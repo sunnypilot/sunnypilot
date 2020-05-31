@@ -1,11 +1,11 @@
 import os
+from pathlib import Path
+
+from selfdrive.hardware import PC
+
 BASEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../"))
 
-from common.android import ANDROID
-if ANDROID:
-  PERSIST = "/persist"
-  PARAMS = "/data/params"
+if PC:
+  PERSIST = os.path.join(str(Path.home()), ".comma", "persist")
 else:
-  PERSIST = os.path.join(BASEDIR, "persist")
-  PARAMS = os.path.join(BASEDIR, "persist", "params")
-
+  PERSIST = "/persist"

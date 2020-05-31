@@ -1,433 +1,458 @@
 #!/usr/bin/env python3
-import os
-import json
-import copy
 import datetime
+import os
+import queue
+import threading
+import time
+from collections import OrderedDict, namedtuple
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+
 import psutil
-from smbus2 import SMBus
-from cereal import log
-from common.android import ANDROID, get_network_type, get_network_strength
-from common.basedir import BASEDIR
-from common.params import Params, put_nonblocking
-from common.realtime import sec_since_boot, DT_TRML
-from common.numpy_fast import clip, interp
-from common.filter_simple import FirstOrderFilter
-from selfdrive.version import terms_version, training_version
-from selfdrive.swaglog import cloudlog
+
 import cereal.messaging as messaging
+from cereal import log
+from common.dict_helpers import strip_deprecated_keys
+from common.filter_simple import FirstOrderFilter
+from common.params import Params
+from common.realtime import DT_TRML, sec_since_boot
+from selfdrive.controls.lib.alertmanager import set_offroad_alert
+from selfdrive.hardware import HARDWARE, TICI
 from selfdrive.loggerd.config import get_available_percent
-from selfdrive.pandad import get_expected_signature
-from selfdrive.thermald.power_monitoring import PowerMonitoring, get_battery_capacity, get_battery_status, get_battery_current, get_battery_voltage, get_usb_present
+from selfdrive.statsd import statlog
+from selfdrive.swaglog import cloudlog
+from selfdrive.thermald.power_monitoring import PowerMonitoring
+from selfdrive.thermald.fan_controller import TiciFanController
+from selfdrive.version import terms_version, training_version
 
-FW_SIGNATURE = get_expected_signature()
-
-ThermalStatus = log.ThermalData.ThermalStatus
-NetworkType = log.ThermalData.NetworkType
-NetworkStrength = log.ThermalData.NetworkStrength
+ThermalStatus = log.DeviceState.ThermalStatus
+NetworkType = log.DeviceState.NetworkType
+NetworkStrength = log.DeviceState.NetworkStrength
 CURRENT_TAU = 15.   # 15s time constant
-CPU_TEMP_TAU = 5.   # 5s time constant
-DAYS_NO_CONNECTIVITY_MAX = 7  # do not allow to engage after a week without internet
-DAYS_NO_CONNECTIVITY_PROMPT = 4  # send an offroad prompt after 4 days with no internet
+TEMP_TAU = 5.   # 5s time constant
 DISCONNECT_TIMEOUT = 5.  # wait 5 seconds before going offroad after disconnect so you get an alert
+PANDA_STATES_TIMEOUT = int(1000 * 2.5 * DT_TRML)  # 2.5x the expected pandaState frequency
 
-LEON = False
-last_eon_fan_val = None
+ThermalBand = namedtuple("ThermalBand", ['min_temp', 'max_temp'])
+HardwareState = namedtuple("HardwareState", ['network_type', 'network_metered', 'network_strength', 'network_info', 'nvme_temps', 'modem_temps'])
 
+# List of thermal bands. We will stay within this region as long as we are within the bounds.
+# When exiting the bounds, we'll jump to the lower or higher band. Bands are ordered in the dict.
+THERMAL_BANDS = OrderedDict({
+  ThermalStatus.green: ThermalBand(None, 80.0),
+  ThermalStatus.yellow: ThermalBand(75.0, 96.0),
+  ThermalStatus.red: ThermalBand(80.0, 107.),
+  ThermalStatus.danger: ThermalBand(94.0, None),
+})
 
-with open(BASEDIR + "/selfdrive/controls/lib/alerts_offroad.json") as json_file:
-  OFFROAD_ALERTS = json.load(json_file)
+# Override to highest thermal band when offroad and above this temp
+OFFROAD_DANGER_TEMP = 79.5
 
+prev_offroad_states: Dict[str, Tuple[bool, Optional[str]]] = {}
 
-def read_tz(x, clip=True):
-  if not ANDROID:
-    # we don't monitor thermal on PC
+pre_built_file = '/data/openpilot/prebuilt'
+
+tz_by_type: Optional[Dict[str, int]] = None
+def populate_tz_by_type():
+  global tz_by_type
+  tz_by_type = {}
+  for n in os.listdir("/sys/devices/virtual/thermal"):
+    if not n.startswith("thermal_zone"):
+      continue
+    with open(os.path.join("/sys/devices/virtual/thermal", n, "type")) as f:
+      tz_by_type[f.read().strip()] = int(n.lstrip("thermal_zone"))
+
+def read_tz(x):
+  if x is None:
     return 0
+
+  if isinstance(x, str):
+    if tz_by_type is None:
+      populate_tz_by_type()
+    x = tz_by_type[x]
+
   try:
-    with open("/sys/devices/virtual/thermal/thermal_zone%d/temp" % x) as f:
-      ret = int(f.read())
-      if clip:
-        ret = max(0, ret)
+    with open(f"/sys/devices/virtual/thermal/thermal_zone{x}/temp") as f:
+      return int(f.read())
   except FileNotFoundError:
     return 0
 
-  return ret
 
-
-def read_thermal():
-  dat = messaging.new_message('thermal')
-  dat.thermal.cpu0 = read_tz(5)
-  dat.thermal.cpu1 = read_tz(7)
-  dat.thermal.cpu2 = read_tz(10)
-  dat.thermal.cpu3 = read_tz(12)
-  dat.thermal.mem = read_tz(2)
-  dat.thermal.gpu = read_tz(16)
-  dat.thermal.bat = read_tz(29)
-  dat.thermal.pa0 = read_tz(25)
+def read_thermal(thermal_config):
+  dat = messaging.new_message('deviceState')
+  dat.deviceState.cpuTempC = [read_tz(z) / thermal_config.cpu[1] for z in thermal_config.cpu[0]]
+  dat.deviceState.gpuTempC = [read_tz(z) / thermal_config.gpu[1] for z in thermal_config.gpu[0]]
+  dat.deviceState.memoryTempC = read_tz(thermal_config.mem[0]) / thermal_config.mem[1]
+  dat.deviceState.ambientTempC = read_tz(thermal_config.ambient[0]) / thermal_config.ambient[1]
+  dat.deviceState.pmicTempC = [read_tz(z) / thermal_config.pmic[1] for z in thermal_config.pmic[0]]
   return dat
 
 
-def setup_eon_fan():
-  global LEON
-
-  os.system("echo 2 > /sys/module/dwc3_msm/parameters/otg_switch")
-
-  bus = SMBus(7, force=True)
-  try:
-    bus.write_byte_data(0x21, 0x10, 0xf)   # mask all interrupts
-    bus.write_byte_data(0x21, 0x03, 0x1)   # set drive current and global interrupt disable
-    bus.write_byte_data(0x21, 0x02, 0x2)   # needed?
-    bus.write_byte_data(0x21, 0x04, 0x4)   # manual override source
-  except IOError:
-    print("LEON detected")
-    LEON = True
-  bus.close()
+def set_offroad_alert_if_changed(offroad_alert: str, show_alert: bool, extra_text: Optional[str]=None):
+  if prev_offroad_states.get(offroad_alert, None) == (show_alert, extra_text):
+    return
+  prev_offroad_states[offroad_alert] = (show_alert, extra_text)
+  set_offroad_alert(offroad_alert, show_alert, extra_text)
 
 
-def set_eon_fan(val):
-  global LEON, last_eon_fan_val
-
-  if last_eon_fan_val is None or last_eon_fan_val != val:
-    bus = SMBus(7, force=True)
-    if LEON:
-      try:
-        i = [0x1, 0x3 | 0, 0x3 | 0x08, 0x3 | 0x10][val]
-        bus.write_i2c_block_data(0x3d, 0, [i])
-      except IOError:
-        # tusb320
-        if val == 0:
-          bus.write_i2c_block_data(0x67, 0xa, [0])
-          #bus.write_i2c_block_data(0x67, 0x45, [1<<2])
-        else:
-          #bus.write_i2c_block_data(0x67, 0x45, [0])
-          bus.write_i2c_block_data(0x67, 0xa, [0x20])
-          bus.write_i2c_block_data(0x67, 0x8, [(val-1)<<6])
-    else:
-      bus.write_byte_data(0x21, 0x04, 0x2)
-      bus.write_byte_data(0x21, 0x03, (val*2)+1)
-      bus.write_byte_data(0x21, 0x04, 0x4)
-    bus.close()
-    last_eon_fan_val = val
-
-
-# temp thresholds to control fan speed - high hysteresis
-_TEMP_THRS_H = [50., 65., 80., 10000]
-# temp thresholds to control fan speed - low hysteresis
-_TEMP_THRS_L = [42.5, 57.5, 72.5, 10000]
-# fan speed options
-_FAN_SPEEDS = [0, 16384, 32768, 65535]
-# max fan speed only allowed if battery is hot
-_BAT_TEMP_THERSHOLD = 45.
-
-
-def handle_fan_eon(max_cpu_temp, bat_temp, fan_speed, ignition):
-  new_speed_h = next(speed for speed, temp_h in zip(_FAN_SPEEDS, _TEMP_THRS_H) if temp_h > max_cpu_temp)
-  new_speed_l = next(speed for speed, temp_l in zip(_FAN_SPEEDS, _TEMP_THRS_L) if temp_l > max_cpu_temp)
-
-  if new_speed_h > fan_speed:
-    # update speed if using the high thresholds results in fan speed increment
-    fan_speed = new_speed_h
-  elif new_speed_l < fan_speed:
-    # update speed if using the low thresholds results in fan speed decrement
-    fan_speed = new_speed_l
-
-  if bat_temp < _BAT_TEMP_THERSHOLD:
-    # no max fan speed unless battery is hot
-    fan_speed = min(fan_speed, _FAN_SPEEDS[-2])
-
-  set_eon_fan(fan_speed // 16384)
-
-  return fan_speed
-
-
-def handle_fan_uno(max_cpu_temp, bat_temp, fan_speed, ignition):
-  new_speed = int(interp(max_cpu_temp, [40.0, 80.0], [0, 80]))
-
-  if not ignition:
-    new_speed = min(30, new_speed)
-
-  return new_speed
-
-
-def thermald_thread():
-  # prevent LEECO from undervoltage
-  BATT_PERC_OFF = 10 if LEON else 3
-
-  health_timeout = int(1000 * 2.5 * DT_TRML)  # 2.5x the expected health frequency
-
-  # now loop
-  thermal_sock = messaging.pub_sock('thermal')
-  health_sock = messaging.sub_sock('health', timeout=health_timeout)
-  location_sock = messaging.sub_sock('gpsLocation')
-
-  ignition = False
-  fan_speed = 0
+def hw_state_thread(end_event, hw_queue):
+  """Handles non critical hardware state, and sends over queue"""
   count = 0
+  registered_count = 0
+  prev_hw_state = None
+
+  modem_version = None
+  modem_nv = None
+  modem_configured = False
+
+  while not end_event.is_set():
+    # these are expensive calls. update every 10s
+    if (count % int(10. / DT_TRML)) == 0:
+      try:
+        network_type = HARDWARE.get_network_type()
+        modem_temps = HARDWARE.get_modem_temperatures()
+        if len(modem_temps) == 0 and prev_hw_state is not None:
+          modem_temps = prev_hw_state.modem_temps
+
+        # Log modem version once
+        if TICI and ((modem_version is None) or (modem_nv is None)):
+          modem_version = HARDWARE.get_modem_version()  # pylint: disable=assignment-from-none
+          modem_nv = HARDWARE.get_modem_nv()  # pylint: disable=assignment-from-none
+
+          if (modem_version is not None) and (modem_nv is not None):
+            cloudlog.event("modem version", version=modem_version, nv=modem_nv)
+
+        hw_state = HardwareState(
+          network_type=network_type,
+          network_metered=HARDWARE.get_network_metered(network_type),
+          network_strength=HARDWARE.get_network_strength(network_type),
+          network_info=HARDWARE.get_network_info(),
+          nvme_temps=HARDWARE.get_nvme_temperatures(),
+          modem_temps=modem_temps,
+        )
+
+        try:
+          hw_queue.put_nowait(hw_state)
+        except queue.Full:
+          pass
+
+        if TICI and (hw_state.network_info is not None) and (hw_state.network_info.get('state', None) == "REGISTERED"):
+          registered_count += 1
+        else:
+          registered_count = 0
+
+        if registered_count > 10:
+          cloudlog.warning(f"Modem stuck in registered state {hw_state.network_info}. nmcli conn up lte")
+          os.system("nmcli conn up lte")
+          registered_count = 0
+
+        # TODO: remove this once the config is in AGNOS
+        if not modem_configured and len(HARDWARE.get_sim_info().get('sim_id', '')) > 0:
+          cloudlog.warning("configuring modem")
+          HARDWARE.configure_modem()
+          modem_configured = True
+
+        prev_hw_state = hw_state
+      except Exception:
+        cloudlog.exception("Error getting hardware state")
+
+    count += 1
+    time.sleep(DT_TRML)
+
+
+def thermald_thread(end_event, hw_queue):
+  pm = messaging.PubMaster(['deviceState'])
+  sm = messaging.SubMaster(["peripheralState", "gpsLocationExternal", "controlsState", "pandaStates"], poll=["pandaStates"])
+
+  count = 0
+
+  onroad_conditions: Dict[str, bool] = {
+    "ignition": False,
+  }
+  startup_conditions: Dict[str, bool] = {}
+  startup_conditions_prev: Dict[str, bool] = {}
 
   off_ts = None
   started_ts = None
   started_seen = False
   thermal_status = ThermalStatus.green
-  thermal_status_prev = ThermalStatus.green
-  usb_power = True
-  usb_power_prev = True
 
-  network_type = NetworkType.none
-  network_strength = NetworkStrength.unknown
+  last_hw_state = HardwareState(
+    network_type=NetworkType.none,
+    network_metered=False,
+    network_strength=NetworkStrength.unknown,
+    network_info=None,
+    nvme_temps=[],
+    modem_temps=[],
+  )
 
   current_filter = FirstOrderFilter(0., CURRENT_TAU, DT_TRML)
-  cpu_temp_filter = FirstOrderFilter(0., CPU_TEMP_TAU, DT_TRML)
-  health_prev = None
-  fw_version_match_prev = True
-  current_connectivity_alert = None
-  time_valid_prev = True
+  temp_filter = FirstOrderFilter(0., TEMP_TAU, DT_TRML)
   should_start_prev = False
-  handle_fan = None
-  is_uno = False
+  in_car = False
+  engaged_prev = False
 
   params = Params()
-  pm = PowerMonitoring()
-  no_panda_cnt = 0
+  power_monitor = PowerMonitoring()
 
-  while 1:
-    health = messaging.recv_sock(health_sock, wait=True)
-    location = messaging.recv_sock(location_sock)
-    location = location.gpsLocation if location else None
-    msg = read_thermal()
+  HARDWARE.initialize_hardware()
+  thermal_config = HARDWARE.get_thermal_config()
 
-    if health is not None:
-      usb_power = health.health.usbPowerMode != log.HealthData.UsbPowerMode.client
+  fan_controller = None
 
-      # If we lose connection to the panda, wait 5 seconds before going offroad
-      if health.health.hwType == log.HealthData.HwType.unknown:
-        no_panda_cnt += 1
-        if no_panda_cnt > DISCONNECT_TIMEOUT / DT_TRML:
-          if ignition:
-            cloudlog.error("Lost panda connection while onroad")
-          ignition = False
-      else:
-        no_panda_cnt = 0
-        ignition = health.health.ignitionLine or health.health.ignitionCan
+  is_openpilot_dir = True
+  no_harness_offroad = params.get_bool("NoOffroadFix")
+  peripheral_state_last = None
+
+  while not end_event.is_set():
+    sm.update(PANDA_STATES_TIMEOUT)
+
+    pandaStates = sm['pandaStates']
+    peripheralState = sm['peripheralState']
+
+    msg = read_thermal(thermal_config)
+
+    if sm.updated['pandaStates'] and len(pandaStates) > 0:
+
+      # Set ignition based on any panda connected
+      onroad_conditions["ignition"] = any(ps.ignitionLine or ps.ignitionCan for ps in pandaStates if ps.pandaType != log.PandaState.PandaType.unknown)
+
+      pandaState = pandaStates[0]
+
+      in_car = pandaState.harnessStatus != log.PandaState.HarnessStatus.notConnected
 
       # Setup fan handler on first connect to panda
-      if handle_fan is None and health.health.hwType != log.HealthData.HwType.unknown:
-        is_uno = health.health.hwType == log.HealthData.HwType.uno
+      if fan_controller is None and peripheralState.pandaType != log.PandaState.PandaType.unknown:
+        if TICI:
+          fan_controller = TiciFanController()
 
-        if is_uno or not ANDROID:
-          cloudlog.info("Setting up UNO fan handler")
-          handle_fan = handle_fan_uno
-        else:
-          cloudlog.info("Setting up EON fan handler")
-          setup_eon_fan()
-          handle_fan = handle_fan_eon
+    try:
+      last_hw_state = hw_queue.get_nowait()
+    except queue.Empty:
+      pass
 
-      # Handle disconnect
-      if health_prev is not None:
-        if health.health.hwType == log.HealthData.HwType.unknown and \
-          health_prev.health.hwType != log.HealthData.HwType.unknown:
-          params.panda_disconnect()
-      health_prev = health
+    msg.deviceState.freeSpacePercent = get_available_percent(default=100.0)
+    msg.deviceState.memoryUsagePercent = int(round(psutil.virtual_memory().percent))
+    msg.deviceState.cpuUsagePercent = [int(round(n)) for n in psutil.cpu_percent(percpu=True)]
+    msg.deviceState.gpuUsagePercent = int(round(HARDWARE.get_gpu_usage_percent()))
 
-    # get_network_type is an expensive call. update every 10s
-    if (count % int(10. / DT_TRML)) == 0:
-      try:
-        network_type = get_network_type()
-        network_strength = get_network_strength(network_type)
-      except Exception:
-        cloudlog.exception("Error getting network status")
+    msg.deviceState.networkType = last_hw_state.network_type
+    msg.deviceState.networkMetered = last_hw_state.network_metered
+    msg.deviceState.networkStrength = last_hw_state.network_strength
+    if last_hw_state.network_info is not None:
+      msg.deviceState.networkInfo = last_hw_state.network_info
 
-    msg.thermal.freeSpace = get_available_percent(default=100.0) / 100.0
-    msg.thermal.memUsedPercent = int(round(psutil.virtual_memory().percent))
-    msg.thermal.cpuPerc = int(round(psutil.cpu_percent()))
-    msg.thermal.networkType = network_type
-    msg.thermal.networkStrength = network_strength
-    msg.thermal.batteryPercent = get_battery_capacity()
-    msg.thermal.batteryStatus = get_battery_status()
-    msg.thermal.batteryCurrent = get_battery_current()
-    msg.thermal.batteryVoltage = get_battery_voltage()
-    msg.thermal.usbOnline = get_usb_present()
+    msg.deviceState.nvmeTempC = last_hw_state.nvme_temps
+    msg.deviceState.modemTempC = last_hw_state.modem_temps
 
-    # Fake battery levels on uno for frame
-    if is_uno:
-      msg.thermal.batteryPercent = 100
-      msg.thermal.batteryStatus = "Charging"
+    msg.deviceState.screenBrightnessPercent = HARDWARE.get_screen_brightness()
+    msg.deviceState.usbOnline = HARDWARE.get_usb_present()
+    current_filter.update(msg.deviceState.batteryCurrent / 1e6)
 
-    current_filter.update(msg.thermal.batteryCurrent / 1e6)
+    max_comp_temp = temp_filter.update(
+      max(max(msg.deviceState.cpuTempC), msg.deviceState.memoryTempC, max(msg.deviceState.gpuTempC))
+    )
 
-    # TODO: add car battery voltage check
-    max_cpu_temp = cpu_temp_filter.update(
-      max(msg.thermal.cpu0,
-          msg.thermal.cpu1,
-          msg.thermal.cpu2,
-          msg.thermal.cpu3) / 10.0)
+    if fan_controller is not None:
+      msg.deviceState.fanSpeedPercentDesired = fan_controller.update(max_comp_temp, onroad_conditions["ignition"])
 
-    max_comp_temp = max(max_cpu_temp, msg.thermal.mem / 10., msg.thermal.gpu / 10.)
-    bat_temp = msg.thermal.bat / 1000.
-
-    if handle_fan is not None:
-      fan_speed = handle_fan(max_cpu_temp, bat_temp, fan_speed, ignition)
-      msg.thermal.fanSpeed = fan_speed
-
-    # thermal logic with hysterisis
-    if max_cpu_temp > 107. or bat_temp >= 63.:
-      # onroad not allowed
+    is_offroad_for_5_min = (started_ts is None) and ((not started_seen) or (off_ts is None) or (sec_since_boot() - off_ts > 60 * 5))
+    if is_offroad_for_5_min and max_comp_temp > OFFROAD_DANGER_TEMP:
+      # If device is offroad we want to cool down before going onroad
+      # since going onroad increases load and can make temps go over 107
       thermal_status = ThermalStatus.danger
-    elif max_comp_temp > 92.5 or bat_temp > 60.:  # CPU throttling starts around ~90C
-      # hysteresis between onroad not allowed and engage not allowed
-      thermal_status = clip(thermal_status, ThermalStatus.red, ThermalStatus.danger)
-    elif max_cpu_temp > 87.5:
-      # hysteresis between engage not allowed and uploader not allowed
-      thermal_status = clip(thermal_status, ThermalStatus.yellow, ThermalStatus.red)
-    elif max_cpu_temp > 80.0:
-      # uploader not allowed
-      thermal_status = ThermalStatus.yellow
-    elif max_cpu_temp > 75.0:
-      # hysteresis between uploader not allowed and all good
-      thermal_status = clip(thermal_status, ThermalStatus.green, ThermalStatus.yellow)
     else:
-      # all good
-      thermal_status = ThermalStatus.green
+      current_band = THERMAL_BANDS[thermal_status]
+      band_idx = list(THERMAL_BANDS.keys()).index(thermal_status)
+      if current_band.min_temp is not None and max_comp_temp < current_band.min_temp:
+        thermal_status = list(THERMAL_BANDS.keys())[band_idx - 1]
+      elif current_band.max_temp is not None and max_comp_temp > current_band.max_temp:
+        thermal_status = list(THERMAL_BANDS.keys())[band_idx + 1]
 
     # **** starting logic ****
 
-    # Check for last update time and display alerts if needed
+    # Ensure date/time are valid
     now = datetime.datetime.utcnow()
+    if params.get("TimeValidBypass"):
+      startup_conditions["time_valid"] = (now.year > 1020) or (now.year == 1020 and now.month >= 10)
+    else:
+      startup_conditions["time_valid"] = (now.year > 2020) or (now.year == 2020 and now.month >= 10)
+    set_offroad_alert_if_changed("Offroad_InvalidTime", (not startup_conditions["time_valid"]))
 
-    # show invalid date/time alert
-    time_valid = now.year >= 2019
-    if time_valid and not time_valid_prev:
-      params.delete("Offroad_InvalidTime")
-    if not time_valid and time_valid_prev:
-      put_nonblocking("Offroad_InvalidTime", json.dumps(OFFROAD_ALERTS["Offroad_InvalidTime"]))
-    time_valid_prev = time_valid
-
-    # Show update prompt
-    try:
-      last_update = datetime.datetime.fromisoformat(params.get("LastUpdateTime", encoding='utf8'))
-    except (TypeError, ValueError):
-      last_update = now
-    dt = now - last_update
-
-    update_failed_count = params.get("UpdateFailedCount")
-    update_failed_count = 0 if update_failed_count is None else int(update_failed_count)
-
-    if dt.days > DAYS_NO_CONNECTIVITY_MAX and update_failed_count > 1:
-      if current_connectivity_alert != "expired":
-        current_connectivity_alert = "expired"
-        params.delete("Offroad_ConnectivityNeededPrompt")
-        put_nonblocking("Offroad_ConnectivityNeeded", json.dumps(OFFROAD_ALERTS["Offroad_ConnectivityNeeded"]))
-    elif dt.days > DAYS_NO_CONNECTIVITY_PROMPT:
-      remaining_time = str(max(DAYS_NO_CONNECTIVITY_MAX - dt.days, 0))
-      if current_connectivity_alert != "prompt" + remaining_time:
-        current_connectivity_alert = "prompt" + remaining_time
-        alert_connectivity_prompt = copy.copy(OFFROAD_ALERTS["Offroad_ConnectivityNeededPrompt"])
-        alert_connectivity_prompt["text"] += remaining_time + " days."
-        params.delete("Offroad_ConnectivityNeeded")
-        put_nonblocking("Offroad_ConnectivityNeededPrompt", json.dumps(alert_connectivity_prompt))
-    elif current_connectivity_alert is not None:
-      current_connectivity_alert = None
-      params.delete("Offroad_ConnectivityNeeded")
-      params.delete("Offroad_ConnectivityNeededPrompt")
-
-    do_uninstall = params.get("DoUninstall") == b"1"
-    accepted_terms = params.get("HasAcceptedTerms") == terms_version
-    completed_training = params.get("CompletedTrainingVersion") == training_version
-
-    panda_signature = params.get("PandaFirmware")
-    fw_version_match = (panda_signature is None) or (panda_signature == FW_SIGNATURE)   # don't show alert is no panda is connected (None)
-
-    should_start = ignition
+    startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or not params.get_bool("EnableUpdates") or params.get_bool("SnoozeUpdate")
+    startup_conditions["not_uninstalling"] = not params.get_bool("DoUninstall")
+    startup_conditions["accepted_terms"] = params.get("HasAcceptedTerms") == terms_version
 
     # with 2% left, we killall, otherwise the phone will take a long time to boot
-    should_start = should_start and msg.thermal.freeSpace > 0.02
-
-    # confirm we have completed training and aren't uninstalling
-    should_start = should_start and accepted_terms and completed_training and (not do_uninstall)
-
-    # check for firmware mismatch
-    should_start = should_start and fw_version_match
-
-    # check if system time is valid
-    should_start = should_start and time_valid
-
-    # don't start while taking snapshot
-    if not should_start_prev:
-      is_viewing_driver = params.get("IsDriverViewEnabled") == b"1"
-      is_taking_snapshot = params.get("IsTakingSnapshot") == b"1"
-      should_start = should_start and (not is_taking_snapshot) and (not is_viewing_driver)
-
-    if fw_version_match and not fw_version_match_prev:
-      params.delete("Offroad_PandaFirmwareMismatch")
-    if not fw_version_match and fw_version_match_prev:
-      put_nonblocking("Offroad_PandaFirmwareMismatch", json.dumps(OFFROAD_ALERTS["Offroad_PandaFirmwareMismatch"]))
-
+    startup_conditions["free_space"] = msg.deviceState.freeSpacePercent > 2
+    startup_conditions["completed_training"] = params.get("CompletedTrainingVersion") == training_version or \
+                                               params.get_bool("Passive")
+    startup_conditions["not_driver_view"] = not params.get_bool("IsDriverViewEnabled")
+    startup_conditions["not_taking_snapshot"] = not params.get_bool("IsTakingSnapshot")
     # if any CPU gets above 107 or the battery gets above 63, kill all processes
     # controls will warn with CPU above 95 or battery above 60
-    if thermal_status >= ThermalStatus.danger:
-      should_start = False
-      if thermal_status_prev < ThermalStatus.danger:
-        put_nonblocking("Offroad_TemperatureTooHigh", json.dumps(OFFROAD_ALERTS["Offroad_TemperatureTooHigh"]))
-    else:
-      if thermal_status_prev >= ThermalStatus.danger:
-        params.delete("Offroad_TemperatureTooHigh")
+    onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger
+    set_offroad_alert_if_changed("Offroad_TemperatureTooHigh", (not onroad_conditions["device_temp_good"]))
+
+    # TODO: this should move to TICI.initialize_hardware, but we currently can't import params there
+    if TICI:
+      if not os.path.isfile("/persist/comma/living-in-the-moment"):
+        if not Path("/data/media").is_mount():
+          set_offroad_alert_if_changed("Offroad_StorageMissing", True)
+        else:
+          # check for bad NVMe
+          try:
+            with open("/sys/block/nvme0n1/device/model") as f:
+              model = f.read().strip()
+            if not model.startswith("Samsung SSD 980") and params.get("Offroad_BadNvme") is None:
+              set_offroad_alert_if_changed("Offroad_BadNvme", True)
+              cloudlog.event("Unsupported NVMe", model=model, error=True)
+          except Exception:
+            pass
+
+    # Handle offroad/onroad transition
+    should_start = all(onroad_conditions.values())
+    if no_harness_offroad:
+      should_start = should_start and HARDWARE.get_usb_present()
+    if started_ts is None:
+      should_start = should_start and all(startup_conditions.values())
+
+    if should_start != should_start_prev or (count == 0):
+      params.put_bool("IsOnroad", should_start)
+      params.put_bool("IsOffroad", not should_start)
+
+      params.put_bool("IsEngaged", False)
+      engaged_prev = False
+      HARDWARE.set_power_save(not should_start)
+
+    if sm.updated['controlsState']:
+      engaged = sm['controlsState'].enabled
+      if engaged != engaged_prev:
+        params.put_bool("IsEngaged", engaged)
+        engaged_prev = engaged
+
+      try:
+        with open('/dev/kmsg', 'w') as kmsg:
+          kmsg.write(f"<3>[thermald] engaged: {engaged}\n")
+      except Exception:
+        pass
 
     if should_start:
-      if not should_start_prev:
-        params.delete("IsOffroad")
-
       off_ts = None
       if started_ts is None:
         started_ts = sec_since_boot()
         started_seen = True
-        os.system('echo performance > /sys/class/devfreq/soc:qcom,cpubw/governor')
     else:
-      if should_start_prev or (count == 0):
-        put_nonblocking("IsOffroad", "1")
+      if onroad_conditions["ignition"] and (startup_conditions != startup_conditions_prev):
+        cloudlog.event("Startup blocked", startup_conditions=startup_conditions, onroad_conditions=onroad_conditions)
 
       started_ts = None
       if off_ts is None:
         off_ts = sec_since_boot()
-        os.system('echo powersave > /sys/class/devfreq/soc:qcom,cpubw/governor')
 
-      # shutdown if the battery gets lower than 3%, it's discharging, we aren't running for
-      # more than a minute but we were running
-      if msg.thermal.batteryPercent < BATT_PERC_OFF and msg.thermal.batteryStatus == "Discharging" and \
-         started_seen and (sec_since_boot() - off_ts) > 60:
-        os.system('LD_LIBRARY_PATH="" svc power shutdown')
+    prebuilt_on = params.get_bool("PrebuiltOn")
+    if not os.path.isdir("/data/openpilot"):
+      if is_openpilot_dir:
+        os.system("cd /data/params/d; rm -f DongleId") # Delete DongleID if the Openpilot directory disappears, Seems you want to switch fork/branch.
+      is_openpilot_dir = False
+    elif not os.path.isfile(pre_built_file) and prebuilt_on and is_openpilot_dir:
+      os.system("cd /data/openpilot; touch prebuilt")
+    elif os.path.isfile(pre_built_file) and not prebuilt_on:
+      os.system("cd /data/openpilot; rm -f prebuilt")
 
     # Offroad power monitoring
-    pm.calculate(health)
-    msg.thermal.offroadPowerUsage = pm.get_power_used()
+    power_monitor.calculate(peripheralState, onroad_conditions["ignition"])
+    msg.deviceState.offroadPowerUsageUwh = power_monitor.get_power_used()
+    msg.deviceState.carBatteryCapacityUwh = max(0, power_monitor.get_car_battery_capacity())
+    current_power_draw = HARDWARE.get_current_power_draw()  # pylint: disable=assignment-from-none
+    if current_power_draw is not None:
+      statlog.sample("power_draw", current_power_draw)
+      msg.deviceState.powerDrawW = current_power_draw
+    else:
+      msg.deviceState.powerDrawW = 0
 
-    msg.thermal.chargingError = current_filter.x > 0. and msg.thermal.batteryPercent < 90  # if current is positive, then battery is being discharged
-    msg.thermal.started = started_ts is not None
-    msg.thermal.startedTs = int(1e9*(started_ts or 0))
+    # Check if we need to disable charging (handled by boardd)
+    msg.deviceState.chargingDisabled = power_monitor.should_disable_charging(onroad_conditions["ignition"], in_car, off_ts)
 
-    msg.thermal.thermalStatus = thermal_status
-    thermal_sock.send(msg.to_bytes())
+    if no_harness_offroad and (peripheral_state_last == peripheralState) and not msg.deviceState.usbOnline:
+      time.sleep(10)
+      HARDWARE.shutdown()
+    peripheral_state_last = peripheralState
 
-    if usb_power_prev and not usb_power:
-      put_nonblocking("Offroad_ChargeDisabled", json.dumps(OFFROAD_ALERTS["Offroad_ChargeDisabled"]))
-    elif usb_power and not usb_power_prev:
-      params.delete("Offroad_ChargeDisabled")
+    # Check if we need to shut down
+    if power_monitor.should_shutdown(peripheralState, onroad_conditions["ignition"], in_car, off_ts, started_seen):
+      cloudlog.warning(f"shutting device down, offroad since {off_ts}")
+      params.put_bool("DoShutdown", True)
 
-    thermal_status_prev = thermal_status
-    usb_power_prev = usb_power
-    fw_version_match_prev = fw_version_match
+    msg.deviceState.chargingError = current_filter.x > 0. and msg.deviceState.batteryPercent < 90  # if current is positive, then battery is being discharged
+    msg.deviceState.started = started_ts is not None
+    msg.deviceState.startedMonoTime = int(1e9*(started_ts or 0))
+
+    last_ping = params.get("LastAthenaPingTime")
+    if last_ping is not None:
+      msg.deviceState.lastAthenaPingTime = int(last_ping)
+
+    msg.deviceState.thermalStatus = thermal_status
+    pm.send("deviceState", msg)
+
     should_start_prev = should_start
+    startup_conditions_prev = startup_conditions.copy()
 
-    # report to server once per minute
-    if (count % int(60. / DT_TRML)) == 0:
+    # Log to statsd
+    statlog.gauge("free_space_percent", msg.deviceState.freeSpacePercent)
+    statlog.gauge("gpu_usage_percent", msg.deviceState.gpuUsagePercent)
+    statlog.gauge("memory_usage_percent", msg.deviceState.memoryUsagePercent)
+    for i, usage in enumerate(msg.deviceState.cpuUsagePercent):
+      statlog.gauge(f"cpu{i}_usage_percent", usage)
+    for i, temp in enumerate(msg.deviceState.cpuTempC):
+      statlog.gauge(f"cpu{i}_temperature", temp)
+    for i, temp in enumerate(msg.deviceState.gpuTempC):
+      statlog.gauge(f"gpu{i}_temperature", temp)
+    statlog.gauge("memory_temperature", msg.deviceState.memoryTempC)
+    statlog.gauge("ambient_temperature", msg.deviceState.ambientTempC)
+    for i, temp in enumerate(msg.deviceState.pmicTempC):
+      statlog.gauge(f"pmic{i}_temperature", temp)
+    for i, temp in enumerate(last_hw_state.nvme_temps):
+      statlog.gauge(f"nvme_temperature{i}", temp)
+    for i, temp in enumerate(last_hw_state.modem_temps):
+      statlog.gauge(f"modem_temperature{i}", temp)
+    statlog.gauge("fan_speed_percent_desired", msg.deviceState.fanSpeedPercentDesired)
+    statlog.gauge("screen_brightness_percent", msg.deviceState.screenBrightnessPercent)
+
+    # report to server once every 10 minutes
+    if (count % int(600. / DT_TRML)) == 0:
       cloudlog.event("STATUS_PACKET",
                      count=count,
-                     health=(health.to_dict() if health else None),
-                     location=(location.to_dict() if location else None),
-                     thermal=msg.to_dict())
+                     pandaStates=[strip_deprecated_keys(p.to_dict()) for p in pandaStates],
+                     peripheralState=strip_deprecated_keys(peripheralState.to_dict()),
+                     location=(strip_deprecated_keys(sm["gpsLocationExternal"].to_dict()) if sm.alive["gpsLocationExternal"] else None),
+                     deviceState=strip_deprecated_keys(msg.to_dict()))
 
     count += 1
 
 
 def main():
-  thermald_thread()
+  hw_queue = queue.Queue(maxsize=1)
+  end_event = threading.Event()
+
+  threads = [
+    threading.Thread(target=hw_state_thread, args=(end_event, hw_queue)),
+    threading.Thread(target=thermald_thread, args=(end_event, hw_queue)),
+  ]
+
+  for t in threads:
+    t.start()
+
+  try:
+    while True:
+      time.sleep(1)
+      if not all(t.is_alive() for t in threads):
+        break
+  finally:
+    end_event.set()
+
+  for t in threads:
+    t.join()
 
 
 if __name__ == "__main__":

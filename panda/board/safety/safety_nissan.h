@@ -11,36 +11,49 @@ const struct lookup_t NISSAN_LOOKUP_ANGLE_RATE_DOWN = {
 
 const int NISSAN_DEG_TO_CAN = 100;
 
-const CanMsg NISSAN_TX_MSGS[] = {{0x169, 0, 8}, {0x2b1, 0, 8}, {0x4cc, 0, 8}, {0x20b, 2, 6}, {0x280, 2, 8}};
+const CanMsg NISSAN_TX_MSGS[] = {
+  {0x169, 0, 8},  // LKAS
+  {0x2b1, 0, 8},  // PROPILOT_HUD
+  {0x4cc, 0, 8},  // PROPILOT_HUD_INFO_MSG
+  {0x20b, 2, 6},  // CRUISE_THROTTLE (X-Trail)
+  {0x20b, 1, 6},  // CRUISE_THROTTLE (Altima)
+  {0x280, 2, 8}   // CANCEL_MSG (Leaf)
+};
 
-AddrCheckStruct nissan_rx_checks[] = {
-  {.msg = {{0x2, 0, 5, .expected_timestep = 10000U}}},  // STEER_ANGLE_SENSOR (100Hz)
-  {.msg = {{0x285, 0, 8, .expected_timestep = 20000U}}}, // WHEEL_SPEEDS_REAR (50Hz)
-  {.msg = {{0x30f, 2, 3, .expected_timestep = 100000U}}}, // CRUISE_STATE (10Hz)
+// Signals duplicated below due to the fact that these messages can come in on either CAN bus, depending on car model.
+AddrCheckStruct nissan_addr_checks[] = {
+  {.msg = {{0x2, 0, 5, .expected_timestep = 10000U},
+           {0x2, 1, 5, .expected_timestep = 10000U}, { 0 }}},  // STEER_ANGLE_SENSOR (100Hz)
+  {.msg = {{0x285, 0, 8, .expected_timestep = 20000U},
+           {0x285, 1, 8, .expected_timestep = 20000U}, { 0 }}}, // WHEEL_SPEEDS_REAR (50Hz)
+  {.msg = {{0x30f, 2, 3, .expected_timestep = 100000U},
+           {0x30f, 1, 3, .expected_timestep = 100000U}, { 0 }}}, // CRUISE_STATE (10Hz)
   {.msg = {{0x15c, 0, 8, .expected_timestep = 20000U},
+           {0x15c, 1, 8, .expected_timestep = 20000U},
            {0x239, 0, 8, .expected_timestep = 20000U}}}, // GAS_PEDAL (100Hz / 50Hz)
   {.msg = {{0x454, 0, 8, .expected_timestep = 100000U},
+           {0x454, 1, 8, .expected_timestep = 100000U},
            {0x1cc, 0, 4, .expected_timestep = 10000U}}}, // DOORS_LIGHTS (10Hz) / BRAKE (100Hz)
 };
-const int NISSAN_RX_CHECK_LEN = sizeof(nissan_rx_checks) / sizeof(nissan_rx_checks[0]);
+#define NISSAN_ADDR_CHECK_LEN (sizeof(nissan_addr_checks) / sizeof(nissan_addr_checks[0]))
+addr_checks nissan_rx_checks = {nissan_addr_checks, NISSAN_ADDR_CHECK_LEN};
 
+// EPS Location. false = V-CAN, true = C-CAN
+bool nissan_alt_eps = false;
 
-static int nissan_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
+static int nissan_rx_hook(CANPacket_t *to_push) {
 
-  bool valid = addr_safety_check(to_push, nissan_rx_checks, NISSAN_RX_CHECK_LEN,
-                                 NULL, NULL, NULL);
-
-  bool unsafe_allow_gas = unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS;
+  bool valid = addr_safety_check(to_push, &nissan_rx_checks, NULL, NULL, NULL);
 
   if (valid) {
     int bus = GET_BUS(to_push);
     int addr = GET_ADDR(to_push);
 
-    if (bus == 0) {
+    if (((bus == 0) && (!nissan_alt_eps)) || ((bus == 1) && (nissan_alt_eps))) {
       if (addr == 0x2) {
         // Current steering angle
         // Factor -0.1, little endian
-        int angle_meas_new = (GET_BYTES_04(to_push) & 0xFFFF);
+        int angle_meas_new = (GET_BYTES_04(to_push) & 0xFFFFU);
         // Need to multiply by 10 here as LKAS and Steering wheel are different base unit
         angle_meas_new = to_signed(angle_meas_new, 16) * 10;
 
@@ -55,48 +68,28 @@ static int nissan_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
         vehicle_moving = vehicle_speed > 0.;
       }
 
-      // exit controls on rising edge of gas press
       // X-Trail 0x15c, Leaf 0x239
       if ((addr == 0x15c) || (addr == 0x239)) {
-        bool gas_pressed = true;
         if (addr == 0x15c){
-          gas_pressed = ((GET_BYTE(to_push, 5) << 2) | ((GET_BYTE(to_push, 6) >> 6) & 0x3)) > 1;
+          gas_pressed = ((GET_BYTE(to_push, 5) << 2) | ((GET_BYTE(to_push, 6) >> 6) & 0x3U)) > 3U;
         } else {
-          gas_pressed = GET_BYTE(to_push, 0) > 3;
+          gas_pressed = GET_BYTE(to_push, 0) > 3U;
         }
-
-        if (!unsafe_allow_gas && gas_pressed && !gas_pressed_prev) {
-          controls_allowed = 0;
-        }
-        gas_pressed_prev = gas_pressed;
-      }
-
-      // 0x169 is lkas cmd. If it is on bus 0, then relay is unexpectedly closed
-      if ((safety_mode_cnt > RELAY_TRNS_TIMEOUT) && (addr == 0x169)) {
-        relay_malfunction_set();
       }
     }
 
-    // exit controls on rising edge of brake press, or if speed > 0 and brake
-    // X-trail 0x454, Leaf  0x1cc
-    if ((addr == 0x454) || (addr == 0x1cc)) {
-      bool brake_pressed = true;
+    // X-trail 0x454, Leaf  0x239
+    if ((addr == 0x454) || (addr == 0x239)) {
       if (addr == 0x454){
-        brake_pressed = (GET_BYTE(to_push, 2) & 0x80) != 0;
+        brake_pressed = (GET_BYTE(to_push, 2) & 0x80U) != 0U;
       } else {
-        brake_pressed = GET_BYTE(to_push, 0) > 3;
+        brake_pressed = ((GET_BYTE(to_push, 4) >> 5) & 1U) != 0U;
       }
-
-      if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
-        controls_allowed = 0;
-      }
-      brake_pressed_prev = brake_pressed;
     }
-
 
     // Handle cruise enabled
-    if ((bus == 2) && (addr == 0x30f)) {
-      bool cruise_engaged = (GET_BYTE(to_push, 0) >> 3) & 1;
+    if ((addr == 0x30f) && (((bus == 2) && (!nissan_alt_eps)) || ((bus == 1) && (nissan_alt_eps)))) {
+      bool cruise_engaged = (GET_BYTE(to_push, 0) >> 3) & 1U;
 
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
@@ -106,12 +99,16 @@ static int nissan_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       }
       cruise_engaged_prev = cruise_engaged;
     }
+
+    generic_rx_checks((addr == 0x169) && (bus == 0));
   }
   return valid;
 }
 
 
-static int nissan_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
+static int nissan_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
+  UNUSED(longitudinal_allowed);
+
   int tx = 1;
   int addr = GET_ADDR(to_send);
   bool violation = 0;
@@ -120,14 +117,10 @@ static int nissan_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
     tx = 0;
   }
 
-  if (relay_malfunction) {
-    tx = 0;
-  }
-
   // steer cmd checks
   if (addr == 0x169) {
-    int desired_angle = ((GET_BYTE(to_send, 0) << 10) | (GET_BYTE(to_send, 1) << 2) | ((GET_BYTE(to_send, 2) >> 6) & 0x3));
-    bool lka_active = (GET_BYTE(to_send, 6) >> 4) & 1;
+    int desired_angle = ((GET_BYTE(to_send, 0) << 10) | (GET_BYTE(to_send, 1) << 2) | ((GET_BYTE(to_send, 2) >> 6) & 0x3U));
+    bool lka_active = (GET_BYTE(to_send, 6) >> 4) & 1U;
 
     // offeset 1310 * NISSAN_DEG_TO_CAN
     desired_angle =  desired_angle - 131000;
@@ -163,11 +156,10 @@ static int nissan_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   // acc button check, only allow cancel button to be sent
   if (addr == 0x20b) {
     // Violation of any button other than cancel is pressed
-    violation |= ((GET_BYTE(to_send, 1) & 0x3d) > 0);
+    violation |= ((GET_BYTE(to_send, 1) & 0x3dU) > 0U);
   }
 
   if (violation) {
-    controls_allowed = 0;
     tx = 0;
   }
 
@@ -175,7 +167,7 @@ static int nissan_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 }
 
 
-static int nissan_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
+static int nissan_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
   int bus_fwd = -1;
   int addr = GET_ADDR(to_fwd);
 
@@ -194,20 +186,18 @@ static int nissan_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
     }
   }
 
-  if (relay_malfunction) {
-    bus_fwd = -1;
-  }
-
-  // fallback to do not forward
   return bus_fwd;
 }
 
+static const addr_checks* nissan_init(uint16_t param) {
+  nissan_alt_eps = param ? 1 : 0;
+  return &nissan_rx_checks;
+}
+
 const safety_hooks nissan_hooks = {
-  .init = nooutput_init,
+  .init = nissan_init,
   .rx = nissan_rx_hook,
   .tx = nissan_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
   .fwd = nissan_fwd_hook,
-  .addr_check = nissan_rx_checks,
-  .addr_check_len = sizeof(nissan_rx_checks) / sizeof(nissan_rx_checks[0]),
 };

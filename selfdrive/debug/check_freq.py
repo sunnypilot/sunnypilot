@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# type: ignore
+
 import argparse
 import numpy as np
 from collections import defaultdict, deque
@@ -18,6 +20,7 @@ if __name__ == "__main__":
   sockets = {}
 
   rcv_times = defaultdict(lambda: deque(maxlen=100))
+  valids = defaultdict(lambda: deque(maxlen=100))
 
   t = sec_since_boot()
   for name in socket_names:
@@ -32,12 +35,13 @@ if __name__ == "__main__":
 
       t = sec_since_boot()
       rcv_times[name].append(msg.logMonoTime / 1e9)
+      valids[name].append(msg.valid)
 
     if t - prev_print > 1:
       print()
       for name in socket_names:
         dts = np.diff(rcv_times[name])
         mean = np.mean(dts)
-        print("%s: Freq %.2f Hz, Min %.2f%%, Max %.2f%%" % (name, 1.0 / mean, np.min(dts) / mean * 100, np.max(dts) / mean * 100))
+        print(f"{name}: Freq {1.0 / mean:.2f} Hz, Min {np.min(dts) / mean * 100:.2f}%, Max {np.max(dts) / mean * 100:.2f}%, valid ", all(valids[name]))
 
       prev_print = t

@@ -5,12 +5,12 @@ import subprocess
 from common.basedir import BASEDIR
 
 
-class TextWindow():
-  def __init__(self, s):
+class TextWindow:
+  def __init__(self, text):
     try:
-      self.text_proc = subprocess.Popen(["./text", s],
+      self.text_proc = subprocess.Popen(["./text", text],
                                         stdin=subprocess.PIPE,
-                                        cwd=os.path.join(BASEDIR, "selfdrive", "ui", "text"),
+                                        cwd=os.path.join(BASEDIR, "selfdrive", "ui"),
                                         close_fds=True)
     except OSError:
       self.text_proc = None
@@ -19,7 +19,6 @@ class TextWindow():
     if self.text_proc is not None:
       self.text_proc.poll()
       return self.text_proc.returncode
-
     return None
 
   def __enter__(self):
@@ -31,36 +30,17 @@ class TextWindow():
       self.text_proc = None
 
   def wait_for_exit(self):
-    while True:
-      if self.get_status() == 1:
-        return
-      time.sleep(0.1)
+    if self.text_proc is not None:
+      while True:
+        if self.get_status() == 1:
+          return
+        time.sleep(0.1)
 
   def __del__(self):
     self.close()
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, exc_type, exc_value, traceback):
     self.close()
-
-
-class FakeTextWindow():
-  def __init__(self, s):
-    pass
-
-  def get_status(self):
-    return 1
-
-  def wait_for_exit(self):
-    return
-
-  def __enter__(self):
-    return self
-
-  def update(self, _):
-    pass
-
-  def __exit__(self, type, value, traceback):
-    pass
 
 
 if __name__ == "__main__":

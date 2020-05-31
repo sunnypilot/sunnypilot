@@ -1,4 +1,6 @@
 venv/
+.env
+.clang-format
 .DS_Store
 .tags
 .ipynb_checkpoints
@@ -6,9 +8,10 @@ venv/
 .overlay_init
 .overlay_consistent
 .sconsign.dblite
-.vscode
+.vscode*
 model2.png
 a.out
+.hypothesis
 
 *.dylib
 *.DSYM
@@ -31,6 +34,7 @@ a.out
 *.vcd
 config.json
 clcache
+compile_commands.json
 
 persist
 board/obj/
@@ -42,21 +46,41 @@ selfdrive/ui/_ui
 selfdrive/test/longitudinal_maneuvers/out
 selfdrive/visiond/visiond
 selfdrive/loggerd/loggerd
+selfdrive/loggerd/bootlog
 selfdrive/sensord/_gpsd
 selfdrive/sensord/_sensord
 selfdrive/camerad/camerad
+selfdrive/camerad/test/ae_gray_test
 selfdrive/modeld/_modeld
 selfdrive/modeld/_dmonitoringmodeld
 /src/
 
 one
+/body/
 openpilot
 notebooks
 xx
+yy
+hyperthneed
 panda_jungle
+provisioning
 
 .coverage*
 coverage.xml
 htmlcov
 pandaextra
 
+.mypy_cache/
+flycheck_*
+
+cppcheck_report.txt
+comma*.sh
+
+selfdrive/modeld/thneed/compile
+selfdrive/modeld/models/*.thneed
+
+*.bz2
+
+build/
+
+!**/.gitkeep
