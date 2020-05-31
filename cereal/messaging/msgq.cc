@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <csignal>
 #include <random>
+#include <string>
 
 #include <poll.h>
 #include <sys/ioctl.h>
@@ -21,7 +22,7 @@
 
 #include <stdio.h>
 
-#include "msgq.hpp"
+#include "msgq.h"
 
 void sigusr2_handler(int signal) {
   assert(signal == SIGUSR2);
@@ -31,7 +32,13 @@ uint64_t msgq_get_uid(void){
   std::random_device rd("/dev/urandom");
   std::uniform_int_distribution<uint64_t> distribution(0,std::numeric_limits<uint32_t>::max());
 
-  uint64_t uid = distribution(rd) << 32 | syscall(SYS_gettid);
+  #ifdef __APPLE__
+    // TODO: this doesn't work
+    uint64_t uid = distribution(rd) << 32 | getpid();
+  #else
+    uint64_t uid = distribution(rd) << 32 | syscall(SYS_gettid);
+  #endif
+
   return uid;
 }
 
@@ -75,36 +82,34 @@ void msgq_wait_for_subscriber(msgq_queue_t *q){
   return;
 }
 
-
-
 int msgq_new_queue(msgq_queue_t * q, const char * path, size_t size){
   assert(size < 0xFFFFFFFF); // Buffer must be smaller than 2^32 bytes
-
   std::signal(SIGUSR2, sigusr2_handler);
 
-  const char * prefix = "/dev/shm/";
-  char * full_path = new char[strlen(path) + strlen(prefix) + 1];
-  strcpy(full_path, prefix);
-  strcat(full_path, path);
+  std::string full_path = "/dev/shm/";
+  const char* prefix = std::getenv("OPENPILOT_PREFIX");
+  if (prefix) {
+    full_path += std::string(prefix) + "/";
+  }
+  full_path += path;
 
-  auto fd = open(full_path, O_RDWR | O_CREAT, 0777);
-  delete[] full_path;
-
+  auto fd = open(full_path.c_str(), O_RDWR | O_CREAT, 0664);
   if (fd < 0) {
     std::cout << "Warning, could not open: " << full_path << std::endl;
     return -1;
   }
 
   int rc = ftruncate(fd, size + sizeof(msgq_header_t));
-  if (rc < 0)
+  if (rc < 0){
+    close(fd);
     return -1;
-
+  }
   char * mem = (char*)mmap(NULL, size + sizeof(msgq_header_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   close(fd);
 
-  if (mem == NULL)
+  if (mem == NULL){
     return -1;
-
+  }
   q->mmap_p = mem;
 
   msgq_header_t *header = (msgq_header_t *)mem;
@@ -174,7 +179,7 @@ void msgq_init_subscriber(msgq_queue_t * q) {
 
     // No more slots available. Reset all subscribers to kick out inactive ones
     if (new_num_readers > NUM_READERS){
-      std::cout << "Warning, evicting all subscribers!" << std::endl;
+      //std::cout << "Warning, evicting all subscribers!" << std::endl;
       *q->num_readers = 0;
 
       for (size_t i = 0; i < NUM_READERS; i++){
@@ -302,7 +307,7 @@ int msgq_msg_ready(msgq_queue_t * q){
   assert(id >= 0); // Make sure subscriber is initialized
 
   if (q->read_uid_local != *q->read_uids[id]){
-    std::cout << q->endpoint << ": Reader was evicted, reconnecting" << std::endl;
+    //std::cout << q->endpoint << ": Reader was evicted, reconnecting" << std::endl;
     msgq_init_subscriber(q);
     goto start;
   }
@@ -329,7 +334,7 @@ int msgq_msg_recv(msgq_msg_t * msg, msgq_queue_t * q){
   assert(id >= 0); // Make sure subscriber is initialized
 
   if (q->read_uid_local != *q->read_uids[id]){
-    std::cout << q->endpoint << ": Reader was evicted, reconnecting" << std::endl;
+    //std::cout << q->endpoint << ": Reader was evicted, reconnecting" << std::endl;
     msgq_init_subscriber(q);
     goto start;
   }
@@ -412,8 +417,6 @@ int msgq_msg_recv(msgq_msg_t * msg, msgq_queue_t * q){
 
 
 int msgq_poll(msgq_pollitem_t * items, size_t nitems, int timeout){
-  assert(timeout >= 0);
-
   int num = 0;
 
   // Check if messages ready
@@ -448,4 +451,14 @@ int msgq_poll(msgq_pollitem_t * items, size_t nitems, int timeout){
   }
 
   return num;
+}
+
+bool msgq_all_readers_updated(msgq_queue_t *q) {
+  uint64_t num_readers = *q->num_readers;
+  for (uint64_t i = 0; i < num_readers; i++) {
+    if (*q->read_valids[i] && *q->write_pointer != *q->read_pointers[i]) {
+      return false;
+    }
+  }
+  return num_readers > 0;
 }

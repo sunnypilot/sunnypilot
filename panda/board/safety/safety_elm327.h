@@ -1,4 +1,5 @@
-static int elm327_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
+static int elm327_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
+  UNUSED(longitudinal_allowed);
 
   int tx = 1;
   int addr = GET_ADDR(to_send);
@@ -33,6 +34,7 @@ static int elm327_tx_lin_hook(int lin_num, uint8_t *data, int len) {
   return tx;
 }
 
+// If current_board->has_obd and safety_param == 0, bus 1 is multiplexed to the OBD-II port
 const safety_hooks elm327_hooks = {
   .init = nooutput_init,
   .rx = default_rx_hook,

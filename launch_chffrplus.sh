@@ -1,24 +1,42 @@
 #!/usr/bin/bash
 
-export OMP_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-export NUMEXPR_NUM_THREADS=1
-export OPENBLAS_NUM_THREADS=1
-export VECLIB_MAXIMUM_THREADS=1
-
 if [ -z "$BASEDIR" ]; then
   BASEDIR="/data/openpilot"
 fi
 
-if [ -z "$PASSIVE" ]; then
-  export PASSIVE="1"
-fi
+source "$BASEDIR/launch_env.sh"
 
-STAGING_ROOT="/data/safe_staging"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
+function tici_init {
+  # wait longer for weston to come up
+  if [ -f "$BASEDIR/prebuilt" ]; then
+    sleep 3
+  fi
+
+  # TODO: move this to agnos
+  sudo rm -f /data/etc/NetworkManager/system-connections/*.nmmeta
+
+  # set success flag for current boot slot
+  sudo abctl --set_success
+
+  # Check if AGNOS update is required
+  if [ $(< /VERSION) != "$AGNOS_VERSION" ]; then
+    AGNOS_PY="$DIR/selfdrive/hardware/tici/agnos.py"
+    MANIFEST="$DIR/selfdrive/hardware/tici/agnos.json"
+    if $AGNOS_PY --verify $MANIFEST; then
+      sudo reboot
+    fi
+    $DIR/selfdrive/hardware/tici/updater $AGNOS_PY $MANIFEST
+  fi
+}
 
 function launch {
-  # Wifi scan
-  wpa_cli IFNAME=wlan0 SCAN
+  # Remove orphaned git lock if it exists on boot
+  [ -f "$DIR/.git/index.lock" ] && rm -f $DIR/.git/index.lock
+
+  # Pull time from panda
+  $DIR/selfdrive/boardd/set_time.py
 
   # Check to see if there's a valid overlay-based update available. Conditions
   # are as follows:
@@ -41,11 +59,10 @@ function launch {
 
           mv $BASEDIR /data/safe_staging/old_openpilot
           mv "${STAGING_ROOT}/finalized" $BASEDIR
-
-          # The mv changed our working directory to /data/safe_staging/old_openpilot
-          cd "${BASEDIR}"
+          cd $BASEDIR
 
           echo "Restarting launch script ${LAUNCHER_LOCATION}"
+          unset AGNOS_VERSION
           exec "${LAUNCHER_LOCATION}"
         else
           echo "openpilot backup found, not updating"
@@ -55,44 +72,33 @@ function launch {
     fi
   fi
 
-  # no cpu rationing for now
-  echo 0-3 > /dev/cpuset/background/cpus
-  echo 0-3 > /dev/cpuset/system-background/cpus
-  echo 0-3 > /dev/cpuset/foreground/boost/cpus
-  echo 0-3 > /dev/cpuset/foreground/cpus
-  echo 0-3 > /dev/cpuset/android/cpus
-
-  # change interrupt affinity
-  echo 3 > /proc/irq/6/smp_affinity_list # MDSS
-  echo 1 > /proc/irq/78/smp_affinity_list # Modem, can potentially lock up
-  echo 2 > /proc/irq/733/smp_affinity_list # USB
-  echo 2 > /proc/irq/736/smp_affinity_list # USB
-
-  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
-  # Remove old NEOS update file
-  # TODO: move this code to the updater
-  if [ -d /data/neoupdate ]; then
-    rm -rf /data/neoupdate
-  fi
-
-  # Check for NEOS update
-  if [ $(< /VERSION) != "14" ]; then
-    if [ -f "$DIR/scripts/continue.sh" ]; then
-      cp "$DIR/scripts/continue.sh" "/data/data/com.termux/files/continue.sh"
-    fi
-
-    "$DIR/installer/updater/updater" "file://$DIR/installer/updater/update.json"
-  fi
-
-
   # handle pythonpath
   ln -sfn $(pwd) /data/pythonpath
-  export PYTHONPATH="$PWD"
+  export PYTHONPATH="$PWD:$PWD/pyextra"
+
+  # hardware specific init
+  if [ -f /TICI ]; then
+    tici_init
+  fi
+
+  # write tmux scrollback to a file
+  tmux capture-pane -pq -S-1000 > /tmp/launch_log
+
+  if [ -f "$BASEDIR/prebuilt" ]; then
+    python /data/openpilot/common/spinner.py &
+  fi
+
+  python ./selfdrive/car/honda/values.py > /data/params/d/HondaCars
+  python ./selfdrive/car/hyundai/values.py > /data/params/d/HyundaiCars
+  python ./selfdrive/car/subaru/values.py > /data/params/d/SubaruCars
+  python ./selfdrive/car/toyota/values.py > /data/params/d/ToyotaCars
+  python ./selfdrive/car/volkswagen/values.py > /data/params/d/VolkswagenCars
+
+  python ./force_car_recognition.py
 
   # start manager
-  cd selfdrive
-  ./manager.py
+  cd selfdrive/manager
+  ./custom_dep.py && ./build.py && ./manager.py
 
   # if broken, keep on screen error
   while true; do sleep 1; done

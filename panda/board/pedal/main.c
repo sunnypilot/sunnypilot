@@ -1,32 +1,13 @@
 // ********************* Includes *********************
+//#define PEDAL_USB
 #include "../config.h"
-#include "libc.h"
 
-#include "main_declarations.h"
-#include "critical.h"
-#include "faults.h"
-
-#include "drivers/registers.h"
-#include "drivers/interrupts.h"
-#include "drivers/llcan.h"
-#include "drivers/llgpio.h"
-#include "drivers/adc.h"
-
-#include "board.h"
-
-#include "drivers/clock.h"
-#include "drivers/dac.h"
-#include "drivers/timer.h"
-
-#include "gpio.h"
+#include "early_init.h"
 #include "crc.h"
 
 #define CAN CAN1
 
-//#define PEDAL_USB
-
 #ifdef PEDAL_USB
-  #include "drivers/uart.h"
   #include "drivers/usb.h"
 #else
   // no serial either
@@ -41,12 +22,12 @@
   }
 #endif
 
-#define ENTER_BOOTLOADER_MAGIC 0xdeadbeef
+#define ENTER_BOOTLOADER_MAGIC 0xdeadbeefU
 uint32_t enter_bootloader_mode;
 
 // cppcheck-suppress unusedFunction ; used in headers not included in cppcheck
 void __initialize_hardware_early(void) {
-  early();
+  early_initialization();
 }
 
 // ********************* serial debugging *********************
@@ -60,30 +41,31 @@ void debug_ring_callback(uart_ring *ring) {
   }
 }
 
-int usb_cb_ep1_in(void *usbdata, int len, bool hardwired) {
+int usb_cb_ep1_in(void *usbdata, int len) {
   UNUSED(usbdata);
   UNUSED(len);
-  UNUSED(hardwired);
   return 0;
 }
-void usb_cb_ep2_out(void *usbdata, int len, bool hardwired) {
+void usb_cb_ep2_out(void *usbdata, int len) {
   UNUSED(usbdata);
   UNUSED(len);
-  UNUSED(hardwired);
 }
-void usb_cb_ep3_out(void *usbdata, int len, bool hardwired) {
+void usb_cb_ep3_out(void *usbdata, int len) {
   UNUSED(usbdata);
   UNUSED(len);
-  UNUSED(hardwired);
 }
 void usb_cb_ep3_out_complete(void) {}
 void usb_cb_enumeration_complete(void) {}
 
-int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) {
-  UNUSED(hardwired);
+int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp) {
   unsigned int resp_len = 0;
   uart_ring *ur = NULL;
   switch (setup->b.bRequest) {
+    // **** 0xc1: get hardware type
+    case 0xc1:
+      resp[0] = hw_type;
+      resp_len = 1;
+      break;
     // **** 0xe0: uart read
     case 0xe0:
       ur = get_ring_by_number(setup->b.wValue.w);
@@ -91,7 +73,7 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
         break;
       }
       // read
-      while ((resp_len < MIN(setup->b.wLength.w, MAX_RESP_LEN)) &&
+      while ((resp_len < MIN(setup->b.wLength.w, USBPACKET_MAX_SIZE)) &&
                          getc(ur, (char*)&resp[resp_len])) {
         ++resp_len;
       }
@@ -136,8 +118,7 @@ uint32_t current_index = 0;
 #define FAULT_TIMEOUT 5U
 #define FAULT_INVALID 6U
 uint8_t state = FAULT_STARTUP;
-
-const uint8_t crc_poly = 0xD5;  // standard crc8
+const uint8_t crc_poly = 0xD5U;  // standard crc8
 
 void CAN1_RX0_IRQ_Handler(void) {
   while ((CAN->RF0R & CAN_RF0R_FMP0) != 0) {
@@ -147,11 +128,11 @@ void CAN1_RX0_IRQ_Handler(void) {
     int address = CAN->sFIFOMailBox[0].RIR >> 21;
     if (address == CAN_GAS_INPUT) {
       // softloader entry
-      if (GET_BYTES_04(&CAN->sFIFOMailBox[0]) == 0xdeadface) {
-        if (GET_BYTES_48(&CAN->sFIFOMailBox[0]) == 0x0ab00b1e) {
+      if (GET_MAILBOX_BYTES_04(&CAN->sFIFOMailBox[0]) == 0xdeadface) {
+        if (GET_MAILBOX_BYTES_48(&CAN->sFIFOMailBox[0]) == 0x0ab00b1e) {
           enter_bootloader_mode = ENTER_SOFTLOADER_MAGIC;
           NVIC_SystemReset();
-        } else if (GET_BYTES_48(&CAN->sFIFOMailBox[0]) == 0x02b00b1e) {
+        } else if (GET_MAILBOX_BYTES_48(&CAN->sFIFOMailBox[0]) == 0x02b00b1e) {
           enter_bootloader_mode = ENTER_BOOTLOADER_MAGIC;
           NVIC_SystemReset();
         } else {
@@ -162,7 +143,7 @@ void CAN1_RX0_IRQ_Handler(void) {
       // normal packet
       uint8_t dat[8];
       for (int i=0; i<8; i++) {
-        dat[i] = GET_BYTE(&CAN->sFIFOMailBox[0], i);
+        dat[i] = GET_MAILBOX_BYTE(&CAN->sFIFOMailBox[0], i);
       }
       uint16_t value_0 = (dat[0] << 8) | dat[1];
       uint16_t value_1 = (dat[2] << 8) | dat[3];
@@ -286,7 +267,7 @@ int main(void) {
   REGISTER_INTERRUPT(CAN1_TX_IRQn, CAN1_TX_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
   REGISTER_INTERRUPT(CAN1_RX0_IRQn, CAN1_RX0_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
   REGISTER_INTERRUPT(CAN1_SCE_IRQn, CAN1_SCE_IRQ_Handler, CAN_INTERRUPT_RATE, FAULT_INTERRUPT_RATE_CAN_1)
-
+  
   // Should run at around 732Hz (see init below)
   REGISTER_INTERRUPT(TIM3_IRQn, TIM3_IRQ_Handler, 1000U, FAULT_INTERRUPT_RATE_TIM3)
 
@@ -295,7 +276,7 @@ int main(void) {
   // init devices
   clock_init();
   peripherals_init();
-  detect_configuration();
+  detect_external_debug_serial();
   detect_board_type();
 
   // init board

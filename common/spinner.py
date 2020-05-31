@@ -2,13 +2,15 @@ import os
 import subprocess
 from common.basedir import BASEDIR
 
+PREBUILT = os.path.exists(os.path.join(BASEDIR, 'prebuilt'))
+
 
 class Spinner():
   def __init__(self):
     try:
       self.spinner_proc = subprocess.Popen(["./spinner"],
                                            stdin=subprocess.PIPE,
-                                           cwd=os.path.join(BASEDIR, "selfdrive", "ui", "spinner"),
+                                           cwd=os.path.join(BASEDIR, "selfdrive", "ui"),
                                            close_fds=True)
     except OSError:
       self.spinner_proc = None
@@ -16,13 +18,16 @@ class Spinner():
   def __enter__(self):
     return self
 
-  def update(self, spinner_text):
+  def update(self, spinner_text: str):
     if self.spinner_proc is not None:
       self.spinner_proc.stdin.write(spinner_text.encode('utf8') + b"\n")
       try:
         self.spinner_proc.stdin.flush()
       except BrokenPipeError:
         pass
+
+  def update_progress(self, cur: float, total: float):
+    self.update(str(round(100 * cur / total)))
 
   def close(self):
     if self.spinner_proc is not None:
@@ -36,31 +41,46 @@ class Spinner():
   def __del__(self):
     self.close()
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, exc_type, exc_value, traceback):
     self.close()
-
-
-class FakeSpinner():
-  def __init__(self):
-    pass
-
-  def __enter__(self):
-    return self
-
-  def update(self, _):
-    pass
-
-  def close(self):
-    pass
-
-  def __exit__(self, type, value, traceback):
-    pass
 
 
 if __name__ == "__main__":
   import time
-  with Spinner() as s:
-    s.update("Spinner text")
+  if PREBUILT:
+    with Spinner() as s:
+      # opkr
+      s.update("S")
+      time.sleep(1.0)
+      s.update("SU")
+      time.sleep(0.3)
+      s.update("SUN")
+      time.sleep(0.3)
+      s.update("SUNN")
+      time.sleep(0.3)
+      s.update("SUNNY")
+      time.sleep(0.3)
+      s.update("SUNNYP")
+      time.sleep(0.3)
+      s.update("SUNNYPI")
+      time.sleep(0.3)
+      s.update("SUNNYPIL")
+      time.sleep(0.3)
+      s.update("SUNNYPILO")
+      time.sleep(0.3)
+      s.update("SUNNYPILOT")
+      time.sleep(1.0)
+      s.update("For")
+      time.sleep(1.0)
+      s.update("Your")
+      time.sleep(1.0)
+      s.update("Comfort")
+      time.sleep(1.5)
+      s.update("Now Booting...")
+      time.sleep(4.0)
+  else:
+    with Spinner() as s:
+      s.update("Spinner text")
+      time.sleep(5.0)
+    print("gone")
     time.sleep(5.0)
-  print("gone")
-  time.sleep(5.0)

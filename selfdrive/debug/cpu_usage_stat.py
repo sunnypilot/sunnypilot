@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-import psutil
-import time
-import os
-import sys
-import numpy as np
-import argparse
-import re
-from collections import defaultdict
-
+# type: ignore
 '''
 System tools like top/htop can only show current cpu usage values, so I write this script to do statistics jobs.
   Features:
-    Use psutil library to sample cpu usage(avergage for all cores) of OpenPilot processes, at a rate of 5 samples/sec.
+    Use psutil library to sample cpu usage(avergage for all cores) of openpilot processes, at a rate of 5 samples/sec.
     Do cpu usage statistics periodically, 5 seconds as a cycle.
     Caculate the average cpu usage within this cycle.
     Caculate minumium/maximium/accumulated_average cpu usage as long term inspections.
@@ -23,25 +15,36 @@ System tools like top/htop can only show current cpu usage values, so I write th
     boardd: 1.96%, min: 1.96%, max: 1.96%, acc: 1.96%
     ubloxd.py: 0.39%, min: 0.39%, max: 0.39%, acc: 0.39%
 '''
+import psutil
+import time
+import os
+import sys
+import numpy as np
+import argparse
+import re
+from collections import defaultdict
+
+from selfdrive.manager.process_config import managed_processes
 
 # Do statistics every 5 seconds
 PRINT_INTERVAL = 5
 SLEEP_INTERVAL = 0.2
 
 monitored_proc_names = [
-  'ubloxd', 'thermald', 'uploader', 'deleter', 'controlsd', 'plannerd', 'radard', 'mapd', 'loggerd' , 'logmessaged', 'tombstoned',
-  'logcatd', 'proclogd', 'boardd', 'pandad', './ui', 'ui',  'calibrationd', 'params_learner', 'modeld', 'dmonitoringmodeld', 'camerad', 'sensord', 'updated', 'gpsd', 'athena']
+  # android procs
+  'SurfaceFlinger', 'sensors.qcom'
+] + list(managed_processes.keys())
+
 cpu_time_names = ['user', 'system', 'children_user', 'children_system']
 
 timer = getattr(time, 'monotonic', time.time)
 
+
 def get_arg_parser():
-  parser = argparse.ArgumentParser(
-    description="Unlogger and UI",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
   parser.add_argument("proc_names", nargs="?", default='',
-                      help="Process names to be monitored, comma seperated")
+                      help="Process names to be monitored, comma separated")
   parser.add_argument("--list_all", action='store_true',
                       help="Show all running processes' cmdline")
   parser.add_argument("--detailed_times", action='store_true',
@@ -63,12 +66,12 @@ if __name__ == "__main__":
   for p in psutil.process_iter():
     if p == psutil.Process():
       continue
-    matched = any([l for l in p.cmdline() if any([pn for pn in monitored_proc_names if re.match(r'.*{}.*'.format(pn), l, re.M | re.I)])])
+    matched = any(l for l in p.cmdline() if any(pn for pn in monitored_proc_names if re.match(r'.*{}.*'.format(pn), l, re.M | re.I)))
     if matched:
       k = ' '.join(p.cmdline())
       print('Add monitored proc:', k)
       stats[k] = {'cpu_samples': defaultdict(list), 'min': defaultdict(lambda: None), 'max': defaultdict(lambda: None),
-                  'avg': defaultdict(lambda: 0.0), 'last_cpu_times': None, 'last_sys_time':None}
+                  'avg': defaultdict(lambda: 0.0), 'last_cpu_times': None, 'last_sys_time': None}
       stats[k]['last_sys_time'] = timer()
       stats[k]['last_cpu_times'] = p.cpu_times()
       monitored_procs.append(p)
@@ -107,14 +110,14 @@ if __name__ == "__main__":
           stat['avg'][name] = (stat['avg'][name] * (i - c) + avg * c) / (i)
           stat['cpu_samples'][name] = []
 
-        msg = 'avg: {1:.2%}, min: {2:.2%}, max: {3:.2%} {0}'.format(os.path.basename(k), stat['avg']['total'], stat['min']['total'], stat['max']['total'])
+        msg = f"avg: {stat['avg']['total']:.2%}, min: {stat['min']['total']:.2%}, max: {stat['max']['total']:.2%} {os.path.basename(k)}"
         if args.detailed_times:
           for stat_type in ['avg', 'min', 'max']:
-            msg += '\n {}: {}'.format(stat_type, [name + ':' + str(round(stat[stat_type][name]*100, 2)) for name in cpu_time_names])
+            msg += f"\n {stat_type}: {[(name + ':' + str(round(stat[stat_type][name] * 100, 2))) for name in cpu_time_names]}"
         l.append((os.path.basename(k), stat['avg']['total'], msg))
-      l.sort(key= lambda x: -x[1])
+      l.sort(key=lambda x: -x[1])
       for x in l:
         print(x[2])
-      print('avg sum: {0:.2%} over {1} samples {2} seconds\n'.format(
-        sum([stat['avg']['total'] for k, stat in stats.items()]), i, i * SLEEP_INTERVAL
+      print('avg sum: {:.2%} over {} samples {} seconds\n'.format(
+        sum(stat['avg']['total'] for k, stat in stats.items()), i, i * SLEEP_INTERVAL
       ))
