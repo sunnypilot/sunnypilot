@@ -12,7 +12,7 @@ class Timeout:
   """
   def __init__(self, seconds, error_msg=None):
     if error_msg is None:
-      error_msg = 'Timed out after {} seconds'.format(seconds)
+      error_msg = f'Timed out after {seconds} seconds'
     self.seconds = seconds
     self.error_msg = error_msg
 
@@ -25,4 +25,3 @@ class Timeout:
 
   def __exit__(self, exc_type, exc_val, exc_tb):
     signal.alarm(0)
-

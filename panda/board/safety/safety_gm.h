@@ -24,27 +24,33 @@ const CanMsg GM_TX_MSGS[] = {{384, 0, 4}, {1033, 0, 7}, {1034, 0, 7}, {715, 0, 8
                              {0x104c006c, 3, 3}, {0x10400060, 3, 5}};  // gmlan
 
 // TODO: do checksum and counter checks. Add correct timestep, 0.1s for now.
-AddrCheckStruct gm_rx_checks[] = {
-  {.msg = {{388, 0, 8, .expected_timestep = 100000U}}},
-  {.msg = {{842, 0, 5, .expected_timestep = 100000U}}},
-  {.msg = {{481, 0, 7, .expected_timestep = 100000U}}},
-  {.msg = {{241, 0, 6, .expected_timestep = 100000U}}},
-  {.msg = {{417, 0, 7, .expected_timestep = 100000U}}},
+AddrCheckStruct gm_addr_checks[] = {
+  {.msg = {{388, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},
+  {.msg = {{842, 0, 5, .expected_timestep = 100000U}, { 0 }, { 0 }}},
+  {.msg = {{481, 0, 7, .expected_timestep = 100000U}, { 0 }, { 0 }}},
+  {.msg = {{241, 0, 6, .expected_timestep = 100000U}, { 0 }, { 0 }}},
+  {.msg = {{452, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},
 };
-const int GM_RX_CHECK_LEN = sizeof(gm_rx_checks) / sizeof(gm_rx_checks[0]);
+#define GM_RX_CHECK_LEN (sizeof(gm_addr_checks) / sizeof(gm_addr_checks[0]))
+addr_checks gm_rx_checks = {gm_addr_checks, GM_RX_CHECK_LEN};
 
-static int gm_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
-  bool valid = addr_safety_check(to_push, gm_rx_checks, GM_RX_CHECK_LEN,
-                                 NULL, NULL, NULL);
+enum {
+  GM_BTN_UNPRESS = 1,
+  GM_BTN_RESUME = 2,
+  GM_BTN_SET = 3,
+  GM_BTN_CANCEL = 6,
+};
 
-  bool unsafe_allow_gas = unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS;
+static int gm_rx_hook(CANPacket_t *to_push) {
 
-  if (valid && (GET_BUS(to_push) == 0)) {
+  bool valid = addr_safety_check(to_push, &gm_rx_checks, NULL, NULL, NULL);
+
+  if (valid && (GET_BUS(to_push) == 0U)) {
     int addr = GET_ADDR(to_push);
 
     if (addr == 388) {
-      int torque_driver_new = ((GET_BYTE(to_push, 6) & 0x7) << 8) | GET_BYTE(to_push, 7);
+      int torque_driver_new = ((GET_BYTE(to_push, 6) & 0x7U) << 8) | GET_BYTE(to_push, 7);
       torque_driver_new = to_signed(torque_driver_new, 11);
       // update array of samples
       update_sample(&torque_driver, torque_driver_new);
@@ -58,44 +64,37 @@ static int gm_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
     // ACC steering wheel buttons
     if (addr == 481) {
-      int button = (GET_BYTE(to_push, 5) & 0x70) >> 4;
-      switch (button) {
-        case 2:  // resume
-        case 3:  // set
-          controls_allowed = 1;
-          break;
-        case 6:  // cancel
-          controls_allowed = 0;
-          break;
-        default:
-          break;  // any other button is irrelevant
+      int button = (GET_BYTE(to_push, 5) & 0x70U) >> 4;
+
+      // exit controls on cancel press
+      if (button == GM_BTN_CANCEL) {
+        controls_allowed = 0;
       }
+
+      // enter controls on falling edge of set or resume
+      bool set = (button == GM_BTN_UNPRESS) && (cruise_button_prev == GM_BTN_SET);
+      bool res = (button == GM_BTN_UNPRESS) && (cruise_button_prev == GM_BTN_RESUME);
+      if (set || res) {
+        controls_allowed = 1;
+      }
+
+      cruise_button_prev = button;
     }
 
-    // exit controls on rising edge of brake press or on brake press when
     // speed > 0
     if (addr == 241) {
       // Brake pedal's potentiometer returns near-zero reading
       // even when pedal is not pressed
-      bool brake_pressed = GET_BYTE(to_push, 1) >= 10;
-      if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
-         controls_allowed = 0;
-      }
-      brake_pressed_prev = brake_pressed;
+      brake_pressed = GET_BYTE(to_push, 1) >= 10U;
     }
 
-    // exit controls on rising edge of gas press
-    if (addr == 417) {
-      bool gas_pressed = GET_BYTE(to_push, 6) != 0;
-      if (!unsafe_allow_gas && gas_pressed && !gas_pressed_prev) {
-        controls_allowed = 0;
-      }
-      gas_pressed_prev = gas_pressed;
+    if (addr == 452) {
+      gas_pressed = GET_BYTE(to_push, 5) != 0U;
     }
 
     // exit controls on regen paddle
     if (addr == 189) {
-      bool regen = GET_BYTE(to_push, 0) & 0x20;
+      bool regen = GET_BYTE(to_push, 0) & 0x20U;
       if (regen) {
         controls_allowed = 0;
       }
@@ -105,9 +104,7 @@ static int gm_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     // on powertrain bus.
     // 384 = ASCMLKASteeringCmd
     // 715 = ASCMGasRegenCmd
-    if ((safety_mode_cnt > RELAY_TRNS_TIMEOUT) && ((addr == 384) || (addr == 715))) {
-      relay_malfunction_set();
-    }
+    generic_rx_checks(((addr == 384) || (addr == 715)));
   }
   return valid;
 }
@@ -118,7 +115,7 @@ static int gm_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 // else
 //     block all commands that produce actuation
 
-static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
+static int gm_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
 
   int tx = 1;
   int addr = GET_ADDR(to_send);
@@ -127,15 +124,11 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
     tx = 0;
   }
 
-  if (relay_malfunction) {
-    tx = 0;
-  }
-
   // disallow actuator commands if gas or brake (with vehicle moving) are pressed
   // and the the latching controls_allowed flag is True
   int pedal_pressed = brake_pressed_prev && vehicle_moving;
-  bool unsafe_allow_gas = unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS;
-  if (!unsafe_allow_gas) {
+  bool alt_exp_allow_gas = alternative_experience & ALT_EXP_DISABLE_DISENGAGE_ON_GAS;
+  if (!alt_exp_allow_gas) {
     pedal_pressed = pedal_pressed || gas_pressed_prev;
   }
   bool current_controls_allowed = controls_allowed && !pedal_pressed;
@@ -144,7 +137,7 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   if (addr == 789) {
     int brake = ((GET_BYTE(to_send, 0) & 0xFU) << 8) + GET_BYTE(to_send, 1);
     brake = (0x1000 - brake) & 0xFFF;
-    if (!current_controls_allowed) {
+    if (!current_controls_allowed || !longitudinal_allowed) {
       if (brake != 0) {
         tx = 0;
       }
@@ -157,7 +150,7 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   // LKA STEER: safety check
   if (addr == 384) {
     int desired_torque = ((GET_BYTE(to_send, 0) & 0x7U) << 8) + GET_BYTE(to_send, 1);
-    uint32_t ts = TIM2->CNT;
+    uint32_t ts = microsecond_timer_get();
     bool violation = 0;
     desired_torque = to_signed(desired_torque, 11);
 
@@ -207,9 +200,16 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
     int gas_regen = ((GET_BYTE(to_send, 2) & 0x7FU) << 5) + ((GET_BYTE(to_send, 3) & 0xF8U) >> 3);
     // Disabled message is !engaged with gas
     // value that corresponds to max regen.
-    if (!current_controls_allowed) {
-      bool apply = GET_BYTE(to_send, 0) & 1U;
-      if (apply || (gas_regen != GM_MAX_REGEN)) {
+    if (!current_controls_allowed || !longitudinal_allowed) {
+      // Stock ECU sends max regen when not enabled
+      if (gas_regen != GM_MAX_REGEN) {
+        tx = 0;
+      }
+    }
+    // Need to allow apply bit in pre-enabled and overriding states
+    if (!controls_allowed) {
+      bool apply = GET_BIT(to_send, 0U) != 0U;
+      if (apply) {
         tx = 0;
       }
     }
@@ -222,13 +222,15 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   return tx;
 }
 
+static const addr_checks* gm_init(uint16_t param) {
+  UNUSED(param);
+  return &gm_rx_checks;
+}
 
 const safety_hooks gm_hooks = {
-  .init = nooutput_init,
+  .init = gm_init,
   .rx = gm_rx_hook,
   .tx = gm_tx_hook,
   .tx_lin = nooutput_tx_lin_hook,
   .fwd = default_fwd_hook,
-  .addr_check = gm_rx_checks,
-  .addr_check_len = sizeof(gm_rx_checks) / sizeof(gm_rx_checks[0]),
 };

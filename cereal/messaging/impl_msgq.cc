@@ -5,14 +5,34 @@
 #include <csignal>
 #include <cerrno>
 
+#include "services.h"
+#include "impl_msgq.h"
 
-#include "impl_msgq.hpp"
 
 volatile sig_atomic_t msgq_do_exit = 0;
 
 void sig_handler(int signal) {
   assert(signal == SIGINT || signal == SIGTERM);
   msgq_do_exit = 1;
+}
+
+static bool service_exists(std::string path){
+  for (const auto& it : services) {
+    if (it.name == path) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static size_t get_size(std::string endpoint){
+  size_t sz = DEFAULT_SEGMENT_SIZE;
+
+  if (endpoint == "roadCameraState" || endpoint == "driverCameraState" || endpoint == "wideRoadCameraState"){
+    sz *= 10;
+  }
+
+  return sz;
 }
 
 
@@ -49,13 +69,16 @@ MSGQMessage::~MSGQMessage() {
   this->close();
 }
 
-
-int MSGQSubSocket::connect(Context *context, std::string endpoint, std::string address, bool conflate){
+int MSGQSubSocket::connect(Context *context, std::string endpoint, std::string address, bool conflate, bool check_endpoint){
   assert(context);
   assert(address == "127.0.0.1");
 
+  if (check_endpoint && !service_exists(std::string(endpoint))){
+    std::cout << "Warning, " << std::string(endpoint) << " is not in service list." << std::endl;
+  }
+
   q = new msgq_queue_t;
-  int r = msgq_new_queue(q, endpoint.c_str(), DEFAULT_SEGMENT_SIZE);
+  int r = msgq_new_queue(q, endpoint.c_str(), get_size(endpoint));
   if (r != 0){
     return r;
   }
@@ -139,11 +162,15 @@ MSGQSubSocket::~MSGQSubSocket(){
   }
 }
 
-int MSGQPubSocket::connect(Context *context, std::string endpoint){
+int MSGQPubSocket::connect(Context *context, std::string endpoint, bool check_endpoint){
   assert(context);
 
+  if (check_endpoint && !service_exists(std::string(endpoint))){
+    std::cout << "Warning, " << std::string(endpoint) << " is not in service list." << std::endl;
+  }
+
   q = new msgq_queue_t;
-  int r = msgq_new_queue(q, endpoint.c_str(), DEFAULT_SEGMENT_SIZE);
+  int r = msgq_new_queue(q, endpoint.c_str(), get_size(endpoint));
   if (r != 0){
     return r;
   }
@@ -167,6 +194,10 @@ int MSGQPubSocket::send(char *data, size_t size){
   msg.size = size;
 
   return msgq_msg_send(&msg, q);
+}
+
+bool MSGQPubSocket::all_readers_updated() {
+  return msgq_all_readers_updated(q);
 }
 
 MSGQPubSocket::~MSGQPubSocket(){

@@ -1,18 +1,19 @@
-#include <memory.h>
-#include <iostream>
-#include <getopt.h>
-#include <math.h>
-#include <fstream>
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <iomanip>
-#include <thread>
 #include <fcntl.h>
-#include <signal.h>
+#include <getopt.h>
+#include <memory.h>
 #include <unistd.h>
+
 #include <cassert>
+#include <cmath>
+#include <csignal>
 #include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <thread>
+#include <vector>
 
 #ifdef ANDROID
 
@@ -26,13 +27,11 @@
 
 #endif
 
-#include <libyuv.h>
-
 #include <CL/cl.h>
 
-#include "clutil.h"
-#include "rgb_to_yuv.h"
-
+#include "libyuv.h"
+#include "selfdrive/camerad/transforms/rgb_to_yuv.h"
+#include "common/clutil.h"
 
 static inline double millis_since_boot() {
   struct timespec t;
@@ -41,16 +40,8 @@ static inline double millis_since_boot() {
 }
 
 void cl_init(cl_device_id &device_id, cl_context &context) {
-  int err;
-  cl_platform_id platform_id = NULL;
-  cl_uint num_devices;
-  cl_uint num_platforms;
-
-  err = clGetPlatformIDs(1, &platform_id, &num_platforms);
-  err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1,
-                       &device_id, &num_devices);
-  cl_print_info(platform_id, device_id);
-  context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
+  device_id = cl_get_device_id(CL_DEVICE_TYPE_DEFAULT);
+  context = CL_CHECK_ERR(clCreateContext(NULL, 1, &device_id, NULL, NULL, &err));
 }
 
 
@@ -109,7 +100,6 @@ bool compare_results(uint8_t *a, uint8_t *b, int len, int stride, int width, int
 int main(int argc, char** argv) {
   srand(1337);
 
-  clu_init();
   cl_device_id device_id;
   cl_context context;
   cl_init(device_id, context)	;
@@ -144,19 +134,19 @@ int main(int argc, char** argv) {
   rgb_to_yuv_init(&rgb_to_yuv_state, context, device_id, width, height, width * 3);
 
   int frame_yuv_buf_size = width * height * 3 / 2;
-  cl_mem yuv_cl = clCreateBuffer(context, CL_MEM_READ_WRITE, frame_yuv_buf_size, (void*)NULL, &err);
+  cl_mem yuv_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_yuv_buf_size, (void*)NULL, &err));
   uint8_t *frame_yuv_buf = new uint8_t[frame_yuv_buf_size];
   uint8_t *frame_yuv_ptr_y = frame_yuv_buf;
   uint8_t *frame_yuv_ptr_u = frame_yuv_buf + (width * height);
   uint8_t *frame_yuv_ptr_v = frame_yuv_ptr_u + ((width/2) * (height/2));
 
-  cl_mem rgb_cl = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * 3, (void*)NULL, &err);
+  cl_mem rgb_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * 3, (void*)NULL, &err));
   int mismatched = 0;
   int counter = 0;
   srand (time(NULL));
 
-  for (int i = 0; i < 100; i++){
-    for (int i = 0; i < width * height * 3; i++){
+  for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < width * height * 3; i++) {
       rgb_frame[i] = (uint8_t)rand();
     }
 

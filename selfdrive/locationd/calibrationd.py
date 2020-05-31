@@ -1,184 +1,244 @@
 #!/usr/bin/env python3
+'''
+This process finds calibration values. More info on what these calibration values
+are can be found here https://github.com/commaai/openpilot/tree/master/common/transformations
+While the roll calibration is a real value that can be estimated, here we assume it's zero,
+and the image input into the neural network is not corrected for roll.
+'''
 
+import gc
 import os
-import copy
-import json
+import capnp
 import numpy as np
-import cereal.messaging as messaging
-from selfdrive.locationd.calibration_helpers import Calibration
-from selfdrive.swaglog import cloudlog
-from common.params import Params, put_nonblocking
-from common.transformations.model import model_height
-from common.transformations.camera import view_frame_from_device_frame, get_view_frame_from_road_frame, \
-                                          get_calib_from_vp, vp_from_rpy, H, W, FOCAL
+from typing import List, NoReturn, Optional
 
-MPH_TO_MS = 0.44704
-MIN_SPEED_FILTER = 15 * MPH_TO_MS
+from cereal import car, log
+import cereal.messaging as messaging
+from common.conversions import Conversions as CV
+from common.params import Params, put_nonblocking
+from common.realtime import set_realtime_priority
+from common.transformations.model import model_height
+from common.transformations.camera import get_view_frame_from_road_frame
+from common.transformations.orientation import rot_from_euler, euler_from_rot
+from selfdrive.hardware import TICI
+from selfdrive.swaglog import cloudlog
+
+MIN_SPEED_FILTER = 15 * CV.MPH_TO_MS
 MAX_VEL_ANGLE_STD = np.radians(0.25)
 MAX_YAW_RATE_FILTER = np.radians(2)  # per second
 
-# This is all 20Hz, blocks needed for efficiency
+# This is at model frequency, blocks needed for efficiency
+SMOOTH_CYCLES = 400
 BLOCK_SIZE = 100
-INPUTS_NEEDED = 5   # allow to update VP every so many frames
+INPUTS_NEEDED = 5   # Minimum blocks needed for valid calibration
 INPUTS_WANTED = 50   # We want a little bit more than we need for stability
-WRITE_CYCLES = 10  # write every 1000 cycles
-VP_INIT = np.array([W/2., H/2.])
+MAX_ALLOWED_SPREAD = np.radians(2)
+RPY_INIT = np.array([0.0,0.0,0.0])
 
-# These validity corners were chosen by looking at 1000
-# and taking most extreme cases with some margin.
-VP_VALIDITY_CORNERS = np.array([[W//2 - 120, 300], [W//2 + 120, 520]])
+# These values are needed to accommodate biggest modelframe
+PITCH_LIMITS = np.array([-0.09074112085129739, 0.14907572052989657])
+YAW_LIMITS = np.array([-0.06912048084718224, 0.06912048084718235])
 DEBUG = os.getenv("DEBUG") is not None
 
 
-def is_calibration_valid(vp):
-  return vp[0] > VP_VALIDITY_CORNERS[0,0] and vp[0] < VP_VALIDITY_CORNERS[1,0] and \
-         vp[1] > VP_VALIDITY_CORNERS[0,1] and vp[1] < VP_VALIDITY_CORNERS[1,1]
+class Calibration:
+  UNCALIBRATED = 0
+  CALIBRATED = 1
+  INVALID = 2
 
 
-def sanity_clip(vp):
-  if np.isnan(vp).any():
-    vp = VP_INIT
-  return np.array([np.clip(vp[0], VP_VALIDITY_CORNERS[0,0] - 20, VP_VALIDITY_CORNERS[1,0] + 20),
-                   np.clip(vp[1], VP_VALIDITY_CORNERS[0,1] - 20, VP_VALIDITY_CORNERS[1,1] + 20)])
+def is_calibration_valid(rpy: np.ndarray) -> bool:
+  return (PITCH_LIMITS[0] < rpy[1] < PITCH_LIMITS[1]) and (YAW_LIMITS[0] < rpy[2] < YAW_LIMITS[1])  # type: ignore
 
 
-def intrinsics_from_vp(vp):
-  return np.array([
-    [FOCAL,   0.,   vp[0]],
-    [  0.,  FOCAL,  vp[1]],
-    [  0.,    0.,     1.]])
+def sanity_clip(rpy: np.ndarray) -> np.ndarray:
+  if np.isnan(rpy).any():
+    rpy = RPY_INIT
+  return np.array([rpy[0],
+                   np.clip(rpy[1], PITCH_LIMITS[0] - .005, PITCH_LIMITS[1] + .005),
+                   np.clip(rpy[2], YAW_LIMITS[0] - .005, YAW_LIMITS[1] + .005)])
 
 
-class Calibrator():
-  def __init__(self, param_put=False):
+class Calibrator:
+  def __init__(self, param_put: bool = False):
     self.param_put = param_put
-    self.vp = copy.copy(VP_INIT)
-    self.vps = np.zeros((INPUTS_WANTED, 2))
+
+    self.CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
+
+    # Read saved calibration
+    params = Params()
+    calibration_params = params.get("CalibrationParams")
+    self.wide_camera = TICI and params.get_bool('EnableWideCamera')
+    rpy_init = RPY_INIT
+    valid_blocks = 0
+
+    if param_put and calibration_params:
+      try:
+        msg = log.Event.from_bytes(calibration_params)
+        rpy_init = np.array(msg.liveCalibration.rpyCalib)
+        valid_blocks = msg.liveCalibration.validBlocks
+      except Exception:
+        cloudlog.exception("Error reading cached CalibrationParams")
+
+    self.reset(rpy_init, valid_blocks)
+    self.update_status()
+
+  def reset(self, rpy_init: np.ndarray = RPY_INIT, valid_blocks: int = 0, smooth_from: Optional[np.ndarray] = None) -> None:
+    if not np.isfinite(rpy_init).all():
+      self.rpy = RPY_INIT.copy()
+    else:
+      self.rpy = rpy_init.copy()
+
+    if not np.isfinite(valid_blocks) or valid_blocks < 0:
+      self.valid_blocks = 0
+    else:
+      self.valid_blocks = valid_blocks
+
+    self.rpys = np.tile(self.rpy, (INPUTS_WANTED, 1))
+
     self.idx = 0
     self.block_idx = 0
-    self.valid_blocks = 0
-    self.cal_status = Calibration.UNCALIBRATED
-    self.just_calibrated = False
-    self.v_ego = 0
+    self.v_ego = 0.0
 
-    # Read calibration
-    if param_put:
-      calibration_params = Params().get("CalibrationParams")
+    if smooth_from is None:
+      self.old_rpy = RPY_INIT
+      self.old_rpy_weight = 0.0
     else:
-      calibration_params = None
-    if calibration_params:
-      try:
-        calibration_params = json.loads(calibration_params)
-        if 'calib_radians' in calibration_params:
-          self.vp = vp_from_rpy(calibration_params["calib_radians"])
-        else:
-          self.vp = np.array(calibration_params["vanishing_point"])
-        if not np.isfinite(self.vp).all():
-          self.vp = copy.copy(VP_INIT)
-        self.vps = np.tile(self.vp, (INPUTS_WANTED, 1))
-        self.valid_blocks = calibration_params['valid_blocks']
-        if not np.isfinite(self.valid_blocks) or self.valid_blocks < 0:
-          self.valid_blocks = 0
-        self.update_status()
-      except Exception:
-        cloudlog.exception("CalibrationParams file found but error encountered")
+      self.old_rpy = smooth_from
+      self.old_rpy_weight = 1.0
 
-  def update_status(self):
-    start_status = self.cal_status
+  def get_valid_idxs(self) -> List[int]:
+    # exclude current block_idx from validity window
+    before_current = list(range(self.block_idx))
+    after_current = list(range(min(self.valid_blocks, self.block_idx + 1), self.valid_blocks))
+    return before_current + after_current
+
+  def update_status(self) -> None:
+    valid_idxs = self.get_valid_idxs()
+    if valid_idxs:
+      rpys = self.rpys[valid_idxs]
+      self.rpy = np.mean(rpys, axis=0)
+      max_rpy_calib = np.array(np.max(rpys, axis=0))
+      min_rpy_calib = np.array(np.min(rpys, axis=0))
+      self.calib_spread = np.abs(max_rpy_calib - min_rpy_calib)
+    else:
+      self.calib_spread = np.zeros(3)
+
     if self.valid_blocks < INPUTS_NEEDED:
       self.cal_status = Calibration.UNCALIBRATED
+    elif is_calibration_valid(self.rpy):
+      self.cal_status = Calibration.CALIBRATED
     else:
-      self.cal_status = Calibration.CALIBRATED if is_calibration_valid(self.vp) else Calibration.INVALID
-    end_status = self.cal_status
+      self.cal_status = Calibration.INVALID
 
-    self.just_calibrated = False
-    if start_status == Calibration.UNCALIBRATED and end_status == Calibration.CALIBRATED:
-      self.just_calibrated = True
+    # If spread is too high, assume mounting was changed and reset to last block.
+    # Make the transition smooth. Abrupt transitions are not good for feedback loop through supercombo model.
+    if max(self.calib_spread) > MAX_ALLOWED_SPREAD and self.cal_status == Calibration.CALIBRATED:
+      self.reset(self.rpys[self.block_idx - 1], valid_blocks=INPUTS_NEEDED, smooth_from=self.rpy)
 
-  def handle_v_ego(self, v_ego):
+    write_this_cycle = (self.idx == 0) and (self.block_idx % (INPUTS_WANTED//5) == 5)
+    if self.param_put and write_this_cycle:
+      put_nonblocking("CalibrationParams", self.get_msg().to_bytes())
+
+  def handle_v_ego(self, v_ego: float) -> None:
     self.v_ego = v_ego
 
-  def handle_cam_odom(self, trans, rot, trans_std, rot_std):
-    straight_and_fast = ((self.v_ego > MIN_SPEED_FILTER) and (trans[0] > MIN_SPEED_FILTER) and (abs(rot[2]) < MAX_YAW_RATE_FILTER))
-    certain_if_calib = ((np.arctan2(trans_std[1], trans[0]) < MAX_VEL_ANGLE_STD) or
-                        (self.valid_blocks < INPUTS_NEEDED))
-    if straight_and_fast and certain_if_calib:
-      # intrinsics are not eon intrinsics, since this is calibrated frame
-      intrinsics = intrinsics_from_vp(self.vp)
-      new_vp = intrinsics.dot(view_frame_from_device_frame.dot(trans))
-      new_vp = new_vp[:2]/new_vp[2]
-      new_vp = sanity_clip(new_vp)
-
-      self.vps[self.block_idx] = (self.idx*self.vps[self.block_idx] + (BLOCK_SIZE - self.idx) * new_vp) / float(BLOCK_SIZE)
-      self.idx = (self.idx + 1) % BLOCK_SIZE
-      if self.idx == 0:
-        self.block_idx += 1
-        self.valid_blocks = max(self.block_idx, self.valid_blocks)
-        self.block_idx = self.block_idx % INPUTS_WANTED
-      if self.valid_blocks > 0:
-        self.vp = np.mean(self.vps[:self.valid_blocks], axis=0)
-      self.update_status()
-
-      if self.param_put and ((self.idx == 0 and self.block_idx == 0) or self.just_calibrated):
-        calib = get_calib_from_vp(self.vp)
-        cal_params = {"calib_radians": list(calib),
-                      "valid_blocks": self.valid_blocks}
-        put_nonblocking("CalibrationParams", json.dumps(cal_params).encode('utf8'))
-      return new_vp
+  def get_smooth_rpy(self) -> np.ndarray:
+    if self.old_rpy_weight > 0:
+      return self.old_rpy_weight * self.old_rpy + (1.0 - self.old_rpy_weight) * self.rpy
     else:
+      return self.rpy
+
+  def handle_cam_odom(self, trans: List[float], rot: List[float], trans_std: List[float]) -> Optional[np.ndarray]:
+    self.old_rpy_weight = min(0.0, self.old_rpy_weight - 1/SMOOTH_CYCLES)
+
+    straight_and_fast = ((self.v_ego > MIN_SPEED_FILTER) and (trans[0] > MIN_SPEED_FILTER) and (abs(rot[2]) < MAX_YAW_RATE_FILTER))
+    if self.wide_camera:
+      angle_std_threshold = 4*MAX_VEL_ANGLE_STD
+    else:
+      angle_std_threshold = MAX_VEL_ANGLE_STD
+    certain_if_calib = ((np.arctan2(trans_std[1], trans[0]) < angle_std_threshold) or
+                        (self.valid_blocks < INPUTS_NEEDED))
+    if not (straight_and_fast and certain_if_calib):
       return None
 
-  def send_data(self, pm):
-    calib = get_calib_from_vp(self.vp)
-    extrinsic_matrix = get_view_frame_from_road_frame(0, calib[1], calib[2], model_height)
+    observed_rpy = np.array([0,
+                             -np.arctan2(trans[2], trans[0]),
+                             np.arctan2(trans[1], trans[0])])
+    new_rpy = euler_from_rot(rot_from_euler(self.get_smooth_rpy()).dot(rot_from_euler(observed_rpy)))
+    new_rpy = sanity_clip(new_rpy)
 
-    cal_send = messaging.new_message('liveCalibration')
-    cal_send.liveCalibration.calStatus = self.cal_status
-    cal_send.liveCalibration.calPerc = min(100 * (self.valid_blocks * BLOCK_SIZE + self.idx) // (INPUTS_NEEDED * BLOCK_SIZE), 100)
-    cal_send.liveCalibration.extrinsicMatrix = [float(x) for x in extrinsic_matrix.flatten()]
-    cal_send.liveCalibration.rpyCalib = [float(x) for x in calib]
+    self.rpys[self.block_idx] = (self.idx*self.rpys[self.block_idx] + (BLOCK_SIZE - self.idx) * new_rpy) / float(BLOCK_SIZE)
+    self.idx = (self.idx + 1) % BLOCK_SIZE
+    if self.idx == 0:
+      self.block_idx += 1
+      self.valid_blocks = max(self.block_idx, self.valid_blocks)
+      self.block_idx = self.block_idx % INPUTS_WANTED
 
-    pm.send('liveCalibration', cal_send)
+    self.update_status()
+
+    return new_rpy
+
+  def get_msg(self) -> capnp.lib.capnp._DynamicStructBuilder:
+    smooth_rpy = self.get_smooth_rpy()
+    extrinsic_matrix = get_view_frame_from_road_frame(0, smooth_rpy[1], smooth_rpy[2], model_height)
+
+    msg = messaging.new_message('liveCalibration')
+    liveCalibration = msg.liveCalibration
+
+    liveCalibration.validBlocks = self.valid_blocks
+    liveCalibration.calStatus = self.cal_status
+    liveCalibration.calPerc = min(100 * (self.valid_blocks * BLOCK_SIZE + self.idx) // (INPUTS_NEEDED * BLOCK_SIZE), 100)
+    liveCalibration.extrinsicMatrix = extrinsic_matrix.flatten().tolist()
+    liveCalibration.rpyCalib = smooth_rpy.tolist()
+    liveCalibration.rpyCalibSpread = self.calib_spread.tolist()
+
+    if self.CP.notCar:
+      extrinsic_matrix = get_view_frame_from_road_frame(0, 0, 0, model_height)
+      liveCalibration.validBlocks = INPUTS_NEEDED
+      liveCalibration.calStatus = Calibration.CALIBRATED
+      liveCalibration.calPerc = 100.
+      liveCalibration.extrinsicMatrix = extrinsic_matrix.flatten().tolist()
+      liveCalibration.rpyCalib = [0, 0, 0]
+      liveCalibration.rpyCalibSpread = self.calib_spread.tolist()
+
+    return msg
+
+  def send_data(self, pm: messaging.PubMaster) -> None:
+    pm.send('liveCalibration', self.get_msg())
 
 
-def calibrationd_thread(sm=None, pm=None):
+def calibrationd_thread(sm: Optional[messaging.SubMaster] = None, pm: Optional[messaging.PubMaster] = None) -> NoReturn:
+  gc.disable()
+  set_realtime_priority(1)
+
   if sm is None:
-    sm = messaging.SubMaster(['cameraOdometry', 'carState'])
+    sm = messaging.SubMaster(['cameraOdometry', 'carState'], poll=['cameraOdometry'])
 
   if pm is None:
     pm = messaging.PubMaster(['liveCalibration'])
 
   calibrator = Calibrator(param_put=True)
 
-  send_counter = 0
   while 1:
-    sm.update()
-
-    # if no inputs still publish calibration
-    if not sm.updated['carState'] and not sm.updated['cameraOdometry']:
-      calibrator.send_data(pm)
-      continue
-
-    if sm.updated['carState']:
-      calibrator.handle_v_ego(sm['carState'].vEgo)
-      if send_counter % 25 == 0:
-        calibrator.send_data(pm)
-      send_counter += 1
+    timeout = 0 if sm.frame == -1 else 100
+    sm.update(timeout)
 
     if sm.updated['cameraOdometry']:
-      new_vp = calibrator.handle_cam_odom(sm['cameraOdometry'].trans,
-                                          sm['cameraOdometry'].rot,
-                                          sm['cameraOdometry'].transStd,
-                                          sm['cameraOdometry'].rotStd)
+      calibrator.handle_v_ego(sm['carState'].vEgo)
+      new_rpy = calibrator.handle_cam_odom(sm['cameraOdometry'].trans,
+                                           sm['cameraOdometry'].rot,
+                                           sm['cameraOdometry'].transStd)
+
+      if DEBUG and new_rpy is not None:
+        print('got new rpy', new_rpy)
+
+    # 4Hz driven by cameraOdometry
+    if sm.frame % 5 == 0:
+      calibrator.send_data(pm)
 
 
-      if DEBUG and new_vp is not None:
-        print('got new vp', new_vp)
-
-      # decimate outputs for efficiency
-
-
-def main(sm=None, pm=None):
+def main(sm: Optional[messaging.SubMaster] = None, pm: Optional[messaging.PubMaster] = None) -> NoReturn:
   calibrationd_thread(sm, pm)
 
 
