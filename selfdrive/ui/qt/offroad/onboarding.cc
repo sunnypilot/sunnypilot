@@ -82,7 +82,7 @@ void TermsPage::showEvent(QShowEvent *event) {
   QHBoxLayout* buttons = new QHBoxLayout;
   main_layout->addLayout(buttons);
 
-  buttons->addWidget(new QPushButton("거절"));
+  decline_btn = new QPushButton("거절");
   buttons->addWidget(decline_btn);
   QObject::connect(decline_btn, &QPushButton::released, this, &TermsPage::declinedTerms);
 
