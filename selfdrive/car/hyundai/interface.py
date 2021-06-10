@@ -155,7 +155,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1675. + STD_CARGO_KG
       ret.wheelbase = 2.845
     elif candidate in [CAR.GRANDEUR_IG_FL, CAR.GRANDEUR_IG_FL_HEV]:
-      ret.mass = 1675. + STD_CARGO_KG
+      ret.mass = 1725. + STD_CARGO_KG
       ret.wheelbase = 2.885
     elif candidate == CAR.VELOSTER:
       ret.mass = 3558. * CV.LB_TO_KG

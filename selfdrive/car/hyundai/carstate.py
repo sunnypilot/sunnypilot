@@ -99,6 +99,8 @@ class CarState(CarStateBase):
     elif self.driverAcc_time:
       self.driverAcc_time -= 1
 
+    ret.autoHold = cp.vl["ESP11"]['AVH_STAT']
+
     # cruise state
     ret.cruiseState.enabled = (cp_scc.vl["SCC12"]['ACCMode'] != 0) if not self.no_radar else \
                                       cp.vl["LVR12"]['CF_Lvr_CruiseSet'] != 0
@@ -436,6 +438,8 @@ class CarState(CarStateBase):
       ("PRESSURE_FR", "TPMS11", 0),
       ("PRESSURE_RL", "TPMS11", 0),
       ("PRESSURE_RR", "TPMS11", 0),
+
+      ("AVH_STAT", "ESP11", -1),        
     ]
 
     checks = [
@@ -443,6 +447,7 @@ class CarState(CarStateBase):
       ("TCS13", 50),
       ("TCS15", 10),
       ("CLU11", 50),
+      ("ESP11", 50),       
       ("ESP12", 100),
       ("CGW1", 10),
       ("CGW2", 5),

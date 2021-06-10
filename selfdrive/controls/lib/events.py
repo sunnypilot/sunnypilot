@@ -166,7 +166,7 @@ class EngagementAlert(Alert):
     super().__init__("", "",
                      AlertStatus.normal, AlertSize.none,
                      Priority.MID, VisualAlert.none,
-                     audible_alert, .2, 0., 0.),
+                     audible_alert, 2.2, 0., 0.),
 
 class NormalPermanentAlert(Alert):
   def __init__(self, alert_text_1: str, alert_text_2: str, duration_text: float = 0.2):
@@ -410,7 +410,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "도로상황에 주의하세요",
       "전방주시 필요",
       AlertStatus.userPrompt, AlertSize.mid,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2Repeat, .1, .1, .1),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, 1.1, .1, .1),
   },
 
   EventName.driverDistracted: {
@@ -418,7 +418,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "경고: 조향제어가 즉시 해제됩니다",
       "운전자 전방주시 불안",
       AlertStatus.critical, AlertSize.full,
-      Priority.HIGH, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, .1, .1),
+      Priority.HIGH, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, 1.1, .1, .1),
   },
 
   EventName.preDriverUnresponsive: {
@@ -426,7 +426,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "핸들을 터치하세요: 모니터링 없음",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, .0, .1, .1, alert_rate=0.75),
+      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, 1.1, .1, .1, alert_rate=0.75),
   },
 
   EventName.promptDriverUnresponsive: {
@@ -434,7 +434,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "핸들을 터치하세요",
       "운전자 모니터링 없음",
       AlertStatus.userPrompt, AlertSize.mid,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .1, .1, .1),
+      Priority.MID, VisualAlert.none, AudibleAlert.chimeWarning1, 1.1, .1, .1),
   },
 
   EventName.driverUnresponsive: {
@@ -442,7 +442,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "경고: 조향제어가 즉시 해제됩니다",
       "운전자 모니터링 없음",
       AlertStatus.critical, AlertSize.full,
-      Priority.HIGH, VisualAlert.none, AudibleAlert.none, .1, .1, .1),
+      Priority.HIGH, VisualAlert.none, AudibleAlert.chimeWarning1, 1.1, .1, .1),
   },
 
   EventName.driverMonitorLowAcc: {

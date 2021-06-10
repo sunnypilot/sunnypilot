@@ -23,6 +23,9 @@
 #include "selfdrive/common/util.h"
 #include "selfdrive/common/visionimg.h"
 
+#define UI_FEATURE_BRAKE 1
+#define UI_FEATURE_AUTOHOLD 1
+
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
 #define COLOR_WHITE nvgRGBA(255, 255, 255, 255)
@@ -75,6 +78,8 @@ typedef enum UIStatus {
   STATUS_ENGAGED,
   STATUS_WARNING,
   STATUS_ALERT,
+  STATUS_BRAKE,
+  STATUS_CRUISE,
 } UIStatus;
 
 static QColor bg_colors [] = {
@@ -82,6 +87,8 @@ static QColor bg_colors [] = {
   [STATUS_ENGAGED] = QColor(0x17, 0x86, 0x44, 0xf1),
   [STATUS_WARNING] = QColor(0xDA, 0x6F, 0x25, 0xf1),
   [STATUS_ALERT] = QColor(0xC9, 0x22, 0x31, 0xf1),
+  [STATUS_BRAKE] = QColor(0xB0, 0x00, 0x00, 0xc8),
+  [STATUS_CRUISE] = QColor(0x00, 0x64, 0xC8, 0xc8),
 };
 
 typedef struct {

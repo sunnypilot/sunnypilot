@@ -221,6 +221,7 @@ struct CarState {
   driverAcc @46 :Bool;
   brakeHold @47 :Bool;    # AutoHold
   cruiseGapSet @48 :UInt8;
+  autoHold @49 : Int32;    
 
   struct WheelSpeeds {
     # optional wheel speeds
