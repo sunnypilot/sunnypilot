@@ -113,7 +113,11 @@ void OffroadAlert::refresh() {
 void OffroadAlert::updateAlerts() {
   alertCount = 0;
   updateAvailable = params.getBool("UpdateAvailable");
-  if (QString::fromStdString(params.get("DongleId") == "maintenance")) maintenance = true;
+  if (QString::fromStdString(params.get("DongleId")) == "maintenance") {
+    maintenance = true;
+  } else {
+    maintenance = false;
+  }
   for (const auto& [key, label] : alerts) {
     auto bytes = params.get(key.c_str());
     if (bytes.size()) {
