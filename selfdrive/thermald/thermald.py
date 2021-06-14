@@ -316,6 +316,11 @@ def thermald_thread():
         network_strength = HARDWARE.get_network_strength(network_type)
         network_info = HARDWARE.get_network_info()  # pylint: disable=assignment-from-none
         wifiIpAddress = HARDWARE.get_ip_address()
+        try:
+          ping_test = subprocess.check_output(["ping", "-c", "1", "-W", "1", "google.com"])
+          Params().put("LastAthenaPingTime", str(int(sec_since_boot() * 1e9))) if ping_test else False
+        except Exception:
+          Params().delete("LastAthenaPingTime")
       except Exception:
         cloudlog.exception("Error getting network status")
 

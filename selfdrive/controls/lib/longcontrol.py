@@ -72,12 +72,17 @@ class LongControl():
 
     self.candidate = candidate
 
+    self.vRel_prev = 0
+    self.decel_damping = 1.0
+    self.decel_damping2 = 1.0
+    self.damping_timer = 0
+
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
     self.pid.reset()
     self.v_pid = v_pid
 
-  def update(self, active, CS, v_target, v_target_future, a_target_raw, a_target, CP, hasLead, radarState, longitudinalPlanSource, extras):
+  def update(self, active, CS, v_target, v_target_future, a_target_raw, a_target, CP, hasLead, radarState, longitudinalPlanSource):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Actuation limits
     gas_max = interp(CS.vEgo, CP.gasMaxBP, CP.gasMaxV)
@@ -121,7 +126,18 @@ class LongControl():
       prevent_overshoot = not CP.stoppingControl and CS.vEgo < 1.5 and v_target_future < 0.7
       deadzone = interp(v_ego_pid, CP.longitudinalTuning.deadzoneBP, CP.longitudinalTuning.deadzoneV)
 
+      # opkr
+      if self.vRel_prev != vRel and vRel < 0 and CS.vEgo > 13.8 and self.damping_timer == 0: # decel mitigation for a while
+        if abs(vRel*3.6) - abs(self.vRel_prev*3.6) > 5:
+          self.damping_timer = 25
+          self.decel_damping2 = interp(abs(vRel*3.6), [5, 20], [1, 0.1])
+        self.vRel_prev = vRel
+      elif self.damping_timer > 0:
+        self.damping_timer -= 1
+        self.decel_damping = interp(self.damping_timer, [0, 25], [1, self.decel_damping2])
+
       output_gb = self.pid.update(self.v_pid, v_ego_pid, speed=v_ego_pid, deadzone=deadzone, feedforward=a_target, freeze_integrator=prevent_overshoot)
+      output_gb *= self.decel_damping
 
       if prevent_overshoot or CS.brakeHold:
         output_gb = min(output_gb, 0.0)

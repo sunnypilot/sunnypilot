@@ -41,6 +41,7 @@ class CarInterfaceBase():
       self.CC = CarController(self.cp.dbc_name, CP, self.VM)
     
     self.user_disable = False
+    self.user_disable_timer = 0
 
   @staticmethod
   def calc_accel_override(a_ego, a_target, v_ego, v_target):
@@ -108,14 +109,21 @@ class CarInterfaceBase():
     if cs_out.seatbeltUnlatched:
       events.add(EventName.seatbeltNotLatched)
     if cs_out.gearShifter != GearShifter.drive and cs_out.gearShifter not in extra_gears and cs_out.cruiseState.enabled and cs_out.steeringAngleDeg < 90:
-      events.add(EventName.wrongGear)
-      self.user_disable = True
+      self.user_disable_timer += 1
+      if self.user_disable_timer > 50:
+        events.add(EventName.wrongGear)
+        self.user_disable = True
     elif cs_out.gearShifter != GearShifter.drive and cs_out.gearShifter not in extra_gears and cs_out.cruiseState.enabled and self.user_disable:
-      events.add(EventName.wrongGear)
+      self.user_disable_timer += 1
+      if self.user_disable_timer > 50:
+        events.add(EventName.wrongGear)
     else:
+      self.user_disable_timer = 0
       self.user_disable = False
     if cs_out.gearShifter == GearShifter.reverse and self.user_disable:
-      events.add(EventName.reverseGear)
+      self.user_disable_timer += 1
+      if self.user_disable_timer > 50:
+        events.add(EventName.reverseGear)
     if not cs_out.cruiseState.available and cs_out.cruiseState.enabled:
       events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
