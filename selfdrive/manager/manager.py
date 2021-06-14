@@ -157,7 +157,7 @@ def manager_init():
     raise Exception("Passive must be set to continue")
 
   if EON:
-    update_apks()
+    update_apks(show_spinner=True)
 
   os.umask(0)  # Make sure we can create files with 777 permissions
 

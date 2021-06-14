@@ -5,6 +5,7 @@ import hashlib
 import shutil
 from common.basedir import BASEDIR
 from selfdrive.swaglog import cloudlog
+from common.spinner import Spinner
 
 android_packages = ("com.opkr.maphack", "com.mixplorer", "com.gmd.hidesoftkeys", "com.google.android.inputmethod.korean", "com.skt.tmap.ku",)
 
@@ -44,11 +45,15 @@ def system(cmd):
 
 # *** external functions ***
 
-def update_apks():
+def update_apks(show_spinner=False):
   # install apks
   installed = get_installed_apks()
 
   install_apks = glob.glob(os.path.join(BASEDIR, "selfdrive/assets/addon/apk/*.apk"))
+  if show_spinner:
+    spinner = Spinner()
+    spinner.update("installing apks")
+
   for apk in install_apks:
     app = os.path.basename(apk)[:-4]
     if app not in installed:
@@ -77,6 +82,9 @@ def update_apks():
         success = install_apk(apk_path)
 
       assert success
+
+  if show_spinner:
+    spinner.close()
 
 def pm_apply_packages(cmd):
   for p in android_packages:
