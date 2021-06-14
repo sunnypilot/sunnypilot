@@ -15,7 +15,7 @@ from selfdrive.hardware import HARDWARE
 from selfdrive.swaglog import cloudlog
 
 
-UNREGISTERED_DONGLE_ID = "UnregisteredDevice"
+UNREGISTERED_DONGLE_ID = "maintenance"
 
 
 def register(show_spinner=False) -> str:
@@ -68,7 +68,7 @@ def register(show_spinner=False) -> str:
       try:
         register_token = jwt.encode({'register': True, 'exp': datetime.utcnow() + timedelta(hours=1)}, private_key, algorithm='RS256')
         cloudlog.info("getting pilotauth")
-        resp = api_get("v2/pilotauth/", method='POST', timeout=15,
+        resp = api_get("v2/pilotauth/", method='POST', timeout=10,
                        imei=imei1, imei2=imei2, serial=serial, public_key=public_key, register_token=register_token)
 
         if resp.status_code in (402, 403, 404):
@@ -81,6 +81,7 @@ def register(show_spinner=False) -> str:
       except Exception:
         try_count += 1
         if try_count >= 2:
+          dongle_id = UNREGISTERED_DONGLE_ID
           break
         cloudlog.exception("failed to authenticate")
         backoff = min(backoff + 1, 15)
