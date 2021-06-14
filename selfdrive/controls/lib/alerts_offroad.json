@@ -43,7 +43,7 @@
   },
   "Offroad_UnofficialHardware": {
     "text": "장치 등록에 실패하였습니다. https://api.retropilot.org 서버가 점검 중인지 확인하십시오. 추후 서버 정상화 시 아래 \"재등록 시도\" 버튼을 이용하여 재등록 하시기 바랍니다. 사용상에는 문제가 없으니 안심하고 사용하시기 바랍니다.",
-    "severity": 1
+    "severity": 0
   },
   "Offroad_NvmeMissing": {
     "text": "NVME drive not mounted.",
