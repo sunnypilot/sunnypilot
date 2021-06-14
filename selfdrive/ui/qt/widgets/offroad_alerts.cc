@@ -47,6 +47,17 @@ OffroadAlert::OffroadAlert(QWidget* parent) : QFrame(parent) {
   footer_layout->addWidget(&rebootBtn, 0, Qt::AlignBottom | Qt::AlignRight);
   QObject::connect(&rebootBtn, &QPushButton::released, [=]() { Hardware::reboot(); });
 
+  recheckBtn.setText("재등록 시도");
+  recheckBtn.setFixedSize(600, 125);
+  recheckBtn.setVisible(false);
+  footer_layout->addWidget(&recheckBtn, 0, Qt::AlignBottom | Qt::AlignRight);
+  QObject::connect(&recheckBtn, &QPushButton::released, [=]() {
+    Params().remove("DongleId");
+    QTimer::singleShot(1000, []() {
+      Hardware::reboot();
+    }
+  });
+
   setLayout(layout);
   setStyleSheet(R"(
     * {
@@ -88,6 +99,7 @@ void OffroadAlert::refresh() {
   updateAlerts();
 
   rebootBtn.setVisible(updateAvailable);
+  recheckBtn.setVisible(maintenance);
   releaseNotesScroll->setVisible(updateAvailable);
   releaseNotes.setText(QString::fromStdString(params.get("ReleaseNotes")));
 
@@ -100,6 +112,7 @@ void OffroadAlert::refresh() {
 void OffroadAlert::updateAlerts() {
   alertCount = 0;
   updateAvailable = params.getBool("UpdateAvailable");
+  maintenance = params.getBool("DongleId");
   for (const auto& [key, label] : alerts) {
     auto bytes = params.get(key.c_str());
     if (bytes.size()) {

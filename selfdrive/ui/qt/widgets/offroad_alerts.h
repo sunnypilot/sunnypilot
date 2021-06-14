@@ -26,6 +26,7 @@ private:
 
   QLabel releaseNotes;
   QPushButton rebootBtn;
+  QPushButton recheckBtn;
   ScrollView *alertsScroll;
   ScrollView *releaseNotesScroll;
   QVBoxLayout *alerts_layout;
