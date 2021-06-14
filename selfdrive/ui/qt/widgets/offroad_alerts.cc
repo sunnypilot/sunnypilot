@@ -55,7 +55,7 @@ OffroadAlert::OffroadAlert(QWidget* parent) : QFrame(parent) {
     Params().remove("DongleId");
     QTimer::singleShot(1000, []() {
       Hardware::reboot();
-    }
+    });
   });
 
   setLayout(layout);

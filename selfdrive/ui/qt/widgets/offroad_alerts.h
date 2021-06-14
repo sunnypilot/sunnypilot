@@ -17,6 +17,7 @@ public:
   explicit OffroadAlert(QWidget *parent = 0);
   int alertCount = 0;
   bool updateAvailable;
+  bool maintenance;
 
 private:
   void updateAlerts();
