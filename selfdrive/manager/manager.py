@@ -181,6 +181,8 @@ def manager_init():
   reg_res = register(show_spinner=True)
   if reg_res:
     dongle_id = reg_res
+  elif not reg_res:
+    dongle_id = "maintenance"
   else:
     serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
