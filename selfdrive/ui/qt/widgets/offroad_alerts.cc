@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QVBoxLayout>
+#include <QTimer>
 
 #include "selfdrive/common/util.h"
 #include "selfdrive/hardware/hw.h"
