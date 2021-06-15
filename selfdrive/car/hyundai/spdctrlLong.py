@@ -110,16 +110,16 @@ class SpdctrlLong(SpdController):
             elif CS.clu_Vanz > 80 and lead_objspd < -3 and int(CS.clu_Vanz) <= int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*1.7 and 1 < dRel < 149: # 유지거리 범위 외 감속 조건 앞차 감속중 현재속도/2 아래로 거리 좁혀졌을 때 상대속도에 따라 점진적 감소
                 self.seq_step_debug = "SS>VS,v>80,-1"
                 lead_wait_cmd, lead_set_speed = self.get_tm_speed( CS, max(20, 70+(lead_objspd*2)), -1)
-            elif CS.clu_Vanz > 60 and lead_objspd < -4 and int(CS.clu_Vanz) <= int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*1.9 and 1 < dRel < 149: # 유지거리 범위 외 감속 조건 앞차 감속중 현재속도/2 아래로 거리 좁혀졌을 때 상대속도에 따라 점진적 감소
+            elif CS.clu_Vanz > 65 and lead_objspd < -3 and int(CS.clu_Vanz) <= int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*1.9 and 1 < dRel < 149: # 유지거리 범위 외 감속 조건 앞차 감속중 현재속도/2 아래로 거리 좁혀졌을 때 상대속도에 따라 점진적 감소
                 self.seq_step_debug = "SS>VS,v>60,-1"
                 lead_wait_cmd, lead_set_speed = self.get_tm_speed( CS, max(20, 80+(lead_objspd*2)), -1)
             # elif CS.clu_Vanz > 40 and lead_objspd < -3 and int(CS.clu_Vanz) <= int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*2.2 and 1 < dRel < 149: # 유지거리 범위 외 감속 조건 앞차 감속중 현재속도/2 아래로 거리 좁혀졌을 때 상대속도에 따라 점진적 감소
             #     self.seq_step_debug = "SS>VS,v>40,-1"
             #     lead_wait_cmd, lead_set_speed = self.get_tm_speed( CS, max(20, 80+(lead_objspd*2)), -1)
-            elif 60 > CS.clu_Vanz > 30 and lead_objspd < -4 and int(CS.clu_Vanz) <= int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*0.85 and 1 < dRel < 149:
+            elif 65 > CS.clu_Vanz > 30 and lead_objspd < -3 and int(CS.clu_Vanz) <= int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*0.85 and 1 < dRel < 149:
                 self.seq_step_debug = "SS>VS,60>v>30,-1"
-                lead_wait_cmd, lead_set_speed = self.get_tm_speed( CS, max(20, 260-(abs(lead_objspd**3))), -1)
-            elif 60 > CS.clu_Vanz > 30 and lead_objspd < 0 and int(CS.clu_Vanz)+4 < int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*0.85 and 1 < dRel < 149:
+                lead_wait_cmd, lead_set_speed = self.get_tm_speed( CS, max(20, 230-(abs(lead_objspd**3))), -1)
+            elif 65 > CS.clu_Vanz > 30 and lead_objspd < 0 and int(CS.clu_Vanz)+4 < int(CS.VSetDis) and int(CS.clu_Vanz) >= dRel*0.85 and 1 < dRel < 149:
                 self.seq_step_debug = "감속준비"
                 lead_wait_cmd, lead_set_speed = self.get_tm_speed( CS, 20, -1)
             elif 7 < int(CS.clu_Vanz) < 30 and lead_objspd < 0 and CS.VSetDis > 30:
@@ -162,19 +162,19 @@ class SpdctrlLong(SpdController):
             elif curve_speed < 40 and CS.clu_Vanz > 40 and CS.lead_distance >= 15:
                 set_speed = min(45, self.cruise_set_speed_kph - int(CS.clu_Vanz * 0.15))
                 self.seq_step_debug = "커브감속-4"
-                wait_time_cmd = 30
+                wait_time_cmd = 40
             elif curve_speed < 60 and CS.clu_Vanz > 40 and CS.lead_distance >= 15:
                 set_speed = min(60, self.cruise_set_speed_kph - int(CS.clu_Vanz * 0.1))
                 self.seq_step_debug = "커브감속-3"
-                wait_time_cmd = 30
+                wait_time_cmd = 50
             elif curve_speed < 75 and CS.clu_Vanz > 40 and CS.lead_distance >= 15:
                 set_speed = min(75, self.cruise_set_speed_kph - int(CS.clu_Vanz * 0.075))
                 self.seq_step_debug = "커브감속-2"
-                wait_time_cmd = 30
+                wait_time_cmd = 60
             elif curve_speed < 90 and CS.clu_Vanz > 40 and CS.lead_distance >= 15:
                 set_speed = min(90, self.cruise_set_speed_kph - int(CS.clu_Vanz * 0.05))
                 self.seq_step_debug = "커브감속-1"
-                wait_time_cmd = 30
+                wait_time_cmd = 70
 
         return wait_time_cmd, set_speed
 
