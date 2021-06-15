@@ -4,7 +4,7 @@
     "severity": 0
   },
   "Offroad_TemperatureTooHigh": {
-    "text": "Device temperature too high. System won't start.",
+    "text": "장치 온도가 너무 높습니다. 시스템 시작이 보류되었습니다.",
     "severity": 1
   },
   "Offroad_ConnectivityNeededPrompt": {
@@ -22,11 +22,11 @@
     "_comment": "Append the command and error to the text."
   },
   "Offroad_PandaFirmwareMismatch": {
-    "text": "Unexpected panda firmware version. System won't start. Reboot your device to reflash panda.",
+    "text": "판다 펌웨어 버전이 일치하지 않습니다. 판다를 다시 플래시하려면 장치를 재부팅하십시오.",
     "severity": 1
   },
   "Offroad_InvalidTime": {
-    "text": "Invalid date and time settings, system won't start. Connect to internet to set time.",
+    "text": "날짜 및 시간 설정이 잘못되었습니다. 인터넷에 연결하여 시간을 설정하시기 바랍니다.",
     "severity": 1
   },
   "Offroad_IsTakingSnapshot": {
@@ -42,8 +42,8 @@
     "severity": 0
   },
   "Offroad_UnofficialHardware": {
-    "text": "Device failed to register. It will not connect to or upload to comma.ai servers, and receives no support from comma.ai. If this is an official device, contact support@comma.ai.",
-    "severity": 1
+    "text": "장치 등록에 실패하였습니다. https://api.retropilot.org 서버가 점검 중인지 확인하십시오. 추후 서버 정상화 시 아래 \"재등록 시도\" 버튼을 이용하여 재등록 하시기 바랍니다. 사용상에는 문제가 없으니 안심하고 사용하시기 바랍니다.",
+    "severity": 0
   },
   "Offroad_NvmeMissing": {
     "text": "NVME drive not mounted.",

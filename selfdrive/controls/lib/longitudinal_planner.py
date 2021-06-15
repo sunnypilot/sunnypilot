@@ -24,13 +24,13 @@ AWARENESS_DECEL = -0.2     # car smoothly decel at .2m/s^2 when user is distract
 
 # lookup tables VS speed to determine min and max accels in cruise
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MIN_V = [-0.7, -0.6, -0.55, -.5, -.30]
+_A_CRUISE_MIN_V = [-0.65, -0.55, -0.5, -.45, -.25]
 _A_CRUISE_MIN_BP = [0.,  5.,  10., 20.,  40.]
 
 # need fast accel at very low speed for stop and go
 # make sure these accelerations are smaller than mpc limits
-_A_CRUISE_MAX_V = [1.2, 1.2, 0.4, .25]
-_A_CRUISE_MAX_V_FOLLOWING = [1.6, 1.6, 0.65, .35]
+_A_CRUISE_MAX_V = [1.2, 1.2, 0.35, .25]
+_A_CRUISE_MAX_V_FOLLOWING = [1.5, 1.45, 0.55, .35]
 _A_CRUISE_MAX_BP = [0.,  6.4, 22.5, 40.]
 
 # Lookup table for turns
@@ -188,8 +188,8 @@ class Planner():
       if self.target_speed_map_counter >= (50+self.target_speed_map_counter1) and self.target_speed_map_counter_check == False:
         self.target_speed_map_counter_check = True
         os.system("logcat -d -s opkrspdlimit,opkrspd2limit | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/LimitSetSpeedCamera &")
-        os.system("logcat -d -s opkrspddist | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/LimitSetSpeedCameraDist &")
-        os.system("logcat -d -s opkrsigntype | tail -n 1 | awk \'{print $7}\' > /data/params/d/OpkrMapSign &")
+        os.system("logcat -d -s opkrspddist,opkrspd2dist | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/LimitSetSpeedCameraDist &")
+        os.system("logcat -d -s opkrsigntype,opkrspdsign | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/OpkrMapSign &")
         self.target_speed_map_counter3 += 1
         if self.target_speed_map_counter3 > 2:
           self.target_speed_map_counter3 = 0

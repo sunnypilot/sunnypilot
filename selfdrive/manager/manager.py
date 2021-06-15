@@ -157,7 +157,7 @@ def manager_init():
     raise Exception("Passive must be set to continue")
 
   if EON:
-    update_apks()
+    update_apks(show_spinner=True)
 
   os.umask(0)  # Make sure we can create files with 777 permissions
 
@@ -181,6 +181,8 @@ def manager_init():
   reg_res = register(show_spinner=True)
   if reg_res:
     dongle_id = reg_res
+  elif not reg_res:
+    dongle_id = "maintenance"
   else:
     serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")

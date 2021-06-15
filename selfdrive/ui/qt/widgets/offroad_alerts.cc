@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QVBoxLayout>
+#include <QTimer>
 
 #include "selfdrive/common/util.h"
 #include "selfdrive/hardware/hw.h"
@@ -47,6 +48,17 @@ OffroadAlert::OffroadAlert(QWidget* parent) : QFrame(parent) {
   footer_layout->addWidget(&rebootBtn, 0, Qt::AlignBottom | Qt::AlignRight);
   QObject::connect(&rebootBtn, &QPushButton::released, [=]() { Hardware::reboot(); });
 
+  recheckBtn.setText("재등록 시도");
+  recheckBtn.setFixedSize(600, 125);
+  recheckBtn.setVisible(false);
+  footer_layout->addWidget(&recheckBtn, 0, Qt::AlignBottom | Qt::AlignRight);
+  QObject::connect(&recheckBtn, &QPushButton::released, [=]() {
+    Params().remove("DongleId");
+    QTimer::singleShot(1000, []() {
+      Hardware::reboot();
+    });
+  });
+
   setLayout(layout);
   setStyleSheet(R"(
     * {
@@ -88,6 +100,7 @@ void OffroadAlert::refresh() {
   updateAlerts();
 
   rebootBtn.setVisible(updateAvailable);
+  recheckBtn.setVisible(maintenance);
   releaseNotesScroll->setVisible(updateAvailable);
   releaseNotes.setText(QString::fromStdString(params.get("ReleaseNotes")));
 
@@ -100,6 +113,11 @@ void OffroadAlert::refresh() {
 void OffroadAlert::updateAlerts() {
   alertCount = 0;
   updateAvailable = params.getBool("UpdateAvailable");
+  if (QString::fromStdString(params.get("DongleId")) == "maintenance") {
+    maintenance = true;
+  } else {
+    maintenance = false;
+  }
   for (const auto& [key, label] : alerts) {
     auto bytes = params.get(key.c_str());
     if (bytes.size()) {

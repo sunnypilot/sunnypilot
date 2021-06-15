@@ -17,6 +17,7 @@ public:
   explicit OffroadAlert(QWidget *parent = 0);
   int alertCount = 0;
   bool updateAvailable;
+  bool maintenance;
 
 private:
   void updateAlerts();
@@ -26,6 +27,7 @@ private:
 
   QLabel releaseNotes;
   QPushButton rebootBtn;
+  QPushButton recheckBtn;
   ScrollView *alertsScroll;
   ScrollView *releaseNotesScroll;
   QVBoxLayout *alerts_layout;
