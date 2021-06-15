@@ -188,8 +188,8 @@ class Planner():
       if self.target_speed_map_counter >= (50+self.target_speed_map_counter1) and self.target_speed_map_counter_check == False:
         self.target_speed_map_counter_check = True
         os.system("logcat -d -s opkrspdlimit,opkrspd2limit | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/LimitSetSpeedCamera &")
-        os.system("logcat -d -s opkrspddist | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/LimitSetSpeedCameraDist &")
-        os.system("logcat -d -s opkrsigntype | tail -n 1 | awk \'{print $7}\' > /data/params/d/OpkrMapSign &")
+        os.system("logcat -d -s opkrspddist,opkrspd2dist | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/LimitSetSpeedCameraDist &")
+        os.system("logcat -d -s opkrsigntype,opkrspdsign | grep opkrspd | tail -n 1 | awk \'{print $7}\' > /data/params/d/OpkrMapSign &")
         self.target_speed_map_counter3 += 1
         if self.target_speed_map_counter3 > 2:
           self.target_speed_map_counter3 = 0
