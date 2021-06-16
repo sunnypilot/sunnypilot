@@ -268,7 +268,8 @@ class Controls:
       self.events.add(EventName.radarFault)
     elif not self.sm.valid["pandaState"]:
       self.events.add(EventName.usbError)
-    elif not self.sm.all_alive_and_valid() and self.sm['pandaState'].pandaType != PandaType.whitePanda and not self.commIssue_ignored:
+    elif not self.sm.all_alive_and_valid() and self.sm['pandaState'].pandaType != PandaType.whitePanda and \
+     not self.commIssue_ignored and not Params().get_bool("OpkrMapEnable"):
       self.events.add(EventName.commIssue)
       if not self.logged_comm_issue:
         cloudlog.error(f"commIssue - valid: {self.sm.valid} - alive: {self.sm.alive}")
