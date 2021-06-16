@@ -116,12 +116,11 @@ class LateralPlanner():
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
     try:
-      lateral_control_method = int(sm['controlsState'].lateralControlMethod)
-      if lateral_control_method == 0:
+      if CP.lateralTuning.which() == 'pid':
         self.output_scale = sm['controlsState'].lateralControlState.pidState.output
-      elif lateral_control_method == 1:
+      elif CP.lateralTuning.which() == 'indi':
         self.output_scale = sm['controlsState'].lateralControlState.indiState.output
-      elif lateral_control_method == 2:
+      elif CP.lateralTuning.which() == 'lqr':
         self.output_scale = sm['controlsState'].lateralControlState.lqrState.output
     except:
       pass
