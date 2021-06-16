@@ -318,6 +318,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"OpkrMapEnable", PERSISTENT},
     {"WhitePandaSupport", PERSISTENT},
     {"SteerWarningFix", PERSISTENT},
+    {"OpkrRunNaviOnBoot", PERSISTENT},
 };
 
 } // namespace
