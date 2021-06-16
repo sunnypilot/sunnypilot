@@ -115,8 +115,16 @@ class LateralPlanner():
       self.second = 0.0
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
-    self.output_scale = 0.0 + float(sm['controlsState'].lateralControlState.pidState.output + \
-     sm['controlsState'].lateralControlState.indiState.output + sm['controlsState'].lateralControlState.lqrState.output)
+    try:
+      lateral_control_method = int(sm['controlsState'].lateralControlMethod)
+      if lateral_control_method == 0:
+        self.output_scale = sm['controlsState'].lateralControlState.pidState.output
+      elif lateral_control_method == 1:
+        self.output_scale = sm['controlsState'].lateralControlState.indiState.output
+      elif lateral_control_method == 2:
+        self.output_scale = sm['controlsState'].lateralControlState.lqrState.output
+    except:
+      pass
   
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
