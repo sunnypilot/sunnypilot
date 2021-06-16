@@ -106,10 +106,10 @@ class CarInterfaceBase():
   def create_common_events(self, cs_out, extra_gears=[], gas_resume_speed=-1, pcm_enable=True):  # pylint: disable=dangerous-default-value
     events = Events()
 
-    if cs_out.doorOpen:
-      events.add(EventName.doorOpen)
-    if cs_out.seatbeltUnlatched:
-      events.add(EventName.seatbeltNotLatched)
+    # if cs_out.doorOpen:
+    #   events.add(EventName.doorOpen)
+    # if cs_out.seatbeltUnlatched:
+    #   events.add(EventName.seatbeltNotLatched)
     if cs_out.gearShifter != GearShifter.drive and cs_out.gearShifter not in extra_gears and cs_out.cruiseState.enabled and cs_out.steeringAngleDeg < 90:
       self.user_disable_timer += 1
       if self.user_disable_timer > 50:
