@@ -139,6 +139,7 @@ class LateralPlanner():
     if len(md.orientation.xStd) == TRAJECTORY_SIZE:
       self.path_xyz_stds = np.column_stack([md.position.xStd, md.position.yStd, md.position.zStd])
 
+    '''
     # Lane change logic
     one_blinker = sm['carState'].leftBlinker != sm['carState'].rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
@@ -198,6 +199,71 @@ class LateralPlanner():
       self.lane_change_timer = 0.0
     else:
       self.lane_change_timer += DT_MDL
+    '''
+
+    # /// Comma stock logic
+    # Lane change logic
+    one_blinker = sm['carState'].leftBlinker != sm['carState'].rightBlinker
+    below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
+
+    if (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (abs(self.output_scale) >= (CP.steerMaxV[0]-0.15) and self.lane_change_timer > 1):
+      self.lane_change_state = LaneChangeState.off
+      self.lane_change_direction = LaneChangeDirection.none
+    else:
+      # LaneChangeState.off
+      if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
+        self.lane_change_state = LaneChangeState.preLaneChange
+        self.lane_change_ll_prob = 1.0
+        self.lane_change_wait_timer = 0        
+
+      # LaneChangeState.preLaneChange
+      elif self.lane_change_state == LaneChangeState.preLaneChange:
+        self.lane_change_wait_timer += DT_MDL
+        # Set lane change direction
+        if sm['carState'].leftBlinker:
+          self.lane_change_direction = LaneChangeDirection.left
+        elif sm['carState'].rightBlinker:
+          self.lane_change_direction = LaneChangeDirection.right
+        else:  # If there are no blinkers we will go back to LaneChangeState.off
+          self.lane_change_direction = LaneChangeDirection.none
+
+        torque_applied = sm['carState'].steeringPressed and \
+                        ((sm['carState'].steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
+                          (sm['carState'].steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right))
+
+        blindspot_detected = ((sm['carState'].leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
+                              (sm['carState'].rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
+
+        if not one_blinker or below_lane_change_speed:
+          self.lane_change_state = LaneChangeState.off
+        elif not blindspot_detected and (torque_applied or (self.lane_change_auto_delay and self.lane_change_wait_timer > self.lane_change_auto_delay)):
+          self.lane_change_state = LaneChangeState.laneChangeStarting
+
+      # LaneChangeState.laneChangeStarting
+      elif self.lane_change_state == LaneChangeState.laneChangeStarting:
+        # fade out over .5s
+        self.lane_change_adjust_new = interp(v_ego, self.lane_change_adjust_vel, self.lane_change_adjust)
+        self.lane_change_ll_prob = max(self.lane_change_ll_prob - self.lane_change_adjust_new*DT_MDL, 0.0)
+
+        # 98% certainty
+        lane_change_prob = self.LP.l_lane_change_prob + self.LP.r_lane_change_prob
+        if lane_change_prob < 0.02 and self.lane_change_ll_prob < 0.01:
+          self.lane_change_state = LaneChangeState.laneChangeFinishing
+
+      # LaneChangeState.laneChangeFinishing
+      elif self.lane_change_state == LaneChangeState.laneChangeFinishing:
+        # fade in laneline over 1s
+        self.lane_change_ll_prob = min(self.lane_change_ll_prob + DT_MDL, 1.0)
+        if one_blinker and self.lane_change_ll_prob > 0.99:
+          self.lane_change_state = LaneChangeState.preLaneChange
+        elif self.lane_change_ll_prob > 0.99:
+          self.lane_change_state = LaneChangeState.off
+
+    if self.lane_change_state in [LaneChangeState.off, LaneChangeState.preLaneChange]:
+      self.lane_change_timer = 0.0
+    else:
+      self.lane_change_timer += DT_MDL
+    # Comma stock logic ///
 
     self.prev_one_blinker = one_blinker
 
