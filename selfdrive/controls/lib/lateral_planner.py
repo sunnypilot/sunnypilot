@@ -89,6 +89,7 @@ class LateralPlanner():
     self.steer_actuator_delay_to_send = 0.0
     
     self.output_scale = 0.0
+    self.second = 0.0
 
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
@@ -107,21 +108,15 @@ class LateralPlanner():
     self.safe_desired_curvature_rate = 0.0
 
   def update(self, sm, CP):
-    self.use_lanelines = not Params().get_bool("EndToEndToggle")
-    self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
+    self.second += DT_MDL
+    if int(self.second) % 2 == 0:
+      self.use_lanelines = not Params().get_bool("EndToEndToggle")
+      self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
+      self.second = 0
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
-    try:
-      lateral_control_method = 0
-      lateral_control_method = int(sm['controlsState'].lateralControlMethod)
-      if lateral_control_method == 0:
-        self.output_scale = sm['controlsState'].lateralControlState.pidState.output
-      elif lateral_control_method == 1:
-        self.output_scale = sm['controlsState'].lateralControlState.indiState.output
-      elif lateral_control_method == 2:
-        self.output_scale = sm['controlsState'].lateralControlState.lqrState.output
-    except:
-      pass
+    self.output_scale = 0.0 + float(sm['controlsState'].lateralControlState.pidState.output + \
+     sm['controlsState'].lateralControlState.indiState.output + sm['controlsState'].lateralControlState.lqrState.output)
   
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
