@@ -5,6 +5,7 @@ from selfdrive.car.hyundai.values import CAR, Buttons
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 from common.params import Params
+from decimal import Decimal
 
 EventName = car.CarEvent.EventName
 ButtonType = car.CarState.ButtonEvent.Type
@@ -13,11 +14,11 @@ class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
     self.cp2 = self.CS.get_can2_parser(CP)
-    self.mad_mode_enabled = Params().get_bool('MadModeEnabled')
     self.lkas_button_alert = False
 
     self.blinker_status = 0
     self.blinker_timer = 0
+    self.mad_mode_enabled = Params().get_bool('MadModeEnabled')
 
   @staticmethod
   def compute_gb(accel, speed):
@@ -31,29 +32,31 @@ class CarInterface(CarInterfaceBase):
     ret.safetyModel = car.CarParams.SafetyModel.hyundai
 
     params = Params()
-    PidKp = float(int(params.get("PidKp", encoding="utf8")) * 0.01)
-    PidKi = float(int(params.get("PidKi", encoding="utf8")) * 0.001)
-    PidKd = float(int(params.get("PidKd", encoding="utf8")) * 0.01)
-    PidKf = float(int(params.get("PidKf", encoding="utf8")) * 0.00001)
-    InnerLoopGain = float(int(params.get("InnerLoopGain", encoding="utf8")) * 0.1)
-    OuterLoopGain = float(int(params.get("OuterLoopGain", encoding="utf8")) * 0.1)
-    TimeConstant = float(int(params.get("TimeConstant", encoding="utf8")) * 0.1)
-    ActuatorEffectiveness = float(int(params.get("ActuatorEffectiveness", encoding="utf8")) * 0.1)
-    Scale = float(int(params.get("Scale", encoding="utf8")) * 1.0)
-    LqrKi = float(int(params.get("LqrKi", encoding="utf8")) * 0.001)
-    DcGain = float(int(params.get("DcGain", encoding="utf8")) * 0.0001)
-    SteerMaxV = float(int(params.get("SteerMaxvAdj", encoding="utf8")) * 0.1)
+    PidKp = float(Decimal(params.get("PidKp", encoding="utf8")) * Decimal('0.01'))
+    PidKi = float(Decimal(params.get("PidKi", encoding="utf8")) * Decimal('0.001'))
+    PidKd = float(Decimal(params.get("PidKd", encoding="utf8")) * Decimal('0.01'))
+    PidKf = float(Decimal(params.get("PidKf", encoding="utf8")) * Decimal('0.00001'))
+    InnerLoopGain = float(Decimal(params.get("InnerLoopGain", encoding="utf8")) * Decimal('0.1'))
+    OuterLoopGain = float(Decimal(params.get("OuterLoopGain", encoding="utf8")) * Decimal('0.1'))
+    TimeConstant = float(Decimal(params.get("TimeConstant", encoding="utf8")) * Decimal('0.1'))
+    ActuatorEffectiveness = float(Decimal(params.get("ActuatorEffectiveness", encoding="utf8")) * Decimal('0.1'))
+    Scale = float(Decimal(params.get("Scale", encoding="utf8")) * Decimal('1.0'))
+    LqrKi = float(Decimal(params.get("LqrKi", encoding="utf8")) * Decimal('0.001'))
+    DcGain = float(Decimal(params.get("DcGain", encoding="utf8")) * Decimal('0.0001'))
+    SteerMaxV = float(Decimal(params.get("SteerMaxvAdj", encoding="utf8")) * Decimal('0.1'))
 
     # Most Hyundai car ports are community features for now
     ret.communityFeature = False
 
-    tire_stiffness_factor = float(int(params.get("TireStiffnessFactorAdj", encoding="utf8")) * 0.01)
-    ret.steerActuatorDelay = float(int(params.get("SteerActuatorDelayAdj", encoding="utf8")) * 0.01)
-    ret.steerRateCost = float(int(params.get("SteerRateCostAdj", encoding="utf8")) * 0.01)
-    ret.steerLimitTimer = float(int(params.get("SteerLimitTimerAdj", encoding="utf8")) * 0.01)
-    ret.steerRatio = float(int(params.get("SteerRatioAdj", encoding="utf8")) * 0.1)
+    tire_stiffness_factor = float(Decimal(params.get("TireStiffnessFactorAdj", encoding="utf8")) * Decimal('0.01'))
+    ret.steerActuatorDelay = float(Decimal(params.get("SteerActuatorDelayAdj", encoding="utf8")) * Decimal('0.01'))
+    ret.steerRateCost = float(Decimal(params.get("SteerRateCostAdj", encoding="utf8")) * Decimal('0.01'))
+    ret.steerLimitTimer = float(Decimal(params.get("SteerLimitTimerAdj", encoding="utf8")) * Decimal('0.01'))
+    ret.steerRatio = float(Decimal(params.get("SteerRatioAdj", encoding="utf8")) * Decimal('0.1'))
 
-    if int(params.get("LateralControlMethod", encoding="utf8")) == 0:
+    lat_control_method = int(params.get("LateralControlMethod", encoding="utf8"))
+    shane_feed_forward = params.get_bool("ShaneFeedForward")
+    if lat_control_method == 0:
       ret.lateralTuning.pid.kf = PidKf
       ret.lateralTuning.pid.kpBP = [0., 9.]
       ret.lateralTuning.pid.kpV = [0.1, PidKp]
@@ -61,8 +64,8 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kiV = [0.01, PidKi]
       ret.lateralTuning.pid.kdBP = [0.]
       ret.lateralTuning.pid.kdV = [PidKd]
-      ret.lateralTuning.pid.newKfTuned = True if params.get_bool("ShaneFeedForward") else False # Shane's feedforward
-    elif int(params.get("LateralControlMethod", encoding="utf8")) == 1:
+      ret.lateralTuning.pid.newKfTuned = True if shane_feed_forward else False # Shane's feedforward
+    elif lat_control_method == 1:
       ret.lateralTuning.init('indi')
       ret.lateralTuning.indi.innerLoopGainBP = [0., 9.]
       ret.lateralTuning.indi.innerLoopGainV = [3.0, InnerLoopGain] # third tune. Highest value that still gives smooth control. Effects turning into curves.
@@ -92,7 +95,7 @@ class CarInterface(CarInterfaceBase):
         # Too high: twitchy hyper lane centering, oversteering
         # Too low: sloppy, all over lane
         # Just right: crisp lane centering
-    elif int(params.get("LateralControlMethod", encoding="utf8")) == 2:
+    elif lat_control_method == 2:
       ret.lateralTuning.init('lqr')
       ret.lateralTuning.lqr.scale = Scale
       ret.lateralTuning.lqr.ki = LqrKi
@@ -257,7 +260,7 @@ class CarInterface(CarInterfaceBase):
     ret.enableCruise = not ret.radarOffCan
     
     # set safety_hyundai_community only for non-SCC, MDPS harrness or SCC harrness cars or cars that have unknown issue
-    if ret.radarOffCan or ret.mdpsBus == 1 or ret.openpilotLongitudinalControl or ret.sccBus == 1 or Params().get_bool('MadModeEnabled'):
+    if ret.radarOffCan or ret.mdpsBus == 1 or ret.openpilotLongitudinalControl or ret.sccBus == 1 or params.get_bool("MadModeEnabled"):
       ret.safetyModel = car.CarParams.SafetyModel.hyundaiCommunity
     return ret
 

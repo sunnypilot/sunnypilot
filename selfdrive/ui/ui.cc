@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <string>
+#include <string>  //opkr
 
 #include <cmath>
 
@@ -369,7 +369,7 @@ static void update_status(UIState *s) {
       s->scene.recording_count = std::stoi(Params().get("RecordingCount"));
       s->scene.recording_quality = std::stoi(Params().get("RecordingQuality"));
       s->scene.speed_lim_off = std::stoi(Params().get("OpkrSpeedLimitOffset"));
-      s->scene.monitoring_mode = std::stoi(Params().get("OpkrMonitoringMode"));
+      s->scene.monitoring_mode = Params().getBool("OpkrMonitoringMode");
       s->scene.scr.autoScreenOff = std::stoi(Params().get("OpkrAutoScreenOff"));
       s->scene.scr.brightness = std::stoi(Params().get("OpkrUIBrightness"));
       s->scene.scr.nVolumeBoost = std::stoi(Params().get("OpkrUIVolumeBoost"));

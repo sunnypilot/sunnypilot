@@ -13,6 +13,7 @@ from common.numpy_fast import clip
 from selfdrive.locationd.models.car_kf import CarKalman, ObservationKind, States
 from selfdrive.locationd.models.constants import GENERATED_DIR
 from selfdrive.swaglog import cloudlog
+from decimal import Decimal
 
 
 MAX_ANGLE_OFFSET_DELTA = 20 * DT_MDL  # Max 20 deg/s
@@ -122,7 +123,7 @@ def main(sm=None, pm=None):
   # When driving in wet conditions the stiffness can go down, and then be too low on the next drive
   # Without a way to detect this we have to reset the stiffness every drive
   #params['stiffnessFactor'] = 1.0
-  params['stiffnessFactor'] = float(int(Params().get("TireStiffnessFactorAdj")) * 0.01)
+  params['stiffnessFactor'] = float(Decimal(Params().get("TireStiffnessFactorAdj", encoding="utf8")) * Decimal('0.01'))
 
   learner = ParamsLearner(CP, params['steerRatio'], params['stiffnessFactor'], math.radians(params['angleOffsetAverageDeg']))
 

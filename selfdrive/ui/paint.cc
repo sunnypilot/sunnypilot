@@ -86,9 +86,7 @@ static void ui_draw_circle_image(const UIState *s, int center_x, int center_y, i
 static void ui_draw_circle_image(const UIState *s, int center_x, int center_y, int radius, const char *image, bool active) {
   float bg_alpha = active ? 0.3f : 0.1f;
   float img_alpha = active ? 1.0f : 0.15f;
-  if (s->scene.monitoring_mode == 0) {
-    ui_draw_circle_image(s, center_x, center_y, radius, image, nvgRGBA(0, 0, 0, (255 * bg_alpha)), img_alpha);
-  } else if (s->scene.monitoring_mode == 1) {
+  if (s->scene.monitoring_mode) {
     ui_draw_circle_image(s, center_x, center_y, radius, image, nvgRGBA(10, 120, 20, (255 * bg_alpha * 1.1)), img_alpha);
   } else {
     ui_draw_circle_image(s, center_x, center_y, radius, image, nvgRGBA(0, 0, 0, (255 * bg_alpha)), img_alpha);

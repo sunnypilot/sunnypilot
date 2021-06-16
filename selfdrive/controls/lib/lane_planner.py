@@ -4,12 +4,13 @@ from selfdrive.hardware import EON, TICI
 from selfdrive.swaglog import cloudlog
 from cereal import car, log
 from common.params import Params
+from decimal import Decimal
 
 TRAJECTORY_SIZE = 33
 # camera offset is meters from center car to camera
 if EON:
-  CAMERA_OFFSET = float(int(Params().get("CameraOffsetAdj", encoding="utf8")) * 0.001)  # m from center car to camera
-  CAMERA_OFFSET_A = float((int(Params().get("CameraOffsetAdj", encoding="utf8")) * 0.001) - 0.1)
+  CAMERA_OFFSET = float(Decimal(Params().get("CameraOffsetAdj", encoding="utf8")) * Decimal('0.001'))  # m from center car to camera
+  CAMERA_OFFSET_A = float((Decimal(Params().get("CameraOffsetAdj", encoding="utf8")) * Decimal('0.001')) - Decimal('0.1'))
   PATH_OFFSET = 0.0
 elif TICI:
   CAMERA_OFFSET = -0.04
@@ -42,6 +43,9 @@ class LanePlanner:
     self.camera_offset = -CAMERA_OFFSET if wide_camera else CAMERA_OFFSET
     self.path_offset = -PATH_OFFSET if wide_camera else PATH_OFFSET
 
+    self.left_curv_offset = int(Params().get("LeftCurvOffsetAdj", encoding="utf8"))
+    self.right_curv_offset = int(Params().get("RightCurvOffsetAdj", encoding="utf8"))
+
   def parse_model(self, md, sm, v_ego):
     curvature = sm['controlsState'].curvature
     mode_select = sm['carState'].cruiseState.modeSel
@@ -55,25 +59,23 @@ class LanePlanner:
     else:
       lean_offset = 0
 
-    if (int(Params().get("LeftCurvOffsetAdj", encoding="utf8")) != 0 or int(Params().get("RightCurvOffsetAdj", encoding="utf8")) != 0) and v_ego > 8:
-      leftCurvOffsetAdj = int(Params().get("LeftCurvOffsetAdj", encoding="utf8")) if Params().get("LeftCurvOffsetAdj", encoding="utf8") is not None else 0
-      rightCurvOffsetAdj = int(Params().get("RightCurvOffsetAdj", encoding="utf8")) if Params().get("RightCurvOffsetAdj", encoding="utf8") is not None else 0
-      if curvature > 0.0008 and leftCurvOffsetAdj < 0 and lane_differ >= 0: # left curve
+    if (self.left_curv_offset != 0 or self.left_curv_offset != 0) and v_ego > 8:
+      if curvature > 0.0008 and self.left_curv_offset < 0 and lane_differ >= 0: # left curve
         if lane_differ > 0.6:
           lane_differ = 0.6          
-        lean_offset = +(abs(leftCurvOffsetAdj) * lane_differ * 0.05) # move to left
-      elif curvature > 0.0008 and leftCurvOffsetAdj > 0 and lane_differ <= 0:
+        lean_offset = +round(abs(self.left_curv_offset) * lane_differ * 0.05, 3) # move to left
+      elif curvature > 0.0008 and self.left_curv_offset > 0 and lane_differ <= 0:
         if lane_differ > 0.6:
           lane_differ = 0.6
-        lean_offset = -(abs(leftCurvOffsetAdj) * lane_differ * 0.05) # move to right
-      elif curvature < -0.0008 and rightCurvOffsetAdj < 0 and lane_differ >= 0: # right curve
+        lean_offset = -round(abs(self.left_curv_offset) * lane_differ * 0.05, 3) # move to right
+      elif curvature < -0.0008 and self.right_curv_offset < 0 and lane_differ >= 0: # right curve
         if lane_differ > 0.6:
           lane_differ = 0.6    
-        lean_offset = +(abs(rightCurvOffsetAdj) * lane_differ * 0.05) # move to left
-      elif curvature < -0.0008 and rightCurvOffsetAdj > 0 and lane_differ <= 0:
+        lean_offset = +round(abs(self.right_curv_offset) * lane_differ * 0.05, 3) # move to left
+      elif curvature < -0.0008 and self.right_curv_offset > 0 and lane_differ <= 0:
         if lane_differ > 0.6:
           lane_differ = 0.6    
-        lean_offset = -(abs(rightCurvOffsetAdj) * lane_differ * 0.05) # move to right
+        lean_offset = -round(abs(self.right_curv_offset) * lane_differ * 0.05, 3) # move to right
       else:
         lean_offset = 0
 

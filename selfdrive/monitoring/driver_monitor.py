@@ -7,11 +7,12 @@ from common.filter_simple import FirstOrderFilter
 from common.stat_live import RunningStatFilter
 
 from common.params import Params
+from decimal import Decimal
 
 EnableDriverMonitoring = Params().get_bool("OpkrEnableDriverMonitoring")
-MonitorEyesThreshold = int(Params().get("OpkrMonitorEyesThreshold", encoding="utf8")) * 0.01
-NormalEyesThreshold = int(Params().get("OpkrMonitorNormalEyesThreshold", encoding="utf8")) * 0.01
-BlinkThreshold = int(Params().get("OpkrMonitorBlinkThreshold", encoding="utf8")) * 0.01
+MonitorEyesThreshold = float(Decimal(Params().get("OpkrMonitorEyesThreshold", encoding="utf8")) * Decimal('0.01'))
+NormalEyesThreshold = float(Decimal(Params().get("OpkrMonitorNormalEyesThreshold", encoding="utf8")) * Decimal('0.01'))
+BlinkThreshold = float(Decimal(Params().get("OpkrMonitorBlinkThreshold", encoding="utf8")) * Decimal('0.01'))
 EventName = car.CarEvent.EventName
 
 # ******************************************************************************************
@@ -128,7 +129,7 @@ class DriverStatus():
     self.hi_std_alert_enabled = True
     self.threshold_prompt = _DISTRACTED_PROMPT_TIME_TILL_TERMINAL / _DISTRACTED_TIME
 
-    self.monitoring_mode = 0
+    self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
     self.second1 = 0.0
     self.second2 = 0.0
     self.second3 = 0.0
@@ -139,13 +140,13 @@ class DriverStatus():
   def _set_timers(self, active_monitoring):
     self.second1 += DT_DMON
     if int(self.second1) % 2 == 0:
-      self.monitoring_mode = int(Params().get("OpkrMonitoringMode", encoding="utf8")) if Params().get("OpkrMonitoringMode", encoding="utf8") is not None else 0
+      self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second1 = 0.0
     if self.monitoring_mode == 1:
       self.threshold_prompt = 7. / 9.
     if self.active_monitoring_mode and self.awareness <= self.threshold_prompt:
       if active_monitoring:
-        if self.monitoring_mode == 1:
+        if self.monitoring_mode:
           self.step_change = DT_DMON / 9.
         else:
           self.step_change = DT_DMON / _DISTRACTED_TIME
@@ -161,7 +162,7 @@ class DriverStatus():
         self.awareness_passive = self.awareness
         self.awareness = self.awareness_active
 
-      if self.monitoring_mode == 1:
+      if self.monitoring_mode:
         self.threshold_pre = _DISTRACTED_PRE_TIME_TILL_TERMINAL / 9.
         self.threshold_prompt = 7. / 9.
         self.step_change = DT_DMON / 9.
@@ -184,7 +185,7 @@ class DriverStatus():
   def _is_driver_distracted(self, pose, blink):
     self.second2 += DT_DMON
     if int(self.second2) % 2 == 0:
-      self.monitoring_mode = int(Params().get("OpkrMonitoringMode", encoding="utf8")) if Params().get("OpkrMonitoringMode", encoding="utf8") is not None else 0
+      self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second2 = 0.0
     if not self.pose_calibrated:
       pitch_error = pose.pitch - _PITCH_NATURAL_OFFSET
@@ -199,7 +200,7 @@ class DriverStatus():
     pitch_error *= _PITCH_WEIGHT
     pose_metric = sqrt(yaw_error**2 + pitch_error**2)
 
-    if self.monitoring_mode == 1:
+    if self.monitoring_mode:
       if pose_metric > _METRIC_THRESHOLD*pose.cfactor:
         return DistractedType.BAD_POSE
       elif (blink.left_blink + blink.right_blink)*0.5 > BlinkThreshold*blink.cfactor:
@@ -217,11 +218,11 @@ class DriverStatus():
   def set_policy(self, model_data):
     self.second3 += DT_DMON
     if int(self.second3) % 2 == 0:
-      self.monitoring_mode = int(Params().get("OpkrMonitoringMode", encoding="utf8")) if Params().get("OpkrMonitoringMode", encoding="utf8") is not None else 0
+      self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second3 = 0.0
     ep = min(model_data.meta.engagedProb, 0.8) / 0.8
     self.pose.cfactor = interp(ep, [0, 0.5, 1], [_METRIC_THRESHOLD_STRICT, _METRIC_THRESHOLD, _METRIC_THRESHOLD_SLACK])/_METRIC_THRESHOLD
-    if self.monitoring_mode == 1:
+    if self.monitoring_mode:
       self.blink.cfactor = interp(ep, [0, 0.5, 1], [BlinkThreshold, BlinkThreshold, min(1.0, BlinkThreshold+0.15)])/BlinkThreshold
     else:
       self.blink.cfactor = interp(ep, [0, 0.5, 1], [_BLINK_THRESHOLD_STRICT, _BLINK_THRESHOLD, _BLINK_THRESHOLD_SLACK])/_BLINK_THRESHOLD
@@ -229,7 +230,7 @@ class DriverStatus():
   def get_pose(self, driver_state, cal_rpy, car_speed, op_engaged):
     self.second4 += DT_DMON
     if int(self.second4) % 2 == 0:
-      self.monitoring_mode = int(Params().get("OpkrMonitoringMode", encoding="utf8")) if Params().get("OpkrMonitoringMode", encoding="utf8") is not None else 0
+      self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second4 = 0.0
     if not all(len(x) > 0 for x in [driver_state.faceOrientation, driver_state.facePosition,
                                     driver_state.faceOrientationStd, driver_state.facePositionStd]):
@@ -244,7 +245,7 @@ class DriverStatus():
     model_std_max = max(self.pose.pitch_std, self.pose.yaw_std)
     self.pose.low_std = model_std_max < _POSESTD_THRESHOLD and not self.face_partial
 
-    if self.monitoring_mode == 1:
+    if self.monitoring_mode:
       self.blink.left_blink = driver_state.leftBlinkProb * (driver_state.leftEyeProb > NormalEyesThreshold) * (driver_state.sunglassesProb < _SG_THRESHOLD)
       self.blink.right_blink = driver_state.rightBlinkProb * (driver_state.rightEyeProb > NormalEyesThreshold) * (driver_state.sunglassesProb < _SG_THRESHOLD)
       self.driver_distracted = (self._is_driver_distracted(self.pose, self.blink) > 0 and

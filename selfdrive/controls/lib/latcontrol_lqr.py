@@ -6,6 +6,7 @@ from common.numpy_fast import clip
 from common.realtime import DT_CTRL
 from cereal import log
 from common.params import Params
+from decimal import Decimal
 
 class LatControlLQR():
   def __init__(self, CP):
@@ -29,6 +30,8 @@ class LatControlLQR():
     self.sat_count_rate = 1.0 * DT_CTRL
     self.sat_limit = CP.steerLimitTimer
 
+    self.live_tune_enabled = self.params.get_bool("OpkrLiveTune")
+
     self.reset()
 
   def reset(self):
@@ -38,9 +41,9 @@ class LatControlLQR():
   def live_tune(self, CP):
     self.mpc_frame += 1
     if self.mpc_frame % 300 == 0:
-      self.scale_ = float(int(self.params.get("Scale", encoding="utf8")) * 1.0)
-      self.ki_ = float(int(self.params.get("LqrKi", encoding="utf8")) * 0.001)
-      self.dc_gain_ = float(int(self.params.get("DcGain", encoding="utf8")) * 0.0001)
+      self.scale_ = float(Decimal(self.params.get("Scale", encoding="utf8")) * Decimal('1.0'))
+      self.ki_ = float(Decimal(self.params.get("LqrKi", encoding="utf8")) * Decimal('0.001'))
+      self.dc_gain_ = float(Decimal(self.params.get("DcGain", encoding="utf8")) * Decimal('0.0001'))
       self.scale = self.scale_
       self.ki = self.ki_
       self.dc_gain = self.dc_gain_
@@ -60,7 +63,7 @@ class LatControlLQR():
     return self.sat_count > self.sat_limit
 
   def update(self, active, CS, CP, VM, params, lat_plan):
-    if self.params.get_bool("OpkrLiveTune"):
+    if self.live_tune_enabled:
       self.live_tune(CP)
 
     lqr_log = log.ControlsState.LateralLQRState.new_message()
