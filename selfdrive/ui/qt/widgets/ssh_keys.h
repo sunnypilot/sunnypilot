@@ -407,6 +407,18 @@ public:
   }
 };
 
+class RunNaviOnBootToggle : public ToggleControl {
+  Q_OBJECT
+
+public:
+  RunNaviOnBootToggle() : ToggleControl("부팅 후 네비 자동 실행", "부팅후 네비게이션(티맵)을 자동 실행합니다.", "../assets/offroad/icon_shell.png", Params().getBool("OpkrRunNaviOnBoot")) {
+    QObject::connect(this, &RunNaviOnBootToggle::toggleFlipped, [=](int state) {
+      char value = state ? '1' : '0';
+      Params().put("OpkrRunNaviOnBoot", &value, 1);
+    });
+  }
+};
+
 // 오픈파일럿 미리보기
 class OpenpilotView : public AbstractControl {
   Q_OBJECT

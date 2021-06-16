@@ -135,6 +135,7 @@ def manager_init():
     ("OpkrFanSpeedGain", "0"),
     ("WhitePandaSupport", "0"),
     ("SteerWarningFix", "0"),
+    ("OpkrRunNaviOnBoot", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

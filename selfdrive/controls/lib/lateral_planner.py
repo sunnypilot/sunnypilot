@@ -60,6 +60,8 @@ class LateralPlanner():
     self.laneless_mode = 0
     self.laneless_mode_status = False
     self.laneless_mode_status_buffer = False
+    self.laneless_mode_at_stopping = False
+    self.laneless_mode_at_stopping_timer = 0
 
     self.lane_change_delay = int(Params().get("OpkrAutoLaneChangeDelay", encoding="utf8"))
     self.lane_change_auto_delay = 0.0 if self.lane_change_delay == 0 else 0.2 if self.lane_change_delay == 1 else 0.5 if self.lane_change_delay == 2 \
@@ -116,12 +118,11 @@ class LateralPlanner():
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
     try:
-      lateral_control_method = int(sm['controlsState'].lateralControlMethod)
-      if lateral_control_method == 0:
+      if CP.lateralTuning.which() == 'pid':
         self.output_scale = sm['controlsState'].lateralControlState.pidState.output
-      elif lateral_control_method == 1:
+      elif CP.lateralTuning.which() == 'indi':
         self.output_scale = sm['controlsState'].lateralControlState.indiState.output
-      elif lateral_control_method == 2:
+      elif CP.lateralTuning.which() == 'lqr':
         self.output_scale = sm['controlsState'].lateralControlState.lqrState.output
     except:
       pass
@@ -211,6 +212,14 @@ class LateralPlanner():
       self.laneless_mode_status = False
     elif self.laneless_mode == 0:
       self.laneless_mode_status = False
+    elif sm['radarState'].leadOne.dRel < 25 and (sm['radarState'].leadOne.vRel < 0 or (sm['radarState'].leadOne.vRel >= 0 and v_ego < 5)) and \
+     (abs(sm['controlsState'].steeringAngleDesiredDeg) - abs(sm['carState'].steeringAngleDeg)) > 2 and self.lane_change_state == LaneChangeState.off:
+      self.laneless_mode_status = True
+      self.laneless_mode_at_stopping = True
+      self.laneless_mode_at_stopping_timer = 60
+    elif self.laneless_mode_at_stopping and (v_ego < 0.5 or self.laneless_mode_at_stopping_timer <= 0):
+      self.laneless_mode_status = False
+      self.laneless_mode_at_stopping = False
     elif self.laneless_mode == 1:
       self.laneless_mode_status = True
     elif self.laneless_mode == 2 and self.lane_change_state == LaneChangeState.off:
@@ -225,7 +234,10 @@ class LateralPlanner():
     else:
       self.laneless_mode_status = False
       self.laneless_mode_status_buffer = False
-    
+
+    if self.laneless_mode_at_stopping_timer > 0:
+      self.laneless_mode_at_stopping_timer -= 1
+
     if not self.laneless_mode_status:
       d_path_xyz = self.LP.get_d_path(v_ego, self.t_idxs, self.path_xyz)
       self.libmpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, CP.steerRateCost)

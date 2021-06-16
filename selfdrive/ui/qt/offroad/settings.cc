@@ -523,6 +523,7 @@ QWidget * user_panel(QWidget * parent) {
   layout->addWidget(new MonitorEyesThreshold());
   layout->addWidget(new NormalEyesThreshold());
   layout->addWidget(new BlinkThreshold());
+  layout->addWidget(new RunNaviOnBootToggle());
 
   layout->addWidget(horizontal_line());
   layout->addWidget(new LabelControl("주행설정", ""));
