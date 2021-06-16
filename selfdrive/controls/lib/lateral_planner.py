@@ -60,6 +60,8 @@ class LateralPlanner():
     self.laneless_mode = 0
     self.laneless_mode_status = False
     self.laneless_mode_status_buffer = False
+    self.laneless_mode_at_stopping = False
+    self.laneless_mode_at_stopping_timer = 0
 
     self.lane_change_delay = int(Params().get("OpkrAutoLaneChangeDelay", encoding="utf8"))
     self.lane_change_auto_delay = 0.0 if self.lane_change_delay == 0 else 0.2 if self.lane_change_delay == 1 else 0.5 if self.lane_change_delay == 2 \
@@ -116,12 +118,11 @@ class LateralPlanner():
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
     try:
-      lateral_control_method = int(sm['controlsState'].lateralControlMethod)
-      if lateral_control_method == 0:
+      if CP.lateralTuning.which() == 'pid':
         self.output_scale = sm['controlsState'].lateralControlState.pidState.output
-      elif lateral_control_method == 1:
+      elif CP.lateralTuning.which() == 'indi':
         self.output_scale = sm['controlsState'].lateralControlState.indiState.output
-      elif lateral_control_method == 2:
+      elif CP.lateralTuning.which() == 'lqr':
         self.output_scale = sm['controlsState'].lateralControlState.lqrState.output
     except:
       pass
@@ -269,6 +270,8 @@ class LateralPlanner():
 
     self.desire = DESIRES[self.lane_change_direction][self.lane_change_state]
 
+    self.steer_rate_cost = interp(v_ego, [1.0, 8.0, 15.0], [1.0, 0.8, CP.steerRateCost])    
+
     # Turn off lanes during lane change
     if self.desire == log.LateralPlan.Desire.laneChangeRight or self.desire == log.LateralPlan.Desire.laneChangeLeft:
       self.LP.lll_prob *= self.lane_change_ll_prob
@@ -277,6 +280,14 @@ class LateralPlanner():
       self.laneless_mode_status = False
     elif self.laneless_mode == 0:
       self.laneless_mode_status = False
+    elif sm['radarState'].leadOne.dRel < 25 and (sm['radarState'].leadOne.vRel < 0 or (sm['radarState'].leadOne.vRel >= 0 and v_ego < 5)) and \
+     (abs(sm['controlsState'].steeringAngleDesiredDeg) - abs(sm['carState'].steeringAngleDeg)) > 2 and self.lane_change_state == LaneChangeState.off:
+      self.laneless_mode_status = True
+      self.laneless_mode_at_stopping = True
+      self.laneless_mode_at_stopping_timer = 60
+    elif self.laneless_mode_at_stopping and (v_ego < 0.5 or self.laneless_mode_at_stopping_timer <= 0):
+      self.laneless_mode_status = False
+      self.laneless_mode_at_stopping = False
     elif self.laneless_mode == 1:
       self.laneless_mode_status = True
     elif self.laneless_mode == 2 and self.lane_change_state == LaneChangeState.off:
@@ -291,16 +302,19 @@ class LateralPlanner():
     else:
       self.laneless_mode_status = False
       self.laneless_mode_status_buffer = False
-    
+
+    if self.laneless_mode_at_stopping_timer > 0:
+      self.laneless_mode_at_stopping_timer -= 1
+
     if not self.laneless_mode_status:
       d_path_xyz = self.LP.get_d_path(v_ego, self.t_idxs, self.path_xyz)
-      self.libmpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, CP.steerRateCost)
+      self.libmpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, self.steer_rate_cost)
     else:
       d_path_xyz = self.path_xyz
       path_cost = np.clip(abs(self.path_xyz[0,1]/self.path_xyz_stds[0,1]), 0.5, 5.0) * MPC_COST_LAT.PATH
       # Heading cost is useful at low speed, otherwise end of plan can be off-heading
-      heading_cost = interp(v_ego, [5.0, 10.0], [MPC_COST_LAT.HEADING, 0.0])
-      self.libmpc.set_weights(path_cost, heading_cost, CP.steerRateCost)
+      heading_cost = interp(v_ego, [5.0, 10.0], [MPC_COST_LAT.HEADING*3, 0.0])
+      self.libmpc.set_weights(path_cost, heading_cost, self.steer_rate_cost)
     y_pts = np.interp(v_ego * self.t_idxs[:MPC_N + 1], np.linalg.norm(d_path_xyz, axis=1), d_path_xyz[:,1])
     heading_pts = np.interp(v_ego * self.t_idxs[:MPC_N + 1], np.linalg.norm(self.path_xyz, axis=1), self.plan_yaw)
     self.y_pts = y_pts
