@@ -112,7 +112,7 @@ class LateralPlanner():
     if int(self.second) % 2 == 0:
       self.use_lanelines = not Params().get_bool("EndToEndToggle")
       self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
-      self.second = 0
+      self.second = 0.0
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
     self.output_scale = 0.0 + float(sm['controlsState'].lateralControlState.pidState.output + \
