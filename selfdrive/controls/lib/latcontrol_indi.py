@@ -8,6 +8,7 @@ from selfdrive.car.toyota.values import CarControllerParams
 from selfdrive.car import apply_toyota_steer_torque_limits
 from selfdrive.controls.lib.drive_helpers import get_steer_max
 from common.params import Params
+from decimal import Decimal
 
 
 class LatControlINDI():
@@ -53,6 +54,8 @@ class LatControlINDI():
     self.sat_count_rate = 1.0 * DT_CTRL
     self.sat_limit = CP.steerLimitTimer
 
+    self.live_tune_enabled = self.params.get_bool("OpkrLiveTune")
+
     self.reset()
 
   def reset(self):
@@ -64,10 +67,10 @@ class LatControlINDI():
   def live_tune(self, CP):
     self.mpc_frame += 1
     if self.mpc_frame % 300 == 0:
-      self.outerLoopGain = float(int(self.params.get("OuterLoopGain", encoding="utf8")) * 0.1)
-      self.innerLoopGain = float(int(self.params.get("InnerLoopGain", encoding="utf8")) * 0.1)
-      self.timeConstant = float(int(self.params.get("TimeConstant", encoding="utf8")) * 0.1)
-      self.actuatorEffectiveness = float(int(self.params.get("ActuatorEffectiveness", encoding="utf8")) * 0.1)
+      self.outerLoopGain = float(Decimal(self.params.get("OuterLoopGain", encoding="utf8")) * Decimal('0.1'))
+      self.innerLoopGain = float(Decimal(self.params.get("InnerLoopGain", encoding="utf8")) * Decimal('0.1'))
+      self.timeConstant = float(Decimal(self.params.get("TimeConstant", encoding="utf8")) * Decimal('0.1'))
+      self.actuatorEffectiveness = float(Decimal(self.params.get("ActuatorEffectiveness", encoding="utf8")) * Decimal('0.1'))
       self.RC = interp(self.speed, [0., 9.], [2.0, self.timeConstant]) 
       self.G = interp(self.speed, [0., 9.], [3.0, self.actuatorEffectiveness])
       self.outer_loop_gain = interp(self.speed, [0., 9.], [1.5, self.outerLoopGain])
@@ -95,7 +98,7 @@ class LatControlINDI():
     self.outer_loop_gain = interp(self.speed, self._outer_loop_gain[0], self._outer_loop_gain[1])
     self.inner_loop_gain = interp(self.speed, self._inner_loop_gain[0], self._inner_loop_gain[1])
 
-    if self.params.get_bool("OpkrLiveTune"):
+    if self.live_tune_enabled:
       self.live_tune(CP)
 
     # Update Kalman filter

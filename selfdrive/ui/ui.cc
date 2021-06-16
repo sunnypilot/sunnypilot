@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <string>
+#include <string>  //opkr
 
 #include <cmath>
 
@@ -157,7 +157,13 @@ static void update_state(UIState *s) {
   if (scene.started && sm.updated("controlsState")) {
     scene.controls_state = sm["controlsState"].getControlsState();
     scene.lateralControlMethod = scene.controls_state.getLateralControlMethod();
-    scene.output_scale = 0.0 + scene.controls_state.getLateralControlState().getPidState().getOutput() + scene.controls_state.getLateralControlState().getIndiState().getOutput() + scene.controls_state.getLateralControlState().getLqrState().getOutput();
+    if (scene.lateralControlMethod == 0) {
+      scene.output_scale = scene.controls_state.getLateralControlState().getPidState().getOutput();
+    } else if (scene.lateralControlMethod == 1) {
+      scene.output_scale = scene.controls_state.getLateralControlState().getIndiState().getOutput();
+    } else if (scene.lateralControlMethod == 2) {
+      scene.output_scale = scene.controls_state.getLateralControlState().getLqrState().getOutput();
+    }
     scene.angleSteersDes = scene.controls_state.getSteeringAngleDesiredDeg();
 
     scene.alertTextMsg1 = scene.controls_state.getAlertTextMsg1(); //debug1
@@ -378,7 +384,7 @@ static void update_status(UIState *s) {
       s->scene.recording_count = std::stoi(Params().get("RecordingCount"));
       s->scene.recording_quality = std::stoi(Params().get("RecordingQuality"));
       s->scene.speed_lim_off = std::stoi(Params().get("OpkrSpeedLimitOffset"));
-      s->scene.monitoring_mode = std::stoi(Params().get("OpkrMonitoringMode"));
+      s->scene.monitoring_mode = Params().getBool("OpkrMonitoringMode");
       s->scene.scr.autoScreenOff = std::stoi(Params().get("OpkrAutoScreenOff"));
       s->scene.scr.brightness = std::stoi(Params().get("OpkrUIBrightness"));
       s->scene.scr.nVolumeBoost = std::stoi(Params().get("OpkrUIVolumeBoost"));

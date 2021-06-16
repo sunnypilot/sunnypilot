@@ -117,14 +117,11 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
   }
   // Monitoring mode
   if (QUIState::ui_state.scene.started && !sidebar->isVisible() && !QUIState::ui_state.scene.map_on_top && monitoring_btn.ptInRect(e->x(), e->y())) {
-    QUIState::ui_state.scene.monitoring_mode = QUIState::ui_state.scene.monitoring_mode + 1;
-    if (QUIState::ui_state.scene.monitoring_mode > 1) {
-      QUIState::ui_state.scene.monitoring_mode = 0;
-    }
-    if (QUIState::ui_state.scene.monitoring_mode == 0) {
-      Params().put("OpkrMonitoringMode", "0", 1);
-    } else if (QUIState::ui_state.scene.monitoring_mode == 1) {
+    QUIState::ui_state.scene.monitoring_mode = !QUIState::ui_state.scene.monitoring_mode;
+    if (QUIState::ui_state.scene.monitoring_mode) {
       Params().put("OpkrMonitoringMode", "1", 1);
+    } else {
+      Params().put("OpkrMonitoringMode", "0", 1);
     }
     return;
   }

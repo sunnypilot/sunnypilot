@@ -126,6 +126,8 @@ class Planner():
     self.target_speed_map_sign = False
     self.map_sign = 0.0
     self.vego = 0
+    self.second = 0.0
+    self.map_enabled = False
 
   def choose_solution(self, v_cruise_setpoint, enabled, model_enabled):
     possible_futures = [self.mpc1.v_mpc_future, self.mpc2.v_mpc_future, v_cruise_setpoint]
@@ -183,7 +185,11 @@ class Planner():
     self.v_acc_start = self.v_acc_next
     self.a_acc_start = self.a_acc_next
 
-    if self.params.get_bool("OpkrMapEnable"):
+    self.second += 0.25
+    if int(self.second) % 2 == 0:
+      self.map_enabled = self.params.get_bool("OpkrMapEnable")
+      self.second = 0.0
+    if self.map_enabled:
       self.target_speed_map_counter += 1
       if self.target_speed_map_counter >= (50+self.target_speed_map_counter1) and self.target_speed_map_counter_check == False:
         self.target_speed_map_counter_check = True

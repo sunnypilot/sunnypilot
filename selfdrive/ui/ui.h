@@ -160,7 +160,7 @@ typedef struct UIScene {
   int recording_quality;
   float steerMax_V;
   int speed_lim_off;
-  int monitoring_mode;
+  bool monitoring_mode;
   int setbtn_count;
   int homebtn_count;
   bool forceGearD;

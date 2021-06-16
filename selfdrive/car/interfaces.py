@@ -42,6 +42,8 @@ class CarInterfaceBase():
     
     self.user_disable = False
     self.user_disable_timer = 0
+    self.steer_wind_down_enabled = Params().get_bool("SteerWindDown")
+    self.steer_warning_fix_enabled = Params().get_bool("SteerWarningFix")
 
   @staticmethod
   def calc_accel_override(a_ego, a_target, v_ego, v_target):
@@ -141,9 +143,9 @@ class CarInterfaceBase():
 
     if cs_out.steerError:
       events.add(EventName.steerUnavailable)
-    elif cs_out.steerWarning and (cs_out.vEgo < 0.1 or cs_out.standstill) and not Params().get_bool("SteerWindDown") and cs_out.steeringAngleDeg < 90:
+    elif cs_out.steerWarning and (cs_out.vEgo < 0.1 or cs_out.standstill) and not self.steer_wind_down_enabled and cs_out.steeringAngleDeg < 90:
       events.add(EventName.isgActive)
-    elif cs_out.steerWarning and not Params().get_bool("SteerWindDown") and not Params().get_bool("SteerWarningFix"):
+    elif cs_out.steerWarning and not self.steer_wind_down_enabled and not self.steer_warning_fix_enabled:
       events.add(EventName.steerTempUnavailable)
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
