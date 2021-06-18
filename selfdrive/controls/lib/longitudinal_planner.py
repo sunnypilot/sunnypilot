@@ -371,6 +371,8 @@ class Planner():
     elif self.target_speed_map > 29 and self.target_speed_map_sign:
       longitudinalPlan.targetSpeedCamera = float(self.target_speed_map)
       longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
+    elif self.target_speed_map > 29 and self.target_speed_map_dist:
+      longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
     else:
       longitudinalPlan.targetSpeedCamera = 0
       longitudinalPlan.targetSpeedCameraDist = 0
