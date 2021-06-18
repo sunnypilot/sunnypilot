@@ -186,7 +186,7 @@ class Planner():
     self.a_acc_start = self.a_acc_next
 
     self.second += 0.25
-    if int(self.second) % 2 == 0:
+    if self.second > 1.0:
       self.map_enabled = self.params.get_bool("OpkrMapEnable")
       self.second = 0.0
     if self.map_enabled:
@@ -370,6 +370,8 @@ class Planner():
       self.target_speed_map_sign = True
     elif self.target_speed_map > 29 and self.target_speed_map_sign:
       longitudinalPlan.targetSpeedCamera = float(self.target_speed_map)
+      longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
+    elif self.target_speed_map > 29 and self.target_speed_map_dist < 600.:
       longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
     else:
       longitudinalPlan.targetSpeedCamera = 0

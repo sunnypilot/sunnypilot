@@ -269,7 +269,7 @@ class Controls:
       self.events.add(EventName.vehicleModelInvalid)
 
     self.second += DT_CTRL
-    if int(self.second) % 2 == 0:
+    if self.second > 1.0:
       self.map_enabled = Params().get_bool("OpkrMapEnable")
       self.second = 0.0
     if len(self.sm['radarState'].radarErrors):

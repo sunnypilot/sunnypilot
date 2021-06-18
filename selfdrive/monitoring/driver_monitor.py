@@ -139,7 +139,7 @@ class DriverStatus():
 
   def _set_timers(self, active_monitoring):
     self.second1 += DT_DMON
-    if int(self.second1) % 2 == 0:
+    if self.second1 > 1.0:
       self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second1 = 0.0
     if self.monitoring_mode == 1:
@@ -184,7 +184,7 @@ class DriverStatus():
 
   def _is_driver_distracted(self, pose, blink):
     self.second2 += DT_DMON
-    if int(self.second2) % 2 == 0:
+    if self.second2 > 1.0:
       self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second2 = 0.0
     if not self.pose_calibrated:
@@ -217,7 +217,7 @@ class DriverStatus():
 
   def set_policy(self, model_data):
     self.second3 += DT_DMON
-    if int(self.second3) % 2 == 0:
+    if self.second3 > 1.0:
       self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second3 = 0.0
     ep = min(model_data.meta.engagedProb, 0.8) / 0.8
@@ -229,7 +229,7 @@ class DriverStatus():
 
   def get_pose(self, driver_state, cal_rpy, car_speed, op_engaged):
     self.second4 += DT_DMON
-    if int(self.second4) % 2 == 0:
+    if self.second4 > 1.0:
       self.monitoring_mode = Params().get_bool("OpkrMonitoringMode")
       self.second4 = 0.0
     if not all(len(x) > 0 for x in [driver_state.faceOrientation, driver_state.facePosition,
