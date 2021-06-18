@@ -57,7 +57,7 @@ class LateralPlanner():
     self.solution_invalid_cnt = 0
 
     self.use_lanelines = False
-    self.laneless_mode = 0
+    self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
     self.laneless_mode_status = False
     self.laneless_mode_status_buffer = False
     self.laneless_mode_at_stopping = False
@@ -91,6 +91,7 @@ class LateralPlanner():
     self.steer_actuator_delay_to_send = 0.0
     
     self.output_scale = 0.0
+    self.second = 0.0
 
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
@@ -109,8 +110,11 @@ class LateralPlanner():
     self.safe_desired_curvature_rate = 0.0
 
   def update(self, sm, CP):
-    self.use_lanelines = not Params().get_bool("EndToEndToggle")
-    self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8")) if Params().get("LanelessMode", encoding="utf8") is not None else 0
+    self.second += DT_MDL
+    if self.second > 1.0:
+      self.use_lanelines = not Params().get_bool("EndToEndToggle")
+      self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
+      self.second = 0.0
     self.v_cruise_kph = sm['controlsState'].vCruise
     self.stand_still = sm['carState'].standStill
     try:
