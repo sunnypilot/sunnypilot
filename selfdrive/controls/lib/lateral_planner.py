@@ -56,7 +56,6 @@ class LateralPlanner():
     self.setup_mpc()
     self.solution_invalid_cnt = 0
 
-    self.use_lanelines = False
     self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
     self.laneless_mode_status = False
     self.laneless_mode_status_buffer = False
