@@ -795,6 +795,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   targetSpeedCamera @39 :Float32;
   targetSpeedCameraDist @40 :Float32;
   mapSign @41 :Float32;
+  onSpeedControl @42 :Bool;
 
   enum LongitudinalPlanSource {
     cruise @0;
