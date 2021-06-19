@@ -56,6 +56,7 @@ class SpdctrlRelaxed(SpdController):
             self.map_enable = True
         else:
             self.target_speed = 0
+            self.map_enable = False
 
         lead_set_speed = int(round(self.cruise_set_speed_kph))
         lead_wait_cmd = 250
