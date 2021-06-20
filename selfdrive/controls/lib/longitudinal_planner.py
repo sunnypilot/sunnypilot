@@ -363,18 +363,24 @@ class Planner():
     if self.target_speed_map > 29 and self.target_speed_map_dist < cam_distance_calc*consider_speed*self.vego*CV.MS_TO_KPH:
       longitudinalPlan.targetSpeedCamera = float(self.target_speed_map)
       longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
+      longitudinalPlan.onSpeedControl = True
       self.target_speed_map_sign = True
     elif self.target_speed_map > 29 and self.target_speed_map_dist >= cam_distance_calc*consider_speed*self.vego*CV.MS_TO_KPH and self.target_speed_map_block:
       longitudinalPlan.targetSpeedCamera = float(self.target_speed_map)
       longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
+      longitudinalPlan.onSpeedControl = True
       self.target_speed_map_sign = True
     elif self.target_speed_map > 29 and self.target_speed_map_sign:
       longitudinalPlan.targetSpeedCamera = float(self.target_speed_map)
       longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
+      longitudinalPlan.onSpeedControl = True
     elif self.target_speed_map > 29 and self.target_speed_map_dist < 600.:
+      longitudinalPlan.targetSpeedCamera = float(self.target_speed_map)
       longitudinalPlan.targetSpeedCameraDist = float(self.target_speed_map_dist)
+      longitudinalPlan.onSpeedControl = False
     else:
       longitudinalPlan.targetSpeedCamera = 0
       longitudinalPlan.targetSpeedCameraDist = 0
+      longitudinalPlan.onSpeedControl = False
 
     pm.send('longitudinalPlan', plan_send)
