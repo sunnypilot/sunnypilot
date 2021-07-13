@@ -17,7 +17,7 @@ InputDialog::InputDialog(const QString &prompt_text, QWidget *parent) : QDialog(
   label->setStyleSheet(R"(font-size: 75px; font-weight: 500;)");
   header_layout->addWidget(label, 1, Qt::AlignLeft);
 
-  QPushButton* cancel_btn = new QPushButton("취소");
+  QPushButton* cancel_btn = new QPushButton("Cancel");
   cancel_btn->setStyleSheet(R"(
     padding: 30px;
     padding-right: 45px;
@@ -163,12 +163,12 @@ ConfirmationDialog::ConfirmationDialog(const QString &prompt_text, const QString
 }
 
 bool ConfirmationDialog::alert(const QString &prompt_text, QWidget *parent) {
-  ConfirmationDialog d = ConfirmationDialog(prompt_text, "확인", "", parent);
+  ConfirmationDialog d = ConfirmationDialog(prompt_text, "Ok", "", parent);
   return d.exec();
 }
 
 bool ConfirmationDialog::confirm(const QString &prompt_text, QWidget *parent) {
-  ConfirmationDialog d = ConfirmationDialog(prompt_text, "확인", "취소", parent);
+  ConfirmationDialog d = ConfirmationDialog(prompt_text, "Ok", "Cancel", parent);
   return d.exec();
 }
 
