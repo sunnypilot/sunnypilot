@@ -561,7 +561,7 @@ QWidget * user_panel(QWidget * parent) {
   layout->addWidget(new WhitePandaSupportToggle());
   layout->addWidget(new SteerWarningFixToggle());
   const char* cal_ok = "cp -f /data/openpilot/selfdrive/assets/addon/param/CalibrationParams /data/params/d/";
-  layout->addWidget(new ButtonControl("Enable Force Calibration", "실행", "If the ion is initialized without setting the calibration for real driving, the calibration is forcibly set for the purpose of checking the engagement.",
+  layout->addWidget(new ButtonControl("Enable Force Calibration", "EXECUTE", "If the device is initialized without setting the calibration for real driving, the calibration is forcibly set for the purpose of checking the engagement.",
                                       [=]() { 
                                         if (ConfirmationDialog::confirm("Force calibration. It is for checking engagement, so please initialize it during actual driving.")){
                                           std::system(cal_ok);
@@ -575,7 +575,7 @@ QWidget * user_panel(QWidget * parent) {
   //layout->addWidget(new LabelControl(car_model, ""));
 
   layout->addWidget(horizontal_line());
-  layout->addWidget(new LabelControl("Panda Value", "주의要"));
+  layout->addWidget(new LabelControl("Panda Value", "CAUTION"));
   layout->addWidget(new MaxSteer());
   layout->addWidget(new MaxRTDelta());
   layout->addWidget(new MaxRateUp());

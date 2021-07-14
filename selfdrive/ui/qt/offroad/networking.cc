@@ -13,7 +13,7 @@
 Networking::Networking(QWidget* parent, bool show_advanced) : QWidget(parent), show_advanced(show_advanced){
   s = new QStackedLayout;
 
-  QLabel* warning = new QLabel("네트워크 관리자 비활성화됨!");
+  QLabel* warning = new QLabel("Network Manager Disabled!");
   warning->setAlignment(Qt::AlignCenter);
   warning->setStyleSheet(R"(font-size: 65px;)");
 
@@ -39,7 +39,7 @@ void Networking::attemptInitialization(){
   QVBoxLayout* vlayout = new QVBoxLayout;
 
   if (show_advanced) {
-    QPushButton* advancedSettings = new QPushButton("추가옵션");
+    QPushButton* advancedSettings = new QPushButton("More Options");
     advancedSettings->setStyleSheet("margin-right: 30px;");
     advancedSettings->setFixedSize(350, 100);
     connect(advancedSettings, &QPushButton::released, [=](){ s->setCurrentWidget(an); });
@@ -97,7 +97,7 @@ void Networking::connectToNetwork(Network n) {
   if (n.security_type == SecurityType::OPEN) {
     wifi->connect(n);
   } else if (n.security_type == SecurityType::WPA) {
-    QString pass = InputDialog::getText(n.ssid + "의 패스워드를 입력하세요", 8);
+    QString pass = InputDialog::getText(n.ssid + "Please enter your password", 8);
     wifi->connect(n, pass);
   }
 }
@@ -105,7 +105,7 @@ void Networking::connectToNetwork(Network n) {
 void Networking::wrongPassword(QString ssid) {
   for (Network n : wifi->seen_networks) {
     if (n.ssid == ssid) {
-      QString pass = InputDialog::getText(n.ssid + " 잘못된 패스워드 입니다", 8);
+      QString pass = InputDialog::getText(n.ssid + " Wrong password", 8);
       wifi->connect(n, pass);
       return;
     }
@@ -121,19 +121,19 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   vlayout->setSpacing(20);
 
   // Back button
-  QPushButton* back = new QPushButton("뒤로가기");
+  QPushButton* back = new QPushButton("BACK");
   back->setFixedSize(500, 100);
   connect(back, &QPushButton::released, [=](){emit backPress();});
   vlayout->addWidget(back, 0, Qt::AlignLeft);
 
   // Enable tethering layout
-  ToggleControl *tetheringToggle = new ToggleControl("테더링 활성화", "", "", wifi->tetheringEnabled());
+  ToggleControl *tetheringToggle = new ToggleControl("Enable Tethering", "", "", wifi->tetheringEnabled());
   vlayout->addWidget(tetheringToggle);
   QObject::connect(tetheringToggle, &ToggleControl::toggleFlipped, this, &AdvancedNetworking::toggleTethering);
   vlayout->addWidget(horizontal_line(), 0);
 
   // Change tethering password
-  editPasswordButton = new ButtonControl("테더링 패스워드", "변경", "", [=](){
+  editPasswordButton = new ButtonControl("Tethering Password", "CHANGE", "", [=](){
     QString pass = InputDialog::getText("Enter new tethering password", 8);
     if (pass.size()) {
       wifi->changeTetheringPassword(pass);
@@ -143,7 +143,7 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   vlayout->addWidget(horizontal_line(), 0);
 
   // IP address
-  ipLabel = new LabelControl("IP 주소", wifi->ipv4_address);
+  ipLabel = new LabelControl("IP Address", wifi->ipv4_address);
   vlayout->addWidget(ipLabel, 0);
   vlayout->addWidget(horizontal_line(), 0);
 
@@ -177,7 +177,7 @@ WifiUI::WifiUI(QWidget *parent, WifiManager* wifi) : QWidget(parent), wifi(wifi)
   vlayout = new QVBoxLayout;
 
   // Scan on startup
-  QLabel *scanning = new QLabel("네트워크 검색 중");
+  QLabel *scanning = new QLabel("Searching the network");
   scanning->setStyleSheet(R"(font-size: 65px;)");
   vlayout->addWidget(scanning, 0, Qt::AlignCenter);
   vlayout->setSpacing(25);
@@ -212,7 +212,7 @@ void WifiUI::refresh() {
     hlayout->addWidget(icon, 0, Qt::AlignRight);
 
     // connect button
-    QPushButton* btn = new QPushButton(network.security_type == SecurityType::UNSUPPORTED ? "연결불가" : (network.connected == ConnectedType::CONNECTED ? "연결됨" : (network.connected == ConnectedType::CONNECTING ? "연결중" : "연결")));
+    QPushButton* btn = new QPushButton(network.security_type == SecurityType::UNSUPPORTED ? "Unable to connect" : (network.connected == ConnectedType::CONNECTED ? "Connected" : (network.connected == ConnectedType::CONNECTING ? "Connecting" : "CONNECT")));
     btn->setDisabled(network.connected == ConnectedType::CONNECTED || network.connected == ConnectedType::CONNECTING || network.security_type == SecurityType::UNSUPPORTED);
     btn->setFixedWidth(350);
     hlayout->addWidget(btn, 0, Qt::AlignRight);
