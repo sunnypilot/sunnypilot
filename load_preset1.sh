@@ -7,7 +7,7 @@ export PYTHONPATH=/data/openpilot
 
 cd /data/openpilot
 
-/data/data/com.termux/files/usr/bin/cat /data/preset1 | while read line
+/data/data/com.termux/files/usr/bin/cat /data/openpilot/preset1 | while read line
 do
 ParamName=$(/data/data/com.termux/files/usr/bin/echo $line | /data/data/com.termux/files/usr/bin/applets/awk -F ':' '{print $1}')
 ParamValue=$(/data/data/com.termux/files/usr/bin/echo $line | /data/data/com.termux/files/usr/bin/applets/awk -F ':' '{print $2}')
