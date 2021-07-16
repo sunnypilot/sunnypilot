@@ -1895,7 +1895,7 @@ MaxSteer::MaxSteer() : AbstractControl("MAX_STEER", "Fix panda MAX_STEER value. 
   QObject::connect(&btnminus, &QPushButton::released, [=]() {
     auto str = QString::fromStdString(params.get("MaxSteer"));
     int value = str.toInt();
-    value = value - 2;
+    value = value - 1;
     if (value <= 384 ) {
       value = 384;
     }
@@ -1907,7 +1907,7 @@ MaxSteer::MaxSteer() : AbstractControl("MAX_STEER", "Fix panda MAX_STEER value. 
   QObject::connect(&btnplus, &QPushButton::released, [=]() {
     auto str = QString::fromStdString(params.get("MaxSteer"));
     int value = str.toInt();
-    value = value + 2;
+    value = value + 1;
     if (value >= 1000 ) {
       value = 1000;
     }
