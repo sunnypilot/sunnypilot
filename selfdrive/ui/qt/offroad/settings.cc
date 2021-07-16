@@ -692,7 +692,7 @@ void SettingsWindow::showEvent(QShowEvent *event) {
     {"Network", network_panel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Software", new SoftwarePanel()},
-    {"User Settings", user_panel(this)},
+    {"Developer", user_panel(this)},
     {"Tuning", tuning_panel(this)},
   };
 
