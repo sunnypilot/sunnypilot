@@ -74,7 +74,7 @@ def manager_init():
     ("SteerRatioAdj", "165"),
     ("SteerRatioMaxAdj", "175"),
     ("SteerActuatorDelayAdj", "0"),
-    ("SteerRateCostAdj", "4"),
+    ("SteerRateCostAdj", "40"),
     ("SteerLimitTimerAdj", "25"),
     ("TireStiffnessFactorAdj", "65"),
     ("SteerMaxBaseAdj", "300"),

@@ -30,7 +30,7 @@ CameraOffsetAdj:60
 SteerRatioAdj:165
 SteerRatioMaxAdj:165
 SteerActuatorDelayAdj:0
-SteerRateCostAdj:4
+SteerRateCostAdj:40
 SteerLimitTimerAdj:25
 TireStiffnessFactorAdj:65
 SteerMaxBaseAdj:300
