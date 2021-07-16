@@ -257,10 +257,10 @@ CarForceSet::CarForceSet() : AbstractControl("Force Vehicle Recognition", "If th
   hlayout->addWidget(&btnc);
 
   QObject::connect(&btnc, &QPushButton::released, [=]() {
-    if (btnc.text() == "설정") {
-      carname = InputDialog::getText("차량명은 이전메뉴 차량강제인식을 클릭하여 확인");
+    if (btnc.text() == "SET") {
+      carname = InputDialog::getText("Check the vehicle name by clicking on the previous menu");
       if (carname.length() > 0) {
-        btnc.setText("완료");
+        btnc.setText("DONE");
         btnc.setEnabled(false);
         params.put("CarModel", carname.toStdString());
         QProcess::execute("/data/openpilot/car_force_set.sh");
@@ -278,10 +278,10 @@ void CarForceSet::refreshc() {
   QString paramc = QString::fromStdString(params.get("CarModel"));
   if (paramc.length()) {
     //carname_label.setText(QString::fromStdString(params.get("CarModel")));
-    btnc.setText("제거");
+    btnc.setText("REMOVE");
   } else {
     //carname_label.setText("");
-    btnc.setText("설정");
+    btnc.setText("SET");
   }
   btnc.setEnabled(true);
 }
