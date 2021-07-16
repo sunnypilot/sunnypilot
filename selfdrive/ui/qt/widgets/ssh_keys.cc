@@ -206,7 +206,7 @@ CarRecognition::CarRecognition() : AbstractControl("Force Vehicle Recognition", 
   hlayout->addWidget(&btn);
 
   QObject::connect(&btn, &QPushButton::released, [=]() {
-    if (btn.text() == "Set" && carname.length()) {
+    if (btn.text() == "SET" && carname.length()) {
       params.put("CarModel", carname.toStdString());
       params.put("CarModelAbb", carname.toStdString());
       QProcess::execute("/data/openpilot/car_force_set.sh");
