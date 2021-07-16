@@ -2410,7 +2410,7 @@ SteerRateCost::SteerRateCost() : AbstractControl("SteerRateCost", "Adjust the St
 void SteerRateCost::refresh() {
   auto strs = QString::fromStdString(params.get("SteerRateCostAdj"));
   int valuei = strs.toInt();
-  float valuef = valuei * 0.01;
+  float valuef = valuei * 0.1;
   QString valuefs = QString::number(valuef);
   label.setText(QString::fromStdString(valuefs.toStdString()));
   btnminus.setText("－");
