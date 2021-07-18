@@ -27,8 +27,8 @@ PidKi:50
 PidKd:150
 PidKf:5
 CameraOffsetAdj:60
-SteerRatioAdj:155
-SteerRatioMaxAdj:175
+SteerRatioAdj:15500
+SteerRatioMaxAdj:17500
 SteerActuatorDelayAdj:10
 SteerRateCostAdj:50
 SteerLimitTimerAdj:40
