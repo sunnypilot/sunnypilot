@@ -83,7 +83,7 @@ def manager_init():
     ("SteerDeltaUpAdj", "3"),
     ("SteerDeltaDownBaseAdj", "7"),
     ("SteerDeltaDownAdj", "7"),
-    ("SteerMaxvAdj", "15"),
+    ("SteerMaxvAdj", "10"),
     ("OpkrBatteryChargingControl", "1"),
     ("OpkrBatteryChargingMin", "70"),
     ("OpkrBatteryChargingMax", "80"),
