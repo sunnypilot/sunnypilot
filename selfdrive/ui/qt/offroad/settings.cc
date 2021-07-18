@@ -380,8 +380,8 @@ void SoftwarePanel::updateLabels() {
         fs_watch->addPath(QString::fromStdString(params.getParamsPath()) + "/d/UpdateFailedCount");
         updateButton->setText("CHECKING");
         updateButton->setEnabled(false);
+        std::system(update_commit);
       }
-      std::system(update_commit);
       std::system("pkill -1 -f selfdrive.updated");
     }, "", this);
     layout()->addWidget(updateButton);
