@@ -372,6 +372,7 @@ void SoftwarePanel::updateLabels() {
     layout()->addWidget(lastUpdateTimeLbl);
     layout()->addWidget(horizontal_line());
 
+    const char* update_commit = "/data/openpilot/gitcommit.sh ''";
     updateButton = new ButtonControl("Check for Update", "CONFIRM", "", [=]() {
       Params params = Params();
       if (params.getBool("IsOffroad")) {
@@ -380,6 +381,7 @@ void SoftwarePanel::updateLabels() {
         updateButton->setText("CHECKING");
         updateButton->setEnabled(false);
       }
+      std::system(update_commit);
       std::system("pkill -1 -f selfdrive.updated");
     }, "", this);
     layout()->addWidget(updateButton);
