@@ -351,8 +351,6 @@ void SoftwarePanel::updateLabels() {
   QString branch = QString::fromStdString(params.get("GitBranch")).trimmed();
   QString lastUpdateTime = "";
 
-  const char* update_commit = "/data/openpilot/gitcommit.sh ''";
-  std::system(update_commit);
   std::string last_update_param = params.get("LastUpdateTime");
   if (!last_update_param.empty()){
     QDateTime lastUpdateDate = QDateTime::fromString(QString::fromStdString(last_update_param + "Z"), Qt::ISODate);
@@ -374,6 +372,7 @@ void SoftwarePanel::updateLabels() {
     layout()->addWidget(lastUpdateTimeLbl);
     layout()->addWidget(horizontal_line());
 
+    const char* update_commit = "/data/openpilot/gitcommit.sh ''";
     updateButton = new ButtonControl("Check for Update", "CONFIRM", "", [=]() {
       Params params = Params();
       if (params.getBool("IsOffroad")) {
@@ -381,6 +380,7 @@ void SoftwarePanel::updateLabels() {
         fs_watch->addPath(QString::fromStdString(params.getParamsPath()) + "/d/UpdateFailedCount");
         updateButton->setText("CHECKING");
         updateButton->setEnabled(false);
+        std::system(update_commit);
       }
       std::system("pkill -1 -f selfdrive.updated");
     }, "", this);
