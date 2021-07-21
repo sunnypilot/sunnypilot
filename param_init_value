@@ -25,11 +25,11 @@ IgnoreZone:1
 PidKp:25
 PidKi:50
 PidKd:150
-PidKf:5
+PidKf:7
 CameraOffsetAdj:60
 SteerRatioAdj:155000
 SteerRatioMaxAdj:175000
-SteerActuatorDelayAdj:10
+SteerActuatorDelayAdj:30
 SteerRateCostAdj:50
 SteerLimitTimerAdj:40
 TireStiffnessFactorAdj:65
