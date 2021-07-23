@@ -483,7 +483,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.preLaneChangeRight: {
     ET.WARNING: Alert(
-      "teer Right to Start Lane Change",
+      "Steer Right to Start Lane Change",
       "Monitor Other Vehicles",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .0, .1, .1, alert_rate=0.75),
