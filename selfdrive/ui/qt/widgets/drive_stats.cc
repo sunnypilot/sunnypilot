@@ -54,10 +54,10 @@ DriveStats::DriveStats(QWidget* parent) : QWidget(parent) {
   QGridLayout* gl = new QGridLayout(this);
   gl->setMargin(0);
 
-  gl->addWidget(new QLabel("Total Drive Stats"), 0, 0, 1, 3);
+  gl->addWidget(new QLabel("ALL TIME"), 0, 0, 1, 3);
   add_stats_layouts(gl, all_, 1, distance_unit);
 
-  gl->addWidget(new QLabel("PAST WEEK"), 6, 0, 1, 3);
+  gl->addWidget(new QLabel("LAST WEEK"), 6, 0, 1, 3);
   add_stats_layouts(gl, week_, 7, distance_unit);
 
   QString dongleId = QString::fromStdString(Params().get("DongleId"));
