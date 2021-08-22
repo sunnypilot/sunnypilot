@@ -21,12 +21,13 @@ Highlight Features
 
 ### Driving Enhancement
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
+* [**(WIP) NEW❗ Dynamic Lane Profile Change (DLPC)**](#dynamic-lane-profile-change-dlpc-wip) - dynamically switch lane profile base on lane recognition confidence
 
 Driving Enhancement
 ---
 
 ### NEW❗ Modified Assistive Driving Safety (MADS)
-The goal of this feature is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
+The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * openpilot ALC and Hyundai SCC/ACC can be engaged independently of each other
 * `LFA` button (only on newer HKG vehicles) or `CRUISE (MAIN)` button toggles openpilot ALC
 * `SET-` button enables Hyundai SCC/ACC
@@ -36,6 +37,10 @@ The goal of this feature is to enhance the user driving experience with modified
 * `GAS pedal` press will not disengage openpilot ALC or Hyundai SCC/ACC
 * `TURN SIGNALS` (`Left` or `Right`) will pause openpilot ALC if the vehicle speed is below the threshold for openpilot Automatic Lane Change
 * Event audible alerts are more relaxed to match Hyundai stock behavior
+
+### (WIP) NEW❗ Dynamic Lane Profile Change (DLPC)
+Dynamic Lane Profile Change (DLPC) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile Change allows openpilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
+
 
 Branch Definitions
 ---
