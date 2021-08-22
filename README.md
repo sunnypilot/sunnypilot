@@ -21,7 +21,7 @@ Highlight Features
 ---
 
 ### Driving Enhancement
-* [**NEW❗ Modified Assistive Driving Safety (MADS)**](NEW❗-modified-assistive-driving-safety-(mads)) - openpilot ALC and Hyundai SCC can be engaged independently of each other
+* [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
 
 Driving Enhancement
 ---
