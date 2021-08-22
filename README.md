@@ -21,7 +21,7 @@ Highlight Features
 
 ### Driving Enhancement
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
-* [**(WIP) NEW❗ Dynamic Lane Profile Change (DLPC)**](#dynamic-lane-profile-change-dlpc-wip) - dynamically switch lane profile base on lane recognition confidence
+* [**(WIP) NEW❗ Dynamic Lane Profile Change (DLPC)**](#wip-new-dynamic-lane-profile-change-dlpc) - dynamically switch lane profile base on lane recognition confidence
 
 Driving Enhancement
 ---
