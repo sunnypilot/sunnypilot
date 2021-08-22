@@ -20,13 +20,13 @@ This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It
 Highlight Features
 =======================
 
-##Driving Enhancement
+###Driving Enhancement
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](NEW❗-modified-assistive-driving-safety-(mads)) - openpilot ALC and Hyundai SCC can be engaged independently of each other
 
 Driving Enhancement
 =======================
 
-##NEW❗ Modified Assistive Driving Safety (MADS)
+###NEW❗ Modified Assistive Driving Safety (MADS)
 The goal of this feature is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * openpilot ALC and Hyundai SCC/ACC can be engaged independently of each other
 * `LFA` button (only on newer HKG vehicles) or `CRUISE (MAIN)` button toggles openpilot ALC
@@ -41,22 +41,22 @@ The goal of this feature is to enhance the user driving experience with modified
 Branch Definitions
 =======================
 
-##Release Branches
+###Release Branches
 Release branches are where features that are gathered for the openpilot individual release versions.
 
-###Production `prod`
-Production branches `prod` have features that are tested by users and ready to use.
+####Production
+* `prod` - Production branches have features that are tested by users and ready to use.
 
-###Staging `staging`
-Staging branches `staging` have new features that are not tested by users. No stability guaranteed.
+####Staging
+* `staging` - Staging branches have new features that are not tested by users. No stability guaranteed.
 
-##Develop Branches `develop`
-The development branches `develop` are where all features that are gathered. Features will be committed to `develop` after review. No stability guaranteed.
+###Develop Branches
+* `develop` - The development branches are where all features that are gathered. Features will be committed to `develop` after review. No stability guaranteed.
 
-##Working Branches
+###Working Branches
 Working branches come in one of two variants:
-* `feature` - feature branches represent new features being added to the system. No stability guaranteed.
-* `test` - test branches are for experimenting with concepts that might not get used in the project. No stability guaranteed.
+* `feature` - Feature branches represent new features being added to the system. No stability guaranteed.
+* `test` - Test branches are for experimenting with concepts that might not get used in the project. No stability guaranteed.
 
 Working branches always branch off of, and merge back in to, `develop`. Only working branches which are complete and release-ready will be merged in to the `develop` branch.
 
