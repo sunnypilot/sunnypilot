@@ -51,3 +51,4 @@ Special Thanks
 
 * [Spektor56](https://github.com/spektor56/openpilot)
 * [mob9221](https://github.com/mob9221/opendbc)
+* [briantran33](https://github.com/briantran33/openpilot)
