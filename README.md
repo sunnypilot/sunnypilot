@@ -44,7 +44,7 @@ Branch Definitions
 * `staging`: Staging branches. Include new features that are not tested by users. No stability guaranteed.
 * `feature`: Feature branches. Represent new features being added to the system. No stability guaranteed.
 * `test`: Test branches. For experimenting with concepts that might not get used in the project. No stability guaranteed.
-* `develop`: Development branches. All features are gathered in respective versions. Features will be committed to `develop` after review. No stability guaranteed.
+* `develop`: Development branches. All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed.
 
 Special Thanks
 ---
