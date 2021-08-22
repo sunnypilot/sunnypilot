@@ -11,22 +11,22 @@ Table of Contents
 ---
 
 Read Before Installing
-=======================
+---
 
 It is recommended to read this entire page before proceeding. This will ensure that you are selecting the right branch for your car to have the best driving experience.
 
 This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
 
 Highlight Features
-=======================
+---
 
-## Driving Enhancement
+### Driving Enhancement
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](NEW❗-modified-assistive-driving-safety-(mads)) - openpilot ALC and Hyundai SCC can be engaged independently of each other
 
 Driving Enhancement
-=======================
+---
 
-## NEW❗ Modified Assistive Driving Safety (MADS)
+### NEW❗ Modified Assistive Driving Safety (MADS)
 The goal of this feature is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * openpilot ALC and Hyundai SCC/ACC can be engaged independently of each other
 * `LFA` button (only on newer HKG vehicles) or `CRUISE (MAIN)` button toggles openpilot ALC
@@ -39,26 +39,26 @@ The goal of this feature is to enhance the user driving experience with modified
 * Event audible alerts are more relaxed to match Hyundai stock behavior
 
 Branch Definitions
-=======================
+---
 
-## Release Branches
+### Release Branches
 Release branches are where features that are gathered for the openpilot individual release versions.
 
 * `prod`: Production branches. Include features that are tested by users and ready to use.
 * `staging`: Staging branches. Include new features that are not tested by users. No stability guaranteed.
 
-## Working Branches
+### Working Branches
 Working branches come in one of two variants:
 * `feature`: Feature branches. Represent new features being added to the system. No stability guaranteed.
 * `test`: Test branches: For experimenting with concepts that might not get used in the project. No stability guaranteed.
 
 Working branches always branch off of, and merge back in to, `develop`. Only working branches which are complete and release-ready will be merged in to the `develop` branch.
 
-## Develop Branches `develop`
+### Develop Branches `develop`
 The development branches `develop` are where all features that are gathered. Features will be committed to `develop` after review. No stability guaranteed.
 
 Special Thanks
-=======================
+---
 
 * [Spektor56](https://github.com/spektor56/openpilot)
 * [mob9221](https://github.com/mob9221/opendbc)
