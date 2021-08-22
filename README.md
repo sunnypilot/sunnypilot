@@ -41,21 +41,11 @@ The goal of this feature is to enhance the user driving experience with modified
 Branch Definitions
 ---
 
-### Release Branches
-Release branches are where features that are gathered for the openpilot individual release versions.
-
 * `prod`: Production branches. Include features that are tested by users and ready to use.
 * `staging`: Staging branches. Include new features that are not tested by users. No stability guaranteed.
-
-### Working Branches
-Working branches come in one of two variants:
 * `feature`: Feature branches. Represent new features being added to the system. No stability guaranteed.
-* `test`: Test branches: For experimenting with concepts that might not get used in the project. No stability guaranteed.
-
-Working branches always branch off of, and merge back in to, `develop`. Only working branches which are complete and release-ready will be merged in to the `develop` branch.
-
-### Develop Branches `develop`
-The development branches `develop` are where all features that are gathered. Features will be committed to `develop` after review. No stability guaranteed.
+* `test`: Test branches. For experimenting with concepts that might not get used in the project. No stability guaranteed.
+* `develop`: Development branches. All features are gathered in respective versions. Features will be committed to `develop` after review. No stability guaranteed.
 
 Special Thanks
 ---
