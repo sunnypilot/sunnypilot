@@ -5,6 +5,7 @@ Table of Contents
 
 * [Read Before Installing](#read-before-installing)
 * [Highlight Features](#highlight-features)
+* [Driving Enhancement](#driving-enhancement)
 * [Branch Definitions](#branch-definitions)
 * [Special Thanks](#special-thanks)
 
