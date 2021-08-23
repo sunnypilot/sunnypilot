@@ -5,25 +5,26 @@ Table of Contents
 * [Highlight Features](#highlight-features)
 * [Driving Enhancement](#driving-enhancement-1)
 * [Branch Definitions](#branch-definitions)
+* [Recommended Branches](#-recommended-branches)
 * [Special Thanks](#special-thanks)
 
 ---
 
-Read Before Installing
+🚨 Read Before Installing 🚨
 ---
 
 It is recommended to read this entire page before proceeding. This will ensure that you are selecting the right branch for your car to have the best driving experience.
 
 This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
 
-Highlight Features
+🚗 Highlight Features
 ---
 
 ### Driving Enhancement
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
 * [**(WIP) NEW❗ Dynamic Lane Profile Change (DLPC)**](#wip-new-dynamic-lane-profile-change-dlpc) - dynamically switch lane profile base on lane recognition confidence
 
-Driving Enhancement
+🚗 Driving Enhancement
 ---
 
 ### NEW❗ Modified Assistive Driving Safety (MADS)
@@ -41,15 +42,25 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 ### (WIP) NEW❗ Dynamic Lane Profile Change (DLPC)
 Dynamic Lane Profile Change (DLPC) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile Change allows openpilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
 
-
-Branch Definitions
+⚒ Branch Definitions
 ---
 
-* `prod`: Production branches. Include features that are tested by users and ready to use.
-* `staging`: Staging branches. Include new features that are not tested by users. No stability guaranteed.
-* `feature`: Feature branches. Represent new features being added to the system. No stability guaranteed.
-* `test`: Test branches. For experimenting with concepts that might not get used in the project. No stability guaranteed.
-* `develop`: Development branches. All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed.
+* `prod`: Production branches. Include features that are tested by users and ready to use. ✅
+* `staging`: Staging branches. Include new features that are not tested by users. No stability guaranteed. 🚨
+* `feature`: Feature branches. Represent new features being added to the system. No stability guaranteed. 🚨
+* `test`: Test branches. For experimenting with concepts that might not get used in the project. No stability guaranteed. 🚨
+* `develop`: Development branches. All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. 🚨
+
+📰 Recommended Branches
+---
+* `<version>-prod-mads-lfa`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with `LFA` button on the steering wheel.
+    * Hyundai: [Sonata] 2020-2021
+    * Hyundai: [Elantra] 2021
+* `<version>-prod-mads-accmain`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with no `LFA` button and only `CRUISE (MAIN)` button on the steering wheel.
+    * Tested vehicles (will update as more testers confirm functionallity)
+      * Hyundai: [Genesis] 2015-2016
+* `<version>-prod-personal-mads-sonata`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, DLP, etc.) and quality-of-life features.
+    * Hyundai: [Sonata N Line] 2021
 
 Special Thanks
 ---
