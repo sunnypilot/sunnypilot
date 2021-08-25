@@ -70,3 +70,9 @@ private:
   QButtonGroup *nav_btns;
   QStackedWidget *panel_widget;
 };
+
+class FeaturesPanel : public QWidget {
+  Q_OBJECT
+public:
+  explicit FeaturesPanel(QWidget *parent = nullptr);
+};
