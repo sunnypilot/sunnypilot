@@ -56,7 +56,7 @@ Dynamic Lane Profile Change (DLPC) aims to provide the best driving experience w
 * `<version>-prod-mads-lfa`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with `LFA` button on the steering wheel.
     * Hyundai: [Sonata] 2020-2021
     * Hyundai: [Elantra] 2021
-* `<version>-prod-mads-accmain`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with no `LFA` button and only `CRUISE (MAIN)` button on the steering wheel.
+* `<version>-prod-mads-non-lfa`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with no `LFA` button and only `CRUISE (MAIN)` button on the steering wheel.
     * Tested vehicles (will update as more testers confirm functionallity)
       * Hyundai: [Genesis] 2015-2016
 * `<version>-prod-personal-mads-sonata`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, DLP, etc.) and quality-of-life features.
