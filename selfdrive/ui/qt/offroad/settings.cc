@@ -296,6 +296,14 @@ QWidget * network_panel(QWidget * parent) {
   return w;
 }
 
+FeaturesPanel::FeaturesPanel(QWidget* parent) : QWidget(parent) {
+  QVBoxLayout *layout = new QVBoxLayout(this);
+
+  layout->addWidget(horizontal_line());
+  layout->addWidget(new CarRecognition());
+  layout->addWidget(horizontal_line());
+}
+
 void SettingsWindow::showEvent(QShowEvent *event) {
   panel_widget->setCurrentIndex(0);
   nav_btns->buttons()[0]->setChecked(true);
@@ -344,6 +352,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {"Network", network_panel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Software", new SoftwarePanel(this)},
+    {"Features", new FeaturesPanel(this)},
   };
 
 #ifdef ENABLE_MAPS

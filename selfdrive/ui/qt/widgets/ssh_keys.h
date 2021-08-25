@@ -32,3 +32,34 @@ private:
   void refresh();
   void getUserKeys(const QString &username);
 };
+
+// Force Car Recognition
+class CarRecognition : public AbstractControl {
+  Q_OBJECT
+
+public:
+  CarRecognition();
+
+private:
+  QPushButton btn;
+  QString carname;
+  QLabel carname_label;
+  Params params;
+
+  void refresh(QString carname);
+};
+
+class CarForceSet : public AbstractControl {
+  Q_OBJECT
+
+public:
+  CarForceSet();
+
+private:
+  QPushButton btnc;
+  QString carname;
+  //QLabel carname_label;
+  Params params;
+
+  void refreshc();
+};
