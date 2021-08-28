@@ -37,6 +37,7 @@ class CarController():
     self.p = CarControllerParams(CP)
     self.packer = CANPacker(dbc_name)
 
+    self.signal_last = 0.
     self.apply_steer_last = 0
     self.car_fingerprint = CP.carFingerprint
     self.steer_rate_limited = False
@@ -49,8 +50,12 @@ class CarController():
     apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.p)
     self.steer_rate_limited = new_steer != apply_steer
 
+    cur_time = frame * DT_CTRL
+    if (CS.leftBlinkerOn or CS.rightBlinkerOn):
+      self.signal_last = cur_time
+
     # disable when temp fault is active, or below LKA minimum speed
-    lkas_active = enabled and not CS.out.steerWarning and CS.out.vEgo >= CS.CP.minSteerSpeed
+    lkas_active = enabled and not CS.out.steerWarning and CS.out.vEgo >= CS.CP.minSteerSpeed and (CS.lfaEnabled or CS.accMainEnabled) and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
 
     if not lkas_active:
       apply_steer = 0
