@@ -98,7 +98,7 @@ class CarState(CarStateBase):
       ret.cruiseState.enabled = cp.vl["TCS13"]["ACC_REQ"] == 1
       ret.cruiseState.standstill = False
     else:
-      ret.cruiseState.available = cp.vl["SCC11"]["MainMode_ACC"] == 1
+      ret.cruiseState.available = cp.vl["SCC11"]["MainMode_ACC"] == 0 or cp.vl["SCC11"]["MainMode_ACC"] == 1
       ret.cruiseState.enabled = cp.vl["SCC12"]["ACCMode"] != 0
       ret.cruiseState.standstill = cp.vl["SCC11"]["SCCInfoDisplay"] == 4.
       self.cruiseState_standstill = ret.cruiseState.standstill
