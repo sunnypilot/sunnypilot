@@ -873,6 +873,8 @@ struct LateralPlan @0xe1e9318e2ae8b51e {
   curvatures @27 :List(Float32);
   curvatureRates @28 :List(Float32);
 
+  lanelessMode @29 :Bool;
+
   enum Desire {
     none @0;
     turnLeft @1;
