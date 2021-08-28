@@ -19,9 +19,31 @@ class CarState(CarStateBase):
     else:  # preferred and elect gear methods use same definition
       self.shifter_values = can_define.dv["LVR12"]["CF_Lvr_Gear"]
 
+    self.resumeAvailable = False
+    self.accEnabled = False
+    self.lfaEnabled = False
+    self.accMainEnabled = False
+    self.leftBlinkerOn = False
+    self.rightBlinkerOn = False
+    self.disengageByBrake = False
+    self.belowLaneChangeSpeed = True
+    self.automaticLaneChange = True
+
+    self.cruise_buttons = 0
+    self.prev_cruise_buttons = 0
+
+    self.lfa_enabled = None
+    self.prev_lfa_enabled = None
+
+    self.acc_main_enabled = None
+    self.prev_acc_main_enabled = None
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
+
+    self.prev_lfa_enabled = self.lfa_enabled
+
+    self.prev_acc_main_enabled = self.acc_main_enabled
 
     ret.doorOpen = any([cp.vl["CGW1"]["CF_Gway_DrvDrSw"], cp.vl["CGW1"]["CF_Gway_AstDrSw"],
                         cp.vl["CGW2"]["CF_Gway_RLDrSw"], cp.vl["CGW2"]["CF_Gway_RRDrSw"]])
@@ -35,6 +57,20 @@ class CarState(CarStateBase):
     ret.vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
 
+    self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
+
+    if self.CP.carFingerprint in FEATURES["use_lfa_button"]:
+      self.lfa_enabled = cp.vl["BCM_PO_11"]["LFA_Pressed"] == 0
+    elif self.CP.carFingerprint not in FEATURES["use_lfa_button"]:
+      self.acc_main_enabled = cp.vl["CLU11"]["CF_Clu_CruiseSwMain"] == 0
+
+    if self.CP.carFingerprint in FEATURES["use_lfa_button"]:
+      if self.prev_lfa_enabled is None:
+        self.prev_lfa_enabled = self.lfa_enabled
+    elif self.CP.carFingerprint not in FEATURES["use_lfa_button"]:
+      if self.prev_acc_main_enabled is None:
+        self.prev_acc_main_enabled = self.acc_main_enabled
+
     ret.standstill = ret.vEgoRaw < 0.1
 
     ret.steeringAngleDeg = cp.vl["SAS11"]["SAS_Angle"]
@@ -45,7 +81,9 @@ class CarState(CarStateBase):
     ret.steeringTorque = cp.vl["MDPS12"]["CR_Mdps_StrColTq"]
     ret.steeringTorqueEps = cp.vl["MDPS12"]["CR_Mdps_OutTq"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
-    ret.steerWarning = cp.vl["MDPS12"]["CF_Mdps_ToiUnavail"] != 0 or cp.vl["MDPS12"]["CF_Mdps_ToiFlt"] != 0
+
+    self.leftBlinkerOn = cp.vl["CGW1"]["CF_Gway_TurnSigLh"] != 0
+    self.rightBlinkerOn = cp.vl["CGW1"]["CF_Gway_TurnSigRh"] != 0
 
     # cruise state
     if self.CP.openpilotLongitudinalControl:
@@ -57,11 +95,35 @@ class CarState(CarStateBase):
       ret.cruiseState.enabled = cp.vl["SCC12"]["ACCMode"] != 0
       ret.cruiseState.standstill = cp.vl["SCC11"]["SCCInfoDisplay"] == 4.
 
+    if ret.cruiseState.available:
+      if self.CP.carFingerprint in FEATURES["use_lfa_button"]:
+        if self.prev_lfa_enabled != 1: #1 == not LFA button
+          if self.lfa_enabled == 1:
+            self.lfaEnabled = not self.lfaEnabled
+      elif self.CP.carFingerprint not in FEATURES["use_lfa_button"]:
+        if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
+          if self.acc_main_enabled == 1:
+            self.accMainEnabled = not self.accMainEnabled
+    else:
+      if self.CP.carFingerprint in FEATURES["use_lfa_button"]:
+        self.lfaEnabled = False
+      elif self.CP.carFingerprint not in FEATURES["use_lfa_button"]:
+        self.accMainEnabled = False
+      self.accEnabled = False
+
     if ret.cruiseState.enabled:
       speed_conv = CV.MPH_TO_MS if cp.vl["CLU11"]["CF_Clu_SPEED_UNIT"] else CV.KPH_TO_MS
       ret.cruiseState.speed = cp.vl["SCC11"]["VSetDis"] * speed_conv
+      self.resumeAvailable = True
     else:
       ret.cruiseState.speed = 0
+
+    ret.steerWarning = False
+
+    if self.lfaEnabled or self.accMainEnabled:
+      steer_state = cp.vl["MDPS12"]["CF_Mdps_ToiActive"]  # 0 NOT ACTIVE, 1 ACTIVE
+      if (self.automaticLaneChange and not self.belowLaneChangeSpeed and (self.rightBlinkerOn or self.leftBlinkerOn)) or not (self.rightBlinkerOn or self.leftBlinkerOn):
+        ret.steerWarning = cp.vl["MDPS12"]["CF_Mdps_ToiUnavail"] != 0 or cp.vl["MDPS12"]["CF_Mdps_ToiFlt"] != 0
 
     # TODO: Find brake pressure
     ret.brake = 0
@@ -105,7 +167,6 @@ class CarState(CarStateBase):
     self.lkas11 = copy.copy(cp_cam.vl["LKAS11"])
     self.clu11 = copy.copy(cp.vl["CLU11"])
     self.park_brake = cp.vl["TCS13"]["PBRAKE_ACT"] == 1
-    self.steer_state = cp.vl["MDPS12"]["CF_Mdps_ToiActive"]  # 0 NOT ACTIVE, 1 ACTIVE
     self.lead_distance = cp.vl["SCC11"]["ACC_ObjDist"]
     self.brake_hold = cp.vl["TCS15"]["AVH_LAMP"] == 2 # 0 OFF, 1 ERROR, 2 ACTIVE, 3 READY
     self.brake_error = cp.vl["TCS13"]["ACCEnable"] != 0 # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
@@ -174,6 +235,8 @@ class CarState(CarStateBase):
       ("SCCInfoDisplay", "SCC11", 0),
       ("ACC_ObjDist", "SCC11", 0),
       ("ACCMode", "SCC12", 1),
+
+      ("LFA_Pressed", "BCM_PO_11", 0),
     ]
 
     checks = [
