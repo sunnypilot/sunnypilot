@@ -33,7 +33,7 @@ cdef class CANParser:
     bool can_valid
     int can_invalid_cnt
 
-  def __init__(self, dbc_name, signals, checks=None, bus=0, enforce_checks=True):
+  def __init__(self, dbc_name, signals, checks=None, bus=0, enforce_checks=False):
     if checks is None:
       checks = []
     self.can_valid = True

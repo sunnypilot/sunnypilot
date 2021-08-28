@@ -137,6 +137,7 @@ void safety_tick(const safety_hooks *hooks) {
       bool lagging = elapsed_time > MAX(hooks->addr_check[i].msg[hooks->addr_check[i].index].expected_timestep * MAX_MISSED_MSGS, 1e6);
       hooks->addr_check[i].lagging = lagging;
       if (lagging) {
+        disengageFromBrakes = false;
         controls_allowed = 0;
       }
     }
@@ -157,6 +158,7 @@ bool is_msg_valid(AddrCheckStruct addr_list[], int index) {
   if (index != -1) {
     if ((!addr_list[index].valid_checksum) || (addr_list[index].wrong_counters >= MAX_WRONG_COUNTERS)) {
       valid = false;
+      disengageFromBrakes = false;
       controls_allowed = 0;
     }
   }
@@ -204,13 +206,22 @@ bool addr_safety_check(CAN_FIFOMailBox_TypeDef *to_push,
 void generic_rx_checks(bool stock_ecu_detected) {
   // exit controls on rising edge of gas press
   if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
+    disengageFromBrakes = false;
     controls_allowed = 0;
   }
   gas_pressed_prev = gas_pressed;
 
   // exit controls on rising edge of brake press
   if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
+    if(controls_allowed == 1)
+    {
+      disengageFromBrakes = true;
+    }
     controls_allowed = 0;
+  }else if (!brake_pressed && disengageFromBrakes)
+  {
+    disengageFromBrakes = false;
+    controls_allowed = 1;
   }
   brake_pressed_prev = brake_pressed;
 
