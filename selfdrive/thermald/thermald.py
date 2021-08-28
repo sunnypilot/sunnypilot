@@ -52,6 +52,8 @@ OFFROAD_DANGER_TEMP = 70.0
 
 prev_offroad_states: Dict[str, Tuple[bool, Optional[str]]] = {}
 
+prebuiltfile = '/data/openpilot/prebuilt'
+
 def read_tz(x):
   if x is None:
     return 0
@@ -212,6 +214,8 @@ def thermald_thread():
         except Exception:
           pass
     cloudlog.event("CPR", data=cpr_data)
+
+  is_openpilot_dir = True
 
   while 1:
     pandaState = messaging.recv_sock(pandaState_sock, wait=True)
@@ -402,6 +406,16 @@ def thermald_thread():
       started_ts = None
       if off_ts is None:
         off_ts = sec_since_boot()
+
+    prebuiltlet = 1
+    if not os.path.isdir("/data/openpilot"):
+      if is_openpilot_dir:
+        os.system("cd /data/params/d; rm -f DongleId") # Delete DongleID if the Openpilot directory disappears, Seems you want to switch fork/branch.
+      is_openpilot_dir = False
+    elif not os.path.isfile(prebuiltfile) and prebuiltlet and is_openpilot_dir:
+      os.system("cd /data/openpilot; touch prebuilt")
+    elif os.path.isfile(prebuiltfile) and not prebuiltlet:
+      os.system("cd /data/openpilot; rm -f prebuilt")
 
     # Offroad power monitoring
     power_monitor.calculate(pandaState)
