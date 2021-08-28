@@ -190,7 +190,7 @@ def below_steer_speed_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: 
     "TAKE CONTROL",
     "Steer Unavailable Below %d %s" % (speed, unit),
     AlertStatus.userPrompt, AlertSize.mid,
-    Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimePrompt, 0., 0.4, .3)
+    Priority.MID, VisualAlert.none, AudibleAlert.none, 0., 0.4, .3)
 
 
 def calibration_incomplete_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool) -> Alert:
@@ -260,7 +260,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   EventName.startup: {
     ET.PERMANENT: Alert(
       "openpilot Initialized",
-      "Toggle autosteer with the LFA button",
+      "To use Autosteer, press the LFA or ACC MAIN button",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 10.),
   },
@@ -400,7 +400,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "Vehicle Parameter Identification Failed",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOWEST, VisualAlert.steerRequired, AudibleAlert.none, .0, .0, .1),
+      Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .0, .0, .1),
   },
 
   EventName.steerTempUnavailableSilent: {
@@ -513,7 +513,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.manualSteeringRequired: {
     ET.WARNING: Alert(
-      "Lane Following Assist is OFF",
+      "Autosteer is OFF",
       "Manual Steering Required",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeDisengage, 1., 2., 2.),
@@ -521,7 +521,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   EventName.manualLongitudinalRequired: {
     ET.WARNING: Alert(
-      "Smart Cruise Control is OFF",
+      "Smart/Adaptive Cruise Control is OFF",
       "Manual Gas/Brakes Required",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1., 2., 2.),
@@ -532,7 +532,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "TAKE CONTROL",
       "Turn Exceeds Steering Limit",
       AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimePrompt, 1., 1., 1.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .1, .1, .1),
   },
 
   # Thrown when the fan is driven at >50% but is not rotating
@@ -598,12 +598,12 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   },
 
   EventName.parkBrake: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.chimeDisengage),
+    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
     ET.NO_ENTRY: NoEntryAlert("Park Brake Engaged"),
   },
 
   EventName.pedalPressed: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.chimeDisengage),
+    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
     ET.NO_ENTRY: NoEntryAlert("Pedal Pressed During Attempt",
                               visual_alert=VisualAlert.brakePressed),
   },
@@ -624,7 +624,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   },
 
   EventName.wrongCruiseMode: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.chimeDisengage),
+    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
     ET.NO_ENTRY: NoEntryAlert("Enable Adaptive Cruise"),
   },
 
@@ -748,7 +748,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   # Thrown when manager detects a service exited unexpectedly while driving
   EventName.processNotRunning: {
     ET.NO_ENTRY: NoEntryAlert("System Malfunction: Reboot Your Device",
-                              audible_alert=AudibleAlert.chimeDisengage),
+                              audible_alert=AudibleAlert.none),
   },
 
   EventName.radarFault: {
