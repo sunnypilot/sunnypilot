@@ -1,13 +1,13 @@
 Table of Contents
 =======================
 
-* [Donate](#donate)
-* [Read Before Installing](#read-before-installing)
-* [Highlight Features](#highlight-features)
-* [Driving Enhancement](#driving-enhancement-1)
-* [Branch Definitions](#branch-definitions)
+* [Donate](#-donate-)
+* [Read Before Installing](#-read-before-installing-)
+* [Highlight Features](#-highlight-features)
+* [Driving Enhancement](#-driving-enhancement)
+* [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
-* [Special Thanks](#special-thanks)
+* [Special Thanks](#-special-thanks)
 
 ---
 
@@ -81,7 +81,7 @@ Dynamic Lane Profile Change (DLPC) aims to provide the best driving experience w
 * `<version>-prod-personal-mads-sonata`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, DLP, etc.) and quality-of-life features.
     * Hyundai: [Sonata N Line] 2021
 
-Special Thanks
+🥉 Special Thanks
 ---
 
 * [Spektor56](https://github.com/spektor56/openpilot)
