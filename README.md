@@ -1,6 +1,7 @@
 Table of Contents
 =======================
 
+* [Donate](#donate)
 * [Read Before Installing](#read-before-installing)
 * [Highlight Features](#highlight-features)
 * [Driving Enhancement](#driving-enhancement-1)
@@ -9,6 +10,26 @@ Table of Contents
 * [Special Thanks](#special-thanks)
 
 ---
+
+💰 Donate 💰
+---
+
+If you find any of the features useful, feel free to donate to support for future development.
+
+Thank you for your continuous love and support!
+
+**PayPal:**
+<form action="https://www.paypal.com/donate" method="post" target="_top">
+<input type="hidden" name="business" value="haibin.wen3@gmail.com" />
+<input type="hidden" name="no_recurring" value="0" />
+<input type="hidden" name="currency_code" value="USD" />
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+</form>
+
+**PayPal QR Code:**
+
+![haibin.wen3@gmail.com_paypal_qr.png.png](haibin.wen3@gmail.com_paypal_qr.png)
 
 🚨 Read Before Installing 🚨
 ---
