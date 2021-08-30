@@ -72,13 +72,14 @@ Dynamic Lane Profile (DLP) aims to provide the best driving experience with stay
 
 📰 Recommended Branches
 ---
-* `<version>-prod-mads-lfa`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with `LFA` button on the steering wheel.
-    * Hyundai: [Sonata] 2020-2021
-    * Hyundai: [Elantra] 2021
-* `<version>-prod-mads-non-lfa`: Contains Modified Assistive Driving Safety (MADS). For HKG vehicles with no `LFA` button and only `CRUISE (MAIN)` button on the steering wheel.
-    * Tested vehicles (will update as more testers confirm functionallity)
-      * Hyundai: [Genesis] 2015-2016
-* `<version>-prod-personal-mads-sonata`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, DLP, etc.) and quality-of-life features.
+* `<version>-prod-mads` (i.e. `0.8.8-prod`): Contains Modified Assistive Driving Safety (MADS).
+    * HKG cars with `LFA` button on the steering wheel will use `LFA` button to engage MADS:
+        * Hyundai: [Sonata] 2020-2021
+        * Hyundai: [Elantra] 2021
+    * HKG cars with **NO** `LFA` button but only `CRUISE (ACC MAIN)` button on the steering wheel will use `CRUISE (ACC MAIN)` button to engage MADS:
+        * All officially supported HKG cars **without** `LFA` button on steering wheel
+* `<version>-prod-full` (i.e. `0.8.8-prod-full`): Contains all features supported by this fork, such as Modified Assistive Driving Safety (MADS), Dynamic Lane Profile (DLP), etc.
+* `<version>-prod-personal` (i.e. `0.8.8-prod-personal`): sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, custom boot screens, quick boot time, etc.) and quality-of-life features.
     * Hyundai: [Sonata N Line] 2021
 
 🏆 Special Thanks
