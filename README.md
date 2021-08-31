@@ -41,7 +41,7 @@ This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It
 
 ### Driving Enhancement
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
-* [**(WIP) NEW❗ Dynamic Lane Profile (DLP)**](#wip-new-dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
+* [**NEW❗ Dynamic Lane Profile (DLP)**](#new-dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
 
 🚗 Driving Enhancement
 ---
@@ -58,7 +58,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * `TURN SIGNALS` (`Left` or `Right`) will pause openpilot ALC if the vehicle speed is below the threshold for openpilot Automatic Lane Change
 * Event audible alerts are more relaxed to match Hyundai stock behavior
 
-### (WIP) NEW❗ Dynamic Lane Profile (DLP)
+### NEW❗ Dynamic Lane Profile (DLP)
 Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows openpilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
 
 ⚒ Branch Definitions
