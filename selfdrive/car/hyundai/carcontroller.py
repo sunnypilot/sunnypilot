@@ -67,8 +67,12 @@ class CarController():
                         left_lane, right_lane, left_lane_depart, right_lane_depart)
 
     can_sends = []
+
+    # show LFA "white_wheel" and LKAS "White car + lanes" when disengageFromBrakes = True in safety.h
+    disengage_from_brakes = (CS.lfaEnabled or CS.accMainEnabled) and not lkas_active
+
     can_sends.append(create_lkas11(self.packer, frame, self.car_fingerprint, apply_steer, lkas_active,
-                                   CS.lkas11, sys_warning, sys_state, enabled,
+                                   CS.lkas11, sys_warning, sys_state, enabled, disengage_from_brakes,
                                    left_lane, right_lane,
                                    left_lane_warning, right_lane_warning))
 
@@ -85,6 +89,6 @@ class CarController():
     if frame % 5 == 0 and self.car_fingerprint in [CAR.SONATA, CAR.PALISADE, CAR.IONIQ, CAR.KIA_NIRO_EV, CAR.KIA_NIRO_HEV_2021,
                                                    CAR.IONIQ_EV_2020, CAR.IONIQ_PHEV, CAR.KIA_CEED, CAR.KIA_SELTOS, CAR.KONA_EV,
                                                    CAR.ELANTRA_2021, CAR.ELANTRA_HEV_2021, CAR.SONATA_HYBRID, CAR.KONA_HEV]:
-      can_sends.append(create_lfahda_mfc(self.packer, enabled))
+      can_sends.append(create_lfahda_mfc(self.packer, enabled, disengage_from_brakes))
 
     return can_sends
