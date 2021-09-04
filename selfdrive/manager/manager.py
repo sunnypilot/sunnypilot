@@ -36,7 +36,8 @@ def manager_init():
     ("CompletedTrainingVersion", "0"),
     ("HasAcceptedTerms", "0"),
     ("OpenpilotEnabledToggle", "1"),
-    ("LanelessMode", "0"),
+    ("EndToEndToggle", "1"),
+    ("LanelessMode", "2"),
     ("CarModel", ""),
     ("CarModelAbb", ""),
   ]
