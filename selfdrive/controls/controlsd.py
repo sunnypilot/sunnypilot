@@ -616,6 +616,7 @@ class Controls:
     controlsState.startMonoTime = int(start_time * 1e9)
     controlsState.forceDecel = bool(force_decel)
     controlsState.canErrorCounter = self.can_error_counter
+    controlsState.steeringAngleDesiredDeg = actuators.steeringAngleDeg
 
     if self.joystick_mode:
       controlsState.lateralControlState.debugState = lac_log

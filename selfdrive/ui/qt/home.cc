@@ -86,6 +86,12 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
   if (onroad->isVisible() && (!sidebar->isVisible() || e->x() > sidebar->width())) {
     sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
   }
+
+  //Handle Dashcam button events
+  if (onroad->isVisible()) {
+    QUIState::ui_state.scene.dashcamX = e->globalX();
+    QUIState::ui_state.scene.dashcamY = e->globalY();
+  }
 }
 
 // OffroadHome: the offroad home page

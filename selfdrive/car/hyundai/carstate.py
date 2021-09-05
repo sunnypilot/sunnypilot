@@ -37,6 +37,7 @@ class CarState(CarStateBase):
 
     self.acc_main_enabled = None
     self.prev_acc_main_enabled = None
+    self.engineRPM = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -84,6 +85,8 @@ class CarState(CarStateBase):
 
     self.leftBlinkerOn = cp.vl["CGW1"]["CF_Gway_TurnSigLh"] != 0
     self.rightBlinkerOn = cp.vl["CGW1"]["CF_Gway_TurnSigRh"] != 0
+
+    self.engineRPM = cp.vl["TCU_DCT13"]['Cluster_Engine_RPM']
 
     # cruise state
     if self.CP.openpilotLongitudinalControl:
@@ -237,6 +240,8 @@ class CarState(CarStateBase):
       ("ACCMode", "SCC12", 1),
 
       ("LFA_Pressed", "BCM_PO_11", 0),
+
+      ("Cluster_Engine_RPM", "TCU_DCT13", 0),
     ]
 
     checks = [
@@ -251,6 +256,7 @@ class CarState(CarStateBase):
       ("CGW4", 5),
       ("WHL_SPD11", 50),
       ("SAS11", 100),
+      ("TCU_DCT13", 100),
     ]
 
     if not CP.openpilotLongitudinalControl:

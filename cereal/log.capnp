@@ -662,7 +662,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   mapValidDEPRECATED @49 :Bool;
   jerkFactorDEPRECATED @12 :Float32;
   steerOverrideDEPRECATED @20 :Bool;
-  steeringAngleDesiredDegDEPRECATED @29 :Float32;
+  steeringAngleDesiredDeg @29 :Float32;
 }
 
 struct ModelDataV2 {

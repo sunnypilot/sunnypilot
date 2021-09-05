@@ -149,6 +149,29 @@ static void update_state(UIState *s) {
     auto model = sm["modelV2"].getModelV2();
     update_model(s, model);
     update_leads(s, model);
+    auto radar_state = sm["radarState"].getRadarState();
+    s->scene.lead_v_rel = radar_state.getLeadOne().getVRel();
+    s->scene.lead_d_rel = radar_state.getLeadOne().getDRel();
+    s->scene.lead_status = radar_state.getLeadOne().getStatus();
+  }
+  if (scene.started && sm.updated("controlsState")) {
+    auto controls_state = sm["controlsState"].getControlsState();
+    s->scene.enabled = controls_state.getEnabled();
+    s->scene.angleSteersDes = controls_state.getSteeringAngleDesiredDeg();
+    s->scene.pidStateOutput = controls_state.getLateralControlState().getPidState().getOutput();
+  }
+  if (sm.updated("carState")) {
+    auto car_state = sm["carState"].getCarState();
+    s->scene.angleSteers = car_state.getSteeringAngleDeg();
+    s->scene.brakePressed = car_state.getBrakePressed();
+    s->scene.engineRPM = car_state.getEngineRPM();
+    s->scene.aEgo = car_state.getAEgo();
+    s->scene.steeringTorqueEps = car_state.getSteeringTorqueEps();
+    s->scene.steeringPressed = car_state.getSteeringPressed();
+    s->scene.standStill = car_state.getStandStill();
+    s->scene.lfaEnabled = car_state.getLfaEnabled();
+    s->scene.accMainEnabled = car_state.getAccMainEnabled();
+    s->scene.brakeLights = car_state.getBrakeLights();
   }
   if (sm.updated("liveCalibration")) {
     scene.world_objects_visible = true;
@@ -174,8 +197,23 @@ static void update_state(UIState *s) {
   } else if ((s->sm->frame - s->sm->rcv_frame("pandaState")) > 5*UI_FREQ) {
     scene.pandaType = cereal::PandaState::PandaType::UNKNOWN;
   }
+  if (sm.updated("ubloxGnss")) {
+    auto data = sm["ubloxGnss"].getUbloxGnss();
+    if (data.which() == cereal::UbloxGnss::MEASUREMENT_REPORT) {
+      s->scene.satelliteCount = data.getMeasurementReport().getNumMeas();
+    }
+  }
+  if (sm.updated("gpsLocationExternal")) {
+    auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
+    s->scene.gpsAccuracyUblox = gpsLocationExternal.getAccuracy();
+    s->scene.altitudeUblox = gpsLocationExternal.getAltitude();
+  }
   if (sm.updated("carParams")) {
     scene.longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
+  }
+  if (sm.updated("lateralPlan")) {
+    auto lp_data = sm["lateralPlan"].getLateralPlan();
+    scene.lateralPlan.standstillElapsed = lp_data.getStandstillElapsed();
   }
   if (sm.updated("sensorEvents")) {
     for (auto sensor : sm["sensorEvents"].getSensorEvents()) {
@@ -206,6 +244,11 @@ static void update_state(UIState *s) {
     float ev = camera_state.getGain() * float(camera_state.getIntegLines());
 
     scene.light_sensor = std::clamp<float>(1.0 - (ev / max_ev), 0.0, 1.0);
+  }
+  if (sm.updated("deviceState")) {
+    auto device_state = sm["deviceState"].getDeviceState();
+    //s->scene.cpuUsagePercent = device_state.getCpuUsagePercent();
+    s->scene.cpu0TempC = device_state.getCpuTempC()[0];
   }
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
   if (sm.updated("lateralPlan")) {
@@ -294,7 +337,7 @@ QUIState::QUIState(QObject *parent) : QObject(parent) {
   ui_state.sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "deviceState", "roadCameraState",
     "pandaState", "carParams", "driverMonitoringState", "sensorEvents", "carState", "liveLocationKalman",
-    "lateralPlan",
+    "lateralPlan", "radarState", "ubloxGnss", "gpsLocationExternal",
   });
 
   ui_state.fb_w = vwp_w;
