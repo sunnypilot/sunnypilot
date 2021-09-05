@@ -108,46 +108,6 @@ static void ui_draw_line(UIState *s, const line_vertices_data &vd, NVGcolor *col
   nvgFill(s->vg);
 }
 
-static void ui_draw_track(UIState *s, const line_vertices_data &vd)
-{
-  const UIScene &scene = s->scene;
-  if (vd.cnt == 0) return;
-
-  nvgBeginPath(s->vg);
-  nvgMoveTo(s->vg, vd.v[0].x, vd.v[0].y);
-  for (int i=1; i<vd.cnt; i++) {
-    nvgLineTo(s->vg, vd.v[i].x, vd.v[i].y);
-  }
-  nvgClosePath(s->vg);
-
-  int steerOverride = s->scene.car_state.getSteeringPressed();
-  int red_lvl = 0;
-  int green_lvl = 0;
-
-  NVGpaint track_bg;
-  if (s->scene.controls_state.getEnabled()) {
-    if (steerOverride) {
-      track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
-        COLOR_BLACK_ALPHA(80), COLOR_BLACK_ALPHA(20));
-    } else if (!scene.lateralPlan.lanelessModeStatus) {
-        red_lvl = 0;
-        green_lvl = 200;
-        track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
-          nvgRGBA(red_lvl, green_lvl, 0, 250), nvgRGBA(red_lvl, green_lvl, 0, 50));
-    } else { // differentiate laneless mode color (Grace blue)
-        track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-          nvgRGBA(0, 100, 255, 250), nvgRGBA(0, 100, 255, 50));
-    }
-  } else {
-    // Draw white vision track
-    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                COLOR_WHITE_ALPHA(150), COLOR_WHITE_ALPHA(100));
-  }
-
-  nvgFillPaint(s->vg, track_bg);
-  nvgFill(s->vg);
-}
-
 static void draw_vision_frame(UIState *s) {
   glBindVertexArray(s->frame_vao);
   mat4 *out_mat = &s->rear_frame_mat;
@@ -176,24 +136,27 @@ static void draw_vision_frame(UIState *s) {
 // sunnyhaibin's colored lane line
 static void ui_draw_vision_lane_lines(UIState *s) {
   const UIScene &scene = s->scene;
-  float red_lvl = 0.0;
-  float green_lvl = 0.0;
+  NVGpaint track_bg;
+  int steerOverride = scene.car_state.getSteeringPressed();
+  int red_lvl = 0;
+  int green_lvl = 0;
+
+  float red_lvl_line = 0;
+  float green_lvl_line = 0;
   //if (!scene.end_to_end) {
   if (!scene.lateralPlan.lanelessModeStatus) {
     // paint lanelines
     for (int i = 0; i < std::size(scene.lane_line_vertices); i++) {
-      red_lvl = 0.0;
-      green_lvl = 0.0;
       if (scene.lane_line_probs[i] > 0.4){
-        red_lvl = 1.0 - (scene.lane_line_probs[i] - 0.4) * 2.5;
-        green_lvl = 1.0 ;
+        red_lvl_line = 1.0 - ((scene.lane_line_probs[i] - 0.4) * 2.5);
+        green_lvl_line = 1.0;
+      } else {
+        red_lvl_line = 1.0;
+        green_lvl_line = 1.0 - ((0.4 - scene.lane_line_probs[i]) * 2.5);
       }
-      else {
-        red_lvl = 1.0 ;
-        green_lvl = 1.0 - (0.4 - scene.lane_line_probs[i]) * 2.5;
-      }
-      NVGcolor lane_color = nvgRGBAf(red_lvl, green_lvl, 0, 1);
-      ui_draw_line(s, scene.lane_line_vertices[i], &lane_color, nullptr);
+      NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene.lane_line_probs[i]);
+      color = nvgRGBAf(red_lvl_line, green_lvl_line, 0, 1);
+      ui_draw_line(s, scene.lane_line_vertices[i], &color, nullptr);
     }
 
     // paint road edges
@@ -201,19 +164,27 @@ static void ui_draw_vision_lane_lines(UIState *s) {
       NVGcolor color = nvgRGBAf(1.0, 0.0, 0.0, std::clamp<float>(1.0 - scene.road_edge_stds[i], 0.0, 1.0));
       ui_draw_line(s, scene.road_edge_vertices[i], &color, nullptr);
     }
-/***
-    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                          COLOR_WHITE, COLOR_WHITE_ALPHA(0));
-  } else {
-    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                          COLOR_RED, COLOR_RED_ALPHA(0));
   }
-
+  if (scene.controls_state.getEnabled()) {
+    if (steerOverride) {
+      track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+        COLOR_BLACK_ALPHA(80), COLOR_BLACK_ALPHA(20));
+    } else if (!scene.lateralPlan.lanelessModeStatus) {
+      red_lvl = 0;
+      green_lvl = 200;
+      track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+        nvgRGBA(red_lvl, green_lvl, 0, 250), nvgRGBA(red_lvl, green_lvl, 0, 50));
+    } else { // differentiate laneless mode color (Grace blue)
+        track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
+          nvgRGBA(0, 100, 255, 250), nvgRGBA(0, 100, 255, 50));
+    }
+  } else {
+    // Draw white vision track
+    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
+                                        COLOR_WHITE_ALPHA(150), COLOR_WHITE_ALPHA(20));
+  }
   // paint path
   ui_draw_line(s, scene.track_vertices, nullptr, &track_bg);
-***/
-  }
-  ui_draw_track(s, scene.track_vertices);
 }
 
 // Draw all world space objects.
