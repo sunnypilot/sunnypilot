@@ -142,6 +142,9 @@ static void update_state(UIState *s) {
   if (scene.started && sm.updated("controlsState")) {
     scene.controls_state = sm["controlsState"].getControlsState();
   }
+  if (sm.updated("carState")){
+    scene.car_state = sm["carState"].getCarState();
+  }
   if (sm.updated("modelV2") && s->vg) {
     auto model = sm["modelV2"].getModelV2();
     update_model(s, model);
