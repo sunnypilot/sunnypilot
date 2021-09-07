@@ -94,7 +94,7 @@ private slots:
   }
 
   bool shouldPlaySound(Alert a) {
-    bool isQuietDrive = Params().get_bool("QuietDrive");
+    bool isQuietDrive = Params().getBool("QuietDrive");
     return (a.sound == AudibleAlert::CHIME_WARNING2_REPEAT || a.sound == AudibleAlert::CHIME_WARNING_REPEAT) ||
       (!isQuietDrive && a.sound != AudibleAlert::NONE);
   }
