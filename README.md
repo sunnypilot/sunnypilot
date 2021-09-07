@@ -88,3 +88,4 @@ Dynamic Lane Profile (DLP) aims to provide the best driving experience with stay
 * [spektor56](https://github.com/spektor56/openpilot)
 * [mob9221](https://github.com/mob9221/opendbc)
 * [briantran33](https://github.com/briantran33/openpilot)
+* [Aragon7777] (https://github.com/aragon7777/openpilot)
