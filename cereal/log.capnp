@@ -868,6 +868,8 @@ struct LateralPlan @0xe1e9318e2ae8b51e {
 
   lanelessMode @29 :Bool;
 
+  standstillElapsed @30 :Float32;
+
   enum Desire {
     none @0;
     turnLeft @1;

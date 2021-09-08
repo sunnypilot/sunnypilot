@@ -70,6 +70,9 @@ class LateralPlanner():
 
     self.second = 0.0
 
+    self.standstill_elapsed = 0.0
+    self.stand_still = False
+
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
     self.libmpc.init()
@@ -92,6 +95,7 @@ class LateralPlanner():
       self.use_lanelines = not Params().get_bool("EndToEndToggle")
       self.laneless_mode = int(Params().get("LanelessMode", encoding="utf8"))
       self.second = 0.0
+    self.stand_still = sm['carState'].standStill
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
     measured_curvature = sm['controlsState'].curvature
@@ -280,5 +284,11 @@ class LateralPlanner():
     plan_send.lateralPlan.laneChangeDirection = self.lane_change_direction
 
     plan_send.lateralPlan.lanelessMode = bool(self.laneless_mode_status)
+
+    if self.stand_still:
+      self.standstill_elapsed += DT_MDL
+    else:
+      self.standstill_elapsed = 0.0
+    plan_send.lateralPlan.standstillElapsed = int(self.standstill_elapsed)
 
     pm.send('lateralPlan', plan_send)

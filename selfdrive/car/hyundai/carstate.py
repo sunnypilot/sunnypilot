@@ -38,6 +38,7 @@ class CarState(CarStateBase):
     self.acc_main_enabled = None
     self.prev_acc_main_enabled = None
     self.engineRPM = 0
+    self.cruiseState_standstill = False
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -58,6 +59,8 @@ class CarState(CarStateBase):
     ret.vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
 
+    ret.vEgo = cp.vl["CLU11"]["CF_Clu_Vanz"] * CV.MPH_TO_MS if bool(cp.vl["CLU11"]["CF_Clu_SPEED_UNIT"]) else cp.vl["CLU11"]["CF_Clu_Vanz"] * CV.KPH_TO_MS
+
     self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
 
     if self.CP.carFingerprint in FEATURES["use_lfa_button"]:
@@ -73,6 +76,7 @@ class CarState(CarStateBase):
         self.prev_acc_main_enabled = self.acc_main_enabled
 
     ret.standstill = ret.vEgoRaw < 0.1
+    ret.standStill = self.CP.standStill
 
     ret.steeringAngleDeg = cp.vl["SAS11"]["SAS_Angle"]
     ret.steeringRateDeg = cp.vl["SAS11"]["SAS_Speed"]
@@ -97,6 +101,7 @@ class CarState(CarStateBase):
       ret.cruiseState.available = cp.vl["SCC11"]["MainMode_ACC"] == 1
       ret.cruiseState.enabled = cp.vl["SCC12"]["ACCMode"] != 0
       ret.cruiseState.standstill = cp.vl["SCC11"]["SCCInfoDisplay"] == 4.
+      self.cruiseState_standstill = ret.cruiseState.standstill
 
     if ret.cruiseState.available:
       if self.CP.carFingerprint in FEATURES["use_lfa_button"]:
@@ -131,6 +136,8 @@ class CarState(CarStateBase):
     # TODO: Find brake pressure
     ret.brake = 0
     ret.brakePressed = cp.vl["TCS13"]["DriverBraking"] != 0
+
+    ret.brakeLights = bool(cp.vl["TCS13"]["BrakeLight"] or ret.brakePressed)
 
     if self.CP.carFingerprint in (HYBRID_CAR | EV_CAR):
       if self.CP.carFingerprint in HYBRID_CAR:
@@ -216,6 +223,7 @@ class CarState(CarStateBase):
       ("CF_Clu_AliveCnt1", "CLU11", 0),
 
       ("ACCEnable", "TCS13", 0),
+      ("BrakeLight", "TCS13", 0),
       ("ACC_REQ", "TCS13", 0),
       ("DriverBraking", "TCS13", 0),
       ("StandStill", "TCS13", 0),

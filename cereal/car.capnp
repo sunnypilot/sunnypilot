@@ -137,6 +137,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     neosUpdateRequiredDEPRECATED @88;
     modelLagWarningDEPRECATED @93;
     startupOneplusDEPRECATED @82;
+    standStill @112;
   }
 }
 
@@ -196,6 +197,8 @@ struct CarState {
   # clutch (manual transmission only)
   clutchPressed @28 :Bool;
 
+  brakeLights @19 :Bool;
+
   lfaEnabled @38 :Bool;
   accMainEnabled @39 :Bool;
   leftBlinkerOn @40 :Bool;
@@ -206,6 +209,8 @@ struct CarState {
   accEnabled @45 :Bool;
 
   engineRPM @46 :Float32;
+
+  standStill @47 :Bool;
 
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
@@ -266,7 +271,6 @@ struct CarState {
   }
 
   errorsDEPRECATED @0 :List(CarEvent.EventName);
-  brakeLightsDEPRECATED @19 :Bool;
 }
 
 # ******* radar state @ 20hz *******
@@ -459,6 +463,8 @@ struct CarParams {
   communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;
   networkLocation @50 :NetworkLocation;  # Where Panda/C2 is integrated into the car's CAN network
+
+  standStill @59: Bool;
 
   struct LateralParams {
     torqueBP @0 :List(Int32);

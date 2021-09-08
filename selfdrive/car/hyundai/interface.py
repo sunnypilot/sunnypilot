@@ -249,6 +249,8 @@ class CarInterface(CarInterfaceBase):
 
     ret.enableBsm = 0x58b in fingerprint[0]
 
+    ret.standStill = False
+
     return ret
 
   def update(self, c, can_strings):
@@ -388,6 +390,11 @@ class CarInterface(CarInterfaceBase):
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
+
+    if self.CS.cruiseState_standstill or self.CC.standstill_status == 1:
+      self.CP.standStill = True
+    else:
+      self.CP.standStill = False
 
     ret.events = events.to_msg()
 

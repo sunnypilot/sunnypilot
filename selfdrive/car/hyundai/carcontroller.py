@@ -44,6 +44,10 @@ class CarController():
     self.steer_rate_limited = False
     self.last_resume_frame = 0
 
+    self.standstill_fault_reduce_timer = 0
+    self.standstill_status = 0
+    self.standstill_status_timer = 0
+
   def update(self, enabled, CS, frame, actuators, pcm_cancel_cmd, visual_alert,
              left_lane, right_lane, left_lane_depart, right_lane_depart):
     # Steering Torque
@@ -88,11 +92,22 @@ class CarController():
     if pcm_cancel_cmd:
       can_sends.append(create_clu11(self.packer, frame, CS.clu11, Buttons.CANCEL))
     elif CS.out.cruiseState.standstill:
+      self.standstill_status = 1
       # send resume at a max freq of 10Hz
       if (frame - self.last_resume_frame) * DT_CTRL > 0.1:
         # send 25 messages at a time to increases the likelihood of resume being accepted
         can_sends.extend([create_clu11(self.packer, frame, CS.clu11, Buttons.RES_ACCEL)] * 25)
         self.last_resume_frame = frame
+
+    if CS.out.brakeLights and CS.out.vEgo == 0:
+      self.standstill_status = 1
+      self.standstill_status_timer += 1
+      if self.standstill_status_timer > 200:
+        self.standstill_status = 1
+        self.standstill_status_timer = 0
+    if self.standstill_status == 1 and CS.out.vEgo > 1:
+      self.standstill_status = 0
+      self.standstill_fault_reduce_timer = 0
 
     # 20 Hz LFA MFA message
     if frame % 5 == 0 and self.car_fingerprint in [CAR.SONATA, CAR.PALISADE, CAR.IONIQ, CAR.KIA_NIRO_EV, CAR.KIA_NIRO_HEV_2021,

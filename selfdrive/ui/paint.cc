@@ -32,6 +32,16 @@
 
 const int border_shifter = 20;
 
+static void ui_print(UIState *s, int x, int y,  const char* fmt, ... )
+{
+  char* msg_buf = NULL;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf( &msg_buf, fmt, args);
+  va_end(args);
+  nvgText(s->vg, x, y, msg_buf, NULL);
+}
+
 static void ui_draw_text(const UIState *s, float x, float y, const char *string, float size, NVGcolor color, const char *font_name) {
   nvgFontFace(s->vg, font_name);
   nvgFontSize(s->vg, size);
@@ -217,6 +227,29 @@ static void ui_draw_world(UIState *s) {
   nvgResetScissor(s->vg);
 }
 
+static void ui_draw_standstill(UIState *s) {
+  const UIScene &scene = s->scene;
+
+  int viz_standstill_x = s->fb_w - 560;
+  int viz_standstill_y = bdr_s + 160 + 250;
+
+  int minute = 0;
+  int second = 0;
+
+  minute = int(scene.lateralPlan.standstillElapsed / 60);
+  second = int(scene.lateralPlan.standstillElapsed) - (minute * 60);
+
+  if (s->scene.standStill) {
+    nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+    nvgFontSize(s->vg, 125);
+    nvgFillColor(s->vg, COLOR_ORANGE_ALPHA(240));
+    ui_print(s, viz_standstill_x, viz_standstill_y, "STOP");
+    nvgFontSize(s->vg, 150);
+    nvgFillColor(s->vg, COLOR_WHITE_ALPHA(240));
+    ui_print(s, viz_standstill_x, viz_standstill_y+150, "%01d:%02d", minute, second);
+  }
+}
+
 static void ui_draw_vision_maxspeed(UIState *s) {
   const int SET_SPEED_NA = 255;
   float maxspeed = (*s->sm)["controlsState"].getControlsState().getVCruise();
@@ -331,6 +364,9 @@ static void ui_draw_vision_header(UIState *s) {
 
   if (s->scene.end_to_end) {
     draw_laneless_button(s);
+  }
+  if (s->scene.lfaEnabled || s->scene.accMainEnabled) {
+    ui_draw_standstill(s);
   }
 }
 
