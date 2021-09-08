@@ -1,33 +1,22 @@
 Table of Contents
 =======================
 
-* [Donate](#-donate-)
+* [Join our Discord](#-join-our-discord-)
 * [Read Before Installing](#-read-before-installing-)
 * [Highlight Features](#-highlight-features)
 * [Driving Enhancement](#-driving-enhancement)
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
+* [Donate](#-donate-)
 * [Special Thanks](#-special-thanks)
 
 ---
 
-💰 Donate 💰
+💭 Join our Discord 💭
 ---
 
-If you find any of the features useful, feel free to donate for coffee to support for future development.
-
-Thank you for your continuous love and support!
-
-**PayPal:**
-
-<a href="https://www.paypal.com/donate?business=haibin.wen3%40gmail.com&no_recurring=10&currency_code=USD" target="_blank">
-<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
-</a>
-<br></br>
-
-**PayPal QR Code:**
-
-![haibin.wen3@gmail.com_paypal_qr.png.png](haibin.wen3@gmail.com_paypal_qr.png)
+Join sunnyhaibin's openpilot server!
+* https://discord.gg/6UCQPWWq
 
 🚨 Read Before Installing 🚨
 ---
@@ -81,6 +70,24 @@ Dynamic Lane Profile (DLP) aims to provide the best driving experience with stay
 * `prod-full`: Contains all features supported by this fork, such as Modified Assistive Driving Safety (MADS), Dynamic Lane Profile (DLP), etc.
 * `prod-personal`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, custom boot screens, quick boot time, etc.) and quality-of-life features.
     * Hyundai: [Sonata N Line] 2021
+
+💰 Donate 💰
+---
+
+If you find any of the features useful, feel free to donate for coffee to support for future development.
+
+Thank you for your continuous love and support!
+
+**PayPal:**
+
+<a href="https://www.paypal.com/donate?business=haibin.wen3%40gmail.com&no_recurring=10&currency_code=USD" target="_blank">
+<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
+</a>
+<br></br>
+
+**PayPal QR Code:**
+
+![haibin.wen3@gmail.com_paypal_qr.png.png](haibin.wen3@gmail.com_paypal_qr.png)
 
 🏆 Special Thanks
 ---
