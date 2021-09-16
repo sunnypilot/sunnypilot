@@ -7,6 +7,7 @@ Table of Contents
 * [Driving Enhancement](#-driving-enhancement)
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
+* [Installation](#-installation)
 * [Donate](#-donate-)
 * [Special Thanks](#-special-thanks)
 
@@ -71,6 +72,40 @@ Dynamic Lane Profile (DLP) aims to provide the best driving experience with stay
 * `prod-personal`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, custom boot screens, quick boot time, etc.) and quality-of-life features.
     * Hyundai: [Sonata N Line] 2021
 
+⚒ Installation
+---
+
+### Smiskol URL (Quickest and Easiest)
+To install sunnyhaibin's fork, simply use the Smiskol URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled openpilot from a previous install:
+
+```
+https://smiskol.com/fork/sunnyhaibin/<insert_branch_name>
+```
+For example, if you would like to install the branch:
+
+* [`0.8.8-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-full):
+    ```
+    https://smiskol.com/fork/sunnyhaibin/0.8.8-prod-full
+    ```
+
+* [`0.8.8-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-personal):
+    ```
+    https://smiskol.com/fork/sunnyhaibin/0.8.8-prod-personal
+    ```
+
+### SSH (More Versatile)
+If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
+
+* [`0.8.8-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-full):
+    ```
+    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.8-prod-full; pkill -f thermald; rm -f prebuilt; reboot
+    ```
+
+* [`0.8.8-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-personal):
+    ```
+    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.8-prod-personal; pkill -f thermald; rm -f prebuilt; reboot
+    ```
+
 💰 Donate 💰
 ---
 
@@ -96,3 +131,4 @@ Thank you for your continuous love and support!
 * [mob9221](https://github.com/mob9221/opendbc)
 * [briantran33](https://github.com/briantran33/openpilot)
 * [Aragon7777](https://github.com/aragon7777/openpilot)
+* [sshane](https://github.com/sshane/openpilot-installer-generator)
