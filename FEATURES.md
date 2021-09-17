@@ -5,6 +5,7 @@
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
 * [**NEW❗ Dynamic Lane Profile (DLP)**](#new-dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
 * Quiet Drive - Toggle to mute all notification sounds (excluding driver safety warnings)
+* Force Car Recognition - Use a selector to force your car to be recognized by Openpilot
 
 🚗 Highlight Features
 ---
