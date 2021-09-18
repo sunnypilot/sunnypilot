@@ -22,6 +22,8 @@ class PIController():
       self._k_p = [[0], [self._k_p]]
     if isinstance(self._k_i, Number):
       self._k_i = [[0], [self._k_i]]
+    if isinstance(self._k_d, Number):
+      self._k_d = [[0], [self._k_d]]
 
     self.pos_limit = pos_limit
     self.neg_limit = neg_limit
