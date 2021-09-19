@@ -102,6 +102,20 @@ static int toyota_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       }
     }
 
+<<<<<<< Updated upstream
+=======
+    if (addr == 0x1D3) {
+      bool acc_main_on = (GET_BYTE(to_push, 1) & 0x80) > 0;
+
+      if(acc_main_on_prev != acc_main_on)
+      {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
+>>>>>>> Stashed changes
     // sample speed
     if (addr == 0xaa) {
       int speed = 0;
