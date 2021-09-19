@@ -9,7 +9,7 @@ Table of Contents
 * [Recommended Branches](#-recommended-branches)
 * [Installation](#-installation)
 * [Donate](#-donate-)
-* [Pull Requests](#-Pull Requests-)
+* [Pull Requests](#-Pull-Requests-)
 * [Special Thanks](#-special-thanks)
 
 ---
