@@ -464,7 +464,8 @@ static void bb_ui_draw_measures_left(UIState *s, int bb_x, int bb_y, int bb_w ) 
         value_fontSize, label_fontSize, uom_fontSize );
     bb_ry = bb_y + bb_h;
   }
-    //engineRPM
+  //engineRPM
+/*
   if (true) {
     char val_str[16];
     char uom_str[4];
@@ -480,6 +481,7 @@ static void bb_ui_draw_measures_left(UIState *s, int bb_x, int bb_y, int bb_w ) 
         value_fontSize, label_fontSize, uom_fontSize );
     bb_ry = bb_y + bb_h;
   }
+*/
   //finally draw the frame
   bb_h += 20;
   nvgBeginPath(s->vg);
