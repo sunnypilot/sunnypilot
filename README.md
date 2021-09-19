@@ -132,3 +132,4 @@ Thank you for your continuous love and support!
 * [briantran33](https://github.com/briantran33/openpilot)
 * [Aragon7777](https://github.com/aragon7777/openpilot)
 * [sshane](https://github.com/sshane/openpilot-installer-generator)
+* [dri94](https://github.com/dri94/openpilot)
