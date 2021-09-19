@@ -9,6 +9,7 @@ Table of Contents
 * [Recommended Branches](#-recommended-branches)
 * [Installation](#-installation)
 * [Donate](#-donate-)
+* [Pull Requests](#-Pull Requests-)
 * [Special Thanks](#-special-thanks)
 
 ---
@@ -123,6 +124,13 @@ Thank you for your continuous love and support!
 **PayPal QR Code:**
 
 ![haibin.wen3@gmail.com_paypal_qr.png.png](haibin.wen3@gmail.com_paypal_qr.png)
+
+🎆 Pull Requests 🎆
+---
+
+We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
+
+Pull requests should be against the most current `develop-full` branch.
 
 🏆 Special Thanks
 ---
