@@ -4,8 +4,8 @@
 
 #include "selfdrive/ui/qt/util.h"
 
-void Sidebar::drawMetric(QPainter &p, const QString &label, QColor c, int y) {
-  const QRect rect = {30, y, 240, label.contains("\n") ? 124 : 100};
+void Sidebar::drawMetric(QPainter &p, const QString &label, const QString &val, QColor c, int y) {
+  const QRect rect = {30, y, 240, val.isEmpty() ? (label.contains("\n") ? 124 : 100) : 148};
 
   p.setPen(Qt::NoPen);
   p.setBrush(QBrush(c));
@@ -20,9 +20,16 @@ void Sidebar::drawMetric(QPainter &p, const QString &label, QColor c, int y) {
   p.drawRoundedRect(rect, 20, 20);
 
   p.setPen(QColor(0xff, 0xff, 0xff));
-  configFont(p, "Open Sans", 35, "Bold");
-  const QRect r = QRect(rect.x() + 30, rect.y(), rect.width() - 40, rect.height());
-  p.drawText(r, Qt::AlignCenter, label);
+  if (val.isEmpty()) {
+    configFont(p, "Open Sans", 35, "Bold");
+    const QRect r = QRect(rect.x() + 30, rect.y(), rect.width() - 40, rect.height());
+    p.drawText(r, Qt::AlignCenter, label);
+  } else {
+    configFont(p, "Open Sans", 58, "Bold");
+    p.drawText(rect.x() + 50, rect.y() + 71, val);
+    configFont(p, "Open Sans", 35, "Regular");
+    p.drawText(rect.x() + 50, rect.y() + 50 + 77, label);
+  }
 }
 
 Sidebar::Sidebar(QWidget *parent) : QFrame(parent) {
@@ -66,7 +73,7 @@ void Sidebar::updateState(const UIState &s) {
   } else if (ts == cereal::DeviceState::ThermalStatus::YELLOW) {
     tempColor = warning_color;
   }
-  setProperty("tempStatus", QVariant::fromValue(ItemStatus{QString("TEMP\n%1°C").arg((int)deviceState.getAmbientTempC()), tempColor}));
+  setProperty("tempStatus", QVariant::fromValue(ItemStatus{QString("%1°C").arg((int)deviceState.getAmbientTempC()), tempColor}));
 
   ItemStatus pandaStatus = {"VEHICLE\nONLINE", good_color};
   if (s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN) {
@@ -105,7 +112,7 @@ void Sidebar::paintEvent(QPaintEvent *event) {
   p.drawText(r, Qt::AlignCenter, net_type);
 
   // metrics
-  drawMetric(p, temp_status.first, temp_status.second, 338);
-  drawMetric(p, panda_status.first, panda_status.second, 496);
-  drawMetric(p, connect_status.first, connect_status.second, 654);
+  drawMetric(p, "TEMP", temp_status.first, temp_status.second, 338);
+  drawMetric(p, panda_status.first, "", panda_status.second, 518);
+  drawMetric(p, connect_status.first, "", connect_status.second, 676);
 }
