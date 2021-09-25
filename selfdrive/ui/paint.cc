@@ -299,19 +299,23 @@ static void ui_draw_vision_face(UIState *s) {
 
 static void draw_laneless_button(UIState *s) {
   if (s->vipc_client->connected) {
-    int btn_w = 140;
-    int btn_h = 140;
-    int btn_x1 = s->fb_w - btn_w - 195 -20;
-    int btn_y = 1080 - btn_h - 35 - (btn_h / 2) - 10;
-    int btn_xc1 = btn_x1 + (btn_w/2);
-    int btn_yc = btn_y + (btn_h/2);
+    const int radius = 80;
+    const int center_x = s->fb_w - radius - bdr_s * 4;
+    const int center_y = s->fb_h - radius - bdr_s * 3.5;
+    int btn_w = radius * 2;
+    int btn_h = radius * 2;
+    int btn_x1 = center_x - 0.5 * radius;
+    int btn_y = center_y - 0.5 * radius;
+    int btn_xc1 = btn_x1 + radius;
+    int btn_yc = btn_y + radius;
     nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
     nvgBeginPath(s->vg);
     nvgRoundedRect(s->vg, btn_x1, btn_y, btn_w, btn_h, 100);
+    // nvgRoundedRect(s->vg, btn_x1, btn_y, btn_w, btn_h, 100);
     nvgStrokeColor(s->vg, nvgRGBA(0,0,0,80));
     nvgStrokeWidth(s->vg, 6);
     nvgStroke(s->vg);
-    nvgFontSize(s->vg, 43);
+    nvgFontSize(s->vg, 58);
 
     if (s->scene.laneless_mode == 0) {
       nvgStrokeColor(s->vg, nvgRGBA(0,125,0,255));
@@ -344,6 +348,11 @@ static void draw_laneless_button(UIState *s) {
       nvgText(s->vg,btn_xc1,btn_yc-20,"Auto",NULL);
       nvgText(s->vg,btn_xc1,btn_yc+20,"Lane",NULL);
     }
+    
+    s->scene.laneless_btn_touch_rect = Rect{center_x - laneless_btn_touch_pad, 
+                                                center_y - laneless_btn_touch_pad,
+                                                radius + 2 * laneless_btn_touch_pad, 
+                                                radius + 2 * laneless_btn_touch_pad}; 
   }
 }
 
