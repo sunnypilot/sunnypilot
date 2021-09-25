@@ -18,7 +18,7 @@ Table of Contents
 ---
 
 Join sunnyhaibin's openpilot server!
-* https://discord.gg/6UCQPWWq
+* https://discord.gg/wRW3meAgtx
 
 🚨 Read Before Installing 🚨
 ---
