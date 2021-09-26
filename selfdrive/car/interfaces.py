@@ -101,14 +101,14 @@ class CarInterfaceBase():
   def apply(self, c):
     raise NotImplementedError
 
-  def create_common_events(self, cs_out, extra_gears=None, gas_resume_speed=-1, pcm_enable=True):
+  def create_common_events(self, cs_out, gas_resume_speed=-1, pcm_enable=True):
     events = Events()
 
     if cs_out.doorOpen:
       events.add(EventName.doorOpen)
     if cs_out.seatbeltUnlatched:
       events.add(EventName.seatbeltNotLatched)
-    if cs_out.gearShifter != GearShifter.drive and cs_out.gearShifter not in extra_gears and not (cs_out.gearShifter == GearShifter.unknown and self.CS.out.gearShifter != GearShifter.unknown):
+    if cs_out.gearShifter != GearShifter.drive and not (cs_out.gearShifter == GearShifter.unknown and self.CS.out.gearShifter != GearShifter.unknown):
       if cs_out.gearShifter == GearShifter.park:
         events.add(EventName.silentWrongGear)
       else:
