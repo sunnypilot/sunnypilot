@@ -68,8 +68,7 @@ void HomeWindow::showDriverView(bool show) {
 
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
   // Laneless mode
-  touch_rect = QUIState::ui_state.scene.laneless_btn_touch_rect;
-  if (QUIState::ui_state.scene.started && !sidebar->isVisible() && QUIState::ui_state.scene.end_to_end && touch_rect.ptInRect(e->x(), e->y())) {
+  if (QUIState::ui_state.scene.started && !sidebar->isVisible() && QUIState::ui_state.scene.end_to_end && QUIState::ui_state.scene.laneless_btn_touch_rect.ptInRect(e->x(), e->y())) {
     QUIState::ui_state.scene.laneless_mode = QUIState::ui_state.scene.laneless_mode + 1;
     if (QUIState::ui_state.scene.laneless_mode > 2) {
       QUIState::ui_state.scene.laneless_mode = 0;
