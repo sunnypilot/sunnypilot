@@ -31,7 +31,7 @@ This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It
 ---
 
 ### Driving Enhancement
-* [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot ALC and Hyundai SCC can be engaged independently of each other
+* [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot (Automatic) Lane Centering (ALC) and Hyundai SCC can be engaged independently of each other
 * [**NEW❗ Dynamic Lane Profile (DLP)**](#new-dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
 
 🚗 Driving Enhancement
