@@ -97,12 +97,12 @@ https://smiskol.com/fork/sunnyhaibin/<insert_branch_name>
 ```
 For example, if you would like to install the branch:
 
-* [`0.8.8-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-full):
+* [`0.8.9-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-full):
     ```
     https://smiskol.com/fork/sunnyhaibin/0.8.8-prod-full
     ```
 
-* [`0.8.8-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-personal):
+* [`0.8.9-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-personal):
     ```
     https://smiskol.com/fork/sunnyhaibin/0.8.8-prod-personal
     ```
@@ -110,14 +110,14 @@ For example, if you would like to install the branch:
 ### SSH (More Versatile)
 If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
 
-* [`0.8.8-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-full):
+* [`0.8.9-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-full):
     ```
-    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.8-prod-full; pkill -f thermald; rm -f prebuilt; reboot
+    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-full; pkill -f thermald; rm -f prebuilt; reboot
     ```
 
-* [`0.8.8-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.8-prod-personal):
+* [`0.8.9-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-personal):
     ```
-    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.8-prod-personal; pkill -f thermald; rm -f prebuilt; reboot
+    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-personal; pkill -f thermald; rm -f prebuilt; reboot
     ```
 
 💰 Donate 💰
