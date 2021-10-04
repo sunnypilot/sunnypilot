@@ -53,7 +53,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 ### NEW❗ Dynamic Lane Profile (DLP)
 Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows openpilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
 
-There are 3 modes to selet on the onroad camera screen:
+There are 3 modes to select on the onroad camera screen:
 * **Auto Lane**: openpilot dynamically chooses Laneline or Laneless model
 * **Laneline**: openpilot uses Laneline model only.
 * **Laneless**: openpilot uses Laneless model only.
