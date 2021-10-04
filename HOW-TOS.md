@@ -12,7 +12,7 @@ Table of Contents
 
 *(Last updated date: October 3rd, 2021)*
 
-*(Base on `master` on version 0.8.10 `d546c109ef4854322bfaea12954ad854d593554c`)*
+*(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
 
 * [Enable Radar Tracks](#-Enable-Radar-Tracks-)
 * [Enable openpilot Longitudinal Control](#-Enable-openpilot-Longitudinal-Control-)
@@ -34,7 +34,7 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
 
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
 
-*(Base on master on version 0.8.10 d546c109ef4854322bfaea12954ad854d593554c)*
+*(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
 
 1. Ensure the car is at the `OFF` ignition position.
 2. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
@@ -55,7 +55,7 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
 
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
 
-*(Base on master on version 0.8.10 d546c109ef4854322bfaea12954ad854d593554c)*
+*(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
 
 1. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
     * (Note: If doing this in the car, ensure the car is at the `OFF` ignition position.)
