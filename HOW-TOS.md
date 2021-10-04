@@ -47,7 +47,7 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
         1. C3: `sudo reboot`
         2. C2 or EON: `reboot`
 5. Once your comma device has been rebooted, start your car with engine on (with or without comma device connected). Ensure that there are no faults from the car.
-6. If there is no fault, you are done! You have successfully enabled radar tracks on your car's radar.
+6. If there are no faults, you are done! You have successfully enabled radar tracks on your car's radar.
 
 ### 🚨 Enable openpilot Longitudinal Control 🚨
 
