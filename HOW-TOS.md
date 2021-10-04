@@ -1,4 +1,4 @@
-#Introduction
+# Introduction
 This page is a repository of useful how-tos as a supplement for additional information.
 
 Table of Contents
@@ -25,7 +25,7 @@ to go back to the default values.
 
 USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be affected by these changes.
 
-###Enable Radar Tracks
+### Enable Radar Tracks
 
 1. Ensure the car is at the `OFF` ignition position.
 2. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
@@ -44,7 +44,7 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
 5. Once your comma device has been rebooted, start your car with engine on (with or without comma device connected). Ensure that there are no faults from the car.
 6. If there is no fault, you are done! You have successfully enabled radar tracks on your car's radar.
 
-###Enable openpilot Longitudinal Control
+### Enable openpilot Longitudinal Control
 
 1. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
     * (Note: If doing this in the car, ensure the car is at the `OFF` ignition position.)
