@@ -25,6 +25,9 @@ to go back to the default values.
 
 **USE AT YOUR OWN RISK!** Stock system safety features, like AEB and FCW, might be affected by these changes.
 
+**How radar points can be used along with vision:**
+* Current OP long policy is identify with vision first, if vision sees a vehicle match it to a radar point. If vision sees nothing you get a false negative and no lead car detection. It's been this way for a long time now. (Source: [Hubblesphere#7894 from comma.ai community Discord](https://discord.com/channels/469524606043160576/872899198738104330/872913890793635872))
+
 ### 🚨 Enable Radar Tracks 🚨
 
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
