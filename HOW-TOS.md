@@ -6,7 +6,7 @@ Table of Contents
 
 * [Enable Radar Tracks and openpilot Longitudinal Control](#Enable-Radar-Tracks-and-openpilot-Longitudinal-Control)
 
-##Enable Radar Tracks and openpilot Longitudinal Control
+## Enable Radar Tracks and openpilot Longitudinal Control
 (Last updated date: October 3rd, 2021. Base on `master` on 0.8.10 `d546c109ef4854322bfaea12954ad854d593554c`)
 
 * [Enable Radar Tracks](#Enable-Radar_Tracks)
