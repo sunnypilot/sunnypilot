@@ -62,9 +62,7 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
         1. C3: `sudo reboot`
         2. C2 or EON: `reboot`
 4. Once your comma device has been rebooted, a new toggle should appear:
-
-Directory Structure
-------
+---
     .
     └── Settings
         └── Toggles
