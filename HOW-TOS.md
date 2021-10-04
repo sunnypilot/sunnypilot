@@ -72,3 +72,8 @@ to go back to the default values.
    
 5. Set the toggle `openpilot Longitudinal Control` to `ON`. Reboot the comma device to ensure to take the change in effect.
 6. Start the car and drive. If a chevron (triangle) appears behind a lead car, you have successfully enabled openpilot Longitudinal Control.
+
+Note: Some Hyundai/Kia/Genesis cars may not see the chevron behind a lead car after enabling `openpilot Longitudinal Control`. Ensure that your car model is listed in the following statement in `selfdrive/car/hyundai/interface.py`:
+
+    ## As of October 3rd, 2021 ##
+    ret.openpilotLongitudinalControl = Params().get_bool("DisableRadar") and candidate in [CAR.SONATA, CAR.SONATA_HYBRID, CAR.PALISADE, CAR.SANTA_FE]
