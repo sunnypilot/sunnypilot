@@ -41,10 +41,8 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
     1. ```killall boardd```
     2. `python /data/openpilot/selfdrive/debug/hyundai_enable_radar_points.py`
     3. Follow the instructions in the script:
-       ```
         1. `Power on the vehicle keeping the engine off (press start button twice) then type OK to continue`.
-        2. If successful, the following message should appear: `[DONE]. Restart your vehicle and ensure there are no faults.
-       ```
+        2. If successful, the following message should appear: `[DONE]. Restart your vehicle and ensure there are no faults`.
     4. Reboot your comma device:
         1. C3: `sudo reboot`
         2. C2 or EON: `reboot`
