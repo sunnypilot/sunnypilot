@@ -1,4 +1,4 @@
-# Introduction
+# How Tos
 This page is a repository of useful how-tos as a supplement for additional information.
 
 Table of Contents
