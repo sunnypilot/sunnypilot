@@ -29,6 +29,8 @@ to go back to the default values.
 
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
 
+***(Only applicable to some Hyundai and Kia cars, as of October 3rd, 2021)***
+
 *(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
 
 1. Ensure the car is at the `OFF` ignition position.
