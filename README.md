@@ -124,7 +124,7 @@ If you are looking to install sunnyhaibin's fork via SSH, run the following comm
 📗 How Tos 📗
 ---
 
-How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/HOW-TOS.md).
+How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
 
 💰 Donate 💰
 ---
