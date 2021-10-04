@@ -68,4 +68,4 @@ to go back to the default values.
                     └── ***openpilot Longitudinal Control***
    
 5. Set the toggle `openpilot Longitudinal Control` to `ON`. Reboot the comma device to ensure to take the change in effect.
-6. Start the car and drive. If a chevron (triangle) appears behind a lead car, openpilot Longitudinal Control has been successfully enabled.
+6. Start the car and drive. If a chevron (triangle) appears behind a lead car, you have successfully enabled openpilot Longitudinal Control.
