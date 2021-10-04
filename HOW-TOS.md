@@ -57,6 +57,7 @@ to go back to the default values.
 2. Use a laptop or applicable device to connect to your comma device via SSH. (Tips: Instructions to SSH in [HERE](https://github.com/commaai/openpilot/wiki/SSH))
 3. In the SSH terminal after successfully connected to your comma device, execute the following commands:
     1. ```echo -n "1" > /data/params/d/DisableRadar_Allow```
+        * Note: It will automatically create the file `DisableRadar_Allow` under `/data/params/d` after executing the command.
     2. Reboot your comma device:
         1. C3: `sudo reboot`
         2. C2 or EON: `reboot`
