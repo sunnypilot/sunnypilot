@@ -8,6 +8,7 @@ Table of Contents
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
 * [Installation](#-installation)
+* [How-Tos](#-How-Tos-)
 * [Donate](#-donate-)
 * [Pull Requests](#-Pull-Requests-)
 * [Special Thanks](#-special-thanks)
@@ -119,6 +120,11 @@ If you are looking to install sunnyhaibin's fork via SSH, run the following comm
     ```
     cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-personal; pkill -f thermald; rm -f prebuilt; reboot
     ```
+
+📗 How Tos 📗
+---
+
+How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/HOW-TOS.md).
 
 💰 Donate 💰
 ---
