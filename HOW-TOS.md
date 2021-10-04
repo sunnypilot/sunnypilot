@@ -10,12 +10,10 @@ Table of Contents
 
 ## Enable Radar Tracks and openpilot Longitudinal Control
 
-*(Last updated date: October 3rd, 2021)*
-
-*(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
-
 * [Enable Radar Tracks](#-Enable-Radar-Tracks-)
 * [Enable openpilot Longitudinal Control](#-Enable-openpilot-Longitudinal-Control-)
+
+
 
 Radar tracks can now be enabled manually on applicable cars through SSH thanks to [@greghogan](https://github.com/greghogan) and [@pd0wm](https://github.com/pd0wm).
 
