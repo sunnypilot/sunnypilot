@@ -34,6 +34,8 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
 
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
 
+*(Base on master on version 0.8.10 d546c109ef4854322bfaea12954ad854d593554c)*
+
 1. Ensure the car is at the `OFF` ignition position.
 2. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
 3. Use a laptop or applicable device to connect to your comma device via SSH. (Tips: Instructions to SSH in [HERE](https://github.com/commaai/openpilot/wiki/SSH))
@@ -52,6 +54,8 @@ USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be a
 ### 🚨 Enable openpilot Longitudinal Control 🚨
 
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
+
+*(Base on master on version 0.8.10 d546c109ef4854322bfaea12954ad854d593554c)*
 
 1. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
     * (Note: If doing this in the car, ensure the car is at the `OFF` ignition position.)
