@@ -26,7 +26,7 @@ After changing the config the car should not show any faults when openpilot is n
 These config changes are persistent across car reboots. You need to run this script again
 to go back to the default values.
 
-USE AT YOUR OWN RISK! Stock system safety features, like AEB and FCW, might be affected by these changes.
+**USE AT YOUR OWN RISK!** Stock system safety features, like AEB and FCW, might be affected by these changes.
 
 ### 🚨 Enable Radar Tracks 🚨
 
