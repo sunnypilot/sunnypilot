@@ -38,6 +38,7 @@ def manager_init():
     ("OpenpilotEnabledToggle", "1"),
     ("EndToEndToggle", "1"),
     ("LanelessMode", "2"),
+    ("CarModel", ""),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

@@ -200,6 +200,11 @@ function launch {
     python /data/openpilot/common/spinner.py &
   fi
 
+  python ./selfdrive/car/hyundai/values.py > /data/params/d/HyundaiCars
+  python ./selfdrive/car/honda/values.py > /data/params/d/HondaCars
+
+  python ./force_car_recognition.py
+
   # start manager
   cd selfdrive/manager
   ./build.py && ./manager.py
