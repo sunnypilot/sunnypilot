@@ -72,7 +72,9 @@ void OnroadWindow::updateState(const UIState &s) {
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   if (map != nullptr) {
     bool sidebarVisible = geometry().x() > 0;
-    map->setVisible(!sidebarVisible && !map->isVisible());
+    if (!QUIState::ui_state.scene.laneless_btn_touch_rect.ptInRect(e->x(), e->y())){
+      map->setVisible(!sidebarVisible && !map->isVisible());
+    }
   }
   // propagation event to parent(HomeWindow)
   QWidget::mousePressEvent(e);
