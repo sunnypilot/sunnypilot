@@ -61,7 +61,7 @@ There are 3 modes to select on the onroad camera screen:
 To use Dynamic Lane Profile, do the following:
 ```
 1. openpilot Settings -> Toggles -> Disable use of lanelines -> ON toggle
-2. Reboot
+2. Reboot.
 3. Before driving, on the onroad camera screen, toggle between the 3 modes by pressing on the button.
 4. Drive. 
 ```
@@ -113,13 +113,16 @@ If you are looking to install sunnyhaibin's fork via SSH, run the following comm
 
 * [`0.8.9-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-full):
     ```
-    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-full; pkill -f thermald; rm -f prebuilt; reboot
+    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-full; pkill -f thermald; rm -f prebuilt
     ```
 
 * [`0.8.9-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-personal):
     ```
-    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-personal; pkill -f thermald; rm -f prebuilt; reboot
+    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.9-prod-personal; pkill -f thermald; rm -f prebuilt
     ```
+After running the command to install the desired branch, reboot the comma device to ensure to take the change in effect:
+1. C3: `sudo reboot`
+2. C2 or EON: `reboot`
 
 📗 How Tos 📗
 ---
