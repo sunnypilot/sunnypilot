@@ -100,12 +100,12 @@ For example, if you would like to install the branch:
 
 * [`0.8.9-prod-full`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-full):
     ```
-    https://smiskol.com/fork/sunnyhaibin/0.8.8-prod-full
+    https://smiskol.com/fork/sunnyhaibin/0.8.9-prod-full
     ```
 
 * [`0.8.9-prod-personal`](https://github.com/sunnyhaibin/openpilot/tree/0.8.9-prod-personal):
     ```
-    https://smiskol.com/fork/sunnyhaibin/0.8.8-prod-personal
+    https://smiskol.com/fork/sunnyhaibin/0.8.9-prod-personal
     ```
 
 ### SSH (More Versatile)
