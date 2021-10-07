@@ -257,9 +257,11 @@ static void ui_draw_vision_face(UIState *s) {
 
 static void draw_laneless_button(UIState *s) {
   if (s->vipc_client->connected) {
+    const Rect maxspeed_rect = {bdr_s * 2, int(bdr_s * 1.5), 184, 202};
+    const int vision_face_radius = 96;
     const int radius = 80;
-    const int center_x = s->fb_w - radius - bdr_s * 4;
-    const int center_y = s->fb_h - radius - bdr_s * 3.5;
+    const int center_x = maxspeed_rect.centerX() + vision_face_radius + 2 * bdr_s + radius;
+    const int center_y = s->fb_h - footer_h / 2 - radius / 2;
     int btn_w = radius * 2;
     int btn_h = radius * 2;
     int btn_x1 = center_x - 0.5 * radius;
@@ -321,10 +323,6 @@ static void ui_draw_vision_header(UIState *s) {
   ui_draw_vision_maxspeed(s);
   ui_draw_vision_speed(s);
   ui_draw_vision_event(s);
-
-  if (s->scene.end_to_end) {
-    draw_laneless_button(s);
-  }
 }
 
 static void ui_draw_vision(UIState *s) {
@@ -337,6 +335,9 @@ static void ui_draw_vision(UIState *s) {
   ui_draw_vision_header(s);
   if ((*s->sm)["controlsState"].getControlsState().getAlertSize() == cereal::ControlsState::AlertSize::NONE) {
     ui_draw_vision_face(s);
+    if (s->scene.end_to_end) {
+      draw_laneless_button(s);
+    }
   }
 }
 
