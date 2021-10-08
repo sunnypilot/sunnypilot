@@ -762,12 +762,10 @@ FW_VERSIONS = {
       ],
     (Ecu.eps, 0x7d4, None): [
       b'\xf1\x8756310-L5500\xf1\000DN8 MDPS C 1.00 1.02 56310-L5500 4DNHC102',
-      b'\xf1\x8756310-L5450\xf1\x00DN8 MDPS C 1.00 1.02 56310-L5450 4DNHC102',
       b'\xf1\x8756310-L5450\xf1\000DN8 MDPS C 1.00 1.02 56310-L5450 4DNHC102',
       ],
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\000DN8HMFC  AT USA LHD 1.00 1.04 99211-L1000 191016',
-      b'\xf1\x00DN8HMFC  AT USA LHD 1.00 1.05 99211-L1000 201109',
       b'\xf1\000DN8HMFC  AT USA LHD 1.00 1.05 99211-L1000 201109',
       ],
     (Ecu.transmission, 0x7e1, None): [
