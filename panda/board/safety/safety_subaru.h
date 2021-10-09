@@ -446,6 +446,8 @@ static int subaru_hybrid_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       relay_malfunction_set();
     }
   }
+
+/*
   if (valid && (GET_BUS(to_push) == 1)) {
 
     // exit controls on rising edge of brake press (Brake_Hybrid)
@@ -466,6 +468,7 @@ static int subaru_hybrid_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       gas_pressed_prev = gas_pressed;
     }
   }
+*/
   if (valid && (GET_BUS(to_push) == 2)) {
 
     if (addr == 0x321) {
