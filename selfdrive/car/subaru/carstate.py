@@ -234,6 +234,7 @@ class CarState(CarStateBase):
       signals += [
         ("Cruise_On", "CruiseControl", 0),
         ("Cruise_Activated", "CruiseControl", 0),
+        ("Main", "Cruise_Buttons", 0),
       ]
 
     if CP.carFingerprint in PREGLOBAL_CARS:
