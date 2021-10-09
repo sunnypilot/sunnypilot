@@ -78,6 +78,10 @@ TogglesPanel::TogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "In this mode openpilot will display alerts but only play the most important warning sounds. ",
                                   "../assets/offroad/icon_mute.png",
                                   this));
+  toggles.append(new ParamControl("ManualParkingBrakeSNGToggle",
+                                  "Subaru Manual PB Stop and Go",
+                                  "Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled.",
+                                  "../assets/offroad/icon_speed_limit.png"));
 
 #ifdef ENABLE_MAPS
   toggles.append(new ParamControl("NavSettingTime24h",
