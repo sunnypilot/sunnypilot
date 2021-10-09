@@ -80,7 +80,7 @@ class CarState(CarStateBase):
     elif self.car_fingerprint == CAR.CROSSTREK_2020H:
       self.acc_main_enabled = cp_cam.vl["ES_DashStatus"]['Cruise_On'] == 0
     else:
-      self.acc_main_enabled = cp.vl["CruiseControl"]["Cruise_On"] == 0
+      self.acc_main_enabled = cp.vl["Cruise_Buttons"]["Main"] == 0
 
     self.cruise_set = cp_cam.vl["ES_Distance"]["Cruise_Set"] == 0
     if self.cruise_set == 1:
