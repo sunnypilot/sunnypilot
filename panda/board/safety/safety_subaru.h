@@ -69,16 +69,32 @@ static int subaru_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
+    if (addr == 0x240) {
+      bool acc_main_on = ((GET_BYTES_48(to_push) >> 8) & 1); // ACC main_on signal
+      if (acc_main_on && !acc_main_on_prev)
+      {
+        controls_allowed = 1;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
     // enter controls on rising edge of ACC, exit controls on ACC off
     if (addr == 0x240) {
       int cruise_engaged = ((GET_BYTES_48(to_push) >> 9) & 1);
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
-      if (!cruise_engaged) {
+      cruise_engaged_prev = cruise_engaged;
+    }
+
+    if (addr == 0x240) {
+      bool acc_main_on = ((GET_BYTES_48(to_push) >> 8) & 1); // ACC main_on signal
+      if (acc_main_on_prev != acc_main_on)
+      {
+        disengageFromBrakes = false;
         controls_allowed = 0;
       }
-      cruise_engaged_prev = cruise_engaged;
+      acc_main_on_prev = acc_main_on;
     }
 
     // sample wheel speed, averaging opposite corners
@@ -115,16 +131,32 @@ static int subaru_legacy_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
+    if (addr == 0x144) {
+      bool acc_main_on = ((GET_BYTES_48(to_push) >> 16) & 1); // ACC main_on signal
+      if (acc_main_on && !acc_main_on_prev)
+      {
+        controls_allowed = 1;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
     // enter controls on rising edge of ACC, exit controls on ACC off
     if (addr == 0x144) {
       int cruise_engaged = ((GET_BYTES_48(to_push) >> 17) & 1);
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
-      if (!cruise_engaged) {
+      cruise_engaged_prev = cruise_engaged;
+    }
+
+    if (addr == 0x144) {
+      bool acc_main_on = ((GET_BYTES_48(to_push) >> 16) & 1); // ACC main_on signal
+      if (acc_main_on_prev != acc_main_on)
+      {
+        disengageFromBrakes = false;
         controls_allowed = 0;
       }
-      cruise_engaged_prev = cruise_engaged;
+      acc_main_on_prev = acc_main_on;
     }
 
     // sample wheel speed, averaging opposite corners
@@ -322,6 +354,7 @@ static int subaru_legacy_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) 
 }
 
 static const addr_checks* subaru_init(int16_t param) {
+  disengageFromBrakes = false;
   UNUSED(param);
   controls_allowed = false;
   relay_malfunction_reset();
@@ -337,6 +370,7 @@ const safety_hooks subaru_hooks = {
 };
 
 static const addr_checks* subaru_legacy_init(int16_t param) {
+  disengageFromBrakes = false;
   UNUSED(param);
   controls_allowed = false;
   relay_malfunction_reset();
