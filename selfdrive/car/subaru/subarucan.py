@@ -3,13 +3,13 @@ from cereal import car
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-def create_steering_control(packer, apply_steer, steer_req, frame, steer_step):
+def create_steering_control(packer, apply_steer, frame, steer_step):
 
   idx = (frame / steer_step) % 16
 
   values = {
     "Counter": idx,
-    "LKAS_Output": apply_steer if steer_req else 0,
+    "LKAS_Output": apply_steer,
     "LKAS_Request": 1 if apply_steer != 0 else 0,
     "SET_1": 1
   }

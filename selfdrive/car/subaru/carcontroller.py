@@ -49,15 +49,13 @@ class CarController():
 
       if enabled and CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
         self.steer_rate_limited = new_steer != apply_steer
-        apply_steer_req = 1
       else:
         apply_steer = 0
-        apply_steer_req = 0
 
       if CS.CP.carFingerprint in PREGLOBAL_CARS:
         can_sends.append(subarucan.create_preglobal_steering_control(self.packer, apply_steer, frame, self.p.STEER_STEP))
       else:
-        can_sends.append(subarucan.create_steering_control(self.packer, apply_steer, apply_steer_req, frame, self.p.STEER_STEP))
+        can_sends.append(subarucan.create_steering_control(self.packer, apply_steer, frame, self.p.STEER_STEP))
 
       self.apply_steer_last = apply_steer
 
