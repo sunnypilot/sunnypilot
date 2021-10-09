@@ -134,9 +134,9 @@ How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/
 💰 Donate 💰
 ---
 
-If you find any of the features useful, feel free to donate for coffee to support for future development.
+If you find any of the features useful, feel free to donate to support for future feature development.
 
-Thank you for your continuous love and support!
+Thank you for your continuous love and support! Enjoy 🥰
 
 **PayPal:**
 
