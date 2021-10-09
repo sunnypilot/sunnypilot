@@ -247,7 +247,7 @@ class CarInterface(CarInterfaceBase):
     enable_pressed = False
     enable_from_brake = False
 
-    if self.CS.disengageByBrake and not ret.brakePressed and (self.CS.lfaEnabled or self.CS.accMainEnabled):
+    if self.CS.disengageByBrake and not ret.brakePressed and self.CS.accMainEnabled:
       enable_pressed = True
       enable_from_brake = True
 
