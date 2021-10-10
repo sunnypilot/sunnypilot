@@ -36,6 +36,8 @@ to go back to the default values.
 
 *(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
 
+**USE AT YOUR OWN RISK!** Stock system safety features, like AEB and FCW, might be affected by these changes.
+
 1. Ensure the car is at the `OFF` ignition position.
 2. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
 3. Use a laptop or applicable device to connect to your comma device via SSH. (Tips: Instructions to SSH in [HERE](https://github.com/commaai/openpilot/wiki/SSH))
@@ -56,6 +58,8 @@ to go back to the default values.
 ***(EXPERIMENTAL, as of October 3rd, 2021)***
 
 *(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
+
+**USE AT YOUR OWN RISK!** Stock system safety features, like AEB and FCW, might be affected by these changes.
 
 1. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
     * (Note: If doing this in the car, ensure the car is at the `OFF` ignition position.)
