@@ -26,15 +26,15 @@ Join sunnyhaibin's openpilot server!
 
 It is recommended to read this entire page before proceeding. This will ensure that you are selecting the right branch for your car to have the best driving experience.
 
-This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
+This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Toyota, Honda, and Subaru cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
 
 🚗 Highlight Features
 ---
 
 ### Driving Enhancement
-* [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot (Automatic) Lane Centering (ALC) and Hyundai SCC can be engaged independently of each other
+* [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot (Automatic) Lane Centering (ALC) and ACC/SCC can be engaged independently of each other
 * [**NEW❗ Dynamic Lane Profile (DLP)**](#new-dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
-* Quiet Drive - Toggle to mute all notification sounds (excluding driver safety warnings)
+* Quiet Drive 🤫 - Toggle to mute all notification sounds (excluding driver safety warnings)
 * Force Car Recognition (FCR) - Use a selector to force your car to be recognized by openpilot
 
 🚗 Driving Enhancement
@@ -42,21 +42,24 @@ This fork is recommended to be used for Hyundai, Kia, and Genesis (HKG) cars. It
 
 ### NEW❗ Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
-* openpilot ALC and Hyundai SCC/ACC can be engaged independently of each other
-* `LFA` button (only on newer HKG vehicles) or `CRUISE (MAIN)` button toggles openpilot ALC
-* `SET-` button enables Hyundai SCC/ACC
-* `CANCEL` button only disables Hyundai SCC/ACC
+* openpilot ALC and ACC/SCC can be engaged independently of each other
+* Dedicated button to toggle openpilot ALC:
+  * Newer HKG cars: `LFA` button
+  * Most HKG cars, Subaru: `CRUISE (MAIN)` button
+  * Honda, Toyota (Subaru coming soon!): `LKAS` button
+* `SET-` button enables ACC/SCC
+* `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
 * `BRAKE pedal` press will pause openpilot ALC; `BRAKE pedal` release will resume openpilot ALC
-* `GAS pedal` press will not disengage openpilot ALC or Hyundai SCC/ACC
+* `GAS pedal` press will not disengage openpilot ALC or ACC/SCC
 * `TURN SIGNALS` (`Left` or `Right`) will pause openpilot ALC if the vehicle speed is below the threshold for openpilot Automatic Lane Change
-* Event audible alerts are more relaxed to match Hyundai stock behavior
+* Event audible alerts are more relaxed to match manufacturer's stock behavior
 
 ### NEW❗ Dynamic Lane Profile (DLP)
 Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows openpilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
 
 There are 3 modes to select on the onroad camera screen:
-* **Auto Lane**: openpilot dynamically chooses Laneline or Laneless model
+* **Auto Lane**: openpilot dynamically chooses between `Laneline` or `Laneless` model
 * **Laneline**: openpilot uses Laneline model only.
 * **Laneless**: openpilot uses Laneless model only.
 
@@ -79,15 +82,9 @@ To use Dynamic Lane Profile, do the following:
 
 📰 Recommended Branches
 ---
-* `prod-mads`: Contains Modified Assistive Driving Safety (MADS).
-    * HKG cars with `LFA` button on the steering wheel will use `LFA` button to engage MADS:
-        * Hyundai: [Sonata] 2020-2021
-        * Hyundai: [Elantra] 2021
-    * HKG cars with **NO** `LFA` button but only `CRUISE (ACC MAIN)` button on the steering wheel will use `CRUISE (ACC MAIN)` button to engage MADS:
-        * All officially supported HKG cars **without** `LFA` button on steering wheel
 * `prod-full`: Contains all features supported by this fork, such as Modified Assistive Driving Safety (MADS), Dynamic Lane Profile (DLP), etc.
 * `prod-personal`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use (i.e. custom alerts, custom boot screens, quick boot time, etc.) and quality-of-life features.
-    * Hyundai: [Sonata N Line] 2021
+    * **Hyundai: Sonata N Line 2021**
 
 ⚒ Installation
 ---
