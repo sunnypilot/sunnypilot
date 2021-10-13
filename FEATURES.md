@@ -4,7 +4,7 @@
 ### All Features
 * [**NEW❗ Modified Assistive Driving Safety (MADS)**](#new-modified-assistive-driving-safety-mads) - openpilot (Automatic) Lane Centering (ALC) and ACC/SCC can be engaged independently of each other
 * [**NEW❗ Dynamic Lane Profile (DLP)**](#new-dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
-* Quiet Drive - Toggle to mute all notification sounds (excluding driver safety warnings)
+* Quiet Drive 🤫 - Toggle to mute all notification sounds (excluding driver safety warnings)
 * Force Car Recognition (FCR) - Use a selector to force your car to be recognized by openpilot
 
 🚗 Highlight Features
