@@ -137,14 +137,14 @@ Thank you for your continuous love and support! Enjoy 🥰
 
 **PayPal:**
 
-<a href="https://www.paypal.com/donate?business=haibin.wen3%40gmail.com&no_recurring=10&currency_code=USD" target="_blank">
+<a href="https://paypal.me/sunnyhaibin0850" target="_blank">
 <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
 </a>
 <br></br>
 
 **PayPal QR Code:**
 
-![haibin.wen3@gmail.com_paypal_qr.png.png](haibin.wen3@gmail.com_paypal_qr.png)
+![sunnyhaibin0850_qrcode_paypal.me.png](sunnyhaibin0850_qrcode_paypal.me.png)
 
 🎆 Pull Requests 🎆
 ---
