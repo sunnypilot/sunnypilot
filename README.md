@@ -26,7 +26,7 @@ Join sunnyhaibin's openpilot server!
 
 It is recommended to read this entire page before proceeding. This will ensure that you are selecting the right branch for your car to have the best driving experience.
 
-This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Toyota, Honda, and Subaru cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
+This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**) and Toyota cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
 
 🚗 Highlight Features
 ---
@@ -45,8 +45,8 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * openpilot ALC and ACC/SCC can be engaged independently of each other
 * Dedicated button to toggle openpilot ALC:
   * Newer HKG cars: `LFA` button
-  * Most HKG cars, Subaru: `CRUISE (MAIN)` button
-  * Honda, Toyota (Subaru coming soon!): `LKAS` button
+  * Most HKG cars: `CRUISE (MAIN)` button
+  * Toyota (Honda, Subaru coming soon!): `LKAS` button
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
