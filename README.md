@@ -44,9 +44,9 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**) and Toyota
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * openpilot ALC and ACC/SCC can be engaged independently of each other
 * Dedicated button to toggle openpilot ALC:
-  * Newer HKG cars: `LFA` button
-  * Most HKG cars: `CRUISE (MAIN)` button
-  * Toyota (Coming Soon™ to Honda and Subaru (Global and Pre Global)!): `LKAS` button
+  * `LFA` button: Newer HKG cars
+  * `CRUISE (MAIN)` button: Most HKG cars
+  * `LKAS` button: Toyota (Coming Soon™ to Honda and Subaru (Global and Pre Global)!)
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
