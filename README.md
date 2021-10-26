@@ -46,7 +46,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * Dedicated button to toggle openpilot ALC:
   * Newer HKG cars: `LFA` button
   * Most HKG cars: `CRUISE (MAIN)` button
-  * Toyota (Honda, Subaru coming soon!): `LKAS` button
+  * Toyota (Coming Soon™ to Honda and Subaru (Global and Pre Global)!): `LKAS` button
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
