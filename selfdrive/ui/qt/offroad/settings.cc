@@ -20,40 +20,94 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
+#include "selfdrive/ui/qt/widgets/sunnypilot.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
 
-TogglesPanel::TogglesPanel(QWidget *parent) : ListWidget(parent) {
+TogglesPanel::TogglesPanel(QWidget *parent) : QWidget(parent) {
+  main_layout = new QStackedLayout(this);
+  QWidget* home = new QWidget(this);
+  QVBoxLayout* fcr_layout = new QVBoxLayout(home);
+  fcr_layout->setContentsMargins(0, 20, 0, 20);
+
+  QString set = QString::fromStdString(Params().get("CarModel"));
+
+  QPushButton* setCarBtn = new QPushButton(set.length() ? set : "Set your car");
+  setCarBtn->setObjectName("setCarBtn");
+  setCarBtn->setStyleSheet("margin-right: 30px;");
+  connect(setCarBtn, &QPushButton::clicked, [=]() { main_layout->setCurrentWidget(setCar); });
+  fcr_layout->addSpacing(10);
+  fcr_layout->addWidget(setCarBtn, 0, Qt::AlignRight);
+  fcr_layout->addSpacing(10);
+
+  home_widget = new QWidget(this);
+  QVBoxLayout* toggle_layout = new QVBoxLayout(home_widget);
+  home_widget->setObjectName("homeWidget");
+
+  ScrollView *scroller = new ScrollView(home_widget, this);
+  scroller->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  fcr_layout->addWidget(scroller, 1);
+
+  main_layout->addWidget(home);
+
+  setCar = new ForceCarRecognition(this);
+  connect(setCar, &ForceCarRecognition::backPress, [=]() { main_layout->setCurrentWidget(home); });
+  connect(setCar, &ForceCarRecognition::selectedCar, [=]() {
+    QString set = QString::fromStdString(Params().get("CarModel"));
+    setCarBtn->setText(set.length() ? set : "Set your car");
+    main_layout->setCurrentWidget(home);
+  });
+  main_layout->addWidget(setCar);
+
+  QPalette pal = palette();
+  pal.setColor(QPalette::Background, QColor(0x29, 0x29, 0x29));
+  setAutoFillBackground(true);
+  setPalette(pal);
+
+  setStyleSheet(R"(
+    #backBtn, #setCarBtn {
+      font-size: 50px;
+      margin: 0px;
+      padding: 20px;
+      border-width: 0;
+      border-radius: 30px;
+      color: #dddddd;
+      background-color: #444444;
+    }
+  )");
+
+  QList<ParamControl*> toggles;
+
   auto params = Params();
-  addItem(new ParamControl("OpenpilotEnabledToggle",
+  toggles.append(new ParamControl("OpenpilotEnabledToggle",
                                   "Enable openpilot",
                                   "Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.",
                                   "../assets/offroad/icon_openpilot.png",
                                   this));
-  addItem(new ParamControl("IsLdwEnabled",
+  toggles.append(new ParamControl("IsLdwEnabled",
                                   "Enable Lane Departure Warnings",
                                   "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31mph (50kph).",
                                   "../assets/offroad/icon_warning.png",
                                   this));
-  addItem(new ParamControl("IsRHD",
+  toggles.append(new ParamControl("IsRHD",
                                   "Enable Right-Hand Drive",
                                   "Allow openpilot to obey left-hand traffic conventions and perform driver monitoring on right driver seat.",
                                   "../assets/offroad/icon_openpilot_mirrored.png",
                                   this));
-  addItem(new ParamControl("IsMetric",
+  toggles.append(new ParamControl("IsMetric",
                                   "Use Metric System",
                                   "Display speed in km/h instead of mph.",
                                   "../assets/offroad/icon_metric.png",
                                   this));
-  addItem(new ParamControl("CommunityFeaturesToggle",
+  toggles.append(new ParamControl("CommunityFeaturesToggle",
                                   "Enable Community Features",
                                   "Use features, such as community supported hardware, from the open source community that are not maintained or supported by comma.ai and have not been confirmed to meet the standard safety model. Be extra cautious when using these features",
                                   "../assets/offroad/icon_shell.png",
                                   this));
 
-  addItem(new ParamControl("UploadRaw",
+  toggles.append(new ParamControl("UploadRaw",
                                   "Upload Raw Logs",
                                   "Upload full logs and full resolution video by default while on Wi-Fi. If not enabled, individual logs can be marked for upload at useradmin.comma.ai.",
                                   "../assets/offroad/icon_network.png",
@@ -64,26 +118,38 @@ TogglesPanel::TogglesPanel(QWidget *parent) : ListWidget(parent) {
                                                  "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",
                                                  "../assets/offroad/icon_monitoring.png",
                                                  this);
-  addItem(record_toggle);
-  addItem(new ParamControl("EndToEndToggle",
+  toggles.append(record_toggle);
+  toggles.append(new ParamControl("EndToEndToggle",
                                   "\U0001f96c Disable use of lanelines (Alpha) \U0001f96c",
                                   "In this mode openpilot will ignore lanelines and just drive how it thinks a human would.",
                                   "../assets/offroad/icon_road.png",
                                   this));
+  toggles.append(new ParamControl("QuietDrive",
+                                  "Quiet Drive 🤫",
+                                  "In this mode openpilot will display alerts but only play the most important warning sounds. ",
+                                  "../assets/offroad/icon_mute.png",
+                                  this));
 #ifdef ENABLE_MAPS
-  addItem(new ParamControl("NavSettingTime24h",
+  toggles.append(new ParamControl("NavSettingTime24h",
                                   "Show ETA in 24h format",
                                   "Use 24h format instead of am/pm",
                                   "../assets/offroad/icon_metric.png",
                                   this));
 #endif
   if (params.getBool("DisableRadar_Allow")) {
-    addItem(new ParamControl("DisableRadar",
+    toggles.append(new ParamControl("DisableRadar",
                              "openpilot Longitudinal Control",
                              "openpilot will disable the car's radar and will take over control of gas and brakes. Warning: this disables AEB!",
                              "../assets/offroad/icon_speed_limit.png",
                              this));
 
+  }
+
+  for(ParamControl *toggle : toggles) {
+    if(main_layout->count() != 0) {
+      toggle_layout->addWidget(horizontal_line());
+    }
+    toggle_layout->addWidget(toggle);
   }
 
   bool record_lock = params.getBool("RecordFrontLock");
@@ -292,6 +358,15 @@ void SettingsWindow::showEvent(QShowEvent *event) {
   nav_btns->buttons()[0]->setChecked(true);
 }
 
+FeaturePanel::FeaturePanel(QWidget* parent) : QWidget(parent) {
+  QVBoxLayout *layout = new QVBoxLayout(this);
+
+  layout->setContentsMargins(50, 0, 50, 0);
+  layout->setSpacing(30);
+
+  layout->addWidget(new AutoLaneChangeTimer());
+}
+
 SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
 
   // setup two main layouts
@@ -335,6 +410,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {"Network", network_panel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Software", new SoftwarePanel(this)},
+    {"Features", new FeaturePanel(this)},
   };
 
 #ifdef ENABLE_MAPS

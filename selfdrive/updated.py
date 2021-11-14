@@ -112,7 +112,7 @@ def set_params(new_version: bool, failed_count: int, exception: Optional[str]) -
 
   if new_version:
     try:
-      with open(os.path.join(FINALIZED, "RELEASES.md"), "rb") as f:
+      with open(os.path.join(FINALIZED, "CHANGELOGS.md"), "rb") as f:
         r = f.read()
       r = r[:r.find(b'\n\n')]  # Slice latest release notes
       params.put("ReleaseNotes", r + b"\n")

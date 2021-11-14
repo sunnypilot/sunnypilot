@@ -184,6 +184,12 @@ function launch {
   # write tmux scrollback to a file
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
+  python ./selfdrive/car/hyundai/values.py > /data/params/d/HyundaiCars
+  python ./selfdrive/car/honda/values.py > /data/params/d/HondaCars
+  python ./selfdrive/car/subaru/values.py > /data/params/d/SubaruCars
+
+  python ./force_car_recognition.py
+
   # start manager
   cd selfdrive/manager
   ./build.py && ./manager.py

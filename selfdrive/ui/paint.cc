@@ -105,13 +105,29 @@ static void ui_draw_line(UIState *s, const line_vertices_data &vd, NVGcolor *col
   nvgFill(s->vg);
 }
 
+// sunnyhaibin's colored lane line
 static void ui_draw_vision_lane_lines(UIState *s) {
   const UIScene &scene = s->scene;
   NVGpaint track_bg;
-  if (!scene.end_to_end) {
+  int steerOverride = scene.car_state.getSteeringPressed();
+  int red_lvl = 0;
+  int green_lvl = 0;
+
+  float red_lvl_line = 0;
+  float green_lvl_line = 0;
+  //if (!scene.end_to_end) {
+  if (!scene.lateralPlan.lanelessModeStatus) {
     // paint lanelines
     for (int i = 0; i < std::size(scene.lane_line_vertices); i++) {
+      if (scene.lane_line_probs[i] > 0.4){
+        red_lvl_line = 1.0 - ((scene.lane_line_probs[i] - 0.4) * 2.5);
+        green_lvl_line = 1.0;
+      } else {
+        red_lvl_line = 1.0;
+        green_lvl_line = 1.0 - ((0.4 - scene.lane_line_probs[i]) * 2.5);
+      }
       NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene.lane_line_probs[i]);
+      color = nvgRGBAf(red_lvl_line, green_lvl_line, 0, 1);
       ui_draw_line(s, scene.lane_line_vertices[i], &color, nullptr);
     }
 
@@ -120,11 +136,24 @@ static void ui_draw_vision_lane_lines(UIState *s) {
       NVGcolor color = nvgRGBAf(1.0, 0.0, 0.0, std::clamp<float>(1.0 - scene.road_edge_stds[i], 0.0, 1.0));
       ui_draw_line(s, scene.road_edge_vertices[i], &color, nullptr);
     }
-    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                          COLOR_WHITE, COLOR_WHITE_ALPHA(0));
+  }
+  if (scene.controls_state.getEnabled()) {
+    if (steerOverride) {
+      track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+        COLOR_BLACK_ALPHA(80), COLOR_BLACK_ALPHA(20));
+    } else if (!scene.lateralPlan.lanelessModeStatus) {
+      red_lvl = 0;
+      green_lvl = 200;
+      track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+        nvgRGBA(red_lvl, green_lvl, 0, 250), nvgRGBA(red_lvl, green_lvl, 0, 50));
+    } else { // differentiate laneless mode color (Grace blue)
+        track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
+          nvgRGBA(0, 100, 255, 250), nvgRGBA(0, 100, 255, 50));
+    }
   } else {
+    // Draw white vision track
     track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                          COLOR_RED, COLOR_RED_ALPHA(0));
+                                        COLOR_WHITE_ALPHA(150), COLOR_WHITE_ALPHA(20));
   }
   // paint path
   ui_draw_line(s, scene.track_vertices, nullptr, &track_bg);
@@ -198,6 +227,65 @@ static void ui_draw_vision_face(UIState *s) {
   ui_draw_circle_image(s, center_x, center_y, radius, "driver_face", s->scene.dm_active);
 }
 
+static void draw_laneless_button(UIState *s) {
+  const Rect maxspeed_rect = {bdr_s * 2, int(bdr_s * 1.5), 184, 202};
+  const int vision_face_radius = 96;
+  const int radius = 80;
+  const int center_x = maxspeed_rect.centerX() + vision_face_radius + 2 * bdr_s + radius;
+  const int center_y = s->fb_h - footer_h / 2 - radius / 2;
+  int btn_w = radius * 2;
+  int btn_h = radius * 2;
+  int btn_x1 = center_x - 0.5 * radius;
+  int btn_y = center_y - 0.5 * radius;
+  int btn_xc1 = btn_x1 + radius;
+  int btn_yc = btn_y + radius;
+  nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+  nvgBeginPath(s->vg);
+  nvgRoundedRect(s->vg, btn_x1, btn_y, btn_w, btn_h, 100);
+  // nvgRoundedRect(s->vg, btn_x1, btn_y, btn_w, btn_h, 100);
+  nvgStrokeColor(s->vg, nvgRGBA(0,0,0,80));
+  nvgStrokeWidth(s->vg, 6);
+  nvgStroke(s->vg);
+  nvgFontSize(s->vg, 58);
+
+  if (s->scene.laneless_mode == 0) {
+    nvgStrokeColor(s->vg, nvgRGBA(0,125,0,255));
+    nvgStrokeWidth(s->vg, 6);
+    nvgStroke(s->vg);
+    NVGcolor fillColor = nvgRGBA(0,125,0,80);
+    nvgFillColor(s->vg, fillColor);
+    nvgFill(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(255,255,255,200));
+    nvgText(s->vg,btn_xc1,btn_yc-20,"Lane",NULL);
+    nvgText(s->vg,btn_xc1,btn_yc+20,"only",NULL);
+  } else if (s->scene.laneless_mode == 1) {
+    nvgStrokeColor(s->vg, nvgRGBA(0,100,255,255));
+    nvgStrokeWidth(s->vg, 6);
+    nvgStroke(s->vg);
+    NVGcolor fillColor = nvgRGBA(0,100,255,80);
+    nvgFillColor(s->vg, fillColor);
+    nvgFill(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(255,255,255,200));
+    nvgText(s->vg,btn_xc1,btn_yc-20,"Lane",NULL);
+    nvgText(s->vg,btn_xc1,btn_yc+20,"less",NULL);
+  } else if (s->scene.laneless_mode == 2) {
+    nvgStrokeColor(s->vg, nvgRGBA(125,0,125,255));
+    nvgStrokeWidth(s->vg, 6);
+    nvgStroke(s->vg);
+    NVGcolor fillColor = nvgRGBA(125,0,125,80);
+    nvgFillColor(s->vg, fillColor);
+    nvgFill(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(255,255,255,200));
+    nvgText(s->vg,btn_xc1,btn_yc-20,"Auto",NULL);
+    nvgText(s->vg,btn_xc1,btn_yc+20,"Lane",NULL);
+  }
+
+  s->scene.laneless_btn_touch_rect = Rect{center_x - laneless_btn_touch_pad,
+                                              center_y - laneless_btn_touch_pad,
+                                              radius + 2 * laneless_btn_touch_pad,
+                                              radius + 2 * laneless_btn_touch_pad};
+}
+
 static void ui_draw_vision_header(UIState *s) {
   NVGpaint gradient = nvgLinearGradient(s->vg, 0, header_h - (header_h / 2.5), 0, header_h,
                                         nvgRGBAf(0, 0, 0, 0.45), nvgRGBAf(0, 0, 0, 0));
@@ -217,6 +305,9 @@ static void ui_draw_vision(UIState *s) {
   ui_draw_vision_header(s);
   if ((*s->sm)["controlsState"].getControlsState().getAlertSize() == cereal::ControlsState::AlertSize::NONE) {
     ui_draw_vision_face(s);
+    if (s->scene.end_to_end) {
+      draw_laneless_button(s);
+    }
   }
 }
 

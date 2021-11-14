@@ -94,6 +94,7 @@ typedef struct {
 void safety_tick(const addr_checks *addr_checks);
 
 // This can be set by the safety hooks
+bool disengageFromBrakes = false;
 bool controls_allowed = false;
 bool relay_malfunction = false;
 bool gas_interceptor_detected = false;
@@ -103,6 +104,9 @@ bool gas_pressed_prev = false;
 bool brake_pressed = false;
 bool brake_pressed_prev = false;
 bool cruise_engaged_prev = false;
+bool acc_main_on_prev = false;
+bool lfa_pressed_prev = false;
+bool set_me_prev = false;
 float vehicle_speed = 0;
 bool vehicle_moving = false;
 

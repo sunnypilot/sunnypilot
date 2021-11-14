@@ -44,11 +44,13 @@ AddrCheckStruct honda_bh_addr_checks[] = {
 
 const uint16_t HONDA_PARAM_ALT_BRAKE = 1;
 const uint16_t HONDA_PARAM_BOSCH_LONG = 2;
+const uint16_t HONDA_PARAM_ALT_LKAS_BUTTON = 4;
 
 int honda_brake = 0;
 bool honda_alt_brake_msg = false;
 bool honda_fwd_brake = false;
 bool honda_bosch_long = false;
+bool honda_alt_lkas_button = false;
 enum {HONDA_N_HW, HONDA_BG_HW, HONDA_BH_HW} honda_hw = HONDA_N_HW;
 addr_checks honda_rx_checks = {honda_addr_checks, HONDA_ADDR_CHECKS_LEN};
 
@@ -100,8 +102,10 @@ static int honda_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
     // 0x1A6 for the ILX, 0x296 for the Civic Touring
     if ((addr == 0x1A6) || (addr == 0x296)) {
       int button = (GET_BYTE(to_push, 0) & 0xE0) >> 5;
+      int button2 = honda_alt_lkas_button ? ((GET_BYTE(to_push, 5) & 0x0C) >> 2) : ((GET_BYTE(to_push, 0) & 0x0C) >> 2);
       switch (button) {
-        case 2:  // cancel
+        case 1:  // main
+          disengageFromBrakes = false;
           controls_allowed = 0;
           break;
         case 3:  // set
@@ -109,6 +113,14 @@ static int honda_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
           controls_allowed = 1;
           break;
         default:
+          switch(button2)
+          {
+            case 1: //lkas_button
+              controls_allowed = 1;
+              break;
+            default:
+              break;
+          }
           break; // any other button is irrelevant
       }
     }
@@ -313,6 +325,7 @@ static const addr_checks* honda_nidec_init(int16_t param) {
   honda_hw = HONDA_N_HW;
   honda_alt_brake_msg = false;
   honda_bosch_long = false;
+  honda_alt_lkas_button = GET_FLAG(param, HONDA_PARAM_ALT_LKAS_BUTTON);
   honda_rx_checks = (addr_checks){honda_addr_checks, HONDA_ADDR_CHECKS_LEN};
   return &honda_rx_checks;
 }
@@ -329,6 +342,7 @@ static const addr_checks* honda_bosch_giraffe_init(int16_t param) {
   honda_bosch_long = GET_FLAG(param, HONDA_PARAM_BOSCH_LONG);
 #endif
 
+  honda_alt_lkas_button = false;
   honda_rx_checks = (addr_checks){honda_addr_checks, HONDA_ADDR_CHECKS_LEN};
   return &honda_rx_checks;
 }
@@ -345,6 +359,7 @@ static const addr_checks* honda_bosch_harness_init(int16_t param) {
   honda_bosch_long = GET_FLAG(param, HONDA_PARAM_BOSCH_LONG);
 #endif
 
+  honda_alt_lkas_button = false;
   honda_rx_checks = (addr_checks){honda_bh_addr_checks, HONDA_BH_ADDR_CHECKS_LEN};
   return &honda_rx_checks;
 }
