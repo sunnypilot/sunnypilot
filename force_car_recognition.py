@@ -1,4 +1,4 @@
-filenames = ['/data/params/d/HyundaiCars', '/data/params/d/HondaCars', '/data/params/d/SubaruCars']
+filenames = ['/data/params/d/HyundaiCars', '/data/params/d/HondaCars', '/data/params/d/SubaruCars', '/data/params/d/SubaruCars']
 
 with open('/data/params/d/Cars', 'w') as outfile:
     for names in filenames:

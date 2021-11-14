@@ -1624,3 +1624,11 @@ NO_STOP_TIMER_CAR = TSS2_CAR | set([CAR.RAV4H, CAR.HIGHLANDERH, CAR.HIGHLANDER, 
 
 # all cars
 TOYOTA_CAR = set([CAR])
+
+def main():
+  for member, value in vars(CAR).items():
+    if not member.startswith("_"):
+      print(value)
+
+if __name__ == "__main__":
+  main()

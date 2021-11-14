@@ -1,6 +1,7 @@
 sunnypilot - Version 0.8.10-1
 ========================
 * sunnypilot 0.8.10 release - based on openpilot 0.8.10 `devel`
+* Add Toyota cars to Force Car Recognition
 
 sunnypilot - Version 0.8.9-4
 ========================

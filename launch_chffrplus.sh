@@ -187,6 +187,7 @@ function launch {
   python ./selfdrive/car/hyundai/values.py > /data/params/d/HyundaiCars
   python ./selfdrive/car/honda/values.py > /data/params/d/HondaCars
   python ./selfdrive/car/subaru/values.py > /data/params/d/SubaruCars
+  python ./selfdrive/car/toyota/values.py > /data/params/d/ToyotaCars
 
   python ./force_car_recognition.py
 
