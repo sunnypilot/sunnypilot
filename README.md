@@ -161,5 +161,6 @@ Pull requests should be against the most current `develop-full` branch.
 * [briantran33](https://github.com/briantran33/openpilot)
 * [Aragon7777](https://github.com/aragon7777/openpilot)
 * [sshane](https://github.com/sshane/openpilot-installer-generator)
+* [jung](https://github.com/chanhojung/openpilot)
 * [dri94](https://github.com/dri94/openpilot)
 * [JamesKGithub](https://github.com/JamesKGithub/FrogPilot)
