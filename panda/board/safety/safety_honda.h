@@ -120,9 +120,10 @@ static int honda_rx_hook(CANPacket_t *to_push) {
     if ((addr == 0x1A6) || (addr == 0x296)) {
       // check for button presses
       int button = (GET_BYTE(to_push, 0) & 0xE0U) >> 5;
+      int button2 = ((GET_BYTE(to_push, (addr == 0x296) ? 0 : 5) & 0x0CU) >> 2);
       switch (button) {
         case 1:  // main
-        case 2:  // cancel
+          disengageFromBrakes = false;
           controls_allowed = 0;
           break;
         case 3:  // set
@@ -132,8 +133,22 @@ static int honda_rx_hook(CANPacket_t *to_push) {
           }
           break;
         default:
+          switch(button2)
+          {
+            case 1: // lkas
+              if (acc_main_on) {
+                controls_allowed = 1;
+              }
+              break;
+            default:
+              break;
+          }
           break; // any other button is irrelevant
       }
+    }
+
+    if (!acc_main_on) {
+      controls_allowed = 0;
     }
 
     // user brake signal on 0x17C reports applied brake from computer brake on accord

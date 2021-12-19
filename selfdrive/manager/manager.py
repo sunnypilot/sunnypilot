@@ -36,9 +36,26 @@ def manager_init():
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
 
   default_params = [
+    ("AutoLaneChangeTimer", "0"),
+    ("BrightnessControl", "0"),
+    ("CarModel", ""),
     ("CompletedTrainingVersion", "0"),
+    ("DisableMADS", "0"),
+    ("DisableOnroadUploads", "0"),
+    ("DynamicLaneProfile", "2"),
+    ("EndToEndToggle", "1"),
     ("HasAcceptedTerms", "0"),
+    ("HandsOnWheelMonitoring", "0"),
+    ("MaxTimeOffroad", "9"),
+    ("OnroadScreenOff", "0"),
+    ("OnroadScreenOffBrightness", "50"),
     ("OpenpilotEnabledToggle", "1"),
+    ("PrebuiltOn", "0"),
+    ("ShowDebugUI", "1"),
+    ("SpeedLimitControl", "1"),
+    ("SpeedLimitPercOffset", "1"),
+    ("TurnSpeedControl", "1"),
+    ("TurnVisionControl", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -53,6 +70,10 @@ def manager_init():
   for k, v in default_params:
     if params.get(k) is None:
       params.put(k, v)
+
+  # parameters set by Enviroment Varables
+  if os.getenv("HANDSMONITORING") is not None:
+    params.put_bool("HandsOnWheelMonitoring", bool(int(os.getenv("HANDSMONITORING"))))
 
   # is this dashcam?
   if os.getenv("PASSIVE") is not None:

@@ -51,6 +51,10 @@ class CruiseButtons:
   CANCEL = 2
   MAIN = 1
 
+class CruiseSetting:
+  DISTANCE_ADJ = 3
+  LKAS_BUTTON = 1
+
 # See dbc files for info on values
 VISUAL_HUD = {
   VisualAlert.none: 0,
@@ -1391,3 +1395,11 @@ HONDA_NIDEC_ALT_SCM_MESSAGES = set([CAR.ACURA_ILX, CAR.ACURA_RDX, CAR.CRV, CAR.C
 HONDA_BOSCH = set([CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_5G,
                    CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E])
 HONDA_BOSCH_ALT_BRAKE_SIGNAL = set([CAR.ACCORD, CAR.CRV_5G, CAR.ACURA_RDX_3G])
+
+def main():
+  for member, value in vars(CAR).items():
+    if not member.startswith("_"):
+      print(value)
+
+if __name__ == "__main__":
+  main()
