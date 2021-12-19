@@ -14,10 +14,11 @@ EventName = car.CarEvent.EventName
 
 
 def get_startup_event(car_recognized, controller_available, fw_seen):
-  if get_comma_remote() and get_tested_branch():
-    event = EventName.startup
-  else:
-    event = EventName.startupMaster
+  #if get_comma_remote() and get_tested_branch():
+    #event = EventName.startup
+  #else:
+    #event = EventName.startupMaster
+  event = EventName.startup
 
   if not car_recognized:
     if fw_seen:
@@ -173,6 +174,11 @@ def get_car(logcan, sendcan):
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)
     candidate = "mock"
 
+  if Params().get("CarModel", encoding="utf8") is not None:
+    car_name = Params().get("CarModel", encoding="utf8")
+    car_name = car_name.rstrip('\n')
+    candidate = car_name
+
   CarInterface, CarController, CarState = interfaces[candidate]
   car_params = CarInterface.get_params(candidate, fingerprints, car_fw)
   car_params.carVin = vin
@@ -180,4 +186,4 @@ def get_car(logcan, sendcan):
   car_params.fingerprintSource = source
   car_params.fuzzyFingerprint = not exact_match
 
-  return CarInterface(car_params, CarController, CarState), car_params
+  return CarInterface(car_params, CarController, CarState), car_params, candidate
