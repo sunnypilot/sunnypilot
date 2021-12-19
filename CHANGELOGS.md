@@ -1,3 +1,9 @@
+sunnypilot - Version 0.8.12-2
+========================
+* NEW❗: Disable M.A.D.S. toggle to disable the beloved M.A.D.S. feature
+  * Enable Stock openpilot engagement/disengagement
+* ADJUST: Initialize Driving Screen Off Brightness at 50%
+
 sunnypilot - Version 0.8.12-1
 ========================
 * sunnypilot 0.8.12 release - based on openpilot 0.8.12 devel
