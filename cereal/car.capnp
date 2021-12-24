@@ -105,6 +105,17 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     localizerMalfunction @103;
     highCpuUsage @105;
     cruiseMismatch @106;
+    manualSteeringRequired @107;
+    manualLongitudinalRequired @108;
+    silentPedalPressed @109;
+    silentButtonEnable @110;
+    silentBrakeHold @111;
+    silentWrongGear @112;
+    preKeepHandsOnWheel @113;
+    promptKeepHandsOnWheel @114;
+    keepHandsOnWheel @115;
+    speedLimitActive @116;
+    speedLimitValueChange @117;
 
     driverMonitorLowAccDEPRECATED @68;
     radarCanErrorDEPRECATED @15;
@@ -187,6 +198,16 @@ struct CarState {
   # clutch (manual transmission only)
   clutchPressed @28 :Bool;
 
+  lfaEnabled @39 :Bool;
+  accMainEnabled @40 :Bool;
+  lkasEnabled @41 :Bool;
+  leftBlinkerOn @42 :Bool;
+  rightBlinkerOn @43 :Bool;
+  disengageByBrake @44 :Bool;
+  automaticLaneChange @45 :Bool;
+  belowLaneChangeSpeed @46 :Bool;
+  accEnabled @47 :Bool;
+
   # which packets this state came from
   canMonoTimes @12: List(UInt64);
 
@@ -209,6 +230,7 @@ struct CarState {
     speedOffset @3 :Float32;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
+    speedLimit @6 :Float32;
   }
 
   enum GearShifter {
@@ -464,6 +486,8 @@ struct CarParams {
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
     kf @4 :Float32;
+    kdBP @5 :List(Float32) = [0.];
+    kdV @6 :List(Float32) = [0.];
   }
 
   struct LongitudinalPIDTuning {
@@ -473,6 +497,8 @@ struct CarParams {
     kiV @3 :List(Float32);
     deadzoneBP @4 :List(Float32);
     deadzoneV @5 :List(Float32);
+    kdBP @6 :List(Float32) = [0.];
+    kdV @7 :List(Float32) = [0.];
   }
 
   struct LateralINDITuning {
