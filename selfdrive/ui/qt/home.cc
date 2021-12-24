@@ -71,6 +71,11 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
   if (onroad->isVisible() && (!sidebar->isVisible() || e->x() > sidebar->width())) {
     sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
   }
+
+  if (QUIState::ui_state.scene.started && QUIState::ui_state.scene.onroadScreenOff != -2) {
+    QUIState::ui_state.scene.touched2 = true;
+    QTimer::singleShot(500, []() { QUIState::ui_state.scene.touched2 = false; });
+  }
 }
 
 // OffroadHome: the offroad home page

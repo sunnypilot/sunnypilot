@@ -2,7 +2,9 @@ from cereal import car
 from selfdrive.car.volkswagen.values import CAR, BUTTON_STATES, CANBUS, NetworkLocation, TransmissionType, GearShifter
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
+from common.params import Params
 
+ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 
 
@@ -25,6 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "volkswagen"
     ret.radarOffCan = True
+    ret.pcmCruiseSpeed = False if (Params().get_bool("SpeedLimitControl") or Params().get_bool("TurnVisionControl") or Params().get_bool("TurnSpeedControl")) else True
 
     if True:  # pylint: disable=using-constant-test
       # Set global MQB parameters
@@ -158,6 +161,9 @@ class CarInterface(CarInterfaceBase):
     ret.centerToFront = ret.wheelbase * 0.45
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront,
                                                                          tire_stiffness_factor=tire_stiffness_factor)
+
+    ret.standStill = False
+
     return ret
 
   # returns a car.CarState
@@ -174,6 +180,13 @@ class CarInterface(CarInterfaceBase):
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
+    ret.accMainEnabled = self.CS.accMainEnabled
+    ret.accEnabled = self.CS.accEnabled
+    ret.leftBlinkerOn = self.CS.leftBlinkerOn
+    ret.rightBlinkerOn = self.CS.rightBlinkerOn
+    ret.automaticLaneChange = self.CS.automaticLaneChange
+    ret.belowLaneChangeSpeed = self.CS.belowLaneChangeSpeed
+
     # TODO: add a field for this to carState, car interface code shouldn't write params
     # Update the device metric configuration to match the car at first startup,
     # or if there's been a change.
@@ -185,11 +198,36 @@ class CarInterface(CarInterfaceBase):
     for button in self.CS.buttonStates:
       if self.CS.buttonStates[button] != self.buttonStatesPrev[button]:
         be = car.CarState.ButtonEvent.new_message()
-        be.type = button
-        be.pressed = self.CS.buttonStates[button]
+        be.type = ButtonType.unknown
+        if self.CS.buttonStates[button]:
+          be.pressed = True
+          but = self.CS.buttonStates[button]
+        else:
+          be.pressed = False
+          but = self.buttonStatesPrev[button]
+        if but == self.CS.buttonStates["accelCruise"]:
+          be.type = ButtonType.accelCruise
+        elif but == self.CS.buttonStates["decelCruise"]:
+          be.type = ButtonType.decelCruise
+        elif but == self.CS.buttonStates["cancel"]:
+          be.type = ButtonType.cancel
+        elif but == self.CS.buttonStates["setCruise"]:
+          be.type = ButtonType.setCruise
+        elif but == self.CS.buttonStates["resumeCruise"]:
+          be.type = ButtonType.resumeCruise
+        elif but == self.CS.buttonStates["gapAdjustCruise"]:
+          be.type = ButtonType.gapAdjustCruise
+
         buttonEvents.append(be)
 
-    events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic])
+    # ACC MAIN BUTTON
+    if self.CS.out.accMainEnabled != self.CS.accMainEnabled:
+      be = car.CarState.ButtonEvent.new_message()
+      be.pressed = True
+      be.type = ButtonType.altButton1
+      buttonEvents.append(be)
+
+    events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic], pcm_enable=False)
 
     # Vehicle health and operation safety checks
     if self.CS.parkingBrakeSet:
@@ -205,8 +243,56 @@ class CarInterface(CarInterfaceBase):
     if self.low_speed_alert:
       events.add(EventName.belowSteerSpeed)
 
+    self.CS.disengageByBrake = self.CS.disengageByBrake or ret.disengageByBrake
+
+    enable_pressed = False
+    enable_from_brake = False
+
+    if self.CS.disengageByBrake and not ret.brakePressed and self.CS.accMainEnabled:
+      enable_pressed = True
+      enable_from_brake = True
+
+    if not ret.brakePressed:
+      self.CS.disengageByBrake = False
+      ret.disengageByBrake = False
+
     ret.events = events.to_msg()
     ret.buttonEvents = buttonEvents
+
+    for b in ret.buttonEvents:
+
+      # do enable on both accel and decel buttons
+      if b.type in [ButtonType.setCruise, ButtonType.resumeCruise, ButtonType.accelCruise, ButtonType.decelCruise] and not b.pressed:
+        enable_pressed = True
+
+      # do disable on ACC Main button if ACC is disabled
+      if b.type in [ButtonType.altButton1] and b.pressed:
+        if not self.CS.accMainEnabled: #disabled ACC Main
+          if not ret.cruiseState.enabled:
+            events.add(EventName.buttonCancel)
+          else:
+            events.add(EventName.manualSteeringRequired)
+        else: #enabled ACC Main
+          if not ret.cruiseState.enabled:
+            enable_pressed = True
+
+      # do disable on button down
+      if b.type == ButtonType.cancel and b.pressed:
+        if not self.CS.accMainEnabled:
+          events.add(EventName.buttonCancel)
+        else:
+          events.add(EventName.manualLongitudinalRequired)
+
+    if (ret.cruiseState.enabled or self.CS.accMainEnabled) and enable_pressed:
+      if enable_from_brake:
+        events.add(EventName.silentButtonEnable)
+      else:
+        events.add(EventName.buttonEnable)
+
+    if self.CS.cruiseState_standstill or self.CC.standstill_status == 1:
+      self.CP.standStill = True
+    else:
+      self.CP.standStill = False
 
     # update previous car states
     self.displayMetricUnitsPrev = self.CS.displayMetricUnits

@@ -15,7 +15,7 @@ def create_mqb_steering_control(packer, bus, apply_steer, idx, lkas_enabled):
   }
   return packer.make_can_msg("HCA_01", bus, values, idx)
 
-def create_mqb_hud_control(packer, bus, enabled, steering_pressed, hud_alert, left_lane_visible, right_lane_visible,
+def create_mqb_hud_control(packer, bus, enabled, lkas_active, steering_pressed, hud_alert, left_lane_visible, right_lane_visible,
                            ldw_stock_values, left_lane_depart, right_lane_depart):
   # Lane color reference:
   # 0 (LKAS disabled) - off
@@ -24,8 +24,8 @@ def create_mqb_hud_control(packer, bus, enabled, steering_pressed, hud_alert, le
   # 3 (LKAS enabled, lane departure detected) - white on VW, red on Audi
   values = ldw_stock_values.copy()
   values.update({
-    "LDW_Status_LED_gelb": 1 if enabled and steering_pressed else 0,
-    "LDW_Status_LED_gruen": 1 if enabled and not steering_pressed else 0,
+    "LDW_Status_LED_gelb": 1 if lkas_active and steering_pressed else 0,
+    "LDW_Status_LED_gruen": 1 if lkas_active and not steering_pressed else 0,
     "LDW_Lernmodus_links": 3 if left_lane_depart else 1 + left_lane_visible,
     "LDW_Lernmodus_rechts": 3 if right_lane_depart else 1 + right_lane_visible,
     "LDW_Texte": hud_alert,

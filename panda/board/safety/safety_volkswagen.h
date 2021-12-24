@@ -122,6 +122,7 @@ static uint8_t volkswagen_pq_compute_checksum(CANPacket_t *to_push) {
 static const addr_checks* volkswagen_mqb_init(int16_t param) {
   UNUSED(param);
 
+  disengageFromBrakes = false;
   controls_allowed = false;
   relay_malfunction_reset();
   volkswagen_torque_msg = MSG_HCA_01;
@@ -179,10 +180,26 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
       }
-      if (!cruise_engaged) {
+      cruise_engaged_prev = cruise_engaged;
+    }
+
+    if (addr == MSG_GRA_ACC_01) {
+      bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28));
+      if (acc_main_on && !acc_main_on_prev)
+      {
+        controls_allowed = 1;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
+    if (addr == MSG_GRA_ACC_01) {
+      bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28));
+      if (acc_main_on_prev != acc_main_on)
+      {
+        disengageFromBrakes = false;
         controls_allowed = 0;
       }
-      cruise_engaged_prev = cruise_engaged;
+      acc_main_on_prev = acc_main_on;
     }
 
     // Signal: Motor_20.MO_Fahrpedalrohwert_01
