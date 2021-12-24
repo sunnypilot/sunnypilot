@@ -1,9 +1,11 @@
 from cereal import car
 from common.numpy_fast import clip, interp
+from common.realtime import DT_CTRL
 from selfdrive.car import apply_toyota_steer_torque_limits, create_gas_interceptor_command, make_can_msg
-from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_command, \
+from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_command, create_ui_command_off,\
                                            create_accel_command, create_acc_cancel_command, \
-                                           create_fcw_command, create_lta_steer_command
+                                           create_fcw_command, create_lta_steer_command, \
+                                           create_ui_command_disable_startup_lkas
 from selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
                                         MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams
 from opendbc.can.packer import CANPacker
@@ -17,6 +19,8 @@ class CarController():
     self.last_standstill = False
     self.standstill_req = False
     self.steer_rate_limited = False
+    self.signal_last = 0.
+    self.has_set_lkas = False
 
     self.packer = CANPacker(dbc_name)
 
@@ -26,7 +30,7 @@ class CarController():
     # *** compute control surfaces ***
 
     # gas and brake
-    if CS.CP.enableGasInterceptor and enabled:
+    if CS.CP.enableGasInterceptor and enabled and CS.out.cruiseState.enabled:
       MAX_INTERCEPTOR_GAS = 0.5
       # RAV4 has very sensitive gas pedal
       if CS.CP.carFingerprint in [CAR.RAV4, CAR.RAV4H, CAR.HIGHLANDER, CAR.HIGHLANDERH]:
@@ -41,24 +45,29 @@ class CarController():
       interceptor_gas_cmd = clip(pedal_command, 0., MAX_INTERCEPTOR_GAS)
     else:
       interceptor_gas_cmd = 0.
-    pcm_accel_cmd = clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
+    pcm_accel_cmd = 0 if not (enabled and CS.out.cruiseState.enabled) else clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
 
     # steer torque
     new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
     apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, CarControllerParams)
-    self.steer_rate_limited = new_steer != apply_steer
+    self.steer_rate_limited = False
+
+    cur_time = frame * DT_CTRL
+    if CS.leftBlinkerOn or CS.rightBlinkerOn:
+      self.signal_last = cur_time
 
     # Cut steering while we're in a known fault state (2s)
-    if not enabled or CS.steer_state in [9, 25]:
+    if enabled and not CS.steer_not_allowed and CS.lkasEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
+      self.steer_rate_limited = new_steer != apply_steer
+      apply_steer_req = 1
+    else:
       apply_steer = 0
       apply_steer_req = 0
-    else:
-      apply_steer_req = 1
 
     # TODO: probably can delete this. CS.pcm_acc_status uses a different signal
     # than CS.cruiseState.enabled. confirm they're not meaningfully different
-    if not enabled and CS.pcm_acc_status:
-      pcm_cancel_cmd = 1
+    #if not enabled and CS.pcm_acc_status:
+      #pcm_cancel_cmd = 1
 
     # on entering standstill, send standstill request
     if CS.out.standstill and not self.last_standstill and CS.CP.carFingerprint not in NO_STOP_TIMER_CAR:
@@ -119,8 +128,19 @@ class CarController():
       # forcing the pcm to disengage causes a bad fault sound so play a good sound instead
       send_ui = True
 
+    if CarControllerParams.FEATURE_NO_LKAS_ICON:
+      if CS.persistedLkasIconDisabled == 0:
+        self.has_set_lkas = True
+
+      if (frame % 100 == 0 or send_ui):
+        if not self.has_set_lkas:
+          can_sends.append(create_ui_command_disable_startup_lkas(self.packer))
+
     if (frame % 100 == 0 or send_ui):
-      can_sends.append(create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, left_line, right_line, left_lane_depart, right_lane_depart))
+      if(CS.lkasEnabled):
+        can_sends.append(create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, left_line, right_line, left_lane_depart, right_lane_depart, CS.lkasEnabled and not apply_steer_req))
+      else:
+        can_sends.append(create_ui_command_off(self.packer))
 
     if frame % 100 == 0 and CS.CP.enableDsu:
       can_sends.append(create_fcw_command(self.packer, fcw_alert))

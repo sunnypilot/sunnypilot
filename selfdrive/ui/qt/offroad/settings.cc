@@ -21,6 +21,7 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
+#include "selfdrive/ui/qt/widgets/sunnypilot.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
@@ -363,6 +364,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {"Network", network_panel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Software", new SoftwarePanel(this)},
+    {"sunnypilot", new SunnypilotPanel(this)},
   };
 
 #ifdef ENABLE_MAPS
@@ -371,7 +373,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QObject::connect(map_panel, &MapPanel::closeSettings, this, &SettingsWindow::closeSettings);
 #endif
 
-  const int padding = panels.size() > 3 ? 25 : 35;
+  const int padding = panels.size() > 3 ? 15 : 35;
 
   nav_btns = new QButtonGroup(this);
   for (auto &[name, panel] : panels) {
@@ -434,4 +436,149 @@ void SettingsWindow::hideEvent(QHideEvent *event) {
 #ifdef QCOM
   HardwareEon::close_activities();
 #endif
+}
+
+SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
+  main_layout = new QStackedLayout(this);
+  home = new QWidget(this);
+  QVBoxLayout* fcr_layout = new QVBoxLayout(home);
+  fcr_layout->setContentsMargins(0, 20, 0, 20);
+
+  QString set = QString::fromStdString(Params().get("CarModel"));
+
+  QPushButton* setCarBtn = new QPushButton(set.length() ? set : "Set your car");
+  setCarBtn->setObjectName("setCarBtn");
+  setCarBtn->setStyleSheet("margin-right: 30px;");
+  connect(setCarBtn, &QPushButton::clicked, [=]() { main_layout->setCurrentWidget(setCar); });
+  fcr_layout->addSpacing(10);
+  fcr_layout->addWidget(setCarBtn, 0, Qt::AlignRight);
+  fcr_layout->addSpacing(10);
+
+  home_widget = new QWidget(this);
+  QVBoxLayout* toggle_layout = new QVBoxLayout(home_widget);
+  home_widget->setObjectName("homeWidget");
+
+  ScrollView *scroller = new ScrollView(home_widget, this);
+  scroller->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  fcr_layout->addWidget(scroller, 1);
+
+  main_layout->addWidget(home);
+
+  setCar = new ForceCarRecognition(this);
+  connect(setCar, &ForceCarRecognition::backPress, [=]() { main_layout->setCurrentWidget(home); });
+  connect(setCar, &ForceCarRecognition::selectedCar, [=]() {
+    QString set = QString::fromStdString(Params().get("CarModel"));
+    setCarBtn->setText(set.length() ? set : "Set your car");
+    main_layout->setCurrentWidget(home);
+  });
+  main_layout->addWidget(setCar);
+
+  QPalette pal = palette();
+  pal.setColor(QPalette::Background, QColor(0x29, 0x29, 0x29));
+  setAutoFillBackground(true);
+  setPalette(pal);
+
+  setStyleSheet(R"(
+    #backBtn, #setCarBtn {
+      font-size: 50px;
+      margin: 0px;
+      padding: 20px;
+      border-width: 0;
+      border-radius: 30px;
+      color: #dddddd;
+      background-color: #444444;
+    }
+  )");
+
+  QList<ParamControl*> toggles;
+
+  toggles.append(new ParamControl("QuietDrive",
+                                  "Quiet Drive 🤫",
+                                  "openpilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on.",
+                                  "../assets/offroad/icon_mute.png",
+                                  this));
+
+  toggles.append(new ParamControl("PrebuiltOn",
+                                  "Fast Boot (Prebuilt)",
+                                  "openpilot will fast boot by creating a Prebuilt file. Note: Turn off this feature if you have made any UI changes!",
+                                  "../assets/offroad/icon_shell.png",
+                                  this));
+
+  toggles.append(new ParamControl("DisableOnroadUploads",
+                                  "Disable Onroad Uploads",
+                                  "Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control and Map Data Turn Control",
+                                  "../assets/offroad/icon_network.png",
+                                  this));
+
+  toggles.append(new ParamControl("ProcessNotRunningOff",
+                                 "Bypass \"System Malfunction\" Error",
+                                 "Prevent openpilot from returning the \"System Malfunction\" alert that hinders the ability use openpilot. Turn on this feature if you experience this alert frequently.",
+                                 "../assets/offroad/icon_shell.png",
+                                 this));
+
+  toggles.append(new ParamControl("DisableMADS",
+                                  "Disable M.A.D.S.",
+                                  "Disable the beloved M.A.D.S. feature. Enable Stock openpilot engagement/disengagement.",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("HandsOnWheelMonitoring",
+                                  "Enable Hands on Wheel Monitoring",
+                                  "Monitor and alert when driver is not keeping the hands on the steering wheel.",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("TurnVisionControl",
+                                  "Enable vision based turn control",
+                                  "Use vision path predictions to estimate the appropiate speed to drive through turns ahead.",
+                                  "../assets/offroad/icon_road.png",
+                                  this));
+
+  toggles.append(new ParamControl("ShowDebugUI",
+                                  "Show debug UI elements",
+                                  "Show UI elements that aid debugging.",
+                                  "../assets/offroad/icon_calibration.png",
+                                  this));
+
+  toggles.append(new ParamControl("SpeedLimitControl",
+                                  "Enable Speed Limit Control",
+                                  "Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits.",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
+
+  toggles.append(new ParamControl("SpeedLimitPercOffset",
+                                  "Enable Speed Limit Offset",
+                                  "Set speed limit slightly higher than actual speed limit for a more natural drive.",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
+
+  toggles.append(new ParamControl("TurnSpeedControl",
+                                  "Enable Map Data Turn Control",
+                                  "Use curvature info from map data to define speed limits to take turns ahead",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("EnableDebugSnapshot",
+                                  "Debug snapshot on screen center tap",
+                                  "Stores snapshot file with current state of some modules.",
+                                  "../assets/offroad/icon_calibration.png",
+                                  this));
+
+  for (ParamControl *toggle : toggles) {
+    if (main_layout->count() != 0) {
+      toggle_layout->addWidget(horizontal_line());
+    }
+    toggle_layout->addWidget(toggle);
+  }
+
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new AutoLaneChangeTimer());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new BrightnessControl());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new OnroadScreenOff());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new OnroadScreenOffBrightness());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new MaxTimeOffroad());
 }

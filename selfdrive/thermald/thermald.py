@@ -17,7 +17,7 @@ from common.params import Params, ParamKeyType
 from common.realtime import DT_TRML, sec_since_boot
 from common.dict_helpers import strip_deprecated_keys
 from selfdrive.controls.lib.alertmanager import set_offroad_alert
-from selfdrive.controls.lib.pid import PIController
+from selfdrive.controls.lib.pid import PIDController
 from selfdrive.hardware import EON, TICI, PC, HARDWARE
 from selfdrive.loggerd.config import get_available_percent
 from selfdrive.swaglog import cloudlog
@@ -46,6 +46,8 @@ THERMAL_BANDS = OrderedDict({
 OFFROAD_DANGER_TEMP = 79.5 if TICI else 70.0
 
 prev_offroad_states: Dict[str, Tuple[bool, Optional[str]]] = {}
+
+prebuiltfile = '/data/openpilot/prebuilt'
 
 def read_tz(x):
   if x is None:
@@ -200,11 +202,13 @@ def thermald_thread():
   thermal_config = HARDWARE.get_thermal_config()
 
   # TODO: use PI controller for UNO
-  controller = PIController(k_p=0, k_i=2e-3, neg_limit=-80, pos_limit=0, rate=(1 / DT_TRML))
+  controller = PIDController(k_p=0, k_i=2e-3, neg_limit=-80, pos_limit=0, rate=(1 / DT_TRML))
 
   # Leave flag for loggerd to indicate device was left onroad
   if params.get_bool("IsOnroad"):
     params.put_bool("BootedOnroad", True)
+
+  is_openpilot_dir = True
 
   while True:
     pandaStates = messaging.recv_sock(pandaState_sock, wait=True)
@@ -368,6 +372,16 @@ def thermald_thread():
       started_ts = None
       if off_ts is None:
         off_ts = sec_since_boot()
+
+    prebuilt_on = params.get_bool("PrebuiltOn")
+    if not os.path.isdir("/data/openpilot"):
+      if is_openpilot_dir:
+        os.system("cd /data/params/d; rm -f DongleId") # Delete DongleID if the Openpilot directory disappears, Seems you want to switch fork/branch.
+      is_openpilot_dir = False
+    elif not os.path.isfile(prebuiltfile) and prebuilt_on and is_openpilot_dir:
+      os.system("cd /data/openpilot; touch prebuilt")
+    elif os.path.isfile(prebuiltfile) and not prebuilt_on:
+      os.system("cd /data/openpilot; rm -f prebuilt")
 
     # Offroad power monitoring
     power_monitor.calculate(peripheralState, onroad_conditions["ignition"])
