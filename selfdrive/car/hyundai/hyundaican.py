@@ -5,6 +5,7 @@ hyundai_checksum = crcmod.mkCrcFun(0x11D, initCrc=0xFD, rev=False, xorOut=0xdf)
 
 def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
                   lkas11, sys_warning, sys_state, enabled,
+                  lkas_active, disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon,
                   left_lane, right_lane,
                   left_lane_depart, right_lane_depart):
   values = lkas11
@@ -29,7 +30,8 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     # FcwOpt_USM 2 = Green car + lanes
     # FcwOpt_USM 1 = White car + lanes
     # FcwOpt_USM 0 = No car + lanes
-    values["CF_Lkas_FcwOpt_USM"] = 2 if enabled else 1
+    values["CF_Lkas_FcwOpt_USM"] = 2 if lkas_active else 2 if disengage_blinking_icon else 1 if\
+                                   (disengage_from_brakes or below_lane_change_speed) else 1
 
     # SysWarning 4 = keep hands on wheel
     # SysWarning 5 = keep hands on wheel (red)
@@ -69,9 +71,9 @@ def create_clu11(packer, frame, clu11, button):
   return packer.make_can_msg("CLU11", 0, values)
 
 
-def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
+def create_lfahda_mfc(packer, enabled, lkas_active, disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon, hda_set_speed=0):
   values = {
-    "LFA_Icon_State": 2 if enabled else 0,
+    "LFA_Icon_State": 2 if lkas_active else 3 if disengage_blinking_icon else 1 if (disengage_from_brakes or below_lane_change_speed) else 0,
     "HDA_Active": 1 if hda_set_speed else 0,
     "HDA_Icon_State": 2 if hda_set_speed else 0,
     "HDA_VSetReq": hda_set_speed,

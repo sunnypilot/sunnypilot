@@ -158,6 +158,15 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
+    if (addr == 913) {
+      bool lfa_pressed = (GET_BYTES_04(to_push) >> 4) & 0x1; // LFA on signal
+      if (lfa_pressed && !lfa_pressed_prev)
+      {
+        controls_allowed = 1;
+      }
+      lfa_pressed_prev = lfa_pressed;
+    }
+
     if (hyundai_longitudinal) {
       // ACC steering wheel buttons
       if (addr == 1265) {
@@ -168,7 +177,6 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
             controls_allowed = 1;
             break;
           case 4:  // cancel
-            controls_allowed = 0;
             break;
           default:
             break;  // any other button is irrelevant
@@ -182,11 +190,27 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
         if (cruise_engaged && !cruise_engaged_prev) {
           controls_allowed = 1;
         }
-        if (!cruise_engaged) {
-          controls_allowed = 0;
-        }
         cruise_engaged_prev = cruise_engaged;
       }
+    }
+
+    if (addr == 1056) {
+      bool acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC main_on signal
+      if (acc_main_on && !acc_main_on_prev)
+      {
+        controls_allowed = 1;
+      }
+      acc_main_on_prev = acc_main_on;
+    }
+
+    if (addr == 1056) {
+      bool acc_main_on = GET_BYTES_04(to_push) & 0x1; // ACC main_on signal
+      if (acc_main_on_prev != acc_main_on)
+      {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+      }
+      acc_main_on_prev = acc_main_on;
     }
 
     // read gas pressed signal
@@ -354,6 +378,7 @@ static int hyundai_fwd_hook(int bus_num, CANPacket_t *to_fwd) {
 }
 
 static const addr_checks* hyundai_init(int16_t param) {
+  disengageFromBrakes = false;
   controls_allowed = false;
   relay_malfunction_reset();
 
@@ -374,6 +399,7 @@ static const addr_checks* hyundai_init(int16_t param) {
 }
 
 static const addr_checks* hyundai_legacy_init(int16_t param) {
+  disengageFromBrakes = false;
   controls_allowed = false;
   relay_malfunction_reset();
 

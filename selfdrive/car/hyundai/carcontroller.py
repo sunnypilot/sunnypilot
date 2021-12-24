@@ -40,6 +40,8 @@ class CarController():
     self.p = CarControllerParams(CP)
     self.packer = CANPacker(dbc_name)
 
+    self.signal_last = 0.
+    self.disengage_blink = 0.
     self.apply_steer_last = 0
     self.car_fingerprint = CP.carFingerprint
     self.steer_rate_limited = False
@@ -52,8 +54,15 @@ class CarController():
     apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.p)
     self.steer_rate_limited = new_steer != apply_steer
 
+    cur_time = frame * DT_CTRL
+    if CS.leftBlinkerOn or CS.rightBlinkerOn:
+      self.signal_last = cur_time
+
     # disable when temp fault is active, or below LKA minimum speed
-    lkas_active = enabled and not CS.out.steerWarning and CS.out.vEgo >= CS.CP.minSteerSpeed
+    lkas_active = enabled and not CS.out.steerWarning and CS.out.vEgo >= CS.CP.minSteerSpeed and\
+                  (CS.lfaEnabled or CS.accMainEnabled) and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
+                  ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not
+                  (CS.leftBlinkerOn or CS.rightBlinkerOn)))
 
     if not lkas_active:
       apply_steer = 0
@@ -66,6 +75,19 @@ class CarController():
 
     can_sends = []
 
+    # show LFA "white_wheel" and LKAS "White car + lanes" when disengageFromBrakes
+    disengage_from_brakes = (CS.lfaEnabled or CS.accMainEnabled) and not lkas_active
+
+    # show LFA "white_wheel" and LKAS "White car + lanes" when belowLaneChangeSpeed and (leftBlinkerOn or rightBlinkerOn)
+    below_lane_change_speed = (CS.lfaEnabled or CS.accMainEnabled) and CS.belowLaneChangeSpeed and\
+                              (CS.leftBlinkerOn or CS.rightBlinkerOn)
+
+    if not (disengage_from_brakes or below_lane_change_speed):
+      self.disengage_blink = cur_time
+
+    disengage_blinking_icon = (disengage_from_brakes or below_lane_change_speed) and not\
+                              ((cur_time - self.disengage_blink) > 1)
+
     # tester present - w/ no response (keeps radar disabled)
     if CS.CP.openpilotLongitudinalControl:
       if (frame % 100) == 0:
@@ -73,6 +95,7 @@ class CarController():
 
     can_sends.append(create_lkas11(self.packer, frame, self.car_fingerprint, apply_steer, lkas_active,
                                    CS.lkas11, sys_warning, sys_state, enabled,
+                                   lkas_active, disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon,
                                    left_lane, right_lane,
                                    left_lane_warning, right_lane_warning))
 
@@ -88,7 +111,7 @@ class CarController():
 
     if frame % 2 == 0 and CS.CP.openpilotLongitudinalControl:
       lead_visible = False
-      accel = actuators.accel if enabled else 0
+      accel = actuators.accel if enabled and CS.out.cruiseState.enabled else 0
 
       jerk = clip(2.0 * (accel - CS.out.aEgo), -12.7, 12.7)
 
@@ -99,14 +122,14 @@ class CarController():
 
       stopping = (actuators.longControlState == LongCtrlState.stopping)
       set_speed_in_units = hud_speed * (CV.MS_TO_MPH if CS.clu11["CF_Clu_SPEED_UNIT"] == 1 else CV.MS_TO_KPH)
-      can_sends.extend(create_acc_commands(self.packer, enabled, accel, jerk, int(frame / 2), lead_visible, set_speed_in_units, stopping))
+      can_sends.extend(create_acc_commands(self.packer, enabled and CS.out.cruiseState.enabled, accel, jerk, int(frame / 2), lead_visible, set_speed_in_units, stopping))
 
     # 20 Hz LFA MFA message
     if frame % 5 == 0 and self.car_fingerprint in [CAR.SONATA, CAR.PALISADE, CAR.IONIQ, CAR.KIA_NIRO_EV, CAR.KIA_NIRO_HEV_2021,
                                                    CAR.IONIQ_EV_2020, CAR.IONIQ_PHEV, CAR.KIA_CEED, CAR.KIA_SELTOS, CAR.KONA_EV,
                                                    CAR.ELANTRA_2021, CAR.ELANTRA_HEV_2021, CAR.SONATA_HYBRID, CAR.KONA_HEV, CAR.SANTA_FE_2022,
                                                    CAR.KIA_K5_2021, CAR.IONIQ_HEV_2022, CAR.SANTA_FE_HEV_2022, CAR.GENESIS_G70_2020]:
-      can_sends.append(create_lfahda_mfc(self.packer, enabled))
+      can_sends.append(create_lfahda_mfc(self.packer, enabled, lkas_active, disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon))
 
     # 5 Hz ACC options
     if frame % 20 == 0 and CS.CP.openpilotLongitudinalControl:
