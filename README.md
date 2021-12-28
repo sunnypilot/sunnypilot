@@ -73,7 +73,7 @@ To use Dynamic Lane Profile, do the following:
 ```
 
 ### OpenStreetMap (OSM) Speed Limit Control
-OpenStreetMap (OSM) allows cars with openpilot-longitudinal-capable cars to dynamically adjust the longitudinal plan base on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
+OpenStreetMap (OSM) allows openpilot-longitudinal-capable cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
 
 Certain features are only available with an active data connection, via:
 * [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or;
