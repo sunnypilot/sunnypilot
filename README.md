@@ -51,7 +51,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
-* `BRAKE pedal` press will pause openpilot ALC; `BRAKE pedal` release will resume openpilot ALC
+* `BRAKE pedal` press will pause openpilot ALC; `BRAKE pedal` release will resume openpilot ALC; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
 * `GAS pedal` press will not disengage openpilot ALC or ACC/SCC
 * `TURN SIGNALS` (`Left` or `Right`) will pause openpilot ALC if the vehicle speed is below the threshold for openpilot Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
