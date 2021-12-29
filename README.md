@@ -181,7 +181,7 @@ Thank you for your continuous love and support! Enjoy 🥰
 
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
-Pull requests should be against the most current `develop-full` branch.
+Pull requests should be against the most current `prod-full` branch.
 
 🏆 Special Thanks
 ---
