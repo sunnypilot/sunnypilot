@@ -142,12 +142,12 @@ If you are looking to install sunnyhaibin's fork via SSH, run the following comm
 
 * [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
     ```
-    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.12-prod-full-hkg; pkill -f thermald; rm -f prebuilt
+    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-full-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; pkill -f thermald; rm -f prebuilt; reboot; sudo reboot
     ```
 
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
     ```
-    cd /data; cp -rf ./openpilot ./openpilot.bak; rm -rf ./openpilot; git clone https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; git checkout 0.8.12-prod-personal-hkg; pkill -f thermald; rm -f prebuilt
+    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; pkill -f thermald; rm -f prebuilt; reboot; sudo reboot
     ```
 After running the command to install the desired branch, reboot the comma device to ensure to take the change in effect:
 1. C3: `sudo reboot`
