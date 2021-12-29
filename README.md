@@ -194,4 +194,5 @@ Pull requests should be against the most current `develop-full` branch.
 * [jung](https://github.com/chanhojung/openpilot)
 * [dri94](https://github.com/dri94/openpilot)
 * [JamesKGithub](https://github.com/JamesKGithub/FrogPilot)
+* [martinl](https://github.com/martinl/openpilot)
 * [Move Fast GmbH](https://github.com/move-fast/openpilot)
