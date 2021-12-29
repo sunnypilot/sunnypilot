@@ -1,7 +1,8 @@
 sunnypilot - Version 0.8.12-1
 ========================
 * sunnypilot 0.8.12 release - based on openpilot 0.8.12 devel
-* Dedicated Toyota branch support
+* Dedicated Hyundai/Kia/Genesis, Honda, Subaru, Toyota branch support
+  * Subaru: Based on subaru-community thanks to martinl!
 * NEW❗: OpenStreetMap integration thanks to the Move Fast team!
   * NEW❗: Vision-based Turn Control
   * NEW❗: Map-Data-based Turn Control
