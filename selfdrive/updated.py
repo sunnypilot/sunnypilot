@@ -125,7 +125,7 @@ def set_params(new_version: bool, failed_count: int, exception: Optional[str]) -
   # Write out release notes for new versions
   if new_version:
     try:
-      with open(os.path.join(FINALIZED, "RELEASES.md"), "rb") as f:
+      with open(os.path.join(FINALIZED, "CHANGELOGS.md"), "rb") as f:
         r = f.read().split(b'\n\n', 1)[0]  # Slice latest release notes
       try:
         params.put("ReleaseNotes", parse_markdown(r.decode("utf-8")))
