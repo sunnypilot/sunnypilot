@@ -3,6 +3,8 @@ import subprocess
 from common.basedir import BASEDIR
 
 
+PREBUILT = os.path.exists(os.path.join(BASEDIR, 'prebuilt'))
+
 class Spinner():
   def __init__(self):
     try:
@@ -45,8 +47,38 @@ class Spinner():
 
 if __name__ == "__main__":
   import time
-  with Spinner() as s:
-    s.update("Spinner text")
+  if PREBUILT:
+    with Spinner() as s:
+      # opkr
+      s.update("O")
+      time.sleep(1.0)
+      s.update("OP")
+      time.sleep(0.3)
+      s.update("OPE")
+      time.sleep(0.3)
+      s.update("OPEN")
+      time.sleep(0.3)
+      s.update("OPENP")
+      time.sleep(0.3)
+      s.update("OPENPI")
+      time.sleep(0.3)
+      s.update("OPENPIL")
+      time.sleep(0.3)
+      s.update("OPENPILO")
+      time.sleep(0.3)
+      s.update("OPENPILOT")
+      time.sleep(1.5)
+      s.update("For")
+      time.sleep(1.0)
+      s.update("Your")
+      time.sleep(1.0)
+      s.update("Comfort")
+      time.sleep(1.5)
+      s.update("Now Booting...")
+      time.sleep(4.0)
+  else:
+    with Spinner() as s:
+      s.update("Spinner text")
+      time.sleep(5.0)
+    print("gone")
     time.sleep(5.0)
-  print("gone")
-  time.sleep(5.0)
