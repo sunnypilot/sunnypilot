@@ -195,4 +195,5 @@ Pull requests should be against the most current `prod-full` branch.
 * [dri94](https://github.com/dri94/openpilot)
 * [JamesKGithub](https://github.com/JamesKGithub/FrogPilot)
 * [martinl](https://github.com/martinl/openpilot)
+* [multikyd](https://github.com/openpilotkr)
 * [Move Fast GmbH](https://github.com/move-fast/openpilot)
