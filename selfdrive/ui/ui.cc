@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <string>
 
 #include "common/transformations/orientation.hpp"
 #include "selfdrive/common/params.h"
@@ -183,10 +184,31 @@ static void update_state(UIState *s) {
     scene.light_sensor = std::clamp<float>(1.0 - (ev / max_ev), 0.0, 1.0);
   }
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
+  if (sm.updated("lateralPlan")) {
+    auto data = sm["lateralPlan"].getLateralPlan();
+
+    scene.lateralPlan.dynamicLaneProfileStatus = data.getDynamicLaneProfile();
+  }
 }
 
 void ui_update_params(UIState *s) {
   s->scene.is_metric = Params().getBool("IsMetric");
+
+    if (!s->scene.read_params) {
+    s->scene.brightness = std::stoi(Params().get("BrightnessControl"));
+    s->scene.onroadScreenOff = std::stoi(Params().get("OnroadScreenOff"));
+    s->scene.onroadScreenOffBrightness = std::stoi(Params().get("OnroadScreenOffBrightness"));
+
+    if (s->scene.onroadScreenOff > 0) {
+      s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
+    } else if (s->scene.onroadScreenOff == 0) {
+      s->scene.osoTimer = 30 * UI_FREQ;
+    } else if (s->scene.onroadScreenOff == -1) {
+      s->scene.osoTimer = 15 * UI_FREQ;
+    } else {
+      s->scene.osoTimer = -1;
+    }
+  }
 }
 
 static void update_status(UIState *s) {
@@ -198,7 +220,7 @@ static void update_status(UIState *s) {
     } else if (alert_status == cereal::ControlsState::AlertStatus::CRITICAL) {
       s->status = STATUS_ALERT;
     } else {
-      s->status = controls_state.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
+      s->status = controls_state.getMadsEnabled() ? controls_state.getCruiseEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED : STATUS_DISENGAGED;
     }
   }
 
@@ -210,6 +232,12 @@ static void update_status(UIState *s) {
       s->scene.started_frame = s->sm->frame;
       s->scene.end_to_end = Params().getBool("EndToEndToggle");
       s->wide_camera = Hardware::TICI() ? Params().getBool("EnableWideCamera") : false;
+      s->scene.dynamic_lane_profile = std::stoi(Params().get("DynamicLaneProfile"));
+      s->scene.show_debug_ui = Params().getBool("ShowDebugUI");
+      s->scene.speed_limit_control_enabled = Params().getBool("SpeedLimitControl");
+      s->scene.speed_limit_perc_offset = Params().getBool("SpeedLimitPercOffset");
+      s->scene.debug_snapshot_enabled = Params().getBool("EnableDebugSnapshot");
+      s->scene.dev_ui_enabled = std::stoi(Params().get("DevUI"));
     }
     // Invisible until we receive a calibration message.
     s->scene.world_objects_visible = false;
@@ -222,6 +250,7 @@ QUIState::QUIState(QObject *parent) : QObject(parent) {
   ui_state.sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "sensorEvents", "carState", "liveLocationKalman",
+    "lateralPlan", "longitudinalPlan", "liveMapData", "gpsLocationExternal",
   });
 
   Params params;
@@ -289,11 +318,25 @@ void Device::updateBrightness(const UIState &s) {
 
     // Scale back to 10% to 100%
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+
+    if (s.scene.onroadScreenOff != -2 && s.scene.touched2) {
+      sleep_time = s.scene.osoTimer;
+    } else if (s.scene.controls_state.getAlertSize() != cereal::ControlsState::AlertSize::NONE && s.scene.onroadScreenOff != -2) {
+      sleep_time = s.scene.osoTimer;
+    } else if (sleep_time > 0 && s.scene.onroadScreenOff != -2) {
+      sleep_time--;
+    } else if (s.scene.started && sleep_time == -1 && s.scene.onroadScreenOff != -2) {
+      sleep_time = s.scene.osoTimer;
+    }
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
+  } else if (s.scene.started && sleep_time == 0 && s.scene.onroadScreenOff != -2) {
+    brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
+  } else if( s.scene.brightness ) {
+    brightness = s.scene.brightness * 0.99;
   }
 
   if (brightness != last_brightness) {

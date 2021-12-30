@@ -198,8 +198,7 @@ int get_rtc_pkt(void *dat) {
 
 
 // send on serial, first byte to select the ring
-void usb_cb_ep2_out(void *usbdata, int len, bool hardwired) {
-  UNUSED(hardwired);
+void usb_cb_ep2_out(void *usbdata, int len) {
   uint8_t *usbdata8 = (uint8_t *)usbdata;
   uart_ring *ur = get_ring_by_number(usbdata8[0]);
   if ((len != 0) && (ur != NULL)) {
@@ -224,7 +223,7 @@ void usb_cb_enumeration_complete(void) {
   is_enumerated = 1;
 }
 
-int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) {
+int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp) {
   unsigned int resp_len = 0;
   uart_ring *ur = NULL;
   timestamp_t t;
@@ -320,16 +319,13 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
     // **** 0xd1: enter bootloader mode
     case 0xd1:
       // this allows reflashing of the bootstub
-      // so it's blocked over wifi
       switch (setup->b.wValue.w) {
         case 0:
           // only allow bootloader entry on debug builds
           #ifdef ALLOW_DEBUG
-            if (hardwired) {
-              puts("-> entering bootloader\n");
-              enter_bootloader_mode = ENTER_BOOTLOADER_MAGIC;
-              NVIC_SystemReset();
-            }
+            puts("-> entering bootloader\n");
+            enter_bootloader_mode = ENTER_BOOTLOADER_MAGIC;
+            NVIC_SystemReset();
           #endif
           break;
         case 1:
@@ -424,13 +420,7 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
 
     // **** 0xdc: set safety mode
     case 0xdc:
-      // Blocked over WiFi.
-      // Allow SILENT, NOOUTPUT and ELM security mode to be set over wifi.
-      if (hardwired || (setup->b.wValue.w == SAFETY_SILENT) ||
-                       (setup->b.wValue.w == SAFETY_NOOUTPUT) ||
-                       (setup->b.wValue.w == SAFETY_ELM327)) {
-        set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
-      }
+      set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
       break;
     // **** 0xdd: get healthpacket and CANPacket versions
     case 0xdd:

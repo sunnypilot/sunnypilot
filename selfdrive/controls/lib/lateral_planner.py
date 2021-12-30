@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from common.params import Params
 from common.realtime import sec_since_boot, DT_MDL
 from common.numpy_fast import interp
 from selfdrive.swaglog import cloudlog
@@ -47,6 +48,13 @@ class LateralPlanner:
     self.steer_rate_cost = CP.steerRateCost
 
     self.solution_invalid_cnt = 0
+
+    self.dynamic_lane_profile = int(Params().get("DynamicLaneProfile", encoding="utf8"))
+    self.dynamic_lane_profile_status = False
+    self.dynamic_lane_profile_status_buffer = False
+
+    self.lane_change_timer = 0.0
+
     self.lane_change_state = LaneChangeState.off
     self.lane_change_direction = LaneChangeDirection.none
     self.lane_change_timer = 0.0
@@ -60,6 +68,12 @@ class LateralPlanner:
     self.plan_yaw = np.zeros((TRAJECTORY_SIZE,))
     self.t_idxs = np.arange(TRAJECTORY_SIZE)
     self.y_pts = np.zeros(TRAJECTORY_SIZE)
+    self.d_path_w_lines_xyz = np.zeros((TRAJECTORY_SIZE, 3))
+
+    self.second = 0.0
+
+    self.standstill_elapsed = 0.0
+    self.stand_still = False
 
     self.lat_mpc = LateralMpc()
     self.reset_mpc(np.zeros(6))
@@ -69,6 +83,17 @@ class LateralPlanner:
     self.lat_mpc.reset(x0=self.x0)
 
   def update(self, sm):
+    self.second += DT_MDL
+    if self.second > 1.0:
+      self.use_lanelines = not Params().get_bool("EndToEndToggle")
+      self.dynamic_lane_profile = int(Params().get("DynamicLaneProfile", encoding="utf8"))
+      self.second = 0.0
+    self.stand_still = sm['carState'].standStill
+
+    lane_change_set_timer = int(Params().get("AutoLaneChangeTimer", encoding="utf8"))
+    lane_change_auto_timer = 0.0 if lane_change_set_timer == 0 else 0.1 if lane_change_set_timer == 1 else 0.5 if lane_change_set_timer == 2 \
+      else 1.0 if lane_change_set_timer == 3 else 1.5 if lane_change_set_timer == 4 else 2.0
+
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
     measured_curvature = sm['controlsState'].curvature
@@ -94,6 +119,7 @@ class LateralPlanner:
       if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
+        self.lane_change_wait_timer = 0
 
       # LaneChangeState.preLaneChange
       elif self.lane_change_state == LaneChangeState.preLaneChange:
@@ -112,9 +138,10 @@ class LateralPlanner:
         blindspot_detected = ((sm['carState'].leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (sm['carState'].rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
+        self.lane_change_wait_timer += DT_MDL
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
-        elif torque_applied and not blindspot_detected:
+        elif (torque_applied or (lane_change_auto_timer and self.lane_change_wait_timer > lane_change_auto_timer)) and not blindspot_detected:
           self.lane_change_state = LaneChangeState.laneChangeStarting
 
       # LaneChangeState.laneChangeStarting
@@ -161,15 +188,21 @@ class LateralPlanner:
     if self.desire == log.LateralPlan.Desire.laneChangeRight or self.desire == log.LateralPlan.Desire.laneChangeLeft:
       self.LP.lll_prob *= self.lane_change_ll_prob
       self.LP.rll_prob *= self.lane_change_ll_prob
-    if self.use_lanelines:
-      d_path_xyz = self.LP.get_d_path(v_ego, self.t_idxs, self.path_xyz)
-      self.lat_mpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, self.steer_rate_cost)
-    else:
+    self.d_path_w_lines_xyz = self.LP.get_d_path(v_ego, self.t_idxs, self.path_xyz)
+    if self.get_dynamic_lane_profile():
+      # laneless logic
       d_path_xyz = self.path_xyz
       path_cost = np.clip(abs(self.path_xyz[0, 1] / self.path_xyz_stds[0, 1]), 0.5, 1.5) * MPC_COST_LAT.PATH
       # Heading cost is useful at low speed, otherwise end of plan can be off-heading
       heading_cost = interp(v_ego, [5.0, 10.0], [MPC_COST_LAT.HEADING, 0.0])
       self.lat_mpc.set_weights(path_cost, heading_cost, self.steer_rate_cost)
+      self.dynamic_lane_profile_status = True
+    else:
+      # laneline logic
+      d_path_xyz = self.d_path_w_lines_xyz
+      self.lat_mpc.set_weights(MPC_COST_LAT.PATH, MPC_COST_LAT.HEADING, self.steer_rate_cost)
+      self.dynamic_lane_profile_status = False
+
     y_pts = np.interp(v_ego * self.t_idxs[:LAT_MPC_N + 1], np.linalg.norm(d_path_xyz, axis=1), d_path_xyz[:, 1])
     heading_pts = np.interp(v_ego * self.t_idxs[:LAT_MPC_N + 1], np.linalg.norm(self.path_xyz, axis=1), self.plan_yaw)
     self.y_pts = y_pts
@@ -200,6 +233,23 @@ class LateralPlanner:
     else:
       self.solution_invalid_cnt = 0
 
+  def get_dynamic_lane_profile(self):
+    if self.dynamic_lane_profile == 1:
+      return True
+    if self.dynamic_lane_profile == 0:
+      return False
+    elif self.dynamic_lane_profile == 2:
+      # only while lane change is off
+      if self.lane_change_state == LaneChangeState.off:
+        # laneline probability too low, we switch to laneless mode
+        if (self.LP.lll_prob + self.LP.rll_prob)/2 < 0.3:
+          self.dynamic_lane_profile_status_buffer = True
+        if (self.LP.lll_prob + self.LP.rll_prob)/2 > 0.5:
+          self.dynamic_lane_profile_status_buffer = False
+        if self.dynamic_lane_profile_status_buffer: # in buffer mode, always laneless
+          return True
+    return False
+
   def publish(self, sm, pm):
     plan_solution_valid = self.solution_invalid_cnt < 2
     plan_send = messaging.new_message('lateralPlan')
@@ -219,5 +269,15 @@ class LateralPlanner:
     plan_send.lateralPlan.useLaneLines = self.use_lanelines
     plan_send.lateralPlan.laneChangeState = self.lane_change_state
     plan_send.lateralPlan.laneChangeDirection = self.lane_change_direction
+
+    plan_send.lateralPlan.dynamicLaneProfile = bool(self.dynamic_lane_profile_status)
+    plan_send.lateralPlan.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
+    plan_send.lateralPlan.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
+
+    if self.stand_still:
+      self.standstill_elapsed += DT_MDL
+    else:
+      self.standstill_elapsed = 0.0
+    plan_send.lateralPlan.standstillElapsed = int(self.standstill_elapsed)
 
     pm.send('lateralPlan', plan_send)
