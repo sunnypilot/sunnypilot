@@ -29,10 +29,10 @@ USB_Setup_TypeDef;
 bool usb_eopf_detected = false;
 
 void usb_init(void);
-int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired);
-int usb_cb_ep1_in(void *usbdata, int len, bool hardwired);
-void usb_cb_ep2_out(void *usbdata, int len, bool hardwired);
-void usb_cb_ep3_out(void *usbdata, int len, bool hardwired);
+int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp);
+int usb_cb_ep1_in(void *usbdata, int len);
+void usb_cb_ep2_out(void *usbdata, int len);
+void usb_cb_ep3_out(void *usbdata, int len);
 void usb_cb_ep3_out_complete(void);
 void usb_cb_enumeration_complete(void);
 void usb_outep3_resume_if_paused(void);
@@ -642,7 +642,7 @@ void usb_setup(void) {
       }
       break;
     default:
-      resp_len = usb_cb_control_msg(&setup, resp, 1);
+      resp_len = usb_cb_control_msg(&setup, resp);
       // response pending if -1 was returned
       if (resp_len != -1) {
         USB_WritePacket(resp, MIN(resp_len, setup.b.wLength.w), 0);
@@ -735,12 +735,12 @@ void usb_irqhandler(void) {
       #endif
 
       if (endpoint == 2) {
-        usb_cb_ep2_out(usbdata, len, 1);
+        usb_cb_ep2_out(usbdata, len);
       }
 
       if (endpoint == 3) {
         outep3_processing = true;
-        usb_cb_ep3_out(usbdata, len, 1);
+        usb_cb_ep3_out(usbdata, len);
       }
     } else if (status == STS_SETUP_UPDT) {
       (void)USB_ReadPacket(&setup, 8);
@@ -879,7 +879,7 @@ void usb_irqhandler(void) {
           puts("  IN PACKET QUEUE\n");
           #endif
           // TODO: always assuming max len, can we get the length?
-          USB_WritePacket((void *)resp, usb_cb_ep1_in(resp, 0x40, 1), 1);
+          USB_WritePacket((void *)resp, usb_cb_ep1_in(resp, 0x40), 1);
         }
         break;
 
@@ -890,7 +890,7 @@ void usb_irqhandler(void) {
           puts("  IN PACKET QUEUE\n");
           #endif
           // TODO: always assuming max len, can we get the length?
-          int len = usb_cb_ep1_in(resp, 0x40, 1);
+          int len = usb_cb_ep1_in(resp, 0x40);
           if (len > 0) {
             USB_WritePacket((void *)resp, len, 1);
           }

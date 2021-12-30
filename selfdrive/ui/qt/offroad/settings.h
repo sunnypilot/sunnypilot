@@ -7,9 +7,11 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QWidget>
+#include <QStackedLayout>
 
 
 #include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/qt/widgets/sunnypilot.h"
 
 // ********** settings window + top-level panels **********
 class SettingsWindow : public QFrame {
@@ -76,4 +78,18 @@ private:
 
   Params params;
   QFileSystemWatcher *fs_watch;
+};
+
+class SunnypilotPanel : public QWidget {
+  Q_OBJECT
+
+private:
+  QStackedLayout* main_layout = nullptr;
+  QWidget* home = nullptr;
+  ForceCarRecognition* setCar = nullptr;
+
+  QWidget* home_widget;
+
+public:
+  explicit SunnypilotPanel(QWidget *parent = nullptr);
 };
