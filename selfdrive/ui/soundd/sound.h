@@ -16,7 +16,7 @@ const std::tuple<AudibleAlert, QString, int> sound_list[] = {
   {AudibleAlert::PROMPT_DISTRACTED, "prompt_distracted.wav", QSoundEffect::Infinite},
 
   {AudibleAlert::WARNING_SOFT, "warning_soft.wav", QSoundEffect::Infinite},
-  {AudibleAlert::WARNING_IMMEDIATE, "warning_immediate.wav", QSoundEffect::Infinite},
+  {AudibleAlert::WARNING_IMMEDIATE, "warning_immediate.wav", 10},
 };
 
 class Sound : public QObject {
@@ -26,6 +26,7 @@ public:
 protected:
   void update();
   void setAlert(const Alert &alert);
+  bool shouldPlaySound(const Alert &alert);
 
   Alert current_alert = {};
   QMap<AudibleAlert, QPair<QSoundEffect *, int>> sounds;
