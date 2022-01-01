@@ -1,5 +1,6 @@
 sunnypilot - Version 0.8.12-2
 ========================
+* IMPROVED: Update Toyota car list in Force Car Recognition (#18) thanks to FrogAi!
 * HOTFIX: Fix double stalk engage lateral and longitudinal control
 * NEW❗: Disable M.A.D.S. toggle to disable the beloved M.A.D.S. feature
   * Enable Stock openpilot engagement/disengagement
