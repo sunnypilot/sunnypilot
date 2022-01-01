@@ -40,8 +40,6 @@ def manager_init():
     ("BrightnessControl", "0"),
     ("CarModel", ""),
     ("CompletedTrainingVersion", "0"),
-    ("DisableRadar", "0"),
-    ("DisableRadar_Allow", "1"),
     ("DisableMADS", "0"),
     ("DisableOnroadUploads", "0"),
     ("DynamicLaneProfile", "2"),
