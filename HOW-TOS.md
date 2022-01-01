@@ -42,7 +42,7 @@ to go back to the default values.
 2. Connect your compatible comma device (EON, C2, C3) to the car. comma device power should be ON.
 3. Use a laptop or applicable device to connect to your comma device via SSH. (Tips: Instructions to SSH in [HERE](https://github.com/commaai/openpilot/wiki/SSH))
 4. In the SSH terminal after successfully connected to your comma device, execute the following commands:
-    1. ```killall boardd```
+    1. `pkill -f openpilot`
     2. `python /data/openpilot/selfdrive/debug/hyundai_enable_radar_points.py`
     3. Follow the instructions in the script:
         1. `Power on the vehicle keeping the engine off (press start button twice) then type OK to continue`.
