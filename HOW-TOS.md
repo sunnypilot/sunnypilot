@@ -30,11 +30,11 @@ to go back to the default values.
 
 ### 🚨 Enable Radar Tracks 🚨
 
-***(EXPERIMENTAL, as of October 3rd, 2021)***
+***(EXPERIMENTAL, as of January 1st, 2022)***
 
-***(Only applicable to some Hyundai and Kia cars, as of October 3rd, 2021)***
+***(Only applicable to some Hyundai, Kia, and Genesis cars, as of January 1st, 2022)***
 
-*(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
+*(Base on version 0.8.12 [`devel`](https://github.com/commaai/openpilot/tree/devel))*
 
 **USE AT YOUR OWN RISK!** Stock system safety features, like AEB and FCW, might be affected by these changes.
 
@@ -46,12 +46,17 @@ to go back to the default values.
     2. `python /data/openpilot/selfdrive/debug/hyundai_enable_radar_points.py`
     3. Follow the instructions in the script:
         1. `Power on the vehicle keeping the engine off (press start button twice) then type OK to continue`.
-        2. If successful, the following message should appear: `[DONE]. Restart your vehicle and ensure there are no faults`.
+        2a. If successful, the following message should appear: `[DONE]. Restart your vehicle and ensure there are no faults`.
+        2b. If the script did not run successfully, reach out to the community in [Sunnyhaibin's Openpilot Discord Server](https://discord.gg/wRW3meAgtx) or `#hyundai-kia-genesis channel` on [commaai community Discord Server](https://discord.comma.ai) for assistance.
     4. Reboot your comma device:
         1. C3: `sudo reboot`
         2. C2 or EON: `reboot`
 5. Once your comma device has been rebooted, start your car with engine on (with or without comma device connected). Ensure that there are no faults from the car.
-6. If there are no faults, you are done! You have successfully enabled radar tracks on your car's radar.
+6a. If the car has no faults: Go to Step 7
+6b. If the car has faults: 
+7. Go for a quick drive and drive behind a lead car with varied follow distance. Then, come back and allow the drive to upload its `rlogs` in [comma Connect](https://connect.comma.ai).
+8. With all `rlogs` uploaded, open the drive in Cabana from [comma Connect](https://connect.comma.ai). Load DBC -> `hyundai_kia_mando_front_radar.dbc`, then search `RADAR_TRACK_50x` (`x` could be anything), open any of them, and look at `LONG_DIST`.
+9. If the radar tracks data is relevant with the lead car you drove behind, you are done! Your car now had radar tracks enabled.
 
 ### 🚨 Enable openpilot Longitudinal Control 🚨
 
