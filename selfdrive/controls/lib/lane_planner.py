@@ -5,20 +5,28 @@ from common.numpy_fast import interp
 from common.realtime import DT_MDL
 from selfdrive.hardware import EON, TICI
 from selfdrive.swaglog import cloudlog
+from common.params import Params
 
 
 TRAJECTORY_SIZE = 33
 # camera offset is meters from center car to camera
-if EON:
-  CAMERA_OFFSET = 0.06
-  PATH_OFFSET = 0.0
-elif TICI:
-  CAMERA_OFFSET = -0.04
-  PATH_OFFSET = -0.04
-else:
-  CAMERA_OFFSET = 0.0
-  PATH_OFFSET = 0.0
 
+# Get offset from param file
+params = Params()
+CameraOffset = float(params.get("CameraOffset", encoding='utf8'))
+# print("User defined Camera Offset value in CM is:", CameraOffset)
+
+if EON:
+  CAMERA_OFFSET = 0.06 + CameraOffset / 100
+  PATH_OFFSET = 0.0 + CameraOffset / 100
+elif TICI:
+  CAMERA_OFFSET = -0.04 + CameraOffset / 100
+  PATH_OFFSET = -0.04 + CameraOffset / 100
+else:
+  CAMERA_OFFSET = 0.0 + CameraOffset / 100
+  PATH_OFFSET = 0.0 + CameraOffset / 100
+
+# print("New CAMERA_OFFSET value in M is:", CAMERA_OFFSET)
 
 class LanePlanner:
   def __init__(self, wide_camera=False):
@@ -42,6 +50,18 @@ class LanePlanner:
 
     self.camera_offset = -CAMERA_OFFSET if wide_camera else CAMERA_OFFSET
     self.path_offset = -PATH_OFFSET if wide_camera else PATH_OFFSET
+
+#    self.CameraOffset = None
+#    self.CameraOffset = None
+
+#  def update_sunny_set_offsets(self, camera_offset, path_offset):
+#    if self.CameraOffset != camera_offset:
+#      self.CameraOffset = camera_offset
+#      self.camera_offset = camera_offset / 100
+
+#    if self.CameraOffset != path_offset:
+#      self.CameraOffset = path_offset
+#      self.path_offset = path_offset / 100
 
   def parse_model(self, md):
     if len(md.laneLines) == 4 and len(md.laneLines[0].t) == TRAJECTORY_SIZE:
