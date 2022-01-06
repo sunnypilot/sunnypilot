@@ -164,6 +164,15 @@ class TestSubaruSafety(common.PandaSafetyTest):
       self.assertTrue(self._tx(self._torque_msg(sign * (MAX_RT_DELTA - 1))))
       self.assertTrue(self._tx(self._torque_msg(sign * (MAX_RT_DELTA + 1))))
 
+class TestSubaru2018Safety(TestSubaruSafety):
+  MAX_STEER = 3071
+
+  def setUp(self):
+    self.packer = CANPackerPanda("subaru_global_2017_generated")
+    self.safety = libpandasafety_py.libpandasafety
+    self.safety.set_safety_hooks(Panda.SAFETY_SUBARU, 2)
+    self.safety.init_tests()
+
 class TestSubaruGen2Safety(TestSubaruSafety):
   TX_MSGS = [[0x122, 0], [0x321, 0], [0x322, 0], [0x40, 2], [0x139, 2]]
   FWD_BLACKLISTED_ADDRS = {0: [0x40, 0x139], 2: [0x122, 0x321, 0x322]}

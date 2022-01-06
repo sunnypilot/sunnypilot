@@ -8,6 +8,8 @@ class CarControllerParams:
   def __init__(self, CP):
     if CP.carFingerprint == CAR.IMPREZA_2020:
       self.STEER_MAX = 1439
+    elif CP.carFingerprint == CAR.CROSSTREK_2018:
+      self.STEER_MAX = 3071
     else:
       self.STEER_MAX = 2047
     self.STEER_STEP = 2                # how often we update the steer cmd
@@ -21,6 +23,7 @@ class CAR:
   ASCENT = "SUBARU ASCENT LIMITED 2019-22"
   IMPREZA = "SUBARU IMPREZA LIMITED 2019-22"
   IMPREZA_2020 = "SUBARU IMPREZA SPORT 2020-22"
+  CROSSTREK_2018 = "SUBARU CROSSTREK 2018"
   CROSSTREK_2020H = "SUBARU CROSSTREK LIMITED 2020 HYBRID"
   FORESTER = "SUBARU FORESTER 2019-21"
   FORESTER_PREGLOBAL = "SUBARU FORESTER 2017 - 2018"
@@ -115,8 +118,6 @@ FW_VERSIONS = {
       b'\x7a\xc0\x0c\x00',
       b'z\xc0\b\x00',
       b'\x8a\xc0\x00\x00',
-      b'z\xc0\x04\x00',
-      b'z\xc0\x00\x00',
       b'\x8a\xc0\x10\x00',
     ],
     (Ecu.fwdCamera, 0x787, None): [
@@ -547,12 +548,23 @@ FW_VERSIONS = {
     ],
   },
 }
-
+FW_VERSIONS[CAR.CROSSTREK_2018] = {
+    (Ecu.esp, 0x7b0, None): FW_VERSIONS[CAR.IMPREZA][(Ecu.esp, 0x7b0, None)],
+    (Ecu.eps, 0x746, None): [
+      b'z\xc0\x04\x00',
+      b'z\xc0\x08\x00',
+      b'z\xc0\x00\x00',
+    ],
+    (Ecu.fwdCamera, 0x787, None): FW_VERSIONS[CAR.IMPREZA][(Ecu.fwdCamera, 0x787, None)],
+    (Ecu.engine, 0x7e0, None): FW_VERSIONS[CAR.IMPREZA][(Ecu.engine, 0x7e0, None)],
+    (Ecu.transmission, 0x7e1, None): FW_VERSIONS[CAR.IMPREZA][(Ecu.transmission, 0x7e1, None)],
+  }
 
 STEER_THRESHOLD = {
   CAR.ASCENT: 80,
   CAR.IMPREZA: 80,
   CAR.IMPREZA_2020: 80,
+  CAR.CROSSTREK_2018: 80,
   CAR.CROSSTREK_2020H: 80,
   CAR.FORESTER: 80,
   CAR.FORESTER_PREGLOBAL: 75,
@@ -569,6 +581,7 @@ DBC = {
   CAR.ASCENT: dbc_dict('subaru_global_2017_generated', None),
   CAR.IMPREZA: dbc_dict('subaru_global_2017_generated', None),
   CAR.IMPREZA_2020: dbc_dict('subaru_global_2017_generated', None),
+  CAR.CROSSTREK_2018: dbc_dict('subaru_global_2017_generated', None),
   CAR.CROSSTREK_2020H: dbc_dict('subaru_global_2020_hybrid_generated', None),
   CAR.FORESTER: dbc_dict('subaru_global_2017_generated', None),
   CAR.FORESTER_PREGLOBAL: dbc_dict('subaru_forester_2017_generated', None),
@@ -582,7 +595,7 @@ DBC = {
 }
 
 PREGLOBAL_CARS = [CAR.FORESTER_PREGLOBAL, CAR.LEGACY_PREGLOBAL, CAR.LEGACY_PREGLOBAL_2018, CAR.LEVORG_PREGLOBAL, CAR.OUTBACK_PREGLOBAL, CAR.OUTBACK_PREGLOBAL_2018, CAR.WRX_PREGLOBAL]
-GLOBAL_CARS_SNG = [CAR.ASCENT, CAR.IMPREZA, CAR.IMPREZA_2020, CAR.FORESTER]
+GLOBAL_CARS_SNG = [CAR.ASCENT, CAR.IMPREZA, CAR.IMPREZA_2020, CAR.CROSSTREK_2018, CAR.FORESTER]
 
 def main():
   for member, value in vars(CAR).items():
