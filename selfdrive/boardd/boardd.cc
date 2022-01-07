@@ -146,10 +146,10 @@ bool safety_setter_thread(std::vector<Panda *> pandas) {
       }
     }
 
-    if (p.getBool("ControlsReady")) {
+    // if (p.getBool("ControlsReady")) {
       params = p.get("CarParams");
       if (params.size() > 0) break;
-    }
+    // }
     util::sleep_for(100);
   }
   LOGW("got %d bytes CarParams", params.size());
