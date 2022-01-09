@@ -54,7 +54,7 @@ to go back to the default values.
 5. Once your comma device has been rebooted, start your car with engine on (with or without comma device connected). Ensure that there are no faults from the car. If there are faults, reach out to the community in [Sunnyhaibin's Openpilot Discord Server](https://discord.gg/wRW3meAgtx) or `#hyundai-kia-genesis channel` on [commaai community Discord Server](https://discord.comma.ai) for assistance.
 6. Go for a quick drive and drive behind a lead car with varied follow distance. Then, come back and allow the drive to upload its `rlogs` in [comma Connect](https://connect.comma.ai).
 7. With all `rlogs` uploaded, open the drive in Cabana from [comma Connect](https://connect.comma.ai). Load DBC -> `hyundai_kia_mando_front_radar.dbc`, then search `RADAR_TRACK_50x` (`x` could be anything), open any of them, and look at `LONG_DIST`.
-8. If the radar tracks data is relevant with the lead car you drove behind, you are done! Your car now had radar tracks enabled.
+8. If the radar tracks data is relevant with the lead car you drove behind, you are done! Your car now have radar tracks enabled.
 
 ### 🚨 Enable openpilot Longitudinal Control 🚨
 
