@@ -45,9 +45,9 @@ to go back to the default values.
     1. `pkill -f openpilot`
     2. `python /data/openpilot/selfdrive/debug/hyundai_enable_radar_points.py`
     3. Follow the instructions in the script:
-        1. `Power on the vehicle keeping the engine off (press start button twice) then type OK to continue`.
-        2a. If successful, the following message should appear: `[DONE]. Restart your vehicle and ensure there are no faults`.
-        2b. If the script did not run successfully, reach out to the community in [Sunnyhaibin's Openpilot Discord Server](https://discord.gg/wRW3meAgtx) or `#hyundai-kia-genesis channel` on [commaai community Discord Server](https://discord.comma.ai) for assistance.
+       * `Power on the vehicle keeping the engine off (press start button twice) then type OK to continue`.
+           * If successful, the following message should appear: `[DONE]. Restart your vehicle and ensure there are no faults`.
+           * If the script did not run successfully, reach out to the community in [Sunnyhaibin's Openpilot Discord Server](https://discord.gg/wRW3meAgtx) or `#hyundai-kia-genesis channel` on [commaai community Discord Server](https://discord.comma.ai) for assistance.
     4. Reboot your comma device:
         1. C3: `sudo reboot`
         2. C2 or EON: `reboot`
