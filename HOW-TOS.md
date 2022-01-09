@@ -58,9 +58,9 @@ to go back to the default values.
 
 ### 🚨 Enable openpilot Longitudinal Control 🚨
 
-***(EXPERIMENTAL, as of October 3rd, 2021)***
+***(EXPERIMENTAL, as of January 9th, 2022)***
 
-*(Base on version 0.8.10 [`master e98d1258114967999d9b3f5f1e46db98f76f78e6`](https://github.com/commaai/openpilot/tree/e98d1258114967999d9b3f5f1e46db98f76f78e6))*
+*(Base on version 0.8.12 [`devel`](https://github.com/commaai/openpilot/tree/devel))*
 
 **USE AT YOUR OWN RISK!** Stock system safety features, like AEB and FCW, might be affected by these changes.
 
@@ -80,10 +80,16 @@ to go back to the default values.
                 └── Toggles
                     └── ***openpilot Longitudinal Control***
    
-5. Set the toggle `openpilot Longitudinal Control` to `ON`. Reboot the comma device to ensure to take the change in effect.
-6. Start the car and drive. If a chevron (triangle) appears behind a lead car, you have successfully enabled openpilot Longitudinal Control.
+5. Set the toggle `openpilot Longitudinal Control` to `ON`. (Note: If this step is done while the car is at the `ON` ignition position, turn of the car to take the change in effect.)
+6. Start the car. Drive. Check for the following:
+   1. Is there a chevron (triangle) appear behind a lead car?
+   2. Are you able to engage openpilot with no fault?
+   3. (Optional, PROCEED WITH EXTREME CAUTION AND BE READY TO TAKE OVER AT ALL TIMES) With the car engaged with openpilot and cruising at or below `35 MPH` or `56 KM/H` in good road conditions, is your car able to detect and slow down / stop behind a stopped car?
+7. If you answered `YES` to all the above questions in Step 6, you have successfully enabled openpilot Longitudinal Control.
 
-Note: Some Hyundai/Kia/Genesis cars may not see the chevron behind a lead car after enabling `openpilot Longitudinal Control`. Ensure that your car model is listed in the following statement in `selfdrive/car/hyundai/interface.py`:
+❗Note❗: Some Hyundai/Kia/Genesis car models may not see the chevron behind a lead car after enabling `openpilot Longitudinal Control`. This could cause by the affected car models being listed in the `LEGACY_SAFETY_MODE_CAR` blacklist in `selfdrive/car/hyundai/values.py` and openpilot Longitudinal Control may not have been tested/confirmed by comma or the community.
 
-    ## As of October 3rd, 2021 ##
-    ret.openpilotLongitudinalControl = Params().get_bool("DisableRadar") and candidate in [CAR.SONATA, CAR.SONATA_HYBRID, CAR.PALISADE, CAR.SANTA_FE]
+If you would like to test whether openpilot Longitudinal Control would work for your car model, ensure that your car model is removed from the blacklist in the following statement in `selfdrive/car/hyundai/values.py`:
+
+    ## As of January 9th, 2022 ##
+    LEGACY_SAFETY_MODE_CAR = set([CAR.HYUNDAI_GENESIS, CAR.IONIQ_EV_2020, CAR.IONIQ_EV_LTD, CAR.IONIQ_PHEV, CAR.IONIQ, CAR.KONA_EV, CAR.KIA_SORENTO, CAR.SONATA_LF, CAR.KIA_NIRO_EV, CAR.KIA_OPTIMA, CAR.VELOSTER, CAR.KIA_STINGER, CAR.GENESIS_G70, CAR.GENESIS_G80, CAR.KIA_CEED, CAR.ELANTRA, CAR.IONIQ_HEV_2022])
