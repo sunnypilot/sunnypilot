@@ -89,8 +89,7 @@ to go back to the default values.
 
 ❗Note❗: Some Hyundai/Kia/Genesis car models may not see the chevron behind a lead car after enabling `openpilot Longitudinal Control`. This could cause by the affected car models being listed in the `LEGACY_SAFETY_MODE_CAR` blacklist in `selfdrive/car/hyundai/values.py` and openpilot Longitudinal Control may not have been tested/confirmed by comma or the community.
 * If you would like to test whether openpilot Longitudinal Control would work for your car model, ensure that your car model is removed from the blacklist in the following statement in `selfdrive/car/hyundai/values.py`:
-
-
-
+```
     ## As of January 9th, 2022 ##
     LEGACY_SAFETY_MODE_CAR = set([CAR.HYUNDAI_GENESIS, CAR.IONIQ_EV_2020, CAR.IONIQ_EV_LTD, CAR.IONIQ_PHEV, CAR.IONIQ, CAR.KONA_EV, CAR.KIA_SORENTO, CAR.SONATA_LF, CAR.KIA_NIRO_EV, CAR.KIA_OPTIMA, CAR.VELOSTER, CAR.KIA_STINGER, CAR.GENESIS_G70, CAR.GENESIS_G80, CAR.KIA_CEED, CAR.ELANTRA, CAR.IONIQ_HEV_2022])
+```
