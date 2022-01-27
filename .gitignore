@@ -82,3 +82,4 @@ models/*.thneed
 build/
 
 !**/.gitkeep
+.vs/

@@ -1,5 +1,5 @@
 const int SUBARU_MAX_STEER = 2047; // 1s
-const int SUBARU_MAX_STEER_2018 = 3071; // Higher limit for some Impreza/Crosstrek
+const int SUBARU_ALT_MAX_STEER = 3071; // Higher limit for some Impreza/Crosstrek
 // real time torque limit to prevent controls spamming
 // the real time limit is 1500/sec
 const int SUBARU_MAX_RT_DELTA = 940;          // max delta torque allowed for real time checks
@@ -66,7 +66,7 @@ const uint16_t SUBARU_L_PARAM_FLIP_DRIVER_TORQUE = 1;
 bool subaru_l_flip_driver_torque = false;
 
 const uint16_t SUBARU_PARAM_MAX_STEER_2018 = 2;
-bool subaru_max_steer_2018 = false;
+bool subaru_max_steer_2018_crosstrek = false;
 
 static uint8_t subaru_get_checksum(CANPacket_t *to_push) {
   return (uint8_t)GET_BYTE(to_push, 0);
@@ -229,24 +229,22 @@ static int subaru_tx_hook(CANPacket_t *to_send) {
     desired_torque = -1 * to_signed(desired_torque, 13);
 
     if (controls_allowed) {
-      
-     if (subaru_max_steer_2018) {
-            // *** global torque limit check ***
-            violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER_2018, -SUBARU_MAX_STEER_2018);
+      if (subaru_max_steer_2018_crosstrek) {
+        // *** global torque limit check ***
+        violation |= max_limit_check(desired_torque, SUBARU_ALT_MAX_STEER, -SUBARU_ALT_MAX_STEER);
+        // *** torque rate limit check ***
+        violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
+          SUBARU_ALT_MAX_STEER, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
+          SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
+      } else {
+        // *** global torque limit check ***
+        violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER, -SUBARU_MAX_STEER);
 
-            // *** torque rate limit check ***
-            violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
-              SUBARU_MAX_STEER_2018, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
-              SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
-          } else {
-            // *** global torque limit check ***
-            violation |= max_limit_check(desired_torque, SUBARU_MAX_STEER, -SUBARU_MAX_STEER);
-
-            // *** torque rate limit check ***
-            violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
-              SUBARU_MAX_STEER, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
-              SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
-          }
+        // *** torque rate limit check ***
+        violation |= driver_limit_check(desired_torque, desired_torque_last, &torque_driver,
+          SUBARU_MAX_STEER, SUBARU_MAX_RATE_UP, SUBARU_MAX_RATE_DOWN,
+          SUBARU_DRIVER_TORQUE_ALLOWANCE, SUBARU_DRIVER_TORQUE_FACTOR);
+      }
 
       // used next time
       desired_torque_last = desired_torque;
@@ -652,7 +650,7 @@ static const addr_checks* subaru_init(int16_t param) {
   controls_allowed = false;
   relay_malfunction_reset();
   // Checking for higher max steer from safety parameter
-  subaru_max_steer_2018 = GET_FLAG(param, SUBARU_PARAM_MAX_STEER_2018);
+  subaru_max_steer_2018_crosstrek = GET_FLAG(param, SUBARU_PARAM_MAX_STEER_2018);
   return &subaru_rx_checks;
 }
 
