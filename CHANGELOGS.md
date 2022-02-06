@@ -1,3 +1,8 @@
+sunnypilot - Version 0.8.12-3
+========================
+* NEW❗: Bypass "System Malfunction" alert toggle
+  * Prevent openpilot from returning the "System Malfunction" alert that hinders the ability use openpilot
+
 sunnypilot - Version 0.8.12-2
 ========================
 * NEW❗: Disable M.A.D.S. toggle to disable the beloved M.A.D.S. feature
