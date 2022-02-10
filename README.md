@@ -199,6 +199,7 @@ Pull requests should be against the most current `prod-full` branch.
 * [martinl](https://github.com/martinl/openpilot)
 * [multikyd](https://github.com/openpilotkr)
 * [Move Fast GmbH](https://github.com/move-fast/openpilot)
+* [Dragonpilot](https://github.com/dragonpilot-community/dragonpilot)
 
 Licensing
 ------
