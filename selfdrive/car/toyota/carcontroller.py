@@ -129,7 +129,7 @@ class CarController():
       send_ui = True
 
     if CarControllerParams.FEATURE_NO_LKAS_ICON:
-      if CS.persistedLkasIconDisabled == 0:
+      if CS.persistLkasIconDisabled == 0:
         self.has_set_lkas = True
 
       if (frame % 100 == 0 or send_ui):
