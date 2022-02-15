@@ -37,7 +37,7 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
 * Quiet Drive 🤫 - Toggle to mute all notification sounds (excluding driver safety warnings)
 * Force Car Recognition (FCR) - Use a selector to force your car to be recognized by openpilot
-* [**OpenStreetMap (OSM) Speed Limit Control**](#openstreetmap-osm-speed-limit-control) - Utilizes data from OpenStreetMap to achieve dynamic speed limit control without user's intervention. Only available to openpilot longitudinal capable cars
+* [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention. Only available to openpilot longitudinal capable cars
 
 🚗 Driving Enhancement
 ---
@@ -73,8 +73,8 @@ To use Dynamic Lane Profile, do the following:
 4. Drive. 
 ```
 
-### OpenStreetMap (OSM) Speed Limit Control
-OpenStreetMap (OSM) allows openpilot-longitudinal-capable cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
+### Enhanced Speed Control
+This fork now allows openpilot-longitudinal-capable cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
 
 Certain features are only available with an active data connection, via:
 * [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or;
