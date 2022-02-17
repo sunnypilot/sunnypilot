@@ -44,17 +44,17 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 
 ### Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
-* openpilot ALC and ACC/SCC can be engaged independently of each other
+* openpilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
 * Dedicated button to toggle openpilot ALC:
   * `LFA` button: Newer HKG cars
-  * `CRUISE (MAIN)` button: Most HKG cars, Subaru (Global and Pre Global)
   * `LKAS` button: Honda, Toyota
+  * `CRUISE (MAIN)` button: Most HKG cars, Subaru (Global and Pre Global)
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
-* `BRAKE pedal` press will pause openpilot ALC; `BRAKE pedal` release will resume openpilot ALC; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
-* `GAS pedal` press will not disengage openpilot ALC or ACC/SCC
-* `TURN SIGNALS` (`Left` or `Right`) will pause openpilot ALC if the vehicle speed is below the threshold for openpilot Automatic Lane Change
+* `BRAKE pedal` press will pause openpilot Automatic Lane Centering; `BRAKE pedal` release will resume openpilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
+* `GAS pedal` press will not disengage openpilot Automatic Lane Centering or ACC/SCC
+* `TURN SIGNALS` (`Left` or `Right`) will pause openpilot Automatic Lane Centering if the vehicle speed is below the threshold for openpilot Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
 
 ### Dynamic Lane Profile (DLP)
