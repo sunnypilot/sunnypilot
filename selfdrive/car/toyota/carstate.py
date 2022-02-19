@@ -145,7 +145,7 @@ class CarState(CarStateBase):
       if not self.disable_mads:
         if not self.prev_lkas_enabled and self.lkas_enabled: #1 == not LKAS button
           self.lkasEnabled = True
-        elif self.prev_lkas_enabled and not self.lkas_enabled:
+        elif self.prev_lkas_enabled == 1 and not self.lkas_enabled:
           self.lkasEnabled = False
     else:
       self.lkasEnabled = False
