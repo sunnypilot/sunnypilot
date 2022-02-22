@@ -94,7 +94,12 @@ To use Dynamic Lane Profile, do the following:
 ```
 
 ### Enhanced Speed Control
-This fork now allows openpilot-longitudinal-capable cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
+This fork now allows supported cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
+
+Supported cars:
+* openpilot Longitudinal Control capable
+* Stock Longitudinal Control
+  * Hyundai/Kia/Genesis
 
 Certain features are only available with an active data connection, via:
 * [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or;
