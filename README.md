@@ -96,7 +96,7 @@ To use Dynamic Lane Profile, do the following:
 ### Enhanced Speed Control
 This fork now allows supported cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
 
-Supported cars:
+####**Supported cars:**
 * openpilot Longitudinal Control capable
 * Stock Longitudinal Control
   * Hyundai/Kia/Genesis
@@ -105,7 +105,7 @@ Certain features are only available with an active data connection, via:
 * [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or;
 * Personal Hotspot - From your mobile device, or a dedicated hotspot from a cellular carrier.
 
-Features:
+####Features:
 * [Vision-based Turn Control]: Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
 * [Map-Data-based Turn Control]: Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
   * **Note: Require data connection**
@@ -115,7 +115,7 @@ Features:
       * **Note: Require data connection**
 * [Hands on Wheel Monitoring]" Monitor and alert when driver is not keeping the hands on the steering wheel
 
-Instruction (WIP)
+####Instruction (WIP)
 
 ⚒ Branch Definitions
 ---
