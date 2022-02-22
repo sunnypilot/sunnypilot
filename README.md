@@ -34,10 +34,30 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 
 ### Driving Enhancement
 * [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - openpilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
-* [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - dynamically switch lane profile base on lane recognition confidence
-* Quiet Drive 🤫 - Toggle to mute all notification sounds (excluding driver safety warnings)
-* Force Car Recognition (FCR) - Use a selector to force your car to be recognized by openpilot
-* [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention. Only available to openpilot longitudinal capable cars
+* [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
+* [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
+* **No Disengage on Gas** - Allow the gas pedal press to not disengage openpilot. This feature is enabled by default.
+* **Quiet Drive 🤫** - Toggle to mute all notification sounds (excluding driver safety warnings)
+* **Auto Lane Change Timer** - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
+* **Force Car Recognition (FCR)** - Use a selector to force your car to be recognized by openpilot
+* **Fix openpilot No Offroad** - Enforce openpilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running openpilot without comma power
+* **Enable ACC+MADS with RES+/SET-** - Engage both ACC and MADS with a single press of RES+ or SET- button
+
+### Visual Enhancement
+* **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
+* **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagemenet status
+* **Developer (Dev) UI** - Display various real-time metrics on screen while driving
+  * Click on the "MAX" box on the top left of the openpilot display to toggle different metrics display
+* **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at a stop lights, stop signs, traffic congestions)
+* **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
+
+### Operational Enhancement
+* **Fast Boot** - openpilot will fast boot by creating a Prebuilt file
+* **Disable Onroad Uploads** - Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot
+* **Brightness Control (Global)** - Manually adjusts the global brightness of the screen
+* **Driving Screen Off Timer** - Turn off the device screen or reduce brightness to protect the screen after car starts
+* **Driving Screen Off Brightness (%)** - When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio
+* **Max Time Offroad** - Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)
 
 🚗 Driving Enhancement
 ---
