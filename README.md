@@ -117,12 +117,7 @@ Certain features are only available with an active data connection, via:
 
 **Instruction**
 
-📗 How to use Custom Longitudinal Control on sunnypilot 📗
-
-**Supported cars:**
-* openpilot Longitudinal Control capable
-* Stock Longitudinal Control
-  * Hyundai/Kia/Genesis
+**📗 How to use Custom Longitudinal Control on sunnypilot 📗**
 
 When using Speed Limit Control, Vision or Map based Turn control, you will be setting the "MAX" ACC speed on the openpilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but never exceeding the max speed set on the openpilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the openpilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
 
