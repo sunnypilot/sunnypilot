@@ -115,7 +115,22 @@ Certain features are only available with an active data connection, via:
       * **Note: Require data connection**
 * Hands on Wheel Monitoring - Monitor and alert when driver is not keeping the hands on the steering wheel
 
-**Instruction (WIP)**
+**Instruction**
+
+📗 How to use Custom Longitudinal Control on sunnypilot 📗
+
+**Supported cars:**
+* openpilot Longitudinal Control capable
+* Stock Longitudinal Control
+  * Hyundai/Kia/Genesis
+
+When using Speed Limit Control, Vision or Map based Turn control, you will be setting the "MAX" ACC speed on the openpilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but never exceeding the max speed set on the openpilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the openpilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
+
+**‼ Where to look when setting ACC speed ‼**
+
+Do not look at the dashboard when setting your ACC max speed. Instead, only look at the one on the openpilot display, "MAX". The reason you need to look at the openpilot display is because openpilot will be changing the one in the dashboard. It will be adjusting it as needed, never raising it above the one set on the openpilot display. ONLY look at the MAX speed on the openpilot display when setting the ACC speed instead of the dashboard!
+
+(Courtesy instructions from John, author of jvePilot)
 
 ⚒ Branch Definitions
 ---
