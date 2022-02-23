@@ -116,6 +116,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     keepHandsOnWheel @115;
     speedLimitActive @116;
     speedLimitValueChange @117;
+    startupZss @118;
 
     driverMonitorLowAccDEPRECATED @68;
     radarCanErrorDEPRECATED @15;
