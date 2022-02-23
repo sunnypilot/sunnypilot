@@ -106,14 +106,14 @@ Certain features are only available with an active data connection, via:
 * Personal Hotspot - From your mobile device, or a dedicated hotspot from a cellular carrier.
 
 **Features:**
-* [Vision-based Turn Control]: Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
-* [Map-Data-based Turn Control]: Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
+* Vision-based Turn Control - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
+* Map-Data-based Turn Control - Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
   * **Note: Require data connection**
-* [Speed Limit Control]: Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
+* Speed Limit Control - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
   * **Note: Require data connection**
-    * [Speed Limit Offset]: When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive
+    * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive
       * **Note: Require data connection**
-* [Hands on Wheel Monitoring]" Monitor and alert when driver is not keeping the hands on the steering wheel
+* Hands on Wheel Monitoring - Monitor and alert when driver is not keeping the hands on the steering wheel
 
 **Instruction (WIP)**
 
