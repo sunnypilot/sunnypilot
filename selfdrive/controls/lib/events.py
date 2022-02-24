@@ -305,13 +305,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   EventName.startupNoCar: {
     ET.PERMANENT: StartupAlert("Dashcam mode for unsupported car"),
   },
-  EventName.startupZss: {
-    ET.PERMANENT: Alert(
-      "Using Zorro steering sensor",
-      "Always keep hands on wheel and eyes on road",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 5.),
-  },
+
   EventName.startupNoFw: {
     ET.PERMANENT: StartupAlert("Car Unrecognized",
                                "Check comma power connections",
