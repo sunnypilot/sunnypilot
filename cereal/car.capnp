@@ -85,8 +85,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     startupNoControl @77;
     startupMaster @78;
     startupNoFw @104;
-    startupZss @105;
     fcw @79;
+    startupZss @118;
     steerSaturated @80;
     belowEngageSpeed @84;
     noGps @85;
@@ -469,7 +469,7 @@ struct CarParams {
   fingerprintSource @49: FingerprintSource;
   networkLocation @50 :NetworkLocation;  # Where Panda/C2 is integrated into the car's CAN network
   hasZss @65: Bool; # true if ZSS is detected
-
+  smartDsu @66: Bool;  # true if sDSU is detected
   wheelSpeedFactor @63 :Float32; # Multiplier on wheels speeds to computer actual speeds
 
   struct SafetyConfig {
