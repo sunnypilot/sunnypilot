@@ -13,12 +13,15 @@ from cereal import car
 EventName = car.CarEvent.EventName
 
 
-def get_startup_event(car_recognized, controller_available, fw_seen):
+def get_startup_event(car_recognized, controller_available, fw_seen, CP):
   #if get_comma_remote() and get_tested_branch():
     #event = EventName.startup
   #else:
     #event = EventName.startupMaster
-  event = EventName.startup
+  if CP.hasZss:
+    event = EventName.startupZss
+  else:
+    event = EventName.startup
 
   if not car_recognized:
     if fw_seen:

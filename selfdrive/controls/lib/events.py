@@ -290,6 +290,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   EventName.startup: {
     ET.PERMANENT: StartupAlert("sunnypilot Initialized")
   },
+  
+  EventName.startupZss: {
+    ET.PERMANENT: StartupAlert("sunnypilot Initialized with ZSS.")
+  },
 
   EventName.startupMaster: {
     ET.PERMANENT: StartupAlert("WARNING: This branch is not tested",
