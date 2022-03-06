@@ -223,6 +223,7 @@ Pull requests should be against the most current `prod-full` branch.
 ---
 
 * [spektor56](https://github.com/spektor56/openpilot)
+* [rav4kumar](https://github.com/rav4kumar/openpilot)
 * [mob9221](https://github.com/mob9221/opendbc)
 * [briantran33](https://github.com/briantran33/openpilot)
 * [Aragon7777](https://github.com/aragon7777/openpilot)
