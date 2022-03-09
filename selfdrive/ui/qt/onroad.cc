@@ -925,7 +925,7 @@ void OnroadHud::drawRightDevUi2(QPainter &p, int x, int y) {
     char val_str[16];
     QColor valueColor = QColor(255, 255, 255, 255);
 
-    snprintf(val_str, sizeof(val_str), "%d", std::fabs(steeringTorque));
+    snprintf(val_str, sizeof(val_str), "%f", std::fabs(steeringTorque));
 
     rh += drawDevUiElementLeft(p, x, ry, val_str, "EPS TRQ", "", valueColor);
     ry = y + rh;
