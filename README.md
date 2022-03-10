@@ -71,6 +71,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
   * `CRUISE (MAIN)` button: Most HKG cars, Subaru (Global and Pre Global)
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
+* `CRUISE (MAIN)` must be `ON` to use MADS and ACC/SCC
 * `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
 * `BRAKE pedal` press will pause openpilot Automatic Lane Centering; `BRAKE pedal` release will resume openpilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
 * `GAS pedal` press will not disengage openpilot Automatic Lane Centering or ACC/SCC
