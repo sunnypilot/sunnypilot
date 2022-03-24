@@ -47,7 +47,8 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
 * **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagemenet status
 * **Developer (Dev) UI** - Display various real-time metrics on screen while driving
-  * Click on the "MAX" box on the top left of the openpilot display to toggle different metrics display
+  * 1. Enable "Show debug UI elements" in the "sunnypilot' menu
+  * 2. Click on the "MAX" box on the top left of the openpilot display to toggle different metrics display
 * **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at a stop lights, stop signs, traffic congestions)
 * **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
 
