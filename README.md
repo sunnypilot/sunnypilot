@@ -36,7 +36,7 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - openpilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
 * [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
 * [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
-  * HKG only: Highway Dynamic Assist (HDA) status integration - on applicable HKG cars only
+  * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
 * **No Disengage on Gas** - Allow the gas pedal press to not disengage openpilot. This feature is enabled by default.
 * **Quiet Drive 🤫** - Toggle to mute all notification sounds (excluding driver safety warnings)
 * **Auto Lane Change Timer** - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
@@ -113,7 +113,7 @@ Certain features are only available with an active data connection, via:
 * Map-Data-based Turn Control - Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
   * **Note: Require data connection**
 * Speed Limit Control - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
-  * HKG only: Highway Dynamic Assist (HDA) status integration - on applicable HKG cars only
+  * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
   * **Note: Require data connection**
     * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive
       * **Note: Require data connection**
