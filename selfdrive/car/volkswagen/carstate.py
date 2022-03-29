@@ -164,7 +164,7 @@ class CarState(CarStateBase):
     self.acc_active = ret.cruiseState.enabled
     self.cruise_active = self.acc_active
 
-    ret.cruiseState.standstill = ret.cruiseState.enabled and self.esp_hold_confirmation
+    ret.cruiseState.standstill = bool(ret.cruiseState.enabled and self.esp_hold_confirmation)
     self.cruiseState_standstill = ret.cruiseState.standstill
 
     self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
