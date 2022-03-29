@@ -56,6 +56,10 @@ class CarState(CarStateBase):
     self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
     self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
     self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
+    print("self.graHauptschalter = " + str(self.graHauptschalter))
+    print("self.graTypHauptschalter = " + str(self.graTypHauptschalter))
+    print("self.graButtonTypeInfo = " + str(self.graButtonTypeInfo))
+    print("self.graTipStufe2 = " + str(self.graTipStufe2))
 
     if self.graHauptschalter:
       self.acc_main_enabled = 1
