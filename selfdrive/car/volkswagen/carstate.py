@@ -212,7 +212,7 @@ class CarState(CarStateBase):
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
         if self.prev_cruise_buttons == 4: #set
-          if self.cruise_buttons != 3:
+          if self.cruise_buttons != 4:
             self.accEnabled = True
         elif self.prev_cruise_buttons == 5 and self.resumeAvailable == True: #resume
           if self.cruise_buttons != 5:
