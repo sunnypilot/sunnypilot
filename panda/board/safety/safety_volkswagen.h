@@ -184,7 +184,7 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
     }
 
     if (addr == MSG_GRA_ACC_01) {
-      bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28));
+      bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28)) & 0x1;
       if (acc_main_on && !acc_main_on_prev)
       {
         controls_allowed = 1;
@@ -193,7 +193,7 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
     }
 
     if (addr == MSG_GRA_ACC_01) {
-      bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28));
+      bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28)) & 0x1;
       if (acc_main_on_prev != acc_main_on)
       {
         disengageFromBrakes = false;
