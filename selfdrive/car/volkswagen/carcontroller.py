@@ -75,29 +75,28 @@ class CarController():
       # torque value. Do that anytime we happen to have 0 torque, or failing that,
       # when exceeding ~1/3 the 360 second timer.
 
-
-      new_steer = int(round(actuators.steer * P.STEER_MAX))
-      apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
-      self.steer_rate_limited = new_steer != apply_steer
-      if apply_steer == 0:
-        hca_enabled = False
-        self.hcaEnabledFrameCount = 0
-      else:
-        self.hcaEnabledFrameCount += 1
-        if self.hcaEnabledFrameCount >= 118 * (100 / P.HCA_STEP):  # 118s
+      if hca_enabled:
+        new_steer = int(round(actuators.steer * P.STEER_MAX))
+        apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
+        self.steer_rate_limited = new_steer != apply_steer
+        if apply_steer == 0:
           hca_enabled = False
           self.hcaEnabledFrameCount = 0
         else:
-          hca_enabled = True
-          if self.apply_steer_last == apply_steer:
-            self.hcaSameTorqueCount += 1
-            if self.hcaSameTorqueCount > 1.9 * (100 / P.HCA_STEP):  # 1.9s
-              apply_steer -= (1, -1)[apply_steer < 0]
-              self.hcaSameTorqueCount = 0
+          self.hcaEnabledFrameCount += 1
+          if self.hcaEnabledFrameCount >= 118 * (100 / P.HCA_STEP):  # 118s
+            hca_enabled = False
+            self.hcaEnabledFrameCount = 0
           else:
-            self.hcaSameTorqueCount = 0
-
-      if not hca_enabled:
+            hca_enabled = True
+            if self.apply_steer_last == apply_steer:
+              self.hcaSameTorqueCount += 1
+              if self.hcaSameTorqueCount > 1.9 * (100 / P.HCA_STEP):  # 1.9s
+                apply_steer -= (1, -1)[apply_steer < 0]
+                self.hcaSameTorqueCount = 0
+            else:
+              self.hcaSameTorqueCount = 0
+      else:
         hca_enabled = False
         apply_steer = 0
 
