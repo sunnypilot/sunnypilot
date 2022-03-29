@@ -53,9 +53,9 @@ class CarState(CarStateBase):
     # to the radar. Ends up being different for steering wheel buttons vs
     # third stalk type controls.
     self.graHauptschalter = bool(pt_cp.vl["GRA_ACC_01"]["GRA_Hauptschalter"])
-    #self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
-    #self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
-    #self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
+    self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
+    self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
+    self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
     print("1. self.graHauptschalter = " + str(self.graHauptschalter))
     #print("2. self.graTypHauptschalter = " + str(self.graTypHauptschalter))
     #print("3. self.graButtonTypeInfo = " + str(self.graButtonTypeInfo))
