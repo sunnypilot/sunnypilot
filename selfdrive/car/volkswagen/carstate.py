@@ -53,22 +53,22 @@ class CarState(CarStateBase):
     # to the radar. Ends up being different for steering wheel buttons vs
     # third stalk type controls.
     self.graHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Hauptschalter"]
-    self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
-    self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
-    self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
+    #self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
+    #self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
+    #self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
     print("1. self.graHauptschalter = " + str(self.graHauptschalter))
-    print("2. self.graTypHauptschalter = " + str(self.graTypHauptschalter))
-    print("3. self.graButtonTypeInfo = " + str(self.graButtonTypeInfo))
-    print("4. self.graTipStufe2 = " + str(self.graTipStufe2))
+    #print("2. self.graTypHauptschalter = " + str(self.graTypHauptschalter))
+    #print("3. self.graButtonTypeInfo = " + str(self.graButtonTypeInfo))
+    #print("4. self.graTipStufe2 = " + str(self.graTipStufe2))
 
     if self.graHauptschalter:
       self.acc_main_enabled = 1
-    elif self.graTypHauptschalter:
-      self.acc_main_enabled = 2
-    elif self.graButtonTypeInfo:
-      self.acc_main_enabled = 3
-    elif self.graTipStufe2:
-      self.acc_main_enabled = 4
+    #elif self.graTypHauptschalter:
+    #  self.acc_main_enabled = 2
+    #elif self.graButtonTypeInfo:
+    #  self.acc_main_enabled = 3
+    #elif self.graTipStufe2:
+    #  self.acc_main_enabled = 4
     else:
       self.acc_main_enabled = 0
 
@@ -221,15 +221,15 @@ class CarState(CarStateBase):
         if self.prev_acc_main_enabled != 1:
           if self.acc_main_enabled == 1:
             self.accMainEnabled = not self.accMainEnabled
-        elif self.prev_acc_main_enabled != 2:
-          if self.acc_main_enabled == 2:
-            self.accMainEnabled = not self.accMainEnabled
-        elif self.prev_acc_main_enabled != 3:
-          if self.acc_main_enabled == 3:
-            self.accMainEnabled = not self.accMainEnabled
-        elif self.prev_acc_main_enabled != 4:
-          if self.acc_main_enabled == 4:
-            self.accMainEnabled = not self.accMainEnabled
+        #elif self.prev_acc_main_enabled != 2:
+        #  if self.acc_main_enabled == 2:
+        #    self.accMainEnabled = not self.accMainEnabled
+        #elif self.prev_acc_main_enabled != 3:
+        #  if self.acc_main_enabled == 3:
+        #    self.accMainEnabled = not self.accMainEnabled
+        #elif self.prev_acc_main_enabled != 4:
+        #  if self.acc_main_enabled == 4:
+        #    self.accMainEnabled = not self.accMainEnabled
         if self.acc_mads_combo:
           if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
             self.accMainEnabled = True
