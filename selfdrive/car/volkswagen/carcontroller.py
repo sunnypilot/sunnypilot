@@ -152,7 +152,7 @@ class CarController():
           # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
-        if not (enabled and CS.esp_hold_confirmation):
+        if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.acc_active):
           self.get_cruise_buttons(CS)
 
       if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
