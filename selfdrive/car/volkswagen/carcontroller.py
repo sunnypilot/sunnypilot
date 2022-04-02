@@ -56,10 +56,6 @@ class CarController():
     if CS.leftBlinkerOn or CS.rightBlinkerOn:
       self.signal_last = cur_time
 
-    hca_enabled = enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
-                  CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
-                  ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
-
     can_sends = []
 
     # **** Steering Controls ************************************************ #
@@ -75,7 +71,9 @@ class CarController():
       # torque value. Do that anytime we happen to have 0 torque, or failing that,
       # when exceeding ~1/3 the 360 second timer.
 
-      if hca_enabled:
+      if enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
+        CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
+        ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
         new_steer = int(round(actuators.steer * P.STEER_MAX))
         apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
         self.steer_rate_limited = new_steer != apply_steer
@@ -107,13 +105,17 @@ class CarController():
 
     # **** HUD Controls ***************************************************** #
 
+    lkas_active = enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
+                  CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
+                  ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
+
     if frame % P.LDW_STEP == 0:
       if visual_alert in [VisualAlert.steerRequired, VisualAlert.ldw]:
         hud_alert = MQB_LDW_MESSAGES["laneAssistTakeOverSilent"]
       else:
         hud_alert = MQB_LDW_MESSAGES["none"]
 
-      can_sends.append(volkswagencan.create_mqb_hud_control(self.packer_pt, CANBUS.pt, enabled, hca_enabled,
+      can_sends.append(volkswagencan.create_mqb_hud_control(self.packer_pt, CANBUS.pt, enabled, lkas_active,
                                                             CS.out.steeringPressed, hud_alert, left_lane_visible,
                                                             right_lane_visible, CS.ldw_stock_values,
                                                             left_lane_depart, right_lane_depart))
