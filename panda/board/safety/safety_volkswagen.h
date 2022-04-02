@@ -190,10 +190,14 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
       {
         controls_allowed = 1;
       }
+      if (!acc_main_on) {
+        disengageFromBrakes = false;
+        controls_allowed = 0;
+      }
       acc_main_on_prev = acc_main_on;
     }
 
-    if (addr == MSG_GRA_ACC_01) {
+    /*if (addr == MSG_GRA_ACC_01) {
       //bool acc_main_on = ((GET_BYTES_04(to_push) >> 12) || (GET_BYTES_04(to_push) >> 14) || (GET_BYTES_04(to_push) >> 27) || (GET_BYTES_04(to_push) >> 28)) & 0x1;
       bool acc_main_on = (GET_BYTES_04(to_push) >> 12) & 0x1;
       if (acc_main_on_prev != acc_main_on)
@@ -202,7 +206,7 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
         controls_allowed = 0;
       }
       acc_main_on_prev = acc_main_on;
-    }
+    }*/
 
     // Signal: Motor_20.MO_Fahrpedalrohwert_01
     if (addr == MSG_MOTOR_20) {
