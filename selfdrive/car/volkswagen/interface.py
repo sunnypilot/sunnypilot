@@ -198,26 +198,8 @@ class CarInterface(CarInterfaceBase):
     for button in self.CS.buttonStates:
       if self.CS.buttonStates[button] != self.buttonStatesPrev[button]:
         be = car.CarState.ButtonEvent.new_message()
-        be.type = ButtonType.unknown
-        if self.CS.buttonStates[button]:
-          be.pressed = True
-          but = self.CS.buttonStates[button]
-        else:
-          be.pressed = False
-          but = self.buttonStatesPrev[button]
-        if but == self.CS.buttonStates["accelCruise"]:
-          be.type = ButtonType.accelCruise
-        elif but == self.CS.buttonStates["decelCruise"]:
-          be.type = ButtonType.decelCruise
-        elif but == self.CS.buttonStates["cancel"]:
-          be.type = ButtonType.cancel
-        elif but == self.CS.buttonStates["setCruise"]:
-          be.type = ButtonType.setCruise
-        elif but == self.CS.buttonStates["resumeCruise"]:
-          be.type = ButtonType.resumeCruise
-        elif but == self.CS.buttonStates["gapAdjustCruise"]:
-          be.type = ButtonType.gapAdjustCruise
-
+        be.type = button
+        be.pressed = self.CS.buttonStates[button]
         buttonEvents.append(be)
 
     # ACC MAIN BUTTON
@@ -226,6 +208,8 @@ class CarInterface(CarInterfaceBase):
       be.pressed = True
       be.type = ButtonType.altButton1
       buttonEvents.append(be)
+
+    ret.buttonEvents = buttonEvents
 
     events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic], pcm_enable=False)
 
@@ -255,9 +239,6 @@ class CarInterface(CarInterfaceBase):
     if not ret.brakePressed:
       self.CS.disengageByBrake = False
       ret.disengageByBrake = False
-
-    ret.events = events.to_msg()
-    ret.buttonEvents = buttonEvents
 
     for b in ret.buttonEvents:
 
@@ -297,6 +278,8 @@ class CarInterface(CarInterfaceBase):
     # update previous car states
     self.displayMetricUnitsPrev = self.CS.displayMetricUnits
     self.buttonStatesPrev = self.CS.buttonStates.copy()
+
+    ret.events = events.to_msg()
 
     self.CS.out = ret.as_reader()
     return self.CS.out

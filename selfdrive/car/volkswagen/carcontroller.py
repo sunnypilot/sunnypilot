@@ -58,9 +58,7 @@ class CarController():
 
     can_sends = []
 
-    lkas_active = enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
-                  CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
-                  ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
+    lkas_active = enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
 
     # **** Steering Controls ************************************************ #
 
@@ -75,20 +73,20 @@ class CarController():
       # torque value. Do that anytime we happen to have 0 torque, or failing that,
       # when exceeding ~1/3 the 360 second timer.
 
-      if lkas_active:
+      if enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
         new_steer = int(round(actuators.steer * P.STEER_MAX))
         apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
         self.steer_rate_limited = new_steer != apply_steer
         if apply_steer == 0:
-          hca_enabled = False
+          hcaEnabled = False
           self.hcaEnabledFrameCount = 0
         else:
           self.hcaEnabledFrameCount += 1
           if self.hcaEnabledFrameCount >= 118 * (100 / P.HCA_STEP):  # 118s
-            hca_enabled = False
+            hcaEnabled = False
             self.hcaEnabledFrameCount = 0
           else:
-            hca_enabled = True
+            hcaEnabled = True
             if self.apply_steer_last == apply_steer:
               self.hcaSameTorqueCount += 1
               if self.hcaSameTorqueCount > 1.9 * (100 / P.HCA_STEP):  # 1.9s
@@ -97,13 +95,12 @@ class CarController():
             else:
               self.hcaSameTorqueCount = 0
       else:
-        hca_enabled = False
+        hcaEnabled = False
         apply_steer = 0
-
       self.apply_steer_last = apply_steer
       idx = (frame / P.HCA_STEP) % 16
       can_sends.append(volkswagencan.create_mqb_steering_control(self.packer_pt, CANBUS.pt, apply_steer,
-                                                                 idx, hca_enabled))
+                                                                 idx, hcaEnabled))
 
     # **** HUD Controls ***************************************************** #
 
@@ -202,7 +199,7 @@ class CarController():
 
   # multikyd methods, sunnyhaibin logic
   def get_cruise_buttons_status(self, CS):
-    if not CS.cruise_active or CS.cruise_buttons == 4 or CS.cruise_buttons == 5:
+    if not CS.cruise_active or CS.buttonStates["accelCruise"] or CS.buttonStates["decelCruise"] or CS.buttonStates["setCruise"] or CS.buttonStates["resumeCruise"]:
       self.timer = 40
     elif self.timer:
       self.timer -= 1
@@ -245,7 +242,6 @@ class CarController():
     return None
 
   def type_0(self):
-    self.button_count = 0
     self.target_speed = self.init_speed
     speed_diff = round(self.target_speed - self.v_set_dis)
     if speed_diff > 0:
@@ -257,32 +253,20 @@ class CarController():
   def type_1(self):
     self.graButtonStatesToSend = BUTTON_STATES.copy()
     cruise_button = self.graButtonStatesToSend["accelCruise"] = True
-    self.button_count += 1
     if self.target_speed == self.v_set_dis:
-      self.button_count = 0
-      self.button_type = 3
-    elif self.button_count > 5:
-      self.button_count = 0
       self.button_type = 3
     return cruise_button
 
   def type_2(self):
     self.graButtonStatesToSend = BUTTON_STATES.copy()
     cruise_button = self.graButtonStatesToSend["decelCruise"] = True
-    self.button_count += 1
     if self.target_speed == self.v_set_dis:
-      self.button_count = 0
-      self.button_type = 3
-    elif self.button_count > 5:
-      self.button_count = 0
       self.button_type = 3
     return cruise_button
 
   def type_3(self):
     cruise_button = None
-    self.button_count += 1
-    if self.button_count > self.t_interval:
-      self.button_type = 0
+    self.button_type = 0
     return cruise_button
 
   def get_curve_speed(self, target_speed_kph):

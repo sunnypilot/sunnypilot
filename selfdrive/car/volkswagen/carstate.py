@@ -17,6 +17,7 @@ class CarState(CarStateBase):
       self.shifter_values = can_define.dv["EV_Gearshift"]["GearPosition"]
     self.hca_status_values = can_define.dv["LH_EPS_03"]["EPS_HCA_Status"]
     self.buttonStates = BUTTON_STATES.copy()
+    self.buttonStatesPrev = BUTTON_STATES.copy()
 
     self.resumeAvailable = False
     self.accEnabled = False
@@ -41,11 +42,15 @@ class CarState(CarStateBase):
     self.acc_active = False
     self.cruise_active = False
 
+    self.prev_print = False
+    self.prev_print2 = False
+
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
     ret = car.CarState.new_message()
 
     self.prev_acc_main_enabled = self.acc_main_enabled
     self.prev_cruise_buttons = self.cruise_buttons
+    self.buttonStatesPrev = self.buttonStates.copy()
     self.disable_mads = Params().get_bool("DisableMADS")
     self.acc_mads_combo = Params().get_bool("ACCMADSCombo")
 
@@ -56,7 +61,6 @@ class CarState(CarStateBase):
     self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
     self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
     self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
-    print("1. self.graHauptschalter = " + str(self.graHauptschalter))
     #print("2. self.graTypHauptschalter = " + str(self.graTypHauptschalter))
     #print("3. self.graButtonTypeInfo = " + str(self.graButtonTypeInfo))
     #print("4. self.graTipStufe2 = " + str(self.graTipStufe2))
@@ -153,7 +157,7 @@ class CarState(CarStateBase):
 
     # Update ACC radar status.
     self.tsk_status = pt_cp.vl["TSK_06"]["TSK_Status"]
-    if self.tsk_status == 2:
+    if self.graHauptschalter or self.tsk_status == 2:
       # ACC okay and enabled, but not currently engaged
       ret.cruiseState.available = True
       ret.cruiseState.enabled = False
@@ -193,34 +197,48 @@ class CarState(CarStateBase):
     ret.leftBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
     ret.rightBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
 
-    if self.buttonStates["accelCruise"]:
-      self.cruise_buttons = 1
-    elif self.buttonStates["decelCruise"]:
-      self.cruise_buttons = 2
-    elif self.buttonStates["cancel"]:
-      self.cruise_buttons = 3
-    elif self.buttonStates["setCruise"]:
-      self.cruise_buttons = 4
-    elif self.buttonStates["resumeCruise"]:
-      self.cruise_buttons = 5
-    elif self.buttonStates["gapAdjustCruise"]:
-      self.cruise_buttons = 6
-    else:
-      self.cruise_buttons = 0
+    #if self.buttonStates["accelCruise"]:
+    #  self.cruise_buttons = 1
+    #elif self.buttonStates["decelCruise"]:
+    #  self.cruise_buttons = 2
+    #elif self.buttonStates["cancel"]:
+    #  self.cruise_buttons = 3
+    #elif self.buttonStates["setCruise"]:
+    #  self.cruise_buttons = 4
+    #elif self.buttonStates["resumeCruise"]:
+    #  self.cruise_buttons = 5
+    #elif self.buttonStates["gapAdjustCruise"]:
+    #  self.cruise_buttons = 6
+    #else:
+    #  self.cruise_buttons = 0
     ret.cruiseButtons = self.cruise_buttons
 
+    if self.graHauptschalter and not self.prev_print:
+      print("1. self.graHauptschalter = " + str(self.graHauptschalter))
+      print("self.acc_main_enabled = " + str(self.acc_main_enabled))
+      print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
+      self.prev_print = True
+    elif not self.graHauptschalter and self.prev_print:
+      print("1. self.graHauptschalter = " + str(self.graHauptschalter))
+      print("self.acc_main_enabled = " + str(self.acc_main_enabled))
+      print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
+      self.prev_print = False
+
     if ret.cruiseState.available:
-      if not self.CP.pcmCruiseSpeed:
-        if self.prev_cruise_buttons == 4: #set
-          if self.cruise_buttons != 4:
+      if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
+        if self.buttonStatesPrev["setCruise"]: # SET-
+          if not self.buttonStates["setCruise"]:
             self.accEnabled = True
-        elif self.prev_cruise_buttons == 5 and self.resumeAvailable == True: #resume
-          if self.cruise_buttons != 5:
+        elif self.buttonStatesPrev["resumeCruise"] and self.resumeAvailable == True: # RESUME+
+          if not self.buttonStates["resumeCruise"]:
             self.accEnabled = True
       if not self.disable_mads:
-        if self.prev_acc_main_enabled != 1:
-          if self.acc_main_enabled == 1:
-            self.accMainEnabled = not self.accMainEnabled
+        if self.prev_acc_main_enabled != 1 and self.acc_main_enabled == 1:
+          self.accMainEnabled = True
+          print("THIS SHOULD BE ON ===== self.accMainEnabled = " + str(self.accMainEnabled))
+        elif self.prev_acc_main_enabled != 0 and self.acc_main_enabled == 0:
+          self.accMainEnabled = False
+          print("THIS SHOULD BE OFF ===== self.accMainEnabled = " + str(self.accMainEnabled))
         #elif self.prev_acc_main_enabled != 2:
         #  if self.acc_main_enabled == 2:
         #    self.accMainEnabled = not self.accMainEnabled
@@ -239,8 +257,8 @@ class CarState(CarStateBase):
       self.accEnabled = False
 
     if (not self.CP.pcmCruise) or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
-      if self.prev_cruise_buttons != 3:
-        if self.cruise_buttons == 3:
+      if not self.buttonStatesPrev["cancel"]:
+        if self.buttonStates["cancel"]:
           self.accEnabled = False
           if self.disable_mads:
             self.accMainEnabled = False
@@ -256,9 +274,10 @@ class CarState(CarStateBase):
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       ret.cruiseState.enabled = self.accEnabled
-      if ret.cruiseState.enabled:
-        if self.disable_mads:
-          self.accMainEnabled = True
+    if ret.cruiseState.enabled:
+      if self.disable_mads:
+        self.accMainEnabled = True
+      self.resumeAvailable = True
 
     self.leftBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
     self.rightBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
