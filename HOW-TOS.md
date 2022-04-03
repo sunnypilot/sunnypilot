@@ -80,7 +80,7 @@ to go back to the default values.
                 └── Toggles
                     └── ***openpilot Longitudinal Control***
    
-5. Set the toggle `openpilot Longitudinal Control` to `ON`. (Note: If this step is done while the car is at the `ON` ignition position, turn of the car to take the change in effect.)
+5. Set the toggle `openpilot Longitudinal Control` to `ON`. (Note: If this step is done while the car is at the `ON` ignition position, turn off the car to take the change in effect.)
 6. Start the car. Drive and check for the following:
    1. Is there a chevron (triangle) appear behind a lead car?
    2. Are you able to engage openpilot with no fault?
