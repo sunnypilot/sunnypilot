@@ -58,6 +58,10 @@ class CarController():
 
     can_sends = []
 
+    lkas_active = enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
+                  CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
+                  ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
+
     # **** Steering Controls ************************************************ #
 
     if frame % P.HCA_STEP == 0:
@@ -71,9 +75,7 @@ class CarController():
       # torque value. Do that anytime we happen to have 0 torque, or failing that,
       # when exceeding ~1/3 the 360 second timer.
 
-      if enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
-        CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
-        ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
+      if lkas_active:
         new_steer = int(round(actuators.steer * P.STEER_MAX))
         apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, P)
         self.steer_rate_limited = new_steer != apply_steer
@@ -104,10 +106,6 @@ class CarController():
                                                                  idx, hca_enabled))
 
     # **** HUD Controls ***************************************************** #
-
-    lkas_active = enabled and CS.out.vEgo > CS.CP.minSteerSpeed and not (CS.out.standstill or CS.out.steerError or CS.out.steerWarning) and\
-                  CS.accMainEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or
-                  ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn)))
 
     if frame % P.LDW_STEP == 0:
       if visual_alert in [VisualAlert.steerRequired, VisualAlert.ldw]:
