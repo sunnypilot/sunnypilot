@@ -148,6 +148,7 @@ class CarController():
           # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
+      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 4:
         if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.acc_active):
           self.get_cruise_buttons(CS)
 
@@ -221,8 +222,8 @@ class CarController():
         v_cruise_kph = target_v_cruise_kph + float(float(self.sm['longitudinalPlan'].speedLimitOffset) * CV.MS_TO_KPH)
       else:
         v_cruise_kph = target_v_cruise_kph + (float(speed_limit_value_offset * CV.MPH_TO_KPH) if not is_metric else speed_limit_value_offset)
-      if not self.slc_active_stock:
-        v_cruise_kph = v_cruise_kph_prev
+      #if not self.slc_active_stock:
+      #  v_cruise_kph = v_cruise_kph_prev
 
     print('v_cruise_kph={}'.format(v_cruise_kph))
     self.t_interval = 10 if not is_metric else 7
@@ -294,7 +295,7 @@ class CarController():
     is_metric = Params().get_bool("IsMetric")
     self.sm.update(0)
     v_cruise_kph_max = self.sm['controlsState'].vCruise
-    self.init_speed = round(min(final_speed, v_cruise_kph_max) * CV.KPH_TO_MPH) if not is_metric else round(min(final_speed, v_cruise_kph_max))
+    self.init_speed = round(final_speed * CV.KPH_TO_MPH) if not is_metric else round(final_speed)
     self.v_set_dis = round(CS.out.cruiseState.speed * CV.MS_TO_MPH) if not is_metric else round(CS.out.cruiseState.speed * CV.MS_TO_KPH)
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
