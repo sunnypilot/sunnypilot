@@ -138,7 +138,7 @@ class CarController():
 
     if CS.CP.pcmCruise:
       if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
-        if not enabled and CS.out.cruiseState.enabled:
+        if (not enabled and CS.out.cruiseState.enabled) or not CS.accEnabled:
           # Cancel ACC if it's engaged with OP disengaged.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["cancel"] = True
@@ -148,7 +148,7 @@ class CarController():
           # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
-      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 6:
+      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 4:
         if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
           cruise_button = self.get_cruise_buttons(CS)
           if cruise_button is not None:
@@ -267,7 +267,7 @@ class CarController():
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 5:
+    elif self.button_count > 10:
       self.button_count = 0
       self.button_type = 3
     return cruise_button
@@ -278,7 +278,7 @@ class CarController():
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 5:
+    elif self.button_count > 10:
       self.button_count = 0
       self.button_type = 3
     return cruise_button
