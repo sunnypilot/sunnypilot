@@ -44,6 +44,7 @@ class CarState(CarStateBase):
 
     self.prev_print = False
     self.prev_print2 = False
+    self.prev_print3 = False
 
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
     ret = car.CarState.new_message()
@@ -171,6 +172,19 @@ class CarState(CarStateBase):
       ret.cruiseState.enabled = False
     self.acc_active = ret.cruiseState.enabled
     self.cruise_active = self.acc_active
+
+    if ret.cruiseState.enabled and not self.prev_print3:
+      print("ret.cruiseState.enabled = " + str(ret.cruiseState.enabled))
+      print("self.acc_active = " + str(self.acc_active))
+      print("self.cruise_active = " + str(self.cruise_active))
+      print("ret.cruiseState.enabled SHOUD BE ON!!!!!!!!!!!!!!!")
+      self.prev_print3 = True
+    elif not ret.cruiseState.enabled and self.prev_print3:
+      print("ret.cruiseState.enabled = " + str(ret.cruiseState.enabled))
+      print("self.acc_active = " + str(self.acc_active))
+      print("self.cruise_active = " + str(self.cruise_active))
+      print("ret.cruiseState.enabled SHOUD BE OFF!!!!!!!!!!!!!!!")
+      self.prev_print3 = False
 
     ret.cruiseState.standstill = bool(ret.cruiseState.enabled and self.esp_hold_confirmation)
     self.cruiseState_standstill = ret.cruiseState.standstill

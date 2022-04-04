@@ -114,6 +114,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EnableDebugSnapshot", PERSISTENT},
     {"EnableWideCamera", CLEAR_ON_MANAGER_START},
     {"EndToEndToggle", PERSISTENT},
+    {"FakeMapSpeed", PERSISTENT},
     {"ForcePowerDown", CLEAR_ON_MANAGER_START},
     {"GitBranch", PERSISTENT},
     {"GitCommit", PERSISTENT},

@@ -149,7 +149,10 @@ class CarController():
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
       if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 4:
-        if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.acc_active):
+        if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.accEnabled):
+          if self.get_cruise_buttons(CS) is not None:
+            print("self.get_cruise_buttons(CS) = " + str(self.get_cruise_buttons(CS)))
+            print("SPAMMING")
           self.get_cruise_buttons(CS)
 
       if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
@@ -273,6 +276,7 @@ class CarController():
 
   def get_curve_speed(self, target_speed_kph):
     v_cruise_kph_prev = self.sm['controlsState'].vCruise
+    fake_map = 0
     if Params().get_bool("TurnVisionControl"):
       self.sm.update(0)
       vision_v_cruise_kph = float(float(self.sm['longitudinalPlan'].visionTurnSpeed) * CV.MS_TO_KPH)
@@ -283,7 +287,10 @@ class CarController():
       vision_v_cruise_kph = 255
     if Params().get_bool("TurnSpeedControl"):
       self.sm.update(0)
-      map_v_cruise_kph = float(float(self.sm['longitudinalPlan'].turnSpeed) * CV.MS_TO_KPH)
+      #map_v_cruise_kph = float(float(self.sm['longitudinalPlan'].turnSpeed) * CV.MS_TO_KPH)
+      if Params().get_bool("FakeMapSpeed"):
+        fake_map = 40
+      map_v_cruise_kph = fake_map
       if int(map_v_cruise_kph) == 0.0:
         map_v_cruise_kph = 255
       map_v_cruise_kph = min(target_speed_kph, map_v_cruise_kph)
@@ -303,9 +310,10 @@ class CarController():
 
   def get_cruise_buttons(self, CS):
     cruise_button = None
-    if not self.get_cruise_buttons_status(CS):
-      pass
-    elif CS.cruise_active:
+    #if not self.get_cruise_buttons_status(CS):
+    #  pass
+    #elif CS.cruise_active:
+    if CS.accEnabled:
       self.sm.update(0)
       v_cruise_kph_prev = self.sm['controlsState'].vCruise
       set_speed_kph = self.get_target_speed(v_cruise_kph_prev)

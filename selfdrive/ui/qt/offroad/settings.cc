@@ -582,6 +582,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
                                   "../assets/offroad/icon_calibration.png",
                                   this));
 
+  toggles.append(new ParamControl("FakeMapSpeed",
+                                  "Fake Map Speed: 40 km/h",
+                                  "TESTING ONLY",
+                                  "../assets/offroad/icon_calibration.png",
+                                  this));
+
   for (ParamControl *toggle : toggles) {
     if (main_layout->count() != 0) {
       toggle_layout->addWidget(horizontal_line());

@@ -46,6 +46,7 @@ def manager_init():
     ("DisableOnroadUploads", "0"),
     ("DynamicLaneProfile", "2"),
     ("EndToEndToggle", "1"),
+    ("FakeMapSpeed", "0"),
     ("GpxDeleteAfterUpload", "1"),
     ("GpxDeleteIfUploaded", "1"),
     ("HasAcceptedTerms", "0"),
