@@ -24,7 +24,7 @@ PYEXTRA_DIR = '/data/openpilot/pyextra'
 def wait_for_internet_connection():
   while True:
     try:
-      _ = urlopen('https://www.google.com/', timeout=10)
+      _ = urlopen('https://api.my-ip.io/ip/', timeout=10)
       return
     except Exception:
       pass
