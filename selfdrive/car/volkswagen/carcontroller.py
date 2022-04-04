@@ -212,6 +212,7 @@ class CarController():
     speed_limit_perc_offset = Params().get_bool("SpeedLimitPercOffset")
     speed_limit_value_offset = int(Params().get("SpeedLimitValueOffset"))
     is_metric = Params().get_bool("IsMetric")
+    v_cruise = self.sm['controlsState'].vCruise
     v_cruise_kph = v_cruise_kph_prev
     self.sm.update(0)
     if Params().get_bool("SpeedLimitControl") and (float(self.sm['longitudinalPlan'].speedLimit if self.sm['longitudinalPlan'].speedLimit is not None else 0.0) != 0.0):
@@ -222,8 +223,8 @@ class CarController():
         v_cruise_kph = target_v_cruise_kph + float(float(self.sm['longitudinalPlan'].speedLimitOffset) * CV.MS_TO_KPH)
       else:
         v_cruise_kph = target_v_cruise_kph + (float(speed_limit_value_offset * CV.MPH_TO_KPH) if not is_metric else speed_limit_value_offset)
-      #if not self.slc_active_stock:
-      #  v_cruise_kph = v_cruise_kph_prev
+      if not self.slc_active_stock:
+        v_cruise_kph = v_cruise
 
     print('v_cruise_kph={}'.format(v_cruise_kph))
     self.t_interval = 10 if not is_metric else 7
