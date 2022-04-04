@@ -148,12 +148,18 @@ class CarController():
           # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
-      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 4:
-        if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.accEnabled):
-          if self.get_cruise_buttons(CS) is not None:
-            print("self.get_cruise_buttons(CS) = " + str(self.get_cruise_buttons(CS)))
+      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 6:
+        if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
+          cruise_button = self.get_cruise_buttons(CS)
+          if cruise_button is not None:
+            if cruise_button == 1:
+              self.graButtonStatesToSend = BUTTON_STATES.copy()
+              self.graButtonStatesToSend["accelCruise"] = True
+            elif cruise_button == 2:
+              self.graButtonStatesToSend = BUTTON_STATES.copy()
+              self.graButtonStatesToSend["decelCruise"] = True
+            print("self.get_cruise_buttons(CS) = " + str(cruise_button))
             print("SPAMMING")
-          self.get_cruise_buttons(CS)
 
       if CS.graMsgBusCounter != self.graMsgBusCounterPrev:
         self.graMsgBusCounterPrev = CS.graMsgBusCounter
@@ -215,7 +221,6 @@ class CarController():
     speed_limit_perc_offset = Params().get_bool("SpeedLimitPercOffset")
     speed_limit_value_offset = int(Params().get("SpeedLimitValueOffset"))
     is_metric = Params().get_bool("IsMetric")
-    v_cruise = self.sm['controlsState'].vCruise
     v_cruise_kph = v_cruise_kph_prev
     self.sm.update(0)
     if Params().get_bool("SpeedLimitControl") and (float(self.sm['longitudinalPlan'].speedLimit if self.sm['longitudinalPlan'].speedLimit is not None else 0.0) != 0.0):
@@ -227,7 +232,7 @@ class CarController():
       else:
         v_cruise_kph = target_v_cruise_kph + (float(speed_limit_value_offset * CV.MPH_TO_KPH) if not is_metric else speed_limit_value_offset)
       if not self.slc_active_stock:
-        v_cruise_kph = v_cruise
+        v_cruise_kph = v_cruise_kph_prev
 
     print('v_cruise_kph={}'.format(v_cruise_kph))
     self.t_interval = 10 if not is_metric else 7
@@ -247,6 +252,7 @@ class CarController():
     return None
 
   def type_0(self):
+    self.button_count = 0
     self.target_speed = self.init_speed
     speed_diff = round(self.target_speed - self.v_set_dis)
     if speed_diff > 0:
@@ -256,22 +262,32 @@ class CarController():
     return None
 
   def type_1(self):
-    self.graButtonStatesToSend = BUTTON_STATES.copy()
-    cruise_button = self.graButtonStatesToSend["accelCruise"] = True
+    cruise_button = 1
+    self.button_count += 1
     if self.target_speed == self.v_set_dis:
+      self.button_count = 0
+      self.button_type = 3
+    elif self.button_count > 5:
+      self.button_count = 0
       self.button_type = 3
     return cruise_button
 
   def type_2(self):
-    self.graButtonStatesToSend = BUTTON_STATES.copy()
-    cruise_button = self.graButtonStatesToSend["decelCruise"] = True
+    cruise_button = 2
+    self.button_count += 1
     if self.target_speed == self.v_set_dis:
+      self.button_count = 0
+      self.button_type = 3
+    elif self.button_count > 5:
+      self.button_count = 0
       self.button_type = 3
     return cruise_button
 
   def type_3(self):
     cruise_button = None
-    self.button_type = 0
+    self.button_count += 1
+    if self.button_count > self.t_interval:
+      self.button_type = 0
     return cruise_button
 
   def get_curve_speed(self, target_speed_kph):
@@ -303,17 +319,16 @@ class CarController():
     is_metric = Params().get_bool("IsMetric")
     self.sm.update(0)
     v_cruise_kph_max = self.sm['controlsState'].vCruise
-    self.init_speed = round(final_speed * CV.KPH_TO_MPH) if not is_metric else round(final_speed)
+    self.init_speed = round(min(final_speed, v_cruise_kph_max) * CV.KPH_TO_MPH) if not is_metric else round(min(final_speed, v_cruise_kph_max))
     self.v_set_dis = round(CS.out.cruiseState.speed * CV.MS_TO_MPH) if not is_metric else round(CS.out.cruiseState.speed * CV.MS_TO_KPH)
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
 
   def get_cruise_buttons(self, CS):
     cruise_button = None
-    #if not self.get_cruise_buttons_status(CS):
-    #  pass
-    #elif CS.cruise_active:
-    if CS.accEnabled:
+    if not self.get_cruise_buttons_status(CS):
+      pass
+    elif CS.cruise_active:
       self.sm.update(0)
       v_cruise_kph_prev = self.sm['controlsState'].vCruise
       set_speed_kph = self.get_target_speed(v_cruise_kph_prev)

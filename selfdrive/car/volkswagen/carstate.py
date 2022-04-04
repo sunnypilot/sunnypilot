@@ -158,7 +158,7 @@ class CarState(CarStateBase):
 
     # Update ACC radar status.
     self.tsk_status = pt_cp.vl["TSK_06"]["TSK_Status"]
-    if self.graHauptschalter or self.tsk_status == 2:
+    if self.tsk_status == 2:
       # ACC okay and enabled, but not currently engaged
       ret.cruiseState.available = True
       ret.cruiseState.enabled = False
@@ -238,7 +238,7 @@ class CarState(CarStateBase):
       print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
       self.prev_print = False
 
-    if ret.cruiseState.available:
+    if self.graHauptschalter:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         if self.buttonStatesPrev["setCruise"]: # SET-
           if not self.buttonStates["setCruise"]:
