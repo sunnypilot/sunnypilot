@@ -258,7 +258,7 @@ class CarState(CarStateBase):
           if not self.disable_mads:
             self.accMainEnabled = not self.accMainEnabled
 
-    if ret.cruiseState.available:
+    if self.accMainEnabled:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         if (self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"]) or \
           (self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]): # SET-
