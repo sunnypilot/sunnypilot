@@ -245,11 +245,11 @@ class CarState(CarStateBase):
           self.accMainControl = True
       elif self.prev_acc_main_enabled != 0:
         if self.acc_main_enabled == 0:
-          self.accMainEnabled = False
+          self.accMainControl = False
     elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
       if self.prev_acc_main_enabled != 1:
         if self.acc_main_enabled == 1:
-          self.accMainControl = not self.accMainEnabled
+          self.accMainControl = not self.accMainControl
 
     if self.accMainControl:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
