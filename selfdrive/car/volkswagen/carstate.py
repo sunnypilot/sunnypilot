@@ -27,6 +27,7 @@ class CarState(CarStateBase):
     self.disengageByBrake = False
     self.belowLaneChangeSpeed = True
     self.automaticLaneChange = True
+    self.accMainControl = False
 
     self.acc_main_enabled = None
     self.prev_acc_main_enabled = None
@@ -238,13 +239,26 @@ class CarState(CarStateBase):
       print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
       self.prev_print = False
 
-    if ret.cruiseState.available:
+    if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+      if self.prev_acc_main_enabled != 1:
+        if self.acc_main_enabled == 1:
+          self.accMainControl = True
+      elif self.prev_acc_main_enabled != 0:
+        if self.acc_main_enabled == 0:
+          self.accMainEnabled = False
+    elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+      if self.prev_acc_main_enabled != 1:
+        if self.acc_main_enabled == 1:
+          self.accMainControl = not self.accMainEnabled
+
+    if self.accMainControl:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
-        if self.buttonStatesPrev["setCruise"]: # SET-
-          if not self.buttonStates["setCruise"]:
+        if self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"] or\
+          self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]: # SET-
             self.accEnabled = True
-        elif self.buttonStatesPrev["resumeCruise"] and self.resumeAvailable == True: # RESUME+
-          if not self.buttonStates["resumeCruise"]:
+        #elif self.buttonStatesPrev["resumeCruise"] and self.resumeAvailable == True: # RESUME+
+        elif self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"] or\
+          self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]: # RESUME+
             self.accEnabled = True
     else:
       self.accMainEnabled = False
@@ -265,15 +279,6 @@ class CarState(CarStateBase):
           if self.acc_main_enabled == 1:
             self.accMainEnabled = not self.accMainEnabled
             print("ACC_STEERING_WHEEL STATE ===== self.accMainEnabled = " + str(self.accMainEnabled))
-      #elif self.prev_acc_main_enabled != 2:
-      #  if self.acc_main_enabled == 2:
-      #    self.accMainEnabled = not self.accMainEnabled
-      #elif self.prev_acc_main_enabled != 3:
-      #  if self.acc_main_enabled == 3:
-      #    self.accMainEnabled = not self.accMainEnabled
-      #elif self.prev_acc_main_enabled != 4:
-      #  if self.acc_main_enabled == 4:
-      #    self.accMainEnabled = not self.accMainEnabled
       if self.acc_mads_combo:
         if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
           self.accMainEnabled = True
@@ -300,7 +305,7 @@ class CarState(CarStateBase):
     if ret.cruiseState.enabled:
       if self.disable_mads:
         self.accMainEnabled = True
-      self.resumeAvailable = True
+      #self.resumeAvailable = True
 
     self.leftBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
     self.rightBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
