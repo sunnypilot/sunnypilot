@@ -242,16 +242,22 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in FEATURES["acc_stalk"]:
       if self.prev_acc_main_enabled != 1:
         if self.acc_main_enabled == 1:
-          self.accMainControl = True
+          ret.cruiseState.available = True
+          if not self.disable_mads:
+            self.accMainEnabled = True
       elif self.prev_acc_main_enabled != 0:
         if self.acc_main_enabled == 0:
-          self.accMainControl = False
+          ret.cruiseState.available = True
+          if not self.disable_mads:
+            self.accMainEnabled = False
     elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
       if self.prev_acc_main_enabled != 1:
         if self.acc_main_enabled == 1:
-          self.accMainControl = not self.accMainControl
+          ret.cruiseState.available = not ret.cruiseState.available
+          if not self.disable_mads:
+            self.accMainEnabled = not self.accMainEnabled
 
-    if self.accMainControl:
+    if ret.cruiseState.available:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         if self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"] or\
           self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]: # SET-
@@ -265,20 +271,20 @@ class CarState(CarStateBase):
       self.accEnabled = False
 
     if not self.disable_mads:
-      if self.CP.carFingerprint in FEATURES["acc_stalk"]:
-        if self.prev_acc_main_enabled != 1:
-          if self.acc_main_enabled == 1:
-            self.accMainEnabled = True
-            print("ACC_STALK === THIS SHOULD BE ON ===== self.accMainEnabled = " + str(self.accMainEnabled))
-        elif self.prev_acc_main_enabled != 0:
-          if self.acc_main_enabled == 0:
-            self.accMainEnabled = False
-            print("ACC_STALK === THIS SHOULD BE OFF ===== self.accMainEnabled = " + str(self.accMainEnabled))
-      elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
-        if self.prev_acc_main_enabled != 1:
-          if self.acc_main_enabled == 1:
-            self.accMainEnabled = not self.accMainEnabled
-            print("ACC_STEERING_WHEEL STATE ===== self.accMainEnabled = " + str(self.accMainEnabled))
+    #  if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+    #    if self.prev_acc_main_enabled != 1:
+    #      if self.acc_main_enabled == 1:
+    #        self.accMainEnabled = True
+    #        print("ACC_STALK === THIS SHOULD BE ON ===== self.accMainEnabled = " + str(self.accMainEnabled))
+    #    elif self.prev_acc_main_enabled != 0:
+    #      if self.acc_main_enabled == 0:
+    #        self.accMainEnabled = False
+    #        print("ACC_STALK === THIS SHOULD BE OFF ===== self.accMainEnabled = " + str(self.accMainEnabled))
+    #  elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+    #    if self.prev_acc_main_enabled != 1:
+    #      if self.acc_main_enabled == 1:
+    #        self.accMainEnabled = not self.accMainEnabled
+    #        print("ACC_STEERING_WHEEL STATE ===== self.accMainEnabled = " + str(self.accMainEnabled))
       if self.acc_mads_combo:
         if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
           self.accMainEnabled = True
