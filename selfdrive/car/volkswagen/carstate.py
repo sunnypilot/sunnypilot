@@ -247,13 +247,13 @@ class CarState(CarStateBase):
             self.accMainEnabled = True
       elif self.prev_acc_main_enabled != 0:
         if self.acc_main_enabled == 0:
-          ret.cruiseState.available = True
+          ret.cruiseState.available = False
           if not self.disable_mads:
             self.accMainEnabled = False
     elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
       if self.prev_acc_main_enabled != 0:
         if self.acc_main_enabled == 0:
-          if self.tsk_status not in [2, 3, 4, 5]:
+          if not self.accMainEnabled and self.tsk_status not in [2, 3, 4, 5]:
             ret.cruiseState.available = True
           if not self.disable_mads:
             self.accMainEnabled = not self.accMainEnabled
