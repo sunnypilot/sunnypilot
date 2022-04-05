@@ -258,7 +258,7 @@ class CarState(CarStateBase):
             self.accEnabled = True
         #elif self.buttonStatesPrev["resumeCruise"] and self.resumeAvailable == True: # RESUME+
         elif self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"] or\
-          self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]: # RESUME+
+          self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]: # RESUME+
             self.accEnabled = True
     else:
       self.accMainEnabled = False
