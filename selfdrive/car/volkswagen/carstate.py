@@ -4,7 +4,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
-from selfdrive.car.volkswagen.values import DBC_FILES, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES, CarControllerParams
+from selfdrive.car.volkswagen.values import DBC_FILES, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES, CarControllerParams, FEATURES
 from common.params import Params
 
 class CarState(CarStateBase):
@@ -238,7 +238,7 @@ class CarState(CarStateBase):
       print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
       self.prev_print = False
 
-    if self.graHauptschalter:
+    if ret.cruiseState.available:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         if self.buttonStatesPrev["setCruise"]: # SET-
           if not self.buttonStates["setCruise"]:
@@ -246,29 +246,38 @@ class CarState(CarStateBase):
         elif self.buttonStatesPrev["resumeCruise"] and self.resumeAvailable == True: # RESUME+
           if not self.buttonStates["resumeCruise"]:
             self.accEnabled = True
-      if not self.disable_mads:
-        if self.prev_acc_main_enabled != 1 and self.acc_main_enabled == 1:
-          self.accMainEnabled = True
-          print("THIS SHOULD BE ON ===== self.accMainEnabled = " + str(self.accMainEnabled))
-        elif self.prev_acc_main_enabled != 0 and self.acc_main_enabled == 0:
-          self.accMainEnabled = False
-          print("THIS SHOULD BE OFF ===== self.accMainEnabled = " + str(self.accMainEnabled))
-        #elif self.prev_acc_main_enabled != 2:
-        #  if self.acc_main_enabled == 2:
-        #    self.accMainEnabled = not self.accMainEnabled
-        #elif self.prev_acc_main_enabled != 3:
-        #  if self.acc_main_enabled == 3:
-        #    self.accMainEnabled = not self.accMainEnabled
-        #elif self.prev_acc_main_enabled != 4:
-        #  if self.acc_main_enabled == 4:
-        #    self.accMainEnabled = not self.accMainEnabled
-        if self.acc_mads_combo:
-          if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
-            self.accMainEnabled = True
-          self.prev_acc_mads_combo = ret.cruiseState.enabled
     else:
       self.accMainEnabled = False
       self.accEnabled = False
+
+    if not self.disable_mads:
+      if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+        if self.prev_acc_main_enabled != 1:
+          if self.acc_main_enabled == 1:
+            self.accMainEnabled = True
+            print("ACC_STALK === THIS SHOULD BE ON ===== self.accMainEnabled = " + str(self.accMainEnabled))
+        elif self.prev_acc_main_enabled != 0:
+          if self.acc_main_enabled == 0:
+            self.accMainEnabled = False
+            print("ACC_STALK === THIS SHOULD BE OFF ===== self.accMainEnabled = " + str(self.accMainEnabled))
+      elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+        if self.prev_acc_main_enabled != 1:
+          if self.acc_main_enabled == 1:
+            self.accMainEnabled = not self.accMainEnabled
+            print("ACC_STEERING_WHEEL STATE ===== self.accMainEnabled = " + str(self.accMainEnabled))
+      #elif self.prev_acc_main_enabled != 2:
+      #  if self.acc_main_enabled == 2:
+      #    self.accMainEnabled = not self.accMainEnabled
+      #elif self.prev_acc_main_enabled != 3:
+      #  if self.acc_main_enabled == 3:
+      #    self.accMainEnabled = not self.accMainEnabled
+      #elif self.prev_acc_main_enabled != 4:
+      #  if self.acc_main_enabled == 4:
+      #    self.accMainEnabled = not self.accMainEnabled
+      if self.acc_mads_combo:
+        if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
+          self.accMainEnabled = True
+        self.prev_acc_mads_combo = ret.cruiseState.enabled
 
     if (not self.CP.pcmCruise) or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if not self.buttonStatesPrev["cancel"]:
