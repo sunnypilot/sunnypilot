@@ -268,7 +268,6 @@ class CarState(CarStateBase):
           (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
             self.accEnabled = True
     else:
-      self.accMainEnabled = False
       self.accEnabled = False
 
     if not self.disable_mads:
