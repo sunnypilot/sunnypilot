@@ -126,8 +126,8 @@ class CarInterfaceBase():
         events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
       events.add(EventName.reverseGear)
-    if not cs_out.cruiseState.available:
-      events.add(EventName.wrongCarMode)
+    #if not cs_out.cruiseState.available:
+    #  events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
       events.add(EventName.espDisabled)
     if cs_out.gasPressed and self.disengage_on_gas:
