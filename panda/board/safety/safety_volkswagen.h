@@ -183,10 +183,10 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
       cruise_engaged_prev = cruise_engaged;
     }**/
     if (addr == MSG_GRA_ACC_01) {
-      bool accelCruise = (GET_BYTES(to_push, 2) >> 1) & 0x1;
-      bool decelCruise = (GET_BYTES(to_push, 2) >> 2) & 0x1;
-      bool setCruise = (GET_BYTES(to_push, 2)) & 0x1;
-      bool resumeCruise = (GET_BYTES(to_push, 2) >> 3) & 0x1;
+      bool accelCruise = (GET_BYTE(to_push, 2) >> 1) & 0x1;
+      bool decelCruise = (GET_BYTE(to_push, 2) >> 2) & 0x1;
+      bool setCruise = (GET_BYTE(to_push, 2)) & 0x1;
+      bool resumeCruise = (GET_BYTE(to_push, 2) >> 3) & 0x1;
       int cruise_engaged = (accelCruise || decelCruise || setCruise || resumeCruise) ? 1 : 0;
       if (cruise_engaged && !cruise_engaged_prev) {
         controls_allowed = 1;
