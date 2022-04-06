@@ -52,6 +52,7 @@ class CarState(CarStateBase):
 
     self.prev_acc_main_enabled = self.acc_main_enabled
     self.prev_cruise_buttons = self.cruise_buttons
+    self.buttonStatesPrev = self.buttonStates.copy()
     self.disable_mads = Params().get_bool("DisableMADS")
     self.acc_mads_combo = Params().get_bool("ACCMADSCombo")
 
