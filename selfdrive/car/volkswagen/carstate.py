@@ -258,14 +258,14 @@ class CarState(CarStateBase):
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
-        if (not self.buttonStatesPrev["setCruise"] and self.buttonStates["setCruise"]) or (not self.buttonStatesPrev["decelCruise"] and self.buttonStates["decelCruise"]): # SET-
-          ret.cruiseState.enabled = True
-        elif (self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"]) or (self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]): # SET-
-          self.accEnabled = True
-        if (not self.buttonStatesPrev["resumeCruise"] and self.buttonStates["resumeCruise"]) or (not self.buttonStatesPrev["accelCruise"] and self.buttonStates["accelCruise"]): # RESUME+
-          ret.cruiseState.enabled = True
-        elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
-          self.accEnabled = True
+        if (self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"]) or \
+          (self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]): # SET-
+            ret.cruiseState.enabled = True
+            self.accEnabled = True
+        elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or \
+          (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
+            ret.cruiseState.enabled = True
+            self.accEnabled = True
     else:
       ret.cruiseState.enabled = False
       self.accEnabled = False
