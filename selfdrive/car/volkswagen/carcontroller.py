@@ -52,6 +52,8 @@ class CarController():
   def update(self, enabled, CS, frame, ext_bus, actuators, visual_alert, left_lane_visible, right_lane_visible, left_lane_depart, right_lane_depart):
     """ Controls thread """
 
+    self.sm.update(0)
+
     cur_time = frame * DT_CTRL
     if CS.leftBlinkerOn or CS.rightBlinkerOn:
       self.signal_last = cur_time
@@ -187,7 +189,6 @@ class CarController():
 
   def get_speed_limit_osm(self):
     is_metric = Params().get_bool("IsMetric")
-    self.sm.update(0)
     speed_limit_osm = float(self.sm['longitudinalPlan'].speedLimit if self.sm['longitudinalPlan'].speedLimit is not None else 0.0) * (CV.MS_TO_MPH if not is_metric else CV.MS_TO_KPH)
     return speed_limit_osm
 
@@ -196,14 +197,12 @@ class CarController():
     speed_limit_value_offset = int(Params().get("SpeedLimitValueOffset"))
     is_metric = Params().get_bool("IsMetric")
     if speed_limit_perc_offset:
-      self.sm.update(0)
       speed_limit_offset = float(self.sm['longitudinalPlan'].speedLimitOffset) * (CV.MS_TO_MPH if not is_metric else CV.MS_TO_KPH)
     else:
       speed_limit_offset = float(speed_limit_value_offset)
     return speed_limit_offset
 
   def get_slc_state(self):
-    self.sm.update(0)
     self.slc_state = self.sm['longitudinalPlan'].speedLimitControlState
     return self.slc_state
 
@@ -222,12 +221,9 @@ class CarController():
     speed_limit_value_offset = int(Params().get("SpeedLimitValueOffset"))
     is_metric = Params().get_bool("IsMetric")
     v_cruise_kph = v_cruise_kph_prev
-    self.sm.update(0)
     if Params().get_bool("SpeedLimitControl") and (float(self.sm['longitudinalPlan'].speedLimit if self.sm['longitudinalPlan'].speedLimit is not None else 0.0) != 0.0):
-      self.sm.update(0)
       target_v_cruise_kph = float(self.sm['longitudinalPlan'].speedLimit if self.sm['longitudinalPlan'].speedLimit is not None else 0.0) * CV.MS_TO_KPH
       if speed_limit_perc_offset:
-        self.sm.update(0)
         v_cruise_kph = target_v_cruise_kph + float(float(self.sm['longitudinalPlan'].speedLimitOffset) * CV.MS_TO_KPH)
       else:
         v_cruise_kph = target_v_cruise_kph + (float(speed_limit_value_offset * CV.MPH_TO_KPH) if not is_metric else speed_limit_value_offset)
@@ -292,9 +288,7 @@ class CarController():
 
   def get_curve_speed(self, target_speed_kph):
     v_cruise_kph_prev = self.sm['controlsState'].vCruise
-    fake_map = 0
     if Params().get_bool("TurnVisionControl"):
-      self.sm.update(0)
       vision_v_cruise_kph = float(float(self.sm['longitudinalPlan'].visionTurnSpeed) * CV.MS_TO_KPH)
       if int(vision_v_cruise_kph) == int(v_cruise_kph_prev):
         vision_v_cruise_kph = 255
@@ -302,11 +296,7 @@ class CarController():
     else:
       vision_v_cruise_kph = 255
     if Params().get_bool("TurnSpeedControl"):
-      self.sm.update(0)
-      #map_v_cruise_kph = float(float(self.sm['longitudinalPlan'].turnSpeed) * CV.MS_TO_KPH)
-      if Params().get_bool("FakeMapSpeed"):
-        fake_map = 40
-      map_v_cruise_kph = fake_map
+      map_v_cruise_kph = float(float(self.sm['longitudinalPlan'].turnSpeed) * CV.MS_TO_KPH)
       if int(map_v_cruise_kph) == 0.0:
         map_v_cruise_kph = 255
       map_v_cruise_kph = min(target_speed_kph, map_v_cruise_kph)
@@ -317,7 +307,6 @@ class CarController():
 
   def get_button_control(self, CS, final_speed):
     is_metric = Params().get_bool("IsMetric")
-    self.sm.update(0)
     v_cruise_kph_max = self.sm['controlsState'].vCruise
     self.init_speed = round(min(final_speed, v_cruise_kph_max) * CV.KPH_TO_MPH) if not is_metric else round(min(final_speed, v_cruise_kph_max))
     self.v_set_dis = round(CS.out.cruiseState.speed * CV.MS_TO_MPH) if not is_metric else round(CS.out.cruiseState.speed * CV.MS_TO_KPH)
@@ -329,7 +318,6 @@ class CarController():
     if not self.get_cruise_buttons_status(CS):
       pass
     elif CS.cruise_active:
-      self.sm.update(0)
       v_cruise_kph_prev = self.sm['controlsState'].vCruise
       set_speed_kph = self.get_target_speed(v_cruise_kph_prev)
       if Params().get_bool("SpeedLimitControl"):
