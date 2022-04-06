@@ -267,7 +267,6 @@ class CarState(CarStateBase):
             self.accEnabled = True
     else:
       ret.cruiseState.enabled = False
-      self.accMainEnabled = False
       self.accEnabled = False
 
     if not self.disable_mads:
