@@ -192,12 +192,13 @@ class CarState(CarStateBase):
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
-        if (self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"]) or \
-          (self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]): # SET-
-            self.accEnabled = True
-        elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or \
-          (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
-            self.accEnabled = True
+        if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+          if (self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"]) or \
+            (self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]): # SET-
+              self.accEnabled = True
+          elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or \
+            (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
+              self.accEnabled = True
       if not self.disable_mads:
         if self.CP.carFingerprint in FEATURES["acc_stalk"]:
           if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
@@ -219,13 +220,15 @@ class CarState(CarStateBase):
       self.accEnabled = False
 
     if (not self.CP.pcmCruise) or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
-      if not self.buttonStatesPrev["cancel"]: # CANCEL
-        if self.buttonStates["cancel"]:
-          self.accEnabled = False
-          if self.disable_mads:
-            self.accMainEnabled = False
+      if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+        if not self.buttonStatesPrev["cancel"]: # CANCEL
+          if self.buttonStates["cancel"]:
+            self.accEnabled = False
+            if self.disable_mads:
+              self.accMainEnabled = False
       if ret.brakePressed:
-        self.accEnabled = False
+        if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+          self.accEnabled = False
         if self.disable_mads:
           self.accMainEnabled = False
 
@@ -235,7 +238,8 @@ class CarState(CarStateBase):
       self.accEnabled = ret.cruiseState.enabled or self.accEnabled
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
-      ret.cruiseState.enabled = self.accEnabled
+      if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+        ret.cruiseState.enabled = self.accEnabled
 
     if ret.cruiseState.enabled:
       if self.disable_mads:
