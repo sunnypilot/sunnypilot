@@ -59,24 +59,18 @@ class CarState(CarStateBase):
     # Read ACC hardware button type configuration info that has to pass thru
     # to the radar. Ends up being different for steering wheel buttons vs
     # third stalk type controls.
-    self.graHauptschalter = bool(pt_cp.vl["GRA_ACC_01"]["GRA_Hauptschalter"])
+    self.graHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Hauptschalter"]
     self.graTypHauptschalter = pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"]
     self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
     self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
-    #print("2. self.graTypHauptschalter = " + str(self.graTypHauptschalter))
-    #print("3. self.graButtonTypeInfo = " + str(self.graButtonTypeInfo))
-    #print("4. self.graTipStufe2 = " + str(self.graTipStufe2))
 
-    if self.graHauptschalter:
-      self.acc_main_enabled = 1
-    #elif self.graTypHauptschalter:
-    #  self.acc_main_enabled = 2
-    #elif self.graButtonTypeInfo:
-    #  self.acc_main_enabled = 3
-    #elif self.graTipStufe2:
-    #  self.acc_main_enabled = 4
-    else:
-      self.acc_main_enabled = 0
+    if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+      self.acc_main_enabled = pt_cp.vl["GRA_ACC_01"]["GRA_Hauptschalter"]
+    elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+      self.acc_main_enabled = pt_cp.vl["GRA_ACC_01"]["GRA_Hauptschalter"] == 0
+
+    if self.prev_acc_main_enabled is None:
+      self.prev_acc_main_enabled = self.acc_main_enabled
 
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
@@ -159,39 +153,23 @@ class CarState(CarStateBase):
 
     # Update ACC radar status.
     self.tsk_status = pt_cp.vl["TSK_06"]["TSK_Status"]
-    #if self.tsk_status == 2:
+    if self.tsk_status == 2:
       # ACC okay and enabled, but not currently engaged
-    #  ret.cruiseState.available = True
-    #  ret.cruiseState.enabled = False
-    #elif self.tsk_status in [3, 4, 5]:
+      ret.cruiseState.available = True
+      ret.cruiseState.enabled = False
+    elif self.tsk_status in [3, 4, 5]:
       # ACC okay and enabled, currently regulating speed (3) or driver accel override (4) or overrun coast-down (5)
-    #  ret.cruiseState.available = True
-    #  ret.cruiseState.enabled = True
-    #else:
+      ret.cruiseState.available = True
+      ret.cruiseState.enabled = True
+    else:
       # ACC okay but disabled (1), or a radar visibility or other fault/disruption (6 or 7)
-    #  ret.cruiseState.available = False
-    #  ret.cruiseState.enabled = False
-
-    #if ret.cruiseState.enabled and not self.prev_print3:
-    #  print("ret.cruiseState.enabled = " + str(ret.cruiseState.enabled))
-    #  print("self.acc_active = " + str(self.acc_active))
-    #  print("self.cruise_active = " + str(self.cruise_active))
-    #  print("ret.cruiseState.enabled SHOUD BE ON!!!!!!!!!!!!!!!")
-    #  self.prev_print3 = True
-    #elif not ret.cruiseState.enabled and self.prev_print3:
-    #  print("ret.cruiseState.enabled = " + str(ret.cruiseState.enabled))
-    #  print("self.acc_active = " + str(self.acc_active))
-    #  print("self.cruise_active = " + str(self.cruise_active))
-    #  print("ret.cruiseState.enabled SHOUD BE OFF!!!!!!!!!!!!!!!")
-    #  self.prev_print3 = False
+      ret.cruiseState.available = False
+      ret.cruiseState.enabled = False
 
     ret.cruiseState.standstill = bool(ret.cruiseState.enabled and self.esp_hold_confirmation)
     self.cruiseState_standstill = ret.cruiseState.standstill
 
     self.belowLaneChangeSpeed = ret.vEgo < (30 * CV.MPH_TO_MS)
-
-    if self.prev_acc_main_enabled is None:
-      self.prev_acc_main_enabled = self.acc_main_enabled
 
     # Update ACC setpoint. When the setpoint is zero or there's an error, the
     # radar sends a set-speed of ~90.69 m/s / 203mph.
@@ -210,74 +188,38 @@ class CarState(CarStateBase):
     ret.leftBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
     ret.rightBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
 
-    #if self.buttonStates["accelCruise"]:
-    #  self.cruise_buttons = 1
-    #elif self.buttonStates["decelCruise"]:
-    #  self.cruise_buttons = 2
-    #elif self.buttonStates["cancel"]:
-    #  self.cruise_buttons = 3
-    #elif self.buttonStates["setCruise"]:
-    #  self.cruise_buttons = 4
-    #elif self.buttonStates["resumeCruise"]:
-    #  self.cruise_buttons = 5
-    #elif self.buttonStates["gapAdjustCruise"]:
-    #  self.cruise_buttons = 6
-    #else:
-    #  self.cruise_buttons = 0
     ret.cruiseButtons = self.cruise_buttons
-
-    #if self.graHauptschalter and not self.prev_print:
-    #  print("1. self.graHauptschalter = " + str(self.graHauptschalter))
-    #  print("self.acc_main_enabled = " + str(self.acc_main_enabled))
-    #  print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
-    #  self.prev_print = True
-    #elif not self.graHauptschalter and self.prev_print:
-    #  print("1. self.graHauptschalter = " + str(self.graHauptschalter))
-    #  print("self.acc_main_enabled = " + str(self.acc_main_enabled))
-    #  print("self.prev_acc_main_enabled = " + str(self.prev_acc_main_enabled))
-    #  self.prev_print = False
-
-    if self.CP.carFingerprint in FEATURES["acc_stalk"]:
-      if self.prev_acc_main_enabled != 1:
-        if self.acc_main_enabled == 1:
-          ret.cruiseState.available = True
-          if not self.disable_mads:
-            self.accMainEnabled = True
-      elif self.prev_acc_main_enabled != 0:
-        if self.acc_main_enabled == 0:
-          ret.cruiseState.available = False
-          if not self.disable_mads:
-            self.accMainEnabled = False
-    elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
-      if self.prev_acc_main_enabled != 1:
-        if self.acc_main_enabled == 1:
-          if not self.accMainEnabled:
-            ret.cruiseState.available = True
-          if not self.disable_mads:
-            self.accMainEnabled = not self.accMainEnabled
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         if (self.buttonStatesPrev["setCruise"] and not self.buttonStates["setCruise"]) or \
           (self.buttonStatesPrev["decelCruise"] and not self.buttonStates["decelCruise"]): # SET-
-            ret.cruiseState.enabled = True
             self.accEnabled = True
         elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or \
           (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
-            ret.cruiseState.enabled = True
             self.accEnabled = True
+      if not self.disable_mads:
+        if self.CP.carFingerprint in FEATURES["acc_stalk"]:
+          if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
+            if self.acc_main_enabled == 1:
+              self.accMainEnabled = True
+          elif self.prev_acc_main_enabled != 0: #0 == ACC Main button
+            if self.acc_main_enabled == 0:
+              self.accMainEnabled = False
+        elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+          if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
+            if self.acc_main_enabled == 1:
+              self.accMainEnabled = not self.accMainEnabled
+        if self.acc_mads_combo:
+          if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
+            self.accMainEnabled = True
+          self.prev_acc_mads_combo = ret.cruiseState.enabled
     else:
-      ret.cruiseState.enabled = False
+      self.accMainEnabled = False
       self.accEnabled = False
 
-    if not self.disable_mads:
-      if self.acc_mads_combo:
-        if not self.prev_acc_mads_combo and ret.cruiseState.enabled:
-          self.accMainEnabled = True
-        self.prev_acc_mads_combo = ret.cruiseState.enabled
-
     if (not self.CP.pcmCruise) or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
-      if not self.buttonStatesPrev["cancel"]:
+      if not self.buttonStatesPrev["cancel"]: # CANCEL
         if self.buttonStates["cancel"]:
           self.accEnabled = False
           if self.disable_mads:
@@ -294,10 +236,11 @@ class CarState(CarStateBase):
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       ret.cruiseState.enabled = self.accEnabled
+
     if ret.cruiseState.enabled:
       if self.disable_mads:
         self.accMainEnabled = True
-      #self.resumeAvailable = True
+      self.resumeAvailable = True
 
     self.acc_active = ret.cruiseState.enabled
     self.cruise_active = self.acc_active
