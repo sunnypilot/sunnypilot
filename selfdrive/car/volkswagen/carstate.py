@@ -188,6 +188,21 @@ class CarState(CarStateBase):
     ret.leftBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
     ret.rightBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
 
+    if bool(pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Hoch"]):
+      self.cruise_buttons = 1
+    elif bool(pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Runter"]):
+      self.cruise_buttons = 2
+    elif bool(pt_cp.vl["GRA_ACC_01"]["GRA_Abbrechen"]):
+      self.cruise_buttons = 3
+    elif bool(pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Setzen"]):
+      self.cruise_buttons = 4
+    elif bool(pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Wiederaufnahme"]):
+      self.cruise_buttons = 5
+    elif bool(pt_cp.vl["GRA_ACC_01"]["GRA_Verstellung_Zeitluecke"]):
+      self.cruise_buttons = 6
+    else:
+      self.cruise_buttons = 0
+
     ret.cruiseButtons = self.cruise_buttons
 
     if ret.cruiseState.available:
@@ -199,6 +214,11 @@ class CarState(CarStateBase):
           elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or \
             (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
               self.accEnabled = True
+        elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+          if (self.prev_cruise_buttons == 2 and self.cruise_buttons != 2) or (self.prev_cruise_buttons == 4 and self.cruise_buttons != 4): # SET-
+            self.accEnabled = True
+          elif (self.prev_cruise_buttons == 1 and self.cruise_buttons != 1) or (self.prev_cruise_buttons == 5 and self.cruise_buttons != 5): # RESUME+
+            self.accEnabled = True
       if not self.disable_mads:
         if self.CP.carFingerprint in FEATURES["acc_stalk"]:
           if self.prev_acc_main_enabled != 1: #1 == not ACC Main button
@@ -226,9 +246,14 @@ class CarState(CarStateBase):
             self.accEnabled = False
             if self.disable_mads:
               self.accMainEnabled = False
+      elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
+        if self.cruise_buttons != 3: # CANCEL
+          if self.cruise_buttons == 3:
+            self.accEnabled = False
+            if self.disable_mads:
+              self.accMainEnabled = False
       if ret.brakePressed:
-        if self.CP.carFingerprint in FEATURES["acc_stalk"]:
-          self.accEnabled = False
+        self.accEnabled = False
         if self.disable_mads:
           self.accMainEnabled = False
 
@@ -238,8 +263,7 @@ class CarState(CarStateBase):
       self.accEnabled = ret.cruiseState.enabled or self.accEnabled
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
-      if self.CP.carFingerprint in FEATURES["acc_stalk"]:
-        ret.cruiseState.enabled = self.accEnabled
+      ret.cruiseState.enabled = self.accEnabled
 
     if ret.cruiseState.enabled:
       if self.disable_mads:
