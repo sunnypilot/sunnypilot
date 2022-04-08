@@ -215,9 +215,9 @@ class CarState(CarStateBase):
             (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
               self.accEnabled = True
         elif self.CP.carFingerprint in FEATURES["acc_steering_wheel"]:
-          if (self.prev_cruise_buttons == 2 and self.cruise_buttons != 2) or (self.prev_cruise_buttons == 4 and self.cruise_buttons != 4): # SET-
+          if self.prev_cruise_buttons == 4 and self.cruise_buttons != 4: # SET-
             self.accEnabled = True
-          elif (self.prev_cruise_buttons == 1 and self.cruise_buttons != 1) or (self.prev_cruise_buttons == 5 and self.cruise_buttons != 5): # RESUME+
+          elif self.prev_cruise_buttons == 5 and self.cruise_buttons != 5: # RESUME+
             self.accEnabled = True
       if not self.disable_mads:
         if self.CP.carFingerprint in FEATURES["acc_stalk"]:
