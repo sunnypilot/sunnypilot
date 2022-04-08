@@ -140,7 +140,7 @@ class CarController():
 
     if CS.CP.pcmCruise:
       if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
-        if (not enabled and CS.out.cruiseState.enabled) or not CS.accEnabled:
+        if not enabled and CS.out.cruiseState.enabled:
           # Cancel ACC if it's engaged with OP disengaged.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["cancel"] = True
