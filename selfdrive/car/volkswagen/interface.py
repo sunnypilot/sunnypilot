@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "volkswagen"
     ret.radarOffCan = True
-    #ret.pcmCruiseSpeed = False if (Params().get_bool("SpeedLimitControl") or Params().get_bool("TurnVisionControl") or Params().get_bool("TurnSpeedControl")) else True
+    ret.pcmCruiseSpeed = False if (Params().get_bool("SpeedLimitControl") or Params().get_bool("TurnVisionControl") or Params().get_bool("TurnSpeedControl")) else True
 
     if True:  # pylint: disable=using-constant-test
       # Set global MQB parameters
