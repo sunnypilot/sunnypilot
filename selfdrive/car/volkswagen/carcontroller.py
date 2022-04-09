@@ -168,14 +168,12 @@ class CarController():
         if self.graButtonStatesToSend is not None:
           if self.graMsgSentCount == 0:
             self.graMsgStartFramePrev = frame
-          idx = self.graMsgSentCount % 16
+          idx = (CS.graMsgBusCounter + 1) % 16
           can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
           self.graMsgSentCount += 1
-          #if self.graMsgSentCount >= P.GRA_VBP_COUNT:
-          #  self.graButtonStatesToSend = None
-          #  self.graMsgSentCount = 0
-        else:
-          self.graMsgSentCount = 0
+          if self.graMsgSentCount >= P.GRA_VBP_COUNT:
+            self.graButtonStatesToSend = None
+            self.graMsgSentCount = 0
 
     if CS.out.brakeLights and CS.out.vEgo < 0.1:
       self.standstill_status = 1
