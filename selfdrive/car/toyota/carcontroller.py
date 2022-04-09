@@ -1,39 +1,29 @@
 from cereal import car
 from common.numpy_fast import clip, interp
-from selfdrive.car import apply_toyota_steer_torque_limits, create_gas_command, make_can_msg
-from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_command, \
+from common.realtime import DT_CTRL
+from selfdrive.car import apply_toyota_steer_torque_limits, create_gas_interceptor_command, make_can_msg
+from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_command, create_ui_command_off,\
                                            create_accel_command, create_acc_cancel_command, \
-                                           create_fcw_command, create_lta_steer_command
+                                           create_fcw_command, create_lta_steer_command, \
+                                           create_ui_command_disable_startup_lkas
 from selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
-                                        MIN_ACC_SPEED, PEDAL_HYST_GAP, PEDAL_SCALE, CarControllerParams
+                                        MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, FEATURES
 from opendbc.can.packer import CANPacker
 VisualAlert = car.CarControl.HUDControl.VisualAlert
-
-
-def accel_hysteresis(accel, accel_steady, enabled):
-
-  # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
-  if not enabled:
-    # send 0 when disabled, otherwise acc faults
-    accel_steady = 0.
-  elif accel > accel_steady + CarControllerParams.ACCEL_HYST_GAP:
-    accel_steady = accel - CarControllerParams.ACCEL_HYST_GAP
-  elif accel < accel_steady - CarControllerParams.ACCEL_HYST_GAP:
-    accel_steady = accel + CarControllerParams.ACCEL_HYST_GAP
-  accel = accel_steady
-
-  return accel, accel_steady
 
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
     self.last_steer = 0
-    self.accel_steady = 0.
     self.alert_active = False
     self.last_standstill = False
     self.standstill_req = False
     self.steer_rate_limited = False
-    self.use_interceptor = False
+    self.signal_last = 0.
+    self.has_set_lkas = False
+    self.standstill_fault_reduce_timer = 0
+    self.standstill_status = 0
+    self.standstill_status_timer = 0
 
     self.packer = CANPacker(dbc_name)
 
@@ -43,53 +33,65 @@ class CarController():
     # *** compute control surfaces ***
 
     # gas and brake
-    interceptor_gas_cmd = 0.
-    pcm_accel_cmd = actuators.accel
-
-    if CS.CP.enableGasInterceptor:
-      # handle hysteresis when around the minimum acc speed
-      if CS.out.vEgo < MIN_ACC_SPEED:
-        self.use_interceptor = True
-      elif CS.out.vEgo > MIN_ACC_SPEED + PEDAL_HYST_GAP:
-        self.use_interceptor = False
-
-      if self.use_interceptor and active:
-        # only send negative accel when using interceptor. gas handles acceleration
-        # +0.18 m/s^2 offset to reduce ABS pump usage when OP is engaged
-        MAX_INTERCEPTOR_GAS = interp(CS.out.vEgo, [0.0, MIN_ACC_SPEED], [0.2, 0.5])
-        interceptor_gas_cmd = clip(actuators.accel / PEDAL_SCALE, 0., MAX_INTERCEPTOR_GAS)
-        pcm_accel_cmd = 0.18 - max(0, -actuators.accel)
-
-    pcm_accel_cmd, self.accel_steady = accel_hysteresis(pcm_accel_cmd, self.accel_steady, enabled)
-    pcm_accel_cmd = clip(pcm_accel_cmd, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
+    if CS.CP.enableGasInterceptor and enabled and CS.out.cruiseState.enabled:
+      MAX_INTERCEPTOR_GAS = 0.5
+      # RAV4 has very sensitive gas pedal
+      if CS.CP.carFingerprint in [CAR.RAV4, CAR.RAV4H, CAR.HIGHLANDER, CAR.HIGHLANDERH]:
+        PEDAL_SCALE = interp(CS.out.vEgo, [0.0, MIN_ACC_SPEED, MIN_ACC_SPEED + PEDAL_TRANSITION], [0.15, 0.3, 0.0])
+      elif CS.CP.carFingerprint in [CAR.COROLLA]:
+        PEDAL_SCALE = interp(CS.out.vEgo, [0.0, MIN_ACC_SPEED, MIN_ACC_SPEED + PEDAL_TRANSITION], [0.3, 0.4, 0.0])
+      else:
+        PEDAL_SCALE = interp(CS.out.vEgo, [0.0, MIN_ACC_SPEED, MIN_ACC_SPEED + PEDAL_TRANSITION], [0.4, 0.5, 0.0])
+      # offset for creep and windbrake
+      pedal_offset = interp(CS.out.vEgo, [0.0, 2.3, MIN_ACC_SPEED + PEDAL_TRANSITION], [-.4, 0.0, 0.2])
+      pedal_command = PEDAL_SCALE * (actuators.accel + pedal_offset)
+      interceptor_gas_cmd = clip(pedal_command, 0., MAX_INTERCEPTOR_GAS)
+    else:
+      interceptor_gas_cmd = 0.
+    pcm_accel_cmd = 0 if not (enabled and CS.out.cruiseState.enabled) else clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
 
     # steer torque
     new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
     apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, CarControllerParams)
-    self.steer_rate_limited = new_steer != apply_steer
+    self.steer_rate_limited = False
+
+    cur_time = frame * DT_CTRL
+    if CS.leftBlinkerOn or CS.rightBlinkerOn:
+      self.signal_last = cur_time
 
     # Cut steering while we're in a known fault state (2s)
-    if not enabled or CS.steer_state in [9, 25]:
+    if enabled and not CS.steer_not_allowed and CS.lkasEnabled and ((CS.automaticLaneChange and not CS.belowLaneChangeSpeed) or ((not ((cur_time - self.signal_last) < 1) or not CS.belowLaneChangeSpeed) and not (CS.leftBlinkerOn or CS.rightBlinkerOn))):
+      self.steer_rate_limited = new_steer != apply_steer
+      apply_steer_req = 1
+    else:
       apply_steer = 0
       apply_steer_req = 0
-    else:
-      apply_steer_req = 1
 
     # TODO: probably can delete this. CS.pcm_acc_status uses a different signal
     # than CS.cruiseState.enabled. confirm they're not meaningfully different
-    if not enabled and CS.pcm_acc_status:
-      pcm_cancel_cmd = 1
+    #if not enabled and CS.pcm_acc_status:
+      #pcm_cancel_cmd = 1
 
     # on entering standstill, send standstill request
     if CS.out.standstill and not self.last_standstill and CS.CP.carFingerprint not in NO_STOP_TIMER_CAR:
       self.standstill_req = True
+      self.standstill_status = 1
     if CS.pcm_acc_status != 8:
       # pcm entered standstill or it's disabled
       self.standstill_req = False
 
     self.last_steer = apply_steer
-    self.last_accel = pcm_accel_cmd
     self.last_standstill = CS.out.standstill
+
+    if CS.out.brakeLights and CS.out.vEgo < 0.1:
+      self.standstill_status = 1
+      self.standstill_status_timer += 1
+      if self.standstill_status_timer > 200:
+        self.standstill_status = 1
+        self.standstill_status_timer = 0
+    if self.standstill_status == 1 and CS.out.vEgo > 1:
+      self.standstill_status = 0
+      self.standstill_fault_reduce_timer = 0
 
     can_sends = []
 
@@ -113,7 +115,7 @@ class CarController():
       lead = lead or CS.out.vEgo < 12.    # at low speed we always assume the lead is present do ACC can be engaged
 
       # Lexus IS uses a different cancellation message
-      if pcm_cancel_cmd and CS.CP.carFingerprint == CAR.LEXUS_IS:
+      if pcm_cancel_cmd and CS.CP.carFingerprint in [CAR.LEXUS_IS, CAR.LEXUS_RC]:
         can_sends.append(create_acc_cancel_command(self.packer))
       elif CS.CP.openpilotLongitudinalControl:
         can_sends.append(create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type))
@@ -123,7 +125,7 @@ class CarController():
     if frame % 2 == 0 and CS.CP.enableGasInterceptor:
       # send exactly zero if gas cmd is zero. Interceptor will send the max between read value and gas cmd.
       # This prevents unexpected pedal range rescaling
-      can_sends.append(create_gas_command(self.packer, interceptor_gas_cmd, frame // 2))
+      can_sends.append(create_gas_interceptor_command(self.packer, interceptor_gas_cmd, frame // 2))
 
     # ui mesg is at 100Hz but we send asap if:
     # - there is something to display
@@ -140,8 +142,26 @@ class CarController():
       # forcing the pcm to disengage causes a bad fault sound so play a good sound instead
       send_ui = True
 
+    use_lta_msg = False
+    if CarControllerParams.FEATURE_NO_LKAS_ICON:
+      if CS.CP.carFingerprint in FEATURES["use_lta_msg"]:
+        use_lta_msg = True
+        if CS.persistLkasIconDisabled == 1:
+          self.has_set_lkas = True
+      else:
+        use_lta_msg = False
+        if CS.persistLkasIconDisabled == 0:
+          self.has_set_lkas = True
+
+      if (frame % 100 == 0 or send_ui):
+        if not self.has_set_lkas:
+          can_sends.append(create_ui_command_disable_startup_lkas(self.packer, use_lta_msg))
+
     if (frame % 100 == 0 or send_ui):
-      can_sends.append(create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, left_line, right_line, left_lane_depart, right_lane_depart))
+      if(CS.lkasEnabled):
+        can_sends.append(create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, left_line, right_line, left_lane_depart, right_lane_depart, CS.lkasEnabled and not apply_steer_req, use_lta_msg))
+      else:
+        can_sends.append(create_ui_command_off(self.packer, use_lta_msg))
 
     if frame % 100 == 0 and CS.CP.enableDsu:
       can_sends.append(create_fcw_command(self.packer, fcw_alert))

@@ -187,6 +187,7 @@ BO_ 1042 LKAS_HUD: 8 XXX
  SG_ TWO_BEEPS : 12|1@0+ (1,0) [0|1] "" XXX
  SG_ ADJUSTING_CAMERA : 13|1@0+ (1,0) [0|1] "" XXX
  SG_ LDA_MALFUNCTION : 15|1@0+ (1,0) [0|1] "" XXX
+ SG_ LDA_ON_MESSAGE : 31|2@0+ (1,0) [0|3] "" XXX
  SG_ REPEATED_BEEPS : 32|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_X0C : 23|8@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_X2C : 47|8@0+ (1,0) [0|1] "" XXX
@@ -328,6 +329,7 @@ CM_ SG_ 951 BRAKE_LIGHTS_ACC "brake lights when ACC commands decel";
 CM_ SG_ 1041 PCS_INDICATOR "Pre-Collision System Indicator";
 CM_ SG_ 1041 PCS_SENSITIVITY "Pre-Collision System Sensitivity";
 CM_ SG_ 1042 SET_ME_1 "unclear what this is, but it's always 1 in drive traces";
+CM_ SG_ 1042 LDA_ON_MESSAGE "Display LDA Turned ON message";
 CM_ SG_ 1042 REPEATED_BEEPS "recommended for fcw and other important alerts";
 CM_ SG_ 1161 SPDVAL1 "Numbers 0-199 is displayed, 200-254 displays circle without number and 255 is for no limit.";
 CM_ SG_ 1161 SYNCID1 "counter from 1 to f at 1 Hz";
@@ -361,6 +363,7 @@ VAL_ 1042 LDA_ALERT 3 "hold with continuous beep" 2 "LDA unavailable" 1 "hold" 0
 VAL_ 1042 BARRIERS 3 "both" 2 "right" 1 "left" 0 "none";
 VAL_ 1042 RIGHT_LINE 3 "orange" 2 "faded" 1 "solid" 0 "none";
 VAL_ 1042 LEFT_LINE 3 "orange" 2 "faded" 1 "solid" 0 "none";
+VAL_ 1042 LDA_ON_MESSAGE 2 "Lane Departure Alert Turned ON, Steering Assist Inactive" 1 "Lane Departure Alert Turned ON, Steering Assist Active" 0 "clear";
 VAL_ 1553 UNITS 1 "km" 2 "miles";
 VAL_ 1556 TURN_SIGNALS 3 "none" 2 "right" 1 "left";
 VAL_ 1161 TSGN1 1 "speed sign" 0 "none";
@@ -370,7 +373,6 @@ VAL_ 1162 TSGN3 0 "none" 1 "speed sign" 2 "0 unlimited" 7 "unlimited" 16 "highwa
 VAL_ 1162 SPLSGN3 15 "conditional blank" 4 "wet road" 5 "rain" 0 "none";
 
 
-CM_ "CHFFR_METRIC 37 STEER_ANGLE STEER_ANGLE 0.36 180";
 
 
 CM_ "Imported file _comma.dbc starts here";

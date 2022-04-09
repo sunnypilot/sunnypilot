@@ -187,6 +187,7 @@ BO_ 1042 LKAS_HUD: 8 XXX
  SG_ TWO_BEEPS : 12|1@0+ (1,0) [0|1] "" XXX
  SG_ ADJUSTING_CAMERA : 13|1@0+ (1,0) [0|1] "" XXX
  SG_ LDA_MALFUNCTION : 15|1@0+ (1,0) [0|1] "" XXX
+ SG_ LDA_ON_MESSAGE : 31|2@0+ (1,0) [0|3] "" XXX
  SG_ REPEATED_BEEPS : 32|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_X0C : 23|8@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_X2C : 47|8@0+ (1,0) [0|1] "" XXX
@@ -370,7 +371,6 @@ VAL_ 1162 TSGN3 0 "none" 1 "speed sign" 2 "0 unlimited" 7 "unlimited" 16 "highwa
 VAL_ 1162 SPLSGN3 15 "conditional blank" 4 "wet road" 5 "rain" 0 "none";
 
 
-CM_ "CHFFR_METRIC 37 STEER_ANGLE STEER_ANGLE 0.36 180";
 
 
 CM_ "Imported file _comma.dbc starts here";
