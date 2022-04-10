@@ -209,7 +209,7 @@ class CarController():
       stopping = (actuators.longControlState == LongCtrlState.stopping)
       accel = actuators.accel if long_active else 0
       # TODO: aEgo lags when jerk is high, use smoothed ACCEL_REF_ACC instead?
-      accel_error = accel - CS.out.aEgo if CC.longActive else 0
+      accel_error = accel - CS.out.aEgo if long_active else 0
 
       # TODO: jerk upper would probably be better from longitudinal planner desired jerk?
       jerk_upper = clip(2.0 * accel_error, 0.0, 2.0) # zero when error is negative to keep decel control tight
