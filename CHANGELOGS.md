@@ -1,3 +1,18 @@
+sunnypilot - Version 0.8.12-4 (2022-04-09)
+========================
+* Note: Each supported car make has additional updates. Please check the changelogs of relevant car make branches for in-depth changelogs
+* NEW❗: Roll Compensation and SteerRatio fix from comma's 0.8.13
+* NEW❗: Dev UI to display different metrics on screen
+  * Click on the "MAX" box on the top left of the openpilot display to toggle different metrics display
+  * Lead car relative distance; Lead car relative speed; Actual steering degree; Desired steering degree; Engine RPM; Longitudinal acceleration; Lead car actual speed; EPS torque; Current altitude; Compass direction
+* NEW❗: Stand Still Timer to display time spent at a stop with M.A.D.S engaged (i.e., stop lights, stop signs, traffic congestions)
+* NEW❗: Current car speed text turns red when the car is braking
+* NEW❗: Export GPS tracks into GPX files and upload to OSM thanks to eFini!
+* NEW❗: Enable ACC and M.A.D.S with a single press of the RES+/SET- button
+* NEW❗: Dedicated icon to show the status of M.A.D.S.
+* NEW❗: No Offroad Fix for non-official devices that cannot shut down after the car is turned off
+* FIXED: MADS button unintentionally set MAX when using stock longitudinal control thanks to Spektor56!
+
 sunnypilot - Version 0.8.12-3
 ========================
 * NEW❗: Bypass "System Malfunction" alert toggle
