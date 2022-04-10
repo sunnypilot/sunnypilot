@@ -256,6 +256,7 @@ class CarState(CarStateBase):
     self.park_brake = cp.vl["TCS13"]["PBRAKE_ACT"] == 1
     self.steer_state = cp.vl["MDPS12"]["CF_Mdps_ToiActive"]  # 0 NOT ACTIVE, 1 ACTIVE
     self.brake_error = cp.vl["TCS13"]["ACCEnable"] != 0 # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
+    self.brake_control_active = cp.vl["TCS13"]["DCEnable"] == 1
 
     if not self.CP.openpilotLongitudinalControl:
       ret.radarObjValid = cp.vl["SCC11"]["ObjValid"] == 1
@@ -301,6 +302,7 @@ class CarState(CarStateBase):
       ("CF_Clu_AliveCnt1", "CLU11", 0),
 
       ("ACCEnable", "TCS13", 0),
+      ("DCEnable", "TCS13"),
       ("ACC_REQ", "TCS13", 0),
       ("BrakeLight", "TCS13", 0),
       ("DriverBraking", "TCS13", 0),
