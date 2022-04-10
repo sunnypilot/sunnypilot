@@ -372,6 +372,79 @@ void OnroadScreenOffBrightness::refresh() {
   btnplus.setText("+");
 }
 
+// Camera Offset Value (Default offset value for C3 is 0.04 (4cm but in meters)).
+CameraOffset::CameraOffset() : AbstractControl("Camera Offset Value (cm)",
+                                               "Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more right, increasing will make it keep more left. Must be set while offroad",
+                                               "../assets/offroad/icon_metric.png") {
+
+  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
+  label.setStyleSheet("color: #e0e879");
+  hlayout->addWidget(&label);
+
+  btnminus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnplus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnminus.setFixedSize(150, 100);
+  btnplus.setFixedSize(150, 100);
+  hlayout->addWidget(&btnminus);
+  hlayout->addWidget(&btnplus);
+
+QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("CameraOffset"));
+    int value = str.toInt();
+    value = value - 1;
+//    int valueInM = str.toInt();
+//    valueInM = value / 100;
+    if (value <= -10 ) {
+      value = -10;
+    }
+
+    QString values = QString::number(value);
+    params.put("CameraOffset", values.toStdString());
+//    QString valuesinM = QString::number(valueInM);
+//    params.put("CameraOffsetinM", valuesinM.toStdString());
+    refresh();
+  });
+
+  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("CameraOffset"));
+    int value = str.toInt();
+    value = value + 1;
+//    int valueInM = str.toInt();
+//    valueInM = value / 100;
+    if (value >= 10 ) {
+      value = 10;
+    }
+
+    QString values = QString::number(value);
+    params.put("CameraOffset", values.toStdString());
+//    QString valuesinM = QString::number(valueInM);
+//    params.put("CameraOffsetinM", valuesinM.toStdString());
+    refresh();
+  });
+  refresh();
+}
+
+void CameraOffset::refresh() {
+  QString option = QString::fromStdString(params.get("CameraOffset"));
+  label.setText(QString::fromStdString(params.get("CameraOffset")));
+  btnminus.setText("-");
+  btnplus.setText("+");
+}
+
 // Max Time Offroad (Shutdown timer)
 MaxTimeOffroad::MaxTimeOffroad() : AbstractControl("Max Time Offroad",
                                                    "Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road).",
