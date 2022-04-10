@@ -39,6 +39,7 @@ def manager_init():
     ("ACCMADSCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
     ("BrightnessControl", "0"),
+    ("CameraOffset", "0"),
     ("CarModel", ""),
     ("CompletedTrainingVersion", "0"),
     ("DevUI", "2"),
