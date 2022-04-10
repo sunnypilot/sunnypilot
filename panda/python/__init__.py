@@ -193,7 +193,7 @@ class Panda(object):
   SAFETY_ALLOUTPUT = 17
   SAFETY_GM_ASCM = 18
   SAFETY_NOOUTPUT = 19
-  SAFETY_HONDA_BOSCH_HARNESS = 20
+  SAFETY_HONDA_BOSCH = 20
   SAFETY_VOLKSWAGEN_PQ = 21
   SAFETY_SUBARU_LEGACY = 22
   SAFETY_HYUNDAI_LEGACY = 23
@@ -238,6 +238,8 @@ class Panda(object):
   FLAG_HYUNDAI_LONG = 4
   FLAG_TESLA_POWERTRAIN = 1
   FLAG_TESLA_LONG_CONTROL = 2
+
+  FLAG_TOYOTA_MADS_LTA_MSG = 1
 
   def __init__(self, serial=None, claim=True):
     self._serial = serial
