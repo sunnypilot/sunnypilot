@@ -97,7 +97,7 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : AbstractControl("Auto Lane Change T
   btnminus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 50px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -105,7 +105,7 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : AbstractControl("Auto Lane Change T
   btnplus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 50px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -172,7 +172,7 @@ BrightnessControl::BrightnessControl() : AbstractControl("Brightness Control (Gl
   btnminus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -180,7 +180,7 @@ BrightnessControl::BrightnessControl() : AbstractControl("Brightness Control (Gl
   btnplus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -241,7 +241,7 @@ OnroadScreenOff::OnroadScreenOff() : AbstractControl("Driving Screen Off Timer",
   btnminus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -249,7 +249,7 @@ OnroadScreenOff::OnroadScreenOff() : AbstractControl("Driving Screen Off Timer",
   btnplus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -315,7 +315,7 @@ OnroadScreenOffBrightness::OnroadScreenOffBrightness() : AbstractControl("Drivin
   btnminus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -323,7 +323,7 @@ OnroadScreenOffBrightness::OnroadScreenOffBrightness() : AbstractControl("Drivin
   btnplus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -384,7 +384,7 @@ CameraOffset::CameraOffset() : AbstractControl("Camera Offset Value (cm)",
   btnminus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -392,7 +392,7 @@ CameraOffset::CameraOffset() : AbstractControl("Camera Offset Value (cm)",
   btnplus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 55px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -457,7 +457,7 @@ MaxTimeOffroad::MaxTimeOffroad() : AbstractControl("Max Time Offroad",
   btnminus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 45px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;
@@ -465,7 +465,7 @@ MaxTimeOffroad::MaxTimeOffroad() : AbstractControl("Max Time Offroad",
   btnplus.setStyleSheet(R"(
     padding: 0;
     border-radius: 50px;
-    font-size: 45px;
+    font-size: 35px;
     font-weight: 500;
     color: #E4E4E4;
     background-color: #393939;

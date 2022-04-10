@@ -87,7 +87,6 @@ class LateralPlanner:
     if self.second > 1.0:
       self.use_lanelines = not Params().get_bool("EndToEndToggle")
       self.dynamic_lane_profile = int(Params().get("DynamicLaneProfile", encoding="utf8"))
-    # self.LP.update_sunny_set_offsets = int(Params().get("CameraOffset", encoding="utf8"))
       self.second = 0.0
     self.stand_still = sm['carState'].standStill
 
