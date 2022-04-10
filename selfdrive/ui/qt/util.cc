@@ -14,7 +14,7 @@ QString getVersion() {
 }
 
 QString getBrand() {
-  return Params().getBool("Passive") ? "dashcam" : "openpilot";
+  return Params().getBool("Passive") ? "dashcam" : "sunnypilot";
 }
 
 QString getBrandVersion() {
@@ -85,6 +85,7 @@ void setQtSurfaceFormat() {
 #else
   fmt.setRenderableType(QSurfaceFormat::OpenGLES);
 #endif
+  fmt.setSamples(16);
   QSurfaceFormat::setDefaultFormat(fmt);
 }
 
