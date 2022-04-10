@@ -907,9 +907,9 @@ void OnroadHud::drawRightDevUi2(QPainter &p, int x, int y) {
 
      if (lead_status) {
        if (speedUnit == "mph") {
-         snprintf(val_str, sizeof(val_str), "%d", (int)((lead_v_rel + vEgo) * 2.236936)); //mph
+         snprintf(val_str, sizeof(val_str), "%.1f", (int)((lead_v_rel + vEgo) * 2.236936)); //mph
        } else {
-         snprintf(val_str, sizeof(val_str), "%d", (int)((lead_v_rel + vEgo) * 3.6)); //kph
+         snprintf(val_str, sizeof(val_str), "%.1f", (int)((lead_v_rel + vEgo) * 3.6)); //kph
        }
      } else {
        snprintf(val_str, sizeof(val_str), "-");
