@@ -1,6 +1,6 @@
 from cereal import car, log
 from common.realtime import DT_CTRL
-from common.numpy_fast import clip, interp
+from common.numpy_fast import clip
 from selfdrive.config import Conversions as CV
 from selfdrive.car import apply_std_steer_torque_limits
 from selfdrive.car.hyundai.hyundaican import create_lkas11, create_clu11, create_lfahda_mfc, create_acc_commands, create_acc_opt, create_frt_radar_opt
@@ -101,6 +101,8 @@ class CarController():
     sys_warning, sys_state, left_lane_warning, right_lane_warning = \
       process_hud_alert(enabled, self.car_fingerprint, visual_alert,
                         left_lane, right_lane, left_lane_depart, right_lane_depart)
+
+    long_active = enabled and CS.out.cruiseState.enabled
 
     can_sends = []
 
@@ -203,18 +205,28 @@ class CarController():
 
     if frame % 2 == 0 and CS.CP.openpilotLongitudinalControl:
       tau_gap_set = CS.gap_adjust_cruise
-      accel = actuators.accel if enabled and CS.out.cruiseState.enabled else 0
+      pid_control = (actuators.longControlState == LongCtrlState.pid)
+      stopping = (actuators.longControlState == LongCtrlState.stopping)
+      accel = actuators.accel if long_active else 0
+      # TODO: aEgo lags when jerk is high, use smoothed ACCEL_REF_ACC instead?
+      accel_error = accel - CS.out.aEgo if CC.longActive else 0
 
-      jerk = clip(2.0 * (accel - CS.out.aEgo), -12.7, 12.7)
+      # TODO: jerk upper would probably be better from longitudinal planner desired jerk?
+      jerk_upper = clip(2.0 * accel_error, 0.0, 2.0) # zero when error is negative to keep decel control tight
+      jerk_lower = 12.7 # always max value to keep decel control tight
 
-      if accel < 0:
-        accel = interp(accel - CS.out.aEgo, [-1.0, -0.5], [2 * accel, accel])
+      if pid_control and CS.out.standstill and CS.brake_control_active and accel > 0.0:
+        # brake controller needs to wind up internallly until it reaches a threshhold where the brakes release
+        # larger values cause faster windup (too small and you never start moving)
+        # larger values get vehicle moving quicker but can cause sharp negative jerk transitioning back to plan
+        # larger values also cause more overshoot and therefore it takes longer to stop once moving
+        accel = 1.0
+        jerk_upper = 1.0
 
       accel = clip(accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
 
-      stopping = (actuators.longControlState == LongCtrlState.stopping)
       set_speed_in_units = hud_speed * (CV.MS_TO_MPH if CS.clu11["CF_Clu_SPEED_UNIT"] == 1 else CV.MS_TO_KPH)
-      can_sends.extend(create_acc_commands(self.packer, enabled and CS.out.cruiseState.enabled, accel, jerk, int(frame / 2), lead_visible, set_speed_in_units, stopping, tau_gap_set))
+      can_sends.extend(create_acc_commands(self.packer, enabled and CS.out.cruiseState.enabled, accel, jerk_upper, jerk_lower, int(frame / 2), lead_visible, set_speed_in_units, stopping, tau_gap_set))
 
     # 20 Hz LFA MFA message
     if frame % 5 == 0 and self.car_fingerprint in [CAR.SONATA, CAR.PALISADE, CAR.IONIQ, CAR.KIA_NIRO_EV, CAR.KIA_NIRO_HEV_2021,
