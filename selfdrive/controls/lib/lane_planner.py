@@ -13,7 +13,7 @@ TRAJECTORY_SIZE = 33
 
 # Get offset from param file
 params = Params()
-CameraOffset = float(params.get("CameraOffset", encoding='utf8'))
+CameraOffset = int(params.get("CameraOffset", encoding='utf8'))
 # print("User defined Camera Offset value in CM is:", CameraOffset)
 
 if EON:
