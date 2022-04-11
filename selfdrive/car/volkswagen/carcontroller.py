@@ -258,23 +258,25 @@ class CarController():
     return None
 
   def type_1(self):
-    cruise_button = 1
+    cruise_button = None
     self.button_count += 1
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 5:
+    elif self.button_count > 50:
+      cruise_button = 1
       self.button_count = 0
       self.button_type = 3
     return cruise_button
 
   def type_2(self):
-    cruise_button = 2
+    cruise_button = None
     self.button_count += 1
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 5:
+    elif self.button_count > 50:
+      cruise_button = 2
       self.button_count = 0
       self.button_type = 3
     return cruise_button
