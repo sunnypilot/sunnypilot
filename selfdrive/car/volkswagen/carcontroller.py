@@ -153,7 +153,7 @@ class CarController():
       if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
         if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
           cruise_button = self.get_cruise_buttons(CS)
-          if cruise_button is not None:
+          if cruise_button is not None and self.graMsgSentCount == 0:
             if cruise_button == 1:
               self.graButtonStatesToSend = BUTTON_STATES.copy()
               self.graButtonStatesToSend["accelCruise"] = True
