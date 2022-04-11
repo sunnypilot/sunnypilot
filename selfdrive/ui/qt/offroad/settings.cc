@@ -540,7 +540,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
                                   "../assets/offroad/icon_openpilot.png",
                                   this));
 
-  toggles.append(new ParamControl("GapAdjustCruiseTr",
+  toggles.append(new ParamControl("GapAdjustCruise",
                                   "Enable Gap Adjust Cruise*",
                                   "Enable the Interval button on the steering wheel to adjust the cruise gap.\n*Only available to cars with openpilot Longitudinal Control*",
                                   "../assets/offroad/icon_dynamic_gac.png",

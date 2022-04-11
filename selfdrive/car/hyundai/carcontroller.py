@@ -204,7 +204,7 @@ class CarController():
     zero_vego = True if CS.out.vEgo < 0.1 and (CS.lfaEnabled or CS.accMainEnabled) else False
 
     if frame % 2 == 0 and CS.CP.openpilotLongitudinalControl:
-      tau_gap_set = CS.gap_adjust_cruise
+      tau_gap_set = CS.gap_adjust_cruise_tr
       pid_control = (actuators.longControlState == LongCtrlState.pid)
       stopping = (actuators.longControlState == LongCtrlState.stopping)
       accel = actuators.accel if long_active else 0

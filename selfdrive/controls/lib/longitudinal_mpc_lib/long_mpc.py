@@ -337,7 +337,7 @@ class LongitudinalMpc():
     self.cruise_max_a = max_a
 
   def update_TF(self, carstate):
-    gap_adjust_cruise = int(Params().get("GapAdjustCruise"))
+    gap_adjust_cruise = Params().get_bool("GapAdjustCruise")
     if gap_adjust_cruise:
       gap_adjust_cruise_tr = int(clip(carstate.gapAdjustCruiseTr, 1., 4.))
       if gap_adjust_cruise_tr == 1: # Traffic

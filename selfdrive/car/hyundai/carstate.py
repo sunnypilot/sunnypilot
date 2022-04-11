@@ -38,7 +38,7 @@ class CarState(CarStateBase):
     self.prev_cruise_buttons = 0
     self.acc_active = False
     self.cruise_active = False
-    self.gap_adjust_cruise = 4
+    self.gap_adjust_cruise_tr = 4
 
     if self.CP.carFingerprint in FEATURES["use_cluster_gears"]:
       self.shifter_values = can_define.dv["CLU15"]["CF_Clu_Gear"]
@@ -58,8 +58,8 @@ class CarState(CarStateBase):
     ret.cruiseButtons = self.cruise_buttons
     self.mads_enabled = Params().get_bool("EnableMADS")
     self.acc_mads_combo = Params().get_bool("ACCMADSCombo")
-    self.gap_adjust_cruise = int(Params().get("GapAdjustCruise"))
-    self.gap_adjust_cruise_tr = Params().get_bool("GapAdjustCruiseTr")
+    self.gap_adjust_cruise_tr = int(Params().get("GapAdjustCruiseTr"))
+    self.gap_adjust_cruise = Params().get_bool("GapAdjustCruise")
 
     ret.doorOpen = any([cp.vl["CGW1"]["CF_Gway_DrvDrSw"], cp.vl["CGW1"]["CF_Gway_AstDrSw"],
                         cp.vl["CGW2"]["CF_Gway_RLDrSw"], cp.vl["CGW2"]["CF_Gway_RRDrSw"]])
@@ -113,16 +113,16 @@ class CarState(CarStateBase):
 
     # self.gap_adjust_cruise = cp.vl["SCC11"]["TauGapSet"] # reserved for stock long
     if not self.CP.pcmCruise:
-      if self.gap_adjust_cruise_tr:
+      if self.gap_adjust_cruise:
         if self.prev_cruise_buttons != 3: # GAP
           if self.cruise_buttons == 3:
-            self.gap_adjust_cruise -= 1
-            if self.gap_adjust_cruise < 1:
-              self.gap_adjust_cruise = 4
-            Params().put("GapAdjustCruise", str(self.gap_adjust_cruise))
+            self.gap_adjust_cruise_tr -= 1
+            if self.gap_adjust_cruise_tr < 1:
+              self.gap_adjust_cruise_tr = 4
+            Params().put("GapAdjustCruiseTr", str(self.gap_adjust_cruise_tr))
       else:
-        self.gap_adjust_cruise = 4
-    ret.gapAdjustCruiseTr = self.gap_adjust_cruise
+        self.gap_adjust_cruise_tr = 4
+    ret.gapAdjustCruiseTr = self.gap_adjust_cruise_tr
 
     # cruise state
     if self.CP.openpilotLongitudinalControl:
