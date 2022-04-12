@@ -150,10 +150,10 @@ class CarController():
           # FIXME: This is a naive implementation, improve with visiond or radar input.
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
-      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 2:
+      if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP / 4:
         if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
           cruise_button = self.get_cruise_buttons(CS)
-          if cruise_button is not None and self.graMsgSentCount == 0:
+          if cruise_button is not None:
             if cruise_button == 1:
               self.graButtonStatesToSend = BUTTON_STATES.copy()
               self.graButtonStatesToSend["accelCruise"] = True
@@ -173,6 +173,7 @@ class CarController():
             idx = (CS.graMsgBusCounter + 1) % 16
             can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
             self.graButtonStatesToSend = None
+            can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
             self.graMsgSentCount = 0
 
     if CS.out.brakeLights and CS.out.vEgo < 0.1:
@@ -263,7 +264,7 @@ class CarController():
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 50:
+    elif self.button_count > 10:
       cruise_button = 1
       self.button_count = 0
       self.button_type = 3
@@ -275,7 +276,7 @@ class CarController():
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 50:
+    elif self.button_count > 10:
       cruise_button = 2
       self.button_count = 0
       self.button_type = 3
