@@ -173,7 +173,6 @@ class CarController():
             idx = (CS.graMsgBusCounter + 1) % 16
             can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
             self.graButtonStatesToSend = None
-            can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
             self.graMsgSentCount = 0
 
     if CS.out.brakeLights and CS.out.vEgo < 0.1:
