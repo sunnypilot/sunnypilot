@@ -19,7 +19,7 @@ Table of Contents
 💭 Join our Discord 💭
 ---
 
-Join sunnyhaibin's openpilot server!
+Join sunnyhaibin's sunnypilot server!
 * https://discord.gg/wRW3meAgtx
 
 🚨 Read Before Installing 🚨
@@ -33,15 +33,15 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 ---
 
 ### Driving Enhancement
-* [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - openpilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
+* [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
 * [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
 * [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
-* **No Disengage on Gas** - Allow the gas pedal press to not disengage openpilot. This feature is enabled by default.
+* **No Disengage on Accelerator** - Allow the accelerator pedal press to not disengage sunnypilot. This feature is enabled by default.
 * **Quiet Drive 🤫** - Toggle to mute all notification sounds (excluding driver safety warnings)
 * **Auto Lane Change Timer** - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
-* **Force Car Recognition (FCR)** - Use a selector to force your car to be recognized by openpilot
-* **Fix openpilot No Offroad** - Enforce openpilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running openpilot without comma power
+* **Force Car Recognition (FCR)** - Use a selector to force your car to be recognized by sunnypilot
+* **Fix sunnypilot No Offroad** - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
 * **Enable ACC+MADS with RES+/SET-** - Engage both ACC and MADS with a single press of RES+ or SET- button
 
 ### Visual Enhancement
@@ -55,12 +55,12 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagemenet status
 * **Developer (Dev) UI** - Display various real-time metrics on screen while driving
   * 1. Enable "Show debug UI elements" in the "sunnypilot' menu
-  * 2. Click on the "MAX" box on the top left of the openpilot display to toggle different metrics display
+  * 2. Click on the "MAX" box on the top left of the sunnypilot display to toggle different metrics display
 * **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at a stop lights, stop signs, traffic congestions)
 * **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
 
 ### Operational Enhancement
-* **Fast Boot** - openpilot will fast boot by creating a Prebuilt file
+* **Fast Boot** - sunnypilot will fast boot by creating a Prebuilt file
 * **Disable Onroad Uploads** - Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot
 * **Brightness Control (Global)** - Manually adjusts the global brightness of the screen
 * **Driving Screen Off Timer** - Turn off the device screen or reduce brightness to protect the screen after car starts
@@ -71,32 +71,32 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 ---
 
 ### Modified Assistive Driving Safety (MADS)
-The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of openpilot engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
-* openpilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
-* Dedicated button to toggle openpilot ALC:
+The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
+* sunnypilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
+* Dedicated button to toggle sunnypilot ALC:
   * `LFA` button: Newer HKG cars
   * `LKAS` button: Honda, Toyota
   * `CRUISE (MAIN)` button: Most HKG cars, Subaru (Global and Pre Global)
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` must be `ON` to use MADS and ACC/SCC
-* `CRUISE (MAIN)` button disables openpilot completely when `OFF` (strictly enforced in panda safety code)
-* `BRAKE pedal` press will pause openpilot Automatic Lane Centering; `BRAKE pedal` release will resume openpilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
-* `GAS pedal` press will not disengage openpilot Automatic Lane Centering or ACC/SCC
-* `TURN SIGNALS` (`Left` or `Right`) will pause openpilot Automatic Lane Centering if the vehicle speed is below the threshold for openpilot Automatic Lane Change
+* `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` (strictly enforced in panda safety code)
+* `BRAKE pedal` press will pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will resume sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
+* `GAS pedal` press will not disengage sunnypilot Automatic Lane Centering or ACC/SCC
+* `TURN SIGNALS` (`Left` or `Right`) will pause sunnypilot Automatic Lane Centering if the vehicle speed is below the threshold for sunnypilot Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
 
 ### Dynamic Lane Profile (DLP)
-Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows openpilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
+Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
 
 There are 3 modes to select on the onroad camera screen:
-* **Auto Lane**: openpilot dynamically chooses between `Laneline` or `Laneless` model
-* **Laneline**: openpilot uses Laneline model only.
-* **Laneless**: openpilot uses Laneless model only.
+* **Auto Lane**: sunnypilot dynamically chooses between `Laneline` or `Laneless` model
+* **Laneline**: sunnypilot uses Laneline model only.
+* **Laneless**: sunnypilot uses Laneless model only.
 
 To use Dynamic Lane Profile, do the following:
 ```
-1. openpilot Settings -> Toggles -> Disable use of lanelines -> ON toggle
+1. sunnypilot Settings -> Toggles -> Disable use of lanelines -> ON toggle
 2. Reboot.
 3. Before driving, on the onroad camera screen, toggle between the 3 modes by pressing on the button.
 4. Drive. 
@@ -106,7 +106,7 @@ To use Dynamic Lane Profile, do the following:
 This fork now allows supported cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
 
 **Supported cars:**
-* openpilot Longitudinal Control capable
+* sunnypilot Longitudinal Control capable
 * Stock Longitudinal Control
   * Hyundai/Kia/Genesis
 
@@ -129,11 +129,11 @@ Certain features are only available with an active data connection, via:
 
 **📗 How to use Custom Longitudinal Control on sunnypilot 📗**
 
-When using Speed Limit Control, Vision or Map based Turn control, you will be setting the "MAX" ACC speed on the openpilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but never exceeding the max speed set on the openpilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the openpilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
+When using Speed Limit Control, Vision or Map based Turn control, you will be setting the "MAX" ACC speed on the sunnypilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but never exceeding the max speed set on the sunnypilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the sunnypilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
 
 **‼ Where to look when setting ACC speed ‼**
 
-Do not look at the dashboard when setting your ACC max speed. Instead, only look at the one on the openpilot display, "MAX". The reason you need to look at the openpilot display is because openpilot will be changing the one in the dashboard. It will be adjusting it as needed, never raising it above the one set on the openpilot display. ONLY look at the MAX speed on the openpilot display when setting the ACC speed instead of the dashboard!
+Do not look at the dashboard when setting your ACC max speed. Instead, only look at the one on the sunnypilot display, "MAX". The reason you need to look at the sunnypilot display is because sunnypilot will be changing the one in the dashboard. It will be adjusting it as needed, never raising it above the one set on the sunnypilot display. ONLY look at the MAX speed on the sunnypilot display when setting the ACC speed instead of the dashboard!
 
 (Courtesy instructions from John, author of jvePilot)
 
@@ -166,7 +166,7 @@ Example:
 ---
 
 ### Smiskol URL (Quickest and Easiest)
-To install sunnyhaibin's fork, simply use the Smiskol URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled openpilot from a previous install:
+To install sunnyhaibin's fork, simply use the Smiskol URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
 
 ```
 https://smiskol.com/fork/sunnyhaibin/<insert_branch_name>
