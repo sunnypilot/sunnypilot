@@ -522,3 +522,70 @@ void SpeedLimitValueOffset::refresh() {
   btnminus.setText("-");
   btnplus.setText("+");
 }
+
+// Volkswagen - MQB ACC Type
+VwAccType::VwAccType() : AbstractControl("Short Press +1/-1 Type",
+                                                   "Define the type of ACC control your car has with short press to +1 or -1.",
+                                                   "../assets/offroad/icon_speed_limit.png") {
+
+  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
+  label.setStyleSheet("color: #e0e879");
+  hlayout->addWidget(&label);
+
+  btnminus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnplus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnminus.setFixedSize(150, 100);
+  btnplus.setFixedSize(150, 100);
+  hlayout->addWidget(&btnminus);
+  hlayout->addWidget(&btnplus);
+
+  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("VwAccType"));
+    int value = str.toInt();
+    value = value - 1;
+    if (value <= 0 ) {
+      value = 0;
+    }
+    QString values = QString::number(value);
+    params.put("VwAccType", values.toStdString());
+    refresh();
+  });
+
+  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("VwAccType"));
+    int value = str.toInt();
+    value = value + 1;
+    if (value >= 12 ) {
+      value = 12;
+    }
+    QString values = QString::number(value);
+    params.put("VwAccType", values.toStdString());
+    refresh();
+  });
+  refresh();
+}
+
+void VwAccType::refresh() {
+  QString option = QString::fromStdString(params.get("VwAccType"));
+  if (option == "0") {
+    label.setText(QString::fromStdString("+/-"));
+  } else if (option == "1") {
+    label.setText(QString::fromStdString("RES/SET"));
+  }
+  btnminus.setText("-");
+  btnplus.setText("+");
+}

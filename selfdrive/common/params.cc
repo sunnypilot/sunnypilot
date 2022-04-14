@@ -183,6 +183,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdateAvailable", CLEAR_ON_MANAGER_START},
     {"UpdateFailedCount", CLEAR_ON_MANAGER_START},
     {"Version", PERSISTENT},
+    {"VwAccType", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},
     {"ApiCache_Device", PERSISTENT},
     {"ApiCache_DriveStats", PERSISTENT},

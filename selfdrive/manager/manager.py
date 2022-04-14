@@ -65,6 +65,7 @@ def manager_init():
     ("SpeedLimitValueOffset", "0"),
     ("TurnSpeedControl", "1"),
     ("TurnVisionControl", "1"),
+    ("VwAccType", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

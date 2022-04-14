@@ -48,6 +48,7 @@ class CarController():
     self.sl_force_active_timer = 0
     self.slc_state = 0
     self.slc_active_stock = False
+    self.acc_type = Params().get("VwAccType")
 
   def update(self, enabled, CS, frame, ext_bus, actuators, visual_alert, left_lane_visible, right_lane_visible, left_lane_depart, right_lane_depart):
     """ Controls thread """
@@ -155,12 +156,20 @@ class CarController():
         if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
           cruise_button = self.get_cruise_buttons(CS)
           if cruise_button is not None and self.graMsgSentCount == 0:
-            if cruise_button == 1:
-              self.graButtonStatesToSend = BUTTON_STATES.copy()
-              self.graButtonStatesToSend["accelCruise"] = True
-            elif cruise_button == 2:
-              self.graButtonStatesToSend = BUTTON_STATES.copy()
-              self.graButtonStatesToSend["decelCruise"] = True
+            if self.acc_type == 0:
+              if cruise_button == 1:
+                self.graButtonStatesToSend = BUTTON_STATES.copy()
+                self.graButtonStatesToSend["accelCruise"] = True
+              elif cruise_button == 2:
+                self.graButtonStatesToSend = BUTTON_STATES.copy()
+                self.graButtonStatesToSend["decelCruise"] = True
+            elif self.acc_type == 1:
+              if cruise_button == 1:
+                self.graButtonStatesToSend = BUTTON_STATES.copy()
+                self.graButtonStatesToSend["resCruise"] = True
+              elif cruise_button == 2:
+                self.graButtonStatesToSend = BUTTON_STATES.copy()
+                self.graButtonStatesToSend["setCruise"] = True
             print("self.get_cruise_buttons(CS) = " + str(cruise_button))
             print("SPAMMING")
 
