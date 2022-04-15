@@ -48,11 +48,11 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
   * Green🟢: M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
-* Lane Path Status Color
-  * Green🟢 (Laneful), Red🔴 (Laneless): M.A.D.S. engaged
+* **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagemenet status
+  * Green🟢: Laneful mode, M.A.D.S. engaged
+  * Red🔴: Laneless mode, M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
   * Black⚫: M.A.D.S. engaged, steering is being manually override by user
-* **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagemenet status
 * **Developer (Dev) UI** - Display various real-time metrics on screen while driving
   * 1. Enable "Show debug UI elements" in the "sunnypilot' menu
   * 2. Click on the "MAX" box on the top left of the sunnypilot display to toggle different metrics display
