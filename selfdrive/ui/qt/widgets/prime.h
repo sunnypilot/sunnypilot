@@ -37,10 +37,13 @@ class PrimeUserWidget : public QWidget {
   Q_OBJECT
 public:
   explicit PrimeUserWidget(QWidget* parent = 0);
+  void setPrime(bool hasPrime);
 
 private:
   QVBoxLayout* mainLayout;
   QLabel* points;
+  QLabel* subscribed;
+  QLabel* commaPrime;
 
 private slots:
   void replyFinished(const QString &response);
@@ -52,6 +55,8 @@ class PrimeAdWidget : public QFrame {
   Q_OBJECT
 public:
   explicit PrimeAdWidget(QWidget* parent = 0);
+signals:
+  void showPrimeWidget(bool hasPrime);
 };
 
 // container widget
@@ -69,4 +74,5 @@ private:
 
 private slots:
   void replyFinished(const QString &response, bool success);
+  void showPrimeWidget(bool hasPrime);
 };

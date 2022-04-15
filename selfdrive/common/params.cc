@@ -160,6 +160,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"PandaHeartbeatLost", CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_OFF},
     {"Passive", PERSISTENT},
     {"PrebuiltOn", PERSISTENT},
+    {"PrimeAdDismissed", PERSISTENT},
     {"PrimeRedirected", PERSISTENT},
     {"ProcessNotRunningOff", PERSISTENT},
     {"QuietDrive", PERSISTENT},
