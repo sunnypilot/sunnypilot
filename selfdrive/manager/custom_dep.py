@@ -3,10 +3,14 @@ import os
 import sys
 import errno
 import shutil
-from urllib.request import urlopen
+#from urllib.request import urlopen
 from glob import glob
 import subprocess
 import importlib.util
+try:
+  import httplib
+except:
+  import http.client as httplib
 
 # NOTE: Do NOT import anything here that needs be built (e.g. params)
 from common.basedir import BASEDIR
@@ -23,12 +27,19 @@ PYEXTRA_DIR = '/data/openpilot/pyextra'
 
 def wait_for_internet_connection():
   while True:
+    #try:
+    #  _ = urlopen('https://www.gitlab.com/', timeout=10)
+    #  return
+    #except Exception:
+    #  pass
+    conn = httplib.HTTPConnection("34.74.90.64", timeout=10)
     try:
-      _ = urlopen('https://www.gitlab.com/', timeout=10)
-      return
+      conn.request("HEAD", "/")
+      return True
     except Exception:
-      pass
-
+      return False
+    finally:
+      conn.close()
 
 def install_dep(spinner):
   wait_for_internet_connection()
