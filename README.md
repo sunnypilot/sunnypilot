@@ -109,6 +109,8 @@ This fork now allows supported cars to dynamically adjust the longitudinal plan 
 * sunnypilot Longitudinal Control capable
 * Stock Longitudinal Control
   * Hyundai/Kia/Genesis
+  * Honda Bosch
+  * Volkswagen MQB
 
 Certain features are only available with an active data connection, via:
 * [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or;
