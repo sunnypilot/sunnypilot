@@ -591,6 +591,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
   }
 
   toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new CameraOffset());
+  toggle_layout->addWidget(horizontal_line());
   toggle_layout->addWidget(new AutoLaneChangeTimer());
   toggle_layout->addWidget(horizontal_line());
   toggle_layout->addWidget(new BrightnessControl());
