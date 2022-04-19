@@ -1,6 +1,7 @@
 #include "selfdrive/ui/qt/offroad/settings.h"
 
 #include <cassert>
+#include <cmath>
 #include <string>
 
 #include <QDebug>
@@ -20,6 +21,7 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
+#include "selfdrive/ui/qt/widgets/sunnypilot.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
@@ -57,12 +59,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "Enable Community Features",
       "Use features, such as community supported hardware, from the open source community that are not maintained or supported by comma.ai and have not been confirmed to meet the standard safety model. Be extra cautious when using these features",
       "../assets/offroad/icon_shell.png",
-    },
-    {
-      "UploadRaw",
-      "Upload Raw Logs",
-      "Upload full logs and full resolution video by default while on Wi-Fi. If not enabled, individual logs can be marked for upload at useradmin.comma.ai.",
-      "../assets/offroad/icon_network.png",
     },
     {
       "RecordFront",
@@ -109,74 +105,51 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   }
 }
 
-DevicePanel::DevicePanel(QWidget* parent) : ListWidget(parent) {
+DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setSpacing(50);
-  Params params = Params();
   addItem(new LabelControl("Dongle ID", getDongleId().value_or("N/A")));
-
-  QString serial = QString::fromStdString(params.get("HardwareSerial", false));
-  addItem(new LabelControl("Serial", serial));
+  addItem(new LabelControl("Serial", params.get("HardwareSerial").c_str()));
 
   // offroad-only buttons
 
   auto dcamBtn = new ButtonControl("Driver Camera", "PREVIEW",
-                                        "Preview the driver facing camera to help optimize device mounting position for best driver monitoring experience. (vehicle must be off)");
+                                   "Preview the driver facing camera to help optimize device mounting position for best driver monitoring experience. (vehicle must be off)");
   connect(dcamBtn, &ButtonControl::clicked, [=]() { emit showDriverView(); });
+  addItem(dcamBtn);
 
-  QString resetCalibDesc = "openpilot requires the device to be mounted within 4° left or right and within 5° up or down. openpilot is continuously calibrating, resetting is rarely required.";
-  auto resetCalibBtn = new ButtonControl("Reset Calibration", "RESET", resetCalibDesc);
-  connect(resetCalibBtn, &ButtonControl::clicked, [=]() {
+  auto resetCalibBtn = new ButtonControl("Reset Calibration", "RESET", " ");
+  connect(resetCalibBtn, &ButtonControl::showDescription, this, &DevicePanel::updateCalibDescription);
+  connect(resetCalibBtn, &ButtonControl::clicked, [&]() {
     if (ConfirmationDialog::confirm("Are you sure you want to reset calibration?", this)) {
-      Params().remove("CalibrationParams");
+      params.remove("CalibrationParams");
     }
   });
-  connect(resetCalibBtn, &ButtonControl::showDescription, [=]() {
-    QString desc = resetCalibDesc;
-    std::string calib_bytes = Params().get("CalibrationParams");
-    if (!calib_bytes.empty()) {
-      try {
-        AlignedBuffer aligned_buf;
-        capnp::FlatArrayMessageReader cmsg(aligned_buf.align(calib_bytes.data(), calib_bytes.size()));
-        auto calib = cmsg.getRoot<cereal::Event>().getLiveCalibration();
-        if (calib.getCalStatus() != 0) {
-          double pitch = calib.getRpyCalib()[1] * (180 / M_PI);
-          double yaw = calib.getRpyCalib()[2] * (180 / M_PI);
-          desc += QString(" Your device is pointed %1° %2 and %3° %4.")
-                      .arg(QString::number(std::abs(pitch), 'g', 1), pitch > 0 ? "up" : "down",
-                           QString::number(std::abs(yaw), 'g', 1), yaw > 0 ? "right" : "left");
-        }
-      } catch (kj::Exception) {
-        qInfo() << "invalid CalibrationParams";
-      }
-    }
-    resetCalibBtn->setDescription(desc);
-  });
+  addItem(resetCalibBtn);
 
-  ButtonControl *retrainingBtn = nullptr;
   if (!params.getBool("Passive")) {
-    retrainingBtn = new ButtonControl("Review Training Guide", "REVIEW", "Review the rules, features, and limitations of openpilot");
+    auto retrainingBtn = new ButtonControl("Review Training Guide", "REVIEW", "Review the rules, features, and limitations of openpilot");
     connect(retrainingBtn, &ButtonControl::clicked, [=]() {
       if (ConfirmationDialog::confirm("Are you sure you want to review the training guide?", this)) {
         emit reviewTrainingGuide();
       }
     });
+    addItem(retrainingBtn);
   }
 
-  ButtonControl *regulatoryBtn = nullptr;
   if (Hardware::TICI()) {
-    regulatoryBtn = new ButtonControl("Regulatory", "VIEW", "");
+    auto regulatoryBtn = new ButtonControl("Regulatory", "VIEW", "");
     connect(regulatoryBtn, &ButtonControl::clicked, [=]() {
       const std::string txt = util::read_file("../assets/offroad/fcc.html");
       RichTextDialog::alert(QString::fromStdString(txt), this);
     });
+    addItem(regulatoryBtn);
   }
 
-  for (auto btn : {dcamBtn, resetCalibBtn, retrainingBtn, regulatoryBtn}) {
-    if (btn) {
-      connect(parent, SIGNAL(offroadTransition(bool)), btn, SLOT(setEnabled(bool)));
-      addItem(btn);
+  QObject::connect(parent, &SettingsWindow::offroadTransition, [=](bool offroad) {
+    for (auto btn : findChildren<ButtonControl *>()) {
+      btn->setEnabled(offroad);
     }
-  }
+  });
 
   // power buttons
   QHBoxLayout *power_layout = new QHBoxLayout();
@@ -185,46 +158,70 @@ DevicePanel::DevicePanel(QWidget* parent) : ListWidget(parent) {
   QPushButton *reboot_btn = new QPushButton("Reboot");
   reboot_btn->setObjectName("reboot_btn");
   power_layout->addWidget(reboot_btn);
-  QObject::connect(reboot_btn, &QPushButton::clicked, [=]() {
-    if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
-      if (ConfirmationDialog::confirm("Are you sure you want to reboot?", this)) {
-        // Check engaged again in case it changed while the dialog was open
-        if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
-          Params().putBool("DoReboot", true);
-        }
-      }
-    } else {
-      ConfirmationDialog::alert("Disengage to Reboot", this);
-    }
-  });
+  QObject::connect(reboot_btn, &QPushButton::clicked, this, &DevicePanel::reboot);
 
   QPushButton *poweroff_btn = new QPushButton("Power Off");
   poweroff_btn->setObjectName("poweroff_btn");
   power_layout->addWidget(poweroff_btn);
-  QObject::connect(poweroff_btn, &QPushButton::clicked, [=]() {
-    if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
-      if (ConfirmationDialog::confirm("Are you sure you want to power off?", this)) {
-        // Check engaged again in case it changed while the dialog was open
-        if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
-          Params().putBool("DoShutdown", true);
-        }
-      }
-    } else {
-      ConfirmationDialog::alert("Disengage to Power Off", this);
-    }
-  });
+  QObject::connect(poweroff_btn, &QPushButton::clicked, this, &DevicePanel::poweroff);
 
   setStyleSheet(R"(
-    QPushButton {
-      height: 120px;
-      border-radius: 15px;
-    }
-    #reboot_btn { background-color: #393939; }
+    #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #reboot_btn:pressed { background-color: #4a4a4a; }
-    #poweroff_btn { background-color: #E22C2C; }
+    #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
   addItem(power_layout);
+}
+
+void DevicePanel::updateCalibDescription() {
+  QString desc =
+      "openpilot requires the device to be mounted within 4° left or right and "
+      "within 5° up or down. openpilot is continuously calibrating, resetting is rarely required.";
+  std::string calib_bytes = Params().get("CalibrationParams");
+  if (!calib_bytes.empty()) {
+    try {
+      AlignedBuffer aligned_buf;
+      capnp::FlatArrayMessageReader cmsg(aligned_buf.align(calib_bytes.data(), calib_bytes.size()));
+      auto calib = cmsg.getRoot<cereal::Event>().getLiveCalibration();
+      if (calib.getCalStatus() != 0) {
+        double pitch = calib.getRpyCalib()[1] * (180 / M_PI);
+        double yaw = calib.getRpyCalib()[2] * (180 / M_PI);
+        desc += QString(" Your device is pointed %1° %2 and %3° %4.")
+                    .arg(QString::number(std::abs(pitch), 'g', 1), pitch > 0 ? "up" : "down",
+                         QString::number(std::abs(yaw), 'g', 1), yaw > 0 ? "right" : "left");
+      }
+    } catch (kj::Exception) {
+      qInfo() << "invalid CalibrationParams";
+    }
+  }
+  qobject_cast<ButtonControl *>(sender())->setDescription(desc);
+}
+
+void DevicePanel::reboot() {
+  if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
+    if (ConfirmationDialog::confirm("Are you sure you want to reboot?", this)) {
+      // Check engaged again in case it changed while the dialog was open
+      if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
+        Params().putBool("DoReboot", true);
+      }
+    }
+  } else {
+    ConfirmationDialog::alert("Disengage to Reboot", this);
+  }
+}
+
+void DevicePanel::poweroff() {
+  if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
+    if (ConfirmationDialog::confirm("Are you sure you want to power off?", this)) {
+      // Check engaged again in case it changed while the dialog was open
+      if (QUIState::ui_state.status == UIStatus::STATUS_DISENGAGED) {
+        Params().putBool("DoShutdown", true);
+      }
+    }
+  } else {
+    ConfirmationDialog::alert("Disengage to Power Off", this);
+  }
 }
 
 SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
@@ -246,9 +243,9 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
 
 
   auto uninstallBtn = new ButtonControl("Uninstall " + getBrand(), "UNINSTALL");
-  connect(uninstallBtn, &ButtonControl::clicked, [=]() {
+  connect(uninstallBtn, &ButtonControl::clicked, [&]() {
     if (ConfirmationDialog::confirm("Are you sure you want to uninstall?", this)) {
-      Params().putBool("DoUninstall", true);
+      params.putBool("DoUninstall", true);
     }
   });
   connect(parent, SIGNAL(offroadTransition(bool)), uninstallBtn, SLOT(setEnabled(bool)));
@@ -367,6 +364,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {"Network", network_panel(this)},
     {"Toggles", new TogglesPanel(this)},
     {"Software", new SoftwarePanel(this)},
+    {"sunnypilot", new SunnypilotPanel(this)},
   };
 
 #ifdef ENABLE_MAPS
@@ -375,9 +373,9 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QObject::connect(map_panel, &MapPanel::closeSettings, this, &SettingsWindow::closeSettings);
 #endif
 
-  const int padding = panels.size() > 3 ? 25 : 35;
+  const int padding = panels.size() > 3 ? 15 : 35;
 
-  nav_btns = new QButtonGroup();
+  nav_btns = new QButtonGroup(this);
   for (auto &[name, panel] : panels) {
     QPushButton *btn = new QPushButton(name);
     btn->setCheckable(true);
@@ -438,4 +436,175 @@ void SettingsWindow::hideEvent(QHideEvent *event) {
 #ifdef QCOM
   HardwareEon::close_activities();
 #endif
+}
+
+SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
+  main_layout = new QStackedLayout(this);
+  home = new QWidget(this);
+  QVBoxLayout* fcr_layout = new QVBoxLayout(home);
+  fcr_layout->setContentsMargins(0, 20, 0, 20);
+
+  QString set = QString::fromStdString(Params().get("CarModel"));
+
+  QPushButton* setCarBtn = new QPushButton(set.length() ? set : "Set your car");
+  setCarBtn->setObjectName("setCarBtn");
+  setCarBtn->setStyleSheet("margin-right: 30px;");
+  connect(setCarBtn, &QPushButton::clicked, [=]() { main_layout->setCurrentWidget(setCar); });
+  fcr_layout->addSpacing(10);
+  fcr_layout->addWidget(setCarBtn, 0, Qt::AlignRight);
+  fcr_layout->addSpacing(10);
+
+  home_widget = new QWidget(this);
+  QVBoxLayout* toggle_layout = new QVBoxLayout(home_widget);
+  home_widget->setObjectName("homeWidget");
+
+  ScrollView *scroller = new ScrollView(home_widget, this);
+  scroller->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  fcr_layout->addWidget(scroller, 1);
+
+  main_layout->addWidget(home);
+
+  setCar = new ForceCarRecognition(this);
+  connect(setCar, &ForceCarRecognition::backPress, [=]() { main_layout->setCurrentWidget(home); });
+  connect(setCar, &ForceCarRecognition::selectedCar, [=]() {
+    QString set = QString::fromStdString(Params().get("CarModel"));
+    setCarBtn->setText(set.length() ? set : "Set your car");
+    main_layout->setCurrentWidget(home);
+  });
+  main_layout->addWidget(setCar);
+
+  QPalette pal = palette();
+  pal.setColor(QPalette::Background, QColor(0x29, 0x29, 0x29));
+  setAutoFillBackground(true);
+  setPalette(pal);
+
+  setStyleSheet(R"(
+    #backBtn, #setCarBtn {
+      font-size: 50px;
+      margin: 0px;
+      padding: 20px;
+      border-width: 0;
+      border-radius: 30px;
+      color: #dddddd;
+      background-color: #444444;
+    }
+  )");
+
+  QList<ParamControl*> toggles;
+
+  toggles.append(new ParamControl("QuietDrive",
+                                  "Quiet Drive 🤫",
+                                  "openpilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on.",
+                                  "../assets/offroad/icon_mute.png",
+                                  this));
+
+  toggles.append(new ParamControl("PrebuiltOn",
+                                  "Fast Boot (Prebuilt)",
+                                  "openpilot will fast boot by creating a Prebuilt file. Note: Turn off this feature if you have made any UI changes!",
+                                  "../assets/offroad/icon_shell.png",
+                                  this));
+
+  toggles.append(new ParamControl("DisableOnroadUploads",
+                                  "Disable Onroad Uploads",
+                                  "Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control and Map Data Turn Control",
+                                  "../assets/offroad/icon_network.png",
+                                  this));
+
+  toggles.append(new ParamControl("ProcessNotRunningOff",
+                                 "Bypass \"System Malfunction\" Error",
+                                 "Prevent openpilot from returning the \"System Malfunction\" alert that hinders the ability use openpilot. Turn on this feature if you experience this alert frequently.",
+                                 "../assets/offroad/icon_shell.png",
+                                 this));
+
+  toggles.append(new ParamControl("ReverseAccChange",
+                                  "ACC +/-: Short=5, Long=1",
+                                  "Change the ACC +/- buttons behavior with cruise speed change in openpilot.\nDisabled (Stock):  Short=1, Long=5\nEnabled:  Short=5, Long=1",
+                                  "../assets/offroad/icon_acc_change.png",
+                                  this));
+
+  toggles.append(new ParamControl("NoOffroadFix",
+                                 "Fix openpilot No Offroad",
+                                 "Enforce openpilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running openpilot without comma power.\nOnly enable this feature if your comma device does not shut down after the car is turned off.",
+                                 "../assets/offroad/icon_shell.png",
+                                 this));
+
+  toggles.append(new ParamControl("ACCMADSCombo",
+                                  "Enable ACC+MADS with RES+/SET-",
+                                  "Engage both ACC and MADS with a single press of RES+ or SET- button.\nNote: Once MADS is engaged via this mode, it will remain engaged until it is manually disabled via LFA/LKAS/Cruise MAIN button or car shut off.",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("DisableMADS",
+                                  "Disable M.A.D.S.",
+                                  "Disable the beloved M.A.D.S. feature. Enable Stock openpilot engagement/disengagement.",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("StockResumeAlt",
+                                  "Stop N' Go Resume Alternative",
+                                  "Offer alternative behavior to auto resume when stopped behind a lead car using stock SCC/ACC. This feature removes the repeating prompt chime when stopped and/or allows some cars to use auto resume (i.e., Genesis).",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
+
+  toggles.append(new ParamControl("HandsOnWheelMonitoring",
+                                  "Enable Hands on Wheel Monitoring",
+                                  "Monitor and alert when driver is not keeping the hands on the steering wheel.",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("TurnVisionControl",
+                                  "Enable vision based turn control",
+                                  "Use vision path predictions to estimate the appropiate speed to drive through turns ahead.",
+                                  "../assets/offroad/icon_road.png",
+                                  this));
+
+  toggles.append(new ParamControl("ShowDebugUI",
+                                  "Show debug UI elements",
+                                  "Show UI elements that aid debugging.",
+                                  "../assets/offroad/icon_calibration.png",
+                                  this));
+
+  toggles.append(new ParamControl("SpeedLimitControl",
+                                  "Enable Speed Limit Control",
+                                  "Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits.",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
+
+  toggles.append(new ParamControl("SpeedLimitPercOffset",
+                                  "Enable Speed Limit % Offset",
+                                  "Set speed limit slightly higher than actual speed limit for a more natural drive.",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
+
+  toggles.append(new ParamControl("TurnSpeedControl",
+                                  "Enable Map Data Turn Control",
+                                  "Use curvature info from map data to define speed limits to take turns ahead",
+                                  "../assets/offroad/icon_openpilot.png",
+                                  this));
+
+  toggles.append(new ParamControl("EnableDebugSnapshot",
+                                  "Debug snapshot on screen center tap",
+                                  "Stores snapshot file with current state of some modules.",
+                                  "../assets/offroad/icon_calibration.png",
+                                  this));
+
+  for (ParamControl *toggle : toggles) {
+    if (main_layout->count() != 0) {
+      toggle_layout->addWidget(horizontal_line());
+    }
+    toggle_layout->addWidget(toggle);
+  }
+
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new AutoLaneChangeTimer());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new SpeedLimitValueOffset());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new BrightnessControl());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new OnroadScreenOff());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new OnroadScreenOffBrightness());
+  toggle_layout->addWidget(horizontal_line());
+  toggle_layout->addWidget(new MaxTimeOffroad());
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
 #include <optional>
@@ -9,27 +8,18 @@
 #include <QTimer>
 #include <QColor>
 #include <QTransform>
-#include "nanovg.h"
 
 #include "cereal/messaging/messaging.h"
-#include "common/transformations/orientation.hpp"
-#include "selfdrive/camerad/cameras/camera_common.h"
-#include "selfdrive/common/mat.h"
 #include "selfdrive/common/modeldata.h"
 #include "selfdrive/common/params.h"
-#include "selfdrive/common/util.h"
-
-#define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
-#define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
-#define COLOR_WHITE nvgRGBA(255, 255, 255, 255)
-#define COLOR_WHITE_ALPHA(x) nvgRGBA(255, 255, 255, x)
-#define COLOR_RED_ALPHA(x) nvgRGBA(201, 34, 49, x)
-#define COLOR_YELLOW nvgRGBA(218, 202, 37, 255)
-#define COLOR_RED nvgRGBA(201, 34, 49, 255)
+#include "selfdrive/common/timing.h"
 
 const int bdr_s = 30;
 const int header_h = 420;
 const int footer_h = 280;
+
+const QRect speed_sgn_rc(bdr_s * 2, bdr_s * 2.5 + 202, 184, 184);
+const QRect max_speed_rc(bdr_s * 2, bdr_s * 1.5, 184, 202);
 
 const int UI_FREQ = 20;   // Hz
 typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
@@ -38,17 +28,6 @@ typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 // TODO: choose based on frame input size
 const float y_offset = Hardware::EON() ? 0.0 : 150.0;
 const float ZOOM = Hardware::EON() ? 2138.5 : 2912.8;
-
-typedef struct Rect {
-  int x, y, w, h;
-  int centerX() const { return x + w / 2; }
-  int centerY() const { return y + h / 2; }
-  int right() const { return x + w; }
-  int bottom() const { return y + h; }
-  bool ptInRect(int px, int py) const {
-    return px >= x && px < (x + w) && py >= y && py < (y + h);
-  }
-} Rect;
 
 struct Alert {
   QString text1;
@@ -60,8 +39,12 @@ struct Alert {
     return text1 == a2.text1 && text2 == a2.text2 && type == a2.type && sound == a2.sound;
   }
 
-  static Alert get(const SubMaster &sm, uint64_t started_frame) {
-    if (sm.updated("controlsState")) {
+  static Alert get(const SubMaster &sm, uint64_t started_frame, uint64_t display_debug_alert_frame = 0) {
+    if (display_debug_alert_frame > 0 && (sm.frame - display_debug_alert_frame) <= 1 * UI_FREQ) {
+      return {"Debug snapshot collected", "",
+              "debugTapDetected", cereal::ControlsState::AlertSize::SMALL,
+              AudibleAlert::PROMPT};
+    } else if (sm.updated("controlsState")) {
       const cereal::ControlsState::Reader &cs = sm["controlsState"].getControlsState();
       return {cs.getAlertText1().cStr(), cs.getAlertText2().cStr(),
               cs.getAlertType().cStr(), cs.getAlertSize(),
@@ -78,7 +61,7 @@ struct Alert {
         // car is started, but controls is lagging or died
         return {"TAKE CONTROL IMMEDIATELY", "Controls Unresponsive",
                 "controlsUnresponsive", cereal::ControlsState::AlertSize::FULL,
-                AudibleAlert::CHIME_WARNING_REPEAT};
+                AudibleAlert::WARNING_IMMEDIATE};
       }
     }
     return {};
@@ -99,21 +82,45 @@ const QColor bg_colors [] = {
   [STATUS_ALERT] = QColor(0xC9, 0x22, 0x31, 0xf1),
 };
 
-typedef struct {
-  float x, y;
-} vertex_data;
+const QColor tcs_colors [] = {
+  [int(cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED)] =  QColor(0x0, 0x0, 0x0, 0xff),
+  [int(cereal::LongitudinalPlan::VisionTurnControllerState::ENTERING)] = QColor(0xC9, 0x22, 0x31, 0xf1),
+  [int(cereal::LongitudinalPlan::VisionTurnControllerState::TURNING)] = QColor(0xDA, 0x6F, 0x25, 0xf1),
+  [int(cereal::LongitudinalPlan::VisionTurnControllerState::LEAVING)
+  ] = QColor(0x17, 0x86, 0x44, 0xf1),
+};
 
 typedef struct {
-  vertex_data v[TRAJECTORY_SIZE * 2];
+  QPointF v[TRAJECTORY_SIZE * 2];
   int cnt;
 } line_vertices_data;
 
 typedef struct UIScene {
-
   mat3 view_from_calib;
   bool world_objects_visible;
 
+  // Debug UI
+  bool show_debug_ui;
+  bool debug_snapshot_enabled;
+  uint64_t display_debug_alert_frame;
+
+  // Speed limit control
+  bool speed_limit_control_enabled;
+  bool speed_limit_perc_offset;
+  int speed_limit_value_offset;
+
+  double last_speed_limit_sign_tap;
   cereal::PandaState::PandaType pandaType;
+
+  int dynamic_lane_profile;
+
+  bool read_params = false;
+  int onroadScreenOff, onroadScreenOffBrightness, osoTimer, brightness, awake;
+  bool touched2 = false;
+
+  cereal::CarState::Reader car_state;
+  cereal::ControlsState::Reader controls_state;
+  cereal::LateralPlan::Reader lateral_plan;
 
   // modelV2
   float lane_line_probs[4];
@@ -122,22 +129,23 @@ typedef struct UIScene {
   line_vertices_data lane_line_vertices[4];
   line_vertices_data road_edge_vertices[2];
 
-  bool dm_active, engageable;
-
   // lead
-  vertex_data lead_vertices[2];
+  QPointF lead_vertices[2];
 
   float light_sensor, accel_sensor, gyro_sensor;
   bool started, ignition, is_metric, longitudinal_control, end_to_end;
   uint64_t started_frame;
+
+  struct _LateralPlan
+  {
+    bool dynamicLaneProfileStatus;
+  } lateralPlan;
+
+  int dev_ui_enabled;
 } UIScene;
 
 typedef struct UIState {
   int fb_w = 0, fb_h = 0;
-  NVGcontext *vg;
-
-  // images
-  std::map<std::string, int> images;
 
   std::unique_ptr<SubMaster> sm;
 
@@ -149,8 +157,6 @@ typedef struct UIState {
 
   QTransform car_space_transform;
   bool wide_camera;
-  
-  float running_time;
 } UIState;
 
 
@@ -188,14 +194,16 @@ private:
   // auto brightness
   const float accel_samples = 5*UI_FREQ;
 
-  bool awake;
+  bool awake = false;
   int awake_timeout = 0;
   float accel_prev = 0;
   float gyro_prev = 0;
-  float last_brightness = 0;
+  int last_brightness = 0;
   FirstOrderFilter brightness_filter;
 
   QTimer *timer;
+
+  int sleep_time = -1;
 
   void updateBrightness(const UIState &s);
   void updateWakefulness(const UIState &s);
@@ -207,3 +215,5 @@ public slots:
   void setAwake(bool on, bool reset);
   void update(const UIState &s);
 };
+
+void ui_update_params(UIState *s);
