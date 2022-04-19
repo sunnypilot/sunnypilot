@@ -38,7 +38,7 @@ try:
 except:
   gitname = ""
 try:
-  ip = requests.get('https://checkip.amazonaws.com/').text.strip()
+  ip = requests.get('https://checkip.amazonaws.com/', timeout=15).text.strip()
 except Exception:
   ip = "255.255.255.255"
 error_tags = {'dirty': get_dirty(), 'dongle_id': dongle_id, 'branch': get_branch(), 'remote': get_origin(), 'fingerprintedAs': candidate, 'gitname':gitname}
