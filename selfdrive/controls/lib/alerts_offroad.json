@@ -48,5 +48,9 @@
   "Offroad_NoFirmware": {
     "text": "openpilot was unable to identify your car. Check integrity of cables and ensure all connections are secure, particularly that the comma power is fully inserted in the OBD-II port of the vehicle. Need help? Join discord.comma.ai.",
     "severity": 0
+  },
+  "StockResumeAlt": {
+    "text": "This branch has been superseded by \"release-c3\". Your device will no longer receive updates on this branch.\n\nIt is strongly recommended to switch to \"release-c3\" for more stable and quality updates.\n\nFor instructions on how to update to the latest branch, visit https://github.com/sunnyhaibin/sunnypilot",
+    "severity": 1
   }
 }

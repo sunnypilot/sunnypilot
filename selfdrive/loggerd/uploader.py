@@ -12,6 +12,7 @@ from cereal import log
 import cereal.messaging as messaging
 from common.api import Api
 from common.params import Params
+from common.realtime import sec_since_boot
 from selfdrive.hardware import TICI
 from selfdrive.loggerd.xattr_cache import getxattr, setxattr
 from selfdrive.loggerd.config import ROOT
@@ -60,8 +61,6 @@ class Uploader():
     self.last_resp = None
     self.last_exc = None
 
-    self.raw_size = 0
-    self.raw_count = 0
     self.immediate_size = 0
     self.immediate_count = 0
 
@@ -72,21 +71,16 @@ class Uploader():
 
     self.immediate_folders = ["crash/", "boot/"]
     self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1}
-    self.high_priority = {"rlog.bz2": 0, "fcamera.hevc": 1, "dcamera.hevc": 2, "ecamera.hevc": 3}
 
   def get_upload_sort(self, name):
     if name in self.immediate_priority:
       return self.immediate_priority[name]
-    if name in self.high_priority:
-      return self.high_priority[name] + 100
     return 1000
 
   def list_upload_files(self):
     if not os.path.isdir(self.root):
       return
 
-    self.raw_size = 0
-    self.raw_count = 0
     self.immediate_size = 0
     self.immediate_count = 0
 
@@ -116,38 +110,27 @@ class Uploader():
           if name in self.immediate_priority:
             self.immediate_count += 1
             self.immediate_size += os.path.getsize(fn)
-          else:
-            self.raw_count += 1
-            self.raw_size += os.path.getsize(fn)
         except OSError:
           pass
 
         yield (name, key, fn)
 
-  def next_file_to_upload(self, with_raw):
+  def next_file_to_upload(self):
     upload_files = list(self.list_upload_files())
 
-    # try to upload qlog files first
     for name, key, fn in upload_files:
-      if name in self.immediate_priority or any(f in fn for f in self.immediate_folders):
+      if any(f in fn for f in self.immediate_folders):
         return (key, fn)
 
-    if with_raw:
-      # then upload the full log files, rear and front camera files
-      for name, key, fn in upload_files:
-        if name in self.high_priority:
-          return (key, fn)
-
-      # then upload other files
-      for name, key, fn in upload_files:
-        if not name.endswith('.lock') and not name.endswith(".tmp"):
-          return (key, fn)
+    for name, key, fn in upload_files:
+      if name in self.immediate_priority:
+        return (key, fn)
 
     return None
 
   def do_upload(self, key, fn):
     try:
-      url_resp = self.api.get("v1.4/"+self.dongle_id+"/upload_url/", timeout=10, path=key, access_token=self.api.get_token())
+      url_resp = self.api.get("v1.4/" + self.dongle_id + "/upload_url/", timeout=10, path=key, access_token=self.api.get_token())
       if url_resp.status_code == 412:
         self.last_resp = url_resp
         return
@@ -226,8 +209,6 @@ class Uploader():
   def get_msg(self):
     msg = messaging.new_message("uploaderState")
     us = msg.uploaderState
-    us.rawQueueSize = int(self.raw_size / 1e6)
-    us.rawQueueCount = self.raw_count
     us.immediateQueueSize = int(self.immediate_size / 1e6)
     us.immediateQueueCount = self.immediate_count
     us.lastTime = self.last_time
@@ -238,6 +219,10 @@ class Uploader():
 def uploader_fn(exit_event):
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf8')
+
+  transition_to_offroad_last = 0.
+  disable_onroad_upload_offroad_transition_timeout = 900. # wait until offroad for 15 minutes before starting uploads
+  offroad_last = params.get_bool("IsOffroad")
 
   if dongle_id is None:
     cloudlog.info("uploader missing dongle_id")
@@ -253,6 +238,13 @@ def uploader_fn(exit_event):
   backoff = 0.1
   while not exit_event.is_set():
     sm.update(0)
+
+    offroad = params.get_bool("IsOffroad")
+    t = sec_since_boot()
+    if offroad and not offroad_last and t > 300.:
+      transition_to_offroad_last = sec_since_boot()
+    offroad_last = offroad
+
     offroad = params.get_bool("IsOffroad")
     network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
     if network_type == NetworkType.none:
@@ -260,10 +252,23 @@ def uploader_fn(exit_event):
         time.sleep(60 if offroad else 5)
       continue
 
-    good_internet = network_type in [NetworkType.wifi, NetworkType.ethernet]
-    allow_raw_upload = params.get_bool("UploadRaw")
+    if params.get_bool("DisableOnroadUploads"):
+      if not offroad or (transition_to_offroad_last > 0. and t - transition_to_offroad_last < disable_onroad_upload_offroad_transition_timeout):
+        if not offroad:
+          cloudlog.info("not uploading: onroad uploads disabled")
+        else:
+          wait_minutes = int(disable_onroad_upload_offroad_transition_timeout / 60)
+          time_left = disable_onroad_upload_offroad_transition_timeout - (t - transition_to_offroad_last)
+          if (time_left / 60. > 2.):
+            time_left_str = f"{int(time_left / 60)} minute(s)"
+          else:
+            time_left_str = f"{int(time_left)} seconds(s)"
+          cloudlog.info(f"not uploading: waiting until offroad for {wait_minutes} minutes; {time_left_str} left")
+        if allow_sleep:
+          time.sleep(60)
+        continue
 
-    d = uploader.next_file_to_upload(with_raw=allow_raw_upload and good_internet and offroad)
+    d = uploader.next_file_to_upload()
     if d is None:  # Nothing to upload
       if allow_sleep:
         time.sleep(60 if offroad else 5)

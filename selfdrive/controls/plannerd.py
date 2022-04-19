@@ -26,7 +26,7 @@ def plannerd_thread(sm=None, pm=None):
   lateral_planner = LateralPlanner(CP, use_lanelines=use_lanelines, wide_camera=wide_camera)
 
   if sm is None:
-    sm = messaging.SubMaster(['carState', 'controlsState', 'radarState', 'modelV2'],
+    sm = messaging.SubMaster(['carState', 'controlsState', 'radarState', 'modelV2', 'lateralPlan', 'liveMapData'],
                              poll=['radarState', 'modelV2'], ignore_avg_freq=['radarState'])
 
   if pm is None:
@@ -36,9 +36,9 @@ def plannerd_thread(sm=None, pm=None):
     sm.update()
 
     if sm.updated['modelV2']:
-      lateral_planner.update(sm, CP)
+      lateral_planner.update(sm)
       lateral_planner.publish(sm, pm)
-      longitudinal_planner.update(sm, CP)
+      longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)
 
 

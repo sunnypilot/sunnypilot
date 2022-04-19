@@ -33,7 +33,7 @@
 #define SAFETY_ALLOUTPUT 17U
 #define SAFETY_GM_ASCM 18U
 #define SAFETY_NOOUTPUT 19U
-#define SAFETY_HONDA_BOSCH_HARNESS 20U
+#define SAFETY_HONDA_BOSCH 20U
 #define SAFETY_VOLKSWAGEN_PQ 21U
 #define SAFETY_SUBARU_LEGACY 22U
 #define SAFETY_HYUNDAI_LEGACY 23U
@@ -138,6 +138,7 @@ void safety_tick(const addr_checks *rx_checks) {
       bool lagging = elapsed_time > MAX(rx_checks->check[i].msg[rx_checks->check[i].index].expected_timestep * MAX_MISSED_MSGS, 1e6);
       rx_checks->check[i].lagging = lagging;
       if (lagging) {
+        disengageFromBrakes = false;
         controls_allowed = 0;
       }
     }
@@ -158,6 +159,7 @@ bool is_msg_valid(AddrCheckStruct addr_list[], int index) {
   if (index != -1) {
     if ((!addr_list[index].valid_checksum) || (addr_list[index].wrong_counters >= MAX_WRONG_COUNTERS)) {
       valid = false;
+      disengageFromBrakes = false;
       controls_allowed = 0;
     }
   }
@@ -204,13 +206,22 @@ bool addr_safety_check(CANPacket_t *to_push,
 void generic_rx_checks(bool stock_ecu_detected) {
   // exit controls on rising edge of gas press
   if (gas_pressed && !gas_pressed_prev && !(unsafe_mode & UNSAFE_DISABLE_DISENGAGE_ON_GAS)) {
+    disengageFromBrakes = false;
     controls_allowed = 0;
   }
   gas_pressed_prev = gas_pressed;
 
   // exit controls on rising edge of brake press
   if (brake_pressed && (!brake_pressed_prev || vehicle_moving)) {
+    if(controls_allowed == 1)
+    {
+      disengageFromBrakes = true;
+    }
     controls_allowed = 0;
+  } else if (!brake_pressed && disengageFromBrakes)
+  {
+    disengageFromBrakes = false;
+    controls_allowed = 1;
   }
   brake_pressed_prev = brake_pressed;
 
@@ -241,7 +252,7 @@ const safety_hook_config safety_hook_registry[] = {
   {SAFETY_TOYOTA, &toyota_hooks},
   {SAFETY_ELM327, &elm327_hooks},
   {SAFETY_GM, &gm_hooks},
-  {SAFETY_HONDA_BOSCH_HARNESS, &honda_bosch_harness_hooks},
+  {SAFETY_HONDA_BOSCH, &honda_bosch_hooks},
   {SAFETY_HYUNDAI, &hyundai_hooks},
   {SAFETY_CHRYSLER, &chrysler_hooks},
   {SAFETY_SUBARU, &subaru_hooks},

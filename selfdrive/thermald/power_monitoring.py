@@ -5,6 +5,7 @@ from statistics import mean
 
 from cereal import log
 from common.params import Params, put_nonblocking
+from common.numpy_fast import interp
 from common.realtime import sec_since_boot
 from selfdrive.hardware import HARDWARE
 from selfdrive.swaglog import cloudlog
@@ -18,7 +19,7 @@ CAR_CHARGING_RATE_W = 45
 
 VBATT_PAUSE_CHARGING = 11.0           # Lower limit on the LPF car battery voltage
 VBATT_INSTANT_PAUSE_CHARGING = 7.0    # Lower limit on the instant car battery voltage measurements to avoid triggering on instant power loss
-MAX_TIME_OFFROAD_S = 30*3600
+#MAX_TIME_OFFROAD_S = 30*3600
 MIN_ON_TIME_S = 3600
 
 class PowerMonitoring:
@@ -161,9 +162,11 @@ class PowerMonitoring:
     if offroad_timestamp is None:
       return False
 
+    max_time_offroad_s = interp(int(self.params.get("MaxTimeOffroad", encoding="utf8")), [0,1,2,3,4,5,6,7,8,9,10,11,12], [0,5,30,60,180,300,600,1800,3600,10800,18000,36000,108000])
+
     now = sec_since_boot()
     disable_charging = False
-    disable_charging |= (now - offroad_timestamp) > MAX_TIME_OFFROAD_S
+    disable_charging |= (now - offroad_timestamp) > max_time_offroad_s
     disable_charging |= (self.car_voltage_mV < (VBATT_PAUSE_CHARGING * 1e3)) and (self.car_voltage_instant_mV > (VBATT_INSTANT_PAUSE_CHARGING * 1e3))
     disable_charging |= (self.car_battery_capacity_uWh <= 0)
     disable_charging &= not ignition

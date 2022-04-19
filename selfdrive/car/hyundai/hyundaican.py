@@ -5,6 +5,7 @@ hyundai_checksum = crcmod.mkCrcFun(0x11D, initCrc=0xFD, rev=False, xorOut=0xdf)
 
 def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
                   lkas11, sys_warning, sys_state, enabled,
+                  lkas_active, disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon,
                   left_lane, right_lane,
                   left_lane_depart, right_lane_depart):
   values = lkas11
@@ -29,7 +30,8 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     # FcwOpt_USM 2 = Green car + lanes
     # FcwOpt_USM 1 = White car + lanes
     # FcwOpt_USM 0 = No car + lanes
-    values["CF_Lkas_FcwOpt_USM"] = 2 if enabled else 1
+    values["CF_Lkas_FcwOpt_USM"] = 2 if lkas_active else 2 if disengage_blinking_icon else 1 if\
+                                   (disengage_from_brakes or below_lane_change_speed) else 1
 
     # SysWarning 4 = keep hands on wheel
     # SysWarning 5 = keep hands on wheel (red)
@@ -69,12 +71,13 @@ def create_clu11(packer, frame, clu11, button):
   return packer.make_can_msg("CLU11", 0, values)
 
 
-def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
+def create_lfahda_mfc(packer, enabled, lkas_active, disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon, slc_active, speed_limit, speed_limit_changed, switching_to_hda, zero_vego, hda_set_speed=0):
   values = {
-    "LFA_Icon_State": 2 if enabled else 0,
-    "HDA_Active": 1 if hda_set_speed else 0,
-    "HDA_Icon_State": 2 if hda_set_speed else 0,
-    "HDA_VSetReq": hda_set_speed,
+    "LFA_Icon_State": 2 if lkas_active else 3 if disengage_blinking_icon else 1 if (disengage_from_brakes or below_lane_change_speed) else 0,
+    "HDA_Active": 1 if not zero_vego else 0,
+    "HDA_Icon_State": 0 if zero_vego else 1 if (not slc_active and (speed_limit > 0.0)) else 2 if slc_active and enabled else 0,
+    "HDA_Chime": 1 if speed_limit_changed and slc_active else 0,
+    "LFA_SysWarning": 1 if switching_to_hda else 0,
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
@@ -102,7 +105,7 @@ def create_acc_commands(packer, enabled, accel, jerk, idx, lead_visible, set_spe
     "CR_VSM_Alive": idx % 0xF,
   }
   scc12_dat = packer.make_can_msg("SCC12", 0, scc12_values)[2]
-  scc12_values["CR_VSM_ChkSum"] = 0x10 - sum([sum(divmod(i, 16)) for i in scc12_dat]) % 0x10
+  scc12_values["CR_VSM_ChkSum"] = 0x10 - sum(sum(divmod(i, 16)) for i in scc12_dat) % 0x10
 
   commands.append(packer.make_can_msg("SCC12", 0, scc12_values))
 
@@ -127,7 +130,7 @@ def create_acc_commands(packer, enabled, accel, jerk, idx, lead_visible, set_spe
     "FCA_Status": 1, # AEB disabled
   }
   fca11_dat = packer.make_can_msg("FCA11", 0, fca11_values)[2]
-  fca11_values["CR_FCA_ChkSum"] = 0x10 - sum([sum(divmod(i, 16)) for i in fca11_dat]) % 0x10
+  fca11_values["CR_FCA_ChkSum"] = 0x10 - sum(sum(divmod(i, 16)) for i in fca11_dat) % 0x10
   commands.append(packer.make_can_msg("FCA11", 0, fca11_values))
 
   return commands
