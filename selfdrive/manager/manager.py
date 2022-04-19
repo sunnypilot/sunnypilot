@@ -18,24 +18,53 @@ from selfdrive.manager.process import ensure_running
 from selfdrive.manager.process_config import managed_processes
 from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
 from selfdrive.swaglog import cloudlog, add_file_handler
-from selfdrive.version import dirty, get_git_commit, version, origin, branch, commit, \
-                              terms_version, training_version, comma_remote, \
-                              get_git_branch, get_git_remote
+from selfdrive.version import get_dirty, get_commit, get_version, get_origin, get_short_branch, \
+                              terms_version, training_version, get_comma_remote
+
 
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
 
-def manager_init():
 
+def manager_init():
   # update system time from panda
   set_time(cloudlog)
+
+  # save boot log
+  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "selfdrive/loggerd"))
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
 
   default_params = [
+    ("ACCMADSCombo", "1"),
+    ("AutoLaneChangeTimer", "0"),
+    ("BrightnessControl", "0"),
+    ("CarModel", ""),
     ("CompletedTrainingVersion", "0"),
+    ("DevUI", "2"),
+    ("DisableMADS", "0"),
+    ("DisableOnroadUploads", "0"),
+    ("DynamicLaneProfile", "2"),
+    ("EndToEndToggle", "1"),
+    ("GpxDeleteAfterUpload", "1"),
+    ("GpxDeleteIfUploaded", "1"),
     ("HasAcceptedTerms", "0"),
+    ("HandsOnWheelMonitoring", "0"),
+    ("LastSpeedLimitSignTap", "0"),
+    ("MaxTimeOffroad", "9"),
+    ("NoOffroadFix", "0"),
+    ("OnroadScreenOff", "0"),
+    ("OnroadScreenOffBrightness", "50"),
     ("OpenpilotEnabledToggle", "1"),
+    ("PrebuiltOn", "0"),
+    ("ReverseAccChange", "1"),
+    ("ShowDebugUI", "1"),
+    ("SpeedLimitControl", "1"),
+    ("SpeedLimitPercOffset", "1"),
+    ("SpeedLimitValueOffset", "0"),
+    ("StockResumeAlt", "0"),
+    ("TurnSpeedControl", "1"),
+    ("TurnVisionControl", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -50,6 +79,10 @@ def manager_init():
   for k, v in default_params:
     if params.get(k) is None:
       params.put(k, v)
+
+  # parameters set by Enviroment Varables
+  if os.getenv("HANDSMONITORING") is not None:
+    params.put_bool("HandsOnWheelMonitoring", bool(int(os.getenv("HANDSMONITORING"))))
 
   # is this dashcam?
   if os.getenv("PASSIVE") is not None:
@@ -67,12 +100,12 @@ def manager_init():
     print("WARNING: failed to make /dev/shm")
 
   # set version params
-  params.put("Version", version)
+  params.put("Version", get_version())
   params.put("TermsVersion", terms_version)
   params.put("TrainingVersion", training_version)
-  params.put("GitCommit", get_git_commit(default=""))
-  params.put("GitBranch", get_git_branch(default=""))
-  params.put("GitRemote", get_git_remote(default=""))
+  params.put("GitCommit", get_commit(default=""))
+  params.put("GitBranch", get_short_branch(default=""))
+  params.put("GitRemote", get_origin(default=""))
 
   # set dongle id
   reg_res = register(show_spinner=True)
@@ -83,16 +116,16 @@ def manager_init():
     raise Exception(f"Registration failed for device {serial}")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
 
-  if not dirty:
+  if not get_dirty():
     os.environ['CLEAN'] = '1'
 
-  cloudlog.bind_global(dongle_id=dongle_id, version=version, dirty=dirty,
+  cloudlog.bind_global(dongle_id=dongle_id, version=get_version(), dirty=get_dirty(),
                        device=HARDWARE.get_device_type())
 
-  if comma_remote and not (os.getenv("NOLOG") or os.getenv("NOCRASH") or PC):
+  if get_comma_remote() and not (os.getenv("NOLOG") or os.getenv("NOCRASH") or PC):
     crash.init()
   crash.bind_user(id=dongle_id)
-  crash.bind_extra(dirty=dirty, origin=origin, branch=branch, commit=commit,
+  crash.bind_extra(dirty=get_dirty(), origin=get_origin(), branch=get_short_branch(), commit=get_commit(),
                    device=HARDWARE.get_device_type())
 
 
@@ -102,8 +135,13 @@ def manager_prepare():
 
 
 def manager_cleanup():
+  # send signals to kill all procs
   for p in managed_processes.values():
-    p.stop()
+    p.stop(block=False)
+
+  # ensure all are killed
+  for p in managed_processes.values():
+    p.stop(block=True)
 
   cloudlog.info("everything is dead")
 
@@ -111,9 +149,6 @@ def manager_cleanup():
 def manager_thread():
   cloudlog.info("manager start")
   cloudlog.info({"environ": os.environ})
-
-  # save boot log
-  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "selfdrive/loggerd"))
 
   params = Params()
 
@@ -149,8 +184,8 @@ def manager_thread():
 
     started_prev = started
 
-    running = ' '.join(["%s%s\u001b[0m" % ("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
-                       for p in managed_processes.values() if p.proc])
+    running = ' '.join("%s%s\u001b[0m" % ("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
+                       for p in managed_processes.values() if p.proc)
     print(running)
     cloudlog.debug(running)
 
