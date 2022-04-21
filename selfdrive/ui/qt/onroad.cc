@@ -273,7 +273,7 @@ ButtonsWindow::ButtonsWindow(QWidget *parent) : QWidget(parent) {
   btns_layout->addWidget(gacBtn, 0, Qt::AlignLeft);
   btns_layout->addStretch();
 
-  if (!QUIState::ui_state.scene.gap_adjust_cruise && QUIState::ui_state.scene.longitudinal_control) {
+  if (QUIState::ui_state.scene.gap_adjust_cruise) {
     gacBtn->hide();
   }
 
@@ -306,8 +306,13 @@ void ButtonsWindow::updateState(const UIState &s) {
     }
   }
 
-  if (prev_gap_adjust_cruise_tr != gapAdjustCruiseTr) {
-    prev_gap_adjust_cruise_tr = gapAdjustCruiseTr;
+  if ((prev_gap_adjust_cruise_tr != QUIState::ui_state.scene.gap_adjust_cruise_tr) || (prev_gap_adjust_cruise_tr != gapAdjustCruiseTr)) {
+    if (prev_gap_adjust_cruise_tr != QUIState::ui_state.scene.gap_adjust_cruise_tr) {
+	  prev_gap_adjust_cruise_tr = QUIState::ui_state.scene.gap_adjust_cruise_tr;
+    } else {
+	  prev_gap_adjust_cruise_tr = gapAdjustCruiseTr;
+	  QUIState::ui_state.scene.gap_adjust_cruise_tr = gapAdjustCruiseTr;
+    }
     if (QUIState::ui_state.scene.gap_adjust_cruise_tr == 3 || gapAdjustCruiseTr == 3) {
       gacBtn->setStyleSheet(QString("font-size: 45px; border-radius: 100px; border-color: %1").arg(gacBtnColors.at(2)));
       gacBtn->setText("Normal\nGap");
