@@ -165,7 +165,7 @@ class CarController():
             elif self.acc_type == 1:
               if cruise_button == 1:
                 self.graButtonStatesToSend = BUTTON_STATES.copy()
-                self.graButtonStatesToSend["resCruise"] = True
+                self.graButtonStatesToSend["resumeCruise"] = True
               elif cruise_button == 2:
                 self.graButtonStatesToSend = BUTTON_STATES.copy()
                 self.graButtonStatesToSend["setCruise"] = True
