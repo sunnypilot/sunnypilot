@@ -53,6 +53,8 @@ class CarController():
   def update(self, enabled, CS, frame, ext_bus, actuators, visual_alert, left_lane_visible, right_lane_visible, left_lane_depart, right_lane_depart):
     """ Controls thread """
 
+    self.acc_type = Params().get("VwAccType")
+
     self.sm.update(0)
 
     cur_time = frame * DT_CTRL
