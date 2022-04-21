@@ -294,9 +294,9 @@ class CarController():
 
   def type_3(self):
     cruise_button = None
-    self.button_count += 1
-    if self.button_count > self.t_interval:
-      self.button_type = 0
+    #self.button_count += 1
+    #if self.button_count > self.t_interval:
+    self.button_type = 0
     return cruise_button
 
   def get_curve_speed(self, target_speed_kph):
