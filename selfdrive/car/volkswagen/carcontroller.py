@@ -48,12 +48,12 @@ class CarController():
     self.sl_force_active_timer = 0
     self.slc_state = 0
     self.slc_active_stock = False
-    self.acc_type = Params().get("VwAccType")
+    self.acc_type = int(Params().get("VwAccType"))
 
   def update(self, enabled, CS, frame, ext_bus, actuators, visual_alert, left_lane_visible, right_lane_visible, left_lane_depart, right_lane_depart):
     """ Controls thread """
 
-    self.acc_type = Params().get("VwAccType")
+    self.acc_type = int(Params().get("VwAccType"))
 
     self.sm.update(0)
 
