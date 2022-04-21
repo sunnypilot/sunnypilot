@@ -569,8 +569,8 @@ VwAccType::VwAccType() : AbstractControl("Short Press +1/-1 Type",
     auto str = QString::fromStdString(params.get("VwAccType"));
     int value = str.toInt();
     value = value + 1;
-    if (value >= 12 ) {
-      value = 12;
+    if (value >= 1 ) {
+      value = 1;
     }
     QString values = QString::number(value);
     params.put("VwAccType", values.toStdString());
