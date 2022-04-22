@@ -161,20 +161,16 @@ class CarController():
               if cruise_button == 1:
                 self.graButtonStatesToSend = BUTTON_STATES.copy()
                 self.graButtonStatesToSend["accelCruise"] = True
-                self.graButtonStatesToSend = None
               elif cruise_button == 2:
                 self.graButtonStatesToSend = BUTTON_STATES.copy()
                 self.graButtonStatesToSend["decelCruise"] = True
-                self.graButtonStatesToSend = None
             elif self.acc_type == 1:
               if cruise_button == 1:
                 self.graButtonStatesToSend = BUTTON_STATES.copy()
                 self.graButtonStatesToSend["resumeCruise"] = True
-                self.graButtonStatesToSend = None
               elif cruise_button == 2:
                 self.graButtonStatesToSend = BUTTON_STATES.copy()
                 self.graButtonStatesToSend["setCruise"] = True
-                self.graButtonStatesToSend = None
             print("self.get_cruise_buttons(CS) = " + str(cruise_button))
             print("SPAMMING")
 
@@ -278,7 +274,7 @@ class CarController():
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 30:
+    elif self.button_count > 10:
       cruise_button = 1
       self.button_count = 0
       self.button_type = 3
@@ -290,7 +286,7 @@ class CarController():
     if self.target_speed == self.v_set_dis:
       self.button_count = 0
       self.button_type = 3
-    elif self.button_count > 30:
+    elif self.button_count > 10:
       cruise_button = 2
       self.button_count = 0
       self.button_type = 3
