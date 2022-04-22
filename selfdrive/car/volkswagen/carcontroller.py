@@ -154,7 +154,7 @@ class CarController():
           self.graButtonStatesToSend = BUTTON_STATES.copy()
           self.graButtonStatesToSend["resumeCruise"] = True
       if frame > self.graMsgStartFramePrev:
-        if not (enabled and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
+        if not ((enabled and CS.out.cruiseState.enabled) and CS.esp_hold_confirmation) and (enabled and CS.cruise_active):
           cruise_button = self.get_cruise_buttons(CS)
           if cruise_button is not None and self.graMsgSentCount == 0:
             if self.acc_type == 0:
