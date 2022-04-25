@@ -36,6 +36,9 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
 * [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
 * [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
+  * Vision-based Turn Speed Control (VTSC)
+  * Map-Data-based Turn Speed Control (MTSC)
+  * Speed Limit control (SLC)
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
 * **No Disengage on Accelerator** - Allow the accelerator pedal press to not disengage sunnypilot. This feature is enabled by default.
 * **Quiet Drive 🤫** - Toggle to mute all notification sounds (excluding driver safety warnings)
@@ -117,10 +120,10 @@ Certain features are only available with an active data connection, via:
 * Personal Hotspot - From your mobile device, or a dedicated hotspot from a cellular carrier.
 
 **Features:**
-* Vision-based Turn Control - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
-* Map-Data-based Turn Control - Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
+* Vision-based Turn Speed Control (VTSC) - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
+* Map-Data-based Turn Speed Control (MTSC) - Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
   * **Note: Require data connection**
-* Speed Limit Control - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
+* Speed Limit Control (SLC) - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
   * **Note: Require data connection**
     * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive
