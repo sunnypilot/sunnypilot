@@ -253,8 +253,8 @@ class LongitudinalMpc():
     j_ego_v_ego = 1
     a_change_v_ego = 1
     if (v_lead0 - v_ego >= 0) and (v_lead1 - v_ego >= 0):
-      j_ego_v_ego = interp(v_ego, v_ego_bps, [.0, 1.])
-      a_change_v_ego = interp(v_ego, v_ego_bps, [.0, 1.])
+      j_ego_v_ego = interp(v_ego, v_ego_bps, [.01, 1.])
+      a_change_v_ego = interp(v_ego, v_ego_bps, [.01, 1.])
     # Select the appropriate min/max of the options
     j_ego = min(j_ego_tf, j_ego_v_ego)
     a_change = min(a_change_tf, a_change_v_ego)
@@ -337,14 +337,13 @@ class LongitudinalMpc():
     self.cruise_max_a = max_a
 
   def update_TF(self, carstate):
-    gap_adjust_cruise_tr = int(clip(carstate.gapAdjustCruiseTr, 1., 3.))
-    if gap_adjust_cruise_tr == 1: # Traffic
+    if carstate.gapAdjustCruiseTr == 1: # Traffic
       # At slow speeds more time, decrease time up to 60mph
       # in mph ~= 5     10   15   20  25     30    35     40  45     50    55     60  65     70    75     80  85     90
       x_vel = [0, 2.25, 4.5, 6.75, 9, 11.25, 13.5, 15.75, 18, 20.25, 22.5, 24.75, 27, 29.25, 31.5, 33.75, 36, 38.25, 40.5]
       y_dist = [1.25, 1.24, 1.23, 1.22, 1.21, 1.20, 1.18, 1.16, 1.13, 1.11, 1.09, 1.07, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05]
       self.tr = np.interp(carstate.vEgo, x_vel, y_dist)
-    elif gap_adjust_cruise_tr == 2: # Relaxed
+    elif carstate.gapAdjustCruiseTr == 2: # Relaxed
       self.tr = 1.25
     else:
       self.tr = T_FOLLOW
