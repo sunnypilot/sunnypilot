@@ -30,7 +30,8 @@ def manager_init():
   set_time(cloudlog)
 
   # save boot log
-  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "selfdrive/loggerd"))
+  #disable for performance
+  #subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "selfdrive/loggerd"))
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
@@ -174,6 +175,12 @@ def manager_thread():
 
     started = sm['deviceState'].started
     driverview = params.get_bool("IsDriverViewEnabled")
+
+    #disable for performance
+    not_run.append("loggerd")
+    not_run.append("uploader")
+    not_run.append("manage_athenad")           
+
     ensure_running(managed_processes.values(), started, driverview, not_run)
 
     # trigger an update after going offroad
