@@ -151,6 +151,12 @@ class CarState(CarStateBase):
           self.gap_adjust_cruise_tr = 1 if cp_cam.vl["ACC_CONTROL"]["DISTANCE"] == 1 else 0
           ret.gapAdjustCruiseTr = cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"]
 
+
+
+    # Toyota 5/5 Speed Increments
+    self.Fast_Speed_Increments = 2 if Params().get_bool('Change5speed') else 1
+
+
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.
     # TODO: it is possible to avoid the lockout and gain stop and go if you

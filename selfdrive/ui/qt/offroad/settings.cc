@@ -492,6 +492,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
 
   QList<ParamControl*> toggles;
 
+  toggles.append(new ParamControl("Change5speed",
+                                  "Change 5 speed",
+                                  "Every tap to change the maximum cruise speed will change 5 instead of just 1",
+                                  "../assets/offroad/icon_speed_limit.png",
+                                  this));
+
   toggles.append(new ParamControl("QuietDrive",
                                   "Quiet Drive 🤫",
                                   "openpilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on.",
