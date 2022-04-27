@@ -182,7 +182,7 @@ class CarController():
           idx = (CS.graMsgBusCounter + 1) % 16
           can_sends.append(volkswagencan.create_mqb_acc_buttons_control(self.packer_pt, ext_bus, self.graButtonStatesToSend, CS, idx))
           self.graMsgSentCount += 1
-          if self.graMsgSentCount >= P.GRA_VBP_COUNT / 4:
+          if self.graMsgSentCount >= P.GRA_VBP_COUNT / 8:
             self.graButtonStatesToSend = None
             self.graMsgSentCount = 0
 
