@@ -32,7 +32,7 @@ def confd_thread():
     if uploader_thread is None:
       uploader_thread = threading.Thread(target=gpx_uploader_thread)
       uploader_thread.start()
-      time.sleep(10)
+      time.sleep(0.01)
 
 def main():
   confd_thread()
