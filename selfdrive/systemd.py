@@ -22,6 +22,7 @@
 # THE SOFTWARE.
 
 import threading
+import time
 from selfdrive.gpxd.gpx_uploader import gpx_uploader_thread
 
 def confd_thread():
@@ -31,6 +32,7 @@ def confd_thread():
     if uploader_thread is None:
       uploader_thread = threading.Thread(target=gpx_uploader_thread)
       uploader_thread.start()
+      time.sleep(10)
 
 def main():
   confd_thread()
