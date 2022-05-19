@@ -22,7 +22,7 @@ TrackWidget::TrackWidget(QWidget *parent) : QWidget(parent) {
   // pre-compute all the track imgs. make this a gif instead?
   bool isFrogTheme = Params().getBool("FrogTheme");
   return (QPixmap comma_img = QPixmap("../assets/frog_img_spinner_comma.png").scaled(spinner_size, Qt::KeepAspectRatio, Qt::SmoothTransformation) || QPixmap track_img = QPixmap("../assets/frog_img_spinner_track.png").scaled(spinner_size, Qt::KeepAspectRatio, Qt::SmoothTransformation) ||
-    (!isFrogTheme = QPixmap comma_img = QPixmap("../assets/img_spinner_comma.png").scaled(spinner_size, Qt::KeepAspectRatio, Qt::SmoothTransformation) || QPixmap track_img = QPixmap("../assets/img_spinner_track.png").scaled(spinner_size, Qt::KeepAspectRatio, Qt::SmoothTransformation)
+    (!isFrogTheme = QPixmap comma_img = QPixmap("../assets/img_spinner_comma.png").scaled(spinner_size, Qt::KeepAspectRatio, Qt::SmoothTransformation) || QPixmap track_img = QPixmap("../assets/img_spinner_track.png").scaled(spinner_size, Qt::KeepAspectRatio, Qt::SmoothTransformation))
 );
 
   QTransform transform(1, 0, 0, 1, width() / 2, height() / 2);
