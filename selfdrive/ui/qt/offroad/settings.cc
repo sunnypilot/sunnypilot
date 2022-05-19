@@ -576,6 +576,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
                                   "../assets/offroad/icon_calibration.png",
                                   this));
 
+  toggles.append(new ParamControl("FrogTheme",
+                                  "Frog Theme 🐸",
+                                  "Frog theme with custom frog icons and sounds accompanied by a green color scheme. 🐸",
+                                  "../assets/images/button_home.png",
+                                  this));
+
   for (ParamControl *toggle : toggles) {
     if (main_layout->count() != 0) {
       toggle_layout->addWidget(horizontal_line());
