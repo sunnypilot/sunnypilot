@@ -579,7 +579,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget* parent) : QWidget(parent) {
   toggles.append(new ParamControl("FrogTheme",
                                   "Frog Theme 🐸",
                                   "Frog theme with custom frog icons and sounds accompanied by a green color scheme. 🐸",
-                                  "../assets/images/button_home.png",
+                                  "../assets/images/frog_button_home.png",
                                   this));
 
   for (ParamControl *toggle : toggles) {
