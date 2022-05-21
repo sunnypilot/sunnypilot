@@ -157,7 +157,7 @@ class CarState(CarStateBase):
       if self.CP.carFingerprint in TSS2_CAR:
         # KRKeegan - Add support for toyota distance button
         self.gap_adjust_cruise_tr = 1 if cp_cam.vl["ACC_CONTROL"]["DISTANCE"] == 1 else 0
-        ret.gapAdjustCruiseTr = cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"]
+      ret.gapAdjustCruiseTr = cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"]
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.
