@@ -278,7 +278,7 @@ class CarInterface(CarInterfaceBase):
 
     # removing the DSU disables AEB and it's considered a community maintained feature
     # intercepting the DSU is a community feature since it requires unofficial hardware
-    ret.communityFeature = ret.enableGasInterceptor or ret.enableDsu or smartDsu
+    ret.communityFeature = ret.enableGasInterceptor or ret.enableDsu or ret.smartDsu
 
     if ret.enableGasInterceptor:
       set_long_tune(ret.longitudinalTuning, LongTunes.PEDAL)
