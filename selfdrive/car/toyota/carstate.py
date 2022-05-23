@@ -396,6 +396,10 @@ class CarState(CarStateBase):
       signals.append(("DISTANCE_LINES", "PCM_CRUISE_SM", 0))
       checks.append(("PCM_CRUISE_SM", 1))
 
+    if CP.smartDsu:
+      signals.append(("FD_BUTTON", "SDSU", 0))
+      checks.append(("SDSU", 33))
+
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 0)
 
   @staticmethod
