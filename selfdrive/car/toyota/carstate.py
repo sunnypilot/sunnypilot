@@ -17,7 +17,7 @@ _TRAFFIC_SINGAL_MAP = {
   66: "No overtake"
 }
 
-T_FACTOR = 1.033
+T_FACTOR = 1.025
 
 class CarState(CarStateBase):
   def __init__(self, CP):
