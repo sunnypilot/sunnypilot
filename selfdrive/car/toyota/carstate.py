@@ -392,9 +392,8 @@ class CarState(CarStateBase):
       ]
 
     # KRKeegan - Add support for toyota distance button
-    if CP.carFingerprint in TSS2_CAR:
-      signals.append(("DISTANCE_LINES", "PCM_CRUISE_SM", 0))
-      checks.append(("PCM_CRUISE_SM", 1))
+    signals.append(("DISTANCE_LINES", "PCM_CRUISE_SM", 0))
+    checks.append(("PCM_CRUISE_SM", 1))
 
     if CP.smartDsu:
       signals.append(("FD_BUTTON", "SDSU", 0))
