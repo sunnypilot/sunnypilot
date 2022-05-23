@@ -159,7 +159,7 @@ class CarState(CarStateBase):
         # KRKeegan - Add support for toyota distance button
         self.gap_adjust_cruise_tr = 1 if cp_cam.vl["ACC_CONTROL"]["DISTANCE"] == 1 else 0
       elif self.CP.smartDsu:
-        self.distance_btn = 1 if cp.vl["SDSU"]["FD_BUTTON"] == 1 else 0
+        self.gap_adjust_cruise_tr = 1 if cp.vl["SDSU"]["FD_BUTTON"] == 1 else 0
       ret.gapAdjustCruiseTr = cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"]
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
