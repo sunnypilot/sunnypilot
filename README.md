@@ -78,7 +78,7 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * sunnypilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
 * Dedicated button to toggle sunnypilot ALC:
-  * `LFA` button: Newer HKG cars with `LFA` butotn
+  * `LFA` button: Newer HKG cars with `LFA` button
   * `LKAS` button: Honda, Toyota, Global Subaru
   * `CRUISE (MAIN)` button: HKG cars without `LFA` button, Pre-Global Subaru
 * `SET-` button enables ACC/SCC
