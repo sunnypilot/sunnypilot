@@ -15,8 +15,8 @@ _PARAMS_UPDATE_PERIOD = 2.  # secs. Time between parameter updates.
 _TEMP_INACTIVE_GUARD_PERIOD = 1.  # secs. Time to wait after activation before considering temp deactivation signal.
 
 # Lookup table for speed limit percent offset depending on speed.
-_LIMIT_PERC_OFFSET_V = [0.1, 0.05, 0.038]  # 55, 105, 135 km/h
-_LIMIT_PERC_OFFSET_BP = [13.9, 27.8, 36.1]  # 50, 100, 130 km/h
+_LIMIT_PERC_OFFSET_V = [0.0, 0.1, 0.11,  0.2, 0.18, 0.17, 0.14, 0.065, 0.0]
+_LIMIT_PERC_OFFSET_BP = [11.0, 13.4, 20.1, 22.3, 24.58, 29.0, 31.2, 33.4, 35.7]
 
 SpeedLimitControlState = log.LongitudinalPlan.SpeedLimitControlState
 EventName = car.CarEvent.EventName
