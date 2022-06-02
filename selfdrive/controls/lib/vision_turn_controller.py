@@ -4,7 +4,7 @@ from cereal import log
 from common.numpy_fast import interp
 from common.params import Params
 from common.realtime import sec_since_boot
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 from selfdrive.controls.lib.lane_planner import TRAJECTORY_SIZE
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
@@ -38,7 +38,7 @@ _ENTERING_SMOOTH_DECEL_BP = [1.3, 3.]  # absolute value of lat acc ahead
 _TURNING_ACC_V = [0.5, 0., -0.4]  # acc value
 _TURNING_ACC_BP = [1.5, 2.3, 3.]  # absolute value of current lat acc
 
-_LEAVING_ACC = 0.5  # Confortble acceleration to regain speed while leaving a turn.
+_LEAVING_ACC = 0.5  # Comfortable acceleration to regain speed while leaving a turn.
 
 _MIN_LANE_PROB = 0.6  # Minimum lanes probability to allow curvature prediction based on lanes.
 
@@ -97,7 +97,7 @@ class VisionTurnController():
     self._CP = CP
     self._op_enabled = False
     self._gas_pressed = False
-    self._is_enabled = self._params.get_bool("TurnVisionControl")
+    self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
     self._last_params_update = 0.
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
@@ -115,7 +115,7 @@ class VisionTurnController():
   @state.setter
   def state(self, value):
     if value != self._state:
-      _debug(f'TVC: TurnVisionController state: {_description_for_state(value)}')
+      _debug(f'VTSC: VisionTurnSpeedControl state: {_description_for_state(value)}')
       if value == VisionTurnControllerState.disabled:
         self._reset()
     self._state = value
@@ -145,17 +145,17 @@ class VisionTurnController():
   def _update_params(self):
     time = sec_since_boot()
     if time > self._last_params_update + 5.0:
-      self._is_enabled = self._params.get_bool("TurnVisionControl")
+      self._is_enabled = self._params.get_bool("VisionTurnSpeedControl")
       self._last_params_update = time
 
   def _update_calculations(self, sm):
-    # Get path polynomial aproximation for curvature estimation from model data.
+    # Get path polynomial approximation for curvature estimation from model data.
     path_poly = None
     model_data = sm['modelV2'] if sm.valid.get('modelV2', False) else None
     lat_planner_data = sm['lateralPlan'] if sm.valid.get('lateralPlan', False) else None
 
     # 1. When the probability of lanes is good enough, compute polynomial from lanes as they are way more stable
-    # on current mode than drving path.
+    # on current mode than driving path.
     if model_data is not None and len(model_data.laneLines) == 4 and len(model_data.laneLines[0].t) == TRAJECTORY_SIZE:
       ll_x = model_data.laneLines[1].x  # left and right ll x is the same
       lll_y = np.array(model_data.laneLines[1].y)
@@ -216,7 +216,7 @@ class VisionTurnController():
       _debug(f'TVC: High LatAcc. Dist: {self._v_overshoot_distance:.2f}, v: {self._v_overshoot * CV.MS_TO_KPH:.2f}')
 
   def _state_transition(self):
-    # In any case, if system is disabled or the feature is disabeld or gas is pressed, disable.
+    # In any case, if system is disabled or the feature is disabled or gas is pressed, disable.
     if not self._op_enabled or not self._is_enabled or self._gas_pressed:
       self.state = VisionTurnControllerState.disabled
       return
@@ -269,11 +269,11 @@ class VisionTurnController():
       _debug(f'    Decel: {a_target:.2f}, target v: {self.v_turn * CV.MS_TO_KPH}')
     # TURNING
     elif self.state == VisionTurnControllerState.turning:
-      # When turning we provide a target acceleration that is confortable for the lateral accelearation felt.
+      # When turning we provide a target acceleration that is comfortable for the lateral acceleration felt.
       a_target = interp(self._current_lat_acc, _TURNING_ACC_BP, _TURNING_ACC_V)
     # LEAVING
     elif self.state == VisionTurnControllerState.leaving:
-      # When leaving we provide a confortable acceleration to regain speed.
+      # When leaving we provide a comfortable acceleration to regain speed.
       a_target = _LEAVING_ACC
 
     # update solution values.

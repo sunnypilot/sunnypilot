@@ -4,8 +4,8 @@
 #include <QLayoutItem>
 #include <QStyleOption>
 
-#include "selfdrive/common/params.h"
-#include "selfdrive/common/swaglog.h"
+#include "common/params.h"
+#include "common/swaglog.h"
 #include "selfdrive/hardware/hw.h"
 
 QString getVersion() {
@@ -14,7 +14,7 @@ QString getVersion() {
 }
 
 QString getBrand() {
-  return Params().getBool("Passive") ? "dashcam" : "sunnypilot";
+  return Params().getBool("Passive") ? "dashcam" : "openpilot";
 }
 
 QString getBrandVersion() {
@@ -89,29 +89,20 @@ void setQtSurfaceFormat() {
   QSurfaceFormat::setDefaultFormat(fmt);
 }
 
-void initApp() {
+void initApp(int argc, char *argv[]) {
   Hardware::set_display_power(true);
   Hardware::set_brightness(65);
-  setQtSurfaceFormat();
-  if (Hardware::EON()) {
-    QApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+#ifdef __APPLE__
+  {
+    // Get the devicePixelRatio, and scale accordingly to maintain 1:1 rendering
+    QApplication tmp(argc, argv);
+    qputenv("QT_SCALE_FACTOR", QString::number(1.0 / tmp.devicePixelRatio() ).toLocal8Bit());
   }
+#endif
+
+  setQtSurfaceFormat();
 }
-
-ClickableWidget::ClickableWidget(QWidget *parent) : QWidget(parent) { }
-
-void ClickableWidget::mouseReleaseEvent(QMouseEvent *event) {
-  emit clicked();
-}
-
-// Fix stylesheets
-void ClickableWidget::paintEvent(QPaintEvent *) {
-  QStyleOption opt;
-  opt.init(this);
-  QPainter p(this);
-  style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-}
-
 
 void swagLogMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
   static std::map<QtMsgType, int> levels = {
@@ -135,4 +126,12 @@ void swagLogMessageHandler(QtMsgType type, const QMessageLogContext &context, co
 QWidget* topWidget (QWidget* widget) {
   while (widget->parentWidget() != nullptr) widget=widget->parentWidget();
   return widget;
+}
+
+QPixmap loadPixmap(const QString &fileName, const QSize &size, Qt::AspectRatioMode aspectRatioMode) {
+  if (size.isEmpty()) {
+    return QPixmap(fileName);
+  } else {
+    return QPixmap(fileName).scaled(size, aspectRatioMode, Qt::SmoothTransformation);
+  }
 }

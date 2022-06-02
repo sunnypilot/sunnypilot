@@ -1,5 +1,5 @@
 from cereal import log, car
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 
 EventName = car.CarEvent.EventName
 HandsOnWheelState = log.DriverMonitoringState.HandsOnWheelState
@@ -8,7 +8,7 @@ _PRE_ALERT_THRESHOLD = 150  # 15s
 _PROMPT_ALERT_THRESHOLD = 300  # 30s
 _TERMINAL_ALERT_THRESHOLD = 600  # 60s
 
-_MIN_MONITORING_SPEED = 10 * CV.KPH_TO_MS  # No monitoring underd 10kph
+_MIN_MONITORING_SPEED = 10 * CV.KPH_TO_MS  # No monitoring under 10kph
 
 
 class HandsOnWheelStatus():

@@ -1,13 +1,12 @@
 from selfdrive.mapd.lib.geo import DIRECTION, R, vectors, bearing_to_points, distance_to_points
 from selfdrive.mapd.lib.osm import create_way
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 from selfdrive.mapd.config import LANE_WIDTH
 from common.basedir import BASEDIR
 from datetime import datetime as dt
 import numpy as np
 import re
 import json
-
 
 _WAY_BBOX_PADING = 80. / R  # 80 mts of pading to bounding box. (expressed in radians)
 

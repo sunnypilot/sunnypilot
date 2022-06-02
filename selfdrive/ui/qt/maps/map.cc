@@ -6,7 +6,7 @@
 #include <QPainterPath>
 #include <QFileInfo>
 
-#include "selfdrive/common/swaglog.h"
+#include "common/swaglog.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/maps/map_helpers.h"
@@ -106,7 +106,7 @@ void MapWindow::initLayers() {
 }
 
 void MapWindow::timerUpdate() {
-  if (!QUIState::ui_state.scene.started) {
+  if (!uiState()->scene.started) {
     return;
   }
 
@@ -117,21 +117,19 @@ void MapWindow::timerUpdate() {
     auto location = (*sm)["liveLocationKalman"].getLiveLocationKalman();
     auto pos = location.getPositionGeodetic();
     auto orientation = location.getCalibratedOrientationNED();
+    auto velocity = location.getVelocityCalibrated();
 
-    localizer_valid = (location.getStatus() == cereal::LiveLocationKalman::Status::VALID) && pos.getValid();
+    localizer_valid = (location.getStatus() == cereal::LiveLocationKalman::Status::VALID) &&
+     pos.getValid() && orientation.getValid() && velocity.getValid();
 
     if (localizer_valid) {
-      float velocity = location.getVelocityCalibrated().getValue()[0];
-      float bearing = RAD2DEG(orientation.getValue()[2]);
-      auto coordinate = QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]);
-
-      last_position = coordinate;
-      last_bearing = bearing;
-      velocity_filter.update(velocity);
+      last_position = QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]);
+      last_bearing = RAD2DEG(orientation.getValue()[2]);
+      velocity_filter.update(velocity.getValue()[0]);
     }
   }
 
-  if (sm->updated("navRoute")) {
+  if (sm->updated("navRoute") && (*sm)["navRoute"].getNavRoute().getCoordinates().size()) {
     qWarning() << "Got new navRoute from navd. Opening map:" << allow_open;
 
     // Only open the map on setting destination the first time
@@ -387,7 +385,7 @@ void MapInstructions::updateDistance(float d) {
   d = std::max(d, 0.0f);
   QString distance_str;
 
-  if (QUIState::ui_state.scene.is_metric) {
+  if (uiState()->scene.is_metric) {
     if (d > 500) {
       distance_str.setNum(d / 1000, 'f', 1);
       distance_str += " km";
@@ -498,10 +496,9 @@ void MapInstructions::updateInstructions(cereal::NavInstruction::Reader instruct
       fn += "turn_straight";
     }
 
-    QPixmap pix(fn + ICON_SUFFIX);
     auto icon = new QLabel;
     int wh = active ? 125 : 75;
-    icon->setPixmap(pix.scaled(wh, wh, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    icon->setPixmap(loadPixmap(fn + ICON_SUFFIX, {wh, wh}, Qt::IgnoreAspectRatio));
     icon->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     lane_layout->addWidget(icon);
   }
@@ -620,7 +617,7 @@ void MapETA::updateETA(float s, float s_typical, float d) {
   // Distance
   QString distance_str;
   float num = 0;
-  if (QUIState::ui_state.scene.is_metric) {
+  if (uiState()->scene.is_metric) {
     num = d / 1000.0;
     distance_unit->setText("km");
   } else {

@@ -183,8 +183,8 @@ void dos_init(void) {
     can_flip_buses(0, 2);
   }
 
-  // Init clock source as internal free running
-  dos_set_clock_source_mode(CLOCK_SOURCE_MODE_FREE_RUNNING);
+  // Init clock source (camera strobe) using PWM
+  dos_set_clock_source_mode(CLOCK_SOURCE_MODE_PWM);
 }
 
 const harness_configuration dos_harness_config = {
@@ -208,7 +208,7 @@ const board board_dos = {
   .has_hw_gmlan = false,
   .has_obd = true,
   .has_lin = false,
-  .has_rtc = true,
+  .has_rtc_battery = true,
   .init = dos_init,
   .enable_can_transceiver = dos_enable_can_transceiver,
   .enable_can_transceivers = dos_enable_can_transceivers,

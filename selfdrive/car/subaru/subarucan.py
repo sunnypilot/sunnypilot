@@ -54,12 +54,21 @@ def create_es_lkas(packer, es_lkas_msg, enabled, visual_alert, left_line, right_
     values["LKAS_ACTIVE"] = 1 # Show LKAS lane lines
     values["LKAS_Dash_State"] = 2 # Green enabled indicator
   else:
-     values["LKAS_Dash_State"] = 0 # LKAS Not enabled
+    values["LKAS_Dash_State"] = 0 # LKAS Not enabled
 
   values["LKAS_Left_Line_Visible"] = int(left_line)
   values["LKAS_Right_Line_Visible"] = int(right_line)
 
   return packer.make_can_msg("ES_LKAS_State", 0, values)
+
+def create_throttle(packer, throttle_msg, throttle_cmd):
+
+  values = copy.copy(throttle_msg)
+  if throttle_cmd:
+    values["Throttle_Pedal"] = 5
+
+  return packer.make_can_msg("Throttle", 2, values)
+
 
 # *** Subaru Pre-global ***
 
@@ -80,11 +89,21 @@ def create_preglobal_steering_control(packer, apply_steer, frame, steer_step):
 
   return packer.make_can_msg("ES_LKAS", 0, values)
 
-def create_es_throttle_control(packer, cruise_button, es_accel_msg):
+def create_preglobal_es_distance(packer, cruise_button, es_distance_msg):
 
-  values = copy.copy(es_accel_msg)
+  values = copy.copy(es_distance_msg)
   values["Cruise_Button"] = cruise_button
 
-  values["Checksum"] = subaru_preglobal_checksum(packer, values, "ES_CruiseThrottle")
+  values["Checksum"] = subaru_preglobal_checksum(packer, values, "ES_Distance")
 
-  return packer.make_can_msg("ES_CruiseThrottle", 0, values)
+  return packer.make_can_msg("ES_Distance", 0, values)
+
+def create_preglobal_throttle(packer, throttle_msg, throttle_cmd):
+
+  values = copy.copy(throttle_msg)
+  if throttle_cmd:
+    values["Throttle_Pedal"] = 5
+
+  values["Checksum"] = subaru_preglobal_checksum(packer, values, "Throttle")
+
+  return packer.make_can_msg("Throttle", 2, values)

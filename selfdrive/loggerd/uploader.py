@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import bz2
+import io
 import json
 import os
 import random
@@ -12,15 +14,18 @@ from cereal import log
 import cereal.messaging as messaging
 from common.api import Api
 from common.params import Params
-from common.realtime import sec_since_boot
+from common.realtime import set_core_affinity
 from selfdrive.hardware import TICI
 from selfdrive.loggerd.xattr_cache import getxattr, setxattr
 from selfdrive.loggerd.config import ROOT
 from selfdrive.swaglog import cloudlog
+from common.realtime import sec_since_boot
 
 NetworkType = log.DeviceState.NetworkType
 UPLOAD_ATTR_NAME = 'user.upload'
 UPLOAD_ATTR_VALUE = b'1'
+
+UPLOAD_QLOG_QCAM_MAX_SIZE = 100 * 1e6  # MB
 
 allow_sleep = bool(os.getenv("UPLOADER_SLEEP", "1"))
 force_wifi = os.getenv("FORCEWIFI") is not None
@@ -65,16 +70,22 @@ class Uploader():
     self.immediate_count = 0
 
     # stats for last successfully uploaded file
-    self.last_time = 0
-    self.last_speed = 0
+    self.last_time = 0.0
+    self.last_speed = 0.0
     self.last_filename = ""
 
     self.immediate_folders = ["crash/", "boot/"]
-    self.immediate_priority = {"qlog.bz2": 0, "qcamera.ts": 1}
+    self.immediate_priority = {"qlog": 0, "qlog.bz2": 0, "qcamera.ts": 1}
+    self.high_priority = {"rlog": 0, "rlog.bz2": 0}
+    self.normal_priority = {"fcamera.hevc": 1, "dcamera.hevc": 2, "ecamera.hevc": 3}
 
   def get_upload_sort(self, name):
     if name in self.immediate_priority:
       return self.immediate_priority[name]
+    if name in self.high_priority:
+      return self.high_priority[name] + 100
+    if name in self.normal_priority:
+      return self.normal_priority[name] + 300
     return 1000
 
   def list_upload_files(self):
@@ -115,16 +126,27 @@ class Uploader():
 
         yield (name, key, fn)
 
-  def next_file_to_upload(self):
+  def next_file_to_upload(self, with_raw):
     upload_files = list(self.list_upload_files())
 
     for name, key, fn in upload_files:
       if any(f in fn for f in self.immediate_folders):
-        return (key, fn)
+        return (name, key, fn)
 
     for name, key, fn in upload_files:
       if name in self.immediate_priority:
-        return (key, fn)
+        return (name, key, fn)
+
+    if with_raw:
+      # then upload the full log files, rear and front camera files
+      for name, key, fn in upload_files:
+        if name in self.high_priority:
+          return (name, key, fn)
+
+      # Could add a param here to disable full video uploads
+      for name, key, fn in upload_files:
+        if name in self.normal_priority:
+          return (name, key, fn)
 
     return None
 
@@ -141,7 +163,7 @@ class Uploader():
       cloudlog.debug("upload_url v1.4 %s %s", url, str(headers))
 
       if fake_upload:
-        cloudlog.debug("*** WARNING, THIS IS A FAKE UPLOAD TO %s ***" % url)
+        cloudlog.debug(f"*** WARNING, THIS IS A FAKE UPLOAD TO {url} ***")
 
         class FakeResponse():
           def __init__(self):
@@ -150,7 +172,13 @@ class Uploader():
         self.last_resp = FakeResponse()
       else:
         with open(fn, "rb") as f:
-          self.last_resp = requests.put(url, data=f, headers=headers, timeout=10)
+          if key.endswith('.bz2') and not fn.endswith('.bz2'):
+            data = bz2.compress(f.read())
+            data = io.BytesIO(data)
+          else:
+            data = f
+
+          self.last_resp = requests.put(url, data=data, headers=headers, timeout=10)
     except Exception as e:
       self.last_exc = (e, traceback.format_exc())
       raise
@@ -166,43 +194,40 @@ class Uploader():
 
     return self.last_resp
 
-  def upload(self, key, fn):
+  def upload(self, name, key, fn, network_type, metered):
     try:
       sz = os.path.getsize(fn)
     except OSError:
       cloudlog.exception("upload: getsize failed")
       return False
 
-    cloudlog.event("upload", key=key, fn=fn, sz=sz)
-
-    cloudlog.debug("checking %r with size %r", key, sz)
+    cloudlog.event("upload_start", key=key, fn=fn, sz=sz, network_type=network_type, metered=metered)
 
     if sz == 0:
-      try:
-        # tag files of 0 size as uploaded
-        setxattr(fn, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
-      except OSError:
-        cloudlog.event("uploader_setxattr_failed", exc=self.last_exc, key=key, fn=fn, sz=sz)
+      # tag files of 0 size as uploaded
+      success = True
+    elif name in self.immediate_priority and sz > UPLOAD_QLOG_QCAM_MAX_SIZE:
+      cloudlog.event("uploader_too_large", key=key, fn=fn, sz=sz)
       success = True
     else:
       start_time = time.monotonic()
-      cloudlog.debug("uploading %r", fn)
       stat = self.normal_upload(key, fn)
-      if stat is not None and stat.status_code in (200, 201, 403, 412):
-        cloudlog.event("upload_success" if stat.status_code != 412 else "upload_ignored", key=key, fn=fn, sz=sz, debug=True)
-        try:
-          # tag file as uploaded
-          setxattr(fn, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
-        except OSError:
-          cloudlog.event("uploader_setxattr_failed", exc=self.last_exc, key=key, fn=fn, sz=sz)
-
+      if stat is not None and stat.status_code in (200, 201, 401, 403, 412):
         self.last_filename = fn
         self.last_time = time.monotonic() - start_time
         self.last_speed = (sz / 1e6) / self.last_time
         success = True
+        cloudlog.event("upload_success" if stat.status_code != 412 else "upload_ignored", key=key, fn=fn, sz=sz, network_type=network_type, metered=metered)
       else:
-        cloudlog.event("upload_failed", stat=stat, exc=self.last_exc, key=key, fn=fn, sz=sz, debug=True)
         success = False
+        cloudlog.event("upload_failed", stat=stat, exc=self.last_exc, key=key, fn=fn, sz=sz, network_type=network_type, metered=metered)
+
+    if success:
+      # tag file as uploaded
+      try:
+        setxattr(fn, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
+      except OSError:
+        cloudlog.event("uploader_setxattr_failed", exc=self.last_exc, key=key, fn=fn, sz=sz)
 
     return success
 
@@ -216,7 +241,15 @@ class Uploader():
     us.lastFilename = self.last_filename
     return msg
 
+
 def uploader_fn(exit_event):
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("failed to set core affinity")
+
+  clear_locks(ROOT)
+
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf8')
 
@@ -268,16 +301,21 @@ def uploader_fn(exit_event):
           time.sleep(60)
         continue
 
-    d = uploader.next_file_to_upload()
+    allow_raw_upload = params.get_bool("UploadRaw")
+
+    d = uploader.next_file_to_upload(with_raw=allow_raw_upload)
     if d is None:  # Nothing to upload
       if allow_sleep:
         time.sleep(60 if offroad else 5)
       continue
 
-    key, fn = d
+    name, key, fn = d
 
-    cloudlog.debug("upload %r over %s", d, network_type)
-    success = uploader.upload(key, fn)
+    # qlogs and bootlogs need to be compressed before uploading
+    if key.endswith(('qlog', 'rlog')) or (key.startswith('boot/') and not key.endswith('.bz2')):
+      key += ".bz2"
+
+    success = uploader.upload(name, key, fn, sm['deviceState'].networkType.raw, sm['deviceState'].networkMetered)
     if success:
       backoff = 0.1
     elif allow_sleep:
@@ -286,7 +324,7 @@ def uploader_fn(exit_event):
       backoff = min(backoff*2, 120)
 
     pm.send("uploaderState", uploader.get_msg())
-    cloudlog.info("upload done, success=%r", success)
+
 
 def main():
   uploader_fn(threading.Event())

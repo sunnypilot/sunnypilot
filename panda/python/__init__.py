@@ -2,13 +2,13 @@
 import datetime
 import struct
 import hashlib
-import socket
 import usb1
 import os
 import time
 import traceback
 import sys
 from functools import wraps
+from typing import Optional
 from .dfu import PandaDFU, MCU_TYPE_F2, MCU_TYPE_F4, MCU_TYPE_H7  # pylint: disable=import-error
 from .flash_release import flash_release  # noqa pylint: disable=import-error
 from .update import ensure_st_up_to_date  # noqa pylint: disable=import-error
@@ -115,65 +115,15 @@ def ensure_can_packet_version(fn):
     return fn(self, *args, **kwargs)
   return wrapper
 
-class PandaWifiStreaming(object):
-  def __init__(self, ip="192.168.0.10", port=1338):
-    self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.sock.setblocking(0)
-    self.ip = ip
-    self.port = port
-    self.kick()
+class ALTERNATIVE_EXPERIENCE:
+  DEFAULT = 0
+  DISABLE_DISENGAGE_ON_GAS = 1
+  DISABLE_STOCK_AEB = 2
+  RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX = 8
+  ENABLE_MADS = 16
+  MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE = 32
 
-  def kick(self):
-    # must be called at least every 5 seconds
-    self.sock.sendto("hello", (self.ip, self.port))
-
-  def can_recv(self):
-    ret = []
-    while True:
-      try:
-        dat, addr = self.sock.recvfrom(0x200 * 0x10)
-        if addr == (self.ip, self.port):
-          ret += unpack_can_buffer(dat)
-      except socket.error as e:
-        if e.errno != 35 and e.errno != 11:
-          traceback.print_exc()
-        break
-    return ret
-
-# stupid tunneling of USB over wifi and SPI
-class WifiHandle(object):
-  def __init__(self, ip="192.168.0.10", port=1337):
-    self.sock = socket.create_connection((ip, port))
-
-  def __recv(self):
-    ret = self.sock.recv(0x44)
-    length = struct.unpack("I", ret[0:4])[0]
-    return ret[4:4 + length]
-
-  def controlWrite(self, request_type, request, value, index, data, timeout=0):
-    # ignore data in reply, panda doesn't use it
-    return self.controlRead(request_type, request, value, index, 0, timeout)
-
-  def controlRead(self, request_type, request, value, index, length, timeout=0):
-    self.sock.send(struct.pack("HHBBHHH", 0, 0, request_type, request, value, index, length))
-    return self.__recv()
-
-  def bulkWrite(self, endpoint, data, timeout=0):
-    if len(data) > 0x10:
-      raise ValueError("Data must not be longer than 0x10")
-    self.sock.send(struct.pack("HH", endpoint, len(data)) + data)
-    self.__recv()  # to /dev/null
-
-  def bulkRead(self, endpoint, length, timeout=0):
-    self.sock.send(struct.pack("HH", endpoint, 0))
-    return self.__recv()
-
-  def close(self):
-    self.sock.close()
-
-# *** normal mode ***
-
-class Panda(object):
+class Panda:
 
   # matches cereal.car.CarParams.SafetyModel
   SAFETY_SILENT = 0
@@ -197,6 +147,11 @@ class Panda(object):
   SAFETY_VOLKSWAGEN_PQ = 21
   SAFETY_SUBARU_LEGACY = 22
   SAFETY_HYUNDAI_LEGACY = 23
+  SAFETY_HYUNDAI_COMMUNITY = 24
+  SAFETY_STELLANTIS = 25
+  SAFETY_FAW = 26
+  SAFETY_BODY = 27
+  SAFETY_HYUNDAI_HDA2 = 28
 
   SERIAL_DEBUG = 0
   SERIAL_ESP = 1
@@ -219,15 +174,19 @@ class Panda(object):
   HW_TYPE_RED_PANDA = b'\x07'
 
   CAN_PACKET_VERSION = 2
-  HEALTH_PACKET_VERSION = 1
+  HEALTH_PACKET_VERSION = 7
+  HEALTH_STRUCT = struct.Struct("<IIIIIIIIBBBBBBBHBBBHIf")
 
-  F2_DEVICES = [HW_TYPE_PEDAL]
-  F4_DEVICES = [HW_TYPE_WHITE_PANDA, HW_TYPE_GREY_PANDA, HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS]
-  H7_DEVICES = [HW_TYPE_RED_PANDA]
+  F2_DEVICES = (HW_TYPE_PEDAL, )
+  F4_DEVICES = (HW_TYPE_WHITE_PANDA, HW_TYPE_GREY_PANDA, HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS)
+  H7_DEVICES = (HW_TYPE_RED_PANDA, )
 
   CLOCK_SOURCE_MODE_DISABLED = 0
   CLOCK_SOURCE_MODE_FREE_RUNNING = 1
-  CLOCK_SOURCE_MODE_EXTERNAL_SYNC = 2
+
+  # first byte is for EPS scaling factor
+  FLAG_TOYOTA_ALT_BRAKE = (1 << 8)
+  FLAG_TOYOTA_STOCK_LONGITUDINAL = (2 << 8)
 
   FLAG_HONDA_ALT_BRAKE = 1
   FLAG_HONDA_BOSCH_LONG = 2
@@ -236,12 +195,15 @@ class Panda(object):
   FLAG_HYUNDAI_EV_GAS = 1
   FLAG_HYUNDAI_HYBRID_GAS = 2
   FLAG_HYUNDAI_LONG = 4
+  FLAG_HYUNDAI_LFA_BTN = 8
+  FLAG_HYUNDAI_ESCC = 16
+
   FLAG_TESLA_POWERTRAIN = 1
   FLAG_TESLA_LONG_CONTROL = 2
 
   FLAG_TOYOTA_MADS_LTA_MSG = 1
 
-  def __init__(self, serial=None, claim=True):
+  def __init__(self, serial: Optional[str] = None, claim: bool = True):
     self._serial = serial
     self._handle = None
     self.connect(claim)
@@ -255,46 +217,39 @@ class Panda(object):
     if self._handle is not None:
       self.close()
 
-    if self._serial == "WIFI":
-      self._handle = WifiHandle()
-      print("opening WIFI device")
-      self.wifi = True
-    else:
-      context = usb1.USBContext()
-      self._handle = None
-      self.wifi = False
+    context = usb1.USBContext()
+    self._handle = None
 
-      while 1:
-        try:
-          for device in context.getDeviceList(skip_on_error=True):
-            if device.getVendorID() == 0xbbaa and device.getProductID() in [0xddcc, 0xddee]:
-              try:
-                this_serial = device.getSerialNumber()
-              except Exception:
-                continue
-              if self._serial is None or this_serial == self._serial:
-                self._serial = this_serial
-                print("opening device", self._serial, hex(device.getProductID()))
-                self.bootstub = device.getProductID() == 0xddee
-                self._handle = device.open()
-                if sys.platform not in ["win32", "cygwin", "msys", "darwin"]:
-                  self._handle.setAutoDetachKernelDriver(True)
-                if claim:
-                  self._handle.claimInterface(0)
-                  # self._handle.setInterfaceAltSetting(0, 0)  # Issue in USB stack
-                break
-        except Exception as e:
-          print("exception", e)
-          traceback.print_exc()
-        if not wait or self._handle is not None:
-          break
-        context = usb1.USBContext()  # New context needed so new devices show up
+    while 1:
+      try:
+        for device in context.getDeviceList(skip_on_error=True):
+          if device.getVendorID() == 0xbbaa and device.getProductID() in (0xddcc, 0xddee):
+            try:
+              this_serial = device.getSerialNumber()
+            except Exception:
+              continue
+            if self._serial is None or this_serial == self._serial:
+              self._serial = this_serial
+              print("opening device", self._serial, hex(device.getProductID()))
+              self.bootstub = device.getProductID() == 0xddee
+              self._handle = device.open()
+              if sys.platform not in ("win32", "cygwin", "msys", "darwin"):
+                self._handle.setAutoDetachKernelDriver(True)
+              if claim:
+                self._handle.claimInterface(0)
+                # self._handle.setInterfaceAltSetting(0, 0)  # Issue in USB stack
+              break
+      except Exception as e:
+        print("exception", e)
+        traceback.print_exc()
+      if not wait or self._handle is not None:
+        break
+      context = usb1.USBContext()  # New context needed so new devices show up
     assert(self._handle is not None)
     self.health_version, self.can_version = self.get_packets_versions()
     print("connected")
 
   def reset(self, enter_bootstub=False, enter_bootloader=False):
-    # reset
     try:
       if enter_bootloader:
         self._handle.controlWrite(Panda.REQUEST_IN, 0xd1, 0, 0, b'')
@@ -381,9 +336,11 @@ class Panda(object):
     if reconnect:
       self.reconnect()
 
-  def recover(self, timeout=None):
-    self.reset(enter_bootstub=True)
-    self.reset(enter_bootloader=True)
+  def recover(self, timeout: Optional[int] = None, reset: bool = True) -> bool:
+    if reset:
+      self.reset(enter_bootstub=True)
+      self.reset(enter_bootloader=True)
+
     t_start = time.time()
     while len(PandaDFU.list()) == 0:
       print("waiting for DFU...")
@@ -400,33 +357,18 @@ class Panda(object):
     return True
 
   @staticmethod
-  def flash_ota_st():
-    ret = os.system("cd %s && make clean && make ota" % (os.path.join(BASEDIR, "board")))
-    time.sleep(1)
-    return ret == 0
-
-  @staticmethod
-  def flash_ota_wifi(release=False):
-    release_str = "RELEASE=1" if release else ""
-    ret = os.system("cd {} && make clean && {} make ota".format(os.path.join(BASEDIR, "boardesp"), release_str))
-    time.sleep(1)
-    return ret == 0
-
-  @staticmethod
   def list():
     context = usb1.USBContext()
     ret = []
     try:
       for device in context.getDeviceList(skip_on_error=True):
-        if device.getVendorID() == 0xbbaa and device.getProductID() in [0xddcc, 0xddee]:
+        if device.getVendorID() == 0xbbaa and device.getProductID() in (0xddcc, 0xddee):
           try:
             ret.append(device.getSerialNumber())
           except Exception:
             continue
     except Exception:
       pass
-    # TODO: detect if this is real
-    # ret += ["WIFI"]
     return ret
 
   def call_control_api(self, msg):
@@ -436,8 +378,8 @@ class Panda(object):
 
   @ensure_health_packet_version
   def health(self):
-    dat = self._handle.controlRead(Panda.REQUEST_IN, 0xd2, 0, 0, 44)
-    a = struct.unpack("<IIIIIIIIBBBBBBBHBBB", dat)
+    dat = self._handle.controlRead(Panda.REQUEST_IN, 0xd2, 0, 0, self.HEALTH_STRUCT.size)
+    a = self.HEALTH_STRUCT.unpack(dat)
     return {
       "uptime": a[0],
       "voltage": a[1],
@@ -458,6 +400,9 @@ class Panda(object):
       "fault_status": a[16],
       "power_save_enabled": a[17],
       "heartbeat_lost": a[18],
+      "alternative_experience": a[19],
+      "blocked_msg_cnt": a[20],
+      "interrupt_load": a[21],
     }
 
   # ******************* control *******************
@@ -472,7 +417,7 @@ class Panda(object):
     return self._handle.controlRead(Panda.REQUEST_IN, 0xd6, 0, 0, 0x40).decode('utf8')
 
   @staticmethod
-  def get_signature_from_firmware(fn):
+  def get_signature_from_firmware(fn) -> bytes:
     f = open(fn, 'rb')
     f.seek(-128, 2)  # Seek from end of file
     return f.read(128)
@@ -528,11 +473,11 @@ class Panda(object):
   def has_obd(self):
     return (self.is_uno() or self.is_dos() or self.is_black() or self.is_red())
 
-  def has_canfd(self):
-    return self._mcu_type in Panda.H7_DEVICES
+  def has_canfd(self) -> bool:
+    return self.get_type() in Panda.H7_DEVICES
 
-  def is_internal(self):
-    return self.get_type() in [Panda.HW_TYPE_UNO, Panda.HW_TYPE_DOS]
+  def is_internal(self) -> bool:
+    return self.get_type() in (Panda.HW_TYPE_UNO, Panda.HW_TYPE_DOS)
 
   def get_serial(self):
     dat = self._handle.controlRead(Panda.REQUEST_IN, 0xd0, 0, 0, 0x20)
@@ -554,6 +499,9 @@ class Panda(object):
   def set_power_save(self, power_save_enabled=0):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xe7, int(power_save_enabled), 0, b'')
 
+  def enable_deepsleep(self):
+    self._handle.controlWrite(Panda.REQUEST_OUT, 0xfb, 0, 0, b'')
+
   def set_esp_power(self, on):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xd9, int(on), 0, b'')
 
@@ -561,8 +509,8 @@ class Panda(object):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xda, int(bootmode), 0, b'')
     time.sleep(0.2)
 
-  def set_safety_mode(self, mode=SAFETY_SILENT, disable_checks=True):
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xdc, mode, 0, b'')
+  def set_safety_mode(self, mode=SAFETY_SILENT, param=0, disable_checks=True):
+    self._handle.controlWrite(Panda.REQUEST_OUT, 0xdc, mode, param, b'')
     if disable_checks:
       self.set_heartbeat_disabled()
       self.set_power_save(0)
@@ -571,7 +519,7 @@ class Panda(object):
     # TODO: check panda type
     if bus is None:
       self._handle.controlWrite(Panda.REQUEST_OUT, 0xdb, 0, 0, b'')
-    elif bus in [Panda.GMLAN_CAN2, Panda.GMLAN_CAN3]:
+    elif bus in (Panda.GMLAN_CAN2, Panda.GMLAN_CAN3):
       self._handle.controlWrite(Panda.REQUEST_OUT, 0xdb, 1, bus, b'')
 
   def set_obd(self, obd):
@@ -592,7 +540,7 @@ class Panda(object):
   def set_can_data_speed_kbps(self, bus, speed):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xf9, bus, int(speed * 10), b'')
 
-    # CAN FD and BRS status
+  # CAN FD and BRS status
   def get_canfd_status(self, bus):
     dat = self._handle.controlRead(Panda.REQUEST_IN, 0xfa, bus, 0, 2)
     if dat:
@@ -623,17 +571,13 @@ class Panda(object):
     snds = pack_can_buffer(arr)
     while True:
       try:
-        if self.wifi:
-          for s in snds:
-            self._handle.bulkWrite(3, s)
-        else:
-          for tx in snds:
-            while True:
-              bs = self._handle.bulkWrite(3, tx, timeout=timeout)
-              tx = tx[bs:]
-              if len(tx) == 0:
-                break
-              print("CAN: PARTIAL SEND MANY, RETRYING")
+        for tx in snds:
+          while True:
+            bs = self._handle.bulkWrite(3, tx, timeout=timeout)
+            tx = tx[bs:]
+            if len(tx) == 0:
+              break
+            print("CAN: PARTIAL SEND MANY, RETRYING")
         break
       except (usb1.USBErrorIO, usb1.USBErrorOverflow):
         print("CAN: BAD SEND MANY, RETRYING")
@@ -762,8 +706,8 @@ class Panda(object):
     msg += self.kline_ll_recv(msg[-1]+1, bus=bus)
     return msg
 
-  def send_heartbeat(self):
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xf3, 0, 0, b'')
+  def send_heartbeat(self, engaged=True):
+    self._handle.controlWrite(Panda.REQUEST_OUT, 0xf3, engaged, 0, b'')
 
   # disable heartbeat checks for use outside of openpilot
   # sending a heartbeat will reenable the checks

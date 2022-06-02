@@ -22,18 +22,21 @@
 # THE SOFTWARE.
 
 import threading
-import time
-from common.realtime import DT_CTRL
+from common.realtime import Ratekeeper
 from selfdrive.gpxd.gpx_uploader import gpx_uploader_thread
+
+HERTZ = 1
+
 
 def confd_thread():
   uploader_thread = None
+  rk = Ratekeeper(HERTZ, print_delay_threshold=None)  # Keeps rate at 1 hz
 
   while True:
     if uploader_thread is None:
       uploader_thread = threading.Thread(target=gpx_uploader_thread)
       uploader_thread.start()
-    time.sleep(DT_CTRL)
+    rk.keep_time()
 
 def main():
   confd_thread()

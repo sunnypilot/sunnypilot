@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import struct
 import traceback
-from typing import Any
+from typing import Any, List
 from collections import defaultdict
+from dataclasses import dataclass
 
 from tqdm import tqdm
 
@@ -84,85 +85,102 @@ NISSAN_VERSION_RESPONSE_STANDARD =  bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIF
 
 NISSAN_RX_OFFSET = 0x20
 
-# brand, request, response, response offset
-REQUESTS = [
+SUBARU_VERSION_REQUEST = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + \
+  p16(uds.DATA_IDENTIFIER_TYPE.APPLICATION_DATA_IDENTIFICATION)
+SUBARU_VERSION_RESPONSE = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 0x40]) + \
+  p16(uds.DATA_IDENTIFIER_TYPE.APPLICATION_DATA_IDENTIFICATION)
+
+
+@dataclass
+class Request:
+  brand: str
+  request: List[bytes]
+  response: List[bytes]
+  rx_offset: int = DEFAULT_RX_OFFSET
+  bus: int = 1
+
+REQUESTS: List[Request] = [
+  # Subaru
+  Request(
+    "subaru",
+    [TESTER_PRESENT_REQUEST, SUBARU_VERSION_REQUEST],
+    [TESTER_PRESENT_RESPONSE, SUBARU_VERSION_RESPONSE],
+  ),
   # Hyundai
-  (
+  Request(
     "hyundai",
     [HYUNDAI_VERSION_REQUEST_LONG],
     [HYUNDAI_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
-  (
+  Request(
     "hyundai",
     [HYUNDAI_VERSION_REQUEST_MULTI],
     [HYUNDAI_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
   # Honda
-  (
+  Request(
     "honda",
     [UDS_VERSION_REQUEST],
     [UDS_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
   # Toyota
-  (
+  Request(
     "toyota",
     [SHORT_TESTER_PRESENT_REQUEST, TOYOTA_VERSION_REQUEST],
     [SHORT_TESTER_PRESENT_RESPONSE, TOYOTA_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
-  (
+  Request(
     "toyota",
     [SHORT_TESTER_PRESENT_REQUEST, OBD_VERSION_REQUEST],
     [SHORT_TESTER_PRESENT_RESPONSE, OBD_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
-  (
+  Request(
     "toyota",
     [TESTER_PRESENT_REQUEST, DEFAULT_DIAGNOSTIC_REQUEST, EXTENDED_DIAGNOSTIC_REQUEST, UDS_VERSION_REQUEST],
     [TESTER_PRESENT_RESPONSE, DEFAULT_DIAGNOSTIC_RESPONSE, EXTENDED_DIAGNOSTIC_RESPONSE, UDS_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
   # Volkswagen
-  (
+  Request(
     "volkswagen",
     [VOLKSWAGEN_VERSION_REQUEST_MULTI],
     [VOLKSWAGEN_VERSION_RESPONSE],
-    VOLKSWAGEN_RX_OFFSET,
+    rx_offset=VOLKSWAGEN_RX_OFFSET,
   ),
-  (
+  Request(
     "volkswagen",
     [VOLKSWAGEN_VERSION_REQUEST_MULTI],
     [VOLKSWAGEN_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
   # Mazda
-  (
+  Request(
     "mazda",
     [MAZDA_VERSION_REQUEST],
     [MAZDA_VERSION_RESPONSE],
-    DEFAULT_RX_OFFSET,
   ),
   # Nissan
-  (
+  Request(
     "nissan",
     [NISSAN_DIAGNOSTIC_REQUEST_KWP, NISSAN_VERSION_REQUEST_KWP],
     [NISSAN_DIAGNOSTIC_RESPONSE_KWP, NISSAN_VERSION_RESPONSE_KWP],
-    DEFAULT_RX_OFFSET,
   ),
-  (
+  Request(
     "nissan",
     [NISSAN_DIAGNOSTIC_REQUEST_KWP, NISSAN_VERSION_REQUEST_KWP],
     [NISSAN_DIAGNOSTIC_RESPONSE_KWP, NISSAN_VERSION_RESPONSE_KWP],
-    NISSAN_RX_OFFSET,
+    rx_offset=NISSAN_RX_OFFSET,
   ),
-  (
+  Request(
     "nissan",
     [NISSAN_VERSION_REQUEST_STANDARD],
     [NISSAN_VERSION_RESPONSE_STANDARD],
-    NISSAN_RX_OFFSET,
+    rx_offset=NISSAN_RX_OFFSET,
+  ),
+  # Body
+  Request(
+    "body",
+    [TESTER_PRESENT_REQUEST, UDS_VERSION_REQUEST],
+    [TESTER_PRESENT_RESPONSE, UDS_VERSION_RESPONSE],
+    bus=0,
   ),
 ]
 
@@ -190,7 +208,7 @@ def match_fw_to_car_fuzzy(fw_versions_dict, log=True, exclude=None):
   # Getting this exactly right isn't crucial, but excluding camera and radar makes it almost
   # impossible to get 3 matching versions, even if two models with shared parts are released at the same
   # time and only one is in our database.
-  exclude_types = [Ecu.fwdCamera, Ecu.fwdRadar, Ecu.eps]
+  exclude_types = [Ecu.fwdCamera, Ecu.fwdRadar, Ecu.eps, Ecu.debug]
 
   # Build lookup table from (addr, subaddr, fw) to list of candidate cars
   all_fw_versions = defaultdict(list)
@@ -221,7 +239,7 @@ def match_fw_to_car_fuzzy(fw_versions_dict, log=True, exclude=None):
   if match_count >= 2:
     if log:
       cloudlog.error(f"Fingerprinted {candidate} using fuzzy match. {match_count} matching ECUs")
-    return set([candidate])
+    return {candidate}
   else:
     return set()
 
@@ -240,15 +258,19 @@ def match_fw_to_car_exact(fw_versions_dict):
       addr = ecu[1:]
       found_version = fw_versions_dict.get(addr, None)
       ESSENTIAL_ECUS = [Ecu.engine, Ecu.eps, Ecu.esp, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.vsa]
-      if ecu_type == Ecu.esp and candidate in [TOYOTA.RAV4, TOYOTA.COROLLA, TOYOTA.HIGHLANDER, TOYOTA.SIENNA, TOYOTA.LEXUS_IS] and found_version is None:
+      if ecu_type == Ecu.esp and candidate in (TOYOTA.RAV4, TOYOTA.COROLLA, TOYOTA.HIGHLANDER, TOYOTA.SIENNA, TOYOTA.LEXUS_IS) and found_version is None:
         continue
 
       # On some Toyota models, the engine can show on two different addresses
-      if ecu_type == Ecu.engine and candidate in [TOYOTA.CAMRY, TOYOTA.COROLLA_TSS2, TOYOTA.CHR, TOYOTA.LEXUS_IS] and found_version is None:
+      if ecu_type == Ecu.engine and candidate in (TOYOTA.CAMRY, TOYOTA.COROLLA_TSS2, TOYOTA.CHR, TOYOTA.LEXUS_IS) and found_version is None:
         continue
 
       # Ignore non essential ecus
       if ecu_type not in ESSENTIAL_ECUS and found_version is None:
+        continue
+
+      # Virtual debug ecu doesn't need to match the database
+      if ecu_type == Ecu.debug:
         continue
 
       if found_version not in expected_versions:
@@ -273,7 +295,7 @@ def match_fw_to_car(fw_versions, allow_fuzzy=True):
   return exact_match, matches
 
 
-def get_fw_versions(logcan, sendcan, bus, extra=None, timeout=0.1, debug=False, progress=False):
+def get_fw_versions(logcan, sendcan, extra=None, timeout=0.1, debug=False, progress=False):
   ecu_types = {}
 
   # Extract ECU addresses to query from fingerprints
@@ -304,12 +326,12 @@ def get_fw_versions(logcan, sendcan, bus, extra=None, timeout=0.1, debug=False, 
   fw_versions = {}
   for i, addr in enumerate(tqdm(addrs, disable=not progress)):
     for addr_chunk in chunks(addr):
-      for brand, request, response, response_offset in REQUESTS:
+      for r in REQUESTS:
         try:
-          addrs = [(a, s) for (b, a, s) in addr_chunk if b in (brand, 'any')]
+          addrs = [(a, s) for (b, a, s) in addr_chunk if b in (r.brand, 'any')]
 
           if addrs:
-            query = IsoTpParallelQuery(sendcan, logcan, bus, addrs, request, response, response_offset, debug=debug)
+            query = IsoTpParallelQuery(sendcan, logcan, r.bus, addrs, r.request, r.response, r.rx_offset, debug=debug)
             t = 2 * timeout if i == 0 else timeout
             fw_versions.update(query.get_data(t))
         except Exception:
@@ -337,7 +359,7 @@ if __name__ == "__main__":
   import argparse
   import cereal.messaging as messaging
   from selfdrive.car.vin import get_vin
-  import selfdrive.crash as crash
+  import selfdrive.sentry as sentry
 
   parser = argparse.ArgumentParser(description='Get firmware version of ECUs')
   parser.add_argument('--scan', '-s', action='store_true', help='In-depth scan of ECU\'s. May cause module faults')
@@ -364,13 +386,11 @@ if __name__ == "__main__":
   print("Getting vin...")
   addr, vin = get_vin(logcan, sendcan, 1, retry=10, debug=args.debug)
   print(f"VIN: {vin}")
-  print("Getting VIN took %.3f s" % (time.time() - t))
+  print(f"Getting VIN took {time.time() - t:.3f} s")
   print()
 
   t = time.time()
-  fw_vers = get_fw_versions(logcan, sendcan, 1, extra=extra, debug=args.debug, progress=True)
-  fw_vers = get_fw_versions(logcan, sendcan, 0, extra=extra, debug=args.debug, progress=True)
-  fw_vers += get_fw_versions(logcan, sendcan, 1, extra=extra, debug=args.debug, progress=True)
+  fw_vers = get_fw_versions(logcan, sendcan, extra=extra, debug=args.debug, progress=True)
   _, candidates = match_fw_to_car(fw_vers)
 
   versions = []
@@ -379,17 +399,17 @@ if __name__ == "__main__":
   print("{")
   for version in fw_vers:
     subaddr = None if version.subAddress == 0 else hex(version.subAddress)
-    vers = (f"  (Ecu.{version.ecu}, {hex(version.address)}, {subaddr}): [{version.fwVersion}]")
+    vers = f"  (Ecu.{version.ecu}, {hex(version.address)}, {subaddr}): [{version.fwVersion}]"
     versions.append('('+vers+')')
     print(vers)
   print("}")
 
   print()
   print("Possible matches:", candidates)
-  print("Getting fw took %.3f s" % (time.time() - t))
+  print(f"Getting fw took {time.time() - t:.3f} s")
 
   if args.json:
     model = args.json
     vers_str = ''.join(versions)
-    crash.capture_info('Model is: '+model+'. '+vers_str)
+    sentry.capture_info('Model is: '+model+'. '+vers_str)
     print("Uploaded JSON & Sentry to fork maintainer")

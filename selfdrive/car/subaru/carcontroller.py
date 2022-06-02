@@ -6,45 +6,97 @@ from opendbc.can.packer import CANPacker
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
+    self.CP = CP
     self.apply_steer_last = 0
     self.es_distance_cnt = -1
-    self.es_accel_cnt = -1
     self.es_lkas_cnt = -1
+    self.throttle_cnt = -1
     self.cruise_button_prev = 0
     self.steer_rate_limited = False
+    self.sng_acc_resume = False
+    self.sng_acc_resume_cnt = -1
+    self.manual_hold = False
+    self.prev_cruise_state = 0
+    self.prev_close_distance = 0
 
+    self.p = CarControllerParams(CP)
     self.packer = CANPacker(DBC[CP.carFingerprint]['pt'])
 
-  def update(self, enabled, CS, frame, actuators, pcm_cancel_cmd, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
+  def update(self, c, CS, frame, actuators, pcm_cancel_cmd, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
 
     can_sends = []
 
     # *** steering ***
-    if (frame % CarControllerParams.STEER_STEP) == 0:
+    if (frame % self.p.STEER_STEP) == 0:
 
-      apply_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
+      apply_steer = int(round(actuators.steer * self.p.STEER_MAX))
 
       # limits due to driver torque
 
       new_steer = int(round(apply_steer))
-      apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, CarControllerParams)
+      apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.p)
       self.steer_rate_limited = new_steer != apply_steer
 
-      if not enabled:
+      if not c.latActive:
         apply_steer = 0
 
-      if CS.CP.carFingerprint in PREGLOBAL_CARS:
-        can_sends.append(subarucan.create_preglobal_steering_control(self.packer, apply_steer, frame, CarControllerParams.STEER_STEP))
+      if self.CP.carFingerprint in PREGLOBAL_CARS:
+        can_sends.append(subarucan.create_preglobal_steering_control(self.packer, apply_steer, frame, self.p.STEER_STEP))
       else:
-        can_sends.append(subarucan.create_steering_control(self.packer, apply_steer, frame, CarControllerParams.STEER_STEP))
+        can_sends.append(subarucan.create_steering_control(self.packer, apply_steer, frame, self.p.STEER_STEP))
 
       self.apply_steer_last = apply_steer
 
 
-    # *** alerts and pcm cancel ***
+    # *** stop and go ***
+
+    throttle_cmd = False
 
     if CS.CP.carFingerprint in PREGLOBAL_CARS:
-      if self.es_accel_cnt != CS.es_accel_msg["Counter"]:
+      if (c.enabled                                            # ACC active
+          and CS.car_follow == 1                             # lead car
+          and CS.out.standstill                              # must be standing still
+          and CS.close_distance > 3                          # acc resume min trigger threshold (m)
+          and CS.close_distance < 4.5                        # acc resume max trigger threshold (m)
+          and CS.close_distance > self.prev_close_distance): # distance with lead car is increasing
+        self.sng_acc_resume = True
+    elif CS.CP.carFingerprint not in PREGLOBAL_CARS:
+      # Record manual hold set while in standstill and no car in front
+      if CS.out.standstill and self.prev_cruise_state == 1 and CS.cruise_state == 3 and CS.car_follow == 0:
+        self.manual_hold = True
+      # Cancel manual hold when car starts moving
+      if not CS.out.standstill:
+        self.manual_hold = False
+      if (c.enabled                                            # ACC active
+          and not self.manual_hold
+          and CS.car_follow == 1                             # lead car
+          and CS.cruise_state == 3                           # ACC HOLD (only with EPB)
+          and CS.out.standstill                              # must be standing still
+          and CS.close_distance > 3                          # acc resume min trigger threshold (m)
+          and CS.close_distance < 4.5                        # acc resume max trigger threshold (m)
+          and CS.close_distance > self.prev_close_distance): # distance with lead car is increasing
+        self.sng_acc_resume = True
+      self.prev_cruise_state = CS.cruise_state
+
+    if self.sng_acc_resume:
+      if self.sng_acc_resume_cnt < 5:
+        throttle_cmd = True
+        self.sng_acc_resume_cnt += 1
+      else:
+        self.sng_acc_resume = False
+        self.sng_acc_resume_cnt = -1
+
+    # Cancel ACC if stopped, brake pressed and not stopped behind another car
+    if c.enabled and CS.out.brakePressed and CS.car_follow == 0 and CS.out.standstill:
+      pcm_cancel_cmd = True
+
+    self.prev_close_distance = CS.close_distance
+
+
+    # *** alerts and pcm cancel ***
+
+    if self.CP.carFingerprint in PREGLOBAL_CARS:
+      if self.es_distance_cnt != CS.es_distance_msg["Counter"]:
         # 1 = main, 2 = set shallow, 3 = set deep, 4 = resume shallow, 5 = resume deep
         # disengage ACC when OP is disengaged
         if pcm_cancel_cmd:
@@ -60,8 +112,12 @@ class CarController():
           cruise_button = 0
         self.cruise_button_prev = cruise_button
 
-        can_sends.append(subarucan.create_es_throttle_control(self.packer, cruise_button, CS.es_accel_msg))
-        self.es_accel_cnt = CS.es_accel_msg["Counter"]
+        can_sends.append(subarucan.create_preglobal_es_distance(self.packer, cruise_button, CS.es_distance_msg))
+        self.es_distance_cnt = CS.es_distance_msg["Counter"]
+
+      if self.throttle_cnt != CS.throttle_msg["Counter"]:
+        can_sends.append(subarucan.create_preglobal_throttle(self.packer, CS.throttle_msg, throttle_cmd))
+        self.throttle_cnt = CS.throttle_msg["Counter"]
 
     else:
       if self.es_distance_cnt != CS.es_distance_msg["Counter"]:
@@ -69,7 +125,14 @@ class CarController():
         self.es_distance_cnt = CS.es_distance_msg["Counter"]
 
       if self.es_lkas_cnt != CS.es_lkas_msg["Counter"]:
-        can_sends.append(subarucan.create_es_lkas(self.packer, CS.es_lkas_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart))
+        can_sends.append(subarucan.create_es_lkas(self.packer, CS.es_lkas_msg, c.enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart))
         self.es_lkas_cnt = CS.es_lkas_msg["Counter"]
 
-    return can_sends
+      if self.throttle_cnt != CS.throttle_msg["Counter"]:
+        can_sends.append(subarucan.create_throttle(self.packer, CS.throttle_msg, throttle_cmd))
+        self.throttle_cnt = CS.throttle_msg["Counter"]
+
+    new_actuators = actuators.copy()
+    new_actuators.steer = self.apply_steer_last / self.p.STEER_MAX
+
+    return new_actuators, can_sends

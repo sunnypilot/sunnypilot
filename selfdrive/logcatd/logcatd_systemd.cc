@@ -8,8 +8,8 @@
 #include "json11.hpp"
 
 #include "cereal/messaging/messaging.h"
-#include "selfdrive/common/timing.h"
-#include "selfdrive/common/util.h"
+#include "common/timing.h"
+#include "common/util.h"
 
 ExitHandler do_exit;
 int main(int argc, char *argv[]) {
@@ -23,6 +23,10 @@ int main(int argc, char *argv[]) {
   assert(err >= 0);
   err = sd_journal_seek_tail(journal);
   assert(err >= 0);
+
+  // workaround for bug https://github.com/systemd/systemd/issues/9934
+  // call sd_journal_previous_skip after sd_journal_seek_tail (like journalctl -f does) to makes things work.
+  sd_journal_previous_skip(journal, 1);
 
   while (!do_exit) {
     err = sd_journal_next(journal);

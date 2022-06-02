@@ -2,8 +2,8 @@ import os
 import subprocess
 from common.basedir import BASEDIR
 
-
 PREBUILT = os.path.exists(os.path.join(BASEDIR, 'prebuilt'))
+
 
 class Spinner():
   def __init__(self):
@@ -26,7 +26,7 @@ class Spinner():
       except BrokenPipeError:
         pass
 
-  def update_progress(self, cur: int, total: int):
+  def update_progress(self, cur: float, total: float):
     self.update(str(round(100 * cur / total)))
 
   def close(self):
@@ -50,24 +50,26 @@ if __name__ == "__main__":
   if PREBUILT:
     with Spinner() as s:
       # opkr
-      s.update("O")
+      s.update("S")
       time.sleep(1.0)
-      s.update("OP")
+      s.update("SU")
       time.sleep(0.3)
-      s.update("OPE")
+      s.update("SUN")
       time.sleep(0.3)
-      s.update("OPEN")
+      s.update("SUNN")
       time.sleep(0.3)
-      s.update("OPENP")
+      s.update("SUNNY")
       time.sleep(0.3)
-      s.update("OPENPI")
+      s.update("SUNNYP")
       time.sleep(0.3)
-      s.update("OPENPIL")
+      s.update("SUNNYPI")
       time.sleep(0.3)
-      s.update("OPENPILO")
+      s.update("SUNNYPIL")
       time.sleep(0.3)
-      s.update("OPENPILOT")
-      time.sleep(1.5)
+      s.update("SUNNYPILO")
+      time.sleep(0.3)
+      s.update("SUNNYPILOT")
+      time.sleep(1.0)
       s.update("For")
       time.sleep(1.0)
       s.update("Your")

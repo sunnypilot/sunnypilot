@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-import gc
 import math
-
 import json
 import numpy as np
 
 import cereal.messaging as messaging
 from cereal import car
 from common.params import Params, put_nonblocking
-from common.realtime import set_realtime_priority, DT_MDL
+from common.realtime import config_realtime_process, DT_MDL
 from common.numpy_fast import clip
 from selfdrive.locationd.models.car_kf import CarKalman, ObservationKind, States
 from selfdrive.locationd.models.constants import GENERATED_DIR
@@ -44,29 +42,32 @@ class ParamsLearner:
       yaw_rate = msg.angularVelocityCalibrated.value[2]
       yaw_rate_std = msg.angularVelocityCalibrated.std[2]
 
-      yaw_rate_valid = msg.angularVelocityCalibrated.valid
-      yaw_rate_valid = yaw_rate_valid and 0 < yaw_rate_std < 10  # rad/s
-      yaw_rate_valid = yaw_rate_valid and abs(yaw_rate) < 1  # rad/s
-
       localizer_roll = msg.orientationNED.value[0]
+      localizer_roll_std = np.radians(1) if np.isnan(msg.orientationNED.std[0]) else msg.orientationNED.std[0]
       roll_valid = msg.orientationNED.valid and ROLL_MIN < localizer_roll < ROLL_MAX
       if roll_valid:
         roll = localizer_roll
-        roll_std = np.radians(1.0)
+        # Experimentally found multiplier of 2 to be best trade-off between stability and accuracy or similar?
+        roll_std = 2 * localizer_roll_std
       else:
         # This is done to bound the road roll estimate when localizer values are invalid
         roll = 0.0
         roll_std = np.radians(10.0)
       self.roll = clip(roll, self.roll - ROLL_MAX_DELTA, self.roll + ROLL_MAX_DELTA)
 
+      yaw_rate_valid = msg.angularVelocityCalibrated.valid
+      yaw_rate_valid = yaw_rate_valid and 0 < yaw_rate_std < 10  # rad/s
+      yaw_rate_valid = yaw_rate_valid and abs(yaw_rate) < 1  # rad/s
+
       if self.active:
-        if msg.inputsOK and msg.posenetOK:
+        if msg.posenetOK:
 
           if yaw_rate_valid:
             self.kf.predict_and_observe(t,
                                         ObservationKind.ROAD_FRAME_YAW_RATE,
                                         np.array([[-yaw_rate]]),
                                         np.array([np.atleast_2d(yaw_rate_std**2)]))
+
           self.kf.predict_and_observe(t,
                                       ObservationKind.ROAD_ROLL,
                                       np.array([[self.roll]]),
@@ -100,8 +101,7 @@ class ParamsLearner:
 
 
 def main(sm=None, pm=None):
-  gc.disable()
-  set_realtime_priority(5)
+  config_realtime_process([0, 1, 2, 3], 5)
 
   if sm is None:
     sm = messaging.SubMaster(['liveLocationKalman', 'carState'], poll=['liveLocationKalman'])
@@ -157,10 +157,11 @@ def main(sm=None, pm=None):
 
   while True:
     sm.update()
-    for which in sorted(sm.updated.keys(), key=lambda x: sm.logMonoTime[x]):
-      if sm.updated[which]:
-        t = sm.logMonoTime[which] * 1e-9
-        learner.handle_log(t, which, sm[which])
+    if sm.all_checks():
+      for which in sorted(sm.updated.keys(), key=lambda x: sm.logMonoTime[x]):
+        if sm.updated[which]:
+          t = sm.logMonoTime[which] * 1e-9
+          learner.handle_log(t, which, sm[which])
 
     if sm.updated['liveLocationKalman']:
       x = learner.kf.x
@@ -174,32 +175,34 @@ def main(sm=None, pm=None):
       angle_offset = clip(math.degrees(x[States.ANGLE_OFFSET] + x[States.ANGLE_OFFSET_FAST]), angle_offset - MAX_ANGLE_OFFSET_DELTA, angle_offset + MAX_ANGLE_OFFSET_DELTA)
 
       msg = messaging.new_message('liveParameters')
-      msg.logMonoTime = sm.logMonoTime['carState']
 
-      msg.liveParameters.posenetValid = True
-      msg.liveParameters.sensorValid = True
-      msg.liveParameters.steerRatio = float(x[States.STEER_RATIO])
-      msg.liveParameters.stiffnessFactor = float(x[States.STIFFNESS])
-      msg.liveParameters.roll = float(x[States.ROAD_ROLL])
-      msg.liveParameters.angleOffsetAverageDeg = angle_offset_average
-      msg.liveParameters.angleOffsetDeg = angle_offset
-      msg.liveParameters.valid = all((
-        abs(msg.liveParameters.angleOffsetAverageDeg) < 10.0,
-        abs(msg.liveParameters.angleOffsetDeg) < 10.0,
-        0.2 <= msg.liveParameters.stiffnessFactor <= 5.0,
-        min_sr <= msg.liveParameters.steerRatio <= max_sr,
+      liveParameters = msg.liveParameters
+      liveParameters.posenetValid = True
+      liveParameters.sensorValid = True
+      liveParameters.steerRatio = float(x[States.STEER_RATIO])
+      liveParameters.stiffnessFactor = float(x[States.STIFFNESS])
+      liveParameters.roll = float(x[States.ROAD_ROLL])
+      liveParameters.angleOffsetAverageDeg = angle_offset_average
+      liveParameters.angleOffsetDeg = angle_offset
+      liveParameters.valid = all((
+        abs(liveParameters.angleOffsetAverageDeg) < 10.0,
+        abs(liveParameters.angleOffsetDeg) < 10.0,
+        0.2 <= liveParameters.stiffnessFactor <= 5.0,
+        min_sr <= liveParameters.steerRatio <= max_sr,
       ))
-      msg.liveParameters.steerRatioStd = float(P[States.STEER_RATIO])
-      msg.liveParameters.stiffnessFactorStd = float(P[States.STIFFNESS])
-      msg.liveParameters.angleOffsetAverageStd = float(P[States.ANGLE_OFFSET])
-      msg.liveParameters.angleOffsetFastStd = float(P[States.ANGLE_OFFSET_FAST])
+      liveParameters.steerRatioStd = float(P[States.STEER_RATIO])
+      liveParameters.stiffnessFactorStd = float(P[States.STIFFNESS])
+      liveParameters.angleOffsetAverageStd = float(P[States.ANGLE_OFFSET])
+      liveParameters.angleOffsetFastStd = float(P[States.ANGLE_OFFSET_FAST])
+
+      msg.valid = sm.all_checks()
 
       if sm.frame % 1200 == 0:  # once a minute
         params = {
           'carFingerprint': CP.carFingerprint,
-          'steerRatio': msg.liveParameters.steerRatio,
-          'stiffnessFactor': msg.liveParameters.stiffnessFactor,
-          'angleOffsetAverageDeg': msg.liveParameters.angleOffsetAverageDeg,
+          'steerRatio': liveParameters.steerRatio,
+          'stiffnessFactor': liveParameters.stiffnessFactor,
+          'angleOffsetAverageDeg': liveParameters.angleOffsetAverageDeg,
         }
         put_nonblocking("LiveParameters", json.dumps(params))
 

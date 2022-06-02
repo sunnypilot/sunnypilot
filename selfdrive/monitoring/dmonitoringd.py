@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
+import gc
+
+import cereal.messaging as messaging
 from cereal import car
 from common.params import Params
-import cereal.messaging as messaging
+from common.realtime import set_realtime_priority
 from selfdrive.controls.lib.events import Events
-from selfdrive.monitoring.driver_monitor import DriverStatus
 from selfdrive.locationd.calibrationd import Calibration
+from selfdrive.monitoring.driver_monitor import DriverStatus
 from selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus
 
+
 def dmonitoringd_thread(sm=None, pm=None):
+  gc.disable()
+  set_realtime_priority(2)
+
   if pm is None:
     pm = messaging.PubMaster(['driverMonitoringState'])
 
@@ -38,22 +45,20 @@ def dmonitoringd_thread(sm=None, pm=None):
     if sm.updated['carState']:
       v_cruise = sm['carState'].cruiseState.speed
       steering_wheel_engaged = len(sm['carState'].buttonEvents) > 0 or \
-                        v_cruise != v_cruise_last or \
-                        sm['carState'].steeringPressed
+                                v_cruise != v_cruise_last or \
+                                sm['carState'].steeringPressed
       driver_engaged = steering_wheel_engaged or sm['carState'].gasPressed
-      if driver_engaged:
-        driver_status.update(Events(), True, sm['controlsState'].enabled, sm['carState'].standstill)
       # Update events and state from hands on wheel monitoring status when steering wheel in engaged
       if steering_wheel_engaged and hands_on_wheel_monitoring_enabled:
         hands_on_wheel_status.update(Events(), True, sm['controlsState'].enabled, sm['carState'].vEgo)
       v_cruise_last = v_cruise
 
     if sm.updated['modelV2']:
-      driver_status.set_policy(sm['modelV2'])
+      driver_status.set_policy(sm['modelV2'], sm['carState'].vEgo)
 
     # Get data from dmonitoringmodeld
     events = Events()
-    driver_status.get_pose(sm['driverState'], sm['liveCalibration'].rpyCalib, sm['carState'].vEgo, sm['controlsState'].enabled)
+    driver_status.update_states(sm['driverState'], sm['liveCalibration'].rpyCalib, sm['carState'].vEgo, sm['controlsState'].enabled)
 
     # Block engaging after max number of distrations
     if driver_status.terminal_alert_cnt >= driver_status.settings._MAX_TERMINAL_ALERTS or \
@@ -61,7 +66,7 @@ def dmonitoringd_thread(sm=None, pm=None):
       events.add(car.CarEvent.EventName.tooDistracted)
 
     # Update events from driver state
-    driver_status.update(events, driver_engaged, sm['controlsState'].enabled, sm['carState'].standstill)
+    driver_status.update_events(events, driver_engaged, sm['controlsState'].enabled, sm['carState'].standstill)
     # Update events and state from hands on wheel monitoring status
     if hands_on_wheel_monitoring_enabled:
       hands_on_wheel_status.update(events, steering_wheel_engaged, sm['controlsState'].enabled, sm['carState'].vEgo)
@@ -72,6 +77,7 @@ def dmonitoringd_thread(sm=None, pm=None):
       "events": events.to_msg(),
       "faceDetected": driver_status.face_detected,
       "isDistracted": driver_status.driver_distracted,
+      "distractedType": sum(driver_status.distracted_types),
       "awarenessStatus": driver_status.awareness,
       "posePitchOffset": driver_status.pose.pitch_offseter.filtered_stat.mean(),
       "posePitchValidCount": driver_status.pose.pitch_offseter.filtered_stat.n,
@@ -87,8 +93,10 @@ def dmonitoringd_thread(sm=None, pm=None):
     }
     pm.send('driverMonitoringState', dat)
 
+
 def main(sm=None, pm=None):
   dmonitoringd_thread(sm, pm)
+
 
 if __name__ == '__main__':
   main()

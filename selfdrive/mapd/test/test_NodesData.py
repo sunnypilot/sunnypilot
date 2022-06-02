@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from selfdrive.mapd.lib.geo import DIRECTION
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 from selfdrive.mapd.lib.WayRelation import WayRelation
 from selfdrive.mapd.lib.NodesData import nodes_raw_data_array_for_wr, node_calculations, \
   spline_curvature_calculations, split_speed_section_by_sign, split_speed_section_by_curv_degree, speed_section, \

@@ -57,7 +57,7 @@ class GpxUploader():
     self._delete_after_upload = Params().get_bool('GpxDeleteAfterUpload')
     self._delete_if_uploaded = Params().get_bool("GpxDeleteIfUploaded")
     self._car_model = Params().get("LastCarModel", encoding='utf8')
-    self._dp_version = get_version()
+    self._sp_version = get_version()
     _debug("GpxUploader init - _delete_after_upload = %s" % self._delete_after_upload)
     _debug("GpxUploader init - _car_model = %s" % self._car_model)
 
@@ -99,7 +99,7 @@ class GpxUploader():
   def _do_upload(self, filename):
     fn = os.path.basename(filename)
     data = {
-      'description': "Routes from sunnypilot %s (%s)." % (self._dp_version, self._car_model),
+      'description': "Routes from sunnypilot %s (%s)." % (self._sp_version, self._car_model),
       'visibility': 'identifiable'
     }
     files = {

@@ -1,4 +1,3 @@
-import numpy as np
 import time
 from common.params import Params
 from cereal import log
@@ -38,7 +37,7 @@ class TurnSpeedController():
   def __init__(self):
     self._params = Params()
     self._last_params_update = 0.
-    self._is_enabled = self._params.get_bool("TurnSpeedControl")
+    self._is_enabled = self._params.get_bool("MapTurnSpeedControl")
     self._op_enabled = False
     self._v_ego = 0.
     self._a_ego = 0.
@@ -165,7 +164,7 @@ class TurnSpeedController():
   def _update_params(self):
     time = sec_since_boot()
     if time > self._last_params_update + 5.0:
-      self._is_enabled = self._params.get_bool("TurnSpeedControl")
+      self._is_enabled = self._params.get_bool("MapTurnSpeedControl")
       self._last_params_update = time
 
   def _update_calculations(self):

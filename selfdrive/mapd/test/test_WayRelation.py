@@ -4,7 +4,7 @@ import numpy as np
 from unittest import mock
 from numpy.testing import assert_array_almost_equal
 from datetime import datetime as dt, timezone, timedelta
-from selfdrive.config import Conversions as CV
+from common.conversions import Conversions as CV
 from selfdrive.mapd.lib.WayRelation import WayRelation, is_osm_time_condition_active, \
   conditional_speed_limit_for_osm_tag_limit_string, speed_limit_for_osm_tag_limit_string
 from selfdrive.mapd.config import LANE_WIDTH

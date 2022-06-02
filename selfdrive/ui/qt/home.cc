@@ -5,7 +5,7 @@
 #include <QMouseEvent>
 #include <QVBoxLayout>
 
-#include "selfdrive/common/params.h"
+#include "common/params.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/drive_stats.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
@@ -19,7 +19,6 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
 
   sidebar = new Sidebar(this);
   main_layout->addWidget(sidebar);
-  QObject::connect(this, &HomeWindow::update, sidebar, &Sidebar::updateState);
   QObject::connect(sidebar, &Sidebar::openSettings, this, &HomeWindow::openSettings);
 
   slayout = new QStackedLayout();
@@ -31,8 +30,8 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   onroad = new OnroadWindow(this);
   slayout->addWidget(onroad);
 
-  QObject::connect(this, &HomeWindow::update, onroad, &OnroadWindow::updateStateSignal);
-  QObject::connect(this, &HomeWindow::offroadTransitionSignal, onroad, &OnroadWindow::offroadTransitionSignal);
+  body = new BodyWindow(this);
+  slayout->addWidget(body);
 
   driver_view = new DriverViewWindow(this);
   connect(driver_view, &DriverViewWindow::done, [=] {
@@ -40,20 +39,32 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   });
   slayout->addWidget(driver_view);
   setAttribute(Qt::WA_NoSystemBackground);
+  QObject::connect(uiState(), &UIState::uiUpdate, this, &HomeWindow::updateState);
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &HomeWindow::offroadTransition);
 }
 
 void HomeWindow::showSidebar(bool show) {
   sidebar->setVisible(show);
 }
 
+void HomeWindow::updateState(const UIState &s) {
+  const SubMaster &sm = *(s.sm);
+
+  // switch to the generic robot UI
+  if (onroad->isVisible() && !body->isEnabled() && sm["carParams"].getCarParams().getNotCar()) {
+    body->setEnabled(true);
+    slayout->setCurrentWidget(body);
+  }
+}
+
 void HomeWindow::offroadTransition(bool offroad) {
+  body->setEnabled(false);
   sidebar->setVisible(offroad);
   if (offroad) {
     slayout->setCurrentWidget(home);
   } else {
     slayout->setCurrentWidget(onroad);
   }
-  emit offroadTransitionSignal(offroad);
 }
 
 void HomeWindow::showDriverView(bool show) {
@@ -68,13 +79,24 @@ void HomeWindow::showDriverView(bool show) {
 
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
   // Handle sidebar collapsing
-  if (onroad->isVisible() && (!sidebar->isVisible() || e->x() > sidebar->width())) {
+  if ((onroad->isVisible() || body->isVisible()) && (!sidebar->isVisible() || e->x() > sidebar->width())) {
     sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
   }
 
-  if (QUIState::ui_state.scene.started && QUIState::ui_state.scene.onroadScreenOff != -2) {
-    QUIState::ui_state.scene.touched2 = true;
-    QTimer::singleShot(500, []() { QUIState::ui_state.scene.touched2 = false; });
+  if (uiState()->scene.started && uiState()->scene.onroadScreenOff != -2) {
+    uiState()->scene.touched2 = true;
+    QTimer::singleShot(500, []() { uiState()->scene.touched2 = false; });
+  }
+}
+
+void HomeWindow::mouseDoubleClickEvent(QMouseEvent* e) {
+  const SubMaster &sm = *(uiState()->sm);
+  if (sm["carParams"].getCarParams().getNotCar()) {
+    if (onroad->isVisible()) {
+      slayout->setCurrentWidget(body);
+    } else if (body->isVisible()) {
+      slayout->setCurrentWidget(onroad);
+    }
   }
 }
 
