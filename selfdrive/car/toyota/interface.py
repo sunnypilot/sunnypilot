@@ -166,7 +166,8 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.9
       tire_stiffness_factor = 0.444  # not optimized yet
       ret.mass = 3060. * CV.LB_TO_KG + STD_CARGO_KG
-      set_lat_tune(ret.lateralTuning, LatTunes.PID_D)
+      set_lat_tune(ret.lateralTuning, LatTunes.INDI_COROLLA_TSS2)
+      ret.steerActuatorDelay = 0.41 # AtL's INDI Corolla TSS2 Tune v2.0
       ret.wheelSpeedFactor = 1.035
 
     elif candidate in [CAR.LEXUS_ES_TSS2, CAR.LEXUS_ESH_TSS2]:
