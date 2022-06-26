@@ -1,3 +1,41 @@
+sunnypilot - Version 0.8.14-1 (2022-06-26)
+========================
+* sunnypilot 0.8.14 release - based on openpilot 0.8.14 devel
+* "0.8.14-prod-c3" branch only supports comma three
+  * If you have a comma two, EON, or other devices than a comma three, visit sunnyhaibin's discord server for more details: https://discord.gg/wRW3meAgtx
+* Mono-branch support
+  * Honda/Acura
+  * Hyundai/Kia/Genesis
+  * Toyota/Lexus
+  * Volkswagen MQB
+* Modified Assistive Driving Safety (MADS) Mode
+  * NEW❗: CRUISE (MAIN) now engages MADS for all supported car makes
+  * NEW❗: Added toggle to disable disengaging Automatic Lane Centering (ALC) on the brake pedal
+* Dynamic Lane Profile (DLP)
+* NEW❗: Gap Adjust Cruise (GAC)
+  * openpilot longitudinal cars can now adjust between the lead car's following distance gap via 3 modes:
+    * Steering Wheel (SW) | User Interface (UI) | Steering Wheel + User Interface (SW+UI)
+* NEW❗: Custom Camera & Path Offsets
+* NEW❗: Torque Lateral Control from openpilot 0.8.15 master (as of 2022-06-15)
+* NEW❗: Torque Lateral Control Live Tune Menu
+* NEW❗: Speed Limit Sign from openpilot 0.8.15 master (as of 2022-06-22)
+* NEW❗: Mapbox Speed Limit data will now be utilized in Speed Limit Control (SLC)
+  * Speed limit data will be utilized in the following availability:
+    * Mapbox (active navigation) -> OpenStreetMap -> Car Interface (Toyota's TSR)
+* Custom Stock Longitudinal Control
+  * NEW❗: Volkswagen MQB
+  * Honda
+  * Hyundai/Kia/Genesis
+* NEW❗: Mapbox navigation support for non-Prime users
+  * Visit sunnyhaibin's discord server for more details: https://discord.gg/wRW3meAgtx
+* Hyundai/Kia/Genesis
+  * NEW❗: Enhanced SCC (ESCC) Support
+    * Requires hardware modification. Visit sunnyhaibin's discord server for more details: https://discord.gg/wRW3meAgtx
+  * NEW❗: Smart MDPS (SMDPS) Support - Auto-detection
+    * Requires hardware modification and custom firmware for the SMDPS. Visit sunnyhaibin's discord server for more details: https://discord.gg/wRW3meAgtx
+* Toyota/Lexus
+  * NEW❗: Added toggle to enforce stock longitudinal control
+
 sunnypilot - Version 0.8.12-4 (2022-04-09)
 ========================
 * Note: Each supported car make has additional updates. Please check the changelogs of relevant car make branches for in-depth changelogs
