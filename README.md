@@ -82,17 +82,19 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * sunnypilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
 * Dedicated button to toggle sunnypilot ALC:
-  * `LFA` button: Newer HKG cars with `LFA` button
-  * `LKAS` button: Honda, Toyota, Global Subaru
-  * `CRUISE (MAIN)` button: HKG cars without `LFA` button, Pre-Global Subaru
+  * `CRUISE (MAIN)` button: All supported cars on sunnypilot
+    * `LFA` button: Newer HKG cars with `LFA` button
+    * `LKAS` button: Honda, Toyota, Global Subaru
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` must be `ON` to use MADS and ACC/SCC
-* `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` (strictly enforced in panda safety code)
-* `BRAKE pedal` press will pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will resume sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry
-* `GAS pedal` press will not disengage sunnypilot Automatic Lane Centering or ACC/SCC
+* `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
+* NEW❗ **Disengage Lateral ALC on Brake Press Mode** toggle:
+  1. `ON`: `BRAKE pedal` press will pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will resume sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
+  2. `OFF`: `BRAKE pedal` press will NOT sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
 * `TURN SIGNALS` (`Left` or `Right`) will pause sunnypilot Automatic Lane Centering if the vehicle speed is below the threshold for sunnypilot Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
+* Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
 
 ### Dynamic Lane Profile (DLP)
 Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
