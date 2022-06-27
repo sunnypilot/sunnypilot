@@ -41,7 +41,7 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
   * Map-Data-based Turn Speed Control (MTSC)
   * Speed Limit control (SLC)
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
-* **No Disengage on Accelerator** - Allow the accelerator pedal press to not disengage sunnypilot. This feature is enabled by default.
+* [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Enable the `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on screen button to adjust the cruise gap between the car and the lead car
 * **Quiet Drive 🤫** - Toggle to mute all notification sounds (excluding driver safety warnings)
 * **Auto Lane Change Timer** - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
 * **Force Car Recognition (FCR)** - Use a selector to force your car to be recognized by sunnypilot
@@ -149,20 +149,44 @@ Do not look at the dashboard when setting your ACC max speed. Instead, only look
 
 (Courtesy instructions from John, author of jvePilot)
 
+### Gap Adjust Cruise
+This fork now allows supported openpilot longitudinal cars to adjust the cruise gap between the car and the lead car.
+
+**Supported cars:**
+* sunnypilot Longitudinal Control capable
+
+🚨**PROCEED WITH EXTREME CAUTION AND BE READY TO MANUALLY TAKE OVER AT ALL TIMES**🚨
+
+There are 4 modes to select on the steering wheel and/or the onroad camera screen:
+* **Far Gap**: Furthest distance - 1.8 second profile
+* **Normal Gap**: Stock sunnypilot distance - 1.45 second profile
+* **Aggro Gap**: Aggressive distance - 1.2 second profile
+* 🚨**Maniac Gap**🚨: Extremely aggressive distance - 1.0 second profile
+
+**Availability**
+| Car Make  | Far Gap | Normal Gap  | Aggro Gap | Maniac Gap |
+| :---: | :---: | :---: | :---: | :---: |
+| Honda  | ✅  | ✅  | ✅  | ⚠  |
+| Hyundai/Kia/Genesis  | ✅  | ✅  | ✅  | ⚠  |
+| Toyota  | ✅  | ✅  | ✅  | ❌  |
+
 ⚒ Branch Definitions
 ---
 
-* `prod`: Production branches. Include features that are tested by users and ready to use. ✅
-* `staging`: Staging branches. Include new features that are not tested by users. No stability guaranteed. 🚨
-* `feature`: Feature branches. Represent new features being added to the system. No stability guaranteed. 🚨
-* `test`: Test branches. For experimenting with concepts that might not get used in the project. No stability guaranteed. 🚨
-* `develop`: Development branches. All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. 🚨
-* `full`: Full Feature branches.
-* `personal`: sunnyhaibin's personal branches, on top of Full Feature.
-* `hkg`: Hyundai/Kia/Genesis(HKG)-specific branches. Only for HKG cars.
-* `honda`: Honda-specific branches. Only for Honda cars.
-* `toyota`: Toyota-specific branches. Only for Toyota cars.
-* `subaru`: Subaru-specific branches. Only for Subaru cars.
+| Tag | Definition | Description |
+| :---: | --- | --- |
+| `prod` | Production branches | Include features that are tested by users and ready to use. ✅ |
+| `staging` | Staging branches | Include new features that are not tested by users. No stability guaranteed. 🚨 |
+| `feature` | Feature branches | Represent new features being added to the system. No stability guaranteed. 🚨 |
+| `test` | Test branches | For experimenting with concepts that might not get used in the project. No stability guaranteed. 🚨 |
+| `develop` | Development branches | All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. 🚨 |
+| `full` | Full Feature branches | All features inclusive within the branch. |
+| `personal` | sunnyhaibin's personal branches | On top of Full Feature. |
+| `hkg` | Hyundai/Kia/Genesis(HKG)-specific branches | Only for HKG cars. |
+| `honda` | Honda-specific branches | Only for Honda cars. |
+| `toyota` | Toyota-specific branches | Only for Toyota cars. |
+| `subaru` | Subaru-specific branches | Only for Subaru cars. |
+| `volkswagen` | Volkswagen-specific branches | Only for Volkswagen cars. |
 
 Example:
 * [`0.8.12-prod-full-honda`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg): 0.8.12-based, Production, Full Feature, Honda branch
