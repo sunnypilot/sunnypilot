@@ -152,14 +152,14 @@ class CarInterface(CarInterfaceBase):
       ret.maxLateralAccel = 2.0
       if Params().get_bool("CorollaIndi"):
         ret.lateralTuning.init('indi')
-        ret.lateralTuning.indi.innerLoopGainBP = [18, 22, 26]
-        ret.lateralTuning.indi.innerLoopGainV = [9, 12, 15]
-        ret.lateralTuning.indi.outerLoopGainBP = [18, 22, 26]
-        ret.lateralTuning.indi.outerLoopGainV = [8, 11, 14.99]
-        ret.lateralTuning.indi.timeConstantBP = [18, 22, 26]
-        ret.lateralTuning.indi.timeConstantV = [1, 3, 4.5]
-        ret.lateralTuning.indi.actuatorEffectivenessBP = [18, 22, 26]
-        ret.lateralTuning.indi.actuatorEffectivenessV = [9, 12, 15]
+        ret.lateralTuning.indi.innerLoopGainBP = [20, 24, 30]
+        ret.lateralTuning.indi.innerLoopGainV = [7.25, 7.5, 9]
+        ret.lateralTuning.indi.outerLoopGainBP = [20, 24, 30]
+        ret.lateralTuning.indi.outerLoopGainV = [6, 7.25, 6]
+        ret.lateralTuning.indi.timeConstantBP = [20, 24]
+        ret.lateralTuning.indi.timeConstantV = [2.0, 2.2]
+        ret.lateralTuning.indi.actuatorEffectivenessBP = [20, 24]
+        ret.lateralTuning.indi.actuatorEffectivenessV = [2, 3]
         ret.steerActuatorDelay = 0.42 - 0.2
       else:
         set_lat_tune(ret.lateralTuning, LatTunes.TORQUE, MAX_LAT_ACCEL=ret.maxLateralAccel, FRICTION=0.07)
