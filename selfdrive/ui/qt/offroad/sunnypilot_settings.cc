@@ -492,8 +492,8 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget* parent) : QWidget(parent) {
                                                  "../assets/offroad/icon_blank.png"));
   toggle_layout->addWidget(horizontal_line());
   toggle_layout->addWidget(new ParamControl("CorollaIndi",
-                                            "Corolla TSS2: Use birdman's INDI Lateral Tune",
-                                            "Use birdman6450#7399's Corolla 2020 TSS2 Tune",
+                                            "Corolla TSS2: Use stupefacient's INDI Lateral Tune",
+                                            "Use stupefacient#7567's Corolla TSS2 Tune",
                                             "../assets/offroad/icon_blank.png"));
   toggle_layout->addWidget(horizontal_line());
   toggle_layout->addWidget(new LabelControl("Volkswagen", ""));
