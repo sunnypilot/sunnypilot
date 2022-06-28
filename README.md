@@ -283,6 +283,7 @@ Pull requests should be against the most current `prod-full` branch.
 * [Move Fast GmbH](https://github.com/move-fast/openpilot)
 * [dragonpilot](https://github.com/dragonpilot-community/dragonpilot)
 * [neokii](https://github.com/neokii/openpilot)
+* [Aragon7777](https://github.com/aragon7777)
 * [AlexandreSato](https://github.com/AlexandreSato/openpilot)
 
 Licensing
