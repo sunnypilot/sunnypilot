@@ -21,7 +21,7 @@ sunnypilot - Version 0.8.14-1 (2022-06-26)
 * NEW❗: Speed Limit Sign from openpilot 0.8.15 master (as of 2022-06-22)
 * NEW❗: Mapbox Speed Limit data will now be utilized in Speed Limit Control (SLC)
   * Speed limit data will be utilized in the following availability:
-    * Mapbox (active navigation) -> OpenStreetMap -> Car Interface (Toyota's TSR)
+    * Mapbox (active navigation) -> OpenStreetMap -> Car Interface (Toyota's RSA)
 * Custom Stock Longitudinal Control
   * NEW❗: Volkswagen MQB
   * Honda
