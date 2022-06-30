@@ -50,6 +50,7 @@ LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 EventName = car.CarEvent.EventName
 ButtonEvent = car.CarState.ButtonEvent
 SafetyModel = car.CarParams.SafetyModel
+GearShifter = car.CarState.GearShifter
 
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 CSID_MAP = {"1": EventName.roadCameraError, "2": EventName.wideRoadCameraError, "0": EventName.driverCameraError}
@@ -619,12 +620,15 @@ class Controls:
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
 
+    not_fwd_gears = [car.CarState.GearShifter.park, car.CarState.GearShifter.reverse, car.CarState.GearShifter.neutral]
+    wrong_gear = True if CS.gearShifter in not_fwd_gears else False
+
     # Check which actuators can be enabled
     CC.latActive = (self.active or self.mads_ndlob) and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                      CS.vEgo > self.CP.minSteerSpeed and not CS.standstill and \
                      CS.madsEnabled and (not CS.brakePressed or self.mads_ndlob) and \
                      (not CS.belowLaneChangeSpeed or (not (((self.sm.frame - self.last_blinker_frame) * DT_CTRL) < 1.0) and
-                     not (CS.leftBlinker or CS.rightBlinker)))
+                     not (CS.leftBlinker or CS.rightBlinker))) and not wrong_gear
     CC.longActive = self.active and CS.cruiseState.enabled and not CS.brakePressed and not self.events.any(ET.OVERRIDE)
 
     actuators = CC.actuators
