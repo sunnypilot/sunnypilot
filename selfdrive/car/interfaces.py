@@ -160,7 +160,7 @@ class CarInterfaceBase(ABC):
             (cs_out.gearShifter == GearShifter.unknown and self.gear_warning < int(0.5/DT_CTRL)):
       if cs_out.gearShifter == GearShifter.park:
         events.add(EventName.silentWrongGear)
-      else:
+      elif cs_out.standstill:
         events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
       events.add(EventName.reverseGear)

@@ -56,6 +56,8 @@ class CarState(CarStateBase):
 
     self.cruiseState_standstill = False
 
+    self.prev_brake_pressed = False
+
     self.below_speed_pause = self.params.get_bool("BelowSpeedPause")
 
   def update(self, cp, cp_cam):
@@ -63,6 +65,7 @@ class CarState(CarStateBase):
 
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lfa_enabled = self.lfa_enabled
+    self.prev_brake_pressed = ret.brakePressed
     self.prev_cruise_buttons = self.cruise_buttons[-1]
     self.prev_main_buttons = self.main_buttons[-1]
     self.cruise_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwState"])
@@ -156,6 +159,8 @@ class CarState(CarStateBase):
                 Params().put("GapAdjustCruiseTr", str(self.gap_adjust_cruise_tr))
         else:
           self.gap_adjust_cruise_tr = 4
+      if self.CP.pcmCruise and not self.CP.pcmCruiseSpeed and not ret.cruiseState.enabled and self.accEnabled:
+        self.accEnabled = False
       if self.enable_mads:
         if (self.prev_mads_enabled != 1 and self.mads_enabled == 1) or \
           (self.prev_lfa_enabled != 1 and self.lfa_enabled == 1):
@@ -185,7 +190,8 @@ class CarState(CarStateBase):
           if not self.enable_mads:
             self.madsEnabled = False
       if ret.brakePressed:
-        self.accEnabled = False
+        if not self.prev_brake_pressed or not ret.standstill:
+          self.accEnabled = False
         if not self.enable_mads:
           self.madsEnabled = False
 

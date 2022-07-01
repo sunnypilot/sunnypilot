@@ -1,3 +1,12 @@
+sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
+========================
+* NEW❗: Add toggle to pause lateral actuation below 30 MPH / 50 KM/H
+* IMPROVED: Better controls mismatch handling
+* IMPROVED: Less frequent Low Memory alert
+* IMPROVED: Only allow lateral control when in forward gears
+* IMPROVED: Better alerts handling on gear changes
+* IMPROVED: Better state handling when using Custom Stock Longitudinal Control features
+
 sunnypilot - Version 0.8.14-1.3 (2022-06-29)
 ========================
 * Hyundai/Kia/Genesis

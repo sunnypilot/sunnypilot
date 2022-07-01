@@ -40,13 +40,17 @@ class CarState(CarStateBase):
 
     self.distance_traveled = 0.
 
+    self.prev_brake_pressed = False
+
     self.cruiseState_standstill = False
 
     self.below_speed_pause = self.params.get_bool("BelowSpeedPause")
 
   def update(self, pt_cp, cam_cp, ext_cp, trans_type):
+    ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled
+    self.prev_brake_pressed = ret.brakePressed
     self.buttonStatesPrev = self.buttonStates.copy()
     self.acc_mads_combo = self.params.get_bool("AccMadsCombo")
     self.visual_brake_lights = self.params.get_bool("BrakeLights")
@@ -59,7 +63,6 @@ class CarState(CarStateBase):
     self.graButtonTypeInfo = pt_cp.vl["GRA_ACC_01"]["GRA_ButtonTypeInfo"]
     self.graTipStufe2 = pt_cp.vl["GRA_ACC_01"]["GRA_Tip_Stufe_2"]
 
-    ret = car.CarState.new_message()
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["ESP_19"]["ESP_VL_Radgeschw_02"],
@@ -190,6 +193,8 @@ class CarState(CarStateBase):
         elif (self.buttonStatesPrev["resumeCruise"] and not self.buttonStates["resumeCruise"]) or \
           (self.buttonStatesPrev["accelCruise"] and not self.buttonStates["accelCruise"]): # RESUME+
             self.accEnabled = True
+      if self.CP.pcmCruise and not self.CP.pcmCruiseSpeed and not ret.cruiseState.enabled and self.accEnabled:
+        self.accEnabled = False
       if self.enable_mads:
         #if self.CP.carFingerprint in FEATURES["acc_stalk"]:
         #  self.madsEnabled = True if self.mads_enabled else False
@@ -213,7 +218,8 @@ class CarState(CarStateBase):
           if not self.enable_mads:
             self.madsEnabled = False
       if ret.brakePressed:
-        self.accEnabled = False
+        if not self.prev_brake_pressed or not ret.standstill:
+          self.accEnabled = False
         if not self.enable_mads:
           self.madsEnabled = False
 
