@@ -329,6 +329,10 @@ void NvgWindow::updateState(const UIState &s) {
   setProperty("has_us_speed_limit", nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::MUTCD);
   setProperty("has_eu_speed_limit", nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::VIENNA);
 
+  // TODO: Add minimum speed?
+  setProperty("left_blindspot", cs_alive && sm["carState"].getCarState().getLeftBlindspot());
+  setProperty("right_blindspot", cs_alive && sm["carState"].getCarState().getRightBlindspot());
+
   setProperty("is_cruise_set", cruise_set);
   setProperty("is_metric", s.scene.is_metric);
   setProperty("speed", cur_speed);
@@ -1287,6 +1291,11 @@ void NvgWindow::drawLaneLines(QPainter &painter, const UIState *s) {
     }
     painter.drawPolygon(scene.lane_line_vertices[i].v, scene.lane_line_vertices[i].cnt);
   }
+
+  // TODO: Fix empty spaces when curiving back on itself
+  painter.setBrush(QColor::fromRgbF(1.0, 0.0, 0.0, 0.2));
+  if (left_blindspot) painter.drawPolygon(scene.lane_barrier_vertices[0].v, scene.lane_barrier_vertices[0].cnt);
+  if (right_blindspot) painter.drawPolygon(scene.lane_barrier_vertices[1].v, scene.lane_barrier_vertices[1].cnt);
 
   // road edges
   for (int i = 0; i < std::size(scene.road_edge_vertices); ++i) {
