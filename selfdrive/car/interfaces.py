@@ -162,7 +162,7 @@ class CarInterfaceBase(ABC):
         events.add(EventName.silentWrongGear)
       elif cs_out.standstill and cs_out.cruiseState.enabled:
         events.add(EventName.wrongGear)
-    if cs_out.gearShifter == GearShifter.reverse:
+    if cs_out.gearShifter == GearShifter.reverse and cs_out.cruiseState.enabled:
       events.add(EventName.reverseGear)
     if not cs_out.cruiseState.available:
       events.add(EventName.wrongCarMode)
