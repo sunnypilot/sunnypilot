@@ -1,5 +1,7 @@
 sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
 ========================
+* NEW❗: New driving model
+  * Better laneless
 * NEW❗: Show barrier when car detected in blind spot
   * Only available to cars that have a factory Blind Spot Monitoring system 
 * NEW❗: Add toggle to pause lateral actuation below 30 MPH / 50 KM/H
