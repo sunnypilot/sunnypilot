@@ -449,6 +449,8 @@ SPControlsPanel::SPControlsPanel(QWidget* parent) : QWidget(parent) {
                                           "Enable Short Press for Higher ACC Value",
                                           "Change the ACC +/- buttons behavior with cruise speed change in openpilot.",
                                           "../assets/offroad/icon_acc_change.png"));
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new accChangeType());
 }
 
 SPVehiclesPanel::SPVehiclesPanel(QWidget* parent) : QWidget(parent) {
@@ -1544,7 +1546,7 @@ void GapAdjustCruiseMode::refresh() {
 // Volkswagen - MQB ACC Type
 VwAccType::VwAccType() : AbstractControl("Short Press +1/-1 Type",
                                          "Define the type of ACC control your car has with short press to +1 or -1.",
-                                         "../assets/offroad/icon_blank.png") {
+                                         "../assets/offroad/icon_acc_change.png") {
 
   label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
   label.setStyleSheet("color: #e0e879");
@@ -1603,6 +1605,72 @@ void VwAccType::refresh() {
     label.setText(QString::fromStdString("+/-"));
   } else if (option == "1") {
     label.setText(QString::fromStdString("RES/SET"));
+  }
+  btnminus.setText("-");
+  btnplus.setText("+");
+}
+
+AccChangeType::AccChangeType() : AbstractControl("Higher ACC Value",
+                                                 "Define the value of higher ACC value change.",
+                                                 "../assets/offroad/icon_blank.png") {
+
+  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
+  label.setStyleSheet("color: #e0e879");
+  hlayout->addWidget(&label);
+
+  btnminus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnplus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnminus.setFixedSize(150, 100);
+  btnplus.setFixedSize(150, 100);
+  hlayout->addWidget(&btnminus);
+  hlayout->addWidget(&btnplus);
+
+  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("AccChangeType"));
+    int value = str.toInt();
+    value = value - 1;
+    if (value <= 0 ) {
+      value = 0;
+    }
+    QString values = QString::number(value);
+    params.put("AccChangeType", values.toStdString());
+    refresh();
+  });
+
+  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("AccChangeType"));
+    int value = str.toInt();
+    value = value + 1;
+    if (value >= 1 ) {
+      value = 1;
+    }
+    QString values = QString::number(value);
+    params.put("AccChangeType", values.toStdString());
+    refresh();
+  });
+  refresh();
+}
+
+void AccChangeType::refresh() {
+  QString option = QString::fromStdString(params.get("AccChangeType"));
+  if (option == "0") {
+    label.setText(QString::fromStdString("5"));
+  } else if (option == "1") {
+    label.setText(QString::fromStdString("10"));
   }
   btnminus.setText("-");
   btnplus.setText("+");

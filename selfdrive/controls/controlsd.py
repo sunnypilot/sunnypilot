@@ -122,6 +122,7 @@ class Controls:
     openpilot_enabled_toggle = params.get_bool("OpenpilotEnabledToggle")
     passive = params.get_bool("Passive") or not openpilot_enabled_toggle
     self.no_gps = params.get_bool("NoGps")
+    self.acc_change_type = params.get_bool("AccChangeType")
 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
@@ -508,7 +509,7 @@ class Controls:
             self.fastMode = False
         else:
           self.v_cruise_kph = update_v_cruise(self.v_cruise_kph, CS.vEgo, CS.gasPressed, CS.buttonEvents,
-                                              self.button_timers, self.enabled, self.is_metric)
+                                              self.button_timers, self.enabled, self.is_metric, self.acc_change_type)
     else:
       if CS.cruiseState.available:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH

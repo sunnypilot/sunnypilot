@@ -279,3 +279,18 @@ private:
 
   void refresh();
 };
+
+class AccChangeType : public AbstractControl {
+  Q_OBJECT
+
+public:
+  AccChangeType();
+
+private:
+  QPushButton btnplus;
+  QPushButton btnminus;
+  QLabel label;
+  Params params;
+
+  void refresh();
+};

@@ -37,6 +37,7 @@ def manager_init() -> None:
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
+    ("AccChangeType", "0"),
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
     ("BelowSpeedPause", "0"),

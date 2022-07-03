@@ -9,11 +9,11 @@ from common.params import Params
 
 # WARNING: this value was determined based on the model's training distribution,
 #          model predictions above this speed can be unpredictable
-V_CRUISE_MAX = 145  # kph
-V_CRUISE_MIN = 8  # kph
+V_CRUISE_MAX = 145 if not Params().get_bool("IsMetric") else 200  # kph
+V_CRUISE_MIN = 8 if not Params().get_bool("IsMetric") else 10  # kph
 V_CRUISE_MIN_HONDA = 5  # kph
 V_CRUISE_DELTA_HONDA = 5
-V_CRUISE_ENABLE_MIN = 40  # kph
+V_CRUISE_ENABLE_MIN = 40 if not Params().get_bool("IsMetric") else 30  # kph
 
 LAT_MPC_N = 16
 LON_MPC_N = 32
@@ -63,7 +63,7 @@ def rate_limit(new_value, last_value, dw_step, up_step):
   return clip(new_value, last_value + dw_step, last_value + up_step)
 
 
-def update_v_cruise(v_cruise_kph, v_ego, gas_pressed, buttonEvents, button_timers, enabled, metric):
+def update_v_cruise(v_cruise_kph, v_ego, gas_pressed, buttonEvents, button_timers, enabled, metric, change_type):
   # handle button presses. TODO: this should be in state_control, but a decelCruise press
   # would have the effect of both enabling and changing speed is checked after the state transition
   reverse_acc_change = Params().get_bool("ReverseAccChange")
@@ -91,13 +91,13 @@ def update_v_cruise(v_cruise_kph, v_ego, gas_pressed, buttonEvents, button_timer
 
   if button_type:
     if reverse_acc_change:
-      v_cruise_delta = v_cruise_delta * (1 if long_press else 5)
+      v_cruise_delta = v_cruise_delta * (1 if long_press else (5 if not change_type else 10))
       if not long_press and v_cruise_kph % v_cruise_delta != 0: # partial interval
         v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
       else:
         v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
     else:
-      v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+      v_cruise_delta = v_cruise_delta * ((5 if not change_type else 10) if long_press else 1)
       if long_press and v_cruise_kph % v_cruise_delta != 0:  # partial interval
         v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
       else:
