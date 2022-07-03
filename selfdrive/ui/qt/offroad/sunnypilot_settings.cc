@@ -450,7 +450,7 @@ SPControlsPanel::SPControlsPanel(QWidget* parent) : QWidget(parent) {
                                           "Change the ACC +/- buttons behavior with cruise speed change in openpilot.",
                                           "../assets/offroad/icon_acc_change.png"));
   main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new accChangeType());
+  main_layout->addWidget(new AccChangeType());
 }
 
 SPVehiclesPanel::SPVehiclesPanel(QWidget* parent) : QWidget(parent) {
