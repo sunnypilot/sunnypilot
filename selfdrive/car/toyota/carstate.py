@@ -118,7 +118,7 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in FEATURES["use_lta_msg"]:
       self.lkas_enabled = cp_cam.vl["LKAS_HUD"]["LDA_ON_MESSAGE"]
       self.persistLkasIconDisabled = cp_cam.vl["LKAS_HUD"]["LKAS_STATUS"] == 1
-    else:
+    elif self.CP.carFingerprint is not CAR.PRIUS_V:
       self.lkas_enabled = cp_cam.vl["LKAS_HUD"]["LKAS_STATUS"]
       self.persistLkasIconDisabled = cp_cam.vl["LKAS_HUD"]["LKAS_STATUS"] == 0
 
@@ -462,8 +462,6 @@ class CarState(CarStateBase):
     signals = [
       ("FORCE", "PRE_COLLISION"),
       ("PRECOLLISION_ACTIVE", "PRE_COLLISION"),
-      ("LKAS_STATUS", "LKAS_HUD"),
-      ("LDA_ON_MESSAGE", "LKAS_HUD"),
     ]
 
     # Include traffic singal signals.
@@ -485,8 +483,16 @@ class CarState(CarStateBase):
       ("RSA1", 0),
       ("RSA2", 0),
       ("PRE_COLLISION", 0), # TODO: figure out why freq is inconsistent
-      ("LKAS_HUD", 1),
     ]
+
+    if CP.carFingerprint is not CAR.PRIUS_V:
+      signals += [
+        ("LKAS_STATUS", "LKAS_HUD"),
+        ("LDA_ON_MESSAGE", "LKAS_HUD"),
+      ]
+      checks += [
+        ("LKAS_HUD", 1),
+      ]
 
     if CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
       signals += [
