@@ -8,6 +8,7 @@ sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
 * IMPROVED: Only allow lateral control when in forward gears
 * IMPROVED: Better alerts handling on gear changes
 * IMPROVED: Better state handling when using Custom Stock Longitudinal Control features
+* FIXED: Lane change now properly initiates and completes
 
 sunnypilot - Version 0.8.14-1.3 (2022-06-29)
 ========================
