@@ -441,7 +441,7 @@ class CarState(CarStateBase):
 
     if CP.smartDsu:
       signals.append(("FD_BUTTON", "SDSU", 0))
-      checks.append(("SDSU", 33))
+      checks.append(("SDSU", 0))
 
     if CP.carFingerprint in RADAR_ACC_CAR:
       signals += [

@@ -9,6 +9,7 @@ sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
 * IMPROVED: Better alerts handling on gear changes
 * IMPROVED: Better state handling when using Custom Stock Longitudinal Control features
 * FIXED: Lane change now properly initiates and completes
+* FIXED: Toyota SDSU should no longer cause CAN error on startup and first cruise set
 
 sunnypilot - Version 0.8.14-1.3 (2022-06-29)
 ========================
