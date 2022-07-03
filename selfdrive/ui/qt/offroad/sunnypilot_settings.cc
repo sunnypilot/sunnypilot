@@ -446,8 +446,8 @@ SPControlsPanel::SPControlsPanel(QWidget* parent) : QWidget(parent) {
                                           "../assets/offroad/icon_openpilot.png"));
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(new ParamControl("ReverseAccChange",
-                                          "ACC +/-: Short=5, Long=1",
-                                          "Change the ACC +/- buttons behavior with cruise speed change in openpilot.\nDisabled (Stock):  Short=1, Long=5\nEnabled:  Short=5, Long=1",
+                                          "Enable Short Press for Higher ACC Value",
+                                          "Change the ACC +/- buttons behavior with cruise speed change in openpilot.",
                                           "../assets/offroad/icon_acc_change.png"));
 }
 
