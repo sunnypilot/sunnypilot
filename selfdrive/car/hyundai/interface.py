@@ -38,15 +38,15 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     tire_stiffness_factor = 1.
 
-    ret.vEgoStarting = 0.1
-    ret.vEgoStopping = 0.1
+    ret.stoppingControl = True
+    ret.vEgoStopping = 1.0
 
     ret.longitudinalTuning.kpV = [0.1]
     ret.longitudinalTuning.kiV = [0.0]
     ret.stopAccel = 0.0
     ret.startAccel = 0.0
 
-    ret.longitudinalActuatorDelayUpperBound = 0.5 # s
+    ret.longitudinalActuatorDelayUpperBound = 1.0 # s
 
     if candidate in [CAR.SANTA_FE, CAR.SANTA_FE_2022, CAR.SANTA_FE_HEV_2022]:
       ret.lateralTuning.pid.kf = 0.00005
@@ -146,7 +146,14 @@ class CarInterface(CarInterfaceBase):
       tire_stiffness_factor = 0.5
       ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.25], [0.05]]
-
+    elif candidate == CAR.TUCSON_DIESEL_2019:
+      ret.lateralTuning.pid.kf = 0.00005
+      ret.mass = 3633. * CV.LB_TO_KG
+      ret.wheelbase = 2.67
+      ret.steerRatio = 14.00 * 1.15
+      tire_stiffness_factor = 0.385
+      ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.25], [0.05]]
     # Kia
     elif candidate == CAR.KIA_SORENTO:
       ret.lateralTuning.pid.kf = 0.00005
