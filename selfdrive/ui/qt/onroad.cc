@@ -470,14 +470,14 @@ void NvgWindow::drawHud(QPainter &p) {
   int default_rect_width = 172;
   int rect_width = default_rect_width;
   if (is_metric || has_eu_speed_limit) rect_width = 200;
-  if ((!roadName.isEmpty() && speedLimitStyle == 0 && speedLimitStrSlc.size() >= 3) || (has_us_speed_limit && speedLimitStr.size() >= 3)) rect_width = 223;
+  if ((speedLimitStyle == 0 && speedLimitStrSlc.size() >= 3) || (has_us_speed_limit && speedLimitStr.size() >= 3)) rect_width = 223;
 
   int rect_height = 204;
-  if ((!roadName.isEmpty() && speedLimitStyle == 0) || has_us_speed_limit) rect_height = 432;
-  else if ((!roadName.isEmpty() && speedLimitStyle == 1) || has_eu_speed_limit) rect_height = 392;
+  if (speedLimitStyle == 0 || has_us_speed_limit) rect_height = 432;
+  else if (speedLimitStyle == 1 || has_eu_speed_limit) rect_height = 392;
 
   int top_radius = 32;
-  int bottom_radius = ((!roadName.isEmpty() && speedLimitStyle == 1) || has_eu_speed_limit) ? 100 : 32;
+  int bottom_radius = (speedLimitStyle == 1 || has_eu_speed_limit) ? 100 : 32;
 
   QRect set_speed_rect(60 + default_rect_width / 2 - rect_width / 2, 45, rect_width, rect_height);
   p.setPen(QPen(QColor(255, 255, 255, 75), 6));
@@ -541,7 +541,7 @@ void NvgWindow::drawHud(QPainter &p) {
   p.drawText(speed_rect, Qt::AlignCenter, setSpeedStr);
 
   // US/Canada (MUTCD style) sign
-  if ((!roadName.isEmpty() && speedLimitStyle == 0) || has_us_speed_limit) {
+  if (speedLimitStyle == 0 || has_us_speed_limit) {
     const int border_width = 6;
     const int sign_width = (speedLimitStrSlc.size() >= 3) ? 199 : 148;
     const int sign_height = 216;
@@ -587,7 +587,7 @@ void NvgWindow::drawHud(QPainter &p) {
   }
 
   // EU (Vienna style) sign
-  if ((!roadName.isEmpty() && speedLimitStyle == 1) || has_eu_speed_limit) {
+  if (speedLimitStyle == 1 || has_eu_speed_limit) {
     int outer_radius = 176 / 2;
     int inner_radius_1 = outer_radius - 6; // White outer border
     int inner_radius_2 = inner_radius_1 - 20; // Red circle
