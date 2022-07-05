@@ -630,7 +630,7 @@ class Controls:
                      CS.madsEnabled and (not CS.brakePressed or self.mads_ndlob) and \
                      (not CS.belowLaneChangeSpeed or (not (((self.sm.frame - self.last_blinker_frame) * DT_CTRL) < 1.0) and
                      not (CS.leftBlinker or CS.rightBlinker))) and not wrong_gear
-    CC.longActive = self.active and CS.cruiseState.enabled and not CS.brakePressed and not self.events.any(ET.OVERRIDE)
+    CC.longActive = self.active and CS.cruiseState.enabled and not self.events.any(ET.OVERRIDE)
 
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state

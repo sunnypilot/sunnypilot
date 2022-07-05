@@ -1,7 +1,10 @@
+import numpy as np
+
 from cereal import log
 from common.conversions import Conversions as CV
 from common.realtime import DT_MDL
 from common.params import Params
+from selfdrive.controls.lib.lane_planner import TRAJECTORY_SIZE
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
@@ -42,7 +45,7 @@ class DesireHelper:
     self.desire = log.LateralPlan.Desire.none
     self.lane_change_wait_timer = 0
 
-  def update(self, carstate, lat_active, lane_change_prob):
+  def update(self, carstate, lat_active, lane_change_prob, model_data):
     lane_change_set_timer = int(Params().get("AutoLaneChangeTimer", encoding="utf8"))
     lane_change_auto_timer = 0.0 if lane_change_set_timer == 0 else 0.1 if lane_change_set_timer == 1 else 0.5 if lane_change_set_timer == 2 \
       else 1.0 if lane_change_set_timer == 3 else 1.5 if lane_change_set_timer == 4 else 2.0
@@ -50,7 +53,23 @@ class DesireHelper:
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    if not lat_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
+    # multikyd's method
+    flll_prob = model_data.laneLineProbs[0]
+    lll_prob = model_data.laneLineProbs[1]
+    rll_prob = model_data.laneLineProbs[2]
+    frll_prob = model_data.laneLineProbs[3]
+    lre_prob = np.clip(1.0 - model_data.roadEdgeStds[0], 0.0, 1.0)
+    rre_prob = np.clip(1.0 - model_data.roadEdgeStds[1], 0.0, 1.0)
+
+    re = 1 if rre_prob > 0.35 and frll_prob < 0.2 and rll_prob > 0.5 and flll_prob >= frll_prob \
+          else -1 if lre_prob > 0.35 and flll_prob < 0.2 and lll_prob > 0.5 and frll_prob >= flll_prob \
+          else 0
+
+    lane_change_direction = -1 if carstate.leftBlinker else 1 if carstate.rightBlinker else 2
+
+    if self.lane_change_state == LaneChangeState.off and re == lane_change_direction:
+      self.lane_change_direction = LaneChangeDirection.none
+    elif not lat_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
     else:

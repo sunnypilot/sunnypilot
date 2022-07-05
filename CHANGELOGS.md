@@ -1,5 +1,6 @@
 sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
 ========================
+* NEW❗: Block lane change if adjacent lane not available thanks to multikyd!
 * NEW❗: Show barrier when car detected in blind spot
   * Only available to cars that have a factory Blind Spot Monitoring system 
 * NEW❗: Add toggle to pause lateral actuation below 30 MPH / 50 KM/H
@@ -8,6 +9,7 @@ sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
 * IMPROVED: Only allow lateral control when in forward gears
 * IMPROVED: Better alerts handling on gear changes
 * IMPROVED: Better state handling when using Custom Stock Longitudinal Control features
+* IMPROVED: Better Toyota BSM detection
 * FIXED: Lane change now properly initiates and completes
 * FIXED: Toyota SDSU should no longer cause CAN error on startup and first cruise set
 * FIXED: MADS: Exclude PRIUS_V from LKAS_HUD signal
