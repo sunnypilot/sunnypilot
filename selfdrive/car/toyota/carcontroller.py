@@ -7,6 +7,7 @@ from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_comma
                                            create_ui_command_disable_startup_lkas
 from selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
                                         MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, FEATURES
+from selfdrive.car.toyota.interface import CarInterface
 from opendbc.can.packer import CANPacker
 from common.realtime import DT_CTRL
 
@@ -61,7 +62,8 @@ class CarController:
       interceptor_gas_cmd = clip(pedal_command, 0., MAX_INTERCEPTOR_GAS)
     else:
       interceptor_gas_cmd = 0.
-    pcm_accel_cmd = 0 if not CC.longActive else clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
+    pid_accel_limits = CarInterface.get_pid_accel_limits(self.CP, CS.out.vEgo, None)  # Need to get cruise speed from somewhere
+    pcm_accel_cmd = 0 if not CC.longActive else clip(actuators.accel, pid_accel_limits[0], pid_accel_limits[1])
 
     # steer torque
     new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))

@@ -273,9 +273,16 @@ class LongitudinalMpc:
     W = np.asfortranarray(np.diag([X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST,
                                    A_EGO_COST, a_change_cost * cost_mulitpliers[0],
                                    J_EGO_COST * cost_mulitpliers[1]]))
-    for i in range(N):
-      W[4,4] = a_change_cost * cost_mulitpliers[0] * np.interp(T_IDXS[i], [0.0, 1.0, 2.0], [1.0, 1.0, 0.0])
-      self.solver.cost_set(i, 'W', W)
+    if Params().get_bool("TSS2LongTune"):
+      for i in range(N):
+        # reduce the cost on (a-a_prev) later in the horizon.
+        # KRKeegan, decreased timescale to .5s since Toyota lag is set to .3s
+        W[4,4] = a_change_cost * cost_mulitpliers[0] * np.interp(T_IDXS[i], [0.0, 0.5, 2.0], [1.0, 1.0, 0.0])
+        self.solver.cost_set(i, 'W', W)
+    else:
+      for i in range(N):
+        W[4,4] = a_change_cost * cost_mulitpliers[0] * np.interp(T_IDXS[i], [0.0, 1.0, 2.0], [1.0, 1.0, 0.0])
+        self.solver.cost_set(i, 'W', W)
     # Setting the slice without the copy make the array not contiguous,
     # causing issues with the C interface.
     self.solver.cost_set(N, 'W', np.copy(W[:COST_E_DIM, :COST_E_DIM]))

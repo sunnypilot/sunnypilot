@@ -31,7 +31,10 @@ _A_TOTAL_MAX_BP = [20., 40.]
 
 
 def get_max_accel(v_ego):
-  return interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS)
+  if Params().get_bool("TSS2LongTune"):
+    return interp(v_ego, [0., 10., 25., 40.], [1.4, 1.2, 0.7, 0.6])
+  else:
+    return interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS)
 
 
 def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
