@@ -49,7 +49,7 @@ try:
 except:
   gitname = ""
 try:
-  ip = requests.get('https://checkip.amazonaws.com/', timeout=15).text.strip()
+  ip = requests.get('https://checkip.amazonaws.com/').text.strip()
 except Exception:
   ip = "255.255.255.255"
 
