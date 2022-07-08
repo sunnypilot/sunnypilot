@@ -543,7 +543,7 @@ void NvgWindow::drawHud(QPainter &p) {
   // US/Canada (MUTCD style) sign
   if ((showSpeedLimit && speedLimitStyle == 0) || (has_us_speed_limit && !(speedLimitStyle == 1))) {
     const int border_width = 6;
-    const int sign_width = (speedLimitStrSlc.size() >= 3) ? 199 : 148;
+    const int sign_width = rect_width - 24;
     const int sign_height = 216;
 
     // White outer square

@@ -154,16 +154,15 @@ class CarController():
     # FIXME: this entire section is in desperate need of refactoring
 
     if self.CP.pcmCruise:
-      if c.cruiseControl.cancel or (c.enabled and CS.out.cruiseState.standstill):
+      if c.cruiseControl.cancel or c.cruiseControl.resume:
         if frame > self.graMsgStartFramePrev + P.GRA_VBP_STEP:
           if c.cruiseControl.cancel:
             # Cancel ACC if it's engaged with OP disengaged.
             self.graButtonStatesToSend = BUTTON_STATES.copy()
             self.graButtonStatesToSend["cancel"] = True
-          elif c.enabled and CS.out.cruiseState.standstill:
+          elif c.cruiseControl.resume:
             self.standstill_status = 1
-            # Blip the Resume button if we're engaged at standstill.
-            # FIXME: This is a naive implementation, improve with visiond or radar input.
+            # Send Resume button when planner wants car to move
             self.graButtonStatesToSend = BUTTON_STATES.copy()
             self.graButtonStatesToSend["resumeCruise"] = True
 

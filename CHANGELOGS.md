@@ -1,5 +1,6 @@
 sunnypilot - Version 0.8.14-1.x (2022-0x-xx)
 ========================
+* NEW❗: AGNOS 5.2
 * NEW❗: Block lane change if adjacent lane not available thanks to multikyd!
 * NEW❗: Show barrier when car detected in blind spot
   * Only available to cars that have a factory Blind Spot Monitoring system 

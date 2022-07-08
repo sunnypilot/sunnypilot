@@ -676,7 +676,15 @@ class Controls:
         lac_log.saturated = abs(actuators.steer) >= 0.9
 
     # Send a "steering required alert" if saturation count has reached the limit
-    if lac_log.active and lac_log.saturated and not CS.steeringPressed and CS.madsEnabled and \
+    if lac_log.active and not CS.steeringPressed and self.CP.lateralTuning.which() == 'torque' and CS.madsEnabled and \
+            not (CS.leftBlinker or CS.rightBlinker):
+      undershooting = abs(lac_log.desiredLateralAccel) / abs(1e-3 + lac_log.actualLateralAccel) > 1.2
+      turning = abs(lac_log.desiredLateralAccel) > 1.0
+      good_speed = CS.vEgo > 5
+      max_torque = abs(self.last_actuators.steer) > 0.99
+      if undershooting and turning and good_speed and max_torque:
+        self.events.add(EventName.steerSaturated)
+    elif lac_log.active and lac_log.saturated and not CS.steeringPressed and CS.madsEnabled and \
             not (CS.leftBlinker or CS.rightBlinker):
       dpath_points = lat_plan.dPathPoints
       if len(dpath_points):
@@ -725,6 +733,10 @@ class Controls:
     CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.enabled)
     if self.joystick_mode and self.sm.rcv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[0]:
       CC.cruiseControl.cancel = True
+
+    speeds = self.sm['longitudinalPlan'].speeds
+    if len(speeds):
+      CC.cruiseControl.resume = self.enabled and CS.cruiseState.enabled and CS.cruiseState.standstill and speeds[-1] > 0.1
 
     hudControl = CC.hudControl
     hudControl.setSpeed = float(self.v_cruise_kph * CV.KPH_TO_MS)

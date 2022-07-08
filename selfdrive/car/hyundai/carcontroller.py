@@ -196,10 +196,11 @@ class CarController:
                                    disengage_from_brakes, below_lane_change_speed, disengage_blinking_icon))
 
     if not self.CP.openpilotLongitudinalControl:
+      if CS.out.cruiseState.standstill:
+        self.standstill_status = 1
       if pcm_cancel_cmd:
         can_sends.append(create_clu11(self.packer, self.frame, CS.clu11, Buttons.CANCEL))
-      elif CS.out.cruiseState.standstill:
-        self.standstill_status = 1
+      elif CC.cruiseControl.resume:
         # send resume at a max freq of 10Hz
         if (self.frame - self.last_resume_frame) * DT_CTRL > 0.1:
           # send 25 messages at a time to increases the likelihood of resume being accepted
