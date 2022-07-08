@@ -4,7 +4,7 @@
     "url": "https://commadist.azureedge.net/agnosupdate/boot-243ddbb9e2256aa7af7fed0daf8cff4017a3c838c759373a634b8539f271bfb8.img.xz",
     "hash": "243ddbb9e2256aa7af7fed0daf8cff4017a3c838c759373a634b8539f271bfb8",
     "hash_raw": "243ddbb9e2256aa7af7fed0daf8cff4017a3c838c759373a634b8539f271bfb8",
-    "size": 14776320,
+    "size": 14780416,
     "sparse": false,
     "full_check": true,
     "has_ab": true
