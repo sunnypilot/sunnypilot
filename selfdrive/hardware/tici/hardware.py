@@ -13,6 +13,7 @@ from selfdrive.hardware.base import HardwareBase, ThermalConfig
 from selfdrive.hardware.tici import iwlist
 from selfdrive.hardware.tici.pins import GPIO
 from selfdrive.hardware.tici.amplifier import Amplifier
+from common.params import Params
 
 NM = 'org.freedesktop.NetworkManager'
 NM_CON_ACT = NM + '.Connection.Active'
@@ -453,6 +454,10 @@ class Tici(HardwareBase):
     # *** VIDC (encoder) config ***
     sudo_write("N", "/sys/kernel/debug/msm_vidc/clock_scaling")
     sudo_write("Y", "/sys/kernel/debug/msm_vidc/disable_thermal_mitigation")
+
+    hotspot_is_enabled = Params().get_bool("HotspotWhenStart")
+    if hotspot_is_enabled:
+        os.system('nmcli con up Hotspot')
 
   def configure_modem(self):
     sim_id = self.get_sim_info().get('sim_id', '')

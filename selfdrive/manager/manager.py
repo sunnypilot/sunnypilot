@@ -89,6 +89,7 @@ def manager_init() -> None:
     ("UploadHiRes", "0"),
     ("VisionCurveLaneless", "0"),
     ("VisionTurnSpeedControl", "1"),
+    ("HotspotWhenStart", "0"),
     ("VwAccType", "0"),
   ]
   if not PC:
