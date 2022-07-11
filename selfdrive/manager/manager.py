@@ -150,7 +150,7 @@ def manager_init() -> None:
   cloudlog.bind_global(dongle_id=dongle_id, version=get_version(), dirty=is_dirty(),
                        device=HARDWARE.get_device_type())
 
-  # Set Tethering when start
+  # Set Tethering when boot
   hotspot_is_enabled = params.get("HotspotWhenStart")
   if hotspot_is_enabled:
     os.system('nmcli con up Hotspot')
