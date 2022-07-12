@@ -35,4 +35,7 @@ public:
 
   static bool get_ssh_enabled() { return Params().getBool("SshEnabled"); };
   static void set_ssh_enabled(bool enabled) { Params().putBool("SshEnabled", enabled); };
+
+  static bool get_tethering_enabled() {return Params().getBool("HotspotWhenStart")}
+  static void set_tethering_enabled(bool enabled) { Params().putBool("HotspotWhenStart", enabled); };
 };
