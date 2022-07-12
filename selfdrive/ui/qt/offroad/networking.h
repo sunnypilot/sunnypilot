@@ -4,6 +4,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "selfdrive/hardware/hw.h"
+
 #include "selfdrive/ui/qt/offroad/wifiManager.h"
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
