@@ -151,7 +151,7 @@ def manager_init() -> None:
                        device=HARDWARE.get_device_type())
 
   # Set Tethering when boot
-  hotspot_is_enabled = params.get("HotspotWhenStart")
+  hotspot_is_enabled = params.get_bool("HotspotWhenStart")
   if hotspot_is_enabled:
     os.system('nmcli con up Hotspot')
 
