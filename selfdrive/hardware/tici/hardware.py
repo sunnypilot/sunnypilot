@@ -13,7 +13,6 @@ from selfdrive.hardware.base import HardwareBase, ThermalConfig
 from selfdrive.hardware.tici import iwlist
 from selfdrive.hardware.tici.pins import GPIO
 from selfdrive.hardware.tici.amplifier import Amplifier
-from common.params import Params
 
 NM = 'org.freedesktop.NetworkManager'
 NM_CON_ACT = NM + '.Connection.Active'
