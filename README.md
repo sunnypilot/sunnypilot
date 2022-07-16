@@ -71,7 +71,7 @@ This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, To
 * **Fast Boot** - sunnypilot will fast boot by creating a Prebuilt file
 * **Disable Onroad Uploads** - Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot
 * **Brightness Control (Global)** - Manually adjusts the global brightness of the screen
-* **Driving Screen Off Timer** - Turn off the device screen or reduce brightness to protect the screen after car starts
+* **Driving Screen Off Timer** - Turns off the device screen or reduces brightness to protect the screen after car starts
 * **Driving Screen Off Brightness (%)** - When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio
 * **Max Time Offroad** - Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)
 
@@ -91,13 +91,13 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
 * NEW❗ **Disengage Lateral ALC on Brake Press Mode** toggle:
   1. `ON`: `BRAKE pedal` press will pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will resume sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
-  2. `OFF`: `BRAKE pedal` press will NOT sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
+  2. `OFF`: `BRAKE pedal` press will NOT pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
 * `TURN SIGNALS` (`Left` or `Right`) will pause sunnypilot Automatic Lane Centering if the vehicle speed is below the threshold for sunnypilot Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
 * Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
 
 ### Dynamic Lane Profile (DLP)
-Dynamic Lane Profile (DLP) aims to provide the best driving experience with staying within the lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles base on lane recognition confidence level on road.
+Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
 
 There are 3 modes to select on the onroad camera screen:
 * **Auto Lane**: sunnypilot dynamically chooses between `Laneline` or `Laneless` model
@@ -106,7 +106,7 @@ There are 3 modes to select on the onroad camera screen:
 
 To use Dynamic Lane Profile, do the following:
 ```
-1. sunnypilot Settings -> Toggles -> Disable use of lanelines -> ON toggle
+1. sunnypilot Settings -> SP - Controls -> Enable Dynamic Lane Profile -> ON toggle
 2. Reboot.
 3. Before driving, on the onroad camera screen, toggle between the 3 modes by pressing on the button.
 4. Drive. 
@@ -129,19 +129,19 @@ Certain features are only available with an active data connection, via:
 **Features:**
 * Vision-based Turn Speed Control (VTSC) - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
 * Map-Data-based Turn Speed Control (MTSC) - Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
-  * **Note: Require data connection**
+  * **Note: Requires data connection**
 * Speed Limit Control (SLC) - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
-  * **Note: Require data connection**
+  * **Note: Requires data connection**
     * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive
-      * **Note: Require data connection**
-* Hands on Wheel Monitoring - Monitor and alert when driver is not keeping the hands on the steering wheel
+      * **Note: Requires data connection**
+* Hands on Wheel Monitoring - Monitors and alerts the driver when their hands have not been on the steering wheel for an extended time
 
 **Instruction**
 
 **📗 How to use Custom Longitudinal Control on sunnypilot 📗**
 
-When using Speed Limit Control, Vision or Map based Turn control, you will be setting the "MAX" ACC speed on the sunnypilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but never exceeding the max speed set on the sunnypilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the sunnypilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
+When using Speed Limit, Vision, or Map based Turn control, you will be setting the "MAX" ACC speed on the sunnypilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but will never exceed the max speed set on the sunnypilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the sunnypilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
 
 **‼ Where to look when setting ACC speed ‼**
 
