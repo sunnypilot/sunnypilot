@@ -6,10 +6,10 @@ Table of Contents
 * [Highlight Features](#-highlight-features)
 * [Driving Enhancement](#-driving-enhancement)
 * [Branch Definitions](#-branch-definitions)
-* [Recommended Branches](#-recommended-branches)
+* [**✅Recommended Branches✅**](#-recommended-branches)
 * [Installation](#-installation)
 * [How-Tos](#-How-Tos-)
-* [Donate](#-donate-)
+* [**💰Donate💰**](#-donate-)
 * [Pull Requests](#-Pull-Requests-)
 * [Special Thanks](#-special-thanks)
 * [Licensing](#licensing)
@@ -164,29 +164,30 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 * 🚨**Maniac Gap**🚨: Extremely aggressive distance - 1.0 second profile
 
 **Availability**
-| Car Make  | Far Gap | Normal Gap  | Aggro Gap | Maniac Gap |
-| :---: | :---: | :---: | :---: | :---: |
-| Honda  | ✅  | ✅  | ✅  | ⚠  |
-| Hyundai/Kia/Genesis  | ✅  | ✅  | ✅  | ⚠  |
-| Toyota  | ✅  | ✅  | ✅  | ❌  |
+
+|      Car Make       | Far Gap | Normal Gap | Aggro Gap | Maniac Gap |
+|:-------------------:|:-------:|:----------:|:---------:|:----------:|
+|       Honda         |    ✅    |     ✅      |     ✅     |     ⚠      |
+| Hyundai/Kia/Genesis |    ✅    |     ✅      |     ✅     |     ⚠      |
+|       Toyota        |    ✅    |     ✅      |     ✅     |     ❌      |
 
 ⚒ Branch Definitions
 ---
 
-| Tag | Definition | Description |
-| :---: | --- | --- |
-| `prod` | Production branches | Include features that are tested by users and ready to use. ✅ |
-| `staging` | Staging branches | Include new features that are not tested by users. No stability guaranteed. 🚨 |
-| `feature` | Feature branches | Represent new features being added to the system. No stability guaranteed. 🚨 |
-| `test` | Test branches | For experimenting with concepts that might not get used in the project. No stability guaranteed. 🚨 |
-| `develop` | Development branches | All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. 🚨 |
-| `full` | Full Feature branches | All features inclusive within the branch. |
-| `personal` | sunnyhaibin's personal branches | On top of Full Feature. |
-| `hkg` | Hyundai/Kia/Genesis(HKG)-specific branches | Only for HKG cars. |
-| `honda` | Honda-specific branches | Only for Honda cars. |
-| `toyota` | Toyota-specific branches | Only for Toyota cars. |
-| `subaru` | Subaru-specific branches | Only for Subaru cars. |
-| `volkswagen` | Volkswagen-specific branches | Only for Volkswagen cars. |
+|     Tag      | Definition                                 | Description                                                                                                                     |
+|:------------:|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+|    `prod`    | Production branches                        | Include features that are tested by users and ready to use. ✅                                                                   |
+|  `staging`   | Staging branches                           | Include new features that are not tested by users. No stability guaranteed. 🚨                                                  |
+|  `feature`   | Feature branches                           | Represent new features being added to the system. No stability guaranteed. 🚨                                                   |
+|    `test`    | Test branches                              | For experimenting with concepts that might not get used in the project. No stability guaranteed. 🚨                             |
+|  `develop`   | Development branches                       | All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. 🚨 |
+|    `full`    | Full Feature branches                      | All features inclusive within the branch.                                                                                       |
+|  `personal`  | sunnyhaibin's personal branches            | On top of Full Feature.                                                                                                         |
+|    `hkg`     | Hyundai/Kia/Genesis(HKG)-specific branches | Only for HKG cars.                                                                                                              |
+|   `honda`    | Honda-specific branches                    | Only for Honda cars.                                                                                                            |
+|   `toyota`   | Toyota-specific branches                   | Only for Toyota cars.                                                                                                           |
+|   `subaru`   | Subaru-specific branches                   | Only for Subaru cars.                                                                                                           |
+| `volkswagen` | Volkswagen-specific branches               | Only for Volkswagen cars.                                                                                                       |
 
 Example:
 * [`0.8.12-prod-full-honda`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg): 0.8.12-based, Production, Full Feature, Honda branch
@@ -194,9 +195,11 @@ Example:
 
 📰 Recommended Branches
 ---
-* `prod-full-<car_brand>`: Contains all features supported by this fork, such as Modified Assistive Driving Safety (MADS), Dynamic Lane Profile (DLP), etc.
-* `prod-personal-<car_brand>`: sunnyhaibin's everyday use branch, contains changes and good stuff for my personal use and quality-of-life features.
-    * **Hyundai: Sonata N Line 2021**
+| Branch           | Definition                                                                                   | Compatible Device | Changelogs                                                                                                 |
+|:-----------------|----------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
+| `0.8.14-prod-c3` | Latest production/stable branch. Based on commaai's openpilot 0.8.14.                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
+| `test-c3`        | Latest test branch with experimental features. Based on commaai's openpilot latest upstream. | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
+
 
 ⚒ Installation
 ---
