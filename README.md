@@ -195,10 +195,10 @@ Example:
 
 📰 Recommended Branches
 ---
-| Branch           | Definition                                                                                         | Compatible Device | Changelogs                                                                                                 |
-|:-----------------|----------------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
-| `0.8.14-prod-c3` | • Latest production/stable branch<br/>• Based on commaai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
-| `test-c3`        | • Latest test branch with experimental features<br/>• Based on commaai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
+| Branch                                                                            | Definition                                                                                         | Compatible Device | Changelogs                                                                                                 |
+|:----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
+| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on commaai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
+| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on commaai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
 
 
 ⚒ Installation
