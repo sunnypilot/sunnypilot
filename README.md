@@ -38,7 +38,7 @@ sunnypilot is recommended to be used for **most** of the following car makes' mo
 It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 
 ### Safety Modifications
-All [official branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) does **not** include the following changes per [comma.ai's](https://github.com/commaai/openpilot) safety:
+All [official branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) does **not** include the following changes per [comma.ai's](https://github.com/commaai/openpilot) safety policy:
 * ❌ Driver Monitoring - "Nerfing" or reducing monitoring bounds ❌
 * Panda safety
   * ❌ No disengaging of longitudinal control on brake pedal press ❌
