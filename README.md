@@ -41,8 +41,8 @@ It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By
 All [official branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) does **not** include the following changes per [comma.ai's](https://github.com/commaai/openpilot) safety policy:
 * ❌ Driver Monitoring - "Nerfing" or reducing monitoring bounds ❌
 * Panda safety
-  * ❌ No disengaging of longitudinal control on brake pedal press ❌
-  * ❌ Re-engaging of longitudinal control on brake pedal release ❌
+  * ❌ No disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press ❌
+  * ❌ Re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release ❌
   * ❌ No disengaging on ACC MAIN in OFF state ❌
 
 🚗 Highlight Features
