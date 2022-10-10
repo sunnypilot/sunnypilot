@@ -25,9 +25,25 @@ Join sunnyhaibin's sunnypilot server!
 🚨 Read Before Installing 🚨
 ---
 
-It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on this fork and you are selecting the right branch for your car to have the best driving experience.
+It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car to have the best driving experience.
 
-This fork is recommended to be used for Hyundai/Kia/Genesis (**HKG**), Honda, Toyota, and Subaru cars. It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to this fork are not liable. <ins>**Use at your own risk.**</ins>
+sunnypilot is recommended to be used for **most** of the following car makes' models:
+* Hyundai/Kia/Genesis (**HKG**)
+* Honda
+* Toyota
+* Subaru
+* Chrysler/Jeep/RAM (**FCA**)
+* General Motors (**GM**)
+
+It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
+
+### Safety Modifications
+All [official branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) does **not** include the following changes per [comma.ai's](https://github.com/commaai/openpilot) safety:
+* ❌ Driver Monitoring - "Nerfing" or reducing monitoring bounds ❌
+* Panda safety
+  * ❌ No disengaging of longitudinal control on brake pedal press ❌
+  * ❌ Re-engaging of longitudinal control on brake pedal release ❌
+  * ❌ No disengaging on ACC MAIN in OFF state ❌
 
 🚗 Highlight Features
 ---
