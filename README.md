@@ -137,7 +137,7 @@ This fork now allows supported cars to dynamically adjust the longitudinal plan 
 **Supported cars:**
 * sunnypilot Longitudinal Control capable
 * Stock Longitudinal Control
-  * Hyundai/Kia/Genesis
+  * Hyundai/Kia/Genesis (non CAN-FD)
   * Honda Bosch
   * Volkswagen MQB
 
