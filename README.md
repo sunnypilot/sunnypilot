@@ -156,7 +156,7 @@ Certain features are only available with an active data connection, via:
       * **Note: Requires data connection**
 * Hands on Wheel Monitoring - Monitors and alerts the driver when their hands have not been on the steering wheel for an extended time
 
-###Custom Stock Longitudinal Control
+### Custom Stock Longitudinal Control
 While using stock Adaptive/Smart Cruise Control, Custom Stock Longitudinal Control in sunnypilot allows sunnypilot to manipulate and take over the set speed on the car's dashboard.
 
 **Supported Cars:**
