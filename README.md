@@ -42,10 +42,10 @@ It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By
 ---
 
 ### Comma URL (Comma 3 only quick setup)
-Test-C3 is more stable than 8.14
-Factory reset/uninstall previous software if you already installed a branch
-Select Custom Software
-Input the following URL: installer.comma.ai/sunnyhaibin/test-c3
+* Test-C3 is more stable than 8.14
+* Factory reset/uninstall previous software if you already installed a branch
+* Select Custom Software
+* Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3```
 
 ### Comma 2 / non-test fork for comma 3
 To install sunnyhaibin's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
