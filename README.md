@@ -3,11 +3,11 @@ Table of Contents
 
 * [Join our Discord](#-join-our-discord-)
 * [Read Before Installing](#-read-before-installing-)
+* [Installation](#-installation)
 * [Highlight Features](#-highlight-features)
 * [Driving Enhancement](#-driving-enhancement)
 * [Branch Definitions](#-branch-definitions)
 * [**✅Recommended Branches✅**](#-recommended-branches)
-* [Installation](#-installation)
 * [How-Tos](#-How-Tos-)
 * [**💰Donate💰**](#-donate-)
 * [Pull Requests](#-Pull-Requests-)
@@ -36,6 +36,34 @@ sunnypilot is recommended to be used for **most** of the following car makes' mo
 * General Motors (**GM**)
 
 It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
+
+
+⚒ Installation
+---
+
+### Comma URL (Comma 3 only quick setup)
+Test-C3 is more stable than 8.14
+Factory reset/uninstall previous software if you already installed a branch
+Select Custom Software
+Input the following URL: installer.comma.ai/sunnyhaibin/test-c3
+
+### Comma 2 / non-test fork for comma 3
+To install sunnyhaibin's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
+
+```
+installer.comma.ai/sunnyhaibin/<insert_branch_name>
+```
+For example, if you would like to install the branch for HKG:
+
+* [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
+    ```
+    installer.comma.ai/0.8.12-prod-full-hkg
+    ```
+
+* [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
+    ```
+    installer.comma.ai/sunnyhaibin/0.8.12-prod-personal-hkg
+    ```
 
 ### Safety Modifications
 All [official sunnypilot branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to comma.ai's safety policy.
@@ -229,27 +257,6 @@ Example:
 | [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on commaai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
 | [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on commaai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
 
-
-⚒ Installation
----
-
-### Smiskol URL (Quickest and Easiest)
-To install sunnyhaibin's fork, simply use the Smiskol URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
-
-```
-https://smiskol.com/fork/sunnyhaibin/<insert_branch_name>
-```
-For example, if you would like to install the branch for HKG:
-
-* [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
-    ```
-    https://smiskol.com/fork/sunnyhaibin/0.8.12-prod-full-hkg
-    ```
-
-* [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
-    ```
-    https://smiskol.com/fork/sunnyhaibin/0.8.12-prod-personal-hkg
-    ```
 
 ### SSH (More Versatile)
 If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
