@@ -52,7 +52,7 @@ The following changes are a **VIOLATION** and **ARE NOT** included:
 ---
 
 ### Comma URL (Comma 3 only quick setup)
-* Test-C3 is more stable than 8.14
+* 8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
 * Factory reset/uninstall previous software if you already installed a branch
 * Select Custom Software
 * Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3```
@@ -67,7 +67,7 @@ For example, if you would like to install the branch for HKG:
 
 * [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
     ```
-    installer.comma.ai/0.8.12-prod-full-hkg
+    installer.comma.ai/sunnyhaibin/0.8.12-prod-full-hkg
     ```
 
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
