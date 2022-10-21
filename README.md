@@ -52,10 +52,12 @@ The following changes are a **VIOLATION** and **ARE NOT** included:
 ---
 
 ### Comma URL (Comma 3 only quick setup)
-* 8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
-* Factory reset/uninstall previous software if you already installed a branch
-* Select Custom Software
-* Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3```
+```
+8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
+1. Factory reset/uninstall previous software if you already installed a branch
+2. Select Custom Software
+3. Input the following URL: installer.comma.ai/sunnyhaibin/test-c3
+```
 
 ### Comma 2 / non-test fork for comma 3
 To install sunnyhaibin's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
