@@ -63,19 +63,21 @@ The following changes are a **VIOLATION** and **ARE NOT** included:
 ### Comma 2 / non-test fork for comma 3
 To install sunnypilot's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
 
+<b>HTTPS://</b> prepend is required for comma 2, This is not required for comma 3!
+
 ```
-installer.comma.ai/sunnyhaibin/<insert_branch_name>
+https://installer.comma.ai/sunnyhaibin/<insert_branch_name>
 ```
 For example, if you would like to install the branch for HKG:
 
 * [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
     ```
-    installer.comma.ai/sunnyhaibin/0.8.12-prod-full-hkg
+    https://installer.comma.ai/sunnyhaibin/0.8.12-prod-full-hkg
     ```
 
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
     ```
-    installer.comma.ai/sunnyhaibin/0.8.12-prod-personal-hkg
+    https://installer.comma.ai/sunnyhaibin/0.8.12-prod-personal-hkg
     ```
 
 🚗 Highlight Features
