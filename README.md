@@ -52,8 +52,8 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
 * Driver Monitoring:
   * ❌ "Nerfing" or reducing monitoring bounds.
 * Panda safety:
-  * ❌ No disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press (was never included in MADS).
-  * ❌ Re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release. (was never included in MADS)
+  * ❌ No preventing disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press (never included in MADS).
+  * ❌ No auto re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release (never included in MADS).
   * ❌ No disengaging on ACC MAIN in OFF state.
 
 </details>
