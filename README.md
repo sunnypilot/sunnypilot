@@ -46,7 +46,7 @@ This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). 
 ---
 <details><summary>Expand</summary>
  
-All [official sunnypilot branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to comma.ai's safety policy. Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
+All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/branches) from sunnypilot's official GitHub repository strictly adhere to [comma.ai's safety policy](https://github.com/commaai/openpilot/blob/master/docs/SAFETY.md). Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
 
 The following changes are a **VIOLATION** and **ARE NOT** included in any sunnypilot branches:
 * Driver Monitoring:
