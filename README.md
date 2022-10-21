@@ -8,7 +8,7 @@ Table of Contents
 * [Driving Enhancements](#-driving-enhancements)
 * [Branch Definitions](#-branch-definitions)
 * [**✅Recommended Branches✅**](#-recommended-branches)
-* [How-Tos](#-How-Tos-)
+* [How-To's](#-How-To's-)
 * [**💰Donate💰**](#-donate-)
 * [Pull Requests](#-Pull-Requests-)
 * [Special Thanks](#-special-thanks)
@@ -111,7 +111,7 @@ For example, if you would like to install the branch for HKG:
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
   * Green🟢: M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
-* **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagemenet status
+* **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagement status
   * 0.8.14 and later:
     * Blue🔵: Laneful mode, M.A.D.S. engaged
     * Green🟢: Laneless mode, M.A.D.S. engaged
@@ -276,8 +276,8 @@ Example:
  
 | Branch                                                                            | Definition                                                                                         | Compatible Device | Changelogs                                                                                                 |
 |:----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
-| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on commaai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
-| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on commaai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
+| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
+| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
 
 
 ### SSH (More Versatile)
@@ -298,7 +298,7 @@ After running the command to install the desired branch, reboot the comma device
 
 </details>
 
-📗 How Tos 📗
+📗 How To's 📗
 ---
 <details><summary>Expand</summary>
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
