@@ -61,7 +61,7 @@ The following changes are a **VIOLATION** and **ARE NOT** included:
 ```
 
 ### Comma 2 / non-test fork for comma 3
-To install sunnyhaibin's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
+To install sunnypilot's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
 
 ```
 installer.comma.ai/sunnyhaibin/<insert_branch_name>
