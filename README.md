@@ -5,7 +5,7 @@ Table of Contents
 * [Read Before Installing](#-read-before-installing-)
 * [Installation](#-installation)
 * [Highlight Features](#-highlight-features)
-* [Driving Enhancement](#-driving-enhancement)
+* [Driving Enhancements](#-driving-enhancements)
 * [Branch Definitions](#-branch-definitions)
 * [**✅Recommended Branches✅**](#-recommended-branches)
 * [How-Tos](#-How-Tos-)
@@ -18,13 +18,16 @@ Table of Contents
 
 💭 Join our Discord 💭
 ---
-
-Join sunnyhaibin's sunnypilot server!
+<details><summary>Expand</summary>
+ 
+Join sunnyhaibin's sunnypilot server to stay up to date with all the latest commits and be a part of shaping the future of sunnypilot!
 * https://discord.gg/wRW3meAgtx
+</details>
 
 🚨 Read Before Installing 🚨
 ---
-
+<details><summary>Expand</summary>
+ 
 It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car to have the best driving experience.
 
 sunnypilot is recommended to be used for **most** of the following car makes' models:
@@ -38,22 +41,25 @@ sunnypilot is recommended to be used for **most** of the following car makes' mo
 It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 
 ### Safety Modifications
-All [official sunnypilot branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to comma.ai's safety policy.
+All [official sunnypilot branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to comma.ai's safety policy. Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
 
-The following changes are a **VIOLATION** and **ARE NOT** included:
-* Driver Monitoring
+The following changes are a **VIOLATION** and **ARE NOT** included in any sunnypilot branches:
+* Driver Monitoring:
   * ❌ "Nerfing" or reducing monitoring bounds ❌
-* Panda safety
+* Panda safety:
   * ❌ No disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press ❌ (was never included in MADS)
   * ❌ Re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release ❌ (was never included in MADS)
   * ❌ No disengaging on ACC MAIN in OFF state ❌
 
+</details>
+
 ⚒ Installation
 ---
-
+<details><summary>Expand</summary>
+ 
 ### Comma URL (Comma 3 only quick setup)
 
-8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
+0.8.14 was last updated in July 2022, many changes have been made since then so `test-c3` is recommended
 ```
 1. Factory reset/uninstall previous software if you already installed a branch
 2. Select Custom Software
@@ -79,11 +85,13 @@ For example, if you would like to install the branch for HKG:
     ```
     https://installer.comma.ai/sunnyhaibin/0.8.12-prod-personal-hkg
     ```
+</details>
 
 🚗 Highlight Features
 ---
-
-### Driving Enhancement
+<details><summary>Expand</summary>
+ 
+### Driving Enhancements
 * [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
   * This feature is enabled by default and can be disabled in the "sunnypilot" menu
 * [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
@@ -126,9 +134,12 @@ For example, if you would like to install the branch for HKG:
 * **Driving Screen Off Brightness (%)** - When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio
 * **Max Time Offroad** - Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)
 
+ </details>
+
 🚗 Driving Enhancement
 ---
-
+<details><summary>Expand</summary>
+ 
 ### Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
 * sunnypilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
@@ -232,9 +243,12 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 | Hyundai/Kia/Genesis |    ✅    |     ✅      |     ✅     |     ⚠      |
 |       Toyota        |    ✅    |     ✅      |     ✅     |     ❌      |
 
+</details>
+
 ⚒ Branch Definitions
 ---
-
+<details><summary>Expand</summary>
+ 
 |     Tag      | Definition                                 | Description                                                                                                                     |
 |:------------:|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 |    `prod`    | Production branches                        | Include features that are tested by users and ready to use. ✅                                                                   |
@@ -254,8 +268,12 @@ Example:
 * [`0.8.12-prod-full-honda`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg): 0.8.12-based, Production, Full Feature, Honda branch
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg): 0.8.12-based, Production, sunnyhaibin's personal Full Feature, Hyundai/Kia/Genesis branch
 
+</details>
+
 📰 Recommended Branches
 ---
+<details><summary>Expand</summary>
+ 
 | Branch                                                                            | Definition                                                                                         | Compatible Device | Changelogs                                                                                                 |
 |:----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
 | [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on commaai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
@@ -278,14 +296,17 @@ After running the command to install the desired branch, reboot the comma device
 1. C3: `sudo reboot`
 2. C2 or EON: `reboot`
 
+</details>
+
 📗 How Tos 📗
 ---
-
+<details><summary>Expand</summary>
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
+</details>
 
 💰 Donate 💰
 ---
-
+<details><summary>Expand</summary>
 If you find any of the features useful, feel free to donate to support for future feature development.
 
 Thank you for your continuous love and support! Enjoy 🥰
@@ -300,17 +321,20 @@ Thank you for your continuous love and support! Enjoy 🥰
 **PayPal QR Code:**
 
 ![sunnyhaibin0850_qrcode_paypal.me.png](sunnyhaibin0850_qrcode_paypal.me.png)
+</details>
 
 🎆 Pull Requests 🎆
 ---
-
+<details><summary>Expand</summary>
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
 Pull requests should be against the most current `prod-full` branch.
+</details>
 
 🏆 Special Thanks
 ---
-
+<details><summary>Expand</summary>
+ 
 * [spektor56](https://github.com/spektor56/openpilot)
 * [rav4kumar](https://github.com/rav4kumar/openpilot)
 * [mob9221](https://github.com/mob9221/opendbc)
@@ -328,6 +352,8 @@ Pull requests should be against the most current `prod-full` branch.
 * [neokii](https://github.com/neokii/openpilot)
 * [Aragon7777](https://github.com/aragon7777)
 * [AlexandreSato](https://github.com/AlexandreSato/openpilot)
+
+</details>
 
 Licensing
 ------
