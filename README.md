@@ -20,7 +20,7 @@ Table of Contents
 ---
 <details><summary>Expand</summary>
  
-Join the official sunnypilot Discrod server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
+Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
 * https://discord.gg/wRW3meAgtx
 </details>
 
