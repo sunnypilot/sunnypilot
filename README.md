@@ -8,7 +8,7 @@ Table of Contents
 * [Driving Enhancements](#-driving-enhancements)
 * [Branch Definitions](#-branch-definitions)
 * [**✅Recommended Branches✅**](#-recommended-branches)
-* [How-To's](#-How-To's-)
+* [How-To's](#-How-Tos-)
 * [**💰Donate💰**](#-donate-)
 * [Pull Requests](#-Pull-Requests-)
 * [Special Thanks](#-special-thanks)
