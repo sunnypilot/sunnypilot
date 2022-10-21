@@ -3,6 +3,7 @@ Table of Contents
 
 * [Join our Discord](#-join-our-discord-)
 * [Read Before Installing](#-read-before-installing-)
+* [Prohibited Safety Modifications](#-prohibited-safety-modifications-)
 * [Installation](#-installation)
 * [Highlight Features](#-highlight-features)
 * [Driving Enhancements](#-driving-enhancements)
@@ -39,8 +40,12 @@ sunnypilot is recommended to be used for **most** of the following car manufactu
 * General Motors (**GM**)
 
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
+</details>
 
-### Safety Modifications
+❌ Prohibited Safety Modifications ❌
+---
+<details><summary>Expand</summary>
+ 
 All [official sunnypilot branches from sunnypilot's official GitHub repository](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to comma.ai's safety policy. Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
 
 The following changes are a **VIOLATION** and **ARE NOT** included in any sunnypilot branches:
