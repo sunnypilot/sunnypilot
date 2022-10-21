@@ -62,7 +62,7 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
 ---
 <details><summary>Expand</summary>
  
-### Comma URL (Comma 3 only quick setup)
+### Official comma URL method ([comma three](https://comma.ai/shop/products/three))
 
 0.8.14 was last updated in July 2022, many changes have been made since then so `test-c3` is recommended
 ```
