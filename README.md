@@ -1,33 +1,29 @@
 Table of Contents
 =======================
 
-* [Join our Discord](#-join-our-discord-)
-* [Read Before Installing](#-read-before-installing-)
-* [Prohibited Safety Modifications](#-prohibited-safety-modifications-)
+* [Join our Discord](#-join-our-discord)
+* [Read Before Installing](#-read-before-installing)
+* [Prohibited Safety Modifications](#-prohibited-safety-modifications)
 * [Installation](#-installation)
 * [Highlight Features](#-highlight-features)
 * [Driving Enhancements](#-driving-enhancements)
 * [Branch Definitions](#-branch-definitions)
 * [**✅Recommended Branches✅**](#-recommended-branches)
-* [How-To's](#-How-Tos-)
-* [**💰Donate💰**](#-donate-)
-* [Pull Requests](#-Pull-Requests-)
+* [How-To's](#-How-Tos)
+* [**💰Donate💰**](#-donate)
+* [Pull Requests](#-Pull-Requests)
 * [Special Thanks](#-special-thanks)
 * [Licensing](#licensing)
 
 ---
 
-💭 Join our Discord 💭
----
-<details><summary>Expand</summary>
- 
-Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
+<details><summary><h2>💭 Join our Discord</h2></summary>
+
+ Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
 * https://discord.gg/wRW3meAgtx
 </details>
 
-🚨 Read Before Installing 🚨
----
-<details><summary>Expand</summary>
+<details><summary><h2>🚨 Read Before Installing</h2></summary>
  
 It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car (and device) to have the best driving experience.
 
@@ -42,9 +38,7 @@ sunnypilot is recommended to be used for **most** models of the following car ma
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 </details>
 
-❌ Prohibited Safety Modifications ❌
----
-<details><summary>Expand</summary>
+<details><summary><h2>⛔ Prohibited Safety Modifications</h2></summary>
  
 All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/branches) from sunnypilot's official GitHub repository strictly adhere to [comma.ai's safety policy](https://github.com/commaai/openpilot/blob/master/docs/SAFETY.md). Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
 
@@ -58,43 +52,59 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
 
 </details>
 
-⚒ Installation
----
-<details><summary>Expand</summary>
- 
-### Official comma URL method ([comma three](https://comma.ai/shop/products/three))
 
-0.8.14 was last updated in July 2022, many changes have been made since then so `test-c3` is recommended
-```
-1. Factory reset/uninstall previous software if you already installed a branch
-2. Select Custom Software
-3. Input the following URL: installer.comma.ai/sunnyhaibin/test-c3
-```
+<details><summary><h2>⚒ Installation</h2></summary>
 
-### Comma 2 / non-test fork for comma 3
-To install sunnypilot's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
+ <details><summary>comma.ai URL (Easy)</summary> 
 
-<b>HTTPS://</b> prepend is required for comma 2, This is not required for comma 3!
+  ### comma three
+  ---
+  
+   Please refer to [Branch Definitions](#-branch-definitions) to find your preferred/supported branch, this guide will assume you want to install the latest release:
 
-```
-https://installer.comma.ai/sunnyhaibin/<insert_branch_name>
-```
-For example, if you would like to install the branch for HKG:
+   1. Factory reset/uninstall previous software if you already installed another fork.
+   2. Select `Custom Software` when given the option.
+   3. Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3``` (note: `https://` is not recrequired on the comma three)
+   4. Complete the rest of the installation.
+   5. Pop into the `#installation-help` channel on Discord for any more assistance.
 
-* [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
+ ### comma two
+  ---
+
+  Please refer to [Branch Definitions](#-branch-definitions) to find your preferred/supported branch, this will assume you want to install the latest release:
+
+  1. Factory reset/uninstall previous software if you already installed another fork.
+  2. Select `Custom Software` when given the option.
+  3. Input the following URL: ```https://installer.comma.ai/sunnyhaibin/0.8.12-4-prod```
+  4. Complete the rest of the installation.
+  5. Pop into the `#installation-help` channel on Discord for any more assistance.
+
+
+  </details>
+   
+ <details><summary>SSH (More Versatile)</summary>
+If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
+
+  
+ comma three:
+* [`test-c3`](https://github.com/sunnyhaibin/openpilot/tree/test-c3):
     ```
-    https://installer.comma.ai/sunnyhaibin/0.8.12-prod-full-hkg
+    cd /data; rm -rf ./openpilot; git clone -b test-c3 --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot; sudo reboot
     ```
-
+comma two:
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
     ```
-    https://installer.comma.ai/sunnyhaibin/0.8.12-prod-personal-hkg
+    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot; sudo reboot
     ```
-</details>
+After running the command to install the desired branch, reboot the comma device to ensure to take the change in effect:
+1. C3: `sudo reboot`
+2. C2 or EON: `reboot`
+  </details>  
+ 
+ </details>  
 
-🚗 Highlight Features
----
-<details><summary>Expand</summary>
+
+<details><summary><h2>🚗 Highlight Features</h2></summary>
  
 ### Driving Enhancements
 * [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
@@ -141,9 +151,8 @@ For example, if you would like to install the branch for HKG:
 
  </details>
 
-🚗 Driving Enhancements
----
-<details><summary>Expand</summary>
+
+<details><summary><h2>🚗 Driving Enhancements</h2></summary>
  
 ### Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
@@ -216,7 +225,7 @@ While using stock Adaptive/Smart Cruise Control, Custom Stock Longitudinal Contr
 
 **Instruction**
 
-**📗 How to use Custom Longitudinal Control on sunnypilot 📗**
+**📗 How to use Custom Longitudinal Control on sunnypilot **
 
 When using Speed Limit, Vision, or Map based Turn control, you will be setting the "MAX" ACC speed on the sunnypilot display instead of the one in the dashboard. The car will then set the ACC setting in the dashboard to the targeted speed, but will never exceed the max speed set on the sunnypilot display. A quick press of the RES+ or SET- buttons will change this speed by 5 MPH or KM/H on the sunnypilot display, while a long deliberate press (about a 1/2 second press) changes it by 1 MPH or KM/H. DO NOT hold the RES+ or SET- buttons for longer that a 1 second. Either make quick or long deliberate presses only.
 
@@ -232,7 +241,7 @@ This fork now allows supported openpilot longitudinal cars to adjust the cruise 
 **Supported cars:**
 * sunnypilot Longitudinal Control capable
 
-🚨**PROCEED WITH EXTREME CAUTION AND BE READY TO MANUALLY TAKE OVER AT ALL TIMES**🚨
+🚨**PROCEED WITH EXTREME CAUTION AND BE READY TO MANUALLY TAKE OVER AT ALL TIMES**
 
 There are 4 modes to select on the steering wheel and/or the onroad camera screen:
 * **Far Gap**: Furthest distance - 1.8 second profile
@@ -250,9 +259,8 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 
 </details>
 
-⚒ Branch Definitions
----
-<details><summary>Expand</summary>
+
+<details><summary><h2>⚒ Branch Definitions</h2></summary>
  
 |     Tag      | Definition                                 | Description                                                                                                                     |
 |:------------:|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
@@ -275,9 +283,7 @@ Example:
 
 </details>
 
-📰 Recommended Branches
----
-<details><summary>Expand</summary>
+<details><summary><h2>📰 Recommended Branches</h2></summary>
  
 | Branch                                                                            | Definition                                                                                         | Compatible Device | Changelogs                                                                                                 |
 |:----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
@@ -285,33 +291,14 @@ Example:
 | [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
 
 
-### SSH (More Versatile)
-If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
-
-* [`0.8.12-prod-full-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg):
-    ```
-    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-full-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot; sudo reboot
-    ```
-
-* [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
-    ```
-    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot; sudo reboot
-    ```
-After running the command to install the desired branch, reboot the comma device to ensure to take the change in effect:
-1. C3: `sudo reboot`
-2. C2 or EON: `reboot`
-
 </details>
 
-📗 How To's 📗
----
-<details><summary>Expand</summary>
+
+<details><summary><h2>📗 How To's</h2></summary>
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
 </details>
 
-💰 Donate 💰
----
-<details><summary>Expand</summary>
+<details><summary><h2>💰 Donate</h2></summary>
 If you find any of the features useful, feel free to donate to support for future feature development.
 
 Thank you for your continuous love and support! Enjoy 🥰
@@ -328,17 +315,15 @@ Thank you for your continuous love and support! Enjoy 🥰
 ![sunnyhaibin0850_qrcode_paypal.me.png](sunnyhaibin0850_qrcode_paypal.me.png)
 </details>
 
-🎆 Pull Requests 🎆
----
-<details><summary>Expand</summary>
+
+<details><summary><h2>🎆 Pull Requests</h2></summary>
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
 Pull requests should be against the most current `prod-full` branch.
 </details>
 
-🏆 Special Thanks
----
-<details><summary>Expand</summary>
+
+<details><summary><h2>🏆 Special Thanks</h2></summary>
  
 * [spektor56](https://github.com/spektor56/openpilot)
 * [rav4kumar](https://github.com/rav4kumar/openpilot)
