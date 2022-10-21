@@ -52,8 +52,9 @@ The following changes are a **VIOLATION** and **ARE NOT** included:
 ---
 
 ### Comma URL (Comma 3 only quick setup)
-```
+
 8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
+```
 1. Factory reset/uninstall previous software if you already installed a branch
 2. Select Custom Software
 3. Input the following URL: installer.comma.ai/sunnyhaibin/test-c3
