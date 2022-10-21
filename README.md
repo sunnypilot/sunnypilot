@@ -30,7 +30,7 @@ Join the official sunnypilot Discord server to stay up to date with all the late
  
 It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car (and device) to have the best driving experience.
 
-sunnypilot is recommended to be used for **most** of the following car makes' models:
+sunnypilot is recommended to be used for **most** of the following car manufacturers:
 * Hyundai/Kia/Genesis (**HKG**)
 * Honda
 * Toyota
