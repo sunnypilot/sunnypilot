@@ -187,6 +187,8 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
 
 ### Dynamic Lane Profile (DLP)
+Please note, DLP is no longer available on braches including and after `test-c3-20220907`.
+
 Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
 
 There are 3 modes to select on the onroad camera screen:
@@ -217,15 +219,12 @@ Certain features are only available with an active data connection, via:
 * Personal Hotspot - From your mobile device, or a dedicated hotspot from a cellular carrier.
 
 **Features:**
-* Vision-based Turn Speed Control (VTSC) - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e., slowing down for curves
-* Map-Data-based Turn Speed Control (MTSC) - Use curvature information from map data to define speed limits to take turns ahead - i.e., slowing down for curves
-  * **Note: Requires data connection**
+* Vision-based Turn Speed Control (VTSC) - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e. slowing down for curves
+* Map-Data-based Turn Speed Control (MTSC) - Use curvature information from map data to define speed limits to take turns ahead - i.e. slowing down for curves[^1]
 * Speed Limit Control (SLC) - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
-  * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
-  * **Note: Requires data connection**
-    * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive
-      * **Note: Requires data connection**
-* Hands on Wheel Monitoring - Monitors and alerts the driver when their hands have not been on the steering wheel for an extended time
+  * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only[^1]
+  * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive[^1]
+* Toggle Hands on Wheel Monitoring - Monitors and alerts the driver when their hands have not been on the steering wheel for an extended time
 
 ### Custom Stock Longitudinal Control
 While using stock Adaptive/Smart Cruise Control, Custom Stock Longitudinal Control in sunnypilot allows sunnypilot to manipulate and take over the set speed on the car's dashboard.
@@ -382,3 +381,5 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/commaai/openpilot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/commaai/openpilot/context:python)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/commaai/openpilot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/commaai/openpilot/context:cpp)
 [![codecov](https://codecov.io/gh/commaai/openpilot/branch/master/graph/badge.svg)](https://codecov.io/gh/commaai/openpilot)
+
+[^1]:Requires data connection if not using Offline Maps data**
