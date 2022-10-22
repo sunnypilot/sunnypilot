@@ -112,20 +112,21 @@ After running the command to install the desired branch, your comma device shoul
 <details><summary><h2>🚗 Highlight Features</h2></summary>
  
 ### Driving Enhancements
-* [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
+- [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
   * This feature is enabled by default and can be disabled in the "sunnypilot" menu
-* [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
-* [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
+- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence (depreciated after `test-c3-20220907`)
+- [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
   * Vision-based Turn Speed Control (VTSC)
   * Map-Data-based Turn Speed Control (MTSC)
   * Speed Limit control (SLC)
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
-* [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Enable the `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on screen button to adjust the cruise gap between the car and the lead car
-* **Quiet Drive 🤫** - Toggle to mute all notification sounds (excluding driver safety warnings)
-* **Auto Lane Change Timer** - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
-* **Force Car Recognition (FCR)** - Use a selector to force your car to be recognized by sunnypilot
-* **Fix sunnypilot No Offroad** - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
-* **Enable ACC+MADS with RES+/SET-** - Engage both ACC and MADS with a single press of RES+ or SET- button
+- [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Enable the `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on screen button to adjust the cruise gap between the car and the lead car
+ - [**Quiet Drive 🤫**](#-quiet-drive) - Toggle to mute all notification sounds (excluding driver safety warnings)
+ - [**Auto Lane Change Timer**](#Auto-Lane-Change-Timer) - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
+ - [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
+ - [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
+ - [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
+ - [**Enable Offline Maps Download**](#Enable-Offline-Maps-Download) - OpenStreetMap database can now be downloaded locally for offline use. Currently offering US South, US West, US Northeast, US Florida, Taiwan, and South Africa
 
 ### Visual Enhancement
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
