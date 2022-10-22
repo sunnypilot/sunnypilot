@@ -245,8 +245,8 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 |    `full`    | Full Feature branches                      | All features inclusive within the branch.                                                                                       |
 |  `personal`  | sunnyhaibin's personal branches            | On top of Full Feature.                                                                                                         |
 |    `hkg`     | Hyundai/Kia/Genesis(HKG)-specific branches | Only for HKG cars.                                                                                                              |
-|   `honda`    | Honda/Acura - Specific branches                    | Only for Honda cars.                                                                                                            |
-|   `toyota`   | Toyota/Lexus - Specific branches                   | Only for Toyota cars.                                                                                                           |
+|   `honda`    | Honda/Acura - Specific branches                    | Only for Honda/Acura cars.                                                                                                            |
+|   `toyota`   | Toyota/Lexus - Specific branches                   | Only for Toyota/Lexus cars.                                                                                                           |
 |   `subaru`   | Subaru - Specific branches                   | Only for Subaru cars.                                                                                                           |
 | `volkswagen` | Volkswagen - Specific branches               | Only for Volkswagen cars.                                                                                                       |
 
