@@ -29,8 +29,8 @@ It is recommended to read this entire page before proceeding. This will ensure t
 
 sunnypilot is recommended to be used for **most** of the following car makes' models:
 * Hyundai/Kia/Genesis (**HKG**)
-* Honda
-* Toyota
+* Honda/Acura
+* Toyota/Lexus
 * Subaru
 * Chrysler/Jeep/RAM (**FCA**)
 * General Motors (**GM**)
