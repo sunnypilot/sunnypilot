@@ -140,6 +140,7 @@ After running the command to install the desired branch, your comma device shoul
   * 0.8.14 and later:
     * Blue🔵: Laneful mode, M.A.D.S. engaged
     * Green🟢: Laneless mode, M.A.D.S. engaged
+    * Yellow🟡: Experimetal e2e, M.A.D.S. engaged
   * Before and not 0.8.14:
     * Green🟢: Laneful mode, M.A.D.S. engaged
     * Red🔴: Laneless mode, M.A.D.S. engaged
