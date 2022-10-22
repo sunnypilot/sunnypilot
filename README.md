@@ -21,6 +21,9 @@ Table of Contents
 
  Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
 * https://discord.gg/wRW3meAgtx
+ 
+    ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
+ 
 </details>
 
 <details><summary><h2>🚨 Read Before Installing</h2></summary>
