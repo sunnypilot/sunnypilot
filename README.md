@@ -82,23 +82,28 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
 
   </details>
    
- <details><summary>SSH (More Versatile)</summary>
+ <details>
+ <summary>SSH (More Versatile)</summary>
+ </br>
+ 
+ Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
+ 
 If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
 
   
- comma three:
+ ### comma three:
+ ---
 * [`test-c3`](https://github.com/sunnyhaibin/openpilot/tree/test-c3):
     ```
-    cd /data; rm -rf ./openpilot; git clone -b test-c3 --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot; sudo reboot
+    cd /data; rm -rf ./openpilot; git clone -b test-c3 --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; sudo reboot
     ```
-comma two:
+### comma two:
+---
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
     ```
-    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot; sudo reboot
+    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot
     ```
-After running the command to install the desired branch, reboot the comma device to ensure to take the change in effect:
-1. C3: `sudo reboot`
-2. C2 or EON: `reboot`
+After running the command to install the desired branch, your comma device should reboot.
   </details>  
  
  </details>  
