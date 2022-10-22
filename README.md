@@ -305,7 +305,9 @@ Example:
 </details>
 
 
-<details><summary><h2>📗 How To's</h2></summary>
+<details>
+ <summary><h2>📗 How To's</h2></summary>
+ 
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
 </details>
 
