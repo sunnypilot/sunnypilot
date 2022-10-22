@@ -17,7 +17,7 @@ Table of Contents
 
 ---
 
-<details><summary><h2>💭 Join our Discord</h2></summary>
+<details><summary><h3>💭 Join our Discord</h3></summary>
 
  Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
 * https://discord.gg/wRW3meAgtx
@@ -26,7 +26,7 @@ Table of Contents
  
 </details>
 
-<details><summary><h2>🚨 Read Before Installing</h2></summary>
+<details><summary><h3>🚨 Read Before Installing</h3></summary>
  
 It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car (and device) to have the best driving experience.
 
@@ -41,7 +41,7 @@ sunnypilot is recommended to be used for **most** models of the following car ma
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 </details>
 
-<details><summary><h2>⛔ Prohibited Safety Modifications</h2></summary>
+<details><summary><h3>⛔ Prohibited Safety Modifications</h3></summary>
  
 All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/branches) from sunnypilot's official GitHub repository strictly adhere to [comma.ai's safety policy](https://github.com/commaai/openpilot/blob/master/docs/SAFETY.md). Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
 
@@ -56,7 +56,7 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
 </details>
 
 
-<details><summary><h2>⚒ Installation</h2></summary>
+<details><summary><h3>⚒ Installation</h3></summary>
 
  <details><summary>comma.ai URL (Easy)</summary> 
 
@@ -112,7 +112,7 @@ After running the command to install the desired branch, your comma device shoul
  </details>  
 
 
-<details><summary><h2>🚗 Highlight Features</h2></summary>
+<details><summary><h3>🚗 Highlight Features</h3></summary>
  
 ### Quality of life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
@@ -166,7 +166,7 @@ After running the command to install the desired branch, your comma device shoul
  </details>
 
 
-<details><summary><h2>🚗 Driving Enhancements</h2></summary>
+<details><summary><h3>🚗 Driving Enhancements</h3></summary>
  
 ### Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
@@ -274,7 +274,7 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 </details>
 
 
-<details><summary><h2>⚒ Branch Definitions</h2></summary>
+<details><summary><h3>⚒ Branch Definitions</h3></summary>
  
 |     Tag      | Definition                                 | Description                                                                                                                     |
 |:------------:|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
@@ -297,7 +297,7 @@ Example:
 
 </details>
 
-<details><summary><h2>✅ Recommended Branches</h2></summary>
+<details><summary><h3>✅ Recommended Branches</h3></summary>
  
 | Branch                                                                            | Definition                                                                                          | Compatible Device | Changelogs                                                                                                      |
 |:----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------|
@@ -310,12 +310,12 @@ Example:
 
 
 <details>
- <summary><h2>📗 How To's</h2></summary>
+ <summary><h3>📗 How To's</h3></summary>
  
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
 </details>
 
-<details><summary><h2>💰 Donate</h2></summary>
+<details><summary><h3>💰 Donate</h3></summary>
 If you find any of the features useful, feel free to donate to support for future feature development.
 
 Thank you for your continuous love and support! Enjoy 🥰
@@ -333,14 +333,14 @@ Thank you for your continuous love and support! Enjoy 🥰
 </details>
 
 
-<details><summary><h2>🎆 Pull Requests</h2></summary>
+<details><summary><h3>🎆 Pull Requests</h3></summary>
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
 Pull requests should be against the most current `prod-full` branch.
 </details>
 
 
-<details><summary><h2>🏆 Special Thanks</h2></summary>
+<details><summary><h3>🏆 Special Thanks</h3></summary>
  
 * [spektor56](https://github.com/spektor56/openpilot)
 * [rav4kumar](https://github.com/rav4kumar/openpilot)
