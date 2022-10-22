@@ -296,10 +296,11 @@ Example:
 
 <details><summary><h2>✅ Recommended Branches</h2></summary>
  
-| Branch                                                                            | Definition                                                                                         | Compatible Device | Changelogs                                                                                                 |
-|:----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------|
-| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md) |
-| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)               |
+| Branch                                                                            | Definition                                                                                          | Compatible Device | Changelogs                                                                                                      |
+|:----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------|
+| `0.8.12-prod-full-<car>`                                                          | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.12                        | comma two         | [`0.8.14-prod-<car>` Changelogs](https://github.com/sunnyhaibin/sunnypilot/branches/all?query=0.8.12-prod-full) |
+| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                        | comma three       | [`0.8.14-prod-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md)      |
+| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)               | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot latest upstream | comma three       | [`test-c3` Changelogs](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)                    |
 
 
 </details>
