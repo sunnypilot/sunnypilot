@@ -63,7 +63,7 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
   ### comma three
   ---
   
-   Please refer to [Branch Definitions](#-branch-definitions) to find your preferred/supported branch, this guide will assume you want to install the latest release:
+   Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
 
    1. Factory reset/uninstall previous software if you already installed another fork.
    2. Select `Custom Software` when given the option.
@@ -74,7 +74,7 @@ The following changes are a **VIOLATION** and **ARE NOT** included in any sunnyp
  ### comma two
   ---
 
-  Please refer to [Branch Definitions](#-branch-definitions) to find your preferred/supported branch, this will assume you want to install the latest release:
+  Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this will assume you want to install the latest release:
 
   1. Factory reset/uninstall previous software if you already installed another fork.
   2. Select `Custom Software` when given the option.
