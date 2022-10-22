@@ -111,7 +111,7 @@ After running the command to install the desired branch, your comma device shoul
 
 <details><summary><h2>🚗 Highlight Features</h2></summary>
  
-### Driving Enhancements
+### Quality of life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
   * This feature is enabled by default and can be disabled in the "sunnypilot" menu
 - [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence (depreciated after `test-c3-20220907`)
@@ -127,8 +127,12 @@ After running the command to install the desired branch, your comma device shoul
  - [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
  - [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
  - [**Enable Offline Maps Download**](#Enable-Offline-Maps-Download) - OpenStreetMap database can now be downloaded locally for offline use. Currently offering US South, US West, US Northeast, US Florida, Taiwan, and South Africa
+ - [**Various Live Tuning**](#Various0-Live-Tuning) - Ability to fine turn your driving experience without having to wait for the official commit
+   * Enforce Torque Lateral Control - Use latest torque controller for all vehicles.
+   * Torque Lateral Control Live Tune - Ability to adjust the torque contoller's `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
+   * Torque Lateral Controller Self-Tune - Enable self turning for the Torque controller.
 
-### Visual Enhancement
+### Visual Enhancements
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
   * Green🟢: M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
@@ -147,7 +151,7 @@ After running the command to install the desired branch, your comma device shoul
 * **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at a stop lights, stop signs, traffic congestions)
 * **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
 
-### Operational Enhancement
+### Operational Enhancements
 * **Fast Boot** - sunnypilot will fast boot by creating a Prebuilt file
 * **Disable Onroad Uploads** - Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot
 * **Brightness Control (Global)** - Manually adjusts the global brightness of the screen
