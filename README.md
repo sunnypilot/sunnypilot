@@ -228,9 +228,9 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 
 |      Car Make       | Far Gap | Normal Gap | Aggro Gap | Maniac Gap |
 |:-------------------:|:-------:|:----------:|:---------:|:----------:|
-|       Honda         |    ✅    |     ✅      |     ✅     |     ⚠      |
+|    Honda/Acura      |    ✅    |     ✅      |     ✅     |     ⚠      |
 | Hyundai/Kia/Genesis |    ✅    |     ✅      |     ✅     |     ⚠      |
-|       Toyota        |    ✅    |     ✅      |     ✅     |     ❌      |
+|    Toyota/Lexus     |    ✅    |     ✅      |     ✅     |     ❌      |
 
 ⚒ Branch Definitions
 ---
