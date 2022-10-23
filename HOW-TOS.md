@@ -5,13 +5,13 @@ Table of Contents
 =======================
 
 * [Radar Tracks](#Radar-Tracks)
-    * [Enable Radar Tracks](#-Enable-Radar-Tracks-)
-* [Enable openpilot Longitudinal Control](#-Enable-openpilot-Longitudinal-Control-)
-* [Enable Mapbox Navigation](#-Enable-Mapbox-Navigation-)
+    * [Enable Radar Tracks](#-Enable-Radar-Tracks)
+* [Enable openpilot Longitudinal Control](#-Enable-openpilot-Longitudinal-Control)
+* [Enable Mapbox Navigation](#-Enable-Mapbox-Navigation)
 
 ---
 
-## Radar Tracks
+<details><summary><h3>Radar Tracks</h3></summary>
 
 Radar tracks can now be enabled manually on applicable cars through SSH thanks to [@greghogan](https://github.com/greghogan) and [@pd0wm](https://github.com/pd0wm).
 
@@ -29,7 +29,7 @@ to go back to the default values.
 **How radar points can be used along with vision:**
 * Current OP long policy is identify with vision first, if vision sees a vehicle match it to a radar point. If vision sees nothing you get a false negative and no lead car detection. (Source: [Hubblesphere#7894 from comma.ai community Discord](https://discord.com/channels/469524606043160576/872899198738104330/872913890793635872))
 
-### 🚨 Enable Radar Tracks 🚨
+### 🚨 Enable Radar Tracks
 
 ***(EXPERIMENTAL, as of January 1st, 2022)***
 
@@ -56,8 +56,9 @@ to go back to the default values.
 6. Go for a quick drive and drive behind a lead car with varied follow distance. Then, come back and allow the drive to upload its `rlogs` in [comma Connect](https://connect.comma.ai).
 7. With all `rlogs` uploaded, open the drive in Cabana from [comma Connect](https://connect.comma.ai). Load DBC -> `hyundai_kia_mando_front_radar.dbc`, then search `RADAR_TRACK_50x` (`x` could be anything), open any of them, and look at `LONG_DIST`.
 8. If the radar tracks data is relevant with the lead car you drove behind, you are done! Your car now have radar tracks enabled.
-
-### 🚨 Enable openpilot Longitudinal Control 🚨
+</details>
+   
+<details><summary><h3>🚨 Enable openpilot Longitudinal Control</h3></summary>
 
 ***(EXPERIMENTAL, as of January 9th, 2022)***
 
@@ -94,8 +95,10 @@ to go back to the default values.
     ## As of January 9th, 2022 ##
     LEGACY_SAFETY_MODE_CAR = set([CAR.HYUNDAI_GENESIS, CAR.IONIQ_EV_2020, CAR.IONIQ_EV_LTD, CAR.IONIQ_PHEV, CAR.IONIQ, CAR.KONA_EV, CAR.KIA_SORENTO, CAR.SONATA_LF, CAR.KIA_NIRO_EV, CAR.KIA_OPTIMA, CAR.VELOSTER, CAR.KIA_STINGER, CAR.GENESIS_G70, CAR.GENESIS_G80, CAR.KIA_CEED, CAR.ELANTRA, CAR.IONIQ_HEV_2022])
 ```
+</details>
 
-### 🗺 Enable Mapbox Navigation 🗺
+<details><summary><h3>🗺 Enable Mapbox Navigation</h3></summary>
+   
 1) Create a free mapbox account. Account will ask for a credit card for verification. You will not be charged for the free tier.
 2) On the Dashboard, you will see a section called Access Tokens. Click `Create a Token`. Name it whatever you like. Set the scopes to allow everything for both Public and Secret. Copy both of these keys. **YOU WON'T BE ABLE TO ACCESS THE SECRET KEY AFTER THIS WINDOW.** 
 3) On your C3, go to `SP - Visuals` and toggle `Enable Mapbox Navigation*`. Accept the reboot.
@@ -112,3 +115,4 @@ to go back to the default values.
 **IMPORTANT NOTE:** Your C3 will require an active internet connection to download map data, generate driving directions, and ETA. Once map data and directions are downloaded, it *is* possible to use it offline, however nothing will update (such as new driving direction after a missed turn, updated ETA, map data further into your drive etc.)
 
 ***NAVIGATION NOTE:** At this time, mapbox does not support alphanumeric addresses (i.e W123N1234 Main St). There is currently no known workaround for this.*
+</details>
