@@ -117,7 +117,7 @@ After running the command to install the desired branch, your comma device shoul
 ### Quality of Life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
   * This feature is enabled by default and can be disabled in the `SP - Controls` menu
-- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence (depreciated after `test-c3-20220907`)
+- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence[^3]
 - [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
   * Vision-based Turn Speed Control (VTSC)
   * Map-Data-based Turn Speed Control (MTSC)
@@ -384,3 +384,4 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
+[^3]:depreciated after `test-c3-20220907`
