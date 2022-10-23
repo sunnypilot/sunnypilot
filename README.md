@@ -60,8 +60,8 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
  <details><summary>comma.ai URL (Easy)</summary> 
 
-  ### comma three
-  ---
+  comma three
+  ------
   
    Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
 
@@ -71,8 +71,8 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
    4. Complete the rest of the installation.
    5. Pop into the `#installation-help` channel on Discord for any more assistance.
 
- ### comma two
-  ---
+  comma two
+  ------
 
   Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this will assume you want to install the latest release:
 
@@ -94,14 +94,14 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
 
   
- ### comma three:
- ---
+ comma three:
+ ------
 * [`test-c3`](https://github.com/sunnyhaibin/openpilot/tree/test-c3):
     ```
     cd /data; rm -rf ./openpilot; git clone -b test-c3 --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; sudo reboot
     ```
-### comma two:
----
+comma two:
+------
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
     ```
     cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot
