@@ -116,7 +116,7 @@ After running the command to install the desired branch, your comma device shoul
  
 ### Quality of Life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
-  * This feature is enabled by default and can be disabled in the "sunnypilot" menu
+  * This feature is enabled by default and can be disabled in the `SP - Controls` menu
 - [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence (depreciated after `test-c3-20220907`)
 - [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
   * Vision-based Turn Speed Control (VTSC)
