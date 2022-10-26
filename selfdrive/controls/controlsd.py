@@ -156,7 +156,7 @@ class Controls:
     self.params.put("CarParams", cp_bytes)
     put_nonblocking("CarParamsCache", cp_bytes)
     put_nonblocking("CarParamsPersistent", cp_bytes)
-    params.put("CarParamsSnG", cp_bytes)
+    self.params.put("CarParamsSnG", cp_bytes)
     put_nonblocking("CarParamsCacheSnG", cp_bytes)
 
     # cleanup old params
