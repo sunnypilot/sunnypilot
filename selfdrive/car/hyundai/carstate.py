@@ -129,7 +129,10 @@ class CarState(CarStateBase):
 
     self.cluster_speed_counter += 1
     if self.cluster_speed_counter > CLUSTER_SAMPLE_RATE:
-      self.cluster_speed = cp.vl["CLU15"]["CF_Clu_VehicleSpeed"]
+      if HyundaiFlags.CANFD_HDA2:
+        self.cluster_speed = cp.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_3"]
+      else: 
+        self.cluster_speed = cp.vl["CLU15"]["CF_Clu_VehicleSpeed"]
       self.cluster_speed_counter = 0
 
       # mimic how dash converts to imperial
@@ -398,7 +401,8 @@ class CarState(CarStateBase):
     if not self.CP.openpilotLongitudinalControl:
       speed_factor = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
       cp_cruise_info = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
-      ret.cruiseState.speed = cp_cruise_info.vl["CRUISE_INFO"]["SET_SPEED"] * speed_factor
+      # ret.cruiseState.speed = cp_cruise_info.vl["CRUISE_INFO"]["SET_SPEED"] * speed_factor
+      ret.cruiseState.speed = cp_cruise_info.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_3"] * speed_factor
       ret.cruiseState.standstill = cp_cruise_info.vl["CRUISE_INFO"]["CRUISE_STANDSTILL"] == 1
       ret.cruiseState.enabled = cp_cruise_info.vl["CRUISE_INFO"]["CRUISE_STATUS"] != 0
       self.pcm_enabled = cp_cruise_info.vl["CRUISE_INFO"]["CRUISE_STATUS"] != 0
@@ -751,9 +755,11 @@ class CarState(CarStateBase):
         ("CRUISE_STATUS", "CRUISE_INFO"),
         ("SET_SPEED", "CRUISE_INFO"),
         ("CRUISE_STANDSTILL", "CRUISE_INFO"),
+        ("SPEED_LIMIT_3", "CLUSTER_SPEED_LIMIT"),
       ]
       checks += [
         ("CRUISE_INFO", 50),
+        ("CLUSTER_SPEED_LIMIT", 50),
       ]
 
     if CP.carFingerprint in EV_CAR:
