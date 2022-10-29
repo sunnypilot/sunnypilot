@@ -67,7 +67,7 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
    1. Factory reset/uninstall previous software if you already installed another fork.
    2. Select `Custom Software` when given the option.
-   3. Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3``` (note: `https://` is not recrequired on the comma three)
+   3. Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3``` (note: `https://` is not requirement on the comma three)
    4. Complete the rest of the installation.
    5. Pop into the `#installation-help` channel on Discord for any more assistance.
 
