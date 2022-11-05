@@ -30,13 +30,14 @@ Table of Contents
  
 It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car (and device) to have the best driving experience.
 
-sunnypilot is recommended to be used for **most** models of the following car manufacturers:
+sunnypilot is compatible with **most** models of the following car manufacturers:
 * Hyundai/Kia/Genesis (**HKG**)
 * Honda/Acura
 * Toyota/Lexus
 * Subaru
 * Chrysler/Jeep/RAM (**FCA**)
 * General Motors (**GM**)
+* VW/Audi/Skoda
 
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 </details>
