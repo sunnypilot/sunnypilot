@@ -123,7 +123,7 @@ After running the command to install the desired branch, your comma device shoul
   * Map-Data-based Turn Speed Control (MTSC)
   * Speed Limit control (SLC)
   * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only
-- [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Allow `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on screen button to adjust the following distance from the lead car
+- [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Allow `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on screen button to adjust the follow distance from the lead car
  - [**Quiet Drive 🤫**](#-quiet-drive) - Toggle to mute all notification sounds (excluding driver safety warnings)
  - [**Auto Lane Change Timer**](#Auto-Lane-Change-Timer) - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
  - [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
