@@ -59,18 +59,18 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
 <details><summary><h3>⚒ Installation</h3></summary>
 
- <details><summary>comma.ai URL (Easy)</summary> 
+ <details><summary>URL (Easy)</summary> 
 
   comma three
   ------
   
    Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
 
-   1. Factory reset/uninstall previous software if you already installed another fork.
-   2. Select `Custom Software` when given the option.
-   3. Input the following URL: ```installer.comma.ai/sunnyhaibin/test-c3``` (note: `https://` is not requirement on the comma three)
-   4. Complete the rest of the installation.
-   5. Pop into the `#installation-help` channel on Discord for any more assistance.
+   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) previous software if you already installed another fork.
+   2. Select `Custom Software` when given the option upon reboot.
+   3. Input the following URL: ```bit.ly/sp-test-c3```[^4] (note: `https://` is not requirement on the comma three)
+   4. Complete the rest of the installation following the onscreen instructions.
+   5. Pop into the `#installation-help` channel on Discord for further assistance.
 
   comma two
   ------
@@ -79,10 +79,9 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
   1. Factory reset/uninstall previous software if you already installed another fork.
   2. Select `Custom Software` when given the option.
-  3. Input the following URL: ```https://installer.comma.ai/sunnyhaibin/0.8.12-4-prod```
-  4. Complete the rest of the installation.
-  5. Pop into the `#installation-help` channel on Discord for any more assistance.
-
+  3. Input the following URL: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
+  4. Complete the rest of the installation following the onscreen instructions.
+  5. Pop into the `#installation-help` channel on Discord for further assistance.
 
   </details>
    
@@ -386,3 +385,4 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
 [^3]:depreciated after `test-c3-20220907`
+[^4]:Shortend URL for convenience. Full url is ```smiskol.com/fork/sunnyhaibin/test-c3```
