@@ -48,7 +48,7 @@ All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/bra
 
 The following changes are a **VIOLATION** of this policy and **ARE NOT** included in any sunnypilot branches:
 * Driver Monitoring:
-  * ❌ "Nerfing" or reducing monitoring bounds.
+  * ❌ "Nerfing" or reducing monitoring parameters.
 * Panda safety:
   * ❌ No preventing disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press (never included in MADS).
   * ❌ No auto re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release (never included in MADS).
