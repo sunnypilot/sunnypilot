@@ -97,15 +97,19 @@ If you are looking to install sunnyhaibin's fork via SSH, run the following comm
  comma three:
  ------
 * [`test-c3`](https://github.com/sunnyhaibin/openpilot/tree/test-c3):
+    
     ```
     cd /data; rm -rf ./openpilot; git clone -b test-c3 --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; sudo reboot
     ```
+
 comma two:
 ------
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
+    
     ```
     cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot
     ```
+    
 After running the command to install the desired branch, your comma device should reboot.
   </details>  
  
