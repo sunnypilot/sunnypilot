@@ -121,7 +121,7 @@ After running the command to install the desired branch, your comma device shoul
 ### Quality of Life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - sunnypilot Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
   * This feature is enabled by default and can be disabled in the `SP - Controls` menu
-- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence[^3]
+- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile base on lane recognition confidence
 - [**Enhanced Speed Control**](#enhanced-speed-control) - Utilizes data from vision or OpenStreetMap to achieve dynamic speed control without user's intervention
   * Vision-based Turn Speed Control (VTSC)
   * Map-Data-based Turn Speed Control (MTSC)
@@ -133,7 +133,7 @@ After running the command to install the desired branch, your comma device shoul
  - [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
  - [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
  - [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
- - [**Offline OSM Maps**](#Offline-OSM-Maps) - OpenStreetMap (OSM) database can now be downloaded locally for offline use[^2]. This enables offline SLC, V-TSC, M-TSC. Currently offering US South, US West, US Northeast, US Florida, Taiwan, and South Africa
+ - [**Offline OSM Maps**](#Offline-OSM-Maps) - OpenStreetMap (OSM) database can now be downloaded locally for offline use[^2]. This enables offline SLC, V-TSC, M-TSC. Currently offering US South, US West, US Northeast, US Florida, Taiwan, South Africa and New Zealand
  - [**Various Live Tuning**](#Various0-Live-Tuning) - Ability to fine turn your driving experience without having to wait for the official commit
    * Enforce Torque Lateral Control - Use latest torque controller for all vehicles.
    * Torque Lateral Control Live Tune - Ability to adjust the torque contoller's `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
@@ -388,5 +388,4 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
-[^3]:depreciated after `test-c3-20220907`
 [^4]:Shortend URL for convenience. Full url is ```smiskol.com/fork/sunnyhaibin/test-c3```
