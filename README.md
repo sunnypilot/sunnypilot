@@ -50,8 +50,8 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 * Driver Monitoring:
   * ❌ "Nerfing" or reducing monitoring parameters.
 * Panda safety:
-  * ❌ No preventing disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press (never included in MADS).
-  * ❌ No auto re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release (never included in MADS).
+  * ❌ No preventing disengaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal press.
+  * ❌ No auto re-engaging of <ins>**LONGITUDINAL CONTROL**</ins> (acceleration/brake) on brake pedal release.
   * ❌ No disengaging on ACC MAIN in OFF state.
 
 </details>
