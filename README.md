@@ -142,20 +142,18 @@ After running the command to install the desired branch, your comma device shoul
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
   * Green🟢: M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
-* **Lane Color** - Various lane colors to display real-time Lane Model and M.A.D.S. engagement status
+* **Lane Path Color** - Various lane path colors to display real-time Lane Model and M.A.D.S. engagement status
   * 0.8.14 and later:
-    * Blue🔵: Laneful mode, M.A.D.S. engaged
-    * Green🟢: Laneless mode, M.A.D.S. engaged
-    * Yellow🟡: Experimetal e2e, M.A.D.S. engaged
-  * Before and not 0.8.14:
-    * Green🟢: Laneful mode, M.A.D.S. engaged
-    * Red🔴: Laneless mode, M.A.D.S. engaged
+    * Blue🔵: Laneful mode & M.A.D.S. engaged
+    * Green🟢: Laneless mode & M.A.D.S. engaged
+    * Yellow🟡: Experimetal e2e & M.A.D.S. engaged
+  * Pre 0.8.14:
+    * Green🟢: Laneful mode & M.A.D.S. engaged
+    * Red🔴: Laneless mode & M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
-  * Black⚫: M.A.D.S. engaged, steering is being manually override by user
+  * Black⚫: M.A.D.S. engaged, steering is being manually overriden by user
 * **Developer (Dev) UI** - Display various real-time metrics on screen while driving
-  * 1. Enable "Show debug UI elements" in the "sunnypilot' menu
-  * 2. Click on the "MAX" box on the top left of the sunnypilot display to toggle different metrics display
-* **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at a stop lights, stop signs, traffic congestions)
+* **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at traffic lights, stop signs, traffic congestions)
 * **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
 
 ### Operational Enhancements
