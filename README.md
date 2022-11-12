@@ -180,17 +180,20 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` must be `ON` to use MADS and ACC/SCC
 * `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
-* NEW❗ **Disengage Lateral ALC on Brake Press Mode** toggle:
-  1. `ON`: `BRAKE pedal` press will pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will resume sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
-  2. `OFF`: `BRAKE pedal` press will NOT pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
-* `TURN SIGNALS` (`Left` or `Right`) will pause sunnypilot Automatic Lane Centering if the vehicle speed is below the threshold for sunnypilot Automatic Lane Change
+
+ ### Disengage Lateral ALC on Brake Press Mode toggle
+ Dedicated toggle to handle Lateral state on brake pedal press and release:
+  1. `ON`: `BRAKE pedal` press will pause Automatic Lane Centering; `BRAKE pedal` release will resume Automatic Lane Centering. Note: `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
+  2. `OFF`: `BRAKE pedal` press will NOT pause Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
+ 
+### Additional
+ * `TURN SIGNALS` (`Left` or `Right`) will pause Automatic Lane Centering if the vehicle speed is below the [threshold](https://github.com/commaai/openpilot/blob/master/selfdrive/controls/lib/desire_helper.py#L8) for Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
 * Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
 
 ### Dynamic Lane Profile (DLP)
-Please note, DLP is no longer available on braches including and after `test-c3-20220907`.
 
-Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
+ Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
 
 There are 3 modes to select on the onroad camera screen:
 * **Auto Lane**: sunnypilot dynamically chooses between `Laneline` or `Laneless` model
