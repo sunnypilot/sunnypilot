@@ -312,27 +312,9 @@ Example:
 </details>
 
 
-<details>
- <summary><h3>📗 How To's</h3></summary>
+<summary><h3>📗 How To's</h3></summary>
  
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
-</details>
-
-<details><summary><h3>💰 Donate</h3></summary>
-If you find any of the features useful, feel free to donate to support for future feature development.
-
-Thank you for your continuous love and support! Enjoy 🥰
-
-**PayPal:**
-
-<a href="https://paypal.me/sunnyhaibin0850" target="_blank">
-<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
-</a>
-<br></br>
-
-**PayPal QR Code:**
-
-![sunnyhaibin0850_qrcode_paypal.me.png](sunnyhaibin0850_qrcode_paypal.me.png)
 </details>
 
 
@@ -341,7 +323,6 @@ We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
 Pull requests should be against the most current `prod-full` branch.
 </details>
-
 
 <details><summary><h3>🏆 Special Thanks</h3></summary>
  
@@ -362,8 +343,25 @@ Pull requests should be against the most current `prod-full` branch.
 * [neokii](https://github.com/neokii/openpilot)
 * [Aragon7777](https://github.com/aragon7777)
 * [AlexandreSato](https://github.com/AlexandreSato/openpilot)
+* [Moodkiller](https://github.com/moodkiller)
 
 </details>
+
+<h3>💰 Donate</h3>
+If you find any of the features useful, feel free to donate to support for future feature development.
+
+Thank you for your continuous love and support! Enjoy 🥰
+
+**PayPal:**
+
+<a href="https://paypal.me/sunnyhaibin0850" target="_blank">
+<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
+</a>
+<br></br>
+
+**PayPal QR Code:**
+
+![sunnyhaibin0850_qrcode_paypal.me.png](sunnyhaibin0850_qrcode_paypal.me.png)
 
 Licensing
 ------
