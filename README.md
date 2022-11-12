@@ -282,12 +282,12 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 |     Tag      | Definition                                 | Description                                                                                                                     |
 |:------------:|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 |    `prod`    | Production branches                        | Include features that are tested by users and ready to use. ✅                                                                   |
-|  `staging`   | Staging branches                           | Include new features that are not tested by users. No stability guaranteed. 🚨                                                  |
-|  `feature`   | Feature branches                           | Represent new features being added to the system. No stability guaranteed. 🚨                                                   |
-|    `test`    | Test branches                              | For experimenting with concepts that might not get used in the project. No stability guaranteed. 🚨                             |
-|  `develop`   | Development branches                       | All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. 🚨 |
-|    `full`    | Full Feature branches                      | All features inclusive within the branch.                                                                                       |
-|  `personal`  | sunnyhaibin's personal branches            | On top of Full Feature.                                                                                                         |
+|  `staging`   | Staging branches                           | Include new features that are not tested by users. No stability guaranteed. ⚠                                                  |
+|  `feature`   | Feature branches                           | Represent new features being added to the system. No stability guaranteed. ⚠                                                   |
+|    `test`    | Test branches                              | For experimenting with concepts that might not get used in the project. No stability guaranteed. ⚠                             |
+|  `develop`   | Development branches                       | All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. ⚠ |
+|    `full`    | Full Feature branches                      | All features inclusive within the branch. ✅                                                                                      |
+|  `personal`  | sunnyhaibin's personal branches            | On top of Full Feature. ✅                                                                                                         |
 |    `hkg`     | Hyundai/Kia/Genesis(HKG)-specific branches | Only for HKG cars.                                                                                                              |
 |   `honda`    | Honda/Acura - Specific branches                    | Only for Honda/Acura cars.                                                                                                            |
 |   `toyota`   | Toyota/Lexus - Specific branches                   | Only for Toyota/Lexus cars.                                                                                                           |
