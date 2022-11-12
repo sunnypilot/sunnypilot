@@ -186,7 +186,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
   1. `ON`: `BRAKE pedal` press will pause Automatic Lane Centering; `BRAKE pedal` release will resume Automatic Lane Centering. Note: `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
   2. `OFF`: `BRAKE pedal` press will NOT pause Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
  
-### Additional
+### Miscellaneous
  * `TURN SIGNALS` (`Left` or `Right`) will pause Automatic Lane Centering if the vehicle speed is below the [threshold](https://github.com/commaai/openpilot/blob/master/selfdrive/controls/lib/desire_helper.py#L8) for Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
 * Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
