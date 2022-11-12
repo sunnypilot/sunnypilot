@@ -28,7 +28,7 @@ Table of Contents
 
 <details><summary><h3>🚨 Read Before Installing</h3></summary>
  
-It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car (and device) to have the best driving experience.
+It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot, and you are selecting the right branch for your car (and device) to have the best driving experience.
 
 sunnypilot is compatible with **most** models of the following car manufacturers:
 * Hyundai/Kia/Genesis (**HKG**)
@@ -120,23 +120,23 @@ After running the command to install the desired branch, your comma device shoul
  
 ### Quality of Life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - Automatic Lane Centering (ALC) / Lane Keep Assist System (LKAS) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
-- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile (between lanefull and laneless) based on lane recognition confidence
+- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile (between Laneful and Laneless) based on lane recognition confidence
 - [**Enhanced Speed Control**](#enhanced-speed-control) - Automatically adjust cruise control speed using vision model, OpenStreetMap (OSM) data, and/or Speed Limit control (SLC) without user interaction
   * Vision-based Turn Speed Control (V-TSC) - lower speed when going around corners using vision model
   * Map-Data-based Turn Speed Control (M-TSC) - lower speed when going around corners using OSM data[^1]
   * Speed Limit Control (SLC) - Set speed limit based on map data or car interface (if applicable) 
   * HKG only: Highway Driving Assist (HDA) status integration - Use cars native speed sign detection to set desired speed (on applicable HKG cars only)
-- [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Allow `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on screen button to adjust the follow distance from the lead car. See table below for options
+- [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Allow `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on-screen button to adjust the follow distance from the lead car. See table below for options
  - [**Quiet Drive 🤫**](#-quiet-drive) - Toggle to mute all notification sounds (excluding driver safety warnings)
  - [**Auto Lane Change Timer**](#Auto-Lane-Change-Timer) - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
  - [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
  - [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
  - [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
  - [**Offline OSM Maps**](#Offline-OSM-Maps) - OSM database can now be downloaded locally for offline use[^2]. This enables offline SLC, V-TSC and M-TSC. Currently available for US South, US West, US Northeast, Florida, Taiwan, South Africa and New Zealand
- - [**Various Live Tuning**](#Various-Live-Tuning) - Ability to tailer your driving experience on the fly:
+ - [**Various Live Tuning**](#Various-Live-Tuning) - Ability to tailor your driving experience on the fly:
    * Enforce Torque Lateral Control - Use the newest [torque controller](https://blog.comma.ai/0815release/#torque-controller) for all vehicles.
-   * Torque Lateral Control Live Tune - Ability to adjust the torque contoller's `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
-   * Torque Lateral Controller Self-Tune - Enable self turning for the Torque controller.
+   * Torque Lateral Control Live Tune - Ability to adjust the torque controller’s `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
+   * Torque Lateral Controller Self-Tune - Enable automatic turning for the Torque controller.
 
 ### Visual Enhancements
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
@@ -146,12 +146,12 @@ After running the command to install the desired branch, your comma device shoul
   * 0.8.14 and later:
     * Blue🔵: Laneful mode & M.A.D.S. engaged
     * Green🟢: Laneless mode & M.A.D.S. engaged
-    * Yellow🟡: Experimetal e2e & M.A.D.S. engaged
+    * Yellow🟡: Experimental e2e & M.A.D.S. engaged
   * Pre 0.8.14:
     * Green🟢: Laneful mode & M.A.D.S. engaged
     * Red🔴: Laneless mode & M.A.D.S. engaged
   * White⚪: M.A.D.S. suspended or disengaged
-  * Black⚫: M.A.D.S. engaged, steering is being manually overriden by user
+  * Black⚫: M.A.D.S. engaged, steering is being manually overridden by user
 * **Developer (Dev) UI** - Display various real-time metrics on screen while driving
 * **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at traffic lights, stop signs, traffic congestions)
 * **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
@@ -219,7 +219,7 @@ This fork now allows supported cars to dynamically adjust the longitudinal plan 
   * Volkswagen MQB
 
 Certain features are only available with an active data connection, via:
-* [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or;
+* [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or
 * Personal Hotspot - From your mobile device, or a dedicated hotspot from a cellular carrier.
 
 **Features:**
@@ -388,4 +388,4 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
-[^4]:Shortend URL for convenience. Full url is ```smiskol.com/fork/sunnyhaibin/test-c3```
+[^4]:Shortened URL for convenience. Full URL is ```smiskol.com/fork/sunnyhaibin/test-c3```
