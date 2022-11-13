@@ -11,7 +11,7 @@ Table of Contents
 
 ---
 
-<details><summary><h3>Radar Tracks</h3></summary>
+<details><summary><h3>📡 Radar Tracks</h3></summary>
 
 Radar tracks can now be enabled manually on applicable cars through SSH thanks to [@greghogan](https://github.com/greghogan) and [@pd0wm](https://github.com/pd0wm).
 
