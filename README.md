@@ -37,7 +37,7 @@ sunnypilot is compatible with **most** models of the following car manufacturers
 * Subaru
 * Chrysler/Jeep/RAM (**FCA**)
 * General Motors (**GM**)
-* VW/Audi/Skoda
+* Volkswagen (MQB/PQ)/Audi/Škoda
 
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 </details>
