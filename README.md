@@ -171,7 +171,7 @@ After running the command to install the desired branch, your comma device shoul
  
 ### Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
-* sunnypilot Automatic Lane Centering and ACC/SCC can be engaged independently of each other
+* sunnypilot Automatic Lane Centering (ALC) and ACC/SCC can be engaged independently of each other
 * Dedicated button to toggle sunnypilot ALC:
   * `CRUISE (MAIN)` button: All supported cars on sunnypilot
     * `LFA` button: Newer HKG cars with `LFA` button
