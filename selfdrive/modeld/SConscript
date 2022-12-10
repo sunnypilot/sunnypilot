@@ -1,0 +1,119 @@
+import os
+
+Import('env', 'arch', 'cereal', 'messaging', 'common', 'gpucommon', 'visionipc', 'transformations')
+lenv = env.Clone()
+
+libs = [cereal, messaging, common, visionipc, gpucommon,
+        'OpenCL', 'SNPE', 'capnp', 'zmq', 'kj', 'yuv']
+
+def get_dlsym_offset():
+  """Returns the offset between dlopen and dlsym in libdl.so"""
+  import ctypes
+  libdl = ctypes.PyDLL('libdl.so')
+  dlopen = ctypes.cast(libdl.dlopen, ctypes.c_void_p).value
+  dlsym = ctypes.cast(libdl.dlsym, ctypes.c_void_p).value
+  return dlsym - dlopen
+
+
+common_src = [
+  "models/commonmodel.cc",
+  "runners/snpemodel.cc",
+  "transforms/loadyuv.cc",
+  "transforms/transform.cc"
+]
+
+thneed_src = [
+  "thneed/thneed_common.cc",
+  "thneed/thneed_qcom2.cc",
+  "thneed/serialize.cc",
+  "runners/thneedmodel.cc",
+]
+
+use_thneed = not GetOption('no_thneed')
+
+if arch == "larch64":
+  libs += ['gsl', 'CB', 'pthread', 'dl']
+
+  if use_thneed:
+    common_src += thneed_src
+    dlsym_offset = get_dlsym_offset()
+    lenv['CXXFLAGS'].append("-DUSE_THNEED")
+    lenv['CXXFLAGS'].append(f"-DDLSYM_OFFSET={dlsym_offset}")
+else:
+  libs += ['pthread']
+
+  if not GetOption('snpe'):
+    # for onnx support
+    common_src += ['runners/onnxmodel.cc']
+
+    # tell runners to use onnx
+    lenv['CFLAGS'].append("-DUSE_ONNX_MODEL")
+    lenv['CXXFLAGS'].append("-DUSE_ONNX_MODEL")
+
+  if arch == "Darwin":
+    # fix OpenCL
+    del libs[libs.index('OpenCL')]
+    lenv['FRAMEWORKS'] = ['OpenCL']
+
+    # no SNPE on Mac
+    del libs[libs.index('SNPE')]
+    del common_src[common_src.index('runners/snpemodel.cc')]
+
+common_model = lenv.Object(common_src)
+
+lenv.Program('_dmonitoringmodeld', [
+    "dmonitoringmodeld.cc",
+    "models/dmonitoring.cc",
+  ]+common_model, LIBS=libs)
+
+# build thneed model
+if use_thneed and arch == "larch64" or GetOption('pc_thneed'):
+  fn = File("models/supercombo").abspath
+
+  if GetOption('pc_thneed'):
+    cmd = f"cd {Dir('#').abspath}/tinygrad_repo && GPU=1 NATIVE_EXPLOG=1 OPTWG=1 UNSAFE_FLOAT4=1 DEBUGCL=1 python3 openpilot/compile.py {fn}.onnx {fn}.thneed"
+  else:
+    cmd = f"cd {Dir('#').abspath}/tinygrad_repo && FLOAT16=1 MATMUL=1 PYOPENCL_NO_CACHE=1 NATIVE_EXPLOG=1 OPTWG=1 UNSAFE_FLOAT4=1 DEBUGCL=1 python3 openpilot/compile.py {fn}.onnx {fn}.thneed"
+
+  # is there a better way then listing all of tinygrad?
+  lenv.Command(fn + ".thneed", [fn + ".onnx",
+    "#tinygrad_repo/openpilot/compile.py",
+    "#tinygrad_repo/accel/opencl/conv.cl",
+    "#tinygrad_repo/accel/opencl/matmul.cl",
+    "#tinygrad_repo/accel/opencl/ops_opencl.py",
+    "#tinygrad_repo/accel/opencl/preprocessing.py",
+    "#tinygrad_repo/extra/onnx.py",
+    "#tinygrad_repo/extra/thneed.py",
+    "#tinygrad_repo/extra/utils.py",
+    "#tinygrad_repo/tinygrad/llops/ops_gpu.py",
+    "#tinygrad_repo/tinygrad/llops/ops_opencl.py",
+    "#tinygrad_repo/tinygrad/helpers.py",
+    "#tinygrad_repo/tinygrad/mlops.py",
+    "#tinygrad_repo/tinygrad/ops.py",
+    "#tinygrad_repo/tinygrad/shapetracker.py",
+    "#tinygrad_repo/tinygrad/tensor.py",
+    "#tinygrad_repo/tinygrad/nn/__init__.py"
+  ], cmd)
+
+llenv = lenv.Clone()
+if GetOption('pc_thneed'):
+  pc_thneed_src = [
+    "thneed/thneed_common.cc",
+    "thneed/thneed_pc.cc",
+    "thneed/serialize.cc",
+    "runners/thneedmodel.cc",
+  ]
+  llenv['CFLAGS'].append("-DUSE_THNEED")
+  llenv['CXXFLAGS'].append("-DUSE_THNEED")
+  common_model += llenv.Object(pc_thneed_src)
+  libs += ['dl']
+
+llenv.Program('_modeld', [
+    "modeld.cc",
+    "models/driving.cc",
+  ]+common_model, LIBS=libs + transformations)
+
+lenv.Program('_navmodeld', [
+    "navmodeld.cc",
+    "models/nav.cc",
+  ]+common_model, LIBS=libs + transformations)
