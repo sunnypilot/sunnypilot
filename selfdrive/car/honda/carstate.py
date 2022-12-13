@@ -138,6 +138,7 @@ class CarState(CarStateBase):
     super().__init__(CP)
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.gearbox_msg = "GEARBOX"
+    #6MT needs to use different Gearbox value - 6MT_SHIFTER and 6MT_GEARBOX available
     if CP.carFingerprint == CAR.ACCORD and CP.transmissionType == TransmissionType.cvt:
       self.gearbox_msg = "GEARBOX_15T"
 
@@ -230,6 +231,7 @@ class CarState(CarStateBase):
     v_wheel = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.0
 
     # blend in transmission speed at low speed, since it has more low speed accuracy
+    # 6MT yet to find transmission speed. "ENGINE_DATA" isn't present in can
     v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
     ret.vEgoRaw = (1. - v_weight) * cp.vl["ENGINE_DATA"]["XMISSION_SPEED"] * CV.KPH_TO_MS * self.CP.wheelSpeedFactor + v_weight * v_wheel
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
