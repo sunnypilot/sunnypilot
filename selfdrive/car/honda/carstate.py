@@ -44,6 +44,9 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     ("CRUISE_SETTING", "SCM_BUTTONS"),
     ("ACC_STATUS", "POWERTRAIN_DATA"),
     ("MAIN_ON", main_on_sig_msg),
+    ("6MT_GEARBOX", "6MT_GEAR"),
+    ("6MT_SHIFTER", "GAS_PEDAL_2"),
+    ("CLUTCH_PEDAL", "GAS_PEDAL_2"),
   ]
 
   checks = [
@@ -58,6 +61,11 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     ("STEER_STATUS", 100),
     ("STEER_MOTOR_TORQUE", 0),  # TODO: not on every car
   ]
+  
+  if CP.carFingerprint == CAR.INTEGRA_6MT:
+    checks -= [
+      ("ENGINE_DATA", 100),
+    ]
 
   if CP.carFingerprint == CAR.ODYSSEY_CHN:
     checks += [
@@ -141,6 +149,8 @@ class CarState(CarStateBase):
     #6MT needs to use different Gearbox value - 6MT_SHIFTER and 6MT_GEARBOX available
     if CP.carFingerprint == CAR.ACCORD and CP.transmissionType == TransmissionType.cvt:
       self.gearbox_msg = "GEARBOX_15T"
+    #elif CP.carFingerprint == CAR.INTEGRA_6MT and CP.transmissionType == TransmissionType.6mt:
+    #self.gearbox_msg = "6MT_SHIFTER"
 
     self.main_on_sig_msg = "SCM_FEEDBACK"
     if CP.carFingerprint in HONDA_NIDEC_ALT_SCM_MESSAGES:
@@ -232,6 +242,7 @@ class CarState(CarStateBase):
 
     # blend in transmission speed at low speed, since it has more low speed accuracy
     # 6MT yet to find transmission speed. "ENGINE_DATA" isn't present in can
+    #if 
     v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
     ret.vEgoRaw = (1. - v_weight) * cp.vl["ENGINE_DATA"]["XMISSION_SPEED"] * CV.KPH_TO_MS * self.CP.wheelSpeedFactor + v_weight * v_wheel
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
