@@ -153,7 +153,6 @@ FW_QUERY_CONFIG = FwQueryConfig(
   ],
 )
 
-# TODO Add CAR.INTEGRA_6MT
 FW_VERSIONS = {
   CAR.ACCORD: {
     (Ecu.programmedFuelInjection, 0x18da10f1, None): [
@@ -1470,6 +1469,36 @@ FW_VERSIONS = {
       b'37805-64A-A620\x00\x00',
     ],
   },
+  #Integra 416955121 is Unknown & probably 6MT transmission
+   CAR.INTEGRA_6MT: {
+    (Ecu.eps, 0x18da30f1, None): [
+      b'39990-T38-A040\x00\x00',
+    ],
+    (Ecu.gateway, 0x18daeff1, None): [
+      b'38897-3S5-A210\x00\x00',
+    ],
+    (Ecu.srs, 0x18da53f1, None): [
+      b'77959-3S5-A920\x00\x00'
+    ],
+    (Ecu.combinationMeter, 0x18da60f1, None): [
+      b'78108-3S5-AC20\x00\x00',
+    ],
+    (Ecu.fwdRadar, 0x18dab0f1, None): [
+      b'36161-3S5-A060\x00\x00',
+    ],
+    (Ecu.vsa, 0x18da28f1, None): [
+      b'57114-3S5-CA30\x00\x00',
+    ],
+    (Ecu.unknown, 0x18da3af1, None): [ 
+     b'39390-3S5-A020\x00\x00',
+    ],
+     (Ecu.hud, 0x18da61f1, None): [
+       b'78209-3S5-A030\x00\x00',
+     ],
+    (Ecu.programmedFuelInjection, 0x18da10f1, None): [
+      b'37805-6LM-A020\x00\x00',
+    ],
+  },
 }
 
 DBC = {
@@ -1503,7 +1532,6 @@ STEER_THRESHOLD = {
   # default is 1200, overrides go here
   CAR.ACURA_RDX: 400,
   CAR.CRV_EU: 400,
-  #CAR.INTEGRA_6MT: 45 mph
 }
 
 HONDA_NIDEC_ALT_PCM_ACCEL = {CAR.ODYSSEY}
