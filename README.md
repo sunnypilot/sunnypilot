@@ -138,7 +138,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
     * `LKAS` button: Honda, Toyota, Global Subaru
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
-* `CRUISE (MAIN)` must be `ON` to use MADS and ACC/SCC
+* `CRUISE (MAIN)` must be `ON` to use ACC/SCC
 * `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
 * NEW❗ **Disengage Lateral ALC on Brake Press Mode** toggle:
   1. `ON`: `BRAKE pedal` press will pause sunnypilot Automatic Lane Centering; `BRAKE pedal` release will resume sunnypilot Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC without an explicit entry **(strictly enforced in panda safety code)**
