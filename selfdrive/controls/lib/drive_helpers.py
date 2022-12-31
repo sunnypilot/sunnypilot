@@ -11,7 +11,7 @@ from selfdrive.modeld.constants import T_IDXS
 #          model predictions above this speed can be unpredictable
 V_CRUISE_MAX = 145  # kph
 V_CRUISE_MIN = 8  # kph
-V_CRUISE_ENABLE_MIN_MPH = 32  # kph
+V_CRUISE_ENABLE_MIN_MPH = 0  # kph
 V_CRUISE_ENABLE_MIN_KPH = 30  # kph
 V_CRUISE_INITIAL = 255  # kph
 IMPERIAL_INCREMENT = 1.6  # should be CV.MPH_TO_KPH, but this causes rounding errors
