@@ -56,7 +56,9 @@ class RadarInterface(RadarInterfaceBase):
     self.rcp = get_radar_can_parser(CP)
 
   def update(self, can_strings):
-    if self.radar_off_can or (self.rcp is None):
+    # if self.radar_off_can or (self.rcp is None):
+    #   return super().update(None)
+    if self.rcp is None:
       return super().update(None)
 
     vls = self.rcp.update_strings(can_strings)

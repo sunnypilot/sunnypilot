@@ -1,3 +1,8 @@
+Version 0.9.2 (2023-01-12)
+========================
+* added commented out code for radar
+* added fix for tall vehicles
+
 Version 0.9.1 (2022-12-XX)
 ========================
 * Adjust alert volume using ambient noise level
