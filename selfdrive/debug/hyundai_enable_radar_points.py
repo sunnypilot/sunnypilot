@@ -48,6 +48,10 @@ SUPPORTED_FW_VERSIONS = {
   b"TM__ SCC F-CUP      1.00 1.03 99110-S2000\x19\x050\x13'    ": ConfigValues(
     default_config=b"\x00\x00\x00\x01\x00\x00",
     tracks_enabled=b"\x00\x00\x00\x01\x00\x01"),
+  # 2022 SANTA FE HEV
+  b'TMhe SCC FHCUP      1.00 1.00 99110-CL500 \x04$\x164    ': ConfigValues(
+    default_config=b"\x00\x00\x00\x01\x00\x00",
+    tracks_enabled=b"\x00\x00\x00\x01\x00\x01"),
   # 2020 GENESIS G70
   b'IK__ SCC F-CUP      1.00 1.02 96400-G9100\x18\x07\x06\x17\x12    ': ConfigValues(
     default_config=b"\x00\x00\x00\x01\x00\x00",
