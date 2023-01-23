@@ -26,8 +26,8 @@ EventName = car.CarEvent.EventName
 LON_MPC_STEP = 0.2  # first step is 0.2s
 AWARENESS_DECEL = -0.2  # car smoothly decel at .2m/s^2 when user is distracted
 A_CRUISE_MIN = -1.2
-A_CRUISE_MAX_VALS = [1.6, 1.2, 0.8, 0.6]
-A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
+A_CRUISE_MAX_VALS = [1.4, 1.0, 0.7, 0.5] # [1.6, 1.2, 0.8, 0.6]
+A_CRUISE_MAX_BP = [0., 10.0, 25., 40.] # 0km/h, 36km/h, 90km/h, 144km/h
 
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
