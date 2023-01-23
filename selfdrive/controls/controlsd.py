@@ -15,6 +15,7 @@ from system.swaglog import cloudlog
 from system.version import is_release_branch, get_short_branch
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_event, get_one_can
+from selfdrive.car.hyundai.values import CAR as HYUNDAI_CAR
 from selfdrive.controls.lib.lane_planner import CAMERA_OFFSET
 from selfdrive.controls.lib.drive_helpers import VCruiseHelper, get_lag_adjusted_curvature
 from selfdrive.controls.lib.latcontrol import LatControl
@@ -29,6 +30,8 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.locationd.calibrationd import Calibration
 from system.hardware import HARDWARE
 from selfdrive.manager.process_config import managed_processes
+from selfdrive.car.isotp_parallel_query import IsoTpParallelQuery
+
 
 SOFT_DISABLE_TIME = 3  # seconds
 LDW_MIN_SPEED = 31 * CV.MPH_TO_MS
@@ -203,6 +206,45 @@ class Controls:
     self.desired_curvature = 0.0
     self.desired_curvature_rate = 0.0
     self.v_cruise_helper = VCruiseHelper(self.CP)
+
+    
+
+
+    # START: Try to enable radar tracks
+    print("Try to enable radar tracks")
+    if self.CP.carFingerprint in [HYUNDAI_CAR.SANTA_FE_HEV_2022]:
+      rdr_fw = None
+      for fw in self.CP.carFw:
+        if fw.ecu == "fwdRadar":
+          rdr_fw = fw
+          break
+      print(f"Found fwdRadar: {rdr_fw.fwVersion}")
+      if rdr_fw.fwVersion in [b'\xf1\x8799110S1500\xf1\x00TM__ SCC FHCUP      1.00 1.00 99110-S1500         ', b'TM__ SCC FHCUP      1.00 1.00 99110-S1500 \x04!\x15\x07    '] or True:
+        try:
+          for i in range(40):
+            try:
+              query = IsoTpParallelQuery(self.pm.sock['sendcan'], self.can_sock, 0, [rdr_fw.address], [b'\x10\x07'], [b'\x50\x07'], debug=True)
+              for addr, dat in query.get_data(0.1).items(): # pylint: disable=unused-variable
+                print("ecu write data by id ...")
+                new_config = b"\x00\x00\x00\x01\x00\x01"
+                dataId = b'\x01\x42'
+                WRITE_DAT_REQUEST = b'\x2e'
+                WRITE_DAT_RESPONSE = b'\x68'
+                query = IsoTpParallelQuery(self.pm.sock['sendcan'], self.can_sock, 0, [rdr_fw.address], [WRITE_DAT_REQUEST+dataId+new_config], [WRITE_DAT_RESPONSE], debug=True)
+                query.get_data(0)
+                print(f"Try {i+1}")
+                break
+              break
+            except Exception as e:
+              print(f"Failed {i}: {e}") 
+        except Exception as e:
+          print("Failed to enable tracks" + str(e))
+    print("END Try to enable radar tracks")
+    # END try to enable radar tracks
+
+
+
+
 
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
