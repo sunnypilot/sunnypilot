@@ -319,12 +319,6 @@ class CarInterfaceBase(ABC):
     if cs_out.steerFaultPermanent:
       events.add(EventName.steerUnavailable)
 
-    # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
-    if (cs_out.gasPressed and not self.CS.out.gasPressed and self.disengage_on_accelerator) or \
-       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill) and not self.mads_ndlob):
-      if cs_out.madsEnabled:
-        cs_out.disengageByBrake = True
-
     # we engage when pcm is active (rising edge)
     # enabling can optionally be blocked by the car interface
     if pcm_enable:
@@ -392,6 +386,13 @@ class CarInterfaceBase(ABC):
 
     if not CS.control_initialized:
       CS.control_initialized = True
+
+    # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
+    if (cs_out.gasPressed and not self.CS.out.gasPressed and self.disengage_on_accelerator) or \
+      (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)) or \
+      (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
+      if cs_out.madsEnabled:
+        cs_out.disengageByBrake = True
 
     cs_out.madsEnabled = CS.madsEnabled
     cs_out.accEnabled = CS.accEnabled
