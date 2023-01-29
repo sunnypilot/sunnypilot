@@ -27,8 +27,8 @@ LON_MPC_STEP = 0.2  # first step is 0.2s
 AWARENESS_DECEL = -0.2  # car smoothly decel at .2m/s^2 when user is distracted
 A_CRUISE_MIN = -0.75 # was -1.2
 
-A_CRUISE_MAX_VALS =   [3.0, 1.7, 1.3, 0.7, 0.6, 0.44, 0.32, 0.22, 0.16, 0.0078]
-A_CRUISE_MAX_BP = [0.,  3,   6.,  8.,  11., 15.,  20.,  25.,  30.,  55.]
+A_CRUISE_MAX_VALS =        [2.0, 1.7, 1.3, 0.9, 0.8, 0.6, 0.5, 0.3, 0.2, 0.1]
+A_CRUISE_MAX_BP =          [0.,  3,   6.,  8.,  11., 15.,  20.,  25.,  30.,  55.]
 
 # _DP_CRUISE_MAX_V =       [3.5, 3.4, 2.1, 1.6, 1.1, 0.91, 0.68, 0.44, 0.34, 0.13]
 # _DP_CRUISE_MAX_V_ECO =   [3.0, 1.7, 1.3, 0.7, 0.6, 0.44, 0.32, 0.22, 0.16, 0.0078]
