@@ -13,8 +13,14 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.shifter_values = can_define.dv["Transmission"]["Gear"]
 
+    self.lkas_enabled = None
+    self.prev_lkas_enabled = None
+
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
 
     ret.gas = cp.vl["Throttle"]["Throttle_Pedal"] / 255.
     ret.gasPressed = ret.gas > 1e-5
@@ -35,9 +41,14 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.vEgoRaw == 0
 
+    if self.car_fingerprint not in PREGLOBAL_CARS:
+      self.lkas_enabled = cp_cam.vl["ES_LKAS_State"]["LKAS_Dash_State"]
+    if self.prev_lkas_enabled is None:
+      self.prev_lkas_enabled = self.lkas_enabled
+
     # continuous blinker signals for assisted lane change
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(50, cp.vl["Dashlights"]["LEFT_BLINKER"],
-                                                                          cp.vl["Dashlights"]["RIGHT_BLINKER"])
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_lamp(50, cp.vl["Dashlights"]["LEFT_BLINKER"],
+                                                                                                                    cp.vl["Dashlights"]["RIGHT_BLINKER"])
 
     if self.CP.enableBsm:
       ret.leftBlindspot = (cp.vl["BSD_RCTA"]["L_ADJACENT"] == 1) or (cp.vl["BSD_RCTA"]["L_APPROACHING"] == 1)
@@ -61,6 +72,11 @@ class CarState(CarStateBase):
     if (self.car_fingerprint in PREGLOBAL_CARS and cp.vl["Dash_State2"]["UNITS"] == 1) or \
        (self.car_fingerprint not in PREGLOBAL_CARS and cp.vl["Dashlights"]["UNITS"] == 1):
       ret.cruiseState.speed *= CV.MPH_TO_KPH
+
+    self.madsEnabled, ret.cruiseState.enabled = self.update_sp_state(ret.cruiseState.enabled, self.enable_mads,
+                                                                     self.accEnabled, self.prev_cruiseState_enabled,
+                                                                     self.madsEnabled)
+    self.prev_brake_pressed = ret.brakePressed
 
     ret.seatbeltUnlatched = cp.vl["Dashlights"]["SEATBELT_FL"] == 1
     ret.doorOpen = any([cp.vl["BodyInfo"]["DOOR_OPEN_RR"],

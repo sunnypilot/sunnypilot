@@ -11,6 +11,7 @@ from selfdrive.car.disable_ecu import disable_ecu
 Ecu = car.CarParams.Ecu
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
+GearShifter = car.CarState.GearShifter
 ENABLE_BUTTONS = (Buttons.RES_ACCEL, Buttons.SET_DECEL, Buttons.CANCEL)
 BUTTONS_DICT = {Buttons.RES_ACCEL: ButtonType.accelCruise, Buttons.SET_DECEL: ButtonType.decelCruise,
                 Buttons.GAP_DIST: ButtonType.gapAdjustCruise, Buttons.CANCEL: ButtonType.cancel}
@@ -267,6 +268,10 @@ class CarInterface(CarInterfaceBase):
       if candidate in CAMERA_SCC_CAR:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_CAMERA_SCC
 
+      if 0x391 in fingerprint[0]:
+        ret.flags |= HyundaiFlags.SP_CAN_LFA_BTN.value
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_LFA_BTN
+
     if ret.openpilotLongitudinalControl:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_LONG
     if candidate in HYBRID_CAR:
@@ -301,26 +306,61 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
 
-    if self.CS.CP.openpilotLongitudinalControl and self.CS.cruise_buttons[-1] != self.CS.prev_cruise_buttons:
-      buttonEvents = [create_button_event(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)]
+    buttonEvents = []
+
+    if self.CS.cruise_buttons[-1] != self.CS.prev_cruise_buttons:
+      buttonEvents.append(create_button_event(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT))
       # Handle CF_Clu_CruiseSwState changing buttons mid-press
       if self.CS.cruise_buttons[-1] != 0 and self.CS.prev_cruise_buttons != 0:
         buttonEvents.append(create_button_event(0, self.CS.prev_cruise_buttons, BUTTONS_DICT))
 
-      ret.buttonEvents = buttonEvents
+    self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
+
+    self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret.cruiseState.available, self.CS.accEnabled,
+                                                                          buttonEvents, c.vCruise)
+
+    if ret.cruiseState.available:
+      if self.enable_mads:
+        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+          self.CS.madsEnabled = True
+        if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
+          self.CS.madsEnabled = not self.CS.madsEnabled
+        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+    else:
+      self.CS.madsEnabled = False
+
+    if not self.CP.pcmCruise:
+      if any(b.type == ButtonType.cancel for b in buttonEvents):
+        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+    if self.get_sp_pedal_disengage(ret.brakePressed, ret.standstill):
+      self.CS.madsEnabled = False if not self.enable_mads else self.CS.madsEnabled
+
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, c.cruiseControl.cancel)
+
+    # MADS BUTTON
+    if self.CS.out.madsEnabled != self.CS.madsEnabled:
+      be = car.CarState.ButtonEvent.new_message()
+      be.pressed = True
+      be.type = ButtonType.altButton1
+      buttonEvents.append(be)
+
+    ret.buttonEvents = buttonEvents
 
     # On some newer model years, the CANCEL button acts as a pause/resume button based on the PCM state
     # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons
     # Main button also can trigger an engagement on these cars
     allow_enable = any(btn in ENABLE_BUTTONS for btn in self.CS.cruise_buttons) or any(self.CS.main_buttons)
-    events = self.create_common_events(ret, pcm_enable=self.CS.CP.pcmCruise, allow_enable=allow_enable)
+    events = self.create_common_events(ret, extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.manumatic],
+                                       pcm_enable=False, allow_enable=allow_enable)
+
+    events, ret = self.create_sp_events(self.CS, ret, events, main_enabled=True, allow_enable=allow_enable)
 
     # low speed steer alert hysteresis logic (only for cars with steer cut off above 10 m/s)
     if ret.vEgo < (self.CP.minSteerSpeed + 2.) and self.CP.minSteerSpeed > 10.:
       self.low_speed_alert = True
     if ret.vEgo > (self.CP.minSteerSpeed + 4.):
       self.low_speed_alert = False
-    if self.low_speed_alert:
+    if self.low_speed_alert and self.CS.madsEnabled:
       events.add(car.CarEvent.EventName.belowSteerSpeed)
 
     ret.events = events.to_msg()

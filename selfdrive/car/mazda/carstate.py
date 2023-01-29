@@ -18,9 +18,16 @@ class CarState(CarStateBase):
     self.lkas_allowed_speed = False
     self.lkas_disabled = False
 
+    self.lkas_enabled = False
+    self.prev_lkas_enabled = False
+
   def update(self, cp, cp_cam):
 
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
+
     ret.wheelSpeeds = self.get_wheel_speeds(
       cp.vl["WHEEL_SPEEDS"]["FL"],
       cp.vl["WHEEL_SPEEDS"]["FR"],
@@ -34,14 +41,16 @@ class CarState(CarStateBase):
     speed_kph = cp.vl["ENGINE_DATA"]["SPEED"]
     ret.standstill = speed_kph < .1
 
+    self.lkas_enabled = not self.lkas_disabled
+
     can_gear = int(cp.vl["GEAR"]["GEAR"])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
 
     ret.genericToggle = bool(cp.vl["BLINK_INFO"]["HIGH_BEAMS"])
     ret.leftBlindspot = cp.vl["BSM"]["LEFT_BS1"] == 1
     ret.rightBlindspot = cp.vl["BSM"]["RIGHT_BS1"] == 1
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
-                                                                      cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_lamp(40, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
+                                                                                                                  cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
 
     ret.steeringAngleDeg = cp.vl["STEER"]["STEER_ANGLE"]
     ret.steeringTorque = cp.vl["STEER_TORQUE"]["STEER_TORQUE_SENSOR"]

@@ -42,6 +42,10 @@ class CarState(CarStateBase):
 
     self.params = CarControllerParams(CP)
 
+    self.lfa_enabled = False
+    self.prev_lfa_enabled = False
+    self.mainEnabled = False
+
   def update(self, cp, cp_cam):
     if self.CP.carFingerprint in CANFD_CAR:
       return self.update_canfd(cp, cp_cam)
@@ -82,7 +86,7 @@ class CarState(CarStateBase):
     ret.steeringAngleDeg = cp.vl["SAS11"]["SAS_Angle"]
     ret.steeringRateDeg = cp.vl["SAS11"]["SAS_Speed"]
     ret.yawRate = cp.vl["ESP12"]["YAW_RATE"]
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_lamp(
       50, cp.vl["CGW1"]["CF_Gway_TurnSigLh"], cp.vl["CGW1"]["CF_Gway_TurnSigRh"])
     ret.steeringTorque = cp.vl["MDPS12"]["CR_Mdps_StrColTq"]
     ret.steeringTorqueEps = cp.vl["MDPS12"]["CR_Mdps_OutTq"]
@@ -92,7 +96,7 @@ class CarState(CarStateBase):
     # cruise state
     if self.CP.openpilotLongitudinalControl:
       # These are not used for engage/disengage since openpilot keeps track of state using the buttons
-      ret.cruiseState.available = cp.vl["TCS13"]["ACCEnable"] == 0
+      ret.cruiseState.available = cp.vl["TCS13"]["ACCEnable"] == 0 and self.mainEnabled
       ret.cruiseState.enabled = cp.vl["TCS13"]["ACC_REQ"] == 1
       ret.cruiseState.standstill = False
     else:
@@ -148,8 +152,18 @@ class CarState(CarStateBase):
     self.clu11 = copy.copy(cp.vl["CLU11"])
     self.steer_state = cp.vl["MDPS12"]["CF_Mdps_ToiActive"]  # 0 NOT ACTIVE, 1 ACTIVE
     self.prev_cruise_buttons = self.cruise_buttons[-1]
+    self.prev_main_buttons = self.main_buttons[-1]
     self.cruise_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwState"])
     self.main_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwMain"])
+    if self.CP.openpilotLongitudinalControl:
+      if self.prev_main_buttons != 1:
+        if self.main_buttons[-1] == 1:
+          self.mainEnabled = not self.mainEnabled
+      ret.cruiseState.available = ret.cruiseState.available and self.mainEnabled
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lfa_enabled = self.lfa_enabled
+    if self.CP.flags & HyundaiFlags.SP_CAN_LFA_BTN:
+      self.lfa_enabled = cp.vl["BCM_PO_11"]["LFA_Pressed"]
 
     return ret
 
@@ -194,8 +208,8 @@ class CarState(CarStateBase):
     ret.steeringPressed = self.update_steering_pressed(abs(ret.steeringTorque) > self.params.STEER_THRESHOLD, 5)
     ret.steerFaultTemporary = cp.vl["MDPS"]["LKA_FAULT"] != 0
 
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(50, cp.vl["BLINKERS"]["LEFT_LAMP"],
-                                                                      cp.vl["BLINKERS"]["RIGHT_LAMP"])
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_lamp(
+      50, cp.vl["BLINKERS"]["LEFT_LAMP"], cp.vl["BLINKERS"]["RIGHT_LAMP"])
     if self.CP.enableBsm:
       ret.leftBlindspot = cp.vl["BLINDSPOTS_REAR_CORNERS"]["FL_INDICATOR"] != 0
       ret.rightBlindspot = cp.vl["BLINDSPOTS_REAR_CORNERS"]["FR_INDICATOR"] != 0
@@ -216,8 +230,12 @@ class CarState(CarStateBase):
 
     cruise_btn_msg = "CRUISE_BUTTONS_ALT" if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS else "CRUISE_BUTTONS"
     self.prev_cruise_buttons = self.cruise_buttons[-1]
+    self.prev_main_buttons = self.main_buttons[-1]
     self.cruise_buttons.extend(cp.vl_all[cruise_btn_msg]["CRUISE_BUTTONS"])
     self.main_buttons.extend(cp.vl_all[cruise_btn_msg]["ADAPTIVE_CRUISE_MAIN_BTN"])
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lfa_enabled = self.lfa_enabled
+    self.lfa_enabled = cp.vl[cruise_btn_msg]["LFA_BTN"]
     self.buttons_counter = cp.vl[cruise_btn_msg]["COUNTER"]
     ret.accFaulted = cp.vl["TCS"]["ACCEnable"] != 0  # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
 
@@ -363,6 +381,10 @@ class CarState(CarStateBase):
       signals.append(("CF_Lvr_Gear", "LVR12"))
       checks.append(("LVR12", 100))
 
+    if CP.flags & HyundaiFlags.SP_CAN_LFA_BTN:
+      signals.append(("LFA_Pressed", "BCM_PO_11"))
+      checks.append(("BCM_PO_11", 50))
+
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 0)
 
   @staticmethod
@@ -448,6 +470,7 @@ class CarState(CarStateBase):
       ("CRUISE_BUTTONS", cruise_btn_msg),
       ("ADAPTIVE_CRUISE_MAIN_BTN", cruise_btn_msg),
       ("DISTANCE_UNIT", "CRUISE_BUTTONS_ALT"),
+      ("LFA_BTN", cruise_btn_msg),
 
       ("LEFT_LAMP", "BLINKERS"),
       ("RIGHT_LAMP", "BLINKERS"),

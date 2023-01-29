@@ -25,6 +25,8 @@ class CarState(CarStateBase):
 
     ret = car.CarState.new_message()
 
+    self.prev_mads_enabled = self.mads_enabled
+
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
                         cp.vl["BCM_1"]["DOOR_OPEN_FR"],
@@ -58,8 +60,8 @@ class CarState(CarStateBase):
     )
 
     # button presses
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(200, cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 1,
-                                                                       cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 2)
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_stalk(200, cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 1,
+                                                                                                                    cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 2)
     ret.genericToggle = cp.vl["STEERING_LEVERS"]["HIGH_BEAM_PRESSED"] == 1
 
     # steering wheel

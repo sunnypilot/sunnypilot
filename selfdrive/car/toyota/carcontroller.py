@@ -78,7 +78,7 @@ class CarController:
 
     # TODO: probably can delete this. CS.pcm_acc_status uses a different signal
     # than CS.cruiseState.enabled. confirm they're not meaningfully different
-    if not CC.enabled and CS.pcm_acc_status:
+    if not (CC.enabled and CS.out.cruiseState.enabled) and CS.pcm_acc_status:
       pcm_cancel_cmd = 1
 
     # on entering standstill, send standstill request
@@ -146,7 +146,7 @@ class CarController:
       if self.frame % 100 == 0 or send_ui:
         can_sends.append(create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, hud_control.leftLaneVisible,
                                            hud_control.rightLaneVisible, hud_control.leftLaneDepart,
-                                           hud_control.rightLaneDepart, CC.enabled, CS.lkas_hud))
+                                           hud_control.rightLaneDepart, CC.latActive, CS.lkas_hud, CS.madsEnabled))
 
       if (self.frame % 100 == 0 or send_ui) and self.CP.enableDsu:
         can_sends.append(create_fcw_command(self.packer, fcw_alert))

@@ -21,6 +21,9 @@ class CarState(CarStateBase):
     self.camera_lka_steering_cmd_counter = 0
     self.buttons_counter = 0
 
+    self.lkas_enabled = False
+    self.prev_lkas_enabled = False
+
   def update(self, pt_cp, cam_cp, loopback_cp):
     ret = car.CarState.new_message()
 
@@ -29,6 +32,8 @@ class CarState(CarStateBase):
     self.buttons_counter = pt_cp.vl["ASCMSteeringButton"]["RollingCounter"]
     self.pscm_status = copy.copy(pt_cp.vl["PSCMStatus"])
     self.moving_backward = pt_cp.vl["EBCMWheelSpdRear"]["MovingBackward"] != 0
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
 
     # Variables used for avoiding LKAS faults
     self.loopback_lka_steering_cmd_updated = len(loopback_cp.vl_all["ASCMLKASteeringCmd"]["RollingCounter"]) > 0
@@ -45,6 +50,8 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     # sample rear wheel speeds, standstill=True if ECM allows engagement with brake
     ret.standstill = ret.wheelSpeeds.rl <= STANDSTILL_THRESHOLD and ret.wheelSpeeds.rr <= STANDSTILL_THRESHOLD
+
+    self.lkas_enabled = pt_cp.vl["ASCMSteeringButton"]["LKAButton"]
 
     if pt_cp.vl["ECMPRDNL2"]["ManualMode"] == 1:
       ret.gearShifter = self.parse_gear_shifter("T")
@@ -87,8 +94,8 @@ class CarState(CarStateBase):
 
     # 1 - latched
     ret.seatbeltUnlatched = pt_cp.vl["BCMDoorBeltStatus"]["LeftSeatBelt"] == 0
-    ret.leftBlinker = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 1
-    ret.rightBlinker = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 2
+    ret.leftBlinker = ret.leftBlinkerOn = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 1
+    ret.rightBlinker = ret.rightBlinkerOn = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 2
 
     ret.parkingBrake = pt_cp.vl["VehicleIgnitionAlt"]["ParkBrake"] == 1
     ret.cruiseState.available = pt_cp.vl["ECMEngineStatus"]["CruiseMainOn"] != 0
@@ -140,6 +147,7 @@ class CarState(CarStateBase):
       ("AcceleratorPedal2", "AcceleratorPedal2"),
       ("CruiseState", "AcceleratorPedal2"),
       ("ACCButtons", "ASCMSteeringButton"),
+      ("LKAButton", "ASCMSteeringButton", 0),
       ("RollingCounter", "ASCMSteeringButton"),
       ("SteeringWheelAngle", "PSCMSteeringAngle"),
       ("SteeringWheelRate", "PSCMSteeringAngle"),

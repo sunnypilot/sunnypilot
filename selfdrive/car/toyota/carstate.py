@@ -30,8 +30,18 @@ class CarState(CarStateBase):
     self.acc_type = 1
     self.lkas_hud = {}
 
+    self.lkas_enabled = None
+    self.prev_lkas_enabled = None
+    self.lta_status = False
+    self.prev_lta_status = False
+    self.lta_status_active = False
+
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
+    self.prev_lta_status = self.lta_status
 
     ret.doorOpen = any([cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_FL"], cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_FR"],
                         cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_RL"], cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_RR"]])
@@ -61,6 +71,20 @@ class CarState(CarStateBase):
 
     ret.standstill = ret.vEgoRaw == 0
 
+    if self.CP.carFingerprint != CAR.PRIUS_V:
+      self.lta_status = cp_cam.vl["LKAS_HUD"]["SET_ME_X02"]
+      if ((self.prev_lta_status == 16 and self.lta_status == 0) or
+          (self.prev_lta_status == 0 and self.lta_status == 16)) and not self.lta_status_active:
+        self.lta_status_active = True
+      if self.prev_lta_status is None:
+        self.prev_lta_status = self.lta_status
+    if self.lta_status_active:
+      self.lkas_enabled = self.lta_status
+    elif self.CP.carFingerprint != CAR.PRIUS_V:
+      self.lkas_enabled = cp_cam.vl["LKAS_HUD"]["LKAS_STATUS"]
+    if self.prev_lkas_enabled is None:
+      self.prev_lkas_enabled = self.lkas_enabled
+
     ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_ANGLE"] + cp.vl["STEER_ANGLE_SENSOR"]["STEER_FRACTION"]
     torque_sensor_angle_deg = cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE"]
 
@@ -81,8 +105,8 @@ class CarState(CarStateBase):
 
     can_gear = int(cp.vl["GEAR_PACKET"]["GEAR"])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
-    ret.leftBlinker = cp.vl["BLINKERS_STATE"]["TURN_SIGNALS"] == 1
-    ret.rightBlinker = cp.vl["BLINKERS_STATE"]["TURN_SIGNALS"] == 2
+    ret.leftBlinker = ret.leftBlinkerOn = cp.vl["BLINKERS_STATE"]["TURN_SIGNALS"] == 1
+    ret.rightBlinker = ret.rightBlinkerOn = cp.vl["BLINKERS_STATE"]["TURN_SIGNALS"] == 2
 
     ret.steeringTorque = cp.vl["STEER_TORQUE_SENSOR"]["STEER_TORQUE_DRIVER"]
     ret.steeringTorqueEps = cp.vl["STEER_TORQUE_SENSOR"]["STEER_TORQUE_EPS"] * self.eps_torque_scale
@@ -267,6 +291,8 @@ class CarState(CarStateBase):
         ("LANE_SWAY_WARNING", "LKAS_HUD"),
         ("LANE_SWAY_SENSITIVITY", "LKAS_HUD"),
         ("LANE_SWAY_TOGGLE", "LKAS_HUD"),
+        ("LKAS_STATUS", "LKAS_HUD"),
+        ("SET_ME_X02", "LKAS_HUD"),
       ]
       checks += [
         ("LKAS_HUD", 1),

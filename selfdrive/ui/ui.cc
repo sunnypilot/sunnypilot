@@ -178,6 +178,8 @@ void ui_update_params(UIState *s) {
 void UIState::updateStatus() {
   if (scene.started && sm->updated("controlsState")) {
     auto controls_state = (*sm)["controlsState"].getControlsState();
+    auto car_control = (*sm)["carControl"].getCarControl();
+    auto car_state = (*sm)["carState"].getCarState();
     auto alert_status = controls_state.getAlertStatus();
     auto state = controls_state.getState();
     if (alert_status == cereal::ControlsState::AlertStatus::USER_PROMPT) {
@@ -187,7 +189,7 @@ void UIState::updateStatus() {
     } else if (state == cereal::ControlsState::OpenpilotState::PRE_ENABLED || state == cereal::ControlsState::OpenpilotState::OVERRIDING) {
       status = STATUS_OVERRIDE;
     } else {
-      status = controls_state.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
+      status = car_state.getMadsEnabled() ? car_control.getLongActive() ? STATUS_ENGAGED : STATUS_MADS : STATUS_DISENGAGED;
     }
   }
 
@@ -215,6 +217,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "gnssMeasurements",
+    "carControl",
   });
 
   Params params;

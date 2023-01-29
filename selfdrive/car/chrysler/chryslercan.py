@@ -4,7 +4,7 @@ from selfdrive.car.chrysler.values import RAM_CARS
 GearShifter = car.CarState.GearShifter
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-def create_lkas_hud(packer, CP, lkas_active, hud_alert, hud_count, car_model, auto_high_beam):
+def create_lkas_hud(packer, CP, lkas_active, mads_enabled, hud_alert, hud_count, car_model, auto_high_beam):
   # LKAS_HUD - Controls what lane-keeping icon is displayed
 
   # == Color ==
@@ -27,7 +27,7 @@ def create_lkas_hud(packer, CP, lkas_active, hud_alert, hud_count, car_model, au
   # 7 Normal
   # 6 lane departure place hands on wheel
 
-  color = 2 if lkas_active else 1
+  color = 2 if lkas_active else 1 if mads_enabled and not lkas_active else 0
   lines = 3 if lkas_active else 0
   alerts = 7 if lkas_active else 0
 

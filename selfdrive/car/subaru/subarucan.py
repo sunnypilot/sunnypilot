@@ -21,7 +21,7 @@ def create_es_distance(packer, es_distance_msg, bus, pcm_cancel_cmd):
     values["Cruise_Cancel"] = 1
   return packer.make_can_msg("ES_Distance", bus, values)
 
-def create_es_lkas(packer, es_lkas_msg, enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
+def create_es_lkas(packer, es_lkas_msg, lat_active, mads_enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
 
   values = copy.copy(es_lkas_msg)
 
@@ -56,11 +56,16 @@ def create_es_lkas(packer, es_lkas_msg, enabled, visual_alert, left_line, right_
     elif right_lane_depart:
       values["LKAS_Alert"] = 11 # Right lane departure dash alert
 
-  if enabled:
+  if lat_active:
     values["LKAS_ACTIVE"] = 1 # Show LKAS lane lines
     values["LKAS_Dash_State"] = 2 # Green enabled indicator
+  elif mads_enabled and not lat_active:
+    values["LKAS_Dash_State"] = 1 # White ready indicator
   else:
     values["LKAS_Dash_State"] = 0 # LKAS Not enabled
+
+  values["LKAS_Left_Line_Enable"] = 1 if lat_active else 0
+  values["LKAS_Right_Line_Enable"] = 1 if lat_active else 0
 
   values["LKAS_Left_Line_Visible"] = int(left_line)
   values["LKAS_Right_Line_Visible"] = int(right_line)

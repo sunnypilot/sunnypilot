@@ -36,11 +36,16 @@ def manager_init() -> None:
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
     ("CompletedTrainingVersion", "0"),
-    ("DisengageOnAccelerator", "1"),
+    ("DisengageOnAccelerator", "0"),
     ("GsmMetered", "1"),
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
+
+    ("AccMadsCombo", "1"),
+    ("BelowSpeedPause", "1"),
+    ("DisengageLateralOnBrake", "1"),
+    ("EnableMads", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

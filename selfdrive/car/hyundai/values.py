@@ -61,6 +61,8 @@ class HyundaiFlags(IntFlag):
 
   ENABLE_BLINKERS = 32
 
+  SP_CAN_LFA_BTN = 64
+
 
 class CAR:
   # Hyundai

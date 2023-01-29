@@ -80,7 +80,7 @@ class CarController:
         self.es_dashstatus_cnt = CS.es_dashstatus_msg["COUNTER"]
 
       if self.es_lkas_cnt != CS.es_lkas_msg["COUNTER"]:
-        can_sends.append(subarucan.create_es_lkas(self.packer, CS.es_lkas_msg, CC.enabled, hud_control.visualAlert,
+        can_sends.append(subarucan.create_es_lkas(self.packer, CS.es_lkas_msg, CC.latActive, CS.madsEnabled, hud_control.visualAlert,
                                                   hud_control.leftLaneVisible, hud_control.rightLaneVisible,
                                                   hud_control.leftLaneDepart, hud_control.rightLaneDepart))
         self.es_lkas_cnt = CS.es_lkas_msg["COUNTER"]

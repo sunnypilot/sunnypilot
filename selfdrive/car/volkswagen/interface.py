@@ -217,16 +217,45 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_ext, self.CP.transmissionType)
 
+    self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
+
+    self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret.cruiseState.available, self.CS.accEnabled,
+                                                                          ret.buttonEvents, c.vCruise,
+                                                                          enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
+
+    if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0):
+      if any(b.type == ButtonType.cancel for b in buttonEvents):
+        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+    if self.get_sp_pedal_disengage(ret.brakePressed, ret.standstill):
+      self.CS.madsEnabled = False if not self.enable_mads else self.CS.madsEnabled
+
+    if self.CP.pcmCruise and self.CP.minEnableSpeed > 0:
+      if ret.gasPressed and not ret.cruiseState.enabled:
+        self.CS.accEnabled = False
+      self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
+
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, c.cruiseControl.cancel)
+
+    # MADS BUTTON
+    if self.CS.out.madsEnabled != self.CS.madsEnabled:
+      be = car.CarState.ButtonEvent.new_message()
+      be.pressed = True
+      be.type = ButtonType.altButton1
+      ret.buttonEvents.append(be)
+
     events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
-                                       pcm_enable=not self.CS.CP.openpilotLongitudinalControl,
+                                       pcm_enable=False,
                                        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
+
+    events, ret = self.create_sp_events(self.CS, ret, events,
+                                        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     # Low speed steer alert hysteresis logic
     if self.CP.minSteerSpeed > 0. and ret.vEgo < (self.CP.minSteerSpeed + 1.):
       self.low_speed_alert = True
     elif ret.vEgo > (self.CP.minSteerSpeed + 2.):
       self.low_speed_alert = False
-    if self.low_speed_alert:
+    if self.low_speed_alert and self.CS.madsEnabled:
       events.add(EventName.belowSteerSpeed)
 
     if self.CS.CP.openpilotLongitudinalControl:

@@ -6,7 +6,8 @@ hyundai_checksum = crcmod.mkCrcFun(0x11D, initCrc=0xFD, rev=False, xorOut=0xdf)
 def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
                   torque_fault, lkas11, sys_warning, sys_state, enabled,
                   left_lane, right_lane,
-                  left_lane_depart, right_lane_depart):
+                  left_lane_depart, right_lane_depart,
+                  lateral_paused, blinking_icon):
   values = lkas11
   values["CF_Lkas_LdwsSysState"] = sys_state
   values["CF_Lkas_SysWarning"] = 3 if sys_warning else 0
@@ -31,7 +32,8 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     # FcwOpt_USM 2 = Green car + lanes
     # FcwOpt_USM 1 = White car + lanes
     # FcwOpt_USM 0 = No car + lanes
-    values["CF_Lkas_FcwOpt_USM"] = 2 if enabled else 1
+    values["CF_Lkas_FcwOpt_USM"] = 2 if steer_req else 2 if blinking_icon else 1 if\
+                                   lateral_paused else 1
 
     # SysWarning 4 = keep hands on wheel
     # SysWarning 5 = keep hands on wheel (red)
@@ -48,7 +50,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     # SysState 1-2 = white car + lanes
     # SysState 3 = green car + lanes, green steering wheel
     # SysState 4 = green car + lanes
-    values["CF_Lkas_LdwsSysState"] = 3 if enabled else 1
+    values["CF_Lkas_LdwsSysState"] = 3 if steer_req else 1
     values["CF_Lkas_LdwsOpt_USM"] = 2  # non-2 changes above SysState definition
 
     # these have no effect
@@ -87,20 +89,20 @@ def create_clu11(packer, frame, clu11, button, car_fingerprint):
   return packer.make_can_msg("CLU11", bus, values)
 
 
-def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
+def create_lfahda_mfc(packer, enabled, lat_active, lateral_paused, blinking_icon, hda_set_speed=0):
   values = {
-    "LFA_Icon_State": 2 if enabled else 0,
+    "LFA_Icon_State": 2 if lat_active else 3 if blinking_icon else 1 if lateral_paused else 0,
     "HDA_Active": 1 if hda_set_speed else 0,
     "HDA_Icon_State": 2 if hda_set_speed else 0,
     "HDA_VSetReq": hda_set_speed,
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override):
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, main_enabled):
   commands = []
 
   scc11_values = {
-    "MainMode_ACC": 1,
+    "MainMode_ACC": 1 if main_enabled else 0,
     "TauGapSet": 4,
     "VSetDis": set_speed if enabled else 0,
     "AliveCounterACC": idx % 0x10,

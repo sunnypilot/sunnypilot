@@ -34,6 +34,9 @@ class CarState(CarStateBase):
       return self.update_pq(pt_cp, cam_cp, ext_cp, trans_type)
 
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["ESP_19"]["ESP_VL_Radgeschw_02"],
@@ -134,8 +137,8 @@ class CarState(CarStateBase):
         ret.cruiseState.speed = 0
 
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
-    ret.leftBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
-    ret.rightBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
+    ret.leftBlinker = ret.leftBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
+    ret.rightBlinker = ret.rightBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
     ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
 
@@ -149,6 +152,9 @@ class CarState(CarStateBase):
 
   def update_pq(self, pt_cp, cam_cp, ext_cp, trans_type):
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["Bremse_3"]["Radgeschw__VL_4_1"],
@@ -239,8 +245,8 @@ class CarState(CarStateBase):
       ret.cruiseState.speed = 0
 
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(300, pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_li"],
-                                                                            pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_re"])
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_stalk(300, pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_li"],
+                                                                                                                      pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_re"])
     ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
     self.gra_stock_values = pt_cp.vl["GRA_Neu"]
 
