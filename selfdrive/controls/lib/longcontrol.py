@@ -7,6 +7,9 @@ from selfdrive.modeld.constants import T_IDXS
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
+STOPPING_ACCEL =    [0.05, 0.10, 0.15,  0.4,  0.8]
+STOPPING_BP =       [0.1,  0.2,  0.4,   0.8,  1.5]
+
 
 def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
                              v_target_1sec, brake_pressed, cruise_standstill):
@@ -106,7 +109,7 @@ class LongControl:
     elif self.long_control_state == LongCtrlState.stopping:
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
-        output_accel -= (0.8 if CS.vEgo > 0.5 else 0.08) * DT_CTRL
+        output_accel -= interp(CS.vEgo, STOPPING_BP, STOPPING_ACCEL) * DT_CTRL
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.starting:
