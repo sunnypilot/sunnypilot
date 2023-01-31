@@ -260,7 +260,7 @@ class Controls:
       (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
       if CS.cruiseState.enabled:
         self.events.add(EventName.pedalPressed)
-      else:
+      elif not self.mads_ndlob:
         self.events.add(EventName.silentPedalPressed)
 
     if CS.brakePressed and CS.standstill and CS.cruiseState.enabled:

@@ -392,10 +392,11 @@ class CarInterfaceBase(ABC):
       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)) or \
       (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
       if cs_out.madsEnabled:
-        cs_out.disengageByBrake = True
+        CS.disengageByBrake = True
 
     cs_out.madsEnabled = CS.madsEnabled
     cs_out.accEnabled = CS.accEnabled
+    cs_out.disengageByBrake = CS.disengageByBrake
 
     return cs_out, CS
 
@@ -453,6 +454,8 @@ class CarInterfaceBase(ABC):
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
+      if CS.disengageByBrake:
+        events.add(EventName.cruiseEngageBlocked)
 
     if cs_out.cruiseState.enabled:
       self.cruise_cancelled_btn = False
