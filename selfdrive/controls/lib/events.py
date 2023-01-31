@@ -558,6 +558,14 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
 
+  EventName.cruiseEngageBlocked: {
+    ET.WARNING: Alert(
+      "openpilot Unavailable",
+      "Pedal Pressed During Cruise Engage",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.brakePressed, AudibleAlert.refuse, 3.),
+  },
+
   EventName.steerSaturated: {
     ET.WARNING: Alert(
       "Take Control",
