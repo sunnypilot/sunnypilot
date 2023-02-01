@@ -243,7 +243,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, c.cruiseControl.cancel)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:

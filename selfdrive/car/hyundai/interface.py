@@ -335,7 +335,7 @@ class CarInterface(CarInterfaceBase):
     if self.get_sp_pedal_disengage(ret.brakePressed, ret.standstill):
       self.CS.madsEnabled = False if not self.enable_mads else self.CS.madsEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, c.cruiseControl.cancel)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
