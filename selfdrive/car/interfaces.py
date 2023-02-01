@@ -401,13 +401,17 @@ class CarInterfaceBase(ABC):
     return cs_out, CS
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
-                       enable_from_brake=False, enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
+                       enable_non_longitudinal=False, enable_pressed_mads=False, enable_from_brake=False,
+                       enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
 
     CS.disengageByBrake = CS.disengageByBrake or cs_out.disengageByBrake
 
     if CS.disengageByBrake and not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and cs_out.madsEnabled:
       enable_pressed = True
       enable_from_brake = True
+
+    if CS.disengageByBrake and cs_out.madsEnabled:
+      enable_non_longitudinal = True
 
     if not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake:
       CS.disengageByBrake = False
@@ -435,6 +439,7 @@ class CarInterfaceBase(ABC):
         else:  # enabled MADS
           if not cs_out.cruiseState.enabled:
             enable_pressed = True
+            enable_pressed_mads = True
     if self.CP.pcmCruise:
       # do disable on button down
       if main_enabled:
@@ -449,12 +454,12 @@ class CarInterfaceBase(ABC):
           events.add(EventName.buttonCancel)
         elif not self.enable_mads:
           cs_out.madsEnabled = False
-    if enable_pressed:
-      if enable_from_brake:
+    if enable_pressed or enable_non_longitudinal:
+      if enable_from_brake or enable_non_longitudinal:
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
-      if CS.disengageByBrake:
+      if CS.disengageByBrake and not enable_pressed_mads:
         events.add(EventName.cruiseEngageBlocked)
 
     if cs_out.cruiseState.enabled:
