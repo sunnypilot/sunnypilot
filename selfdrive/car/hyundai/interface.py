@@ -333,7 +333,8 @@ class CarInterface(CarInterfaceBase):
       if any(b.type == ButtonType.cancel for b in buttonEvents):
         self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
     if self.get_sp_pedal_disengage(ret.brakePressed, ret.standstill):
-      self.CS.madsEnabled = False if not self.enable_mads else self.CS.madsEnabled
+      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      ret.cruiseState.enabled = False if self.CP.pcmCruise else self.CS.accEnabled
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
