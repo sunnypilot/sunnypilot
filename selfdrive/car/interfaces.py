@@ -390,7 +390,7 @@ class CarInterfaceBase(ABC):
     if (cs_out.gasPressed and not self.CS.out.gasPressed and self.disengage_on_accelerator) or \
       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)) or \
       (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
-      if cs_out.madsEnabled:
+      if CS.madsEnabled:
         CS.disengageByBrake = True
 
     cs_out.madsEnabled = CS.madsEnabled
@@ -403,13 +403,11 @@ class CarInterfaceBase(ABC):
                        enable_non_longitudinal=False, enable_pressed_mads=False, enable_from_brake=False,
                        enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
 
-    CS.disengageByBrake = CS.disengageByBrake or cs_out.disengageByBrake
-
-    if CS.disengageByBrake and not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and cs_out.madsEnabled:
+    if cs_out.disengageByBrake and not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and cs_out.madsEnabled:
       enable_pressed = True
       enable_from_brake = True
 
-    if CS.disengageByBrake and cs_out.madsEnabled:
+    if cs_out.disengageByBrake and cs_out.madsEnabled:
       enable_non_longitudinal = True
 
     if not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake:
@@ -458,7 +456,7 @@ class CarInterfaceBase(ABC):
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
-      if CS.disengageByBrake and not enable_pressed_mads:
+      if cs_out.disengageByBrake and not enable_pressed_mads:
         events.add(EventName.cruiseEngageBlocked)
 
     if cs_out.cruiseState.enabled:
