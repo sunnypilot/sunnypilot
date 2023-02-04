@@ -393,6 +393,8 @@ class CarInterfaceBase(ABC):
       (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
       if CS.madsEnabled:
         CS.disengageByBrake = True
+    else:
+      CS.disengageByBrake = False
 
     cs_out.madsEnabled = CS.madsEnabled
     cs_out.accEnabled = CS.accEnabled
@@ -401,7 +403,7 @@ class CarInterfaceBase(ABC):
     return cs_out, CS
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
-                       enable_pressed_mads=False, enable_from_brake=False,
+                       enable_from_brake=False, enable_pressed_long=False,
                        enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
 
     if cs_out.disengageByBrake and not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and cs_out.madsEnabled:
@@ -417,6 +419,7 @@ class CarInterfaceBase(ABC):
       if not self.CP.pcmCruise:
         if b.type in enable_buttons and not b.pressed:
           enable_pressed = True
+          enable_pressed_long = True
       # Disable on rising and falling edge of cancel for both stock and OP long
       if b.type == ButtonType.cancel:
         if not cs_out.madsEnabled:
@@ -434,7 +437,6 @@ class CarInterfaceBase(ABC):
         else:  # enabled MADS
           if not cs_out.cruiseState.enabled:
             enable_pressed = True
-            enable_pressed_mads = True
     if self.CP.pcmCruise:
       # do disable on button down
       if main_enabled:
@@ -444,6 +446,7 @@ class CarInterfaceBase(ABC):
       # do enable on both accel and decel buttons
       if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled and allow_enable:
         enable_pressed = True
+        enable_pressed_long = True
       elif not cs_out.cruiseState.enabled:
         if not cs_out.madsEnabled:
           events.add(EventName.buttonCancel)
@@ -454,11 +457,8 @@ class CarInterfaceBase(ABC):
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
-      if cs_out.disengageByBrake and not enable_pressed_mads and not cs_out.cruiseState.enabled:
-        events.add(EventName.cruiseEngageBlocked)
-    if ((cs_out.brakePressed and self.CS.out.brakePressed) or
-       (cs_out.regenBraking and self.CS.out.regenBraking)) and self.mads_ndlob:
-      events.add(EventName.silentButtonEnable)
+    if cs_out.disengageByBrake and enable_pressed_long:
+      events.add(EventName.cruiseEngageBlocked)
 
     if cs_out.cruiseState.enabled:
       self.cruise_cancelled_btn = False
