@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cereal import car
 from panda import Panda
-from selfdrive.car import STD_CARGO_KG, get_safety_config
+from selfdrive.car import STD_CARGO_KG, get_safety_config, create_mads_event
 from selfdrive.car.chrysler.values import CAR, DBC, RAM_HD, RAM_DT, RAM_CARS, ChryslerFlags
 from selfdrive.car.interfaces import CarInterfaceBase
 
@@ -125,10 +125,13 @@ class CarInterface(CarInterfaceBase):
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      be = car.CarState.ButtonEvent.new_message()
-      be.pressed = True
-      be.type = ButtonType.altButton1
-      buttonEvents.append(be)
+      if self.mads_event_lock:
+        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.mads_event_lock = False
+    else:
+      if not self.mads_event_lock:
+        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.mads_event_lock = True
 
     ret.buttonEvents = buttonEvents
 

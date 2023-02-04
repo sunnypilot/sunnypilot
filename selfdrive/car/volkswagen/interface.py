@@ -1,7 +1,7 @@
 from cereal import car
 from panda import Panda
 from common.conversions import Conversions as CV
-from selfdrive.car import STD_CARGO_KG, get_safety_config
+from selfdrive.car import STD_CARGO_KG, get_safety_config, create_mads_event
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter
 
@@ -239,10 +239,13 @@ class CarInterface(CarInterfaceBase):
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      be = car.CarState.ButtonEvent.new_message()
-      be.pressed = True
-      be.type = ButtonType.altButton1
-      ret.buttonEvents.append(be)
+      if self.mads_event_lock:
+        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.mads_event_lock = False
+    else:
+      if not self.mads_event_lock:
+        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.mads_event_lock = True
 
     events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
                                        pcm_enable=False,

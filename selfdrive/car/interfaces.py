@@ -95,6 +95,7 @@ class CarInterfaceBase(ABC):
     self.acc_mads_combo = self.param_s.get_bool("AccMadsCombo")
     self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
     self.prev_acc_mads_combo = False
+    self.mads_event_lock = True
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -400,15 +401,12 @@ class CarInterfaceBase(ABC):
     return cs_out, CS
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
-                       enable_non_longitudinal=False, enable_pressed_mads=False, enable_from_brake=False,
+                       enable_pressed_mads=False, enable_from_brake=False,
                        enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
 
     if cs_out.disengageByBrake and not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and cs_out.madsEnabled:
       enable_pressed = True
       enable_from_brake = True
-
-    if cs_out.disengageByBrake and cs_out.madsEnabled:
-      enable_non_longitudinal = True
 
     if not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake:
       CS.disengageByBrake = False
@@ -451,13 +449,16 @@ class CarInterfaceBase(ABC):
           events.add(EventName.buttonCancel)
         elif not self.enable_mads:
           cs_out.madsEnabled = False
-    if enable_pressed or enable_non_longitudinal:
-      if enable_from_brake or enable_non_longitudinal:
+    if enable_pressed:
+      if enable_from_brake:
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
-      if cs_out.disengageByBrake and not enable_pressed_mads:
+      if cs_out.disengageByBrake and not enable_pressed_mads and not cs_out.cruiseState.enabled:
         events.add(EventName.cruiseEngageBlocked)
+    if ((cs_out.brakePressed and self.CS.out.brakePressed) or
+       (cs_out.regenBraking and self.CS.out.regenBraking)) and self.mads_ndlob:
+      events.add(EventName.silentButtonEnable)
 
     if cs_out.cruiseState.enabled:
       self.cruise_cancelled_btn = False
