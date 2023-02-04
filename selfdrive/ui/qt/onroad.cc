@@ -532,11 +532,6 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   // paint path
   QLinearGradient bg(0, height(), 0, height() / 4);
   float start_hue, end_hue;
-  const auto &orientation = sm["modelV2"].getModelV2().getOrientation();
-  float orientation_future = 0;
-  if (orientation.getZ().size() > 16) {
-    orientation_future = std::abs(orientation.getZ()[16]);  // 2.5 seconds
-  }
   if (madsEnabled) {
     if (steerOverride && latActive) {
       bg.setColorAt(0, blackColor(80));
