@@ -42,6 +42,10 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool rightHandDM MEMBER rightHandDM);
   Q_PROPERTY(int status MEMBER status);
 
+  Q_PROPERTY(bool steerOverride MEMBER steerOverride);
+  Q_PROPERTY(bool latActive MEMBER latActive);
+  Q_PROPERTY(bool madsEnabled MEMBER madsEnabled);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -73,6 +77,10 @@ private:
 
   int skip_frame_count = 0;
   bool wide_cam_requested = false;
+
+  bool steerOverride = false;
+  bool latActive = false;
+  bool madsEnabled = false;
 
 protected:
   void paintGL() override;

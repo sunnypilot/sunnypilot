@@ -191,6 +191,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const bool nav_alive = sm.alive("navInstruction") && sm["navInstruction"].getValid();
 
   const auto cs = sm["controlsState"].getControlsState();
+  const auto car_state = sm["carState"].getCarState();
+  const auto car_control = sm["carControl"].getCarControl();
 
   // Handle older routes where vCruiseCluster is not set
   float v_cruise =  cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
@@ -226,6 +228,10 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("speedUnit", s.scene.is_metric ? tr("km/h") : tr("mph"));
   setProperty("hideDM", cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   setProperty("status", s.status);
+
+  setProperty("steerOverride", car_state.getSteeringPressed());
+  setProperty("latActive", car_control.getLatActive());
+  setProperty("madsEnabled", car_state.getMadsEnabled());
 
   // update engageability and DM icons at 2Hz
   if (sm.frame % (UI_FREQ / 2) == 0) {
@@ -455,9 +461,19 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   const UIScene &scene = s->scene;
   SubMaster &sm = *(s->sm);
 
-  // lanelines
+  // Shane's colored lanelines
   for (int i = 0; i < std::size(scene.lane_line_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(scene.lane_line_probs[i], 0.0, 0.7)));
+    if (i == 1 || i == 2) {
+      // TODO: can we just use the projected vertices somehow?
+      const cereal::ModelDataV2::XYZTData::Reader &line = (*s->sm)["modelV2"].getModelV2().getLaneLines()[i];
+      const float default_pos = 1.4;  // when lane poly isn't available
+      const float lane_pos = line.getY().size() > 0 ? std::abs(line.getY()[5]) : default_pos;  // get redder when line is closer to car
+      float hue = 332.5 * lane_pos - 332.5;  // equivalent to {1.4, 1.0}: {133, 0} (green to red)
+      hue = std::fmin(133, fmax(0, hue)) / 360.;  // clip and normalize
+      painter.setBrush(QColor::fromHslF(hue, 1.0, 0.50, std::clamp<float>(scene.lane_line_probs[i], 0.0, 0.7)));
+    } else {
+      painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(scene.lane_line_probs[i], 0.0, 0.7)));
+    }
     painter.drawPolygon(scene.lane_line_vertices[i]);
   }
 
@@ -470,26 +486,43 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   // paint path
   QLinearGradient bg(0, height(), 0, height() / 4);
   float start_hue, end_hue;
-  if (sm["controlsState"].getControlsState().getExperimentalMode()) {
-    const auto &acceleration = sm["modelV2"].getModelV2().getAcceleration();
-    float acceleration_future = 0;
-    if (acceleration.getZ().size() > 16) {
-      acceleration_future = acceleration.getX()[16];  // 2.5 seconds
+  const auto &orientation = sm["modelV2"].getModelV2().getOrientation();
+  float orientation_future = 0;
+  if (orientation.getZ().size() > 16) {
+    orientation_future = std::abs(orientation.getZ()[16]);  // 2.5 seconds
+  }
+  if (madsEnabled) {
+    if (steerOverride && latActive) {
+      bg.setColorAt(0, blackColor(80));
+      bg.setColorAt(1, blackColor(20));
+    } else if (!latActive) {
+      bg.setColorAt(0, whiteColor());
+      bg.setColorAt(1, whiteColor(0));
+    } else if (sm["controlsState"].getControlsState().getExperimentalMode()) {
+      const auto &acceleration = sm["modelV2"].getModelV2().getAcceleration();
+      float acceleration_future = 0;
+      if (acceleration.getZ().size() > 16) {
+        acceleration_future = acceleration.getX()[16];  // 2.5 seconds
+      }
+      start_hue = 60;
+      // speed up: 120, slow down: 0
+      end_hue = fmax(fmin(start_hue + acceleration_future * 45, 148), 0);
+
+      // FIXME: painter.drawPolygon can be slow if hue is not rounded
+      end_hue = int(end_hue * 100 + 0.5) / 100;
+
+      bg.setColorAt(0.0, QColor::fromHslF(start_hue / 360., 0.97, 0.56, 0.4));
+      bg.setColorAt(0.5, QColor::fromHslF(end_hue / 360., 1.0, 0.68, 0.35));
+      bg.setColorAt(1.0, QColor::fromHslF(end_hue / 360., 1.0, 0.68, 0.0));
+    } else {
+      bg.setColorAt(0.0, QColor::fromHslF(148 / 360., 0.94, 0.51, 0.4));
+      bg.setColorAt(0.5, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.35));
+      bg.setColorAt(1.0, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.0));
     }
-    start_hue = 60;
-    // speed up: 120, slow down: 0
-    end_hue = fmax(fmin(start_hue + acceleration_future * 45, 148), 0);
-
-    // FIXME: painter.drawPolygon can be slow if hue is not rounded
-    end_hue = int(end_hue * 100 + 0.5) / 100;
-
-    bg.setColorAt(0.0, QColor::fromHslF(start_hue / 360., 0.97, 0.56, 0.4));
-    bg.setColorAt(0.5, QColor::fromHslF(end_hue / 360., 1.0, 0.68, 0.35));
-    bg.setColorAt(1.0, QColor::fromHslF(end_hue / 360., 1.0, 0.68, 0.0));
   } else {
-    bg.setColorAt(0.0, QColor::fromHslF(148 / 360., 0.94, 0.51, 0.4));
-    bg.setColorAt(0.5, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.35));
-    bg.setColorAt(1.0, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.0));
+    bg.setColorAt(0.0, whiteColor(102));
+    bg.setColorAt(0.5, whiteColor(89));
+    bg.setColorAt(1.0, whiteColor(0));
   }
 
   painter.setBrush(bg);
