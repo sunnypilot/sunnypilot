@@ -172,6 +172,7 @@ class LateralPlanner:
     lateralPlan.useLaneLines = self.use_lanelines
     lateralPlan.laneChangeState = self.DH.lane_change_state
     lateralPlan.laneChangeDirection = self.DH.lane_change_direction
+    lateralPlan.laneChangePrev = self.DH.prev_lane_change
 
     lateralPlan.dynamicLaneProfile = int(self.dynamic_lane_profile)
     lateralPlan.dynamicLaneProfileStatus = bool(self.dynamic_lane_profile_status)
