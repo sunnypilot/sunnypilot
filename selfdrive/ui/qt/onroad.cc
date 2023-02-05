@@ -78,12 +78,16 @@ void OnroadWindow::updateState(const UIState &s) {
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
+  bool sidebarVisible = geometry().x() > 0;
+  bool propagate_event = true;
+
   if (map != nullptr) {
-    bool sidebarVisible = geometry().x() > 0;
     map->setVisible(!sidebarVisible && !map->isVisible());
   }
   // propagation event to parent(HomeWindow)
-  QWidget::mousePressEvent(e);
+  if (propagate_event) {
+    QWidget::mousePressEvent(e);
+  }
 }
 
 void OnroadWindow::offroadTransition(bool offroad) {
