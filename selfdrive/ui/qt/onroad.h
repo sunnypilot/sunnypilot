@@ -65,6 +65,9 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool latActive MEMBER latActive);
   Q_PROPERTY(bool madsEnabled MEMBER madsEnabled);
 
+  Q_PROPERTY(bool dynamicLaneProfileToggle MEMBER dynamicLaneProfileToggle);
+  Q_PROPERTY(int dynamicLaneProfile MEMBER dynamicLaneProfile);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -72,6 +75,8 @@ public:
 private:
   void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
+
+  void drawDlpButton(QPainter &p, int x, int y, int w, int h);
 
   ExperimentalButton *experimental_btn;
   QPixmap dm_img;
@@ -96,6 +101,9 @@ private:
   bool steerOverride = false;
   bool latActive = false;
   bool madsEnabled = false;
+
+  bool dynamicLaneProfileToggle;
+  int dynamicLaneProfile;
 
 protected:
   void paintGL() override;
@@ -129,6 +137,8 @@ private:
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QWidget *map = nullptr;
   QHBoxLayout* split;
+
+  Params params;
 
 private slots:
   void offroadTransition(bool offroad);

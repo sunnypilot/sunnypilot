@@ -81,7 +81,18 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   bool sidebarVisible = geometry().x() > 0;
   bool propagate_event = true;
 
-  if (map != nullptr) {
+  UIState *s = uiState();
+  UIScene &scene = s->scene;
+
+  QRect dlp_btn_rect = QRect(bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75), 150, 150);
+
+  if (scene.dynamic_lane_profile_toggle && dlp_btn_rect.contains(e->x(), e->y())) {
+    scene.dynamic_lane_profile++;
+    scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
+    params.put("DynamicLaneProfile", std::to_string(scene.dynamic_lane_profile));
+    propagate_event = false;
+  }
+  else if (map != nullptr) {
     map->setVisible(!sidebarVisible && !map->isVisible());
   }
   // propagation event to parent(HomeWindow)
@@ -288,6 +299,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("latActive", car_control.getLatActive());
   setProperty("madsEnabled", car_state.getMadsEnabled());
 
+  setProperty("dynamicLaneProfileToggle", s.scene.dynamic_lane_profile_toggle);
+  setProperty("dynamicLaneProfile", s.scene.dynamic_lane_profile);
+
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
@@ -451,6 +465,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawIcon(p, dm_icon_x, rect().bottom() - footer_h / 2,
              dm_img, blackColor(70), dmActive ? 1.0 : 0.2);
   }
+
+  // Dynamic Lane Profile Button
+  if (dynamicLaneProfileToggle) {
+    drawDlpButton(p, bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75), 150, 150);
+  }
   p.restore();
 }
 
@@ -474,6 +493,34 @@ void AnnotatedCameraWidget::drawIcon(QPainter &p, int x, int y, QPixmap &img, QB
   p.setOpacity(opacity);
   p.drawPixmap(x - img.size().width() / 2, y - img.size().height() / 2, img);
   p.setOpacity(1.0);
+}
+
+void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int h) {
+  int prev_dynamic_lane_profile = -1;
+  QString dlp_text = "";
+  QColor dlp_border = QColor(255, 255, 255, 255);
+
+  if (prev_dynamic_lane_profile != dynamicLaneProfile) {
+    prev_dynamic_lane_profile = dynamicLaneProfile;
+    if (dynamicLaneProfile == 0) {
+      dlp_text = tr("Lane\nonly");
+      dlp_border = QColor("#2020f8");
+    } else if (dynamicLaneProfile == 1) {
+      dlp_text = tr("Lane\nless");
+      dlp_border = QColor("#0df87a");
+    } else if (dynamicLaneProfile == 2) {
+      dlp_text = tr("Auto\nLane");
+      dlp_border = QColor("#0df8f8");
+    }
+  }
+
+  QRect dlpBtn(x, y, w, h);
+  p.setPen(QPen(dlp_border, 6));
+  p.setBrush(QColor(75, 75, 75, 75));
+  p.drawEllipse(dlpBtn);
+  p.setPen(QColor(Qt::white));
+  configFont(p, "Inter", 36, "SemiBold");
+  p.drawText(dlpBtn, Qt::AlignCenter, dlp_text);
 }
 
 
@@ -550,20 +597,29 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
       if (acceleration.getZ().size() > 16) {
         acceleration_future = acceleration.getX()[16];  // 2.5 seconds
       }
-      start_hue = 60;
-      // speed up: 120, slow down: 0
-      end_hue = fmax(fmin(start_hue + acceleration_future * 45, 148), 0);
-
+      if (scene.dynamic_lane_profile_status) {
+        start_hue = 60;
+        // speed up: 120, slow down: 0
+        end_hue = fmax(fmin(start_hue + acceleration_future * 45, 148), 0);
+      } else {
+        start_hue = 240;
+        // speed up: 300, slow down: 180
+        end_hue = fmin(fmax(start_hue + acceleration_future * 45, 180), 328);
+      }
       // FIXME: painter.drawPolygon can be slow if hue is not rounded
       end_hue = int(end_hue * 100 + 0.5) / 100;
 
       bg.setColorAt(0.0, QColor::fromHslF(start_hue / 360., 0.97, 0.56, 0.4));
       bg.setColorAt(0.5, QColor::fromHslF(end_hue / 360., 1.0, 0.68, 0.35));
       bg.setColorAt(1.0, QColor::fromHslF(end_hue / 360., 1.0, 0.68, 0.0));
-    } else {
+    } else if (scene.dynamic_lane_profile_status) {
       bg.setColorAt(0.0, QColor::fromHslF(148 / 360., 0.94, 0.51, 0.4));
       bg.setColorAt(0.5, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.35));
       bg.setColorAt(1.0, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.0));
+    } else {
+      bg.setColorAt(0.0, QColor::fromHslF(240 / 360., 0.94, 0.51, 0.4));
+      bg.setColorAt(0.5, QColor::fromHslF(204 / 360., 1.0, 0.68, 0.35));
+      bg.setColorAt(1.0, QColor::fromHslF(204 / 360., 1.0, 0.68, 0.0));
     }
   } else {
     bg.setColorAt(0.0, whiteColor(102));
