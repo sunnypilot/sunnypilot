@@ -111,6 +111,8 @@ typedef struct UIScene {
 
   int dynamic_lane_profile;
   bool dynamic_lane_profile_status, dynamic_lane_profile_toggle;
+
+  bool visual_brake_lights;
 } UIScene;
 
 class UIState : public QObject {

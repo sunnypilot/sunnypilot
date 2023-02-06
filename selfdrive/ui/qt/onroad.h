@@ -68,6 +68,8 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool dynamicLaneProfileToggle MEMBER dynamicLaneProfileToggle);
   Q_PROPERTY(int dynamicLaneProfile MEMBER dynamicLaneProfile);
 
+  Q_PROPERTY(bool brakeLights MEMBER brakeLights);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -77,6 +79,7 @@ private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
 
   void drawDlpButton(QPainter &p, int x, int y, int w, int h);
+  void drawSpeedText(QPainter &p, int x, int y, const QString &text, QColor color);
 
   ExperimentalButton *experimental_btn;
   QPixmap dm_img;
@@ -104,6 +107,8 @@ private:
 
   bool dynamicLaneProfileToggle;
   int dynamicLaneProfile;
+
+  bool brakeLights;
 
 protected:
   void paintGL() override;
