@@ -94,6 +94,7 @@ typedef struct UIScene {
   mat3 view_from_calib = DEFAULT_CALIBRATION;
   mat3 view_from_wide_calib = DEFAULT_CALIBRATION;
   cereal::PandaState::PandaType pandaType;
+  cereal::ControlsState::Reader controlsState;
 
   // modelV2
   float lane_line_probs[4];
@@ -113,6 +114,9 @@ typedef struct UIScene {
   bool dynamic_lane_profile_status, dynamic_lane_profile_toggle;
 
   bool visual_brake_lights;
+
+  int onroadScreenOff, osoTimer, brightness, onroadScreenOffBrightness, awake;
+  bool touched2 = false;
 } UIScene;
 
 class UIState : public QObject {
@@ -177,6 +181,8 @@ private:
   void updateWakefulness(const UIState &s);
   bool motionTriggered(const UIState &s);
   void setAwake(bool on);
+
+  int sleep_time = -1;
 
 signals:
   void displayPowerChanged(bool on);

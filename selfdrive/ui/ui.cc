@@ -179,6 +179,19 @@ void ui_update_params(UIState *s) {
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
   s->scene.dynamic_lane_profile_toggle = params.getBool("DynamicLaneProfileToggle");
   s->scene.visual_brake_lights = params.getBool("BrakeLights");
+  s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
+  s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
+
+  if (s->scene.onroadScreenOff > 0) {
+    s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
+  } else if (s->scene.onroadScreenOff == 0) {
+    s->scene.osoTimer = 30 * UI_FREQ;
+  } else if (s->scene.onroadScreenOff == -1) {
+    s->scene.osoTimer = 15 * UI_FREQ;
+  } else {
+    s->scene.osoTimer = -1;
+  }
 }
 
 void UIState::updateStatus() {
@@ -290,11 +303,24 @@ void Device::updateBrightness(const UIState &s) {
 
     // Scale back to 10% to 100%
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+    if (s.scene.onroadScreenOff != -2 && s.scene.touched2) {
+      sleep_time = s.scene.osoTimer;
+    } else if (s.scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE && s.scene.onroadScreenOff != -2) {
+      sleep_time = s.scene.osoTimer;
+    } else if (sleep_time > 0 && s.scene.onroadScreenOff != -2) {
+      sleep_time--;
+    } else if (s.scene.started && sleep_time == -1 && s.scene.onroadScreenOff != -2) {
+      sleep_time = s.scene.osoTimer;
+    }
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
+  } else if (s.scene.started && sleep_time == 0 && s.scene.onroadScreenOff != -2) {
+    brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
+  } else if (s.scene.brightness) {
+    brightness = s.scene.brightness * 0.99;
   }
 
   if (brightness != last_brightness) {
