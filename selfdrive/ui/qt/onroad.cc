@@ -302,7 +302,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("dynamicLaneProfileToggle", s.scene.dynamic_lane_profile_toggle);
   setProperty("dynamicLaneProfile", s.scene.dynamic_lane_profile);
 
-  setProperty("brakeLights", car_state.getBrakeLights());
+  setProperty("brakeLights", car_state.getBrakeLights() && s.scene.visual_brake_lights);
 
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
