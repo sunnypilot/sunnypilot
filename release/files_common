@@ -109,6 +109,7 @@ selfdrive/car/fw_versions.py
 selfdrive/car/fw_query_definitions.py
 selfdrive/car/ecu_addrs.py
 selfdrive/car/isotp_parallel_query.py
+selfdrive/car/sunnypilot_carname.json
 selfdrive/car/tests/__init__.py
 selfdrive/car/tests/test_car_interfaces.py
 selfdrive/car/torque_data/params.yaml
