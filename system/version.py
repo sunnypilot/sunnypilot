@@ -7,8 +7,8 @@ from functools import lru_cache
 from common.basedir import BASEDIR
 from system.swaglog import cloudlog
 
-RELEASE_BRANCHES = ['release3-staging', 'dashcam3-staging', 'release3', 'dashcam3', 'prod-c3']
-TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'test-c3']
+RELEASE_BRANCHES = ['release3-staging', 'dashcam3-staging', 'release3', 'dashcam3', 'nightly']
+TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'prod-c3', 'test-c3']
 
 training_version: bytes = b"0.2.0"
 terms_version: bytes = b"2"
