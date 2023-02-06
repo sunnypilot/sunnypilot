@@ -21,7 +21,7 @@ QString getVersion() {
 }
 
 QString getBrand() {
-  return Params().getBool("Passive") ? QObject::tr("dashcam") : QObject::tr("openpilot");
+  return Params().getBool("Passive") ? QObject::tr("dashcam") : QObject::tr("sunnypilot");
 }
 
 QString getUserAgent() {
@@ -40,6 +40,19 @@ std::optional<QString> getDongleId() {
 
 QMap<QString, QString> getSupportedLanguages() {
   QFile f("translations/languages.json");
+  f.open(QIODevice::ReadOnly | QIODevice::Text);
+  QString val = f.readAll();
+
+  QJsonObject obj = QJsonDocument::fromJson(val.toUtf8()).object();
+  QMap<QString, QString> map;
+  for (auto key : obj.keys()) {
+    map[key] = obj[key].toString();
+  }
+  return map;
+}
+
+QMap<QString, QString> getCarNames() {
+  QFile f("/data/openpilot/selfdrive/car/sunnypilot_carname.json");
   f.open(QIODevice::ReadOnly | QIODevice::Text);
   QString val = f.readAll();
 

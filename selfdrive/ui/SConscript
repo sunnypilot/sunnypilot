@@ -24,7 +24,8 @@ widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/drive_stats.cc",
                "qt/widgets/ssh_keys.cc", "qt/widgets/toggle.cc", "qt/widgets/controls.cc",
                "qt/widgets/offroad_alerts.cc", "qt/widgets/prime.cc", "qt/widgets/keyboard.cc",
                "qt/widgets/scrollview.cc", "qt/widgets/cameraview.cc", "#third_party/qrcode/QrCode.cc",
-               "qt/request_repeater.cc", "qt/qt_window.cc", "qt/offroad/networking.cc", "qt/offroad/wifiManager.cc"]
+               "qt/request_repeater.cc", "qt/qt_window.cc", "qt/offroad/networking.cc", "qt/offroad/wifiManager.cc",
+               "qt/offroad/sunnypilot_settings.cc"]
 
 qt_env['CPPDEFINES'] = []
 if maps:

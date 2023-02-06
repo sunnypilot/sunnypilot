@@ -14,6 +14,7 @@ QString getBrand();
 QString getUserAgent();
 std::optional<QString> getDongleId();
 QMap<QString, QString> getSupportedLanguages();
+QMap<QString, QString> getCarNames();
 void configFont(QPainter &p, const QString &family, int size, const QString &style);
 void clearLayout(QLayout* layout);
 void setQtSurfaceFormat();
