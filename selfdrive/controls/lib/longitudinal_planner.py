@@ -154,4 +154,6 @@ class LongitudinalPlanner:
 
     longitudinalPlan.solverExecutionTime = self.mpc.solve_time
 
+    longitudinalPlan.e2eX = self.mpc.e2e_x.tolist()
+
     pm.send('longitudinalPlan', plan_send)

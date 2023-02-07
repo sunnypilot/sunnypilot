@@ -203,6 +203,8 @@ class LongitudinalMpc:
     self.reset()
     self.source = SOURCES[2]
 
+    self.e2e_x = np.zeros(13, dtype=np.float64)
+
   def reset(self):
     # self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.solver.reset()
@@ -319,6 +321,13 @@ class LongitudinalMpc:
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1])
     lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1])
 
+    cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0]
+    e2e_xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
+    e2e_x = np.cumsum(np.insert(e2e_xforward, 0, x[0]))
+
+    x_and_cruise = np.column_stack([e2e_x, cruise_target])
+    e2e_x = np.min(x_and_cruise, axis=1)
+
     self.params[:,0] = MIN_ACCEL
     self.params[:,1] = self.max_a
 
@@ -356,6 +365,8 @@ class LongitudinalMpc:
 
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
+
+    self.e2e_x = e2e_x[:]
 
     self.yref[:,1] = x
     self.yref[:,2] = v
