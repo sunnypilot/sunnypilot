@@ -247,7 +247,31 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
 
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size, img_size});
+
+  // screen recoder - neokii
+
+#ifdef ENABLE_DASHCAM
+  record_timer = std::make_shared<QTimer>();
+  QObject::connect(record_timer.get(), &QTimer::timeout, [=]() {
+    if (recorder) {
+      recorder->update_screen();
+    }
+  });
+  record_timer->start(1000/UI_FREQ);
+
+  recorder = new ScreenRecoder(this);
+  main_layout->addWidget(recorder);
+  main_layout->addWidget(recorder, 0, Qt::AlignRight | Qt::AlignBottom);
+#endif
 }
+
+#ifdef ENABLE_DASHCAM
+void AnnotatedCameraWidget::offroadTransition(bool offroad) {
+  if (offroad && recorder) {
+    recorder->stop(false);
+  }
+}
+#endif
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
   const int SET_SPEED_NA = 255;
@@ -682,11 +706,16 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
 }
 
 void AnnotatedCameraWidget::paintGL() {
+}
+
+void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   UIState *s = uiState();
   SubMaster &sm = *(s->sm);
   const double start_draw_t = millis_since_boot();
   const cereal::ModelDataV2::Reader &model = sm["modelV2"].getModelV2();
   const cereal::RadarState::Reader &radar_state = sm["radarState"].getRadarState();
+
+  QPainter painter(this);
 
   // draw camera frame
   {
@@ -725,11 +754,12 @@ void AnnotatedCameraWidget::paintGL() {
     } else {
       CameraWidget::updateCalibration(DEFAULT_CALIBRATION);
     }
+    painter.beginNativePainting();
     CameraWidget::setFrameId(model.getFrameId());
     CameraWidget::paintGL();
+    painter.endNativePainting();
   }
 
-  QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing);
   painter.setPen(Qt::NoPen);
 
