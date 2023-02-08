@@ -86,6 +86,8 @@ private:
   void drawDlpButton(QPainter &p, int x, int y, int w, int h);
   void drawSpeedText(QPainter &p, int x, int y, const QString &text, QColor color);
 
+  uint64_t last_update_params;
+
   ExperimentalButton *experimental_btn;
   QPixmap dm_img;
   float speed;
