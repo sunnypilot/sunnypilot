@@ -132,6 +132,7 @@ protected:
 
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;
+  void rocketFuel(QPainter &p);
 
 // neokii
 #ifdef ENABLE_DASHCAM

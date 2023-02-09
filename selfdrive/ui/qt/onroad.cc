@@ -669,6 +669,47 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   painter.restore();
 }
 
+void AnnotatedCameraWidget::rocketFuel(QPainter &p) {
+
+  static const int ct_n = 1;
+  static float ct;
+
+  int rect_w = rect().width();
+  int rect_h = rect().height();
+
+  const int n = 15 + 1; //Add one off screen due to timing issues
+  static float t[n];
+  int dim_n = (sin(ct / 5) + 1) * (n - 0.01);
+  t[dim_n] = 1.0;
+  t[(int)(ct/ct_n)] = 1.0;
+
+  UIState *s = uiState();
+  float vc_accel0 = (*s->sm)["carState"].getCarState().getAEgo();
+  static float vc_accel;
+  vc_accel = vc_accel + (vc_accel0 - vc_accel) / 5;
+  float hha = 0;
+  if (vc_accel > 0) {
+    hha = 1 - 0.1 / vc_accel;
+    p.setBrush(QColor(0, 245, 0, 200));
+  }
+  if (vc_accel < 0) {
+    hha = 1 + 0.1 / vc_accel;
+    p.setBrush(QColor(245, 0, 0, 200));
+  }
+  if (hha < 0) {
+    hha = 0;
+  }
+  hha = hha * rect_h;
+  float wp = 35;
+  if (vc_accel > 0) {
+    QRect ra = QRect(rect_w - wp, rect_h / 2 - hha / 2, wp, hha / 2);
+    p.drawRect(ra);
+  } else {
+    QRect ra = QRect(rect_w - wp, rect_h / 2, wp, hha / 2);
+    p.drawRect(ra);
+  }
+}
+
 void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd) {
   painter.save();
 
@@ -782,6 +823,8 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
         drawLead(painter, lead_two, s->scene.lead_vertices[1]);
       }
+
+      rocketFuel(painter);
     }
   }
 
