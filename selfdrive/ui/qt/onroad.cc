@@ -333,6 +333,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("brakeLights", car_state.getBrakeLights() && s.scene.visual_brake_lights);
 
   setProperty("standStillTimer", s.scene.stand_still_timer);
+  setProperty("standStill", car_state.getStandstill());
   setProperty("standstillElapsedTime", sm["lateralPlan"].getLateralPlan().getStandstillElapsed());
 
   // update engageability/experimental mode button
@@ -501,7 +502,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // Stand Still Timer
-  if (standStillTimer && standstillElapsedTime != 0.0) {
+  if (standStillTimer && standStill) {
     drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
   }
   p.restore();
@@ -571,7 +572,7 @@ void AnnotatedCameraWidget::drawStandstillTimer(QPainter &p, int x, int y) {
   int minute = (int)(standstillElapsedTime / 60);
   int second = (int)((standstillElapsedTime) - (minute * 60));
 
-  if (standstillElapsedTime != 0) {
+  if (standStill) {
     snprintf(lab_str, sizeof(lab_str), "STOP");
     snprintf(val_str, sizeof(val_str), "%01d:%02d", minute, second);
   }

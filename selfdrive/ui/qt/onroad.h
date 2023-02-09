@@ -78,6 +78,7 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool brakeLights MEMBER brakeLights);
 
   Q_PROPERTY(bool standStillTimer MEMBER standStillTimer);
+  Q_PROPERTY(bool standStill MEMBER standStill);
   Q_PROPERTY(float standstillElapsedTime MEMBER standstillElapsedTime);
 
 public:
@@ -127,6 +128,7 @@ private:
   bool brakeLights;
 
   bool standStillTimer;
+  bool standStill;
   float standstillElapsedTime;
 
 protected:
