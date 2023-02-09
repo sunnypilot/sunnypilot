@@ -332,6 +332,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("brakeLights", car_state.getBrakeLights() && s.scene.visual_brake_lights);
 
+  setProperty("standStillTimer", s.scene.stand_still_timer);
+  setProperty("standstillElapsedTime", sm["lateralPlan"].getLateralPlan().getStandstillElapsed());
+
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
@@ -485,7 +488,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   // current speed
   configFont(p, "Inter", 176, "Bold");
-  drawSpeedText(p, rect().center().x(), 210, speedStr, brakeLights ? QColor(0xff, 0, 0, 255) : QColor(0xff, 0xff, 0xff, 255));
+  drawColoredText(p, rect().center().x(), 210, speedStr, brakeLights ? QColor(0xff, 0, 0, 255) : QColor(0xff, 0xff, 0xff, 255));
   configFont(p, "Inter", 66, "Regular");
   drawText(p, rect().center().x(), 290, speedUnit, 200);
 
@@ -499,6 +502,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   // Dynamic Lane Profile Button
   if (dynamicLaneProfileToggle) {
     drawDlpButton(p, bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75), 150, 150);
+  }
+
+  // Stand Still Timer
+  if (standStillTimer && standstillElapsedTime != 0.0) {
+    drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
   }
   p.restore();
 }
@@ -515,10 +523,8 @@ void AnnotatedCameraWidget::drawText(QPainter &p, int x, int y, const QString &t
   p.drawText(real_rect.x(), real_rect.bottom(), text);
 }
 
-void AnnotatedCameraWidget::drawSpeedText(QPainter &p, int x, int y, const QString &text, QColor color) {
-  QFontMetrics fm(p.font());
-  QRect init_rect = fm.boundingRect(text);
-  QRect real_rect = fm.boundingRect(init_rect, 0, text);
+void AnnotatedCameraWidget::drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color) {
+  QRect real_rect = getTextRect(p, 0, text);
   real_rect.moveCenter({x, y - real_rect.height() / 2});
 
   p.setPen(color);
@@ -561,6 +567,23 @@ void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int 
   p.setPen(QColor(Qt::white));
   configFont(p, "Inter", 36, "SemiBold");
   p.drawText(dlpBtn, Qt::AlignCenter, dlp_text);
+}
+
+void AnnotatedCameraWidget::drawStandstillTimer(QPainter &p, int x, int y) {
+  char lab_str[16];
+  char val_str[16];
+  int minute = (int)(standstillElapsedTime / 60);
+  int second = (int)((standstillElapsedTime) - (minute * 60));
+
+  if (standstillElapsedTime != 0) {
+    snprintf(lab_str, sizeof(lab_str), "STOP");
+    snprintf(val_str, sizeof(val_str), "%01d:%02d", minute, second);
+  }
+
+  configFont(p, "Inter", 125, "SemiBold");
+  drawColoredText(p, x, y, QString(lab_str), QColor(255, 175, 3, 240));
+  configFont(p, "Inter", 150, "SemiBold");
+  drawColoredText(p, x, y + 150, QString(val_str), QColor(255, 255, 255, 240));
 }
 
 

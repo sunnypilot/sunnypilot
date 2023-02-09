@@ -188,6 +188,7 @@ void ui_update_params(UIState *s) {
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
+  s->scene.stand_still_timer = params.getBool("StandStillTimer");
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;

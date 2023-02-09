@@ -77,6 +77,9 @@ class AnnotatedCameraWidget : public CameraWidget {
 
   Q_PROPERTY(bool brakeLights MEMBER brakeLights);
 
+  Q_PROPERTY(bool standStillTimer MEMBER standStillTimer);
+  Q_PROPERTY(float standstillElapsedTime MEMBER standstillElapsedTime);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -86,7 +89,8 @@ private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
 
   void drawDlpButton(QPainter &p, int x, int y, int w, int h);
-  void drawSpeedText(QPainter &p, int x, int y, const QString &text, QColor color);
+  void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color);
+  void drawStandstillTimer(QPainter &p, int x, int y);
 
   uint64_t last_update_params;
 
@@ -120,6 +124,9 @@ private:
   int dynamicLaneProfile;
 
   bool brakeLights;
+
+  bool standStillTimer;
+  float standstillElapsedTime;
 
 protected:
   void paintGL() override;

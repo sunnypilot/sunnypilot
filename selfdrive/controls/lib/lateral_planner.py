@@ -51,6 +51,9 @@ class LateralPlanner:
     self.dynamic_lane_profile_status_buffer = False
     self.second = 0.0
 
+    self.standstill_elapsed = 0.0
+    self.standstill = False
+
   def reset_mpc(self, x0=np.zeros(4)):
     self.x0 = x0
     self.lat_mpc.reset(x0=self.x0)
@@ -60,6 +63,7 @@ class LateralPlanner:
     if self.second > 1.0:
       self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding="utf8"))
       self.second = 0.0
+    self.standstill = sm['carState'].standstill
     # clip speed , lateral planning is not possible at 0 speed
     self.v_ego = max(MIN_SPEED, sm['carState'].vEgo)
     measured_curvature = sm['controlsState'].curvature
@@ -176,5 +180,8 @@ class LateralPlanner:
 
     lateralPlan.dynamicLaneProfile = int(self.dynamic_lane_profile)
     lateralPlan.dynamicLaneProfileStatus = bool(self.dynamic_lane_profile_status)
+
+    self.standstill_elapsed += DT_MDL if self.standstill else 0.0
+    lateralPlan.standstillElapsed = int(self.standstill_elapsed)
 
     pm.send('lateralPlan', plan_send)

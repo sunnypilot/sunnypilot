@@ -118,6 +118,8 @@ typedef struct UIScene {
 
   int onroadScreenOff, osoTimer, brightness, onroadScreenOffBrightness, awake;
   bool touched2 = false;
+
+  bool stand_still_timer;
 } UIScene;
 
 class UIState : public QObject {
