@@ -426,18 +426,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>Installing...</source>
         <translation>インストールしています...</translation>
     </message>
-    <message>
-        <source>Receiving objects: </source>
-        <translation>ｵﾌﾞｼﾞｪｸﾄをﾀﾞｳﾝﾛｰﾄﾞしています： </translation>
-    </message>
-    <message>
-        <source>Resolving deltas: </source>
-        <translation>デルタを解決しています： </translation>
-    </message>
-    <message>
-        <source>Updating files: </source>
-        <translation>ファイルを更新しています： </translation>
-    </message>
 </context>
 <context>
     <name>MapETA</name>
@@ -1216,18 +1204,6 @@ Reboot now?</source>
     <message>
         <source>Waiting for internet</source>
         <translation>インターネット接続を待機中</translation>
-    </message>
-    <message>
-        <source>Choose Software to Install</source>
-        <translation>インストールするソフトウェアを選択してください</translation>
-    </message>
-    <message>
-        <source>Dashcam</source>
-        <translation>ﾄﾞﾗｲﾌﾞﾚｺｰﾀﾞｰ</translation>
-    </message>
-    <message>
-        <source>Custom Software</source>
-        <translation>カスタムソフトウェア</translation>
     </message>
     <message>
         <source>Enter URL</source>

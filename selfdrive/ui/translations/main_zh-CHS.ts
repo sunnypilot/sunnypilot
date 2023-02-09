@@ -426,18 +426,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>Installing...</source>
         <translation>正在安装……</translation>
     </message>
-    <message>
-        <source>Receiving objects: </source>
-        <translation>正在接收： </translation>
-    </message>
-    <message>
-        <source>Resolving deltas: </source>
-        <translation>正在处理： </translation>
-    </message>
-    <message>
-        <source>Updating files: </source>
-        <translation>正在更新文件： </translation>
-    </message>
 </context>
 <context>
     <name>MapETA</name>
@@ -1214,18 +1202,6 @@ Reboot now?</source>
     <message>
         <source>Waiting for internet</source>
         <translation>等待网络连接</translation>
-    </message>
-    <message>
-        <source>Choose Software to Install</source>
-        <translation>选择要安装的软件</translation>
-    </message>
-    <message>
-        <source>Dashcam</source>
-        <translation>Dashcam（行车记录仪）</translation>
-    </message>
-    <message>
-        <source>Custom Software</source>
-        <translation>自定义软件</translation>
     </message>
     <message>
         <source>Enter URL</source>

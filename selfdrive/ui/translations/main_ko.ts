@@ -426,18 +426,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>Installing...</source>
         <translation>설치중...</translation>
     </message>
-    <message>
-        <source>Receiving objects: </source>
-        <translation>수신중： </translation>
-    </message>
-    <message>
-        <source>Resolving deltas: </source>
-        <translation>델타병합： </translation>
-    </message>
-    <message>
-        <source>Updating files: </source>
-        <translation>파일갱신： </translation>
-    </message>
 </context>
 <context>
     <name>MapETA</name>
@@ -1216,18 +1204,6 @@ Reboot now?</source>
     <message>
         <source>Waiting for internet</source>
         <translation>네트워크 접속을 기다립니다</translation>
-    </message>
-    <message>
-        <source>Choose Software to Install</source>
-        <translation>설치할 소프트웨어를 선택하세요</translation>
-    </message>
-    <message>
-        <source>Dashcam</source>
-        <translation>Dashcam</translation>
-    </message>
-    <message>
-        <source>Custom Software</source>
-        <translation>Custom Software</translation>
     </message>
     <message>
         <source>Enter URL</source>
