@@ -60,6 +60,8 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool has_eu_speed_limit MEMBER has_eu_speed_limit);
   Q_PROPERTY(bool has_us_speed_limit MEMBER has_us_speed_limit);
   Q_PROPERTY(bool is_metric MEMBER is_metric);
+  Q_PROPERTY(bool left_blindspot MEMBER left_blindspot);
+  Q_PROPERTY(bool right_blindspot MEMBER right_blindspot);
 
   Q_PROPERTY(bool dmActive MEMBER dmActive);
   Q_PROPERTY(bool hideDM MEMBER hideDM);
@@ -102,6 +104,8 @@ private:
   bool has_us_speed_limit = false;
   bool has_eu_speed_limit = false;
   bool v_ego_cluster_seen = false;
+  bool left_blindspot = false;
+  bool right_blindspot = false;
   int status = STATUS_DISENGAGED;
   std::unique_ptr<PubMaster> pm;
 
