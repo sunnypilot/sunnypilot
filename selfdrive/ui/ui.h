@@ -109,7 +109,8 @@ typedef struct UIScene {
   // modelV2
   float lane_line_probs[4];
   float road_edge_stds[2];
-  QPolygonF track_vertices;
+  QPolygonF track_vertices;;
+  QPolygonF track_edge_vertices;
   QPolygonF lane_line_vertices[4];
   QPolygonF road_edge_vertices[2];
   QPolygonF lane_barrier_vertices[2];

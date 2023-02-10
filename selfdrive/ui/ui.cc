@@ -116,6 +116,7 @@ void update_model(UIState *s, const cereal::ModelDataV2::Reader &model) {
   }
   max_idx = get_path_length_idx(model_position, max_distance);
   update_line_data(s, model_position, 0.9, 1.22, 1.22, &scene.track_vertices, max_idx, false);
+  update_line_data(s, model_position, 1.0, 1.22, 1.22, &scene.track_edge_vertices, max_idx, false);
 }
 
 void update_dmonitoring(UIState *s, const cereal::DriverStateV2::Reader &driverstate, float dm_fade_state, bool is_rhd) {
