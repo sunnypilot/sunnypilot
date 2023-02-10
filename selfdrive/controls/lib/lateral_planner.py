@@ -181,7 +181,10 @@ class LateralPlanner:
     lateralPlan.dynamicLaneProfile = int(self.dynamic_lane_profile)
     lateralPlan.dynamicLaneProfileStatus = bool(self.dynamic_lane_profile_status)
 
-    self.standstill_elapsed += DT_MDL if self.standstill else 0.0
+    if self.standstill:
+      self.standstill_elapsed += DT_MDL
+    else:
+      self.standstill_elapsed = 0.0
     lateralPlan.standstillElapsed = int(self.standstill_elapsed)
 
     pm.send('lateralPlan', plan_send)
