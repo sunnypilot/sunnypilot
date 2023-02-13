@@ -208,6 +208,7 @@ void ui_update_params(UIState *s) {
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
   s->scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
   s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
+  s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
 }
 
 void UIState::updateStatus() {
