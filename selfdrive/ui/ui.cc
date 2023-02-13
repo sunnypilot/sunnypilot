@@ -223,6 +223,10 @@ void ui_update_params(UIState *s) {
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
+  s->scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
+  s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
+  s->scene.show_debug_ui = params.getBool("ShowDebugUI");
+  s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
@@ -277,7 +281,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "gnssMeasurements",
-    "carControl", "lateralPlan",
+    "carControl", "lateralPlan", "longitudinalPlan", "liveMapData",
   });
 
   Params params;
