@@ -110,6 +110,11 @@ typedef struct UIScene {
   mat3 view_from_wide_calib = DEFAULT_CALIBRATION;
   cereal::PandaState::PandaType pandaType;
 
+  // Speed limit control
+  bool speed_limit_control_enabled;
+  bool speed_limit_perc_offset;
+  double last_speed_limit_sign_tap;
+
   // modelV2
   float lane_line_probs[4];
   float road_edge_stds[2];

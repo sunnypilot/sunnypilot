@@ -206,6 +206,8 @@ void ui_update_params(UIState *s) {
   auto params = Params();
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
+  s->scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
+  s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
 }
 
 void UIState::updateStatus() {
