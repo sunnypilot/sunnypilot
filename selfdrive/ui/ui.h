@@ -114,6 +114,8 @@ typedef struct UIScene {
   mat3 view_from_wide_calib = DEFAULT_CALIBRATION;
   cereal::PandaState::PandaType pandaType;
 
+  // Debug UI
+  bool show_debug_ui;
   bool debug_snapshot_enabled;
   uint64_t display_debug_alert_frame;
 
