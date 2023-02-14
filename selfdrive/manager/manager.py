@@ -24,6 +24,8 @@ from system.version import is_dirty, get_commit, get_version, get_origin, get_sh
                               terms_version, training_version, is_tested_branch, is_release_branch
 
 
+sys.path.append(os.path.join(BASEDIR, "third_party"))
+
 
 def manager_init() -> None:
   # update system time from panda
@@ -85,6 +87,7 @@ def manager_init() -> None:
     ("SpeedLimitPercOffset", "1"),
     ("SpeedLimitStyle", "0"),
     ("SpeedLimitValueOffset", "0"),
+    ("SpeedLimitOffsetType", "0"),
     ("StandStillTimer", "0"),
     ("StockLongToyota", "0"),
     ("TorqueDeadzoneDeg", "0"),
