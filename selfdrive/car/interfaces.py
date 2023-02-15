@@ -13,7 +13,7 @@ from common.params import Params
 from common.realtime import DT_CTRL
 from selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
-from selfdrive.controls.lib.drive_helpers import V_CRUISE_INITIAL, V_CRUISE_MAX, apply_center_deadzone
+from selfdrive.controls.lib.drive_helpers import V_CRUISE_UNSET, V_CRUISE_MAX, apply_center_deadzone
 from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 
@@ -332,7 +332,7 @@ class CarInterfaceBase(ABC):
 
   @staticmethod
   def sp_v_cruise_initialized(v_cruise):
-    return v_cruise != V_CRUISE_INITIAL
+    return v_cruise != V_CRUISE_UNSET
 
   def get_acc_mads(self, cruiseState_enabled, acc_enabled, mads_enabled):
     if self.acc_mads_combo:
