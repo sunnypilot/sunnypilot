@@ -96,6 +96,8 @@ class CarInterfaceBase(ABC):
     self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
     self.prev_acc_mads_combo = False
     self.mads_event_lock = True
+    self.gap_button_counter = 0
+    self.experimental_mode_hold = False
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -364,7 +366,7 @@ class CarInterfaceBase(ABC):
   def get_sp_pedal_disengage(self, brake_pressed, standstill):
     return brake_pressed and (not self.CS.out.brakePressed or not standstill)
 
-  def get_sp_common_state(self, cs_out, CS, gear_allowed=True):
+  def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
     if self.CP.pcmCruise:
       if not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
         CS.madsEnabled, cs_out.cruiseState.enabled = self.get_sp_cancel_cruise_state(CS.madsEnabled)
@@ -375,6 +377,8 @@ class CarInterfaceBase(ABC):
         CS.madsEnabled = True
       elif not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
         CS.madsEnabled = False
+
+    self.toggle_exp_mode(gap_button)
 
     cs_out.belowLaneChangeSpeed = cs_out.vEgo < LANE_CHANGE_SPEED_MIN and self.below_speed_pause
 
@@ -402,6 +406,21 @@ class CarInterfaceBase(ABC):
     cs_out.brakeLights |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
 
     return cs_out, CS
+
+  def toggle_exp_mode(self, gap_pressed):
+    if not self.CP.openpilotLongitudinalControl:
+      return None
+    experimental_mode = self.param_s.get_bool("ExperimentalMode")
+    if gap_pressed:
+      if not self.experimental_mode_hold:
+        self.gap_button_counter += 1
+        if self.gap_button_counter > 50:
+          self.gap_button_counter = 0
+          self.experimental_mode_hold = True
+          self.param_s.put_bool("ExperimentalMode", not experimental_mode)
+    else:
+      self.gap_button_counter = 0
+      self.experimental_mode_hold = False
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
                        enable_from_brake=False, enable_pressed_long=False,

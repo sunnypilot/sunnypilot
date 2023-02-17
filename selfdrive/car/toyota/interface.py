@@ -270,7 +270,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       ret.cruiseState.enabled = False if self.CP.pcmCruise else self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(self.CS.gap_dist_button))
 
     # CANCEL
     if self.CS.out.cruiseState.enabled and not ret.cruiseState.enabled:
