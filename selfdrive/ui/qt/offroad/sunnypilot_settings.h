@@ -79,7 +79,6 @@ private:
 
   QWidget* home_widget;
 
-  ParamControl *eScc;
   ParamControl *stockLongToyota;
 };
 

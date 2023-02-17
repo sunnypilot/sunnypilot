@@ -519,21 +519,6 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
     }
   )");
 
-  toggle_layout->addWidget(new LabelControl(tr("Hyundai/Kia/Genesis (HKG)")));
-  eScc = new ParamControl(
-    "EnhancedScc",
-    tr("Enhanced SCC Radar Interceptor ℹ"),
-    QString("%1<br>"
-            "<b>%2</b><br>"
-            "<b>%3</b>")
-    .arg(tr("sunnypilot will take over control of gas and brakes and will <b>NOT</b> disable the car's radar. This preserves AEB."))
-    .arg(tr("Note: Only enable this feature if you have the Enhanced SCC Radar Interceptor hardware installed."))
-    .arg(tr("Want to get one for your car? Reach out to sunnyhaibin#0865 on Discord for more information.")),
-    "../assets/offroad/icon_blank.png"
-  );
-  eScc->setConfirmation(true, false);
-  toggle_layout->addWidget(horizontal_line());
-  toggle_layout->addWidget(eScc);
   toggle_layout->addWidget(horizontal_line());
   toggle_layout->addWidget(new LabelControl(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControl(
