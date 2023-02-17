@@ -35,6 +35,7 @@ class CarState(CarStateBase):
     # brake pedal
     ret.brake = 0
     ret.brakePressed = cp.vl["ESP_1"]['Brake_Pedal_State'] == 1  # Physical brake pedal switch
+    ret.brakeLights = bool(cp.vl["ESP_1"]["BRAKE_PRESSED_ACC"])
 
     # gas pedal
     ret.gas = cp.vl["ECM_5"]["Accelerator_Position"]
@@ -81,8 +82,9 @@ class CarState(CarStateBase):
 
     if self.CP.carFingerprint in RAM_CARS:
       self.auto_high_beam = cp_cam.vl["DAS_6"]['AUTO_HIGH_BEAM_ON']  # Auto High Beam isn't Located in this message on chrysler or jeep currently located in 729 message
-      ret.steerFaultTemporary  = cp.vl["EPS_3"]["DASM_FAULT"] == 1
+      ret.steerFaultTemporary = cp.vl["EPS_3"]["DASM_FAULT"] == 1
     else:
+      ret.steerFaultTemporary = cp.vl["EPS_2"]["LKAS_TEMPORARY_FAULT"] == 1
       ret.steerFaultPermanent = cp.vl["EPS_2"]["LKAS_STATE"] == 4
 
     # blindspot sensors
@@ -121,6 +123,7 @@ class CarState(CarStateBase):
       ("DOOR_OPEN_RL", "BCM_1"),
       ("DOOR_OPEN_RR", "BCM_1"),
       ("Brake_Pedal_State", "ESP_1"),
+      ("BRAKE_PRESSED_ACC", "ESP_1"),
       ("Accelerator_Position", "ECM_5"),
       ("WHEEL_SPEED_FL", "ESP_6"),
       ("WHEEL_SPEED_RR", "ESP_6"),
@@ -135,6 +138,7 @@ class CarState(CarStateBase):
       ("COUNTER", "EPS_2",),
       ("COLUMN_TORQUE", "EPS_2"),
       ("EPS_TORQUE_MOTOR", "EPS_2"),
+      ("LKAS_TEMPORARY_FAULT", "EPS_2"),
       ("LKAS_STATE", "EPS_2"),
       ("COUNTER", "CRUISE_BUTTONS"),
     ]

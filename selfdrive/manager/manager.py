@@ -23,6 +23,8 @@ from system.version import is_dirty, get_commit, get_version, get_origin, get_sh
                               terms_version, training_version, is_tested_branch, is_release_branch
 
 
+sys.path.append(os.path.join(BASEDIR, "third_party"))
+
 
 def manager_init() -> None:
   # update system time from panda
@@ -36,11 +38,64 @@ def manager_init() -> None:
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
     ("CompletedTrainingVersion", "0"),
-    ("DisengageOnAccelerator", "1"),
+    ("DisengageOnAccelerator", "0"),
     ("GsmMetered", "1"),
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
+
+    ("AccMadsCombo", "1"),
+    ("AutoLaneChangeTimer", "0"),
+    ("BelowSpeedPause", "0"),
+    ("BrakeLights", "0"),
+    ("BrightnessControl", "0"),
+    ("CustomTorqueLateral", "0"),
+    ("CameraControl", "2"),
+    ("CameraControlToggle", "0"),
+    ("CameraOffset", "0"),
+    ("CarModel", ""),
+    ("CarModelText", ""),
+    ("ChevronInfo", "1"),
+    ("CustomBootScreen", "0"),
+    ("CustomOffsets", "0"),
+    ("DevUI", "1"),
+    ("DevUIRow", "1"),
+    ("DisableOnroadUploads", "0"),
+    ("DisengageLateralOnBrake", "1"),
+    ("DynamicLaneProfile", "2"),
+    ("DynamicLaneProfileToggle", "1"),
+    ("EnableMads", "1"),
+    ("EndToEndLongAlert", "0"),
+    ("EndToEndLongToggle", "1"),
+    ("EnhancedScc", "0"),
+    ("GapAdjustCruise", "1"),
+    ("GapAdjustCruiseMode", "0"),
+    ("GapAdjustCruiseTr", "4"),
+    ("GpxDeleteAfterUpload", "1"),
+    ("GpxDeleteIfUploaded", "1"),
+    ("HandsOnWheelMonitoring", "0"),
+    ("LastSpeedLimitSignTap", "0"),
+    ("MadsIconToggle", "1"),
+    ("MaxTimeOffroad", "9"),
+    ("OnroadScreenOff", "0"),
+    ("OnroadScreenOffBrightness", "50"),
+    ("PathOffset", "0"),
+    ("ReverseAccChange", "0"),
+    ("ShowDebugUI", "1"),
+    ("SpeedLimitControl", "1"),
+    ("SpeedLimitPercOffset", "1"),
+    ("SpeedLimitStyle", "0"),
+    ("SpeedLimitValueOffset", "0"),
+    ("SpeedLimitOffsetType", "0"),
+    ("StandStillTimer", "0"),
+    ("StockLongToyota", "0"),
+    ("TorqueDeadzoneDeg", "0"),
+    ("TorqueFriction", "1"),
+    ("TorqueMaxLatAccel", "250"),
+    ("TurnSpeedControl", "0"),
+    ("TurnVisionControl", "0"),
+    ("VisionCurveLaneless", "0"),
+    ("VwAccType", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -52,6 +107,10 @@ def manager_init() -> None:
   for k, v in default_params:
     if params.get(k) is None:
       params.put(k, v)
+
+  # parameters set by Environment Variables
+  if os.getenv("HANDSMONITORING") is not None:
+    params.put_bool("HandsOnWheelMonitoring", bool(int(os.getenv("HANDSMONITORING", "0"))))
 
   # is this dashcam?
   if os.getenv("PASSIVE") is not None:

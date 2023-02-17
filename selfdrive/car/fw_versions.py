@@ -29,10 +29,9 @@ def chunks(l, n=128):
 def build_fw_dict(fw_versions, filter_brand=None):
   fw_versions_dict = defaultdict(set)
   for fw in fw_versions:
-    if filter_brand is None or fw.brand == filter_brand:
-      addr = fw.address
+    if (filter_brand is None or fw.brand == filter_brand) and not fw.logging:
       sub_addr = fw.subAddress if fw.subAddress != 0 else None
-      fw_versions_dict[(addr, sub_addr)].add(fw.fwVersion)
+      fw_versions_dict[(fw.address, sub_addr)].add(fw.fwVersion)
   return dict(fw_versions_dict)
 
 
@@ -146,12 +145,16 @@ def match_fw_to_car(fw_versions, allow_exact=True, allow_fuzzy=True):
   return True, set()
 
 
-def get_present_ecus(logcan, sendcan):
+def get_present_ecus(logcan, sendcan, num_pandas=1) -> Set[Tuple[int, Optional[int], int]]:
   queries = list()
   parallel_queries = list()
   responses = set()
 
   for brand, r in REQUESTS:
+    # Skip query if no panda available
+    if r.bus > num_pandas * 4 - 1:
+      continue
+
     for brand_versions in VERSIONS[brand].values():
       for ecu_type, addr, sub_addr in brand_versions:
         # Only query ecus in whitelist if whitelist is not empty
@@ -171,7 +174,7 @@ def get_present_ecus(logcan, sendcan):
 
   queries.insert(0, parallel_queries)
 
-  ecu_responses: Set[Tuple[int, Optional[int], int]] = set()
+  ecu_responses = set()
   for query in queries:
     ecu_responses.update(get_ecu_addrs(logcan, sendcan, set(query), responses, timeout=0.1))
   return ecu_responses
@@ -228,14 +231,18 @@ def get_fw_versions(logcan, sendcan, query_brand=None, extra=None, timeout=0.1, 
   # ECUs using a subaddress need be queried one by one, the rest can be done in parallel
   addrs = []
   parallel_addrs = []
+  logging_addrs = []
   ecu_types = {}
 
   for brand, brand_versions in versions.items():
-    for c in brand_versions.values():
-      for ecu_type, addr, sub_addr in c.keys():
+    for candidate, ecu in brand_versions.items():
+      for ecu_type, addr, sub_addr in ecu.keys():
         a = (brand, addr, sub_addr)
         if a not in ecu_types:
           ecu_types[a] = ecu_type
+
+        if a not in logging_addrs and candidate == "debug":
+          logging_addrs.append(a)
 
         if sub_addr is None:
           if a not in parallel_addrs:
@@ -265,13 +272,15 @@ def get_fw_versions(logcan, sendcan, query_brand=None, extra=None, timeout=0.1, 
             for (tx_addr, sub_addr), version in query.get_data(timeout).items():
               f = car.CarParams.CarFw.new_message()
 
-              f.ecu = ecu_types.get((brand, tx_addr, sub_addr), Ecu.unknown)
+              ecu_key = (brand, tx_addr, sub_addr)
+              f.ecu = ecu_types.get(ecu_key, Ecu.unknown)
               f.fwVersion = version
               f.address = tx_addr
               f.responseAddress = uds.get_rx_addr_for_tx_addr(tx_addr, r.rx_offset)
               f.request = r.request
               f.brand = brand
               f.bus = r.bus
+              f.logging = r.logging or ecu_key in logging_addrs
 
               if sub_addr is not None:
                 f.subAddress = sub_addr
