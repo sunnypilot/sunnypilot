@@ -9,6 +9,10 @@ SConstruct
 
 README.md
 RELEASES.md
+CHANGELOGS.md
+HOW-TOS.md
+sunnyhaibin0850_qrcode_paypal.me.png
+.github/FUNDING.yml
 docs/CARS.md
 docs/CONTRIBUTING.md
 docs/INTEGRATION.md
@@ -56,6 +60,9 @@ common/transformations/transformations.pyx
 common/api/__init__.py
 
 release/*
+
+installer/custom/install_osm.sh
+installer/custom/install_osm_db.sh
 
 tools/__init__.py
 tools/lib/*
@@ -147,6 +154,13 @@ selfdrive/debug/vw_mqb_config.py
 selfdrive/gpxd/gpx_uploader.py
 selfdrive/gpxd/gpxd.py
 
+selfdrive/mapd/assets/*
+selfdrive/mapd/config.py
+selfdrive/mapd/mapd.py
+selfdrive/mapd/lib/*
+selfdrive/mapd/README.md
+selfdrive/mapd/sp_osm_db.json
+
 common/SConscript
 common/version.h
 
@@ -195,7 +209,10 @@ selfdrive/controls/lib/longcontrol.py
 selfdrive/controls/lib/longitudinal_planner.py
 selfdrive/controls/lib/pid.py
 selfdrive/controls/lib/radar_helpers.py
+selfdrive/controls/lib/speed_limit_controller.py
+selfdrive/controls/lib/turn_speed_controller.py
 selfdrive/controls/lib/vehicle_model.py
+selfdrive/controls/lib/vision_turn_controller.py
 
 selfdrive/controls/lib/lateral_mpc_lib/.gitignore
 selfdrive/controls/lib/longitudinal_mpc_lib/.gitignore
@@ -322,6 +339,7 @@ selfdrive/ui/qt/widgets/*.cc
 selfdrive/ui/qt/widgets/*.h
 selfdrive/ui/qt/maps/*.cc
 selfdrive/ui/qt/maps/*.h
+selfdrive/ui/qt/screenrecorder/*
 selfdrive/ui/qt/setup/*.cc
 selfdrive/ui/qt/setup/*.h
 
@@ -344,7 +362,9 @@ system/camerad/imgproc/utils.h
 
 selfdrive/manager/__init__.py
 selfdrive/manager/build.py
+selfdrive/manager/custom_dep.py
 selfdrive/manager/helpers.py
+selfdrive/manager/local_osm_install.py
 selfdrive/manager/manager.py
 selfdrive/manager/process_config.py
 selfdrive/manager/process.py
@@ -398,10 +418,13 @@ selfdrive/modeld/runners/run.h
 
 selfdrive/monitoring/dmonitoringd.py
 selfdrive/monitoring/driver_monitor.py
+selfdrive/monitoring/hands_on_wheel_monitor.py
 
 selfdrive/navd/__init__.py
 selfdrive/navd/navd.py
 selfdrive/navd/helpers.py
+selfdrive/navd/otisserv.py
+selfdrive/navd/tpl/*
 
 selfdrive/assets/.gitignore
 selfdrive/assets/assets.qrc
@@ -446,6 +469,8 @@ third_party/acados/acados_template/**
 
 third_party/bootstrap/**
 third_party/qt5/larch64/bin/**
+
+third_party/mapd/*
 
 scripts/update_now.sh
 scripts/stop_updater.sh

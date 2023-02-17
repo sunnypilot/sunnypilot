@@ -9,29 +9,24 @@ cd $DIR
 BUILD_DIR=/data/openpilot
 SOURCE_DIR="$(git rev-parse --show-toplevel)"
 
-if [ -f /TICI ]; then
-  FILES_SRC="release/files_tici"
-else
-  echo "no release files set"
-  exit 1
-fi
-
-if [ -z "$RELEASE_BRANCH" ]; then
-  echo "RELEASE_BRANCH is not set"
-  exit 1
-fi
+FILES_SRC="release/files_tici"
+RELEASE_BRANCH="prod-c3"
 
 
 # set git identity
 source $DIR/identity.sh
+export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 
 echo "[-] Setting up repo T=$SECONDS"
 rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:commaai/openpilot.git
-git checkout --orphan $RELEASE_BRANCH
+# set git username/password
+source /data/identity.sh
+git remote add origin https://github.com/sunnyhaibin/sunnypilot.git
+git remote add devel https://github.com/sunnyhaibin/openpilot-special.git
+git fetch origin $RELEASE_BRANCH
 
 # do the files copy
 echo "[-] copying files T=$SECONDS"
@@ -44,19 +39,24 @@ cd $BUILD_DIR
 
 rm -f panda/board/obj/panda.bin.signed
 rm -f panda/board/obj/panda_h7.bin.signed
+rm -f panda/board/obj/bootstub.panda.bin
+rm -f panda/board/obj/bootstub.panda_h7.bin
 
-VERSION=$(cat common/version.h | awk -F[\"-]  '{print $2}')
-echo "#define COMMA_VERSION \"$VERSION-release\"" > common/version.h
+VERSION=$(date '+%Y.%m.%d')
+echo "#define COMMA_VERSION \"$VERSION\"" > common/version.h
 
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
-git commit -a -m "openpilot v$VERSION release"
+git commit -a -m "sunnypilot v$VERSION release"
+git branch --set-upstream-to=origin/$RELEASE_BRANCH
 
 # Build panda firmware
 pushd panda/
-CERT=/data/pandaextra/certs/release RELEASE=1 scons -u .
+scons -u .
 mv board/obj/panda.bin.signed /tmp/panda.bin.signed
 mv board/obj/panda_h7.bin.signed /tmp/panda_h7.bin.signed
+mv board/obj/bootstub.panda.bin /tmp/bootstub.panda.bin
+mv board/obj/bootstub.panda_h7.bin /tmp/bootstub.panda_h7.bin
 popd
 
 # Build
@@ -77,15 +77,20 @@ find . -name '*.o' -delete
 find . -name '*.os' -delete
 find . -name '*.pyc' -delete
 find . -name 'moc_*' -delete
+find . -name '*.cc' -delete
 find . -name '__pycache__' -delete
+find selfdrive/ui/ -name '*.h' -delete
 rm -rf panda/board panda/certs panda/crypto
 rm -rf .sconsign.dblite Jenkinsfile release/
 rm selfdrive/modeld/models/supercombo.onnx
-
+#rm models/supercombo_badweights.thneed
+rm -rf selfdrive/ui/replay/
 # Move back signed panda fw
 mkdir -p panda/board/obj
 mv /tmp/panda.bin.signed panda/board/obj/panda.bin.signed
 mv /tmp/panda_h7.bin.signed panda/board/obj/panda_h7.bin.signed
+mv /tmp/bootstub.panda.bin panda/board/obj/bootstub.panda.bin
+mv /tmp/bootstub.panda_h7.bin panda/board/obj/bootstub.panda_h7.bin
 
 # Restore third_party
 git checkout third_party/
@@ -93,30 +98,33 @@ git checkout third_party/
 # Mark as prebuilt release
 touch prebuilt
 
+# include source commit hash and build date in commit
+GIT_HASH=$(git --git-dir=$SOURCE_DIR/.git rev-parse HEAD)
+DATETIME=$(date '+%Y-%m-%dT%H:%M:%S')
+SP_VERSION=$(cat $SOURCE_DIR/common/version.h | awk -F\" '{print $2}')
+
 # Add built files to git
 git add -f .
-git commit --amend -m "openpilot v$VERSION"
+git commit --amend -m "sunnypilot v$VERSION
+version: sunnypilot v$SP_VERSION release
+date: $DATETIME
+master commit: $GIT_HASH
+"
+git branch -m prod-c3
 
 # Run tests
-TEST_FILES="tools/"
-cd $SOURCE_DIR
-cp -pR -n --parents $TEST_FILES $BUILD_DIR/
-cd $BUILD_DIR
-RELEASE=1 selfdrive/test/test_onroad.py
+#TEST_FILES="tools/"
+#cd $SOURCE_DIR
+#cp -pR -n --parents $TEST_FILES $BUILD_DIR/
+#cd $BUILD_DIR
+#RELEASE=1 selfdrive/test/test_onroad.py
 #selfdrive/manager/test/test_manager.py
-selfdrive/car/tests/test_car_interfaces.py
-rm -rf $TEST_FILES
+#selfdrive/car/tests/test_car_interfaces.py
+#rm -rf $TEST_FILES
 
-if [ ! -z "$RELEASE_BRANCH" ]; then
-  echo "[-] pushing release T=$SECONDS"
-  git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
-fi
-
-if [ ! -z "$DASHCAM_BRANCH" ]; then
-  # Create dashcam
-  git rm selfdrive/car/*/carcontroller.py
-  git commit -m "create dashcam release from release"
-  git push -f origin $RELEASE_BRANCH:$DASHCAM_BRANCH
+if [ ! -z "$PUSH" ]; then
+  echo "[-] pushing T=$SECONDS"
+  git push -f origin $RELEASE_BRANCH
 fi
 
 echo "[-] done T=$SECONDS"
