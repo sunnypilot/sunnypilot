@@ -61,6 +61,7 @@ class HyundaiFlags(IntFlag):
   ENABLE_BLINKERS = 32
   CANFD_ALT_GEARS_2 = 64
   SEND_LFA = 128
+  SP_ENHANCED_SCC = 256
 
 
 class CAR:

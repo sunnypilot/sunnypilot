@@ -142,6 +142,20 @@ class CarState(CarStateBase):
       aeb_braking = cp_cruise.vl[aeb_src]["CF_VSM_DecCmdAct"] != 0 or cp_cruise.vl[aeb_src][aeb_sig] != 0
       ret.stockFcw = aeb_warning and not aeb_braking
       ret.stockAeb = aeb_warning and aeb_braking
+    elif self.CP.flags & HyundaiFlags.SP_ENHANCED_SCC:
+      aeb_src = "ESCC"
+      aeb_sig = "FCA_CmdAct" if self.CP.carFingerprint in FEATURES["use_fca"] else "AEB_CmdAct"
+      aeb_warning_sig = "CF_VSM_Warn_FCA11" if self.CP.carFingerprint in FEATURES["use_fca"] else "CF_VSM_Warn_SCC12"
+      aeb_braking_sig = "CF_VSM_DecCmdAct_FCA11" if self.CP.carFingerprint in FEATURES["use_fca"] else "CF_VSM_DecCmdAct_SCC12"
+      aeb_braking_cmd = "CR_VSM_DecCmd_FCA11" if self.CP.carFingerprint in FEATURES["use_fca"] else "CR_VSM_DecCmd_SCC12"
+      aeb_warning = cp.vl[aeb_src][aeb_warning_sig] != 0
+      aeb_braking = cp.vl[aeb_src][aeb_braking_sig] != 0 or cp.vl[aeb_src][aeb_sig] != 0
+      ret.stockFcw = aeb_warning and not aeb_braking
+      ret.stockAeb = aeb_warning and aeb_braking
+      self.escc_aeb_warning = cp.vl[aeb_src][aeb_warning_sig]
+      self.escc_aeb_dec_cmd_act = cp.vl[aeb_src][aeb_braking_sig]
+      self.escc_cmd_act = cp.vl[aeb_src][aeb_sig]
+      self.escc_aeb_dec_cmd = cp.vl[aeb_src][aeb_braking_cmd]
 
     if self.CP.enableBsm:
       ret.leftBlindspot = cp.vl["LCA11"]["CF_Lca_IndLeft"] != 0
@@ -367,6 +381,23 @@ class CarState(CarStateBase):
     else:
       signals.append(("CF_Lvr_Gear", "LVR12"))
       checks.append(("LVR12", 100))
+
+    if CP.flags & HyundaiFlags.SP_ENHANCED_SCC:
+      if CP.carFingerprint in FEATURES["use_fca"]:
+        signals += [
+          ("FCA_CmdAct", "ESCC"),
+          ("CF_VSM_Warn_FCA11", "ESCC"),
+          ("CF_VSM_DecCmdAct_FCA11", "ESCC"),
+          ("CR_VSM_DecCmd_FCA11", "ESCC"),
+        ]
+      else:
+        signals += [
+          ("AEB_CmdAct", "ESCC"),
+          ("CF_VSM_Warn_SCC12", "ESCC"),
+          ("CF_VSM_DecCmdAct_SCC12", "ESCC"),
+          ("CR_VSM_DecCmd_SCC12", "ESCC"),
+        ]
+      checks.append(("ESCC", 50))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 0)
 
