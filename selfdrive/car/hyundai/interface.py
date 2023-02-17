@@ -52,6 +52,9 @@ class CarInterface(CarInterfaceBase):
       if 0x38d in fingerprint[0] or 0x38d in fingerprint[2]:
         ret.flags |= HyundaiFlags.USE_FCA.value
 
+      if 0x2AB in fingerprint[0]:
+        ret.flags |= HyundaiFlags.SP_ENHANCED_SCC.value
+
     ret.steerActuatorDelay = 0.1  # Default delay
     ret.steerLimitTimer = 0.4
     tire_stiffness_factor = 1.
@@ -278,9 +281,7 @@ class CarInterface(CarInterfaceBase):
       if candidate in CAMERA_SCC_CAR:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_CAMERA_SCC
 
-      enhancedScc = 0x2AB in fingerprint[0] and ret.openpilotLongitudinalControl
-      if enhancedScc:
-        ret.flags |= HyundaiFlags.SP_ENHANCED_SCC.value
+      if ret.flags & HyundaiFlags.SP_ENHANCED_SCC:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_ESCC
 
     if ret.openpilotLongitudinalControl:
