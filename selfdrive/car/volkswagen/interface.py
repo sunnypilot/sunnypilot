@@ -228,6 +228,14 @@ class CarInterface(CarInterfaceBase):
                                                                           ret.buttonEvents, c.vCruise,
                                                                           enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
+    if ret.cruiseState.available:
+      if self.enable_mads:
+        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+          self.CS.madsEnabled = True
+        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+    else:
+      self.CS.madsEnabled = False
+
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0):
       if any(b.type == ButtonType.cancel for b in buttonEvents):
         self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
