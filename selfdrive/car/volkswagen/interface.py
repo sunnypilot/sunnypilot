@@ -3,7 +3,7 @@ from panda import Panda
 from common.conversions import Conversions as CV
 from selfdrive.car import STD_CARGO_KG, get_safety_config, create_mads_event
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter
+from selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -19,6 +19,8 @@ class CarInterface(CarInterfaceBase):
     else:
       self.ext_bus = CANBUS.cam
       self.cp_ext = self.cp_cam
+
+    self.buttonStatesPrev = BUTTON_STATES.copy()
 
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long):
@@ -222,10 +224,21 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_ext, self.CP.transmissionType)
 
+    buttonEvents = []
+
+    # Check for and process state-change events (button press or release) from
+    # the turn stalk switch or ACC steering wheel/control stalk buttons.
+    for button in self.CS.buttonStates:
+      if self.CS.buttonStates[button] != self.buttonStatesPrev[button]:
+        be = car.CarState.ButtonEvent.new_message()
+        be.type = button
+        be.pressed = self.CS.buttonStates[button]
+        buttonEvents.append(be)
+
     self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
 
     self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret.cruiseState.available, self.CS.accEnabled,
-                                                                          ret.buttonEvents, c.vCruise,
+                                                                          buttonEvents, c.vCruise,
                                                                           enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     if ret.cruiseState.available:
@@ -260,6 +273,8 @@ class CarInterface(CarInterfaceBase):
         buttonEvents.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = True
 
+    ret.buttonEvents = buttonEvents
+
     events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
                                        pcm_enable=False,
                                        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
@@ -282,6 +297,9 @@ class CarInterface(CarInterfaceBase):
         events.add(EventName.speedTooLow)
 
     ret.events = events.to_msg()
+
+    # update previous car states
+    self.buttonStatesPrev = self.CS.buttonStates.copy()
 
     return ret
 

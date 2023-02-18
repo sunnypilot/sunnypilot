@@ -103,6 +103,16 @@ class CANBUS:
   cam = 2
 
 
+BUTTON_STATES = {
+  "accelCruise": False,
+  "decelCruise": False,
+  "cancel": False,
+  "setCruise": False,
+  "resumeCruise": False,
+  "gapAdjustCruise": False
+}
+
+
 # Check the 7th and 8th characters of the VIN before adding a new CAR. If the
 # chassis code is already listed below, don't add a new CAR, just add to the
 # FW_VERSIONS for that existing CAR.
