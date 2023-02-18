@@ -271,7 +271,6 @@ class WayRelation():
 
     # - Get the distance and bearings from location to all nodes. (N)
     bearings = bearing_to_points(location_rad, self._nodes_np)
-    distances = distance_to_points(location_rad, self._nodes_np)
 
     # - Get absolute bearing delta to current driving bearing. (N)
     delta = np.abs(bearing_rad - bearings)
@@ -303,16 +302,22 @@ class WayRelation():
     # - Get the index where the distance to the way is minimum. That is the chosen location.
     min_h_possible_idx = np.argmin(h_possible)
     min_delta_idx = possible_idxs[min_h_possible_idx]
+    projection = projections[min_delta_idx]
 
-    # - If the distance to the way is over 4 standard deviations of the gps accuracy + half the maximum road width
+    # - If the distance to the way is over 4 standard deviations of the gps accuracy + the maximum road width
     # estimate, then we are way too far to stick to this way (i.e. we are not on this way anymore)
+    # In theory the osm path is centered on the road which means half the road width would cover the whole road.
+    # however, often times the osm path is not perfectly centered so we'll make the possible route more lenient by using
+    # the full road width.
+    road_width_estimate = self.lanes * LANE_WIDTH
     half_road_width_estimate = self.lanes * LANE_WIDTH / 2.
-    if h_possible[min_h_possible_idx] > 4. * location_stdev + half_road_width_estimate:
+    if h_possible[min_h_possible_idx] > 4. * location_stdev + road_width_estimate:
       return
 
-    # - If the distance to the road is greater than 2 standard deviations of the gps accuracy + half the maximum road
-    # width estimate then we are most likely diverting from this route.
-    diverting = h_possible[min_h_possible_idx] > 2. * location_stdev + half_road_width_estimate
+    # If the distance to the road is greater than 2 standard deviations of the gps accuracy + half the maximum road
+    # width estimate + 1 lane width then we are most likely diverting from this route. Adding a lane width to give
+    # leniency to not perfectly centered osm paths
+    diverting = h_possible[min_h_possible_idx] > 2. * location_stdev + half_road_width_estimate + LANE_WIDTH
 
     # Populate location variables with result
     if is_ahead[min_delta_idx]:
@@ -326,10 +331,10 @@ class WayRelation():
 
     self._distance_to_way = h[min_delta_idx]
     self._active_bearing_delta = abs_sin_bw_delta_possible[min_h_possible_idx]
-    # TODO: The distance to node ahead currently represent the distance from the GPS fix location.
-    # It would be perhaps more accurate to use the distance on the projection over the direct line between
-    # the two nodes.
-    self.distance_to_node_ahead = distances[self.ahead_idx]
+    
+    # find the distance to the next node by projecting our location onto the line and finding the delta between that
+    # point and the next point on the route
+    self.distance_to_node_ahead = distance_to_points(projection, np.array([self._nodes_np[self.ahead_idx]]))[0]
     self.active = True
     self.diverting = diverting
     self.location_rad = location_rad
