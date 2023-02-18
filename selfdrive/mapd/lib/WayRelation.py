@@ -1,4 +1,4 @@
-from selfdrive.mapd.lib.geo import DIRECTION, R, vectors, bearing_to_points, distance_to_points
+from selfdrive.mapd.lib.geo import DIRECTION, R, vectors, bearing_to_points, distance_to_points, point_on_line
 from selfdrive.mapd.lib.osm import create_way
 from common.conversions import Conversions as CV
 from selfdrive.mapd.config import LANE_WIDTH
@@ -286,16 +286,8 @@ class WayRelation():
     if len(possible_idxs) == 0:
       return
 
-    # - Find then angle formed between the vectors from the current location to consecutive nodes. This is the
-    # value of the difference in the bearings of the vectors.
-    teta = np.diff(bearings)
-
-    # - When two consecutive nodes will be ahead and behind, they will form a triangle with the current location.
-    # We find the closest distance to the way by solving the area of the triangle and finding the height (h).
-    # We must use the abolute value of the sin of the angle in the formula, which is equivalent to ensure we
-    # are considering the smallest of the two angles formed between the two vectors.
-    # https://www.mathsisfun.com/algebra/trig-area-triangle-without-right-angle.html
-    h = distances[:-1] * distances[1:] * np.abs(np.sin(teta)) / self._way_distances
+    projections = point_on_line(self._nodes_np[:-1], self._nodes_np[1:], location_rad)
+    h = distance_to_points(location_rad, projections)
 
     # - Calculate the delta between driving bearing and way bearings. (N-1)
     bw_delta = self._way_bearings - bearing_rad
