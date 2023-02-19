@@ -646,6 +646,24 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(customMapbox);
   main_layout->addWidget(mapboxMain);
+
+  // Visuals: Speedometer: Display True Speed
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "TrueVEgoUi",
+    tr("Speedometer: Display True Speed"),
+    tr("Display the true vehicle current speed from wheel speed sensors."),
+    "../assets/offroad/icon_openpilot.png"
+  ));
+
+  // Visuals: Speedometer: Hide from Onroad Screen
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "HideVEgoUi",
+    tr("Speedometer: Hide from Onroad Screen"),
+    "",
+    "../assets/offroad/icon_openpilot.png"
+  ));
 }
 
 void SPVisualsPanel::showEvent(QShowEvent *event) {

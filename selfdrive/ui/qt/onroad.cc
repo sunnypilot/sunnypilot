@@ -378,7 +378,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // Handle older routes where vEgoCluster is not set
   float v_ego;
-  if (sm["carState"].getCarState().getVEgoCluster() == 0.0 && !v_ego_cluster_seen) {
+  if ((sm["carState"].getCarState().getVEgoCluster() == 0.0 && !v_ego_cluster_seen) || s.scene.true_vego_ui) {
     v_ego = sm["carState"].getCarState().getVEgo();
   } else {
     v_ego = sm["carState"].getCarState().getVEgoCluster();
@@ -419,6 +419,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("standStillTimer", s.scene.stand_still_timer);
   setProperty("standStill", car_state.getStandstill());
   setProperty("standstillElapsedTime", sm["lateralPlan"].getLateralPlan().getStandstillElapsed());
+
+  setProperty("hideVEgoUi", s.scene.hide_vego_ui);
 
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
@@ -667,10 +669,12 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // current speed
-  configFont(p, "Inter", 176, "Bold");
-  drawColoredText(p, rect().center().x(), 210, speedStr, brakeLights ? QColor(0xff, 0, 0, 255) : QColor(0xff, 0xff, 0xff, 255));
-  configFont(p, "Inter", 66, "Regular");
-  drawText(p, rect().center().x(), 290, speedUnit, 200);
+  if (!hideVEgoUi) {
+    configFont(p, "Inter", 176, "Bold");
+    drawColoredText(p, rect().center().x(), 210, speedStr, brakeLights ? QColor(0xff, 0, 0, 255) : QColor(0xff, 0xff, 0xff, 255));
+    configFont(p, "Inter", 66, "Regular");
+    drawText(p, rect().center().x(), 290, speedUnit, 200);
+  }
 
   // Dynamic Lane Profile Button
   if (dynamicLaneProfileToggle) {

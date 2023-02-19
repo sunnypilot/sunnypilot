@@ -104,6 +104,8 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool tscActive MEMBER tscActive);
   Q_PROPERTY(int curveSign MEMBER curveSign);
 
+  Q_PROPERTY(bool hideVEgoUi MEMBER hideVEgoUi);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -187,6 +189,8 @@ private:
   bool tscActive = false;
   int curveSign = 0;
   int speedLimitStyle;
+
+  bool hideVEgoUi;
 
 protected:
   void paintGL() override;

@@ -162,6 +162,8 @@ typedef struct UIScene {
   bool touched2 = false;
 
   bool stand_still_timer;
+
+  bool hide_vego_ui, true_vego_ui;
 } UIScene;
 
 class UIState : public QObject {
