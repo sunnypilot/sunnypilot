@@ -928,7 +928,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   for (int i = 0; i < std::size(scene.lane_line_vertices); ++i) {
     if (i == 1 || i == 2) {
       // TODO: can we just use the projected vertices somehow?
-      const cereal::ModelDataV2::XYZTData::Reader &line = (*s->sm)["modelV2"].getModelV2().getLaneLines()[i];
+      const cereal::XYZTData::Reader &line = (*s->sm)["modelV2"].getModelV2().getLaneLines()[i];
       const float default_pos = 1.4;  // when lane poly isn't available
       const float lane_pos = line.getY().size() > 0 ? std::abs(line.getY()[5]) : default_pos;  // get redder when line is closer to car
       float hue = 332.5 * lane_pos - 332.5;  // equivalent to {1.4, 1.0}: {133, 0} (green to red)
