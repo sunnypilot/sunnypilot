@@ -3,11 +3,12 @@ import time
 from common.numpy_fast import interp
 from enum import IntEnum
 from cereal import log, car
+from common.conversions import Conversions as CV
 from common.params import Params
 from common.realtime import sec_since_boot
 from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_ACC, LIMIT_MAX_ACC, LIMIT_SPEED_OFFSET_TH, \
   LIMIT_MAX_MAP_DATA_AGE, CONTROL_N
-from selfdrive.controls.lib.events import Events
+from selfdrive.controls.lib.events import Events, ET
 from selfdrive.modeld.constants import T_IDXS
 
 
@@ -46,6 +47,7 @@ class SpeedLimitResolver():
     none = 0
     car_state = 1
     map_data = 2
+    nav = 3
 
   class Policy(IntEnum):
     car_state_only = 0
@@ -53,8 +55,10 @@ class SpeedLimitResolver():
     car_state_priority = 2
     map_data_priority = 3
     combined = 4
+    nav_only = 5
+    nav_priority = 6
 
-  def __init__(self, policy=Policy.map_data_priority):
+  def __init__(self, policy=Policy.nav_priority):
     self._limit_solutions = {}  # Store for speed limit solutions from different sources
     self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
     self._v_ego = 0.
@@ -71,6 +75,7 @@ class SpeedLimitResolver():
     self._sm = sm
 
     self._get_from_car_state()
+    self._get_from_nav()
     self._get_from_map_data()
     self._consolidate()
 
@@ -79,6 +84,18 @@ class SpeedLimitResolver():
   def _get_from_car_state(self):
     self._limit_solutions[SpeedLimitResolver.Source.car_state] = self._sm['carState'].cruiseState.speedLimit
     self._distance_solutions[SpeedLimitResolver.Source.car_state] = 0.
+
+  def _get_from_nav(self):
+    # Ignore if nav instruction is not alive
+    if not self._sm.alive['navInstruction']:
+      self._limit_solutions[SpeedLimitResolver.Source.nav] = 0.
+      self._distance_solutions[SpeedLimitResolver.Source.nav] = 0.
+      _debug('SL: No nav instruction for speed limit')
+      return
+
+    # Load limits from nav instruction
+    self._limit_solutions[SpeedLimitResolver.Source.nav] = self._sm['navInstruction'].speedLimit
+    self._distance_solutions[SpeedLimitResolver.Source.nav] = 0.
 
   def _get_from_map_data(self):
     # Ignore if no live map data
@@ -152,6 +169,13 @@ class SpeedLimitResolver():
       distances = np.append(distances, self._distance_solutions[SpeedLimitResolver.Source.car_state])
       sources = np.append(sources, SpeedLimitResolver.Source.car_state.value)
 
+    if self._policy == SpeedLimitResolver.Policy.nav_only or \
+       self._policy == SpeedLimitResolver.Policy.nav_priority or \
+       self._policy == SpeedLimitResolver.Policy.combined:
+      limits = np.append(limits, self._limit_solutions[SpeedLimitResolver.Source.nav])
+      distances = np.append(distances, self._distance_solutions[SpeedLimitResolver.Source.nav])
+      sources = np.append(sources, SpeedLimitResolver.Source.nav.value)
+
     if self._policy == SpeedLimitResolver.Policy.map_data_only or \
        self._policy == SpeedLimitResolver.Policy.map_data_priority or \
        self._policy == SpeedLimitResolver.Policy.combined:
@@ -169,6 +193,16 @@ class SpeedLimitResolver():
         limits = np.append(limits, self._limit_solutions[SpeedLimitResolver.Source.car_state])
         distances = np.append(distances, self._distance_solutions[SpeedLimitResolver.Source.car_state])
         sources = np.append(sources, SpeedLimitResolver.Source.car_state.value)
+
+      elif self._policy == SpeedLimitResolver.Policy.nav_priority:
+        limits = np.append(limits, self._limit_solutions[SpeedLimitResolver.Source.map_data])
+        distances = np.append(distances, self._distance_solutions[SpeedLimitResolver.Source.map_data])
+        sources = np.append(sources, SpeedLimitResolver.Source.map_data.value)
+
+        if np.amax(limits) == 0.:
+          limits = np.append(limits, self._limit_solutions[SpeedLimitResolver.Source.car_state])
+          distances = np.append(distances, self._distance_solutions[SpeedLimitResolver.Source.car_state])
+          sources = np.append(sources, SpeedLimitResolver.Source.car_state.value)
 
     # Get all non-zero values and set the minimum if any, otherwise 0.
     mask = limits > 0.
@@ -198,6 +232,7 @@ class SpeedLimitController():
     self._is_metric = self._params.get_bool("IsMetric")
     self._is_enabled = self._params.get_bool("SpeedLimitControl")
     self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
+    self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._op_enabled = False
     self._op_enabled_prev = False
     self._v_ego = 0.
@@ -215,6 +250,11 @@ class SpeedLimitController():
     self._state_prev = SpeedLimitControlState.inactive
     self._gas_pressed = False
     self._a_target = 0.
+
+    self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
+    self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
+    self._brake_pressed = False
+    self._brake_pressed_prev = False
 
   @property
   def a_target(self):
@@ -247,7 +287,12 @@ class SpeedLimitController():
   @property
   def speed_limit_offset(self):
     if self._offset_enabled:
-      return interp(self._speed_limit, _LIMIT_PERC_OFFSET_BP, _LIMIT_PERC_OFFSET_V) * self._speed_limit
+      if self._offset_type == 0:
+        return interp(self._speed_limit, _LIMIT_PERC_OFFSET_BP, _LIMIT_PERC_OFFSET_V) * self._speed_limit
+      elif self._offset_type == 1:
+        return self._offset_value * 0.01 * self._speed_limit
+      elif self._offset_type == 2:
+        return self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
     return 0.
 
   @property
@@ -267,6 +312,8 @@ class SpeedLimitController():
     if time > self._last_params_update + _PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("SpeedLimitControl")
       self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
+      self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
+      self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
       _debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_enabled}')
       self._last_params_update = time
 
@@ -287,13 +334,14 @@ class SpeedLimitController():
     self._speed_limit_prev = self._speed_limit
     self._v_cruise_setpoint_prev = self._v_cruise_setpoint
     self._op_enabled_prev = self._op_enabled
+    self._brake_pressed_prev = self._brake_pressed
 
   def _state_transition(self):
     self._state_prev = self._state
 
     # In any case, if op is disabled, or speed limit control is disabled
     # or the reported speed limit is 0 or gas is pressed, deactivate.
-    if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or (self._gas_pressed and self._disengage_on_accelerator):
       self.state = SpeedLimitControlState.inactive
       return
 
@@ -362,11 +410,15 @@ class SpeedLimitController():
       events.add(EventName.speedLimitValueChange)
 
   def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events=Events()):
-    self._op_enabled = enabled
+    _car_state = sm['carState']
+    self._op_enabled = sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
+                       not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
+                       not events.any(ET.OVERRIDE_LONGITUDINAL)
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
-    self._gas_pressed = sm['carState'].gasPressed
+    self._gas_pressed = _car_state.gasPressed
+    self._brake_pressed = _car_state.brakePressed
 
     self._speed_limit, self._distance, self._source = self._resolver.resolve(v_ego, self.speed_limit, sm)
 

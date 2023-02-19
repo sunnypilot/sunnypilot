@@ -1,9 +1,11 @@
 #include "selfdrive/ui/qt/onroad.h"
 
 #include <cmath>
+#include <chrono>
 
 #include <QDebug>
 #include <iomanip>
+#include <QPainterPath>
 
 #include "common/timing.h"
 #include "selfdrive/ui/qt/util.h"
@@ -148,13 +150,26 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 
   UIState *s = uiState();
   UIScene &scene = s->scene;
+  SubMaster &sm = *(uiState()->sm);
+  auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
 
   QRect dlp_btn_rect = QRect(bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75), 150, 150);
+  QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
+  QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
   if (scene.dynamic_lane_profile_toggle && dlp_btn_rect.contains(e->x(), e->y())) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
     params.put("DynamicLaneProfile", std::to_string(scene.dynamic_lane_profile));
+    propagate_event = false;
+  } else if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+    // If touching the speed limit sign area when visible
+    scene.last_speed_limit_sign_tap = seconds_since_boot();
+    scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
+    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
+    propagate_event = false;
+  } else if (scene.debug_snapshot_enabled && debug_tap_rect.contains(e->x(), e->y())) {
+    issue_debug_snapshot(sm);
     propagate_event = false;
   }
   else if (map != nullptr) {
@@ -274,7 +289,8 @@ void ExperimentalButton::updateState(const UIState &s) {
 
   // button is "visible" if engageable or enabled
   const auto cs = sm["controlsState"].getControlsState();
-  setVisible(cs.getEngageable() || cs.getEnabled());
+  const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
+  setVisible((cs.getEngageable() || cs.getEnabled()) && !(lp.getVisionTurnControllerState() > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED));
 
   // button is "checked" if experimental mode is enabled
   setChecked(sm["controlsState"].getControlsState().getExperimentalMode());
@@ -312,6 +328,9 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
 
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size + 5, img_size + 5});
+  map_img = loadPixmap("../assets/img_world_icon.png", {subsign_img_size, subsign_img_size});
+  left_img = loadPixmap("../assets/img_turn_left_icon.png", {subsign_img_size, subsign_img_size});
+  right_img = loadPixmap("../assets/img_turn_right_icon.png", {subsign_img_size, subsign_img_size});
 
   // screen recoder - neokii
 
@@ -404,10 +423,69 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
+  const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
+
   // update DM icons at 2Hz
   if (sm.frame % (UI_FREQ / 2) == 0) {
     setProperty("dmActive", sm["driverMonitoringState"].getDriverMonitoringState().getIsActiveMode());
     setProperty("rightHandDM", sm["driverMonitoringState"].getDriverMonitoringState().getIsRHD());
+
+    const auto vtcState = lp.getVisionTurnControllerState();
+    const float vtc_speed = lp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const auto lpSoruce = lp.getLongitudinalPlanSource();
+    QColor vtc_color = tcs_colors[int(vtcState)];
+    vtc_color.setAlpha(lpSoruce == cereal::LongitudinalPlan::LongitudinalPlanSource::TURN ? 255 : 100);
+
+    setProperty("showVTC", vtcState > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED);
+    setProperty("vtcSpeed", QString::number(std::nearbyint(vtc_speed)));
+    setProperty("vtcColor", vtc_color);
+    setProperty("showDebugUI", s.scene.show_debug_ui);
+
+    const auto lmd = sm["liveMapData"].getLiveMapData();
+    const uint64_t lmd_fix_time = lmd.getLastGpsTimestamp();
+    const uint64_t current_ts = std::chrono::duration_cast<std::chrono::milliseconds>
+                              (std::chrono::system_clock::now().time_since_epoch()).count();
+    const bool show_road_name = current_ts - lmd_fix_time < 10000; // hide if fix older than 10s
+    setProperty("roadName", show_road_name ? QString::fromStdString(lmd.getCurrentRoadName()) : "");
+
+    float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const auto slcState = lp.getSpeedLimitControlState();
+    const bool sl_force_active = s.scene.speed_limit_control_enabled &&
+                                 seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
+    const bool sl_inactive = !sl_force_active && (!s.scene.speed_limit_control_enabled ||
+                             slcState == cereal::LongitudinalPlan::SpeedLimitControlState::INACTIVE);
+    const bool sl_temp_inactive = !sl_force_active && (s.scene.speed_limit_control_enabled &&
+                                  slcState == cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE);
+    const int sl_distance = int(lp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
+    const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
+    const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
+                                "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
+                                "+" + QString::number(std::nearbyint(speed_limit_offset)) : "");
+    const QString sl_inactive_str(sl_temp_inactive ? "TEMP" : "");
+    const QString sl_substring(sl_inactive || sl_temp_inactive ? sl_inactive_str :
+                               sl_distance > 0 ? sl_distance_str : sl_offset_str);
+
+    setProperty("showSpeedLimit", speed_limit_slc > 0.0);
+    setProperty("speedLimitSLC", speed_limit_slc);
+    setProperty("slcSubText", sl_substring);
+    setProperty("slcSubTextSize", sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0);
+    setProperty("mapSourcedSpeedLimit", lp.getIsMapSpeedLimit());
+    setProperty("slcActive", !sl_inactive && !sl_temp_inactive);
+    setProperty("overSpeedLimit", (((speed_limit_slc + speed_limit_offset) < cur_speed) && !sl_inactive && !sl_temp_inactive) ||
+                                  ((speed_limit_slc < cur_speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive)));
+    setProperty("speedLimitStyle", s.scene.speed_limit_style);
+
+    const float tsc_speed = lp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const auto tscState = lp.getTurnSpeedControlState();
+    const int t_distance = int(lp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
+    const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
+
+    setProperty("showTurnSpeedLimit", tsc_speed > 0.0 && (tsc_speed < cur_speed || s.scene.show_debug_ui));
+    setProperty("turnSpeedLimit", QString::number(std::nearbyint(tsc_speed)));
+    setProperty("tscSubText", t_distance > 0 ? t_distance_str : QString(""));
+    setProperty("tscActive", tscState > cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE);
+    setProperty("curveSign", lp.getTurnSign());
   }
 
   // DM icon transition
@@ -424,21 +502,23 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   p.fillRect(0, 0, width(), header_h, bg);
 
   QString speedLimitStr = (speedLimit > 1) ? QString::number(std::nearbyint(speedLimit)) : "–";
+  QString speedLimitStrSlc = showSpeedLimit ? QString::number(std::nearbyint(speedLimitSLC)) : "–";
   QString speedStr = QString::number(std::nearbyint(speed));
   QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(setSpeed)) : "–";
 
   // Draw outer box + border to contain set speed and speed limit
   int default_rect_width = 172;
   int rect_width = default_rect_width;
-  if (is_metric || has_eu_speed_limit) rect_width = 200;
-  if (has_us_speed_limit && speedLimitStr.size() >= 3) rect_width = 223;
+  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || is_metric || has_eu_speed_limit) rect_width = 200;
+  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0 && speedLimitStrSlc.size() >= 3) ||
+      (has_us_speed_limit && speedLimitStr.size() >= 3)) rect_width = 223;
 
   int rect_height = 204;
-  if (has_us_speed_limit) rect_height = 402;
-  else if (has_eu_speed_limit) rect_height = 392;
+  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0) || has_us_speed_limit) rect_height = (slcSubText == "" ? 402 : 432);
+  else if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) rect_height = 392;
 
   int top_radius = 32;
-  int bottom_radius = has_eu_speed_limit ? 100 : 32;
+  int bottom_radius = (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) ? 100 : 32;
 
   QRect set_speed_rect(60 + default_rect_width / 2 - rect_width / 2, 45, rect_width, rect_height);
   p.setPen(QPen(whiteColor(75), 6));
@@ -451,6 +531,12 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
       p.setPen(whiteColor());
     } else if (status == STATUS_OVERRIDE) {
       p.setPen(QColor(0x91, 0x9b, 0x95, 0xff));
+    } else if (speedLimitSLC > 0) {
+      p.setPen(interpColor(
+        setSpeed,
+        {speedLimitSLC + 5, speedLimitSLC + 15, speedLimitSLC + 25},
+        {QColor(0x80, 0xd8, 0xa6, 0xff), QColor(0xff, 0xe4, 0xbf, 0xff), QColor(0xff, 0xbf, 0xbf, 0xff)}
+      ));
     } else if (speedLimit > 0) {
       p.setPen(interpColor(
         setSpeed,
@@ -471,7 +557,13 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   // Draw set speed
   if (is_cruise_set) {
-    if (speedLimit > 0 && status != STATUS_DISENGAGED && status != STATUS_OVERRIDE) {
+    if (speedLimitSLC > 0 && status != STATUS_DISENGAGED && status != STATUS_OVERRIDE) {
+      p.setPen(interpColor(
+        setSpeed,
+        {speedLimitSLC + 5, speedLimitSLC + 15, speedLimitSLC + 25},
+        {whiteColor(), QColor(0xff, 0x95, 0x00, 0xff), QColor(0xff, 0x00, 0x00, 0xff)}
+      ));
+    } else if (speedLimit > 0 && status != STATUS_DISENGAGED && status != STATUS_OVERRIDE) {
       p.setPen(interpColor(
         setSpeed,
         {speedLimit + 5, speedLimit + 15, speedLimit + 25},
@@ -492,10 +584,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
 
   // US/Canada (MUTCD style) sign
-  if (has_us_speed_limit) {
+  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0) || has_us_speed_limit) {
     const int border_width = 6;
     const int sign_width = rect_width - 24;
-    const int sign_height = 186;
+    int sign_height = (slcSubText == "" ? 186 : 216);
 
     // White outer square
     QRect sign_rect_outer(set_speed_rect.left() + 12, set_speed_rect.bottom() - 11 - sign_height, sign_width, sign_height);
@@ -524,14 +616,24 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // Speed limit value
     configFont(p, "Inter", 70, "Bold");
-    QRect speed_limit_rect = getTextRect(p, Qt::AlignCenter, speedLimitStr);
+    QRect speed_limit_rect = getTextRect(p, Qt::AlignCenter, speedLimitStrSlc);
     speed_limit_rect.moveCenter({sign_rect.center().x(), 0});
     speed_limit_rect.moveTop(sign_rect_outer.top() + 85);
-    p.drawText(speed_limit_rect, Qt::AlignCenter, speedLimitStr);
+    if (overSpeedLimit) p.setPen(QColor(255, 0, 0, 255));
+    else p.setPen(blackColor());
+    p.drawText(speed_limit_rect, Qt::AlignCenter, speedLimitStrSlc);
+
+    // Speed limit offset value
+    configFont(p, "Inter", 32, "Bold");
+    QRect speed_limit_offset_rect = getTextRect(p, Qt::AlignCenter, slcSubText);
+    speed_limit_offset_rect.moveCenter({sign_rect.center().x(), 0});
+    speed_limit_offset_rect.moveTop(sign_rect_outer.top() + 85 + 77);
+    p.setPen(blackColor());
+    p.drawText(speed_limit_offset_rect, Qt::AlignCenter, slcSubText);
   }
 
   // EU (Vienna style) sign
-  if (has_eu_speed_limit) {
+  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) {
     int outer_radius = 176 / 2;
     int inner_radius_1 = outer_radius - 6; // White outer border
     int inner_radius_2 = inner_radius_1 - 20; // Red circle
@@ -547,12 +649,21 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     p.drawEllipse(center, inner_radius_2, inner_radius_2);
 
     // Speed limit value
-    int font_size = (speedLimitStr.size() >= 3) ? 60 : 70;
+    int font_size = (speedLimitStrSlc.size() >= 3) ? 60 : 70;
     configFont(p, "Inter", font_size, "Bold");
-    QRect speed_limit_rect = getTextRect(p, Qt::AlignCenter, speedLimitStr);
+    QRect speed_limit_rect = getTextRect(p, Qt::AlignCenter, speedLimitStrSlc);
     speed_limit_rect.moveCenter(center);
+    if (overSpeedLimit) p.setPen(QColor(255, 0, 0, 255));
+    else p.setPen(blackColor());
+    p.drawText(speed_limit_rect, Qt::AlignCenter, speedLimitStrSlc);
+
+    // Speed limit offset value
+    configFont(p, "Inter", slcSubTextSize, "Bold");
+    QRect speed_limit_offset_rect = getTextRect(p, Qt::AlignCenter, slcSubText);
+    speed_limit_offset_rect.moveCenter(center);
+    speed_limit_offset_rect.moveTop(center.y() + 27);
     p.setPen(blackColor());
-    p.drawText(speed_limit_rect, Qt::AlignCenter, speedLimitStr);
+    p.drawText(speed_limit_offset_rect, Qt::AlignCenter, slcSubText);
   }
 
   // current speed
@@ -569,6 +680,29 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   // Stand Still Timer
   if (standStillTimer && standStill) {
     drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
+  }
+
+  // V-TSC
+  if (showDebugUI && showVTC) {
+    drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
+  }
+
+  // Bottom bar road name
+  if (showDebugUI && !roadName.isEmpty()) {
+    const int h = 38;
+    QRect bar_rc(rect().left(), rect().top(), rect().width(), h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(0, 0, 0, 100));
+    p.drawRect(bar_rc);
+    configFont(p, "Inter", 28, "Bold");
+    drawCenteredText(p, bar_rc.center().x(), bar_rc.center().y(), roadName, QColor(255, 255, 255, 200));
+  }
+
+  // Turn Speed Sign
+  if (showTurnSpeedLimit) {
+    QRect rc = speed_sgn_rc;
+    rc.moveTop(speed_sgn_rc.bottom() + bdr_s);
+    drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
   }
   p.restore();
 }
@@ -593,6 +727,14 @@ void AnnotatedCameraWidget::drawColoredText(QPainter &p, int x, int y, const QSt
   p.drawText(real_rect.x(), real_rect.bottom(), text);
 }
 
+void AnnotatedCameraWidget::drawCenteredText(QPainter &p, int x, int y, const QString &text, QColor color) {
+  QRect real_rect = getTextRect(p, 0, text);
+  real_rect.moveCenter({x, y});
+
+  p.setPen(color);
+  p.drawText(real_rect, Qt::AlignCenter, text);
+}
+
 void AnnotatedCameraWidget::drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity) {
   p.setOpacity(1.0);  // bg dictates opacity of ellipse
   p.setPen(Qt::NoPen);
@@ -601,6 +743,18 @@ void AnnotatedCameraWidget::drawIcon(QPainter &p, int x, int y, QPixmap &img, QB
   p.setOpacity(opacity);
   p.drawPixmap(x - img.size().width() / 2, y - img.size().height() / 2, img);
   p.setOpacity(1.0);
+}
+
+void AnnotatedCameraWidget::drawVisionTurnControllerUI(QPainter &p, int x, int y, int size, const QColor &color,
+                                                       const QString &vision_speed, int alpha) {
+  QRect rvtc(x, y, size, size);
+  p.setPen(QPen(color, 10));
+  p.setBrush(QColor(0, 0, 0, alpha));
+  p.drawRoundedRect(rvtc, 20, 20);
+  p.setPen(Qt::NoPen);
+
+  configFont(p, "Inter", 56, "SemiBold");
+  drawCenteredText(p, rvtc.center().x(), rvtc.center().y(), vision_speed, color);
 }
 
 void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int h) {
@@ -646,6 +800,92 @@ void AnnotatedCameraWidget::drawStandstillTimer(QPainter &p, int x, int y) {
   drawColoredText(p, x, y, QString(lab_str), QColor(255, 175, 3, 240));
   configFont(p, "Inter", 150, "SemiBold");
   drawColoredText(p, x, y + 150, QString(val_str), QColor(255, 255, 255, 240));
+}
+
+void AnnotatedCameraWidget::drawCircle(QPainter &p, int x, int y, int r, QBrush bg) {
+  p.setPen(Qt::NoPen);
+  p.setBrush(bg);
+  p.drawEllipse(x - r, y - r, 2 * r, 2 * r);
+}
+
+void AnnotatedCameraWidget::drawSpeedSign(QPainter &p, QRect rc, const QString &speed_limit, const QString &sub_text,
+                                          int subtext_size, bool is_map_sourced, bool is_active) {
+  const QColor ring_color = is_active ? QColor(255, 0, 0, 255) : QColor(0, 0, 0, 50);
+  const QColor inner_color = QColor(255, 255, 255, is_active ? 255 : 85);
+  const QColor text_color = QColor(0, 0, 0, is_active ? 255 : 85);
+
+  const int x = rc.center().x();
+  const int y = rc.center().y();
+  const int r = rc.width() / 2.0f;
+
+  drawCircle(p, x, y, r, ring_color);
+  drawCircle(p, x, y, int(r * 0.8f), inner_color);
+
+  configFont(p, "Open Sans", 89, "Bold");
+  drawCenteredText(p, x, y, speed_limit, text_color);
+  configFont(p, "Open Sans", subtext_size, "Bold");
+  drawCenteredText(p, x, y + 55, sub_text, text_color);
+
+  if (is_map_sourced) {
+    p.setPen(Qt::NoPen);
+    p.setOpacity(is_active ? 1.0 : 0.3);
+    p.drawPixmap(x - subsign_img_size / 2, y - 55 - subsign_img_size / 2, map_img);
+    p.setOpacity(1.0);
+  }
+}
+
+void AnnotatedCameraWidget::drawTrunSpeedSign(QPainter &p, QRect rc, const QString &turn_speed, const QString &sub_text,
+                                              int curv_sign, bool is_active) {
+  const QColor border_color = is_active ? QColor(255, 0, 0, 255) : QColor(0, 0, 0, 50);
+  const QColor inner_color = QColor(255, 255, 255, is_active ? 255 : 85);
+  const QColor text_color = QColor(0, 0, 0, is_active ? 255 : 85);
+
+  const int x = rc.center().x();
+  const int y = rc.center().y();
+  const int width = rc.width();
+
+  const float stroke_w = 15.0;
+  const float cS = stroke_w / 2.0 + 4.5;  // half width of the stroke on the corners of the triangle
+  const float R = width / 2.0 - stroke_w / 2.0;
+  const float A = 0.73205;
+  const float h2 = 2.0 * R / (1.0 + A);
+  const float h1 = A * h2;
+  const float L = 4.0 * R / sqrt(3.0);
+
+  // Draw the internal triangle, compensate for stroke width. Needed to improve rendering when in inactive
+  // state due to stroke transparency being different from inner transparency.
+  QPainterPath path;
+  path.moveTo(x, y - R + cS);
+  path.lineTo(x - L / 2.0 + cS, y + h1 + h2 - R - stroke_w / 2.0);
+  path.lineTo(x + L / 2.0 - cS, y + h1 + h2 - R - stroke_w / 2.0);
+  path.lineTo(x, y - R + cS);
+  p.setPen(Qt::NoPen);
+  p.setBrush(inner_color);
+  p.drawPath(path);
+
+  // Draw the stroke
+  QPainterPath stroke_path;
+  stroke_path.moveTo(x, y - R);
+  stroke_path.lineTo(x - L / 2.0, y + h1 + h2 - R);
+  stroke_path.lineTo(x + L / 2.0, y + h1 + h2 - R);
+  stroke_path.lineTo(x, y - R);
+  p.setPen(QPen(border_color, stroke_w, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+  p.setBrush(Qt::NoBrush);
+  p.drawPath(stroke_path);
+
+  // Draw the turn sign
+  if (curv_sign != 0) {
+    p.setPen(Qt::NoPen);
+    p.setOpacity(is_active ? 1.0 : 0.3);
+    p.drawPixmap(int(x - (subsign_img_size / 2)), int(y - R + stroke_w + 30), curv_sign > 0 ? left_img : right_img);
+    p.setOpacity(1.0);
+  }
+
+  // Draw the texts.
+  configFont(p, "Open Sans", 67, "Bold");
+  drawCenteredText(p, x, y + 25, turn_speed, text_color);
+  configFont(p, "Open Sans", 22, "Bold");
+  drawCenteredText(p, x, y + 65, sub_text, text_color);
 }
 
 

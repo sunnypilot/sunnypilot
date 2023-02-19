@@ -8,6 +8,39 @@
 
 #include "selfdrive/ui/qt/widgets/controls.h"
 
+class SpeedLimitOffsetType : public AbstractControl {
+  Q_OBJECT
+
+public:
+  SpeedLimitOffsetType();
+
+signals:
+  void offsetTypeUpdated();
+
+private:
+  QPushButton btnplus;
+  QPushButton btnminus;
+  QLabel label;
+  Params params;
+
+  void refresh();
+};
+
+class SpeedLimitValueOffset : public AbstractControl {
+  Q_OBJECT
+
+public:
+  SpeedLimitValueOffset();
+
+private:
+  QPushButton btnplus;
+  QPushButton btnminus;
+  QLabel label;
+  Params params;
+
+  void refresh();
+};
+
 class SPGeneralPanel : public QWidget {
   Q_OBJECT
 
@@ -25,6 +58,9 @@ class SPControlsPanel : public QWidget {
 public:
   explicit SPControlsPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateToggles();
 
 private:
   Params params;
@@ -46,6 +82,8 @@ private:
   QVBoxLayout *speedLimitSub;
   QWidget *speedOffsetMain;
   QVBoxLayout *speedOffsetSub;
+  QWidget *speedOffsetValMain;
+  QVBoxLayout *speedOffsetValSub;
 
   ParamControl *madsControl;
   ParamControl *disengageLateralOnBrake;
@@ -62,7 +100,8 @@ private:
   ParamControl *speedPercControl;
   ParamControl *osmLocalDb;
 
-  void updateToggles();
+  SpeedLimitOffsetType *slo_type;
+  SpeedLimitValueOffset *slvo;
 };
 
 class SPVehiclesPanel : public QWidget {
@@ -259,21 +298,6 @@ class SpeedLimitStyle : public AbstractControl {
 
 public:
   SpeedLimitStyle();
-
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
-  void refresh();
-};
-
-class SpeedLimitValueOffset : public AbstractControl {
-  Q_OBJECT
-
-public:
-  SpeedLimitValueOffset();
 
 private:
   QPushButton btnplus;

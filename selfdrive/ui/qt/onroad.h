@@ -16,6 +16,7 @@
 
 const int btn_size = 192;
 const int img_size = (btn_size / 4) * 3;
+const int subsign_img_size = 35;
 
 
 // ***** onroad widgets *****
@@ -81,6 +82,28 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool standStill MEMBER standStill);
   Q_PROPERTY(float standstillElapsedTime MEMBER standstillElapsedTime);
 
+  Q_PROPERTY(bool showVTC MEMBER showVTC);
+  Q_PROPERTY(QString vtcSpeed MEMBER vtcSpeed);
+  Q_PROPERTY(QColor vtcColor MEMBER vtcColor);
+  Q_PROPERTY(bool showDebugUI MEMBER showDebugUI);
+
+  Q_PROPERTY(QString roadName MEMBER roadName);
+
+  Q_PROPERTY(bool showSpeedLimit MEMBER showSpeedLimit);
+  Q_PROPERTY(float speedLimitSLC MEMBER speedLimitSLC);
+  Q_PROPERTY(QString slcSubText MEMBER slcSubText);
+  Q_PROPERTY(float slcSubTextSize MEMBER slcSubTextSize);
+  Q_PROPERTY(bool overSpeedLimit MEMBER overSpeedLimit);
+  Q_PROPERTY(bool mapSourcedSpeedLimit MEMBER mapSourcedSpeedLimit);
+  Q_PROPERTY(bool slcActive MEMBER slcActive);
+  Q_PROPERTY(int speedLimitStyle MEMBER speedLimitStyle);
+
+  Q_PROPERTY(bool showTurnSpeedLimit MEMBER showTurnSpeedLimit);
+  Q_PROPERTY(QString turnSpeedLimit MEMBER turnSpeedLimit);
+  Q_PROPERTY(QString tscSubText MEMBER tscSubText);
+  Q_PROPERTY(bool tscActive MEMBER tscActive);
+  Q_PROPERTY(int curveSign MEMBER curveSign);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -88,6 +111,14 @@ public:
 private:
   void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
+  void drawCenteredText(QPainter &p, int x, int y, const QString &text, QColor color);
+  void drawVisionTurnControllerUI(QPainter &p, int x, int y, int size, const QColor &color, const QString &speed,
+                                  int alpha);
+  void drawCircle(QPainter &p, int x, int y, int r, QBrush bg);
+  void drawSpeedSign(QPainter &p, QRect rc, const QString &speed, const QString &sub_text, int subtext_size,
+                     bool is_map_sourced, bool is_active);
+  void drawTrunSpeedSign(QPainter &p, QRect rc, const QString &speed, const QString &sub_text, int curv_sign,
+                         bool is_active);
 
   void drawDlpButton(QPainter &p, int x, int y, int w, int h);
   void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color);
@@ -97,6 +128,9 @@ private:
 
   ExperimentalButton *experimental_btn;
   QPixmap dm_img;
+  QPixmap map_img;
+  QPixmap left_img;
+  QPixmap right_img;
   float speed;
   QString speedUnit;
   float setSpeed;
@@ -130,6 +164,29 @@ private:
   bool standStillTimer;
   bool standStill;
   float standstillElapsedTime;
+
+  bool showVTC = false;
+  QString vtcSpeed;
+  QColor vtcColor;
+
+  bool showDebugUI = false;
+
+  QString roadName;
+
+  bool showSpeedLimit = false;
+  float speedLimitSLC;
+  QString slcSubText;
+  float slcSubTextSize = 0.0;
+  bool overSpeedLimit;
+  bool mapSourcedSpeedLimit = false;
+  bool slcActive = false;
+
+  bool showTurnSpeedLimit = false;
+  QString turnSpeedLimit;
+  QString tscSubText;
+  bool tscActive = false;
+  int curveSign = 0;
+  int speedLimitStyle;
 
 protected:
   void paintGL() override;

@@ -11,7 +11,7 @@ def create_way(way_id, node_ids, from_way):
                     tags=from_way.tags)
 
 
-class OSM():
+class OSM:
   def __init__(self):
     self.api = overpy.Overpass()
     # self.api = overpy.Overpass(url='http://3.65.170.21/api/interpreter')

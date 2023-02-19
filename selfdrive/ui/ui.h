@@ -20,6 +20,8 @@ const int bdr_s = 30;
 const int header_h = 420;
 const int footer_h = 280;
 
+const QRect speed_sgn_rc(bdr_s * 2, bdr_s * 2.5 + 202, 184, 184);
+
 const int UI_FREQ = 20; // Hz
 typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
@@ -126,6 +128,7 @@ typedef struct UIScene {
   bool speed_limit_control_enabled;
   bool speed_limit_perc_offset;
   double last_speed_limit_sign_tap;
+  int speed_limit_style;
 
   // modelV2
   float lane_line_probs[4];

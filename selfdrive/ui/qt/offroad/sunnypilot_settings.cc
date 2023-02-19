@@ -342,6 +342,8 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
   speedLimitSub = new QVBoxLayout(speedLimitMain);
   speedOffsetMain = new QWidget();
   speedOffsetSub = new QVBoxLayout(speedOffsetMain);
+  speedOffsetValMain = new QWidget();
+  speedOffsetValSub = new QVBoxLayout(speedOffsetValMain);
   // Controls: Enable Speed Limit Control (SLC)
   main_layout->addWidget(horizontal_line());
   speedLimitControl = new ParamControl(
@@ -356,19 +358,32 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
   speedLimitSub->addWidget(horizontal_line());
   speedLimitSub->addWidget(new SpeedLimitStyle());
 
-  // Controls: Enable Speed Limit % Offset
+  // Controls: Enable Speed Limit Offset
   speedLimitSub->addWidget(horizontal_line());
   speedPercControl = new ParamControl(
     "SpeedLimitPercOffset",
-    tr("Enable Speed Limit % Offset"),
+    tr("Enable Speed Limit Offset"),
     tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
     "../assets/offroad/icon_speed_limit.png"
   );
   speedOffsetSub->setContentsMargins(QMargins());
 
-  // Controls: Speed Limit Offset (MPH / KM/H)
+  // Controls: Speed Limit Offset Type
+  slo_type = new SpeedLimitOffsetType();
   speedOffsetSub->addWidget(horizontal_line());
-  speedOffsetSub->addWidget(new SpeedLimitValueOffset());
+  speedOffsetSub->addWidget(slo_type);
+
+  speedOffsetValSub->setContentsMargins(QMargins());
+
+  // Controls: Speed Limit Offset Values (% or actual value)
+  slvo = new SpeedLimitValueOffset();
+  speedOffsetValSub->addWidget(horizontal_line());
+  speedOffsetValSub->addWidget(slvo);
+
+  connect(slo_type, &SpeedLimitOffsetType::offsetTypeUpdated, this, &SPControlsPanel::updateToggles);
+
+  speedOffsetSub->addWidget(speedOffsetValMain);
+
   connect(speedPercControl, &ToggleControl::toggleFlipped, [=](bool state) {
     updateToggles();
   });
@@ -466,7 +481,9 @@ void SPControlsPanel::updateToggles() {
     customTorqueMain->setVisible(false);
   }
 
-  speedOffsetMain->setVisible(!params.getBool("SpeedLimitPercOffset"));
+  speedOffsetValMain->setVisible(QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
+  speedOffsetValMain->update();
+  speedOffsetMain->setVisible(params.getBool("SpeedLimitPercOffset"));
   speedOffsetMain->update();
   speedLimitMain->setVisible(params.getBool("SpeedLimitControl"));
   speedLimitMain->update();
@@ -1449,14 +1466,87 @@ void SpeedLimitStyle::refresh() {
   btnplus.setText("+");
 }
 
-// Speed Limit Control Custom Offset
-SpeedLimitValueOffset::SpeedLimitValueOffset() : AbstractControl(
-  tr("Speed Limit Offset (MPH / KM/H) ℹ"),
+// Speed Limit Control Custom Offset Type
+SpeedLimitOffsetType::SpeedLimitOffsetType() : AbstractControl(
+  tr("Speed Limit Offset Type"),
   QString("%1<br>"
           "%2")
   .arg(tr("Set speed limit higher or lower than actual speed limit for a more personalized drive."))
   .arg(tr("To use this feature, turn off \"Enable Speed Limit % Offset\".")),
   "../assets/offroad/icon_speed_limit.png")
+
+{
+  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
+  label.setStyleSheet("color: #e0e879");
+  hlayout->addWidget(&label);
+
+  btnminus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnplus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 35px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnminus.setFixedSize(150, 100);
+  btnplus.setFixedSize(150, 100);
+  hlayout->addWidget(&btnminus);
+  hlayout->addWidget(&btnplus);
+
+  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("SpeedLimitOffsetType"));
+    int value = str.toInt();
+    value = value - 1;
+    if (value <= 0 ) {
+      value = 0;
+    }
+    QString values = QString::number(value);
+    params.put("SpeedLimitOffsetType", values.toStdString());
+    refresh();
+    emit offsetTypeUpdated();
+  });
+
+  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("SpeedLimitOffsetType"));
+    int value = str.toInt();
+    value = value + 1;
+    if (value >= 2 ) {
+      value = 2;
+    }
+    QString values = QString::number(value);
+    params.put("SpeedLimitOffsetType", values.toStdString());
+    refresh();
+    emit offsetTypeUpdated();
+  });
+  refresh();
+}
+
+void SpeedLimitOffsetType::refresh() {
+  QString option = QString::fromStdString(params.get("SpeedLimitOffsetType"));
+  if (option == "0") {
+    label.setText(tr("Default"));
+  } else if (option == "1") {
+    label.setText(tr("%"));
+  } else if (option == "2") {
+    label.setText(tr("Value"));
+  }
+  btnminus.setText("-");
+  btnplus.setText("+");
+}
+
+// Speed Limit Control Custom Offset
+SpeedLimitValueOffset::SpeedLimitValueOffset() : AbstractControl(
+  "",
+  "",
+  "../assets/offroad/icon_blank.png")
 
 {
   label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
