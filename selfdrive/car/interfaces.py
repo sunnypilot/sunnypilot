@@ -363,8 +363,10 @@ class CarInterfaceBase(ABC):
     mads_enabled = False if not self.enable_mads else mads_enabled
     return mads_enabled, acc_enabled
 
-  def get_sp_pedal_disengage(self, brake_pressed, standstill):
-    return brake_pressed and (not self.CS.out.brakePressed or not standstill)
+  def get_sp_pedal_disengage(self, cs_out):
+    brake = cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)
+    regen = cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)
+    return brake or regen
 
   def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
     if self.CP.pcmCruise:
