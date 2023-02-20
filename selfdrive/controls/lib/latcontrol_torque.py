@@ -2,6 +2,7 @@ import math
 
 from cereal import log
 from common.numpy_fast import interp
+from common.params import Params
 from selfdrive.controls.lib.latcontrol import LatControl
 from selfdrive.controls.lib.pid import PIDController
 from selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
@@ -31,12 +32,26 @@ class LatControlTorque(LatControl):
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
 
+    self.param_s = Params()
+    self.custom_torque = self.param_s.get_bool("CustomTorqueLateral")
+    self._frame = 0
+
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
     self.torque_params.latAccelOffset = latAccelOffset
     self.torque_params.friction = friction
 
+  def update_live_tune(self):
+    if not self.custom_torque:
+      return
+    self._frame += 1
+    if self._frame % 300 == 0:
+      self.torque_params.latAccelFactor = float(self.param_s.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
+      self.torque_params.friction = float(self.param_s.get("TorqueFriction", encoding="utf8")) * 0.01
+      self._frame = 0
+
   def update(self, active, CS, VM, params, last_actuators, steer_limited, desired_curvature, desired_curvature_rate, llk):
+    self.update_live_tune()
     pid_log = log.ControlsState.LateralTorqueState.new_message()
 
     if not active:

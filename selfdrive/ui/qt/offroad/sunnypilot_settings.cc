@@ -291,7 +291,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
   customTorqueSub->addWidget(new TorqueMaxLatAccel());
   connect(customTorqueLateral, &ToggleControl::toggleFlipped, [=](bool state) {
     updateToggles();
-    ConfirmationDialog::alert(tr("\"Torque Lateral Control Live Tune\"<br>You must restart your car or your device to apply these changes."), this);
+    ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
   });
   torqueSub->addWidget(horizontal_line());
   torqueSub->addWidget(customTorqueLateral);
@@ -308,7 +308,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
   });
   connect(liveTorque, &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
-    ConfirmationDialog::alert(tr("\"Torque Lateral Controller Self-Tune\"<br>You must restart your car or your device to apply these changes."), this);
+    ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
   });
   torqueSub->addWidget(horizontal_line());
   torqueSub->addWidget(liveTorque);
