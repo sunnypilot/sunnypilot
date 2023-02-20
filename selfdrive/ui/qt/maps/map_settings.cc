@@ -114,9 +114,12 @@ MapPanel::MapPanel(QWidget* parent) : QWidget(parent) {
   }
 
   stack->addWidget(main_widget);
-  stack->addWidget(no_prime_widget);
+  custom_mapbox = Params().getBool("CustomMapbox");
+  if (!custom_mapbox) {
+    stack->addWidget(no_prime_widget);
+  }
   connect(uiState(), &UIState::primeTypeChanged, [=](int prime_type) {
-    stack->setCurrentIndex(prime_type ? 0 : 1);
+    stack->setCurrentIndex(!custom_mapbox ? uiState()->prime_type ? 0 : 1 : 1);
   });
 
   QVBoxLayout *wrapper = new QVBoxLayout(this);
@@ -157,6 +160,10 @@ MapPanel::MapPanel(QWidget* parent) : QWidget(parent) {
 }
 
 void MapPanel::showEvent(QShowEvent *event) {
+  if (custom_mapbox) {
+    QString list = QString::fromStdString((params.get("ApiCache_NavDestinations")).c_str());
+    parseResponse(list.toUtf8(), true);
+  }
   updateCurrentRoute();
   refresh();
 }

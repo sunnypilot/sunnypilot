@@ -184,13 +184,14 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 void OnroadWindow::offroadTransition(bool offroad) {
 #ifdef ENABLE_MAPS
   if (!offroad) {
-    if (map == nullptr && (uiState()->prime_type || !MAPBOX_TOKEN.isEmpty())) {
+    bool custom_mapbox = Params().getBool("CustomMapbox") && QString::fromStdString(Params().get("CustomMapboxTokenSk")) != "";
+    if (map == nullptr && (uiState()->prime_type || !MAPBOX_TOKEN.isEmpty() || custom_mapbox)) {
       MapWindow * m = new MapWindow(get_mapbox_settings());
       map = m;
 
       QObject::connect(uiState(), &UIState::offroadTransition, m, &MapWindow::offroadTransition);
 
-      m->setFixedWidth(topWidget(this)->width() / 2);
+      m->setFixedWidth(topWidget(this)->width() / (Params().getBool("MapboxFullScreen")? 1 : 2));
       split->insertWidget(0, m);
 
       // Make map visible after adding to split

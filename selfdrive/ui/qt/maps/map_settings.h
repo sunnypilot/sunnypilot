@@ -33,6 +33,7 @@ private:
   QVBoxLayout *recent_layout;
   QWidget *current_widget;
   ButtonControl *current_route;
+  bool custom_mapbox;
 
 signals:
   void closeSettings();
