@@ -6,7 +6,7 @@ from common.params import Params
 from common.realtime import sec_since_boot
 from common.conversions import Conversions as CV
 from selfdrive.controls.lib.lateral_planner import TRAJECTORY_SIZE
-from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N
+from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
 
 _MIN_V = 5.6  # Do not operate under 20km/h
@@ -186,10 +186,11 @@ class VisionTurnController():
         c_y = width_pts / 2 + lll_y
         path_poly = np.polyfit(ll_x, c_y, 3)
 
-    # 2. If not polynomial derived from lanes, then derive it from driving path as provided by `lateralPlanner`.
-    if path_poly is None and lat_planner_data is not None and len(lat_planner_data.psis) == CONTROL_N \
-       and lat_planner_data.dPathPoints[0] > 0:
-      path_poly = np.polyfit(lat_planner_data.psis, lat_planner_data.dPathPoints, 3)
+    # 2. If not polynomial derived from lanes, then derive it from compensated driving path with lanes as
+    # provided by `lateralPlanner`.
+    if path_poly is None and lat_planner_data is not None and len(lat_planner_data.dPathWLinesX) > 0 \
+       and lat_planner_data.dPathWLinesX[0] > 0:
+      path_poly = np.polyfit(lat_planner_data.dPathWLinesX, lat_planner_data.dPathWLinesY, 3)
 
     # 3. If no polynomial derived from lanes or driving path, then provide a straight line poly.
     if path_poly is None:
