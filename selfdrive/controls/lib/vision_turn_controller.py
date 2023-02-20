@@ -135,6 +135,14 @@ class VisionTurnController():
   def is_active(self):
     return self._state != VisionTurnControllerState.disabled
 
+  @property
+  def current_lat_acc(self):
+    return self._current_lat_acc
+
+  @property
+  def max_pred_lat_acc(self):
+    return self._max_pred_lat_acc
+
   def _reset(self):
     self._current_lat_acc = 0.
     self._max_v_for_current_curvature = 0.
