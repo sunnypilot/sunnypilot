@@ -6,7 +6,7 @@ from scipy.interpolate import splev, splprep
 
 
 _TURN_CURVATURE_THRESHOLD = 0.002  # 1/mts. A curvature over this value will generate a speed limit section.
-_MAX_LAT_ACC = 2.3  # Maximum lateral acceleration in turns.
+_MAX_LAT_ACC = 2.  # Maximum lateral acceleration in turns.
 _SPLINE_EVAL_STEP = 5  # mts for spline evaluation for curvature calculation
 _MIN_SPEED_SECTION_LENGTH = 100.  # mts. Sections below this value will not be split in smaller sections.
 _MAX_CURV_DEVIATION_FOR_SPLIT = 2.  # Split a speed section if the max curvature deviates from mean by this factor.
