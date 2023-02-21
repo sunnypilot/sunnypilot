@@ -98,6 +98,8 @@ class CarInterfaceBase(ABC):
     self.mads_event_lock = True
     self.gap_button_counter = 0
     self.experimental_mode_hold = False
+    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
+    self._frame = 0
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -419,14 +421,14 @@ class CarInterfaceBase(ABC):
   def toggle_exp_mode(self, gap_pressed):
     if not self.CP.openpilotLongitudinalControl:
       return None
-    experimental_mode = self.param_s.get_bool("ExperimentalMode")
     if gap_pressed:
       if not self.experimental_mode_hold:
         self.gap_button_counter += 1
         if self.gap_button_counter > 50:
           self.gap_button_counter = 0
           self.experimental_mode_hold = True
-          self.param_s.put_bool("ExperimentalMode", not experimental_mode)
+          self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
+          self.param_s.put_bool("ExperimentalMode", not self.experimental_mode)
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
@@ -493,6 +495,12 @@ class CarInterfaceBase(ABC):
       self.cruise_cancelled_btn = False
 
     return events, cs_out
+
+  def sp_update_params(self):
+    self._frame += 1
+    if self._frame % 300 == 0:
+      self._frame = 0
+      self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):

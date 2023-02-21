@@ -111,6 +111,7 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
+    self.sp_update_params()
 
     buttonEvents = []
 
