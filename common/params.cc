@@ -238,6 +238,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EnforceTorqueLateral", PERSISTENT},
     {"EnhancedScc", PERSISTENT},
     {"GapAdjustCruise", PERSISTENT},
+    {"GapAdjustCruiseMax", PERSISTENT},
+    {"GapAdjustCruiseMin", PERSISTENT},
     {"GapAdjustCruiseMode", PERSISTENT},
     {"GapAdjustCruiseTr", PERSISTENT},
     {"GmapKey", PERSISTENT},

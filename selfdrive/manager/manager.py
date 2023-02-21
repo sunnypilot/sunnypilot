@@ -70,6 +70,8 @@ def manager_init() -> None:
     ("EndToEndLongToggle", "1"),
     ("EnhancedScc", "0"),
     ("GapAdjustCruise", "1"),
+    ("GapAdjustCruiseMax", "0"),
+    ("GapAdjustCruiseMin", "0"),
     ("GapAdjustCruiseMode", "0"),
     ("GapAdjustCruiseTr", "4"),
     ("GpxDeleteAfterUpload", "1"),
