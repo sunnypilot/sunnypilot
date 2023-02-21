@@ -14,12 +14,13 @@ import importlib.util
 from common.spinner import Spinner
 
 
-sys.path.append(os.path.join(BASEDIR, "third_party"))
+sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
 OPSPLINE_SPEC = importlib.util.find_spec('scipy')
 OVERPY_SPEC = importlib.util.find_spec('overpy')
 MAX_BUILD_PROGRESS = 100
 TMP_DIR = '/data/tmp'
-THIRD_PARTY_DIR = '/data/openpilot/third_party'
+THIRD_PARTY_DIR = '/data/openpilot/third_party/mapd'
+THIRD_PARTY_DIR_SP = '/data/third_party_community'
 
 
 def wait_for_internet_connection(return_on_failure=False):
@@ -77,10 +78,21 @@ def install_dep(spinner):
   if OPSPLINE_SPEC is None:
     for directory in glob(f'{THIRD_PARTY_DIR}/numpy*'):
       shutil.rmtree(directory)
-    shutil.rmtree(f'{THIRD_PARTY_DIR}/bin')
+    if os.path.exists(f'{THIRD_PARTY_DIR}/bin'):
+      shutil.rmtree(f'{THIRD_PARTY_DIR}/bin')
+
+  dup = f'cp -rf {THIRD_PARTY_DIR} {THIRD_PARTY_DIR_SP}'
+  process_dup = subprocess.Popen(dup, stdout=subprocess.PIPE, shell=True)
 
 
 if __name__ == "__main__" and (OPSPLINE_SPEC is None or OVERPY_SPEC is None):
   spinner = Spinner()
-  spinner.update_progress(0, 100)
-  install_dep(spinner)
+  if os.path.exists(THIRD_PARTY_DIR_SP):
+    spinner.update("Loading dependencies")
+    command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
+    print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
+  else:
+    spinner.update("Waiting for internet")
+    install_dep(spinner)
