@@ -1,3 +1,8 @@
+sunnypilot - Version Latest (2023-02-22)
+========================
+* UPDATED: Synced with commaai's master branch - 2023.02.19-04:52:00:GMT - 0.9.2
+* Refactor sunnypilot features to be more stable
+
 sunnypilot - Version Latest (2022-12-16)
 ========================
 * UPDATED: Synced with commaai's master branch - 2022.12.16-06:31:00:GMT - 0.9.1
