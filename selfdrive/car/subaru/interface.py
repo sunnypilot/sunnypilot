@@ -12,7 +12,6 @@ class CarInterface(CarInterfaceBase):
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long):
     ret.carName = "subaru"
     ret.radarUnavailable = True
-    ret.dashcamOnly = candidate in PREGLOBAL_CARS
     ret.autoResumeSng = False
 
     if candidate in PREGLOBAL_CARS:
