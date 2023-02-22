@@ -408,8 +408,6 @@ class CarInterfaceBase(ABC):
       (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
       if CS.madsEnabled:
         CS.disengageByBrake = True
-    else:
-      CS.disengageByBrake = False
 
     cs_out.madsEnabled = CS.madsEnabled
     cs_out.accEnabled = CS.accEnabled
@@ -437,11 +435,10 @@ class CarInterfaceBase(ABC):
                        enable_from_brake=False, enable_pressed_long=False,
                        enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
 
-    if cs_out.disengageByBrake and not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and cs_out.madsEnabled:
-      enable_pressed = True
-      enable_from_brake = True
-
-    if not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake:
+    if not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and not cs_out.regenBraking:
+      if cs_out.disengageByBrake and cs_out.madsEnabled:
+        enable_pressed = True
+        enable_from_brake = True
       CS.disengageByBrake = False
       cs_out.disengageByBrake = False
 
