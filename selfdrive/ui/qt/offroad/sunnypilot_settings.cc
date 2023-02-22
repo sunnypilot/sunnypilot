@@ -664,6 +664,10 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
     "",
     "../assets/offroad/icon_openpilot.png"
   ));
+
+  // Visuals: Display Metrics above Chevron
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ChevronInfo());
 }
 
 void SPVisualsPanel::showEvent(QShowEvent *event) {
@@ -1757,6 +1761,77 @@ void DevUiRow::refresh() {
     label.setText(tr("1-Row"));
   } else {
     label.setText(tr("2-Row"));
+  }
+  btnminus.setText("-");
+  btnplus.setText("+");
+}
+
+// Display Metrics above Chevron
+ChevronInfo::ChevronInfo() : AbstractControl(
+  tr("Display Metrics above Chevron"),
+  tr("Display useful metrics above the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
+  "../assets/offroad/icon_calibration.png")
+
+{
+  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
+  label.setStyleSheet("color: #e0e879");
+  hlayout->addWidget(&label);
+
+  btnminus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 50px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnplus.setStyleSheet(R"(
+    padding: 0;
+    border-radius: 50px;
+    font-size: 50px;
+    font-weight: 500;
+    color: #E4E4E4;
+    background-color: #393939;
+  )");
+  btnminus.setFixedSize(150, 100);
+  btnplus.setFixedSize(150, 100);
+  hlayout->addWidget(&btnminus);
+  hlayout->addWidget(&btnplus);
+
+  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("ChevronInfo"));
+    int value = str.toInt();
+    value = value - 1;
+    if (value <= 0 ) {
+      value = 0;
+    }
+    QString values = QString::number(value);
+    params.put("ChevronInfo", values.toStdString());
+    refresh();
+  });
+
+  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
+    auto str = QString::fromStdString(params.get("ChevronInfo"));
+    int value = str.toInt();
+    value = value + 1;
+    if (value >= 2 ) {
+      value = 2;
+    }
+    QString values = QString::number(value);
+    params.put("ChevronInfo", values.toStdString());
+    refresh();
+  });
+  refresh();
+}
+
+void ChevronInfo::refresh() {
+  QString option = QString::fromStdString(params.get("ChevronInfo"));
+  if (option == "0") {
+    label.setText(tr("OFF"));
+  } else if (option == "1") {
+    label.setText(tr("Distance"));
+  } else if (option == "2") {
+    label.setText(tr("Speed"));
   }
   btnminus.setText("-");
   btnplus.setText("+");

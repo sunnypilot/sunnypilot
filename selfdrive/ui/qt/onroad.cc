@@ -1093,7 +1093,8 @@ void AnnotatedCameraWidget::rocketFuel(QPainter &p) {
   }
 }
 
-void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd) {
+void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd,
+                                     int num, float radar_d_rel, float v_ego, float radar_v_rel, int chevron_data, bool isMetric) {
   painter.save();
 
   const float speedBuff = 10.;
@@ -1117,14 +1118,34 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   float g_xo = sz / 5;
   float g_yo = sz / 10;
 
-  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
+  float homebase_h = 12;
+  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo + homebase_h}, {x + (sz * 1.35) + g_xo, y + sz + g_yo},
+                   {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo + homebase_h}};
   painter.setBrush(QColor(218, 202, 37, 255));
   painter.drawPolygon(glow, std::size(glow));
 
   // chevron
-  QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
+  QPointF chevron[] = {{x + (sz * 1.25), y + sz + homebase_h}, {x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz},
+                      {x - (sz * 1.25), y + sz + homebase_h}};
   painter.setBrush(redColor(fillAlpha));
   painter.drawPolygon(chevron, std::size(chevron));
+
+  if (num == 0) { // Display the distance to the 0th lead car
+    QString dist = "";
+    if (chevron_data == 1) dist = QString::number(radar_d_rel,'f', 1) + "m";
+    else if (chevron_data == 2) {
+      if (isMetric) dist = QString::number((radar_v_rel + v_ego) * 3.6,'f', 0) + "km/h";
+      else dist = QString::number((radar_v_rel + v_ego) * 2.236936,'f', 0) + "mph";
+    }
+    int str_w = 200;
+    configFont(painter, "Inter", 44, "SemiBold");
+    painter.setPen(QColor(0x0, 0x0, 0x0 , 200)); // Shadow
+    float lock_indicator_dx = 2; // Avoid downward cross sights
+    painter.drawText(QRect(x + 2 + lock_indicator_dx, y - 50 + 2, str_w, 50), Qt::AlignBottom | Qt::AlignLeft, dist);
+    painter.setPen(QColor(0xff, 0xff, 0xff));
+    painter.drawText(QRect(x + lock_indicator_dx, y - 50, str_w, 50), Qt::AlignBottom | Qt::AlignLeft, dist);
+    painter.setPen(Qt::NoPen);
+  }
 
   painter.restore();
 }
@@ -1200,11 +1221,14 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     if (s->scene.longitudinal_control) {
       auto lead_one = radar_state.getLeadOne();
       auto lead_two = radar_state.getLeadTwo();
+      float v_ego = sm["carState"].getCarState().getVEgo();
+      float radar_d_rel = radar_state.getLeadOne().getDRel();
+      float radar_v_rel = radar_state.getLeadOne().getVRel();
       if (lead_one.getStatus()) {
-        drawLead(painter, lead_one, s->scene.lead_vertices[0]);
+        drawLead(painter, lead_one, s->scene.lead_vertices[0], 0, radar_d_rel, v_ego, radar_v_rel, s->scene.chevron_data, s->scene.is_metric);
       }
       if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
-        drawLead(painter, lead_two, s->scene.lead_vertices[1]);
+        drawLead(painter, lead_two, s->scene.lead_vertices[1], 1, radar_d_rel, v_ego, radar_v_rel, s->scene.chevron_data, s->scene.is_metric);
       }
 
       rocketFuel(painter);

@@ -164,6 +164,8 @@ typedef struct UIScene {
   bool stand_still_timer;
 
   bool hide_vego_ui, true_vego_ui;
+
+  int chevron_data;
 } UIScene;
 
 class UIState : public QObject {

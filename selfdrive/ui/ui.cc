@@ -235,6 +235,7 @@ void ui_update_params(UIState *s) {
   s->scene.speed_limit_style = std::atoi(params.get("SpeedLimitStyle").c_str());
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
+  s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
