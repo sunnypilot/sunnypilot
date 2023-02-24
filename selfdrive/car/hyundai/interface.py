@@ -333,7 +333,8 @@ class CarInterface(CarInterfaceBase):
       if self.CS.cruise_buttons[-1] != 0 and self.CS.prev_cruise_buttons != 0:
         buttonEvents.append(create_button_event(0, self.CS.prev_cruise_buttons, BUTTONS_DICT))
 
-    self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
+    if self.CP.carFingerprint not in CANFD_CAR:
+      self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
 
     self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret.cruiseState.available, self.CS.accEnabled,
                                                                           buttonEvents, c.vCruise)
