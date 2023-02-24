@@ -152,8 +152,11 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   UIScene &scene = s->scene;
   SubMaster &sm = *(uiState()->sm);
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
+  auto car_state = sm["carState"].getCarState();
+  auto controls_state = sm["controlsState"].getControlsState();
 
   QRect dlp_btn_rect = QRect(bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75), 150, 150);
+  QRect gac_btn_rect = QRect(bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75), 150, 150);
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
@@ -161,6 +164,12 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
     params.put("DynamicLaneProfile", std::to_string(scene.dynamic_lane_profile));
+    propagate_event = false;
+  } else if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && !controls_state.getExperimentalMode() &&
+             car_state.getCruiseState().getAvailable() && gac_btn_rect.contains(e->x(), e->y())) {
+    scene.gac_tr--;
+    scene.gac_tr = scene.gac_tr < scene.gac_min ? scene.gac_max : scene.gac_tr;
+    params.put("GapAdjustCruiseTr", std::to_string(scene.gac_tr));
     propagate_event = false;
   } else if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
     // If touching the speed limit sign area when visible
@@ -423,6 +432,10 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("hideVEgoUi", s.scene.hide_vego_ui);
 
+  setProperty("gac", s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control && !cs.getExperimentalMode() &&
+              car_state.getCruiseState().getAvailable());
+  setProperty("gacTr", s.scene.gac_tr);
+
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
@@ -682,6 +695,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawDlpButton(p, bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75), 150, 150);
   }
 
+  if (gac) {
+    drawGacButton(p, bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75), 150, 150);
+  }
+
   // Stand Still Timer
   if (standStillTimer && standStill) {
     drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
@@ -788,6 +805,34 @@ void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int 
   p.setPen(QColor(Qt::white));
   configFont(p, "Inter", 36, "SemiBold");
   p.drawText(dlpBtn, Qt::AlignCenter, dlp_text);
+}
+
+void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int h) {
+  int prev_gac_tr = -1;
+  QString gac_text = "";
+  QColor gac_border = QColor(255, 255, 255, 255);
+
+  if (prev_gac_tr != gacTr) {
+    prev_gac_tr = gacTr;
+    if (gacTr == 1) {
+      gac_text = "Aggro\nGap";
+      gac_border = QColor("#ff4b4b");
+    } else if (gacTr == 2) {
+      gac_text = "Mild\nGap";
+      gac_border = QColor("#fcff4b");
+    } else {
+      gac_text = "Stock\nGap";
+      gac_border = QColor("#4bff66");
+    }
+  }
+
+  QRect gacBtn(x, y, w, h);
+  p.setPen(QPen(gac_border, 6));
+  p.setBrush(QColor(75, 75, 75, 75));
+  p.drawEllipse(gacBtn);
+  p.setPen(QColor(Qt::white));
+  configFont(p, "Inter", 36, "SemiBold");
+  p.drawText(gacBtn, Qt::AlignCenter, gac_text);
 }
 
 void AnnotatedCameraWidget::drawStandstillTimer(QPainter &p, int x, int y) {

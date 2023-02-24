@@ -1,4 +1,5 @@
 import yaml
+import operator
 import os
 import time
 from abc import abstractmethod, ABC
@@ -30,6 +31,8 @@ FRICTION_THRESHOLD = 0.3
 TORQUE_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/params.yaml')
 TORQUE_OVERRIDE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/override.yaml')
 TORQUE_SUBSTITUTE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/substitute.yaml')
+
+GAC_DICT = {1: 1, 2: 2, 3: 3}
 
 
 def get_torque_params(candidate):
@@ -100,6 +103,13 @@ class CarInterfaceBase(ABC):
     self.experimental_mode_hold = False
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
     self._frame = 0
+    self.op_lookup = {"+": operator.add, "-": operator.sub}
+    self.gac = self.param_s.get_bool("GapAdjustCruise")
+    self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
+    self.prev_gac_button = False
+    self.gac_button_counter = 0
+    self.gac_min = -1
+    self.gac_max = -1
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -425,11 +435,50 @@ class CarInterfaceBase(ABC):
         if self.gap_button_counter > 50:
           self.gap_button_counter = 0
           self.experimental_mode_hold = True
-          self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
           self.param_s.put_bool("ExperimentalMode", not self.experimental_mode)
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
+
+  def get_sp_gac_state(self, gac_tr, gac_min, gac_max, inc_dec):
+    op = self.op_lookup.get(inc_dec)
+    gac_tr = op(gac_tr, 1)
+    if inc_dec == "+":
+      gac_tr = gac_min if gac_tr > gac_max else gac_tr
+    else:
+      gac_tr = gac_max if gac_tr < gac_min else gac_tr
+    return int(gac_tr)
+
+  def get_sp_distance(self, gac_tr, gac_max, gac_dict=None):
+    if gac_dict is None:
+      gac_dict = GAC_DICT
+    for key, value in gac_dict.items():
+      if gac_tr == value:
+        return key
+    return gac_max
+
+  def toggle_gac(self, cs_out, CS, gac_button, gac_min, gac_max, gac_default, inc_dec):
+    if (not (self.CP.openpilotLongitudinalControl or self.gac)) or (self.experimental_mode and self.CP.openpilotLongitudinalControl):
+      cs_out.gapAdjustCruiseTr = 4
+      CS.gac_tr = gac_default
+      return
+    if self.gac_min != gac_min:
+      self.gac_min = gac_min
+      self.param_s.put("GapAdjustCruiseMin", str(self.gac_min))
+    if self.gac_max != gac_max:
+      self.gac_max = gac_max
+      self.param_s.put("GapAdjustCruiseMax", str(self.gac_max))
+    if self.gac_mode in (0, 2):
+      if gac_button:
+        self.gac_button_counter += 1
+      elif self.prev_gac_button and not gac_button and self.gac_button_counter < 50:
+        self.gac_button_counter = 0
+        CS.gac_tr = self.get_sp_gac_state(CS.gac_tr, gac_min, gac_max, inc_dec)
+        self.param_s.put("GapAdjustCruiseTr", str(CS.gac_tr))
+      else:
+        self.gac_button_counter = 0
+    self.prev_gac_button = gac_button
+    cs_out.gapAdjustCruiseTr = self.get_sp_distance(CS.gac_tr, gac_max)
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
                        enable_from_brake=False, enable_pressed_long=False,
@@ -493,11 +542,14 @@ class CarInterfaceBase(ABC):
 
     return events, cs_out
 
-  def sp_update_params(self):
+  def sp_update_params(self, CS):
+    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
+    CS.gac_tr = round(float(self.param_s.get("GapAdjustCruiseTr", encoding="utf8")))
     self._frame += 1
     if self._frame % 300 == 0:
       self._frame = 0
-      self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
+      self.gac = self.param_s.get_bool("GapAdjustCruise")
+      self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
@@ -529,6 +581,7 @@ class CarStateBase(ABC):
     self.cluster_speed_hyst_gap = 0.0
     self.cluster_min_speed = 0.0  # min speed before dropping to 0
 
+    self.param_s = Params()
     self.accEnabled = False
     self.madsEnabled = False
     self.disengageByBrake = False
@@ -536,6 +589,7 @@ class CarStateBase(ABC):
     self.prev_mads_enabled = False
     self.control_initialized = False
     self.gap_dist_button = 0
+    self.gac_tr = round(float(self.param_s.get("GapAdjustCruiseTr", encoding="utf8")))
 
     # Q = np.matrix([[0.0, 0.0], [0.0, 100.0]])
     # R = 0.3

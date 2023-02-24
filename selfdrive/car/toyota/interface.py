@@ -4,12 +4,14 @@ from common.conversions import Conversions as CV
 from common.params import Params
 from panda import Panda
 from selfdrive.car.toyota.values import Ecu, CAR, ToyotaFlags, TSS2_CAR, RADAR_ACC_CAR, NO_DSU_CAR, MIN_ACC_SPEED, EPS_SCALE, EV_HYBRID_CAR, UNSUPPORTED_DSU_CAR, CarControllerParams, NO_STOP_TIMER_CAR
-from selfdrive.car import STD_CARGO_KG, scale_tire_stiffness, get_safety_config, create_mads_event
+from selfdrive.car import STD_CARGO_KG, create_button_event, scale_tire_stiffness, get_safety_config, create_mads_event
 from selfdrive.car.interfaces import CarInterfaceBase
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 GearShifter = car.CarState.GearShifter
+
+GAC_DICT = {3: 1, 2: 2, 1: 3}
 
 
 class CarInterface(CarInterfaceBase):
@@ -244,9 +246,12 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
-    self.sp_update_params()
+    self.sp_update_params(self.CS)
 
     buttonEvents = []
+
+    if self.CS.gap_dist_button != self.CS.prev_gap_dist_button:
+      buttonEvents.append(create_button_event(self.CS.gap_dist_button, self.CS.prev_gap_dist_button, {1: ButtonType.gapAdjustCruise}))
 
     self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
 
@@ -263,6 +268,33 @@ class CarInterface(CarInterfaceBase):
             (self.CS.prev_lkas_enabled == 1 and not self.CS.lkas_enabled):
             self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+      if (not (self.CP.openpilotLongitudinalControl or self.gac)) or (self.experimental_mode and self.CP.openpilotLongitudinalControl):
+        ret.gapAdjustCruiseTr = 3
+      else:
+        if self.gac_min != 1:
+          self.gac_min = 1
+          self.param_s.put("GapAdjustCruiseMin", str(self.gac_min))
+        if self.gac_max != 3:
+          self.gac_max = 3
+          self.param_s.put("GapAdjustCruiseMax", str(self.gac_max))
+        if self.gac_mode in (0, 2):
+          if bool(self.CS.gap_dist_button):
+            self.gac_button_counter += 1
+          elif self.prev_gac_button and not bool(self.CS.gap_dist_button) and self.gac_button_counter < 50:
+            self.gac_button_counter = 0
+            self.CS.follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
+            self.CS.gac_tr = self.get_sp_distance(self.CS.follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
+            self.param_s.put("GapAdjustCruiseTr", str(self.CS.gac_tr))
+          else:
+            self.gac_button_counter = 0
+        self.prev_gac_button = bool(self.CS.gap_dist_button)
+        ret.gapAdjustCruiseTr = self.CS.gac_tr
+      if self.CS.gac_send_counter < 10 and (self.get_sp_distance(ret.gapAdjustCruiseTr, self.gac_max, gac_dict=GAC_DICT) != self.CS.follow_distance):
+        self.CS.gac_send_counter += 1
+        self.CS.gac_send = 1
+      else:
+        self.CS.gac_send_counter = 0
+        self.CS.gac_send = 0
     else:
       self.CS.madsEnabled = False
 

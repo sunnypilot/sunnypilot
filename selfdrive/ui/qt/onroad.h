@@ -106,6 +106,9 @@ class AnnotatedCameraWidget : public CameraWidget {
 
   Q_PROPERTY(bool hideVEgoUi MEMBER hideVEgoUi);
 
+  Q_PROPERTY(bool gac MEMBER gac);
+  Q_PROPERTY(int gacTr MEMBER gacTr);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -123,6 +126,7 @@ private:
                          bool is_active);
 
   void drawDlpButton(QPainter &p, int x, int y, int w, int h);
+  void drawGacButton(QPainter &p, int x, int y, int w, int h);
   void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color);
   void drawStandstillTimer(QPainter &p, int x, int y);
 
@@ -191,6 +195,9 @@ private:
   int speedLimitStyle;
 
   bool hideVEgoUi;
+
+  bool gac;
+  int gacTr;
 
 protected:
   void paintGL() override;

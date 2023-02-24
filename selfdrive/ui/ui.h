@@ -166,6 +166,9 @@ typedef struct UIScene {
   bool hide_vego_ui, true_vego_ui;
 
   int chevron_data;
+
+  bool gac;
+  int gac_mode, gac_tr, gac_min, gac_max;
 } UIScene;
 
 class UIState : public QObject {

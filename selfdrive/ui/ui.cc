@@ -216,6 +216,9 @@ static void update_state(UIState *s) {
     scene.dynamic_lane_profile = sm["lateralPlan"].getLateralPlan().getDynamicLaneProfile();
     scene.dynamic_lane_profile_status = sm["lateralPlan"].getLateralPlan().getDynamicLaneProfileStatus();
   }
+  if (sm.updated("carState")) {
+    scene.gac_tr = sm["carState"].getCarState().getGapAdjustCruiseTr();
+  }
 }
 
 void ui_update_params(UIState *s) {
@@ -236,6 +239,10 @@ void ui_update_params(UIState *s) {
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
+  s->scene.gac = params.getBool("GapAdjustCruise");
+  s->scene.gac_mode = std::atoi(params.get("GapAdjustCruiseMode").c_str());
+  s->scene.gac_min = std::atoi(params.get("GapAdjustCruiseMin").c_str());
+  s->scene.gac_max = std::atoi(params.get("GapAdjustCruiseMax").c_str());
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;

@@ -96,11 +96,11 @@ def create_acc_accel_control(packer, bus, acc_type, enabled, accel, acc_control,
   return commands
 
 
-def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance):
+def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance, gac_tr):
   values = {
     "ACC_Status_Anzeige": acc_hud_status,
     "ACC_Wunschgeschw_02": set_speed if set_speed < 250 else 327.36,
-    "ACC_Gesetzte_Zeitluecke": 3,
+    "ACC_Gesetzte_Zeitluecke": gac_tr,
     "ACC_Display_Prio": 3,
     "ACC_Abstandsindex": lead_distance,
   }

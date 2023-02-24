@@ -311,7 +311,7 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
-    self.sp_update_params()
+    self.sp_update_params(self.CS)
 
     buttonEvents = []
 
@@ -333,6 +333,7 @@ class CarInterface(CarInterfaceBase):
         if self.CS.prev_cruise_setting != 1 and self.CS.cruise_setting == 1:
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+      self.toggle_gac(ret, self.CS, (self.CS.cruise_setting == 3), 1, 3, 0, "-")
     else:
       self.CS.madsEnabled = False
 
