@@ -188,6 +188,8 @@ class CarState(CarStateBase):
     if self.CP.flags & HyundaiFlags.SP_CAN_LFA_BTN:
       self.lfa_enabled = cp.vl["BCM_PO_11"]["LFA_Pressed"]
 
+    self.mads_enabled = False if not self.control_initialized else ret.cruiseState.available
+
     self._update_traffic_signals(self.CP, cp, cp_cam)
     ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
