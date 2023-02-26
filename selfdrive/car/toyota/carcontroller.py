@@ -41,7 +41,7 @@ class CarController:
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
     hud_control = CC.hudControl
-    pcm_cancel_cmd = CC.cruiseControl.cancel
+    pcm_cancel_cmd = CC.cruiseControl.cancel or any(b.type == car.CarState.ButtonEvent.Type.cancel for b in CS.out.buttonEvents)
     lat_active = CC.latActive and abs(CS.out.steeringTorque) < MAX_USER_TORQUE
 
     # gas and brake
