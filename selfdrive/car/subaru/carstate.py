@@ -77,11 +77,6 @@ class CarState(CarStateBase):
        (self.car_fingerprint not in PREGLOBAL_CARS and cp.vl["Dashlights"]["UNITS"] == 1):
       ret.cruiseState.speed *= CV.MPH_TO_KPH
 
-    self.madsEnabled, ret.cruiseState.enabled = self.update_sp_state(ret.cruiseState.enabled, self.enable_mads,
-                                                                     self.accEnabled, self.prev_cruiseState_enabled,
-                                                                     self.madsEnabled)
-    self.prev_brake_pressed = ret.brakePressed
-
     ret.seatbeltUnlatched = cp.vl["Dashlights"]["SEATBELT_FL"] == 1
     ret.doorOpen = any([cp.vl["BodyInfo"]["DOOR_OPEN_RR"],
                         cp.vl["BodyInfo"]["DOOR_OPEN_RL"],
