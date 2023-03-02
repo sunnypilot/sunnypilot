@@ -45,14 +45,6 @@ class CarControllerParams:
     self.STEER_LOOKUP_BP = [v * -1 for v in CP.lateralParams.torqueBP][1:][::-1] + list(CP.lateralParams.torqueBP)
     self.STEER_LOOKUP_V = [v * -1 for v in CP.lateralParams.torqueV][1:][::-1] + list(CP.lateralParams.torqueV)
 
-class LKAS_LIMITS:
-  STEER_MAX = 239
-  STEER_THRESHOLD = 30
-  STEER_DELTA_UP = 7
-  STEER_DELTA_DOWN = 100
-  STEER_DRIVER_ALLOWANCE = 25
-  STEER_DRIVER_MULTIPLIER = 18
-  STEER_DRIVER_FACTOR = 1
 
 class HondaFlags(IntFlag):
   # Bosch models with alternate set of LKAS_HUD messages
