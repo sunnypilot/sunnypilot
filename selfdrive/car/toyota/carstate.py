@@ -155,8 +155,9 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in (TSS2_CAR | RADAR_ACC_CAR):
       self.acc_type = cp_acc.vl["ACC_CONTROL"]["ACC_TYPE"]
       ret.stockFcw = bool(cp_acc.vl["ACC_HUD"]["FCW"])
-      self.gap_dist_button = cp_cam.vl["ACC_CONTROL"]["DISTANCE"]
 
+    if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
+      self.gap_dist_button = cp_cam.vl["ACC_CONTROL"]["DISTANCE"]
     if self.CP.flags & ToyotaFlags.SMART_DSU:
       self.gap_dist_button = cp.vl["SDSU"]["FD_BUTTON"]
 
