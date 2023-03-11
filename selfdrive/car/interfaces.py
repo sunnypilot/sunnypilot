@@ -1,4 +1,5 @@
 import yaml
+import operator
 import os
 import time
 from abc import abstractmethod, ABC
@@ -102,6 +103,7 @@ class CarInterfaceBase(ABC):
     self.experimental_mode_hold = False
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
     self._frame = 0
+    self.op_lookup = {"+": operator.add, "-": operator.sub}
     self.gac = self.param_s.get_bool("GapAdjustCruise")
     self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
     self.prev_gac_button = False
@@ -439,10 +441,12 @@ class CarInterfaceBase(ABC):
       self.experimental_mode_hold = False
 
   def get_sp_gac_state(self, gac_tr, gac_min, gac_max, inc_dec):
+    op = self.op_lookup.get(inc_dec)
+    gac_tr = op(gac_tr, 1)
     if inc_dec == "+":
-      gac_tr = min(gac_tr + 1, gac_max)
+      gac_tr = gac_min if gac_tr > gac_max else gac_tr
     else:
-      gac_tr = max(gac_tr - 1, gac_min)
+      gac_tr = gac_max if gac_tr < gac_min else gac_tr
     return int(gac_tr)
 
   def get_sp_distance(self, gac_tr, gac_max, gac_dict=None):
