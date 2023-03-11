@@ -9,7 +9,7 @@ from common.basedir import BASEDIR
 from common.conversions import Conversions as CV
 from common.kalman.simple_kalman import KF1D
 from common.numpy_fast import clip, interp
-from common.params import Params, put_nonblocking
+from common.params import Params, put_nonblocking, put_bool_nonblocking
 from common.realtime import DT_CTRL
 from selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
@@ -433,7 +433,7 @@ class CarInterfaceBase(ABC):
         if self.gap_button_counter > 50:
           self.gap_button_counter = 0
           self.experimental_mode_hold = True
-          self.param_s.put_bool("ExperimentalMode", not self.experimental_mode)
+          put_bool_nonblocking("ExperimentalMode", not self.experimental_mode)
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
