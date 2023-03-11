@@ -1,5 +1,4 @@
 import yaml
-import operator
 import os
 import time
 from abc import abstractmethod, ABC
@@ -10,7 +9,7 @@ from common.basedir import BASEDIR
 from common.conversions import Conversions as CV
 from common.kalman.simple_kalman import KF1D
 from common.numpy_fast import clip, interp
-from common.params import Params
+from common.params import Params, put_nonblocking
 from common.realtime import DT_CTRL
 from selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
@@ -103,7 +102,6 @@ class CarInterfaceBase(ABC):
     self.experimental_mode_hold = False
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
     self._frame = 0
-    self.op_lookup = {"+": operator.add, "-": operator.sub}
     self.gac = self.param_s.get_bool("GapAdjustCruise")
     self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
     self.prev_gac_button = False
@@ -441,21 +439,16 @@ class CarInterfaceBase(ABC):
       self.experimental_mode_hold = False
 
   def get_sp_gac_state(self, gac_tr, gac_min, gac_max, inc_dec):
-    op = self.op_lookup.get(inc_dec)
-    gac_tr = op(gac_tr, 1)
     if inc_dec == "+":
-      gac_tr = gac_min if gac_tr > gac_max else gac_tr
+      gac_tr = min(gac_tr + 1, gac_max)
     else:
-      gac_tr = gac_max if gac_tr < gac_min else gac_tr
+      gac_tr = max(gac_tr - 1, gac_min)
     return int(gac_tr)
 
   def get_sp_distance(self, gac_tr, gac_max, gac_dict=None):
     if gac_dict is None:
       gac_dict = GAC_DICT
-    for key, value in gac_dict.items():
-      if gac_tr == value:
-        return key
-    return gac_max
+    return next((key for key, value in gac_dict.items() if value == gac_tr), gac_max)
 
   def toggle_gac(self, cs_out, CS, gac_button, gac_min, gac_max, gac_default, inc_dec):
     if (not (self.CP.openpilotLongitudinalControl or self.gac)) or (self.experimental_mode and self.CP.openpilotLongitudinalControl):
@@ -464,17 +457,17 @@ class CarInterfaceBase(ABC):
       return
     if self.gac_min != gac_min:
       self.gac_min = gac_min
-      self.param_s.put("GapAdjustCruiseMin", str(self.gac_min))
+      put_nonblocking("GapAdjustCruiseMin", str(self.gac_min))
     if self.gac_max != gac_max:
       self.gac_max = gac_max
-      self.param_s.put("GapAdjustCruiseMax", str(self.gac_max))
+      put_nonblocking("GapAdjustCruiseMax", str(self.gac_max))
     if self.gac_mode in (0, 2):
       if gac_button:
         self.gac_button_counter += 1
       elif self.prev_gac_button and not gac_button and self.gac_button_counter < 50:
         self.gac_button_counter = 0
         CS.gac_tr = self.get_sp_gac_state(CS.gac_tr, gac_min, gac_max, inc_dec)
-        self.param_s.put("GapAdjustCruiseTr", str(CS.gac_tr))
+        put_nonblocking("GapAdjustCruiseTr", str(CS.gac_tr))
       else:
         self.gac_button_counter = 0
     self.prev_gac_button = gac_button

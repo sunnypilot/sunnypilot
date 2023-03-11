@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cereal import car
 from common.conversions import Conversions as CV
-from common.params import Params
+from common.params import Params, put_nonblocking
 from panda import Panda
 from selfdrive.car.toyota.values import Ecu, CAR, ToyotaFlags, TSS2_CAR, RADAR_ACC_CAR, NO_DSU_CAR, MIN_ACC_SPEED, EPS_SCALE, EV_HYBRID_CAR, UNSUPPORTED_DSU_CAR, CarControllerParams, NO_STOP_TIMER_CAR
 from selfdrive.car import STD_CARGO_KG, create_button_event, scale_tire_stiffness, get_safety_config, create_mads_event
@@ -273,23 +273,27 @@ class CarInterface(CarInterfaceBase):
       else:
         if self.gac_min != 1:
           self.gac_min = 1
-          self.param_s.put("GapAdjustCruiseMin", str(self.gac_min))
+          put_nonblocking("GapAdjustCruiseMin", str(self.gac_min))
         if self.gac_max != 3:
           self.gac_max = 3
-          self.param_s.put("GapAdjustCruiseMax", str(self.gac_max))
+          put_nonblocking("GapAdjustCruiseMax", str(self.gac_max))
+        gap_dist_button = bool(self.CS.gap_dist_button)
         if self.gac_mode in (0, 2):
-          if bool(self.CS.gap_dist_button):
+          if gap_dist_button:
             self.gac_button_counter += 1
-          elif self.prev_gac_button and not bool(self.CS.gap_dist_button) and self.gac_button_counter < 50:
+          elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
             self.gac_button_counter = 0
-            self.CS.follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
-            self.CS.gac_tr = self.get_sp_distance(self.CS.follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
-            self.param_s.put("GapAdjustCruiseTr", str(self.CS.gac_tr))
+            follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
+            gac_tr = self.get_sp_distance(follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
+            if gac_tr != self.CS.gac_tr:
+              put_nonblocking("GapAdjustCruiseTr", str(gac_tr))
+              self.CS.gac_tr = gac_tr
           else:
             self.gac_button_counter = 0
-        self.prev_gac_button = bool(self.CS.gap_dist_button)
+        self.prev_gac_button = gap_dist_button
         ret.gapAdjustCruiseTr = self.CS.gac_tr
-      if self.CS.gac_send_counter < 10 and (self.get_sp_distance(ret.gapAdjustCruiseTr, self.gac_max, gac_dict=GAC_DICT) != self.CS.follow_distance):
+      gap_distance = self.get_sp_distance(ret.gapAdjustCruiseTr, self.gac_max, gac_dict=GAC_DICT)
+      if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
         self.CS.gac_send_counter += 1
         self.CS.gac_send = 1
       else:

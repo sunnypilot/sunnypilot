@@ -46,7 +46,6 @@ class CarState(CarStateBase):
     self.gac_send = False
     self.gac_send_counter = 0
     self.follow_distance = 0
-    self.follow_distance_converted = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
