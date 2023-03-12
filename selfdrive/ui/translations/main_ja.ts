@@ -766,16 +766,8 @@ location set</source>
         <translation>初期化してもよろしいですか？</translation>
     </message>
     <message>
-        <source>Resetting device...</source>
-        <translation>デバイスが初期化されます...</translation>
-    </message>
-    <message>
         <source>System Reset</source>
         <translation>システムを初期化</translation>
-    </message>
-    <message>
-        <source>System reset triggered. Press confirm to erase all content and settings. Press cancel to resume boot.</source>
-        <translation>システムの初期化をリクエストしました。「確認」ボタンを押すとデバイスが初期化されます。「キャンセル」ボタンを押すと起動を続行します。</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -790,8 +782,17 @@ location set</source>
         <translation>確認</translation>
     </message>
     <message>
-        <source>Unable to mount data partition. Press confirm to reset your device.</source>
-        <translation>「data」パーティションをマウントできません。「確認」ボタンを押すとデバイスが初期化されます。</translation>
+        <source>Unable to mount data partition. Partition may be corrupted. Press confirm to erase and reset your device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Press confirm to erase all content and settings. Press cancel to resume boot.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Resetting device...
+This may take up to a minute.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1232,6 +1233,14 @@ Reboot now?</source>
     <message>
         <source>Start over</source>
         <translation>最初からやり直す</translation>
+    </message>
+    <message>
+        <source>No custom software found at this URL.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Something went wrong. Reboot the device.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
