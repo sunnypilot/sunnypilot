@@ -531,7 +531,7 @@ class CarInterfaceBase(ABC):
         events.add(EventName.silentButtonEnable)
       else:
         events.add(EventName.buttonEnable)
-    if cs_out.disengageByBrake and enable_pressed_long:
+    if cs_out.disengageByBrake and not cs_out.standstill and enable_pressed_long:
       events.add(EventName.cruiseEngageBlocked)
 
     if cs_out.cruiseState.enabled:
