@@ -1006,8 +1006,9 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   float start_hue, end_hue;
   if (madsEnabled) {
     if (steerOverride && latActive) {
-      bg.setColorAt(0, blackColor(80));
-      bg.setColorAt(1, blackColor(20));
+      bg.setColorAt(0.0, QColor::fromHslF(20 / 360., 0.94, 0.51, 0.17));
+      bg.setColorAt(0.5, QColor::fromHslF(20 / 360., 1.0, 0.68, 0.17));
+      bg.setColorAt(1.0, QColor::fromHslF(20 / 360., 1.0, 0.68, 0.0));
     } else if (!latActive) {
       bg.setColorAt(0, whiteColor());
       bg.setColorAt(1, whiteColor(0));
@@ -1038,18 +1039,24 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
     bg.setColorAt(1.0, whiteColor(0));
   }
 
-  if (!scene.dynamic_lane_profile_status) {
-    // paint path edges
-    QLinearGradient pe(0, height(), 0, height() / 4);
-    pe.setColorAt(0.0, whiteColor(102));
-    pe.setColorAt(0.5, whiteColor(89));
-    pe.setColorAt(1.0, whiteColor(0));
-    painter.setBrush(pe);
-    painter.drawPolygon(scene.track_edge_vertices);
-  }
-
   painter.setBrush(bg);
   painter.drawPolygon(scene.track_vertices);
+
+  // create path combining track vertices and track edge vertices
+  QPainterPath path;
+  path.addPolygon(scene.track_vertices);
+  path.addPolygon(scene.track_edge_vertices);
+
+  // paint path edges
+  QLinearGradient pe(0, height(), 0, height() / 4);
+  if (!scene.dynamic_lane_profile_status) {
+    pe.setColorAt(0.0, QColor::fromHslF(240 / 360., 0.94, 0.51, 1.0));
+    pe.setColorAt(0.5, QColor::fromHslF(204 / 360., 1.0, 0.68, 0.5));
+    pe.setColorAt(1.0, QColor::fromHslF(204 / 360., 1.0, 0.68, 0.0));
+
+    painter.setBrush(pe);
+    painter.drawPath(path);
+  }
 
   painter.restore();
 }
@@ -1166,15 +1173,12 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   float g_xo = sz / 5;
   float g_yo = sz / 10;
 
-  float homebase_h = 12;
-  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo + homebase_h}, {x + (sz * 1.35) + g_xo, y + sz + g_yo},
-                   {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo + homebase_h}};
+  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
   painter.setBrush(QColor(218, 202, 37, 255));
   painter.drawPolygon(glow, std::size(glow));
 
   // chevron
-  QPointF chevron[] = {{x + (sz * 1.25), y + sz + homebase_h}, {x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz},
-                      {x - (sz * 1.25), y + sz + homebase_h}};
+  QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
   painter.setBrush(redColor(fillAlpha));
   painter.drawPolygon(chevron, std::size(chevron));
 
