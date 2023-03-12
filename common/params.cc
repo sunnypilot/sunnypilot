@@ -222,7 +222,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CustomStockLong", PERSISTENT},
     {"CustomTorqueLateral", PERSISTENT},
     {"DevUI", PERSISTENT},
-    {"DevUIRow", PERSISTENT},
+    {"DevUIInfo", PERSISTENT},
     {"DisableOnroadUploads", PERSISTENT},
     {"DisengageLateralOnBrake", PERSISTENT},
     {"DynamicLaneProfile", PERSISTENT},

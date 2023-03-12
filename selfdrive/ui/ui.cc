@@ -243,6 +243,8 @@ void ui_update_params(UIState *s) {
   s->scene.gac_mode = std::atoi(params.get("GapAdjustCruiseMode").c_str());
   s->scene.gac_min = std::atoi(params.get("GapAdjustCruiseMin").c_str());
   s->scene.gac_max = std::atoi(params.get("GapAdjustCruiseMax").c_str());
+  s->scene.dev_ui_enabled = params.getBool("DevUI");
+  s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
@@ -279,6 +281,8 @@ void UIState::updateStatus() {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
       wide_cam_only = Params().getBool("WideCameraOnly");
+      scene.live_torque_toggle = Params().getBool("LiveTorque");
+      scene.custom_torque_toggle = Params().getBool("CustomTorqueLateral");
     }
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
@@ -297,7 +301,8 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "gnssMeasurements",
-    "uiPlan", "carControl", "lateralPlan", "longitudinalPlan", "liveMapData",
+    "uiPlan", "carControl", "lateralPlan", "longitudinalPlan", "liveMapData", "gpsLocationExternal", "liveParameters",
+    "liveTorqueParameters",
   });
 
   Params params;

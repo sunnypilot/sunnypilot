@@ -843,6 +843,7 @@ class Controls:
       controlsState.lateralControlState.torqueState = lac_log
     elif lat_tuning == 'indi':
       controlsState.lateralControlState.indiState = lac_log
+    controlsState.lateralState = lat_tuning
 
     self.pm.send('controlsState', dat)
 

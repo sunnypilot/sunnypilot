@@ -323,11 +323,11 @@ private:
   void refresh();
 };
 
-class DevUiRow : public AbstractControl {
+class DevUiInfo : public AbstractControl {
   Q_OBJECT
 
 public:
-  DevUiRow();
+  DevUiInfo();
 
 private:
   QPushButton btnplus;

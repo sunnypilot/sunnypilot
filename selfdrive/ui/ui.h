@@ -169,6 +169,13 @@ typedef struct UIScene {
 
   bool gac;
   int gac_mode, gac_tr, gac_min, gac_max;
+
+  bool map_visible;
+  bool dev_ui_enabled;
+  int dev_ui_info;
+  int rn_offset;
+  bool live_torque_toggle;
+  bool custom_torque_toggle;
 } UIScene;
 
 class UIState : public QObject {

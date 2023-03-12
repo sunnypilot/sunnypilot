@@ -585,7 +585,7 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
   );
   devUiSub->setContentsMargins(QMargins());
   devUiSub->addWidget(horizontal_line());
-  devUiSub->addWidget(new DevUiRow());
+  devUiSub->addWidget(new DevUiInfo());
   connect(devUi, &ToggleControl::toggleFlipped, [=](bool state) {
     updateToggles();
   });
@@ -1697,8 +1697,8 @@ void VwAccType::refresh() {
   btnplus.setText("+");
 }
 
-// Developer UI Rows (Dev UI)
-DevUiRow::DevUiRow() : AbstractControl(
+// Developer UI Info (Dev UI)
+DevUiInfo::DevUiInfo() : AbstractControl(
   tr("Developer UI List"),
   tr("Select the number of lists of real-time parameters you would like to display on the sunnypilot screen while driving."),
   "../assets/offroad/icon_blank.png")
@@ -1730,37 +1730,37 @@ DevUiRow::DevUiRow() : AbstractControl(
   hlayout->addWidget(&btnplus);
 
   QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("DevUIRow"));
+    auto str = QString::fromStdString(params.get("DevUIInfo"));
     int value = str.toInt();
     value = value - 1;
     if (value <= 0 ) {
       value = 0;
     }
     QString values = QString::number(value);
-    params.put("DevUIRow", values.toStdString());
+    params.put("DevUIInfo", values.toStdString());
     refresh();
   });
 
   QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("DevUIRow"));
+    auto str = QString::fromStdString(params.get("DevUIInfo"));
     int value = str.toInt();
     value = value + 1;
     if (value >= 1 ) {
       value = 1;
     }
     QString values = QString::number(value);
-    params.put("DevUIRow", values.toStdString());
+    params.put("DevUIInfo", values.toStdString());
     refresh();
   });
   refresh();
 }
 
-void DevUiRow::refresh() {
-  QString option = QString::fromStdString(params.get("DevUIRow"));
+void DevUiInfo::refresh() {
+  QString option = QString::fromStdString(params.get("DevUIInfo"));
   if (option == "0") {
-    label.setText(tr("1-Row"));
+    label.setText(tr("5 Metrics"));
   } else {
-    label.setText(tr("2-Row"));
+    label.setText(tr("10 Metrics"));
   }
   btnminus.setText("-");
   btnplus.setText("+");

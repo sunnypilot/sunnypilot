@@ -109,6 +109,33 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool gac MEMBER gac);
   Q_PROPERTY(int gacTr MEMBER gacTr);
 
+  Q_PROPERTY(bool mapVisible MEMBER mapVisible);
+
+  // ############################## DEV UI START ##############################
+  Q_PROPERTY(bool lead_status MEMBER lead_status);
+  Q_PROPERTY(float lead_d_rel MEMBER lead_d_rel);
+  Q_PROPERTY(float lead_v_rel MEMBER lead_v_rel);
+  Q_PROPERTY(QString lateralState MEMBER lateralState);
+  Q_PROPERTY(float angleSteers MEMBER angleSteers);
+  Q_PROPERTY(float steerAngleDesired MEMBER steerAngleDesired);
+  Q_PROPERTY(float curvature MEMBER curvature);
+  Q_PROPERTY(float roll MEMBER roll);
+  Q_PROPERTY(int memoryUsagePercent MEMBER memoryUsagePercent);
+  Q_PROPERTY(bool devUiEnabled MEMBER devUiEnabled);
+  Q_PROPERTY(int devUiInfo MEMBER devUiInfo);
+  Q_PROPERTY(float gpsAccuracy MEMBER gpsAccuracy);
+  Q_PROPERTY(float altitude MEMBER altitude);
+  Q_PROPERTY(float vEgo MEMBER vEgo);
+  Q_PROPERTY(float aEgo MEMBER aEgo);
+  Q_PROPERTY(float steeringTorqueEps MEMBER steeringTorqueEps);
+  Q_PROPERTY(float bearingAccuracyDeg MEMBER bearingAccuracyDeg);
+  Q_PROPERTY(float bearingDeg MEMBER bearingDeg);
+  Q_PROPERTY(bool torquedUseParams MEMBER torquedUseParams);
+  Q_PROPERTY(float latAccelFactorFiltered MEMBER latAccelFactorFiltered);
+  Q_PROPERTY(float frictionCoefficientFiltered MEMBER frictionCoefficientFiltered);
+  Q_PROPERTY(bool liveValid MEMBER liveValid);
+  // ############################## DEV UI END ##############################
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -129,6 +156,14 @@ private:
   void drawGacButton(QPainter &p, int x, int y, int w, int h);
   void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color);
   void drawStandstillTimer(QPainter &p, int x, int y);
+
+  // ############################## DEV UI START ##############################
+  void drawRightDevUi(QPainter &p, int x, int y);
+  int drawDevUiElementRight(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color);
+  int drawNewDevUiElement(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color);
+  void drawNewDevUi2(QPainter &p, int x, int y);
+  void drawCenteredLeftText(QPainter &p, int x, int y, const QString &text1, QColor color1, const QString &text2, const QString &text3, QColor color2);
+  // ############################## DEV UI END ##############################
 
   uint64_t last_update_params;
 
@@ -198,6 +233,33 @@ private:
 
   bool gac;
   int gacTr;
+
+  bool mapVisible;
+
+  // ############################## DEV UI START ##############################
+  bool lead_status;
+  float lead_d_rel = 0;
+  float lead_v_rel = 0;
+  QString lateralState;
+  float angleSteers = 0;
+  float steerAngleDesired = 0;
+  float curvature;
+  float roll;
+  int memoryUsagePercent;
+  bool devUiEnabled;
+  int devUiInfo;
+  float gpsAccuracy;
+  float altitude;
+  float vEgo;
+  float aEgo;
+  float steeringTorqueEps;
+  float bearingAccuracyDeg;
+  float bearingDeg;
+  bool torquedUseParams;
+  float latAccelFactorFiltered;
+  float frictionCoefficientFiltered;
+  bool liveValid;
+  // ############################## DEV UI END ##############################
 
 protected:
   void paintGL() override;

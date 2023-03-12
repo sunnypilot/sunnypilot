@@ -56,6 +56,8 @@ void HomeWindow::updateState(const UIState &s) {
     body->setEnabled(true);
     slayout->setCurrentWidget(body);
   }
+
+  uiState()->scene.map_visible = onroad->isMapVisible();
 }
 
 void HomeWindow::offroadTransition(bool offroad) {
