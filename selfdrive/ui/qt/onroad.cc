@@ -214,7 +214,10 @@ void OnroadWindow::offroadTransition(bool offroad) {
 
 void OnroadWindow::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  p.fillRect(rect(), QColor(bg.red(), bg.green(), bg.blue(), 255));
+
+  QPainterPath path;
+  path.addRoundedRect(rect(), 40, 40);
+  p.fillPath(path, QColor(bg.red(), bg.green(), bg.blue(), 255));
 }
 
 // ***** onroad widgets *****
@@ -545,7 +548,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   QLinearGradient bg(0, header_h - (header_h / 2.5), 0, header_h);
   bg.setColorAt(0, QColor::fromRgbF(0, 0, 0, 0.45));
   bg.setColorAt(1, QColor::fromRgbF(0, 0, 0, 0));
-  p.fillRect(0, 0, width(), header_h, bg);
+
+  QRect headerRect(0, 0, width(), header_h);
+  QPainterPath headerPath;
+  headerPath.addRoundedRect(headerRect, 40, 40);
+  p.fillPath(headerPath, bg);
 
   QString speedLimitStr = (speedLimit > 1) ? QString::number(std::nearbyint(speedLimit)) : "–";
   QString speedLimitStrSlc = showSpeedLimit ? QString::number(std::nearbyint(speedLimitSLC)) : "–";
@@ -1616,6 +1623,17 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       CameraWidget::updateCalibration(DEFAULT_CALIBRATION);
     }
     painter.beginNativePainting();
+
+    // Create a QPainterPath with rounded corners
+    QPainterPath path;
+    int radius = 40;
+    int width = CameraWidget::width();
+    int height = CameraWidget::height();
+    path.addRoundedRect(0, 0, width, height, radius, radius);
+
+    // Set the path as the clipping region for the painter
+    painter.setClipPath(path);
+
     CameraWidget::setFrameId(model.getFrameId());
     CameraWidget::paintGL();
     painter.endNativePainting();
@@ -1623,6 +1641,8 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
   painter.setRenderHint(QPainter::Antialiasing);
   painter.setPen(Qt::NoPen);
+
+  setBackgroundColor(bg_colors[s->status]);
 
   if (s->worldObjectsVisible()) {
     if (sm.rcv_frame("modelV2") > s->scene.started_frame) {
