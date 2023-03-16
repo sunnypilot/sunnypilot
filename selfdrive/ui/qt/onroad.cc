@@ -551,7 +551,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   QRect headerRect(0, 0, width(), header_h);
   QPainterPath headerPath;
-  headerPath.addRoundedRect(headerRect, 40, 40);
+  headerPath.addRoundedRect(headerRect, 30, 30);
   p.fillPath(headerPath, bg);
 
   QString speedLimitStr = (speedLimit > 1) ? QString::number(std::nearbyint(speedLimit)) : "–";
@@ -1626,7 +1626,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
     // Create a QPainterPath with rounded corners
     QPainterPath path;
-    int radius = 40;
+    int radius = 30;
     int width = CameraWidget::width();
     int height = CameraWidget::height();
     path.addRoundedRect(0, 0, width, height, radius, radius);
