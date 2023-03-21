@@ -567,6 +567,8 @@ class Controls:
             self.state = State.enabled
           else:
             self.current_alert_types += [ET.OVERRIDE_LATERAL, ET.OVERRIDE_LONGITUDINAL]
+          if CS.cruiseState.enabled and not self.CS_prev.cruiseState.enabled:
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
 
     # DISABLED
     elif self.state == State.disabled:
