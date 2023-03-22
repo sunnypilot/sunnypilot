@@ -34,8 +34,6 @@ class CarControllerParams:
 class ToyotaFlags(IntFlag):
   HYBRID = 1
 
-  SMART_DSU = 2
-
 
 class CAR:
   # Toyota
@@ -242,6 +240,7 @@ FW_QUERY_CONFIG = FwQueryConfig(
 )
 
 FW_VERSIONS = {
+  CAR.CHR_TSS2: {(Ecu.eps, 0xfff, None): [b'\x00']},
   CAR.AVALON: {
     (Ecu.abs, 0x7b0, None): [
       b'F152607060\x00\x00\x00\x00\x00\x00',
