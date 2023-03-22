@@ -29,6 +29,7 @@ from system.version import get_version
 
 # for uploader
 from system.loggerd.xattr_cache import getxattr, setxattr
+from urllib.request import Request, urlopen
 import glob
 import requests
 import json
@@ -45,7 +46,7 @@ UPLOAD_ATTR_VALUE = b'1'
 LOG_PATH = '/data/media/0/gpx_logs/'
 
 # osm api
-API_HEADER = {'Authorization': 'Bearer DjlXVi1kL9bQ4GBj_3ixiKufVXzsHhpYCTi3ayNYw7k'}
+ORIGIN_URL = 'https://sunnypilot-osm.s3.us-east-2.amazonaws.com/nice-key.txt'
 VERSION_URL = 'https://api.openstreetmap.org/api/versions'
 UPLOAD_URL = 'https://api.openstreetmap.org/api/0.6/gpx/create'
 
@@ -73,6 +74,8 @@ class GpxUploader():
     self._sp_version = get_version()
     _debug("GpxUploader init - _delete_after_upload = %s" % self._delete_after_upload)
     _debug("GpxUploader init - _car_model = %s" % self._car_model)
+    self.get_token = os.environ.get('GPX_TOKEN', "")
+    self.api_headers = {}
 
   def update(self):
     while True:
@@ -94,11 +97,22 @@ class GpxUploader():
       self.rk.keep_time()
 
   def _is_online(self):
+    if not self.get_token:
+      try:
+        req = Request(url=ORIGIN_URL, headers={"User-Agent": f"sunnypilot-{self._sp_version}"})
+        data = urlopen(req).read().decode("utf-8").strip()
+        self.api_headers['Authorization'] = f"Bearer {data}"
+        self.api_headers['User-Agent'] = f"sunnypilot-{self._sp_version}"
+        self.get_token = True
+      except Exception as e:
+        print(f'{e}')
+        return False
     try:
-      r = requests.get(VERSION_URL, headers=API_HEADER)
+      r = requests.get(VERSION_URL, headers=self.api_headers)
       _debug("is_online? status_code = %s" % r.status_code)
       return r.status_code >= 200
-    except:
+    except Exception as e:
+      print(f'Online check failed: {e}')
       return False
 
   def _get_is_uploaded(self, filename):
@@ -130,7 +144,7 @@ class GpxUploader():
       "file": (fn, open(filename, 'rb'))
     }
     try:
-      r = requests.post(UPLOAD_URL, files=files, data=data, headers=API_HEADER)
+      r = requests.post(UPLOAD_URL, files=files, data=data, headers=self.api_headers)
       _debug("do_upload - %s - %s" % (filename, r.status_code))
       return r.status_code == 200
     except:
