@@ -52,13 +52,13 @@ class MapD():
     self._lock = threading.RLock()
 
   def udpate_state(self, sm):
-    sock = 'controlsState'
+    sock = 'carControl'
     if not sm.updated[sock] or not sm.valid[sock]:
       return
 
-    controls_state = sm[sock]
-    self._disengaging = not controls_state.enabled and self._op_enabled
-    self._op_enabled = controls_state.enabled
+    hud_control = sm[sock].hudControl
+    self._disengaging = not hud_control.speedVisible and self._op_enabled
+    self._op_enabled = hud_control.speedVisible
 
   def update_gps(self, sm):
     sock = 'gpsLocationExternal'
@@ -244,7 +244,7 @@ def mapd_thread(sm=None, pm=None):
 
   # *** setup messaging
   if sm is None:
-    sm = messaging.SubMaster(['gpsLocationExternal', 'controlsState'])
+    sm = messaging.SubMaster(['gpsLocationExternal', 'carControl'])
   if pm is None:
     pm = messaging.PubMaster(['liveMapData'])
 
