@@ -97,16 +97,18 @@ class GpxUploader():
       self.rk.keep_time()
 
   def _is_online(self):
-    if not self.get_token:
-      try:
+    try:
+      if self.get_token:
+        self.api_headers['Authorization'] = f"Bearer {self.get_token}"
+      else:
         req = Request(url=ORIGIN_URL, headers={"User-Agent": f"sunnypilot-{self._sp_version}"})
         data = urlopen(req).read().decode("utf-8").strip()
         self.api_headers['Authorization'] = f"Bearer {data}"
-        self.api_headers['User-Agent'] = f"sunnypilot-{self._sp_version}"
         self.get_token = True
-      except Exception as e:
-        print(f'{e}')
-        return False
+      self.api_headers['User-Agent'] = f"sunnypilot-{self._sp_version}"
+    except Exception as e:
+      print(f'{e}')
+      return False
     try:
       r = requests.get(VERSION_URL, headers=self.api_headers)
       _debug("is_online? status_code = %s" % r.status_code)
