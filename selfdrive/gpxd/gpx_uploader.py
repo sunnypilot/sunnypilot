@@ -25,6 +25,7 @@ import os
 import time
 from common.params import Params
 from common.realtime import Ratekeeper
+from selfdrive.athena.registration import register
 from system.version import get_version
 
 # for uploader
@@ -101,11 +102,11 @@ class GpxUploader():
       if self.get_token:
         self.api_headers['Authorization'] = f"Bearer {self.get_token}"
       else:
-        req = Request(url=ORIGIN_URL, headers={"User-Agent": f"sunnypilot-{self._sp_version}"})
+        req = Request(url=ORIGIN_URL, headers={"User-Agent": f"sunnypilot-{self._sp_version}-{register()}"})
         data = urlopen(req).read().decode("utf-8").strip()
         self.api_headers['Authorization'] = f"Bearer {data}"
         self.get_token = True
-      self.api_headers['User-Agent'] = f"sunnypilot-{self._sp_version}"
+      self.api_headers['User-Agent'] = f"sunnypilot-{self._sp_version}-{register()}"
     except Exception as e:
       print(f'{e}')
       return False
