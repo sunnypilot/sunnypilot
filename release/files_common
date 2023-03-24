@@ -159,7 +159,6 @@ selfdrive/mapd/config.py
 selfdrive/mapd/mapd.py
 selfdrive/mapd/lib/*
 selfdrive/mapd/README.md
-selfdrive/mapd/sp_osm_db.json
 
 common/SConscript
 common/version.h

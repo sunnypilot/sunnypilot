@@ -493,9 +493,12 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     const auto lmd = sm["liveMapData"].getLiveMapData();
     const uint64_t lmd_fix_time = lmd.getLastGpsTimestamp();
     const uint64_t current_ts = std::chrono::duration_cast<std::chrono::milliseconds>
-                              (std::chrono::system_clock::now().time_since_epoch()).count();
+                                (std::chrono::system_clock::now().time_since_epoch()).count();
+    QString road_name = QString::fromStdString(lmd.getCurrentRoadName());
     const bool show_road_name = current_ts - lmd_fix_time < 10000; // hide if fix older than 10s
-    setProperty("roadName", show_road_name ? QString::fromStdString(lmd.getCurrentRoadName()) : "");
+    const auto data_type = int(lmd.getDataType());
+    const QString data_type_draw(data_type == 2 ? "🌐  " : "");
+    setProperty("roadName", show_road_name ? data_type_draw + road_name : "");
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);

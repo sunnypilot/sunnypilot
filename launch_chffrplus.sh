@@ -84,7 +84,11 @@ function launch {
 
   # start manager
   cd selfdrive/manager
-  ./custom_dep.py && ./build.py && ./manager.py
+  if [ ! -f "/data/params/d/OsmLocal" ]; then
+    ./custom_dep.py && ./build.py && ./manager.py
+  else
+    ./custom_dep.py && ./build.py && ./local_osm_install.py && ./manager.py
+  fi
 
   # if broken, keep on screen error
   while true; do sleep 1; done

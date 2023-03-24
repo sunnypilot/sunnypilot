@@ -11,7 +11,7 @@ _ACCEPTABLE_BEARING_DELTA_IND = 0.7071067811865475  # sin(pi/4) | 45 degrees acc
 class WayCollection():
   """A collection of WayRelations to use for maps data analysis.
   """
-  def __init__(self, ways, query_center):
+  def __init__(self, areas, ways, query_center):
     """Creates a WayCollection with a set of OSM way objects.
 
     Args:
@@ -19,7 +19,7 @@ class WayCollection():
         query_center (Numpy Array): [lat, lon] numpy array in radians indicating the center of the data query.
     """
     self.id = uuid.uuid4()
-    self.way_relations = [WayRelation(way) for way in ways]
+    self.way_relations = [WayRelation(areas, way) for way in ways]
     self.query_center = query_center
 
     self.wr_index = WayRelationIndex(self.way_relations)

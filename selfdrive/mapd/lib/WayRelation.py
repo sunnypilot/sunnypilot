@@ -11,6 +11,8 @@ import json
 
 _WAY_BBOX_PADING = 80. / R  # 80 mts of padding to bounding box. (expressed in radians)
 
+with open(BASEDIR + "/selfdrive/mapd/lib/default_speeds_by_region.json", "rb") as f:
+  DEFAULT_SPEEDS_BY_REGION = json.loads(f.read())
 
 with open(BASEDIR + "/selfdrive/mapd/lib/default_speeds.json", "rb") as f:
   _COUNTRY_LIMITS = json.loads(f.read())
@@ -39,7 +41,8 @@ _HIGHWAY_RANK = {
   'tertiary_link': 41,
   'unclassified': 50,
   'residential': 60,
-  'living_street': 61
+  'living_street': 61,
+  'service': 62
 }
 
 
@@ -140,12 +143,58 @@ def conditional_speed_limit_for_osm_tag_limit_string(limit_string):
   # If we get here, no current date-time condition is active.
   return 0.
 
+def speed_limit_value_for_highway_type(areas, tags):
+  max_speed = None
+  try:
+    geocode_country = ''
+    geocode_region = ''
+    for area in areas:
+      if area.tags.get('admin_level', '') == "2":
+        if area.tags.get('ISO3166-1:alpha2', '') != '':
+          geocode_country = area.tags.get('ISO3166-1:alpha2', '')
+      elif area.tags.get('admin_level', '') == "4":
+        geocode_region = area.tags.get('name', '')
+    country_rules = DEFAULT_SPEEDS_BY_REGION.get(geocode_country, {})
+    country_defaults = country_rules.get('Default', [])
+    for rule in country_defaults:
+      rule_valid = all(
+        tag_name in tags
+        and tags[tag_name] == value
+        for tag_name, value in rule['tags'].items()
+      )
+      if rule_valid:
+        max_speed = rule['speed']
+        break #stop searching country
+
+    region_rules = country_rules.get(geocode_region, [])
+    for rule in region_rules:
+      rule_valid = all(
+        tag_name in tags
+        and tags[tag_name] == value
+        for tag_name, value in rule['tags'].items()
+      )
+      if rule_valid:
+        max_speed = rule['speed']
+        break #stop searching region
+  except KeyError as e:
+    print(e)
+  except TypeError as e:
+    print(f"TypeError: {e} object is not iterable.")
+  if max_speed is None:
+    return 0
+  v = re.match(r'^\s*([0-9]{1,3})\s*?(mph)?\s*$', str(max_speed))
+  if v is None:
+    return None
+  conv = CV.MPH_TO_MS if v[2] is not None and v[2] == "mph" else CV.KPH_TO_MS
+  return conv * float(v[1])
+
 
 class WayRelation():
   """A class that represent the relationship of an OSM way and a given `location` and `bearing` of a driving vehicle.
   """
-  def __init__(self, way, parent=None):
+  def __init__(self, areas, way, parent=None):
     self.way = way
+    self.areas = areas
     self.parent = parent
     self.parent_wr_id = parent.id if parent is not None else None  # For WRs created as splits of other WRs
     self.reset_location_variables()
@@ -162,8 +211,8 @@ class WayRelation():
       self.lanes = 2
 
     # Create numpy arrays with nodes data to support calculations.
-    self._nodes_np = np.radians(np.array([[node.lat, node.lon] for node in way.nodes], dtype=float))
-    self._nodes_ids = np.array([node.id for node in way .nodes], dtype=int)
+    self._nodes_np = np.radians(np.array([[nd.lat, nd.lon] for nd in way.nodes], dtype=float))
+    self._nodes_ids = np.array([nd.id for nd in way .nodes], dtype=int)
 
     # Get the vectors representation of the segments betwheen consecutive nodes. (N-1, 2)
     v = vectors(self._nodes_np) * R
@@ -341,6 +390,9 @@ class WayRelation():
 
       limit = speed_limit_for_osm_tag_limit_string(limit_string)
 
+    if limit == 0.:
+      limit = speed_limit_value_for_highway_type(self.areas, self.way.tags)
+
     self._speed_limit = limit
     return self._speed_limit
 
@@ -419,4 +471,4 @@ class WayRelation():
 
     ways = [create_way(way_ids[0], node_ids=self._nodes_ids[:idx + 1], from_way=self.way),
             create_way(way_ids[1], node_ids=self._nodes_ids[idx:], from_way=self.way)]
-    return [WayRelation(way, parent=self) for way in ways]
+    return [WayRelation(self.areas, way, parent=self) for way in ways]

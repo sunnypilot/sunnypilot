@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
+import json
 import threading
 from traceback import print_exception
 import numpy as np
 from time import strftime, gmtime
+from cereal import log
 import cereal.messaging as messaging
+from common.params import Params
 from common.realtime import Ratekeeper
 from selfdrive.mapd.lib.osm import OSM
 from selfdrive.mapd.lib.geo import distance_to_points
@@ -11,9 +14,12 @@ from selfdrive.mapd.lib.WayCollection import WayCollection
 from selfdrive.mapd.config import QUERY_RADIUS, MIN_DISTANCE_FOR_NEW_QUERY, FULL_STOP_MAX_SPEED, LOOK_AHEAD_HORIZON_TIME
 from system.swaglog import cloudlog
 
+DataType = log.LiveMapData.DataType
+
 
 _DEBUG = False
 _CLOUDLOG_DEBUG = True
+ROAD_NAME_TIMEOUT = 30 # secs
 
 
 def _debug(msg, log_to_cloud=True):
@@ -46,10 +52,23 @@ class MapD():
     self.last_fetch_location = None
     self.last_route_update_fix_timestamp = 0
     self.last_publish_fix_timestamp = 0
+    self.data_type = DataType.default
     self._op_enabled = False
     self._disengaging = False
     self._query_thread = None
     self._lock = threading.RLock()
+
+    # dp - use LastGPSPosition as init position (if we are in a undercover car park?)
+    # this way we can prefetch osm data before we get a fix.
+    last_pos = Params().get("LastGPSPosition")
+    if last_pos is not None and last_pos != "":
+      l = json.loads(last_pos)
+      lat = float(l["latitude"])
+      lon = float(l["longitude"])
+      self.location_rad = np.radians(np.array([lat, lon], dtype=float))
+      self.location_deg = (lat, lon)
+      self.bearing_rad = np.radians(0, dtype=float)
+      _debug("Use LastGPSPosition position - lat: %s, lon: %s" % (lat, lon))
 
   def udpate_state(self, sm):
     sock = 'carControl'
@@ -89,13 +108,13 @@ class MapD():
     def query(osm, location_deg, location_rad, radius):
       _debug(f'Mapd: Start query for OSM map data at {location_deg}')
       lat, lon = location_deg
-      ways = osm.fetch_road_ways_around_location(lat, lon, radius)
+      areas, ways, self.data_type = osm.fetch_road_ways_around_location(lat, lon, radius)
       _debug(f'Mapd: Query to OSM finished with {len(ways)} ways')
 
       # Only issue an update if we received some ways. Otherwise it is most likely a connectivity issue.
       # Will retry on next loop.
       if len(ways) > 0:
-        new_way_collection = WayCollection(ways, location_rad)
+        new_way_collection = WayCollection(areas, ways, location_rad)
 
         # Use the lock to update the way_collection as it might be being used to update the route.
         _debug('Mapd: Locking to write results from osm.', log_to_cloud=False)
@@ -232,6 +251,8 @@ class MapD():
     map_data_msg.liveMapData.turnSpeedLimitsAheadSigns = [float(s.curv_sign) for s in next_turn_speed_limit_sections]
 
     map_data_msg.liveMapData.currentRoadName = str(current_road_name if current_road_name is not None else "")
+
+    map_data_msg.liveMapData.dataType = self.data_type
 
     pm.send('liveMapData', map_data_msg)
     _debug(f'Mapd *****: Publish: \n{map_data_msg}\n********', log_to_cloud=False)
