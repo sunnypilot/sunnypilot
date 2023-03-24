@@ -48,10 +48,10 @@ public:
 
 private:
   void insertItem(SignalModel::Item *parent_item, int pos, const cabana::Signal *sig);
-  void handleSignalAdded(uint32_t address, const cabana::Signal *sig);
+  void handleSignalAdded(MessageId id, const cabana::Signal *sig);
   void handleSignalUpdated(const cabana::Signal *sig);
   void handleSignalRemoved(const cabana::Signal *sig);
-  void handleMsgChanged(uint32_t address);
+  void handleMsgChanged(MessageId id);
   void refresh();
   void updateState(const QHash<MessageId, CanData> *msgs);
 
@@ -108,8 +108,17 @@ private:
   void rowsChanged();
   void leaveEvent(QEvent *event);
 
+  struct TreeView : public QTreeView {
+    TreeView(QWidget *parent) : QTreeView(parent) {}
+    void rowsInserted(const QModelIndex &parent, int start, int end) override {
+      ((SignalView *)parentWidget())->rowsChanged();
+      // update widget geometries in QTreeView::rowsInserted
+      QTreeView::rowsInserted(parent, start, end);
+    }
+  };
+
   MessageId msg_id;
-  QTreeView *tree;
+  TreeView *tree;
   QLineEdit *filter_edit;
   ChartsWidget *charts;
   QLabel *signal_count_lb;
