@@ -534,8 +534,7 @@ class CarInterfaceBase(ABC):
     if cs_out.disengageByBrake and not cs_out.standstill and enable_pressed_long:
       events.add(EventName.cruiseEngageBlocked)
 
-    if cs_out.cruiseState.enabled:
-      self.cruise_cancelled_btn = False
+    self.cruise_cancelled_btn = False if cs_out.cruiseState.enabled else True
 
     return events, cs_out
 
