@@ -125,8 +125,9 @@ class LongitudinalPlanner:
       v_cruise = 0.0
 
     # Get acceleration and active solutions for custom long mpc.
-    self.cruise_source, a_min_sol, v_cruise_sol = self.cruise_solutions(not reset_state, self.v_desired_filter.x,
-                                                                        self.a_desired, v_cruise, sm)
+    self.cruise_source, a_min_sol, v_cruise_sol = self.cruise_solutions(
+      not reset_state and self.CP.openpilotLongitudinalControl, self.v_desired_filter.x,
+      self.a_desired, v_cruise, sm)
 
     # clip limits, cannot init MPC outside of bounds
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05, a_min_sol)
