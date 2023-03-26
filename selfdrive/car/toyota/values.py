@@ -45,6 +45,7 @@ class CAR:
   CAMRYH_TSS2 = "TOYOTA CAMRY HYBRID 2021-22"
   CHR = "TOYOTA C-HR 2018"
   CHRH = "TOYOTA C-HR HYBRID 2018"
+  CHRH_TSS2 = "TOYOTA C-HR HYBRID 2022" #TSS 2.5
   COROLLA = "TOYOTA COROLLA 2017-18"
   COROLLA_TSS2 = "TOYOTA COROLLA TSS2 2019"
   # LSS2 Lexus UX Hybrid is same as a TSS2 Corolla Hybrid
@@ -389,8 +390,9 @@ FW_VERSIONS = {
       b'\x028646F3305300\x00\x00\x00\x008646G5301200\x00\x00\x00\x00',
     ],
   },
-  CAR.CHR: {
+   CAR.CHR: {
     (Ecu.engine, 0x700, None): [
+      b'\x01896631021100\x00\x00\x00\x00',
       b'\x01896631017100\x00\x00\x00\x00',
       b'\x01896631017200\x00\x00\x00\x00',
       b'\x0189663F413100\x00\x00\x00\x00',
@@ -406,7 +408,7 @@ FW_VERSIONS = {
       b'8821FF406000    ',
       b'8821FF407100    ',
     ],
-    (Ecu.esp, 0x7b0, None): [
+    (Ecu.abs, 0x7b0, None): [
       b'F152610020\x00\x00\x00\x00\x00\x00',
       b'F152610153\x00\x00\x00\x00\x00\x00',
       b'F152610210\x00\x00\x00\x00\x00\x00',
@@ -428,6 +430,7 @@ FW_VERSIONS = {
       b'\x033F401100\x00\x00\x00\x00\x00\x00\x00\x00A0202000\x00\x00\x00\x00\x00\x00\x00\x00895231203102\x00\x00\x00\x00',
       b'\x033F401200\x00\x00\x00\x00\x00\x00\x00\x00A0202000\x00\x00\x00\x00\x00\x00\x00\x00895231203202\x00\x00\x00\x00',
       b'\x033F424000\x00\x00\x00\x00\x00\x00\x00\x00A0202000\x00\x00\x00\x00\x00\x00\x00\x00895231203202\x00\x00\x00\x00',
+      b'\x033F424000\x00\x00\x00\x00\x00\x00\x00\x00A0202000\x00\x00\x00\x00\x00\x00\x00\x00895231203302\x00\x00\x00\x00',
     ],
     (Ecu.fwdRadar, 0x750, 0xf): [
       b'8821F0W01000    ',
@@ -457,7 +460,7 @@ FW_VERSIONS = {
       b'\x0289663F431000\x00\x00\x00\x008966A4703000\x00\x00\x00\x00',
       b'\x0189663F438000\x00\x00\x00\x00',
     ],
-    (Ecu.esp, 0x7b0, None): [
+    (Ecu.abs, 0x7b0, None): [
       b'F152610012\x00\x00\x00\x00\x00\x00',
       b'F152610013\x00\x00\x00\x00\x00\x00',
       b'F152610014\x00\x00\x00\x00\x00\x00',
@@ -498,6 +501,23 @@ FW_VERSIONS = {
       b'8646FF404000    ',
       b'8646FF406000    ',
       b'8646FF407000    ',
+    ],
+  },
+  CAR.CHRH_TSS2: {
+    (Ecu.eps, 0x7a1, None): [
+      b'8965B10092\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.abs, 0x7b0, None): [
+      b'F152610041\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.engine, 0x700, None): [
+      b'\x0189663F438000\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdRadar, 0x750, 15): [
+      b'\x018821FF410500\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdCamera, 0x750, 109): [
+      b'\x028646FF413100\x00\x00\x00\x008646GF411100\x00\x00\x00\x00',
     ],
   },
   CAR.COROLLA: {
@@ -1619,7 +1639,8 @@ DBC = {
   CAR.LEXUS_RX_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.LEXUS_RXH_TSS2: dbc_dict('toyota_nodsu_hybrid_pt_generated', 'toyota_tss2_adas'),
   CAR.CHR: dbc_dict('toyota_nodsu_pt_generated', 'toyota_adas'),
-  CAR.CHRH: dbc_dict('toyota_nodsu_hybrid_pt_generated', 'toyota_adas'),
+  CAR.CHRH: dbc_dict('toyota_nodsu_pt_generated', 'toyota_adas'),
+  CAR.CHRH_TSS2: dbc_dict('toyota_nodsu_pt_generated', None),
   CAR.CAMRY: dbc_dict('toyota_nodsu_pt_generated', 'toyota_adas'),
   CAR.CAMRYH: dbc_dict('toyota_camry_hybrid_2018_pt_generated', 'toyota_adas'),
   CAR.CAMRY_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
@@ -1649,25 +1670,24 @@ DBC = {
   CAR.ALPHARD_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
 }
 
+# These cars have non-standard EPS torque scale factors. All others are 73
+EPS_SCALE = defaultdict(lambda: 73, {CAR.PRIUS: 66, CAR.COROLLA: 88, CAR.LEXUS_IS: 77, CAR.LEXUS_RC: 77, CAR.LEXUS_CTH: 100, CAR.PRIUS_V: 100})
 
 # Toyota/Lexus Safety Sense 2.0 and 2.5
-TSS2_CAR = set([CAR.RAV4_TSS2, CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2, CAR.LEXUS_ES_TSS2, CAR.LEXUS_ESH_TSS2, CAR.RAV4H_TSS2,
-                CAR.LEXUS_RX_TSS2, CAR.LEXUS_RXH_TSS2, CAR.HIGHLANDER_TSS2, CAR.HIGHLANDERH_TSS2, CAR.PRIUS_TSS2, CAR.CAMRY_TSS2, CAR.CAMRYH_TSS2,
-                CAR.MIRAI, CAR.LEXUS_NX_TSS2, CAR.ALPHARD_TSS2])
+TSS2_CAR = {CAR.RAV4_TSS2, CAR.RAV4_TSS2_2022, CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2, CAR.LEXUS_ES_TSS2, CAR.LEXUS_ESH_TSS2, CAR.RAV4H_TSS2, CAR.RAV4H_TSS2_2022,
+            CAR.LEXUS_RX_TSS2, CAR.LEXUS_RXH_TSS2, CAR.HIGHLANDER_TSS2, CAR.HIGHLANDERH_TSS2, CAR.PRIUS_TSS2, CAR.CAMRY_TSS2, CAR.CAMRYH_TSS2, CAR.CHRH_TSS2,
+            CAR.MIRAI, CAR.LEXUS_NX_TSS2, CAR.LEXUS_NXH_TSS2, CAR.ALPHARD_TSS2, CAR.AVALON_TSS2, CAR.AVALONH_TSS2, CAR.ALPHARDH_TSS2}
 
-NO_DSU_CAR = TSS2_CAR | set([CAR.CHR, CAR.CHRH, CAR.CAMRY, CAR.CAMRYH])
+
+# the DSU uses the AEB message for longitudinal on these cars
+UNSUPPORTED_DSU_CAR = {CAR.LEXUS_IS, CAR.LEXUS_RC}
+
+# these cars have a radar which sends ACC messages instead of the camera
+RADAR_ACC_CAR = {CAR.RAV4H_TSS2_2022, CAR.RAV4_TSS2_2022, CAR.CHRH_TSS2}
+
+EV_HYBRID_CAR = {CAR.AVALONH_2019, CAR.AVALONH_TSS2, CAR.CAMRYH, CAR.CAMRYH_TSS2, CAR.CHRH, CAR.CHRH_TSS2, CAR.COROLLAH_TSS2, CAR.HIGHLANDERH, CAR.HIGHLANDERH_TSS2, CAR.PRIUS,
+                 CAR.PRIUS_V, CAR.RAV4H, CAR.RAV4H_TSS2, CAR.RAV4H_TSS2_2022, CAR.LEXUS_CTH, CAR.MIRAI, CAR.LEXUS_ESH, CAR.LEXUS_ESH_TSS2, CAR.LEXUS_NXH, CAR.LEXUS_RXH,
+                 CAR.LEXUS_RXH_TSS2, CAR.LEXUS_NXH_TSS2, CAR.PRIUS_TSS2, CAR.ALPHARDH_TSS2}
 
 # no resume button press required
-NO_STOP_TIMER_CAR = TSS2_CAR | set([CAR.RAV4H, CAR.HIGHLANDERH, CAR.HIGHLANDER, CAR.SIENNA, CAR.LEXUS_ESH])
-
-FEATURES = {
-  "use_lta_msg": set([CAR.CAMRY_TSS2, CAR.CAMRYH_TSS2, CAR.HIGHLANDER_TSS2, CAR.HIGHLANDER_TSS2])
-}
-
-def main():
-  for member, value in vars(CAR).items():
-    if not member.startswith("_"):
-      print(value)
-
-if __name__ == "__main__":
-  main()
+NO_STOP_TIMER_CAR = TSS2_CAR | {CAR.PRIUS_V, CAR.RAV4H, CAR.HIGHLANDERH, CAR.HIGHLANDER, CAR.SIENNA, CAR.LEXUS_ESH}
