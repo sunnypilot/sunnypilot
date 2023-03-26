@@ -68,6 +68,15 @@ def _set_is_uploaded(filename):
   setxattr(filename, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
 
 
+def _get_files_to_be_uploaded():
+  files = sorted(filter(os.path.isfile, glob.glob(LOG_PATH + '*')))
+  files_to_be_uploaded = []
+  for file in files:
+    if not _get_is_uploaded(file):
+      files_to_be_uploaded.append(file)
+  return files_to_be_uploaded
+
+
 class GpxUploader():
   def __init__(self):
     self.param_s = Params()
@@ -87,7 +96,7 @@ class GpxUploader():
 
   def update(self):
     while True:
-      files = self._get_files_to_be_uploaded()
+      files = _get_files_to_be_uploaded()
       if len(files) == 0 or not self._is_online():
         _debug("run - not online or no files")
       elif not self.param_s.get_bool("DisableOnroadUploads") or self.param_s.get_bool("IsOffroad"):
@@ -112,17 +121,6 @@ class GpxUploader():
     except Exception as e:
       print(f'Online check error: {e}')
       return False
-
-  def _get_files(self):
-    return sorted( filter( os.path.isfile, glob.glob(LOG_PATH + '*') ) )
-
-  def _get_files_to_be_uploaded(self):
-    files = self._get_files()
-    files_to_be_uploaded = []
-    for file in files:
-      if not _get_is_uploaded(file):
-        files_to_be_uploaded.append(file)
-    return files_to_be_uploaded
 
   def _do_upload(self, filename):
     fn = os.path.basename(filename)
