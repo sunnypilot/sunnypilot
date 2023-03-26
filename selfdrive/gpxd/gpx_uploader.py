@@ -58,6 +58,16 @@ def _debug(msg):
   print(msg, flush=True)
 
 
+def _get_is_uploaded(filename):
+  _debug("%s is uploaded: %s" % (filename, getxattr(filename, UPLOAD_ATTR_NAME) is not None))
+  return getxattr(filename, UPLOAD_ATTR_NAME) is not None
+
+
+def _set_is_uploaded(filename):
+  _debug("%s set to uploaded" % filename)
+  setxattr(filename, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
+
+
 class GpxUploader():
   def __init__(self):
     self.param_s = Params()
@@ -88,7 +98,7 @@ class GpxUploader():
               os.remove(file)
             else:
               _debug("run - set_is_uploaded")
-              self._set_is_uploaded(file)
+              _set_is_uploaded(file)
       # sleep for 300 secs if offroad
       # otherwise sleep 60 secs
       time.sleep(300 if self.param_s.get_bool("IsOffroad") else 60)
@@ -100,16 +110,8 @@ class GpxUploader():
       _debug("is_online? status_code = %s" % r.status_code)
       return r.status_code >= 200
     except Exception as e:
-      print(f'Online check failed: {e}')
+      print(f'Online check error: {e}')
       return False
-
-  def _get_is_uploaded(self, filename):
-    _debug("%s is uploaded: %s" % (filename, getxattr(filename, UPLOAD_ATTR_NAME) is not None))
-    return getxattr(filename, UPLOAD_ATTR_NAME) is not None
-
-  def _set_is_uploaded(self, filename):
-    _debug("%s set to uploaded" % filename)
-    setxattr(filename, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
 
   def _get_files(self):
     return sorted( filter( os.path.isfile, glob.glob(LOG_PATH + '*') ) )
@@ -118,7 +120,7 @@ class GpxUploader():
     files = self._get_files()
     files_to_be_uploaded = []
     for file in files:
-      if not self._get_is_uploaded(file):
+      if not _get_is_uploaded(file):
         files_to_be_uploaded.append(file)
     return files_to_be_uploaded
 
@@ -135,7 +137,8 @@ class GpxUploader():
       r = requests.post(UPLOAD_URL, files=files, data=data, headers=self.api_headers)
       _debug("do_upload - %s - %s" % (filename, r.status_code))
       return r.status_code == 200
-    except:
+    except Exception as e:
+      print(f'Upload error: {e}')
       return False
 
 
