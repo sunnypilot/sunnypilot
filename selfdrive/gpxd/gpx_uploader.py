@@ -30,7 +30,6 @@ from system.version import get_version
 
 # for uploader
 from system.loggerd.xattr_cache import getxattr, setxattr
-from urllib.request import Request, urlopen
 import glob
 import requests
 import json
@@ -47,9 +46,8 @@ UPLOAD_ATTR_VALUE = b'1'
 LOG_PATH = '/data/media/0/gpx_logs/'
 
 # osm api
-ORIGIN_URL = 'https://sunnypilot-osm.s3.us-east-2.amazonaws.com/nice-key.txt'
 VERSION_URL = 'https://api.openstreetmap.org/api/versions'
-UPLOAD_URL = 'https://api.openstreetmap.org/api/0.6/gpx/create'
+UPLOAD_URL = 'https://sunnypilot.com/osm/gpx_uploader.php'
 
 _DEBUG = False
 
@@ -75,8 +73,7 @@ class GpxUploader():
     self._sp_version = get_version()
     _debug("GpxUploader init - _delete_after_upload = %s" % self._delete_after_upload)
     _debug("GpxUploader init - _car_model = %s" % self._car_model)
-    self.get_token = os.environ.get('GPX_TOKEN', "")
-    self.api_headers = {}
+    self.api_headers = {"User-Agent": f"sunnypilot-{self._sp_version}-{register()}"}
 
   def update(self):
     while True:
@@ -98,18 +95,6 @@ class GpxUploader():
       self.rk.keep_time()
 
   def _is_online(self):
-    try:
-      if self.get_token:
-        self.api_headers['Authorization'] = f"Bearer {self.get_token}"
-      else:
-        req = Request(url=ORIGIN_URL, headers={"User-Agent": f"sunnypilot-{self._sp_version}-{register()}"})
-        data = urlopen(req).read().decode("utf-8").strip()
-        self.api_headers['Authorization'] = f"Bearer {data}"
-        self.get_token = True
-      self.api_headers['User-Agent'] = f"sunnypilot-{self._sp_version}-{register()}"
-    except Exception as e:
-      print(f'{e}')
-      return False
     try:
       r = requests.get(VERSION_URL, headers=self.api_headers)
       _debug("is_online? status_code = %s" % r.status_code)
