@@ -70,6 +70,7 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(int status MEMBER status);
 
   Q_PROPERTY(bool steerOverride MEMBER steerOverride);
+  Q_PROPERTY(bool gasOverride MEMBER gasOverride);
   Q_PROPERTY(bool latActive MEMBER latActive);
   Q_PROPERTY(bool madsEnabled MEMBER madsEnabled);
 
@@ -194,6 +195,7 @@ private:
   bool wide_cam_requested = false;
 
   bool steerOverride = false;
+  bool gasOverride = false;
   bool latActive = false;
   bool madsEnabled = false;
 

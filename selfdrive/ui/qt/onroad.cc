@@ -424,6 +424,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("status", s.status);
 
   setProperty("steerOverride", car_state.getSteeringPressed());
+  setProperty("gasOverride", car_state.getGasPressed());
   setProperty("latActive", car_control.getLatActive());
   setProperty("madsEnabled", car_state.getMadsEnabled());
 
@@ -598,7 +599,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (is_cruise_set) {
     if (status == STATUS_DISENGAGED) {
       p.setPen(whiteColor());
-    } else if (status == STATUS_OVERRIDE) {
+    } else if (status == STATUS_OVERRIDE && gasOverride) {
       p.setPen(QColor(0x91, 0x9b, 0x95, 0xff));
     } else if (speedLimitSLC > 0) {
       p.setPen(interpColor(
@@ -626,13 +627,13 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   // Draw set speed
   if (is_cruise_set) {
-    if (speedLimitSLC > 0 && status != STATUS_DISENGAGED && status != STATUS_OVERRIDE) {
+    if (speedLimitSLC > 0 && status != STATUS_DISENGAGED && (status != STATUS_OVERRIDE || !gasOverride)) {
       p.setPen(interpColor(
         setSpeed,
         {speedLimitSLC + 5, speedLimitSLC + 15, speedLimitSLC + 25},
         {whiteColor(), QColor(0xff, 0x95, 0x00, 0xff), QColor(0xff, 0x00, 0x00, 0xff)}
       ));
-    } else if (speedLimit > 0 && status != STATUS_DISENGAGED && status != STATUS_OVERRIDE) {
+    } else if (speedLimit > 0 && status != STATUS_DISENGAGED && (status != STATUS_OVERRIDE || !gasOverride)) {
       p.setPen(interpColor(
         setSpeed,
         {speedLimit + 5, speedLimit + 15, speedLimit + 25},
