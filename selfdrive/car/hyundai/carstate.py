@@ -190,8 +190,9 @@ class CarState(CarStateBase):
 
     self.mads_enabled = False if not self.control_initialized else ret.cruiseState.available
 
-    self._update_traffic_signals(self.CP, cp, cp_cam)
-    ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
+    if self.CP.flags & HyundaiFlags.SP_NAV_MSG:
+      self._update_traffic_signals(self.CP, cp, cp_cam)
+      ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
     return ret
 
