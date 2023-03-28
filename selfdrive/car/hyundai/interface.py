@@ -372,7 +372,7 @@ class CarInterface(CarInterfaceBase):
     # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons
     # Main button also can trigger an engagement on these cars
     allow_enable = any(btn in ENABLE_BUTTONS for btn in self.CS.cruise_buttons) or any(self.CS.main_buttons)
-    events = self.create_common_events(ret, extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.manumatic],
+    events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.manumatic],
                                        pcm_enable=False, allow_enable=allow_enable)
 
     events, ret = self.create_sp_events(self.CS, ret, events, main_enabled=True, allow_enable=allow_enable)

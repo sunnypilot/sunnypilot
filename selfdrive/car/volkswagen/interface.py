@@ -281,7 +281,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = buttonEvents
 
-    events = self.create_common_events(ret, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
+    events = self.create_common_events(ret, c, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
                                        pcm_enable=False,
                                        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 

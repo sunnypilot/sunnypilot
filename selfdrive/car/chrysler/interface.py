@@ -142,7 +142,7 @@ class CarInterface(CarInterfaceBase):
     ret.buttonEvents = buttonEvents
 
     # events
-    events = self.create_common_events(ret, extra_gears=[car.CarState.GearShifter.low], pcm_enable=False)
+    events = self.create_common_events(ret, c, extra_gears=[car.CarState.GearShifter.low], pcm_enable=False)
 
     events, ret = self.create_sp_events(self.CS, ret, events)
 
