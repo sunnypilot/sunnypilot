@@ -219,6 +219,9 @@ static void update_state(UIState *s) {
   if (sm.updated("carState")) {
     scene.gac_tr = sm["carState"].getCarState().getGapAdjustCruiseTr();
   }
+  if (sm.updated("controlsState")) {
+    scene.controlsState = sm["controlsState"].getControlsState();
+  }
 }
 
 void ui_update_params(UIState *s) {
