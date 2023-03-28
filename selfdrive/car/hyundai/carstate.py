@@ -175,8 +175,9 @@ class CarState(CarStateBase):
     self.cruise_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwState"])
     self.main_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwMain"])
 
-    self._update_traffic_signals(self.CP, cp, cp_cam)
-    ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
+    if self.CP.flags & HyundaiFlags.SP_NAV_MSG:
+      self._update_traffic_signals(self.CP, cp, cp_cam)
+      ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
     return ret
 
