@@ -119,8 +119,6 @@ class LongitudinalPlanner:
     if len(sm['modelV2'].temporalPose.trans):
       self.v_model_error = sm['modelV2'].temporalPose.trans[0] - v_ego
 
-    accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
-    accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
     if force_slow_decel:
       v_cruise = 0.0
 
