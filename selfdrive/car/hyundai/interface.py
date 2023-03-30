@@ -2,7 +2,8 @@
 from cereal import car
 from panda import Panda
 from common.conversions import Conversions as CV
-from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, Buttons
+from selfdrive.car.hyundai.hyundaicanfd import get_e_can_bus
+from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, NON_SCC_CAR, Buttons
 from selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
 from selfdrive.car import STD_CARGO_KG, create_button_event, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
@@ -25,7 +26,7 @@ class CarInterface(CarInterfaceBase):
     # These cars have been put into dashcam only due to both a lack of users and test coverage.
     # These cars likely still work fine. Once a user confirms each car works and a test route is
     # added to selfdrive/car/tests/routes.py, we can remove it from this list.
-    ret.dashcamOnly = candidate in {CAR.KIA_OPTIMA_H, }
+    ret.dashcamOnly = candidate in ({CAR.KIA_OPTIMA_H, } | NON_SCC_CAR)
 
     if candidate in CANFD_CAR:
       # detect HDA2 with ADAS Driving ECU
@@ -86,7 +87,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 15.4            # 14 is Stock | Settled Params Learner values are steerRatio: 15.401566348670535
       tire_stiffness_factor = 0.385    # stiffnessFactor settled on 1.0081302973865127
       ret.minSteerSpeed = 32 * CV.MPH_TO_MS
-    elif candidate == CAR.ELANTRA_2021:
+    elif candidate in (CAR.ELANTRA_2021, CAR.ELANTRA_2022_NON_SCC):
       ret.mass = (2800. * CV.LB_TO_KG) + STD_CARGO_KG
       ret.wheelbase = 2.72
       ret.steerRatio = 12.9
@@ -165,7 +166,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1825. + STD_CARGO_KG
       ret.wheelbase = 2.78
       ret.steerRatio = 14.4 * 1.15   # 15% higher at the center seems reasonable
-    elif candidate == CAR.KIA_FORTE:
+    elif candidate in (CAR.KIA_FORTE, CAR. KIA_FORTE_2019_NON_SCC, CAR.KIA_FORTE_2021_NON_SCC):
       ret.mass = 3558. * CV.LB_TO_KG
       ret.wheelbase = 2.80
       ret.steerRatio = 13.75
@@ -212,7 +213,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1640.0 + STD_CARGO_KG
       ret.wheelbase = 2.84
       ret.steerRatio = 13.56
-    elif candidate == CAR.GENESIS_G70_2020:
+    elif candidate in (CAR.GENESIS_G70_2020, CAR.GENESIS_G70_2021_NON_SCC):
       ret.mass = 3673.0 * CV.LB_TO_KG + STD_CARGO_KG
       ret.wheelbase = 2.83
       ret.steerRatio = 12.9
@@ -250,10 +251,15 @@ class CarInterface(CarInterfaceBase):
 
     # *** feature detection ***
     if candidate in CANFD_CAR:
-      bus = 5 if ret.flags & HyundaiFlags.CANFD_HDA2 else 4
-      ret.enableBsm = 0x1e5 in fingerprint[bus]
+      ret.enableBsm = 0x1e5 in fingerprint[get_e_can_bus(ret)]
+
+      if 0x1fa in fingerprint[get_e_can_bus(ret)]:
+        ret.flags |= HyundaiFlags.SP_NAV_MSG.value
     else:
       ret.enableBsm = 0x58b in fingerprint[0]
+
+      if 0x544 in fingerprint[0]:
+        ret.flags |= HyundaiFlags.SP_NAV_MSG.value
 
     # *** panda safety config ***
     if candidate in CANFD_CAR:

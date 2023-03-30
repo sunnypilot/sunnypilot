@@ -23,7 +23,7 @@ from system.version import is_dirty, get_commit, get_version, get_origin, get_sh
                               terms_version, training_version, is_tested_branch, is_release_branch
 
 
-sys.path.append(os.path.join(BASEDIR, "third_party"))
+sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
 
 
 def manager_init() -> None:
@@ -31,7 +31,7 @@ def manager_init() -> None:
   set_time(cloudlog)
 
   # save boot log
-  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "selfdrive/loggerd"))
+  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "system/loggerd"))
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
@@ -69,6 +69,8 @@ def manager_init() -> None:
     ("EndToEndLongToggle", "1"),
     ("EnhancedScc", "0"),
     ("GapAdjustCruise", "1"),
+    ("GapAdjustCruiseMax", "0"),
+    ("GapAdjustCruiseMin", "0"),
     ("GapAdjustCruiseMode", "0"),
     ("GapAdjustCruiseTr", "4"),
     ("GpxDeleteAfterUpload", "1"),
@@ -214,7 +216,7 @@ def manager_thread() -> None:
     for param in ("DoUninstall", "DoShutdown", "DoReboot"):
       if params.get_bool(param):
         shutdown = True
-        params.put("LastManagerExitReason", param)
+        params.put("LastManagerExitReason", f"{param} {datetime.datetime.now()}")
         cloudlog.warning(f"Shutting down manager - {param} set")
 
     if shutdown:

@@ -25,10 +25,11 @@ import os
 import time
 from common.params import Params
 from common.realtime import Ratekeeper
+from selfdrive.athena.registration import register
 from system.version import get_version
 
 # for uploader
-from selfdrive.loggerd.xattr_cache import getxattr, setxattr
+from system.loggerd.xattr_cache import getxattr, setxattr
 import glob
 import requests
 import json
@@ -45,9 +46,8 @@ UPLOAD_ATTR_VALUE = b'1'
 LOG_PATH = '/data/media/0/gpx_logs/'
 
 # osm api
-API_HEADER = {'Authorization': 'Bearer DjlXVi1kL9bQ4GBj_3ixiKufVXzsHhpYCTi3ayNYw7k'}
 VERSION_URL = 'https://api.openstreetmap.org/api/versions'
-UPLOAD_URL = 'https://api.openstreetmap.org/api/0.6/gpx/create'
+UPLOAD_URL = 'https://sunnypilot.com/osm/gpx_uploader.php'
 
 _DEBUG = False
 
@@ -56,6 +56,25 @@ def _debug(msg):
   if not _DEBUG:
     return
   print(msg, flush=True)
+
+
+def _get_is_uploaded(filename):
+  _debug("%s is uploaded: %s" % (filename, getxattr(filename, UPLOAD_ATTR_NAME) is not None))
+  return getxattr(filename, UPLOAD_ATTR_NAME) is not None
+
+
+def _set_is_uploaded(filename):
+  _debug("%s set to uploaded" % filename)
+  setxattr(filename, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
+
+
+def _get_files_to_be_uploaded():
+  files = sorted(filter(os.path.isfile, glob.glob(LOG_PATH + '*')))
+  files_to_be_uploaded = []
+  for file in files:
+    if not _get_is_uploaded(file):
+      files_to_be_uploaded.append(file)
+  return files_to_be_uploaded
 
 
 class GpxUploader():
@@ -73,10 +92,11 @@ class GpxUploader():
     self._sp_version = get_version()
     _debug("GpxUploader init - _delete_after_upload = %s" % self._delete_after_upload)
     _debug("GpxUploader init - _car_model = %s" % self._car_model)
+    self.api_headers = {"User-Agent": f"sunnypilot-{self._sp_version}-{register()}"}
 
   def update(self):
     while True:
-      files = self._get_files_to_be_uploaded()
+      files = _get_files_to_be_uploaded()
       if len(files) == 0 or not self._is_online():
         _debug("run - not online or no files")
       elif not self.param_s.get_bool("DisableOnroadUploads") or self.param_s.get_bool("IsOffroad"):
@@ -87,7 +107,7 @@ class GpxUploader():
               os.remove(file)
             else:
               _debug("run - set_is_uploaded")
-              self._set_is_uploaded(file)
+              _set_is_uploaded(file)
       # sleep for 300 secs if offroad
       # otherwise sleep 60 secs
       time.sleep(300 if self.param_s.get_bool("IsOffroad") else 60)
@@ -95,30 +115,12 @@ class GpxUploader():
 
   def _is_online(self):
     try:
-      r = requests.get(VERSION_URL, headers=API_HEADER)
+      r = requests.get(VERSION_URL, headers=self.api_headers)
       _debug("is_online? status_code = %s" % r.status_code)
       return r.status_code >= 200
-    except:
+    except Exception as e:
+      print(f'Online check error: {e}')
       return False
-
-  def _get_is_uploaded(self, filename):
-    _debug("%s is uploaded: %s" % (filename, getxattr(filename, UPLOAD_ATTR_NAME) is not None))
-    return getxattr(filename, UPLOAD_ATTR_NAME) is not None
-
-  def _set_is_uploaded(self, filename):
-    _debug("%s set to uploaded" % filename)
-    setxattr(filename, UPLOAD_ATTR_NAME, UPLOAD_ATTR_VALUE)
-
-  def _get_files(self):
-    return sorted( filter( os.path.isfile, glob.glob(LOG_PATH + '*') ) )
-
-  def _get_files_to_be_uploaded(self):
-    files = self._get_files()
-    files_to_be_uploaded = []
-    for file in files:
-      if not self._get_is_uploaded(file):
-        files_to_be_uploaded.append(file)
-    return files_to_be_uploaded
 
   def _do_upload(self, filename):
     fn = os.path.basename(filename)
@@ -130,10 +132,11 @@ class GpxUploader():
       "file": (fn, open(filename, 'rb'))
     }
     try:
-      r = requests.post(UPLOAD_URL, files=files, data=data, headers=API_HEADER)
+      r = requests.post(UPLOAD_URL, files=files, data=data, headers=self.api_headers)
       _debug("do_upload - %s - %s" % (filename, r.status_code))
       return r.status_code == 200
-    except:
+    except Exception as e:
+      print(f'Upload error: {e}')
       return False
 
 

@@ -40,6 +40,7 @@ class LateralPlanner:
     self.plan_yaw_rate = np.zeros((TRAJECTORY_SIZE,))
     self.t_idxs = np.arange(TRAJECTORY_SIZE)
     self.y_pts = np.zeros(TRAJECTORY_SIZE)
+    self.d_path_w_lines_xyz = np.zeros((TRAJECTORY_SIZE, 3))
 
     self.lat_mpc = LateralMpc()
     self.reset_mpc(np.zeros(4))
@@ -133,5 +134,8 @@ class LateralPlanner:
     lateralPlan.laneChangeState = self.DH.lane_change_state
     lateralPlan.laneChangeDirection = self.DH.lane_change_direction
     lateralPlan.laneChangePrev = self.DH.prev_lane_change
+
+    lateralPlan.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
+    lateralPlan.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
 
     pm.send('lateralPlan', plan_send)
