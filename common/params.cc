@@ -210,6 +210,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"BelowSpeedPause", PERSISTENT},
     {"BrakeLights", PERSISTENT},
     {"BrightnessControl", PERSISTENT},
+    {"ButtonAutoHide", PERSISTENT},
     {"CameraControl", PERSISTENT},
     {"CameraControlToggle", PERSISTENT},
     {"CameraOffset", PERSISTENT},
