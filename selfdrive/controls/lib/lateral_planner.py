@@ -98,12 +98,13 @@ class LateralPlanner:
     else:
       d_path_xyz = self.path_xyz
       self.dynamic_lane_profile_status = True
+    self.path_xyz = d_path_xyz
 
     self.lat_mpc.set_weights(PATH_COST, LATERAL_MOTION_COST,
                              LATERAL_ACCEL_COST, LATERAL_JERK_COST,
                              STEERING_RATE_COST)
 
-    y_pts = d_path_xyz[:LAT_MPC_N+1, 1]
+    y_pts = self.path_xyz[:LAT_MPC_N+1, 1]
     heading_pts = self.plan_yaw[:LAT_MPC_N+1]
     yaw_rate_pts = self.plan_yaw_rate[:LAT_MPC_N+1]
     self.y_pts = y_pts

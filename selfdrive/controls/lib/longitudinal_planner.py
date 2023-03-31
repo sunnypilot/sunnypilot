@@ -96,7 +96,7 @@ class LongitudinalPlanner:
     force_slow_decel = sm['controlsState'].forceDecel
 
     # Reset current state when not engaged, or user is controlling the speed
-    reset_state = long_control_off if self.CP.openpilotLongitudinalControl else not sm['controlsState'].enabled
+    reset_state = long_control_off if self.CP.openpilotLongitudinalControl else not sm['carControl'].hudControl.speedVisible
 
     # No change cost when user is controlling the speed, or when standstill
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
@@ -131,10 +131,11 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05, a_min_sol)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
+    self.mpc.set_weights(prev_accel_constraint)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['carState'], sm['radarState'], v_cruise_sol, x, v, a, j, prev_accel_constraint)
+    self.mpc.update(sm['carState'], sm['radarState'], v_cruise_sol, x, v, a, j)
 
     self.v_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
