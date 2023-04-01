@@ -267,6 +267,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"PathOffset", PERSISTENT},
     {"QuietDrive", PERSISTENT},
     {"ReverseAccChange", PERSISTENT},
+    {"ReverseDmCam", PERSISTENT},
     {"ShowDebugUI", PERSISTENT},
     {"SpeedLimitControl", PERSISTENT},
     {"SpeedLimitPercOffset", PERSISTENT},
