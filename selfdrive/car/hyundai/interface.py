@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
     # These cars have been put into dashcam only due to both a lack of users and test coverage.
     # These cars likely still work fine. Once a user confirms each car works and a test route is
     # added to selfdrive/car/tests/routes.py, we can remove it from this list.
-    ret.dashcamOnly = candidate in ({CAR.KIA_OPTIMA_H, } | NON_SCC_CAR)
+    ret.dashcamOnly = candidate in {CAR.KIA_OPTIMA_H, }
 
     if candidate in CANFD_CAR:
       # detect HDA2 with ADAS Driving ECU
@@ -289,6 +289,9 @@ class CarInterface(CarInterfaceBase):
 
       if ret.flags & HyundaiFlags.SP_ENHANCED_SCC:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_ESCC
+
+      if candidate in NON_SCC_CAR:
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_NON_SCC
 
     if ret.openpilotLongitudinalControl:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_LONG
