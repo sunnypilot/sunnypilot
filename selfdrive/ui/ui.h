@@ -159,6 +159,7 @@ typedef struct UIScene {
   bool visual_brake_lights;
 
   int onroadScreenOff, osoTimer, brightness, onroadScreenOffBrightness, awake;
+  int sleep_time = -1;
   bool touched2 = false;
 
   bool stand_still_timer;
@@ -176,6 +177,12 @@ typedef struct UIScene {
   int rn_offset;
   bool live_torque_toggle;
   bool custom_torque_toggle;
+
+  bool touch_to_wake = false;
+  int sleep_btn = -1;
+  bool sleep_btn_fading_in = false;
+  int sleep_btn_opacity = 20;
+  bool button_auto_hide;
 } UIScene;
 
 class UIState : public QObject {
@@ -239,8 +246,6 @@ private:
   void updateWakefulness(const UIState &s);
   bool motionTriggered(const UIState &s);
   void setAwake(bool on);
-
-  int sleep_time = -1;
 
 signals:
   void displayPowerChanged(bool on);

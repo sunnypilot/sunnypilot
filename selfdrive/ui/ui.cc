@@ -248,6 +248,7 @@ void ui_update_params(UIState *s) {
   s->scene.gac_max = std::atoi(params.get("GapAdjustCruiseMax").c_str());
   s->scene.dev_ui_enabled = params.getBool("DevUI");
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
+  s->scene.button_auto_hide = params.getBool("ButtonAutoHide");
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
@@ -295,6 +296,50 @@ void UIState::updateStatus() {
     prime_type_prev = prime_type;
     emit primeTypeChanged(prime_type);
     Params().put("PrimeType", std::to_string(prime_type));
+  }
+
+  if (scene.started) {
+    if (scene.button_auto_hide) {
+      if (scene.touch_to_wake) {
+        scene.sleep_btn = 30 * UI_FREQ;
+      } else if (scene.sleep_btn > 0) {
+        scene.sleep_btn--;
+      } else if (scene.sleep_btn == -1) {
+        scene.sleep_btn = 30 * UI_FREQ;
+      }
+      // Check if the sleep button should be fading in
+      if (scene.sleep_btn_fading_in) {
+        // Increase the opacity of the sleep button by a small amount
+        if (scene.sleep_btn_opacity < 20) {
+          scene.sleep_btn_opacity+= 10;
+        }
+        if (scene.sleep_btn_opacity >= 20) {
+          // If the opacity has reached its maximum value, stop fading in
+          scene.sleep_btn_fading_in = false;
+          scene.sleep_btn_opacity = 20;
+        }
+      } else if (scene.sleep_btn == 0) {
+        // Fade out the sleep button as before
+        if (scene.sleep_btn_opacity > 0) {
+          scene.sleep_btn_opacity-= 2;
+        }
+      } else {
+        // Set the opacity of the sleep button to its maximum value
+        scene.sleep_btn_opacity = 20;
+      }
+    } else {
+      scene.sleep_btn_opacity = 20;
+    }
+
+    if (scene.onroadScreenOff != -2 && scene.touched2) {
+      scene.sleep_time = scene.osoTimer;
+    } else if (scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE && scene.onroadScreenOff != -2) {
+      scene.sleep_time = scene.osoTimer;
+    } else if (scene.sleep_time > 0 && scene.onroadScreenOff != -2) {
+      scene.sleep_time--;
+    } else if (scene.sleep_time == -1 && scene.onroadScreenOff != -2) {
+      scene.sleep_time = scene.osoTimer;
+    }
   }
 }
 
@@ -369,21 +414,12 @@ void Device::updateBrightness(const UIState &s) {
 
     // Scale back to 10% to 100%
     clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
-    if (s.scene.onroadScreenOff != -2 && s.scene.touched2) {
-      sleep_time = s.scene.osoTimer;
-    } else if (s.scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE && s.scene.onroadScreenOff != -2) {
-      sleep_time = s.scene.osoTimer;
-    } else if (sleep_time > 0 && s.scene.onroadScreenOff != -2) {
-      sleep_time--;
-    } else if (s.scene.started && sleep_time == -1 && s.scene.onroadScreenOff != -2) {
-      sleep_time = s.scene.osoTimer;
-    }
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
-  } else if (s.scene.started && sleep_time == 0 && s.scene.onroadScreenOff != -2) {
+  } else if (s.scene.started && s.scene.sleep_time == 0 && s.scene.onroadScreenOff != -2) {
     brightness = s.scene.onroadScreenOffBrightness * 0.01 * brightness;
   } else if (s.scene.brightness) {
     brightness = s.scene.brightness * 0.99;

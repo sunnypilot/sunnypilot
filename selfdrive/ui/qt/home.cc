@@ -81,14 +81,24 @@ void HomeWindow::showDriverView(bool show) {
 }
 
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
-  // Handle sidebar collapsing
-  if ((onroad->isVisible() || body->isVisible()) && (!sidebar->isVisible() || e->x() > sidebar->width())) {
-    sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
+  if (uiState()->scene.started) {
+    if (uiState()->scene.onroadScreenOff != -2) {
+      uiState()->scene.touched2 = true;
+      QTimer::singleShot(500, []() { uiState()->scene.touched2 = false; });
+    }
+    if (uiState()->scene.button_auto_hide) {
+      uiState()->scene.touch_to_wake = true;
+      uiState()->scene.sleep_btn_fading_in = true;
+      QTimer::singleShot(500, []() { uiState()->scene.touch_to_wake = false; });
+    }
   }
 
-  if (uiState()->scene.started && uiState()->scene.onroadScreenOff != -2) {
-    uiState()->scene.touched2 = true;
-    QTimer::singleShot(500, []() { uiState()->scene.touched2 = false; });
+  // Handle sidebar collapsing
+  if ((onroad->isVisible() || body->isVisible()) && (!sidebar->isVisible() || e->x() > sidebar->width())) {
+    if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
+        (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
+      sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
+    }
   }
 }
 

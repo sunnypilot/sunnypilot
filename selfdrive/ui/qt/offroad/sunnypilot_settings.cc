@@ -594,6 +594,16 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
   main_layout->addWidget(devUiMain);
 
 
+  // Visuals: Auto-Hide UI Button
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "ButtonAutoHide",
+    tr("Auto-Hide UI Buttons"),
+    tr("Hide UI buttons on driving screen after a 30-second timeout. Tap on the screen at anytime to reveal the UI buttons."),
+    "../assets/offroad/icon_road.png"
+  ));
+
+
   // Visuals: OSM: Show debug UI elements
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(new ParamControl(

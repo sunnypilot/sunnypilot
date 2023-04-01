@@ -160,13 +160,13 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (scene.dynamic_lane_profile_toggle && dlp_btn_rect.contains(e->x(), e->y())) {
+  if (scene.dynamic_lane_profile_toggle && scene.sleep_btn_opacity == 20 && dlp_btn_rect.contains(e->x(), e->y())) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
     params.put("DynamicLaneProfile", std::to_string(scene.dynamic_lane_profile));
     propagate_event = false;
   } else if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && !controls_state.getExperimentalMode() &&
-             car_state.getCruiseState().getAvailable() && gac_btn_rect.contains(e->x(), e->y())) {
+             car_state.getCruiseState().getAvailable() && scene.sleep_btn_opacity == 20 && gac_btn_rect.contains(e->x(), e->y())) {
     scene.gac_tr--;
     scene.gac_tr = scene.gac_tr < scene.gac_min ? scene.gac_max : scene.gac_tr;
     params.put("GapAdjustCruiseTr", std::to_string(scene.gac_tr));
@@ -469,6 +469,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("frictionCoefficientFiltered", ltp.getFrictionCoefficientFiltered());
   setProperty("liveValid", ltp.getLiveValid());
   // ############################## DEV UI END ##############################
+
+  setProperty("btnPerc", s.scene.sleep_btn_opacity * 0.05);
 
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
@@ -855,27 +857,27 @@ void AnnotatedCameraWidget::drawVisionTurnControllerUI(QPainter &p, int x, int y
 void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int h) {
   int prev_dynamic_lane_profile = -1;
   QString dlp_text = "";
-  QColor dlp_border = QColor(255, 255, 255, 255);
+  QColor dlp_border = QColor(255, 255, 255, (255 * btnPerc));
 
   if (prev_dynamic_lane_profile != dynamicLaneProfile) {
     prev_dynamic_lane_profile = dynamicLaneProfile;
     if (dynamicLaneProfile == 0) {
       dlp_text = tr("Lane\nonly");
-      dlp_border = QColor("#2020f8");
+      dlp_border = QColor(32, 32, 248, (255 * btnPerc));
     } else if (dynamicLaneProfile == 1) {
       dlp_text = tr("Lane\nless");
-      dlp_border = QColor("#0df87a");
+      dlp_border = QColor(13, 248, 122, (255 * btnPerc));
     } else if (dynamicLaneProfile == 2) {
       dlp_text = tr("Auto\nLane");
-      dlp_border = QColor("#0df8f8");
+      dlp_border = QColor(13, 248, 248, (255 * btnPerc));
     }
   }
 
   QRect dlpBtn(x, y, w, h);
   p.setPen(QPen(dlp_border, 6));
-  p.setBrush(QColor(75, 75, 75, 75));
+  p.setBrush(QColor(75, 75, 75, (75 * btnPerc)));
   p.drawEllipse(dlpBtn);
-  p.setPen(QColor(Qt::white));
+  p.setPen(QColor(255, 255, 255, (255 * btnPerc)));
   configFont(p, "Inter", 36, "SemiBold");
   p.drawText(dlpBtn, Qt::AlignCenter, dlp_text);
 }
@@ -883,27 +885,27 @@ void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int 
 void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int h) {
   int prev_gac_tr = -1;
   QString gac_text = "";
-  QColor gac_border = QColor(255, 255, 255, 255);
+  QColor gac_border = QColor(255, 255, 255, (255 * btnPerc));
 
   if (prev_gac_tr != gacTr) {
     prev_gac_tr = gacTr;
     if (gacTr == 1) {
       gac_text = "Aggro\nGap";
-      gac_border = QColor("#ff4b4b");
+      gac_border = QColor(255, 75, 75, (255 * btnPerc));
     } else if (gacTr == 2) {
       gac_text = "Mild\nGap";
-      gac_border = QColor("#fcff4b");
+      gac_border = QColor(252, 255, 75, (255 * btnPerc));
     } else {
       gac_text = "Stock\nGap";
-      gac_border = QColor("#4bff66");
+      gac_border = QColor(75, 255, 102, (255 * btnPerc));
     }
   }
 
   QRect gacBtn(x, y, w, h);
   p.setPen(QPen(gac_border, 6));
-  p.setBrush(QColor(75, 75, 75, 75));
+  p.setBrush(QColor(75, 75, 75, (75 * btnPerc)));
   p.drawEllipse(gacBtn);
-  p.setPen(QColor(Qt::white));
+  p.setPen(QColor(255, 255, 255, (255 * btnPerc)));
   configFont(p, "Inter", 36, "SemiBold");
   p.drawText(gacBtn, Qt::AlignCenter, gac_text);
 }

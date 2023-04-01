@@ -137,6 +137,8 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool liveValid MEMBER liveValid);
   // ############################## DEV UI END ##############################
 
+  Q_PROPERTY(float btnPerc MEMBER btnPerc);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -262,6 +264,8 @@ private:
   float frictionCoefficientFiltered;
   bool liveValid;
   // ############################## DEV UI END ##############################
+
+  float btnPerc;
 
 protected:
   void paintGL() override;
