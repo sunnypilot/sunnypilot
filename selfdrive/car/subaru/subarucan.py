@@ -21,9 +21,9 @@ def create_es_distance(packer, es_distance_msg, bus, pcm_cancel_cmd):
     values["Cruise_Cancel"] = 1
   return packer.make_can_msg("ES_Distance", bus, values)
 
-def create_es_lkas(packer, es_lkas_msg, lat_active, mads_enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
+def create_es_lkas_state(packer, es_lkas_state_msg, lat_active, mads_enabled, visual_alert, left_line, right_line, left_lane_depart, right_lane_depart):
 
-  values = copy.copy(es_lkas_msg)
+  values = copy.copy(es_lkas_state_msg)
 
   # Filter the stock LKAS "Keep hands on wheel" alert
   if values["LKAS_Alert_Msg"] == 1:
@@ -56,13 +56,8 @@ def create_es_lkas(packer, es_lkas_msg, lat_active, mads_enabled, visual_alert, 
     elif right_lane_depart:
       values["LKAS_Alert"] = 11 # Right lane departure dash alert
 
-  if lat_active:
-    values["LKAS_ACTIVE"] = 1 # Show LKAS lane lines
-    values["LKAS_Dash_State"] = 2 # Green enabled indicator
-  elif mads_enabled and not lat_active:
-    values["LKAS_Dash_State"] = 1 # White ready indicator
-  else:
-    values["LKAS_Dash_State"] = 0 # LKAS Not enabled
+  values["LKAS_ACTIVE"] = 1 # Show LKAS lane lines
+  values["LKAS_Dash_State"] = 2 if lat_active else 1 if mads_enabled and not lat_active else 0 # 2 = Green enabled indicator, 1 = White ready indicator, 0 = LKAS Not enabled
 
   values["LKAS_Left_Line_Enable"] = 1 if lat_active else 0
   values["LKAS_Right_Line_Enable"] = 1 if lat_active else 0
@@ -76,10 +71,25 @@ def create_es_dashstatus(packer, dashstatus_msg):
   values = copy.copy(dashstatus_msg)
 
   # Filter stock LKAS disabled and Keep hands on steering wheel OFF alerts
-  if values["LKAS_State_Msg"] in [2, 3]:
+  if values["LKAS_State_Msg"] in (2, 3):
     values["LKAS_State_Msg"] = 0
 
   return packer.make_can_msg("ES_DashStatus", 0, values)
+
+def create_infotainmentstatus(packer, infotainmentstatus_msg, visual_alert):
+  # Filter stock LKAS disabled and Keep hands on steering wheel OFF alerts
+  if infotainmentstatus_msg["LKAS_State_Infotainment"] in (3, 4):
+    infotainmentstatus_msg["LKAS_State_Infotainment"] = 0
+
+  # Show Keep hands on wheel alert for openpilot steerRequired alert
+  if visual_alert == VisualAlert.steerRequired:
+    infotainmentstatus_msg["LKAS_State_Infotainment"] = 3
+
+  # Show Obstacle Detected for fcw
+  if visual_alert == VisualAlert.fcw:
+    infotainmentstatus_msg["LKAS_State_Infotainment"] = 2
+
+  return packer.make_can_msg("INFOTAINMENT_STATUS", 0, infotainmentstatus_msg)
 
 # *** Subaru Pre-global ***
 

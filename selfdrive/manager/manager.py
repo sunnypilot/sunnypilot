@@ -21,7 +21,8 @@ from selfdrive.sentry import CRASHES_DIR
 from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
 from system.swaglog import cloudlog, add_file_handler
 from system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
-                              terms_version, training_version, is_tested_branch, is_release_branch
+                           get_normalized_origin, terms_version, training_version, \
+                           is_tested_branch, is_release_branch
 
 
 sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
@@ -63,8 +64,8 @@ def manager_init() -> None:
     ("DevUIInfo", "1"),
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "1"),
-    ("DynamicLaneProfile", "2"),
-    ("DynamicLaneProfileToggle", "1"),
+    ("DynamicLaneProfile", "1"),
+    ("DynamicLaneProfileToggle", "0"),
     ("EnableMads", "1"),
     ("EndToEndLongAlert", "0"),
     ("EndToEndLongToggle", "1"),
@@ -156,7 +157,12 @@ def manager_init() -> None:
 
   # init logging
   sentry.init(sentry.SentryProject.SELFDRIVE)
-  cloudlog.bind_global(dongle_id=dongle_id, version=get_version(), dirty=is_dirty(),
+  cloudlog.bind_global(dongle_id=dongle_id,
+                       version=get_version(),
+                       origin=get_normalized_origin(),
+                       branch=get_short_branch(),
+                       commit=get_commit(),
+                       dirty=is_dirty(),
                        device=HARDWARE.get_device_type())
 
   if os.path.isfile(f'{CRASHES_DIR}/error.txt'):
