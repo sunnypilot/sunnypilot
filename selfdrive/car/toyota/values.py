@@ -35,8 +35,6 @@ class ToyotaFlags(IntFlag):
   HYBRID = 1
   SMART_DSU = 2
 
-  SMART_DSU = 2
-
 
 class CAR:
   # Toyota
