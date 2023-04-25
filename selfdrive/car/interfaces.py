@@ -110,6 +110,7 @@ class CarInterfaceBase(ABC):
     self.gac_button_counter = 0
     self.gac_min = -1
     self.gac_max = -1
+    self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -282,9 +283,9 @@ class CarInterfaceBase(ABC):
       else:
         events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
-      if cs_out.vEgo < 5:
+      if not self.reverse_dm_cam and cs_out.vEgo < 5:
         events.add(EventName.spReverseGear)
-      else:
+      elif cs_out.vEgo >= 5:
         events.add(EventName.reverseGear)
     if not cs_out.cruiseState.available:
       events.add(EventName.wrongCarMode)
@@ -542,6 +543,7 @@ class CarInterfaceBase(ABC):
       self._frame = 0
       self.gac = self.param_s.get_bool("GapAdjustCruise")
       self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
+      self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):

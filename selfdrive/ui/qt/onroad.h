@@ -139,6 +139,8 @@ class AnnotatedCameraWidget : public CameraWidget {
 
   Q_PROPERTY(float btnPerc MEMBER btnPerc);
 
+  Q_PROPERTY(bool reversing MEMBER reversing);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -266,6 +268,8 @@ private:
   // ############################## DEV UI END ##############################
 
   float btnPerc;
+
+  bool reversing;
 
 protected:
   void paintGL() override;

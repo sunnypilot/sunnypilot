@@ -556,6 +556,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     setProperty("curveSign", lp.getTurnSign());
   }
 
+  setProperty("reversing", int(car_state.getGearShifter()) == 4);
+
   // DM icon transition
   dm_fade_state = fmax(0.0, fmin(1.0, dm_fade_state+0.2*(0.5-(float)(dmActive))));
 }
@@ -746,60 +748,62 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawText(p, rect().center().x(), 290, speedUnit, 200);
   }
 
-  // ####### 1 ROW #######
-  QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
-  if (devUiEnabled && !mapVisible && devUiInfo == 1) {
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0, 0, 0, 100));
-    p.drawRect(bar_rect1);
-    drawNewDevUi2(p, bar_rect1.left(), bar_rect1.center().y());
-  }
+  if (!reversing) {
+    // ####### 1 ROW #######
+    QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
+    if (devUiEnabled && !mapVisible && devUiInfo == 1) {
+      p.setPen(Qt::NoPen);
+      p.setBrush(QColor(0, 0, 0, 100));
+      p.drawRect(bar_rect1);
+      drawNewDevUi2(p, bar_rect1.left(), bar_rect1.center().y());
+    }
 
-  // ####### 1 COLUMN ########
-  QRect rc2(rect().right() - (bdr_s * 2), bdr_s * 1.5, 184, 152);
-  if (devUiEnabled) {
-    drawRightDevUi(p, rect().right() - 184 - bdr_s * 2, bdr_s * 2 + rc2.height());
-  }
+    // ####### 1 COLUMN ########
+    QRect rc2(rect().right() - (bdr_s * 2), bdr_s * 1.5, 184, 152);
+    if (devUiEnabled) {
+      drawRightDevUi(p, rect().right() - 184 - bdr_s * 2, bdr_s * 2 + rc2.height());
+    }
 
-  int rn_btn = 0;
-  rn_btn = devUiEnabled && !mapVisible && devUiInfo == 1 ? 30 : 0;
-  uiState()->scene.rn_offset = rn_btn;
+    int rn_btn = 0;
+    rn_btn = devUiEnabled && !mapVisible && devUiInfo == 1 ? 30 : 0;
+    uiState()->scene.rn_offset = rn_btn;
 
-  // Dynamic Lane Profile Button
-  if (dynamicLaneProfileToggle) {
-    drawDlpButton(p, bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75) - rn_btn, 150, 150);
-  }
+    // Dynamic Lane Profile Button
+    if (dynamicLaneProfileToggle) {
+      drawDlpButton(p, bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75) - rn_btn, 150, 150);
+    }
 
-  if (gac) {
-    drawGacButton(p, bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75) - rn_btn, 150, 150);
-  }
+    if (gac) {
+      drawGacButton(p, bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75) - rn_btn, 150, 150);
+    }
 
-  // Stand Still Timer
-  if (standStillTimer && standStill) {
-    drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
-  }
+    // Stand Still Timer
+    if (standStillTimer && standStill) {
+      drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
+    }
 
-  // V-TSC
-  if (showDebugUI && showVTC) {
-    drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
-  }
+    // V-TSC
+    if (showDebugUI && showVTC) {
+      drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
+    }
 
-  // Bottom bar road name
-  if (showDebugUI && !roadName.isEmpty()) {
-    const int h = 38;
-    QRect bar_rc(rect().left(), rect().top(), rect().width(), h);
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0, 0, 0, 100));
-    p.drawRect(bar_rc);
-    configFont(p, "Inter", 28, "Bold");
-    drawCenteredText(p, bar_rc.center().x(), bar_rc.center().y(), roadName, QColor(255, 255, 255, 200));
-  }
+    // Bottom bar road name
+    if (showDebugUI && !roadName.isEmpty()) {
+      const int h = 38;
+      QRect bar_rc(rect().left(), rect().top(), rect().width(), h);
+      p.setPen(Qt::NoPen);
+      p.setBrush(QColor(0, 0, 0, 100));
+      p.drawRect(bar_rc);
+      configFont(p, "Inter", 28, "Bold");
+      drawCenteredText(p, bar_rc.center().x(), bar_rc.center().y(), roadName, QColor(255, 255, 255, 200));
+    }
 
-  // Turn Speed Sign
-  if (showTurnSpeedLimit) {
-    QRect rc = speed_sgn_rc;
-    rc.moveTop(speed_sgn_rc.bottom() + bdr_s);
-    drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
+    // Turn Speed Sign
+    if (showTurnSpeedLimit) {
+      QRect rc = speed_sgn_rc;
+      rc.moveTop(speed_sgn_rc.bottom() + bdr_s);
+      drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
+    }
   }
   p.restore();
 }
@@ -1635,6 +1639,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       wide_cam_requested = wide_cam_requested && s->scene.calibration_wide_valid;
     }
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
+
+    if (reversing && s->scene.reverse_dm_cam) {
+      CameraWidget::setStreamType(VISION_STREAM_DRIVER);
+    }
 
     s->scene.wide_cam = CameraWidget::getStreamType() == VISION_STREAM_WIDE_ROAD;
     if (s->scene.calibration_valid) {

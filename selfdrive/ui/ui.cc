@@ -249,6 +249,7 @@ void ui_update_params(UIState *s) {
   s->scene.dev_ui_enabled = params.getBool("DevUI");
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.button_auto_hide = params.getBool("ButtonAutoHide");
+  s->scene.reverse_dm_cam = params.getBool("ReverseDmCam");
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;

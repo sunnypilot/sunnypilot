@@ -604,6 +604,16 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
   ));
 
 
+  // Visuals: Display DM Camera in Reverse Gear
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "ReverseDmCam",
+    tr("Display DM Camera in Reverse Gear"),
+    tr("Show Driver Monitoring camera while the car is in reverse gear."),
+    "../assets/offroad/icon_road.png"
+  ));
+
+
   // Visuals: OSM: Show debug UI elements
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(new ParamControl(

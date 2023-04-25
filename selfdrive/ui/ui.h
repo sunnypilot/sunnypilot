@@ -183,6 +183,8 @@ typedef struct UIScene {
   bool sleep_btn_fading_in = false;
   int sleep_btn_opacity = 20;
   bool button_auto_hide;
+
+  bool reverse_dm_cam;
 } UIScene;
 
 class UIState : public QObject {
