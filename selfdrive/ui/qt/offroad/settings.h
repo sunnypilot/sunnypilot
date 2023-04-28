@@ -126,6 +126,12 @@ private:
         "https://thecorgirosie-my.sharepoint.com/:u:/g/personal/databases_sunnypilot_com/EWtFOVR9mj5CoRpATYR0_tUBWNEcy5jeasp8zO0ZYdduRg?e=Cg0l2Z&download=1",
       },
       {
+        "Germany",
+        "germany",
+        "461526153",
+        "https://thecorgirosie-my.sharepoint.com/:u:/g/personal/databases_sunnypilot_com/EbNzQuA8jHBCuGch1WY4cuoBJfK1S6m5odj5qMnOu3HA3Q?e=cNDn30&download=1",
+      },
+      {
         "Malaysia, Singapore, Brunei",
         "malaysia-singapore-brunei",
         "1112741782",
