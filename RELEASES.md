@@ -1,5 +1,4 @@
 Version 0.9.2 (2023-03-XX)
-
 ========================
 * New driving model, trained on a new dataset
 * Draw MPC path instead of model predicted path, this is a more accurate representation of what the car will do.
