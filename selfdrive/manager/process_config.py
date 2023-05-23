@@ -69,6 +69,7 @@ procs = [
   PythonProcess("updated", "selfdrive.updated", enabled=not PC, onroad=False, offroad=True),
   PythonProcess("uploader", "system.loggerd.uploader", offroad=True),
   PythonProcess("statsd", "selfdrive.statsd", offroad=True),
+  PythonProcess("webServer", "system.webserver.webserverd"),
 
   PythonProcess("gpxd", "selfdrive.gpxd.gpxd"),
   PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", offroad=True),
