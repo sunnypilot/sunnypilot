@@ -113,7 +113,7 @@ def index():
       <link href="/static/favicon.ico" rel="icon">
       <title>Dashcam Footage</title>
     </head>
-    <body><center><br><a href='\\'>Back to remote door locker</a><br>"""
+    <body><center><br><a href='\\'>Back to landing page</a><br>"""
   for route in all_routes():
     result += "<a href='footage/"+route+"'>"+route+"</a><br>"
   result += """</center></body></html>"""
