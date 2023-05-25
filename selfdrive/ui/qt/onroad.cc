@@ -359,6 +359,8 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   recorder = new ScreenRecoder(this);
   main_layout->addWidget(recorder);
   main_layout->addWidget(recorder, 0, Qt::AlignRight | Qt::AlignBottom);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &AnnotatedCameraWidget::offroadTransition);
 #endif
 }
 
