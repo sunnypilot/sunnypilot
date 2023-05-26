@@ -22,7 +22,7 @@ Table of Contents
 ---
 
 Join sunnyhaibin's sunnypilot server!
-* https://discord.gg/wRW3meAgtx
+* https://discord.sunnypilot.com/
 
 🚨 Read Before Installing 🚨
 ---
