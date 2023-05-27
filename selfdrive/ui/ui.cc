@@ -255,7 +255,8 @@ void ui_update_params(UIState *s) {
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.button_auto_hide = params.getBool("ButtonAutoHide");
   s->scene.reverse_dm_cam = params.getBool("ReverseDmCam");
-  s->scene.e2e_long_alert = params.getBool("EndToEndLongAlert");
+  s->scene.e2e_long_alert_light = params.getBool("EndToEndLongAlertLight");
+  s->scene.e2e_long_alert_lead = params.getBool("EndToEndLongAlertLead");
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
 
   if (s->scene.onroadScreenOff > 0) {

@@ -186,7 +186,7 @@ typedef struct UIScene {
 
   bool reverse_dm_cam;
 
-  bool e2e_long_alert, e2e_long_alert_ui;
+  bool e2e_long_alert_light, e2e_long_alert_lead, e2e_long_alert_ui;
   float e2eX[13] = {0};
 } UIScene;
 

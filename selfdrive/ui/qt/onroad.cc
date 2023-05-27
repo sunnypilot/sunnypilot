@@ -568,6 +568,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   static bool chime_sent = false;
   static int chime_count = 0;
   int chime_prompt = 0;
+  static float last_lead_distance = -1;
+  const float lead_distance = radar_state.getLeadOne().getDRel();
 
   if (!s.scene.e2e_long_alert_ui) {
     e2eLStatus = 0;
@@ -579,18 +581,33 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     e2eLStatus = 0;
   }
 
-  if (!s.scene.e2e_long_alert || radar_state.getLeadOne().getStatus()) {
+  if (!car_state.getStandstill()) {
     chime_prompt = 0;
     chime_sent = false;
     chime_count = 0;
-  } else if (e2eLStatus == 2) {
+
+    if (last_lead_distance != -1) {
+      last_lead_distance = -1;
+    }
+  }
+
+  if (e2eLStatus == 2) {
     if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
       if (chime_sent) {
         chime_count = 0;
       } else {
         chime_count += 1;
       }
-      if (chime_count >= 2 && !chime_sent) {
+      if (radar_state.getLeadOne().getStatus()) {
+        if ((last_lead_distance == -1) || (lead_distance < last_lead_distance)) {
+          last_lead_distance = lead_distance;
+        } else if (s.scene.e2e_long_alert_lead && (lead_distance - last_lead_distance > 1.0) && !chime_sent) {
+          chime_prompt = 2;
+          chime_sent = true;
+        } else {
+          chime_prompt = 0;
+        }
+      } else if (s.scene.e2e_long_alert_light && chime_count >= 2 && !chime_sent) {
         chime_prompt = 1;
         chime_sent = true;
       } else {
@@ -598,15 +615,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
       }
     }
   } else {
-    chime_prompt = 0;
-    chime_sent = false;
-    chime_count = 0;
-  }
-
-  if (!car_state.getStandstill()) {
-    chime_prompt = 0;
-    chime_sent = false;
-    chime_count = 0;
   }
 
   setProperty("e2eStatus", chime_prompt);

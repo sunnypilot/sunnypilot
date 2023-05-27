@@ -28,7 +28,7 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : QWidget(parent) {
 
   // General: Green Traffic Light Chime
   endToEndLongAlert = new ParamControl(
-    "EndToEndLongAlert",
+    "EndToEndLongAlertLight",
     tr("Green Traffic Light Chime (Beta)"),
     QString("%1<br>"
             "<h4>%2</h4><br>")
@@ -39,6 +39,18 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : QWidget(parent) {
   endToEndLongAlert->setConfirmation(true, false);
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(endToEndLongAlert);
+
+  // General: Lead Vehicle Departure Alert
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "EndToEndLongAlertLead",
+    tr("Lead Vehicle Departure Alert"),
+    QString("%1<br>"
+            "<h4>%2</h4><br>")
+            .arg(tr("Enable this will notify when the leading vehicle drives away."))
+            .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+    "../assets/offroad/icon_road.png"
+  ));
 
   // General: Custom Boot Screen
   main_layout->addWidget(horizontal_line());
