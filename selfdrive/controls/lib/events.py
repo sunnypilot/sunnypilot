@@ -648,6 +648,14 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.WARNING: speed_limit_adjust_alert,
   },
 
+  EventName.e2eLongStart: {
+    ET.PERMANENT: Alert(
+      "",
+      "",
+      AlertStatus.userPrompt, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptStarting, 1.5),
+  },
+
   # ********** events that affect controls state transitions **********
 
   EventName.pcmEnable: {
@@ -830,7 +838,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.SOFT_DISABLE: soft_disable_alert("Calibration Incomplete"),
     ET.NO_ENTRY: NoEntryAlert("Calibration in Progress"),
   },
-  
+
   EventName.calibrationRecalibrating: {
     ET.PERMANENT: calibration_incomplete_alert,
     ET.SOFT_DISABLE: soft_disable_alert("Device Remount Detected: Recalibrating"),

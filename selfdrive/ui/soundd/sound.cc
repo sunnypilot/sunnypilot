@@ -79,6 +79,7 @@ void Sound::setAlert(const Alert &alert) {
 bool Sound::shouldPlaySound(const Alert &alert) {
   bool isQuietDrive = params.getBool("QuietDrive");
     return (alert.sound == AudibleAlert::WARNING_SOFT || alert.sound == AudibleAlert::WARNING_IMMEDIATE ||
-            alert.sound == AudibleAlert::PROMPT_DISTRACTED || alert.sound == AudibleAlert::PROMPT_REPEAT) ||
+            alert.sound == AudibleAlert::PROMPT_DISTRACTED || alert.sound == AudibleAlert::PROMPT_REPEAT ||
+            alert.sound == AudibleAlert::PROMPT_STARTING) ||
             (!isQuietDrive && alert.sound != AudibleAlert::NONE);
 }

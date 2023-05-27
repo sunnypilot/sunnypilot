@@ -185,6 +185,9 @@ typedef struct UIScene {
   bool button_auto_hide;
 
   bool reverse_dm_cam;
+
+  bool e2e_long_alert, e2e_long_alert_ui;
+  float e2eX[13] = {0};
 } UIScene;
 
 class UIState : public QObject {

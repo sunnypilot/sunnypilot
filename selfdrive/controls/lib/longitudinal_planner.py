@@ -4,6 +4,7 @@ import numpy as np
 from common.numpy_fast import clip, interp
 
 import cereal.messaging as messaging
+from cereal import car
 from common.conversions import Conversions as CV
 from common.filter_simple import FirstOrderFilter
 from common.realtime import DT_MDL
@@ -26,6 +27,8 @@ A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
+
+EventName = car.CarEvent.EventName
 
 
 def get_max_accel(v_ego):
@@ -152,6 +155,8 @@ class LongitudinalPlanner:
     self.a_desired = float(interp(DT_MDL, T_IDXS[:CONTROL_N], self.a_desired_trajectory))
     self.v_desired_filter.x = self.v_desired_filter.x + DT_MDL * (self.a_desired + a_prev) / 2.0
 
+    self.e2e_events(sm)
+
   def publish(self, sm, pm):
     plan_send = messaging.new_message('longitudinalPlan')
 
@@ -219,3 +224,9 @@ class LongitudinalPlanner:
     source = min(v_solutions, key=v_solutions.get)
 
     return source, a_solutions[source], v_solutions[source]
+
+  def e2e_events(self, sm):
+    e2e_long_status = sm['e2eLongState'].status
+
+    if e2e_long_status in (1, 2):
+      self.events.add(EventName.e2eLongStart)

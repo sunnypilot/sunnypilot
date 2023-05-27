@@ -688,6 +688,15 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
   // Visuals: Display Metrics above Chevron
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(new ChevronInfo());
+
+  // Visuals: Display End-to-end Longitudinal Status (Beta)
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "EndToEndLongAlertUI",
+    tr("Display End-to-end Longitudinal Status (Beta)"),
+    tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
+    "../assets/offroad/icon_road.png"
+  ));
 }
 
 void SPVisualsPanel::showEvent(QShowEvent *event) {

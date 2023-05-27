@@ -332,6 +332,7 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
 AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : last_update_params(0), fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
   pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"uiDebug"});
+  e2e_state = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"e2eLongState"});
 
   QVBoxLayout *main_layout  = new QVBoxLayout(this);
   main_layout->setMargin(bdr_s);
@@ -562,6 +563,54 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // DM icon transition
   dm_fade_state = fmax(0.0, fmin(1.0, dm_fade_state+0.2*(0.5-(float)(dmActive))));
+
+  int e2eLStatus = 0;
+  static bool chime_sent = false;
+  static int chime_count = 0;
+  int chime_prompt = 0;
+
+  if (!s.scene.e2e_long_alert_ui) {
+    e2eLStatus = 0;
+  } else if (s.scene.e2eX[12] > 30 && car_state.getVEgo() < 1.0) {
+    e2eLStatus = 2;
+  } else if ((s.scene.e2eX[12] > 0 && s.scene.e2eX[12] < 80) || s.scene.e2eX[12] < 0) {
+    e2eLStatus = 1;
+  } else {
+    e2eLStatus = 0;
+  }
+
+  if (!s.scene.e2e_long_alert || radar_state.getLeadOne().getStatus()) {
+    chime_prompt = 0;
+    chime_sent = false;
+    chime_count = 0;
+  } else if (e2eLStatus == 2) {
+    if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+      if (chime_sent) {
+        chime_count = 0;
+      } else {
+        chime_count += 1;
+      }
+      if (chime_count >= 2 && !chime_sent) {
+        chime_prompt = 1;
+        chime_sent = true;
+      } else {
+        chime_prompt = 0;
+      }
+    }
+  } else {
+    chime_prompt = 0;
+    chime_sent = false;
+    chime_count = 0;
+  }
+
+  if (!car_state.getStandstill()) {
+    chime_prompt = 0;
+    chime_sent = false;
+    chime_count = 0;
+  }
+
+  setProperty("e2eStatus", chime_prompt);
+  setProperty("e2eState", e2eLStatus);
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
@@ -806,6 +855,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
       rc.moveTop(speed_sgn_rc.bottom() + bdr_s);
       drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
     }
+  }
+
+  // E2E Status
+  if (e2eState != 0) {
+    drawE2eStatus(p, bdr_s * 2 + 190, 45, 150, 150, e2eState);
   }
   p.restore();
 }
@@ -1335,6 +1389,24 @@ void AnnotatedCameraWidget::drawNewDevUi2(QPainter &p, int x, int y) {
 
 // ############################## DEV UI END ##############################
 
+void AnnotatedCameraWidget::drawE2eStatus(QPainter &p, int x, int y, int w, int h, int e2e_long_status) {
+  QColor status_color;
+  QRect e2eStatusIcon(x, y, w, h);
+  p.setPen(Qt::NoPen);
+  p.setBrush(QBrush(blackColor(70)));
+  p.drawEllipse(e2eStatusIcon);
+  e2eStatusIcon -= QMargins(25, 25, 25, 25);
+  p.setPen(Qt::NoPen);
+  if (e2e_long_status == 2) {
+    status_color = QColor::fromRgbF(0.0, 1.0, 0.0, 0.9);
+  } else if (e2e_long_status == 1) {
+    status_color = QColor::fromRgbF(1.0, 0.0, 0.0, 0.9);
+  }
+  p.setBrush(QBrush(status_color));
+  p.drawEllipse(e2eStatusIcon);
+}
+
+
 void AnnotatedCameraWidget::initializeGL() {
   CameraWidget::initializeGL();
   qInfo() << "OpenGL version:" << QString((const char*)glGetString(GL_VERSION));
@@ -1727,6 +1799,11 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   auto m = msg.initEvent().initUiDebug();
   m.setDrawTimeMillis(cur_draw_t - start_draw_t);
   pm->send("uiDebug", msg);
+
+  MessageBuilder e2e_long_msg;
+  auto e2eLongStatus = e2e_long_msg.initEvent().initE2eLongState();
+  e2eLongStatus.setStatus(e2eStatus);
+  e2e_state->send("e2eLongState", e2e_long_msg);
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {

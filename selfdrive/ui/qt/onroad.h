@@ -141,6 +141,9 @@ class AnnotatedCameraWidget : public CameraWidget {
 
   Q_PROPERTY(bool reversing MEMBER reversing);
 
+  Q_PROPERTY(int e2eState MEMBER e2eState);
+  Q_PROPERTY(int e2eStatus MEMBER e2eStatus);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -170,6 +173,8 @@ private:
   void drawCenteredLeftText(QPainter &p, int x, int y, const QString &text1, QColor color1, const QString &text2, const QString &text3, QColor color2);
   // ############################## DEV UI END ##############################
 
+  void drawE2eStatus(QPainter &p, int x, int y, int w, int h, int e2e_long_status);
+
   uint64_t last_update_params;
 
   ExperimentalButton *experimental_btn;
@@ -194,6 +199,7 @@ private:
   bool right_blindspot = false;
   int status = STATUS_DISENGAGED;
   std::unique_ptr<PubMaster> pm;
+  std::unique_ptr<PubMaster> e2e_state;
 
   int skip_frame_count = 0;
   bool wide_cam_requested = false;
@@ -270,6 +276,9 @@ private:
   float btnPerc;
 
   bool reversing;
+
+  int e2eState;
+  int e2eStatus;
 
 protected:
   void paintGL() override;
