@@ -392,10 +392,6 @@ class CarInterfaceBase(ABC):
     return brake or regen
 
   def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
-    if self.CP.pcmCruise:
-      if not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
-        CS.madsEnabled, cs_out.cruiseState.enabled = self.get_sp_cancel_cruise_state(CS.madsEnabled)
-
     cs_out.cruiseState.enabled = cs_out.cruiseState.enabled if self.CP.pcmCruise else CS.accEnabled
     if not self.enable_mads:
       if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled:
