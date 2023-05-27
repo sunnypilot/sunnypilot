@@ -2,8 +2,8 @@ from opendbc.can.packer import CANPacker
 from common.realtime import DT_CTRL
 from selfdrive.car import apply_meas_steer_torque_limits
 from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, create_cruise_buttons
-from selfdrive.car.chrysler.values import RAM_CARS, CarControllerParams, ChryslerFlags
-
+from selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, RAM_HD, CarControllerParams, ChryslerFlags
+from cereal import car
 
 class CarController:
   def __init__(self, dbc_name, CP, VM):
@@ -49,12 +49,17 @@ class CarController:
 
       # TODO: can we make this more sane? why is it different for all the cars?
       lkas_control_bit = self.lkas_control_bit_prev
-      if CS.out.vEgo > self.CP.minSteerSpeed:
+      if self.CP.carFingerprint in RAM_DT:
+        if CS.out.vEgo >= self.CP.minEnableSpeed and CS.out.vEgo <= self.CP.minEnableSpeed + 0.5:
+          lkas_control_bit = True
+        if (self.CP.minEnableSpeed >= 14.5)  and (CS.out.gearShifter != car.CarState.GearShifter.drive) :
+          lkas_control_bit = False
+      elif CS.out.vEgo > self.CP.minSteerSpeed:
         lkas_control_bit = True
       elif self.CP.flags & ChryslerFlags.HIGHER_MIN_STEERING_SPEED:
         if CS.out.vEgo < (self.CP.minSteerSpeed - 3.0):
           lkas_control_bit = False
-      elif self.CP.carFingerprint in RAM_CARS:
+      elif self.CP.carFingerprint in RAM_HD:
         if CS.out.vEgo < (self.CP.minSteerSpeed - 0.5):
           lkas_control_bit = False
 
