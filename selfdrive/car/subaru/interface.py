@@ -59,6 +59,8 @@ class CarInterface(CarInterfaceBase):
                                                 b'z\xc0\x08\x00'):
           ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
           ret.steerActuatorDelay = 0.18  # measured
+          ret.lateralTuning.pid.kf = 0.00003333
+          ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.133, 0.2], [0.0133, 0.02]]
 
     elif candidate == CAR.IMPREZA_2020:
       ret.mass = 1480. + STD_CARGO_KG
