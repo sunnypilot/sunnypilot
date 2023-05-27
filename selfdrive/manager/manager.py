@@ -67,8 +67,6 @@ def manager_init() -> None:
     ("DynamicLaneProfile", "1"),
     ("DynamicLaneProfileToggle", "0"),
     ("EnableMads", "1"),
-    ("EndToEndLongAlert", "0"),
-    ("EndToEndLongToggle", "1"),
     ("EnhancedScc", "0"),
     ("GapAdjustCruise", "1"),
     ("GapAdjustCruiseMax", "0"),
