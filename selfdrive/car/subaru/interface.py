@@ -56,7 +56,8 @@ class CarInterface(CarInterfaceBase):
       for fw in car_fw:
         if fw.ecu == "eps" and fw.fwVersion in (b'z\xc0\x00\x00',
                                                 b'z\xc0\x04\x00',
-                                                b'z\xc0\x08\x00'):
+                                                b'z\xc0\x08\x00',
+                                                b'\x8a\xc0\x00\x00'):
           ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
           ret.steerActuatorDelay = 0.18  # measured
           ret.lateralTuning.pid.kf = 0.00003333
