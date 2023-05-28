@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 from flask import Flask, render_template, Response, request
-from common.params import Params
 from system.webserver.helpers import *
 
 app = Flask(__name__)
+
 
 @app.route("/")
 def hello_world():
   return render_template("index.html")
 
+
 @app.route("/footage/full/<cameratype>/<route>")
-def full(cameratype, route):
-  chunk_size = 1024 * 512 # 5KiB
-  #if not is_valid_route(route):
-  #  return "invalid route"
+def full(cameratype, routes):
+  chunk_size = 1024 * 512  # 5KiB
   file_name = cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
-  vidlist = "|".join(ROOT + "/" + segment + "/" + file_name for segment in segments_in_route(route))
+  vidlist = "|".join(ROOT + "/" + segment + "/" + file_name for segment in segments_in_route(routes))
+
   def generate_buffered_stream():
     with ffmpeg_mp4_concat_wrap_process_builder(vidlist, cameratype, chunk_size) as process:
       for chunk in iter(lambda: process.stdout.read(chunk_size), b""):
         yield bytes(chunk)
   return Response(generate_buffered_stream(), status=200, mimetype='video/mp4')
+
 
 @app.route("/footage/<cameratype>/<segment>")
 def fcamera(cameratype, segment):
@@ -30,9 +31,10 @@ def fcamera(cameratype, segment):
 
   return Response(ffmpeg_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
+
 @app.route("/footage/<route>")
-def route(route):
-  if len(route) != 20:
+def route(routes):
+  if len(routes) != 20:
     return "route not found"
 
   if str(request.query_string) == "b''":
@@ -44,8 +46,8 @@ def route(route):
 
   links = ""
   segments = ""
-  for segment in segments_in_route(route):
-    links += "<a href='"+route+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
+  for segment in segments_in_route(routes):
+    links += "<a href='"+routes+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
     segments += "'"+segment+"',"
   return """<html>
   <head>
@@ -62,14 +64,14 @@ def route(route):
     <br>
     current view: <span id="currentview"></span>
     <br>
-    <a download=\""""+route+"-"+ query_type + ".mp4" + """\" href=\"/footage/full/"""+query_type+"""/"""+route+"""\">download full route """ + query_type + """</a>
+    <a download=\""""+routes+"-"+ query_type + ".mp4" + """\" href=\"/footage/full/"""+query_type+"""/"""+routes+"""\">download full route """ + query_type + """</a>
     <br><br>
     <a href="/footage">back to routes</a>
     <br><br>
-    <a href=\""""+route+"""?0,qcamera\">qcamera</a> -
-    <a href=\""""+route+"""?0,fcamera\">fcamera</a> -
-    <a href=\""""+route+"""?0,dcamera\">dcamera</a> -
-    <a href=\""""+route+"""?0,ecamera\">ecamera</a>
+    <a href=\""""+routes+"""?0,qcamera\">qcamera</a> -
+    <a href=\""""+routes+"""?0,fcamera\">fcamera</a> -
+    <a href=\""""+routes+"""?0,dcamera\">dcamera</a> -
+    <a href=\""""+routes+"""?0,ecamera\">ecamera</a>
     <br><br>
     """+links+"""
   </center>
@@ -104,6 +106,7 @@ def route(route):
 </html>
 """
 
+
 @app.route("/footage")
 def index():
   result = """
@@ -114,14 +117,15 @@ def index():
       <title>Dashcam Footage</title>
     </head>
     <body><center><br><a href='\\'>Back to landing page</a><br>"""
-  for route in all_routes():
-    result += "<a href='footage/"+route+"'>"+route+"</a><br>"
+  for routes in all_routes():
+    result += "<a href='footage/"+routes+"'>"+routes+"</a><br>"
   result += """</center></body></html>"""
   return result
 
 
 def main():
   app.run(host="0.0.0.0")
+
 
 if __name__ == '__main__':
   main()
