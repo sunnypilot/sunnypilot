@@ -1,3 +1,5 @@
+![](https://user-images.githubusercontent.com/47793918/233812617-beab2e71-57b9-479e-8bff-c3931347ca40.png)
+
 Table of Contents
 =======================
 
@@ -20,7 +22,7 @@ Table of Contents
 <details><summary><h3>💭 Join our Discord</h3></summary>
 
  Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
-* https://discord.gg/wRW3meAgtx
+* https://discord.sunnypilot.com
  
     ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
  
@@ -178,7 +180,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
     * `LKAS` button: Honda, Toyota, Global Subaru
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
-* `CRUISE (MAIN)` must be `ON` to use MADS and ACC/SCC
+* `CRUISE (MAIN)` must be `ON` to use ACC/SCC
 * `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
 
  ### Disengage Lateral ALC on Brake Press Mode toggle
