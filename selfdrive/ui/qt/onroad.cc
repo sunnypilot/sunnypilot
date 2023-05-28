@@ -571,9 +571,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   static float last_lead_distance = -1;
   const float lead_distance = radar_state.getLeadOne().getDRel();
 
-  if (!s.scene.e2e_long_alert_ui) {
-    e2eLStatus = 0;
-  } else if (s.scene.e2eX[12] > 30 && car_state.getVEgo() < 1.0) {
+  if (s.scene.e2eX[12] > 30 && car_state.getVEgo() < 1.0) {
     e2eLStatus = 2;
   } else if ((s.scene.e2eX[12] > 0 && s.scene.e2eX[12] < 80) || s.scene.e2eX[12] < 0) {
     e2eLStatus = 1;
@@ -601,7 +599,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
       if (radar_state.getLeadOne().getStatus()) {
         if ((last_lead_distance == -1) || (lead_distance < last_lead_distance)) {
           last_lead_distance = lead_distance;
-        } else if (s.scene.e2e_long_alert_lead && (lead_distance - last_lead_distance > 1.0) && !chime_sent) {
+        }
+        if (s.scene.e2e_long_alert_lead && (lead_distance - last_lead_distance > 1.0) && !chime_sent) {
           chime_prompt = 2;
           chime_sent = true;
         } else {
