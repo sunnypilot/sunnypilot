@@ -4,17 +4,16 @@ from system.webserver.helpers import *
 
 app = Flask(__name__)
 
-
 @app.route("/")
 def hello_world():
   return render_template("index.html")
 
 
 @app.route("/footage/full/<cameratype>/<route>")
-def full(cameratype, routes):
+def full(cameratype, route):
   chunk_size = 1024 * 512  # 5KiB
   file_name = cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
-  vidlist = "|".join(ROOT + "/" + segment + "/" + file_name for segment in segments_in_route(routes))
+  vidlist = "|".join(ROOT + "/" + segment + "/" + file_name for segment in segments_in_route(route))
 
   def generate_buffered_stream():
     with ffmpeg_mp4_concat_wrap_process_builder(vidlist, cameratype, chunk_size) as process:
@@ -33,8 +32,8 @@ def fcamera(cameratype, segment):
 
 
 @app.route("/footage/<route>")
-def route(routes):
-  if len(routes) != 20:
+def route(route):
+  if len(route) != 20:
     return "route not found"
 
   if str(request.query_string) == "b''":
@@ -46,8 +45,8 @@ def route(routes):
 
   links = ""
   segments = ""
-  for segment in segments_in_route(routes):
-    links += "<a href='"+routes+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
+  for segment in segments_in_route(route):
+    links += "<a href='"+route+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
     segments += "'"+segment+"',"
   return """<html>
   <head>
@@ -64,14 +63,14 @@ def route(routes):
     <br>
     current view: <span id="currentview"></span>
     <br>
-    <a download=\""""+routes+"-"+ query_type + ".mp4" + """\" href=\"/footage/full/"""+query_type+"""/"""+routes+"""\">download full route """ + query_type + """</a>
+    <a download=\""""+route+"-"+ query_type + ".mp4" + """\" href=\"/footage/full/"""+query_type+"""/"""+route+"""\">download full route """ + query_type + """</a>
     <br><br>
     <a href="/footage">back to routes</a>
     <br><br>
-    <a href=\""""+routes+"""?0,qcamera\">qcamera</a> -
-    <a href=\""""+routes+"""?0,fcamera\">fcamera</a> -
-    <a href=\""""+routes+"""?0,dcamera\">dcamera</a> -
-    <a href=\""""+routes+"""?0,ecamera\">ecamera</a>
+    <a href=\""""+route+"""?0,qcamera\">qcamera</a> -
+    <a href=\""""+route+"""?0,fcamera\">fcamera</a> -
+    <a href=\""""+route+"""?0,dcamera\">dcamera</a> -
+    <a href=\""""+route+"""?0,ecamera\">ecamera</a>
     <br><br>
     """+links+"""
   </center>
@@ -117,8 +116,8 @@ def index():
       <title>Dashcam Footage</title>
     </head>
     <body><center><br><a href='\\'>Back to landing page</a><br>"""
-  for routes in all_routes():
-    result += "<a href='footage/"+routes+"'>"+routes+"</a><br>"
+  for route in all_routes():
+    result += "<a href='footage/"+route+"'>"+route+"</a><br>"
   result += """</center></body></html>"""
   return result
 
