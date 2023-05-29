@@ -51,7 +51,7 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
     values["BRAKE_PUMP_REQUEST_ALT"] = apply_brake > 0
   else:
     values["COMPUTER_BRAKE"] = apply_brake
-    values["BRAKE_PUMP_REQUEST"] = apply_brake > 0
+    values["BRAKE_PUMP_REQUEST"] = pump_on
 
   bus = get_pt_bus(car_fingerprint)
   return packer.make_can_msg("BRAKE_COMMAND", bus, values)
