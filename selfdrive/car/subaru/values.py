@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import IntFlag
+from panda import Panda
 from typing import Dict, List, Union
 
 from cereal import car
@@ -26,6 +27,8 @@ class CarControllerParams:
       self.STEER_DELTA_DOWN = 40
     elif CP.carFingerprint == CAR.IMPREZA_2020:
       self.STEER_MAX = 1439
+    elif CP.safetyConfigs[0].safetyParam == Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018:
+      self.STEER_MAX = 3071
     else:
       self.STEER_MAX = 2047
 
