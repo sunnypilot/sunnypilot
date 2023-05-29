@@ -369,7 +369,7 @@ class Controls:
       self.events.add(EventName.radarFault)
     if not self.sm.valid['pandaStates']:
       self.events.add(EventName.usbError)
-    if CS.canTimeout:
+    if CS.canTimeout and CS.gearShifter != 1:  # CS.gearShifter == 1 park gear
       self.events.add(EventName.canBusMissing)
     elif not CS.canValid:
       self.events.add(EventName.canError)
