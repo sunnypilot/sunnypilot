@@ -836,7 +836,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     }
 
     // Stand Still Timer
-    if (standStillTimer && standStill) {
+    if (standStillTimer && standStill && !mapVisible) {
       drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
     }
 
