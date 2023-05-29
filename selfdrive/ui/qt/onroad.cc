@@ -200,7 +200,7 @@ void OnroadWindow::offroadTransition(bool offroad) {
 
       QObject::connect(uiState(), &UIState::offroadTransition, m, &MapWindow::offroadTransition);
 
-      m->setFixedWidth(topWidget(this)->width() / (Params().getBool("MapboxFullScreen")? 1 : 2));
+      m->setFixedWidth(topWidget(this)->width() / 2);
       split->insertWidget(0, m);
 
       // Make map visible after adding to split

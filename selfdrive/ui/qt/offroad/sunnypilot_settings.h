@@ -133,12 +133,9 @@ private:
 
   QWidget *devUiMain;
   QVBoxLayout *devUiSub;
-  QWidget *mapboxMain;
-  QVBoxLayout *mapboxSub;
 
   ParamControl *devUi;
   ParamControl *customMapbox;
-  ParamControl *mapboxFullScreen;
 
   void updateToggles();
 };

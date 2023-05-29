@@ -635,9 +635,6 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
     "../assets/offroad/icon_calibration.png"
   ));
 
-  // Mapbox
-  mapboxMain = new QWidget();
-  mapboxSub = new QVBoxLayout(mapboxMain);
   // Visuals: Enable Mapbox Navigation
   customMapbox = new ParamControl(
     "CustomMapbox",
@@ -660,24 +657,8 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
       Hardware::reboot();
     }
   });
-  mapboxFullScreen = new ParamControl(
-    "MapboxFullScreen",
-    "Display Navigation Full Screen",
-    "Enable this will display the built-in navigation in full screen.\nTo switch back to driving view, tap on the border edge.",
-    "../assets/offroad/icon_blank.png"
-  );
-  connect(mapboxFullScreen, &ToggleControl::toggleFlipped, [=](bool state) {
-    ConfirmationDialog::alert("\"Enable Mapbox Navigation\"\nEnable this will display the built-in navigation in full screen.\nTo switch back to driving view, tap on the border edge.", this);
-  });
-  mapboxSub->setContentsMargins(QMargins());
-  mapboxSub->addWidget(horizontal_line());
-  mapboxSub->addWidget(mapboxFullScreen);
-  QObject::connect(customMapbox, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(customMapbox);
-  main_layout->addWidget(mapboxMain);
 
   // Visuals: Speedometer: Display True Speed
   main_layout->addWidget(horizontal_line());
@@ -718,9 +699,6 @@ void SPVisualsPanel::showEvent(QShowEvent *event) {
 void SPVisualsPanel::updateToggles() {
   devUiMain->setVisible(params.getBool("DevUI"));
   devUiMain->update();
-
-  mapboxMain->setVisible(params.getBool("CustomMapbox"));
-  mapboxMain->update();
 }
 
 // Max Time Offroad (Shutdown timer)
