@@ -74,6 +74,7 @@ procs = [
   PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", offroad=True),
   PythonProcess("mapd", "selfdrive.mapd.mapd"),
   PythonProcess("otisserv", "selfdrive.navd.otisserv", offroad=True),
+  PythonProcess("dashcam_viewer", "system.dashcamviewer.dashcam_viewer", onroad=False, offroad=True),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], onroad=False, callback=notcar),
