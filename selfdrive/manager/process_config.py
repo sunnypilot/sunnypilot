@@ -69,11 +69,11 @@ procs = [
   PythonProcess("updated", "selfdrive.updated", enabled=not PC, onroad=False, offroad=True),
   PythonProcess("uploader", "system.loggerd.uploader", offroad=True),
   PythonProcess("statsd", "selfdrive.statsd", offroad=True),
-  PythonProcess("dashcam_viewer", "system.dashcamviewer.dashcam_viewerd", onroad=False, offroad=True),
 
   PythonProcess("gpxd", "selfdrive.gpxd.gpxd"),
   PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", offroad=True),
   PythonProcess("mapd", "selfdrive.mapd.mapd"),
+  PythonProcess("dashcam_viewer", "system.dashcamviewer.dashcam_viewerd", onroad=False, offroad=True),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], onroad=False, callback=notcar),
