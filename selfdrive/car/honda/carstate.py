@@ -121,20 +121,15 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     signals.append(("INTERCEPTOR_GAS2", "GAS_SENSOR"))
     checks.append(("GAS_SENSOR", 50))
 
-
-
-  if CP.carFingerprint == CAR.CLARITY:
+  if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
+    signals.append(("CRUISE_FAULT", "CRUISE_FAULT_STATUS"))
+    checks.append(("CRUISE_FAULT_STATUS", 50))
+  elif CP.carFingerprint == CAR.CLARITY:
     signals += [
       ("BRAKE_ERROR_1", "BRAKE_ERROR"),
       ("BRAKE_ERROR_2", "BRAKE_ERROR")
     ]
-    checks += [
-      ("BRAKE_ERROR", 100),
-    ]
-
-  if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
-    signals.append(("CRUISE_FAULT", "CRUISE_FAULT_STATUS"))
-    checks.append(("CRUISE_FAULT_STATUS", 50))
+    checks.append(("BRAKE_ERROR", 100)),
   elif CP.openpilotLongitudinalControl:
     signals += [
       ("BRAKE_ERROR_1", "STANDSTILL"),
