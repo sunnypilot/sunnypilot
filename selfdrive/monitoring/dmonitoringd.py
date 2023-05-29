@@ -3,10 +3,10 @@ import gc
 
 import cereal.messaging as messaging
 from cereal import car
+from cereal import log
 from common.params import Params, put_bool_nonblocking
 from common.realtime import set_realtime_priority
 from selfdrive.controls.lib.events import Events
-from selfdrive.locationd.calibrationd import Calibration
 from selfdrive.monitoring.driver_monitor import DriverStatus
 from selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus
 
@@ -24,7 +24,7 @@ def dmonitoringd_thread(sm=None, pm=None):
   driver_status = DriverStatus(rhd_saved=Params().get_bool("IsRhdDetected"))
   hands_on_wheel_status = HandsOnWheelStatus()
 
-  sm['liveCalibration'].calStatus = Calibration.INVALID
+  sm['liveCalibration'].calStatus = log.LiveCalibrationData.Status.invalid
   sm['liveCalibration'].rpyCalib = [0, 0, 0]
   sm['carState'].buttonEvents = []
   sm['carState'].standstill = True
