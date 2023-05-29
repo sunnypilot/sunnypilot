@@ -303,15 +303,13 @@ class CarState(CarStateBase):
       ret.brakeLights = bool(cp.vl["ACC_CONTROL"]['BRAKE_LIGHTS'] != 0 or ret.brake > 0.4) if not self.CP.openpilotLongitudinalControl else \
                          bool(ret.brake > 0.4)
 
+    aeb_sig = "COMPUTER_BRAKE_ALT" if self.CP.carFingerprint == CAR.CLARITY else "COMPUTER_BRAKE"
     if self.CP.carFingerprint in HONDA_BOSCH:
       # TODO: find the radarless AEB_STATUS bit and make sure ACCEL_COMMAND is correct to enable AEB alerts
       if self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
         ret.stockAeb = (not self.CP.openpilotLongitudinalControl) and bool(cp.vl["ACC_CONTROL"]["AEB_STATUS"] and cp.vl["ACC_CONTROL"]["ACCEL_COMMAND"] < -1e-5)
     else:
-      if self.CP.carFingerprint == CAR.CLARITY:
-        ret.stockAeb = bool(cp_cam.vl["BRAKE_COMMAND"]["AEB_REQ_1"] and cp_cam.vl["BRAKE_COMMAND"]["COMPUTER_BRAKE_ALT"] > 1e-5)
-      else:
-        ret.stockAeb = bool(cp_cam.vl["BRAKE_COMMAND"]["AEB_REQ_1"] and cp_cam.vl["BRAKE_COMMAND"]["COMPUTER_BRAKE"] > 1e-5)
+      ret.stockAeb = bool(cp_cam.vl["BRAKE_COMMAND"]["AEB_REQ_1"] and cp_cam.vl["BRAKE_COMMAND"][aeb_sig] > 1e-5)
 
     self.acc_hud = False
     self.lkas_hud = False
@@ -341,6 +339,8 @@ class CarState(CarStateBase):
       ("STEERING_CONTROL", 100),
     ]
 
+    aeb_sig = "COMPUTER_BRAKE_ALT" if CP.carFingerprint == CAR.CLARITY else "COMPUTER_BRAKE"
+
     if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
       signals.append(("LKAS_PROBLEM", "LKAS_HUD"))
       checks.append(("LKAS_HUD", 10))
@@ -352,32 +352,18 @@ class CarState(CarStateBase):
         checks.append(("ACC_HUD", 10))
 
     elif CP.carFingerprint not in HONDA_BOSCH:
-      if CP.carFingerprint == CAR.CLARITY:
-        signals += [("COMPUTER_BRAKE_ALT", "BRAKE_COMMAND"),
-                    ("AEB_REQ_1", "BRAKE_COMMAND"),
-                    ("FCW", "BRAKE_COMMAND"),
-                    ("CHIME", "BRAKE_COMMAND"),
-                    ("FCM_OFF", "ACC_HUD"),
-                    ("FCM_OFF_2", "ACC_HUD"),
-                    ("FCM_PROBLEM", "ACC_HUD"),
-                    ("ICONS", "ACC_HUD")]
-        checks += [
-          ("ACC_HUD", 10),
-          ("BRAKE_COMMAND", 50),
-        ]
-      else:
-        signals += [("COMPUTER_BRAKE", "BRAKE_COMMAND"),
-                    ("AEB_REQ_1", "BRAKE_COMMAND"),
-                    ("FCW", "BRAKE_COMMAND"),
-                    ("CHIME", "BRAKE_COMMAND"),
-                    ("FCM_OFF", "ACC_HUD"),
-                    ("FCM_OFF_2", "ACC_HUD"),
-                    ("FCM_PROBLEM", "ACC_HUD"),
-                    ("ICONS", "ACC_HUD")]
-        checks += [
-          ("ACC_HUD", 10),
-          ("BRAKE_COMMAND", 50),
-        ]
+      signals += [(aeb_sig, "BRAKE_COMMAND"),
+                  ("AEB_REQ_1", "BRAKE_COMMAND"),
+                  ("FCW", "BRAKE_COMMAND"),
+                  ("CHIME", "BRAKE_COMMAND"),
+                  ("FCM_OFF", "ACC_HUD"),
+                  ("FCM_OFF_2", "ACC_HUD"),
+                  ("FCM_PROBLEM", "ACC_HUD"),
+                  ("ICONS", "ACC_HUD")]
+      checks += [
+        ("ACC_HUD", 10),
+        ("BRAKE_COMMAND", 50),
+      ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2)
 
