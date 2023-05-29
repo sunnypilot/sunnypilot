@@ -21,13 +21,14 @@ Table of Contents
 
 <details><summary><h3>💭 Join our Discord</h3></summary>
 
- Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
+Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
 * https://discord.sunnypilot.com
  
      ![](https://dcbadge.vercel.app/api/server/wRW3meAgtx?style=flat) ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
    
  
 </details>
+=======
 
 <details><summary><h3>🚨 Read Before Installing</h3></summary>
  
