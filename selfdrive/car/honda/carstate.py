@@ -82,8 +82,10 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     checks.append(("EPB_STATUS", 50))
 
   if CP.carFingerprint == CAR.CLARITY:
-    signals += [("BRAKE_ERROR_1", "BRAKE_ERROR"),
-                ("BRAKE_ERROR_2", "BRAKE_ERROR")]
+    signals += [
+      ("BRAKE_ERROR_1", "BRAKE_ERROR"),
+      ("BRAKE_ERROR_2", "BRAKE_ERROR")
+    ]
     checks += [
       ("BRAKE_ERROR", 100),
     ]
@@ -205,9 +207,9 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS:
       self.brake_error = cp.vl["CRUISE_FAULT_STATUS"]["CRUISE_FAULT"]
       if self.CP.carFingerprint == CAR.CLARITY:
-          self.brake_error = cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_1"] or cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_2"]
+        self.brake_error = cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_1"] or cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_2"]
       else:
-          self.brake_error = cp.vl["STANDSTILL"]["BRAKE_ERROR_1"] or cp.vl["STANDSTILL"]["BRAKE_ERROR_2"]
+        self.brake_error = cp.vl["STANDSTILL"]["BRAKE_ERROR_1"] or cp.vl["STANDSTILL"]["BRAKE_ERROR_2"]
     ret.espDisabled = cp.vl["VSA_STATUS"]["ESP_DISABLED"] != 0
 
     ret.wheelSpeeds = self.get_wheel_speeds(
