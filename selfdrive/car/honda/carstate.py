@@ -303,12 +303,12 @@ class CarState(CarStateBase):
       ret.brakeLights = bool(cp.vl["ACC_CONTROL"]['BRAKE_LIGHTS'] != 0 or ret.brake > 0.4) if not self.CP.openpilotLongitudinalControl else \
                          bool(ret.brake > 0.4)
 
-    aeb_sig = "COMPUTER_BRAKE_ALT" if self.CP.carFingerprint == CAR.CLARITY else "COMPUTER_BRAKE"
     if self.CP.carFingerprint in HONDA_BOSCH:
       # TODO: find the radarless AEB_STATUS bit and make sure ACCEL_COMMAND is correct to enable AEB alerts
       if self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
         ret.stockAeb = (not self.CP.openpilotLongitudinalControl) and bool(cp.vl["ACC_CONTROL"]["AEB_STATUS"] and cp.vl["ACC_CONTROL"]["ACCEL_COMMAND"] < -1e-5)
     else:
+      aeb_sig = "COMPUTER_BRAKE_ALT" if self.CP.carFingerprint == CAR.CLARITY else "COMPUTER_BRAKE"
       ret.stockAeb = bool(cp_cam.vl["BRAKE_COMMAND"]["AEB_REQ_1"] and cp_cam.vl["BRAKE_COMMAND"][aeb_sig] > 1e-5)
 
     self.acc_hud = False
@@ -339,8 +339,6 @@ class CarState(CarStateBase):
       ("STEERING_CONTROL", 100),
     ]
 
-    aeb_sig = "COMPUTER_BRAKE_ALT" if CP.carFingerprint == CAR.CLARITY else "COMPUTER_BRAKE"
-
     if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
       signals.append(("LKAS_PROBLEM", "LKAS_HUD"))
       checks.append(("LKAS_HUD", 10))
@@ -352,6 +350,7 @@ class CarState(CarStateBase):
         checks.append(("ACC_HUD", 10))
 
     elif CP.carFingerprint not in HONDA_BOSCH:
+      aeb_sig = "COMPUTER_BRAKE_ALT" if CP.carFingerprint == CAR.CLARITY else "COMPUTER_BRAKE"
       signals += [(aeb_sig, "BRAKE_COMMAND"),
                   ("AEB_REQ_1", "BRAKE_COMMAND"),
                   ("FCW", "BRAKE_COMMAND"),
