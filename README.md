@@ -28,7 +28,6 @@ Join the official sunnypilot Discord server to stay up to date with all the late
    
  
 </details>
-=======
 
 <details><summary><h3>🚨 Read Before Installing</h3></summary>
  
