@@ -81,15 +81,6 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     signals.append(("EPB_STATE", "EPB_STATUS"))
     checks.append(("EPB_STATUS", 50))
 
-  if CP.carFingerprint == CAR.CLARITY:
-    signals += [
-      ("BRAKE_ERROR_1", "BRAKE_ERROR"),
-      ("BRAKE_ERROR_2", "BRAKE_ERROR")
-    ]
-    checks += [
-      ("BRAKE_ERROR", 100),
-    ]
-
   if CP.carFingerprint in HONDA_BOSCH:
     # these messages are on camera bus on radarless cars
     if not CP.openpilotLongitudinalControl and CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
@@ -129,6 +120,17 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     signals.append(("INTERCEPTOR_GAS", "GAS_SENSOR"))
     signals.append(("INTERCEPTOR_GAS2", "GAS_SENSOR"))
     checks.append(("GAS_SENSOR", 50))
+
+
+
+  if CP.carFingerprint == CAR.CLARITY:
+    signals += [
+      ("BRAKE_ERROR_1", "BRAKE_ERROR"),
+      ("BRAKE_ERROR_2", "BRAKE_ERROR")
+    ]
+    checks += [
+      ("BRAKE_ERROR", 100),
+    ]
 
   if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
     signals.append(("CRUISE_FAULT", "CRUISE_FAULT_STATUS"))
@@ -206,8 +208,8 @@ class CarState(CarStateBase):
 
     if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS:
       self.brake_error = cp.vl["CRUISE_FAULT_STATUS"]["CRUISE_FAULT"]
-      if self.CP.carFingerprint == CAR.CLARITY:
-        self.brake_error = cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_1"] or cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_2"]
+    elif self.CP.carFingerprint == CAR.CLARITY:
+      self.brake_error = cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_1"] or cp.vl["BRAKE_ERROR"]["BRAKE_ERROR_2"]
     elif self.CP.openpilotLongitudinalControl:
       self.brake_error = cp.vl["STANDSTILL"]["BRAKE_ERROR_1"] or cp.vl["STANDSTILL"]["BRAKE_ERROR_2"]
     ret.espDisabled = cp.vl["VSA_STATUS"]["ESP_DISABLED"] != 0
