@@ -33,8 +33,6 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   pcm_fault_cmd = False
 
   values = {
-    "COMPUTER_BRAKE": apply_brake,
-    "BRAKE_PUMP_REQUEST": pump_on,
     "CRUISE_OVERRIDE": pcm_override,
     "CRUISE_FAULT_CMD": pcm_fault_cmd,
     "CRUISE_CANCEL_CMD": pcm_cancel_cmd,
@@ -47,6 +45,14 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
     "AEB_REQ_2": 0,
     "AEB_STATUS": 0,
   }
+
+  if car_fingerprint == CAR.CLARITY:
+    values["COMPUTER_BRAKE_ALT"] = apply_brake
+    values["BRAKE_PUMP_REQUEST_ALT"] = apply_brake > 0
+  else:
+    values["COMPUTER_BRAKE"] = apply_brake
+    values["BRAKE_PUMP_REQUEST"] = pump_on
+
   bus = get_pt_bus(car_fingerprint)
   return packer.make_can_msg("BRAKE_COMMAND", bus, values)
 
