@@ -58,7 +58,19 @@ def footage():
 
 @app.route("/screenrecords")
 def screenrecords():
-  return render_template("screenrecords.html", rows=all_screenrecords())
+  rows = all_screenrecords()
+  return render_template("screenrecords.html", rows=rows, clip=rows[0])
+
+
+@app.route("/screenrecords/<clip>")
+def screenrecord(clip):
+  return render_template("screenrecords.html", rows=all_screenrecords(), clip=clip)
+
+
+@app.route("/screenrecords/play/pipe/<file>")
+def videoscreenrecord(file):
+  file_name = screenrecordspath + file 
+  return Response(ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
 def main():

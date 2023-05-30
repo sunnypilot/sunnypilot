@@ -6,7 +6,7 @@ from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
 # path to sunnypilot screen records
-screenrecordspath = "/data/media/0/videos" if TICI else "/home/sato/.comma/media/0/videos"
+screenrecordspath = "/data/media/0/videos/" if TICI else "/home/sato/.comma/media/0/videos/"
 def all_screenrecords():
   return sorted(listdir_by_creation(screenrecordspath), reverse=True)
 
@@ -88,6 +88,19 @@ def ffmpeg_mp4_wrap_process_builder(filename):
   command_line += ["-map", "0"]
   if extension == "hevc":
     command_line += ["-vtag", "hvc1"]
+  command_line += ["-f", "mp4"]
+  command_line += ["-movflags", "empty_moov"]
+  command_line += ["-"]
+  return subprocess.Popen(
+    command_line, stdout=subprocess.PIPE
+  )
+
+
+def ffplay_mp4_wrap_process_builder(file_name):
+  command_line = ["ffmpeg"]
+  command_line += ["-i", file_name]
+  command_line += ["-c", "copy"]
+  command_line += ["-map", "0"]
   command_line += ["-f", "mp4"]
   command_line += ["-movflags", "empty_moov"]
   command_line += ["-"]

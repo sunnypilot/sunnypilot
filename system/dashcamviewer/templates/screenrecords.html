@@ -5,8 +5,19 @@
 {% endblock %}
 
 {% block main %}
+    <video id="video" width="320" height="240" controls autoplay="autoplay" style="background:black">
+    </video>
+    <script>
+    var video = document.getElementById("video");
+    var track = {
+        play: function() {
+        return ( "/screenrecords/play/pipe/" + '{{ clip }}' );
+        }
+    }
+    video.src = track.play();
+    </script>
     <br>
     {% for row in rows %}
-        <a href="#/{{ row }}">{{ row }}</a><br>
+        <a href="/screenrecords/{{ row }}">{{ row }}</a><br>
     {% endfor %}
 {% endblock %}
