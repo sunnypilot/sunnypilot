@@ -4,6 +4,8 @@ Table of Contents
 =======================
 
 * [Join our Discord](#-join-our-discord-)
+* [What is sunnypilot?](#-what-is-sunnypilot-)
+* [Running in a car](#-running-on-a-dedicated-device-in-a-car)
 * [Read Before Installing](#-read-before-installing-)
 * [Installation](#-installation)
 * [Highlight Features](#-highlight-features)
@@ -11,6 +13,7 @@ Table of Contents
 * [Branch Definitions](#-branch-definitions)
 * [**✅Recommended Branches✅**](#-recommended-branches)
 * [How-Tos](#-How-Tos-)
+* [User Data](#user-data)
 * [**💰Donate💰**](#-donate-)
 * [Pull Requests](#-Pull-Requests-)
 * [Special Thanks](#-special-thanks)
@@ -24,18 +27,28 @@ Table of Contents
 Join sunnyhaibin's sunnypilot server!
 * https://discord.sunnypilot.com/
 
+🌞 What is sunnypilot? 🌞
+---
+
+[sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 200 supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
+
+🚘 Running on a dedicated device in a car
+---
+
+To use sunnypilot in a car, you need the following:
+* A supported device to run this software
+  * a [comma three](https://comma.ai/shop/products/three), or
+  * a comma two (only with older versions below 0.8.13)
+* This software
+* One of [the 250+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
+* A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
+
+Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
+
 🚨 Read Before Installing 🚨
 ---
 
-It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car to have the best driving experience.
-
-sunnypilot is recommended to be used for **most** of the following car makes' models:
-* Hyundai/Kia/Genesis (**HKG**)
-* Honda/Acura
-* Toyota/Lexus
-* Subaru
-* Chrysler/Jeep/RAM (**FCA**)
-* General Motors (**GM**)
+It is recommended to read this **entire page** before proceeding. This will ensure that you fully understand each added feature on sunnypilot and you are selecting the right branch for your car to have the best driving experience.
 
 It is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
 
@@ -53,16 +66,16 @@ The following changes are a **VIOLATION** and **ARE NOT** included:
 ⚒ Installation
 ---
 
-### Comma URL (Comma 3 only quick setup)
+### Comma URL (comma three only quick setup)
 
-8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
+0.8.14 was last updated in July 2022, many changes have been made since then so test-c3 is recommended
 ```
 1. Factory reset/uninstall previous software if you already installed a branch
 2. Select Custom Software
 3. Input the following URL: installer.comma.ai/sunnyhaibin/test-c3
 ```
 
-### Comma 2 / non-test fork for comma 3
+### comma two / non-test fork for comma three
 To install sunnypilot's fork, simply use the installer.comma.ai URL (thanks [Shane](https://github.com/sshane/openpilot-installer-generator)!) on the setup screen for "Custom Software" after you factory reset or uninstalled sunnypilot from a previous install:
 
 <b>HTTPS://</b> prepend is required for comma 2, This is not required for comma 3!
@@ -284,6 +297,18 @@ After running the command to install the desired branch, reboot the comma device
 ---
 
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
+
+User Data
+---
+
+By default, sunnypilot uploads the driving data to comma servers. You can also access your data through [comma connect](https://connect.comma.ai/).
+
+sunnypilot is open source software. The user is free to disable data collection if they wish to do so.
+
+sunnypilot logs the road-facing camera, CAN, GPS, IMU, magnetometer, thermal sensors, crashes, and operating system logs.
+The driver-facing camera is only logged if you explicitly opt in in settings. The microphone is not recorded.
+
+By using this software, you understand that use of this software or its related services will generate certain types of user data, which may be logged and stored at the sole discretion of comma. By accepting this agreement, you grant an irrevocable, perpetual, worldwide right to comma for the use of this data.
 
 💰 Donate 💰
 ---
