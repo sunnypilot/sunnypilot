@@ -1,3 +1,4 @@
+import numpy as np
 from cereal import log
 from common.conversions import Conversions as CV
 from common.params import Params
@@ -44,8 +45,9 @@ class DesireHelper:
     self.param_s = Params()
     self.lane_change_wait_timer = 0
     self.prev_lane_change = False
+    self.road_edge = False
 
-  def update(self, carstate, lateral_active, lane_change_prob):
+  def update(self, carstate, lateral_active, lane_change_prob, model_data):
     lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     lane_change_auto_timer = 0.0 if lane_change_set_timer == 0 else 0.1 if lane_change_set_timer == 1 else \
                              0.5 if lane_change_set_timer == 2 else 1.0 if lane_change_set_timer == 3 else \
@@ -53,6 +55,30 @@ class DesireHelper:
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
+
+    # Lane detection by FrogAi
+    if one_blinker:
+      # Set the minimum lane threshold to 3.0 meters
+      min_lane_threshold = 3.0
+      # Set the blinker index based on which signal is on
+      blinker_index = 0 if carstate.leftBlinker else 1
+      desired_edge = model_data.roadEdges[blinker_index]
+      current_lane = model_data.laneLines[blinker_index + 1]
+      # Check if both the desired lane and the current lane have valid x and y values
+      if all([desired_edge.x, desired_edge.y, current_lane.x, current_lane.y]) and len(desired_edge.x) == len(current_lane.x):
+        # Interpolate the x and y values to the same length
+        x = np.linspace(desired_edge.x[0], desired_edge.x[-1], num=len(desired_edge.x))
+        lane_y = np.interp(x, current_lane.x, current_lane.y)
+        desired_y = np.interp(x, desired_edge.x, desired_edge.y)
+        # Calculate the width of the lane we're wanting to change into
+        lane_width = np.abs(desired_y - lane_y)
+        # Set road_edge to False if the lane width is not larger than the threshold
+        self.road_edge = not (np.amax(lane_width) > min_lane_threshold)
+      else:
+        self.road_edge = True
+    else:
+      # Default to setting "road_edge" to False
+      self.road_edge = False
 
     if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
       self.lane_change_state = LaneChangeState.off
@@ -66,6 +92,8 @@ class DesireHelper:
         self.lane_change_wait_timer = 0
 
       # LaneChangeState.preLaneChange
+      elif self.lane_change_state == LaneChangeState.preLaneChange and self.road_edge:
+        self.lane_change_direction = LaneChangeDirection.none
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
         self.lane_change_direction = LaneChangeDirection.left if \
