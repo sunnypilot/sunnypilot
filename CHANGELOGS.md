@@ -1,3 +1,7 @@
+sunnypilot - 0.9.2.x (2023-02-22)
+========================
+* Honda Clarity 2018-22 support thanks to mcallbosco, vanillagorillaa and wirelessnet2!
+
 sunnypilot - Version Latest (2023-02-22)
 ========================
 * UPDATED: Synced with commaai's master branch - 2023.02.19-04:52:00:GMT - 0.9.2
