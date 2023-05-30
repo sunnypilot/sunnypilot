@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    DashCam Routes
+{% endblock %}
+
+{% block main %}
+    <br>
+    {% for row in rows %}
+        <a href="#/{{ row }}">{{ row }}</a><br>
+    {% endfor %}
+{% endblock %}

@@ -28,7 +28,6 @@ def fcamera(cameratype, segment):
   if not is_valid_segment(segment):
     return "invalid segment"
   file_name = ROOT + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
-
   return Response(ffmpeg_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
@@ -49,78 +48,17 @@ def route(route):
   for segment in segments_in_route(route):
     links += "<a href='"+route+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
     segments += "'"+segment+"',"
-  return """<html>
-  <head>
-    <meta name="viewport" content="initial-scale=1, width=device-width"/>
-    <link href="/static/favicon.ico" rel="icon">
-    <title>Dashcam Footage</title>
-  </head>
-  <body>
-  <center>
-    <video id="video" width="320" height="240" controls autoplay="autoplay" style="background:black">
-    </video>
-    <br><br>
-    current segment: <span id="currentsegment"></span>
-    <br>
-    current view: <span id="currentview"></span>
-    <br>
-    <a download=\""""+route+"-"+ query_type + ".mp4" + """\" href=\"/footage/full/"""+query_type+"""/"""+route+"""\">download full route """ + query_type + """</a>
-    <br><br>
-    <a href="/footage">back to routes</a>
-    <br><br>
-    <a href=\""""+route+"""?0,qcamera\">qcamera</a> -
-    <a href=\""""+route+"""?0,fcamera\">fcamera</a> -
-    <a href=\""""+route+"""?0,dcamera\">dcamera</a> -
-    <a href=\""""+route+"""?0,ecamera\">ecamera</a>
-    <br><br>
-    """+links+"""
-  </center>
-  </body>
-    <script>
-    var video = document.getElementById('video');
-    var tracks = {
-      list: ["""+segments+"""],
-      index: """+query_segment+""",
-      next: function() {
-        if (this.index == this.list.length - 1) this.index = 0;
-        else {
-            this.index += 1;
-        }
-      },
-      play: function() {
-        return ( \""""+query_type+"""/" + this.list[this.index] );
-      }
-    }
-    video.addEventListener('ended', function(e) {
-      tracks.next();
-      video.src = tracks.play();
-      document.getElementById("currentsegment").textContent=video.src.split("/")[5];
-      document.getElementById("currentview").textContent=video.src.split("/")[4];
-      video.load();
-      video.play();
-    });
-    video.src = tracks.play();
-    document.getElementById("currentsegment").textContent=video.src.split("/")[5];
-    document.getElementById("currentview").textContent=video.src.split("/")[4];
-    </script>
-</html>
-"""
-
+  return render_template("route.html",route=route, query_type=query_type, links=links, segments=segments, query_segment=query_segment)
+  
 
 @app.route("/footage")
-def index():
-  result = """
-  <html>
-    <head>
-      <meta name="viewport" content="initial-scale=1, width=device-width"/>
-      <link href="/static/favicon.ico" rel="icon">
-      <title>Dashcam Footage</title>
-    </head>
-    <body><center><br><a href='\\'>Back to landing page</a><br>"""
-  for route in all_routes():
-    result += "<a href='footage/"+route+"'>"+route+"</a><br>"
-  result += """</center></body></html>"""
-  return result
+def footage():
+  return render_template("footage.html", rows=all_routes())
+
+
+@app.route("/screenrecords")
+def screenrecords():
+  return render_template("screenrecords.html", rows=all_screenrecords())
 
 
 def main():
