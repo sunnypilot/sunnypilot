@@ -72,7 +72,7 @@ def screenrecord(clip):
 
 @app.route("/screenrecords/play/pipe/<file>")
 def videoscreenrecord(file):
-  file_name = dashcam.screenrecordspath + file
+  file_name = dashcam.SCREENRECORD_PATH + file
   return Response(dashcam.ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 

@@ -1,16 +1,21 @@
 import os
 import subprocess
-from system.hardware import TICI
+from pathlib import Path
+from system.hardware import PC
 from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
-# path to sunnypilot screen records
-screenrecordspath = "/data/media/0/videos/" if TICI else "/home/sato/.comma/media/0/videos/"
+# path to sunnypilot screen recordings
+if PC:
+  SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos")
+else:
+  SCREENRECORD_PATH = "/data/media/0/videos/"
+
 
 
 def all_screenrecords():
-  return sorted(listdir_by_creation(screenrecordspath), reverse=True)
+  return sorted(listdir_by_creation(SCREENRECORD_PATH), reverse=True)
 
 
 def is_valid_segment(segment):
