@@ -63,7 +63,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 16.3
       ret.mass = 2493. + STD_CARGO_KG
       ret.minSteerSpeed = 0.5
-      ret.minEnableSpeed = 14.6
+      ret.minEnableSpeed = 14.5
       if any(fw.ecu == 'eps' and (fw.fwVersion[:4] <= b"6831" or fw.fwVersion[:4] <= b"6827") for fw in car_fw):
         ret.minEnableSpeed = 0.
 
