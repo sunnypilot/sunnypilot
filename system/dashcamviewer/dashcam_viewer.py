@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+import os
+import system.dashcamviewer.helpers as dashcam
+from common.basedir import BASEDIR
 from flask import Flask, render_template, Response, request
-from system.dashcamviewer.helpers import *
+from system.loggerd.config import ROOT as REALDATA
 
 app = Flask(__name__)
 
@@ -14,10 +17,10 @@ def index_page():
 def full(cameratype, route):
   chunk_size = 1024 * 512  # 5KiB
   file_name = cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
-  vidlist = "|".join(ROOT + "/" + segment + "/" + file_name for segment in segments_in_route(route))
+  vidlist = "|".join(REALDATA + "/" + segment + "/" + file_name for segment in dashcam.segments_in_route(route))
 
   def generate_buffered_stream():
-    with ffmpeg_mp4_concat_wrap_process_builder(vidlist, cameratype, chunk_size) as process:
+    with dashcam.ffmpeg_mp4_concat_wrap_process_builder(vidlist, cameratype, chunk_size) as process:
       for chunk in iter(lambda: process.stdout.read(chunk_size), b""):
         yield bytes(chunk)
   return Response(generate_buffered_stream(), status=200, mimetype='video/mp4')
@@ -25,10 +28,10 @@ def full(cameratype, route):
 
 @app.route("/footage/<cameratype>/<segment>")
 def fcamera(cameratype, segment):
-  if not is_valid_segment(segment):
+  if not dashcam.is_valid_segment(segment):
     return "invalid segment"
-  file_name = ROOT + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
-  return Response(ffmpeg_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
+  file_name = REALDATA + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
+  return Response(dashcam.ffmpeg_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
 @app.route("/footage/<route>")
@@ -45,32 +48,32 @@ def route(route):
 
   links = ""
   segments = ""
-  for segment in segments_in_route(route):
+  for segment in dashcam.segments_in_route(route):
     links += "<a href='"+route+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
     segments += "'"+segment+"',"
-  return render_template("route.html",route=route, query_type=query_type, links=links, segments=segments, query_segment=query_segment)
+  return render_template("route.html", route=route, query_type=query_type, links=links, segments=segments, query_segment=query_segment)
 
 
 @app.route("/footage")
 def footage():
-  return render_template("footage.html", rows=all_routes())
+  return render_template("footage.html", rows=dashcam.all_routes())
 
 
 @app.route("/screenrecords")
 def screenrecords():
-  rows = all_screenrecords()
+  rows = dashcam.all_screenrecords()
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
 
 
 @app.route("/screenrecords/<clip>")
 def screenrecord(clip):
-  return render_template("screenrecords.html", rows=all_screenrecords(), clip=clip)
+  return render_template("screenrecords.html", rows=dashcam.all_screenrecords(), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
 def videoscreenrecord(file):
-  file_name = screenrecordspath + file
-  return Response(ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
+  file_name = dashcam.screenrecordspath + file
+  return Response(dashcam.ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
 def main():

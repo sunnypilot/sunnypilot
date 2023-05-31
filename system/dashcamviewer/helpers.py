@@ -1,7 +1,7 @@
 import os
 import subprocess
 from system.hardware import TICI
-from system.loggerd.config import ROOT
+from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
@@ -15,7 +15,7 @@ def all_screenrecords():
 
 def is_valid_segment(segment):
   try:
-    segment_to_segment_name(ROOT, segment)
+    segment_to_segment_name(REALDATA, segment)
     return True
   except AssertionError:
     return False
@@ -28,9 +28,9 @@ def segment_to_segment_name(data_dir, segment):
 
 def all_segment_names():
   segments = []
-  for segment in listdir_by_creation(ROOT):
+  for segment in listdir_by_creation(REALDATA):
     try:
-      segments.append(segment_to_segment_name(ROOT, segment))
+      segments.append(segment_to_segment_name(REALDATA, segment))
     except AssertionError:
       pass
   return segments
