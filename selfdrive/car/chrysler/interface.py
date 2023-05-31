@@ -62,17 +62,13 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.88
       ret.steerRatio = 16.3
       ret.mass = 2493. + STD_CARGO_KG
-      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
       ret.minSteerSpeed = 0.5
       ret.minEnableSpeed = 14.6
-      if car_fw is not None:
-        for fw in car_fw:
-          if fw.ecu == 'eps' and fw.fwVersion in (b"68273275AF", b"68273275AG", b"68312176AE", b"68312176AG", ):
-            ret.minEnableSpeed = 0.
+      if any(fw.ecu == 'eps' and (fw.fwVersion[:4] <= b"6831" or fw.fwVersion[:4] <= b"6827") for fw in car_fw):
+        ret.minEnableSpeed = 0.
 
     elif candidate == CAR.RAM_HD:
-      stiffnessFactor = 0.35
-      ret.steerActuatorDelay = 0.25
+      ret.steerActuatorDelay = 0.2
       ret.wheelbase = 3.785
       ret.steerRatio = 15.61
       ret.mass = 3405. + STD_CARGO_KG
