@@ -368,7 +368,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 #ifdef ENABLE_DASHCAM
 void AnnotatedCameraWidget::offroadTransition(bool offroad) {
   if (offroad && recorder) {
-    recorder->stop(false);
+    recorder->stop();
   }
 }
 #endif
