@@ -4,6 +4,7 @@ from selfdrive.car import apply_meas_steer_torque_limits
 from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, create_cruise_buttons
 from selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, RAM_HD, CarControllerParams, ChryslerFlags
 
+
 class CarController:
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
