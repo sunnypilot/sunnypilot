@@ -62,7 +62,7 @@ def footage():
 def screenrecords():
   rows = dashcam.all_screenrecords()
   if not rows:
-    return render_template("error.html", error="no screenrecords")
+    return render_template("error.html", error="no screenrecords found at:<br><br> /data/media/0/videos/" if not dashcam.PC else "no screenrecords found at:<br><br> ~/.comma/media/0/videos/")
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
 
 
