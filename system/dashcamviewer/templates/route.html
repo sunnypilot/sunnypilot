@@ -25,8 +25,8 @@
     <script>
     var video = document.getElementById('video');
     var tracks = {
-      list: [{{ segments  }}],
-      index: {{ query_segment }},
+      list: [segments],
+      index: query_segment,
       next: function() {
         if (this.index == this.list.length - 1) this.index = 0;
         else {
