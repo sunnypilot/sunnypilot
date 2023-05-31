@@ -7,8 +7,11 @@ from tools.lib.route import SegmentName
 
 # path to sunnypilot screen records
 screenrecordspath = "/data/media/0/videos/" if TICI else "/home/sato/.comma/media/0/videos/"
+
+
 def all_screenrecords():
   return sorted(listdir_by_creation(screenrecordspath), reverse=True)
+
 
 def is_valid_segment(segment):
   try:

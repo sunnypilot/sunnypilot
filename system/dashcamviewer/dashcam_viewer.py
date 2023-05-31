@@ -49,7 +49,7 @@ def route(route):
     links += "<a href='"+route+"?"+segment.split("--")[2]+","+query_type+"'>"+segment+"</a><br>"
     segments += "'"+segment+"',"
   return render_template("route.html",route=route, query_type=query_type, links=links, segments=segments, query_segment=query_segment)
-  
+
 
 @app.route("/footage")
 def footage():
@@ -69,7 +69,7 @@ def screenrecord(clip):
 
 @app.route("/screenrecords/play/pipe/<file>")
 def videoscreenrecord(file):
-  file_name = screenrecordspath + file 
+  file_name = screenrecordspath + file
   return Response(ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
