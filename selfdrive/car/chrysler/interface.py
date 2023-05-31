@@ -8,7 +8,7 @@ from selfdrive.car.interfaces import CarInterfaceBase
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
-  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long):
+  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "chrysler"
     ret.dashcamOnly = candidate in RAM_HD
 
@@ -62,10 +62,11 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.88
       ret.steerRatio = 16.3
       ret.mass = 2493. + STD_CARGO_KG
-      ret.minSteerSpeed = 14.5
-      # Older EPS FW allow steer to zero
-      if any(fw.ecu == 'eps' and fw.fwVersion[:4] <= b"6831" for fw in car_fw):
-        ret.minSteerSpeed = 0.
+      ret.minSteerSpeed = 0.5
+      ret.minEnableSpeed = 14.5
+      # Certain EPS FW allow steer to zero
+      if any(fw.ecu == 'eps' and (fw.fwVersion[:4] <= b"6831" or fw.fwVersion[:4] <= b"6827") for fw in car_fw):
+        ret.minEnableSpeed = 0.
 
     elif candidate == CAR.RAM_HD:
       ret.steerActuatorDelay = 0.2

@@ -179,7 +179,7 @@ static void update_state(UIState *s) {
         scene.view_from_wide_calib.v[i*3 + j] = view_from_wide_calib(i,j);
       }
     }
-    scene.calibration_valid = sm["liveCalibration"].getLiveCalibration().getCalStatus() == 1;
+    scene.calibration_valid = sm["liveCalibration"].getLiveCalibration().getCalStatus() == cereal::LiveCalibrationData::Status::CALIBRATED;
     scene.calibration_wide_valid = wfde_list.size() == 3;
   }
   if (sm.updated("pandaStates")) {
@@ -238,17 +238,9 @@ void UIState::updateStatus() {
     if (scene.started) {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
-      wide_cam_only = Params().getBool("WideCameraOnly");
     }
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
-  }
-
-  // Handle prime type change
-  if (prime_type != prime_type_prev) {
-    prime_type_prev = prime_type;
-    emit primeTypeChanged(prime_type);
-    Params().put("PrimeType", std::to_string(prime_type));
   }
 }
 
@@ -256,12 +248,10 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
-    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "gnssMeasurements",
-    "uiPlan", "longitudinalPlan", "liveMapData",
+    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlan", "liveMapData",
   });
 
   Params params;
-  wide_cam_only = params.getBool("WideCameraOnly");
   prime_type = std::atoi(params.get("PrimeType").c_str());
   language = QString::fromStdString(params.get("LanguageSetting"));
 
@@ -280,6 +270,14 @@ void UIState::update() {
     watchdog_kick(nanos_since_boot());
   }
   emit uiUpdate(*this);
+}
+
+void UIState::setPrimeType(int type) {
+  if (type != prime_type) {
+    prime_type = type;
+    Params().put("PrimeType", std::to_string(prime_type));
+    emit primeTypeChanged(prime_type);
+  }
 }
 
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
