@@ -28,7 +28,7 @@ def full(cameratype, route):
 @app.route("/footage/<cameratype>/<segment>")
 def fcamera(cameratype, segment):
   if not dashcam.is_valid_segment(segment):
-    return "invalid segment"
+    return render_template("error.html", error="invalid segment")
   file_name = REALDATA + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
   return Response(dashcam.ffmpeg_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
@@ -36,7 +36,7 @@ def fcamera(cameratype, segment):
 @app.route("/footage/<route>")
 def route(route):
   if len(route) != 20:
-    return "route not found"
+    return render_template("error.html", error="route not found")
 
   if str(request.query_string) == "b''":
     query_segment = str("0")
@@ -61,6 +61,8 @@ def footage():
 @app.route("/screenrecords")
 def screenrecords():
   rows = dashcam.all_screenrecords()
+  if not rows:
+    return render_template("error.html", error="no screenrecords")
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
 
 
