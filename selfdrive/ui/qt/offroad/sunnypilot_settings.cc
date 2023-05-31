@@ -165,6 +165,19 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
     accMadsCombo->setEnabled(offroad);
   });
   madsSubControl->addWidget(accMadsCombo);
+  madsSubControl->addWidget(horizontal_line());
+
+  // Controls: Enable M.A.D.S. with Cruise Main
+  madsCruiseMain = new ParamControl(
+    "MadsCruiseMain",
+    tr("Toggle M.A.D.S. with Cruise Main"),
+    tr("Allows M.A.D.S. engagement/disengagement with \"Cruise Main\" cruise control button from the steering wheel."),
+    "../assets/offroad/icon_openpilot.png"
+  );
+  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+    madsCruiseMain->setEnabled(offroad);
+  });
+  madsSubControl->addWidget(madsCruiseMain);
   connect(madsControl, &ToggleControl::toggleFlipped, [=](bool state) {
     updateToggles();
   });

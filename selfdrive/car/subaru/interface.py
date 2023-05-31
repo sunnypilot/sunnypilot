@@ -125,7 +125,7 @@ class CarInterface(CarInterfaceBase):
 
     buttonEvents = []
 
-    self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
+    self.CS.mads_enabled = False if not (self.CS.control_initialized or self.CS.mads_main_toggle) else ret.cruiseState.available
 
     if ret.cruiseState.available:
       if self.enable_mads:

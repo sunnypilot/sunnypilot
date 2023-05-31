@@ -88,6 +88,7 @@ private:
   ParamControl *madsControl;
   ParamControl *disengageLateralOnBrake;
   ParamControl *accMadsCombo;
+  ParamControl *madsCruiseMain;
   ParamControl *belowSpeed;
   ParamControl *dlpControl;
   ParamControl *dlpCurve;

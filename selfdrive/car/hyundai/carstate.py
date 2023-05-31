@@ -193,7 +193,7 @@ class CarState(CarStateBase):
     if self.CP.flags & HyundaiFlags.SP_CAN_LFA_BTN:
       self.lfa_enabled = cp.vl["BCM_PO_11"]["LFA_Pressed"]
 
-    self.mads_enabled = False if not self.control_initialized else ret.cruiseState.available
+    self.mads_enabled = False if not (self.control_initialized or self.mads_main_toggle) else ret.cruiseState.available
 
     if self.CP.flags & HyundaiFlags.SP_NAV_MSG:
       self._update_traffic_signals(self.CP, cp, cp_cam)

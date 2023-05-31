@@ -547,6 +547,7 @@ class CarInterfaceBase(ABC):
       self.gac = self.param_s.get_bool("GapAdjustCruise")
       self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
       self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
+      CS.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
@@ -587,6 +588,7 @@ class CarStateBase(ABC):
     self.control_initialized = False
     self.gap_dist_button = 0
     self.gac_tr = round(float(self.param_s.get("GapAdjustCruiseTr", encoding="utf8")))
+    self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
 
     # Q = np.matrix([[0.0, 0.0], [0.0, 100.0]])
     # R = 0.3

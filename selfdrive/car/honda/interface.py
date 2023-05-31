@@ -344,7 +344,7 @@ class CarInterface(CarInterfaceBase):
     if self.CS.cruise_setting != self.CS.prev_cruise_setting:
       buttonEvents.append(create_button_event(self.CS.cruise_setting, self.CS.prev_cruise_setting, {1: ButtonType.altButton1}))
 
-    self.CS.mads_enabled = False if not self.CS.control_initialized else ret.cruiseState.available
+    self.CS.mads_enabled = False if not (self.CS.control_initialized or self.CS.mads_main_toggle) else ret.cruiseState.available
 
     self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret.cruiseState.available, self.CS.accEnabled,
                                                                           buttonEvents, c.vCruise)
