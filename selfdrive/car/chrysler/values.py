@@ -43,7 +43,7 @@ class CarControllerParams:
     elif CP.carFingerprint in RAM_DT:
       self.STEER_DELTA_UP = 6
       self.STEER_DELTA_DOWN = 6
-      self.STEER_MAX = 350  # EPS allows more, up to 350?
+      self.STEER_MAX = 261  # EPS allows more, up to 350?
     else:
       self.STEER_DELTA_UP = 3
       self.STEER_DELTA_DOWN = 3
@@ -226,6 +226,7 @@ FW_VERSIONS = {
       b'68453514AD',
       b'68510283AG',
       b'68527375AD',
+      b'68527346AE',
     ],
     (Ecu.srs, 0x744, None): [
       b'68428609AB',
@@ -248,6 +249,7 @@ FW_VERSIONS = {
       b'68535469AB',
       b'68535470AC',
       b'68586307AB',
+      b'68548900AB',
     ],
     (Ecu.fwdRadar, 0x753, None): [
       b'04672892AB',
@@ -263,10 +265,10 @@ FW_VERSIONS = {
       b'68475160AG',
     ],
     (Ecu.eps, 0x75A, None): [
-      b'68273275AF', #S0
-      b'68273275AG', #S0
-      b'68312176AE', #S0
-      b'68312176AG', #S0
+      b'68273275AF',
+      b'68273275AG',
+      b'68312176AE',
+      b'68312176AG',
       b'68440789AC',
       b'68466110AB',
       b'68469901AA',
@@ -275,52 +277,45 @@ FW_VERSIONS = {
       b'68552788AA',
       b'68552790AA',
       b'68585112AB',
+      b'68552789AA',
     ],
     (Ecu.engine, 0x7e0, None): [
       b'05036065AE ',
+      b'05036066AE ',
+      b'68378701AI ',
+      b'68378758AM ',
       b'68448163AJ',
       b'68448165AK',
       b'68500630AD',
       b'68500630AE',
       b'68539650AD',
-      b'           ', # TODO:some trucks are responding with nothing here
-      b'68378758AM ',
+      b'05149846AA ',
     ],
-    # (Ecu.transmission, 0x7e1, None): [
-    #   b'05036069AA',
-    #   b'68360078AL',
-    #   b'68360080AM',
-    #   b'68360081AM',
-    #   b'68360085AL',
-    #   b'68360085AM',
-    #   b'68384328AD',
-    #   b'68384332AD',
-    #   b'68445533AB',
-    #   b'68484467AC',
-    #   b'68502994AD',
-    #   b'68540431AB',
-    # ],
-    # (Ecu.gateway, 0x18DACBF1, None): [
-    #   b'68402660AB',
-    #   b'68445283AB',
-    #   b'68500483AB',
-    #   b'68533631AB',
-    # ],
+    (Ecu.transmission, 0x7e1, None): [
+      b'68360078AL',
+      b'68360080AM',
+      b'68360081AM',
+      b'68360085AL',
+      b'68384328AD',
+      b'68384332AD',
+      b'68445533AB',
+      b'68484467AC',
+      b'68502994AD',
+      b'68540431AB',
+      b'68520867AE',
+    ],
   },
 
   CAR.RAM_HD: {
     (Ecu.combinationMeter, 0x742, None): [
       b'68361606AH',
       b'68437735AC',
-      b'68437746AD',
       b'68492693AD',
-      b'68525485AB', #TODO: CHECK in newest updat on dongle 5c05760b592aee2c
+      b'68525485AB',
       b'68525487AB',
       b'68525498AB',
-      b'68528791AF',
     ],
     (Ecu.srs, 0x744, None): [
-      b'68346749AB',
       b'68399794AC',
       b'68428503AA',
       b'68428505AA',
@@ -334,20 +329,18 @@ FW_VERSIONS = {
       b'68504022AC',
       b'68530686AB',
       b'68530686AC',
-      b'68544596AC',
     ],
     (Ecu.fwdRadar, 0x753, None): [
       b'04672895AB',
       b'56029827AG',
+      b'56029827AH',
       b'68462657AE',
       b'68484694AD',
       b'68484694AE',
-      b'04672934AB',
     ],
     (Ecu.eps, 0x761, None): [
       b'68421036AC',
       b'68507906AB',
-      b'68534023AC',
     ],
     (Ecu.engine, 0x7e0, None): [
       b'52370131AF',
@@ -359,14 +352,6 @@ FW_VERSIONS = {
       b'68527616AD ',
       b'M2370131MB',
       b'M2421132MB',
-      b'52421332AF',
-      b'           ',
-    ],
-    (Ecu.gateway, 0x18DACBF1, None): [
-      b'68450806AB',
-      b'68488419AB',
-      b'68535476AB',
-      b'68535476AC',
     ],
   },
 }
