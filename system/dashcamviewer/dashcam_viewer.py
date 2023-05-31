@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import os
 import system.dashcamviewer.helpers as dashcam
-from common.basedir import BASEDIR
 from flask import Flask, render_template, Response, request
 from system.loggerd.config import ROOT as REALDATA
 
-app = Flask(__name__, template_folder=(os.path.join(BASEDIR, "systems/dashcamviewer/templates")))
+app = Flask(__name__)
 
 
 @app.route("/")
