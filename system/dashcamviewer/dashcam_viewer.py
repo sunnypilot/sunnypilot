@@ -75,8 +75,13 @@ def videoscreenrecord(file):
   return Response(dashcam.ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
+@app.route("/about")
+def about():
+  return render_template("about.html")
+
+
 def main():
-  app.run(host="0.0.0.0")
+  app.run(host="0.0.0.0", port=5050)
 
 
 if __name__ == '__main__':
