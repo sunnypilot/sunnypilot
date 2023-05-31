@@ -46,6 +46,8 @@ class DesireHelper:
     self.lane_change_wait_timer = 0
     self.prev_lane_change = False
     self.road_edge = False
+    self.count = 0
+    self.edge_toggle = self.param_s.get("RoadEdge")
 
   def update(self, carstate, lateral_active, lane_change_prob, model_data):
     lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
@@ -56,8 +58,13 @@ class DesireHelper:
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
+    if self.count % 200 == 0:
+      self.edge_toggle = self.param_s.get("RoadEdge")
+
     # Lane detection by FrogAi
-    if one_blinker:
+    if not self.edge_toggle:
+      self.road_edge = False
+    elif one_blinker:
       # Set the minimum lane threshold to 3.0 meters
       min_lane_threshold = 3.0
       # Set the blinker index based on which signal is on
@@ -155,3 +162,5 @@ class DesireHelper:
         self.keep_pulse_timer = 0.0
       elif self.desire in (log.LateralPlan.Desire.keepLeft, log.LateralPlan.Desire.keepRight):
         self.desire = log.LateralPlan.Desire.none
+
+    self.count += DT_MDL

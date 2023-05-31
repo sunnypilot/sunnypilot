@@ -198,6 +198,15 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(belowSpeed);
 
+  // Controls: Block Lane Change: Road Edge Detection
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "RoadEdge",
+    tr("Block Lane Change: Road Edge Detection"),
+    tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
+    "../assets/offroad/icon_openpilot.png"
+  ));
+
   // D.L.P.
   dlpMain = new QWidget();
   dlpSub = new QVBoxLayout(dlpMain);
