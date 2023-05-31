@@ -7,6 +7,9 @@
 {% block main %}
     <video id="video" width="320" height="240" controls autoplay="autoplay" style="background:black">
     </video>
+    <br>
+    current view: <span id="mycurrentview"></span>
+    <br>
     <script>
     var video = document.getElementById("video");
     var track = {
@@ -15,8 +18,8 @@
         }
     }
     video.src = track.play();
+    document.getElementById("mycurrentview").textContent=video.src.split("/")[6];
     </script>
-    <br>
     {% for row in rows %}
         <a href="/screenrecords/{{ row }}">{{ row }}</a><br>
     {% endfor %}
