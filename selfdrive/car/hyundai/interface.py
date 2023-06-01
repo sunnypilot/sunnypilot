@@ -348,6 +348,8 @@ class CarInterface(CarInterfaceBase):
     self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret.cruiseState.available, self.CS.accEnabled,
                                                                           buttonEvents, c.vCruise)
 
+    self.CS.mads_enabled = False if not self.mads_main_toggle else self.CS.mads_enabled
+
     if ret.cruiseState.available:
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
