@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import system.dashcamviewer.helpers as dashcam
-from flask import Flask, render_template, Response, request
+from flask import Flask, render_template, Response, request, send_from_directory
 from system.loggerd.config import ROOT as REALDATA
 
 app = Flask(__name__)
@@ -62,7 +62,7 @@ def footage():
 def screenrecords():
   rows = dashcam.all_screenrecords()
   if not rows:
-    return render_template("error.html", error="no screenrecords found at:<br><br> /data/media/0/videos/" if not dashcam.PC else "no screenrecords found at:<br><br> ~/.comma/media/0/videos/")
+    return render_template("error.html", error="no screenrecords found at:<br><br>" + dashcam.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
 
 
@@ -76,6 +76,11 @@ def videoscreenrecord(file):
   file_name = dashcam.SCREENRECORD_PATH + file
   return Response(dashcam.ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
+
+@app.route("/screenrecords/download/<clip>")
+def download_file(clip):
+  return send_from_directory(dashcam.SCREENRECORD_PATH, clip, as_attachment=True)
+  
 
 @app.route("/about")
 def about():
