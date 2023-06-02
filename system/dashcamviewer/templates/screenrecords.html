@@ -1,14 +1,16 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Screen Records
+    Screen Recordings
 {% endblock %}
 
 {% block main %}
-    Screen Records<br>
+    <br>
+    <b>Screen Recordings</b>
+    <br><br>
     <video id="video" width="320" height="240" controls autoplay="autoplay" style="background:black">
     </video>
-    <br>
+    <br><br>
     current view: <span id="mycurrentview"></span>
     <br>
     <a href="/screenrecords/download/{{ clip }}">download: {{ clip }}</a><br><br>

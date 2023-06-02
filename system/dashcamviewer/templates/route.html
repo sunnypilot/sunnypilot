@@ -1,13 +1,15 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    DashCam Segments
+    Dashcam Segments
 {% endblock %}
 
 
 {% block main %}
 {% autoescape false %}
-    DaschCam Segments (one per minute)<br>
+    <br>
+    <b>Dashcam Segments (one per minute)</b>
+    <br><br>
     <video id="video" width="320" height="240" controls autoplay="autoplay" style="background:black">
     </video>
     <br><br>
