@@ -57,6 +57,7 @@ def manager_init() -> None:
     ("CarModel", ""),
     ("CarModelText", ""),
     ("ChevronInfo", "1"),
+    ("MadsCruiseMain", "1"),
     ("CustomBootScreen", "0"),
     ("CustomOffsets", "0"),
     ("DevUI", "1"),
