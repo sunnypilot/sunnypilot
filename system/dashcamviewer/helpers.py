@@ -1,13 +1,26 @@
 import os
 import subprocess
-from system.loggerd.config import ROOT
+from pathlib import Path
+from system.hardware import PC
+from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
+
+# path to sunnypilot screen recordings
+if PC:
+  SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
+else:
+  SCREENRECORD_PATH = "/data/media/0/videos/"
+
+
+
+def all_screenrecords():
+  return sorted(listdir_by_creation(SCREENRECORD_PATH), reverse=True)
 
 
 def is_valid_segment(segment):
   try:
-    segment_to_segment_name(ROOT, segment)
+    segment_to_segment_name(REALDATA, segment)
     return True
   except AssertionError:
     return False
@@ -20,9 +33,9 @@ def segment_to_segment_name(data_dir, segment):
 
 def all_segment_names():
   segments = []
-  for segment in listdir_by_creation(ROOT):
+  for segment in listdir_by_creation(REALDATA):
     try:
-      segments.append(segment_to_segment_name(ROOT, segment))
+      segments.append(segment_to_segment_name(REALDATA, segment))
     except AssertionError:
       pass
   return segments
@@ -83,6 +96,19 @@ def ffmpeg_mp4_wrap_process_builder(filename):
   command_line += ["-map", "0"]
   if extension == "hevc":
     command_line += ["-vtag", "hvc1"]
+  command_line += ["-f", "mp4"]
+  command_line += ["-movflags", "empty_moov"]
+  command_line += ["-"]
+  return subprocess.Popen(
+    command_line, stdout=subprocess.PIPE
+  )
+
+
+def ffplay_mp4_wrap_process_builder(file_name):
+  command_line = ["ffmpeg"]
+  command_line += ["-i", file_name]
+  command_line += ["-c", "copy"]
+  command_line += ["-map", "0"]
   command_line += ["-f", "mp4"]
   command_line += ["-movflags", "empty_moov"]
   command_line += ["-"]
