@@ -52,15 +52,6 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : QWidget(parent) {
     "../assets/offroad/icon_road.png"
   ));
 
-  // General: Custom Boot Screen
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "CustomBootScreen",
-    tr("Custom Boot Screen"),
-    tr("Display sunnypilot welcome screen while booting the device."),
-    "../assets/offroad/icon_shell.png"
-  ));
-
   // General: Max Time Offroad (Shutdown timer)
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(new MaxTimeOffroad());
@@ -581,10 +572,6 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
   stockLongToyota->setConfirmation(true, false);
   toggle_layout->addWidget(horizontal_line());
   toggle_layout->addWidget(stockLongToyota);
-  toggle_layout->addWidget(horizontal_line());
-  toggle_layout->addWidget(new LabelControl(tr("Volkswagen MQB/PQ")));
-  toggle_layout->addWidget(horizontal_line());
-  toggle_layout->addWidget(new VwAccType());
 }
 
 SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
@@ -1665,75 +1652,6 @@ SpeedLimitValueOffset::SpeedLimitValueOffset() : AbstractControl(
 
 void SpeedLimitValueOffset::refresh() {
   label.setText(QString::fromStdString(params.get("SpeedLimitValueOffset")));
-  btnminus.setText("-");
-  btnplus.setText("+");
-}
-
-// Volkswagen - MQB ACC Type
-VwAccType::VwAccType() : AbstractControl(
-  tr("Short Press +1/-1 Type"),
-  tr("Define the type of ACC control your car has with short press to +1 or -1."),
-  "../assets/offroad/icon_blank.png")
-
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("VwAccType"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("VwAccType", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("VwAccType"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 1 ) {
-      value = 1;
-    }
-    QString values = QString::number(value);
-    params.put("VwAccType", values.toStdString());
-    refresh();
-  });
-  refresh();
-}
-
-void VwAccType::refresh() {
-  QString option = QString::fromStdString(params.get("VwAccType"));
-  if (option == "0") {
-    label.setText(tr("+/-"));
-  } else if (option == "1") {
-    label.setText(tr("RES/SET"));
-  }
   btnminus.setText("-");
   btnplus.setText("+");
 }
