@@ -604,29 +604,31 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     }
   }
 
-  if (e2eLStatus == 2) {
-    if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+    if (e2eLStatus == 2 && !radar_state.getLeadOne().getStatus()) {
       if (chime_sent) {
         chime_count = 0;
       } else {
         chime_count += 1;
       }
-      if (radar_state.getLeadOne().getStatus()) {
-        if ((last_lead_distance == -1) || (lead_distance < last_lead_distance)) {
-          last_lead_distance = lead_distance;
-        }
-        if (s.scene.e2e_long_alert_lead && (lead_distance - last_lead_distance > 1.0) && !chime_sent) {
-          chime_prompt = 2;
-          chime_sent = true;
-        } else {
-          chime_prompt = 0;
-        }
-      } else if (s.scene.e2e_long_alert_light && chime_count >= 2 && !chime_sent) {
+      if (s.scene.e2e_long_alert_light && chime_count >= 2 && !chime_sent) {
         chime_prompt = 1;
         chime_sent = true;
       } else {
         chime_prompt = 0;
       }
+    } else if (radar_state.getLeadOne().getStatus()) {
+      if ((last_lead_distance == -1) || (lead_distance < last_lead_distance)) {
+        last_lead_distance = lead_distance;
+      }
+      if (s.scene.e2e_long_alert_lead && (lead_distance - last_lead_distance > 1.0) && !chime_sent) {
+        chime_prompt = 2;
+        chime_sent = true;
+      } else {
+        chime_prompt = 0;
+      }
+    } else {
+      chime_prompt = 0;
     }
   } else {
   }
