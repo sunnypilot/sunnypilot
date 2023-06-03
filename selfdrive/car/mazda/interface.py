@@ -15,6 +15,7 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "mazda"
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.mazda)]
     ret.radarUnavailable = True
+    ret.customStockLongAvailable = True
 
     ret.dashcamOnly = candidate not in (CAR.CX5_2022, CAR.CX9_2021)
 
