@@ -562,7 +562,19 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     setProperty("curveSign", lp.getTurnSign());
   }
 
-  setProperty("reversing", int(car_state.getGearShifter()) == 4);
+  static int reverse_delay = 0;
+  bool reverse_allowed = false;
+  if (int(car_state.getGearShifter()) != 4) {
+    reverse_delay = 0;
+    reverse_allowed = false;
+  } else {
+    reverse_delay += 50;
+    if (reverse_delay >= 1000) {
+      reverse_allowed = true;
+    }
+  }
+
+  setProperty("reversing", reverse_allowed);
 
   // DM icon transition
   dm_fade_state = fmax(0.0, fmin(1.0, dm_fade_state+0.2*(0.5-(float)(dmActive))));
