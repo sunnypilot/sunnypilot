@@ -89,6 +89,7 @@ class CarInterface(CarInterfaceBase):
         ret.minEnableSpeed = 4.5
 
     ret.pcmCruise = not ret.openpilotLongitudinalControl
+    ret.customStockLongAvailable = True
     ret.stoppingControl = True
     ret.startingState = True
     ret.startAccel = 1.0
