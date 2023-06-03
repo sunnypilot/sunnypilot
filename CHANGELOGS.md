@@ -1,6 +1,7 @@
 sunnypilot - 0.9.2.x (2023-02-22)
 ========================
 * Dashcam Viewer (native & screen recordings) via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
+* HKG: smartMDPS automatic detection (installed with applicable firmware)
 * Honda Clarity 2018-22 support thanks to mcallbosco, vanillagorillaa and wirelessnet2!
 
 sunnypilot - Version Latest (2023-02-22)
