@@ -52,6 +52,15 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : QWidget(parent) {
     "../assets/offroad/icon_road.png"
   ));
 
+  // General: Retain hotspot/tethering state
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "HotspotOnBoot",
+    tr("Retain hotspot/tethering state"),
+    tr("Enabling this toggle will retain the hotspot/tethering toggle state across reboots."),
+    "../assets/offroad/icon_network.png"
+  ));
+
   // General: Max Time Offroad (Shutdown timer)
   main_layout->addWidget(horizontal_line());
   main_layout->addWidget(new MaxTimeOffroad());
