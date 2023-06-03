@@ -345,7 +345,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       font-size: 140px;
       padding-bottom: 20px;
       border 1px grey solid;
-      border-radius: 100px;
+      border-radius: 30px;
       background-color: #292929;
       font-weight: 400;
     }
@@ -353,9 +353,10 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       background-color: #3B3B3B;
     }
   )");
-  close_btn->setFixedSize(200, 200);
-  sidebar_layout->addSpacing(45);
-  sidebar_layout->addWidget(close_btn, 0, Qt::AlignCenter);
+  close_btn->setFixedSize(300, 110);
+  sidebar_layout->addSpacing(10);
+  sidebar_layout->addWidget(close_btn, 0, Qt::AlignRight);
+  sidebar_layout->addSpacing(10);
   QObject::connect(close_btn, &QPushButton::clicked, this, &SettingsWindow::closeSettings);
 
   // setup panels
