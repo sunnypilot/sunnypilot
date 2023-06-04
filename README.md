@@ -398,13 +398,6 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 
 ---
 
-
-[![openpilot tests](https://github.com/commaai/openpilot/workflows/openpilot%20tests/badge.svg?event=push)](https://github.com/commaai/openpilot/actions)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/commaai/openpilot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/commaai/openpilot/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/commaai/openpilot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/commaai/openpilot/context:python)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/commaai/openpilot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/commaai/openpilot/context:cpp)
-[![codecov](https://codecov.io/gh/commaai/openpilot/branch/master/graph/badge.svg)](https://codecov.io/gh/commaai/openpilot)
-
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
 [^4]:Shortened URL for convenience. Full URL is ```smiskol.com/fork/sunnyhaibin/test-c3```
