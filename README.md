@@ -356,6 +356,19 @@ Pull requests should be against the most current `master` branch.
 
 </details>
 
+<details><summary><h3>User Data</h3></summary>
+
+By default, sunnypilot uploads the driving data to comma servers. You can also access your data through [comma connect](https://connect.comma.ai/).
+
+sunnypilot is open source software. The user is free to disable data collection if they wish to do so.
+
+sunnypilot logs the road-facing camera, CAN, GPS, IMU, magnetometer, thermal sensors, crashes, and operating system logs.
+The driver-facing camera is only logged if you explicitly opt-in in settings. The microphone is not recorded.
+
+By using this software, you understand that use of this software or its related services will generate certain types of user data, which may be logged and stored at the sole discretion of comma. By accepting this agreement, you grant an irrevocable, perpetual, worldwide right to comma for the use of this data.
+
+</details>
+
 <h3>💰 Donate</h3>
 If you find any of the features useful, feel free to donate to support for future feature development.
 
