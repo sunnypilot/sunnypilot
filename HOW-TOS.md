@@ -6,7 +6,6 @@ Table of Contents
 
 * [Radar Tracks](#Radar-Tracks)
     * [Enable Radar Tracks](#-Enable-Radar-Tracks)
-* [Enable openpilot Longitudinal Control](#-Enable-openpilot-Longitudinal-Control)
 * [Enable Mapbox Navigation](#-Enable-Mapbox-Navigation)
 
 ---
