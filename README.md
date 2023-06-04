@@ -4,6 +4,8 @@ Table of Contents
 =======================
 
 * [Join our Discord](#-join-our-discord)
+* [What is sunnypilot?](#-what-is-sunnypilot-)
+* [Running in a car](#-running-on-a-dedicated-device-in-a-car)
 * [Read Before Installing](#-read-before-installing)
 * [Prohibited Safety Modifications](#-prohibited-safety-modifications)
 * [Installation](#-installation)
@@ -12,6 +14,7 @@ Table of Contents
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
 * [How-To's](#-How-Tos)
+* [User Data](#user-data)
 * [Donate](#-donate)
 * [Pull Requests](#-Pull-Requests)
 * [Special Thanks](#-special-thanks)
@@ -25,29 +28,40 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 * https://discord.sunnypilot.com
  
      ![](https://dcbadge.vercel.app/api/server/wRW3meAgtx?style=flat) ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
-   
- 
+
+</details>
+
+<details><summary><h3>🌞 What is sunnypilot? 🌞</h3></summary>
+
+[sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 200 supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
+
+</details>
+
+<details><summary><h3>🚘 Running on a dedicated device in a car</h3></summary>
+
+To use sunnypilot in a car, you need the following:
+* A supported device to run this software
+  * a [comma three](https://comma.ai/shop/products/three), or
+  * a comma two (only with older versions below 0.8.13)
+* This software
+* One of [the 250+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
+* A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
+
+Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
+
 </details>
 
 <details><summary><h3>🚨 Read Before Installing</h3></summary>
- 
-It is recommended to read this entire page before proceeding. This will ensure that you fully understand each added feature on sunnypilot, and you are selecting the right branch for your car (and device) to have the best driving experience.
 
-sunnypilot is compatible with **most** models of the following car manufacturers:
-* Hyundai/Kia/Genesis (**HKG**)
-* Honda/Acura
-* Toyota/Lexus
-* Subaru
-* Chrysler/Jeep/RAM (**FCA**)
-* General Motors (**GM**)
-* Volkswagen (MQB/PQ)/Audi/Škoda
+It is recommended to read this **entire page** before proceeding. This will ensure that you fully understand each added feature on sunnypilot, and you are selecting the right branch for your car to have the best driving experience.
 
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
+
 </details>
 
 <details><summary><h3>⛔ Prohibited Safety Modifications</h3></summary>
  
-All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to [comma.ai's safety policy](https://github.com/commaai/openpilot/blob/master/docs/SAFETY.md). Any changes to this policy will result in your fork and/or device being banned from both comma.ai and sunnypilot channels.
+All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to [comma.ai's safety policy](https://github.com/commaai/openpilot/blob/master/docs/SAFETY.md). Any changes that go against this policy will result in your fork and your device being banned from both comma.ai and sunnypilot channels.
 
 The following changes are a **VIOLATION** of this policy and **ARE NOT** included in any sunnypilot branches:
 * Driver Monitoring:
@@ -62,25 +76,25 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
 <details><summary><h3>⚒ Installation</h3></summary>
 
- <details><summary>URL (Easy)</summary> 
+  <details><summary>URL (Easy)</summary> 
 
   comma three
   ------
   
-   Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
+  Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
 
-   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) previous software if you already installed another fork.
-   2. Select `Custom Software` when given the option upon reboot.
-   3. Input the following URL: ```bit.ly/sp-test-c3```[^4] (note: `https://` is not requirement on the comma three)
-   4. Complete the rest of the installation following the onscreen instructions.
-   5. Pop into the `#installation-help` channel on Discord for further assistance.
+  1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) previous software if you already installed another software/fork.
+  2. Select `Custom Software` when given the option upon reboot.
+  3. Input the following URL: ```bit.ly/sp-dev-nicki-minaj```[^4] (note: `https://` is not requirement on the comma three)
+  4. Complete the rest of the installation following the onscreen instructions.
+  5. Pop into the `#installation-help` channel on Discord for further assistance.
 
   comma two
   ------
 
   Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this will assume you want to install the latest release:
 
-  1. Factory reset/uninstall previous software if you already installed another fork.
+  1. Factory reset/uninstall previous software if you already installed another software/fork.
   2. Select `Custom Software` when given the option.
   3. Input the following URL: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
   4. Complete the rest of the installation following the onscreen instructions.
@@ -88,35 +102,35 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
   </details>
    
- <details>
- <summary>SSH (More Versatile)</summary>
- </br>
+  <details>
+  <summary>SSH (More Versatile)</summary>
+  </br>
  
- Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
+  Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
  
-If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
+  If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
 
   
- comma three:
- ------
-* [`test-c3`](https://github.com/sunnyhaibin/openpilot/tree/test-c3):
+  comma three:
+  ------
+  * [`dev-nicki-minaj`](https://github.com/sunnyhaibin/openpilot/tree/dev-nicki-minaj):
     
     ```
-    cd /data; rm -rf ./openpilot; git clone -b test-c3 --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; sudo reboot
+    cd /data; rm -rf ./openpilot; git clone -b dev-nicki-minaj --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
     ```
 
-comma two:
-------
-* [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
+  comma two:
+  ------
+  * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
     
     ```
-    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/openpilot.git openpilot; cd openpilot; reboot
+    cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; reboot
     ```
     
-After running the command to install the desired branch, your comma device should reboot.
+  After running the command to install the desired branch, your comma device should reboot.
   </details>  
  
- </details>  
+</details>  
 
 
 <details><summary><h3>🚗 Highlight Features</h3></summary>
@@ -130,16 +144,16 @@ After running the command to install the desired branch, your comma device shoul
   * Speed Limit Control (SLC) - Set speed limit based on map data or car interface (if applicable) 
   * HKG only: Highway Driving Assist (HDA) status integration - Use cars native speed sign detection to set desired speed (on applicable HKG cars only)
 - [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Allow `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on-screen button to adjust the follow distance from the lead car. See table below for options
- - [**Quiet Drive 🤫**](#-quiet-drive) - Toggle to mute all notification sounds (excluding driver safety warnings)
- - [**Auto Lane Change Timer**](#Auto-Lane-Change-Timer) - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
- - [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
- - [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
- - [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
- - [**Offline OSM Maps**](#Offline-OSM-Maps) - OSM database can now be downloaded locally for offline use[^2]. This enables offline SLC, V-TSC and M-TSC. Currently available for US South, US West, US Northeast, Florida, Taiwan, South Africa and New Zealand
- - [**Various Live Tuning**](#Various-Live-Tuning) - Ability to tailor your driving experience on the fly:
-   * Enforce Torque Lateral Control - Use the newest [torque controller](https://blog.comma.ai/0815release/#torque-controller) for all vehicles.
-   * Torque Lateral Control Live Tune - Ability to adjust the torque controller’s `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
-   * Torque Lateral Controller Self-Tune - Enable automatic turning for the Torque controller.
+  - [**Quiet Drive 🤫**](#-quiet-drive) - Toggle to mute all notification sounds (excluding driver safety warnings)
+  - [**Auto Lane Change Timer**](#Auto-Lane-Change-Timer) - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
+  - [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
+  - [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
+  - [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
+  - [**Offline OSM Maps**](#Offline-OSM-Maps) - OSM database can now be downloaded locally for offline use[^2]. This enables offline SLC, V-TSC and M-TSC. Currently available for US South, US West, US Northeast, Florida, Taiwan, South Africa and New Zealand
+  - [**Various Live Tuning**](#Various-Live-Tuning) - Ability to tailor your driving experience on the fly:
+    * Enforce Torque Lateral Control - Use the newest [torque controller](https://blog.comma.ai/0815release/#torque-controller) for all vehicles.
+    * Torque Lateral Control Live Tune - Ability to adjust the torque controller’s `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
+    * Torque Lateral Controller Self-Tune - Enable automatic turning for the Torque controller.
 
 ### Visual Enhancements
 * **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
@@ -167,8 +181,7 @@ After running the command to install the desired branch, your comma device shoul
 * **Driving Screen Off Brightness (%)** - When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio
 * **Max Time Offroad** - Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)
 
- </details>
-
+</details>
 
 <details><summary><h3>🚗 Driving Enhancements</h3></summary>
  
@@ -184,19 +197,19 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * `CRUISE (MAIN)` must be `ON` to use ACC/SCC
 * `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
 
- ### Disengage Lateral ALC on Brake Press Mode toggle
- Dedicated toggle to handle Lateral state on brake pedal press and release:
+### Disengage Lateral ALC on Brake Press Mode toggle
+Dedicated toggle to handle Lateral state on brake pedal press and release:
   1. `ON`: `BRAKE pedal` press will pause Automatic Lane Centering; `BRAKE pedal` release will resume Automatic Lane Centering. Note: `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
   2. `OFF`: `BRAKE pedal` press will NOT pause Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
  
 ### Miscellaneous
- * `TURN SIGNALS` (`Left` or `Right`) will pause Automatic Lane Centering if the vehicle speed is below the [threshold](https://github.com/commaai/openpilot/blob/master/selfdrive/controls/lib/desire_helper.py#L8) for Automatic Lane Change
+* `TURN SIGNALS` (`Left` or `Right`) will pause Automatic Lane Centering if the vehicle speed is below the [threshold](https://github.com/commaai/openpilot/blob/master/selfdrive/controls/lib/desire_helper.py#L8) for Automatic Lane Change
 * Event audible alerts are more relaxed to match manufacturer's stock behavior
 * Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
 
 ### Dynamic Lane Profile (DLP)
 
- Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
+Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
 
 There are 3 modes to select on the onroad camera screen:
 * **Auto Lane**: sunnypilot dynamically chooses between `Laneline` or `Laneless` model
@@ -205,7 +218,7 @@ There are 3 modes to select on the onroad camera screen:
 
 To use Dynamic Lane Profile, do the following:
 ```
-1. sunnypilot Settings -> SP - Controls -> Enable Dynamic Lane Profile -> ON toggle
+1. sunnypilot Settings -> `SP - Controls` -> Enable Dynamic Lane Profile -> ON toggle
 2. Reboot.
 3. Before driving, on the onroad camera screen, toggle between the 3 modes by pressing on the button.
 4. Drive. 
@@ -264,67 +277,61 @@ This fork now allows supported openpilot longitudinal cars to adjust the cruise 
 🚨**PROCEED WITH EXTREME CAUTION AND BE READY TO MANUALLY TAKE OVER AT ALL TIMES**
 
 There are 4 modes to select on the steering wheel and/or the onroad camera screen:
-* **Far Gap**: Furthest distance - 1.8 second profile
-* **Normal Gap**: Stock sunnypilot distance - 1.45 second profile
-* **Aggro Gap**: Aggressive distance - 1.2 second profile
-* 🚨**Maniac Gap**🚨: Extremely aggressive distance - 1.0 second profile
+* **Stock Gap**: Stock sunnypilot distance - 1.45 second profile
+* **Mild Gap**: Semi-aggressive distance - 1.25 second profile
+* 🚨**Aggro Gap**🚨: Aggressive distance - 1.0 second profile
 
 **Availability**
 
-|      Car Make       | Far Gap | Normal Gap | Aggro Gap | Maniac Gap |
-|:-------------------:|:-------:|:----------:|:---------:|:----------:|
-|    Honda/Acura      |    ✅    |     ✅      |     ✅     |     ⚠      |
-| Hyundai/Kia/Genesis |    ✅    |     ✅      |     ✅     |     ⚠      |
-|    Toyota/Lexus     |    ✅    |     ✅      |     ✅     |     ❌      |
+|      Car Make       | Stock Gap | Mild Gap | Aggro Gap |
+|:-------------------:|:---------:|:--------:|:---------:|
+|     Honda/Acura     |     ✅     |    ✅     |     ✅     |
+| Hyundai/Kia/Genesis |     ✅     |    ✅     |     ✅     |
+|    Toyota/Lexus     |     ✅     |    ✅     |     ✅     |
+|  Volkswagen MQB/PQ  |     ✅     |    ✅     |     ✅     |
 
 </details>
 
 
 <details><summary><h3>⚒ Branch Definitions</h3></summary>
  
-|     Tag      | Definition                                 | Description                                                                                                                     |
-|:------------:|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-|    `prod`    | Production branches                        | Include features that are tested by users and ready to use. ✅                                                                   |
-|  `staging`   | Staging branches                           | Include new features that are not tested by users. No stability guaranteed. ⚠                                                  |
-|  `feature`   | Feature branches                           | Represent new features being added to the system. No stability guaranteed. ⚠                                                   |
-|    `test`    | Test branches                              | For experimenting with concepts that might not get used in the project. No stability guaranteed. ⚠                             |
-|  `develop`   | Development branches                       | All features are gathered in respective versions. Reviewed features will be committed to `develop`. No stability guaranteed. ⚠ |
-|    `full`    | Full Feature branches                      | All features inclusive within the branch. ✅                                                                                      |
-|  `personal`  | sunnyhaibin's personal branches            | On top of Full Feature. ✅                                                                                                         |
-|    `hkg`     | Hyundai/Kia/Genesis(HKG)-specific branches | Only for HKG cars.                                                                                                              |
-|   `honda`    | Honda/Acura - Specific branches                    | Only for Honda/Acura cars.                                                                                                            |
-|   `toyota`   | Toyota/Lexus - Specific branches                   | Only for Toyota/Lexus cars.                                                                                                           |
-|   `subaru`   | Subaru - Specific branches                   | Only for Subaru cars.                                                                                                           |
-| `volkswagen` | Volkswagen - Specific branches               | Only for Volkswagen cars.                                                                                                       |
+|   Tag    | Definition                  | Description                                                                                                                                                                                 |
+|:--------:|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|  `prod`  | Production/Release branches | Include features that are **verified** by trusted testers and the community. Ready to use. ✅                                                                                                |
+|  `test`  | Test branches               | Include new features that are **tested** by trusted testers and the community. Stability may vary. ⚠                                                                                        |
+|  `dev`   | Development branches        | All features are gathered in respective versions. Reviewed and merged features will be committed to `dev`. Stability may vary. ⚠                                                            |
+| `master` | Main branch                 | Syncs with [commaai's openpilot `master`](https://github.com/commaai/openpilot) upstream branch. Accepts all pull requests. Does not include all sunnypilot features. Stability may vary. ⚠ |
 
 Example:
-* [`0.8.12-prod-full-honda`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-full-hkg): 0.8.12-based, Production, Full Feature, Honda branch
-* [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg): 0.8.12-based, Production, sunnyhaibin's personal Full Feature, Hyundai/Kia/Genesis branch
+* [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3): Latest test branch that are tested by trusted testers and the community, verification required.
+* [`dev-nicki-minaj`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-nicki-minaj): Latest development branch that include all sunnypilot features, testing required.
 
 </details>
 
 <details><summary><h3>✅ Recommended Branches</h3></summary>
  
-| Branch                                                                                                    | Definition                                                                                          | Compatible Device | Changelogs                                                                                                      |
-|:----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------|
-| [`0.8.12-prod-full-<car>`](https://github.com/sunnyhaibin/sunnypilot/branches/all?query=0.8.12-prod-full) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.12                        | comma two/three   | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.12-prod-full-subaru/CHANGELOGS.md) |
-| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3)                         | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                        | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md)      |
-| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)                                       | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot latest upstream | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)                    |
-
+| Branch                                                                                                    | Definition                                                                                                            | Compatible Device | Changelogs                                                                                              |
+|:----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------|
+| [`0.8.12-prod-full-<car>`](https://github.com/sunnyhaibin/sunnypilot/branches/all?query=0.8.12-prod-full) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.12                                          | comma two/three   | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.12-prod-full-subaru/CHANGELOGS.md) |
+| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3)                         | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                                          | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md)          |
+| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)                                       | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot commits up to December 16th, 2022 | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)                 |
+| [`dev-nicki-minaj`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-nicki-minaj)                       | • Latest development branch<br/>• Based on comma.ai's openpilot 0.9.2 release<br/>• Nicki Minaj driving model         | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/dev-nicki-minaj/CHANGELOGS.md)         |
 
 </details>
-
 
 <details><summary><h3>📗 How To's</h3></summary>
  
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
+
 </details>
 
 
 <details><summary><h3>🎆 Pull Requests</h3></summary>
+
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
-Pull requests should be against the most current `prod-full` branch.
+Pull requests should be against the most current `master` branch.
+
 </details>
 
 <details><summary><h3>🏆 Special Thanks</h3></summary>
@@ -344,7 +351,6 @@ Pull requests should be against the most current `prod-full` branch.
 * [Move Fast GmbH](https://github.com/move-fast/openpilot)
 * [dragonpilot](https://github.com/dragonpilot-community/dragonpilot)
 * [neokii](https://github.com/neokii/openpilot)
-* [Aragon7777](https://github.com/aragon7777)
 * [AlexandreSato](https://github.com/AlexandreSato/openpilot)
 * [Moodkiller](https://github.com/moodkiller)
 
