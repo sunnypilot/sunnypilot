@@ -24,6 +24,8 @@ Table of Contents
 
 <details><summary><h3>💭 Join our Discord</h3></summary>
 
+---
+
 Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
 * https://discord.sunnypilot.com
 
@@ -33,11 +35,15 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 
 <details><summary><h3>🌞 What is sunnypilot?</h3></summary>
 
+---
+
 [sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 200 supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
 
 </details>
 
 <details><summary><h3>🚘 Running on a dedicated device in a car</h3></summary>
+
+---
 
 To use sunnypilot in a car, you need the following:
 * A supported device to run this software
@@ -53,6 +59,8 @@ Detailed instructions for [how to mount the device in a car](https://comma.ai/se
 
 <details><summary><h3>🚨 Read Before Installing</h3></summary>
 
+---
+
 It is recommended to read this **entire page** before proceeding. This will ensure that you fully understand each added feature on sunnypilot, and you are selecting the right branch for your car to have the best driving experience.
 
 This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). By installing this software, you accept all responsibility for anything that might occur while you use it. All contributors to sunnypilot are not liable. ❗<ins>**Use at your own risk.**</ins>❗
@@ -60,6 +68,8 @@ This is a fork of [comma.ai's openpilot](https://github.com/commaai/openpilot). 
 </details>
 
 <details><summary><h3>⛔ Prohibited Safety Modifications</h3></summary>
+
+---
 
 All [official sunnypilot branches](https://github.com/sunnyhaibin/sunnypilot/branches) strictly adhere to [comma.ai's safety policy](https://github.com/commaai/openpilot/blob/master/docs/SAFETY.md). Any changes that go against this policy will result in your fork and your device being banned from both comma.ai and sunnypilot channels.
 
@@ -75,6 +85,8 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
 
 <details><summary><h3>⚒ Installation</h3></summary>
+
+---
 
   <details><summary>URL (Easy)</summary>
 
@@ -135,6 +147,8 @@ After running the command to install the desired branch, your comma device shoul
 
 <details><summary><h3>🚗 Highlight Features</h3></summary>
 
+---
+
 ### Quality of Life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - Automatic Lane Centering (ALC) / Lane Keep Assist System (LKAS) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
 - [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile (between Laneful and Laneless) based on lane recognition confidence
@@ -184,6 +198,8 @@ After running the command to install the desired branch, your comma device shoul
 </details>
 
 <details><summary><h3>🚗 Driving Enhancements</h3></summary>
+
+---
 
 ### Modified Assistive Driving Safety (MADS)
 The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driving experience with modified behaviors of driving assist engagements. This feature complies with comma.ai's safety rules as accurately as possible with the following changes:
@@ -295,6 +311,8 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 
 <details><summary><h3>⚒ Branch Definitions</h3></summary>
 
+---
+
 |   Tag    | Definition                  | Description                                                                                                                                                                                 |
 |:--------:|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |  `prod`  | Production/Release branches | Include features that are **verified** by trusted testers and the community. Ready to use. ✅                                                                                                |
@@ -310,6 +328,8 @@ Example:
 
 <details><summary><h3>✅ Recommended Branches</h3></summary>
 
+---
+
 | Branch                                                                                                    | Definition                                                                                                            | Compatible Device | Changelogs                                                                                              |
 |:----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------|
 | [`0.8.12-prod-full-<car>`](https://github.com/sunnyhaibin/sunnypilot/branches/all?query=0.8.12-prod-full) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.12                                          | comma two/three   | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.12-prod-full-subaru/CHANGELOGS.md) |
@@ -321,12 +341,16 @@ Example:
 
 <details><summary><h3>📗 How To's</h3></summary>
 
+---
+
 How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
 
 </details>
 
 
 <details><summary><h3>🎆 Pull Requests</h3></summary>
+
+---
 
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
@@ -335,6 +359,8 @@ Pull requests should be against the most current `master` branch.
 </details>
 
 <details><summary><h3>🏆 Special Thanks</h3></summary>
+
+---
 
 * [spektor56](https://github.com/spektor56/openpilot)
 * [rav4kumar](https://github.com/rav4kumar/openpilot)
@@ -357,6 +383,8 @@ Pull requests should be against the most current `master` branch.
 </details>
 
 <details><summary><h3>📊 User Data</h3></summary>
+
+---
 
 By default, sunnypilot uploads the driving data to comma servers. You can also access your data through [comma connect](https://connect.comma.ai/).
 
