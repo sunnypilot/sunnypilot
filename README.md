@@ -14,7 +14,7 @@ Table of Contents
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
 * [How-To's](#-How-Tos)
-* [User Data](#user-data)
+* [User Data](#-user-data)
 * [Donate](#-donate)
 * [Pull Requests](#-Pull-Requests)
 * [Special Thanks](#-special-thanks)
@@ -356,7 +356,7 @@ Pull requests should be against the most current `master` branch.
 
 </details>
 
-<details><summary><h3>User Data</h3></summary>
+<details><summary><h3>📊 User Data</h3></summary>
 
 By default, sunnypilot uploads the driving data to comma servers. You can also access your data through [comma connect](https://connect.comma.ai/).
 
