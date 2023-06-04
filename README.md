@@ -4,7 +4,7 @@ Table of Contents
 =======================
 
 * [Join our Discord](#-join-our-discord)
-* [What is sunnypilot?](#-what-is-sunnypilot-)
+* [What is sunnypilot?](#-what-is-sunnypilot)
 * [Running in a car](#-running-on-a-dedicated-device-in-a-car)
 * [Read Before Installing](#-read-before-installing)
 * [Prohibited Safety Modifications](#-prohibited-safety-modifications)
@@ -31,7 +31,7 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 
 </details>
 
-<details><summary><h3>🌞 What is sunnypilot? 🌞</h3></summary>
+<details><summary><h3>🌞 What is sunnypilot?</h3></summary>
 
 [sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 200 supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
 
