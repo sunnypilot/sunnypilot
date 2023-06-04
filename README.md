@@ -383,7 +383,7 @@ Thank you for your continuous love and support! Enjoy 🥰
 
 **PayPal QR Code:**
 
-![sunnyhaibin0850_qrcode_paypal.me.png](sunnyhaibin0850_qrcode_paypal.me.png)
+![sunnyhaibin0850_qrcode_paypal.me.png](docs/sunnyhaibin0850_qrcode_paypal.me.png)
 
 Licensing
 ------
