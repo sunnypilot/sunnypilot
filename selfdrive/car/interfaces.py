@@ -549,6 +549,7 @@ class CarInterfaceBase(ABC):
       self.gac = self.param_s.get_bool("GapAdjustCruise")
       self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
       self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
+    return CS
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
