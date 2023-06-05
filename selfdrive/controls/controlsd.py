@@ -371,7 +371,7 @@ class Controls:
       self.events.add(EventName.radarFault)
     if not self.sm.valid['pandaStates']:
       self.events.add(EventName.usbError)
-    if CS.canTimeout and CS.gearShifter != 1:  # CS.gearShifter == 1 park gear
+    if CS.canTimeout:
       self.events.add(EventName.canBusMissing)
     elif not CS.canValid:
       self.events.add(EventName.canError)
@@ -519,7 +519,8 @@ class Controls:
 
       elif self.events.any(ET.IMMEDIATE_DISABLE):
         self.state = State.disabled
-        self.current_alert_types.append(ET.IMMEDIATE_DISABLE)
+        if CS.gearShifter != 1:  # CS.gearShifter == 1 park gear
+          self.current_alert_types.append(ET.IMMEDIATE_DISABLE)
 
       else:
         # ENABLED
