@@ -12,9 +12,9 @@ from system.version import get_branch, get_commit, get_origin, get_version, \
 
 import os
 import traceback
-import requests
 from cereal import car
 from datetime import datetime
+
 
 class SentryProject(Enum):
   # python project
@@ -36,10 +36,6 @@ try:
   gitname = params.get("GithubUsername", encoding='utf-8')
 except Exception:
   gitname = ""
-try:
-  ip = requests.get('https://checkip.amazonaws.com/').text.strip()
-except Exception:
-  ip = "255.255.255.255"
 error_tags = {
   'dirty': is_dirty(),
   'dongle_id': dongle_id,
@@ -48,6 +44,8 @@ error_tags = {
   'fingerprintedAs': candidate,
   'gitname': gitname
 }
+ip = "{{auto}}"
+
 
 def report_tombstone(fn: str, message: str, contents: str) -> None:
   cloudlog.error({'tombstone': message})
@@ -62,6 +60,7 @@ def report_tombstone(fn: str, message: str, contents: str) -> None:
 def capture_exception(*args, **kwargs) -> None:
   save_exception(traceback.format_exc())
   cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))
+  bind_user(id=dongle_id, ip_address=ip, name=gitname)
 
   try:
     sentry_sdk.capture_exception(*args, **kwargs)
@@ -115,6 +114,7 @@ def init(project: SentryProject) -> None:
 
   env = "release" if is_tested_branch() else "master"
   dongle_id = Params().get("DongleId", encoding='utf-8')
+  ip = "{{auto}}"
   gitname = Params().get("GithubUsername", encoding='utf-8')
 
   integrations = []
@@ -128,10 +128,12 @@ def init(project: SentryProject) -> None:
                   release=get_version(),
                   integrations=integrations,
                   traces_sample_rate=1.0,
-                  environment=env)
+                  environment=env,
+                  send_default_pii=True)
 
   sentry_sdk.set_user({"id": dongle_id})
-  sentry_sdk.set_user({"gitname": gitname})
+  sentry_sdk.set_user({"ip_address": ip})
+  sentry_sdk.set_user({"name": gitname})
   sentry_sdk.set_tag("dirty", is_dirty())
   sentry_sdk.set_tag("origin", get_origin())
   sentry_sdk.set_tag("branch", get_branch())
