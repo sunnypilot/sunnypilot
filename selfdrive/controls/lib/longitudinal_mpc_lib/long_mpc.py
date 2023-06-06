@@ -401,9 +401,7 @@ class LongitudinalMpc:
 
     self.params[:,2] = np.min(x_obstacles, axis=1)
     self.params[:,3] = np.copy(self.prev_a)
-    self.params[:,4] = T_FOLLOW
-    if self.mode == 'acc':
-      self.params[:,4] = self.desired_TF
+    self.params[:,4] = self.desired_TF
 
     self.run()
     if (np.any(lead_xv_0[FCW_IDXS,0] - self.x_sol[FCW_IDXS,0] < CRASH_DISTANCE) and

@@ -153,7 +153,6 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   SubMaster &sm = *(uiState()->sm);
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
   auto car_state = sm["carState"].getCarState();
-  auto controls_state = sm["controlsState"].getControlsState();
 
   QRect dlp_btn_rect = QRect(bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75) - scene.rn_offset, 150, 150);
   QRect gac_btn_rect = QRect(bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75) - scene.rn_offset, 150, 150);
@@ -165,8 +164,8 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
     params.put("DynamicLaneProfile", std::to_string(scene.dynamic_lane_profile));
     propagate_event = false;
-  } else if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && !controls_state.getExperimentalMode() &&
-             car_state.getCruiseState().getAvailable() && scene.sleep_btn_opacity == 20 && gac_btn_rect.contains(e->x(), e->y())) {
+  } else if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && car_state.getCruiseState().getAvailable() &&
+             scene.sleep_btn_opacity == 20 && gac_btn_rect.contains(e->x(), e->y())) {
     scene.gac_tr--;
     scene.gac_tr = scene.gac_tr < scene.gac_min ? scene.gac_max : scene.gac_tr;
     params.put("GapAdjustCruiseTr", std::to_string(scene.gac_tr));
@@ -445,7 +444,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("hideVEgoUi", s.scene.hide_vego_ui);
 
-  setProperty("gac", s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control && !cs.getExperimentalMode() &&
+  setProperty("gac", s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control &&
               car_state.getCruiseState().getAvailable());
   setProperty("gacTr", s.scene.gac_tr);
 

@@ -457,7 +457,7 @@ class CarInterfaceBase(ABC):
     return next((key for key, value in gac_dict.items() if value == gac_tr), gac_max)
 
   def toggle_gac(self, cs_out, CS, gac_button, gac_min, gac_max, gac_default, inc_dec):
-    if (not (self.CP.openpilotLongitudinalControl or self.gac)) or (self.experimental_mode and self.CP.openpilotLongitudinalControl):
+    if not (self.CP.openpilotLongitudinalControl or self.gac):
       cs_out.gapAdjustCruiseTr = 4
       CS.gac_tr = gac_default
       return
