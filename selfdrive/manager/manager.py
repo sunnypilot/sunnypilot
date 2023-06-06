@@ -73,7 +73,7 @@ def manager_init() -> None:
     ("GapAdjustCruiseMax", "0"),
     ("GapAdjustCruiseMin", "0"),
     ("GapAdjustCruiseMode", "0"),
-    ("GapAdjustCruiseTr", "4"),
+    ("GapAdjustCruiseTr", "3"),
     ("GpxDeleteAfterUpload", "1"),
     ("GpxDeleteIfUploaded", "1"),
     ("HandsOnWheelMonitoring", "0"),
