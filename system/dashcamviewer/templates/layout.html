@@ -26,6 +26,9 @@
             <a href="/screenrecords" class="nav-link">&nbsp &nbsp &nbsp &nbsp Screen Recordings</a>
           </li>
           <li class="nav-item active">
+            <a href="/crashs" class="nav-link">&nbsp &nbsp &nbsp &nbsp Error Troubleshoot</a>
+          </li>
+          <li class="nav-item active">
             <a href="/about" class="nav-link">&nbsp &nbsp &nbsp &nbsp About</a>
           </li>
         </ul>
@@ -33,5 +36,6 @@
     </div>
   </nav>
   <main class="container-fluid p-7 text-center"> {% block main %}{% endblock %} </main>
+  {% block unformated %}{% endblock %}
 </body>
 </html>

@@ -23,8 +23,14 @@
     }
     video.src = track.play();
     document.getElementById("mycurrentview").textContent=video.src.split("/")[6];
+    function confirmation() {
+        if(confirm("Are you sure? This will delete all screen records!") == true) {
+            window.location = "/deletescreenrecords"
+        }
+    }
     </script>
     {% for row in rows %}
         <a href="/screenrecords/{{ row }}">{{ row }}</a><br>
     {% endfor %}
+    <br><br><button onclick="confirmation()" class="btn btn-danger btn-lg">delete all screen records</button><br><br>.
 {% endblock %}

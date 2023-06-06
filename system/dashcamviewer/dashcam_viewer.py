@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import os
+import os, shutil
 import system.dashcamviewer.helpers as dashcam
-from flask import Flask, render_template, Response, request, send_from_directory
+from flask import Flask, render_template, redirect, Response, request, send_from_directory
 from system.loggerd.config import ROOT as REALDATA
 
 app = Flask(__name__)
@@ -60,7 +60,7 @@ def footage():
 
 @app.route("/screenrecords")
 def screenrecords():
-  rows = dashcam.all_screenrecords()
+  rows = dashcam.all_files_on_folder(dashcam.SCREENRECORD_PATH)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + dashcam.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
@@ -68,7 +68,7 @@ def screenrecords():
 
 @app.route("/screenrecords/<clip>")
 def screenrecord(clip):
-  return render_template("screenrecords.html", rows=dashcam.all_screenrecords(), clip=clip)
+  return render_template("screenrecords.html", rows=dashcam.all_files_on_folder(dashcam.SCREENRECORD_PATH), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
@@ -85,6 +85,24 @@ def download_file(clip):
 @app.route("/about")
 def about():
   return render_template("about.html")
+
+
+@app.route("/crashs")
+def crashs():
+  return render_template("crashs.html", rows=dashcam.all_files_on_folder(dashcam.CRASH_LOGS_PATH))
+
+
+@app.route("/crashs/<file_name>")
+def opencrashlog(file_name):
+  f = open(dashcam.CRASH_LOGS_PATH + file_name)
+  error = f.read()
+  return render_template("crash.html", file_name=file_name, file_content=error)
+
+
+@app.route("/deletescreenrecords")
+def delete_folder():
+  shutil.rmtree(dashcam.SCREENRECORD_PATH, True)
+  return redirect("/screenrecords")
 
 
 def main():

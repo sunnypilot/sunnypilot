@@ -9,13 +9,15 @@ from tools.lib.route import SegmentName
 # path to sunnypilot screen recordings
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
+  CRASH_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
 else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
+  CRASH_LOGS_PATH = "/data/community/crashes/"
 
 
 
-def all_screenrecords():
-  return sorted(listdir_by_creation(SCREENRECORD_PATH), reverse=True)
+def all_files_on_folder(especificPath):
+  return sorted(listdir_by_creation(especificPath), reverse=True)
 
 
 def is_valid_segment(segment):
