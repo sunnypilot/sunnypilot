@@ -6,7 +6,7 @@ from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
-# path to sunnypilot screen recordings
+# path to sunnypilot screen recordings and crash logs
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
   CRASH_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
