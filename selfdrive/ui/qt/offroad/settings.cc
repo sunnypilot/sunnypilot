@@ -185,7 +185,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   QFile f("/data/otp/otp.conf");
   f.open(QIODevice::ReadOnly | QIODevice::Text);
   QString pin = f.readAll();
-  addItem(new LabelControl(tr("Dashcam Viewer PIN"), pin));
+  addItem(new LabelControl(tr("Fleet Manager PIN"), pin));
 
   // offroad-only buttons
 
