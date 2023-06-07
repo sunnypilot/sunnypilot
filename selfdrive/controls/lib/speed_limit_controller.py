@@ -198,6 +198,7 @@ class SpeedLimitController():
     self._is_metric = self._params.get_bool("IsMetric")
     self._is_enabled = self._params.get_bool("SpeedLimitControl")
     self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
+    self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._op_enabled = False
     self._op_enabled_prev = False
     self._v_ego = 0.
@@ -293,7 +294,7 @@ class SpeedLimitController():
 
     # In any case, if op is disabled, or speed limit control is disabled
     # or the reported speed limit is 0 or gas is pressed, deactivate.
-    if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or (self._gas_pressed and self._disengage_on_accelerator):
       self.state = SpeedLimitControlState.inactive
       return
 
