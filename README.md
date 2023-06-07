@@ -14,11 +14,11 @@ Table of Contents
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
 * [How-To's](#-How-Tos)
-* [User Data](#-user-data)
-* [Donate](#-donate)
 * [Pull Requests](#-Pull-Requests)
 * [Special Thanks](#-special-thanks)
+* [User Data](#-user-data)
 * [Licensing](#licensing)
+* [Donate](#-support-sunnypilot)
 
 ---
 
@@ -397,24 +397,7 @@ By using this software, you understand that use of this software or its related 
 
 </details>
 
-<h3>💰 Donate</h3>
-If you find any of the features useful, feel free to donate to support for future feature development.
-
-Thank you for your continuous love and support! Enjoy 🥰
-
-**PayPal:**
-
-<a href="https://paypal.me/sunnyhaibin0850" target="_blank">
-<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
-</a>
-<br></br>
-
-**PayPal QR Code:**
-
-![sunnyhaibin0850_qrcode_paypal.me.png](docs/sunnyhaibin0850_qrcode_paypal.me.png)
-
-Licensing
-------
+<details><summary><h3>Licensing</h3></summary>
 
 openpilot is released under the MIT license. Some parts of the software are released under other licenses as specified.
 
@@ -424,7 +407,41 @@ Any user of this software shall indemnify and hold harmless comma.ai, Inc. and i
 YOU ARE RESPONSIBLE FOR COMPLYING WITH LOCAL LAWS AND REGULATIONS.
 NO WARRANTY EXPRESSED OR IMPLIED.**
 
+</details>
+
+<h3>💰 Support sunnypilot</h3>
+
 ---
+
+If you find any of the features useful, consider becoming a [patron on Patreon](https://www.patreon.com/sunnyhaibin) or a [sponsor on GitHub](https://github.com/sponsors/sunnyhaibin) to support future feature development and improvements.
+
+
+By becoming a patron/sponsor, you will gain access to exclusive content, early access to new features, and the opportunity to directly influence the project's development.
+
+<h3>Patreon</h3>
+
+<a href="https://www.patreon.com/sunnyhaibin">
+  <img src="https://user-images.githubusercontent.com/47793918/244128051-bc7e913e-a196-4455-926e-23aec9a4bd3b.png" alt="Become a Patron" width="300" style="max-width: 100%; height: auto;">
+</a>
+<br>
+
+<h3>GitHub Sponsor</h3>
+
+<a href="https://github.com/sponsors/sunnyhaibin">
+  <img src="https://user-images.githubusercontent.com/47793918/244135584-9800acbd-69fd-4b2b-bec9-e5fa2d85c817.png" alt="Become a Sponsor" width="300" style="max-width: 100%; height: auto;">
+</a>
+<br>
+
+<h3>PayPal</h3>
+
+<a href="https://paypal.me/sunnyhaibin0850" target="_blank">
+<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
+</a>
+<br></br>
+
+Your continuous love and support are greatly appreciated! Enjoy 🥰
+
+<span>-</span> Jason, Founder of sunnypilot
 
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
