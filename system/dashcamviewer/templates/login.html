@@ -1,60 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
+{% extends "layout.html" %}
 
-        h1 {
-            text-align: center;
-        }
+{% block title %}
+Login
+{% endblock %}
 
-        .container {
-            max-width: 300px;
-            margin: 0 auto;
-        }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: bold;
-        }
-
-        .form-group input[type="text"] {
-            width: 100%;
-            padding: 5px;
-        }
-
-        .form-group .error {
-            color: red;
-        }
-
-        .form-group .submit-button {
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
+{% block main %}
 <div class="container">
+    <br>
     <h1>Login</h1>
+    <br>
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
     <form action="/login" method="POST">
         <div class="form-group">
-            <label for="pin">PIN:</label>
-            <input type="text" id="pin" name="pin" maxlength="6" minlength="6" required>
+            <label for="pin">Enter PIN below:</label>
+            <div class="input-container">
+                <input type="text" id="pin" name="pin" maxlength="6" minlength="6" required>
+            </div>
         </div>
+        <br>
         <div class="form-group submit-button">
             <input type="submit" value="Submit">
         </div>
     </form>
 </div>
-</body>
-</html>
+{% endblock %}
