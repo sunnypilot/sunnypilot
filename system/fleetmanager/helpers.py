@@ -1,10 +1,13 @@
 import os
 import subprocess
+from flask import redirect, session, url_for
+from functools import wraps
 from pathlib import Path
 from system.hardware import PC
 from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
+
 
 # path to sunnypilot screen recordings and crash logs
 if PC:
@@ -15,6 +18,15 @@ else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
   CRASH_LOGS_PATH = "/data/community/crashes/"
   PIN_PATH = "/data/otp/"
+
+
+def login_required(f):
+  @wraps(f)
+  def decorated_route(*args, **kwargs):
+    if not session.get("logged_in"):
+      return redirect(url_for("index_page"))
+    return f(*args, **kwargs)
+  return decorated_route
 
 
 def all_files_on_folder(especificPath):

@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
-import os, shutil
+import os
 import random
 import secrets
 import system.fleetmanager.helpers as fleet
+from system.fleetmanager.helpers import login_required
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
-from functools import wraps
 from system.loggerd.config import ROOT as REALDATA
 
+
 app = Flask(__name__)
-
-
-def login_required(f):
-  @wraps(f)
-  def decorated_route(*args, **kwargs):
-    if not session.get("logged_in"):
-      return redirect(url_for("index_page"))
-    return f(*args, **kwargs)
-  return decorated_route
 
 
 @app.route("/")
@@ -139,12 +131,6 @@ def opencrashlog(file_name):
   f = open(fleet.CRASH_LOGS_PATH + file_name)
   error = f.read()
   return render_template("crash.html", file_name=file_name, file_content=error)
-
-
-@app.route("/deletescreenrecords")
-def delete_folder():
-  shutil.rmtree(fleet.SCREENRECORD_PATH, True)
-  return redirect("/screenrecords")
 
 
 def main():
