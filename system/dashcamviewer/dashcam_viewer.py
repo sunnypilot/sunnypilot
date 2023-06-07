@@ -137,10 +137,7 @@ def main():
   with open(dashcam.PIN_PATH + "otp.conf", "w") as file:
     file.write(pin)
 
-  print(pin)
-
   app.secret_key = secrets.token_hex(32)
-
   app.run(host="0.0.0.0", port=5050)
 
 
