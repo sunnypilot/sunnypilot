@@ -4,9 +4,19 @@ import random
 import secrets
 import system.dashcamviewer.helpers as dashcam
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
+from functools import wraps
 from system.loggerd.config import ROOT as REALDATA
 
 app = Flask(__name__)
+
+
+def login_required(f):
+  @wraps(f)
+  def decorated_route(*args, **kwargs):
+    if not session.get("logged_in"):
+      return redirect(url_for("index_page"))
+    return f(*args, **kwargs)
+  return decorated_route
 
 
 @app.route("/")
@@ -14,13 +24,6 @@ def index_page():
   if session.get("logged_in"):
     return redirect(url_for("home_page"))
   return render_template("login.html")
-
-
-@app.route("/index")
-def home_page():
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
-  return render_template("index.html")
 
 
 @app.route("/login", methods=["POST"])
@@ -37,10 +40,15 @@ def login():
     return render_template("login.html", error=error_message)
 
 
+@app.route("/index")
+@login_required
+def home_page():
+  return render_template("index.html")
+
+
 @app.route("/footage/full/<cameratype>/<route>")
+@login_required
 def full(cameratype, route):
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   chunk_size = 1024 * 512  # 5KiB
   file_name = cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
   vidlist = "|".join(REALDATA + "/" + segment + "/" + file_name for segment in dashcam.segments_in_route(route))
@@ -53,9 +61,8 @@ def full(cameratype, route):
 
 
 @app.route("/footage/<cameratype>/<segment>")
+@login_required
 def fcamera(cameratype, segment):
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   if not dashcam.is_valid_segment(segment):
     return render_template("error.html", error="invalid segment")
   file_name = REALDATA + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
@@ -63,9 +70,8 @@ def fcamera(cameratype, segment):
 
 
 @app.route("/footage/<route>")
+@login_required
 def route(route):
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   if len(route) != 20:
     return render_template("error.html", error="route not found")
 
@@ -85,16 +91,14 @@ def route(route):
 
 
 @app.route("/footage")
+@login_required
 def footage():
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   return render_template("footage.html", rows=dashcam.all_routes())
 
 
 @app.route("/screenrecords")
+@login_required
 def screenrecords():
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   rows = dashcam.all_screenrecords()
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + dashcam.SCREENRECORD_PATH)
@@ -102,31 +106,27 @@ def screenrecords():
 
 
 @app.route("/screenrecords/<clip>")
+@login_required
 def screenrecord(clip):
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   return render_template("screenrecords.html", rows=dashcam.all_screenrecords(), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
+@login_required
 def videoscreenrecord(file):
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   file_name = dashcam.SCREENRECORD_PATH + file
   return Response(dashcam.ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
 @app.route("/screenrecords/download/<clip>")
+@login_required
 def download_file(clip):
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   return send_from_directory(dashcam.SCREENRECORD_PATH, clip, as_attachment=True)
 
 
 @app.route("/about")
+@login_required
 def about():
-  if not session.get("logged_in"):
-    return redirect(url_for("index_page"))
   return render_template("about.html")
 
 
