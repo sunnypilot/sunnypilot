@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os, shutil
-import system.dashcamviewer.helpers as dashcam
 import random
 import secrets
 import system.fleetmanager.helpers as fleet
@@ -100,7 +99,7 @@ def footage():
 @app.route("/screenrecords")
 @login_required
 def screenrecords():
-  rows = dashcam.all_files_on_folder(dashcam.SCREENRECORD_PATH)
+  rows = fleet.all_files_on_folder(fleet.SCREENRECORD_PATH)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + fleet.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
@@ -109,7 +108,7 @@ def screenrecords():
 @app.route("/screenrecords/<clip>")
 @login_required
 def screenrecord(clip):
-  return render_template("screenrecords.html", rows=fleet.all_files_on_folder(dashcam.SCREENRECORD_PATH), clip=clip)
+  return render_template("screenrecords.html", rows=fleet.all_files_on_folder(fleet.SCREENRECORD_PATH), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
@@ -126,26 +125,25 @@ def download_file(clip):
 
 
 @app.route("/about")
-@login_required
 def about():
   return render_template("about.html")
 
 
 @app.route("/crashs")
 def crashs():
-  return render_template("crashs.html", rows=dashcam.all_files_on_folder(dashcam.CRASH_LOGS_PATH))
+  return render_template("crashs.html", rows=fleet.all_files_on_folder(fleet.CRASH_LOGS_PATH))
 
 
 @app.route("/crashs/<file_name>")
 def opencrashlog(file_name):
-  f = open(dashcam.CRASH_LOGS_PATH + file_name)
+  f = open(fleet.CRASH_LOGS_PATH + file_name)
   error = f.read()
   return render_template("crash.html", file_name=file_name, file_content=error)
 
 
 @app.route("/deletescreenrecords")
 def delete_folder():
-  shutil.rmtree(dashcam.SCREENRECORD_PATH, True)
+  shutil.rmtree(fleet.SCREENRECORD_PATH, True)
   return redirect("/screenrecords")
 
 
