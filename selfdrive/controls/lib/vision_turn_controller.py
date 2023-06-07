@@ -98,6 +98,7 @@ class VisionTurnController():
     self._op_enabled = False
     self._gas_pressed = False
     self._is_enabled = self._params.get_bool("TurnVisionControl")
+    self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._last_params_update = 0.
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
@@ -225,7 +226,7 @@ class VisionTurnController():
 
   def _state_transition(self):
     # In any case, if system is disabled or the feature is disabeld or gas is pressed, disable.
-    if not self._op_enabled or not self._is_enabled or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled or (self._gas_pressed and self._disengage_on_accelerator):
       self.state = VisionTurnControllerState.disabled
       return
 
