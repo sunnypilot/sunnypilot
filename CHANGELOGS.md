@@ -6,7 +6,7 @@ sunnypilot - Version Latest (2023-06-xx)
 * NEW❗: Nissan and Mazda upstream models support
 * NEW❗: Pre-Global Subaru upstream models support
 * HKG: smartMDPS automatic detection (installed with applicable firmware)
-* Dashcam Viewer (native & screen recordings) via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
+* Fleet Manager (native & screen recordings) via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
 * Honda Clarity 2018-22 support thanks to mcallbosco, vanillagorillaa and wirelessnet2!
 * Ram: Steer to 0/7 MPH support thanks to vincentw56!
 * Retain hotspot/tethering state across reboots thanks to rogerioaguas!

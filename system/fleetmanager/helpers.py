@@ -10,10 +10,11 @@ from tools.lib.route import SegmentName
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
   CRASH_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
+  PIN_PATH = os.path.join(str(Path.home()), ".comma", "otp", "")
 else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
   CRASH_LOGS_PATH = "/data/community/crashes/"
-
+  PIN_PATH = "/data/otp/"
 
 
 def all_files_on_folder(especificPath):
