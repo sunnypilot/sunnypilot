@@ -9,9 +9,10 @@ from tools.lib.route import SegmentName
 # path to sunnypilot screen recordings
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
+  PIN_PATH = os.path.join(str(Path.home()), ".comma", "otp", "")
 else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
-
+  PIN_PATH = "/data/otp/"
 
 
 def all_screenrecords():

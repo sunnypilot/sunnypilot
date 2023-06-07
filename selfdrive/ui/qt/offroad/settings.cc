@@ -5,6 +5,7 @@
 #include <string>
 
 #include <QDebug>
+#include <QFile>
 
 #include "selfdrive/ui/qt/offroad/networking.h"
 
@@ -181,6 +182,10 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setSpacing(50);
   addItem(new LabelControl(tr("Dongle ID"), getDongleId().value_or(tr("N/A"))));
   addItem(new LabelControl(tr("Serial"), params.get("HardwareSerial").c_str()));
+  QFile f("/data/otp/otp.conf");
+  f.open(QIODevice::ReadOnly | QIODevice::Text);
+  QString pin = f.readAll();
+  addItem(new LabelControl(tr("Dashcam Viewer PIN"), pin));
 
   // offroad-only buttons
 
