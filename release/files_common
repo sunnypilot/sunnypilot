@@ -361,7 +361,7 @@ system/camerad/imgproc/pool.cl
 system/camerad/imgproc/utils.cc
 system/camerad/imgproc/utils.h
 
-system/dashcamviewer/*
+system/fleetmanager/*
 
 selfdrive/manager/__init__.py
 selfdrive/manager/build.py
