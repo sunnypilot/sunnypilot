@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-Login
+    Login
 {% endblock %}
 
 {% block main %}
@@ -23,6 +23,15 @@ Login
         <div class="form-group submit-button">
             <input type="submit" value="Submit">
         </div>
+        <br>
+        <details>
+            <summary>Where to find the PIN?</summary>
+            <br>
+            <p>The PIN can be found on the comma device:</p>
+            <p><b>Settings ➡️ Device ➡️ Dashcam Viewer PIN</b></p>
+            <img src=" {{ url_for("static", filename="dashcam_pin.png")}}" alt="Dashcam Viewer Pin Location" style="max-width: 100%; height: auto;">
+            <br><br>
+        </details>
     </form>
 </div>
 {% endblock %}
