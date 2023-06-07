@@ -8,7 +8,7 @@ from common.basedir import BASEDIR
 from system.swaglog import cloudlog
 
 RELEASE_BRANCHES = ['release3-staging', 'dashcam3-staging', 'release3', 'dashcam3', 'nightly']
-TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'prod-c3', 'test-c3']
+TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging']
 
 training_version: bytes = b"0.2.0"
 terms_version: bytes = b"2"
@@ -124,6 +124,21 @@ def is_dirty() -> bool:
     dirty = True
 
   return dirty
+
+@cache
+def get_branch_type() -> str:
+  short_branch = get_short_branch()
+
+  if short_branch.startswith("dev-"):
+    return "development"
+  elif short_branch.startswith("staging-"):
+    return "staging"
+  elif short_branch.startswith("release-"):
+    return "release"
+  elif is_tested_branch():
+    return "release"
+  else:
+    return "master"
 
 
 if __name__ == "__main__":

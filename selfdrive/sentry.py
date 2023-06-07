@@ -8,7 +8,7 @@ from common.params import Params
 from system.hardware import HARDWARE, PC
 from system.swaglog import cloudlog
 from system.version import get_branch, get_commit, get_origin, get_version, \
-                              is_comma_remote, is_dirty, is_tested_branch
+                              is_comma_remote, is_dirty, is_tested_branch, get_branch_type
 
 import os
 import traceback
@@ -112,7 +112,8 @@ def init(project: SentryProject) -> None:
   #if not comma_remote or not is_registered_device() or PC:
   #  return
 
-  env = "release" if is_tested_branch() else "master"
+  #env = "release" if is_tested_branch() else "master"
+  env = get_branch_type()
   dongle_id = Params().get("DongleId", encoding='utf-8')
   ip = "{{auto}}"
   gitname = Params().get("GithubUsername", encoding='utf-8')
