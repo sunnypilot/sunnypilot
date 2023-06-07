@@ -139,8 +139,7 @@ def main():
 
   print(pin)
 
-  secret = secrets.token_hex(32)
-  app.secret_key = secret
+  app.secret_key = secrets.token_hex(32)
 
   app.run(host="0.0.0.0", port=5050)
 
