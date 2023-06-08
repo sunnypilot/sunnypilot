@@ -24,7 +24,12 @@ def login():
 
   if inputted_pin == correct_pin:
     session["logged_in"] = True
-    return redirect(url_for("home_page"))
+    if "previous_page" in session:
+      previous_page = session["previous_page"]
+      session.pop("previous_page", None)
+      return redirect(previous_page)
+    else:
+      return redirect(url_for("home_page"))
   else:
     error_message = "Incorrect PIN. Please try again."
     return render_template("login.html", error=error_message)
@@ -79,12 +84,14 @@ def route(route):
   return render_template("route.html", route=route, query_type=query_type, links=links, segments=segments, query_segment=query_segment)
 
 
+@app.route("/footage/")
 @app.route("/footage")
 @fleet.login_required
 def footage():
   return render_template("footage.html", rows=fleet.all_routes())
 
 
+@app.route("/screenrecords/")
 @app.route("/screenrecords")
 @fleet.login_required
 def screenrecords():
