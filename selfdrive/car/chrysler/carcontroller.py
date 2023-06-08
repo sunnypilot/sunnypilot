@@ -50,9 +50,9 @@ class CarController:
       # TODO: can we make this more sane? why is it different for all the cars?
       lkas_control_bit = self.lkas_control_bit_prev
       if self.CP.carFingerprint in RAM_DT:
-        if CS.out.vEgo >= self.CP.minEnableSpeed and CS.out.vEgo <= self.CP.minEnableSpeed + 0.5:
+        if self.CP.minEnableSpeed <= CS.out.vEgo <= self.CP.minEnableSpeed + 0.5:
           lkas_control_bit = True
-        if (self.CP.minEnableSpeed >= 14.5) and (CS.out.gearShifter != 2) :
+        if (self.CP.minEnableSpeed >= 14.5) and (CS.out.gearShifter != 2):
           lkas_control_bit = False
       elif CS.out.vEgo > self.CP.minSteerSpeed:
         lkas_control_bit = True
