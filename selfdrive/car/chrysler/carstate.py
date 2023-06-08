@@ -21,11 +21,16 @@ class CarState(CarStateBase):
     else:
       self.shifter_values = can_define.dv["GEAR"]["PRNDL"]
 
+    self.lkas_enabled = False
+    self.prev_lkas_enabled = False
+    self.lkas_heartbit = None
+
   def update(self, cp, cp_cam):
 
     ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -84,8 +89,11 @@ class CarState(CarStateBase):
 
     if self.CP.carFingerprint in RAM_CARS:
       self.auto_high_beam = cp_cam.vl["DAS_6"]['AUTO_HIGH_BEAM_ON']  # Auto High Beam isn't Located in this message on chrysler or jeep currently located in 729 message
+      self.lkas_enabled = cp.vl["Center_Stack_2"]["LKAS_Button"] == 1 or cp.vl["Center_Stack_1"]["LKAS_Button"] == 1
       ret.steerFaultTemporary = cp.vl["EPS_3"]["DASM_FAULT"] == 1
     else:
+      self.lkas_enabled = cp.vl["TRACTION_BUTTON"]["TOGGLE_LKAS"] == 1
+      self.lkas_heartbit = cp_cam.vl["LKAS_HEARTBIT"]
       ret.steerFaultTemporary = cp.vl["EPS_2"]["LKAS_TEMPORARY_FAULT"] == 1
       ret.steerFaultPermanent = cp.vl["EPS_2"]["LKAS_STATE"] == 4
 
@@ -170,21 +178,27 @@ class CarState(CarStateBase):
         ("DASM_FAULT", "EPS_3"),
         ("Vehicle_Speed", "ESP_8"),
         ("Gear_State", "Transmission_Status"),
+        ("LKAS_Button", "Center_Stack_1"),
+        ("LKAS_Button", "Center_Stack_2"),
       ]
       checks += [
         ("ESP_8", 50),
         ("EPS_3", 50),
         ("Transmission_Status", 50),
+        ("Center_Stack_1", 1),
+        ("Center_Stack_2", 1),
       ]
     else:
       signals += [
         ("PRNDL", "GEAR"),
         ("SPEED_LEFT", "SPEED_1"),
         ("SPEED_RIGHT", "SPEED_1"),
+        ("TOGGLE_LKAS", "TRACTION_BUTTON"),
       ]
       checks += [
         ("GEAR", 50),
         ("SPEED_1", 100),
+        ("TRACTION_BUTTON", 1),
       ]
       signals += CarState.get_cruise_signals()[0]
       checks += CarState.get_cruise_signals()[1]
@@ -207,5 +221,16 @@ class CarState(CarStateBase):
       ]
       signals += CarState.get_cruise_signals()[0]
       checks += CarState.get_cruise_signals()[1]
+    else:
+      # LKAS_HEARTBIT data needs to be forwarded!
+      forward_lkas_heartbit_signals = [
+        ("AUTO_HIGH_BEAM", "LKAS_HEARTBIT"),
+        ("FORWARD_1", "LKAS_HEARTBIT"),
+        ("FORWARD_2", "LKAS_HEARTBIT"),
+        ("FORWARD_3", "LKAS_HEARTBIT"),
+      ]
+
+      signals += forward_lkas_heartbit_signals
+      checks.append(("LKAS_HEARTBIT", 10))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2)

@@ -1,7 +1,7 @@
 from opendbc.can.packer import CANPacker
 from common.realtime import DT_CTRL
 from selfdrive.car import apply_meas_steer_torque_limits
-from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, create_cruise_buttons
+from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, create_cruise_buttons, create_lkas_heartbit
 from selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags
 
 
@@ -22,7 +22,10 @@ class CarController:
   def update(self, CC, CS, now_nanos):
     can_sends = []
 
-    lkas_active = CC.latActive and self.lkas_control_bit_prev
+    lkas_active = CC.latActive and CS.madsEnabled
+
+    if self.frame % 10 == 0 and self.CP.carFingerprint not in RAM_CARS:
+      can_sends.append(create_lkas_heartbit(self.packer, CS.madsEnabled, CS.lkas_heartbit))
 
     # cruise buttons
     if (self.frame - self.last_button_frame)*DT_CTRL > 0.05:
@@ -64,18 +67,18 @@ class CarController:
           lkas_control_bit = False
 
       # EPS faults if LKAS re-enables too quickly
-      lkas_control_bit = lkas_control_bit and (self.frame - self.last_lkas_falling_edge > 200)
+      lkas_control_bit = lkas_control_bit and (self.frame - self.last_lkas_falling_edge > 200) and not CS.out.steerFaultTemporary and not CS.out.steerFaultPermanent
 
       if not lkas_control_bit and self.lkas_control_bit_prev:
         self.last_lkas_falling_edge = self.frame
-      self.lkas_control_bit_prev = lkas_control_bit
 
       # steer torque
       new_steer = int(round(CC.actuators.steer * self.params.STEER_MAX))
       apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, self.params)
-      if not lkas_active or not lkas_control_bit:
+      if not lkas_active or not lkas_control_bit or not self.lkas_control_bit_prev:
         apply_steer = 0
       self.apply_steer_last = apply_steer
+      self.lkas_control_bit_prev = lkas_control_bit
 
       can_sends.append(create_lkas_command(self.packer, self.CP, int(apply_steer), lkas_control_bit))
 
