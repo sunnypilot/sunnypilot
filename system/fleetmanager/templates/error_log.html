@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Error Log
+{% endblock %}
+
+{% block main %}
+    <br>
+    <h1>Error Log of<br>{{ file_name }}</h1>
+    <br>
+{% endblock %}
+
+{% block unformated %}
+    <pre style="font-size: x-small; margin: 20px;">{{ file_content }}</pre>
+    <br><br>
+{% endblock %}

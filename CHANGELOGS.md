@@ -1,12 +1,52 @@
-sunnypilot - Version Latest (2023-06-xx)
+sunnypilot - 0.9.2.1 (2023-06-xx)
 ========================
 * UPDATED: Synced with commaai's 0.9.2 release
 * UPDATED: feature revamp with better stability
+* UPDATED:
+  * M.A.D.S.
+    * Path color becomes LIGHT ORANGE during Driver Steering Override
+  * Gap Adjust Cruise (now known as Driving Personality in upstream openpilot 0.9.3):
+    * Updated profiles and jerk changes
+    * Experimental Mode support
+    * Three settings: Stock, Aggressive, and Maniac
+    * Stock is recommended and the default
+    * In Aggressive/Maniac mode, lead follow distance is shorter and quicker gas/brake response
+  * Dynamic Lane Profile
+    * Display blue borders on both sides of the driving path when Laneline mode is being used in the planner
+    * Auto Mode optimization
+      * Permanent: Laneless during Auto Lane Change execution
+  * Mapd
+    * OpenStreetMap Database: new regions added
+  * Developer UI (Dev UI)
+    * REMOVED: 2-column design
+    * NEW❗: 1-column + 1-row design
+* NEW❗: Switch between Chill (openpilot ACC) and Experimental (E2E longitudinal) with DISTANCE button on the steering wheel
+  * To switch between Chill and Experimental Mode: press and hold the DISTANCE button on the steering wheel for over 0.5 second
+  * All openpilot longitudinal capable cars support
 * NEW❗: Nicki Minaj driving model
 * NEW❗: Nissan and Mazda upstream models support
 * NEW❗: Pre-Global Subaru upstream models support
-* HKG: smartMDPS automatic detection (installed with applicable firmware)
-* Fleet Manager (native & screen recordings) via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
+* NEW❗: Display End-to-end Longitudinal Status (Beta)
+  * Display an icon that appears when the End-to-end model decides to start or stop
+* NEW❗: Green Traffic Light Chime (Beta)
+  * A chime will play when the traffic light you are waiting for turns green, and you have no vehicle in front of you.
+* NEW❗: Lead Vehicle Departure Alert
+  * Notify when the leading vehicle drives away
+* NEW❗: Speedometer: Display True Speed
+  * Display the true vehicle current speed from wheel speed sensors.
+* NEW❗: Speedometer: Hide from Onroad Screen
+* NEW❗: Auto-Hide UI Buttons
+  * Hide UI buttons on driving screen after a 30-second timeout. Tap on the screen at anytime to reveal the UI buttons
+  * Applicable to Dynamic Lane Profile (DLP) and Gap Adjust Cruise (GAC)
+* NEW❗: Display DM Camera in Reverse Gear
+  * Show Driver Monitoring camera while the car is in reverse gear
+* NEW❗: Block Lane Change: Road Edge Detection (Beta)
+  * Block lane change when road edge is detected on the stalk actuated side
+* NEW❗: HKG: smartMDPS automatic detection (installed with applicable firmware)
+* FIXED: Unintended siren/alarm from the comma device if the vehicle is turned off too quickly in PARK gear
+* Fleet Manager via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
+  * Access your dashcam footage, screen recordings, and error logs when the car is turned off
+  * Connect to the device via Wi-Fi, mobile hotspot, or tethering on the comma device, then navigate to http://ipAddress:5050 to access.
 * Honda Clarity 2018-22 support thanks to mcallbosco, vanillagorillaa and wirelessnet2!
 * Ram: Steer to 0/7 MPH support thanks to vincentw56!
 * Retain hotspot/tethering state across reboots thanks to rogerioaguas!

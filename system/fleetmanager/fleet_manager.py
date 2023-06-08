@@ -2,28 +2,17 @@
 import os, shutil
 import random
 import secrets
-import system.fleetmanager.helpers as fleet
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
-from functools import wraps
+import system.fleetmanager.helpers as fleet
 from system.loggerd.config import ROOT as REALDATA
 
 app = Flask(__name__)
 
 
-def login_required(f):
-  @wraps(f)
-  def decorated_route(*args, **kwargs):
-    if not session.get("logged_in"):
-      return redirect(url_for("index_page"))
-    return f(*args, **kwargs)
-  return decorated_route
-
-
 @app.route("/")
-def index_page():
-  if session.get("logged_in"):
-    return redirect(url_for("home_page"))
-  return render_template("login.html")
+@app.route("/index")
+def home_page():
+  return render_template("index.html")
 
 
 @app.route("/login", methods=["POST"])
@@ -34,20 +23,19 @@ def login():
 
   if inputted_pin == correct_pin:
     session["logged_in"] = True
-    return redirect(url_for("home_page"))
+    if "previous_page" in session:
+      previous_page = session["previous_page"]
+      session.pop("previous_page", None)
+      return redirect(previous_page)
+    else:
+      return redirect(url_for("home_page"))
   else:
     error_message = "Incorrect PIN. Please try again."
     return render_template("login.html", error=error_message)
 
 
-@app.route("/index")
-@login_required
-def home_page():
-  return render_template("index.html")
-
-
 @app.route("/footage/full/<cameratype>/<route>")
-@login_required
+@fleet.login_required
 def full(cameratype, route):
   chunk_size = 1024 * 512  # 5KiB
   file_name = cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
@@ -61,7 +49,7 @@ def full(cameratype, route):
 
 
 @app.route("/footage/<cameratype>/<segment>")
-@login_required
+@fleet.login_required
 def fcamera(cameratype, segment):
   if not fleet.is_valid_segment(segment):
     return render_template("error.html", error="invalid segment")
@@ -70,7 +58,7 @@ def fcamera(cameratype, segment):
 
 
 @app.route("/footage/<route>")
-@login_required
+@fleet.login_required
 def route(route):
   if len(route) != 20:
     return render_template("error.html", error="route not found")
@@ -90,36 +78,38 @@ def route(route):
   return render_template("route.html", route=route, query_type=query_type, links=links, segments=segments, query_segment=query_segment)
 
 
+@app.route("/footage/")
 @app.route("/footage")
-@login_required
+@fleet.login_required
 def footage():
   return render_template("footage.html", rows=fleet.all_routes())
 
 
+@app.route("/screenrecords/")
 @app.route("/screenrecords")
-@login_required
+@fleet.login_required
 def screenrecords():
-  rows = fleet.all_files_on_folder(fleet.SCREENRECORD_PATH)
+  rows = fleet.list_files(fleet.SCREENRECORD_PATH)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + fleet.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
 
 
 @app.route("/screenrecords/<clip>")
-@login_required
+@fleet.login_required
 def screenrecord(clip):
-  return render_template("screenrecords.html", rows=fleet.all_files_on_folder(fleet.SCREENRECORD_PATH), clip=clip)
+  return render_template("screenrecords.html", rows=fleet.list_files(fleet.SCREENRECORD_PATH), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
-@login_required
+@fleet.login_required
 def videoscreenrecord(file):
   file_name = fleet.SCREENRECORD_PATH + file
   return Response(fleet.ffplay_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 
 @app.route("/screenrecords/download/<clip>")
-@login_required
+@fleet.login_required
 def download_file(clip):
   return send_from_directory(fleet.SCREENRECORD_PATH, clip, as_attachment=True)
 
@@ -129,23 +119,22 @@ def about():
   return render_template("about.html")
 
 
-@app.route("/crashs")
-def crashs():
-  return render_template("crashs.html", rows=fleet.all_files_on_folder(fleet.CRASH_LOGS_PATH))
+@app.route("/error_logs")
+def error_logs():
+  return render_template("error_logs.html", rows=fleet.list_files(fleet.ERROR_LOGS_PATH))
 
 
-@app.route("/crashs/<file_name>")
-def opencrashlog(file_name):
-  f = open(fleet.CRASH_LOGS_PATH + file_name)
+@app.route("/error_logs/<file_name>")
+def open_error_log(file_name):
+  f = open(fleet.ERROR_LOGS_PATH + file_name)
   error = f.read()
-  return render_template("crash.html", file_name=file_name, file_content=error)
+  return render_template("error_log.html", file_name=file_name, file_content=error)
 
 
 @app.route("/deletescreenrecords")
 def delete_folder():
   shutil.rmtree(fleet.SCREENRECORD_PATH, True)
   return redirect("/screenrecords")
-
 
 def main():
   if not os.path.exists(fleet.PIN_PATH):
@@ -154,6 +143,7 @@ def main():
   with open(fleet.PIN_PATH + "otp.conf", "w") as file:
     file.write(pin)
 
+  print(f'\n\npin: {pin}\n\n')
   app.secret_key = secrets.token_hex(32)
   app.run(host="0.0.0.0", port=5050)
 
