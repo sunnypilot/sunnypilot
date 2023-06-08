@@ -2,8 +2,8 @@
 import os
 import random
 import secrets
-import system.fleetmanager.helpers as fleet
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
+import system.fleetmanager.helpers as fleet
 from system.loggerd.config import ROOT as REALDATA
 
 app = Flask(__name__)
@@ -89,7 +89,7 @@ def footage():
 @app.route("/screenrecords")
 @fleet.login_required
 def screenrecords():
-  rows = fleet.all_screenrecords()
+  rows = fleet.list_files(fleet.SCREENRECORD_PATH)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + fleet.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
@@ -98,7 +98,7 @@ def screenrecords():
 @app.route("/screenrecords/<clip>")
 @fleet.login_required
 def screenrecord(clip):
-  return render_template("screenrecords.html", rows=fleet.all_screenrecords(), clip=clip)
+  return render_template("screenrecords.html", rows=fleet.list_files(fleet.SCREENRECORD_PATH), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
@@ -117,6 +117,18 @@ def download_file(clip):
 @app.route("/about")
 def about():
   return render_template("about.html")
+
+
+@app.route("/error_logs")
+def error_logs():
+  return render_template("error_logs.html", rows=fleet.list_files(fleet.ERROR_LOGS_PATH))
+
+
+@app.route("/error_logs/<file_name>")
+def open_error_log(file_name):
+  f = open(fleet.ERROR_LOGS_PATH + file_name)
+  error = f.read()
+  return render_template("error_log.html", file_name=file_name, file_content=error)
 
 
 def main():

@@ -1,15 +1,14 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Dashcam Routes
+    Error Logs
 {% endblock %}
 
 {% block main %}
     <br>
-    <h1>Dashcam Routes</h1>
+    <h1>Error Logs</h1>
     <br>
     {% for row in rows %}
-        <a href="footage/{{ row }}">{{ row }}</a><br>
+        <a href="error_logs/{{ row }}">{{ row }}</a><br>
     {% endfor %}
-    <br><br>
 {% endblock %}

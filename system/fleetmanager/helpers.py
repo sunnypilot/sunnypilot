@@ -8,12 +8,15 @@ from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
-# path to sunnypilot screen recordings
+
+# path to sunnypilot screen recordings and error logs
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
+  ERROR_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
   PIN_PATH = os.path.join(str(Path.home()), ".comma", "otp", "")
 else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
+  ERROR_LOGS_PATH = "/data/community/crashes/"
   PIN_PATH = "/data/otp/"
 
 
@@ -27,8 +30,8 @@ def login_required(f):
   return decorated_route
 
 
-def all_screenrecords():
-  return sorted(listdir_by_creation(SCREENRECORD_PATH), reverse=True)
+def list_files(path):
+  return sorted(listdir_by_creation(path), reverse=True)
 
 
 def is_valid_segment(segment):
