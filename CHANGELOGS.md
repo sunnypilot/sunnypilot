@@ -6,7 +6,9 @@ sunnypilot - Version Latest (2023-06-xx)
 * NEW❗: Nissan and Mazda upstream models support
 * NEW❗: Pre-Global Subaru upstream models support
 * HKG: smartMDPS automatic detection (installed with applicable firmware)
-* Fleet Manager (native & screen recordings) via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
+* Fleet Manager via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
+  * Access your dashcam footage, screen recordings, and error logs when the car is turned off
+  * Connect to the device via Wi-Fi, mobile hotspot, or tethering on the comma device, then navigate to http://ipAddress:5050 to access.
 * Honda Clarity 2018-22 support thanks to mcallbosco, vanillagorillaa and wirelessnet2!
 * Ram: Steer to 0/7 MPH support thanks to vincentw56!
 * Retain hotspot/tethering state across reboots thanks to rogerioaguas!
