@@ -2,6 +2,7 @@
 import math
 import numpy as np
 from common.numpy_fast import clip, interp
+from cereal import log
 
 import cereal.messaging as messaging
 from cereal import car
@@ -71,6 +72,13 @@ class LongitudinalPlanner:
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
 
+    self.read_gac(gac_tr=3)
+    self.personality = log.LongitudinalPersonality.standard
+
+  def read_gac(self, gac_tr=3):
+    gac_tr = clip(gac_tr, 1, 3)
+    self.personality = int(gac_tr - 1)
+
   @staticmethod
   def parse_model(model_msg, model_error):
     if (len(model_msg.position.x) == 33 and
@@ -88,6 +96,7 @@ class LongitudinalPlanner:
     return x, v, a, j
 
   def update(self, sm):
+    self.read_gac(gac_tr=sm['carState'].gapAdjustCruiseTr)
     self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 
     v_ego = sm['carState'].vEgo
@@ -133,11 +142,11 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05, a_min_sol)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint)
+    self.mpc.set_weights(prev_accel_constraint, personality=self.personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['carState'], sm['radarState'], v_cruise_sol, x, v, a, j)
+    self.mpc.update(sm['radarState'], v_cruise_sol, x, v, a, j, personality=self.personality)
 
     self.v_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
@@ -175,6 +184,7 @@ class LongitudinalPlanner:
     longitudinalPlan.fcw = self.fcw
 
     longitudinalPlan.solverExecutionTime = self.mpc.solve_time
+    longitudinalPlan.personality = self.personality
 
     longitudinalPlan.e2eX = self.mpc.e2e_x.tolist()
     longitudinalPlan.desiredTF = self.mpc.desired_TF

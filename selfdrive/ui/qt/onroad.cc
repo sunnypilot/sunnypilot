@@ -973,10 +973,10 @@ void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int 
   if (prev_gac_tr != gacTr) {
     prev_gac_tr = gacTr;
     if (gacTr == 1) {
-      gac_text = "Aggro\nGap";
+      gac_text = "Maniac\nGap";
       gac_border = QColor(255, 75, 75, (255 * btnPerc));
     } else if (gacTr == 2) {
-      gac_text = "Mild\nGap";
+      gac_text = "Aggro\nGap";
       gac_border = QColor(252, 255, 75, (255 * btnPerc));
     } else {
       gac_text = "Stock\nGap";
@@ -989,7 +989,7 @@ void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int 
   p.setBrush(QColor(75, 75, 75, (75 * btnPerc)));
   p.drawEllipse(gacBtn);
   p.setPen(QColor(255, 255, 255, (255 * btnPerc)));
-  configFont(p, "Inter", 36, "SemiBold");
+  configFont(p, "Inter", gacTr == 1 ? 32 : 36, "SemiBold");
   p.drawText(gacBtn, Qt::AlignCenter, gac_text);
 }
 
