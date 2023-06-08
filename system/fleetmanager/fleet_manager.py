@@ -10,10 +10,9 @@ app = Flask(__name__)
 
 
 @app.route("/")
-def index_page():
-  if session.get("logged_in"):
-    return redirect(url_for("home_page"))
-  return render_template("login.html")
+@app.route("/index")
+def home_page():
+  return render_template("index.html")
 
 
 @app.route("/login", methods=["POST"])
@@ -33,11 +32,6 @@ def login():
   else:
     error_message = "Incorrect PIN. Please try again."
     return render_template("login.html", error=error_message)
-
-
-@app.route("/index")
-def home_page():
-  return render_template("index.html")
 
 
 @app.route("/footage/full/<cameratype>/<route>")
