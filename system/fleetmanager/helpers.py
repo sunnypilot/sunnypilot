@@ -9,14 +9,14 @@ from system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
 
-# path to sunnypilot screen recordings and crash logs
+# path to sunnypilot screen recordings and error logs
 if PC:
   SCREENRECORD_PATH = os.path.join(str(Path.home()), ".comma", "media", "0", "videos", "")
-  CRASH_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
+  ERROR_LOGS_PATH = os.path.join(str(Path.home()), ".comma", "community", "crashes", "")
   PIN_PATH = os.path.join(str(Path.home()), ".comma", "otp", "")
 else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
-  CRASH_LOGS_PATH = "/data/community/crashes/"
+  ERROR_LOGS_PATH = "/data/community/crashes/"
   PIN_PATH = "/data/otp/"
 
 

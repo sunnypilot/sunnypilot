@@ -121,16 +121,16 @@ def about():
   return render_template("about.html")
 
 
-@app.route("/crashs")
-def crashs():
-  return render_template("crashs.html", rows=fleet.all_files_on_folder(fleet.CRASH_LOGS_PATH))
+@app.route("/error_logs")
+def error_logs():
+  return render_template("error_logs.html", rows=fleet.all_files_on_folder(fleet.ERROR_LOGS_PATH))
 
 
-@app.route("/crashs/<file_name>")
-def opencrashlog(file_name):
-  f = open(fleet.CRASH_LOGS_PATH + file_name)
+@app.route("/error_logs/<file_name>")
+def open_error_log(file_name):
+  f = open(fleet.ERROR_LOGS_PATH + file_name)
   error = f.read()
-  return render_template("crash.html", file_name=file_name, file_content=error)
+  return render_template("error_log.html", file_name=file_name, file_content=error)
 
 
 def main():
@@ -139,7 +139,7 @@ def main():
   pin = str(random.randint(100000, 999999))
   with open(fleet.PIN_PATH + "otp.conf", "w") as file:
     file.write(pin)
-
+  print(pin)
   app.secret_key = secrets.token_hex(32)
   app.run(host="0.0.0.0", port=5050)
 

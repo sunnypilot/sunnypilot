@@ -1,13 +1,13 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Crashe Log
+    Error Log
 {% endblock %}
 
 {% block main %}
     <br>
-    <b>Crash Log of<br>{{ file_name }}</b>
-    <br><br>
+    <h1>Error Log of<br>{{ file_name }}</h1>
+    <br>
     {% endblock %}
 {% block unformated %}
     <pre>{{ file_content }}</pre>
