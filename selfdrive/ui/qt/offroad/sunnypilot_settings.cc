@@ -3,8 +3,6 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <QFileInfo>
-#include <QDateTime>
 
 #include "common/watchdog.h"
 #include "selfdrive/ui/qt/api.h"
@@ -85,22 +83,6 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : QWidget(parent) {
     tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
     "../assets/offroad/icon_network.png"
   ));
-
-  // General: Error Troubleshoot
-  auto errorBtn = new ButtonControl(
-    tr("Error Troubleshoot"),
-    tr("VIEW"),
-    tr("Display error from the tmux session when an error has occurred from a system process.")
-  );
-  QFileInfo file("/data/community/crashes/error.txt");
-  QDateTime modifiedTime = file.lastModified();
-  QString modified_time = modifiedTime.toString("yyyy-MM-dd hh:mm:ss ");
-  connect(errorBtn, &ButtonControl::clicked, [=]() {
-    const std::string txt = util::read_file("/data/community/crashes/error.txt");
-    ConfirmationDialog::rich(modified_time + QString::fromStdString(txt), this);
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(errorBtn);
 
   // General: Debug snapshot on screen center tap
   main_layout->addWidget(horizontal_line());

@@ -6,6 +6,8 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
+#include <QDateTime>
 
 #include "selfdrive/ui/qt/offroad/networking.h"
 
@@ -186,6 +188,19 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   f.open(QIODevice::ReadOnly | QIODevice::Text);
   QString pin = f.readAll();
   addItem(new LabelControl(tr("Fleet Manager PIN"), pin));
+
+  // Error Troubleshoot
+  auto errorBtn = new ButtonControl(
+    tr("Error Troubleshoot"), tr("VIEW"),
+    tr("Display error from the tmux session when an error has occurred from a system process."));
+  QFileInfo file("/data/community/crashes/error.txt");
+  QDateTime modifiedTime = file.lastModified();
+  QString modified_time = modifiedTime.toString("yyyy-MM-dd hh:mm:ss ");
+  connect(errorBtn, &ButtonControl::clicked, [=]() {
+    const std::string txt = util::read_file("/data/community/crashes/error.txt");
+    ConfirmationDialog::rich(modified_time + QString::fromStdString(txt), this);
+  });
+  addItem(errorBtn);
 
   // offroad-only buttons
 
