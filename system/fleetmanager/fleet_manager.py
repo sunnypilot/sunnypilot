@@ -31,7 +31,6 @@ def login():
 
 
 @app.route("/index")
-@fleet.login_required
 def home_page():
   return render_template("index.html")
 
