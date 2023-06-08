@@ -1,6 +1,6 @@
 import os
 import subprocess
-from flask import redirect, session, url_for
+from flask import render_template, request, session
 from functools import wraps
 from pathlib import Path
 from system.hardware import PC
@@ -24,7 +24,8 @@ def login_required(f):
   @wraps(f)
   def decorated_route(*args, **kwargs):
     if not session.get("logged_in"):
-      return redirect(url_for("index_page"))
+      session["previous_page"] = request.url
+      return render_template("login.html")
     return f(*args, **kwargs)
   return decorated_route
 
