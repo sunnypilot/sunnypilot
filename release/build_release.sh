@@ -10,7 +10,7 @@ BUILD_DIR=/data/openpilot
 SOURCE_DIR="$(git rev-parse --show-toplevel)"
 
 FILES_SRC="release/files_tici"
-RELEASE_BRANCH="prod-c3"
+RELEASE_BRANCH="release-c3"
 
 
 # set git identity
@@ -110,7 +110,7 @@ version: sunnypilot v$SP_VERSION release
 date: $DATETIME
 master commit: $GIT_HASH
 "
-git branch -m prod-c3
+git branch -m release-c3
 
 # Run tests
 #TEST_FILES="tools/"
