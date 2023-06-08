@@ -1,5 +1,7 @@
 import os
 import subprocess
+from flask import render_template, session
+from functools import wraps
 from pathlib import Path
 from system.hardware import PC
 from system.loggerd.config import ROOT as REALDATA
@@ -13,6 +15,15 @@ if PC:
 else:
   SCREENRECORD_PATH = "/data/media/0/videos/"
   PIN_PATH = "/data/otp/"
+
+
+def login_required(f):
+  @wraps(f)
+  def decorated_route(*args, **kwargs):
+    if not session.get("logged_in"):
+      return render_template("login.html")
+    return f(*args, **kwargs)
+  return decorated_route
 
 
 def all_screenrecords():
