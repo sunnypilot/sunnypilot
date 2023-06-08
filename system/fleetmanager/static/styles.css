@@ -1,3 +1,25 @@
 .nav-item {
     margin-left: 25px;
 }
+
+
+footer {
+    word-wrap: break-word;
+}
+
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+pre {
+    font-size: x-small;
+    margin: 20px;
+}
+
+
+video {
+    background:black
+}
