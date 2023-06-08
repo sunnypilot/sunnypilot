@@ -29,8 +29,8 @@ def login_required(f):
   return decorated_route
 
 
-def all_files_on_folder(especificPath):
-  return sorted(listdir_by_creation(especificPath), reverse=True)
+def list_files(path):
+  return sorted(listdir_by_creation(path), reverse=True)
 
 
 def is_valid_segment(segment):

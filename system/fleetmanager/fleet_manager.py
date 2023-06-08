@@ -91,7 +91,7 @@ def footage():
 @app.route("/screenrecords")
 @login_required
 def screenrecords():
-  rows = fleet.all_files_on_folder(fleet.SCREENRECORD_PATH)
+  rows = fleet.list_files(fleet.SCREENRECORD_PATH)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + fleet.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
@@ -100,7 +100,7 @@ def screenrecords():
 @app.route("/screenrecords/<clip>")
 @login_required
 def screenrecord(clip):
-  return render_template("screenrecords.html", rows=fleet.all_files_on_folder(fleet.SCREENRECORD_PATH), clip=clip)
+  return render_template("screenrecords.html", rows=fleet.list_files(fleet.SCREENRECORD_PATH), clip=clip)
 
 
 @app.route("/screenrecords/play/pipe/<file>")
@@ -123,7 +123,7 @@ def about():
 
 @app.route("/error_logs")
 def error_logs():
-  return render_template("error_logs.html", rows=fleet.all_files_on_folder(fleet.ERROR_LOGS_PATH))
+  return render_template("error_logs.html", rows=fleet.list_files(fleet.ERROR_LOGS_PATH))
 
 
 @app.route("/error_logs/<file_name>")
