@@ -8,7 +8,8 @@ sunnypilot - Version Latest (2023-06-xx)
 * HKG: smartMDPS automatic detection (installed with applicable firmware)
 * Fleet Manager via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
   * Access your dashcam footage, screen recordings, and error logs when the car is turned off
-  * Connect to the device via Wi-Fi, mobile hotspot, or tethering on the comma device, then navigate to http://ipAddress:5050 to access.
+  * Connect to the device via Wi-Fi, mobile hotspot, or tethering on the comma device, then navigate to 
+    http://ipAddress:5050 to access.
 * Honda Clarity 2018-22 support thanks to mcallbosco, vanillagorillaa and wirelessnet2!
 * Ram: Steer to 0/7 MPH support thanks to vincentw56!
 * Retain hotspot/tethering state across reboots thanks to rogerioaguas!
