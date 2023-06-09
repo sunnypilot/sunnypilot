@@ -25,6 +25,7 @@ import cereal.messaging as messaging
 import os
 import datetime
 import signal
+import subprocess
 import threading
 from common.realtime import Ratekeeper
 from cereal import log
@@ -39,6 +40,8 @@ LOST_SIGNAL_COUNT_LENGTH = 10  # secs, output log file if we lost signal for thi
 # do not change
 LOST_SIGNAL_COUNT_MAX = LOST_SIGNAL_COUNT_LENGTH * LOG_HERTZ  # secs,
 LOGS_PER_FILE = LOG_LENGTH * 60 * LOG_HERTZ  # e.g. 10 * 60 * 10 = 6000 points per file
+
+ERROR_STRING = ("[Errno 13]", "[Errno 30]")
 
 
 _DEBUG = False
@@ -123,33 +126,42 @@ class GpxD:
   def _write_gpx(self):
     if len(self.logs) > 1:
       if not os.path.exists(GPX_LOG_PATH):
-        os.makedirs(GPX_LOG_PATH)
+        try:
+          os.makedirs(GPX_LOG_PATH)
+        except (PermissionError, OSError) as e:
+          if any(error in str(e) for error in ERROR_STRING):
+            subprocess.run(["sudo", "mount", "-o", "rw,remount", "/"])
+            print(f"gpxd: {e}: Filesystem remounted.")
+          else:
+            print(f"gpxd: Other error occurred: {e}")
+        except Exception as e:
+          print(f"An error occurred: {e}")
       filename = self.started_time.replace(':','-')
-      str = ''
-      str += "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n"
-      str += "<gpx version=\"1.1\" creator=\"sunnypilot https://github.com/sunnypilot/openpilot\" xmlns=\"http://www.topografix.com/GPX/1/1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">\n"
-      str += "<trk>\n"
-      str += "  <name>" + self.started_time + "</name>"
-      str += "  <trkseg>\n"
+      gpx_str = ''
+      gpx_str += "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n"
+      gpx_str += "<gpx version=\"1.1\" creator=\"sunnypilot https://github.com/sunnypilot/openpilot\" xmlns=\"http://www.topografix.com/GPX/1/1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">\n"
+      gpx_str += "<trk>\n"
+      gpx_str += "  <name>" + self.started_time + "</name>"
+      gpx_str += "  <trkseg>\n"
       for trkpt in self.logs:
-        str += self._trkpt_template(trkpt[1], trkpt[2], trkpt[3], trkpt[0])
-      str += "  </trkseg>\n"
-      str += "</trk>\n"
-      str += "</gpx>\n"
+        gpx_str += self._trkpt_template(trkpt[1], trkpt[2], trkpt[3], trkpt[0])
+      gpx_str += "  </trkseg>\n"
+      gpx_str += "</trk>\n"
+      gpx_str += "</gpx>\n"
       try:
         f = open('%s%sZ.gpx' % (GPX_LOG_PATH, filename), 'w')
-        f.write(str)
+        f.write(gpx_str)
         f.close()
       except:
         pass
 
   def _trkpt_template(self, lat, lon, ele, time):
-    str = ""
-    str += "    <trkpt lat=\"" + lat + "\" lon=\"" + lon + "\">\n"
-    str += "      <ele>" + ele + "</ele>\n"
-    str += "      <time>" + time + "</time>\n"
-    str += "    </trkpt>\n"
-    return str
+    gpx_str = ""
+    gpx_str += "    <trkpt lat=\"" + lat + "\" lon=\"" + lon + "\">\n"
+    gpx_str += "      <ele>" + ele + "</ele>\n"
+    gpx_str += "      <time>" + time + "</time>\n"
+    gpx_str += "    </trkpt>\n"
+    return gpx_str
 
   def gpxd_thread(self):
     while True:
