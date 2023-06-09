@@ -83,3 +83,6 @@ build/
 !**/.gitkeep
 
 poetry.toml
+
+!third_party/mapd/
+!third_party/**/__pycache__/
