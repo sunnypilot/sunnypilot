@@ -34,6 +34,14 @@ class CAR:
   CX5_2022 = "MAZDA CX-5 2022"
 
 
+BUTTON_STATES = {
+  "accelCruise": False,
+  "decelCruise": False,
+  "cancel": False,
+  "resumeCruise": False,
+}
+
+
 @dataclass
 class MazdaCarInfo(CarInfo):
   package: str = "All"

@@ -3,7 +3,7 @@ from common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS
+from selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS, BUTTON_STATES
 
 
 class CarState(CarStateBase):
@@ -25,12 +25,16 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = False
     self.lkas_heartbit = None
 
+    self.buttonStates = BUTTON_STATES.copy()
+    self.buttonStatesPrev = BUTTON_STATES.copy()
+
   def update(self, cp, cp_cam):
 
     ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lkas_enabled = self.lkas_enabled
+    self.buttonStatesPrev = self.buttonStates.copy()
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -102,6 +106,11 @@ class CarState(CarStateBase):
       ret.leftBlindspot = cp.vl["BSM_1"]["LEFT_STATUS"] == 1
       ret.rightBlindspot = cp.vl["BSM_1"]["RIGHT_STATUS"] == 1
 
+    self.buttonStates["accelCruise"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Accel"])
+    self.buttonStates["decelCruise"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Decel"])
+    self.buttonStates["cancel"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Cancel"])
+    self.buttonStates["resumeCruise"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Resume"])
+
     self.lkas_car_model = cp_cam.vl["DAS_6"]["CAR_MODEL"]
     self.button_counter = cp.vl["CRUISE_BUTTONS"]["COUNTER"]
 
@@ -151,6 +160,11 @@ class CarState(CarStateBase):
       ("LKAS_TEMPORARY_FAULT", "EPS_2"),
       ("LKAS_STATE", "EPS_2"),
       ("COUNTER", "CRUISE_BUTTONS"),
+
+      ("ACC_Accel", "CRUISE_BUTTONS"),
+      ("ACC_Decel", "CRUISE_BUTTONS"),
+      ("ACC_Cancel", "CRUISE_BUTTONS"),
+      ("ACC_Resume", "CRUISE_BUTTONS"),
     ]
 
     checks = [

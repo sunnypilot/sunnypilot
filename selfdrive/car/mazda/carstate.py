@@ -3,7 +3,7 @@ from common.conversions import Conversions as CV
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.mazda.values import DBC, LKAS_LIMITS, GEN1
+from selfdrive.car.mazda.values import DBC, LKAS_LIMITS, GEN1, BUTTON_STATES
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -21,12 +21,16 @@ class CarState(CarStateBase):
     self.lkas_enabled = False
     self.prev_lkas_enabled = False
 
+    self.buttonStates = BUTTON_STATES.copy()
+    self.buttonStatesPrev = BUTTON_STATES.copy()
+
   def update(self, cp, cp_cam):
 
     ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lkas_enabled = self.lkas_enabled
+    self.buttonStatesPrev = self.buttonStates.copy()
 
     ret.wheelSpeeds = self.get_wheel_speeds(
       cp.vl["WHEEL_SPEEDS"]["FL"],
@@ -104,6 +108,11 @@ class CarState(CarStateBase):
 
     self.acc_active_last = ret.cruiseState.enabled
 
+    self.buttonStates["accelCruise"] = bool(cp.vl["CRZ_BTNS"]["SET_P"])
+    self.buttonStates["decelCruise"] = bool(cp.vl["CRZ_BTNS"]["SET_M"])
+    self.buttonStates["cancel"] = bool(cp.vl["CRZ_BTNS"]["CAN_OFF"])
+    self.buttonStates["resumeCruise"] = bool(cp.vl["CRZ_BTNS"]["RES"])
+
     self.crz_btns_counter = cp.vl["CRZ_BTNS"]["CTR"]
 
     # camera signals
@@ -162,6 +171,11 @@ class CarState(CarStateBase):
         ("CTR", "CRZ_BTNS"),
         ("LEFT_BS1", "BSM"),
         ("RIGHT_BS1", "BSM"),
+
+        ("SET_P", "CRZ_BTNS"),
+        ("SET_M", "CRZ_BTNS"),
+        ("CAN_OFF", "CRZ_BTNS"),
+        ("RES", "CRZ_BTNS"),
       ]
 
       checks += [

@@ -54,6 +54,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_speed_limit.png",
     },
     {
+      "CustomStockLong",
+      tr("Custom Stock Longitudinal Control"),
+      tr("When enabled, sunnypilot will attempt to control stock longitudinal control with ACC button presses.\nThis feature must be used along with SLC, and/or V-TSC, and/or M-TSC."),
+      "../assets/offroad/icon_speed_limit.png",
+    },
+    {
       "IsLdwEnabled",
       tr("Enable Lane Departure Warnings"),
       tr("Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h)."),
@@ -107,6 +113,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   toggles["ExperimentalMode"]->setActiveIcon("../assets/img_experimental.svg");
   toggles["ExperimentalMode"]->setConfirmation(true, true);
   toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
+  toggles["CustomStockLong"]->setConfirmation(true, false);
 
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
@@ -124,6 +131,7 @@ void TogglesPanel::showEvent(QShowEvent *event) {
 void TogglesPanel::updateToggles() {
   auto e2e_toggle = toggles["ExperimentalMode"];
   auto op_long_toggle = toggles["ExperimentalLongitudinalEnabled"];
+  auto custom_stock_long_toggle = toggles["CustomStockLong"];
   const QString e2e_description = QString("%1<br>"
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
@@ -148,12 +156,19 @@ void TogglesPanel::updateToggles() {
     }
     op_long_toggle->setVisible(CP.getExperimentalLongitudinalAvailable() && !is_release);
 
+    if (!CP.getCustomStockLongAvailable()) {
+      params.remove("CustomStockLongControl");
+    }
+    custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
+
     const bool op_long = CP.getOpenpilotLongitudinalControl() && !CP.getExperimentalLongitudinalAvailable();
     const bool exp_long_enabled = CP.getExperimentalLongitudinalAvailable() && params.getBool("ExperimentalLongitudinalEnabled");
     if (op_long || exp_long_enabled) {
       // normal description and toggle
       e2e_toggle->setEnabled(true);
       e2e_toggle->setDescription(e2e_description);
+      custom_stock_long_toggle->setEnabled(false);
+      params.remove("CustomStockLong");
     } else {
       // no long for now
       e2e_toggle->setEnabled(false);
@@ -171,12 +186,16 @@ void TogglesPanel::updateToggles() {
         }
       }
       e2e_toggle->setDescription("<b>" + long_desc + "</b><br><br>" + e2e_description);
+
+      custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
     }
 
     e2e_toggle->refresh();
+    custom_stock_long_toggle->refresh();
   } else {
     e2e_toggle->setDescription(e2e_description);
     op_long_toggle->setVisible(false);
+    custom_stock_long_toggle->setEnabled(false);
   }
 }
 

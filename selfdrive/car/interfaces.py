@@ -369,15 +369,20 @@ class CarInterfaceBase(ABC):
 
     return mads_enabled
 
-  def get_sp_v_cruise_non_pcm_state(self, cruiseState_available, acc_enabled, button_events, vCruise,
-                                    enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
+  def get_sp_v_cruise_non_pcm_state(self, cs_out, acc_enabled, button_events, vCruise,
+                                    enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
+                                    resume_button=(ButtonType.accelCruise, ButtonType.resumeCruise)):
 
-    if cruiseState_available:
+    if cs_out.cruiseState.available:
       for b in button_events:
-        if not self.CP.pcmCruise:
+        if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
           if b.type in enable_buttons and not b.pressed:
             acc_enabled = True
-          if b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) and not self.sp_v_cruise_initialized(vCruise):
+        if not self.CP.pcmCruise:
+          if b.type in resume_button and not self.sp_v_cruise_initialized(vCruise):
+            acc_enabled = False
+        if not self.CP.pcmCruiseSpeed:
+          if b.type == ButtonType.accelCruise and not cs_out.cruiseState.enabled:
             acc_enabled = False
     else:
       acc_enabled = False
@@ -394,7 +399,7 @@ class CarInterfaceBase(ABC):
     return brake or regen
 
   def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
-    cs_out.cruiseState.enabled = cs_out.cruiseState.enabled if self.CP.pcmCruise else CS.accEnabled
+    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
     if not self.enable_mads:
       if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled:
         CS.madsEnabled = True
@@ -651,6 +656,16 @@ class CarStateBase(ABC):
     self.right_blinker_prev = right_blinker_stalk
 
     return bool(left_blinker_stalk or self.left_blinker_cnt > 0), bool(right_blinker_stalk or self.right_blinker_cnt > 0)
+
+  def update_custom_stock_long(self, cruise_button, final_speed_kph, target_speed, v_set_dis, speed_diff, button_type):
+    customStockLong = car.CarState.CustomStockLong.new_message()
+    customStockLong.cruiseButton = 0 if cruise_button is None else cruise_button
+    customStockLong.finalSpeedKph = final_speed_kph
+    customStockLong.targetSpeed = target_speed
+    customStockLong.vSetDis = v_set_dis
+    customStockLong.speedDiff = speed_diff
+    customStockLong.buttonType = button_type
+    return customStockLong
 
   @staticmethod
   def parse_gear_shifter(gear: Optional[str]) -> car.CarState.GearShifter:

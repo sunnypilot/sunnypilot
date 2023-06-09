@@ -119,6 +119,9 @@ class Controls:
     elif self.mads_ndlob:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE
 
+    if self.CP.customStockLongAvailable and self.CP.pcmCruise and self.params.get_bool("CustomStockLong"):
+      self.CP.pcmCruiseSpeed = False
+
     # read params
     self.is_metric = self.params.get_bool("IsMetric")
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
@@ -526,7 +529,7 @@ class Controls:
         # ENABLED
         if self.state == State.enabled:
           if CS.cruiseState.enabled and not self.CS_prev.cruiseState.enabled:
-            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric)
           # Block resume if cruise never previously enabled
           resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
           if not self.CP.pcmCruise and not self.v_cruise_helper.v_cruise_initialized and resume_pressed:
@@ -570,7 +573,7 @@ class Controls:
           else:
             self.current_alert_types += [ET.OVERRIDE_LATERAL, ET.OVERRIDE_LONGITUDINAL]
           if CS.cruiseState.enabled and not self.CS_prev.cruiseState.enabled:
-            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric)
 
     # DISABLED
     elif self.state == State.disabled:
@@ -587,7 +590,7 @@ class Controls:
             self.state = State.enabled
           self.current_alert_types.append(ET.ENABLE)
           if CS.cruiseState.enabled:
-            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric)
 
     # Check if openpilot is engaged and actuators are enabled
     self.enabled = self.state in ENABLED_STATES

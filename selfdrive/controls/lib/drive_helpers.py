@@ -45,6 +45,27 @@ LIMIT_MIN_SPEED = 8.33  # m/s, Minimum speed limit to provide as solution on lim
 LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and current speed for adapting state.
 LIMIT_MAX_MAP_DATA_AGE = 10.  # s Maximum time to hold to map data, then consider it invalid inside limits controllers.
 
+FCA_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
+HONDA_V_CRUISE_MIN = {
+  True: 40,
+  False: int(25 * CV.MPH_TO_KPH),
+}
+HYUNDAI_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
+MAZDA_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
+VOLKSWAGEN_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
+
 
 class VCruiseHelper:
   def __init__(self, CP):
@@ -63,7 +84,7 @@ class VCruiseHelper:
     self.v_cruise_kph_last = self.v_cruise_kph
 
     if CS.cruiseState.available:
-      if not self.CP.pcmCruise:
+      if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
         self.v_cruise_cluster_kph = self.v_cruise_kph
@@ -124,7 +145,20 @@ class VCruiseHelper:
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
       self.v_cruise_kph = max(self.v_cruise_kph, CS.vEgo * CV.MS_TO_KPH)
 
-    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
+    v_cruise_min = V_CRUISE_MIN
+    if not self.CP.pcmCruiseSpeed:
+      if self.CP.carName == "honda":
+        v_cruise_min = HONDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "hyundai":
+        v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "chrysler":
+        v_cruise_min = FCA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "mazda":
+        v_cruise_min = MAZDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "volkswagen":
+        v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
+
+    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), v_cruise_min, V_CRUISE_MAX)
 
   def update_button_timers(self, CS, enabled):
     # increment timer for buttons still pressed
@@ -138,15 +172,31 @@ class VCruiseHelper:
         self.button_timers[b.type.raw] = 1 if b.pressed else 0
         self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
 
-  def initialize_v_cruise(self, CS, experimental_mode: bool) -> None:
+  def initialize_v_cruise(self, CS, experimental_mode: bool, is_metric) -> None:
     # initializing is handled by the PCM
-    if self.CP.pcmCruise:
+    if self.CP.pcmCruise and self.CP.pcmCruiseSpeed:
       return
 
     initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode else V_CRUISE_INITIAL
 
+    resume_buttons = (ButtonType.accelCruise, ButtonType.resumeCruise)
+
+    if not self.CP.pcmCruiseSpeed:
+      if self.CP.carName == "honda":
+        initial = HONDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "hyundai":
+        initial = HYUNDAI_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "chrysler":
+        initial = FCA_V_CRUISE_MIN[is_metric]
+        if not self.CP.pcmCruiseSpeed:
+          resume_buttons = (ButtonType.resumeCruise,)
+      elif self.CP.carName == "mazda":
+        initial = MAZDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "volkswagen":
+        initial = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
+
     # 250kph or above probably means we never had a set speed
-    if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_kph_last < 250:
+    if any(b.type in resume_buttons for b in CS.buttonEvents) and self.v_cruise_kph_last < 250:
       self.v_cruise_kph = self.v_cruise_kph_last
     else:
       self.v_cruise_kph = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))

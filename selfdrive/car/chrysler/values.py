@@ -50,6 +50,14 @@ class CarControllerParams:
       self.STEER_MAX = 261  # higher than this faults the EPS
 
 
+BUTTON_STATES = {
+  "accelCruise": False,
+  "decelCruise": False,
+  "cancel": False,
+  "resumeCruise": False,
+}
+
+
 STEER_THRESHOLD = 120
 
 RAM_DT = {CAR.RAM_1500, }

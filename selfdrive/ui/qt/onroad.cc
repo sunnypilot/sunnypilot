@@ -173,6 +173,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   } else if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
     // If touching the speed limit sign area when visible
     scene.last_speed_limit_sign_tap = seconds_since_boot();
+    params.putBool("LastSpeedLimitSignTap", true);
     scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
     params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
     propagate_event = false;
