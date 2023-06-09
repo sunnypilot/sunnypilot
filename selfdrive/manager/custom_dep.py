@@ -3,6 +3,7 @@ import os
 import sys
 import errno
 import shutil
+import tarfile
 import time
 from common.basedir import BASEDIR
 from urllib.request import urlopen
@@ -21,6 +22,7 @@ MAX_BUILD_PROGRESS = 100
 TMP_DIR = '/data/tmp'
 THIRD_PARTY_DIR = '/data/openpilot/third_party/mapd'
 THIRD_PARTY_DIR_SP = '/data/third_party_community'
+PRELOADED_DEP_FILE = os.path.join(BASEDIR, "selfdrive/mapd/assets/mapd_deps.tar.xz")
 
 
 def wait_for_internet_connection(return_on_failure=False):
@@ -87,12 +89,27 @@ def install_dep(spinner):
 
 if __name__ == "__main__" and (OPSPLINE_SPEC is None or OVERPY_SPEC is None):
   spinner = Spinner()
-  if os.path.exists(THIRD_PARTY_DIR_SP):
-    spinner.update("Loading dependencies")
-    command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-    print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
-    print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
-  else:
-    spinner.update("Waiting for internet")
-    install_dep(spinner)
+  preload_fault = False
+  if os.path.exists(PRELOADED_DEP_FILE):
+    spinner.update("Loading preloaded dependencies")
+    try:
+      with tarfile.open(PRELOADED_DEP_FILE, "r:xz") as tar:
+        for member in tar.getmembers():
+          split_components = member.name.split('/')
+          if len(split_components) > 1:
+            member.name = '/'.join(split_components[1:])
+          tar.extract(member, path=THIRD_PARTY_DIR)
+      print(f"SP_LOG: Preloaded dependencies extracted to {THIRD_PARTY_DIR}")
+    except Exception as e:
+      preload_fault = True
+      print(f"SP_LOG: An error occurred while extracting preloaded dependencies: {e}")
+  if not os.path.exists(PRELOADED_DEP_FILE) or preload_fault:
+    if os.path.exists(THIRD_PARTY_DIR_SP):
+      spinner.update("Loading dependencies")
+      command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
+      process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+      print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
+      print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
+    else:
+      spinner.update("Waiting for internet")
+      install_dep(spinner)
