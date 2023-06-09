@@ -262,6 +262,12 @@ CAR_INFO: Dict[str, Optional[Union[HyundaiCarInfo, List[HyundaiCarInfo]]]] = {
   CAR.GENESIS_G80: HyundaiCarInfo("Genesis G80 2018-19", "All", harness_kit=HarnessKit(Harness.hyundai_h)),
   CAR.GENESIS_G90: HyundaiCarInfo("Genesis G90 2017-18", "All", harness_kit=HarnessKit(Harness.hyundai_c)),
   CAR.GENESIS_GV80: HyundaiCarInfo("Genesis GV80 2023", "All", harness_kit=HarnessKit(Harness.hyundai_m)),
+
+  # Non-SCC Cars
+  CAR.ELANTRA_2022_NON_SCC: HyundaiCarInfo("Hyundai Elantra Non-SCC 2022"),
+  CAR.KIA_FORTE_2019_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2019"),
+  CAR.KIA_FORTE_2021_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2021"),
+  CAR.GENESIS_G70_2021_NON_SCC: HyundaiCarInfo("Genesis G70 Non-SCC 2021"),
 }
 
 class Buttons:
