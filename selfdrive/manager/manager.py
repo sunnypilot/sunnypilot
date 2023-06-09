@@ -167,9 +167,6 @@ def manager_init() -> None:
   if os.path.isfile(f'{CRASHES_DIR}/error.txt'):
     os.remove(f'{CRASHES_DIR}/error.txt')
 
-  if params.get_bool("HotspotOnBoot"):
-    os.system('nmcli con up Hotspot')
-
 
 def manager_prepare() -> None:
   for p in managed_processes.values():
@@ -285,6 +282,9 @@ def main() -> None:
   elif params.get_bool("DoShutdown"):
     cloudlog.warning("shutdown")
     HARDWARE.shutdown()
+
+  if params.get_bool("HotspotOnBoot"):
+    os.system('nmcli con up Hotspot')
 
 
 if __name__ == "__main__":
