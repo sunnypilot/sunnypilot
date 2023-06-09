@@ -23,7 +23,7 @@ class SentryProject(Enum):
   SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
 
 
-CRASHES_DIR = os.path.join('/data/community/crashes')
+CRASHES_DIR = '/data/community/crashes/'
 ret = car.CarParams.new_message()
 candidate = ret.carFingerprint
 params = Params()
@@ -73,15 +73,16 @@ def save_exception(exc_text):
   if not os.path.exists(CRASHES_DIR):
     os.makedirs(CRASHES_DIR)
 
-  log_file = '{}/{}'.format(CRASHES_DIR, datetime.now().strftime('%m-%d-%Y--%I:%M.%S-%p.log'))
-  log_file_2 = f'{CRASHES_DIR}/error.txt'
-  with open(log_file, 'w') as f:
-    f.write(exc_text)
-    f.close()
-  with open(log_file_2, 'w') as f2:
-    f2.write(exc_text)
-    f2.close()
-  print('Logged current crash to {}'.format(log_file))
+  files = [
+    os.path.join(CRASHES_DIR, datetime.now().strftime('%Y-%m-%d--%H-%M-%S.log')),
+    os.path.join(CRASHES_DIR, 'error.txt')
+  ]
+
+  for file in files:
+    with open(file, 'w') as f:
+      f.write(exc_text)
+
+  print('Logged current crash to {}'.format(files))
 
 
 def bind_user(**kwargs) -> None:

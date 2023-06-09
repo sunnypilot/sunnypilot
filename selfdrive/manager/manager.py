@@ -17,7 +17,6 @@ from system.hardware import HARDWARE, PC
 from selfdrive.manager.helpers import unblock_stdout, write_onroad_params
 from selfdrive.manager.process import ensure_running
 from selfdrive.manager.process_config import managed_processes
-from selfdrive.sentry import CRASHES_DIR
 from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
 from system.swaglog import cloudlog, add_file_handler
 from system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
@@ -164,8 +163,8 @@ def manager_init() -> None:
                        dirty=is_dirty(),
                        device=HARDWARE.get_device_type())
 
-  if os.path.isfile(f'{CRASHES_DIR}/error.txt'):
-    os.remove(f'{CRASHES_DIR}/error.txt')
+  if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
+    os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
 
 
 def manager_prepare() -> None:
