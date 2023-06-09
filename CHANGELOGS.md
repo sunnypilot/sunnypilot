@@ -47,6 +47,8 @@ sunnypilot - 0.9.2.1 (2023-06-xx)
   * Show Driver Monitoring camera while the car is in reverse gear
 * NEW❗: Block Lane Change: Road Edge Detection (Beta)
   * Block lane change when road edge is detected on the stalk actuated side
+* NEW❗: Display CPU Temperature on Sidebar
+  * Display the CPU core with the highest temperature on the sidebar
 * NEW❗: HKG: smartMDPS automatic detection (installed with applicable firmware)
 * FIXED: Unintended siren/alarm from the comma device if the vehicle is turned off too quickly in PARK gear
 * FIXED: mapd: Exception handling for loading dependencies
