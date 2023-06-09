@@ -690,6 +690,15 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
     tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
     "../assets/offroad/icon_road.png"
   ));
+
+  // Visuals: Display CPU Temperature
+  main_layout->addWidget(horizontal_line());
+  main_layout->addWidget(new ParamControl(
+    "SidebarCpuTemp",
+    tr("Display CPU Temperature"),
+    tr("Enable this will display the the CPU that has the highest temperature on the sidebar."),
+    "../assets/offroad/icon_calibration.png"
+  ));
 }
 
 void SPVisualsPanel::showEvent(QShowEvent *event) {

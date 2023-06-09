@@ -271,6 +271,7 @@ void ui_update_params(UIState *s) {
 }
 
 void UIState::updateStatus() {
+  auto params = Params();
   if (scene.started && sm->updated("controlsState")) {
     auto controls_state = (*sm)["controlsState"].getControlsState();
     auto car_control = (*sm)["carControl"].getCarControl();
@@ -293,8 +294,8 @@ void UIState::updateStatus() {
     if (scene.started) {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
-      scene.live_torque_toggle = Params().getBool("LiveTorque");
-      scene.custom_torque_toggle = Params().getBool("CustomTorqueLateral");
+      scene.live_torque_toggle = params.getBool("LiveTorque");
+      scene.custom_torque_toggle = params.getBool("CustomTorqueLateral");
     }
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
@@ -341,6 +342,11 @@ void UIState::updateStatus() {
     } else if (scene.sleep_time == -1 && scene.onroadScreenOff != -2) {
       scene.sleep_time = scene.osoTimer;
     }
+  }
+
+  if (millis_since_boot() - last_update_params_sidebar > 1000 * 1) {
+    last_update_params_sidebar = millis_since_boot();
+    scene.sidebar_cpu_temp = params.getBool("SidebarCpuTemp");
   }
 }
 

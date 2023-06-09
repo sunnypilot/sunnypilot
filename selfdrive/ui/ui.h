@@ -188,6 +188,8 @@ typedef struct UIScene {
 
   bool e2e_long_alert_light, e2e_long_alert_lead, e2e_long_alert_ui;
   float e2eX[13] = {0};
+
+  bool sidebar_cpu_temp;
 } UIScene;
 
 class UIState : public QObject {
@@ -230,6 +232,7 @@ private:
   QTimer *timer;
   bool started_prev = false;
   int prime_type = -1;
+  uint64_t last_update_params_sidebar;
 };
 
 UIState *uiState();
