@@ -20,6 +20,11 @@ sunnypilot - 0.9.2.1 (2023-06-xx)
   * Developer UI (Dev UI)
     * REMOVED: 2-column design
     * NEW❗: 1-column + 1-row design
+  * Custom Stock Longitudinal Control
+    * NEW❗: Chrysler/Jeep/Ram support
+    * NEW❗: Mazda support
+    * NEW❗: Volkswagen PQ support
+    * DISABLED: Hyundai/Kia/Genesis CAN-FD platforms
 * NEW❗: Switch between Chill (openpilot ACC) and Experimental (E2E longitudinal) with DISTANCE button on the steering wheel
   * To switch between Chill and Experimental Mode: press and hold the DISTANCE button on the steering wheel for over 0.5 second
   * All openpilot longitudinal capable cars support
