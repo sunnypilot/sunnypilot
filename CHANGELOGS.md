@@ -49,6 +49,7 @@ sunnypilot - 0.9.2.1 (2023-06-xx)
   * Block lane change when road edge is detected on the stalk actuated side
 * NEW❗: HKG: smartMDPS automatic detection (installed with applicable firmware)
 * FIXED: Unintended siren/alarm from the comma device if the vehicle is turned off too quickly in PARK gear
+* FIXED: mapd: Exception handling for loading dependencies
 * Fleet Manager via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
   * Access your dashcam footage, screen recordings, and error logs when the car is turned off
   * Connect to the device via Wi-Fi, mobile hotspot, or tethering on the comma device, then navigate to http://ipAddress:5050 to access.
