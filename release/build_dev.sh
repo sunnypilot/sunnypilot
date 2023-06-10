@@ -10,7 +10,7 @@ BUILD_DIR=/data/openpilot
 SOURCE_DIR="$(git rev-parse --show-toplevel)"
 
 FILES_SRC="release/files_tici"
-RELEASE_BRANCH="release-c3"
+DEV_BRANCH="dev-c3"
 
 
 # set git identity
@@ -25,7 +25,7 @@ git init
 # set git username/password
 source /data/identity.sh
 git remote add origin https://github.com/sunnyhaibin/sunnypilot.git
-git fetch origin $RELEASE_BRANCH
+git fetch origin $DEV_BRANCH
 
 # do the files copy
 echo "[-] copying files T=$SECONDS"
@@ -41,13 +41,13 @@ rm -f panda/board/obj/panda_h7.bin.signed
 rm -f panda/board/obj/bootstub.panda.bin
 rm -f panda/board/obj/bootstub.panda_h7.bin
 
-VERSION=$(cat common/version.h | awk -F[\"-]  '{print $2}')
-echo "#define COMMA_VERSION \"$VERSION-release\"" > common/version.h
+VERSION=$(date '+%Y.%m.%d')
+echo "#define COMMA_VERSION \"$VERSION-dev\"" > common/version.h
 
 echo "[-] committing version $VERSION T=$SECONDS"
 git add -f .
 git commit -a -m "sunnypilot v$VERSION release"
-git branch --set-upstream-to=origin/$RELEASE_BRANCH
+git branch --set-upstream-to=origin/$DEV_BRANCH
 
 # Build panda firmware
 pushd panda/
@@ -82,7 +82,6 @@ find selfdrive/ui/ -name '*.h' -delete
 rm -rf panda/board panda/certs panda/crypto
 rm -rf .sconsign.dblite Jenkinsfile release/
 rm selfdrive/modeld/models/supercombo.onnx
-#rm models/supercombo_badweights.thneed
 rm -rf selfdrive/ui/replay/
 # Move back signed panda fw
 mkdir -p panda/board/obj
@@ -104,8 +103,12 @@ SP_VERSION=$(cat $SOURCE_DIR/common/version.h | awk -F\" '{print $2}')
 
 # Add built files to git
 git add -f .
-git commit --amend -m "sunnypilot v$VERSION"
-git branch -m release-c3
+git commit --amend -m "sunnypilot v$VERSION
+version: sunnypilot v$SP_VERSION release
+date: $DATETIME
+master commit: $GIT_HASH
+"
+git branch -m dev-c3
 
 # Run tests
 #TEST_FILES="tools/"
@@ -119,7 +122,7 @@ git branch -m release-c3
 
 if [ ! -z "$PUSH" ]; then
   echo "[-] pushing T=$SECONDS"
-  git push -f origin $RELEASE_BRANCH
+  git push -f origin $DEV_BRANCH
 fi
 
 echo "[-] done T=$SECONDS"
