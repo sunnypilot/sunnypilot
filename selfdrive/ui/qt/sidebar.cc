@@ -98,30 +98,30 @@ void Sidebar::updateState(const UIState &s) {
   }
   setProperty("connectStatus", QVariant::fromValue(connectStatus));
 
-  int max_cpu_temp_index = -1;
-  float max_cpu_temp = std::numeric_limits<float>::lowest();
-  const auto& cpu_temp_list = deviceState.getCpuTempC();
+  if (millis_since_boot() - last_max_cpu_temp_count > 1000 * 1) {
+    last_max_cpu_temp_count = millis_since_boot();
 
-  for (int i = 0; i < cpu_temp_list.size(); ++i) {
-    float temp = cpu_temp_list[i];
-    if (temp > max_cpu_temp) {
-      max_cpu_temp_index = i;
-      max_cpu_temp = temp;
+    QString max_cpu_temp_str = "0°C";
+    const auto& cpu_temp_list = deviceState.getCpuTempC();
+    float max_cpu_temp = std::numeric_limits<float>::lowest();
+
+    for (const float& temp : cpu_temp_list) {
+      max_cpu_temp = std::max(max_cpu_temp, temp);
     }
-  }
-  QString max_cpu_temp_str = "0°C";
-  if (max_cpu_temp_index != -1) {
-    max_cpu_temp_str = QString::number(std::nearbyint(max_cpu_temp)) + "°C";
-  }
 
-  ItemStatus tempStatus = {{tr("TEMP"), s.scene.sidebar_cpu_temp ? max_cpu_temp_str : tr("HIGH")}, danger_color};
-  auto ts = deviceState.getThermalStatus();
-  if (ts == cereal::DeviceState::ThermalStatus::GREEN) {
-    tempStatus = {{tr("TEMP"), s.scene.sidebar_cpu_temp ? max_cpu_temp_str : tr("GOOD")}, good_color};
-  } else if (ts == cereal::DeviceState::ThermalStatus::YELLOW) {
-    tempStatus = {{tr("TEMP"), s.scene.sidebar_cpu_temp ? max_cpu_temp_str : tr("OK")}, warning_color};
+    if (max_cpu_temp >= 0) {
+      max_cpu_temp_str = QString::number(std::nearbyint(max_cpu_temp)) + "°C";
+    }
+
+    ItemStatus tempStatus = {{tr("TEMP"), s.scene.sidebar_cpu_temp ? max_cpu_temp_str : tr("HIGH")}, danger_color};
+    auto ts = deviceState.getThermalStatus();
+    if (ts == cereal::DeviceState::ThermalStatus::GREEN) {
+      tempStatus = {{tr("TEMP"), s.scene.sidebar_cpu_temp ? max_cpu_temp_str : tr("GOOD")}, good_color};
+    } else if (ts == cereal::DeviceState::ThermalStatus::YELLOW) {
+      tempStatus = {{tr("TEMP"), s.scene.sidebar_cpu_temp ? max_cpu_temp_str : tr("OK")}, warning_color};
+    }
+    setProperty("tempStatus", QVariant::fromValue(tempStatus));
   }
-  setProperty("tempStatus", QVariant::fromValue(tempStatus));
 
   ItemStatus pandaStatus = {{tr("VEHICLE"), tr("ONLINE")}, good_color};
   if (s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN) {

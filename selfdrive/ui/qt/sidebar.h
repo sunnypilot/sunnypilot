@@ -57,4 +57,6 @@ protected:
 
 private:
   std::unique_ptr<PubMaster> pm;
+
+  uint64_t last_max_cpu_temp_count;
 };
