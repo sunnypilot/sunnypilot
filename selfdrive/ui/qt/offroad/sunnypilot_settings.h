@@ -118,6 +118,15 @@ private:
   QWidget* home = nullptr;
 
   QWidget* home_widget;
+};
+
+class SPVehiclesTogglesPanel : public ListWidget {
+  Q_OBJECT
+public:
+  explicit SPVehiclesTogglesPanel(SPVehiclesPanel *parent);
+
+private:
+  Params params;
 
   ParamControl *stockLongToyota;
 };

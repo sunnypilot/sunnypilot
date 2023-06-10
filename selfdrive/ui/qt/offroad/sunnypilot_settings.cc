@@ -535,25 +535,33 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
   home_widget->setObjectName("homeWidget");
 
   ScrollView *scroller = new ScrollView(home_widget, this);
-  scroller->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  scroller->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   fcr_layout->addWidget(scroller, 1);
 
   main_layout->addWidget(home);
 
   setStyleSheet(R"(
     #setCarBtn {
+      border-radius: 50px;
       font-size: 50px;
-      margin: 0px;
-      padding: 20px;
-      border-width: 0;
-      border-radius: 30px;
-      color: #dddddd;
-      background-color: #444444;
+      font-weight: 500;
+      height:100px;
+      padding: 0 35 0 35;
+      color: #E4E4E4;
+      background-color: #393939;
+    }
+    #setCarBtn:pressed {
+      background-color: #4a4a4a;
     }
   )");
 
-  toggle_layout->addWidget(horizontal_line());
-  toggle_layout->addWidget(new LabelControl(tr("Toyota/Lexus")));
+  auto toggle_panel = new SPVehiclesTogglesPanel(this);
+  toggle_layout->addWidget(toggle_panel);
+}
+
+SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWidget(parent) {
+  setSpacing(50);
+  addItem(new LabelControl(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControl(
     "StockLongToyota",
     "Enable Stock Toyota Longitudinal Control",
@@ -561,8 +569,7 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
     "../assets/offroad/icon_blank.png"
   );
   stockLongToyota->setConfirmation(true, false);
-  toggle_layout->addWidget(horizontal_line());
-  toggle_layout->addWidget(stockLongToyota);
+  addItem(stockLongToyota);
 }
 
 SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
