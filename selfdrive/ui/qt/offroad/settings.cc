@@ -203,10 +203,16 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setSpacing(50);
   addItem(new LabelControl(tr("Dongle ID"), getDongleId().value_or(tr("N/A"))));
   addItem(new LabelControl(tr("Serial"), params.get("HardwareSerial").c_str()));
-  QFile f("/data/otp/otp.conf");
-  f.open(QIODevice::ReadOnly | QIODevice::Text);
-  QString pin = f.readAll();
-  addItem(new LabelControl(tr("Fleet Manager PIN"), pin));
+
+  fleetManagerPin = new LabelControl(tr("Fleet Manager PIN"), pin);
+  addItem(fleetManagerPin);
+
+  fs_watch = new QFileSystemWatcher(this);
+  connect(fs_watch, &QFileSystemWatcher::fileChanged, this, &DevicePanel::onPinFileChanged);
+
+  QString pin_path = "/data/otp/otp.conf";
+  fs_watch->addPath(pin_path);
+  refreshPin();
 
   // Error Troubleshoot
   auto errorBtn = new ButtonControl(
@@ -303,6 +309,22 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
   addItem(power_layout);
+}
+
+void DevicePanel::onPinFileChanged(const QString &file_path) {
+  if (file_path == "/data/otp/otp.conf") {
+    refreshPin();
+  }
+}
+
+void DevicePanel::refreshPin() {
+  QFile f("/data/otp/otp.conf");
+  if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    pin = f.readAll();
+    f.close();
+    setSpacing(50);
+    fleetManagerPin->setText(pin);
+  }
 }
 
 void DevicePanel::updateCalibDescription() {

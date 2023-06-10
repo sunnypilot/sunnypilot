@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QTimer>
 #include <QWidget>
 
 
@@ -47,9 +48,15 @@ private slots:
   void poweroff();
   void reboot();
   void updateCalibDescription();
+  void onPinFileChanged(const QString &file_path);
+  void refreshPin();
 
 private:
   Params params;
+
+  LabelControl *fleetManagerPin;
+  QString pin;
+  QFileSystemWatcher *fs_watch;
 };
 
 class TogglesPanel : public ListWidget {
