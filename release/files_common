@@ -10,13 +10,13 @@ SConstruct
 README.md
 RELEASES.md
 CHANGELOGS.md
-HOW-TOS.md
-sunnyhaibin0850_qrcode_paypal.me.png
 .github/FUNDING.yml
 docs/CARS.md
 docs/CONTRIBUTING.md
+docs/HOW-TOS.md
 docs/INTEGRATION.md
 docs/LIMITATIONS.md
+docs/sunnyhaibin0850_qrcode_paypal.me.png
 site_scons/site_tools/cython.py
 
 common/.gitignore
@@ -426,8 +426,6 @@ selfdrive/monitoring/hands_on_wheel_monitor.py
 selfdrive/navd/.gitignore
 selfdrive/navd/__init__.py
 selfdrive/navd/**
-selfdrive/navd/otisserv.py
-selfdrive/navd/tpl/*
 
 selfdrive/assets/.gitignore
 selfdrive/assets/assets.qrc
