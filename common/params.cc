@@ -290,6 +290,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TurnVisionControl", PERSISTENT},
     {"VisionCurveLaneless", PERSISTENT},
     {"VwAccType", PERSISTENT},
+    {"Offroad_SupersededUpdate", PERSISTENT},
 };
 
 } // namespace

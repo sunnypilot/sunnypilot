@@ -37,7 +37,7 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 
 ---
 
-[sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 200 supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
+[sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 250+ supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
 
 </details>
 
@@ -93,42 +93,48 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 comma three
 ------
 
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
+Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
 
-1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) previous software if you already installed another software/fork.
-2. Select `Custom Software` when given the option upon reboot.
-3. Input the following URL: ```bit.ly/sp-dev-nicki-minaj```[^4] (note: `https://` is not requirement on the comma three)
-4. Complete the rest of the installation following the onscreen instructions.
-5. Pop into the `#installation-help` channel on Discord for further assistance.
+* sunnypilot not installed or you installed a version before 0.8.17?
+  1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
+  2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
+  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3``` [^4] (note: `https://` is not requirement on the comma three)
+  4. Complete the rest of the installation following the onscreen instructions.
+
+* sunnypilot already installed and you installed a version after 0.8.17?
+  1. On the comma three, go to `Settings` ▶️ `Software`.
+  2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
+  3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
+  4. Scroll to select the desired branch per [Recommended Branches](#-recommended-branches). Example: `release-c3`
+
+Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
 comma two
 ------
 
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this will assume you want to install the latest release:
-
-1. Factory reset/uninstall previous software if you already installed another software/fork.
-2. Select `Custom Software` when given the option.
-3. Input the following URL: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
+1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
+2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
+3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
 4. Complete the rest of the installation following the onscreen instructions.
-5. Pop into the `#installation-help` channel on Discord for further assistance.
+
+Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
   </details>
 
   <details>
   <summary>SSH (More Versatile)</summary>
-  </br>
+  <br>
 
 Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
 
-If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
-
+If you are looking to install sunnypilot via SSH, run the following command in an SSH terminal after connecting to your device:
 
 comma three:
 ------
-* [`dev-nicki-minaj`](https://github.com/sunnyhaibin/openpilot/tree/dev-nicki-minaj):
+* [`release-c3`](https://github.com/sunnyhaibin/openpilot/tree/release-c3):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b dev-nicki-minaj --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
+  cd /data; rm -rf ./openpilot; git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
   ```
 
 comma two:
@@ -136,7 +142,7 @@ comma two:
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; reboot
+  cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
   ```
 
 After running the command to install the desired branch, your comma device should reboot.
@@ -313,16 +319,17 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 
 ---
 
-|   Tag    | Definition                  | Description                                                                                                                                                                                 |
-|:--------:|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  `prod`  | Production/Release branches | Include features that are **verified** by trusted testers and the community. Ready to use. ✅                                                                                                |
-|  `test`  | Test branches               | Include new features that are **tested** by trusted testers and the community. Stability may vary. ⚠                                                                                        |
-|  `dev`   | Development branches        | All features are gathered in respective versions. Reviewed and merged features will be committed to `dev`. Stability may vary. ⚠                                                            |
-| `master` | Main branch                 | Syncs with [commaai's openpilot `master`](https://github.com/commaai/openpilot) upstream branch. Accepts all pull requests. Does not include all sunnypilot features. Stability may vary. ⚠ |
+|    Tag    | Definition           | Description                                                                                                                                                                                 |
+|:---------:|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `release` | Release branches     | Include features that are **verified** by trusted testers and the community. Ready to use. ✅                                                                                                |
+| `staging` | Staging branches     | Include new features that are **tested** by trusted testers and the community. Stability may vary. ⚠                                                                                        |
+|   `dev`   | Development branches | All features are gathered in respective versions. Reviewed and merged features will be committed to `dev`. Stability may vary. ⚠                                                            |
+| `master`  | Main branch          | Syncs with [commaai's openpilot `master`](https://github.com/commaai/openpilot) upstream branch. Accepts all pull requests. Does not include all sunnypilot features. Stability may vary. ⚠ |
 
 Example:
-* [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3): Latest test branch that are tested by trusted testers and the community, verification required.
-* [`dev-nicki-minaj`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-nicki-minaj): Latest development branch that include all sunnypilot features, testing required.
+* [`release-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/release-c3): Latest release branch for comma three that are verified by trusted testers and the community. Ready to use.
+* [`staging-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/staging-c3): Latest staging branch for comma three that are tested by trusted testers and the community. Verification required.
+* [`dev-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-c3): Latest development branch for comma three that include all sunnypilot features. Testing required.
 
 </details>
 
@@ -330,12 +337,11 @@ Example:
 
 ---
 
-| Branch                                                                                                    | Definition                                                                                                            | Compatible Device | Changelogs                                                                                              |
-|:----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------|
-| [`0.8.12-prod-full-<car>`](https://github.com/sunnyhaibin/sunnypilot/branches/all?query=0.8.12-prod-full) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.12                                          | comma two/three   | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.12-prod-full-subaru/CHANGELOGS.md) |
-| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3)                         | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                                          | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md)          |
-| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)                                       | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot commits up to December 16th, 2022 | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)                 |
-| [`dev-nicki-minaj`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-nicki-minaj)                       | • Latest development branch<br/>• Based on comma.ai's openpilot 0.9.2 release<br/>• Nicki Minaj driving model         | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/dev-nicki-minaj/CHANGELOGS.md)         |
+| Branch                                                                              | Definition                                              | Compatible Device | Changelogs                                                                                 |
+|:------------------------------------------------------------------------------------|---------------------------------------------------------|-------------------|--------------------------------------------------------------------------------------------|
+| [`release-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/release-c3)           | • Latest release/stable branch                          | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/release-c3/CHANGELOGS.md) |
+| [`staging-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/staging-c3)           | • Latest staging branch                                 | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/staging-c3/CHANGELOGS.md) |
+| [`dev-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-c3)                   | • Latest development branch with experimental features  | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/dev-c3/CHANGELOGS.md)     |
 
 </details>
 
@@ -445,4 +451,4 @@ Your continuous love and support are greatly appreciated! Enjoy 🥰
 
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
-[^4]:Shortened URL for convenience. Full URL is ```smiskol.com/fork/sunnyhaibin/test-c3```
+[^4]:Shortened URL for convenience. Full URL is ```smiskol.com/fork/sunnyhaibin/release-c3```
