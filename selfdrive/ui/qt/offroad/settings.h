@@ -89,6 +89,7 @@ private:
 
   QLabel *onroadLbl;
   QLabel *osmUpdateLbl;
+  LabelControl *currentModelLbl;
   LabelControl *versionLbl;
   ButtonControl *installBtn;
   ButtonControl *downloadBtn;

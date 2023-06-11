@@ -162,6 +162,7 @@ selfdrive/mapd/README.md
 
 common/SConscript
 common/version.h
+common/model.h
 
 common/prefix.h
 common/swaglog.h

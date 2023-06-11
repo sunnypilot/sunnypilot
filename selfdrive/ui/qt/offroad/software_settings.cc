@@ -9,6 +9,7 @@
 
 #include "common/params.h"
 #include "common/util.h"
+#include "common/model.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
@@ -21,6 +22,9 @@ void SoftwarePanel::checkForUpdates() {
 }
 
 SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
+  currentModelLbl = new LabelControl(tr("Current Driving Model"), CURRENT_MODEL);
+  addItem(currentModelLbl);
+
   onroadLbl = new QLabel(tr("Updates are only downloaded while the car is off."));
   onroadLbl->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left; padding-top: 30px; padding-bottom: 30px;");
   addItem(onroadLbl);
