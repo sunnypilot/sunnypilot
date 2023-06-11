@@ -117,6 +117,8 @@ comma two
 3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3```[^4] (note: `https://` is not requirement on the comma three)
 4. Complete the rest of the installation following the onscreen instructions.
 
+Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
+
   </details>
 
   <details>
