@@ -114,7 +114,7 @@ comma two
 
 1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
 2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://bit.ly/sp-0-8-12-4-prod``` [^4] (note: `https://` is not requirement on the comma three)
+3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
 4. Complete the rest of the installation following the onscreen instructions.
 
 Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
