@@ -74,9 +74,7 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
       checkForUpdates();
     }
   });
-  if (!params.getBool("IsTestedBranch")) {
-    addItem(targetBranchBtn);
-  }
+  addItem(targetBranchBtn);
 
   osmUpdateLbl = new QLabel(tr("Database updates can be downloaded while the car is off."));
   osmUpdateLbl->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left; padding-top: 30px; padding-bottom: 30px;");
