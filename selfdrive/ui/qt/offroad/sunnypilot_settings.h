@@ -41,115 +41,6 @@ private:
   void refresh();
 };
 
-class SPGeneralPanel : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit SPGeneralPanel(QWidget *parent = nullptr);
-
-private:
-  QVBoxLayout *main_layout;
-  ParamControl *endToEndLongAlert;
-};
-
-class SPControlsPanel : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit SPControlsPanel(QWidget *parent = nullptr);
-  void showEvent(QShowEvent *event) override;
-
-public slots:
-  void updateToggles();
-
-private:
-  Params params;
-
-  QVBoxLayout *main_layout;
-  QWidget *madsMainControl;
-  QVBoxLayout *madsSubControl;
-  QWidget *dlpMain;
-  QVBoxLayout *dlpSub;
-  QWidget *customOffsetsMain;
-  QVBoxLayout *customOffsetsSub;
-  QWidget *gacMain;
-  QVBoxLayout *gacSub;
-  QWidget *torqueMain;
-  QVBoxLayout *torqueSub;
-  QWidget *customTorqueMain;
-  QVBoxLayout *customTorqueSub;
-  QWidget *speedLimitMain;
-  QVBoxLayout *speedLimitSub;
-  QWidget *speedOffsetMain;
-  QVBoxLayout *speedOffsetSub;
-  QWidget *speedOffsetValMain;
-  QVBoxLayout *speedOffsetValSub;
-
-  ParamControl *madsControl;
-  ParamControl *disengageLateralOnBrake;
-  ParamControl *accMadsCombo;
-  ParamControl *madsCruiseMain;
-  ParamControl *belowSpeed;
-  ParamControl *dlpControl;
-  ParamControl *dlpCurve;
-  ParamControl *customOffsets;
-  ParamControl *gapAdjustCruise;
-  ParamControl *torqueLateral;
-  ParamControl *customTorqueLateral;
-  ParamControl *liveTorque;
-  ParamControl *speedLimitControl;
-  ParamControl *speedPercControl;
-  ParamControl *osmLocalDb;
-
-  SpeedLimitOffsetType *slo_type;
-  SpeedLimitValueOffset *slvo;
-};
-
-class SPVehiclesPanel : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit SPVehiclesPanel(QWidget *parent = nullptr);
-
-private:
-  Params params;
-
-  QStackedLayout* main_layout = nullptr;
-  QWidget* home = nullptr;
-
-  QWidget* home_widget;
-};
-
-class SPVehiclesTogglesPanel : public ListWidget {
-  Q_OBJECT
-public:
-  explicit SPVehiclesTogglesPanel(SPVehiclesPanel *parent);
-
-private:
-  Params params;
-
-  ParamControl *stockLongToyota;
-};
-
-class SPVisualsPanel : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit SPVisualsPanel(QWidget *parent = nullptr);
-  void showEvent(QShowEvent *event) override;
-
-private:
-  Params params;
-
-  QWidget *devUiMain;
-  QVBoxLayout *devUiSub;
-
-  ParamControl *devUi;
-  ParamControl *customMapbox;
-
-  void updateToggles();
-};
-
 class MaxTimeOffroad : public AbstractControl {
   Q_OBJECT
 
@@ -343,4 +234,83 @@ private:
   Params params;
 
   void refresh();
+};
+
+class SPGeneralPanel : public ListWidget {
+  Q_OBJECT
+
+public:
+  explicit SPGeneralPanel(QWidget *parent = nullptr);
+
+private:
+  Params params;
+  std::map<std::string, ParamControl*> toggles;
+};
+
+class SPControlsPanel : public ListWidget {
+  Q_OBJECT
+
+public:
+  explicit SPControlsPanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateToggles();
+
+private:
+  Params params;
+  std::map<std::string, ParamControl*> toggles;
+
+  CameraOffset *camera_offset;
+  PathOffset *path_offset;
+  AutoLaneChangeTimer *auto_lane_change_timer;
+  SpeedLimitOffsetType *slo_type;
+  SpeedLimitValueOffset *slvo;
+  GapAdjustCruiseMode *gac_mode;
+  TorqueFriction *friction;
+  TorqueMaxLatAccel *lat_accel_factor;
+  SpeedLimitStyle *speed_limit_style;
+};
+
+class SPVehiclesPanel : public QWidget {
+  Q_OBJECT
+
+public:
+  explicit SPVehiclesPanel(QWidget *parent = nullptr);
+
+private:
+  Params params;
+
+  QStackedLayout* main_layout = nullptr;
+  QWidget* home = nullptr;
+
+  QWidget* home_widget;
+};
+
+class SPVehiclesTogglesPanel : public ListWidget {
+  Q_OBJECT
+public:
+  explicit SPVehiclesTogglesPanel(SPVehiclesPanel *parent);
+
+private:
+  Params params;
+
+  ParamControl *stockLongToyota;
+};
+
+class SPVisualsPanel : public ListWidget {
+  Q_OBJECT
+
+public:
+  explicit SPVisualsPanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+private:
+  Params params;
+  std::map<std::string, ParamControl*> toggles;
+
+  DevUiInfo *dev_ui_info;
+  ChevronInfo *chevron_info;
+
+  void updateToggles();
 };

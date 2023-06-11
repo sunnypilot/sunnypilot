@@ -13,443 +13,329 @@
 
 #include "selfdrive/ui/ui.h"
 
-SPGeneralPanel::SPGeneralPanel(QWidget *parent) : QWidget(parent) {
-  main_layout = new QVBoxLayout(this);
+SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
+  // param, title, desc, icon
+  std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
+    {
+      "QuietDrive",
+      tr("Quiet Drive 🤫"),
+      tr("sunnypilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on."),
+      "../assets/offroad/icon_mute.png",
+    },
+    {
+      "EndToEndLongAlertLight",
+      tr("Green Traffic Light Chime (Beta)"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>")
+              .arg(tr("A chime will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. If you are waiting behind another vehicle, the chime will play once the vehicle advances unless ACC is engaged."))
+              .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "EndToEndLongAlertLead",
+      tr("Lead Vehicle Departure Alert"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>")
+              .arg(tr("Enable this will notify when the leading vehicle drives away."))
+              .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "HotspotOnBoot",
+      tr("Retain hotspot/tethering state"),
+      tr("Enabling this toggle will retain the hotspot/tethering toggle state across reboots."),
+      "../assets/offroad/icon_network.png",
+    },
+    {
+      "DisableOnroadUploads",
+      tr("Disable Onroad Uploads"),
+      tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
+      "../assets/offroad/icon_network.png",
+    },
+    {
+      "EnableDebugSnapshot",
+      tr("Debug snapshot on screen center tap"),
+      tr("Stores snapshot file with current state of some modules."),
+      "../assets/offroad/icon_calibration.png"
+    }
+  };
 
-  // General: Quiet Drive
-  main_layout->addWidget(new ParamControl(
-    "QuietDrive",
-    tr("Quiet Drive 🤫"),
-    tr("sunnypilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on."),
-    "../assets/offroad/icon_mute.png"
-  ));
+  for (auto &[param, title, desc, icon] : toggle_defs) {
+    auto toggle = new ParamControl(param, title, desc, icon, this);
 
-  // General: Green Traffic Light Chime
-  endToEndLongAlert = new ParamControl(
-    "EndToEndLongAlertLight",
-    tr("Green Traffic Light Chime (Beta)"),
-    QString("%1<br>"
-            "<h4>%2</h4><br>")
-            .arg(tr("A chime will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. If you are waiting behind another vehicle, the chime will play once the vehicle advances unless ACC is engaged."))
-            .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
-    "../assets/offroad/icon_road.png"
-  );
-  endToEndLongAlert->setConfirmation(true, false);
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(endToEndLongAlert);
+    addItem(toggle);
+    toggles[param.toStdString()] = toggle;
 
-  // General: Lead Vehicle Departure Alert
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "EndToEndLongAlertLead",
-    tr("Lead Vehicle Departure Alert"),
-    QString("%1<br>"
-            "<h4>%2</h4><br>")
-            .arg(tr("Enable this will notify when the leading vehicle drives away."))
-            .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
-    "../assets/offroad/icon_road.png"
-  ));
+    if (param == "HotspotOnBoot") {
+      // General: Max Time Offroad (Shutdown timer)
+      addItem(new MaxTimeOffroad());
 
-  // General: Retain hotspot/tethering state
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "HotspotOnBoot",
-    tr("Retain hotspot/tethering state"),
-    tr("Enabling this toggle will retain the hotspot/tethering toggle state across reboots."),
-    "../assets/offroad/icon_network.png"
-  ));
+      // General: Onroad Screen Off (Auto Onroad Screen Timer)
+      addItem(new OnroadScreenOff());
 
-  // General: Max Time Offroad (Shutdown timer)
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new MaxTimeOffroad());
+      // General: Onroad Screen Off Brightness
+      addItem(new OnroadScreenOffBrightness());
 
-  // General: Onroad Screen Off (Auto Onroad Screen Timer)
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new OnroadScreenOff());
+      // General: Brightness Control (Global)
+      addItem(new BrightnessControl());
+    }
+  }
 
-  // General: Onroad Screen Off Brightness
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new OnroadScreenOffBrightness());
-
-  // General: Brightness Control (Global)
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new BrightnessControl());
-
-  // General: Disable Onroad Uploads
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "DisableOnroadUploads",
-    tr("Disable Onroad Uploads"),
-    tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
-    "../assets/offroad/icon_network.png"
-  ));
-
-  // General: Debug snapshot on screen center tap
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "EnableDebugSnapshot",
-    tr("Debug snapshot on screen center tap"),
-    tr("Stores snapshot file with current state of some modules."),
-    "../assets/offroad/icon_calibration.png"
-  ));
+  toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
 }
 
-SPControlsPanel::SPControlsPanel(QWidget *parent) : QWidget(parent) {
-  main_layout = new QVBoxLayout(this);
+SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
+  // param, title, desc, icon
+  std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
+    {
+      "EnableMads",
+      tr("Enable M.A.D.S."),
+      tr("Enable the beloved M.A.D.S. feature. Disable toggle to revert back to stock openpilot engagement/disengagement."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "DisengageLateralOnBrake",
+      tr("Disengage ALC On Brake Pedal ℹ"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>"
+              "<h4>%3</h4><br>")
+      .arg(tr("Define brake pedal interactions with sunnypilot when M.A.D.S. is enabled."))
+      .arg(tr("Enabled: Pressing the brake pedal will disengage Automatic Lane Centering (ALC) on sunnypilot."))
+      .arg(tr("Disabled: Pressing the brake pedal will <b>NOT</b> disengage Automatic Lane Centering (ALC) on sunnypilot.")),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "AccMadsCombo",
+      tr("Enable ACC+MADS with RES+/SET-"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>")
+      .arg(tr("Engage both M.A.D.S. and ACC with a single press of RES+ or SET- button."))
+      .arg(tr("Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.")),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "MadsCruiseMain",
+      tr("Toggle M.A.D.S. with Cruise Main"),
+      tr("Allows M.A.D.S. engagement/disengagement with \"Cruise Main\" cruise control button from the steering wheel."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "BelowSpeedPause",
+      tr("Pause Lateral Below Speed w/ Blinker"),
+      tr("Enable this toggle to pause lateral actuation with blinker when traveling below 30 MPH or 50 KM/H."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "RoadEdge",
+      tr("Block Lane Change: Road Edge Detection"),
+      tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "DynamicLaneProfileToggle",
+      tr("Enable Dynamic Lane Profile"),
+      tr("Enable toggle to use Dynamic Lane Profile. Disable toggle to use Laneless only."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "VisionCurveLaneless",
+      tr("Laneless for Curves in \"Auto lane\""),
+      tr("While in Auto Lane, switch to Laneless for current/future curves."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "CustomOffsets",
+      tr("Custom Offsets"),
+      tr("Add custom offsets to Camera and Path in sunnypilot."),
+      "../assets/offroad/icon_metric.png",
+    },
+    {
+      "GapAdjustCruise",
+      tr("Enable Gap Adjust Cruise ℹ"),
+      QString("%1<br>"
+              "<h4>%2</h4>")
+      .arg(tr("Enable the Interval button on the steering wheel to adjust the cruise gap."))
+      .arg(tr("Only available to cars with openpilot Longitudinal Control")),
+      "../assets/offroad/icon_dynamic_gac.png",
+    },
+    {
+      "EnforceTorqueLateral",
+      tr("Enforce Torque Lateral Control"),
+      tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
+      "../assets/offroad/icon_calibration.png",
+    },
+    {
+      "CustomTorqueLateral",
+      tr("Torque Lateral Control Live Tune"),
+      tr("Enables live tune for Torque lateral control."),
+      "../assets/offroad/icon_calibration.png",
+    },
+    {
+      "LiveTorque",
+      tr("Torque Lateral Controller Self-Tune"),
+      tr("Enables self-tune for Torque lateral control."),
+      "../assets/offroad/icon_calibration.png",
+    },
+    {
+      "HandsOnWheelMonitoring",
+      tr("Enable Hands on Wheel Monitoring"),
+      tr("Monitor and alert when driver is not keeping the hands on the steering wheel."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "TurnVisionControl",
+      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
+      tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "SpeedLimitControl",
+      tr("Enable Speed Limit Control (SLC)"),
+      tr("Use speed limit signs information from map data and car interface (if applicable) to automatically adapt cruise speed to road limits."),
+      "../assets/offroad/icon_speed_limit.png",
+    },
+    {
+      "SpeedLimitPercOffset",
+      tr("Enable Speed Limit Offset"),
+      tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
+      "../assets/offroad/icon_speed_limit.png",
+    },
+    {
+      "TurnSpeedControl",
+      tr("Enable Map Data Turn Speed Control (M-TSC)"),
+      tr("Use curvature information from map data to define speed limits to take turns ahead."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "ReverseAccChange",
+      tr("ACC +/-: Long Press Reverse"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>"
+              "<h4>%3</h4><br>")
+      .arg(tr("Change the ACC +/- buttons behavior with cruise speed change in sunnypilot."))
+      .arg(tr("Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)"))
+      .arg(tr("Enabled: Short = 5 (imperial) / 10 (metric), Long=1")),
+      "../assets/offroad/icon_acc_change.png",
+    },
+    {
+      "OsmLocalDb",
+      tr("OSM: Use Offline Database"),
+      "",
+      "../assets/img_map.png",
+    },
+  };
 
-  // M.A.D.S.
-  madsMainControl = new QWidget();
-  madsSubControl = new QVBoxLayout(madsMainControl);
-  // Controls: Enable M.A.D.S.
-  madsControl = new ParamControl(
-    "EnableMads",
-    tr("Enable M.A.D.S."),
-    tr("Enable the beloved M.A.D.S. feature. Disable toggle to revert back to stock openpilot engagement/disengagement."),
-    "../assets/offroad/icon_openpilot.png"
-  );
-  madsControl->setConfirmation(true, false);
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    madsControl->setEnabled(offroad);
-  });
-  madsSubControl->setContentsMargins(QMargins());
-  madsSubControl->addWidget(horizontal_line());
-
-  // Controls: Disengage ALC On Brake Pedal
-  disengageLateralOnBrake = new ParamControl(
-    "DisengageLateralOnBrake",
-    tr("Disengage ALC On Brake Pedal ℹ"),
-    QString("%1<br>"
-            "<h4>%2</h4><br>"
-            "<h4>%3</h4><br>")
-    .arg(tr("Define brake pedal interactions with sunnypilot when M.A.D.S. is enabled."))
-    .arg(tr("Enabled: Pressing the brake pedal will disengage Automatic Lane Centering (ALC) on sunnypilot."))
-    .arg(tr("Disabled: Pressing the brake pedal will <b>NOT</b> disengage Automatic Lane Centering (ALC) on sunnypilot.")),
-    "../assets/offroad/icon_openpilot.png"
-  );
-  disengageLateralOnBrake->setConfirmation(true, false);
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    disengageLateralOnBrake->setEnabled(offroad);
-  });
-  madsSubControl->addWidget(disengageLateralOnBrake);
-  madsSubControl->addWidget(horizontal_line());
-
-  // Controls: Enable ACC+MADS with RES+/SET-
-  accMadsCombo = new ParamControl(
-    "AccMadsCombo",
-    tr("Enable ACC+MADS with RES+/SET-"),
-    QString("%1<br>"
-            "<h4>%2</h4><br>")
-    .arg(tr("Engage both M.A.D.S. and ACC with a single press of RES+ or SET- button."))
-    .arg(tr("Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.")),
-    "../assets/offroad/icon_openpilot.png"
-  );
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    accMadsCombo->setEnabled(offroad);
-  });
-  madsSubControl->addWidget(accMadsCombo);
-  madsSubControl->addWidget(horizontal_line());
-
-  // Controls: Enable M.A.D.S. with Cruise Main
-  madsCruiseMain = new ParamControl(
-    "MadsCruiseMain",
-    tr("Toggle M.A.D.S. with Cruise Main"),
-    tr("Allows M.A.D.S. engagement/disengagement with \"Cruise Main\" cruise control button from the steering wheel."),
-    "../assets/offroad/icon_openpilot.png"
-  );
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    madsCruiseMain->setEnabled(offroad);
-  });
-  madsSubControl->addWidget(madsCruiseMain);
-  connect(madsControl, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-  main_layout->addWidget(madsControl);
-  main_layout->addWidget(madsMainControl);
-
-
-  // Controls: Pause Lateral Below Speed w/ Blinker
-  belowSpeed = new ParamControl(
-    "BelowSpeedPause",
-    tr("Pause Lateral Below Speed w/ Blinker"),
-    tr("Enable this toggle to pause lateral actuation with blinker when traveling below 30 MPH or 50 KM/H."),
-    "../assets/offroad/icon_openpilot.png"
-  );
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    belowSpeed->setEnabled(offroad);
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(belowSpeed);
-
-  // Controls: Block Lane Change: Road Edge Detection
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "RoadEdge",
-    tr("Block Lane Change: Road Edge Detection"),
-    tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
-    "../assets/offroad/icon_openpilot.png"
-  ));
-
-  // D.L.P.
-  dlpMain = new QWidget();
-  dlpSub = new QVBoxLayout(dlpMain);
-  // Controls: Enable Dynamic Lane Profile
-  dlpControl = new ParamControl(
-    "DynamicLaneProfileToggle",
-    tr("Enable Dynamic Lane Profile"),
-    tr("Enable toggle to use Dynamic Lane Profile. Disable toggle to use Laneless only."),
-    "../assets/offroad/icon_road.png"
-  );
-
-  // Controls: Laneless for Curves in Auto lane
-  dlpCurve = new ParamControl(
-    "VisionCurveLaneless",
-    tr("Laneless for Curves in \"Auto lane\""),
-    tr("While in Auto Lane, switch to Laneless for current/future curves."),
-    "../assets/offroad/icon_blank.png"
-  );
-  dlpSub->addWidget(horizontal_line());
-  dlpSub->addWidget(dlpCurve);
-  connect(dlpControl, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(dlpControl);
-  main_layout->addWidget(dlpMain);
-
-
-  // Custom Offsets
-  customOffsetsMain = new QWidget();
-  customOffsetsSub = new QVBoxLayout(customOffsetsMain);
-  // Controls: Custom Offsets
-  customOffsets = new ParamControl(
-    "CustomOffsets",
-    tr("Custom Offsets"),
-    tr("Add custom offsets to Camera and Path in sunnypilot."),
-    "../assets/offroad/icon_metric.png"
-  );
-  customOffsetsSub->setContentsMargins(QMargins());
+  // toggle names to trigger updateToggles() when toggleFlipped
+  std::vector<std::string> updateTogglesNames{
+    "EnableMads", "DynamicLaneProfileToggle", "CustomOffsets", "GapAdjustCruise", "EnforceTorqueLateral",
+    "SpeedLimitPercOffset", "SpeedLimitControl"
+  };
+  // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
+  std::vector<std::string> updateTogglesNamesAlert{
+    "CustomTorqueLateral", "LiveTorque"
+  };
+  // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
+  std::vector<std::string> toggleOffroad{
+    "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral",
+    "CustomTorqueLateral", "LiveTorque"
+  };
 
   // Controls: Camera Offset (cm)
-  customOffsetsSub->addWidget(horizontal_line());
-  customOffsetsSub->addWidget(new CameraOffset());
-
+  camera_offset = new CameraOffset();
   // Controls: Path Offset (cm)
-  customOffsetsSub->addWidget(horizontal_line());
-  customOffsetsSub->addWidget(new PathOffset());
-  connect(customOffsets, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(customOffsets);
-  main_layout->addWidget(customOffsetsMain);
-
+  path_offset = new PathOffset();
   // Controls: Auto Lane Change Timer
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new AutoLaneChangeTimer());
-
-  // G.A.C.
-  gacMain = new QWidget();
-  gacSub = new QVBoxLayout(gacMain);
-  // Controls: Enable Gap Adjust Cruise
-  gapAdjustCruise = new ParamControl(
-    "GapAdjustCruise",
-    tr("Enable Gap Adjust Cruise ℹ"),
-    QString("%1<br>"
-            "<h4>%2</h4>")
-    .arg(tr("Enable the Interval button on the steering wheel to adjust the cruise gap."))
-    .arg(tr("Only available to cars with openpilot Longitudinal Control")),
-    "../assets/offroad/icon_dynamic_gac.png"
-  );
-  gapAdjustCruise->setConfirmation(true, false);
-  gacSub->setContentsMargins(QMargins());
-
-  // Controls: Mode
-  gacSub->addWidget(horizontal_line());
-  gacSub->addWidget(new GapAdjustCruiseMode());
-  connect(gapAdjustCruise, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(gapAdjustCruise);
-  main_layout->addWidget(gacMain);
-
-  // Torque Lateral Control
-  torqueMain = new QWidget();
-  torqueSub = new QVBoxLayout(torqueMain);
-  customTorqueMain = new QWidget();
-  customTorqueSub = new QVBoxLayout(customTorqueMain);
-  // Controls: Enforce Torque Lateral Control
-  torqueLateral = new ParamControl(
-    "EnforceTorqueLateral",
-    tr("Enforce Torque Lateral Control"),
-    tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
-    "../assets/offroad/icon_calibration.png"
-  );
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    torqueLateral->setEnabled(offroad);
-  });
-  // Torque Lateral Control Live Tune
-  customTorqueLateral = new ParamControl(
-    "CustomTorqueLateral",
-    tr("Torque Lateral Control Live Tune"),
-    tr("Enables live tune for Torque lateral control."),
-    "../assets/offroad/icon_calibration.png"
-  );
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    customTorqueLateral->setEnabled(offroad);
-  });
-  customTorqueSub->setContentsMargins(QMargins());
-  // Control: FRICTION
-  customTorqueSub->addWidget(horizontal_line());
-  customTorqueSub->addWidget(new TorqueFriction());
-  // Controls: LAT_ACCEL_FACTOR
-  customTorqueSub->addWidget(horizontal_line());
-  customTorqueSub->addWidget(new TorqueMaxLatAccel());
-  connect(customTorqueLateral, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-    ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
-  });
-  torqueSub->addWidget(horizontal_line());
-  torqueSub->addWidget(customTorqueLateral);
-  torqueSub->addWidget(customTorqueMain);
-  // Controls: Torque Lateral Controller Self-Tune
-  liveTorque = new ParamControl(
-    "LiveTorque",
-    tr("Torque Lateral Controller Self-Tune"),
-    tr("Enables self-tune for Torque lateral control."),
-    "../assets/offroad/icon_calibration.png"
-  );
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    liveTorque->setEnabled(offroad);
-  });
-  connect(liveTorque, &ToggleControl::toggleFlipped, [=]() {
-    updateToggles();
-    ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
-  });
-  torqueSub->addWidget(horizontal_line());
-  torqueSub->addWidget(liveTorque);
-  connect(torqueLateral, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(torqueLateral);
-  main_layout->addWidget(torqueMain);
-
-
-  // Controls: Enable Hands on Wheel Monitoring
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "HandsOnWheelMonitoring",
-    tr("Enable Hands on Wheel Monitoring"),
-    tr("Monitor and alert when driver is not keeping the hands on the steering wheel."),
-    "../assets/offroad/icon_openpilot.png"
-  ));
-
-  // Controls: Enable Vision Based Turn Speed Control (V-TSC)
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "TurnVisionControl",
-    tr("Enable Vision Based Turn Speed Control (V-TSC)"),
-    tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
-    "../assets/offroad/icon_road.png"));
-
-  // S.L.C.
-  speedLimitMain = new QWidget();
-  speedLimitSub = new QVBoxLayout(speedLimitMain);
-  speedOffsetMain = new QWidget();
-  speedOffsetSub = new QVBoxLayout(speedOffsetMain);
-  speedOffsetValMain = new QWidget();
-  speedOffsetValSub = new QVBoxLayout(speedOffsetValMain);
-  // Controls: Enable Speed Limit Control (SLC)
-  main_layout->addWidget(horizontal_line());
-  speedLimitControl = new ParamControl(
-    "SpeedLimitControl",
-    tr("Enable Speed Limit Control (SLC)"),
-    tr("Use speed limit signs information from map data and car interface (if applicable) to automatically adapt cruise speed to road limits."),
-    "../assets/offroad/icon_speed_limit.png"
-  );
-  speedLimitSub->setContentsMargins(QMargins());
-
-  // Controls: MUTCD: US/Canada\nVienna: Europe/Asia/etc.
-  speedLimitSub->addWidget(horizontal_line());
-  speedLimitSub->addWidget(new SpeedLimitStyle());
-
-  // Controls: Enable Speed Limit Offset
-  speedLimitSub->addWidget(horizontal_line());
-  speedPercControl = new ParamControl(
-    "SpeedLimitPercOffset",
-    tr("Enable Speed Limit Offset"),
-    tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
-    "../assets/offroad/icon_speed_limit.png"
-  );
-  speedOffsetSub->setContentsMargins(QMargins());
-
+  auto_lane_change_timer = new AutoLaneChangeTimer();
   // Controls: Speed Limit Offset Type
   slo_type = new SpeedLimitOffsetType();
-  speedOffsetSub->addWidget(horizontal_line());
-  speedOffsetSub->addWidget(slo_type);
-
-  speedOffsetValSub->setContentsMargins(QMargins());
-
   // Controls: Speed Limit Offset Values (% or actual value)
   slvo = new SpeedLimitValueOffset();
-  speedOffsetValSub->addWidget(horizontal_line());
-  speedOffsetValSub->addWidget(slvo);
+  // Controls: GAC Mode
+  gac_mode = new GapAdjustCruiseMode();
+  // Controls: Torque - FRICTION
+  friction = new TorqueFriction();
+  // Controls: Torque - LAT_ACCEL_FACTOR
+  lat_accel_factor = new TorqueMaxLatAccel();
+  // Controls: MUTCD: US/Canada\nVienna: Europe/Asia/etc.
+  speed_limit_style = new SpeedLimitStyle();
+
+  for (auto &[param, title, desc, icon] : toggle_defs) {
+    auto toggle = new ParamControl(param, title, desc, icon, this);
+
+    addItem(toggle);
+    toggles[param.toStdString()] = toggle;
+
+    if (param == "CustomOffsets") {
+      // Controls: Camera Offset (cm)
+      addItem(camera_offset);
+
+      // Controls: Path Offset (cm)
+      addItem(path_offset);
+
+      // Controls: Auto Lane Change Timer
+      addItem(auto_lane_change_timer);
+    }
+
+    if (param == "GapAdjustCruise") {
+      // Controls: Mode
+      addItem(gac_mode);
+    }
+
+    if (param == "CustomTorqueLateral") {
+      // Control: FRICTION
+      addItem(friction);
+
+      // Controls: LAT_ACCEL_FACTOR
+      addItem(lat_accel_factor);
+    }
+
+    if (param == "SpeedLimitControl") {
+      // Controls: MUTCD: US/Canada\nVienna: Europe/Asia/etc.
+      addItem(speed_limit_style);
+    }
+
+    if (param == "SpeedLimitPercOffset") {
+      // Controls: Speed Limit Offset Type
+      addItem(slo_type);
+
+      // Controls: Speed Limit Offset Values (% or actual value)
+      addItem(slvo);
+    }
+
+    // trigger updateToggles() when toggleFlipped
+    if (std::find(updateTogglesNames.begin(), updateTogglesNames.end(), param.toStdString()) != updateTogglesNames.end()) {
+      connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
+        updateToggles();
+      });
+    }
+
+    // trigger updateToggles() and display ConfirmationDialog::alert when toggleFlipped
+    if (std::find(updateTogglesNamesAlert.begin(), updateTogglesNamesAlert.end(), param.toStdString()) != updateTogglesNamesAlert.end()) {
+      connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
+        updateToggles();
+        ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
+      });
+    }
+
+    // trigger offroadTransition when going onroad/offroad
+    if (std::find(toggleOffroad.begin(), toggleOffroad.end(), param.toStdString()) != toggleOffroad.end()) {
+      connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+        toggle->setEnabled(offroad);
+      });
+    }
+  }
 
   connect(slo_type, &SpeedLimitOffsetType::offsetTypeUpdated, this, &SPControlsPanel::updateToggles);
 
-  speedOffsetSub->addWidget(speedOffsetValMain);
+  toggles["EnableMads"]->setConfirmation(true, false);
+  toggles["DisengageLateralOnBrake"]->setConfirmation(true, false);
+  toggles["GapAdjustCruise"]->setConfirmation(true, false);
 
-  connect(speedPercControl, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
+  connect(toggles["OsmLocalDb"], &ToggleControl::toggleFlipped, [=](bool state) {
+    if (!state) {
+      params.remove("OsmLocalDb");
+    }
   });
-
-  speedLimitSub->addWidget(speedPercControl);
-  speedLimitSub->addWidget(speedOffsetMain);
-
-  connect(speedLimitControl, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-
-  main_layout->addWidget(speedLimitControl);
-  main_layout->addWidget(speedLimitMain);
-
-
-  // Controls: Enable Map Data Turn Speed Control (M-TSC)
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "TurnSpeedControl",
-    tr("Enable Map Data Turn Speed Control (M-TSC)"),
-    tr("Use curvature information from map data to define speed limits to take turns ahead."),
-    "../assets/offroad/icon_openpilot.png"
-  ));
-
-  // Controls: ACC +/-: Long Press Reverse
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "ReverseAccChange",
-    tr("ACC +/-: Long Press Reverse"),
-    QString("%1<br>"
-            "<h4>%2</h4><br>"
-            "<h4>%3</h4><br>")
-    .arg(tr("Change the ACC +/- buttons behavior with cruise speed change in sunnypilot."))
-    .arg(tr("Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)"))
-    .arg(tr("Enabled: Short = 5 (imperial) / 10 (metric), Long=1")),
-    "../assets/offroad/icon_acc_change.png"
-  ));
-
-  // Controls: OSM: Use Offline Database
-  osmLocalDb = new ParamControl(
-    "OsmLocalDb",
-    tr("OSM: Use Offline Database"),
-    "",
-    "../assets/img_map.png"
-  );
-  connect(osmLocalDb, &ToggleControl::toggleFlipped, [=](bool state) {
-    if (!state) params.remove("OsmLocalDb");
-  });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(osmLocalDb);
 }
 
 void SPControlsPanel::showEvent(QShowEvent *event) {
@@ -457,52 +343,95 @@ void SPControlsPanel::showEvent(QShowEvent *event) {
 }
 
 void SPControlsPanel::updateToggles() {
-  madsMainControl->setVisible(params.getBool("EnableMads"));
-  madsMainControl->update();
+  // toggle names to update when EnableMads is flipped
+  std::vector<std::string> enableMadsGroup{"DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain"};
+  for (const auto& enableMadstoggle : enableMadsGroup) {
+    if (toggles.find(enableMadstoggle) != toggles.end()) {
+      toggles[enableMadstoggle]->setVisible(params.getBool("EnableMads"));
+    }
+  }
 
-  dlpMain->setVisible(params.getBool("DynamicLaneProfileToggle"));
-  dlpMain->update();
+  // toggle names to update when DynamicLaneProfileToggle is flipped
+  toggles["VisionCurveLaneless"]->setVisible(params.getBool("DynamicLaneProfileToggle"));
 
-  customOffsetsMain->setVisible(params.getBool("CustomOffsets"));
-  customOffsetsMain->update();
+  // toggle names to update when CustomOffsets is flipped
+  std::vector<AbstractControl*> customOffsetsGroup{camera_offset, path_offset};
+  for (const auto& customOffsetsControl : customOffsetsGroup) {
+    customOffsetsControl->setVisible(params.getBool("CustomOffsets"));
+  }
 
-  gacMain->setVisible(params.getBool("GapAdjustCruise"));
-  gacMain->update();
+  // toggle names to update when GapAdjustCruise is flipped
+  gac_mode->setVisible(params.getBool("GapAdjustCruise"));
 
-  customTorqueMain->setVisible(params.getBool("CustomTorqueLateral"));
-  customTorqueMain->update();
-  torqueMain->setVisible(params.getBool("EnforceTorqueLateral"));
-  torqueMain->update();
+  auto custom_torque_lateral = toggles["CustomTorqueLateral"];
+  auto live_torque = toggles["LiveTorque"];
+
+  // toggle names to update when EnforceTorqueLateral is flipped
+  std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque"};
+  for (const auto& enforceTorqueToggle : enforceTorqueGroup) {
+    if (toggles.find(enforceTorqueToggle) != toggles.end()) {
+      toggles[enforceTorqueToggle]->setVisible(params.getBool("EnforceTorqueLateral"));
+    }
+  }
+
+  // toggle names to update when CustomTorqueLateral is flipped
+  std::vector<AbstractControl*> customTorqueGroup{friction, lat_accel_factor};
+  for (const auto& customTorqueControl : customTorqueGroup) {
+    customTorqueControl->setVisible(params.getBool("CustomTorqueLateral"));
+  }
+
+  // toggle names to update when SpeedLimitControl is flipped
+  std::vector<AbstractControl*> speedLimitControlGroup{slo_type, slvo};
+  for (const auto& speedLimitControl : speedLimitControlGroup) {
+    speedLimitControl->setVisible(params.getBool("SpeedLimitControl"));
+  }
+
   if (params.getBool("EnforceTorqueLateral")) {
     if (params.getBool("CustomTorqueLateral")) {
-      liveTorque->setEnabled(false);
+      live_torque->setEnabled(false);
       params.putBool("LiveTorque", false);
     } else {
-      liveTorque->setEnabled(true);
+      live_torque->setEnabled(true);
     }
 
     if (params.getBool("LiveTorque")) {
-      customTorqueLateral->setEnabled(false);
+      custom_torque_lateral->setEnabled(false);
       params.putBool("CustomTorqueLateral", false);
-      customTorqueMain->setVisible(false);
+      for (const auto& customTorqueControl : customTorqueGroup) {
+        customTorqueControl->setVisible(false);
+      }
     } else {
-      customTorqueLateral->setEnabled(true);
+      custom_torque_lateral->setEnabled(true);
     }
 
-    liveTorque->refresh();
-    customTorqueLateral->refresh();
+    live_torque->refresh();
+    custom_torque_lateral->refresh();
   } else {
     params.putBool("LiveTorque", false);
     params.putBool("CustomTorqueLateral", false);
-    customTorqueMain->setVisible(false);
+    for (const auto& customTorqueControl : customTorqueGroup) {
+      customTorqueControl->setVisible(false);
+    }
   }
 
-  speedOffsetValMain->setVisible(QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
-  speedOffsetValMain->update();
-  speedOffsetMain->setVisible(params.getBool("SpeedLimitPercOffset"));
-  speedOffsetMain->update();
-  speedLimitMain->setVisible(params.getBool("SpeedLimitControl"));
-  speedLimitMain->update();
+  if (params.getBool("SpeedLimitControl")) {
+    if (params.getBool("SpeedLimitPercOffset")) {
+      slvo->setVisible(QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
+      slo_type->setVisible(true);
+    } else {
+      for (const auto& speedLimitControl : speedLimitControlGroup) {
+        speedLimitControl->setVisible(false);
+      }
+    }
+  } else {
+    for (const auto& speedLimitControl : speedLimitControlGroup) {
+      speedLimitControl->setVisible(false);
+    }
+  }
+
+  // toggle names to update when SpeedLimitControl is flipped
+  speed_limit_style->setVisible(params.getBool("SpeedLimitControl"));
+  toggles["SpeedLimitPercOffset"]->setVisible(params.getBool("SpeedLimitControl"));
 }
 
 SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
@@ -572,140 +501,120 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   addItem(stockLongToyota);
 }
 
-SPVisualsPanel::SPVisualsPanel(QWidget *parent) : QWidget(parent) {
-  QVBoxLayout* main_layout = new QVBoxLayout(this);
+SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
+  // param, title, desc, icon
+  std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
+    {
+      "BrakeLights",
+      tr("Display Braking Status"),
+      tr("Enable this will turn the current speed value to red while the brake is used."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "StandStillTimer",
+      tr("Display Stand Still Timer"),
+      tr("Enable this will display time spent at a stop (i.e., at a stop lights, stop signs, traffic congestions)."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "DevUI",
+      tr("Show Developer UI"),
+      tr("Show developer UI (Dev UI) for real-time parameters from various sources."),
+      "../assets/offroad/icon_calibration.png",
+    },
+    {
+      "ButtonAutoHide",
+      tr("Auto-Hide UI Buttons"),
+      tr("Hide UI buttons on driving screen after a 30-second timeout. Tap on the screen at anytime to reveal the UI buttons."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "ReverseDmCam",
+      tr("Display DM Camera in Reverse Gear"),
+      tr("Show Driver Monitoring camera while the car is in reverse gear."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "ShowDebugUI",
+      tr("OSM: Show debug UI elements"),
+      tr("OSM: Show UI elements that aid debugging."),
+      "../assets/offroad/icon_calibration.png",
+    },
+    {
+      "CustomMapbox",
+      tr("Enable Mapbox Navigation*"),
+      QString("%1<br>"
+              "%2<br>"
+              "%3<br>"
+              "<h4>%4</h4>")
+      .arg(tr("Enable built-in navigation on sunnypilot, powered by Mapbox."))
+      .arg(tr("Access via the web interface: \"http://<device_ip>:8082\""))
+      .arg(tr("If you do not have comma Prime, you will need to provide your own Mapbox token at https://mapbox.com/. Reach out to sunnyhaibin#0865 on Discord for more information."))
+      .arg(tr("Huge thanks to the dragonpilot team for making this possible!")),
+      "../assets/img_map.png",
+    },
+    {
+      "TrueVEgoUi",
+      tr("Speedometer: Display True Speed"),
+      tr("Display the true vehicle current speed from wheel speed sensors."),
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "HideVEgoUi",
+      tr("Speedometer: Hide from Onroad Screen"),
+      "",
+      "../assets/offroad/icon_openpilot.png",
+    },
+    {
+      "EndToEndLongAlertUI",
+      tr("Display End-to-end Longitudinal Status (Beta)"),
+      tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
+      "SidebarCpuTemp",
+      tr("Display CPU Temperature on Sidebar"),
+      tr("Enable this will display the CPU core with the highest temperature on the sidebar."),
+      "../assets/offroad/icon_calibration.png",
+    },
+  };
 
-  // Visuals: Display Braking Status
-  main_layout->addWidget(new ParamControl(
-    "BrakeLights",
-    tr("Display Braking Status"),
-    tr("Enable this will turn the current speed value to red while the brake is used."),
-    "../assets/offroad/icon_road.png"
-  ));
+  // Developer UI Info (Dev UI)
+  dev_ui_info = new DevUiInfo();
+  // Visuals: Display Metrics above Chevron
+  chevron_info = new ChevronInfo();
 
-  // Visuals: Display Stand Still Timer
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "StandStillTimer",
-    tr("Display Stand Still Timer"),
-    tr("Enable this will display time spent at a stop (i.e., at a stop lights, stop signs, traffic congestions)."),
-    "../assets/offroad/icon_road.png"
-  ));
+  for (auto &[param, title, desc, icon] : toggle_defs) {
+    auto toggle = new ParamControl(param, title, desc, icon, this);
 
-  // Dev U.I.
-  devUiMain = new QWidget();
-  devUiSub = new QVBoxLayout(devUiMain);
-  // Visuals: Show Developer UI
-  devUi = new ParamControl(
-    "DevUI",
-    tr("Show Developer UI"),
-    tr("Show developer UI (Dev UI) for real-time parameters from various sources."),
-    "../assets/offroad/icon_calibration.png"
-  );
-  devUiSub->setContentsMargins(QMargins());
-  devUiSub->addWidget(horizontal_line());
-  devUiSub->addWidget(new DevUiInfo());
-  connect(devUi, &ToggleControl::toggleFlipped, [=](bool state) {
+    addItem(toggle);
+    toggles[param.toStdString()] = toggle;
+
+    if (param == "DevUI") {
+      addItem(dev_ui_info);
+    }
+
+    if (param == "HideVEgoUi") {
+      addItem(chevron_info);
+    }
+  }
+
+  // trigger updateToggles() when toggleFlipped
+  connect(toggles["DevUI"], &ToggleControl::toggleFlipped, [=](bool state) {
     updateToggles();
   });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(devUi);
-  main_layout->addWidget(devUiMain);
 
-
-  // Visuals: Auto-Hide UI Button
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "ButtonAutoHide",
-    tr("Auto-Hide UI Buttons"),
-    tr("Hide UI buttons on driving screen after a 30-second timeout. Tap on the screen at anytime to reveal the UI buttons."),
-    "../assets/offroad/icon_road.png"
-  ));
-
-
-  // Visuals: Display DM Camera in Reverse Gear
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "ReverseDmCam",
-    tr("Display DM Camera in Reverse Gear"),
-    tr("Show Driver Monitoring camera while the car is in reverse gear."),
-    "../assets/offroad/icon_road.png"
-  ));
-
-
-  // Visuals: OSM: Show debug UI elements
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "ShowDebugUI",
-    tr("OSM: Show debug UI elements"),
-    tr("OSM: Show UI elements that aid debugging."),
-    "../assets/offroad/icon_calibration.png"
-  ));
-
-  // Visuals: Enable Mapbox Navigation
-  customMapbox = new ParamControl(
-    "CustomMapbox",
-    tr("Enable Mapbox Navigation*"),
-    QString("%1<br>"
-            "%2<br>"
-            "%3<br>"
-            "<h4>%4</h4>")
-    .arg(tr("Enable built-in navigation on sunnypilot, powered by Mapbox."))
-    .arg(tr("Access via the web interface: \"http://<device_ip>:8082\""))
-    .arg(tr("If you do not have comma Prime, you will need to provide your own Mapbox token at https://mapbox.com/. Reach out to sunnyhaibin#0865 on Discord for more information."))
-    .arg(tr("Huge thanks to the dragonpilot team for making this possible!")),
-    "../assets/img_map.png"
-  );
+  // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    customMapbox->setEnabled(offroad);
+    toggles["CustomMapbox"]->setEnabled(offroad);
   });
-  connect(customMapbox, &ToggleControl::toggleFlipped, [=](bool state) {
+
+  // trigger hardwrae reboot if user confirms the selection
+  connect(toggles["CustomMapbox"], &ToggleControl::toggleFlipped, [=](bool state) {
     if (ConfirmationDialog::confirm(tr("\"Enable Mapbox Navigation\"\nYou must restart your car or your device to apply these changes.\nReboot now?"), "Reboot", parent)) {
       Hardware::reboot();
     }
   });
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(customMapbox);
-
-  // Visuals: Speedometer: Display True Speed
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "TrueVEgoUi",
-    tr("Speedometer: Display True Speed"),
-    tr("Display the true vehicle current speed from wheel speed sensors."),
-    "../assets/offroad/icon_openpilot.png"
-  ));
-
-  // Visuals: Speedometer: Hide from Onroad Screen
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "HideVEgoUi",
-    tr("Speedometer: Hide from Onroad Screen"),
-    "",
-    "../assets/offroad/icon_openpilot.png"
-  ));
-
-  // Visuals: Display Metrics above Chevron
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ChevronInfo());
-
-  // Visuals: Display End-to-end Longitudinal Status (Beta)
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "EndToEndLongAlertUI",
-    tr("Display End-to-end Longitudinal Status (Beta)"),
-    tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
-    "../assets/offroad/icon_road.png"
-  ));
-
-  // Visuals: Display CPU Temperature
-  main_layout->addWidget(horizontal_line());
-  main_layout->addWidget(new ParamControl(
-    "SidebarCpuTemp",
-    tr("Display CPU Temperature on Sidebar"),
-    tr("Enable this will display the CPU core with the highest temperature on the sidebar."),
-    "../assets/offroad/icon_calibration.png"
-  ));
 }
 
 void SPVisualsPanel::showEvent(QShowEvent *event) {
@@ -713,8 +622,7 @@ void SPVisualsPanel::showEvent(QShowEvent *event) {
 }
 
 void SPVisualsPanel::updateToggles() {
-  devUiMain->setVisible(params.getBool("DevUI"));
-  devUiMain->update();
+  dev_ui_info->setVisible(params.getBool("DevUI"));
 }
 
 // Max Time Offroad (Shutdown timer)
