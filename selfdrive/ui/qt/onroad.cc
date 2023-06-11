@@ -500,27 +500,11 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     setProperty("showDebugUI", s.scene.show_debug_ui);
 
     const auto lmd = sm["liveMapData"].getLiveMapData();
-    const uint64_t lmd_fix_time = lmd.getLastGpsTimestamp();
-    const uint64_t current_ts = std::chrono::duration_cast<std::chrono::milliseconds>
-                                (std::chrono::system_clock::now().time_since_epoch()).count();
     QString road_name = QString::fromStdString(lmd.getCurrentRoadName());
-    const bool show_road_name = current_ts - lmd_fix_time < 10000; // hide if fix older than 10s
-
-    // Add hysteresis window to prevent rapid toggling of road name
-    static bool road_name_visible = false; // initialize to hidden state
-    if (show_road_name && !road_name_visible) {
-      // show road name and set visibility flag to true
-      road_name_visible = true;
-    } else if (!show_road_name && road_name_visible && (current_ts - lmd_fix_time) > 12000) {
-      // hide road name and set visibility flag to false only if fix is older than 12 sec
-      road_name_visible = false;
-    }
-    // use visibility flag to set the actual visibility of the road name
-    const bool actual_visibility = road_name_visible && show_road_name;
 
     const auto data_type = int(lmd.getDataType());
     const QString data_type_draw(data_type == 2 ? "🌐  " : "");
-    setProperty("roadName", actual_visibility ? data_type_draw + road_name : "");
+    setProperty("roadName", !road_name.isEmpty() ? data_type_draw + road_name : "");
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
