@@ -98,7 +98,7 @@ comma three
 * sunnypilot not installed?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3```[^4] (note: `https://` is not requirement on the comma three)
+  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3``` [^4] (note: `https://` is not requirement on the comma three)
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed?
@@ -114,7 +114,7 @@ comma two
 
 1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
 2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3```[^4] (note: `https://` is not requirement on the comma three)
+3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://bit.ly/sp-0-8-12-4-prod``` [^4] (note: `https://` is not requirement on the comma three)
 4. Complete the rest of the installation following the onscreen instructions.
 
 Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
@@ -127,15 +127,14 @@ Requires further assistance with software installation? Join the [sunnypilot Dis
 
 Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
 
-If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
-
+If you are looking to install sunnypilot via SSH, run the following command in an SSH terminal after connecting to your device:
 
 comma three:
 ------
-* [`dev-nicki-minaj`](https://github.com/sunnyhaibin/openpilot/tree/dev-nicki-minaj):
+* [`release-c3`](https://github.com/sunnyhaibin/openpilot/tree/release-c3):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b dev-nicki-minaj --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
+  cd /data; rm -rf ./openpilot; git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
   ```
 
 comma two:
@@ -143,7 +142,7 @@ comma two:
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; reboot
+  cd /data; rm -rf ./openpilot; git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
   ```
 
 After running the command to install the desired branch, your comma device should reboot.
