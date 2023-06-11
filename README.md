@@ -88,12 +88,12 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 
 ---
 
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
-
   <details><summary>URL (Easy)</summary>
 
 comma three
 ------
+
+Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
 
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
