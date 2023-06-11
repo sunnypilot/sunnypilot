@@ -37,7 +37,7 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 
 ---
 
-[sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 200 supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
+[sunnypilot](https://github.com/sunnyhaibin/sunnypilot) is a fork of comma.ai's openpilot, an open source driver assistance system. sunnypilot offers the user a unique driving experience for over 250+ supported car makes and models with modified behaviors of driving assist engagements. sunnypilot complies with comma.ai's safety rules as accurately as possible.
 
 </details>
 
@@ -93,42 +93,48 @@ The following changes are a **VIOLATION** of this policy and **ARE NOT** include
 comma three
 ------
 
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this guide will assume you want to install the latest release:
+Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
 
-1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) previous software if you already installed another software/fork.
-2. Select `Custom Software` when given the option upon reboot.
-3. Input the following URL: ```bit.ly/sp-dev-nicki-minaj```[^4] (note: `https://` is not requirement on the comma three)
-4. Complete the rest of the installation following the onscreen instructions.
-5. Pop into the `#installation-help` channel on Discord for further assistance.
+* sunnypilot not installed or you installed a version before 0.8.17?
+  1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
+  2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
+  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3``` [^4] (note: `https://` is not requirement on the comma three)
+  4. Complete the rest of the installation following the onscreen instructions.
+
+* sunnypilot already installed and you installed a version after 0.8.17?
+  1. On the comma three, go to `Settings` ▶️ `Software`.
+  2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
+  3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
+  4. Scroll to select the desired branch per [Recommended Branches](#-recommended-branches). Example: `release-c3`
+
+Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
 comma two
 ------
 
-Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch, this will assume you want to install the latest release:
-
-1. Factory reset/uninstall previous software if you already installed another software/fork.
-2. Select `Custom Software` when given the option.
-3. Input the following URL: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
+1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
+2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
+3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
 4. Complete the rest of the installation following the onscreen instructions.
-5. Pop into the `#installation-help` channel on Discord for further assistance.
+
+Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
   </details>
 
   <details>
   <summary>SSH (More Versatile)</summary>
-  </br>
+  <br>
 
 Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
 
-If you are looking to install sunnyhaibin's fork via SSH, run the following command in an SSH terminal after connecting to your device:
-
+If you are looking to install sunnypilot via SSH, run the following command in an SSH terminal after connecting to your device:
 
 comma three:
 ------
-* [`dev-nicki-minaj`](https://github.com/sunnyhaibin/openpilot/tree/dev-nicki-minaj):
+* [`release-c3`](https://github.com/sunnyhaibin/openpilot/tree/release-c3):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b dev-nicki-minaj --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
+  cd /data; rm -rf ./openpilot; git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
   ```
 
 comma two:
@@ -136,7 +142,7 @@ comma two:
 * [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --depth 1 --single-branch --recurse-submodules --shallow-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; reboot
+  cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
   ```
 
 After running the command to install the desired branch, your comma device should reboot.
