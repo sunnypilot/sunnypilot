@@ -95,13 +95,13 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 comma three
 ------
 
-* sunnypilot not installed?
+* sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
   3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3``` [^4] (note: `https://` is not requirement on the comma three)
   4. Complete the rest of the installation following the onscreen instructions.
 
-* sunnypilot already installed?
+* sunnypilot already installed and you installed a version after 0.8.17?
   1. On the comma three, go to `Settings` ▶️ `Software`.
   2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
