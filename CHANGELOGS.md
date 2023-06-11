@@ -49,6 +49,7 @@ sunnypilot - 0.9.2.1 (2023-06-xx)
   * Block lane change when road edge is detected on the stalk actuated side
 * NEW❗: Display CPU Temperature on Sidebar
   * Display the CPU core with the highest temperature on the sidebar
+* NEW❗: Display current driving model in Software settings
 * NEW❗: HKG: smartMDPS automatic detection (installed with applicable firmware)
 * FIXED: Unintended siren/alarm from the comma device if the vehicle is turned off too quickly in PARK gear
 * FIXED: mapd: Exception handling for loading dependencies
