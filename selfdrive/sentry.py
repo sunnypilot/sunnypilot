@@ -60,7 +60,7 @@ def report_tombstone(fn: str, message: str, contents: str) -> None:
 def capture_exception(*args, **kwargs) -> None:
   save_exception(traceback.format_exc())
   cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))
-  bind_user(id=dongle_id, ip_address=ip, name=gitname)
+  bind_user(id=dongle_id, ip_address=ip, username=gitname)
 
   try:
     sentry_sdk.capture_exception(*args, **kwargs)
@@ -135,7 +135,7 @@ def init(project: SentryProject) -> None:
 
   sentry_sdk.set_user({"id": dongle_id})
   sentry_sdk.set_user({"ip_address": ip})
-  sentry_sdk.set_user({"name": gitname})
+  sentry_sdk.set_user({"username": gitname})
   sentry_sdk.set_tag("dirty", is_dirty())
   sentry_sdk.set_tag("origin", get_origin())
   sentry_sdk.set_tag("branch", get_branch())
