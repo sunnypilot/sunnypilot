@@ -319,16 +319,17 @@ There are 4 modes to select on the steering wheel and/or the onroad camera scree
 
 ---
 
-|   Tag    | Definition                  | Description                                                                                                                                                                                 |
-|:--------:|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  `prod`  | Production/Release branches | Include features that are **verified** by trusted testers and the community. Ready to use. ✅                                                                                                |
-|  `test`  | Test branches               | Include new features that are **tested** by trusted testers and the community. Stability may vary. ⚠                                                                                        |
-|  `dev`   | Development branches        | All features are gathered in respective versions. Reviewed and merged features will be committed to `dev`. Stability may vary. ⚠                                                            |
-| `master` | Main branch                 | Syncs with [commaai's openpilot `master`](https://github.com/commaai/openpilot) upstream branch. Accepts all pull requests. Does not include all sunnypilot features. Stability may vary. ⚠ |
+|    Tag    | Definition           | Description                                                                                                                                                                                 |
+|:---------:|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `release` | Release branches     | Include features that are **verified** by trusted testers and the community. Ready to use. ✅                                                                                                |
+| `staging` | Staging branches     | Include new features that are **tested** by trusted testers and the community. Stability may vary. ⚠                                                                                        |
+|   `dev`   | Development branches | All features are gathered in respective versions. Reviewed and merged features will be committed to `dev`. Stability may vary. ⚠                                                            |
+| `master`  | Main branch          | Syncs with [commaai's openpilot `master`](https://github.com/commaai/openpilot) upstream branch. Accepts all pull requests. Does not include all sunnypilot features. Stability may vary. ⚠ |
 
 Example:
-* [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3): Latest test branch that are tested by trusted testers and the community, verification required.
-* [`dev-nicki-minaj`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-nicki-minaj): Latest development branch that include all sunnypilot features, testing required.
+* [`release-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/release-c3): Latest release branch for comma three that are verified by trusted testers and the community. Ready to use.
+* [`staging-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/staging-c3): Latest staging branch for comma three that are tested by trusted testers and the community. Verification required.
+* [`dev-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-c3): Latest development branch for comma three that include all sunnypilot features. Testing required.
 
 </details>
 
@@ -336,12 +337,11 @@ Example:
 
 ---
 
-| Branch                                                                                                    | Definition                                                                                                            | Compatible Device | Changelogs                                                                                              |
-|:----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------|
-| [`0.8.12-prod-full-<car>`](https://github.com/sunnyhaibin/sunnypilot/branches/all?query=0.8.12-prod-full) | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.12                                          | comma two/three   | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.12-prod-full-subaru/CHANGELOGS.md) |
-| [`0.8.14-prod-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/0.8.14-prod-c3)                         | • Latest production/stable branch<br/>• Based on comma.ai's openpilot 0.8.14                                          | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/0.8.14-prod-c3/CHANGELOGS.md)          |
-| [`test-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/test-c3)                                       | • Latest test branch with experimental features<br/>• Based on comma.ai's openpilot commits up to December 16th, 2022 | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/test-c3/CHANGELOGS.md)                 |
-| [`dev-nicki-minaj`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-nicki-minaj)                       | • Latest development branch<br/>• Based on comma.ai's openpilot 0.9.2 release<br/>• Nicki Minaj driving model         | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/dev-nicki-minaj/CHANGELOGS.md)         |
+| Branch                                                                              | Definition                                              | Compatible Device | Changelogs                                                                                 |
+|:------------------------------------------------------------------------------------|---------------------------------------------------------|-------------------|--------------------------------------------------------------------------------------------|
+| [`release-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/release-c3)           | • Latest release/stable branch                          | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/release-c3/CHANGELOGS.md) |
+| [`staging-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/staging-c3)           | • Latest staging branch                                 | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/staging-c3/CHANGELOGS.md) |
+| [`dev-c3`](https://github.com/sunnyhaibin/sunnypilot/tree/dev-c3)                   | • Latest development branch with experimental features  | comma three       | [`CHANGELOGS.md`](https://github.com/sunnyhaibin/sunnypilot/blob/dev-c3/CHANGELOGS.md)     |
 
 </details>
 
@@ -451,4 +451,4 @@ Your continuous love and support are greatly appreciated! Enjoy 🥰
 
 [^1]:Requires data connection if not using Offline Maps data
 [^2]:At least 50 GB of storage space is required. If you have the 32 GB version of comma three, upgrading with a compatible 250 GB or 1 TB SSD is strongly recommended
-[^4]:Shortened URL for convenience. Full URL is ```smiskol.com/fork/sunnyhaibin/dev-nicki-minaj```
+[^4]:Shortened URL for convenience. Full URL is ```smiskol.com/fork/sunnyhaibin/release-c3```
