@@ -95,34 +95,45 @@ class CarController:
     if self.frame % 10 == 0 and self.CP.carFingerprint not in RAM_CARS:
       can_sends.append(create_lkas_heartbit(self.packer, CS.madsEnabled, CS.lkas_heartbit))
 
+    ram_cars = self.CP.carFingerprint in RAM_CARS
+
     das_bus = 2 if self.CP.carFingerprint in RAM_CARS else 0
     # cruise buttons
     if CS.button_counter != self.last_button_frame:
       self.last_button_frame = CS.button_counter
 
+      button_counter = 0 if ram_cars else 1
+
       # ACC cancellation
-      if CC.cruiseControl.cancel:
+      if CC.cruiseControl.cancel or (ram_cars and CS.buttonStates["cancel"]):
         self.last_button_frame = self.frame
-        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, cancel=True))
+        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + button_counter, das_bus, self.CP, cancel=True))
 
       # ACC resume from standstill
-      elif CC.cruiseControl.resume:
+      elif CC.cruiseControl.resume or (ram_cars and CS.buttonStates["resumeCruise"]):
         self.last_button_frame = self.frame
-        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, resume=True))
+        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + button_counter, das_bus, self.CP, resume=True))
 
-      elif not self.CP.pcmCruiseSpeed and CS.out.cruiseState.enabled:
+      elif ram_cars:
+        if any(CS.buttonStates[button_state] for button_state in ["accelCruise", "decelCruise"]):
+          button = 1 if CS.buttonStates["accelCruise"] else 2 if CS.buttonStates["decelCruise"] else 0
+          can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, buttons=button))
+        else:
+          can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, cruise_buttons_msg=CS.cruise_buttons))
+
+      if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and not self.CP.pcmCruiseSpeed and CS.out.cruiseState.enabled:
         self.button_frame += 1
         button_counter_offset = [1, 1, 0, None][self.button_frame % 4]
-        if self.CP.carFingerprint in RAM_CARS:
+        if ram_cars:
           self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
         elif button_counter_offset is not None:
           self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
 
         if self.cruise_button is not None:
-          if self.CP.carFingerprint in RAM_CARS:
-            can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, buttons=self.cruise_button))
+          if ram_cars:
+            can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, buttons=self.cruise_button))
           elif button_counter_offset is not None:
-            can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + button_counter_offset, das_bus, buttons=self.cruise_button))
+            can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + button_counter_offset, das_bus, self.CP, buttons=self.cruise_button))
 
     # HUD alerts
     if self.frame % 25 == 0:

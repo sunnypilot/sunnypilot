@@ -63,7 +63,7 @@ def create_lkas_command(packer, CP, apply_steer, lkas_control_bit):
   return packer.make_can_msg("LKAS_COMMAND", 0, values)
 
 
-def create_cruise_buttons(packer, frame, bus, buttons=0, cancel=False, resume=False):
+def create_cruise_buttons(packer, frame, bus, CP, cruise_buttons_msg=None, buttons=0, cancel=False, resume=False):
 
   acc_accel = 1 if buttons == 1 else 0
   acc_decel = 1 if buttons == 2 else 0
@@ -75,6 +75,9 @@ def create_cruise_buttons(packer, frame, bus, buttons=0, cancel=False, resume=Fa
     "ACC_Decel": acc_decel,
     "COUNTER": frame % 0x10,
   }
+
+  if buttons == 0 and not (cancel or resume) and CP.carFingerprint in RAM_CARS:
+    values = cruise_buttons_msg.copy()
   return packer.make_can_msg("CRUISE_BUTTONS", bus, values)
 
 
