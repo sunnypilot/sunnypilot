@@ -1,4 +1,7 @@
-sunnypilot - 0.9.2.1 (2023-06-xx)
+sunnypilot - 0.9.2.2 (2023-06-xx)
+========================
+
+sunnypilot - 0.9.2.1 (2023-06-10)
 ========================
 * UPDATED: Synced with commaai's 0.9.2 release
 * UPDATED: feature revamp with better stability
@@ -20,6 +23,11 @@ sunnypilot - 0.9.2.1 (2023-06-xx)
   * Developer UI (Dev UI)
     * REMOVED: 2-column design
     * NEW❗: 1-column + 1-row design
+  * Custom Stock Longitudinal Control
+    * NEW❗: Chrysler/Jeep/Ram support
+    * NEW❗: Mazda support
+    * NEW❗: Volkswagen PQ support
+    * DISABLED: Hyundai/Kia/Genesis CAN-FD platforms
 * NEW❗: Switch between Chill (openpilot ACC) and Experimental (E2E longitudinal) with DISTANCE button on the steering wheel
   * To switch between Chill and Experimental Mode: press and hold the DISTANCE button on the steering wheel for over 0.5 second
   * All openpilot longitudinal capable cars support
@@ -42,8 +50,12 @@ sunnypilot - 0.9.2.1 (2023-06-xx)
   * Show Driver Monitoring camera while the car is in reverse gear
 * NEW❗: Block Lane Change: Road Edge Detection (Beta)
   * Block lane change when road edge is detected on the stalk actuated side
+* NEW❗: Display CPU Temperature on Sidebar
+  * Display the CPU core with the highest temperature on the sidebar
+* NEW❗: Display current driving model in Software settings
 * NEW❗: HKG: smartMDPS automatic detection (installed with applicable firmware)
 * FIXED: Unintended siren/alarm from the comma device if the vehicle is turned off too quickly in PARK gear
+* FIXED: mapd: Exception handling for loading dependencies
 * Fleet Manager via Browser support thanks to actuallylemoncurd, AlexandreSato, ntegan1, and royjr!
   * Access your dashcam footage, screen recordings, and error logs when the car is turned off
   * Connect to the device via Wi-Fi, mobile hotspot, or tethering on the comma device, then navigate to http://ipAddress:5050 to access.

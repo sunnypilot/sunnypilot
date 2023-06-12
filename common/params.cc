@@ -274,6 +274,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ReverseAccChange", PERSISTENT},
     {"ReverseDmCam", PERSISTENT},
     {"ShowDebugUI", PERSISTENT},
+    {"SidebarCpuTemp", PERSISTENT},
     {"SpeedLimitControl", PERSISTENT},
     {"SpeedLimitPercOffset", PERSISTENT},
     {"SpeedLimitStyle", PERSISTENT},
@@ -289,6 +290,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TurnVisionControl", PERSISTENT},
     {"VisionCurveLaneless", PERSISTENT},
     {"VwAccType", PERSISTENT},
+    {"Offroad_SupersededUpdate", PERSISTENT},
 };
 
 } // namespace
