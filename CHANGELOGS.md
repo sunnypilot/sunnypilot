@@ -5,6 +5,7 @@ sunnypilot - 0.9.2.3 (2023-06-xx)
     * Enabled: Wake the brightness of the screen to display all events
     * Disabled: Wake the brightness of the screen to display critical events
 * IMPROVED: mapd: better exceptions handling when loading dependencies
+* UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
 
 sunnypilot - 0.9.2.2 (2023-06-13)
 ========================
