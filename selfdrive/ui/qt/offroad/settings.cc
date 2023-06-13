@@ -244,6 +244,15 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(resetCalibBtn);
 
+  auto resetMapboxTokenBtn = new ButtonControl(tr("Reset Mapbox Access Token"), tr("RESET"), "");
+  connect(resetMapboxTokenBtn, &ButtonControl::clicked, [=]() {
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset the Mapbox access token?"), tr("Reset"), this)) {
+      params.remove("CustomMapboxTokenPk");
+      params.remove("CustomMapboxTokenSk");
+    }
+  });
+  addItem(resetMapboxTokenBtn);
+
   if (!params.getBool("Passive")) {
     auto retrainingBtn = new ButtonControl(tr("Review Training Guide"), tr("REVIEW"), tr("Review the rules, features, and limitations of sunnypilot"));
     connect(retrainingBtn, &ButtonControl::clicked, [=]() {
