@@ -186,9 +186,8 @@ class CarController:
 
   # multikyd methods, sunnyhaibin logic
   def get_cruise_buttons_status(self, CS):
-    if not CS.out.cruiseState.enabled:
-      if any(CS.buttonStates[button_state] for button_state in BUTTONS_STATES):
-        self.timer = 40
+    if not CS.out.cruiseState.enabled or any(CS.buttonStates[button_state] for button_state in BUTTONS_STATES):
+      self.timer = 40
     elif self.timer:
       self.timer -= 1
     else:
