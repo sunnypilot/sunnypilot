@@ -124,9 +124,14 @@ class VCruiseHelper:
     if button_type is None:
       return
 
+    resume_button = ButtonType.accelCruise
+    if not self.CP.pcmCruiseSpeed:
+      if self.CP.carName == "chrysler":
+        resume_button = ButtonType.resumeCruise
+
     # Don't adjust speed when pressing resume to exit standstill
     cruise_standstill = self.button_change_states[button_type]["standstill"] or CS.cruiseState.standstill
-    if button_type == ButtonType.accelCruise and cruise_standstill:
+    if button_type == resume_button and cruise_standstill:
       return
 
     # Don't adjust speed if we've enabled since the button was depressed (some ports enable on rising edge)
