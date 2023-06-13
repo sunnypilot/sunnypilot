@@ -1,5 +1,7 @@
 sunnypilot - 0.9.2.2 (2023-06-xx)
 ========================
+* NEW❗: Toyota: Allow M.A.D.S. toggling with LKAS Button (Beta)
+* IMPROVED: Ram: cruise button handling
 
 sunnypilot - 0.9.2.1 (2023-06-10)
 ========================
