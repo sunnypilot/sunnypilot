@@ -105,18 +105,35 @@ if __name__ == "__main__" and (OPSPLINE_SPEC is None or OVERPY_SPEC is None):
         print(f"SP_LOG: Preloaded dependencies extracted to {THIRD_PARTY_DIR}")
       except Exception as e:
         preload_fault = True
+        command = f'rm -rf {THIRD_PARTY_DIR}'
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
         print(f"SP_LOG: An error occurred while extracting preloaded dependencies: {e}")
+        print(f"SP_LOG: Cleanup directory {e}")
     if not os.path.exists(PRELOADED_DEP_FILE) or preload_fault:
       if os.path.exists(THIRD_PARTY_DIR_SP):
-        spinner.update("Loading dependencies")
-        command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-        print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
-        print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
+        try:
+          spinner.update("Loading cached dependencies")
+          command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
+          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+          print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
+          print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
+        except Exception as e:
+          command = f'rm -rf {THIRD_PARTY_DIR}'
+          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+          print(f"SP_LOG: An error occurred while loading cached dependencies: {e}")
+          print(f"SP_LOG: Cleanup directory {e}")
       else:
         spinner.update("Waiting for internet")
-        install_dep(spinner)
+        try:
+          install_dep(spinner)
+        except Exception as e:
+          command = f'rm -rf {THIRD_PARTY_DIR}'
+          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+          print(f"SP_LOG: An error occurred while downloading dependencies: {e}")
+          print(f"SP_LOG: Cleanup directory {e}")
   except Exception:
+    command = f'rm -rf {THIRD_PARTY_DIR}'
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
     import selfdrive.sentry as sentry
     sentry.init(sentry.SentryProject.SELFDRIVE)
     traceback.print_exc()
