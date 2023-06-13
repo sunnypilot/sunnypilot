@@ -660,7 +660,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.PERMANENT: Alert(
       "",
       "",
-      AlertStatus.userPrompt, AlertSize.none,
+      AlertStatus.normal, AlertSize.none,
       Priority.MID, VisualAlert.none, AudibleAlert.promptStarting, 1.5),
   },
 
