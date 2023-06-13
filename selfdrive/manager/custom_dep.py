@@ -8,7 +8,6 @@ import time
 import traceback
 from common.basedir import BASEDIR
 from common.text_window import TextWindow
-import selfdrive.sentry as sentry
 from urllib.request import urlopen
 from glob import glob
 import subprocess
@@ -118,6 +117,7 @@ if __name__ == "__main__" and (OPSPLINE_SPEC is None or OVERPY_SPEC is None):
         spinner.update("Waiting for internet")
         install_dep(spinner)
   except Exception:
+    import selfdrive.sentry as sentry
     sentry.init(sentry.SentryProject.SELFDRIVE)
     traceback.print_exc()
     sentry.capture_exception()
