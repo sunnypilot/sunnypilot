@@ -62,6 +62,9 @@ class OnroadScreenOff : public AbstractControl {
 public:
   OnroadScreenOff();
 
+signals:
+  void toggleUpdated();
+
 private:
   QPushButton btnplus;
   QPushButton btnminus;
@@ -241,10 +244,17 @@ class SPGeneralPanel : public ListWidget {
 
 public:
   explicit SPGeneralPanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateToggles();
 
 private:
   Params params;
   std::map<std::string, ParamControl*> toggles;
+
+  OnroadScreenOff *onroad_screen_off;
+  OnroadScreenOffBrightness *onroad_screen_off_brightness;
 };
 
 class SPControlsPanel : public ListWidget {

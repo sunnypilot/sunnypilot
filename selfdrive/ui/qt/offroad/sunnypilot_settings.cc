@@ -60,6 +60,11 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
     }
   };
 
+  // General: Onroad Screen Off (Auto Onroad Screen Timer)
+  onroad_screen_off = new OnroadScreenOff();
+  // General: Onroad Screen Off Brightness
+  onroad_screen_off_brightness = new OnroadScreenOffBrightness();
+
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
 
@@ -70,18 +75,27 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
       // General: Max Time Offroad (Shutdown timer)
       addItem(new MaxTimeOffroad());
 
-      // General: Onroad Screen Off (Auto Onroad Screen Timer)
-      addItem(new OnroadScreenOff());
+      addItem(onroad_screen_off);
 
-      // General: Onroad Screen Off Brightness
-      addItem(new OnroadScreenOffBrightness());
+      addItem(onroad_screen_off_brightness);
 
       // General: Brightness Control (Global)
       addItem(new BrightnessControl());
     }
   }
 
+  connect(onroad_screen_off, &OnroadScreenOff::toggleUpdated, this, &SPGeneralPanel::updateToggles);
+
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
+}
+
+void SPGeneralPanel::showEvent(QShowEvent *event) {
+  updateToggles();
+}
+
+void SPGeneralPanel::updateToggles() {
+  // toggle names to update when OnroadScreenOff is toggled
+  onroad_screen_off_brightness->setVisible(QString::fromStdString(params.get("OnroadScreenOff")) != "-2");
 }
 
 SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
@@ -774,6 +788,7 @@ OnroadScreenOff::OnroadScreenOff() : AbstractControl(
     QString values = QString::number(value);
     params.put("OnroadScreenOff", values.toStdString());
     refresh();
+    emit toggleUpdated();
   });
 
   QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
@@ -787,6 +802,7 @@ OnroadScreenOff::OnroadScreenOff() : AbstractControl(
     QString values = QString::number(value);
     params.put("OnroadScreenOff", values.toStdString());
     refresh();
+    emit toggleUpdated();
   });
   refresh();
 }
@@ -812,7 +828,7 @@ void OnroadScreenOff::refresh()
 OnroadScreenOffBrightness::OnroadScreenOffBrightness() : AbstractControl(
   tr("Driving Screen Off Brightness (%)"),
   tr("When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio."),
-  "../assets/offroad/icon_metric.png")
+  "../assets/offroad/icon_blank.png")
 
 {
   label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
