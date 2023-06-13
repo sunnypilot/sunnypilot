@@ -113,6 +113,7 @@ class CarInterfaceBase(ABC):
     self.gac_max = -1
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
+    self.lkas_toggle = self.param_s.get_bool("LkasToggle")
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):

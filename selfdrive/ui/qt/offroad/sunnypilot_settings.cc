@@ -499,6 +499,18 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   );
   stockLongToyota->setConfirmation(true, false);
   addItem(stockLongToyota);
+
+  auto lkasToggle = new ParamControl(
+    "LkasToggle",
+    tr("Allow M.A.D.S. toggling w/ LKAS Button (Beta)"),
+    QString("%1<br>"
+            "<h4>%2</h4><br>")
+            .arg(tr("Allows M.A.D.S. engagement/disengagement with \"LKAS\" cruise control button from the steering wheel."))
+            .arg(tr("Note: Enabling this toggle may have unexpected behavior with steering control. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
+    "../assets/offroad/icon_blank.png"
+  );
+  lkasToggle->setConfirmation(true, false);
+  addItem(lkasToggle);
 }
 
 SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
