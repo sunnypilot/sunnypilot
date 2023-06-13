@@ -505,7 +505,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
     tr("Allow M.A.D.S. toggling w/ LKAS Button (Beta)"),
     QString("%1<br>"
             "<h4>%2</h4><br>")
-            .arg(tr("Allows M.A.D.S. engagement/disengagement with \"LKAS\" cruise control button from the steering wheel."))
+            .arg(tr("Allows M.A.D.S. engagement/disengagement with \"LKAS\" button from the steering wheel."))
             .arg(tr("Note: Enabling this toggle may have unexpected behavior with steering control. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
     "../assets/offroad/icon_blank.png"
   );
