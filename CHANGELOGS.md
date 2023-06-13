@@ -1,5 +1,9 @@
 sunnypilot - 0.9.2.3 (2023-06-xx)
 ========================
+* NEW❗: Driving Screen Off: Wake with Non-Critical Events
+  * When Driving Screen Off Timer is not set to "Always On":
+    * Enabled: Wake the brightness of the screen to display all events
+    * Disabled: Wake the brightness of the screen to display critical events
 
 sunnypilot - 0.9.2.2 (2023-06-13)
 ========================

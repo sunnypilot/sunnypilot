@@ -262,6 +262,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"MaxTimeOffroad", PERSISTENT},
     {"OnroadScreenOff", PERSISTENT},
     {"OnroadScreenOffBrightness", PERSISTENT},
+    {"OnroadScreenOffEvent", PERSISTENT},
     {"OsmDbUpdatesCheck", PERSISTENT},
     {"OsmLocal", PERSISTENT},
     {"OsmLocalDb", PERSISTENT},
