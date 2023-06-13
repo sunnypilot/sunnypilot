@@ -78,6 +78,7 @@ def manager_init() -> None:
     ("HandsOnWheelMonitoring", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
+    ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
     ("MaxTimeOffroad", "9"),
     ("OnroadScreenOff", "0"),
