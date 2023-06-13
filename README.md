@@ -376,7 +376,7 @@ Pull requests should be against the most current `master` branch.
 * [sshane](https://github.com/sshane/openpilot-installer-generator)
 * [jung](https://github.com/chanhojung/openpilot)
 * [dri94](https://github.com/dri94/openpilot)
-* [JamesKGithub](https://github.com/JamesKGithub/FrogPilot)
+* [FrogAi](https://github.com/frogAi/FrogPilot/)
 * [twilsonco](https://github.com/twilsonco/openpilot)
 * [martinl](https://github.com/martinl/openpilot)
 * [multikyd](https://github.com/openpilotkr)
