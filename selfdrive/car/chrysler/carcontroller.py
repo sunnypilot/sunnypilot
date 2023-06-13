@@ -102,24 +102,23 @@ class CarController:
     if CS.button_counter != self.last_button_frame:
       self.last_button_frame = CS.button_counter
 
-      button_counter = 0 if ram_cars else 1
+      if ram_cars:
+        if CS.buttonStates["cancel"]:
+          can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, cancel=True))
+        else:
+          can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP,
+                                                 cruise_buttons_msg=CS.cruise_buttons,
+                                                 cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
 
       # ACC cancellation
-      if CC.cruiseControl.cancel or (ram_cars and CS.buttonStates["cancel"]):
+      elif CC.cruiseControl.cancel:
         self.last_button_frame = self.frame
-        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + button_counter, das_bus, self.CP, cancel=True))
+        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, self.CP, cancel=True))
 
       # ACC resume from standstill
-      elif CC.cruiseControl.resume or (ram_cars and CS.buttonStates["resumeCruise"]):
+      elif CC.cruiseControl.resume:
         self.last_button_frame = self.frame
-        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + button_counter, das_bus, self.CP, resume=True))
-
-      elif ram_cars:
-        if any(CS.buttonStates[button_state] for button_state in ["accelCruise", "decelCruise"]):
-          button = 1 if CS.buttonStates["accelCruise"] else 2 if CS.buttonStates["decelCruise"] else 0
-          can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, buttons=button))
-        else:
-          can_sends.append(create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, cruise_buttons_msg=CS.cruise_buttons))
+        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, self.CP, resume=True))
 
       if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and not self.CP.pcmCruiseSpeed and CS.out.cruiseState.enabled:
         self.button_frame += 1
