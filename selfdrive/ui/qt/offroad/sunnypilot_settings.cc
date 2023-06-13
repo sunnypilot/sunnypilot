@@ -47,6 +47,17 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_network.png",
     },
     {
+      "OnroadScreenOffEvent",
+      tr("Driving Screen Off: Non-Critical Events"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>"
+              "<h4>%3</h4><br>")
+      .arg(tr("When <b>Driving Screen Off Timer</b> is not set to <b>\"Always On\"</b>:"))
+      .arg(tr("Enabled: Wake the brightness of the screen to display all events."))
+      .arg(tr("Disabled: Wake the brightness of the screen to display critical events.")),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "DisableOnroadUploads",
       tr("Disable Onroad Uploads"),
       tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
@@ -78,7 +89,9 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
       addItem(onroad_screen_off);
 
       addItem(onroad_screen_off_brightness);
+    }
 
+    if (param == "OnroadScreenOffEvent") {
       // General: Brightness Control (Global)
       addItem(new BrightnessControl());
     }
@@ -96,6 +109,7 @@ void SPGeneralPanel::showEvent(QShowEvent *event) {
 void SPGeneralPanel::updateToggles() {
   // toggle names to update when OnroadScreenOff is toggled
   onroad_screen_off_brightness->setVisible(QString::fromStdString(params.get("OnroadScreenOff")) != "-2");
+  toggles["OnroadScreenOffEvent"]->setVisible(QString::fromStdString(params.get("OnroadScreenOff")) != "-2");
 }
 
 SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {

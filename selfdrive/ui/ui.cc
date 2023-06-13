@@ -237,6 +237,7 @@ void ui_update_params(UIState *s) {
   s->scene.visual_brake_lights = params.getBool("BrakeLights");
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
+  s->scene.onroadScreenOffEvent = params.getBool("OnroadScreenOffEvent");
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
   s->scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
@@ -335,7 +336,10 @@ void UIState::updateStatus() {
 
     if (scene.onroadScreenOff != -2 && scene.touched2) {
       scene.sleep_time = scene.osoTimer;
-    } else if (scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE && scene.onroadScreenOff != -2) {
+    } else if (scene.onroadScreenOff != -2 &&
+               ((scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE) &&
+                ((scene.controlsState.getAlertStatus() == cereal::ControlsState::AlertStatus::NORMAL && scene.onroadScreenOffEvent) ||
+                 (scene.controlsState.getAlertStatus() != cereal::ControlsState::AlertStatus::NORMAL)))) {
       scene.sleep_time = scene.osoTimer;
     } else if (scene.sleep_time > 0 && scene.onroadScreenOff != -2) {
       scene.sleep_time--;

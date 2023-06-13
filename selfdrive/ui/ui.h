@@ -159,6 +159,7 @@ typedef struct UIScene {
   bool visual_brake_lights;
 
   int onroadScreenOff, osoTimer, brightness, onroadScreenOffBrightness, awake;
+  bool onroadScreenOffEvent;
   int sleep_time = -1;
   bool touched2 = false;
 
