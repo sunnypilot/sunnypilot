@@ -1,3 +1,6 @@
+sunnypilot - 0.9.2.3 (2023-06-xx)
+========================
+
 sunnypilot - 0.9.2.2 (2023-06-13)
 ========================
 * NEW❗: Toyota: Allow M.A.D.S. toggling with LKAS Button (Beta)
