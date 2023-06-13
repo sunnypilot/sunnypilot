@@ -255,6 +255,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"LastCarModel", PERSISTENT},
     {"LastSpeedLimitSignTap", PERSISTENT},
     {"LiveTorque", PERSISTENT},
+    {"LkasToggle", PERSISTENT},
     {"MadsCruiseMain", PERSISTENT},
     {"MadsIconToggle", PERSISTENT},
     {"MapboxFullScreen", PERSISTENT},
