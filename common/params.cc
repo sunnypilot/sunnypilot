@@ -208,6 +208,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"AmapKey1", PERSISTENT},
     {"AmapKey2", PERSISTENT},
     {"AutoLaneChangeTimer", PERSISTENT},
+    {"AutoLaneChangeBsmDelay", PERSISTENT},
     {"BelowSpeedPause", PERSISTENT},
     {"BrakeLights", PERSISTENT},
     {"BrightnessControl", PERSISTENT},

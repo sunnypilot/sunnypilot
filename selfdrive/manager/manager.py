@@ -47,6 +47,7 @@ def manager_init() -> None:
 
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
+    ("AutoLaneChangeBsmDelay", "1"),
     ("BelowSpeedPause", "0"),
     ("BrakeLights", "0"),
     ("BrightnessControl", "0"),

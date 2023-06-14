@@ -178,6 +178,12 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_metric.png",
     },
     {
+      "AutoLaneChangeBsmDelay",
+      tr("Auto Lane Change: Delay with Blind Spot"),
+      tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "GapAdjustCruise",
       tr("Enable Gap Adjust Cruise ℹ"),
       QString("%1<br>"
@@ -353,6 +359,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     }
   }
 
+  connect(auto_lane_change_timer, &AutoLaneChangeTimer::toggleUpdated, this, &SPControlsPanel::updateToggles);
   connect(slo_type, &SpeedLimitOffsetType::offsetTypeUpdated, this, &SPControlsPanel::updateToggles);
 
   toggles["EnableMads"]->setConfirmation(true, false);
@@ -390,6 +397,9 @@ void SPControlsPanel::updateToggles() {
 
   // toggle names to update when GapAdjustCruise is flipped
   gac_mode->setVisible(params.getBool("GapAdjustCruise"));
+
+  // toggle names to update when AutoLaneChangeTimer is not "Nudge"
+  toggles["AutoLaneChangeBsmDelay"]->setVisible(QString::fromStdString(params.get("AutoLaneChangeTimer")) != "0");
 
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
   auto live_torque = toggles["LiveTorque"];
@@ -1156,6 +1166,7 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : AbstractControl(
     QString values = QString::number(value);
     params.put("AutoLaneChangeTimer", values.toStdString());
     refresh();
+    emit toggleUpdated();
   });
 
   QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
@@ -1168,6 +1179,7 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : AbstractControl(
     QString values = QString::number(value);
     params.put("AutoLaneChangeTimer", values.toStdString());
     refresh();
+    emit toggleUpdated();
   });
   refresh();
 }

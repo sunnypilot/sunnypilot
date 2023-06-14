@@ -140,6 +140,9 @@ class AutoLaneChangeTimer : public AbstractControl {
 public:
   AutoLaneChangeTimer();
 
+signals:
+  void toggleUpdated();
+
 private:
   QPushButton btnplus;
   QPushButton btnminus;

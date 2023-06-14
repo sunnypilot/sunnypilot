@@ -48,6 +48,7 @@ class DesireHelper:
     self.road_edge = False
     self.count = 0
     self.edge_toggle = self.param_s.get("RoadEdge")
+    self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
   def update(self, carstate, lateral_active, lane_change_prob, model_data):
     lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
@@ -114,6 +115,13 @@ class DesireHelper:
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
         self.lane_change_wait_timer += DT_MDL
+
+        if self.lane_change_bsm_delay and blindspot_detected and lane_change_auto_timer:
+          if lane_change_auto_timer == 0.1:
+            self.lane_change_wait_timer = -1
+          else:
+            self.lane_change_wait_timer = lane_change_auto_timer - 1
+
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
           self.prev_lane_change = False
