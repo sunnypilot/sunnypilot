@@ -4,6 +4,9 @@ sunnypilot - 0.9.2.3 (2023-06-xx)
   * When Driving Screen Off Timer is not set to "Always On":
     * Enabled: Wake the brightness of the screen to display all events
     * Disabled: Wake the brightness of the screen to display critical events
+* NEW❗: Auto Lane Change: Delay with Blind Spot
+  * Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing vehicle, ensuring safe maneuvering
+  * Currently, all non-nudge modes are default to continue lane change after 1 seconds of blind spot detection
 * IMPROVED: mapd: better exceptions handling when loading dependencies
 * UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
 
