@@ -405,7 +405,7 @@ class CarInterfaceBase(ABC):
     elif not self.mads_main_toggle:
       mads_enabled = False
     else:
-      mads_enabled = cs_out.cruiseState.enabled
+      mads_enabled = cs_out.cruiseState.available
 
     return mads_enabled
 
