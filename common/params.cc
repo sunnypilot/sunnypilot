@@ -242,6 +242,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EndToEndLongToggle", PERSISTENT},
     {"EnforceTorqueLateral", PERSISTENT},
     {"EnhancedScc", PERSISTENT},
+    {"FleetManagerPin", PERSISTENT},
     {"GapAdjustCruise", PERSISTENT},
     {"GapAdjustCruiseMax", PERSISTENT},
     {"GapAdjustCruiseMin", PERSISTENT},
