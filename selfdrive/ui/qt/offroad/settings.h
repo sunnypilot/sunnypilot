@@ -54,8 +54,9 @@ private slots:
 private:
   Params params;
 
-  LabelControl *fleetManagerPin;
-  QString pin;
+  ButtonControl *fleetManagerPin;
+  const char *pin_title = "Fleet Manager PIN: ";
+  QString pin = "OFF";
   QFileSystemWatcher *fs_watch;
 };
 

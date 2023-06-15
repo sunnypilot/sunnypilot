@@ -3,6 +3,7 @@ import subprocess
 from flask import render_template, request, session
 from functools import wraps
 from pathlib import Path
+from common.params import Params
 from system.hardware import PC
 from system.loggerd.config import ROOT as REALDATA
 from system.loggerd.uploader import listdir_by_creation
@@ -23,7 +24,7 @@ else:
 def login_required(f):
   @wraps(f)
   def decorated_route(*args, **kwargs):
-    if not session.get("logged_in"):
+    if not session.get("logged_in") and Params().get_bool("FleetManagerPin"):
       session["previous_page"] = request.url
       return render_template("login.html")
     return f(*args, **kwargs)

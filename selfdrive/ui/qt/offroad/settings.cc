@@ -204,14 +204,29 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(new LabelControl(tr("Dongle ID"), getDongleId().value_or(tr("N/A"))));
   addItem(new LabelControl(tr("Serial"), params.get("HardwareSerial").c_str()));
 
-  fleetManagerPin = new LabelControl(tr("Fleet Manager PIN"), pin);
+  fleetManagerPin = new ButtonControl(
+    tr(pin_title) + pin, tr("TOGGLE"),
+    tr("Enable or disable PIN requirement for Fleet Manager access."));
+  connect(fleetManagerPin, &ButtonControl::clicked, [=]() {
+    if (params.getBool("FleetManagerPin")) {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to turn off PIN requirement?"), tr("Turn Off"), this)) {
+        params.remove("FleetManagerPin");
+        refreshPin();
+      }
+    } else {
+      params.putBool("FleetManagerPin", true);
+      refreshPin();
+    }
+  });
   addItem(fleetManagerPin);
 
   fs_watch = new QFileSystemWatcher(this);
   connect(fs_watch, &QFileSystemWatcher::fileChanged, this, &DevicePanel::onPinFileChanged);
 
   QString pin_path = "/data/otp/otp.conf";
+  QString pin_require = "/data/params/d/FleetManagerPin";
   fs_watch->addPath(pin_path);
+  fs_watch->addPath(pin_require);
   refreshPin();
 
   // Error Troubleshoot
@@ -321,18 +336,24 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
 }
 
 void DevicePanel::onPinFileChanged(const QString &file_path) {
-  if (file_path == "/data/otp/otp.conf") {
+  if (file_path == "/data/params/d/FleetManagerPin") {
+    refreshPin();
+  } else if (file_path == "/data/otp/otp.conf") {
     refreshPin();
   }
 }
 
 void DevicePanel::refreshPin() {
   QFile f("/data/otp/otp.conf");
-  if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+  QFile require("/data/params/d/FleetManagerPin");
+  if (!require.exists()) {
+    setSpacing(50);
+    fleetManagerPin->setTitle(QString(pin_title) + "OFF");
+  } else if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
     pin = f.readAll();
     f.close();
     setSpacing(50);
-    fleetManagerPin->setText(pin);
+    fleetManagerPin->setTitle(QString(pin_title) + pin);
   }
 }
 
