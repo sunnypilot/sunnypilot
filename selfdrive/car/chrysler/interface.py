@@ -82,6 +82,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 3405. + STD_CARGO_KG
       ret.minSteerSpeed = 16
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning, 1.0, False)
+      ret.flags |= ChryslerFlags.SP_RAM_HD_PARAMSD_IGNORE.value
 
     else:
       raise ValueError(f"Unsupported car: {candidate}")
