@@ -178,6 +178,10 @@ class CarState(CarStateBase):
     # save the entire LKAS11 and CLU11
     self.lkas11 = copy.copy(cp_cam.vl["LKAS11"])
     self.clu11 = copy.copy(cp.vl["CLU11"])
+    # only forward FCA messages for FCW/AEB when using openpilot longitudinal on Camera SCC cars
+    if self.CP.openpilotLongitudinalControl and self.CP.carFingerprint in CAMERA_SCC_CAR:
+      self.fca11 = copy.copy(cp_cruise.vl["FCA11"])
+      self.fca12 = copy.copy(cp_cruise.vl["FCA12"])
     self.steer_state = cp.vl["MDPS12"]["CF_Mdps_ToiActive"]  # 0 NOT ACTIVE, 1 ACTIVE
     self.prev_cruise_buttons = self.cruise_buttons[-1]
     self.prev_main_buttons = self.main_buttons[-1]
@@ -515,6 +519,34 @@ class CarState(CarStateBase):
           ("AEB_CmdAct", "SCC12"),
           ("CF_VSM_Warn", "SCC12"),
           ("CF_VSM_DecCmdAct", "SCC12"),
+        ]
+
+    if CP.openpilotLongitudinalControl and CP.carFingerprint in CAMERA_SCC_CAR:
+      if CP.flags & HyundaiFlags.USE_FCA.value:
+        signals += [
+          ("CF_VSM_Prefill", "FCA11"),
+          ("CF_VSM_HBACmd", "FCA11"),
+          ("CF_VSM_BeltCmd", "FCA11"),
+          ("CR_VSM_DecCmd", "FCA11"),
+          ("FCA_Status", "FCA11"),
+          ("FCA_StopReq", "FCA11"),
+          ("FCA_DrvSetStatus", "FCA11"),
+          ("FCA_Failinfo", "FCA11"),
+          ("CR_FCA_Alive", "FCA11"),
+          ("FCA_RelativeVelocity", "FCA11"),
+          ("FCA_TimetoCollision", "FCA11"),
+          ("CR_FCA_ChkSum", "FCA11"),
+          ("PAINT1_Status", "FCA11"),
+          ("FCA_CmdAct", "FCA11"),
+          ("CF_VSM_Warn", "FCA11"),
+          ("CF_VSM_DecCmdAct", "FCA11"),
+
+          ("FCA_USM", "FCA12"),
+          ("FCA_DrvSetState", "FCA12"),
+        ]
+        checks += [
+          ("FCA11", 50),
+          ("FCA12", 50),
         ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2)

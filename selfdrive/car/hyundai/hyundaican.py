@@ -100,7 +100,7 @@ def create_lfahda_mfc(packer, enabled, lat_active, lateral_paused, blinking_icon
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
 def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, main_enabled,
-                        CS, escc):
+                        CS, escc, car_fingerprint):
   commands = []
 
   scc11_values = {
@@ -145,24 +145,30 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
 
   # note that some vehicles most likely have an alternate checksum/counter definition
   # https://github.com/commaai/opendbc/commit/9ddcdb22c4929baf310295e832668e6e7fcfa602
-  fca11_values = {
-    "CR_FCA_Alive": idx % 0xF,
-    "PAINT1_Status": 0 if escc else 1,
-    "FCA_DrvSetStatus": 0 if escc else 1,
-    "FCA_Status": 0 if escc else 1, # AEB disabled
+  if car_fingerprint in CAMERA_SCC_CAR:
+    fca11_values = CS.fca11
+    fca11_values["PAINT1_Status"] = 1
+    fca11_values["FCA_DrvSetStatus"] = 1
+    fca11_values["FCA_Status"] = 1  # AEB disabled, until a route with AEB or FCW trigger is verified
+  else:
+    fca11_values = {
+      "CR_FCA_Alive": idx % 0xF,
+      "PAINT1_Status": 0 if escc else 1,
+      "FCA_DrvSetStatus": 0 if escc else 1,
+      "FCA_Status": 0 if escc else 1, # AEB disabled
 
-    "FCA_CmdAct": CS.escc_cmd_act,
-    "CF_VSM_Warn": CS.escc_aeb_warning,
-    "CF_VSM_DecCmdAct": CS.escc_aeb_dec_cmd_act,
-    "CR_VSM_DecCmd": CS.escc_aeb_dec_cmd,
-  }
+      "FCA_CmdAct": CS.escc_cmd_act,
+      "CF_VSM_Warn": CS.escc_aeb_warning,
+      "CF_VSM_DecCmdAct": CS.escc_aeb_dec_cmd_act,
+      "CR_VSM_DecCmd": CS.escc_aeb_dec_cmd,
+    }
   fca11_dat = packer.make_can_msg("FCA11", 0, fca11_values)[2]
   fca11_values["CR_FCA_ChkSum"] = hyundai_checksum(fca11_dat[:7])
   commands.append(packer.make_can_msg("FCA11", 0, fca11_values))
 
   return commands
 
-def create_acc_opt(packer, escc):
+def create_acc_opt(packer, escc, CS, car_fingerprint):
   commands = []
 
   scc13_values = {
@@ -172,10 +178,15 @@ def create_acc_opt(packer, escc):
   }
   commands.append(packer.make_can_msg("SCC13", 0, scc13_values))
 
-  fca12_values = {
-    "FCA_DrvSetState": 0 if escc else 2,
-    "FCA_USM": 0 if escc else 1, # AEB disabled
-  }
+  if car_fingerprint in CAMERA_SCC_CAR:
+    fca12_values = CS.fca12
+    fca12_values["FCA_DrvSetState"] = 2
+    fca12_values["FCA_USM"] = 1  # AEB disabled, until a route with AEB or FCW trigger is verified
+  else:
+    fca12_values = {
+      "FCA_DrvSetState": 0 if escc else 2,
+      "FCA_USM": 0 if escc else 1, # AEB disabled
+    }
   commands.append(packer.make_can_msg("FCA12", 0, fca12_values))
 
   return commands

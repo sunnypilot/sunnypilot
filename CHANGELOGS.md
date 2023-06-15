@@ -11,6 +11,7 @@ sunnypilot - 0.9.2.3 (2023-06-xx)
 * UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
 * FIXED: Ram HD (2500/3500): Fixed/Constant steering ratio
   * Live parameters have trouble with self-tuning the steering ratio on this platform with upstream openpilot 0.9.2
+* Hyundai: Longitudinal support for CAN-based Camera SCC cars thanks to Zack1010OP's Patreon sponsor!
 
 sunnypilot - 0.9.2.2 (2023-06-13)
 ========================
