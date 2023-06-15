@@ -19,8 +19,6 @@ from numpy.linalg import solve
 
 from cereal import car
 
-from selfdrive.car.chrysler.values import ChryslerFlags
-
 ACCELERATION_DUE_TO_GRAVITY = 9.8
 
 
@@ -40,14 +38,13 @@ class VehicleModel:
 
     self.cF_orig: float = CP.tireStiffnessFront
     self.cR_orig: float = CP.tireStiffnessRear
-    self.chrysler_ram_hd: bool = (CP.carName == "chrysler") and CP.flags & ChryslerFlags.SP_RAM_HD_FIXED_STEERING_RATIO.value
-    self.update_params(1.0, CP.steerRatio, CP)
+    self.update_params(1.0, CP.steerRatio)
 
-  def update_params(self, stiffness_factor: float, steer_ratio: float, CP: car.CarParams) -> None:
+  def update_params(self, stiffness_factor: float, steer_ratio: float) -> None:
     """Update the vehicle model with a new stiffness factor and steer ratio"""
     self.cF: float = stiffness_factor * self.cF_orig
     self.cR: float = stiffness_factor * self.cR_orig
-    self.sR: float = CP.steerRatio if self.chrysler_ram_hd else steer_ratio
+    self.sR: float = steer_ratio
 
   def steady_state_sol(self, sa: float, u: float, roll: float) -> np.ndarray:
     """Returns the steady state solution.
