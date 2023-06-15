@@ -268,6 +268,15 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(resetMapboxTokenBtn);
 
+  auto resetParamsBtn = new ButtonControl(tr("Reset sunnypilot Settings"), tr("RESET"), "");
+  connect(resetParamsBtn, &ButtonControl::clicked, [=]() {
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings?"), tr("Reset"), this)) {
+      std::system("sudo rm -rf /data/params/d/*");
+      Hardware::reboot();
+    }
+  });
+  addItem(resetParamsBtn);
+
   if (!params.getBool("Passive")) {
     auto retrainingBtn = new ButtonControl(tr("Review Training Guide"), tr("REVIEW"), tr("Review the rules, features, and limitations of sunnypilot"));
     connect(retrainingBtn, &ButtonControl::clicked, [=]() {
