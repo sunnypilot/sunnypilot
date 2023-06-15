@@ -263,7 +263,7 @@ class CarInterface(CarInterfaceBase):
     if self.CS.gap_dist_button != self.CS.prev_gap_dist_button:
       buttonEvents.append(create_button_event(self.CS.gap_dist_button, self.CS.prev_gap_dist_button, {1: ButtonType.gapAdjustCruise}))
 
-    self.CS.mads_enabled = False if not (self.CS.control_initialized or self.mads_main_toggle) else ret.cruiseState.available
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
     if ret.cruiseState.available:
       if self.enable_mads:

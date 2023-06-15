@@ -108,7 +108,7 @@ class CarInterface(CarInterfaceBase):
         be.pressed = self.CS.buttonStates[button]
         buttonEvents.append(be)
 
-    self.CS.mads_enabled = False if not (self.CS.control_initialized or self.mads_main_toggle) else ret.cruiseState.available
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
     self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
                                                                           buttonEvents, c.vCruise,

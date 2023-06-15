@@ -262,7 +262,7 @@ class CarInterface(CarInterfaceBase):
       if self.CS.cruise_buttons != CruiseButtons.UNPRESS and self.CS.prev_cruise_buttons != CruiseButtons.UNPRESS:
         buttonEvents.append(create_button_event(CruiseButtons.UNPRESS, self.CS.prev_cruise_buttons, BUTTONS_DICT, CruiseButtons.UNPRESS))
 
-    self.CS.mads_enabled = False if not (self.CS.control_initialized or self.mads_main_toggle) else ret.cruiseState.available
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
     if not self.CP.pcmCruise:
       if any(b.type == ButtonType.accelCruise and b.pressed for b in buttonEvents):

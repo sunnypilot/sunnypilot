@@ -399,6 +399,16 @@ class CarInterfaceBase(ABC):
     regen = cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)
     return brake or regen
 
+  def get_sp_cruise_main_state(self, cs_out, CS):
+    if not CS.control_initialized:
+      mads_enabled = False
+    elif not self.mads_main_toggle:
+      mads_enabled = False
+    else:
+      mads_enabled = cs_out.cruiseState.enabled
+
+    return mads_enabled
+
   def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
     if not self.enable_mads:
