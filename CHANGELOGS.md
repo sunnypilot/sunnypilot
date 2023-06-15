@@ -9,6 +9,8 @@ sunnypilot - 0.9.2.3 (2023-06-xx)
   * Currently, all non-nudge modes are default to continue lane change after 1 seconds of blind spot detection
 * IMPROVED: mapd: better exceptions handling when loading dependencies
 * UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
+* FIXED: Ram HD (2500/3500): Fixed/Constant steering ratio
+  * Live parameters have trouble with self-tuning the steering ratio on this platform with upstream openpilot 0.9.2
 
 sunnypilot - 0.9.2.2 (2023-06-13)
 ========================
