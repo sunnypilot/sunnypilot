@@ -1,14 +1,15 @@
 sunnypilot - 0.9.2.3 (2023-06-xx)
 ========================
+* NEW❗: Auto Lane Change: Delay with Blind Spot
+  * Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing vehicle, ensuring safe maneuvering
 * NEW❗: Driving Screen Off: Wake with Non-Critical Events
   * When Driving Screen Off Timer is not set to "Always On":
     * Enabled: Wake the brightness of the screen to display all events
     * Disabled: Wake the brightness of the screen to display critical events
-* NEW❗: Auto Lane Change: Delay with Blind Spot
-  * Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing vehicle, ensuring safe maneuvering
   * Currently, all non-nudge modes are default to continue lane change after 1 seconds of blind spot detection
 * NEW❗: Fleet Manager PIN Requirement toggle
   * User can now enable or disable PIN requirement on the comma device before accessing Fleet Manager
+* NEW❗: Reset all sunnypilot settings toggle
 * IMPROVED: mapd: better exceptions handling when loading dependencies
 * UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
 * FIXED: Ram HD (2500/3500): Ignore paramsd sanity check
