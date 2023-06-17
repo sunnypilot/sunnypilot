@@ -478,6 +478,10 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("btnPerc", s.scene.sleep_btn_opacity * 0.05);
 
+  setProperty("left_blinker", sm["carState"].getCarState().getLeftBlinker());
+  setProperty("right_blinker", sm["carState"].getCarState().getRightBlinker());
+  setProperty("lane_change_edge_block", sm["lateralPlan"].getLateralPlan().getLaneChangeEdgeBlock());
+
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
@@ -1414,6 +1418,131 @@ void AnnotatedCameraWidget::drawE2eStatus(QPainter &p, int x, int y, int w, int 
   p.drawEllipse(e2eStatusIcon);
 }
 
+void AnnotatedCameraWidget::drawLeftTurnSignal(QPainter &painter, int x, int y, int state) {
+  painter.setRenderHint(QPainter::Antialiasing, true);
+
+  QColor circle_color, circle_color_0, circle_color_1;
+  QColor arrow_color, arrow_color_0, arrow_color_1;
+  if ((left_blindspot || lane_change_edge_block) && !(left_blinker && right_blinker)) {
+    circle_color_0 = QColor(164, 0, 1);
+    circle_color_1 = QColor(204, 0, 1);
+    arrow_color_0 = QColor(72, 1, 1);
+    arrow_color_1 = QColor(255, 255, 255);
+  } else {
+    circle_color_0 = QColor(22, 156, 69);
+    circle_color_1 = QColor(30, 215, 96);
+    arrow_color_0 = QColor(9, 56, 27);
+    arrow_color_1 = QColor(255, 255, 255);
+  }
+
+  if (state == 1) {
+    circle_color = circle_color_1;
+    arrow_color = arrow_color_1;
+  } else if (state == 0) {
+    circle_color = circle_color_0;
+    arrow_color = arrow_color_0;
+  }
+
+  // Draw the circle
+  int circleSize = 120;
+  int circleX = x;
+  int circleY = y;
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(circle_color);
+  painter.drawEllipse(circleX, circleY, circleSize, circleSize);
+
+  // Draw the arrow
+  int arrowSize = 50;
+  int arrowX = circleX + (circleSize - arrowSize) / 4;
+  int arrowY = circleY + (circleSize - arrowSize) / 2;
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(arrow_color);
+
+  // Draw the arrow shape
+  QPolygon arrowPolygon;
+  arrowPolygon << QPoint(arrowX + 10, arrowY + arrowSize / 2)
+               << QPoint(arrowX + arrowSize - 3, arrowY)
+               << QPoint(arrowX + arrowSize, arrowY)
+               << QPoint(arrowX + arrowSize, arrowY + arrowSize)
+               << QPoint(arrowX + arrowSize - 3, arrowY + arrowSize)
+               << QPoint(arrowX + 10, arrowY + arrowSize / 2);
+  painter.drawPolygon(arrowPolygon);
+
+  // Draw the tail rectangle
+  int tailWidth = arrowSize / 2.25;
+  int tailHeight = arrowSize / 2;
+  QRect tailRect(arrowX + arrowSize - 3, arrowY + arrowSize / 4, tailWidth, tailHeight);
+  painter.fillRect(tailRect, arrow_color);
+}
+
+void AnnotatedCameraWidget::drawRightTurnSignal(QPainter &painter, int x, int y, int state) {
+  painter.setRenderHint(QPainter::Antialiasing, true);
+
+  QColor circle_color, circle_color_0, circle_color_1;
+  QColor arrow_color, arrow_color_0, arrow_color_1;
+  if ((right_blindspot || lane_change_edge_block) && !(left_blinker && right_blinker)) {
+    circle_color_0 = QColor(164, 0, 1);
+    circle_color_1 = QColor(204, 0, 1);
+    arrow_color_0 = QColor(72, 1, 1);
+    arrow_color_1 = QColor(255, 255, 255);
+  } else {
+    circle_color_0 = QColor(22, 156, 69);
+    circle_color_1 = QColor(30, 215, 96);
+    arrow_color_0 = QColor(9, 56, 27);
+    arrow_color_1 = QColor(255, 255, 255);
+  }
+
+  if (state == 1) {
+    circle_color = circle_color_1;
+    arrow_color = arrow_color_1;
+  } else if (state == 0) {
+    circle_color = circle_color_0;
+    arrow_color = arrow_color_0;
+  }
+
+
+  // Draw the circle
+  int circleSize = 120;
+  int circleX = x;
+  int circleY = y;
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(circle_color);
+  painter.drawEllipse(circleX, circleY, circleSize, circleSize);
+
+  // Draw the arrow
+  int arrowSize = 50;
+  int arrowX = circleX + (circleSize - arrowSize) / 2 + (arrowSize / 2.5) - 3;
+  int arrowY = circleY + (circleSize - arrowSize) / 2;
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(arrow_color);
+
+  // Draw the arrow shape
+  QPolygon arrowPolygon;
+  arrowPolygon << QPoint(arrowX + arrowSize - 10, arrowY + arrowSize / 2)
+               << QPoint(arrowX + 3, arrowY)
+               << QPoint(arrowX, arrowY)
+               << QPoint(arrowX, arrowY + arrowSize)
+               << QPoint(arrowX + 3, arrowY + arrowSize)
+               << QPoint(arrowX + arrowSize - 10, arrowY + arrowSize / 2);
+  painter.drawPolygon(arrowPolygon);
+
+  // Draw the tail rectangle
+  int tailWidth = arrowSize / 2.25;
+  int tailHeight = arrowSize / 2;
+  QRect tailRect(arrowX - tailWidth + 3, arrowY + arrowSize / 4, tailWidth, tailHeight);
+  painter.fillRect(tailRect, arrow_color);
+}
+
+int AnnotatedCameraWidget::blinkerPulse(int frame) {
+  if (frame % UI_FREQ < (UI_FREQ / 2)) {
+    blinker_state = 1;
+  } else {
+    blinker_state = 0;
+  }
+
+  return blinker_state;
+}
+
 
 void AnnotatedCameraWidget::initializeGL() {
   CameraWidget::initializeGL();
@@ -1793,6 +1922,19 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   }
 
   drawHud(painter);
+
+  if (left_blinker || right_blinker) {
+    blinker_frame++;
+    int state = blinkerPulse(blinker_frame);
+    if (left_blinker) {
+      drawLeftTurnSignal(painter, rect().center().x() - 300, 90, state);
+    }
+    if (right_blinker) {
+      drawRightTurnSignal(painter, rect().center().x() + 180, 90, state);
+    }
+  } else {
+    blinker_frame = 0;
+  }
 
   double cur_draw_t = millis_since_boot();
   double dt = cur_draw_t - prev_draw_t;

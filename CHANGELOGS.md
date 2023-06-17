@@ -10,6 +10,9 @@ sunnypilot - 0.9.2.3 (2023-06-xx)
 * NEW❗: Fleet Manager PIN Requirement toggle
   * User can now enable or disable PIN requirement on the comma device before accessing Fleet Manager
 * NEW❗: Reset all sunnypilot settings toggle
+* NEW❗: Turn signals display on screen when blinker is used
+  * Green: Blinker is on
+  * Red: Blinker is on, car detected in the adjacent blind spot or road edge detected
 * IMPROVED: mapd: better exceptions handling when loading dependencies
 * UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
 * FIXED: Ram HD (2500/3500): Ignore paramsd sanity check

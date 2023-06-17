@@ -144,6 +144,10 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(int e2eState MEMBER e2eState);
   Q_PROPERTY(int e2eStatus MEMBER e2eStatus);
 
+  Q_PROPERTY(bool left_blinker MEMBER left_blinker);
+  Q_PROPERTY(bool right_blinker MEMBER right_blinker);
+  Q_PROPERTY(bool lane_change_edge_block MEMBER lane_change_edge_block);
+
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
@@ -174,6 +178,10 @@ private:
   // ############################## DEV UI END ##############################
 
   void drawE2eStatus(QPainter &p, int x, int y, int w, int h, int e2e_long_status);
+
+  void drawLeftTurnSignal(QPainter &painter, int x, int y, int state);
+  void drawRightTurnSignal(QPainter &painter, int x, int y, int state);
+  int blinkerPulse(int frame);
 
   uint64_t last_update_params;
 
@@ -279,6 +287,10 @@ private:
 
   int e2eState;
   int e2eStatus;
+
+  bool left_blinker, right_blinker, lane_change_edge_block;
+  int blinker_frame;
+  int blinker_state = 0;
 
 protected:
   void paintGL() override;
