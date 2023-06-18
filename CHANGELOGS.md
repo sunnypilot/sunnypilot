@@ -1,4 +1,4 @@
-sunnypilot - 0.9.2.3 (2023-06-xx)
+sunnypilot - 0.9.2.3 (2023-06-18)
 ========================
 * NEW❗: Auto Lane Change: Delay with Blind Spot
   * Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing vehicle, ensuring safe maneuvering
