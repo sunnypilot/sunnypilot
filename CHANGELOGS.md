@@ -15,6 +15,7 @@ sunnypilot - 0.9.2.3 (2023-06-18)
   * Red: Blinker is on, car detected in the adjacent blind spot or road edge detected
 * IMPROVED: mapd: better exceptions handling when loading dependencies
 * UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
+* FIXED: mapd: Road name flashing caused by desync with last GPS timestamp
 * FIXED: Ram HD (2500/3500): Ignore paramsd sanity check
   * Live parameters have trouble with self-tuning on this platform with upstream openpilot 0.9.2
 * Hyundai: Longitudinal support for CAN-based Camera SCC cars thanks to Zack1010OP's Patreon sponsor!
