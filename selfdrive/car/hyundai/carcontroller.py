@@ -92,6 +92,7 @@ class CarController:
     self.v_tsc = 0
     self.m_tsc = 0
     self.steady_speed = 0
+    self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
 
   def update(self, CC, CS, now_nanos):
     if not self.CP.pcmCruiseSpeed:
@@ -285,6 +286,8 @@ class CarController:
                 self.last_button_frame = self.frame
 
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
+        if self.hkg_can_smooth_stop:
+          stopping = stopping and CS.out.vEgoRaw < 0.05
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, jerk, int(self.frame / 2),

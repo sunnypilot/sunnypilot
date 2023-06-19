@@ -2,6 +2,7 @@
 from cereal import car
 from panda import Panda
 from common.conversions import Conversions as CV
+from common.params import Params
 from selfdrive.car.hyundai.hyundaicanfd import CanBus
 from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, NON_SCC_CAR, Buttons
 from selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
@@ -325,6 +326,9 @@ class CarInterface(CarInterfaceBase):
     # Detect smartMDPS, which bypasses EPS low speed lockout, allowing sunnypilot to send steering commands down to 0
     if 0x2AA in fingerprint[0]:
       ret.minSteerSpeed = 0.
+
+    if Params().get_bool("HkgSmoothStop"):
+      ret.vEgoStopping = 0.1
 
     return ret
 

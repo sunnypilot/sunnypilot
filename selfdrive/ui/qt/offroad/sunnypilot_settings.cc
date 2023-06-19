@@ -528,6 +528,16 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
 
 SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWidget(parent) {
   setSpacing(50);
+  addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
+  auto hkgSmoothStop = new ParamControl(
+    "HkgSmoothStop",
+    "HKG CAN: Smoother Stopping Performance (Beta)",
+    "Smoother stopping behind a stopped car or desired stopping event. This is only applicable to HKG CAN platforms using openpilot longitudinal control.",
+    "../assets/offroad/icon_blank.png"
+  );
+  hkgSmoothStop->setConfirmation(true, false);
+  addItem(hkgSmoothStop);
+
   addItem(new LabelControl(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControl(
     "StockLongToyota",
@@ -549,6 +559,11 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   );
   lkasToggle->setConfirmation(true, false);
   addItem(lkasToggle);
+
+  // trigger offroadTransition when going onroad/offroad
+  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+    hkgSmoothStop->setEnabled(offroad);
+  });
 }
 
 SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
