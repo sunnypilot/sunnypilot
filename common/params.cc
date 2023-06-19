@@ -253,6 +253,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"GpxDeleteIfUploaded", PERSISTENT},
     {"HandsOnWheelMonitoring", PERSISTENT},
     {"HideVEgoUi", PERSISTENT},
+    {"HkgSmoothStop", PERSISTENT},
     {"HotspotOnBoot", PERSISTENT},
     {"LastCarModel", PERSISTENT},
     {"LastSpeedLimitSignTap", PERSISTENT},
