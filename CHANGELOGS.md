@@ -1,3 +1,7 @@
+sunnypilot - 0.9.3.1 (2023-XX-XX)
+========================
+
+
 sunnypilot - 0.9.2.3 (2023-06-18)
 ========================
 * NEW❗: Auto Lane Change: Delay with Blind Spot
