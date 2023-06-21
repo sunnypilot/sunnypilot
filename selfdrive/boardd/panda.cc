@@ -163,10 +163,6 @@ void Panda::send_heartbeat(bool engaged) {
   handle->control_write(0xf3, engaged, 0);
 }
 
-void Panda::parked_heartbeat(bool parked) {
-  handle->control_write(0xff, parked, 0);
-}
-
 void Panda::set_can_speed_kbps(uint16_t bus, uint16_t speed) {
   handle->control_write(0xde, bus, (speed * 10));
 }
