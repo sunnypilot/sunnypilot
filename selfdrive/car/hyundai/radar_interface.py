@@ -4,14 +4,14 @@ import math
 from cereal import car
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import RadarInterfaceBase
-from selfdrive.car.hyundai.values import DBC, HyundaiFlags
+from selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP
 
 RADAR_START_ADDR = 0x500
 RADAR_MSG_COUNT = 32
 
 
 def get_radar_can_parser(CP):
-  if (CP.flags & HyundaiFlags.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None:
+  if (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None:
     msg = "ESCC"
     signals = [
       ("ObjValid", msg),
@@ -47,7 +47,7 @@ def get_radar_can_parser(CP):
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
-    self.enhanced_scc = (CP.flags & HyundaiFlags.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None
+    self.enhanced_scc = (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None
     self.updated_messages = set()
     self.trigger_msg = 0x2AB if self.enhanced_scc else RADAR_START_ADDR + RADAR_MSG_COUNT - 1
     self.track_id = 0

@@ -8,7 +8,7 @@ from cereal import car
 from common.params import Params, put_nonblocking
 from common.realtime import config_realtime_process, DT_MDL
 from common.numpy_fast import clip
-from selfdrive.car.chrysler.values import ChryslerFlags
+from selfdrive.car.chrysler.values import ChryslerFlagsSP
 from selfdrive.locationd.models.car_kf import CarKalman, ObservationKind, States
 from selfdrive.locationd.models.constants import GENERATED_DIR
 from system.swaglog import cloudlog
@@ -215,7 +215,7 @@ def main(sm=None, pm=None):
         0.2 <= liveParameters.stiffnessFactor <= 5.0,
         min_sr <= liveParameters.steerRatio <= max_sr,
       ))
-      if CP.carName == "chrysler" and CP.flags & ChryslerFlags.SP_RAM_HD_PARAMSD_IGNORE:
+      if CP.carName == "chrysler" and CP.spFlags & ChryslerFlagsSP.SP_RAM_HD_PARAMSD_IGNORE:
         liveParameters.valid = True
       liveParameters.steerRatioStd = float(P[States.STEER_RATIO])
       liveParameters.stiffnessFactorStd = float(P[States.STIFFNESS])

@@ -14,7 +14,10 @@ Ecu = car.CarParams.Ecu
 class ChryslerFlags(IntFlag):
   HIGHER_MIN_STEERING_SPEED = 1
 
-  SP_RAM_HD_PARAMSD_IGNORE = 2
+
+class ChryslerFlagsSP(IntFlag):
+  SP_RAM_HD_PARAMSD_IGNORE = 1
+
 
 class CAR:
   # Chrysler

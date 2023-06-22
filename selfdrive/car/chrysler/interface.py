@@ -2,7 +2,7 @@
 from cereal import car
 from panda import Panda
 from selfdrive.car import STD_CARGO_KG, get_safety_config, create_mads_event
-from selfdrive.car.chrysler.values import CAR, RAM_HD, RAM_DT, RAM_CARS, ChryslerFlags, BUTTON_STATES
+from selfdrive.car.chrysler.values import CAR, RAM_HD, RAM_DT, RAM_CARS, ChryslerFlags, ChryslerFlagsSP, BUTTON_STATES
 from selfdrive.car.interfaces import CarInterfaceBase
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -82,7 +82,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 3405. + STD_CARGO_KG
       ret.minSteerSpeed = 16
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning, 1.0, False)
-      ret.flags |= ChryslerFlags.SP_RAM_HD_PARAMSD_IGNORE.value
+      ret.spFlags |= ChryslerFlagsSP.SP_RAM_HD_PARAMSD_IGNORE.value
 
     else:
       raise ValueError(f"Unsupported car: {candidate}")

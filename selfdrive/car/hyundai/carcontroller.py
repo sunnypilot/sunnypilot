@@ -8,7 +8,7 @@ from opendbc.can.packer import CANPacker
 from selfdrive.car import apply_driver_steer_torque_limits
 from selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from selfdrive.car.hyundai.hyundaicanfd import CanBus
-from selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CarControllerParams, CANFD_CAR, CAR, CAMERA_SCC_CAR
+from selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, Buttons, CarControllerParams, CANFD_CAR, CAR, CAMERA_SCC_CAR
 from selfdrive.controls.lib.drive_helpers import HYUNDAI_V_CRUISE_MIN
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -161,7 +161,7 @@ class CarController:
 
     self.lat_active_last = CC.latActive
 
-    escc = self.CP.flags & HyundaiFlags.SP_ENHANCED_SCC.value
+    escc = self.CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC.value
 
     can_sends = []
 
