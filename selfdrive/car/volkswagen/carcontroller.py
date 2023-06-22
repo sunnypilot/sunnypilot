@@ -190,8 +190,7 @@ class CarController:
           elif self.acc_type == 1:
             self.cruise_button = 3 if self.cruise_button == 1 else 4  # resume, set
           if send_freq:
-            counter = (CS.gra_stock_values["COUNTER"] + 1) % 16
-            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values, counter,
+            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values,
                                                                  buttons=self.cruise_button))
             self.last_button_frame = self.frame
             self.send_count += 1
