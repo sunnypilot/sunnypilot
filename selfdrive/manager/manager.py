@@ -7,6 +7,7 @@ import sys
 import traceback
 from typing import List, Tuple, Union
 
+from cereal import log
 import cereal.messaging as messaging
 import selfdrive.sentry as sentry
 from common.basedir import BASEDIR
@@ -36,6 +37,8 @@ def manager_init() -> None:
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
+  params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
+  params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
     ("CompletedTrainingVersion", "0"),
@@ -44,6 +47,7 @@ def manager_init() -> None:
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
+    ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
 
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),

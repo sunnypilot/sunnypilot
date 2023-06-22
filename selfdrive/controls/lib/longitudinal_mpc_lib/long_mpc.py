@@ -183,6 +183,7 @@ def gen_long_ocp():
   ocp.constraints.x0 = x0
   ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_T_FOLLOW(), LEAD_DANGER_FACTOR])
 
+
   # We put all constraint cost weights to 0 and only set them at runtime
   cost_weights = np.zeros(CONSTR_DIM)
   ocp.cost.zl = cost_weights

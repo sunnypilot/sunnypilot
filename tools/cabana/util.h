@@ -2,11 +2,10 @@
 
 #include <cmath>
 
-#include <QAbstractItemView>
 #include <QApplication>
 #include <QByteArray>
 #include <QDateTime>
-#include <QColor>
+#include <QDoubleValidator>
 #include <QFont>
 #include <QRegExpValidator>
 #include <QStringBuilder>
@@ -21,7 +20,7 @@ class LogSlider : public QSlider {
   Q_OBJECT
 
 public:
-  LogSlider(double factor, Qt::Orientation orientation, QWidget *parent = nullptr) : factor(factor), QSlider(orientation, parent) {};
+  LogSlider(double factor, Qt::Orientation orientation, QWidget *parent = nullptr) : factor(factor), QSlider(orientation, parent) {}
 
   void setRange(double min, double max) {
     log_min = factor * std::log10(min);
@@ -67,7 +66,6 @@ public:
   MessageBytesDelegate(QObject *parent, bool multiple_lines = false);
   void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
   QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-  bool helpEvent(QHelpEvent *event, QAbstractItemView *view, const QStyleOptionViewItem &option, const QModelIndex &index) override;
   void setMultipleLines(bool v);
   int widthForBytes(int n) const;
   bool multipleLines() const { return multiple_lines; }
@@ -81,14 +79,18 @@ private:
 
 inline QString toHex(const QByteArray &dat) { return dat.toHex(' ').toUpper(); }
 QString toHex(uint8_t byte);
-QColor getColor(const cabana::Signal *sig);
 
 class NameValidator : public QRegExpValidator {
   Q_OBJECT
-
 public:
   NameValidator(QObject *parent=nullptr);
   QValidator::State validate(QString &input, int &pos) const override;
+};
+
+class DoubleValidator : public QDoubleValidator {
+  Q_OBJECT
+public:
+  DoubleValidator(QObject *parent = nullptr);
 };
 
 namespace utils {
@@ -134,3 +136,4 @@ private:
 };
 
 int num_decimals(double num);
+QString signalToolTip(const cabana::Signal *sig);

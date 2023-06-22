@@ -2,10 +2,10 @@
 import math
 import numpy as np
 from common.numpy_fast import clip, interp
-from cereal import log
+from common.params import Params
+from cereal import car, log
 
 import cereal.messaging as messaging
-from cereal import car
 from common.conversions import Conversions as CV
 from common.filter_simple import FirstOrderFilter
 from common.realtime import DT_MDL
@@ -65,6 +65,10 @@ class LongitudinalPlanner:
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
+    self.params = Params()
+    self.param_read_counter = 0
+    self.read_param()
+    self.personality = log.LongitudinalPersonality.standard
 
     self.cruise_source = 'cruise'
     self.vision_turn_controller = VisionTurnController(CP)
@@ -73,7 +77,12 @@ class LongitudinalPlanner:
     self.turn_speed_controller = TurnSpeedController()
 
     self.read_gac(gac_tr=3)
-    self.personality = log.LongitudinalPersonality.standard
+
+  def read_param(self):
+    try:
+      self.personality = int(self.params.get('LongitudinalPersonality'))
+    except (ValueError, TypeError):
+      self.personality = log.LongitudinalPersonality.standard
 
   def read_gac(self, gac_tr=3):
     gac_tr = clip(gac_tr, 1, 3)
@@ -96,6 +105,9 @@ class LongitudinalPlanner:
     return x, v, a, j
 
   def update(self, sm):
+    if self.param_read_counter % 50 == 0:
+      self.read_param()
+    self.param_read_counter += 1
     self.read_gac(gac_tr=sm['carState'].gapAdjustCruiseTr)
     self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 

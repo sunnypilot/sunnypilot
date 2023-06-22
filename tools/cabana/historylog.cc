@@ -63,7 +63,10 @@ QVariant HistoryLogModel::headerData(int section, Qt::Orientation orientation, i
         return "Data";
       }
     } else if (role == Qt::BackgroundRole && section > 0 && show_signals) {
-      return QBrush(getColor(sigs[section - 1]));
+      // Alpha-blend the signal color with the background to ensure contrast
+      QColor sigColor = sigs[section - 1]->color;
+      sigColor.setAlpha(128);
+      return QBrush(sigColor);
     }
   }
   return {};
@@ -122,7 +125,7 @@ std::deque<HistoryLogModel::Message> HistoryLogModel::fetchData(InputIt first, I
   for (; first != last && (*first)->mono_time > min_time; ++first) {
     const CanEvent *e = *first;
     for (int i = 0; i < sigs.size(); ++i) {
-      values[i] = get_raw_value(e->dat, e->size, *sigs[i]);
+      sigs[i]->getValue(e->dat, e->size, &values[i]);
     }
     if (!filter_cmp || filter_cmp(values[filter_sig_idx], filter_value)) {
       auto &m = msgs.emplace_back();
@@ -224,7 +227,7 @@ LogsWidget::LogsWidget(QWidget *parent) : QFrame(parent) {
   display_type_cb->setToolTip(tr("Display signal value or raw hex value"));
   comp_box->addItems({">", "=", "!=", "<"});
   value_edit->setClearButtonEnabled(true);
-  value_edit->setValidator(new QDoubleValidator(-500000, 500000, 6, this));
+  value_edit->setValidator(new DoubleValidator(this));
   dynamic_mode->setChecked(true);
   dynamic_mode->setEnabled(!can->liveStreaming());
 
