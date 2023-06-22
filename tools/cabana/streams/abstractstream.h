@@ -20,10 +20,10 @@ struct CanData {
   double freq = 0;
   QByteArray dat;
   QVector<QColor> colors;
-  QVector<double> last_change_t;
-  QVector<std::array<uint32_t, 8>> bit_change_counts;
-  QVector<int> last_delta;
-  QVector<int> same_delta_counter;
+  std::vector<double> last_change_t;
+  std::vector<std::array<uint32_t, 8>> bit_change_counts;
+  std::vector<int> last_delta;
+  std::vector<int> same_delta_counter;
 };
 
 struct CanEvent {
@@ -40,6 +40,7 @@ class AbstractStream : public QObject {
 public:
   AbstractStream(QObject *parent);
   virtual ~AbstractStream() {};
+  virtual void start() = 0;
   inline bool liveStreaming() const { return route() == nullptr; }
   virtual void seekTo(double ts) {}
   virtual QString routeName() const = 0;
@@ -90,7 +91,6 @@ protected:
 };
 
 class AbstractOpenStreamWidget : public QWidget {
-  Q_OBJECT
 public:
   AbstractOpenStreamWidget(AbstractStream **stream, QWidget *parent = nullptr) : stream(stream), QWidget(parent) {}
   virtual bool open() = 0;
@@ -98,6 +98,25 @@ public:
 
 protected:
   AbstractStream **stream = nullptr;
+};
+
+class DummyStream : public AbstractStream {
+  Q_OBJECT
+public:
+  DummyStream(QObject *parent) : AbstractStream(parent) {}
+  QString routeName() const override { return tr("No Stream"); }
+  void start() override { emit streamStarted(); }
+  double currentSec() const override { return 0; }
+};
+
+class StreamNotifier : public QObject {
+  Q_OBJECT
+public:
+  StreamNotifier(QObject *parent = nullptr) : QObject(parent) {}
+  static StreamNotifier* instance();
+signals:
+  void streamStarted();
+  void changingStream();
 };
 
 // A global pointer referring to the unique AbstractStream object
