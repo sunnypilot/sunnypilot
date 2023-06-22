@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Nicki Minaj (May 22, 2023)"
+#define CURRENT_MODEL "Hot Coffee (June 2, 2023)"
