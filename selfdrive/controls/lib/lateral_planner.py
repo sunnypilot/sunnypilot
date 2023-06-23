@@ -26,9 +26,9 @@ STEERING_RATE_COST = 700.0
 
 
 class LateralPlanner:
-  def __init__(self, CP, use_lanelines=True, wide_camera=False):
+  def __init__(self, CP, use_lanelines=True):
     self.use_lanelines = use_lanelines
-    self.LP = LanePlanner(wide_camera)
+    self.LP = LanePlanner()
     self.DH = DesireHelper()
 
     # Vehicle model parameters used to calculate lateral movement of car

@@ -14,7 +14,7 @@ CAMERA_OFFSET = 0.04
 
 
 class LanePlanner:
-  def __init__(self, wide_camera=False):
+  def __init__(self):
     self.ll_t = np.zeros((TRAJECTORY_SIZE,))
     self.ll_x = np.zeros((TRAJECTORY_SIZE,))
     self.lll_y = np.zeros((TRAJECTORY_SIZE,))
@@ -33,8 +33,8 @@ class LanePlanner:
     self.l_lane_change_prob = 0.
     self.r_lane_change_prob = 0.
 
-    self.camera_offset = -CAMERA_OFFSET if wide_camera else CAMERA_OFFSET
-    self.path_offset = -PATH_OFFSET if wide_camera else PATH_OFFSET
+    self.camera_offset = -CAMERA_OFFSET
+    self.path_offset = -PATH_OFFSET
 
   def parse_model(self, md):
     lane_lines = md.laneLines
