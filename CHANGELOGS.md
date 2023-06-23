@@ -1,5 +1,7 @@
 sunnypilot - 0.9.3.1 (2023-XX-XX)
 ========================
+* UPDATED: Synced with commaai's 0.9.3 release
+* NEW❗: Hot Coffee driving model
 * NEW❗: HKG CAN: Smoother Stopping Performance (Beta) toggle
   * Smoother stopping behind a stopped car or desired stopping event.
   * This is only applicable to HKG CAN platforms using openpilot longitudinal control
