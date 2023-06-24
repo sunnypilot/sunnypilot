@@ -871,7 +871,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // E2E Status
-  if (e2eState != 0) {
+  if (uiState()->scene.e2e_long_alert_ui && e2eState != 0) {
     drawE2eStatus(p, bdr_s * 2 + 190, 45, 150, 150, e2eState);
   }
   p.restore();
