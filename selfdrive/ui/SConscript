@@ -10,7 +10,7 @@ if arch == 'larch64':
   base_libs.append('EGL')
 
 maps = arch in ['larch64', 'x86_64']
-screenrecorder = arch in ['larch64']
+screenrecorder = False
 
 if maps and arch == 'x86_64':
   rpath = [Dir(f"#third_party/mapbox-gl-native-qt/{arch}").srcnode().abspath]
