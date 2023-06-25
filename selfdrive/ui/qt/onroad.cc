@@ -196,7 +196,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 void OnroadWindow::offroadTransition(bool offroad) {
 #ifdef ENABLE_MAPS
   if (!offroad) {
-    bool custom_mapbox = Params().getBool("CustomMapbox") && QString::fromStdString(Params().get("CustomMapboxTokenSk")) != "";
+    bool custom_mapbox = params.getBool("CustomMapbox") && QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
     if (map == nullptr && (uiState()->primeType() || !MAPBOX_TOKEN.isEmpty() || custom_mapbox)) {
       MapWindow * m = new MapWindow(get_mapbox_settings());
       map = m;

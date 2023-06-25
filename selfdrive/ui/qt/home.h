@@ -39,6 +39,7 @@ private:
   OffroadAlert* alerts_widget;
   QPushButton* alert_notif;
   QPushButton* update_notif;
+  bool custom_mapbox;
 };
 
 class HomeWindow : public QWidget {
