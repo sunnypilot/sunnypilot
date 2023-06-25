@@ -279,7 +279,7 @@ class CarInterface(CarInterfaceBase):
               (self.CS.prev_lkas_enabled == 1 and not self.CS.lkas_enabled):
               self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      if not (self.CP.openpilotLongitudinalControl or self.gac):
+      if not self.CP.openpilotLongitudinalControl or not self.gac:
         ret.gapAdjustCruiseTr = 3
       else:
         if self.gac_min != 1:
