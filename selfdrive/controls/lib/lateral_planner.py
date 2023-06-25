@@ -63,13 +63,22 @@ class LateralPlanner:
 
     self.vision_curve_laneless = self.param_s.get_bool("VisionCurveLaneless")
 
+    self.param_read_counter = 0
+    self.read_param()
+
+  def read_param(self):
+    self.dynamic_lane_profile_enabled = self.param_s.get_bool("DynamicLaneProfileToggle")
+    self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))
+    self.vision_curve_laneless = self.param_s.get_bool("VisionCurveLaneless")
+
   def reset_mpc(self, x0=np.zeros(4)):
     self.x0 = x0
     self.lat_mpc.reset(x0=self.x0)
 
   def update(self, sm):
-    self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))
-    self.vision_curve_laneless = self.param_s.get_bool("VisionCurveLaneless")
+    if self.param_read_counter % 50 == 0:
+      self.read_param()
+    self.param_read_counter += 1
     self.standstill = sm['carState'].standstill
     # clip speed , lateral planning is not possible at 0 speed
     measured_curvature = sm['controlsState'].curvature
