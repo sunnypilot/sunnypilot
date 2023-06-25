@@ -242,6 +242,28 @@ private:
   void refresh();
 };
 
+class SidebarTemp : public QWidget {
+  Q_OBJECT
+
+public:
+  explicit SidebarTemp(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateToggles();
+
+private:
+  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
+  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
+  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
+  QVBoxLayout outer_layout;
+  QVBoxLayout inner_layout;
+  Params params;
+
+  ParamControl *sidebarTemperature;
+  ButtonParamControl *sidebar_temp_setting;
+};
+
 class SPGeneralPanel : public ListWidget {
   Q_OBJECT
 

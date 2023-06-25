@@ -15,6 +15,7 @@ class Sidebar : public QFrame {
   Q_PROPERTY(ItemStatus tempStatus MEMBER temp_status NOTIFY valueChanged);
   Q_PROPERTY(QString netType MEMBER net_type NOTIFY valueChanged);
   Q_PROPERTY(int netStrength MEMBER net_strength NOTIFY valueChanged);
+  Q_PROPERTY(QString sidebarTemp MEMBER sidebar_temp_str NOTIFY valueChanged);
 
 public:
   explicit Sidebar(QWidget* parent = 0);
@@ -58,5 +59,7 @@ protected:
 private:
   std::unique_ptr<PubMaster> pm;
 
-  uint64_t last_max_cpu_temp_count;
+  uint64_t last_temp_count;
+  QString sidebar_temp = "0";
+  QString sidebar_temp_str = "0";
 };

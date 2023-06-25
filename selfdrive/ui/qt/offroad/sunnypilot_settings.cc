@@ -636,12 +636,6 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
       tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
       "../assets/offroad/icon_road.png",
     },
-    {
-      "SidebarCpuTemp",
-      tr("Display CPU Temperature on Sidebar"),
-      tr("Enable this will display the CPU core with the highest temperature on the sidebar."),
-      "../assets/offroad/icon_calibration.png",
-    },
   };
 
   // Developer UI Info (Dev UI)
@@ -663,6 +657,9 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
       addItem(chevron_info);
     }
   }
+
+  auto sidebar_temp = new SidebarTemp(this);
+  addItem(sidebar_temp);
 
   // trigger updateToggles() when toggleFlipped
   connect(toggles["DevUI"], &ToggleControl::toggleFlipped, [=](bool state) {
@@ -1778,4 +1775,42 @@ void ChevronInfo::refresh() {
   }
   btnminus.setText("-");
   btnplus.setText("+");
+}
+
+SidebarTemp::SidebarTemp(QWidget *parent) : QWidget(parent), outer_layout(this) {
+  outer_layout.setMargin(0);
+  outer_layout.setSpacing(0);
+  outer_layout.addLayout(&inner_layout);
+  inner_layout.setMargin(0);
+  //inner_layout.setSpacing(25); // default spacing is 25
+  outer_layout.addStretch();
+
+  sidebarTemperature = new ParamControl(
+    "SidebarTemperature",
+    tr("Display Temperature on Sidebar"),
+    tr("Display Ambient temperature, memory temperature, CPU core with the highest temperature, GPU temperature, or max of Memory/CPU/GPU on the sidebar."),
+    "../assets/offroad/icon_calibration.png"
+  );
+
+  std::vector<QString> sidebar_temp_texts{tr("Ambient"), tr("Memory"), tr("CPU"), tr("GPU"), tr("Max")};
+  sidebar_temp_setting = new ButtonParamControl(
+    "SidebarTemperatureOptions", "", "",
+    "../assets/offroad/icon_blank.png",
+    sidebar_temp_texts
+  );
+
+  connect(sidebarTemperature, &ToggleControl::toggleFlipped, [=](bool state) {
+    updateToggles();
+  });
+
+  addItem(sidebarTemperature);
+  addItem(sidebar_temp_setting);
+}
+
+void SidebarTemp::showEvent(QShowEvent *event) {
+  updateToggles();
+}
+
+void SidebarTemp::updateToggles() {
+  sidebar_temp_setting->setVisible(params.getBool("SidebarTemperature"));
 }

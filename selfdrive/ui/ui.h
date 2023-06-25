@@ -190,7 +190,8 @@ typedef struct UIScene {
   bool e2e_long_alert_light, e2e_long_alert_lead, e2e_long_alert_ui;
   float e2eX[13] = {0};
 
-  bool sidebar_cpu_temp;
+  bool sidebar_temp;
+  int sidebar_temp_options;
 } UIScene;
 
 class UIState : public QObject {

@@ -350,7 +350,8 @@ void UIState::updateStatus() {
 
   if (millis_since_boot() - last_update_params_sidebar > 1000 * 1) {
     last_update_params_sidebar = millis_since_boot();
-    scene.sidebar_cpu_temp = params.getBool("SidebarCpuTemp");
+    scene.sidebar_temp = params.getBool("SidebarTemperature");
+    scene.sidebar_temp_options = std::atoi(params.get("SidebarTemperatureOptions").c_str());
   }
 }
 
