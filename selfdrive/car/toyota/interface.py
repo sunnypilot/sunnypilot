@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from cereal import car
 from common.conversions import Conversions as CV
+from common.params import Params
 from panda import Panda
 from selfdrive.car.toyota.values import Ecu, CAR, DBC, ToyotaFlags, CarControllerParams, TSS2_CAR, RADAR_ACC_CAR, NO_DSU_CAR, \
                                         MIN_ACC_SPEED, EPS_SCALE, EV_HYBRID_CAR, UNSUPPORTED_DSU_CAR, NO_STOP_TIMER_CAR, ANGLE_CONTROL_CAR
@@ -228,18 +229,26 @@ class CarInterface(CarInterfaceBase):
     # to a negative value, so it won't matter.
     ret.minEnableSpeed = -1. if (stop_and_go or ret.enableGasInterceptor) else MIN_ACC_SPEED
 
+    sp_tss2_long_tune = Params().get_bool("ToyotaTSS2Long")
+
     tune = ret.longitudinalTuning
     tune.deadzoneBP = [0., 9.]
     tune.deadzoneV = [.0, .15]
     if candidate in TSS2_CAR or ret.enableGasInterceptor:
-      tune.kpBP = [0., 5., 20., 30.]
-      tune.kpV = [1.3, 1.0, 0.7, 0.1]
-      tune.kiBP = [0., 8.3, 11.9, 13.8, 19.7, 30., 33., 40.]
-      tune.kiV = [.02, .03, .14, .18, .18, .06, .01, .001]
+      if sp_tss2_long_tune:
+        tune.kpBP = [0., 5., 20., 30.]
+        tune.kpV = [1.3, 1.0, 0.7, 0.1]
+        tune.kiBP = [0., 8.3, 11.9, 13.8, 19.7, 30., 33., 40.]
+        tune.kiV = [.02, .03, .14, .18, .18, .06, .01, .001]
+      else:
+        tune.kpBP = [0., 5., 20.]
+        tune.kpV = [1.3, 1.0, 0.7]
+        tune.kiBP = [0., 5., 12., 20., 27.]
+        tune.kiV = [.35, .23, .20, .17, .1]
       if candidate in TSS2_CAR:
         ret.vEgoStopping = 0.25
         ret.vEgoStarting = 0.25
-        ret.stoppingDecelRate = 0.009  # reach stopping target smoothly
+        ret.stoppingDecelRate = 0.009 if sp_tss2_long_tune else 0.3  # reach stopping target smoothly
     else:
       tune.kpBP = [0., 5., 35.]
       tune.kiBP = [0., 35.]
