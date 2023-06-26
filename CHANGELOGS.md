@@ -5,6 +5,8 @@ sunnypilot - 0.9.3.1 (2023-XX-XX)
 * NEW❗: HKG CAN: Smoother Stopping Performance (Beta) toggle
   * Smoother stopping behind a stopped car or desired stopping event.
   * This is only applicable to HKG CAN platforms using openpilot longitudinal control
+* NEW❗: Toyota: TSS2 longitudinal: Custom Tuning
+  * Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars thanks to dragonpilot-community!
 * DISABLED: Screen Recorder
     * UI sometimes crashes on startup along with screen recorder, will reimplement in future updates
 
