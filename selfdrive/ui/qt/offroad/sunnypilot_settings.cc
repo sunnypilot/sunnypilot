@@ -561,9 +561,19 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   lkasToggle->setConfirmation(true, false);
   addItem(lkasToggle);
 
+  auto toyotaTss2LongTune = new ParamControl(
+    "ToyotaTSS2Long",
+    "TSS2 Longitudinal: Custom Tuning",
+    "Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars. Big thanks to dragonpilot-community for this implementation.",
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaTss2LongTune->setConfirmation(true, false);
+  addItem(toyotaTss2LongTune);
+
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     hkgSmoothStop->setEnabled(offroad);
+    toyotaTss2LongTune->setEnabled(offroad);
   });
 }
 
