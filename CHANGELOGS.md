@@ -8,7 +8,7 @@ sunnypilot - 0.9.3.1 (2023-XX-XX)
 * NEW❗: Toyota: TSS2 longitudinal: Custom Tuning
   * Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars thanks to dragonpilot-community!
 * DISABLED: Screen Recorder
-    * UI sometimes crashes on startup along with screen recorder, will reimplement in future updates
+  * UI sometimes crashes on startup along with screen recorder, will reimplement in future updates
 
 sunnypilot - 0.9.2.3 (2023-06-18)
 ========================
