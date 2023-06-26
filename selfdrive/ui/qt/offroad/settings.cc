@@ -100,9 +100,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   };
 
 
-  std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Standard"), tr("Relaxed")};
+  std::vector<QString> longi_button_texts{tr("Maniac"), tr("Aggro"), tr("Stock"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
-                                          tr("Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars."),
+                                          tr("Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars."),
                                           "../assets/offroad/icon_speed_limit.png",
                                           longi_button_texts);
   for (auto &[param, title, desc, icon] : toggle_defs) {
@@ -129,6 +129,8 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
   });
+
+  connect(new SPControlsPanel(), &SPControlsPanel::updateStockToggles, this, &TogglesPanel::updateToggles);
 }
 
 void TogglesPanel::expandToggleDescription(const QString &param) {
@@ -179,7 +181,7 @@ void TogglesPanel::updateToggles() {
       // normal description and toggle
       e2e_toggle->setEnabled(true);
       e2e_toggle->setDescription(e2e_description);
-      long_personality_setting->setEnabled(true);
+      long_personality_setting->setEnabled(!params.getBool("GapAdjustCruise"));
       custom_stock_long_toggle->setEnabled(false);
       params.remove("CustomStockLong");
     } else {

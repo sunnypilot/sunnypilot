@@ -289,6 +289,9 @@ public:
   explicit SPControlsPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
 
+signals:
+  void updateStockToggles();
+
 public slots:
   void updateToggles();
 

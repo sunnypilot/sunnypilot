@@ -271,7 +271,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
   // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
   std::vector<std::string> toggleOffroad{
     "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral",
-    "CustomTorqueLateral", "LiveTorque"
+    "CustomTorqueLateral", "LiveTorque", "GapAdjustCruise"
   };
 
   // Controls: Camera Offset (cm)
@@ -361,6 +361,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
   connect(auto_lane_change_timer, &AutoLaneChangeTimer::toggleUpdated, this, &SPControlsPanel::updateToggles);
   connect(slo_type, &SpeedLimitOffsetType::offsetTypeUpdated, this, &SPControlsPanel::updateToggles);
+  connect(toggles["GapAdjustCruise"], &ToggleControl::toggleFlipped, [=]() { emit updateStockToggles(); });
 
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["DisengageLateralOnBrake"]->setConfirmation(true, false);

@@ -68,13 +68,12 @@ public:
 
 public slots:
   void expandToggleDescription(const QString &param);
+  void updateToggles();
 
 private:
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
-
-  void updateToggles();
 };
 
 class SoftwarePanel : public ListWidget {

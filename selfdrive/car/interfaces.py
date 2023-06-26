@@ -563,7 +563,6 @@ class CarInterfaceBase(ABC):
     self._frame += 1
     if self._frame % 300 == 0:
       self._frame = 0
-      self.gac = self.param_s.get_bool("GapAdjustCruise")
       self.gac_mode = round(float(self.param_s.get("GapAdjustCruiseMode", encoding="utf8")))
       self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     return CS
