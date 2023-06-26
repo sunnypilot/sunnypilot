@@ -476,7 +476,7 @@ class CarInterfaceBase(ABC):
     if not self.CP.openpilotLongitudinalControl or not self.gac:
       cs_out.gapAdjustCruiseTr = 4
       CS.gac_tr = gac_default
-      return
+      return cs_out, CS
     if self.gac_min != gac_min:
       self.gac_min = gac_min
       put_nonblocking("GapAdjustCruiseMin", str(self.gac_min))
@@ -494,6 +494,7 @@ class CarInterfaceBase(ABC):
         self.gac_button_counter = 0
     self.prev_gac_button = gac_button
     cs_out.gapAdjustCruiseTr = self.get_sp_distance(CS.gac_tr, gac_max)
+    return cs_out, CS
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
                        enable_from_brake=False, enable_pressed_long=False,

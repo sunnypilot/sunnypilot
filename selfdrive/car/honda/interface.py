@@ -357,7 +357,7 @@ class CarInterface(CarInterfaceBase):
         if self.CS.prev_cruise_setting != 1 and self.CS.cruise_setting == 1:
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      self.toggle_gac(ret, self.CS, (self.CS.cruise_setting == 3), 1, 3, 0, "-")
+      ret, self.CS = self.toggle_gac(ret, self.CS, (self.CS.cruise_setting == 3), 1, 3, 0, "-")
     else:
       self.CS.madsEnabled = False
 

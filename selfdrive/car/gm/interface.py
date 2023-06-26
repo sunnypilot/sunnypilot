@@ -278,7 +278,7 @@ class CarInterface(CarInterfaceBase):
         if self.CS.prev_lkas_enabled != 1 and self.CS.lkas_enabled == 1:
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      self.toggle_gac(ret, self.CS, bool(self.CS.gap_dist_button), 1, 3, 3, "-")
+      ret, self.CS = self.toggle_gac(ret, self.CS, bool(self.CS.gap_dist_button), 1, 3, 3, "-")
     else:
       self.CS.madsEnabled = False
 
