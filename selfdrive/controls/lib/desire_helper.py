@@ -47,7 +47,7 @@ class DesireHelper:
     self.prev_lane_change = False
     self.road_edge = False
     self.count = 0
-    self.edge_toggle = self.param_s.get("RoadEdge")
+    self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
   def update(self, carstate, lateral_active, lane_change_prob, model_data):
@@ -60,7 +60,7 @@ class DesireHelper:
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
     if self.count % 200 == 0:
-      self.edge_toggle = self.param_s.get("RoadEdge")
+      self.edge_toggle = self.param_s.get_bool("RoadEdge")
 
     # Lane detection by FrogAi
     if not self.edge_toggle:
