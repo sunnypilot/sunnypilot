@@ -154,7 +154,8 @@ typedef struct UIScene {
   uint64_t started_frame;
 
   int dynamic_lane_profile;
-  bool dynamic_lane_profile_status, dynamic_lane_profile_toggle;
+  bool dynamic_lane_profile_status = true;
+  bool dynamic_lane_profile_toggle;
 
   bool visual_brake_lights;
 
