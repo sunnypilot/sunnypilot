@@ -194,6 +194,7 @@ class Controls:
     self.v_cruise_helper = VCruiseHelper(self.CP)
     self.recalibrating_seen = False
 
+    self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = False
 
     self.live_torque = self.params.get_bool("LiveTorque")
@@ -317,7 +318,6 @@ class Controls:
         self.events.add(EventName.calibrationInvalid)
 
     # Handle lane change
-    lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     if self.sm['lateralPlan'].laneChangeEdgeBlock:
       self.events.add(EventName.laneChangeRoadEdge)
     elif self.sm['lateralPlan'].laneChangeState == LaneChangeState.preLaneChange:
@@ -328,10 +328,10 @@ class Controls:
         self.events.add(EventName.laneChangeBlocked)
       else:
         if direction == LaneChangeDirection.left:
-          self.events.add(EventName.preLaneChangeLeft) if lane_change_set_timer == 0 or lc_prev else \
+          self.events.add(EventName.preLaneChangeLeft) if self.lane_change_set_timer == 0 or lc_prev else \
             self.events.add(EventName.laneChange)
         else:
-          self.events.add(EventName.preLaneChangeRight) if lane_change_set_timer == 0 or lc_prev else \
+          self.events.add(EventName.preLaneChangeRight) if self.lane_change_set_timer == 0 or lc_prev else \
             self.events.add(EventName.laneChange)
     elif self.sm['lateralPlan'].laneChangeState in (LaneChangeState.laneChangeStarting,
                                                     LaneChangeState.laneChangeFinishing):
@@ -900,6 +900,7 @@ class Controls:
     self.is_metric = self.params.get_bool("IsMetric")
     self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
 
+    self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
 
     # Sample data from sockets and get a carState

@@ -31,6 +31,14 @@ DESIRES = {
   },
 }
 
+AUTO_LANE_CHANGE_TIMER = {
+  0: 0.0,
+  1: 0.1,
+  2: 0.5,
+  3: 1.0,
+  4: 1.5,
+}
+
 
 class DesireHelper:
   def __init__(self):
@@ -48,13 +56,12 @@ class DesireHelper:
     self.road_edge = False
     self.count = 0
     self.edge_toggle = self.param_s.get("RoadEdge")
+    self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
   def update(self, carstate, lateral_active, lane_change_prob, model_data):
-    lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
-    lane_change_auto_timer = 0.0 if lane_change_set_timer == 0 else 0.1 if lane_change_set_timer == 1 else \
-                             0.5 if lane_change_set_timer == 2 else 1.0 if lane_change_set_timer == 3 else \
-                             1.5 if lane_change_set_timer == 4 else 2.0
+    self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
+    lane_change_auto_timer = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer, 2.0)
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
