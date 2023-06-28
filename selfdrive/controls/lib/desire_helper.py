@@ -56,12 +56,12 @@ class DesireHelper:
     self.road_edge = False
     self.param_read_counter = 0
     self.read_param()
-    self.edge_toggle = self.param_s.get("RoadEdge")
+    self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
   def read_param(self):
-    self.edge_toggle = self.param_s.get("RoadEdge")
+    self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
