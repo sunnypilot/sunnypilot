@@ -1,5 +1,4 @@
 import numpy as np
-from common.conversions import Conversions as CV
 from common.realtime import sec_since_boot, DT_MDL
 from common.numpy_fast import interp
 from common.params import Params
@@ -107,9 +106,7 @@ class LateralPlanner:
       self.LP.lll_prob *= self.DH.lane_change_ll_prob
       self.LP.rll_prob *= self.DH.lane_change_ll_prob
 
-    low_speed = v_ego_car < 10 * CV.MPH_TO_MS
-
-    if not self.get_dynamic_lane_profile(sm['longitudinalPlan']) and not low_speed:
+    if not self.get_dynamic_lane_profile(sm['longitudinalPlan']):
       d_path_xyz = self.LP.get_d_path(self.v_ego, self.t_idxs, self.path_xyz)
       self.dynamic_lane_profile_status = False
     else:
