@@ -278,6 +278,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"RoadEdge", PERSISTENT},
     {"ReverseAccChange", PERSISTENT},
     {"ReverseDmCam", PERSISTENT},
+    {"ScreenRecorder", PERSISTENT},
     {"ShowDebugUI", PERSISTENT},
     {"SidebarTemperature", PERSISTENT},
     {"SidebarTemperatureOptions", PERSISTENT},
