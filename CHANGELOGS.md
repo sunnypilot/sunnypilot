@@ -1,4 +1,4 @@
-sunnypilot - 0.9.3.1 (2023-06-30)
+sunnypilot - 0.9.3.1 (2023-07-xx)
 ========================
 * UPDATED: Synced with commaai's 0.9.3 release
 * NEW❗: Display Temperature on Sidebar toggle
