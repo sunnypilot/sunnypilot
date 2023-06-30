@@ -91,6 +91,7 @@ def manager_init() -> None:
     ("OnroadScreenOffEvent", "1"),
     ("PathOffset", "0"),
     ("ReverseAccChange", "0"),
+    ("ScreenRecorder", "1"),
     ("ShowDebugUI", "1"),
     ("SpeedLimitControl", "1"),
     ("SpeedLimitPercOffset", "1"),
