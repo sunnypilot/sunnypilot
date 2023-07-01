@@ -3,7 +3,7 @@ from cereal import car
 from panda import Panda
 from common.conversions import Conversions as CV
 from selfdrive.car.hyundai.hyundaicanfd import CanBus
-from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, NON_SCC_CAR, Buttons
+from selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, NON_SCC_CAR, Buttons
 from selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
 from selfdrive.car import STD_CARGO_KG, create_button_event, scale_tire_stiffness, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
@@ -58,7 +58,7 @@ class CarInterface(CarInterfaceBase):
         ret.flags |= HyundaiFlags.USE_FCA.value
 
       if 0x2AB in fingerprint[0]:
-        ret.flags |= HyundaiFlags.SP_ENHANCED_SCC.value
+        ret.spFlags |= HyundaiFlagsSP.SP_ENHANCED_SCC.value
 
     ret.steerActuatorDelay = 0.1  # Default delay
     ret.steerLimitTimer = 0.4
@@ -263,12 +263,12 @@ class CarInterface(CarInterfaceBase):
       ret.enableBsm = 0x1e5 in fingerprint[CAN.ECAN]
 
       if 0x1fa in fingerprint[CAN.ECAN]:
-        ret.flags |= HyundaiFlags.SP_NAV_MSG.value
+        ret.spFlags |= HyundaiFlagsSP.SP_NAV_MSG.value
     else:
       ret.enableBsm = 0x58b in fingerprint[0]
 
       if 0x544 in fingerprint[0]:
-        ret.flags |= HyundaiFlags.SP_NAV_MSG.value
+        ret.spFlags |= HyundaiFlagsSP.SP_NAV_MSG.value
 
     # *** panda safety config ***
     if candidate in CANFD_CAR:
@@ -293,7 +293,7 @@ class CarInterface(CarInterfaceBase):
       if candidate in CAMERA_SCC_CAR:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_CAMERA_SCC
 
-      if ret.flags & HyundaiFlags.SP_ENHANCED_SCC:
+      if ret.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_ESCC
 
     if ret.openpilotLongitudinalControl:
@@ -322,7 +322,7 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def init(CP, logcan, sendcan):
-    if CP.openpilotLongitudinalControl and not ((CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value) or (CP.flags & HyundaiFlags.SP_ENHANCED_SCC)):
+    if CP.openpilotLongitudinalControl and not ((CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value) or (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC)):
       addr, bus = 0x7d0, 0
       if CP.flags & HyundaiFlags.CANFD_HDA2.value:
         addr, bus = 0x730, CanBus(CP).ECAN
