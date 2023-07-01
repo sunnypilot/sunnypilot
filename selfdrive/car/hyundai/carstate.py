@@ -7,7 +7,7 @@ from common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.car.hyundai.hyundaicanfd import CanBus
-from selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CAN_GEARS, CAMERA_SCC_CAR, CANFD_CAR, EV_CAR, HYBRID_CAR, Buttons, CarControllerParams
+from selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, CAR, DBC, CAN_GEARS, CAMERA_SCC_CAR, CANFD_CAR, EV_CAR, HYBRID_CAR, Buttons, CarControllerParams
 from selfdrive.car.interfaces import CarStateBase
 
 PREV_BUTTON_SAMPLES = 8
@@ -148,7 +148,7 @@ class CarState(CarStateBase):
       aeb_braking = cp_cruise.vl[aeb_src]["CF_VSM_DecCmdAct"] != 0 or cp_cruise.vl[aeb_src][aeb_sig] != 0
       ret.stockFcw = aeb_warning and not aeb_braking
       ret.stockAeb = aeb_warning and aeb_braking
-    elif self.CP.flags & HyundaiFlags.SP_ENHANCED_SCC:
+    elif self.CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
       aeb_src = "ESCC"
       aeb_sig = "FCA_CmdAct" if self.CP.flags & HyundaiFlags.USE_FCA.value else "AEB_CmdAct"
       aeb_warning_sig = "CF_VSM_Warn_FCA11" if self.CP.flags & HyundaiFlags.USE_FCA.value else "CF_VSM_Warn_SCC12"
@@ -175,7 +175,7 @@ class CarState(CarStateBase):
     self.cruise_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwState"])
     self.main_buttons.extend(cp.vl_all["CLU11"]["CF_Clu_CruiseSwMain"])
 
-    if self.CP.flags & HyundaiFlags.SP_NAV_MSG:
+    if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
       self._update_traffic_signals(self.CP, cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
@@ -252,7 +252,7 @@ class CarState(CarStateBase):
     if self.CP.flags & HyundaiFlags.CANFD_HDA2:
       self.cam_0x2a4 = copy.copy(cp_cam.vl["CAM_0x2a4"])
 
-    if self.CP.flags & HyundaiFlags.SP_NAV_MSG:
+    if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
       self._update_traffic_signals(self.CP, cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_factor
 
@@ -404,7 +404,7 @@ class CarState(CarStateBase):
       signals.append(("CF_Lvr_Gear", "LVR12"))
       checks.append(("LVR12", 100))
 
-    if CP.flags & HyundaiFlags.SP_ENHANCED_SCC.value:
+    if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC.value:
       if CP.flags & HyundaiFlags.USE_FCA.value:
         signals += [
           ("FCA_CmdAct", "ESCC"),
@@ -421,7 +421,7 @@ class CarState(CarStateBase):
         ]
       checks.append(("ESCC", 50))
 
-    if CP.flags & HyundaiFlags.SP_NAV_MSG:
+    if CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
       signals.append(("SpeedLim_Nav_Clu", "Navi_HU"))
       checks.append(("Navi_HU", 5))
 
@@ -577,7 +577,7 @@ class CarState(CarStateBase):
         ("ACCELERATOR_BRAKE_ALT", 100),
       ]
 
-    if CP.flags & HyundaiFlags.CANFD_HDA2 and CP.flags & HyundaiFlags.SP_NAV_MSG:
+    if CP.flags & HyundaiFlags.CANFD_HDA2 and CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
       signals.append(("SPEED_LIMIT_1", "CLUSTER_SPEED_LIMIT"))
       checks.append(("CLUSTER_SPEED_LIMIT", 10))
 
@@ -609,7 +609,7 @@ class CarState(CarStateBase):
         ("SCC_CONTROL", 50),
       ]
 
-    if not (CP.flags & HyundaiFlags.CANFD_HDA2) and CP.flags & HyundaiFlags.SP_NAV_MSG:
+    if not (CP.flags & HyundaiFlags.CANFD_HDA2) and CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
       signals.append(("SPEED_LIMIT_1", "CLUSTER_SPEED_LIMIT"))
       checks.append(("CLUSTER_SPEED_LIMIT", 10))
 

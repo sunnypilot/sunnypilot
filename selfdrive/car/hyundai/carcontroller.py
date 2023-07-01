@@ -6,7 +6,7 @@ from opendbc.can.packer import CANPacker
 from selfdrive.car import apply_driver_steer_torque_limits
 from selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from selfdrive.car.hyundai.hyundaicanfd import CanBus
-from selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CarControllerParams, CANFD_CAR, CAR
+from selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, Buttons, CarControllerParams, CANFD_CAR, CAR
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -78,7 +78,7 @@ class CarController:
     sys_warning, sys_state, left_lane_warning, right_lane_warning = process_hud_alert(CC.enabled, self.car_fingerprint,
                                                                                       hud_control)
 
-    escc = self.CP.flags & HyundaiFlags.SP_ENHANCED_SCC.value
+    escc = self.CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC.value
 
     can_sends = []
 
