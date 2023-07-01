@@ -63,9 +63,12 @@ class HyundaiFlags(IntFlag):
   CANFD_ALT_GEARS_2 = 64
   SEND_LFA = 128
   USE_FCA = 256
-  SP_ENHANCED_SCC = 512
-  SP_CAN_LFA_BTN = 1024
-  SP_NAV_MSG = 2048
+
+
+class HyundaiFlagsSP(IntFlag):
+  SP_ENHANCED_SCC = 1
+  SP_CAN_LFA_BTN = 2
+  SP_NAV_MSG = 4
 
 
 class CAR:
