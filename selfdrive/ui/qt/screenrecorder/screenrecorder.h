@@ -27,6 +27,7 @@ protected:
   void paintEvent(QPaintEvent*) override;
 
 private:
+  Params params;
   bool recording;
   long long started;
   int src_width, src_height;
@@ -53,4 +54,5 @@ public:
   void stop();
   void toggle();
   void update_screen();
+  void updateState(const UIState &s);
 };

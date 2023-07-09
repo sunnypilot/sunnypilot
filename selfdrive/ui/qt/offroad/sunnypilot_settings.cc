@@ -58,6 +58,12 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "ScreenRecorder",
+      tr("Enable Screen Recorder"),
+      tr("Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements."),
+      "../assets/offroad/icon_calibration.png"
+    },
+    {
       "DisableOnroadUploads",
       tr("Disable Onroad Uploads"),
       tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),

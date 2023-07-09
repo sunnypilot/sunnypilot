@@ -621,6 +621,10 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("e2eStatus", chime_prompt);
   setProperty("e2eState", e2eLStatus);
+
+#ifdef ENABLE_DASHCAM
+  recorder->updateState(s);
+#endif
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {

@@ -10,6 +10,8 @@ sunnypilot - 0.9.3.1 (2023-07-xx)
   * This is only applicable to HKG CAN platforms using openpilot longitudinal control
 * NEW❗: Toyota: TSS2 longitudinal: Custom Tuning
   * Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars thanks to dragonpilot-community!
+* NEW❗: Enable Screen Recorder toggle
+  * Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.
 * IMPROVED: Dynamic Lane Profile: when using Laneline planner via Laneline Mode or Auto Mode, enforce Laneless planner while traveling below 10 MPH or 16 km/h
 * REMOVED: Display CPU Temperature on Sidebar
 
