@@ -1,4 +1,4 @@
-sunnypilot - 0.9.3.1 (2023-07-xx)
+sunnypilot - 0.9.3.1 (2023-07-09)
 ========================
 * UPDATED: Synced with commaai's 0.9.3 release
 * NEW❗: Display Temperature on Sidebar toggle
@@ -10,9 +10,9 @@ sunnypilot - 0.9.3.1 (2023-07-xx)
   * This is only applicable to HKG CAN platforms using openpilot longitudinal control
 * NEW❗: Toyota: TSS2 longitudinal: Custom Tuning
   * Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars thanks to dragonpilot-community!
+* NEW❗: Enable Screen Recorder toggle
+  * Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.
 * IMPROVED: Dynamic Lane Profile: when using Laneline planner via Laneline Mode or Auto Mode, enforce Laneless planner while traveling below 10 MPH or 16 km/h
-* DISABLED: Screen Recorder
-  * UI sometimes crashes on startup along with screen recorder, will reimplement in future updates
 * REMOVED: Display CPU Temperature on Sidebar
 
 sunnypilot - 0.9.2.3 (2023-06-18)
