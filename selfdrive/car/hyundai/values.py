@@ -268,10 +268,10 @@ CAR_INFO: Dict[str, Optional[Union[HyundaiCarInfo, List[HyundaiCarInfo]]]] = {
   CAR.GENESIS_GV80: HyundaiCarInfo("Genesis GV80 2023", "All", car_parts=CarParts.common([CarHarness.hyundai_m])),
 
   # Non-SCC Cars
-  CAR.ELANTRA_2022_NON_SCC: HyundaiCarInfo("Hyundai Elantra Non-SCC 2022"),
-  CAR.KIA_FORTE_2019_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2019"),
-  CAR.KIA_FORTE_2021_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2021"),
-  CAR.GENESIS_G70_2021_NON_SCC: HyundaiCarInfo("Genesis G70 Non-SCC 2021"),
+  CAR.ELANTRA_2022_NON_SCC: HyundaiCarInfo("Hyundai Elantra Non-SCC 2022", "No Smart Cruise Control (SCC)"),
+  CAR.KIA_FORTE_2019_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2019", "No Smart Cruise Control (SCC)"),
+  CAR.KIA_FORTE_2021_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2021", "No Smart Cruise Control (SCC)"),
+  CAR.GENESIS_G70_2021_NON_SCC: HyundaiCarInfo("Genesis G70 Non-SCC 2021", "No Smart Cruise Control (SCC)"),
 }
 
 class Buttons:
