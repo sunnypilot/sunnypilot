@@ -477,6 +477,18 @@ void SPControlsPanel::updateToggles() {
   // toggle names to update when SpeedLimitControl is flipped
   speed_limit_style->setVisible(params.getBool("SpeedLimitControl"));
   toggles["SpeedLimitPercOffset"]->setVisible(params.getBool("SpeedLimitControl"));
+
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+      toggles["EnforceTorqueLateral"]->setEnabled(false);
+      params.remove("EnforceTorqueLateral");
+    }
+  }
 }
 
 SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {

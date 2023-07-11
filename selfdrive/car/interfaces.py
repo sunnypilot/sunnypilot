@@ -130,7 +130,7 @@ class CarInterfaceBase(ABC):
   def get_params(cls, candidate: str, fingerprint: Dict[int, Dict[int, int]], car_fw: List[car.CarParams.CarFw], experimental_long: bool, docs: bool):
     ret = CarInterfaceBase.get_std_params(candidate)
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
-    if Params().get_bool("EnforceTorqueLateral"):
+    if Params().get_bool("EnforceTorqueLateral") and ret.steerControlType != car.CarParams.SteerControlType.angle:
       ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
 
     # Set common params using fields set by the car interface
