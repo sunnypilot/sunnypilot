@@ -1,3 +1,7 @@
+sunnypilot - 0.9.3.2 (2023-07-xx)
+========================
+
+
 sunnypilot - 0.9.3.1 (2023-07-09)
 ========================
 * UPDATED: Synced with commaai's 0.9.3 release
