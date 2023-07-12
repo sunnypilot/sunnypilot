@@ -109,8 +109,8 @@ class Footnote(Enum):
     Column.FSR_LONGITUDINAL)
   SERIAL_STEERING = CarFootnote(
     "9th Generation model-years have ALC data over serial lines and require third party hardware to " +
-    "interface with openpilot. More information available " +
-    "on <a href=\"https://github.com/mlocoteta/serialSteeringHardware\" target=\"_blank\">mlocoteta's GitHub</a>.",
+    "interface with openpilot. For more information, " +
+    "see <a href=\"https://github.com/mlocoteta/serialSteeringHardware\" target=\"_blank\">mlocoteta's GitHub</a>.",
     Column.HARDWARE)
 
 
