@@ -2,6 +2,8 @@ sunnypilot - 0.9.3.2 (2023-07-xx)
 ========================
 * FIXED: Disallow torque lateral control for angle control platforms (e.g. Ford, Nissan, Tesla)
   * Torque lateral control cannot be used by angle control platforms, and would cause a "Controls Unresponsive" error if Torque lateral control is enforced in settings
+* Honda Accord 2016-17 support thanks to mlocoteta!
+  * Serial Steering hardware required. For more information, see https://github.com/mlocoteta/serialSteeringHardware
 
 sunnypilot - 0.9.3.1 (2023-07-09)
 ========================
