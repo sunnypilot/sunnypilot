@@ -279,7 +279,7 @@ A supported vehicle is one that just works when you install a comma three. All s
 <sup>3</sup>Requires a <a href="https://github.com/commaai/openpilot/wiki/GM#hardware" target="_blank">community built ASCM harness</a>. <b><i>NOTE: disconnecting the ASCM disables Automatic Emergency Braking (AEB).</i></b> <br />
 <sup>4</sup>2019 Honda Civic 1.6L Diesel Sedan does not have ALC below 12mph. <br />
 <sup>5</sup>openpilot operates above 25mph for 9th Generation Accord 4CYL, 6CYL and Hybrid which don't have Low-Speed Follow. <br />
-<sup>6</sup>9th Generation model years have ALC data over serial lines and require third party hardware to interface with openpilot. More information available on <a href=\"https://github.com/mlocoteta/serialSteeringHardware\" target=\"_blank\">mlocoteta's GitHub</a>. <br />
+<sup>6</sup>9th Generation model years have ALC data over serial lines and require third party hardware to interface with openpilot. More information available on <a href="https://github.com/mlocoteta/serialSteeringHardware" target="_blank">mlocoteta's GitHub</a>. <br />
 <sup>7</sup>Requires a <a href="https://comma.ai/shop/panda" target="_blank">red panda</a> for this <a href="https://en.wikipedia.org/wiki/CAN_FD" target="_blank">CAN FD car</a>. All the hardware needed is sold in the <a href="https://comma.ai/shop/can-fd-panda-kit" target="_blank">CAN FD kit</a>. <br />
 <sup>8</sup>openpilot operates above 28mph for Camry 4CYL L, 4CYL LE and 4CYL SE which don't have Full-Speed Range Dynamic Radar Cruise Control. <br />
 <sup>9</sup>Not including the China market Kamiq, which is based on the (currently) unsupported PQ34 platform. <br />
