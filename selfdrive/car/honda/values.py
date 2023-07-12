@@ -432,7 +432,7 @@ FW_VERSIONS = {
     (Ecu.srs, 0x18DA53F1, None): [
       b'77959-T2F-A030\x00\x00',
     ],
-  }, 
+  },
   CAR.CIVIC: {
     (Ecu.programmedFuelInjection, 0x18da10f1, None): [
       b'37805-5AA-A640\x00\x00',
@@ -1599,7 +1599,7 @@ FW_VERSIONS = {
 }
 
 DBC = {
-  CAR.ACCORD_NIDEC: dbc_dict('honda_accord_touring_2016_can_generated', 'acura_ilx_2016_nidec'),  
+  CAR.ACCORD_NIDEC: dbc_dict('honda_accord_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
   CAR.ACCORD: dbc_dict('honda_accord_2018_can_generated', None),
   CAR.ACCORDH: dbc_dict('honda_accord_2018_can_generated', None),
   CAR.ACURA_ILX: dbc_dict('acura_ilx_2016_can_generated', 'acura_ilx_2016_nidec'),
@@ -1640,4 +1640,5 @@ HONDA_BOSCH = {CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL,
                CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_2022, CAR.HRV_3G}
 HONDA_BOSCH_ALT_BRAKE_SIGNAL = {CAR.ACCORD, CAR.CRV_5G, CAR.ACURA_RDX_3G, CAR.HRV_3G}
 HONDA_BOSCH_RADARLESS = {CAR.CIVIC_2022, CAR.HRV_3G}
-SERIAL_STEERING = {CAR.ACCORD_NIDEC}
+
+SERIAL_STEERING = {CAR.ACCORD_NIDEC, }
