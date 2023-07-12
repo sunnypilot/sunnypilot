@@ -1,3 +1,8 @@
+sunnypilot - 0.9.3.2 (2023-07-xx)
+========================
+* FIXED: Disallow torque lateral control for angle control platforms (e.g. Ford, Nissan, Tesla)
+  * Torque lateral control cannot be used by angle control platforms, and would cause a "Controls Unresponsive" error if Torque lateral control is enforced in settings
+
 sunnypilot - 0.9.3.1 (2023-07-09)
 ========================
 * UPDATED: Synced with commaai's 0.9.3 release
