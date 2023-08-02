@@ -86,6 +86,8 @@ MapSettings::MapSettings(bool closeable, QWidget *parent) : QFrame(parent) {
   QObject::connect(NavigationRequest::instance(), &NavigationRequest::nextDestinationUpdated, this, &MapSettings::updateCurrentRoute);
 
   current_locations = NavigationRequest::instance()->currentLocations();
+
+  navigation_request = new NavigationRequest(this);
 }
 
 void MapSettings::mousePressEvent(QMouseEvent *ev) {
@@ -96,7 +98,7 @@ void MapSettings::mousePressEvent(QMouseEvent *ev) {
 void MapSettings::showEvent(QShowEvent *event) {
   if (custom_mapbox) {
     QString list = QString::fromStdString((params.get("ApiCache_NavDestinations")).c_str());
-    parseLocationsResponse(list.toUtf8(), true);
+    navigation_request->parseLocationsResponse(list.toUtf8(), true);
   }
   updateCurrentRoute();
 }

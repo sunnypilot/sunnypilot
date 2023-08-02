@@ -19,7 +19,7 @@
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
-const QRect speed_sgn_rc(bdr_s * 2, bdr_s * 2.5 + 202, 184, 184);
+const QRect speed_sgn_rc(UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2.5 + 202, 184, 184);
 
 const int UI_FREQ = 20; // Hz
 const int BACKLIGHT_OFFROAD = 50;

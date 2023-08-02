@@ -147,8 +147,8 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
   auto car_state = sm["carState"].getCarState();
 
-  QRect dlp_btn_rect = QRect(bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75) - scene.rn_offset, 150, 150);
-  QRect gac_btn_rect = QRect(bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75) - scene.rn_offset, 150, 150);
+  QRect dlp_btn_rect = QRect(UI_BORDER_SIZE * 2 + 220, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
+  QRect gac_btn_rect = QRect(UI_BORDER_SIZE * 2 + 220 + 180, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
@@ -684,8 +684,8 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   const QSize default_size = {172, 204};
   QSize set_speed_size = default_size;
-  if (is_metric || has_eu_speed_limit) rect_width = 200;
-  if (has_us_speed_limit && speedLimitStr.size() >= 3) rect_width = 223;
+  if (is_metric || has_eu_speed_limit) set_speed_size.rwidth() = 200;
+  if (has_us_speed_limit && speedLimitStr.size() >= 3) set_speed_size.rwidth() = 223;
   if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || is_metric || has_eu_speed_limit) set_speed_size.rwidth() = 200;
   if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0 && speedLimitStrSlc.size() >= 3) ||
            (has_us_speed_limit && speedLimitStr.size() >= 3)) set_speed_size.rwidth() = 223;
@@ -794,9 +794,9 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     }
 
     // ####### 1 COLUMN ########
-    QRect rc2(rect().right() - (bdr_s * 2), bdr_s * 1.5, 184, 152);
+    QRect rc2(rect().right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 152);
     if (devUiEnabled) {
-      drawRightDevUi(p, rect().right() - 184 - bdr_s * 2, bdr_s * 2 + rc2.height());
+      drawRightDevUi(p, rect().right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rc2.height());
     }
 
     int rn_btn = 0;
@@ -805,11 +805,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // Dynamic Lane Profile Button
     if (dynamicLaneProfileToggle) {
-      drawDlpButton(p, bdr_s * 2 + 220, (rect().bottom() - footer_h / 2 - 75) - rn_btn, 150, 150);
+      drawDlpButton(p, UI_BORDER_SIZE * 2 + 220, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
     }
 
     if (gac) {
-      drawGacButton(p, bdr_s * 2 + 220 + 180, (rect().bottom() - footer_h / 2 - 75) - rn_btn, 150, 150);
+      drawGacButton(p, UI_BORDER_SIZE * 2 + 220 + 180, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
     }
 
     // Stand Still Timer
@@ -819,7 +819,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // V-TSC
     if (showDebugUI && showVTC) {
-      drawVisionTurnControllerUI(p, rect().right() - 184 - bdr_s, int(bdr_s * 1.5), 184, vtcColor, vtcSpeed, 100);
+      drawVisionTurnControllerUI(p, rect().right() - 184 - UI_BORDER_SIZE, int(UI_BORDER_SIZE * 1.5), 184, vtcColor, vtcSpeed, 100);
     }
 
     // Bottom bar road name
@@ -829,21 +829,21 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
       p.setPen(Qt::NoPen);
       p.setBrush(QColor(0, 0, 0, 100));
       p.drawRect(bar_rc);
-      configFont(p, "Inter", 28, "Bold");
+      p.setFont(InterFont(28, QFont::Bold));
       drawCenteredText(p, bar_rc.center().x(), bar_rc.center().y(), roadName, QColor(255, 255, 255, 200));
     }
 
     // Turn Speed Sign
     if (showTurnSpeedLimit) {
       QRect rc = speed_sgn_rc;
-      rc.moveTop(speed_sgn_rc.bottom() + bdr_s);
+      rc.moveTop(speed_sgn_rc.bottom() + UI_BORDER_SIZE);
       drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
     }
   }
 
   // E2E Status
   if (uiState()->scene.e2e_long_alert_ui && e2eState != 0) {
-    drawE2eStatus(p, bdr_s * 2 + 190, 45, 150, 150, e2eState);
+    drawE2eStatus(p, UI_BORDER_SIZE * 2 + 190, 45, 150, 150, e2eState);
   }
   p.restore();
 }
@@ -857,7 +857,7 @@ void AnnotatedCameraWidget::drawText(QPainter &p, int x, int y, const QString &t
 }
 
 void AnnotatedCameraWidget::drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color) {
-  QRect real_rect = getTextRect(p, 0, text);
+  QRect real_rect = p.fontMetrics().boundingRect(text);
   real_rect.moveCenter({x, y - real_rect.height() / 2});
 
   p.setPen(color);
@@ -865,7 +865,7 @@ void AnnotatedCameraWidget::drawColoredText(QPainter &p, int x, int y, const QSt
 }
 
 void AnnotatedCameraWidget::drawCenteredText(QPainter &p, int x, int y, const QString &text, QColor color) {
-  QRect real_rect = getTextRect(p, 0, text);
+  QRect real_rect = p.fontMetrics().boundingRect(text);
   real_rect.moveCenter({x, y});
 
   p.setPen(color);
@@ -1768,7 +1768,7 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
       else dist = QString::number((radar_v_rel + v_ego) * 2.236936,'f', 0) + "mph";
     }
     int str_w = 200;
-    configFont(painter, "Inter", 44, "SemiBold");
+    painter.setFont(InterFont(44, QFont::DemiBold));
     painter.setPen(QColor(0x0, 0x0, 0x0 , 200)); // Shadow
     float lock_indicator_dx = 2; // Avoid downward cross sights
     painter.drawText(QRect(x + 2 + lock_indicator_dx, y - 50 + 2, str_w, 50), Qt::AlignBottom | Qt::AlignLeft, dist);

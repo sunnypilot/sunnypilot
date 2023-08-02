@@ -27,14 +27,14 @@ public:
   static NavigationRequest *instance();
   QJsonArray currentLocations() const { return locations; };
 
+  NavigationRequest(QObject *parent);
+  void parseLocationsResponse(const QString &response, bool success);
+
 signals:
   void locationsUpdated(const QJsonArray &locations);
   void nextDestinationUpdated();
 
 private:
-  NavigationRequest(QObject *parent);
-  void parseLocationsResponse(const QString &response, bool success);
-
   Params params;
   QString prev_response;
   QJsonArray locations;
@@ -62,6 +62,7 @@ private:
   DestinationWidget *home_widget;
   DestinationWidget *work_widget;
   std::vector<DestinationWidget *> widgets;
+  NavigationRequest *navigation_request;
   bool custom_mapbox;
 
 signals:
