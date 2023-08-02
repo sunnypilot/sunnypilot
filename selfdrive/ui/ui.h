@@ -55,6 +55,7 @@ struct Alert {
     if (display_debug_alert_frame > 0 && (sm.frame - display_debug_alert_frame) <= 1 * UI_FREQ) {
       return {"Debug snapshot collected", "",
               "debugTapDetected", cereal::ControlsState::AlertSize::SMALL,
+              cereal::ControlsState::AlertStatus::NORMAL,
               AudibleAlert::WARNING_SOFT};
     } else if (controls_frame >= started_frame) {  // Don't get old alert.
       alert = {cs.getAlertText1().cStr(), cs.getAlertText2().cStr(),
