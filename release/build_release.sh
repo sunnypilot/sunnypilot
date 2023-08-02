@@ -52,10 +52,8 @@ git branch --set-upstream-to=origin/$RELEASE_BRANCH
 # Build panda firmware
 pushd panda/
 scons -u .
-mv board/obj/panda.bin.signed /tmp/panda.bin.signed
-mv board/obj/panda_h7.bin.signed /tmp/panda_h7.bin.signed
-mv board/obj/bootstub.panda.bin /tmp/bootstub.panda.bin
-mv board/obj/bootstub.panda_h7.bin /tmp/bootstub.panda_h7.bin
+mkdir /tmp/panda_obj/
+mv board/obj/panda.bin.signed board/obj/panda_h7.bin.signed board/obj/bootstub.panda.bin board/obj/bootstub.panda_h7.bin /tmp/panda_obj/
 popd
 
 # Build
@@ -86,10 +84,7 @@ rm selfdrive/modeld/models/supercombo.onnx
 rm -rf selfdrive/ui/replay/
 # Move back signed panda fw
 mkdir -p panda/board/obj
-mv /tmp/panda.bin.signed panda/board/obj/panda.bin.signed
-mv /tmp/panda_h7.bin.signed panda/board/obj/panda_h7.bin.signed
-mv /tmp/bootstub.panda.bin panda/board/obj/bootstub.panda.bin
-mv /tmp/bootstub.panda_h7.bin panda/board/obj/bootstub.panda_h7.bin
+mv /tmp/panda_obj/* panda/board/obj/
 
 # Restore third_party
 git checkout third_party/

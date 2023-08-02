@@ -20,6 +20,8 @@ class CarInterface(CarInterfaceBase):
       self.ext_bus = CANBUS.cam
       self.cp_ext = self.cp_cam
 
+    self.eps_timer_soft_disable_alert = False
+
     self.buttonStatesPrev = BUTTON_STATES.copy()
 
   @staticmethod
@@ -93,6 +95,7 @@ class CarInterface(CarInterfaceBase):
     ret.stoppingControl = True
     ret.startingState = True
     ret.startAccel = 1.0
+    ret.stopAccel = -0.55
     ret.vEgoStarting = 1.0
     ret.vEgoStopping = 1.0
     ret.longitudinalTuning.kpV = [0.1]
@@ -301,6 +304,9 @@ class CarInterface(CarInterfaceBase):
       if c.enabled and ret.vEgo < self.CP.minEnableSpeed:
         events.add(EventName.speedTooLow)
 
+    if self.eps_timer_soft_disable_alert:
+      events.add(EventName.steerTimeLimit)
+
     ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
                                                            self.CC.target_speed, self.CC.v_set_dis,
                                                            self.CC.speed_diff, self.CC.button_type)
@@ -313,4 +319,5 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   def apply(self, c, now_nanos):
-    return self.CC.update(c, self.CS, self.ext_bus, now_nanos)
+    new_actuators, can_sends, self.eps_timer_soft_disable_alert = self.CC.update(c, self.CS, self.ext_bus, now_nanos)
+    return new_actuators, can_sends

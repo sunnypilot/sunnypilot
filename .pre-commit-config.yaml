@@ -5,5 +5,5 @@ repos:
     -   id: poetry-check
     -   id: poetry-lock
         name: validate poetry lock
-        args: 
+        args:
         - --check
