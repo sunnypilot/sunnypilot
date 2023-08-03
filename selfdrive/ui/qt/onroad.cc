@@ -690,7 +690,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0 && speedLimitStrSlc.size() >= 3) ||
            (has_us_speed_limit && speedLimitStr.size() >= 3)) set_speed_size.rwidth() = 223;
 
-  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0) || has_us_speed_limit) set_speed_size.rheight() += us_sign_height + sign_margin + (slcSubText == "" ? 0 : 30);
+  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0) || has_us_speed_limit) set_speed_size.rheight() += us_sign_height + sign_margin;
   else if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) set_speed_size.rheight() += eu_sign_size + sign_margin;
 
   int top_radius = 32;
