@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Hot Coffee (June 2, 2023)"
+#define CURRENT_MODEL "Moonrise (June 30, 2023)"
