@@ -370,12 +370,13 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
 
   map_settings_btn = new MapSettingsButton(this);
-  main_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
 
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size + 5, img_size + 5});
   map_img = loadPixmap("../assets/img_world_icon.png", {subsign_img_size, subsign_img_size});
   left_img = loadPixmap("../assets/img_turn_left_icon.png", {subsign_img_size, subsign_img_size});
   right_img = loadPixmap("../assets/img_turn_right_icon.png", {subsign_img_size, subsign_img_size});
+
+  QHBoxLayout *buttons_layout = new QHBoxLayout(this);
 
   // screen recoder - neokii
 
@@ -389,11 +390,15 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   record_timer->start(1000/UI_FREQ);
 
   recorder = new ScreenRecoder(this);
-  main_layout->addWidget(recorder);
-  main_layout->addWidget(recorder, 0, Qt::AlignRight | Qt::AlignBottom);
+  buttons_layout->addWidget(recorder);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &AnnotatedCameraWidget::offroadTransition);
 #endif
+
+  buttons_layout->addSpacing(60);
+  buttons_layout->addWidget(map_settings_btn);
+  buttons_layout->setAlignment(Qt::AlignBottom | Qt::AlignRight);
+  main_layout->addLayout(buttons_layout);
 }
 
 #ifdef ENABLE_DASHCAM

@@ -25,12 +25,14 @@ ScreenRecoder::ScreenRecoder(QWidget *parent) : QPushButton(parent), image_queue
   recording = false;
   started = 0;
   frame = 0;
+  rec_btn_size = 120;
 
   setVisible(false);
-  setFixedSize(btn_size, btn_size);
+  setFixedSize(rec_btn_size, rec_btn_size);
   setFocusPolicy(Qt::NoFocus);
-  connect(this, SIGNAL(pressed()),this,SLOT(btnPressed()));
-  connect(this, SIGNAL(released()),this,SLOT(btnReleased()));
+  QObject::connect(this, &QPushButton::clicked, [=]() {
+    toggle();
+  });
 
   std::string path = "/data/media/0/videos";
   src_width = 2160;
@@ -65,24 +67,24 @@ void ScreenRecoder::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   p.setRenderHint(QPainter::Antialiasing);
 
-  QPoint center(btn_size / 2 - 25, btn_size / 2 + 10 - 30);
-  QRect rec_btn(36 - 25, 36 + 10 - 30, 120, 120);
+  QPoint center(rec_btn_size / 2, rec_btn_size / 2);
 
   p.setOpacity(1.0);
   p.setPen(Qt::NoPen);
   p.setBrush(QBrush(recording ? recording_color : QColor(252, 255, 253, 70)));
-  p.setOpacity(isDown() ? 0.8 : 1.0);
-  p.drawEllipse(center, 120 / 2, 120 / 2);
+  p.setOpacity(isDown() ? 0.6 : 1.0);
+  p.drawEllipse(center, rec_btn_size / 2, rec_btn_size / 2);
+
   p.setPen(Qt::white);
   p.setFont(QFont("Arial", 30));
-  p.drawText(rec_btn, Qt::AlignCenter, "REC");
-}
+  QFontMetrics fontMetrics(p.font());
+  int textWidth = fontMetrics.width("REC");
+  int textHeight = fontMetrics.height();
 
-void ScreenRecoder::btnReleased(void) {
-  toggle();
-}
+  int textX = center.x() - textWidth / 2;
+  int textY = center.y() / 1.5; // Adjust vertically for proper alignment
 
-void ScreenRecoder::btnPressed(void) {
+  p.drawText(textX, textY, textWidth, textHeight, Qt::AlignCenter, "REC");
 }
 
 void ScreenRecoder::openEncoder(const char* filename) {
