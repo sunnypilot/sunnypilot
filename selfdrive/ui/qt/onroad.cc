@@ -376,7 +376,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   left_img = loadPixmap("../assets/img_turn_left_icon.png", {subsign_img_size, subsign_img_size});
   right_img = loadPixmap("../assets/img_turn_right_icon.png", {subsign_img_size, subsign_img_size});
 
-  QHBoxLayout *buttons_layout = new QHBoxLayout(this);
+  QHBoxLayout *buttons_layout = new QHBoxLayout();
 
   // screen recoder - neokii
 
