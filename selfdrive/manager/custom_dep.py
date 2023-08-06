@@ -12,6 +12,7 @@ from urllib.request import urlopen
 from glob import glob
 import subprocess
 import importlib.util
+from importlib.metadata import version
 
 # NOTE: Do NOT import anything here that needs be built (e.g. params)
 from common.spinner import Spinner
@@ -25,6 +26,12 @@ TMP_DIR = '/data/tmp'
 THIRD_PARTY_DIR = '/data/openpilot/third_party/mapd'
 THIRD_PARTY_DIR_SP = '/data/third_party_community'
 PRELOADED_DEP_FILE = os.path.join(BASEDIR, "selfdrive/mapd/assets/mapd_deps.tar.xz")
+OPSPLINE_VERSION = "1.11.1"
+OVERPY_VERSION = "0.6"
+SPECS = {
+  'scipy': OPSPLINE_VERSION,
+  'overpy': OVERPY_VERSION,
+}
 
 
 def wait_for_internet_connection(return_on_failure=False):
@@ -57,9 +64,9 @@ def install_dep(spinner):
   pip_target = [f'--target={THIRD_PARTY_DIR}']
   packages = []
   if OPSPLINE_SPEC is None:
-    packages.append('scipy==1.11.1')
+    packages.append(f'scipy=={OPSPLINE_VERSION}')
   if OVERPY_SPEC is None:
-    packages.append('overpy==0.6')
+    packages.append(f'overpy=={OVERPY_VERSION}')
 
   pip = subprocess.Popen([sys.executable, "-m", "pip", "install", "-v"] + pip_target + packages,
                           stdout=subprocess.PIPE, env=my_env)
@@ -89,57 +96,67 @@ def install_dep(spinner):
   process_dup = subprocess.Popen(dup, stdout=subprocess.PIPE, shell=True)
 
 
-if __name__ == "__main__" and (OPSPLINE_SPEC is None or OVERPY_SPEC is None):
-  spinner = Spinner()
-  preload_fault = False
-  try:
-    if os.path.exists(PRELOADED_DEP_FILE):
-      spinner.update("Loading preloaded dependencies")
-      try:
-        with tarfile.open(PRELOADED_DEP_FILE, "r:xz") as tar:
-          for member in tar.getmembers():
-            split_components = member.name.split('/')
-            if len(split_components) > 1:
-              member.name = '/'.join(split_components[1:])
-            tar.extract(member, path=THIRD_PARTY_DIR)
-        print(f"SP_LOG: Preloaded dependencies extracted to {THIRD_PARTY_DIR}")
-      except Exception as e:
-        preload_fault = True
-        command = f'rm -rf {THIRD_PARTY_DIR}'
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-        print(f"SP_LOG: An error occurred while extracting preloaded dependencies: {e}")
-        print(f"SP_LOG: Cleanup directory {e}")
-    if not os.path.exists(PRELOADED_DEP_FILE) or preload_fault:
-      if os.path.exists(THIRD_PARTY_DIR_SP):
-        try:
-          spinner.update("Loading cached dependencies")
-          command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
-          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-          print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
-          print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
-        except Exception as e:
-          command = f'rm -rf {THIRD_PARTY_DIR}'
-          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-          print(f"SP_LOG: An error occurred while loading cached dependencies: {e}")
-          print(f"SP_LOG: Cleanup directory {e}")
-      else:
-        spinner.update("Waiting for internet")
-        try:
-          install_dep(spinner)
-        except Exception as e:
-          command = f'rm -rf {THIRD_PARTY_DIR}'
-          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-          print(f"SP_LOG: An error occurred while downloading dependencies: {e}")
-          print(f"SP_LOG: Cleanup directory {e}")
-  except Exception:
+if __name__ == "__main__":
+  reload_required = False
+  for package, req_version in SPECS.items():
+    package_spec = importlib.util.find_spec(package)
+    if package_spec is not None and version(package) != req_version:
+      print(f"SP_LOG: current {package} is {version(package)}, requires {req_version}. Removing directory {THIRD_PARTY_DIR}...")
+      reload_required = True
+  if reload_required:
     command = f'rm -rf {THIRD_PARTY_DIR}'
     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-    import selfdrive.sentry as sentry
-    sentry.init(sentry.SentryProject.SELFDRIVE)
-    traceback.print_exc()
-    sentry.capture_exception()
+  if OPSPLINE_SPEC is None or OVERPY_SPEC is None or reload_required:
+    spinner = Spinner()
+    preload_fault = False
+    try:
+      if os.path.exists(PRELOADED_DEP_FILE):
+        spinner.update("Loading preloaded dependencies")
+        try:
+          with tarfile.open(PRELOADED_DEP_FILE, "r:xz") as tar:
+            for member in tar.getmembers():
+              split_components = member.name.split('/')
+              if len(split_components) > 1:
+                member.name = '/'.join(split_components[1:])
+              tar.extract(member, path=THIRD_PARTY_DIR)
+          print(f"SP_LOG: Preloaded dependencies extracted to {THIRD_PARTY_DIR}")
+        except Exception as e:
+          preload_fault = True
+          command = f'rm -rf {THIRD_PARTY_DIR}'
+          process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+          print(f"SP_LOG: An error occurred while extracting preloaded dependencies: {e}")
+          print(f"SP_LOG: Cleanup directory {e}")
+      if not os.path.exists(PRELOADED_DEP_FILE) or preload_fault:
+        if os.path.exists(THIRD_PARTY_DIR_SP):
+          try:
+            spinner.update("Loading cached dependencies")
+            command = f'rm -rf {THIRD_PARTY_DIR}; cp -rf {THIRD_PARTY_DIR_SP} {THIRD_PARTY_DIR}'
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+            print(f"SP_LOG: Removed directory {THIRD_PARTY_DIR}")
+            print(f"SP_LOG: Copied {THIRD_PARTY_DIR_SP} to {THIRD_PARTY_DIR}")
+          except Exception as e:
+            command = f'rm -rf {THIRD_PARTY_DIR}'
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+            print(f"SP_LOG: An error occurred while loading cached dependencies: {e}")
+            print(f"SP_LOG: Cleanup directory {e}")
+        else:
+          spinner.update("Waiting for internet")
+          try:
+            install_dep(spinner)
+          except Exception as e:
+            command = f'rm -rf {THIRD_PARTY_DIR}'
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+            print(f"SP_LOG: An error occurred while downloading dependencies: {e}")
+            print(f"SP_LOG: Cleanup directory {e}")
+    except Exception:
+      command = f'rm -rf {THIRD_PARTY_DIR}'
+      process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+      import selfdrive.sentry as sentry
+      sentry.init(sentry.SentryProject.SELFDRIVE)
+      traceback.print_exc()
+      sentry.capture_exception()
 
-    error = traceback.format_exc(-3)
-    error = "Dependency Manager failed to start\n\n" + error
-    with TextWindow(error) as t:
-      t.wait_for_exit()
+      error = traceback.format_exc(-3)
+      error = "Dependency Manager failed to start\n\n" + error
+      with TextWindow(error) as t:
+        t.wait_for_exit()
