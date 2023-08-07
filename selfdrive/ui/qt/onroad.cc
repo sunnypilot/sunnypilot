@@ -147,17 +147,11 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
   auto car_state = sm["carState"].getCarState();
 
-  QRect dlp_btn_rect = QRect(scene.dlp_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
   QRect gac_btn_rect = QRect(scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (scene.dynamic_lane_profile_toggle && scene.sleep_btn_opacity == 20 && dlp_btn_rect.contains(e->x(), e->y())) {
-    scene.dynamic_lane_profile++;
-    scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
-    params.put("DynamicLaneProfile", std::to_string(scene.dynamic_lane_profile));
-    propagate_event = false;
-  } else if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && car_state.getCruiseState().getAvailable() &&
+  if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && car_state.getCruiseState().getAvailable() &&
              scene.sleep_btn_opacity == 20 && gac_btn_rect.contains(e->x(), e->y())) {
     scene.gac_tr--;
     scene.gac_tr = scene.gac_tr < scene.gac_min ? scene.gac_max : scene.gac_tr;
@@ -466,9 +460,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("gasOverride", car_state.getGasPressed());
   setProperty("latActive", car_control.getLatActive());
   setProperty("madsEnabled", car_state.getMadsEnabled());
-
-  setProperty("dynamicLaneProfileToggle", s.scene.dynamic_lane_profile_toggle);
-  setProperty("dynamicLaneProfile", s.scene.dynamic_lane_profile);
 
   setProperty("brakeLights", car_state.getBrakeLights() && s.scene.visual_brake_lights);
 
@@ -789,16 +780,14 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // counts total number of UI buttons to display; modify this if add/change/remove UI buttons
-  bool dlp_on = dynamicLaneProfileToggle;
   bool gac_on = gac;
-  int total_ui_buttons = int(dlp_on) + int(gac_on);
+  int total_ui_buttons = int(gac_on);
 
   int btnValues[total_ui_buttons];
   for (int i = 0; i < total_ui_buttons; i++) {
     btnValues[i] = UI_BORDER_SIZE * 2 + 220 + (i * 180);
   }
-  uiState()->scene.dlp_btn = dlp_on ? btnValues[0] : 0;
-  uiState()->scene.gac_btn = dlp_on ? btnValues[1] : btnValues[0];
+  uiState()->scene.gac_btn = gac_on ? btnValues[0] : 0;
 
   if (!reversing) {
     // ####### 1 ROW #######
@@ -819,11 +808,6 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     int rn_btn = 0;
     rn_btn = devUiEnabled && !mapVisible && devUiInfo == 1 ? 30 : 0;
     uiState()->scene.rn_offset = rn_btn;
-
-    // Dynamic Lane Profile Button
-    if (dynamicLaneProfileToggle) {
-      drawDlpButton(p, uiState()->scene.dlp_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
-    }
 
     if (gac) {
       drawGacButton(p, uiState()->scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
@@ -909,34 +893,6 @@ void AnnotatedCameraWidget::drawVisionTurnControllerUI(QPainter &p, int x, int y
 
   p.setFont(InterFont(56, QFont::DemiBold));
   drawCenteredText(p, rvtc.center().x(), rvtc.center().y(), vision_speed, color);
-}
-
-void AnnotatedCameraWidget::drawDlpButton(QPainter &p, int x, int y, int w, int h) {
-  int prev_dynamic_lane_profile = -1;
-  QString dlp_text = "";
-  QColor dlp_border = QColor(255, 255, 255, (255 * btnPerc));
-
-  if (prev_dynamic_lane_profile != dynamicLaneProfile) {
-    prev_dynamic_lane_profile = dynamicLaneProfile;
-    if (dynamicLaneProfile == 0) {
-      dlp_text = tr("Lane\nonly");
-      dlp_border = QColor(32, 32, 248, (255 * btnPerc));
-    } else if (dynamicLaneProfile == 1) {
-      dlp_text = tr("Lane\nless");
-      dlp_border = QColor(13, 248, 122, (255 * btnPerc));
-    } else if (dynamicLaneProfile == 2) {
-      dlp_text = tr("Auto\nLane");
-      dlp_border = QColor(13, 248, 248, (255 * btnPerc));
-    }
-  }
-
-  QRect dlpBtn(x, y, w, h);
-  p.setPen(QPen(dlp_border, 6));
-  p.setBrush(QColor(75, 75, 75, (75 * btnPerc)));
-  p.drawEllipse(dlpBtn);
-  p.setPen(QColor(255, 255, 255, (255 * btnPerc)));
-  p.setFont(InterFont(36, QFont::DemiBold));
-  p.drawText(dlpBtn, Qt::AlignCenter, dlp_text);
 }
 
 void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int h) {

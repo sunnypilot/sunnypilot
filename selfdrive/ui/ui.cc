@@ -233,8 +233,6 @@ void ui_update_params(UIState *s) {
   auto params = Params();
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
-  s->scene.dynamic_lane_profile_toggle = params.getBool("DynamicLaneProfileToggle");
-  s->scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
   s->scene.visual_brake_lights = params.getBool("BrakeLights");
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
