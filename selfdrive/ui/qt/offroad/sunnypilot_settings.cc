@@ -165,7 +165,12 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
       "../assets/offroad/icon_openpilot.png",
     },
-    // Dynamic Lane Profile group will fit here
+    {
+      "DynamicLaneProfileToggle",
+      tr("Enable Dynamic Lane Profile"),
+      tr("Enable toggle to use Dynamic Lane Profile. Disable toggle to use Laneless only."),
+      "../assets/offroad/icon_road.png",
+    },
     {
       "VisionCurveLaneless",
       tr("Laneless for Curves in \"Auto lane\""),
@@ -260,16 +265,11 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     },
   };
 
-  // Controls: Dynamic Lane Profile group
-  auto dynamic_lane_profile = new DynamicLaneProfile(this);
-
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
-    "EnableMads", "CustomOffsets", "GapAdjustCruise", "EnforceTorqueLateral",
+    "EnableMads", "DynamicLaneProfileToggle", "CustomOffsets", "GapAdjustCruise", "EnforceTorqueLateral",
     "SpeedLimitPercOffset", "SpeedLimitControl"
   };
-  connect(dynamic_lane_profile, &DynamicLaneProfile::updateExternalToggles, this, &SPControlsPanel::updateToggles);
-
   // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
   std::vector<std::string> updateTogglesNamesAlert{
     "CustomTorqueLateral", "LiveTorque"
@@ -304,11 +304,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
     addItem(toggle);
     toggles[param.toStdString()] = toggle;
-
-    if (param == "RoadEdge") {
-      // Controls: Dynamic Lane Profile group
-      addItem(dynamic_lane_profile);
-    }
 
     if (param == "CustomOffsets") {
       // Controls: Camera Offset (cm)
@@ -1847,44 +1842,4 @@ void SidebarTemp::showEvent(QShowEvent *event) {
 
 void SidebarTemp::updateToggles() {
   sidebar_temp_setting->setVisible(params.getBool("SidebarTemperature"));
-}
-
-DynamicLaneProfile::DynamicLaneProfile(QWidget *parent) : QWidget(parent), outer_layout(this) {
-  outer_layout.setMargin(0);
-  outer_layout.setSpacing(0);
-  outer_layout.addLayout(&inner_layout);
-  inner_layout.setMargin(0);
-  //inner_layout.setSpacing(25); // default spacing is 25
-  outer_layout.addStretch();
-
-  dynamicLaneProfile = new ParamControl(
-    "DynamicLaneProfileToggle",
-    tr("Enable Dynamic Lane Profile"),
-    tr("Enable toggle to use Dynamic Lane Profile. Disable toggle to use Laneless only."),
-    "../assets/offroad/icon_road.png"
-  );
-
-  std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
-  dlp_settings = new ButtonParamControl(
-    "DynamicLaneProfile", "", "",
-    "../assets/offroad/icon_blank.png",
-    dlp_settings_texts
-  );
-
-  connect(dynamicLaneProfile, &ToggleControl::toggleFlipped, [=]() {
-    updateToggles();
-    emit updateExternalToggles();
-  });
-
-  addItem(dynamicLaneProfile);
-  addItem(dlp_settings);
-}
-
-void DynamicLaneProfile::showEvent(QShowEvent *event) {
-  updateToggles();
-}
-
-void DynamicLaneProfile::updateToggles() {
-  // toggle names to update when DynamicLaneProfile is flipped
-  dlp_settings->setVisible(params.getBool("DynamicLaneProfileToggle"));
 }

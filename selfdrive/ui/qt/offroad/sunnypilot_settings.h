@@ -264,31 +264,6 @@ private:
   ButtonParamControl *sidebar_temp_setting;
 };
 
-class DynamicLaneProfile : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit DynamicLaneProfile(QWidget *parent = nullptr);
-  void showEvent(QShowEvent *event) override;
-
-signals:
-  void updateExternalToggles();
-
-public slots:
-  void updateToggles();
-
-private:
-  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
-  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
-  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
-  QVBoxLayout outer_layout;
-  QVBoxLayout inner_layout;
-  Params params;
-
-  ParamControl *dynamicLaneProfile;
-  ButtonParamControl *dlp_settings;
-};
-
 class SPGeneralPanel : public ListWidget {
   Q_OBJECT
 
