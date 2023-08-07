@@ -147,8 +147,8 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
   auto car_state = sm["carState"].getCarState();
 
-  QRect dlp_btn_rect = QRect(UI_BORDER_SIZE * 2 + 220, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
-  QRect gac_btn_rect = QRect(UI_BORDER_SIZE * 2 + 220 + 180, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
+  QRect dlp_btn_rect = QRect(scene.dlp_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
+  QRect gac_btn_rect = QRect(scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
@@ -788,6 +788,18 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawText(p, rect().center().x(), 290, speedUnit, 200);
   }
 
+  // counts total number of UI buttons to display; modify this if add/change/remove UI buttons
+  bool dlp_on = dynamicLaneProfileToggle;
+  bool gac_on = gac;
+  int total_ui_buttons = int(dlp_on) + int(gac_on);
+
+  int btnValues[total_ui_buttons];
+  for (int i = 0; i < total_ui_buttons; i++) {
+    btnValues[i] = UI_BORDER_SIZE * 2 + 220 + (i * 180);
+  }
+  uiState()->scene.dlp_btn = dlp_on ? btnValues[0] : 0;
+  uiState()->scene.gac_btn = dlp_on ? btnValues[1] : btnValues[0];
+
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
@@ -810,11 +822,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // Dynamic Lane Profile Button
     if (dynamicLaneProfileToggle) {
-      drawDlpButton(p, UI_BORDER_SIZE * 2 + 220, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
+      drawDlpButton(p, uiState()->scene.dlp_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
     }
 
     if (gac) {
-      drawGacButton(p, UI_BORDER_SIZE * 2 + 220 + 180, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
+      drawGacButton(p, uiState()->scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
     }
 
     // Stand Still Timer

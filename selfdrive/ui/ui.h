@@ -208,6 +208,9 @@ typedef struct UIScene {
 
   bool sidebar_temp;
   int sidebar_temp_options;
+
+  // UI button sorting
+  int dlp_btn, gac_btn;
 } UIScene;
 
 class UIState : public QObject {
