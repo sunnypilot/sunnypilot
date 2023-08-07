@@ -90,9 +90,6 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool latActive MEMBER latActive);
   Q_PROPERTY(bool madsEnabled MEMBER madsEnabled);
 
-  Q_PROPERTY(bool dynamicLaneProfileToggle MEMBER dynamicLaneProfileToggle);
-  Q_PROPERTY(int dynamicLaneProfile MEMBER dynamicLaneProfile);
-
   Q_PROPERTY(bool brakeLights MEMBER brakeLights);
 
   Q_PROPERTY(bool standStillTimer MEMBER standStillTimer);
@@ -182,7 +179,6 @@ private:
   void drawTrunSpeedSign(QPainter &p, QRect rc, const QString &speed, const QString &sub_text, int curv_sign,
                          bool is_active);
 
-  void drawDlpButton(QPainter &p, int x, int y, int w, int h);
   void drawGacButton(QPainter &p, int x, int y, int w, int h);
   void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color);
   void drawStandstillTimer(QPainter &p, int x, int y);
@@ -235,9 +231,6 @@ private:
   bool gasOverride = false;
   bool latActive = false;
   bool madsEnabled = false;
-
-  bool dynamicLaneProfileToggle;
-  int dynamicLaneProfile;
 
   bool brakeLights;
 
