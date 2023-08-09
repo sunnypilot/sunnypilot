@@ -119,8 +119,8 @@ void update_model(UIState *s,
     max_distance = std::clamp((float)(lead_d - fmin(lead_d * 0.35, 10.)), 0.0f, max_distance);
   }
   max_idx = get_path_length_idx(plan_position, max_distance);
-  update_line_data(s, plan_position, 0.9, 1.22, 1.22, &scene.track_vertices, max_idx, false);
-  update_line_data(s, plan_position, 1.0, 1.22, 1.22, &scene.track_edge_vertices, max_idx, false);
+  update_line_data(s, plan_position, 0.9 - scene.mads_path_range * scene.mads_path_scale, 1.22, 1.22, &scene.track_vertices, max_idx, false);
+  update_line_data(s, plan_position, 1.0 - scene.mads_path_range * scene.mads_path_scale - 0.1 * scene.mads_path_scale, 1.22, 1.22, &scene.track_edge_vertices, max_idx, false);
 }
 
 void update_dmonitoring(UIState *s, const cereal::DriverStateV2::Reader &driverstate, float dm_fade_state, bool is_rhd) {
@@ -276,12 +276,32 @@ void UIState::updateStatus() {
     auto controls_state = (*sm)["controlsState"].getControlsState();
     auto car_control = (*sm)["carControl"].getCarControl();
     auto car_state = (*sm)["carState"].getCarState();
+    auto mads_enabled = car_state.getMadsEnabled();
     auto state = controls_state.getState();
     if (state == cereal::ControlsState::OpenpilotState::PRE_ENABLED || state == cereal::ControlsState::OpenpilotState::OVERRIDING) {
       status = STATUS_OVERRIDE;
     } else {
       status = car_state.getMadsEnabled() ? car_control.getLongActive() ? STATUS_ENGAGED : STATUS_MADS : STATUS_DISENGAGED;
     }
+
+    if (mads_enabled != last_mads_enabled) {
+      mads_path_state = true;
+    }
+    last_mads_enabled = mads_enabled;
+    if (mads_path_state) {
+      if (mads_enabled) {
+        mads_path_count = fmax(mads_path_count - 1, 0);
+        if (mads_path_count == 0) {
+          mads_path_state = false;
+        }
+      } else {
+        mads_path_count = fmin(mads_path_count + 1, mads_path_timestep);
+        if (mads_path_count == mads_path_timestep) {
+          mads_path_state = false;
+        }
+      }
+    }
+    scene.mads_path_scale = mads_path_count * (1 / mads_path_timestep);
   }
 
   // Handle onroad/offroad transition

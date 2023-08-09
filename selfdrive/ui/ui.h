@@ -20,6 +20,8 @@ const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
 const QRect speed_sgn_rc(UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2.5 + 202, 184, 184);
+const float DRIVING_PATH_WIDE = 0.9;
+const float DRIVING_PATH_NARROW = 0.25;
 
 const int UI_FREQ = 20; // Hz
 const int BACKLIGHT_OFFROAD = 50;
@@ -209,6 +211,9 @@ typedef struct UIScene {
 
   // UI button sorting
   int gac_btn;
+
+  float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;
+  float mads_path_range = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;  // 0.9 - 0.25 = 0.65
 } UIScene;
 
 class UIState : public QObject {
@@ -251,6 +256,11 @@ private:
   bool started_prev = false;
   int prime_type = -1;
   uint64_t last_update_params_sidebar;
+
+  bool last_mads_enabled = false;
+  bool mads_path_state = false;
+  float mads_path_timestep = 4;  // UI runs at 20 Hz, therefore 0.2 second is [0.2 second / (1 / 20 Hz) = 4]
+  float mads_path_count = 4;     // UI runs at 20 Hz, therefore 0.2 second is [0.2 second / (1 / 20 Hz) = 4]
 };
 
 UIState *uiState();
