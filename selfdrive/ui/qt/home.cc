@@ -174,8 +174,8 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
     custom_mapbox = params.getBool("CustomMapbox") && QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
     if (!custom_mapbox) {
       left_widget->addWidget(new PrimeAdWidget);
-      left_widget->setStyleSheet("border-radius: 10px;");
     }
+    left_widget->setStyleSheet("border-radius: 10px;");
 
     left_widget->setCurrentIndex(!custom_mapbox ? uiState()->primeType() ? 0 : 1 : 0);
     connect(uiState(), &UIState::primeTypeChanged, [=](int prime_type) {
