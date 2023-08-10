@@ -1,6 +1,11 @@
 sunnypilot - 0.9.4.1 (2023-08-xx)
 ========================
 * UPDATED: Synced with commaai's 0.9.4 release
+* NEW❗: Moonrise driving model
+* NEW❗: Ford upstream models support
+  * G.A.C. support for Ford will be implemented in future updates
+* UPDATED: Dynamic Lane Profile selector in the "SP - Controls" menu
+* REMOVED: Dynamic Lane Profile driving screen UI button
 * FIXED: Disallow torque lateral control for angle control platforms (e.g. Ford, Nissan, Tesla)
   * Torque lateral control cannot be used by angle control platforms, and would cause a "Controls Unresponsive" error if Torque lateral control is enforced in settings
 * Honda Accord 2016-17 support thanks to mlocoteta!
