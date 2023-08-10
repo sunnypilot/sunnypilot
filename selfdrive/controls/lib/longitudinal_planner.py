@@ -213,7 +213,7 @@ class LongitudinalPlanner:
     longitudinalPlan.speedLimit = float(self.speed_limit_controller.speed_limit)
     longitudinalPlan.speedLimitOffset = float(self.speed_limit_controller.speed_limit_offset)
     longitudinalPlan.distToSpeedLimit = float(self.speed_limit_controller.distance)
-    longitudinalPlan.isMapSpeedLimit = bool(self.speed_limit_controller.source == SpeedLimitResolver.Source.map_data)
+    longitudinalPlan.isMapSpeedLimit = bool(self.speed_limit_controller.source not in (SpeedLimitResolver.Source.none, SpeedLimitResolver.Source.nav))
     longitudinalPlan.eventsDEPRECATED = self.events.to_msg()
 
     longitudinalPlan.turnSpeedControlState = self.turn_speed_controller.state

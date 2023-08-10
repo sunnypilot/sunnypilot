@@ -296,8 +296,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
   friction = new TorqueFriction();
   // Controls: Torque - LAT_ACCEL_FACTOR
   lat_accel_factor = new TorqueMaxLatAccel();
-  // Controls: MUTCD: US/Canada\nVienna: Europe/Asia/etc.
-  speed_limit_style = new SpeedLimitStyle();
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -332,11 +330,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
       // Controls: LAT_ACCEL_FACTOR
       addItem(lat_accel_factor);
-    }
-
-    if (param == "SpeedLimitControl") {
-      // Controls: MUTCD: US/Canada\nVienna: Europe/Asia/etc.
-      addItem(speed_limit_style);
     }
 
     if (param == "SpeedLimitPercOffset") {
@@ -480,7 +473,6 @@ void SPControlsPanel::updateToggles() {
   }
 
   // toggle names to update when SpeedLimitControl is flipped
-  speed_limit_style->setVisible(params.getBool("SpeedLimitControl"));
   toggles["SpeedLimitPercOffset"]->setVisible(params.getBool("SpeedLimitControl"));
 
   auto cp_bytes = params.get("CarParamsPersistent");
@@ -1456,77 +1448,6 @@ void TorqueMaxLatAccel::refresh() {
   float valuef = valuei * 0.01;
   QString valuefs = QString::number(valuef);
   label.setText(QString::fromStdString(valuefs.toStdString()));
-  btnminus.setText("-");
-  btnplus.setText("+");
-}
-
-SpeedLimitStyle::SpeedLimitStyle() : AbstractControl(
-  tr("Speed Limit Style"),
-  QString("%1<br>"
-          "%2")
-  .arg(tr("MUTCD: US/Canada"))
-  .arg(tr("Vienna: Europe/Asia/etc.")),
-  "../assets/offroad/icon_blank.png")
-
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("SpeedLimitStyle"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("SpeedLimitStyle", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("SpeedLimitStyle"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 1 ) {
-      value = 1;
-    }
-    QString values = QString::number(value);
-    params.put("SpeedLimitStyle", values.toStdString());
-    refresh();
-  });
-  refresh();
-}
-
-void SpeedLimitStyle::refresh() {
-  QString option = QString::fromStdString(params.get("SpeedLimitStyle"));
-  if (option == "0") {
-    label.setText(tr("MUTCD"));
-  } else {
-    label.setText(tr("Vienna"));
-  }
   btnminus.setText("-");
   btnplus.setText("+");
 }

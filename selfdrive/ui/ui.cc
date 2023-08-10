@@ -243,7 +243,6 @@ void ui_update_params(UIState *s) {
   s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
   s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
-  s->scene.speed_limit_style = std::atoi(params.get("SpeedLimitStyle").c_str());
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());

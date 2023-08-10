@@ -143,7 +143,6 @@ typedef struct UIScene {
   bool speed_limit_control_enabled;
   bool speed_limit_perc_offset;
   double last_speed_limit_sign_tap;
-  int speed_limit_style;
 
   // modelV2
   float lane_line_probs[4];

@@ -569,7 +569,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     setProperty("slcActive", !sl_inactive && !sl_temp_inactive);
     setProperty("overSpeedLimit", (((speed_limit_slc + speed_limit_offset) < cur_speed) && !sl_inactive && !sl_temp_inactive) ||
                                   ((speed_limit_slc < cur_speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive)));
-    setProperty("speedLimitStyle", s.scene.speed_limit_style);
 
     const float tsc_speed = lp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const auto tscState = lp.getTurnSpeedControlState();
@@ -672,6 +671,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   QString speedLimitStrSlc = showSpeedLimit ? QString::number(std::nearbyint(speedLimitSLC)) : "–";
   QString speedStr = QString::number(std::nearbyint(speed));
   QString setSpeedStr = is_cruise_set ? QString::number(std::nearbyint(setSpeed)) : "–";
+  const bool isNavSpeedLimit = has_us_speed_limit || has_eu_speed_limit;
 
   // Draw outer box + border to contain set speed and speed limit
   const int sign_margin = 12;
@@ -681,16 +681,14 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   const QSize default_size = {172, 204};
   QSize set_speed_size = default_size;
   if (is_metric || has_eu_speed_limit) set_speed_size.rwidth() = 200;
-  if (has_us_speed_limit && speedLimitStr.size() >= 3) set_speed_size.rwidth() = 223;
-  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || is_metric || has_eu_speed_limit) set_speed_size.rwidth() = 200;
-  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0 && speedLimitStrSlc.size() >= 3) ||
-           (has_us_speed_limit && speedLimitStr.size() >= 3)) set_speed_size.rwidth() = 223;
+  if ((mapSourcedSpeedLimit && !is_metric && speedLimitStrSlc.size() >= 3) ||
+      (has_us_speed_limit && speedLimitStr.size() >= 3)) set_speed_size.rwidth() = 223;
 
-  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0) || has_us_speed_limit) set_speed_size.rheight() += us_sign_height + sign_margin;
-  else if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) set_speed_size.rheight() += eu_sign_size + sign_margin;
+  if ((mapSourcedSpeedLimit && !is_metric) || has_us_speed_limit) set_speed_size.rheight() += us_sign_height + sign_margin;
+  else if ((mapSourcedSpeedLimit && is_metric) || has_eu_speed_limit) set_speed_size.rheight() += eu_sign_size + sign_margin;
 
   int top_radius = 32;
-  int bottom_radius = (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) ? 100 : 32;
+  int bottom_radius = ((mapSourcedSpeedLimit && is_metric) || has_eu_speed_limit) ? 100 : 32;
 
   QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
   p.setPen(QPen(whiteColor(75), 6));
@@ -731,7 +729,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   const QRect sign_rect = set_speed_rect.adjusted(sign_margin, default_size.height(), -sign_margin, -sign_margin);
   // US/Canada (MUTCD style) sign
-  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 0) || has_us_speed_limit) {
+  if ((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawRoundedRect(sign_rect, 24, 24);
@@ -753,7 +751,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // EU (Vienna style) sign
-  if (((!roadName.isEmpty() || showSpeedLimit) && speedLimitStyle == 1) || has_eu_speed_limit) {
+  if ((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawEllipse(sign_rect);

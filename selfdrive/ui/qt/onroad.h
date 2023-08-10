@@ -110,7 +110,6 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool overSpeedLimit MEMBER overSpeedLimit);
   Q_PROPERTY(bool mapSourcedSpeedLimit MEMBER mapSourcedSpeedLimit);
   Q_PROPERTY(bool slcActive MEMBER slcActive);
-  Q_PROPERTY(int speedLimitStyle MEMBER speedLimitStyle);
 
   Q_PROPERTY(bool showTurnSpeedLimit MEMBER showTurnSpeedLimit);
   Q_PROPERTY(QString turnSpeedLimit MEMBER turnSpeedLimit);
@@ -259,7 +258,6 @@ private:
   QString tscSubText;
   bool tscActive = false;
   int curveSign = 0;
-  int speedLimitStyle;
 
   bool hideVEgoUi;
 

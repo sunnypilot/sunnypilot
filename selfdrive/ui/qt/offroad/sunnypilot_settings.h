@@ -197,21 +197,6 @@ private:
   void refresh();
 };
 
-class SpeedLimitStyle : public AbstractControl {
-  Q_OBJECT
-
-public:
-  SpeedLimitStyle();
-
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
-  void refresh();
-};
-
 class DevUiInfo : public AbstractControl {
   Q_OBJECT
 
@@ -332,7 +317,6 @@ private:
   GapAdjustCruiseMode *gac_mode;
   TorqueFriction *friction;
   TorqueMaxLatAccel *lat_accel_factor;
-  SpeedLimitStyle *speed_limit_style;
 };
 
 class SPVehiclesPanel : public QWidget {
