@@ -8,8 +8,11 @@
           <input type="hidden" name="lon" value="{{lon}}">
           <select id="save_type" name="save_type" class="uk-select">
             <option value="recent">Recent</option>
-            <option value="home">Home</option>
-            <option value="work">Work</option>
+            <option value="home">Set Home</option>
+            <option value="work">Set Work</option>
+            <option value="fav1">Set Favorite 1</option>
+            <option value="fav2">Set Favorite 2</option>
+            <option value="fav3">Set Favorite 3</option>
           </select>
           <input class="uk-button uk-button-primary uk-width-1-1 uk-margin-small-bottom" type="submit" value="Start Navigation">
         </div>
