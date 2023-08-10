@@ -1,6 +1,7 @@
 sunnypilot - 0.9.4.1 (2023-08-xx)
 ========================
 * UPDATED: Synced with commaai's 0.9.4 release
+* NEW❗: Moonrise driving model
 * NEW❗: Ford upstream models support
   * G.A.C. support for Ford will be implemented in future updates
 * UPDATED: Dynamic Lane Profile selector in the "SP - Controls" menu
