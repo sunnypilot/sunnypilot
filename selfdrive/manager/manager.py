@@ -95,7 +95,6 @@ def manager_init() -> None:
     ("ShowDebugUI", "1"),
     ("SpeedLimitControl", "1"),
     ("SpeedLimitPercOffset", "1"),
-    ("SpeedLimitStyle", "0"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
     ("StandStillTimer", "0"),

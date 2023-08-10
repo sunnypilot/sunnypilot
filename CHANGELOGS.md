@@ -8,6 +8,7 @@ sunnypilot - 0.9.4.1 (2023-08-xx)
 * REMOVED: Dynamic Lane Profile driving screen UI button
 * FIXED: Disallow torque lateral control for angle control platforms (e.g. Ford, Nissan, Tesla)
   * Torque lateral control cannot be used by angle control platforms, and would cause a "Controls Unresponsive" error if Torque lateral control is enforced in settings
+* REMOVED: Speed Limit Style override
 * Honda Accord 2016-17 support thanks to mlocoteta!
   * Serial Steering hardware required. For more information, see https://github.com/mlocoteta/serialSteeringHardware
 
