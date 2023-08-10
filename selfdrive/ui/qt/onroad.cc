@@ -785,7 +785,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   int btnValues[total_ui_buttons];
   for (int i = 0; i < total_ui_buttons; i++) {
-    btnValues[i] = UI_BORDER_SIZE * 2 + 220 + (i * 180);
+    btnValues[i] = UI_BORDER_SIZE * 2 + 190 + (i * 180);
   }
   uiState()->scene.gac_btn = gac_on ? btnValues[0] : 0;
 
