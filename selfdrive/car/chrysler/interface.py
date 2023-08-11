@@ -8,14 +8,14 @@ from selfdrive.car.interfaces import CarInterfaceBase
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
-  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long):
+  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "chrysler"
-    ret.dashcamOnly = candidate in RAM_HD
 
     # radar parsing needs some work, see https://github.com/commaai/openpilot/issues/26842
     ret.radarUnavailable = True # DBC[candidate]['radar'] is None
     ret.steerActuatorDelay = 0.1
     ret.steerLimitTimer = 0.4
+    ret.customStockLongAvailable = True
 
     # safety config
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.chrysler)]
@@ -62,10 +62,10 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.88
       ret.steerRatio = 16.3
       ret.mass = 2493. + STD_CARGO_KG
-      ret.minSteerSpeed = 14.5
-      # Older EPS FW allow steer to zero
-      if any(fw.ecu == 'eps' and fw.fwVersion[:4] <= b"6831" for fw in car_fw):
-        ret.minSteerSpeed = 0.
+      ret.minSteerSpeed = 0.5
+      ret.minEnableSpeed = 14.5
+      if any(fw.ecu == 'eps' and fw.fwVersion in (b"68273275AF", b"68273275AG", b"68312176AE", b"68312176AG",) for fw in car_fw):
+        ret.minEnableSpeed = 0.
 
     elif candidate == CAR.RAM_HD:
       ret.steerActuatorDelay = 0.2
@@ -94,10 +94,16 @@ class CarInterface(CarInterfaceBase):
     events = self.create_common_events(ret, extra_gears=[car.CarState.GearShifter.low])
 
     # Low speed steer alert hysteresis logic
-    if self.CP.minSteerSpeed > 0. and ret.vEgo < (self.CP.minSteerSpeed + 0.5):
-      self.low_speed_alert = True
-    elif ret.vEgo > (self.CP.minSteerSpeed + 1.):
-      self.low_speed_alert = False
+    if self.CP.carFingerprint in RAM_DT:
+      if self.CS.out.vEgo >= self.CP.minEnableSpeed:
+        self.low_speed_alert = False
+      if (self.CP.minEnableSpeed >= 14.5) and (self.CS.out.gearShifter != car.CarState.GearShifter.drive):
+        self.low_speed_alert = True
+    else:
+      if self.CP.minSteerSpeed > 0. and ret.vEgo < (self.CP.minSteerSpeed + 0.5):
+        self.low_speed_alert = True
+      elif ret.vEgo > (self.CP.minSteerSpeed + 1.):
+        self.low_speed_alert = False
     if self.low_speed_alert:
       events.add(car.CarEvent.EventName.belowSteerSpeed)
 
