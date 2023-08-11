@@ -110,7 +110,7 @@ class CarState(CarStateBase):
       ret.leftBlindspot = cp_bsm.vl["Side_Detect_L_Stat"]["SodDetctLeft_D_Stat"] != 0
       ret.rightBlindspot = cp_bsm.vl["Side_Detect_R_Stat"]["SodDetctRight_D_Stat"] != 0
 
-    self.lkas_enabled = bool(cp.vl["Steering_Data_FD1"]["CcAslButtnSetIncPress"])
+    self.lkas_enabled = bool(cp.vl["Steering_Data_FD1"]["TjaButtnOnOffPress"])
 
     self.buttonStates["accelCruise"] = bool(cp.vl["Steering_Data_FD1"]["CcAslButtnSetIncPress"])
     self.buttonStates["decelCruise"] = bool(cp.vl["Steering_Data_FD1"]["CcAslButtnSetDecPress"])
