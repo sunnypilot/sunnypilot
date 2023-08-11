@@ -416,6 +416,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto radar_state = sm["radarState"].getRadarState();
   const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
+  const auto lateral_plan = sm["lateralPlan"].getLateralPlan();
 
   // Handle older routes where vCruiseCluster is not set
   float v_cruise =  cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
@@ -445,8 +446,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("has_eu_speed_limit", nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::VIENNA);
 
   // TODO: Add minimum speed?
-  setProperty("left_blindspot", cs_alive && sm["carState"].getCarState().getLeftBlindspot());
-  setProperty("right_blindspot", cs_alive && sm["carState"].getCarState().getRightBlindspot());
+  setProperty("left_blindspot", cs_alive && car_state.getLeftBlindspot());
+  setProperty("right_blindspot", cs_alive && car_state.getRightBlindspot());
 
   setProperty("is_cruise_set", cruise_set);
   setProperty("is_metric", s.scene.is_metric);
@@ -465,7 +466,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("standStillTimer", s.scene.stand_still_timer);
   setProperty("standStill", car_state.getStandstill());
-  setProperty("standstillElapsedTime", sm["lateralPlan"].getLateralPlan().getStandstillElapsed());
+  setProperty("standstillElapsedTime", lateral_plan.getStandstillElapsed());
 
   setProperty("hideVEgoUi", s.scene.hide_vego_ui);
 
@@ -502,9 +503,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   setProperty("btnPerc", s.scene.sleep_btn_opacity * 0.05);
 
-  setProperty("left_blinker", sm["carState"].getCarState().getLeftBlinker());
-  setProperty("right_blinker", sm["carState"].getCarState().getRightBlinker());
-  setProperty("lane_change_edge_block", sm["lateralPlan"].getLateralPlan().getLaneChangeEdgeBlock());
+  setProperty("left_blinker", car_state.getLeftBlinker());
+  setProperty("right_blinker", car_state.getRightBlinker());
+  setProperty("lane_change_edge_block", lateral_plan.getLaneChangeEdgeBlock());
 
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
