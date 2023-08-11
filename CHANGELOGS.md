@@ -11,6 +11,7 @@ sunnypilot - 0.9.4.1 (2023-08-xx)
 * REMOVED: Speed Limit Style override
 * Honda Accord 2016-17 support thanks to mlocoteta!
   * Serial Steering hardware required. For more information, see https://github.com/mlocoteta/serialSteeringHardware
+* mapd: utilize advisory speed limit in curves (#142) thanks to pfeiferj!
 
 sunnypilot - 0.9.3.1 (2023-07-09)
 ========================
