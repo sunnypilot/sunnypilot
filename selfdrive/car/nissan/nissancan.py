@@ -98,7 +98,7 @@ def create_lkas_hud_msg(packer, lkas_hud_msg, lat_active, blinking_icon, lateral
   values["RIGHT_LANE_YELLOW_FLASH"] = 1 if right_lane_depart else 0
   values["LEFT_LANE_YELLOW_FLASH"] = 1 if left_lane_depart else 0
 
-  values["LARGE_STEERING_WHEEL_ICON"] = 2 if lat_active else 3 if blinking_icon else 1 if lateral_paused else 0,
+  values["LARGE_STEERING_WHEEL_ICON"] = 2 if lat_active else 3 if blinking_icon else 1 if lateral_paused else 0
   values["RIGHT_LANE_GREEN"] = 1 if right_line and lat_active else 0
   values["LEFT_LANE_GREEN"] = 1 if left_line and lat_active else 0
 
