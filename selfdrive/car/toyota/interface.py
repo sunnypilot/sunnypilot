@@ -259,12 +259,13 @@ class CarInterface(CarInterfaceBase):
     if candidate in TSS2_CAR or ret.enableGasInterceptor:
       tune.kpBP = [0., 5., 20., 30.] if sp_tss2_long_tune else [0., 5., 20.]
       tune.kpV = [1.3, 1.0, 0.7, 0.1] if sp_tss2_long_tune else [1.3, 1.0, 0.7]
-      tune.kiBP = [0., 8.3, 11.9, 13.8, 19.7, 30., 33., 40.] if sp_tss2_long_tune else [0., 5., 12., 20., 27.]
-      tune.kiV = [.02, .03, .14, .18, .18, .06, .01, .001] if sp_tss2_long_tune else [.35, .23, .20, .17, .1]
+      tune.kiBP = [0.,   1.,    2.,    3.,   4.,   5.,    12.,  20.,  27., 40.] if sp_tss2_long_tune else [0., 5., 12., 20., 27.]
+      tune.kiV = [.348, .3361, .3168, .2831, .2571, .226, .198, .17,  .10, .01] if sp_tss2_long_tune else [.35, .23, .20, .17, .1]
       if candidate in TSS2_CAR:
-        ret.vEgoStopping = 0.25
-        ret.vEgoStarting = 0.25
-        ret.stoppingDecelRate = 0.009 if sp_tss2_long_tune else 0.3  # reach stopping target smoothly
+        ret.vEgoStopping = 0.15 if sp_tss2_long_tune else 0.25
+        ret.vEgoStarting = 0.15 if sp_tss2_long_tune else 0.25
+        ret.stopAccel = -0.4 if sp_tss2_long_tune else 0
+        ret.stoppingDecelRate = 0.05 if sp_tss2_long_tune else 0.3  # reach stopping target smoothly
     else:
       tune.kpBP = [0., 5., 35.]
       tune.kiBP = [0., 35.]
