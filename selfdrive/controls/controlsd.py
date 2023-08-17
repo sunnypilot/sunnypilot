@@ -14,6 +14,7 @@ from common.conversions import Conversions as CV
 from panda import ALTERNATIVE_EXPERIENCE
 from system.swaglog import cloudlog
 from system.version import is_release_branch, get_short_branch
+from selfdrive.athena.registration import is_registered_device
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_event, get_one_can
 from selfdrive.controls.lib.lane_planner import CAMERA_OFFSET
@@ -78,11 +79,19 @@ class Controls:
     self.log_sock = messaging.sub_sock('androidLog')
 
     self.params = Params()
+
+    self.d_camera_hardware_missing = self.params.get_bool("DriverCameraHardwareMissing") and not is_registered_device()
+    if self.d_camera_hardware_missing:
+      IGNORE_PROCESSES.update({"dmonitoringd", "dmonitoringmodeld"})
+      self.camera_packets.remove("driverCameraState")
+
     self.sm = sm
     if self.sm is None:
       ignore = ['testJoystick']
       if SIMULATION:
         ignore += ['driverCameraState', 'managerState']
+      if self.d_camera_hardware_missing:
+        ignore += ['driverMonitoringState']
       self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                      'driverMonitoringState', 'longitudinalPlan', 'lateralPlan', 'liveLocationKalman',
                                      'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters', 'testJoystick'] + self.camera_packets,
@@ -276,7 +285,8 @@ class Controls:
       self.events.add(EventName.gasPressedOverride)
 
     if not self.CP.notCar:
-      self.events.add_from_msg(self.sm['driverMonitoringState'].events)
+      if not self.d_camera_hardware_missing:
+        self.events.add_from_msg(self.sm['driverMonitoringState'].events)
       self.events.add_from_msg(self.sm['longitudinalPlan'].eventsDEPRECATED)
 
     # Add car events, ignore if CAN isn't valid
@@ -372,6 +382,9 @@ class Controls:
       if not SIMULATION and not self.rk.lagging:
         if not self.sm.all_alive(self.camera_packets):
           self.events.add(EventName.cameraMalfunction)
+          if not self.sm.all_alive(['driverCameraState']) and not self.d_camera_hardware_missing:
+            self.d_camera_hardware_missing = True
+            put_bool_nonblocking("DriverCameraHardwareMissing", True)
         elif not self.sm.all_freq_ok(self.camera_packets):
           self.events.add(EventName.cameraFrameRate)
       self.process_not_running = False

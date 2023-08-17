@@ -18,7 +18,7 @@ from system.hardware import HARDWARE, PC
 from selfdrive.manager.helpers import unblock_stdout, write_onroad_params
 from selfdrive.manager.process import ensure_running
 from selfdrive.manager.process_config import managed_processes
-from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
+from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
 from system.swaglog import cloudlog, add_file_handler
 from system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
                            get_normalized_origin, terms_version, training_version, \
@@ -204,6 +204,8 @@ def manager_thread() -> None:
   if os.getenv("NOBOARD") is not None:
     ignore.append("pandad")
   ignore += [x for x in os.getenv("BLOCK", "").split(",") if len(x) > 0]
+  if params.get("DriverCameraHardwareMissing") and not is_registered_device():
+    ignore += ["dmonitoringd", "dmonitoringmodeld"]
 
   sm = messaging.SubMaster(['deviceState', 'carParams'], poll=['deviceState'])
   pm = messaging.PubMaster(['managerState'])
