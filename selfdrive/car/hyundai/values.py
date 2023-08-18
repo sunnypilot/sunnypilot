@@ -27,7 +27,7 @@ class CarControllerParams:
     self.STEER_STEP = 1  # 100 Hz
 
     if CP.carFingerprint in CANFD_CAR:
-      upstream_taco = CP.safetyConfigs[-1].safetyParam == Panda.FLAG_HYUNDAI_UPSTREAM_TACO
+      upstream_taco = CP.safetyConfigs[-1].safetyParam & Panda.FLAG_HYUNDAI_UPSTREAM_TACO
       self.STEER_MAX = 270 if not upstream_taco else 384 if vEgoRaw < 11. else 330
       self.STEER_DRIVER_ALLOWANCE = 250 if not upstream_taco else 350
       self.STEER_DRIVER_MULTIPLIER = 2
