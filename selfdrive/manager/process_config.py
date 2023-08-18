@@ -47,7 +47,6 @@ procs = [
   NativeProcess("mapsd", "selfdrive/navd", ["./mapsd"]),
   NativeProcess("navmodeld", "selfdrive/modeld", ["./navmodeld"]),
   NativeProcess("sensord", "system/sensord", ["./sensord"], enabled=not PC),
-  NativeProcess("ui", "selfdrive/ui", ["./ui"], offroad=True, watchdog_max_dt=(5 if not PC else None), always_watchdog=True),
   NativeProcess("soundd", "selfdrive/ui/soundd", ["./soundd"]),
   NativeProcess("locationd", "selfdrive/locationd", ["./locationd"]),
   NativeProcess("boardd", "selfdrive/boardd", ["./boardd"], enabled=False),
@@ -70,6 +69,7 @@ procs = [
   PythonProcess("updated", "selfdrive.updated", enabled=not PC, onroad=False, offroad=True),
   PythonProcess("uploader", "system.loggerd.uploader", offroad=True),
   PythonProcess("statsd", "selfdrive.statsd", offroad=True),
+  NativeProcess("ui", "selfdrive/ui", ["./ui"], offroad=True, watchdog_max_dt=(5 if not PC else None), always_watchdog=True),
 
   PythonProcess("gpxd", "selfdrive.gpxd.gpxd"),
   PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", offroad=True),
