@@ -409,7 +409,8 @@ class CarInterfaceBase(ABC):
     return mads_enabled
 
   def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
-    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
+    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or \
+                                                  (self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed) else cs_out.cruiseState.enabled
     if not self.enable_mads:
       if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled:
         CS.madsEnabled = True
