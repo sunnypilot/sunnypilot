@@ -183,7 +183,6 @@ def create_adrv_messages(packer, CAN, frame):
 
   values = {
   }
-  ret.append(packer.make_can_msg("ADRV_0x51", CAN.ACAN, values))
 
   if frame % 2 == 0:
     values = {
