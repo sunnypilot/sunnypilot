@@ -446,8 +446,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("has_eu_speed_limit", nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::VIENNA);
 
   // TODO: Add minimum speed?
-  setProperty("left_blindspot", cs_alive && car_state.getLeftBlindspot());
-  setProperty("right_blindspot", cs_alive && car_state.getRightBlindspot());
+  left_blindspot = cs_alive && car_state.getLeftBlindspot();
+  right_blindspot = cs_alive && car_state.getRightBlindspot();
 
   setProperty("is_cruise_set", cruise_set);
   setProperty("is_metric", s.scene.is_metric);
@@ -457,55 +457,55 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   setProperty("hideBottomIcons", (cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE));
   setProperty("status", s.status);
 
-  setProperty("steerOverride", car_state.getSteeringPressed());
-  setProperty("gasOverride", car_state.getGasPressed());
-  setProperty("latActive", car_control.getLatActive());
-  setProperty("madsEnabled", car_state.getMadsEnabled());
+  steerOverride = car_state.getSteeringPressed();
+  gasOverride = car_state.getGasPressed();
+  latActive = car_control.getLatActive();
+  madsEnabled = car_state.getMadsEnabled();
 
-  setProperty("brakeLights", car_state.getBrakeLights() && s.scene.visual_brake_lights);
+  brakeLights = car_state.getBrakeLights() && s.scene.visual_brake_lights;
 
-  setProperty("standStillTimer", s.scene.stand_still_timer);
-  setProperty("standStill", car_state.getStandstill());
-  setProperty("standstillElapsedTime", lateral_plan.getStandstillElapsed());
+  standStillTimer = s.scene.stand_still_timer;
+  standStill = car_state.getStandstill();
+  standstillElapsedTime = lateral_plan.getStandstillElapsed();
 
-  setProperty("hideVEgoUi", s.scene.hide_vego_ui);
+  hideVEgoUi = s.scene.hide_vego_ui;
 
-  setProperty("gac", s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control &&
-              car_state.getCruiseState().getAvailable());
-  setProperty("gacTr", s.scene.gac_tr);
+  gac = s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control &&
+              car_state.getCruiseState().getAvailable();
+  gacTr = s.scene.gac_tr;
 
-  setProperty("mapVisible", s.scene.map_visible);
+  mapVisible = s.scene.map_visible;
 
   // ############################## DEV UI START ##############################
-  setProperty("lead_d_rel", radar_state.getLeadOne().getDRel());
-  setProperty("lead_v_rel", radar_state.getLeadOne().getVRel());
-  setProperty("lead_status", radar_state.getLeadOne().getStatus());
-  setProperty("lateralState", QString::fromStdString(cs.getLateralState()));
-  setProperty("angleSteers", car_state.getSteeringAngleDeg());
-  setProperty("steerAngleDesired", cs.getLateralControlState().getPidState().getSteeringAngleDesiredDeg());
-  setProperty("curvature", cs.getCurvature());
-  setProperty("roll", sm["liveParameters"].getLiveParameters().getRoll());
-  setProperty("memoryUsagePercent", sm["deviceState"].getDeviceState().getMemoryUsagePercent());
-  setProperty("devUiEnabled", s.scene.dev_ui_enabled);
-  setProperty("devUiInfo", s.scene.dev_ui_info);
-  setProperty("gpsAccuracy", gpsLocationExternal.getAccuracy());
-  setProperty("altitude", gpsLocationExternal.getAltitude());
-  setProperty("vEgo", car_state.getVEgo());
-  setProperty("aEgo", car_state.getAEgo());
-  setProperty("steeringTorqueEps", car_state.getSteeringTorqueEps());
-  setProperty("bearingAccuracyDeg", gpsLocationExternal.getBearingAccuracyDeg());
-  setProperty("bearingDeg", gpsLocationExternal.getBearingDeg());
-  setProperty("torquedUseParams", s.scene.live_torque_toggle && !s.scene.custom_torque_toggle);
-  setProperty("latAccelFactorFiltered", ltp.getLatAccelFactorFiltered());
-  setProperty("frictionCoefficientFiltered", ltp.getFrictionCoefficientFiltered());
-  setProperty("liveValid", ltp.getLiveValid());
+  lead_d_rel = radar_state.getLeadOne().getDRel();
+  lead_v_rel = radar_state.getLeadOne().getVRel();
+  lead_status = radar_state.getLeadOne().getStatus();
+  lateralState = QString::fromStdString(cs.getLateralState());
+  angleSteers = car_state.getSteeringAngleDeg();
+  steerAngleDesired = cs.getLateralControlState().getPidState().getSteeringAngleDesiredDeg();
+  curvature = cs.getCurvature();
+  roll = sm["liveParameters"].getLiveParameters().getRoll();
+  memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
+  devUiEnabled = s.scene.dev_ui_enabled;
+  devUiInfo = s.scene.dev_ui_info;
+  gpsAccuracy = gpsLocationExternal.getAccuracy();
+  altitude = gpsLocationExternal.getAltitude();
+  vEgo = car_state.getVEgo();
+  aEgo = car_state.getAEgo();
+  steeringTorqueEps = car_state.getSteeringTorqueEps();
+  bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
+  bearingDeg = gpsLocationExternal.getBearingDeg();
+  torquedUseParams = s.scene.live_torque_toggle && !s.scene.custom_torque_toggle;
+  latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
+  frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
+  liveValid = ltp.getLiveValid();
   // ############################## DEV UI END ##############################
 
-  setProperty("btnPerc", s.scene.sleep_btn_opacity * 0.05);
+  btnPerc = s.scene.sleep_btn_opacity * 0.05;
 
-  setProperty("left_blinker", car_state.getLeftBlinker());
-  setProperty("right_blinker", car_state.getRightBlinker());
-  setProperty("lane_change_edge_block", lateral_plan.getLaneChangeEdgeBlock());
+  left_blinker = car_state.getLeftBlinker();
+  right_blinker = car_state.getRightBlinker();
+  lane_change_edge_block = lateral_plan.getLaneChangeEdgeBlock();
 
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
@@ -532,17 +532,17 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     QColor vtc_color = tcs_colors[int(vtcState)];
     vtc_color.setAlpha(lpSoruce == cereal::LongitudinalPlan::LongitudinalPlanSource::TURN ? 255 : 100);
 
-    setProperty("showVTC", vtcState > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED);
-    setProperty("vtcSpeed", QString::number(std::nearbyint(vtc_speed)));
-    setProperty("vtcColor", vtc_color);
-    setProperty("showDebugUI", s.scene.show_debug_ui);
+    showVTC = vtcState > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED;
+    vtcSpeed = QString::number(std::nearbyint(vtc_speed));
+    vtcColor = vtc_color;
+    showDebugUI = s.scene.show_debug_ui;
 
     const auto lmd = sm["liveMapData"].getLiveMapData();
     QString road_name = QString::fromStdString(lmd.getCurrentRoadName());
 
     const auto data_type = int(lmd.getDataType());
     const QString data_type_draw(data_type == 2 ? "🌐  " : "");
-    setProperty("roadName", !road_name.isEmpty() ? data_type_draw + road_name : "");
+    roadName = !road_name.isEmpty() ? data_type_draw + road_name : "";
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
@@ -562,25 +562,25 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     const QString sl_substring(sl_inactive || sl_temp_inactive ? sl_inactive_str :
                                sl_distance > 0 ? sl_distance_str : sl_offset_str);
 
-    setProperty("showSpeedLimit", speed_limit_slc > 0.0);
-    setProperty("speedLimitSLC", speed_limit_slc);
-    setProperty("slcSubText", sl_substring);
-    setProperty("slcSubTextSize", sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0);
-    setProperty("mapSourcedSpeedLimit", lp.getIsMapSpeedLimit());
-    setProperty("slcActive", !sl_inactive && !sl_temp_inactive);
-    setProperty("overSpeedLimit", (((speed_limit_slc + speed_limit_offset) < cur_speed) && !sl_inactive && !sl_temp_inactive) ||
-                                  ((speed_limit_slc < cur_speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive)));
+    showSpeedLimit = speed_limit_slc > 0.0;
+    speedLimitSLC = speed_limit_slc;
+    slcSubText = sl_substring;
+    slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
+    mapSourcedSpeedLimit = lp.getIsMapSpeedLimit();
+    slcActive = !sl_inactive && !sl_temp_inactive;
+    overSpeedLimit = (((speed_limit_slc + speed_limit_offset) < cur_speed) && !sl_inactive && !sl_temp_inactive) ||
+                                  ((speed_limit_slc < cur_speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive));
 
     const float tsc_speed = lp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const auto tscState = lp.getTurnSpeedControlState();
     const int t_distance = int(lp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
 
-    setProperty("showTurnSpeedLimit", tsc_speed > 0.0 && (tsc_speed < cur_speed || s.scene.show_debug_ui));
-    setProperty("turnSpeedLimit", QString::number(std::nearbyint(tsc_speed)));
-    setProperty("tscSubText", t_distance > 0 ? t_distance_str : QString(""));
-    setProperty("tscActive", tscState > cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE);
-    setProperty("curveSign", lp.getTurnSign());
+    showTurnSpeedLimit = tsc_speed > 0.0 && (tsc_speed < cur_speed || s.scene.show_debug_ui);
+    turnSpeedLimit = QString::number(std::nearbyint(tsc_speed));
+    tscSubText = t_distance > 0 ? t_distance_str : QString("");
+    tscActive = tscState > cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE;
+    curveSign = lp.getTurnSign();
   }
 
   static int reverse_delay = 0;
@@ -595,7 +595,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     }
   }
 
-  setProperty("reversing", reverse_allowed);
+  reversing = reverse_allowed;
 
   int e2eLStatus = 0;
   static bool chime_sent = false;
@@ -651,8 +651,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   } else {
   }
 
-  setProperty("e2eStatus", chime_prompt);
-  setProperty("e2eState", e2eLStatus);
+  e2eStatus = chime_prompt;
+  e2eState = e2eLStatus;
 
 #ifdef ENABLE_DASHCAM
   recorder->updateState(s);
