@@ -116,9 +116,6 @@ class Controls:
     self.mads_disengage_lateral_on_brake = self.params.get_bool("DisengageLateralOnBrake")
     self.mads_dlob = self.enable_mads and self.mads_disengage_lateral_on_brake
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
-    if self.enable_mads and self.disengage_on_accelerator:
-      self.params.put_bool("DisengageOnAccelerator", False)
-      self.disengage_on_accelerator = False
     self.CP.alternativeExperience = 0
     if not self.disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
