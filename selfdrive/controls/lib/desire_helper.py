@@ -1,7 +1,7 @@
 from cereal import log
-from common.conversions import Conversions as CV
-from common.params import Params
-from common.realtime import DT_MDL
+from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
