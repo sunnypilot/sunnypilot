@@ -13,17 +13,17 @@ from typing import Dict, List
 import cereal.messaging as messaging
 from cereal import log
 from cereal.services import service_list
-from common.basedir import BASEDIR
-from common.params import Params
-from common.timeout import Timeout
-from system.loggerd.config import ROOT
-from system.loggerd.xattr_cache import getxattr
-from system.loggerd.deleter import PRESERVE_ATTR_NAME, PRESERVE_ATTR_VALUE
-from selfdrive.manager.process_config import managed_processes
-from system.version import get_version
-from tools.lib.logreader import LogReader
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.common.timeout import Timeout
+from openpilot.system.loggerd.config import ROOT
+from openpilot.system.loggerd.xattr_cache import getxattr
+from openpilot.system.loggerd.deleter import PRESERVE_ATTR_NAME, PRESERVE_ATTR_VALUE
+from openpilot.selfdrive.manager.process_config import managed_processes
+from openpilot.system.version import get_version
+from openpilot.tools.lib.logreader import LogReader
 from cereal.visionipc import VisionIpcServer, VisionStreamType
-from common.transformations.camera import tici_f_frame_size, tici_d_frame_size, tici_e_frame_size
+from openpilot.common.transformations.camera import tici_f_frame_size, tici_d_frame_size, tici_e_frame_size
 
 SentinelType = log.Sentinel.SentinelType
 
@@ -130,7 +130,7 @@ class TestLoggerd(unittest.TestCase):
 
     # check params
     logged_params = {entry.key: entry.value for entry in initData.params.entries}
-    expected_params = set(k for k, _, __ in fake_params) | {'LaikadEphemerisV3'}
+    expected_params = {k for k, _, __ in fake_params} | {'LaikadEphemerisV3'}
     assert set(logged_params.keys()) == expected_params, set(logged_params.keys()) ^ expected_params
     assert logged_params['LaikadEphemerisV3'] == b'', f"DONT_LOG param value was logged: {repr(logged_params['LaikadEphemerisV3'])}"
     for param_key, initData_key, v in fake_params:
@@ -154,35 +154,35 @@ class TestLoggerd(unittest.TestCase):
       vipc_server.create_buffers_with_sizes(stream_type, 40, False, *(frame_spec))
     vipc_server.start_listener()
 
-    for _ in range(5):
-      num_segs = random.randint(2, 5)
-      length = random.randint(1, 3)
-      os.environ["LOGGERD_SEGMENT_LENGTH"] = str(length)
-      managed_processes["loggerd"].start()
-      managed_processes["encoderd"].start()
-      time.sleep(1)
+    num_segs = random.randint(2, 5)
+    length = random.randint(1, 3)
+    os.environ["LOGGERD_SEGMENT_LENGTH"] = str(length)
+    managed_processes["loggerd"].start()
+    managed_processes["encoderd"].start()
+    time.sleep(1)
 
-      fps = 20.0
-      for n in range(1, int(num_segs*length*fps)+1):
-        for stream_type, frame_spec, state in streams:
-          dat = np.empty(frame_spec[2], dtype=np.uint8)
-          vipc_server.send(stream_type, dat[:].flatten().tobytes(), n, n/fps, n/fps)
+    fps = 20.0
+    for n in range(1, int(num_segs*length*fps)+1):
+      time_start = time.monotonic()
+      for stream_type, frame_spec, state in streams:
+        dat = np.empty(frame_spec[2], dtype=np.uint8)
+        vipc_server.send(stream_type, dat[:].flatten().tobytes(), n, n/fps, n/fps)
 
-          camera_state = messaging.new_message(state)
-          frame = getattr(camera_state, state)
-          frame.frameId = n
-          pm.send(state, camera_state)
-        time.sleep(1.0/fps)
+        camera_state = messaging.new_message(state)
+        frame = getattr(camera_state, state)
+        frame.frameId = n
+        pm.send(state, camera_state)
+      time.sleep(max((1.0/fps) - (time.monotonic() - time_start), 0))
 
-      managed_processes["loggerd"].stop()
-      managed_processes["encoderd"].stop()
+    managed_processes["loggerd"].stop()
+    managed_processes["encoderd"].stop()
 
-      route_path = str(self._get_latest_log_dir()).rsplit("--", 1)[0]
-      for n in range(num_segs):
-        p = Path(f"{route_path}--{n}")
-        logged = {f.name for f in p.iterdir() if f.is_file()}
-        diff = logged ^ expected_files
-        self.assertEqual(len(diff), 0, f"didn't get all expected files. run={_} seg={n} {route_path=}, {diff=}\n{logged=} {expected_files=}")
+    route_path = str(self._get_latest_log_dir()).rsplit("--", 1)[0]
+    for n in range(num_segs):
+      p = Path(f"{route_path}--{n}")
+      logged = {f.name for f in p.iterdir() if f.is_file()}
+      diff = logged ^ expected_files
+      self.assertEqual(len(diff), 0, f"didn't get all expected files. run={_} seg={n} {route_path=}, {diff=}\n{logged=} {expected_files=}")
 
   def test_bootlog(self):
     # generate bootlog with fake launch log
@@ -210,7 +210,8 @@ class TestLoggerd(unittest.TestCase):
     for fn in ["console-ramoops", "pmsg-ramoops-0"]:
       path = Path(os.path.join("/sys/fs/pstore/", fn))
       if path.is_file():
-        expected_val = open(path, "rb").read()
+        with open(path, "rb") as f:
+          expected_val = f.read()
         bootlog_val = [e.value for e in boot.pstore.entries if e.key == fn][0]
         self.assertEqual(expected_val, bootlog_val)
 

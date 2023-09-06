@@ -1,9 +1,9 @@
 import numpy as np
 import math
+import time
 from cereal import log
 from common.numpy_fast import interp
 from common.params import Params
-from common.realtime import sec_since_boot
 from common.conversions import Conversions as CV
 from selfdrive.controls.lib.lateral_planner import TRAJECTORY_SIZE
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
@@ -152,10 +152,10 @@ class VisionTurnController():
     self._lat_acc_overshoot_ahead = False
 
   def _update_params(self):
-    time = sec_since_boot()
-    if time > self._last_params_update + 5.0:
+    t = time.monotonic()
+    if t > self._last_params_update + 5.0:
       self._is_enabled = self._params.get_bool("TurnVisionControl")
-      self._last_params_update = time
+      self._last_params_update = t
 
   def _update_calculations(self, sm):
     # Get path polynomial approximation for curvature estimation from model data.

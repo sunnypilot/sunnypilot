@@ -1,9 +1,9 @@
 from cereal import car
-from common.realtime import DT_CTRL
+from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
-from selfdrive.car import apply_std_steer_angle_limits
-from selfdrive.car.nissan import nissancan
-from selfdrive.car.nissan.values import CAR, CarControllerParams
+from openpilot.selfdrive.car import apply_std_steer_angle_limits
+from openpilot.selfdrive.car.nissan import nissancan
+from openpilot.selfdrive.car.nissan.values import CAR, CarControllerParams
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -84,8 +84,9 @@ class CarController:
     # Below are the HUD messages. We copy the stock message and modify
     if self.CP.carFingerprint != CAR.ALTIMA:
       if self.frame % 2 == 0:
-        can_sends.append(nissancan.create_lkas_hud_msg(
-          self.packer, CS.lkas_hud_msg, CC.latActive, blinking_icon, lateral_paused, hud_control.leftLaneVisible, hud_control.rightLaneVisible, hud_control.leftLaneDepart, hud_control.rightLaneDepart))
+        can_sends.append(nissancan.create_lkas_hud_msg(self.packer, CS.lkas_hud_msg, CC.latActive, blinking_icon, lateral_paused,
+                                                       hud_control.leftLaneVisible, hud_control.rightLaneVisible,
+                                                       hud_control.leftLaneDepart, hud_control.rightLaneDepart))
 
       if self.frame % 50 == 0:
         can_sends.append(nissancan.create_lkas_hud_info_msg(
