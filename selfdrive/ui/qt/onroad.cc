@@ -571,15 +571,15 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
     mapSourcedSpeedLimit = lp.getIsMapSpeedLimit();
     slcActive = !sl_inactive && !sl_temp_inactive;
-    overSpeedLimit = (((speed_limit_slc + speed_limit_offset) < cur_speed) && !sl_inactive && !sl_temp_inactive) ||
-                                  ((speed_limit_slc < cur_speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive));
+    overSpeedLimit = (((speed_limit_slc + speed_limit_offset) < speed) && !sl_inactive && !sl_temp_inactive) ||
+                                  ((speed_limit_slc < speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive));
 
     const float tsc_speed = lp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const auto tscState = lp.getTurnSpeedControlState();
     const int t_distance = int(lp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
 
-    showTurnSpeedLimit = tsc_speed > 0.0 && (tsc_speed < cur_speed || s.scene.show_debug_ui);
+    showTurnSpeedLimit = tsc_speed > 0.0 && (tsc_speed < speed || s.scene.show_debug_ui);
     turnSpeedLimit = QString::number(std::nearbyint(tsc_speed));
     tscSubText = t_distance > 0 ? t_distance_str : QString("");
     tscActive = tscState > cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE;
