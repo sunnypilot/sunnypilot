@@ -4,7 +4,6 @@ from common.numpy_fast import interp
 from enum import IntEnum
 from cereal import log, car
 from common.params import Params
-from common.realtime import sec_since_boot
 from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_ACC, LIMIT_MAX_ACC, LIMIT_SPEED_OFFSET_TH, \
   LIMIT_MAX_MAP_DATA_AGE, CONTROL_N
 from selfdrive.controls.lib.events import Events
@@ -264,12 +263,12 @@ class SpeedLimitController():
     return self._source
 
   def _update_params(self):
-    time = sec_since_boot()
-    if time > self._last_params_update + _PARAMS_UPDATE_PERIOD:
+    t = time.monotonic()
+    if t > self._last_params_update + _PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("SpeedLimitControl")
       self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
       _debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_enabled}')
-      self._last_params_update = time
+      self._last_params_update = t
 
   def _update_calculations(self):
     # Update current velocity offset (error)
@@ -280,7 +279,7 @@ class SpeedLimitController():
     # cause a temp inactive transition if the controller is updated before controlsd sets actual cruise
     # speed.
     if not self._op_enabled_prev and self._op_enabled:
-      self._last_op_enabled_time = sec_since_boot()
+      self._last_op_enabled_time = time.monotonic()
 
     # Update change tracking variables
     self._speed_limit_changed = self._speed_limit != self._speed_limit_prev
@@ -302,7 +301,7 @@ class SpeedLimitController():
     # Ignore if a minimum amount of time has not passed since activation. This is to prevent temp inactivations
     # due to controlsd logic changing cruise setpoint when going active.
     if self._v_cruise_setpoint_changed and \
-       sec_since_boot() > (self._last_op_enabled_time + _TEMP_INACTIVE_GUARD_PERIOD):
+      time.monotonic() > (self._last_op_enabled_time + _TEMP_INACTIVE_GUARD_PERIOD):
       self.state = SpeedLimitControlState.tempInactive
       return
 
