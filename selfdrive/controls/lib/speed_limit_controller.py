@@ -412,7 +412,7 @@ class SpeedLimitController():
     _car_state = sm['carState']
     self._op_enabled = enabled and sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
                        not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
-                       not events.any(ET.OVERRIDE_LONGITUDINAL)
+                       not events.contains(ET.OVERRIDE_LONGITUDINAL)
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
