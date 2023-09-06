@@ -345,10 +345,10 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
     self.CS = self.sp_update_params(self.CS)
 
-    buttonEvents = []
-
-    buttonEvents.append(create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT))
-    buttonEvents.append(create_button_events(self.CS.cruise_setting, self.CS.prev_cruise_setting, {1: ButtonType.altButton1}))
+    buttonEvents = [
+      *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT),
+      *create_button_events(self.CS.cruise_setting, self.CS.prev_cruise_setting, {1: ButtonType.altButton1}),
+    ]
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
