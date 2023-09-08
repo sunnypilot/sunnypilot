@@ -1,5 +1,7 @@
 sunnypilot - 0.9.5.1 (202x-xx-xx)
 ========================
+* UPDATED: Synced with commaai's master commit 338288d
+* NEW❗: Non-Inflatable driving model
 * NEW❗: Wide camera view when the steering angle is more than 45°
 
 sunnypilot - 0.9.4.1 (2023-08-11)
