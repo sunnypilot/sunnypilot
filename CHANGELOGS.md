@@ -1,5 +1,63 @@
-sunnypilot - 0.9.2.2 (2023-06-xx)
+sunnypilot - 0.9.5.1 (202x-xx-xx)
 ========================
+
+sunnypilot - 0.9.4.1 (2023-08-11)
+========================
+* UPDATED: Synced with commaai's 0.9.4 release
+* NEW❗: Moonrise driving model
+* NEW❗: Ford upstream models support
+* UPDATED: Dynamic Lane Profile selector in the "SP - Controls" menu
+* REMOVED: Dynamic Lane Profile driving screen UI button
+* FIXED: Disallow torque lateral control for angle control platforms (e.g. Ford, Nissan, Tesla)
+  * Torque lateral control cannot be used by angle control platforms, and would cause a "Controls Unresponsive" error if Torque lateral control is enforced in settings
+* REMOVED: Speed Limit Style override
+* Honda Accord 2016-17 support thanks to mlocoteta!
+  * Serial Steering hardware required. For more information, see https://github.com/mlocoteta/serialSteeringHardware
+* mapd: utilize advisory speed limit in curves (#142) thanks to pfeiferj!
+
+sunnypilot - 0.9.3.1 (2023-07-09)
+========================
+* UPDATED: Synced with commaai's 0.9.3 release
+* NEW❗: Display Temperature on Sidebar toggle
+  * Display Ambient temperature, memory temperature, CPU core with the highest temperature, GPU temperature, or max of Memory/CPU/GPU on the sidebar
+  * Replace "Display CPU Temperature on Sidebar" toggle
+* NEW❗: Hot Coffee driving model
+* NEW❗: HKG CAN: Smoother Stopping Performance (Beta) toggle
+  * Smoother stopping behind a stopped car or desired stopping event.
+  * This is only applicable to HKG CAN platforms using openpilot longitudinal control
+* NEW❗: Toyota: TSS2 longitudinal: Custom Tuning
+  * Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars thanks to dragonpilot-community!
+* NEW❗: Enable Screen Recorder toggle
+  * Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.
+* IMPROVED: Dynamic Lane Profile: when using Laneline planner via Laneline Mode or Auto Mode, enforce Laneless planner while traveling below 10 MPH or 16 km/h
+* REMOVED: Display CPU Temperature on Sidebar
+
+sunnypilot - 0.9.2.3 (2023-06-18)
+========================
+* NEW❗: Auto Lane Change: Delay with Blind Spot
+  * Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects an obstructing vehicle, ensuring safe maneuvering
+* NEW❗: Driving Screen Off: Wake with Non-Critical Events
+  * When Driving Screen Off Timer is not set to "Always On":
+    * Enabled: Wake the brightness of the screen to display all events
+    * Disabled: Wake the brightness of the screen to display critical events
+  * Currently, all non-nudge modes are default to continue lane change after 1 seconds of blind spot detection
+* NEW❗: Fleet Manager PIN Requirement toggle
+  * User can now enable or disable PIN requirement on the comma device before accessing Fleet Manager
+* NEW❗: Reset all sunnypilot settings toggle
+* NEW❗: Turn signals display on screen when blinker is used
+  * Green: Blinker is on
+  * Red: Blinker is on, car detected in the adjacent blind spot or road edge detected
+* IMPROVED: mapd: better exceptions handling when loading dependencies
+* UPDATED: Green Traffic Light Chime no longer displays an orange border when executed
+* FIXED: mapd: Road name flashing caused by desync with last GPS timestamp
+* FIXED: Ram HD (2500/3500): Ignore paramsd sanity check
+  * Live parameters have trouble with self-tuning on this platform with upstream openpilot 0.9.2
+* Hyundai: Longitudinal support for CAN-based Camera SCC cars thanks to Zack1010OP's Patreon sponsor!
+
+sunnypilot - 0.9.2.2 (2023-06-13)
+========================
+* NEW❗: Toyota: Allow M.A.D.S. toggling with LKAS Button (Beta)
+* IMPROVED: Ram: cruise button handling
 
 sunnypilot - 0.9.2.1 (2023-06-10)
 ========================

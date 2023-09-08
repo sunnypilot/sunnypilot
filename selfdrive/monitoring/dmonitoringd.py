@@ -4,11 +4,11 @@ import gc
 import cereal.messaging as messaging
 from cereal import car
 from cereal import log
-from common.params import Params, put_bool_nonblocking
-from common.realtime import set_realtime_priority
-from selfdrive.controls.lib.events import Events
-from selfdrive.monitoring.driver_monitor import DriverStatus
-from selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus
+from openpilot.common.params import Params, put_bool_nonblocking
+from openpilot.common.realtime import set_realtime_priority
+from openpilot.selfdrive.controls.lib.events import Events
+from openpilot.selfdrive.monitoring.driver_monitor import DriverStatus
+from openpilot.selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus
 
 
 def dmonitoringd_thread(sm=None, pm=None):
