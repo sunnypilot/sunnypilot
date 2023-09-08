@@ -177,9 +177,9 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
     }
     left_widget->setStyleSheet("border-radius: 10px;");
 
-    left_widget->setCurrentIndex(!custom_mapbox ? uiState()->primeType() ? 0 : 1 : 0);
-    connect(uiState(), &UIState::primeTypeChanged, [=](int prime_type) {
-      left_widget->setCurrentIndex(!custom_mapbox ? prime_type ? 0 : 1 : 0);
+    left_widget->setCurrentIndex(!custom_mapbox ? uiState()->hasPrime() ? 0 : 1 : 0);
+    connect(uiState(), &UIState::primeChanged, [=](int prime) {
+      left_widget->setCurrentIndex(!custom_mapbox ? prime ? 0 : 1 : 0);
     });
 
     home_layout->addWidget(left_widget, 1);

@@ -1,5 +1,9 @@
 #include "selfdrive/ui/qt/util.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include <QApplication>
 #include <QFile>
 #include <QFileInfo>
@@ -39,7 +43,7 @@ std::optional<QString> getDongleId() {
 }
 
 QMap<QString, QString> getSupportedLanguages() {
-  QFile f("translations/languages.json");
+  QFile f(":/languages.json");
   f.open(QIODevice::ReadOnly | QIODevice::Text);
   QString val = f.readAll();
 
@@ -62,19 +66,6 @@ QMap<QString, QString> getCarNames() {
     map[key] = obj[key].toString();
   }
   return map;
-}
-
-void clearLayout(QLayout* layout) {
-  while (layout->count() > 0) {
-    QLayoutItem* item = layout->takeAt(0);
-    if (QWidget* widget = item->widget()) {
-      widget->deleteLater();
-    }
-    if (QLayout* childLayout = item->layout()) {
-      clearLayout(childLayout);
-    }
-    delete item;
-  }
 }
 
 QString timeAgo(const QDateTime &date) {
@@ -156,7 +147,7 @@ void swagLogMessageHandler(QtMsgType type, const QMessageLogContext &context, co
 }
 
 
-QWidget* topWidget (QWidget* widget) {
+QWidget* topWidget(QWidget* widget) {
   while (widget->parentWidget() != nullptr) widget=widget->parentWidget();
   return widget;
 }
@@ -219,8 +210,7 @@ QColor interpColor(float xv, std::vector<float> xp, std::vector<QColor> fp) {
       (xv - xp[low]) * (fp[hi].red() - fp[low].red()) / (xp[hi] - xp[low]) + fp[low].red(),
       (xv - xp[low]) * (fp[hi].green() - fp[low].green()) / (xp[hi] - xp[low]) + fp[low].green(),
       (xv - xp[low]) * (fp[hi].blue() - fp[low].blue()) / (xp[hi] - xp[low]) + fp[low].blue(),
-      (xv - xp[low]) * (fp[hi].alpha() - fp[low].alpha()) / (xp[hi] - xp[low]) + fp[low].alpha()
-    );
+      (xv - xp[low]) * (fp[hi].alpha() - fp[low].alpha()) / (xp[hi] - xp[low]) + fp[low].alpha());
   }
 }
 

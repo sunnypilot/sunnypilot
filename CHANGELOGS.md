@@ -1,5 +1,6 @@
-sunnypilot - 0.9.4.2 (2023-08-xx)
+sunnypilot - 0.9.5.1 (202x-xx-xx)
 ========================
+* NEW❗: Wide camera view when the steering angle is more than 45°
 
 sunnypilot - 0.9.4.1 (2023-08-11)
 ========================

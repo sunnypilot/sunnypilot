@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Moonrise (June 30, 2023)"
+#define CURRENT_MODEL "Non-Inflatable (August 9, 2023)"

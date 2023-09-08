@@ -49,16 +49,12 @@ git add -f .
 git commit -a -m "sunnypilot v$VERSION release"
 git branch --set-upstream-to=origin/$RELEASE_BRANCH
 
-# Build panda firmware
-pushd panda/
-scons -u .
-mkdir /tmp/panda_obj/
-mv board/obj/panda.bin.signed board/obj/panda_h7.bin.signed board/obj/bootstub.panda.bin board/obj/bootstub.panda_h7.bin /tmp/panda_obj/
-popd
-
 # Build
 export PYTHONPATH="$BUILD_DIR"
 scons -j$(nproc)
+
+# release panda fw
+scons -j$(nproc) panda/
 
 # Ensure no submodules in release
 if test "$(git submodule--helper list | wc -l)" -gt "0"; then
@@ -77,14 +73,9 @@ find . -name 'moc_*' -delete
 find . -name '*.cc' -delete
 find . -name '__pycache__' -delete
 find selfdrive/ui/ -name '*.h' -delete
-rm -rf panda/board panda/certs panda/crypto
 rm -rf .sconsign.dblite Jenkinsfile release/
 rm selfdrive/modeld/models/supercombo.onnx
-#rm models/supercombo_badweights.thneed
 rm -rf selfdrive/ui/replay/
-# Move back signed panda fw
-mkdir -p panda/board/obj
-mv /tmp/panda_obj/* panda/board/obj/
 
 # Restore third_party
 git checkout third_party/
