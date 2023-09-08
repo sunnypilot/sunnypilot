@@ -1,13 +1,13 @@
 from cereal import car
 import cereal.messaging as messaging
-from common.conversions import Conversions as CV
-from common.params import Params, put_bool_nonblocking
-from common.realtime import DT_CTRL
+from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params, put_bool_nonblocking
+from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
-from selfdrive.car import apply_driver_steer_torque_limits
-from selfdrive.car.mazda import mazdacan
-from selfdrive.car.mazda.values import CarControllerParams, Buttons
-from selfdrive.controls.lib.drive_helpers import MAZDA_V_CRUISE_MIN
+from openpilot.selfdrive.car import apply_driver_steer_torque_limits
+from openpilot.selfdrive.car.mazda import mazdacan
+from openpilot.selfdrive.car.mazda.values import CarControllerParams, Buttons
+from openpilot.selfdrive.controls.lib.drive_helpers import MAZDA_V_CRUISE_MIN
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 

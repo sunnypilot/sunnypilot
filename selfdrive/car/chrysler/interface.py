@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from cereal import car
 from panda import Panda
-from selfdrive.car import STD_CARGO_KG, get_safety_config, create_mads_event
-from selfdrive.car.chrysler.values import CAR, RAM_HD, RAM_DT, RAM_CARS, ChryslerFlags, ChryslerFlagsSP, BUTTON_STATES
-from selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car import get_safety_config, create_mads_event
+from openpilot.selfdrive.car.chrysler.values import CAR, RAM_HD, RAM_DT, RAM_CARS, ChryslerFlags, ChryslerFlagsSP, BUTTON_STATES
+from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -43,7 +43,7 @@ class CarInterface(CarInterfaceBase):
 
     # Chrysler
     if candidate in (CAR.PACIFICA_2017_HYBRID, CAR.PACIFICA_2018, CAR.PACIFICA_2018_HYBRID, CAR.PACIFICA_2019_HYBRID, CAR.PACIFICA_2020):
-      ret.mass = 2242. + STD_CARGO_KG
+      ret.mass = 2242.
       ret.wheelbase = 3.089
       ret.steerRatio = 16.2  # Pacifica Hybrid 2017
 
@@ -54,7 +54,7 @@ class CarInterface(CarInterfaceBase):
 
     # Jeep
     elif candidate in (CAR.JEEP_CHEROKEE, CAR.JEEP_CHEROKEE_2019):
-      ret.mass = 1778 + STD_CARGO_KG
+      ret.mass = 1778
       ret.wheelbase = 2.71
       ret.steerRatio = 16.7
       ret.steerActuatorDelay = 0.2
@@ -69,7 +69,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.2
       ret.wheelbase = 3.88
       ret.steerRatio = 16.3
-      ret.mass = 2493. + STD_CARGO_KG
+      ret.mass = 2493.
       ret.minSteerSpeed = 0.5
       ret.minEnableSpeed = 14.5
       if any(fw.ecu == 'eps' and fw.fwVersion in (b"68273275AF", b"68273275AG", b"68312176AE", b"68312176AG",) for fw in car_fw):
@@ -79,7 +79,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.2
       ret.wheelbase = 3.785
       ret.steerRatio = 15.61
-      ret.mass = 3405. + STD_CARGO_KG
+      ret.mass = 3405.
       ret.minSteerSpeed = 16
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning, 1.0, False)
       ret.spFlags |= ChryslerFlagsSP.SP_RAM_HD_PARAMSD_IGNORE.value

@@ -79,8 +79,21 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
 
   // General: Onroad Screen Off (Auto Onroad Screen Timer)
   onroad_screen_off = new OnroadScreenOff();
+  onroad_screen_off->setUpdateOtherToggles(true);
+  connect(onroad_screen_off, &SPOptionControl::updateLabels, onroad_screen_off, &OnroadScreenOff::refresh);
+  connect(onroad_screen_off, &SPOptionControl::updateOtherToggles, this, &SPGeneralPanel::updateToggles);
+
   // General: Onroad Screen Off Brightness
   onroad_screen_off_brightness = new OnroadScreenOffBrightness();
+  connect(onroad_screen_off_brightness, &SPOptionControl::updateLabels, onroad_screen_off_brightness, &OnroadScreenOffBrightness::refresh);
+
+  // General: Brightness Control (Global)
+  auto brightness_control = new BrightnessControl();
+  connect(brightness_control, &SPOptionControl::updateLabels, brightness_control, &BrightnessControl::refresh);
+
+  // General: Max Time Offroad (Shutdown timer)
+  auto max_time_offroad = new MaxTimeOffroad();
+  connect(max_time_offroad, &SPOptionControl::updateLabels, max_time_offroad, &MaxTimeOffroad::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -90,7 +103,7 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
 
     if (param == "HotspotOnBoot") {
       // General: Max Time Offroad (Shutdown timer)
-      addItem(new MaxTimeOffroad());
+      addItem(max_time_offroad);
 
       addItem(onroad_screen_off);
 
@@ -99,11 +112,9 @@ SPGeneralPanel::SPGeneralPanel(QWidget *parent) : ListWidget(parent) {
 
     if (param == "OnroadScreenOffEvent") {
       // General: Brightness Control (Global)
-      addItem(new BrightnessControl());
+      addItem(brightness_control);
     }
   }
-
-  connect(onroad_screen_off, &OnroadScreenOff::toggleUpdated, this, &SPGeneralPanel::updateToggles);
 
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
 }
@@ -282,20 +293,38 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
   // Controls: Camera Offset (cm)
   camera_offset = new CameraOffset();
+  connect(camera_offset, &SPOptionControl::updateLabels, camera_offset, &CameraOffset::refresh);
+
   // Controls: Path Offset (cm)
   path_offset = new PathOffset();
+  connect(path_offset, &SPOptionControl::updateLabels, path_offset, &PathOffset::refresh);
+
   // Controls: Auto Lane Change Timer
   auto_lane_change_timer = new AutoLaneChangeTimer();
+  auto_lane_change_timer->setUpdateOtherToggles(true);
+  connect(auto_lane_change_timer, &SPOptionControl::updateLabels, auto_lane_change_timer, &AutoLaneChangeTimer::refresh);
+  connect(auto_lane_change_timer, &AutoLaneChangeTimer::updateOtherToggles, this, &SPControlsPanel::updateToggles);
+
   // Controls: Speed Limit Offset Type
   slo_type = new SpeedLimitOffsetType();
+  slo_type->setUpdateOtherToggles(true);
+  connect(slo_type, &SPOptionControl::updateLabels, slo_type, &SpeedLimitOffsetType::refresh);
+  connect(slo_type, &SPOptionControl::updateOtherToggles, this, &SPControlsPanel::updateToggles);
+
   // Controls: Speed Limit Offset Values (% or actual value)
   slvo = new SpeedLimitValueOffset();
+  connect(slvo, &SPOptionControl::updateLabels, slvo, &SpeedLimitValueOffset::refresh);
   // Controls: GAC Mode
   gac_mode = new GapAdjustCruiseMode();
+  connect(gac_mode, &SPOptionControl::updateLabels, gac_mode, &GapAdjustCruiseMode::refresh);
+
   // Controls: Torque - FRICTION
   friction = new TorqueFriction();
+  connect(friction, &SPOptionControl::updateLabels, friction, &TorqueFriction::refresh);
+
   // Controls: Torque - LAT_ACCEL_FACTOR
   lat_accel_factor = new TorqueMaxLatAccel();
+  connect(lat_accel_factor, &SPOptionControl::updateLabels, lat_accel_factor, &TorqueMaxLatAccel::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -363,8 +392,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     }
   }
 
-  connect(auto_lane_change_timer, &AutoLaneChangeTimer::toggleUpdated, this, &SPControlsPanel::updateToggles);
-  connect(slo_type, &SpeedLimitOffsetType::offsetTypeUpdated, this, &SPControlsPanel::updateToggles);
   connect(toggles["GapAdjustCruise"], &ToggleControl::toggleFlipped, [=]() { emit updateStockToggles(); });
 
   toggles["EnableMads"]->setConfirmation(true, false);
@@ -664,10 +691,13 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
     },
   };
 
-  // Developer UI Info (Dev UI)
+  // Visuals: Developer UI Info (Dev UI)
   dev_ui_info = new DevUiInfo();
+  connect(dev_ui_info, &SPOptionControl::updateLabels, dev_ui_info, &DevUiInfo::refresh);
+
   // Visuals: Display Metrics above Chevron
   chevron_info = new ChevronInfo();
+  connect(chevron_info, &SPOptionControl::updateLabels, chevron_info, &ChevronInfo::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -714,60 +744,13 @@ void SPVisualsPanel::updateToggles() {
 }
 
 // Max Time Offroad (Shutdown timer)
-MaxTimeOffroad::MaxTimeOffroad() : AbstractControl(
+MaxTimeOffroad::MaxTimeOffroad() : SPOptionControl (
+  "MaxTimeOffroad",
   tr("Max Time Offroad"),
   tr("Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)."),
-  "../assets/offroad/icon_metric.png")
+  "../assets/offroad/icon_metric.png",
+  {0, 12}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("MaxTimeOffroad"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("MaxTimeOffroad", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("MaxTimeOffroad"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 12 ) {
-      value = 12;
-    }
-    QString values = QString::number(value);
-    params.put("MaxTimeOffroad", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
@@ -777,448 +760,141 @@ void MaxTimeOffroad::refresh() {
   QString minute = tr("m");
   QString hour = tr("h");
   if (option == "0") {
-    label.setText(tr("Always On"));
+    setLabel(tr("Always On"));
   } else if (option == "1") {
-    label.setText(tr("Immediate"));
+    setLabel(tr("Immediate"));
   } else if (option == "2") {
-    label.setText("30" + second);
+    setLabel("30" + second);
   } else if (option == "3") {
-    label.setText("1" + minute);
+    setLabel("1" + minute);
   } else if (option == "4") {
-    label.setText("3" + minute);
+    setLabel("3" + minute);
   } else if (option == "5") {
-    label.setText("5" + minute);
+    setLabel("5" + minute);
   } else if (option == "6") {
-    label.setText("10" + minute);
+    setLabel("10" + minute);
   } else if (option == "7") {
-    label.setText("30" + minute);
+    setLabel("30" + minute);
   } else if (option == "8") {
-    label.setText("1" + hour);
+    setLabel("1" + hour);
   } else if (option == "9") {
-    label.setText("3" + hour);
+    setLabel("3" + hour);
   } else if (option == "10") {
-    label.setText("5" + hour);
+    setLabel("5" + hour);
   } else if (option == "11") {
-    label.setText("10" + hour);
+    setLabel("10" + hour);
   } else if (option == "12") {
-    label.setText("30" + hour);
+    setLabel("30" + hour);
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // Onroad Screen Off (Auto Onroad Screen Timer)
-OnroadScreenOff::OnroadScreenOff() : AbstractControl(
+OnroadScreenOff::OnroadScreenOff() : SPOptionControl (
+  "OnroadScreenOff",
   tr("Driving Screen Off Timer"),
   tr("Turn off the device screen or reduce brightness to protect the screen after driving starts. It automatically brightens or turns on when a touch or event occurs."),
-  "../assets/offroad/icon_metric.png")
+  "../assets/offroad/icon_metric.png",
+  {-2, 10}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("OnroadScreenOff"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= -2 ) {
-      value = -2;
-    }
-    uiState()->scene.onroadScreenOff = value;
-    QString values = QString::number(value);
-    params.put("OnroadScreenOff", values.toStdString());
-    refresh();
-    emit toggleUpdated();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("OnroadScreenOff"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 10 ) {
-      value = 10;
-    }
-    uiState()->scene.onroadScreenOff = value;
-    QString values = QString::number(value);
-    params.put("OnroadScreenOff", values.toStdString());
-    refresh();
-    emit toggleUpdated();
-  });
   refresh();
 }
 
-void OnroadScreenOff::refresh()
-{
+void OnroadScreenOff::refresh() {
   QString option = QString::fromStdString(params.get("OnroadScreenOff"));
   QString second = tr("s");
   if (option == "-2") {
-    label.setText(tr("Always On"));
+    setLabel(tr("Always On"));
   } else if (option == "-1") {
-    label.setText("15" + second);
+    setLabel("15" + second);
   } else if (option == "0") {
-    label.setText("30" + second);
+    setLabel("30" + second);
   } else {
-    label.setText(QString::fromStdString(params.get("OnroadScreenOff")) + "min(s)");
+    setLabel(option + "min(s)");
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // Onroad Screen Off Brightness
-OnroadScreenOffBrightness::OnroadScreenOffBrightness() : AbstractControl(
+OnroadScreenOffBrightness::OnroadScreenOffBrightness() : SPOptionControl (
+  "OnroadScreenOffBrightness",
   tr("Driving Screen Off Brightness (%)"),
   tr("When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio."),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {0, 100},
+  10) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("OnroadScreenOffBrightness"));
-    int value = str.toInt();
-    value = value - 10;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    uiState()->scene.onroadScreenOffBrightness = value;
-    QString values = QString::number(value);
-    params.put("OnroadScreenOffBrightness", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("OnroadScreenOffBrightness"));
-    int value = str.toInt();
-    value = value + 10;
-    if (value >= 100 ) {
-      value = 100;
-    }
-    uiState()->scene.onroadScreenOffBrightness = value;
-    QString values = QString::number(value);
-    params.put("OnroadScreenOffBrightness", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void OnroadScreenOffBrightness::refresh() {
   QString option = QString::fromStdString(params.get("OnroadScreenOffBrightness"));
   if (option == "0") {
-    label.setText(tr("Dark"));
+    setLabel(tr("Dark"));
   } else {
-    label.setText(QString::fromStdString(params.get("OnroadScreenOffBrightness")));
+    setLabel(option);
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // Brightness Control (Global)
-BrightnessControl::BrightnessControl() : AbstractControl(
+BrightnessControl::BrightnessControl() : SPOptionControl (
+  "BrightnessControl",
   tr("Brightness Control (Global, %)"),
   tr("Manually adjusts the global brightness of the screen."),
-  "../assets/offroad/icon_metric.png")
+  "../assets/offroad/icon_metric.png",
+  {0, 100},
+  5) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("BrightnessControl"));
-    int value = str.toInt();
-    value = value - 5;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    uiState()->scene.brightness = value;
-    QString values = QString::number(value);
-    params.put("BrightnessControl", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("BrightnessControl"));
-    int value = str.toInt();
-    value = value + 5;
-    if (value >= 100 ) {
-      value = 100;
-    }
-    uiState()->scene.brightness = value;
-    QString values = QString::number(value);
-    params.put("BrightnessControl", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void BrightnessControl::refresh() {
   QString option = QString::fromStdString(params.get("BrightnessControl"));
   if (option == "0") {
-    label.setText(tr("Auto"));
+    setLabel(tr("Auto"));
   } else {
-    label.setText(QString::fromStdString(params.get("BrightnessControl")));
+    setLabel(option);
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // Camera Offset Value
-CameraOffset::CameraOffset() : AbstractControl(
+CameraOffset::CameraOffset() : SPOptionControl (
+  "CameraOffset",
   tr("Camera Offset (cm)"),
   tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately."),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {-10, 10}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("CameraOffset"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= -10 ) {
-      value = -10;
-    }
-
-    QString values = QString::number(value);
-    params.put("CameraOffset", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("CameraOffset"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 10 ) {
-      value = 10;
-    }
-
-    QString values = QString::number(value);
-    params.put("CameraOffset", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void CameraOffset::refresh() {
   QString option = QString::fromStdString(params.get("CameraOffset"));
-  label.setText(QString::fromStdString(params.get("CameraOffset")));
-  btnminus.setText("-");
-  btnplus.setText("+");
+  setLabel(option);
 }
 
 // Path Offset Value
-PathOffset::PathOffset() : AbstractControl(
+PathOffset::PathOffset() : SPOptionControl (
+  "PathOffset",
   tr("Path Offset (cm)"),
   tr("Hack to trick the model path to be left or right biased of the lane. Decreasing the value will shift the model more left, increasing will shift the model more right. Changes take effect immediately."),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {-10, 10}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("PathOffset"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= -10 ) {
-      value = -10;
-    }
-
-    QString values = QString::number(value);
-    params.put("PathOffset", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("PathOffset"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 10 ) {
-      value = 10;
-    }
-
-    QString values = QString::number(value);
-    params.put("PathOffset", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void PathOffset::refresh() {
   QString option = QString::fromStdString(params.get("PathOffset"));
-  label.setText(QString::fromStdString(params.get("PathOffset")));
-  btnminus.setText("-");
-  btnplus.setText("+");
+  setLabel(option);
 }
 
 // Auto Lane Change Timer (ALCT)
-AutoLaneChangeTimer::AutoLaneChangeTimer() : AbstractControl(
+AutoLaneChangeTimer::AutoLaneChangeTimer() : SPOptionControl (
+  "AutoLaneChangeTimer",
   tr("Auto Lane Change Timer"),
   tr("Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set.\nPlease use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
-  "../assets/offroad/icon_road.png")
+  "../assets/offroad/icon_road.png",
+  {0, 5}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("AutoLaneChangeTimer"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("AutoLaneChangeTimer", values.toStdString());
-    refresh();
-    emit toggleUpdated();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("AutoLaneChangeTimer"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 5 ) {
-      value = 5;
-    }
-    QString values = QString::number(value);
-    params.put("AutoLaneChangeTimer", values.toStdString());
-    refresh();
-    emit toggleUpdated();
-  });
   refresh();
 }
 
@@ -1226,24 +902,23 @@ void AutoLaneChangeTimer::refresh() {
   QString option = QString::fromStdString(params.get("AutoLaneChangeTimer"));
   QString second = tr("s");
   if (option == "0") {
-    label.setText(tr("Nudge"));
+    setLabel(tr("Nudge"));
   } else if (option == "1") {
-    label.setText(tr("Nudgeless"));
+    setLabel(tr("Nudgeless"));
   } else if (option == "2") {
-    label.setText("0.5" + second);
+    setLabel("0.5" + second);
   } else if (option == "3") {
-    label.setText("1" + second);
+    setLabel("1" + second);
   } else if (option == "4") {
-    label.setText("1.5" + second);
+    setLabel("1.5" + second);
   } else {
-    label.setText("2" + second);
+    setLabel("2" + second);
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // G.A.C. Mode
-GapAdjustCruiseMode::GapAdjustCruiseMode() : AbstractControl(
+GapAdjustCruiseMode::GapAdjustCruiseMode() : SPOptionControl (
+  "GapAdjustCruiseMode",
   tr("Mode"),
   QString("%1<br>"
           "%2<br>"
@@ -1251,485 +926,136 @@ GapAdjustCruiseMode::GapAdjustCruiseMode() : AbstractControl(
   .arg(tr("SW: Steering Wheel Button only"))
   .arg(tr("UI: User Interface Button on screen only"))
   .arg(tr("SW + UI: Steering Wheel Button + User Interface Button on screen")),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {0, 2}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("GapAdjustCruiseMode"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("GapAdjustCruiseMode", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("GapAdjustCruiseMode"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 2 ) {
-      value = 2;
-    }
-    QString values = QString::number(value);
-    params.put("GapAdjustCruiseMode", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void GapAdjustCruiseMode::refresh() {
   QString option = QString::fromStdString(params.get("GapAdjustCruiseMode"));
   if (option == "0") {
-    label.setText(tr("S.W."));
+    setLabel(tr("S.W."));
   } else if (option == "1") {
-    label.setText(tr("UI"));
+    setLabel(tr("UI"));
   } else if (option == "2") {
-    label.setText(tr("S.W. + UI"));
+    setLabel(tr("S.W. + UI"));
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
-TorqueFriction::TorqueFriction() : AbstractControl(
+TorqueFriction::TorqueFriction() : SPOptionControl (
+  "TorqueFriction",
   tr("FRICTION"),
   tr("Adjust Friction for the Torque Lateral Controller"),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {0, 50}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("TorqueFriction"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("TorqueFriction", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("TorqueFriction"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 50 ) {
-      value = 50;
-    }
-    QString values = QString::number(value);
-    params.put("TorqueFriction", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void TorqueFriction::refresh() {
-  auto strs = QString::fromStdString(params.get("TorqueFriction"));
-  int valuei = strs.toInt();
-  float valuef = valuei * 0.01;
-  QString valuefs = QString::number(valuef);
-  label.setText(QString::fromStdString(valuefs.toStdString()));
-  btnminus.setText("-");
-  btnplus.setText("+");
+  QString torqueFrictionStr = QString::fromStdString(params.get("TorqueFriction"));
+  float valuef = torqueFrictionStr.toInt() * 0.01;
+  setLabel(QString::number(valuef));
 }
 
-TorqueMaxLatAccel::TorqueMaxLatAccel() : AbstractControl(
+TorqueMaxLatAccel::TorqueMaxLatAccel() : SPOptionControl (
+  "TorqueMaxLatAccel",
   tr("LAT_ACCEL_FACTOR"),
   tr("Adjust Max Lateral Acceleration for the Torque Lateral Controller"),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {1, 500}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("TorqueMaxLatAccel"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 1 ) {
-      value = 1;
-    }
-    QString values = QString::number(value);
-    params.put("TorqueMaxLatAccel", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("TorqueMaxLatAccel"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 500 ) {
-      value = 500;
-    }
-    QString values = QString::number(value);
-    params.put("TorqueMaxLatAccel", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void TorqueMaxLatAccel::refresh() {
-  auto strs = QString::fromStdString(params.get("TorqueMaxLatAccel"));
-  int valuei = strs.toInt();
-  float valuef = valuei * 0.01;
-  QString valuefs = QString::number(valuef);
-  label.setText(QString::fromStdString(valuefs.toStdString()));
-  btnminus.setText("-");
-  btnplus.setText("+");
+  QString torqueMaxLatAccelStr = QString::fromStdString(params.get("TorqueMaxLatAccel"));
+  float valuef = torqueMaxLatAccelStr.toInt() * 0.01;
+  setLabel(QString::number(valuef));
 }
 
 // Speed Limit Control Custom Offset Type
-SpeedLimitOffsetType::SpeedLimitOffsetType() : AbstractControl(
+SpeedLimitOffsetType::SpeedLimitOffsetType() : SPOptionControl (
+  "SpeedLimitOffsetType",
   tr("Speed Limit Offset Type"),
   QString("%1<br>"
           "%2")
   .arg(tr("Set speed limit higher or lower than actual speed limit for a more personalized drive."))
   .arg(tr("To use this feature, turn off \"Enable Speed Limit % Offset\".")),
-  "../assets/offroad/icon_speed_limit.png")
+  "../assets/offroad/icon_speed_limit.png",
+  {0, 2}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("SpeedLimitOffsetType"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("SpeedLimitOffsetType", values.toStdString());
-    refresh();
-    emit offsetTypeUpdated();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("SpeedLimitOffsetType"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 2 ) {
-      value = 2;
-    }
-    QString values = QString::number(value);
-    params.put("SpeedLimitOffsetType", values.toStdString());
-    refresh();
-    emit offsetTypeUpdated();
-  });
   refresh();
 }
 
 void SpeedLimitOffsetType::refresh() {
   QString option = QString::fromStdString(params.get("SpeedLimitOffsetType"));
   if (option == "0") {
-    label.setText(tr("Default"));
+    setLabel(tr("Default"));
   } else if (option == "1") {
-    label.setText(tr("%"));
+    setLabel(tr("%"));
   } else if (option == "2") {
-    label.setText(tr("Value"));
+    setLabel(tr("Value"));
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // Speed Limit Control Custom Offset
-SpeedLimitValueOffset::SpeedLimitValueOffset() : AbstractControl(
+SpeedLimitValueOffset::SpeedLimitValueOffset() : SPOptionControl (
+  "SpeedLimitValueOffset",
   "",
   "",
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {-30, 30}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 35px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("SpeedLimitValueOffset"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= -30 ) {
-      value = -30;
-    }
-    QString values = QString::number(value);
-    params.put("SpeedLimitValueOffset", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("SpeedLimitValueOffset"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 30 ) {
-      value = 30;
-    }
-    QString values = QString::number(value);
-    params.put("SpeedLimitValueOffset", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void SpeedLimitValueOffset::refresh() {
-  label.setText(QString::fromStdString(params.get("SpeedLimitValueOffset")));
-  btnminus.setText("-");
-  btnplus.setText("+");
+  QString option = QString::fromStdString(params.get("SpeedLimitValueOffset"));
+  setLabel(option);
 }
 
 // Developer UI Info (Dev UI)
-DevUiInfo::DevUiInfo() : AbstractControl(
+DevUiInfo::DevUiInfo() : SPOptionControl (
+  "DevUIInfo",
   tr("Developer UI List"),
   tr("Select the number of lists of real-time parameters you would like to display on the sunnypilot screen while driving."),
-  "../assets/offroad/icon_blank.png")
+  "../assets/offroad/icon_blank.png",
+  {0, 1}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("DevUIInfo"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("DevUIInfo", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("DevUIInfo"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 1 ) {
-      value = 1;
-    }
-    QString values = QString::number(value);
-    params.put("DevUIInfo", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void DevUiInfo::refresh() {
   QString option = QString::fromStdString(params.get("DevUIInfo"));
   if (option == "0") {
-    label.setText(tr("5 Metrics"));
+    setLabel(tr("5 Metrics"));
   } else {
-    label.setText(tr("10 Metrics"));
+    setLabel(tr("10 Metrics"));
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 // Display Metrics above Chevron
-ChevronInfo::ChevronInfo() : AbstractControl(
+ChevronInfo::ChevronInfo() : SPOptionControl (
+  "ChevronInfo",
   tr("Display Metrics above Chevron"),
   tr("Display useful metrics above the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
-  "../assets/offroad/icon_calibration.png")
+  "../assets/offroad/icon_calibration.png",
+  {0, 2}) {
 
-{
-  label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
-  label.setStyleSheet("color: #e0e879");
-  hlayout->addWidget(&label);
-
-  btnminus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnplus.setStyleSheet(R"(
-    padding: 0;
-    border-radius: 50px;
-    font-size: 50px;
-    font-weight: 500;
-    color: #E4E4E4;
-    background-color: #393939;
-  )");
-  btnminus.setFixedSize(150, 100);
-  btnplus.setFixedSize(150, 100);
-  hlayout->addWidget(&btnminus);
-  hlayout->addWidget(&btnplus);
-
-  QObject::connect(&btnminus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("ChevronInfo"));
-    int value = str.toInt();
-    value = value - 1;
-    if (value <= 0 ) {
-      value = 0;
-    }
-    QString values = QString::number(value);
-    params.put("ChevronInfo", values.toStdString());
-    refresh();
-  });
-
-  QObject::connect(&btnplus, &QPushButton::clicked, [=]() {
-    auto str = QString::fromStdString(params.get("ChevronInfo"));
-    int value = str.toInt();
-    value = value + 1;
-    if (value >= 2 ) {
-      value = 2;
-    }
-    QString values = QString::number(value);
-    params.put("ChevronInfo", values.toStdString());
-    refresh();
-  });
   refresh();
 }
 
 void ChevronInfo::refresh() {
   QString option = QString::fromStdString(params.get("ChevronInfo"));
   if (option == "0") {
-    label.setText(tr("OFF"));
+    setLabel(tr("OFF"));
   } else if (option == "1") {
-    label.setText(tr("Distance"));
+    setLabel(tr("Distance"));
   } else if (option == "2") {
-    label.setText(tr("Speed"));
+    setLabel(tr("Speed"));
   }
-  btnminus.setText("-");
-  btnplus.setText("+");
 }
 
 SidebarTemp::SidebarTemp(QWidget *parent) : QWidget(parent), outer_layout(this) {

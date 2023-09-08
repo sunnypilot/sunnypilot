@@ -8,223 +8,259 @@
 
 #include "selfdrive/ui/qt/widgets/controls.h"
 
-class SpeedLimitOffsetType : public AbstractControl {
+class SPOptionControl : public AbstractControl {
+  Q_OBJECT
+
+private:
+  struct MinMaxValue {
+    int min_value;
+    int max_value;
+  };
+
+public:
+  SPOptionControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
+                  const MinMaxValue &range, const int per_value_change = 1) : AbstractControl(title, desc, icon) {
+    const QString style = R"(
+      QPushButton {
+        padding: 0;
+        border-radius: 50px;
+        font-size: 35px;
+        font-weight: 500;
+        color: #E4E4E4;
+        background-color: #393939;
+      }
+      QPushButton:pressed {
+        background-color: #4a4a4a;
+      }
+      QPushButton:disabled {
+        color: #33E4E4E4;
+      }
+    )";
+
+    label.setAlignment(Qt::AlignVCenter|Qt::AlignRight);
+    label.setStyleSheet("color: #e0e879");
+    hlayout->addWidget(&label);
+
+    const std::vector<QString> button_texts{"-", "+"};
+
+    key = param.toStdString();
+    value = atoi(params.get(key).c_str());
+
+    button_group = new QButtonGroup(this);
+    button_group->setExclusive(true);
+    for (int i = 0; i < button_texts.size(); i++) {
+      QPushButton *button = new QPushButton(button_texts[i], this);
+      button->setStyleSheet(style);
+      button->setFixedSize(150, 100);
+      hlayout->addWidget(button);
+      button_group->addButton(button, i);
+
+      int change_value = (i == 0) ? -per_value_change : per_value_change;
+
+      QObject::connect(button, &QPushButton::clicked, [=]() {
+        key = param.toStdString();
+        value = atoi(params.get(key).c_str());
+        value += change_value;
+        value = std::clamp(value, range.min_value, range.max_value);
+        params.put(key, QString::number(value).toStdString());
+        updateLabels();
+
+        if (update) {
+          emit updateOtherToggles();
+        }
+      });
+    }
+  }
+
+  void setUpdateOtherToggles(bool _update) {
+    update = _update;
+  }
+
+  inline void setLabel(const QString &text) { label.setText(text); }
+
+signals:
+  void updateLabels();
+  void updateOtherToggles();
+
+private:
+  std::string key;
+  int value;
+  QButtonGroup *button_group;
+  QLabel label;
+  Params params;
+  std::map<QString, QString> option_label = {};
+  bool update = false;
+};
+
+class SpeedLimitOffsetType : public SPOptionControl {
   Q_OBJECT
 
 public:
   SpeedLimitOffsetType();
 
-signals:
-  void offsetTypeUpdated();
+  void refresh();
 
 private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
   Params params;
-
-  void refresh();
 };
 
-class SpeedLimitValueOffset : public AbstractControl {
+class SpeedLimitValueOffset : public SPOptionControl {
   Q_OBJECT
 
 public:
   SpeedLimitValueOffset();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class MaxTimeOffroad : public AbstractControl {
+class MaxTimeOffroad : public SPOptionControl {
   Q_OBJECT
 
 public:
   MaxTimeOffroad();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class OnroadScreenOff : public AbstractControl {
+class OnroadScreenOff : public SPOptionControl {
   Q_OBJECT
 
 public:
   OnroadScreenOff();
 
-signals:
-  void toggleUpdated();
+  void refresh();
 
 private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
   Params params;
-
-  void refresh();
 };
 
-class OnroadScreenOffBrightness : public AbstractControl {
+class OnroadScreenOffBrightness : public SPOptionControl {
   Q_OBJECT
 
 public:
   OnroadScreenOffBrightness();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class BrightnessControl : public AbstractControl {
+class BrightnessControl : public SPOptionControl {
   Q_OBJECT
 
 public:
   BrightnessControl();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class CameraOffset : public AbstractControl {
+class CameraOffset : public SPOptionControl {
   Q_OBJECT
 
 public:
   CameraOffset();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class PathOffset : public AbstractControl {
+class PathOffset : public SPOptionControl {
   Q_OBJECT
 
 public:
   PathOffset();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class AutoLaneChangeTimer : public AbstractControl {
+class AutoLaneChangeTimer : public SPOptionControl {
   Q_OBJECT
 
 public:
   AutoLaneChangeTimer();
 
+  void refresh();
+
 signals:
   void toggleUpdated();
 
 private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
   Params params;
-
-  void refresh();
 };
 
-class GapAdjustCruiseMode : public AbstractControl {
+class GapAdjustCruiseMode : public SPOptionControl {
   Q_OBJECT
 
 public:
   GapAdjustCruiseMode();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class TorqueFriction : public AbstractControl {
+class TorqueFriction : public SPOptionControl {
   Q_OBJECT
 
 public:
   TorqueFriction();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class TorqueMaxLatAccel : public AbstractControl {
+class TorqueMaxLatAccel : public SPOptionControl {
   Q_OBJECT
 
 public:
   TorqueMaxLatAccel();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class DevUiInfo : public AbstractControl {
+class DevUiInfo : public SPOptionControl {
   Q_OBJECT
 
 public:
   DevUiInfo();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
-class ChevronInfo : public AbstractControl {
+class ChevronInfo : public SPOptionControl {
   Q_OBJECT
 
 public:
   ChevronInfo();
 
-private:
-  QPushButton btnplus;
-  QPushButton btnminus;
-  QLabel label;
-  Params params;
-
   void refresh();
+
+private:
+  Params params;
 };
 
 class SidebarTemp : public QWidget {

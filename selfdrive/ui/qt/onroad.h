@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <QPushButton>
 #include <QStackedLayout>
 #include <QWidget>
@@ -24,7 +26,7 @@ class OnroadAlerts : public QWidget {
   Q_OBJECT
 
 public:
-  OnroadAlerts(QWidget *parent = 0) : QWidget(parent) {};
+  OnroadAlerts(QWidget *parent = 0) : QWidget(parent) {}
   void updateAlert(const Alert &a);
 
 protected:
@@ -69,96 +71,6 @@ private:
 // container window for the NVG UI
 class AnnotatedCameraWidget : public CameraWidget {
   Q_OBJECT
-  Q_PROPERTY(float speed MEMBER speed);
-  Q_PROPERTY(QString speedUnit MEMBER speedUnit);
-  Q_PROPERTY(float setSpeed MEMBER setSpeed);
-  Q_PROPERTY(float speedLimit MEMBER speedLimit);
-  Q_PROPERTY(bool is_cruise_set MEMBER is_cruise_set);
-  Q_PROPERTY(bool has_eu_speed_limit MEMBER has_eu_speed_limit);
-  Q_PROPERTY(bool has_us_speed_limit MEMBER has_us_speed_limit);
-  Q_PROPERTY(bool is_metric MEMBER is_metric);
-  Q_PROPERTY(bool left_blindspot MEMBER left_blindspot);
-  Q_PROPERTY(bool right_blindspot MEMBER right_blindspot);
-
-  Q_PROPERTY(bool dmActive MEMBER dmActive);
-  Q_PROPERTY(bool hideBottomIcons MEMBER hideBottomIcons);
-  Q_PROPERTY(bool rightHandDM MEMBER rightHandDM);
-  Q_PROPERTY(int status MEMBER status);
-
-  Q_PROPERTY(bool steerOverride MEMBER steerOverride);
-  Q_PROPERTY(bool gasOverride MEMBER gasOverride);
-  Q_PROPERTY(bool latActive MEMBER latActive);
-  Q_PROPERTY(bool madsEnabled MEMBER madsEnabled);
-
-  Q_PROPERTY(bool brakeLights MEMBER brakeLights);
-
-  Q_PROPERTY(bool standStillTimer MEMBER standStillTimer);
-  Q_PROPERTY(bool standStill MEMBER standStill);
-  Q_PROPERTY(float standstillElapsedTime MEMBER standstillElapsedTime);
-
-  Q_PROPERTY(bool showVTC MEMBER showVTC);
-  Q_PROPERTY(QString vtcSpeed MEMBER vtcSpeed);
-  Q_PROPERTY(QColor vtcColor MEMBER vtcColor);
-  Q_PROPERTY(bool showDebugUI MEMBER showDebugUI);
-
-  Q_PROPERTY(QString roadName MEMBER roadName);
-
-  Q_PROPERTY(bool showSpeedLimit MEMBER showSpeedLimit);
-  Q_PROPERTY(float speedLimitSLC MEMBER speedLimitSLC);
-  Q_PROPERTY(QString slcSubText MEMBER slcSubText);
-  Q_PROPERTY(float slcSubTextSize MEMBER slcSubTextSize);
-  Q_PROPERTY(bool overSpeedLimit MEMBER overSpeedLimit);
-  Q_PROPERTY(bool mapSourcedSpeedLimit MEMBER mapSourcedSpeedLimit);
-  Q_PROPERTY(bool slcActive MEMBER slcActive);
-
-  Q_PROPERTY(bool showTurnSpeedLimit MEMBER showTurnSpeedLimit);
-  Q_PROPERTY(QString turnSpeedLimit MEMBER turnSpeedLimit);
-  Q_PROPERTY(QString tscSubText MEMBER tscSubText);
-  Q_PROPERTY(bool tscActive MEMBER tscActive);
-  Q_PROPERTY(int curveSign MEMBER curveSign);
-
-  Q_PROPERTY(bool hideVEgoUi MEMBER hideVEgoUi);
-
-  Q_PROPERTY(bool gac MEMBER gac);
-  Q_PROPERTY(int gacTr MEMBER gacTr);
-
-  Q_PROPERTY(bool mapVisible MEMBER mapVisible);
-
-  // ############################## DEV UI START ##############################
-  Q_PROPERTY(bool lead_status MEMBER lead_status);
-  Q_PROPERTY(float lead_d_rel MEMBER lead_d_rel);
-  Q_PROPERTY(float lead_v_rel MEMBER lead_v_rel);
-  Q_PROPERTY(QString lateralState MEMBER lateralState);
-  Q_PROPERTY(float angleSteers MEMBER angleSteers);
-  Q_PROPERTY(float steerAngleDesired MEMBER steerAngleDesired);
-  Q_PROPERTY(float curvature MEMBER curvature);
-  Q_PROPERTY(float roll MEMBER roll);
-  Q_PROPERTY(int memoryUsagePercent MEMBER memoryUsagePercent);
-  Q_PROPERTY(bool devUiEnabled MEMBER devUiEnabled);
-  Q_PROPERTY(int devUiInfo MEMBER devUiInfo);
-  Q_PROPERTY(float gpsAccuracy MEMBER gpsAccuracy);
-  Q_PROPERTY(float altitude MEMBER altitude);
-  Q_PROPERTY(float vEgo MEMBER vEgo);
-  Q_PROPERTY(float aEgo MEMBER aEgo);
-  Q_PROPERTY(float steeringTorqueEps MEMBER steeringTorqueEps);
-  Q_PROPERTY(float bearingAccuracyDeg MEMBER bearingAccuracyDeg);
-  Q_PROPERTY(float bearingDeg MEMBER bearingDeg);
-  Q_PROPERTY(bool torquedUseParams MEMBER torquedUseParams);
-  Q_PROPERTY(float latAccelFactorFiltered MEMBER latAccelFactorFiltered);
-  Q_PROPERTY(float frictionCoefficientFiltered MEMBER frictionCoefficientFiltered);
-  Q_PROPERTY(bool liveValid MEMBER liveValid);
-  // ############################## DEV UI END ##############################
-
-  Q_PROPERTY(float btnPerc MEMBER btnPerc);
-
-  Q_PROPERTY(bool reversing MEMBER reversing);
-
-  Q_PROPERTY(int e2eState MEMBER e2eState);
-  Q_PROPERTY(int e2eStatus MEMBER e2eStatus);
-
-  Q_PROPERTY(bool left_blinker MEMBER left_blinker);
-  Q_PROPERTY(bool right_blinker MEMBER right_blinker);
-  Q_PROPERTY(bool lane_change_edge_block MEMBER lane_change_edge_block);
 
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
@@ -167,7 +79,6 @@ public:
   MapSettingsButton *map_settings_btn;
 
 private:
-  void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void drawCenteredText(QPainter &p, int x, int y, const QString &text, QColor color);
   void drawVisionTurnControllerUI(QPainter &p, int x, int y, int size, const QColor &color, const QString &speed,
@@ -356,5 +267,6 @@ private:
 
 private slots:
   void offroadTransition(bool offroad);
+  void primeChanged(bool prime);
   void updateState(const UIState &s);
 };
