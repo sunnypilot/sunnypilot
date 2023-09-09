@@ -13,24 +13,31 @@
     <br><br>
     current view: <span id="mycurrentview"></span>
     <br>
-    <a href="/screenrecords/download/{{ clip }}">download: {{ clip }}</a><br><br>
+    <a href="/screenrecords/download/{{ clip }}">download: {{ clip }}</a><br>
+    <span onclick="return confirmation1();"><a href="/screenrecords/delete/{{ clip }}">delete: {{ clip }}</a></span><br><br>
     <script>
-    var video = document.getElementById("video");
-    var track = {
-        play: function() {
-        return ( "/screenrecords/play/pipe/" + '{{ clip }}' );
+        var video = document.getElementById("video");
+        var track = {
+            play: function() {
+            return ( "/screenrecords/play/pipe/" + '{{ clip }}' );
+            }
         }
-    }
-    video.src = track.play();
-    document.getElementById("mycurrentview").textContent=video.src.split("/")[6];
-    function confirmation() {
-        if(confirm("Are you sure? This will delete all screen records!") == true) {
-            window.location = "/deletescreenrecords"
+        video.src = track.play();
+        document.getElementById("mycurrentview").textContent=video.src.split("/")[6];
+        function confirmation1() {
+            return confirm("Are you sure? This will delete this current screen record!") 
         }
-    }
+        function confirmation2() {
+            let ensure = prompt("Please type 'delete all my screenrecords'");
+            if (ensure == "delete all my screenrecords") {
+                window.location = "/deletescreenrecords";
+            } else if (ensure != null){
+                alert(`Make sure that you want to delete ALL screen records and that you wrote without quotation marks`);
+            }
+        }
     </script>
     {% for row in rows %}
         <a href="/screenrecords/{{ row }}">{{ row }}</a><br>
     {% endfor %}
-    <br><br><button onclick="confirmation()" class="btn btn-danger btn-lg">delete all screen records</button><br><br>
+    <br><br><button onclick="confirmation2()" class="btn btn-danger btn-lg">delete all screen records</button><br><br>
 {% endblock %}

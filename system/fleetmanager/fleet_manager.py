@@ -114,6 +114,13 @@ def download_file(clip):
   return send_from_directory(fleet.SCREENRECORD_PATH, clip, as_attachment=True)
 
 
+@app.route("/screenrecords/delete/<clip>")
+@fleet.login_required
+def delete_file(clip):
+  os.remove(fleet.SCREENRECORD_PATH + clip)
+  return redirect("/screenrecords")
+
+
 @app.route("/about")
 def about():
   return render_template("about.html")
@@ -143,7 +150,7 @@ def main():
   with open(fleet.PIN_PATH + "otp.conf", "w") as file:
     file.write(pin)
 
-  print(f'\n\npin: {pin}\n\n')
+  # print(f'\n\npin: {pin}\n\n')
   app.secret_key = secrets.token_hex(32)
   app.run(host="0.0.0.0", port=5050)
 

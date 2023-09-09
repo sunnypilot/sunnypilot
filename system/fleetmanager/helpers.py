@@ -24,6 +24,7 @@ def login_required(f):
   @wraps(f)
   def decorated_route(*args, **kwargs):
     if not session.get("logged_in"):
+    # if not session.get("logged_in") and False:
       session["previous_page"] = request.url
       return render_template("login.html")
     return f(*args, **kwargs)
