@@ -1849,10 +1849,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     blinker_frame++;
     int state = blinkerPulse(blinker_frame);
     if (left_blinker) {
-      drawLeftTurnSignal(painter, rect().center().x() - 300, 90, state);
+      drawLeftTurnSignal(painter, rect().center().x() - 300, mapVisible ? 210 : 90, state);
     }
     if (right_blinker) {
-      drawRightTurnSignal(painter, rect().center().x() + 180, 90, state);
+      drawRightTurnSignal(painter, rect().center().x() + 180, mapVisible ? 210 : 90, state);
     }
   } else {
     blinker_frame = 0;
