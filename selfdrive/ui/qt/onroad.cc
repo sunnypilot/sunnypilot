@@ -1670,18 +1670,18 @@ void AnnotatedCameraWidget::rocketFuel(QPainter &p) {
   vc_accel = vc_accel + (vc_accel0 - vc_accel) / 5;
   float hha = 0;
   if (vc_accel > 0) {
-    hha = 1 - 0.1 / vc_accel;
+    hha = 0.85 - 0.1 / vc_accel;  // only extend up to 85%
     p.setBrush(QColor(0, 245, 0, 200));
   }
   if (vc_accel < 0) {
-    hha = 1 + 0.1 / vc_accel;
+    hha = 0.85 + 0.1 / vc_accel; // only extend up to 85%
     p.setBrush(QColor(245, 0, 0, 200));
   }
   if (hha < 0) {
     hha = 0;
   }
   hha = hha * rect_h;
-  float wp = 35;
+  float wp = 28;
   if (vc_accel > 0) {
     QRect ra = QRect(rect_w - wp, rect_h / 2 - hha / 2, wp, hha / 2);
     p.drawRect(ra);
