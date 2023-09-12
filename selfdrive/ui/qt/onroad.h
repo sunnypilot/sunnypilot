@@ -105,6 +105,7 @@ private:
   void drawLeftTurnSignal(QPainter &painter, int x, int y, int state);
   void drawRightTurnSignal(QPainter &painter, int x, int y, int state);
   int blinkerPulse(int frame);
+  void updateButtonsLayout();
 
   uint64_t last_update_params;
 
