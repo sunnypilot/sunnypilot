@@ -29,6 +29,18 @@ static void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, cons
   p.setOpacity(1.0);
 }
 
+static void drawCustomButtonIcon(QPainter &p, const int btn_size_x, const int btn_size_y, const QPixmap &img, const QBrush &bg, float opacity) {
+  QPoint center(btn_size_x / 2, btn_size_y / 2);
+  p.setRenderHint(QPainter::Antialiasing);
+  p.setOpacity(1.0);  // bg dictates opacity of ellipse
+  p.setPen(Qt::NoPen);
+  p.setBrush(bg);
+  p.drawEllipse(center, btn_size_x / 2, btn_size_y / 2);
+  p.setOpacity(opacity);
+  p.drawPixmap(center - QPoint(img.width() / 2, img.height() / 2), img);
+  p.setOpacity(1.0);
+}
+
 OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *main_layout  = new QVBoxLayout(this);
   main_layout->setMargin(UI_BORDER_SIZE);
@@ -340,8 +352,10 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
 // MapSettingsButton
 MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
-  setFixedSize(btn_size, btn_size);
-  settings_img = loadPixmap("../assets/navigation/icon_directions_outlined.svg", {img_size, img_size});
+  // btn_size: 192 * 80% ~= 152
+  // img_size: (152 / 4) * 3 = 114
+  setFixedSize(152, 152);
+  settings_img = loadPixmap("../assets/navigation/icon_directions_outlined.svg", {114, 114});
 
   // hidden by default, made visible if map is created (has prime or mapbox token)
   setVisible(false);
@@ -350,7 +364,7 @@ MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
 
 void MapSettingsButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+  drawCustomButtonIcon(p, 152, 152, settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
 }
 
 
@@ -390,6 +404,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 #endif
 
   buttons_layout = new QHBoxLayout();
+  buttons_layout->setContentsMargins(0, 0, 20, 40);
   main_layout->addLayout(buttons_layout);
   updateButtonsLayout();
 }
