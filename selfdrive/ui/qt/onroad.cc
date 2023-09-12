@@ -164,19 +164,11 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   UIScene &scene = s->scene;
   SubMaster &sm = *(uiState()->sm);
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
-  auto car_state = sm["carState"].getCarState();
 
-  QRect gac_btn_rect = QRect(scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && car_state.getCruiseState().getAvailable() &&
-             scene.sleep_btn_opacity == 20 && gac_btn_rect.contains(e->x(), e->y())) {
-    scene.gac_tr--;
-    scene.gac_tr = scene.gac_tr < scene.gac_min ? scene.gac_max : scene.gac_tr;
-    params.put("GapAdjustCruiseTr", std::to_string(scene.gac_tr));
-    propagate_event = false;
-  } else if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+  if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
     // If touching the speed limit sign area when visible
     scene.last_speed_limit_sign_tap = seconds_since_boot();
     params.putBool("LastSpeedLimitSignTap", true);
@@ -472,10 +464,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   standstillElapsedTime = lateral_plan.getStandstillElapsed();
 
   hideVEgoUi = s.scene.hide_vego_ui;
-
-  gac = s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control &&
-              car_state.getCruiseState().getAvailable();
-  gacTr = s.scene.gac_tr;
 
   splitPanelVisible = s.scene.map_visible;
 
@@ -781,16 +769,6 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawText(p, rect().center().x(), 290, speedUnit, 200);
   }
 
-  // counts total number of UI buttons to display; modify this if add/change/remove UI buttons
-  bool gac_on = gac;
-  int total_ui_buttons = int(gac_on);
-
-  int btnValues[total_ui_buttons];
-  for (int i = 0; i < total_ui_buttons; i++) {
-    btnValues[i] = UI_BORDER_SIZE * 2 + 190 + (i * 180);
-  }
-  uiState()->scene.gac_btn = gac_on ? btnValues[0] : 0;
-
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
@@ -810,10 +788,6 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     int rn_btn = 0;
     rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 30 : 0;
     uiState()->scene.rn_offset = rn_btn;
-
-    if (gac) {
-      drawGacButton(p, uiState()->scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
-    }
 
     // Stand Still Timer
     if (standStillTimer && standStill && !splitPanelVisible) {
@@ -885,34 +859,6 @@ void AnnotatedCameraWidget::drawVisionTurnControllerUI(QPainter &p, int x, int y
 
   p.setFont(InterFont(56, QFont::DemiBold));
   drawCenteredText(p, rvtc.center().x(), rvtc.center().y(), vision_speed, color);
-}
-
-void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int h) {
-  int prev_gac_tr = -1;
-  QString gac_text = "";
-  QColor gac_border = QColor(255, 255, 255, (255 * btnPerc));
-
-  if (prev_gac_tr != gacTr) {
-    prev_gac_tr = gacTr;
-    if (gacTr == 1) {
-      gac_text = "Maniac\nGap";
-      gac_border = QColor(255, 75, 75, (255 * btnPerc));
-    } else if (gacTr == 2) {
-      gac_text = "Aggro\nGap";
-      gac_border = QColor(252, 255, 75, (255 * btnPerc));
-    } else {
-      gac_text = "Stock\nGap";
-      gac_border = QColor(75, 255, 102, (255 * btnPerc));
-    }
-  }
-
-  QRect gacBtn(x, y, w, h);
-  p.setPen(QPen(gac_border, 6));
-  p.setBrush(QColor(75, 75, 75, (75 * btnPerc)));
-  p.drawEllipse(gacBtn);
-  p.setPen(QColor(255, 255, 255, (255 * btnPerc)));
-  p.setFont(InterFont(gacTr == 1 ? 32 : 36, QFont::DemiBold));
-  p.drawText(gacBtn, Qt::AlignCenter, gac_text);
 }
 
 void AnnotatedCameraWidget::drawStandstillTimer(QPainter &p, int x, int y) {

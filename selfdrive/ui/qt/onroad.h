@@ -89,7 +89,6 @@ private:
   void drawTrunSpeedSign(QPainter &p, QRect rc, const QString &speed, const QString &sub_text, int curv_sign,
                          bool is_active);
 
-  void drawGacButton(QPainter &p, int x, int y, int w, int h);
   void drawColoredText(QPainter &p, int x, int y, const QString &text, QColor color);
   void drawStandstillTimer(QPainter &p, int x, int y);
 
@@ -171,9 +170,6 @@ private:
   int curveSign = 0;
 
   bool hideVEgoUi;
-
-  bool gac;
-  int gacTr;
 
   bool splitPanelVisible;
 
