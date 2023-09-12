@@ -477,7 +477,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
               car_state.getCruiseState().getAvailable();
   gacTr = s.scene.gac_tr;
 
-  mapVisible = s.scene.map_visible;
+  splitPanelVisible = s.scene.map_visible;
 
   // ############################## DEV UI START ##############################
   lead_d_rel = radar_state.getLeadOne().getDRel();
@@ -794,7 +794,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
-    if (devUiEnabled && !mapVisible && devUiInfo == 1) {
+    if (devUiEnabled && !splitPanelVisible && devUiInfo == 1) {
       p.setPen(Qt::NoPen);
       p.setBrush(QColor(0, 0, 0, 100));
       p.drawRect(bar_rect1);
@@ -808,7 +808,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     }
 
     int rn_btn = 0;
-    rn_btn = devUiEnabled && !mapVisible && devUiInfo == 1 ? 30 : 0;
+    rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 30 : 0;
     uiState()->scene.rn_offset = rn_btn;
 
     if (gac) {
@@ -816,7 +816,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     }
 
     // Stand Still Timer
-    if (standStillTimer && standStill && !mapVisible) {
+    if (standStillTimer && standStill && !splitPanelVisible) {
       drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
     }
 
@@ -1849,10 +1849,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     blinker_frame++;
     int state = blinkerPulse(blinker_frame);
     if (left_blinker) {
-      drawLeftTurnSignal(painter, rect().center().x() - 300, mapVisible ? 210 : 90, state);
+      drawLeftTurnSignal(painter, rect().center().x() - 300, splitPanelVisible ? 210 : 90, state);
     }
     if (right_blinker) {
-      drawRightTurnSignal(painter, rect().center().x() + 180, mapVisible ? 210 : 90, state);
+      drawRightTurnSignal(painter, rect().center().x() + 180, splitPanelVisible ? 210 : 90, state);
     }
   } else {
     blinker_frame = 0;

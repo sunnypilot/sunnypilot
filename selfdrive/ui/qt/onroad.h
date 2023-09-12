@@ -175,7 +175,7 @@ private:
   bool gac;
   int gacTr;
 
-  bool mapVisible;
+  bool splitPanelVisible;
 
   // ############################## DEV UI START ##############################
   bool lead_status;
