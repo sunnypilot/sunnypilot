@@ -389,6 +389,8 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   QObject::connect(uiState(), &UIState::offroadTransition, this, &AnnotatedCameraWidget::offroadTransition);
 #endif
 
+  buttons_layout = new QHBoxLayout();
+  main_layout->addLayout(buttons_layout);
   updateButtonsLayout();
 }
 
@@ -401,7 +403,10 @@ void AnnotatedCameraWidget::offroadTransition(bool offroad) {
 #endif
 
 void AnnotatedCameraWidget::updateButtonsLayout() {
-  QHBoxLayout *buttons_layout = new QHBoxLayout();
+  QLayoutItem *item;
+  while ((item = buttons_layout->takeAt(0)) != nullptr) {
+    delete item;
+  }
 
 #ifdef ENABLE_DASHCAM
   buttons_layout->addWidget(recorder);
@@ -410,8 +415,6 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
   buttons_layout->addSpacing(map_settings_btn->isVisible() ? 60 : 0);
   buttons_layout->addWidget(map_settings_btn);
   buttons_layout->setAlignment(Qt::AlignBottom | Qt::AlignRight);
-
-  main_layout->addLayout(buttons_layout);
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {

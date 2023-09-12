@@ -110,6 +110,7 @@ private:
   uint64_t last_update_params;
 
   QVBoxLayout *main_layout;
+  QHBoxLayout *buttons_layout;
   ExperimentalButton *experimental_btn;
   QPixmap dm_img;
   QPixmap map_img;
