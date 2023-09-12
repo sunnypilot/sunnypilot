@@ -106,8 +106,7 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
 
   // Handle sidebar collapsing
   if ((onroad->isVisible() || body->isVisible()) && (!sidebar->isVisible() || e->x() > sidebar->width())) {
-    if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
-        (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
+    if (onroad->wakeScreenTimeout()) {
       sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
     }
   }

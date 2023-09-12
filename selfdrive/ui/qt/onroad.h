@@ -247,6 +247,14 @@ public:
   bool isMapVisible() const { return map && map->isVisible(); }
   void showMapPanel(bool show) { if (map) map->setVisible(show); }
 
+  bool wakeScreenTimeout() {
+    if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
+        (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
+      return true;
+    }
+    return false;
+  }
+
 signals:
   void mapPanelRequested();
 

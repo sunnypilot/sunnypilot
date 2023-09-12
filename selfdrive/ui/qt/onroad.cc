@@ -181,8 +181,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   }
 #ifdef ENABLE_MAPS
   else if (map != nullptr) {
-    if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
-        (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
+    if (wakeScreenTimeout()) {
       // Switch between map and sidebar when using navigate on openpilot
       bool sidebarVisible = geometry().x() > 0;
           bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
