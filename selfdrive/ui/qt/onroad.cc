@@ -404,7 +404,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 #endif
 
   buttons_layout = new QHBoxLayout();
-  buttons_layout->setContentsMargins(0, 0, 20, 40);
+  buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
   updateButtonsLayout();
 }
@@ -423,13 +423,16 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
     delete item;
   }
 
+  buttons_layout->setContentsMargins(0, 0, 10, uiState()->scene.rn_offset != 0 ? uiState()->scene.rn_offset + 10 : 20);
+
+  buttons_layout->addStretch(1);
+
 #ifdef ENABLE_DASHCAM
-  buttons_layout->addWidget(recorder);
+  buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | Qt::AlignRight);
 #endif
 
   buttons_layout->addSpacing(map_settings_btn->isVisible() ? 60 : 0);
-  buttons_layout->addWidget(map_settings_btn);
-  buttons_layout->setAlignment(Qt::AlignBottom | Qt::AlignRight);
+  buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
@@ -814,7 +817,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     }
 
     int rn_btn = 0;
-    rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 30 : 0;
+    rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 35 : 0;
     uiState()->scene.rn_offset = rn_btn;
 
     // Stand Still Timer
