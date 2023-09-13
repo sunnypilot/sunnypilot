@@ -48,6 +48,9 @@ class OtisServ(BaseHTTPRequestHandler):
     if self.path == '/logo.png':
       self.get_logo()
       return
+    if self.path == '/navdirections.json':
+      self.get_navdirections()
+      return
     if self.path == '/?reset=1':
       params.put("NavDestination", "")
     if use_amap:
@@ -108,7 +111,10 @@ class OtisServ(BaseHTTPRequestHandler):
       if self.get_app_token() is None:
         self.display_page_app_token()
         return
-      self.display_page_addr_input()
+      if params.get("NavDestination") is not None:
+        self.display_nav_directions()
+      else :
+        self.display_page_addr_input() 
 
   def do_POST(self):
     use_amap = params.get_bool("EnableAmap")
@@ -213,13 +219,24 @@ class OtisServ(BaseHTTPRequestHandler):
     elif use_gmap:
       self.display_page_gmap()
     else:
-      self.display_page_addr_input()
+      if params.get("NavDestination") is not None:
+        self.display_nav_directions()
+      else :
+        self.display_page_addr_input()
 
   def get_logo(self):
     self.send_response(200)
     self.send_header('Content-type','image/png')
     self.end_headers()
     f = open("%s/selfdrive/assets/img_spinner_comma.png" % BASEDIR, "rb")
+    self.wfile.write(f.read())
+    f.close()
+
+  def get_navdirections(self):
+    self.send_response(200)
+    self.send_header('Content-type','application/json')
+    self.end_headers()
+    f = open("%s/selfdrive/manager/navdirections.json" % BASEDIR, "rb")
     self.wfile.write(f.read())
     f.close()
 
@@ -288,6 +305,10 @@ class OtisServ(BaseHTTPRequestHandler):
 
   def display_page_addr_input(self, msg = ""):
     self.wfile.write(bytes(self.get_parsed_template("body", {"{{content}}": self.get_parsed_template("addr_input", {"{{msg}}": msg})}), "utf-8"))
+    
+  def display_nav_directions(self, msg = ""):
+    content = self.get_parsed_template("addr_input", {"{{msg}}": ""}) + self.get_parsed_template("nav_directions", {"{{msg}}": msg})
+    self.wfile.write(bytes(self.get_parsed_template("body", {"{{content}}": content }), "utf-8"))
 
   def display_page_nav_confirmation(self, addr, lon, lat):
     content = self.get_parsed_template("addr_input", {"{{msg}}": ""}) + self.get_parsed_template("nav_confirmation", {"{{token}}": self.get_public_token(), "{{lon}}": lon, "{{lat}}": lat, "{{addr}}": addr})
@@ -407,6 +428,10 @@ class OtisServ(BaseHTTPRequestHandler):
     params.put("ApiCache_NavDestinations", json.dumps(dests).rstrip("\n\r"))
 
 def main():
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("otisserv: failed to set core affinity")
   webServer = HTTPServer((hostName, serverPort), OtisServ)
 
   try:

@@ -154,6 +154,32 @@ class RouteEngine:
       resp.raise_for_status()
 
       r = resp.json()
+      r1 = resp.json()
+      # Function to remove specified keys recursively unnessary for display
+      def remove_keys(obj, keys_to_remove):
+        if isinstance(obj, list):
+          return [remove_keys(item, keys_to_remove) for item in obj]
+        elif isinstance(obj, dict):
+          return {key: remove_keys(value, keys_to_remove) for key, value in obj.items() if key not in keys_to_remove}
+        else:
+          return obj
+      keys_to_remove = ['geometry', 'annotation', 'incidents', 'intersections', 'components', 'sub', 'waypoints']
+      self.r2 = remove_keys(r1, keys_to_remove)
+      # Add items for display under "routes"
+      if 'routes' in self.r2 and len(self.r2['routes']) > 0:
+        first_route = self.r2['routes'][0]
+        nav_destination_json = self.params.get('NavDestination')
+        try:
+          nav_destination_data = json.loads(nav_destination_json)
+          place_name = nav_destination_data.get('place_name', 'Default Place Name')
+          first_route['Destination'] = place_name
+          first_route['CurrentStep'] = 0
+        except json.JSONDecodeError as e:
+          print(f"Error decoding JSON: {e}")
+	  # Save slim json as file
+      with open('navdirections.json', 'w') as json_file:
+        json.dump(self.r2, json_file, indent=4)
+		
       if len(r['routes']):
         self.route = r['routes'][0]['legs'][0]['steps']
         self.route_geometry = []
@@ -286,6 +312,13 @@ class RouteEngine:
       if self.step_idx + 1 < len(self.route):
         self.step_idx += 1
         self.reset_recompute_limits()
+        # Update the 'CurrentStep' value in the JSON
+        if 'routes' in self.r2 and len(self.r2['routes']) > 0:
+          first_route = self.r2['routes'][0]
+          first_route['CurrentStep'] = self.step_idx
+        # Write the modified JSON data back to the file
+        with open('navdirections.json', 'w') as json_file:
+          json.dump(self.r2, json_file, indent=4)
       else:
         cloudlog.warning("Destination reached")
 
