@@ -179,7 +179,9 @@ typedef struct UIScene {
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
   uint64_t started_frame;
 
+  int dynamic_lane_profile;
   bool dynamic_lane_profile_status = true;
+  bool dynamic_lane_profile_toggle;
 
   bool visual_brake_lights;
 
