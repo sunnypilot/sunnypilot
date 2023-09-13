@@ -1469,6 +1469,10 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   p.drawText(x, y, status_text);
 
   y += text_height;
+  status_text.sprintf("DLP: %s\n", QString::number(uiState()->scene.dynamic_lane_profile).toStdString().c_str());
+  p.drawText(x, y, status_text);
+
+  y += text_height;
   status_text.sprintf("SLC: %s\n", QString::number(int(slcState)).toStdString().c_str());
   p.drawText(x, y, status_text);
 }
