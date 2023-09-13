@@ -546,6 +546,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   }
 
   const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
+  slcState = lp.getSpeedLimitControlState();
 
   if (sm.frame % (UI_FREQ / 2) == 0) {
     const auto vtcState = lp.getVisionTurnControllerState();
@@ -568,7 +569,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const auto slcState = lp.getSpeedLimitControlState();
     const bool sl_force_active = s.scene.speed_limit_control_enabled &&
                                  seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
     const bool sl_inactive = !sl_force_active && (!s.scene.speed_limit_control_enabled ||
@@ -853,6 +853,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (uiState()->scene.e2e_long_alert_ui && e2eState != 0) {
     drawE2eStatus(p, UI_BORDER_SIZE * 2 + 190, 45, 150, 150, e2eState);
   }
+
+  if (!hideBottomIcons) {
+    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 155 - uiState()->scene.rn_offset);
+  }
+
   p.restore();
 }
 
@@ -1451,6 +1456,21 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
   }
 
   return blinker_state;
+}
+
+void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
+  QString status_text;
+  const int text_height = 34;
+
+  p.setFont(InterFont(32, QFont::Bold));
+  p.setPen(whiteColor());
+
+  status_text.sprintf("GAC: %s\n", QString::number(uiState()->scene.gac_tr).toStdString().c_str());
+  p.drawText(x, y, status_text);
+
+  y += text_height;
+  status_text.sprintf("SLC: %s\n", QString::number(int(slcState)).toStdString().c_str());
+  p.drawText(x, y, status_text);
 }
 
 

@@ -107,6 +107,8 @@ private:
   int blinkerPulse(int frame);
   void updateButtonsLayout();
 
+  void drawFeatureStatusText(QPainter &p, int x, int y);
+
   uint64_t last_update_params;
 
   QVBoxLayout *main_layout;
@@ -228,6 +230,8 @@ protected:
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;
   void rocketFuel(QPainter &p);
+
+  cereal::LongitudinalPlan::SpeedLimitControlState slcState;
 
 // neokii
 #ifdef ENABLE_DASHCAM
