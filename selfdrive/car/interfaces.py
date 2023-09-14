@@ -555,7 +555,7 @@ class CarInterfaceBase(ABC):
 
   def sp_update_params(self, CS):
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
-    CS.gac_tr = round(float(self.param_s.get("LongitudinalPersonality", encoding="utf8")))
+    CS.gac_tr = int(self.param_s.get("LongitudinalPersonality"))
     self._frame += 1
     if self._frame % 300 == 0:
       self._frame = 0
@@ -600,8 +600,8 @@ class CarStateBase(ABC):
     self.prev_mads_enabled = False
     self.control_initialized = False
     self.gap_dist_button = 0
-    self.gac_tr = round(float(self.param_s.get("LongitudinalPersonality", encoding="utf8")))
-    self.gac_tr_cluster = clip(round(float(self.param_s.get("LongitudinalPersonality", encoding="utf8"))), 1, 3)
+    self.gac_tr = int(self.param_s.get("LongitudinalPersonality"))
+    self.gac_tr_cluster = clip(int(self.param_s.get("LongitudinalPersonality")), 1, 3)
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
