@@ -217,9 +217,6 @@ static void update_state(UIState *s) {
   if (sm.updated("lateralPlan")) {
     scene.dynamic_lane_profile_status = sm["lateralPlan"].getLateralPlan().getDynamicLaneProfileStatus();
   }
-  if (sm.updated("carState")) {
-    scene.gac_tr = sm["carState"].getCarState().getGapAdjustCruiseTr();
-  }
   if (sm.updated("controlsState")) {
     scene.controlsState = sm["controlsState"].getControlsState();
   }
@@ -249,8 +246,6 @@ void ui_update_params(UIState *s) {
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
-  s->scene.gac = params.getBool("GapAdjustCruise");
-  s->scene.gac_mode = std::atoi(params.get("GapAdjustCruiseMode").c_str());
   s->scene.gac_min = std::atoi(params.get("GapAdjustCruiseMin").c_str());
   s->scene.gac_max = std::atoi(params.get("GapAdjustCruiseMax").c_str());
   s->scene.dev_ui_enabled = params.getBool("DevUI");
@@ -260,6 +255,7 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_light = params.getBool("EndToEndLongAlertLight");
   s->scene.e2e_long_alert_lead = params.getBool("EndToEndLongAlertLead");
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
+  s->scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
 
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;

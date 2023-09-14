@@ -130,8 +130,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     updateToggles();
   });
 
-  connect(new SPControlsPanel(), &SPControlsPanel::updateStockToggles, this, &TogglesPanel::updateToggles);
-
   param_watcher = new ParamWatcher(this);
 
   QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
@@ -193,7 +191,7 @@ void TogglesPanel::updateToggles() {
       // normal description and toggle
       experimental_mode_toggle->setEnabled(true);
       experimental_mode_toggle->setDescription(e2e_description);
-      long_personality_setting->setEnabled(!params.getBool("GapAdjustCruise"));
+      long_personality_setting->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
       params.remove("CustomStockLong");
     } else {

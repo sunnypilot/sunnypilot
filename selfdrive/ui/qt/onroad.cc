@@ -1465,7 +1465,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   p.setFont(InterFont(32, QFont::Bold));
   p.setPen(whiteColor());
 
-  status_text.sprintf("GAC: %s\n", QString::number(uiState()->scene.gac_tr).toStdString().c_str());
+  status_text.sprintf("GAC: %s\n", QString::number(uiState()->scene.longitudinal_personality).toStdString().c_str());
   p.drawText(x, y, status_text);
 
   y += text_height;

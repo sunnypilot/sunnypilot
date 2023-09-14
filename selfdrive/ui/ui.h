@@ -197,7 +197,7 @@ typedef struct UIScene {
   int chevron_data;
 
   bool gac;
-  int gac_mode, gac_tr, gac_min, gac_max;
+  int longitudinal_personality, gac_min, gac_max;
 
   bool map_visible;
   bool dev_ui_enabled;

@@ -204,18 +204,6 @@ private:
   Params params;
 };
 
-class GapAdjustCruiseMode : public SPOptionControl {
-  Q_OBJECT
-
-public:
-  GapAdjustCruiseMode();
-
-  void refresh();
-
-private:
-  Params params;
-};
-
 class TorqueFriction : public SPOptionControl {
   Q_OBJECT
 
@@ -339,9 +327,6 @@ public:
   explicit SPControlsPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
 
-signals:
-  void updateStockToggles();
-
 public slots:
   void updateToggles();
 
@@ -354,7 +339,6 @@ private:
   AutoLaneChangeTimer *auto_lane_change_timer;
   SpeedLimitOffsetType *slo_type;
   SpeedLimitValueOffset *slvo;
-  GapAdjustCruiseMode *gac_mode;
   TorqueFriction *friction;
   TorqueMaxLatAccel *lat_accel_factor;
 };

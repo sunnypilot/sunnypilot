@@ -313,8 +313,9 @@ class CarInterface(CarInterfaceBase):
               (self.CS.prev_lkas_enabled == 1 and not self.CS.lkas_enabled):
               self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      if not self.CP.openpilotLongitudinalControl or not self.gac:
-        ret.gapAdjustCruiseTr = 3
+      if not self.CP.openpilotLongitudinalControl:
+        cluster_gap_display = 3
+        put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
       else:
         if self.gac_min != 1:
           self.gac_min = 1
@@ -323,21 +324,20 @@ class CarInterface(CarInterfaceBase):
           self.gac_max = 3
           put_nonblocking("GapAdjustCruiseMax", str(self.gac_max))
         gap_dist_button = bool(self.CS.gap_dist_button)
-        if self.gac_mode in (0, 2):
-          if gap_dist_button:
-            self.gac_button_counter += 1
-          elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
-            self.gac_button_counter = 0
-            follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
-            gac_tr = self.get_sp_distance(follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
-            if gac_tr != self.CS.gac_tr:
-              put_nonblocking("GapAdjustCruiseTr", str(gac_tr))
-              self.CS.gac_tr = gac_tr
-          else:
-            self.gac_button_counter = 0
+        if gap_dist_button:
+          self.gac_button_counter += 1
+        elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
+          self.gac_button_counter = 0
+          follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
+          gac_tr = self.get_sp_distance(follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
+          if gac_tr != self.CS.gac_tr:
+            put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(gac_tr))
+            self.CS.gac_tr = gac_tr
+        else:
+          self.gac_button_counter = 0
         self.prev_gac_button = gap_dist_button
-        ret.gapAdjustCruiseTr = self.CS.gac_tr
-      gap_distance = self.get_sp_distance(ret.gapAdjustCruiseTr, self.gac_max, gac_dict=GAC_DICT)
+        cluster_gap_display = self.CS.gac_tr
+      gap_distance = self.get_sp_distance(cluster_gap_display, self.gac_max, gac_dict=GAC_DICT)
       if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
         self.CS.gac_send_counter += 1
         self.CS.gac_send = 1
