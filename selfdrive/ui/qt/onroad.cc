@@ -605,6 +605,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     curveSign = lp.getTurnSign();
   }
 
+  longitudinalPersonality = s.scene.longitudinal_personality;
+  dynamicLaneProfile = s.scene.dynamic_lane_profile;
+
   static int reverse_delay = 0;
   bool reverse_allowed = false;
   if (int(car_state.getGearShifter()) != 4) {
@@ -1465,11 +1468,11 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   p.setFont(InterFont(32, QFont::Bold));
   p.setPen(whiteColor());
 
-  status_text.sprintf("GAC: %s\n", QString::number(uiState()->scene.longitudinal_personality).toStdString().c_str());
+  status_text.sprintf("GAP: %s\n", QString::number(longitudinalPersonality).toStdString().c_str());
   p.drawText(x, y, status_text);
 
   y += text_height;
-  status_text.sprintf("DLP: %s\n", QString::number(uiState()->scene.dynamic_lane_profile).toStdString().c_str());
+  status_text.sprintf("DLP: %s\n", QString::number(dynamicLaneProfile).toStdString().c_str());
   p.drawText(x, y, status_text);
 
   y += text_height;

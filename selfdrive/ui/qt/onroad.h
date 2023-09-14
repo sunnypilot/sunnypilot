@@ -213,6 +213,10 @@ private:
   int blinker_frame;
   int blinker_state = 0;
 
+  cereal::LongitudinalPlan::SpeedLimitControlState slcState;
+  int longitudinalPersonality;
+  int dynamicLaneProfile;
+
 protected:
   void paintGL() override;
   void initializeGL() override;
@@ -230,8 +234,6 @@ protected:
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;
   void rocketFuel(QPainter &p);
-
-  cereal::LongitudinalPlan::SpeedLimitControlState slcState;
 
 // neokii
 #ifdef ENABLE_DASHCAM
