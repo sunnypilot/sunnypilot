@@ -15,7 +15,8 @@ SteerControlType = car.CarParams.SteerControlType
 GearShifter = car.CarState.GearShifter
 
 GAC_DICT = {3: 1, 2: 2, 1: 3}
-
+GAC_MIN = 1
+GAC_MAX = 3
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
@@ -317,19 +318,13 @@ class CarInterface(CarInterfaceBase):
         cluster_gap_display = 3
         put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
       else:
-        if self.gac_min != 1:
-          self.gac_min = 1
-          put_nonblocking("GapAdjustCruiseMin", str(self.gac_min))
-        if self.gac_max != 3:
-          self.gac_max = 3
-          put_nonblocking("GapAdjustCruiseMax", str(self.gac_max))
         gap_dist_button = bool(self.CS.gap_dist_button)
         if gap_dist_button:
           self.gac_button_counter += 1
         elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
           self.gac_button_counter = 0
-          follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
-          gac_tr = self.get_sp_distance(follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
+          follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, GAC_MIN, GAC_MAX, "+")
+          gac_tr = self.get_sp_distance(follow_distance_converted, GAC_MAX, gac_dict=GAC_DICT)
           if gac_tr != self.CS.gac_tr:
             put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(gac_tr))
             self.CS.gac_tr = gac_tr
@@ -337,7 +332,7 @@ class CarInterface(CarInterfaceBase):
           self.gac_button_counter = 0
         self.prev_gac_button = gap_dist_button
         cluster_gap_display = self.CS.gac_tr
-      gap_distance = self.get_sp_distance(cluster_gap_display, self.gac_max, gac_dict=GAC_DICT)
+      gap_distance = self.get_sp_distance(cluster_gap_display, GAC_MAX, gac_dict=GAC_DICT)
       if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
         self.CS.gac_send_counter += 1
         self.CS.gac_send = 1

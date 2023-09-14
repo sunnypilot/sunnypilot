@@ -246,8 +246,6 @@ void ui_update_params(UIState *s) {
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
-  s->scene.gac_min = std::atoi(params.get("GapAdjustCruiseMin").c_str());
-  s->scene.gac_max = std::atoi(params.get("GapAdjustCruiseMax").c_str());
   s->scene.dev_ui_enabled = params.getBool("DevUI");
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.button_auto_hide = params.getBool("ButtonAutoHide");

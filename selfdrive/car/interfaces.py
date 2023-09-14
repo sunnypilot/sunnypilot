@@ -108,8 +108,6 @@ class CarInterfaceBase(ABC):
     self.op_lookup = {"+": operator.add, "-": operator.sub}
     self.prev_gac_button = False
     self.gac_button_counter = 0
-    self.gac_min = -1
-    self.gac_max = -1
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
     self.lkas_toggle = self.param_s.get_bool("LkasToggle")
@@ -481,12 +479,6 @@ class CarInterfaceBase(ABC):
       CS.gac_tr = gac_default
       put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
       return cs_out, CS
-    if self.gac_min != gac_min:
-      self.gac_min = gac_min
-      put_nonblocking("GapAdjustCruiseMin", str(self.gac_min))
-    if self.gac_max != gac_max:
-      self.gac_max = gac_max
-      put_nonblocking("GapAdjustCruiseMax", str(self.gac_max))
     if gac_button:
       self.gac_button_counter += 1
     elif self.prev_gac_button and not gac_button and self.gac_button_counter < 50:

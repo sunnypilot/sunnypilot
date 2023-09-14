@@ -247,8 +247,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EnforceTorqueLateral", PERSISTENT},
     {"EnhancedScc", PERSISTENT},
     {"FleetManagerPin", PERSISTENT},
-    {"GapAdjustCruiseMax", PERSISTENT},
-    {"GapAdjustCruiseMin", PERSISTENT},
     {"GmapKey", PERSISTENT},
     {"GpxDeleteAfterUpload", PERSISTENT},
     {"GpxDeleteIfUploaded", PERSISTENT},

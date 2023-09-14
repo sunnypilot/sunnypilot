@@ -73,8 +73,6 @@ def manager_init() -> None:
     ("DynamicLaneProfileToggle", "0"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
-    ("GapAdjustCruiseMax", "0"),
-    ("GapAdjustCruiseMin", "0"),
     ("GpxDeleteAfterUpload", "1"),
     ("GpxDeleteIfUploaded", "1"),
     ("HandsOnWheelMonitoring", "0"),
