@@ -477,6 +477,7 @@ class CarInterfaceBase(ABC):
   def toggle_gac(self, cs_out, CS, gac_button, gac_min, gac_max, gac_default, inc_dec):
     if not self.CP.openpilotLongitudinalControl:
       CS.gac_tr = gac_default
+      CS.gac_tr_cluster = gac_default
       put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
       return cs_out, CS
     if gac_button:
@@ -487,6 +488,7 @@ class CarInterfaceBase(ABC):
       put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(CS.gac_tr))
     else:
       self.gac_button_counter = 0
+    CS.gac_tr_cluster = clip(CS.gac_tr, gac_min, gac_max)
     self.prev_gac_button = gac_button
     return cs_out, CS
 
@@ -599,6 +601,7 @@ class CarStateBase(ABC):
     self.control_initialized = False
     self.gap_dist_button = 0
     self.gac_tr = round(float(self.param_s.get("LongitudinalPersonality", encoding="utf8")))
+    self.gac_tr_cluster = clip(round(float(self.param_s.get("LongitudinalPersonality", encoding="utf8"))), 1, 3)
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3

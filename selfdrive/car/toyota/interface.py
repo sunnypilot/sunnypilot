@@ -1,5 +1,6 @@
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params, put_nonblocking
 from panda import Panda
 from panda.python import uds
@@ -316,6 +317,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
       if not self.CP.openpilotLongitudinalControl:
         cluster_gap_display = 3
+        self.CS.gac_tr_cluster = 3
         put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
       else:
         gap_dist_button = bool(self.CS.gap_dist_button)
@@ -332,6 +334,7 @@ class CarInterface(CarInterfaceBase):
           self.gac_button_counter = 0
         self.prev_gac_button = gap_dist_button
         cluster_gap_display = self.CS.gac_tr
+      self.CS.gac_tr_cluster = clip(cluster_gap_display, GAC_MIN, GAC_MAX)
       gap_distance = self.get_sp_distance(cluster_gap_display, GAC_MAX, gac_dict=GAC_DICT)
       if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
         self.CS.gac_send_counter += 1
