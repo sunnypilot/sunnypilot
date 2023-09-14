@@ -1466,7 +1466,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   const int text_height = 34;
   const int drop_shadow_size = 2;
   QColor text_color = Qt::white;
-  QColor shadow_color = Qt::black;
+  QColor shadow_color = blackColor(38);
 
   p.setFont(InterFont(32, QFont::Bold));
 
