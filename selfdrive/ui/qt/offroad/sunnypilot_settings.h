@@ -6,6 +6,7 @@
 #include <QStackedWidget>
 #include <QWidget>
 
+#include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 
 class SPOptionControl : public AbstractControl {
@@ -308,6 +309,9 @@ private:
 
   ParamControl *dynamicLaneProfile;
   ButtonParamControl *dlp_settings;
+
+  ParamWatcher *param_watcher;
+  void updateButtons();
 };
 
 class SPGeneralPanel : public ListWidget {

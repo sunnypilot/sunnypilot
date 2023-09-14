@@ -1125,13 +1125,28 @@ DynamicLaneProfile::DynamicLaneProfile(QWidget *parent) : QWidget(parent), outer
 
   addItem(dynamicLaneProfile);
   addItem(dlp_settings);
+
+  param_watcher = new ParamWatcher(this);
+
+  QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    updateButtons();
+  });
 }
 
 void DynamicLaneProfile::showEvent(QShowEvent *event) {
   updateToggles();
+  updateButtons();
 }
 
 void DynamicLaneProfile::updateToggles() {
   // toggle names to update when DynamicLaneProfile is flipped
   dlp_settings->setVisible(params.getBool("DynamicLaneProfileToggle"));
+}
+
+void DynamicLaneProfile::updateButtons() {
+  param_watcher->addParam("DynamicLaneProfile");
+
+  if (!isVisible()) return;
+
+  dlp_settings->setButton("DynamicLaneProfile");
 }
