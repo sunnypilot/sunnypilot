@@ -220,9 +220,6 @@ typedef struct UIScene {
   bool sidebar_temp;
   int sidebar_temp_options;
 
-  // UI button sorting
-  int gac_btn;
-
   float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;
   float mads_path_range = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;  // 0.9 - 0.25 = 0.65
 } UIScene;
