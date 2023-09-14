@@ -1464,19 +1464,30 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
 void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   QString status_text;
   const int text_height = 34;
+  const int drop_shadow_size = 2;
+  QColor text_color = Qt::white;
+  QColor shadow_color = Qt::black;
 
   p.setFont(InterFont(32, QFont::Bold));
-  p.setPen(whiteColor());
 
+  p.setPen(QPen(shadow_color, 2));
   status_text.sprintf("GAP: %s\n", QString::number(longitudinalPersonality).toStdString().c_str());
+  p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
+  p.setPen(QPen(text_color, 2));
   p.drawText(x, y, status_text);
 
   y += text_height;
+  p.setPen(QPen(shadow_color, 2));
   status_text.sprintf("DLP: %s\n", QString::number(dynamicLaneProfile).toStdString().c_str());
+  p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
+  p.setPen(QPen(text_color, 2));
   p.drawText(x, y, status_text);
 
   y += text_height;
+  p.setPen(QPen(shadow_color, 2));
   status_text.sprintf("SLC: %s\n", QString::number(int(slcState)).toStdString().c_str());
+  p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
+  p.setPen(QPen(text_color, 2));
   p.drawText(x, y, status_text);
 }
 
