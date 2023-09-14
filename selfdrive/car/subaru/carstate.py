@@ -35,7 +35,7 @@ class CarState(CarStateBase):
       ret.brakePressed = cp_brakes.vl["Brake_Status"]["Brake"] == 1
 
     brake_msg = "ES_Brake" if self.car_fingerprint in PREGLOBAL_CARS else "ES_DashStatus"
-    brake_sig = "Brake_Light" if self.car_fingerprint in PREGLOBAL_CARS else "Brake_Lights"
+    brake_sig = "Cruise_Brake_Lights" if self.car_fingerprint in PREGLOBAL_CARS else "Brake_Lights"
     ret.brakeLights = bool(cp_cam.vl[brake_msg][brake_sig])
 
     cp_wheels = cp_body if self.car_fingerprint in GLOBAL_GEN2 else cp
