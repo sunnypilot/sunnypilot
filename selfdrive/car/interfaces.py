@@ -474,7 +474,7 @@ class CarInterfaceBase(ABC):
     if not self.CP.openpilotLongitudinalControl:
       CS.gac_tr = 2
       CS.gac_tr_cluster = gac_default
-      put_nonblocking("LongitudinalPersonality", 2)
+      put_nonblocking("LongitudinalPersonality", "2")
       return cs_out, CS
     if gac_button:
       self.gac_button_counter += 1
