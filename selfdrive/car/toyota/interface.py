@@ -316,26 +316,25 @@ class CarInterface(CarInterfaceBase):
               self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
       if not self.CP.openpilotLongitudinalControl:
-        cluster_gap_display = 3
         self.CS.gac_tr_cluster = 3
-        put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
+        put_nonblocking("LongitudinalPersonality", 2)
       else:
         gap_dist_button = bool(self.CS.gap_dist_button)
         if gap_dist_button:
           self.gac_button_counter += 1
         elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
           self.gac_button_counter = 0
-          follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, GAC_MIN, GAC_MAX, "+")
-          gac_tr = self.get_sp_distance(follow_distance_converted, GAC_MAX, gac_dict=GAC_DICT)
+          pre_calculated_distance = 3 if self.CS.gac_tr == 3 else self.CS.follow_distance
+          follow_distance_converted = self.get_sp_gac_state(pre_calculated_distance, GAC_MIN, GAC_MAX, "+")
+          gac_tr = self.get_sp_distance(follow_distance_converted, GAC_MAX, gac_dict=GAC_DICT) - 1  # always 1 lower
           if gac_tr != self.CS.gac_tr:
-            put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(gac_tr))
+            put_nonblocking("LongitudinalPersonality", str(gac_tr))
             self.CS.gac_tr = gac_tr
         else:
           self.gac_button_counter = 0
         self.prev_gac_button = gap_dist_button
-        cluster_gap_display = self.CS.gac_tr
-      self.CS.gac_tr_cluster = clip(cluster_gap_display, GAC_MIN, GAC_MAX)
-      gap_distance = self.get_sp_distance(cluster_gap_display, GAC_MAX, gac_dict=GAC_DICT)
+        self.CS.gac_tr_cluster = clip(self.CS.gac_tr + 1, GAC_MIN, GAC_MAX)  # always 1 higher
+      gap_distance = self.get_sp_distance(self.CS.gac_tr_cluster, GAC_MAX, gac_dict=GAC_DICT)
       if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
         self.CS.gac_send_counter += 1
         self.CS.gac_send = 1

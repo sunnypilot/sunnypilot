@@ -470,25 +470,21 @@ class CarInterfaceBase(ABC):
       gac_dict = GAC_DICT
     return next((key for key, value in gac_dict.items() if value == gac_tr), gac_max)
 
-  def get_sp_gac_mpc(self, gac_tr: int):
-    gac_tr = clip(gac_tr, 1, 3)
-    return str(gac_tr - 1)
-
   def toggle_gac(self, cs_out, CS, gac_button, gac_min, gac_max, gac_default, inc_dec):
     if not self.CP.openpilotLongitudinalControl:
-      CS.gac_tr = gac_default
+      CS.gac_tr = 2
       CS.gac_tr_cluster = gac_default
-      put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(3))
+      put_nonblocking("LongitudinalPersonality", 2)
       return cs_out, CS
     if gac_button:
       self.gac_button_counter += 1
     elif self.prev_gac_button and not gac_button and self.gac_button_counter < 50:
       self.gac_button_counter = 0
-      CS.gac_tr = self.get_sp_gac_state(CS.gac_tr, gac_min, gac_max, inc_dec)
-      put_nonblocking("LongitudinalPersonality", self.get_sp_gac_mpc(CS.gac_tr))
+      CS.gac_tr = self.get_sp_gac_state(CS.gac_tr, 0, 2, inc_dec)
+      put_nonblocking("LongitudinalPersonality", str(CS.gac_tr))
     else:
       self.gac_button_counter = 0
-    CS.gac_tr_cluster = clip(CS.gac_tr, gac_min, gac_max)
+    CS.gac_tr_cluster = clip(CS.gac_tr + 1, gac_min, gac_max)  # always 1 higher
     self.prev_gac_button = gac_button
     return cs_out, CS
 
