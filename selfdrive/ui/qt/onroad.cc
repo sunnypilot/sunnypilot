@@ -431,7 +431,7 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
   buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | Qt::AlignRight);
 #endif
 
-  buttons_layout->addSpacing(map_settings_btn->isVisible() ? 60 : 0);
+  buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
   buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
 }
 
