@@ -231,15 +231,14 @@ void ui_update_params(UIState *s) {
   auto params = Params();
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
+
   s->scene.dynamic_lane_profile_toggle = params.getBool("DynamicLaneProfileToggle");
-  s->scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
   s->scene.visual_brake_lights = params.getBool("BrakeLights");
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffEvent = params.getBool("OnroadScreenOffEvent");
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
-  s->scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
   s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
   s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
@@ -253,7 +252,6 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_light = params.getBool("EndToEndLongAlertLight");
   s->scene.e2e_long_alert_lead = params.getBool("EndToEndLongAlertLead");
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
-  s->scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -314,6 +312,15 @@ void UIState::updateStatus() {
   }
 
   if (scene.started) {
+    // Update live params when the camera view is on
+    {
+      if (sm->frame % (UI_FREQ / 10) == 0) {  // Update every 2 Hz
+        scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
+        scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
+        scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
+      }
+    }
+
     // Auto hide UI button state machine
     {
       if (scene.button_auto_hide) {
@@ -366,8 +373,7 @@ void UIState::updateStatus() {
     }
   }
 
-  if (millis_since_boot() - last_update_params_sidebar > 1000 * 1) {
-    last_update_params_sidebar = millis_since_boot();
+  if (sm->frame % (UI_FREQ / 20) == 0) {  // Update every 1 Hz
     scene.sidebar_temp = params.getBool("SidebarTemperature");
     scene.sidebar_temp_options = std::atoi(params.get("SidebarTemperatureOptions").c_str());
   }
