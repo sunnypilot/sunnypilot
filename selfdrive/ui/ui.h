@@ -265,7 +265,6 @@ private:
   QTimer *timer;
   bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
-  uint64_t last_update_params_sidebar;
 
   bool last_mads_enabled = false;
   bool mads_path_state = false;
