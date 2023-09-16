@@ -92,7 +92,9 @@ void Sidebar::updateState(const UIState &s) {
   }
   setProperty("connectStatus", QVariant::fromValue(connectStatus));
 
-  if (sm.frame % (UI_FREQ / 20) == 0) {  // Update every 1 Hz
+  if (millis_since_boot() - last_temp_count > 1000 * 1) {
+    last_temp_count = millis_since_boot();
+
     switch (s.scene.sidebar_temp_options) {
       case 0:
         sidebar_temp = QString::number((int)deviceState.getAmbientTempC());

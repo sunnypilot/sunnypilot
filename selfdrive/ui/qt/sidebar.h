@@ -61,6 +61,7 @@ protected:
 private:
   std::unique_ptr<PubMaster> pm;
 
+  uint64_t last_temp_count;
   QString sidebar_temp = "0";
   QString sidebar_temp_str = "0";
 };
