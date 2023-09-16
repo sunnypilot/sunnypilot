@@ -312,50 +312,57 @@ void UIState::updateStatus() {
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
   }
+
   if (scene.started) {
-    if (scene.button_auto_hide) {
-      if (scene.touch_to_wake) {
-        scene.sleep_btn = 30 * UI_FREQ;
-      } else if (scene.sleep_btn > 0) {
-        scene.sleep_btn--;
-      } else if (scene.sleep_btn == -1) {
-        scene.sleep_btn = 30 * UI_FREQ;
-      }
-      // Check if the sleep button should be fading in
-      if (scene.sleep_btn_fading_in) {
-        // Increase the opacity of the sleep button by a small amount
-        if (scene.sleep_btn_opacity < 20) {
-          scene.sleep_btn_opacity+= 10;
+    // Auto hide UI button state machine
+    {
+      if (scene.button_auto_hide) {
+        if (scene.touch_to_wake) {
+          scene.sleep_btn = 30 * UI_FREQ;
+        } else if (scene.sleep_btn > 0) {
+          scene.sleep_btn--;
+        } else if (scene.sleep_btn == -1) {
+          scene.sleep_btn = 30 * UI_FREQ;
         }
-        if (scene.sleep_btn_opacity >= 20) {
-          // If the opacity has reached its maximum value, stop fading in
-          scene.sleep_btn_fading_in = false;
+        // Check if the sleep button should be fading in
+        if (scene.sleep_btn_fading_in) {
+          // Increase the opacity of the sleep button by a small amount
+          if (scene.sleep_btn_opacity < 20) {
+            scene.sleep_btn_opacity+= 10;
+          }
+          if (scene.sleep_btn_opacity >= 20) {
+            // If the opacity has reached its maximum value, stop fading in
+            scene.sleep_btn_fading_in = false;
+            scene.sleep_btn_opacity = 20;
+          }
+        } else if (scene.sleep_btn == 0) {
+          // Fade out the sleep button as before
+          if (scene.sleep_btn_opacity > 0) {
+            scene.sleep_btn_opacity-= 2;
+          }
+        } else {
+          // Set the opacity of the sleep button to its maximum value
           scene.sleep_btn_opacity = 20;
         }
-      } else if (scene.sleep_btn == 0) {
-        // Fade out the sleep button as before
-        if (scene.sleep_btn_opacity > 0) {
-          scene.sleep_btn_opacity-= 2;
-        }
       } else {
-        // Set the opacity of the sleep button to its maximum value
         scene.sleep_btn_opacity = 20;
       }
-    } else {
-      scene.sleep_btn_opacity = 20;
     }
 
-    if (scene.onroadScreenOff != -2 && scene.touched2) {
-      scene.sleep_time = scene.osoTimer;
-    } else if (scene.onroadScreenOff != -2 &&
-               ((scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE) &&
-                ((scene.controlsState.getAlertStatus() == cereal::ControlsState::AlertStatus::NORMAL && scene.onroadScreenOffEvent) ||
-                 (scene.controlsState.getAlertStatus() != cereal::ControlsState::AlertStatus::NORMAL)))) {
-      scene.sleep_time = scene.osoTimer;
-    } else if (scene.sleep_time > 0 && scene.onroadScreenOff != -2) {
-      scene.sleep_time--;
-    } else if (scene.sleep_time == -1 && scene.onroadScreenOff != -2) {
-      scene.sleep_time = scene.osoTimer;
+    // Onroad Screen Off Brightness + Timer + Global Brightness
+    {
+      if (scene.onroadScreenOff != -2 && scene.touched2) {
+        scene.sleep_time = scene.osoTimer;
+      } else if (scene.onroadScreenOff != -2 &&
+                 ((scene.controlsState.getAlertSize() != cereal::ControlsState::AlertSize::NONE) &&
+                  ((scene.controlsState.getAlertStatus() == cereal::ControlsState::AlertStatus::NORMAL && scene.onroadScreenOffEvent) ||
+                   (scene.controlsState.getAlertStatus() != cereal::ControlsState::AlertStatus::NORMAL)))) {
+        scene.sleep_time = scene.osoTimer;
+      } else if (scene.sleep_time > 0 && scene.onroadScreenOff != -2) {
+        scene.sleep_time--;
+      } else if (scene.sleep_time == -1 && scene.onroadScreenOff != -2) {
+        scene.sleep_time = scene.osoTimer;
+      }
     }
   }
 
