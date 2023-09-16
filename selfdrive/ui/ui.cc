@@ -255,6 +255,7 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
   s->scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
 
+  // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
     s->scene.osoTimer = s->scene.onroadScreenOff * 60 * UI_FREQ;
   } else if (s->scene.onroadScreenOff == 0) {

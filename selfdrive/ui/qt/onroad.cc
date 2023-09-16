@@ -369,7 +369,7 @@ void MapSettingsButton::paintEvent(QPaintEvent *event) {
 
 
 // Window that shows camera view and variety of info drawn on top
-AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : last_update_params(0), fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
+AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
   pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"uiDebug"});
   e2e_state = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"e2eLongState"});
 
@@ -1896,9 +1896,6 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
 
-  if (millis_since_boot() - last_update_params > 1000 * 5) {
-    last_update_params = millis_since_boot();
-    ui_update_params(uiState());
-  }
+  ui_update_params(uiState());
   prev_draw_t = millis_since_boot();
 }

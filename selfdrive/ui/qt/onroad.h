@@ -109,8 +109,6 @@ private:
 
   void drawFeatureStatusText(QPainter &p, int x, int y);
 
-  uint64_t last_update_params;
-
   QVBoxLayout *main_layout;
   QHBoxLayout *buttons_layout;
   ExperimentalButton *experimental_btn;
