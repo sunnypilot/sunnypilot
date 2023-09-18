@@ -41,6 +41,23 @@ static void drawCustomButtonIcon(QPainter &p, const int btn_size_x, const int bt
   p.setOpacity(1.0);
 }
 
+static std::pair<QString, QColor> getFeatureStatus(int value, QStringList text_list, QStringList color_list,
+                                                   bool condition, QString off_text) {
+
+  QString text("Error");
+  QColor color("#ffffff");
+
+  for (int i = 0; i < text_list.size() && i < color_list.size(); ++i) {
+    if (value == i) {
+      text = condition ? text_list[i] : off_text;
+      color = condition ? QColor(color_list[i]) : QColor("#ffffff");
+      break;  // Exit the loop once a match is found
+    }
+  }
+
+  return {text, color};
+}
+
 OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *main_layout  = new QVBoxLayout(this);
   main_layout->setMargin(UI_BORDER_SIZE);
@@ -858,7 +875,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   if (!hideBottomIcons) {
-    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 155 - uiState()->scene.rn_offset);
+    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - uiState()->scene.rn_offset);
   }
 
   p.restore();
@@ -1462,33 +1479,44 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
 }
 
 void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
-  QString status_text;
+  const FeatureStatusText feature_text;
+  const FeatureStatusColor feature_color;
+  const QColor text_color = whiteColor();
+  const QColor shadow_color = blackColor(38);
   const int text_height = 34;
   const int drop_shadow_size = 2;
-  QColor text_color = Qt::white;
-  QColor shadow_color = blackColor(38);
+  const int eclipse_x_offset = 25;
+  const int eclipse_y_offset = 20;
+  const int w = 16;
+  const int h = 16;
+
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  const bool longitudinal = hasLongitudinalControl(cp);
 
   p.setFont(InterFont(32, QFont::Bold));
 
-  p.setPen(QPen(shadow_color, 2));
-  status_text.sprintf("GAP: %s\n", QString::number(longitudinalPersonality).toStdString().c_str());
-  p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
-  p.setPen(QPen(text_color, 2));
-  p.drawText(x, y, status_text);
+  // Define a function to draw a feature status button
+  auto drawFeatureStatusElement = [&](int value, const QStringList& text_list, const QStringList& color_list, bool condition, const QString& off_text, const QString& label) {
+    std::pair<QString, QColor> feature_status = getFeatureStatus(value, text_list, color_list, condition, off_text);
+    QRect btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
+    QRect btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(shadow_color);
+    p.drawEllipse(btn_shadow);
+    p.setBrush(feature_status.second);
+    p.drawEllipse(btn);
+    QString status_text;
+    status_text.sprintf("%s: %s", label.toStdString().c_str(), (feature_status.first).toStdString().c_str());
+    p.setPen(QPen(shadow_color, 2));
+    p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
+    p.setPen(QPen(text_color, 2));
+    p.drawText(x, y, status_text);
+    y += text_height;
+  };
 
-  y += text_height;
-  p.setPen(QPen(shadow_color, 2));
-  status_text.sprintf("DLP: %s\n", QString::number(dynamicLaneProfile).toStdString().c_str());
-  p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
-  p.setPen(QPen(text_color, 2));
-  p.drawText(x, y, status_text);
-
-  y += text_height;
-  p.setPen(QPen(shadow_color, 2));
-  status_text.sprintf("SLC: %s\n", QString::number(int(slcState)).toStdString().c_str());
-  p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
-  p.setPen(QPen(text_color, 2));
-  p.drawText(x, y, status_text);
+  drawFeatureStatusElement(longitudinalPersonality, feature_text.gac_list_text, feature_color.gac_list_color, longitudinal, "N/A", "GAP");  // Driving Personality / Gap Adjust Cruise
+  drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");  // Dynamic Lane Profile
+  drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");  // Speed Limit Control
 }
 
 
