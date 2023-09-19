@@ -25,7 +25,7 @@ const QRect speed_sgn_rc(UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2.5 + 202, 184, 18
 struct FeatureStatusText {
   const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
   const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
-  const QStringList slc_list_text = { "Inactive", "TempInactive", "Adapting",  "Active" };
+  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active" };
 };
 
 struct FeatureStatusColor {
