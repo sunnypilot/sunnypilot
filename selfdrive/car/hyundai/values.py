@@ -1434,15 +1434,18 @@ FW_VERSIONS = {
     ],
     (Ecu.eps, 0x7D4, None): [
       b'\xf1\x00DL3 MDPS C 1.00 1.02 56310-L7000 4DLHC102',
+      b'\xf1\x00DL3 MDPS C 1.00 1.02 56310-L7220 4DLHC102',
     ],
     (Ecu.fwdCamera, 0x7C4, None): [
       b'\xf1\x00DL3HMFC  AT KOR LHD 1.00 1.02 99210-L2000 200309',
+      b'\xf1\x00DL3HMFC  AT KOR LHD 1.00 1.04 99210-L2000 210527',
     ],
     (Ecu.engine, 0x7E0, None): [
       b'\xf1\x87391162JLA0',
     ],
     (Ecu.transmission, 0x7E1, None): [
       b'\xf1\x00PSBG2323  E08\x00\x00\x00\x00\x00\x00\x00TDL2H20KA2\xe3\xc6cz',
+      b'\xf1\x00PSBG2333  E16\x00\x00\x00\x00\x00\x00\x00TDL2H20KA5T\xf2\xc9\xc2',
     ],
   },
   CAR.KONA_EV: {
