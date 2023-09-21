@@ -143,7 +143,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 14.2
 
     # Kia
-    elif candidate == CAR.KIA_SORENTO:
+    elif candidate in (CAR.KIA_SELTOS, CAR.KIA_SELTOS_2024_NON_SCC):
       ret.mass = 1985.
       ret.wheelbase = 2.78
       ret.steerRatio = 14.4 * 1.1   # 10% higher at the center seems reasonable
