@@ -1514,9 +1514,20 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
     y += text_height;
   };
 
-  drawFeatureStatusElement(longitudinalPersonality, feature_text.gac_list_text, feature_color.gac_list_color, longitudinal, "N/A", "GAP");  // Driving Personality / Gap Adjust Cruise
-  drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");  // Dynamic Lane Profile
-  drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");  // Speed Limit Control
+  // Driving Personality / Gap Adjust Cruise
+  if (longitudinal) {
+    drawFeatureStatusElement(longitudinalPersonality, feature_text.gac_list_text, feature_color.gac_list_color, longitudinal, "N/A", "GAP");
+  }
+
+  // Dynamic Lane Profile
+  if (uiState()->scene.dynamic_lane_profile_toggle) {
+    drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");
+  }
+
+  // Speed Limit Control
+  if (longitudinal || !cp.getPcmCruiseSpeed()) {
+    drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
+  }
 }
 
 
