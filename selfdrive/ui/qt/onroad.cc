@@ -17,6 +17,7 @@
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 #include "selfdrive/ui/qt/maps/map_panel.h"
 #endif
+#include "selfdrive/ui/qt/onroad_settings_panel.h"
 
 static void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity) {
   p.setRenderHint(QPainter::Antialiasing);
@@ -208,16 +209,23 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     issue_debug_snapshot(sm);
     propagate_event = false;
   }
+  else {
 #ifdef ENABLE_MAPS
-  else if (map != nullptr) {
-    if (wakeScreenTimeout()) {
-      // Switch between map and sidebar when using navigate on openpilot
-      bool sidebarVisible = geometry().x() > 0;
-      bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
-      map->setVisible(show_map && !map->isVisible());
+    if (map != nullptr && !isOnroadSettingsVisible()) {
+      if (wakeScreenTimeout()) {
+        // Switch between map and sidebar when using navigate on openpilot
+        bool sidebarVisible = geometry().x() > 0;
+        bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
+        map->setVisible(show_map && !map->isVisible());
+      }
+    }
+#endif
+    if (onroad_settings != nullptr && !isMapVisible()) {
+      if (wakeScreenTimeout()) {
+        onroad_settings->setVisible(false);
+      }
     }
   }
-#endif
   // propagation event to parent(HomeWindow)
   if (propagate_event) {
     QWidget::mousePressEvent(e);
@@ -225,14 +233,15 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 }
 
 void OnroadWindow::offroadTransition(bool offroad) {
-#ifdef ENABLE_MAPS
   if (!offroad) {
+#ifdef ENABLE_MAPS
     bool custom_mapbox = params.getBool("CustomMapbox") && QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
     if (map == nullptr && (uiState()->hasPrime() || !MAPBOX_TOKEN.isEmpty() || custom_mapbox)) {
       auto m = new MapPanel(get_mapbox_settings());
       map = m;
 
       QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::mapPanelRequested);
+      QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::onroadSettingsPanelNotRequested);
       QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
       nvg->map_settings_btn->setEnabled(true);
 
@@ -242,8 +251,23 @@ void OnroadWindow::offroadTransition(bool offroad) {
       // hidden by default, made visible when navRoute is published
       m->setVisible(false);
     }
-  }
 #endif
+    if (onroad_settings == nullptr) {
+      auto os = new OnroadSettingsPanel(this);
+      onroad_settings = os;
+
+      QObject::connect(os, &OnroadSettingsPanel::onroadSettingsPanelRequested, this, &OnroadWindow::onroadSettingsPanelRequested);
+      QObject::connect(os, &OnroadSettingsPanel::onroadSettingsPanelRequested, this, &OnroadWindow::mapPanelNotRequested);
+      QObject::connect(nvg->onroad_settings_btn, &OnroadSettingsButton::clicked, os, &OnroadSettingsPanel::toggleOnroadSettings);
+      nvg->onroad_settings_btn->setEnabled(true);
+
+      os->setFixedWidth(topWidget(this)->width() / 2.67 - UI_BORDER_SIZE);
+      split->insertWidget(0, os);
+
+      // hidden by default
+      os->setVisible(false);
+    }
+  }
 
   alerts->updateAlert({});
 }
@@ -385,6 +409,33 @@ void MapSettingsButton::paintEvent(QPaintEvent *event) {
 }
 
 
+// OnroadSettingsButton
+OnroadSettingsButton::OnroadSettingsButton(QWidget *parent) : QPushButton(parent) {
+  // btn_size: 192 * 80% ~= 152
+  // img_size: (152 / 4) * 3 = 114
+  setFixedSize(152, 152);
+  settings_img = loadPixmap("../assets/navigation/icon_settings.svg", {114, 114});
+
+  // hidden by default, made visible if Driving Personality / GAC, DLP, or SLC is enabled
+  setVisible(false);
+  setEnabled(false);
+}
+
+void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
+  QPainter p(this);
+  drawCustomButtonIcon(p, 152, 152, settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+}
+
+void OnroadSettingsButton::updateState(const UIState &s) {
+  const auto cp = (*s.sm)["carParams"].getCarParams();
+  auto dlp_enabled = s.scene.dynamic_lane_profile_toggle;
+  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
+
+  setVisible(allow_btn);
+  setEnabled(allow_btn);
+}
+
+
 // Window that shows camera view and variety of info drawn on top
 AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
   pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"uiDebug"});
@@ -396,6 +447,8 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 
   experimental_btn = new ExperimentalButton(this);
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
+
+  onroad_settings_btn = new OnroadSettingsButton(this);
 
   map_settings_btn = new MapSettingsButton(this);
 
@@ -441,6 +494,9 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
   }
 
   buttons_layout->setContentsMargins(0, 0, 10, uiState()->scene.rn_offset != 0 ? uiState()->scene.rn_offset + 10 : 20);
+
+  buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
+  buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
 
   buttons_layout->addStretch(1);
 
@@ -510,7 +566,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   hideVEgoUi = s.scene.hide_vego_ui;
 
-  splitPanelVisible = s.scene.map_visible;
+  splitPanelVisible = s.scene.map_visible || s.scene.onroad_settings_visible;
 
   // ############################## DEV UI START ##############################
   lead_d_rel = radar_state.getLeadOne().getDRel();
@@ -546,6 +602,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
+  // update onroad settings button state
+  onroad_settings_btn->updateState(s);
+
   // update buttons layout
   updateButtonsLayout();
 
@@ -560,6 +619,12 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   if (map_settings_btn->isEnabled()) {
     map_settings_btn->setVisible(!hideBottomIcons);
     main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+  }
+
+  // hide onroad settings button for alerts and flip for right hand DM
+  if (onroad_settings_btn->isEnabled()) {
+    onroad_settings_btn->setVisible(!hideBottomIcons);
+    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
   }
 
   const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();

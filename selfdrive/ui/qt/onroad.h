@@ -68,6 +68,19 @@ private:
   QPixmap settings_img;
 };
 
+class OnroadSettingsButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit OnroadSettingsButton(QWidget *parent = 0);
+  void updateState(const UIState &s);
+
+private:
+  void paintEvent(QPaintEvent *event) override;
+
+  QPixmap settings_img;
+};
+
 // container window for the NVG UI
 class AnnotatedCameraWidget : public CameraWidget {
   Q_OBJECT
@@ -77,6 +90,8 @@ public:
   void updateState(const UIState &s);
 
   MapSettingsButton *map_settings_btn;
+
+  OnroadSettingsButton *onroad_settings_btn;
 
 private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
@@ -253,6 +268,11 @@ public:
   bool isMapVisible() const { return map && map->isVisible(); }
   void showMapPanel(bool show) { if (map) map->setVisible(show); }
 
+  bool isOnroadSettingsVisible() const { return onroad_settings && onroad_settings->isVisible(); }
+  bool isMapAvailable() const { return map; }
+  void mapPanelNotRequested() { if (map) map->setVisible(false); }
+  void onroadSettingsPanelNotRequested() { if (onroad_settings) onroad_settings->setVisible(false); }
+
   bool wakeScreenTimeout() {
     if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
         (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
@@ -263,6 +283,7 @@ public:
 
 signals:
   void mapPanelRequested();
+  void onroadSettingsPanelRequested();
 
 private:
   void paintEvent(QPaintEvent *event);
@@ -274,6 +295,8 @@ private:
   QHBoxLayout* split;
 
   Params params;
+
+  QWidget *onroad_settings = nullptr;
 
 private slots:
   void offroadTransition(bool offroad);

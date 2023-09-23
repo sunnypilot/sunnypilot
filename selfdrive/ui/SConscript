@@ -42,7 +42,8 @@ qt_libs = [widgets, qt_util] + base_libs
 qt_src = ["main.cc", "qt/sidebar.cc", "qt/onroad.cc", "qt/body.cc",
           "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
-          "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc"]
+          "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
+          "qt/onroad_settings.cc", "qt/onroad_settings_panel.cc"]
 
 # build translation files
 with open(File("translations/languages.json").abspath) as f:

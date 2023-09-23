@@ -235,6 +235,8 @@ typedef struct UIScene {
 
   float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;
   float mads_path_range = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;  // 0.9 - 0.25 = 0.65
+
+  bool onroad_settings_visible;
 } UIScene;
 
 class UIState : public QObject {
