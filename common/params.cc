@@ -224,7 +224,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CarModelText", PERSISTENT},
     {"ChevronInfo", PERSISTENT},
     {"CustomBootScreen", PERSISTENT},
-    {"CustomMapbox", PERSISTENT},
     {"CustomMapboxTokenPk", PERSISTENT},
     {"CustomMapboxTokenSk", PERSISTENT},
     {"CustomOffsets", PERSISTENT},

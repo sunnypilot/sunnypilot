@@ -636,19 +636,6 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_calibration.png",
     },
     {
-      "CustomMapbox",
-      tr("Enable Mapbox Navigation*"),
-      QString("%1<br>"
-              "%2<br>"
-              "%3<br>"
-              "<h4>%4</h4>")
-      .arg(tr("Enable built-in navigation on sunnypilot, powered by Mapbox."))
-      .arg(tr("Access via the web interface: \"http://<device_ip>:8082\""))
-      .arg(tr("If you do not have comma Prime, you will need to provide your own Mapbox token at https://mapbox.com/. Reach out to sunnyhaibin#0865 on Discord for more information."))
-      .arg(tr("Huge thanks to the dragonpilot team for making this possible!")),
-      "../assets/img_map.png",
-    },
-    {
       "TrueVEgoUi",
       tr("Speedometer: Display True Speed"),
       tr("Display the true vehicle current speed from wheel speed sensors."),
@@ -701,14 +688,6 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
 
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    toggles["CustomMapbox"]->setEnabled(offroad);
-  });
-
-  // trigger hardwrae reboot if user confirms the selection
-  connect(toggles["CustomMapbox"], &ToggleControl::toggleFlipped, [=](bool state) {
-    if (ConfirmationDialog::confirm(tr("\"Enable Mapbox Navigation\"\nYou must restart your car or your device to apply these changes.\nReboot now?"), "Reboot", parent)) {
-      Hardware::reboot();
-    }
   });
 }
 

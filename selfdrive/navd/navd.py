@@ -48,8 +48,8 @@ class RouteEngine:
 
     self.reroute_counter = 0
 
-    if self.params.get_bool("CustomMapbox") or "MAPBOX_TOKEN" in os.environ:
-      self.mapbox_token = self.params.get("CustomMapboxTokenSk") if self.params.get_bool("CustomMapbox") else os.environ["MAPBOX_TOKEN"]
+    if self.params.get("CustomMapboxTokenSk") is not None or "MAPBOX_TOKEN" in os.environ:
+      self.mapbox_token = self.params.get("CustomMapboxTokenSk") if self.params.get("CustomMapboxTokenSk") is not None else os.environ["MAPBOX_TOKEN"]
       self.mapbox_host = "https://api.mapbox.com"
     else:
       try:
