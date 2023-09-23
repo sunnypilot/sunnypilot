@@ -172,15 +172,11 @@ def create_spas_messages(packer, CAN, frame, left_blink, right_blink):
   return ret
 
 
-def create_adrv_messages(packer, CAN, frame):
+def create_adrv_messages(packer, CAN, frame, hda2=False):
   # messages needed to car happy after disabling
   # the ADAS Driving ECU to do longitudinal control
 
   ret = []
-
-  values = {
-  }
-  ret.append(packer.make_can_msg("ADRV_0x51", CAN.ACAN, values))
 
   if frame % 2 == 0:
     values = {
@@ -192,32 +188,37 @@ def create_adrv_messages(packer, CAN, frame):
     }
     ret.append(packer.make_can_msg("ADRV_0x160", CAN.ECAN, values))
 
-  if frame % 5 == 0:
+  if hda2:
     values = {
-      'SET_ME_1C': 0x1c,
-      'SET_ME_FF': 0xff,
-      'SET_ME_TMP_F': 0xf,
-      'SET_ME_TMP_F_2': 0xf,
     }
-    ret.append(packer.make_can_msg("ADRV_0x1ea", CAN.ECAN, values))
+    ret.append(packer.make_can_msg("ADRV_0x51", CAN.ACAN, values))
 
-    values = {
-      'SET_ME_E1': 0xe1,
-      'SET_ME_3A': 0x3a,
-    }
-    ret.append(packer.make_can_msg("ADRV_0x200", CAN.ECAN, values))
+    if frame % 5 == 0:
+      values = {
+        'SET_ME_1C': 0x1c,
+        'SET_ME_FF': 0xff,
+        'SET_ME_TMP_F': 0xf,
+        'SET_ME_TMP_F_2': 0xf,
+      }
+      ret.append(packer.make_can_msg("ADRV_0x1ea", CAN.ECAN, values))
 
-  if frame % 20 == 0:
-    values = {
-      'SET_ME_15': 0x15,
-    }
-    ret.append(packer.make_can_msg("ADRV_0x345", CAN.ECAN, values))
+      values = {
+        'SET_ME_E1': 0xe1,
+        'SET_ME_3A': 0x3a,
+      }
+      ret.append(packer.make_can_msg("ADRV_0x200", CAN.ECAN, values))
 
-  if frame % 100 == 0:
-    values = {
-      'SET_ME_22': 0x22,
-      'SET_ME_41': 0x41,
-    }
-    ret.append(packer.make_can_msg("ADRV_0x1da", CAN.ECAN, values))
+    if frame % 20 == 0:
+      values = {
+        'SET_ME_15': 0x15,
+      }
+      ret.append(packer.make_can_msg("ADRV_0x345", CAN.ECAN, values))
+
+    if frame % 100 == 0:
+      values = {
+        'SET_ME_22': 0x22,
+        'SET_ME_41': 0x41,
+      }
+      ret.append(packer.make_can_msg("ADRV_0x1da", CAN.ECAN, values))
 
   return ret
