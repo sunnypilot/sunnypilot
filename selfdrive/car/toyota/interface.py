@@ -324,8 +324,8 @@ class CarInterface(CarInterfaceBase):
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
       if not self.CP.openpilotLongitudinalControl:
         self.CS.gac_tr_cluster = 3
-        if CS.gac_tr != 2:
-          CS.gac_tr = 2
+        if self.CS.gac_tr != 2:
+          self.CS.gac_tr = 2
           put_nonblocking("LongitudinalPersonality", "2")
       else:
         gap_dist_button = bool(self.CS.gap_dist_button)
