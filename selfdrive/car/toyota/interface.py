@@ -1,5 +1,6 @@
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params, put_nonblocking
 from panda import Panda
 from panda.python import uds
@@ -15,7 +16,8 @@ SteerControlType = car.CarParams.SteerControlType
 GearShifter = car.CarState.GearShifter
 
 GAC_DICT = {3: 1, 2: 2, 1: 3}
-
+GAC_MIN = 1
+GAC_MAX = 3
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
@@ -32,7 +34,15 @@ class CarInterface(CarInterfaceBase):
     if DBC[candidate]["pt"] == "toyota_new_mc_pt_generated":
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_TOYOTA_ALT_BRAKE
 
-    if candidate in ANGLE_CONTROL_CAR:
+    # Allow angle control cars with whitelisted EPSs to use torque control (made in Japan)
+    # So far only hybrid RAV4 2023 has been seen with this FW version
+    angle_car_torque_fw = any(fw.ecu == "eps" and fw.fwVersion == b'8965B42371\x00\x00\x00\x00\x00\x00' for fw in car_fw)
+    if candidate not in ANGLE_CONTROL_CAR or (angle_car_torque_fw and candidate == CAR.RAV4H_TSS2_2023):
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+      ret.steerActuatorDelay = 0.12  # Default delay, Prius has larger delay
+      ret.steerLimitTimer = 0.4
+    else:
       ret.dashcamOnly = True
       ret.steerControlType = SteerControlType.angle
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_TOYOTA_LTA
@@ -40,11 +50,6 @@ class CarInterface(CarInterfaceBase):
       # LTA control can be more delayed and winds up more often
       ret.steerActuatorDelay = 0.25
       ret.steerLimitTimer = 0.8
-    else:
-      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-
-      ret.steerActuatorDelay = 0.12  # Default delay, Prius has larger delay
-      ret.steerLimitTimer = 0.4
 
     ret.stoppingControl = False  # Toyota starts braking more when it thinks you want to stop
 
@@ -126,21 +131,25 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 14.3
       ret.tireStiffnessFactor = 0.7933
       ret.mass = 3585. * CV.LB_TO_KG  # Average between ICE and Hybrid
-      ret.lateralTuning.init('pid')
-      ret.lateralTuning.pid.kiBP = [0.0]
-      ret.lateralTuning.pid.kpBP = [0.0]
-      ret.lateralTuning.pid.kpV = [0.6]
-      ret.lateralTuning.pid.kiV = [0.1]
-      ret.lateralTuning.pid.kf = 0.00007818594
 
-      # 2019+ RAV4 TSS2 uses two different steering racks and specific tuning seems to be necessary.
-      # See https://github.com/commaai/openpilot/pull/21429#issuecomment-873652891
-      for fw in car_fw:
-        if fw.ecu == "eps" and (fw.fwVersion.startswith(b'\x02') or fw.fwVersion in [b'8965B42181\x00\x00\x00\x00\x00\x00']):
-          ret.lateralTuning.pid.kpV = [0.15]
-          ret.lateralTuning.pid.kiV = [0.05]
-          ret.lateralTuning.pid.kf = 0.00004
-          break
+      # Only specific EPS FW accept torque on 2023 RAV4, so they likely are all the same
+      # TODO: revisit this disparity if there is a divide for 2023
+      if candidate not in (CAR.RAV4_TSS2_2023, CAR.RAV4H_TSS2_2023):
+        ret.lateralTuning.init('pid')
+        ret.lateralTuning.pid.kiBP = [0.0]
+        ret.lateralTuning.pid.kpBP = [0.0]
+        ret.lateralTuning.pid.kpV = [0.6]
+        ret.lateralTuning.pid.kiV = [0.1]
+        ret.lateralTuning.pid.kf = 0.00007818594
+
+        # 2019+ RAV4 TSS2 uses two different steering racks and specific tuning seems to be necessary.
+        # See https://github.com/commaai/openpilot/pull/21429#issuecomment-873652891
+        for fw in car_fw:
+          if fw.ecu == "eps" and (fw.fwVersion.startswith(b'\x02') or fw.fwVersion in [b'8965B42181\x00\x00\x00\x00\x00\x00']):
+            ret.lateralTuning.pid.kpV = [0.15]
+            ret.lateralTuning.pid.kiV = [0.05]
+            ret.lateralTuning.pid.kf = 0.00004
+            break
 
     elif candidate in (CAR.COROLLA_TSS2, CAR.COROLLAH_TSS2):
       ret.wheelbase = 2.67  # Average between 2.70 for sedan and 2.64 for hatchback
@@ -313,31 +322,26 @@ class CarInterface(CarInterfaceBase):
               (self.CS.prev_lkas_enabled == 1 and not self.CS.lkas_enabled):
               self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      if not self.CP.openpilotLongitudinalControl or not self.gac:
-        ret.gapAdjustCruiseTr = 3
+      if not self.CP.openpilotLongitudinalControl:
+        self.CS.gac_tr_cluster = 3
+        put_nonblocking("LongitudinalPersonality", 2)
       else:
-        if self.gac_min != 1:
-          self.gac_min = 1
-          put_nonblocking("GapAdjustCruiseMin", str(self.gac_min))
-        if self.gac_max != 3:
-          self.gac_max = 3
-          put_nonblocking("GapAdjustCruiseMax", str(self.gac_max))
         gap_dist_button = bool(self.CS.gap_dist_button)
-        if self.gac_mode in (0, 2):
-          if gap_dist_button:
-            self.gac_button_counter += 1
-          elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
-            self.gac_button_counter = 0
-            follow_distance_converted = self.get_sp_gac_state(self.CS.follow_distance, self.gac_min, self.gac_max, "+")
-            gac_tr = self.get_sp_distance(follow_distance_converted, self.gac_max, gac_dict=GAC_DICT)
-            if gac_tr != self.CS.gac_tr:
-              put_nonblocking("GapAdjustCruiseTr", str(gac_tr))
-              self.CS.gac_tr = gac_tr
-          else:
-            self.gac_button_counter = 0
+        if gap_dist_button:
+          self.gac_button_counter += 1
+        elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
+          self.gac_button_counter = 0
+          pre_calculated_distance = 3 if self.CS.gac_tr == 3 else self.CS.follow_distance
+          follow_distance_converted = self.get_sp_gac_state(pre_calculated_distance, GAC_MIN, GAC_MAX, "+")
+          gac_tr = self.get_sp_distance(follow_distance_converted, GAC_MAX, gac_dict=GAC_DICT) - 1  # always 1 lower
+          if gac_tr != self.CS.gac_tr:
+            put_nonblocking("LongitudinalPersonality", str(gac_tr))
+            self.CS.gac_tr = gac_tr
+        else:
+          self.gac_button_counter = 0
         self.prev_gac_button = gap_dist_button
-        ret.gapAdjustCruiseTr = self.CS.gac_tr
-      gap_distance = self.get_sp_distance(ret.gapAdjustCruiseTr, self.gac_max, gac_dict=GAC_DICT)
+        self.CS.gac_tr_cluster = clip(self.CS.gac_tr + 1, GAC_MIN, GAC_MAX)  # always 1 higher
+      gap_distance = self.get_sp_distance(self.CS.gac_tr_cluster, GAC_MAX, gac_dict=GAC_DICT)
       if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
         self.CS.gac_send_counter += 1
         self.CS.gac_send = 1

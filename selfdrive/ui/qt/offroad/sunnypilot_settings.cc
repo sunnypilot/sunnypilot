@@ -196,15 +196,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
-      "GapAdjustCruise",
-      tr("Enable Gap Adjust Cruise ℹ"),
-      QString("%1<br>"
-              "<h4>%2</h4>")
-      .arg(tr("Enable the Interval button on the steering wheel to adjust the cruise gap."))
-      .arg(tr("Only available to cars with openpilot Longitudinal Control")),
-      "../assets/offroad/icon_dynamic_gac.png",
-    },
-    {
       "EnforceTorqueLateral",
       tr("Enforce Torque Lateral Control"),
       tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
@@ -276,7 +267,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
-    "EnableMads", "CustomOffsets", "GapAdjustCruise", "EnforceTorqueLateral",
+    "EnableMads", "CustomOffsets", "EnforceTorqueLateral",
     "SpeedLimitPercOffset", "SpeedLimitControl"
   };
   connect(dynamic_lane_profile, &DynamicLaneProfile::updateExternalToggles, this, &SPControlsPanel::updateToggles);
@@ -288,7 +279,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
   // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
   std::vector<std::string> toggleOffroad{
     "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral",
-    "CustomTorqueLateral", "LiveTorque", "GapAdjustCruise"
+    "CustomTorqueLateral", "LiveTorque"
   };
 
   // Controls: Camera Offset (cm)
@@ -314,9 +305,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
   // Controls: Speed Limit Offset Values (% or actual value)
   slvo = new SpeedLimitValueOffset();
   connect(slvo, &SPOptionControl::updateLabels, slvo, &SpeedLimitValueOffset::refresh);
-  // Controls: GAC Mode
-  gac_mode = new GapAdjustCruiseMode();
-  connect(gac_mode, &SPOptionControl::updateLabels, gac_mode, &GapAdjustCruiseMode::refresh);
 
   // Controls: Torque - FRICTION
   friction = new TorqueFriction();
@@ -346,11 +334,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
       // Controls: Auto Lane Change Timer
       addItem(auto_lane_change_timer);
-    }
-
-    if (param == "GapAdjustCruise") {
-      // Controls: Mode
-      addItem(gac_mode);
     }
 
     if (param == "CustomTorqueLateral") {
@@ -392,11 +375,8 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     }
   }
 
-  connect(toggles["GapAdjustCruise"], &ToggleControl::toggleFlipped, [=]() { emit updateStockToggles(); });
-
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["DisengageLateralOnBrake"]->setConfirmation(true, false);
-  toggles["GapAdjustCruise"]->setConfirmation(true, false);
 
   connect(toggles["OsmLocalDb"], &ToggleControl::toggleFlipped, [=](bool state) {
     if (!state) {
@@ -426,9 +406,6 @@ void SPControlsPanel::updateToggles() {
   for (const auto& customOffsetsControl : customOffsetsGroup) {
     customOffsetsControl->setVisible(params.getBool("CustomOffsets"));
   }
-
-  // toggle names to update when GapAdjustCruise is flipped
-  gac_mode->setVisible(params.getBool("GapAdjustCruise"));
 
   // toggle names to update when AutoLaneChangeTimer is not "Nudge"
   toggles["AutoLaneChangeBsmDelay"]->setVisible(QString::fromStdString(params.get("AutoLaneChangeTimer")) != "0");
@@ -916,33 +893,6 @@ void AutoLaneChangeTimer::refresh() {
   }
 }
 
-// G.A.C. Mode
-GapAdjustCruiseMode::GapAdjustCruiseMode() : SPOptionControl (
-  "GapAdjustCruiseMode",
-  tr("Mode"),
-  QString("%1<br>"
-          "%2<br>"
-          "%3")
-  .arg(tr("SW: Steering Wheel Button only"))
-  .arg(tr("UI: User Interface Button on screen only"))
-  .arg(tr("SW + UI: Steering Wheel Button + User Interface Button on screen")),
-  "../assets/offroad/icon_blank.png",
-  {0, 2}) {
-
-  refresh();
-}
-
-void GapAdjustCruiseMode::refresh() {
-  QString option = QString::fromStdString(params.get("GapAdjustCruiseMode"));
-  if (option == "0") {
-    setLabel(tr("S.W."));
-  } else if (option == "1") {
-    setLabel(tr("UI"));
-  } else if (option == "2") {
-    setLabel(tr("S.W. + UI"));
-  }
-}
-
 TorqueFriction::TorqueFriction() : SPOptionControl (
   "TorqueFriction",
   tr("FRICTION"),
@@ -1125,13 +1075,28 @@ DynamicLaneProfile::DynamicLaneProfile(QWidget *parent) : QWidget(parent), outer
 
   addItem(dynamicLaneProfile);
   addItem(dlp_settings);
+
+  param_watcher = new ParamWatcher(this);
+
+  QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    updateButtons();
+  });
 }
 
 void DynamicLaneProfile::showEvent(QShowEvent *event) {
   updateToggles();
+  updateButtons();
 }
 
 void DynamicLaneProfile::updateToggles() {
   // toggle names to update when DynamicLaneProfile is flipped
   dlp_settings->setVisible(params.getBool("DynamicLaneProfileToggle"));
+}
+
+void DynamicLaneProfile::updateButtons() {
+  param_watcher->addParam("DynamicLaneProfile");
+
+  if (!isVisible()) return;
+
+  dlp_settings->setButton("DynamicLaneProfile");
 }
