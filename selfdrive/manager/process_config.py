@@ -85,7 +85,7 @@ procs = [
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None), always_watchdog=True),
 
   PythonProcess("gpxd", "selfdrive.gpxd.gpxd", only_onroad),
-  PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", always_run),
+  PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", only_offroad),
   PythonProcess("mapd", "selfdrive.mapd.mapd", only_onroad),
   PythonProcess("otisserv", "selfdrive.navd.otisserv", always_run),
   PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", only_offroad),

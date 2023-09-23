@@ -5,6 +5,8 @@ import secrets
 import threading
 import time
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
+from common.realtime import set_core_affinity
+from system.swaglog import cloudlog
 import system.fleetmanager.helpers as fleet
 from system.loggerd.config import ROOT as REALDATA
 
@@ -153,6 +155,10 @@ def update_pin():
 
 
 def main():
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("fleet_manager: failed to set core affinity")
   app.secret_key = secrets.token_hex(32)
   schedule_pin_generate()
   app.run(host="0.0.0.0", port=5050)
