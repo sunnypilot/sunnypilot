@@ -1644,18 +1644,23 @@ FW_VERSIONS = {
   CAR.KIA_SELTOS_2023_NON_SCC: {
     (Ecu.abs, 0x7d1, None): [
       b'\xf1\x00SP ESC \t 101"\t\x01 58910-Q5510',
+      b'\xf1\x00SP ESC \r 100"\x04\x01 58910-Q5510',
     ],
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x81616K0051\x00\x00\x00\x00\x00\x00\x00\x00',
+      b'\xf1\x81616G2051\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
     (Ecu.eps, 0x7d4, None): [
       b'\xf1\x00SP2 MDPS C 1.00 1.04 56310Q5240  4SPSC104',
+      b'\xf1\x00SP2 MDPS C 1.00 1.01 56300Q5920          ',
     ],
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\x00SP2 MFC  AT USA LHD 1.00 1.03 99210-Q5500 230208',
+      b'\xf1\x00SP2 MFC  AT AUS RHD 1.00 1.02 99210-Q5500 220624',
     ],
     (Ecu.transmission, 0x7e1, None): [
       b'\xf1\x006V2B0_C2\x00\x006V2D5051\x00\x00CSP2N20NL0\x00\x00\x00\x00',
+      b'\xf1\x006V2B0_C2\x00\x006V2D4051\x00\x00CSP2N20KL1\x00\x00\x00\x00',
     ],
   },
   CAR.KIA_OPTIMA_G4: {
