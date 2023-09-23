@@ -77,18 +77,11 @@ class LongitudinalPlanner:
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
 
-    self.gap_adjust_cruise = "gac" if self.params.get_bool("GapAdjustCruise") else "stock"
-    self.read_gac(gac_tr=3)
-
   def read_param(self):
     try:
       self.personality = int(self.params.get('LongitudinalPersonality'))
     except (ValueError, TypeError):
       self.personality = log.LongitudinalPersonality.standard
-
-  def read_gac(self, gac_tr=3):
-    gac_tr = clip(gac_tr, 1, 3)
-    self.personality = int(gac_tr - 1)
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -107,12 +100,9 @@ class LongitudinalPlanner:
     return x, v, a, j
 
   def update(self, sm):
-    if self.gap_adjust_cruise == "stock":
-      if self.param_read_counter % 50 == 0:
-        self.read_param()
-      self.param_read_counter += 1
-    elif self.gap_adjust_cruise == "gac":
-      self.read_gac(gac_tr=sm['carState'].gapAdjustCruiseTr)
+    if self.param_read_counter % 50 == 0:
+      self.read_param()
+    self.param_read_counter += 1
     self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 
     v_ego = sm['carState'].vEgo
@@ -157,11 +147,11 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05, a_min_sol)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint, personality=self.personality, personality_mode=self.gap_adjust_cruise)
+    self.mpc.set_weights(prev_accel_constraint, personality=self.personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise_sol, x, v, a, j, personality=self.personality, personality_mode=self.gap_adjust_cruise)
+    self.mpc.update(sm['radarState'], v_cruise_sol, x, v, a, j, personality=self.personality)
 
     self.v_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
@@ -202,7 +192,6 @@ class LongitudinalPlanner:
     longitudinalPlan.personality = self.personality
 
     longitudinalPlan.e2eX = self.mpc.e2e_x.tolist()
-    longitudinalPlan.desiredTF = self.mpc.desired_TF
 
     longitudinalPlan.visionTurnControllerState = self.vision_turn_controller.state
     longitudinalPlan.visionTurnSpeed = float(self.vision_turn_controller.v_turn)

@@ -25,7 +25,7 @@ ScreenRecoder::ScreenRecoder(QWidget *parent) : QPushButton(parent), image_queue
   recording = false;
   started = 0;
   frame = 0;
-  rec_btn_size = 120;
+  rec_btn_size = 150;
 
   setVisible(false);
   setFixedSize(rec_btn_size, rec_btn_size);

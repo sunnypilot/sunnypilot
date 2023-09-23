@@ -21,6 +21,19 @@ const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
 const QRect speed_sgn_rc(UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2.5 + 202, 184, 184);
+
+struct FeatureStatusText {
+  const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
+  const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
+  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active" };
+};
+
+struct FeatureStatusColor {
+  const QStringList dlp_list_color = { "#2020f8",      "#0df87a",  "#0df8f8"            };
+  const QStringList gac_list_color = { "#ff4b4b",      "#fcff4b",  "#4bff66", "#6a0ac9" };
+  const QStringList slc_list_color = { "#ffffff",      "#ffffff",  "#fcff4b", "#4bff66" };
+};
+
 const float DRIVING_PATH_WIDE = 0.9;
 const float DRIVING_PATH_NARROW = 0.25;
 
@@ -179,7 +192,9 @@ typedef struct UIScene {
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
   uint64_t started_frame;
 
+  int dynamic_lane_profile;
   bool dynamic_lane_profile_status = true;
+  bool dynamic_lane_profile_toggle;
 
   bool visual_brake_lights;
 
@@ -195,7 +210,7 @@ typedef struct UIScene {
   int chevron_data;
 
   bool gac;
-  int gac_mode, gac_tr, gac_min, gac_max;
+  int longitudinal_personality;
 
   bool map_visible;
   bool dev_ui_enabled;
@@ -218,11 +233,10 @@ typedef struct UIScene {
   bool sidebar_temp;
   int sidebar_temp_options;
 
-  // UI button sorting
-  int gac_btn;
-
   float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;
   float mads_path_range = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;  // 0.9 - 0.25 = 0.65
+
+  bool onroad_settings_visible;
 } UIScene;
 
 class UIState : public QObject {
@@ -266,7 +280,6 @@ private:
   QTimer *timer;
   bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
-  uint64_t last_update_params_sidebar;
 
   bool last_mads_enabled = false;
   bool mads_path_state = false;

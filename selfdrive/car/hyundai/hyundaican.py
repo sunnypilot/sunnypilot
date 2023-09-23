@@ -39,7 +39,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
                          CAR.ELANTRA_HEV_2021, CAR.SONATA_HYBRID, CAR.KONA_EV, CAR.KONA_HEV, CAR.KONA_EV_2022,
                          CAR.SANTA_FE_2022, CAR.KIA_K5_2021, CAR.IONIQ_HEV_2022, CAR.SANTA_FE_HEV_2022,
                          CAR.SANTA_FE_PHEV_2022, CAR.KIA_STINGER_2022, CAR.KIA_K5_HEV_2020, CAR.KIA_CEED,
-                         CAR.ELANTRA_2022_NON_SCC, CAR.GENESIS_G70_2021_NON_SCC):
+                         CAR.AZERA_6TH_GEN, CAR.ELANTRA_2022_NON_SCC, CAR.GENESIS_G70_2021_NON_SCC):
     values["CF_Lkas_LdwsActivemode"] = int(left_lane) + (int(right_lane) << 1)
     values["CF_Lkas_LdwsOpt_USM"] = 2
 
@@ -134,7 +134,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
 
   scc11_values = {
     "MainMode_ACC": 1 if main_enabled else 0,
-    "TauGapSet": CS.gac_tr,
+    "TauGapSet": CS.gac_tr_cluster,
     "VSetDis": set_speed if enabled else 0,
     "AliveCounterACC": idx % 0x10,
     "ObjValid": 1, # close lead makes controls tighter

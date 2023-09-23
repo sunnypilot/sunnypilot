@@ -252,6 +252,14 @@ public:
     }
   }
 
+  void setButton(QString param) {
+    key = param.toStdString();
+    int value = atoi(params.get(key).c_str());
+    for (int i = 0; i < button_group->buttons().size(); i++) {
+      button_group->buttons()[i]->setChecked(i == value);
+    }
+  }
+
 private:
   std::string key;
   Params params;

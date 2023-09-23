@@ -17,6 +17,7 @@
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 #include "selfdrive/ui/qt/maps/map_panel.h"
 #endif
+#include "selfdrive/ui/qt/onroad_settings_panel.h"
 
 static void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity) {
   p.setRenderHint(QPainter::Antialiasing);
@@ -27,6 +28,35 @@ static void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, cons
   p.setOpacity(opacity);
   p.drawPixmap(center - QPoint(img.width() / 2, img.height() / 2), img);
   p.setOpacity(1.0);
+}
+
+static void drawCustomButtonIcon(QPainter &p, const int btn_size_x, const int btn_size_y, const QPixmap &img, const QBrush &bg, float opacity) {
+  QPoint center(btn_size_x / 2, btn_size_y / 2);
+  p.setRenderHint(QPainter::Antialiasing);
+  p.setOpacity(1.0);  // bg dictates opacity of ellipse
+  p.setPen(Qt::NoPen);
+  p.setBrush(bg);
+  p.drawEllipse(center, btn_size_x / 2, btn_size_y / 2);
+  p.setOpacity(opacity);
+  p.drawPixmap(center - QPoint(img.width() / 2, img.height() / 2), img);
+  p.setOpacity(1.0);
+}
+
+static std::pair<QString, QColor> getFeatureStatus(int value, QStringList text_list, QStringList color_list,
+                                                   bool condition, QString off_text) {
+
+  QString text("Error");
+  QColor color("#ffffff");
+
+  for (int i = 0; i < text_list.size() && i < color_list.size(); ++i) {
+    if (value == i) {
+      text = condition ? text_list[i] : off_text;
+      color = condition ? QColor(color_list[i]) : QColor("#ffffff");
+      break;  // Exit the loop once a match is found
+    }
+  }
+
+  return {text, color};
 }
 
 OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
@@ -164,19 +194,11 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   UIScene &scene = s->scene;
   SubMaster &sm = *(uiState()->sm);
   auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
-  auto car_state = sm["carState"].getCarState();
 
-  QRect gac_btn_rect = QRect(scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - scene.rn_offset, 150, 150);
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (scene.gac && scene.gac_mode != 0 && scene.longitudinal_control && car_state.getCruiseState().getAvailable() &&
-             scene.sleep_btn_opacity == 20 && gac_btn_rect.contains(e->x(), e->y())) {
-    scene.gac_tr--;
-    scene.gac_tr = scene.gac_tr < scene.gac_min ? scene.gac_max : scene.gac_tr;
-    params.put("GapAdjustCruiseTr", std::to_string(scene.gac_tr));
-    propagate_event = false;
-  } else if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+  if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
     // If touching the speed limit sign area when visible
     scene.last_speed_limit_sign_tap = seconds_since_boot();
     params.putBool("LastSpeedLimitSignTap", true);
@@ -187,17 +209,23 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     issue_debug_snapshot(sm);
     propagate_event = false;
   }
+  else {
 #ifdef ENABLE_MAPS
-  else if (map != nullptr) {
-    if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
-        (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
-      // Switch between map and sidebar when using navigate on openpilot
-      bool sidebarVisible = geometry().x() > 0;
-          bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
-      map->setVisible(show_map && !map->isVisible());
+    if (map != nullptr && !isOnroadSettingsVisible()) {
+      if (wakeScreenTimeout()) {
+        // Switch between map and sidebar when using navigate on openpilot
+        bool sidebarVisible = geometry().x() > 0;
+        bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
+        map->setVisible(show_map && !map->isVisible());
+      }
+    }
+#endif
+    if (onroad_settings != nullptr && !isMapVisible()) {
+      if (wakeScreenTimeout()) {
+        onroad_settings->setVisible(false);
+      }
     }
   }
-#endif
   // propagation event to parent(HomeWindow)
   if (propagate_event) {
     QWidget::mousePressEvent(e);
@@ -205,14 +233,15 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 }
 
 void OnroadWindow::offroadTransition(bool offroad) {
-#ifdef ENABLE_MAPS
   if (!offroad) {
+#ifdef ENABLE_MAPS
     bool custom_mapbox = params.getBool("CustomMapbox") && QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
     if (map == nullptr && (uiState()->hasPrime() || !MAPBOX_TOKEN.isEmpty() || custom_mapbox)) {
       auto m = new MapPanel(get_mapbox_settings());
       map = m;
 
       QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::mapPanelRequested);
+      QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::onroadSettingsPanelNotRequested);
       QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
       nvg->map_settings_btn->setEnabled(true);
 
@@ -222,8 +251,23 @@ void OnroadWindow::offroadTransition(bool offroad) {
       // hidden by default, made visible when navRoute is published
       m->setVisible(false);
     }
-  }
 #endif
+    if (onroad_settings == nullptr) {
+      auto os = new OnroadSettingsPanel(this);
+      onroad_settings = os;
+
+      QObject::connect(os, &OnroadSettingsPanel::onroadSettingsPanelRequested, this, &OnroadWindow::onroadSettingsPanelRequested);
+      QObject::connect(os, &OnroadSettingsPanel::onroadSettingsPanelRequested, this, &OnroadWindow::mapPanelNotRequested);
+      QObject::connect(nvg->onroad_settings_btn, &OnroadSettingsButton::clicked, os, &OnroadSettingsPanel::toggleOnroadSettings);
+      nvg->onroad_settings_btn->setEnabled(true);
+
+      os->setFixedWidth(topWidget(this)->width() / 2.67 - UI_BORDER_SIZE);
+      split->insertWidget(0, os);
+
+      // hidden by default
+      os->setVisible(false);
+    }
+  }
 
   alerts->updateAlert({});
 }
@@ -315,7 +359,6 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
 ExperimentalButton::ExperimentalButton(QWidget *parent) : experimental_mode(false), engageable(false), QPushButton(parent) {
   setFixedSize(btn_size, btn_size);
 
-  params = Params();
   engage_img = loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size});
   experimental_img = loadPixmap("../assets/img_experimental.svg", {img_size, img_size});
   QObject::connect(this, &QPushButton::clicked, this, &ExperimentalButton::changeMode);
@@ -349,8 +392,10 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
 // MapSettingsButton
 MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
-  setFixedSize(btn_size, btn_size);
-  settings_img = loadPixmap("../assets/navigation/icon_directions_outlined.svg", {img_size, img_size});
+  // btn_size: 192 * 80% ~= 152
+  // img_size: (152 / 4) * 3 = 114
+  setFixedSize(152, 152);
+  settings_img = loadPixmap("../assets/navigation/icon_directions_outlined.svg", {114, 114});
 
   // hidden by default, made visible if map is created (has prime or mapbox token)
   setVisible(false);
@@ -359,12 +404,39 @@ MapSettingsButton::MapSettingsButton(QWidget *parent) : QPushButton(parent) {
 
 void MapSettingsButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+  drawCustomButtonIcon(p, 152, 152, settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+}
+
+
+// OnroadSettingsButton
+OnroadSettingsButton::OnroadSettingsButton(QWidget *parent) : QPushButton(parent) {
+  // btn_size: 192 * 80% ~= 152
+  // img_size: (152 / 4) * 3 = 114
+  setFixedSize(152, 152);
+  settings_img = loadPixmap("../assets/navigation/icon_settings.svg", {114, 114});
+
+  // hidden by default, made visible if Driving Personality / GAC, DLP, or SLC is enabled
+  setVisible(false);
+  setEnabled(false);
+}
+
+void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
+  QPainter p(this);
+  drawCustomButtonIcon(p, 152, 152, settings_img, QColor(0, 0, 0, 166), isDown() ? 0.6 : 1.0);
+}
+
+void OnroadSettingsButton::updateState(const UIState &s) {
+  const auto cp = (*s.sm)["carParams"].getCarParams();
+  auto dlp_enabled = s.scene.dynamic_lane_profile_toggle;
+  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
+
+  setVisible(allow_btn);
+  setEnabled(allow_btn);
 }
 
 
 // Window that shows camera view and variety of info drawn on top
-AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : last_update_params(0), fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
+AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
   pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"uiDebug"});
   e2e_state = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"e2eLongState"});
 
@@ -375,14 +447,14 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   experimental_btn = new ExperimentalButton(this);
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
 
+  onroad_settings_btn = new OnroadSettingsButton(this);
+
   map_settings_btn = new MapSettingsButton(this);
 
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size + 5, img_size + 5});
   map_img = loadPixmap("../assets/img_world_icon.png", {subsign_img_size, subsign_img_size});
   left_img = loadPixmap("../assets/img_turn_left_icon.png", {subsign_img_size, subsign_img_size});
   right_img = loadPixmap("../assets/img_turn_right_icon.png", {subsign_img_size, subsign_img_size});
-
-  QHBoxLayout *buttons_layout = new QHBoxLayout();
 
   // screen recoder - neokii
 
@@ -396,15 +468,14 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   record_timer->start(1000/UI_FREQ);
 
   recorder = new ScreenRecoder(this);
-  buttons_layout->addWidget(recorder);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &AnnotatedCameraWidget::offroadTransition);
 #endif
 
-  buttons_layout->addSpacing(60);
-  buttons_layout->addWidget(map_settings_btn);
-  buttons_layout->setAlignment(Qt::AlignBottom | Qt::AlignRight);
+  buttons_layout = new QHBoxLayout();
+  buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
+  updateButtonsLayout();
 }
 
 #ifdef ENABLE_DASHCAM
@@ -414,6 +485,27 @@ void AnnotatedCameraWidget::offroadTransition(bool offroad) {
   }
 }
 #endif
+
+void AnnotatedCameraWidget::updateButtonsLayout() {
+  QLayoutItem *item;
+  while ((item = buttons_layout->takeAt(0)) != nullptr) {
+    delete item;
+  }
+
+  buttons_layout->setContentsMargins(0, 0, 10, uiState()->scene.rn_offset != 0 ? uiState()->scene.rn_offset + 10 : 20);
+
+  buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
+  buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
+
+  buttons_layout->addStretch(1);
+
+#ifdef ENABLE_DASHCAM
+  buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | Qt::AlignRight);
+#endif
+
+  buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
+  buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+}
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
   const int SET_SPEED_NA = 255;
@@ -473,11 +565,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   hideVEgoUi = s.scene.hide_vego_ui;
 
-  gac = s.scene.gac && s.scene.gac_mode != 0 && s.scene.longitudinal_control &&
-              car_state.getCruiseState().getAvailable();
-  gacTr = s.scene.gac_tr;
-
-  mapVisible = s.scene.map_visible;
+  splitPanelVisible = s.scene.map_visible || s.scene.onroad_settings_visible;
 
   // ############################## DEV UI START ##############################
   lead_d_rel = radar_state.getLeadOne().getDRel();
@@ -513,6 +601,12 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
 
+  // update onroad settings button state
+  onroad_settings_btn->updateState(s);
+
+  // update buttons layout
+  updateButtonsLayout();
+
   // update DM icon
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
   dmActive = dm_state.getIsActiveMode();
@@ -526,7 +620,14 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
   }
 
+  // hide onroad settings button for alerts and flip for right hand DM
+  if (onroad_settings_btn->isEnabled()) {
+    onroad_settings_btn->setVisible(!hideBottomIcons);
+    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+  }
+
   const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
+  slcState = lp.getSpeedLimitControlState();
 
   if (sm.frame % (UI_FREQ / 2) == 0) {
     const auto vtcState = lp.getVisionTurnControllerState();
@@ -549,7 +650,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const auto slcState = lp.getSpeedLimitControlState();
     const bool sl_force_active = s.scene.speed_limit_control_enabled &&
                                  seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
     const bool sl_inactive = !sl_force_active && (!s.scene.speed_limit_control_enabled ||
@@ -585,6 +685,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     tscActive = tscState > cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE;
     curveSign = lp.getTurnSign();
   }
+
+  longitudinalPersonality = s.scene.longitudinal_personality;
+  dynamicLaneProfile = s.scene.dynamic_lane_profile;
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -781,20 +884,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawText(p, rect().center().x(), 290, speedUnit, 200);
   }
 
-  // counts total number of UI buttons to display; modify this if add/change/remove UI buttons
-  bool gac_on = gac;
-  int total_ui_buttons = int(gac_on);
-
-  int btnValues[total_ui_buttons];
-  for (int i = 0; i < total_ui_buttons; i++) {
-    btnValues[i] = UI_BORDER_SIZE * 2 + 190 + (i * 180);
-  }
-  uiState()->scene.gac_btn = gac_on ? btnValues[0] : 0;
-
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
-    if (devUiEnabled && !mapVisible && devUiInfo == 1) {
+    if (!hideBottomIcons && devUiEnabled && !splitPanelVisible && devUiInfo == 1) {
       p.setPen(Qt::NoPen);
       p.setBrush(QColor(0, 0, 0, 100));
       p.drawRect(bar_rect1);
@@ -808,15 +901,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     }
 
     int rn_btn = 0;
-    rn_btn = devUiEnabled && !mapVisible && devUiInfo == 1 ? 30 : 0;
+    rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 35 : 0;
     uiState()->scene.rn_offset = rn_btn;
 
-    if (gac) {
-      drawGacButton(p, uiState()->scene.gac_btn, (rect().bottom() - (UI_BORDER_SIZE + btn_size / 2) - 75) - rn_btn, 150, 150);
-    }
-
     // Stand Still Timer
-    if (standStillTimer && standStill && !mapVisible) {
+    if (standStillTimer && standStill && !splitPanelVisible) {
       drawStandstillTimer(p, rect().right() - 650, 30 + 160 + 250);
     }
 
@@ -848,6 +937,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (uiState()->scene.e2e_long_alert_ui && e2eState != 0) {
     drawE2eStatus(p, UI_BORDER_SIZE * 2 + 190, 45, 150, 150, e2eState);
   }
+
+  if (!hideBottomIcons) {
+    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - uiState()->scene.rn_offset);
+  }
+
   p.restore();
 }
 
@@ -885,34 +979,6 @@ void AnnotatedCameraWidget::drawVisionTurnControllerUI(QPainter &p, int x, int y
 
   p.setFont(InterFont(56, QFont::DemiBold));
   drawCenteredText(p, rvtc.center().x(), rvtc.center().y(), vision_speed, color);
-}
-
-void AnnotatedCameraWidget::drawGacButton(QPainter &p, int x, int y, int w, int h) {
-  int prev_gac_tr = -1;
-  QString gac_text = "";
-  QColor gac_border = QColor(255, 255, 255, (255 * btnPerc));
-
-  if (prev_gac_tr != gacTr) {
-    prev_gac_tr = gacTr;
-    if (gacTr == 1) {
-      gac_text = "Maniac\nGap";
-      gac_border = QColor(255, 75, 75, (255 * btnPerc));
-    } else if (gacTr == 2) {
-      gac_text = "Aggro\nGap";
-      gac_border = QColor(252, 255, 75, (255 * btnPerc));
-    } else {
-      gac_text = "Stock\nGap";
-      gac_border = QColor(75, 255, 102, (255 * btnPerc));
-    }
-  }
-
-  QRect gacBtn(x, y, w, h);
-  p.setPen(QPen(gac_border, 6));
-  p.setBrush(QColor(75, 75, 75, (75 * btnPerc)));
-  p.drawEllipse(gacBtn);
-  p.setPen(QColor(255, 255, 255, (255 * btnPerc)));
-  p.setFont(InterFont(gacTr == 1 ? 32 : 36, QFont::DemiBold));
-  p.drawText(gacBtn, Qt::AlignCenter, gac_text);
 }
 
 void AnnotatedCameraWidget::drawStandstillTimer(QPainter &p, int x, int y) {
@@ -1476,6 +1542,58 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
   return blinker_state;
 }
 
+void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
+  const FeatureStatusText feature_text;
+  const FeatureStatusColor feature_color;
+  const QColor text_color = whiteColor();
+  const QColor shadow_color = blackColor(38);
+  const int text_height = 34;
+  const int drop_shadow_size = 2;
+  const int eclipse_x_offset = 25;
+  const int eclipse_y_offset = 20;
+  const int w = 16;
+  const int h = 16;
+
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  const bool longitudinal = hasLongitudinalControl(cp);
+
+  p.setFont(InterFont(32, QFont::Bold));
+
+  // Define a function to draw a feature status button
+  auto drawFeatureStatusElement = [&](int value, const QStringList& text_list, const QStringList& color_list, bool condition, const QString& off_text, const QString& label) {
+    std::pair<QString, QColor> feature_status = getFeatureStatus(value, text_list, color_list, condition, off_text);
+    QRect btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
+    QRect btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(shadow_color);
+    p.drawEllipse(btn_shadow);
+    p.setBrush(feature_status.second);
+    p.drawEllipse(btn);
+    QString status_text;
+    status_text.sprintf("%s: %s", label.toStdString().c_str(), (feature_status.first).toStdString().c_str());
+    p.setPen(QPen(shadow_color, 2));
+    p.drawText(x + drop_shadow_size, y + drop_shadow_size, status_text);
+    p.setPen(QPen(text_color, 2));
+    p.drawText(x, y, status_text);
+    y += text_height;
+  };
+
+  // Driving Personality / Gap Adjust Cruise
+  if (longitudinal) {
+    drawFeatureStatusElement(longitudinalPersonality, feature_text.gac_list_text, feature_color.gac_list_color, longitudinal, "N/A", "GAP");
+  }
+
+  // Dynamic Lane Profile
+  if (uiState()->scene.dynamic_lane_profile_toggle) {
+    drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");
+  }
+
+  // Speed Limit Control
+  if (longitudinal || !cp.getPcmCruiseSpeed()) {
+    drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
+  }
+}
+
 
 void AnnotatedCameraWidget::initializeGL() {
   CameraWidget::initializeGL();
@@ -1670,18 +1788,18 @@ void AnnotatedCameraWidget::rocketFuel(QPainter &p) {
   vc_accel = vc_accel + (vc_accel0 - vc_accel) / 5;
   float hha = 0;
   if (vc_accel > 0) {
-    hha = 1 - 0.1 / vc_accel;
+    hha = 0.85 - 0.1 / vc_accel;  // only extend up to 85%
     p.setBrush(QColor(0, 245, 0, 200));
   }
   if (vc_accel < 0) {
-    hha = 1 + 0.1 / vc_accel;
+    hha = 0.85 + 0.1 / vc_accel; // only extend up to 85%
     p.setBrush(QColor(245, 0, 0, 200));
   }
   if (hha < 0) {
     hha = 0;
   }
   hha = hha * rect_h;
-  float wp = 35;
+  float wp = 28;
   if (vc_accel > 0) {
     QRect ra = QRect(rect_w - wp, rect_h / 2 - hha / 2, wp, hha / 2);
     p.drawRect(ra);
@@ -1849,10 +1967,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     blinker_frame++;
     int state = blinkerPulse(blinker_frame);
     if (left_blinker) {
-      drawLeftTurnSignal(painter, rect().center().x() - 300, 90, state);
+      drawLeftTurnSignal(painter, rect().center().x() - 300, splitPanelVisible ? 210 : 90, state);
     }
     if (right_blinker) {
-      drawRightTurnSignal(painter, rect().center().x() + 180, 90, state);
+      drawRightTurnSignal(painter, rect().center().x() + 180, splitPanelVisible ? 210 : 90, state);
     }
   } else {
     blinker_frame = 0;
@@ -1881,9 +1999,6 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
 
-  if (millis_since_boot() - last_update_params > 1000 * 5) {
-    last_update_params = millis_since_boot();
-    ui_update_params(uiState());
-  }
+  ui_update_params(uiState());
   prev_draw_t = millis_since_boot();
 }

@@ -77,6 +77,9 @@ private:
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
+
+  ParamWatcher *param_watcher;
+  void updateButtons();
 };
 
 class SoftwarePanel : public ListWidget {

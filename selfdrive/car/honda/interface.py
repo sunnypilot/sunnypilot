@@ -226,7 +226,7 @@ class CarInterface(CarInterfaceBase):
       ret.tireStiffnessFactor = 0.677
 
     elif candidate == CAR.ACCORD_NIDEC_4CYL:
-      ret.mass = 3279. * CV.LB_TO_KG + STD_CARGO_KG
+      ret.mass = 3279. * CV.LB_TO_KG
       ret.wheelbase = 2.75
       ret.centerToFront = ret.wheelbase * 0.39
       ret.steerRatio = 13.66 # 13.37 is spec
@@ -289,7 +289,7 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.CLARITY:
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HONDA_CLARITY
-      ret.mass = 4052. * CV.LB_TO_KG + STD_CARGO_KG
+      ret.mass = 4052. * CV.LB_TO_KG
       ret.wheelbase = 2.75
       ret.centerToFront = ret.wheelbase * 0.4
       ret.steerRatio = 16.50  # 12.72 is end-to-end spec
