@@ -12,8 +12,6 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
   setContentsMargins(0, 0, 0, 0);
   setAttribute(Qt::WA_NoMousePropagation);
 
-  params = Params();
-
   auto *frame = new QVBoxLayout(this);
   frame->setContentsMargins(40, 40, 40, 25);
   frame->setSpacing(0);
