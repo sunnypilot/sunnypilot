@@ -276,7 +276,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
   std::vector<std::string> updateTogglesNamesAlert{
     "CustomTorqueLateral", "LiveTorque"
   };
-  // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
+  // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
     "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral",
     "CustomTorqueLateral", "LiveTorque"
@@ -548,6 +548,8 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
 
 SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWidget(parent) {
   setSpacing(50);
+
+  // Hyundai/Kia/Genesis
   addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
   auto hkgSmoothStop = new ParamControl(
     "HkgSmoothStop",
@@ -558,6 +560,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   hkgSmoothStop->setConfirmation(true, false);
   addItem(hkgSmoothStop);
 
+  // Toyota/Lexus
   addItem(new LabelControl(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControl(
     "StockLongToyota",
