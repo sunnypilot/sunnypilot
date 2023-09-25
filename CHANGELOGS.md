@@ -11,6 +11,9 @@ sunnypilot - 0.9.5.1 (2023-09-27)
   * GAP - Driving Personality
   * DLP - Dynamic Lane Profile
   * SLC - Speed Limit Control
+* NEW❗: Toyota - Stop and Go hack
+  * Allow some Toyota/Lexus cars to auto resume during stop and go traffic
+  * Only applicable to certain models and model years
 * NEW❗: Wide camera view when the steering angle is more than 45°
 * NEW❗: Toyota: ZSS support thanks to dragonpilot-community and ErichMoraga!
 * openpilot Longitudianl Control capable cars only

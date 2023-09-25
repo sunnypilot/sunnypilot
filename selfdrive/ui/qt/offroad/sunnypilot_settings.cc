@@ -592,10 +592,20 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
+  auto toyotaSngHack = new ParamControl(
+    "ToyotaSnG",
+    "Enable Stop and Go Hack",
+    "sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models. Use at your own risk.",
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaSngHack->setConfirmation(true, false);
+  addItem(toyotaSngHack);
+
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
+    toyotaSngHack->setEnabled(offroad);
   });
 }
 

@@ -44,6 +44,7 @@ class CarController:
 
     self.param_s = Params()
     self._reverse_acc_change = self.param_s.get_bool("ReverseAccChange")
+    self._sng_hack = self.param_s.get_bool("ToyotaSnG")
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -119,7 +120,8 @@ class CarController:
       pcm_cancel_cmd = 1
 
     # on entering standstill, send standstill request
-    if CS.out.standstill and not self.last_standstill and (self.CP.carFingerprint not in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptor):
+    if CS.out.standstill and not self.last_standstill and (self.CP.carFingerprint not in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptor) and \
+      not self._sng_hack:
       self.standstill_req = True
     if CS.pcm_acc_status != 8:
       # pcm entered standstill or it's disabled
