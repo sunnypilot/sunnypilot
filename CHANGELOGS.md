@@ -12,6 +12,7 @@ sunnypilot - 0.9.5.1 (2023-09-27)
   * DLP - Dynamic Lane Profile
   * SLC - Speed Limit Control
 * NEW❗: Wide camera view when the steering angle is more than 45°
+* NEW❗: Toyota: ZSS support thanks to dragonpilot-community and ErichMoraga!
 * openpilot Longitudianl Control capable cars only
   * UPDATED: Gap Adjust Cruise is now a part of Driving Personality
     * [DISTANCE/FOLLOW DISTANCE/GAP DISTANCE] physical button on the steering wheel to select Driving Personality on by default
