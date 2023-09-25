@@ -156,6 +156,8 @@ def hw_state_thread(end_event, hw_queue):
           cloudlog.warning("configuring modem")
           HARDWARE.configure_modem()
           modem_configured = True
+          if Params().get_bool("HotspotOnBoot") and Params().get_bool("HotspotOnBootConfirmed"):
+            os.system('nmcli con up Hotspot')
 
         prev_hw_state = hw_state
       except Exception:
