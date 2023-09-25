@@ -125,7 +125,7 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
 
   ListWidget *list = new ListWidget(this);
   // Enable tethering layout
-  const bool set_hotspot_on_boot = params.getBool("HotspotOnBootConfirmed");
+  const bool set_hotspot_on_boot = params.getBool("HotspotOnBoot") && params.getBool("HotspotOnBootConfirmed");
   tetheringToggle = new ToggleControl(tr("Enable Tethering"), "", "", wifi->isTetheringEnabled() || set_hotspot_on_boot);
   list->addItem(tetheringToggle);
   QObject::connect(tetheringToggle, &ToggleControl::toggleFlipped, this, &AdvancedNetworking::toggleTethering);
