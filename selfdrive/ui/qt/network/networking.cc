@@ -201,7 +201,7 @@ void AdvancedNetworking::refresh() {
 }
 
 void AdvancedNetworking::toggleTethering(bool enabled) {
-  params.putBool("HotspotOnBoot", enabled);
+  params.putBool("HotspotOnBootConfirmed", enabled);
   wifi->setTetheringEnabled(enabled);
   tetheringToggle->setEnabled(false);
 }

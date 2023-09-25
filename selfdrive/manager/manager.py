@@ -267,6 +267,9 @@ def main() -> None:
   # SystemExit on sigterm
   signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(1))
 
+  if Params().get_bool("HotspotOnBoot") and Params().get_bool("HotspotOnBootConfirmed"):
+    os.system('nmcli con up Hotspot')
+
   try:
     manager_thread()
   except Exception:
@@ -285,9 +288,6 @@ def main() -> None:
   elif params.get_bool("DoShutdown"):
     cloudlog.warning("shutdown")
     HARDWARE.shutdown()
-
-  if params.get_bool("HotspotOnBoot"):
-    os.system('nmcli con up Hotspot')
 
 
 if __name__ == "__main__":

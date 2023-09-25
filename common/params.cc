@@ -255,6 +255,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"HideVEgoUi", PERSISTENT},
     {"HkgSmoothStop", PERSISTENT},
     {"HotspotOnBoot", PERSISTENT},
+    {"HotspotOnBootConfirmed", PERSISTENT},
     {"LastCarModel", PERSISTENT},
     {"LastSpeedLimitSignTap", PERSISTENT},
     {"LiveTorque", PERSISTENT},
