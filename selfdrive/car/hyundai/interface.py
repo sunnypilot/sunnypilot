@@ -65,6 +65,7 @@ class CarInterface(CarInterfaceBase):
 
       if 0x2AB in fingerprint[0]:
         ret.spFlags |= HyundaiFlagsSP.SP_ENHANCED_SCC.value
+        ret.radarUnavailable = False
 
     ret.steerActuatorDelay = 0.1  # Default delay
     ret.steerLimitTimer = 0.4
