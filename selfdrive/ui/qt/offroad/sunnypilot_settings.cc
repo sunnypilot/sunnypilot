@@ -267,19 +267,18 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
-    "EnableMads", "CustomOffsets", "EnforceTorqueLateral",
-    "SpeedLimitPercOffset", "SpeedLimitControl"
+    "EnableMads", "CustomOffsets", "EnforceTorqueLateral", "SpeedLimitPercOffset", "SpeedLimitControl",
+    "CustomTorqueLateral", "LiveTorque"
   };
   connect(dynamic_lane_profile, &DynamicLaneProfile::updateExternalToggles, this, &SPControlsPanel::updateToggles);
 
-  // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
+  // toggle names to display ConfirmationDialog::alert
   std::vector<std::string> updateTogglesNamesAlert{
     "CustomTorqueLateral", "LiveTorque"
   };
   // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
-    "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral",
-    "CustomTorqueLateral", "LiveTorque"
+    "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral"
   };
 
   // Controls: Camera Offset (cm)
@@ -362,7 +361,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     // trigger updateToggles() and display ConfirmationDialog::alert when toggleFlipped
     if (std::find(updateTogglesNamesAlert.begin(), updateTogglesNamesAlert.end(), param.toStdString()) != updateTogglesNamesAlert.end()) {
       connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
-        updateToggles();
         ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
       });
     }
