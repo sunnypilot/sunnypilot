@@ -392,7 +392,7 @@ void SPControlsPanel::updateToggles() {
   std::vector<std::string> enableMadsGroup{"DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain"};
   for (const auto& enableMadstoggle : enableMadsGroup) {
     if (toggles.find(enableMadstoggle) != toggles.end()) {
-      toggles[enableMadstoggle]->setVisible(params.getBool("EnableMads"));
+      toggles[enableMadstoggle]->setVisible(toggles["EnableMads"]->isToggled());
     }
   }
 
@@ -402,44 +402,48 @@ void SPControlsPanel::updateToggles() {
   // toggle names to update when CustomOffsets is flipped
   std::vector<AbstractControl*> customOffsetsGroup{camera_offset, path_offset};
   for (const auto& customOffsetsControl : customOffsetsGroup) {
-    customOffsetsControl->setVisible(params.getBool("CustomOffsets"));
+    customOffsetsControl->setVisible(toggles["CustomOffsets"]->isToggled());
   }
 
   // toggle names to update when AutoLaneChangeTimer is not "Nudge"
   toggles["AutoLaneChangeBsmDelay"]->setVisible(QString::fromStdString(params.get("AutoLaneChangeTimer")) != "0");
 
+  auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
   auto live_torque = toggles["LiveTorque"];
+
+  auto speed_limit_control = toggles["SpeedLimitControl"];
+  auto speed_limit_perc_offset = toggles["SpeedLimitPercOffset"];
 
   // toggle names to update when EnforceTorqueLateral is flipped
   std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque"};
   for (const auto& enforceTorqueToggle : enforceTorqueGroup) {
     if (toggles.find(enforceTorqueToggle) != toggles.end()) {
-      toggles[enforceTorqueToggle]->setVisible(params.getBool("EnforceTorqueLateral"));
+      toggles[enforceTorqueToggle]->setVisible(enforce_torque_lateral->isToggled());
     }
   }
 
   // toggle names to update when CustomTorqueLateral is flipped
   std::vector<AbstractControl*> customTorqueGroup{friction, lat_accel_factor};
   for (const auto& customTorqueControl : customTorqueGroup) {
-    customTorqueControl->setVisible(params.getBool("CustomTorqueLateral"));
+    customTorqueControl->setVisible(custom_torque_lateral->isToggled());
   }
 
   // toggle names to update when SpeedLimitControl is flipped
   std::vector<AbstractControl*> speedLimitControlGroup{slo_type, slvo};
   for (const auto& speedLimitControl : speedLimitControlGroup) {
-    speedLimitControl->setVisible(params.getBool("SpeedLimitControl"));
+    speedLimitControl->setVisible(speed_limit_control->isToggled());
   }
 
-  if (params.getBool("EnforceTorqueLateral")) {
-    if (params.getBool("CustomTorqueLateral")) {
+  if (enforce_torque_lateral->isToggled()) {
+    if (custom_torque_lateral->isToggled()) {
       live_torque->setEnabled(false);
       params.putBool("LiveTorque", false);
     } else {
       live_torque->setEnabled(true);
     }
 
-    if (params.getBool("LiveTorque")) {
+    if (live_torque->isToggled()) {
       custom_torque_lateral->setEnabled(false);
       params.putBool("CustomTorqueLateral", false);
       for (const auto& customTorqueControl : customTorqueGroup) {
@@ -459,8 +463,8 @@ void SPControlsPanel::updateToggles() {
     }
   }
 
-  if (params.getBool("SpeedLimitControl")) {
-    if (params.getBool("SpeedLimitPercOffset")) {
+  if (speed_limit_control->isToggled()) {
+    if (speed_limit_perc_offset->isToggled()) {
       slvo->setVisible(QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
       slo_type->setVisible(true);
     } else {
@@ -475,7 +479,7 @@ void SPControlsPanel::updateToggles() {
   }
 
   // toggle names to update when SpeedLimitControl is flipped
-  toggles["SpeedLimitPercOffset"]->setVisible(params.getBool("SpeedLimitControl"));
+  speed_limit_perc_offset->setVisible(speed_limit_control->isToggled());
 
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
@@ -484,7 +488,7 @@ void SPControlsPanel::updateToggles() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
     if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
-      toggles["EnforceTorqueLateral"]->setEnabled(false);
+      enforce_torque_lateral->setEnabled(false);
       params.remove("EnforceTorqueLateral");
     }
   }
@@ -707,7 +711,7 @@ void SPVisualsPanel::showEvent(QShowEvent *event) {
 }
 
 void SPVisualsPanel::updateToggles() {
-  dev_ui_info->setVisible(params.getBool("DevUI"));
+  dev_ui_info->setVisible(toggles["DevUI"]->isToggled());
 }
 
 // Max Time Offroad (Shutdown timer)
@@ -1033,7 +1037,7 @@ void SidebarTemp::showEvent(QShowEvent *event) {
 }
 
 void SidebarTemp::updateToggles() {
-  sidebar_temp_setting->setVisible(params.getBool("SidebarTemperature"));
+  sidebar_temp_setting->setVisible(sidebarTemperature->isToggled());
 }
 
 DynamicLaneProfile::DynamicLaneProfile(QWidget *parent) : QWidget(parent), outer_layout(this) {
@@ -1080,7 +1084,7 @@ void DynamicLaneProfile::showEvent(QShowEvent *event) {
 
 void DynamicLaneProfile::updateToggles() {
   // toggle names to update when DynamicLaneProfile is flipped
-  dlp_settings->setVisible(params.getBool("DynamicLaneProfileToggle"));
+  dlp_settings->setVisible(dynamicLaneProfile->isToggled());
 }
 
 void DynamicLaneProfile::updateButtons() {
