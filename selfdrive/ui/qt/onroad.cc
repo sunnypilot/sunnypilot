@@ -479,8 +479,10 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 
 #ifdef ENABLE_DASHCAM
 void AnnotatedCameraWidget::offroadTransition(bool offroad) {
-  if (offroad && recorder) {
-    recorder->stop();
+  if (offroad) {
+    if (recorder) recorder->stop();
+
+    roadName = "";
   }
 }
 #endif
@@ -641,11 +643,11 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     showDebugUI = s.scene.show_debug_ui;
 
     const auto lmd = sm["liveMapData"].getLiveMapData();
-    QString road_name = QString::fromStdString(lmd.getCurrentRoadName());
 
     const auto data_type = int(lmd.getDataType());
     const QString data_type_draw(data_type == 2 ? "🌐  " : "");
-    roadName = !road_name.isEmpty() ? data_type_draw + road_name : "";
+    roadName = QString::fromStdString(lmd.getCurrentRoadName());
+    roadName = !roadName.isEmpty() ? data_type_draw + roadName : "";
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);

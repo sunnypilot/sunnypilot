@@ -170,7 +170,7 @@ private:
 
   bool showDebugUI = false;
 
-  QString roadName;
+  QString roadName = "";
 
   bool showSpeedLimit = false;
   float speedLimitSLC;
