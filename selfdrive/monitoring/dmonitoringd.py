@@ -90,7 +90,7 @@ def dmonitoringd_thread(sm=None, pm=None):
       "hiStdCount": driver_status.hi_stds,
       "isActiveMode": driver_status.active_monitoring_mode,
       "isRHD": driver_status.wheel_on_right,
-      "handsOnWheelState": hands_on_wheel_status.hands_on_wheel_state,
+      "handsOnWheelStateSP": hands_on_wheel_status.hands_on_wheel_state,
     }
     pm.send('driverMonitoringState', dat)
 

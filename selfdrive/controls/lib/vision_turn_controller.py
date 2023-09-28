@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import time
-from cereal import log
+from cereal import custom
 from common.numpy_fast import interp
 from common.params import Params
 from common.conversions import Conversions as CV
@@ -51,7 +51,7 @@ def _debug(msg):
   print(msg)
 
 
-VisionTurnControllerState = log.LongitudinalPlan.VisionTurnControllerState
+VisionTurnControllerState = custom.LongitudinalPlanSP.VisionTurnControllerState
 
 
 def eval_curvature(poly, x_vals):
@@ -153,7 +153,7 @@ class VisionTurnController():
     # Get path polynomial approximation for curvature estimation from model data.
     path_poly = None
     model_data = sm['modelV2'] if sm.valid.get('modelV2', False) else None
-    lat_planner_data = sm['lateralPlan'] if sm.valid.get('lateralPlan', False) else None
+    lat_planner_data = sm['lateralPlanSP'] if sm.valid.get('lateralPlanSP', False) else None
 
     # 1. When the probability of lanes is good enough, compute polynomial from lanes as they are way more stable
     # on current mode than drving path.

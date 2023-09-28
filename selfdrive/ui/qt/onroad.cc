@@ -93,8 +93,8 @@ void OnroadWindow::updateState(const UIState &s) {
 
 
 void issue_debug_snapshot(SubMaster &sm) {
-  auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
-  auto live_map_data = sm["liveMapData"].getLiveMapData();
+  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  auto live_map_data = sm["liveMapDataSP"].getLiveMapDataSP();
   auto car_state = sm["carState"].getCarState();
 
   auto t = std::time(nullptr);
@@ -138,17 +138,17 @@ void issue_debug_snapshot(SubMaster &sm) {
   }
 
   os << "SPEED LIMIT CONTROLLER:\n";
-  os << "sl: " << longitudinal_plan.getSpeedLimit() * 3.6  << ", ";
-  os << "state: " << int(longitudinal_plan.getSpeedLimitControlState()) << ", ";
-  os << "isMap: " << longitudinal_plan.getIsMapSpeedLimit() << "\n\n";
+  os << "sl: " << longitudinal_plan_sp.getSpeedLimit() * 3.6  << ", ";
+  os << "state: " << int(longitudinal_plan_sp.getSpeedLimitControlState()) << ", ";
+  os << "isMap: " << longitudinal_plan_sp.getIsMapSpeedLimit() << "\n\n";
 
   os << "TURN SPEED CONTROLLER:\n";
-  os << "speed: " << longitudinal_plan.getTurnSpeed() * 3.6 << ", ";
-  os << "state: " << int(longitudinal_plan.getTurnSpeedControlState()) << "\n\n";
+  os << "speed: " << longitudinal_plan_sp.getTurnSpeed() * 3.6 << ", ";
+  os << "state: " << int(longitudinal_plan_sp.getTurnSpeedControlState()) << "\n\n";
 
   os << "VISION TURN CONTROLLER:\n";
-  os << "speed: " << longitudinal_plan.getVisionTurnSpeed() * 3.6 << ", ";
-  os << "state: " << int(longitudinal_plan.getVisionTurnControllerState());
+  os << "speed: " << longitudinal_plan_sp.getVisionTurnSpeed() * 3.6 << ", ";
+  os << "state: " << int(longitudinal_plan_sp.getVisionTurnControllerState());
 
   Params().put(param_name_os.str().c_str(), os.str().c_str(), os.str().length());
   uiState()->scene.display_debug_alert_frame = sm.frame;

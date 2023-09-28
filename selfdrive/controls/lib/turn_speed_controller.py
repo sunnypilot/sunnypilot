@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from common.params import Params
-from cereal import log
+from cereal import custom
 from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_SPEED, LIMIT_MAX_MAP_DATA_AGE, \
   LIMIT_SPEED_OFFSET_TH, CONTROL_N, LIMIT_MIN_ACC, LIMIT_MAX_ACC
 from selfdrive.modeld.constants import T_IDXS
@@ -13,7 +13,7 @@ _ACTIVE_LIMIT_MAX_ACC = 0.5   # m/s^2 Maximum acelration allowed while active.
 
 _DEBUG = False
 
-TurnSpeedControlState = log.LongitudinalPlan.SpeedLimitControlState
+TurnSpeedControlState = custom.longitudinalPlanSP.SpeedLimitControlState
 
 
 def _debug(msg):
@@ -98,7 +98,7 @@ class TurnSpeedController():
     """Provides the speed limit, distance and turn sign to it for turns based on map data.
     """
     # Ignore if no live map data
-    sock = 'liveMapData'
+    sock = 'liveMapDataSP'
     if sm.logMonoTime[sock] is None:
       _debug('TS: No map data for turn speed limit')
       return 0., 0., 0

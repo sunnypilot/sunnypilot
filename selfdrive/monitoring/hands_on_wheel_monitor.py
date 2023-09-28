@@ -1,8 +1,8 @@
-from cereal import log, car
+from cereal import custom, car
 from common.conversions import Conversions as CV
 
 EventName = car.CarEvent.EventName
-HandsOnWheelState = log.DriverMonitoringState.HandsOnWheelState
+HandsOnWheelState = custom.DriverMonitoringStateSP.HandsOnWheelState
 
 _PRE_ALERT_THRESHOLD = 150  # 15s
 _PROMPT_ALERT_THRESHOLD = 300  # 30s
