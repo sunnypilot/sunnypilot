@@ -16,7 +16,7 @@ def dmonitoringd_thread(sm=None, pm=None):
   set_realtime_priority(2)
 
   if pm is None:
-    pm = messaging.PubMaster(['driverMonitoringState'])
+    pm = messaging.PubMaster(['driverMonitoringState', 'driverMonitoringStateSP'])
 
   if sm is None:
     sm = messaging.SubMaster(['driverStateV2', 'liveCalibration', 'carState', 'controlsState', 'modelV2'], poll=['driverStateV2'])
@@ -90,9 +90,14 @@ def dmonitoringd_thread(sm=None, pm=None):
       "hiStdCount": driver_status.hi_stds,
       "isActiveMode": driver_status.active_monitoring_mode,
       "isRHD": driver_status.wheel_on_right,
-      "handsOnWheelStateSP": hands_on_wheel_status.hands_on_wheel_state,
     }
     pm.send('driverMonitoringState', dat)
+
+    sp_dat = messaging.new_message('driverMonitoringStateSP')
+    sp_dat.driverMonitoringStateSP = {
+      "handsOnWheelStateSP": hands_on_wheel_status.hands_on_wheel_state,
+    }
+    pm.send('handsOnWheelStateSP', sp_dat)
 
     # save rhd virtual toggle every 5 mins
     if (sm['driverStateV2'].frameId % 6000 == 0 and
