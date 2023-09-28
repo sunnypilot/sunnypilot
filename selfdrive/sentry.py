@@ -12,7 +12,6 @@ from openpilot.system.version import get_branch, get_commit, get_origin, get_ver
 
 import os
 import traceback
-from cereal import car
 from datetime import datetime
 
 
@@ -24,27 +23,7 @@ class SentryProject(Enum):
 
 
 CRASHES_DIR = '/data/community/crashes/'
-ret = car.CarParams.new_message()
-candidate = ret.carFingerprint
-params = Params()
-#uniqueID = op_params.get('uniqueID')
-try:
-  dongle_id = params.get("DongleId").decode('utf8')
-except AttributeError:
-  dongle_id = "None"
-try:
-  gitname = params.get("GithubUsername", encoding='utf-8')
-except Exception:
-  gitname = ""
-error_tags = {
-  'dirty': is_dirty(),
-  'dongle_id': dongle_id,
-  'branch': get_branch(),
-  'remote': get_origin(),
-  'fingerprintedAs': candidate,
-  'gitname': gitname
-}
-ip = "{{auto}}"
+IP_ADDRESS = "{{auto}}"
 
 
 def report_tombstone(fn: str, message: str, contents: str) -> None:
@@ -60,7 +39,6 @@ def report_tombstone(fn: str, message: str, contents: str) -> None:
 def capture_exception(*args, **kwargs) -> None:
   save_exception(traceback.format_exc())
   cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))
-  bind_user(id=dongle_id, ip_address=ip, username=gitname)
 
   try:
     sentry_sdk.capture_exception(*args, **kwargs)
@@ -85,26 +63,18 @@ def save_exception(exc_text):
   print('Logged current crash to {}'.format(files))
 
 
-def bind_user(**kwargs) -> None:
-  sentry_sdk.set_user(kwargs)
-  sentry_sdk.flush()
-
-
 def capture_warning(warning_string):
-  bind_user(id=dongle_id, ip_address=ip, name=gitname)
   sentry_sdk.capture_message(warning_string, level='warning')
   sentry_sdk.flush()
 
 
 def capture_info(info_string):
-  bind_user(id=dongle_id, ip_address=ip, name=gitname)
   sentry_sdk.capture_message(info_string, level='info')
   sentry_sdk.flush()
 
 
 def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
-  sentry_sdk.flush()
 
 
 def init(project: SentryProject) -> None:
@@ -116,7 +86,6 @@ def init(project: SentryProject) -> None:
   #env = "release" if is_tested_branch() else "master"
   env = get_branch_type()
   dongle_id = Params().get("DongleId", encoding='utf-8')
-  ip = "{{auto}}"
   gitname = Params().get("GithubUsername", encoding='utf-8')
 
   integrations = []
@@ -134,7 +103,7 @@ def init(project: SentryProject) -> None:
                   send_default_pii=True)
 
   sentry_sdk.set_user({"id": dongle_id})
-  sentry_sdk.set_user({"ip_address": ip})
+  sentry_sdk.set_user({"ip_address": IP_ADDRESS})
   sentry_sdk.set_user({"username": gitname})
   sentry_sdk.set_tag("dirty", is_dirty())
   sentry_sdk.set_tag("origin", get_origin())
