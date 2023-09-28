@@ -263,6 +263,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"MadsCruiseMain", PERSISTENT},
     {"MadsIconToggle", PERSISTENT},
     {"MapboxFullScreen", PERSISTENT},
+    {"Map3DBuildings", PERSISTENT},
     {"MaxTimeOffroad", PERSISTENT},
     {"OnroadScreenOff", PERSISTENT},
     {"OnroadScreenOffBrightness", PERSISTENT},

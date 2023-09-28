@@ -668,6 +668,12 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
       tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
       "../assets/offroad/icon_road.png",
     },
+    {
+      "Map3DBuildings",
+      tr("Map: Display 3D Buildings"),
+      tr("Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation."),
+      "../assets/img_map.png",
+    },
   };
 
   // Visuals: Developer UI Info (Dev UI)

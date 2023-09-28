@@ -252,6 +252,7 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_light = params.getBool("EndToEndLongAlertLight");
   s->scene.e2e_long_alert_lead = params.getBool("EndToEndLongAlertLead");
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
+  s->scene.map_3d_buildings = params.getBool("Map3DBuildings");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
