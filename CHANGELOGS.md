@@ -1,5 +1,6 @@
 sunnypilot - 0.9.5.1 (202x-xx-xx)
 ========================
+* Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
 ========================
