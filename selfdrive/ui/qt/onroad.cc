@@ -587,7 +587,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   steeringTorqueEps = car_state.getSteeringTorqueEps();
   bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
   bearingDeg = gpsLocationExternal.getBearingDeg();
-  torquedUseParams = s.scene.live_torque_toggle && !s.scene.custom_torque_toggle;
+  torquedUseParams = ltp.getUseParams() || s.scene.live_torque_toggle;
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();

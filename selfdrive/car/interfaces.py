@@ -127,8 +127,12 @@ class CarInterfaceBase(ABC):
   def get_params(cls, candidate: str, fingerprint: Dict[int, Dict[int, int]], car_fw: List[car.CarParams.CarFw], experimental_long: bool, docs: bool):
     ret = CarInterfaceBase.get_std_params(candidate)
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
-    if Params().get_bool("EnforceTorqueLateral") and ret.steerControlType != car.CarParams.SteerControlType.angle:
+
+    params = Params()
+    if params.get_bool("EnforceTorqueLateral") and ret.steerControlType != car.CarParams.SteerControlType.angle:
       ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
+      if params.get_bool("CustomTorqueLateral"):
+        ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
 
     # Vehicle mass is published curb weight plus assumed payload such as a human driver; notCars have no assumed payload
     if not ret.notCar:
@@ -224,6 +228,12 @@ class CarInterfaceBase(ABC):
   @staticmethod
   def sp_configure_torque_tune(candidate, ret):
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+    return ret
+
+  @staticmethod
+  def sp_configure_custom_torque_tune(ret, params):
+    ret.lateralTuning.torque.friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.01
+    ret.lateralTuning.torque.latAccelFactor = float(params.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
     return ret
 
   @abstractmethod

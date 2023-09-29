@@ -217,7 +217,6 @@ typedef struct UIScene {
   int dev_ui_info;
   int rn_offset;
   bool live_torque_toggle;
-  bool custom_torque_toggle;
 
   bool touch_to_wake = false;
   int sleep_btn = -1;
