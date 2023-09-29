@@ -30,6 +30,7 @@ sunnypilot - 0.9.5.1 (2023-09-27)
 * UPDATED: Developer UI: Bottom row now hidden when there are active alerts
 * FIXED: Map stuck in "Map Loading" if comma Prime is active
 * FIXED: UI elements adjustments
+* Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
 ========================
