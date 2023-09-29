@@ -313,15 +313,6 @@ void UIState::updateStatus() {
   }
 
   if (scene.started) {
-    // Update live params when the camera view is on
-    {
-      if (sm->frame % (UI_FREQ / 2) == 0) {  // Update every 2 Hz
-        scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
-        scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
-        scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
-      }
-    }
-
     // Auto hide UI button state machine
     {
       if (scene.button_auto_hide) {

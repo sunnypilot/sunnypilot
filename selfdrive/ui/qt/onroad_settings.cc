@@ -147,6 +147,12 @@ void OnroadSettings::refresh() {
   param_watcher->addParam("LongitudinalPersonality");
   param_watcher->addParam("SpeedLimitControl");
 
+  UIScene &scene = uiState()->scene;
+  // Update live params on Feature Status on camera view
+  scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
+  scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
+  scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
+
   if (!isVisible()) return;
 
   setUpdatesEnabled(false);
