@@ -58,7 +58,7 @@ def manager_init() -> None:
     ("CustomTorqueLateral", "0"),
     ("CameraControl", "2"),
     ("CameraControlToggle", "0"),
-    ("CameraOffset", "0"),
+    ("CameraOffset", "4"),
     ("CarModel", ""),
     ("CarModelText", ""),
     ("ChevronInfo", "1"),

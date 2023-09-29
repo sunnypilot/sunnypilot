@@ -846,10 +846,10 @@ void BrightnessControl::refresh() {
 // Camera Offset Value
 CameraOffset::CameraOffset() : SPOptionControl (
   "CameraOffset",
-  tr("Camera Offset (cm)"),
-  tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately."),
+  tr("Camera Offset - Laneful Only (cm)"),
+  tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm"),
   "../assets/offroad/icon_blank.png",
-  {-10, 10}) {
+  {-20, 20}) {
 
   refresh();
 }
