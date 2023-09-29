@@ -1,9 +1,10 @@
 import numpy as np
 from cereal import log
-from common.filter_simple import FirstOrderFilter
-from common.numpy_fast import interp
-from common.realtime import DT_MDL
-from system.swaglog import cloudlog
+from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.common.numpy_fast import interp
+from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
+from openpilot.system.swaglog import cloudlog
 
 
 TRAJECTORY_SIZE = 33
@@ -33,10 +34,29 @@ class LanePlanner:
     self.l_lane_change_prob = 0.
     self.r_lane_change_prob = 0.
 
-    self.camera_offset = -CAMERA_OFFSET
-    self.path_offset = -PATH_OFFSET
+    self.camera_offset = CAMERA_OFFSET
+    self.path_offset = PATH_OFFSET
+
+    self.param_s = Params()
+    self.custom_offsets = self.param_s.get_bool("CustomOffsets")
+    self._frame = 0
+
+  def update_custom_offsets(self):
+    self._frame += 1
+    if self._frame % 50 == 0:
+      self.custom_offsets = self.param_s.get_bool("CustomOffsets")
+      if not self.custom_offsets:
+        self._frame = 0
+        self.camera_offset = CAMERA_OFFSET
+        self.path_offset = PATH_OFFSET
+        return
+
+      self.camera_offset = float(self.param_s.get("CameraOffset", encoding="utf8")) * 0.01
+      self.path_offset = float(self.param_s.get("PathOffset", encoding="utf8")) * 0.01
+      self._frame = 0
 
   def parse_model(self, md):
+    self.update_custom_offsets()
     lane_lines = md.laneLines
     if len(lane_lines) == 4 and len(lane_lines[0].t) == TRAJECTORY_SIZE:
       self.ll_t = (np.array(lane_lines[1].t) + np.array(lane_lines[2].t))/2

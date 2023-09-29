@@ -217,7 +217,6 @@ typedef struct UIScene {
   int dev_ui_info;
   int rn_offset;
   bool live_torque_toggle;
-  bool custom_torque_toggle;
 
   bool touch_to_wake = false;
   int sleep_btn = -1;
@@ -237,6 +236,8 @@ typedef struct UIScene {
   float mads_path_range = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;  // 0.9 - 0.25 = 0.65
 
   bool onroad_settings_visible;
+
+  bool map_3d_buildings;
 } UIScene;
 
 class UIState : public QObject {

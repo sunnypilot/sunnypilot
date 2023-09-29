@@ -7,7 +7,7 @@ from time import strftime, gmtime
 from cereal import log
 import cereal.messaging as messaging
 from common.params import Params
-from common.realtime import Ratekeeper
+from common.realtime import set_core_affinity, Ratekeeper
 from selfdrive.mapd.lib.osm import OSM
 from selfdrive.mapd.lib.geo import distance_to_points
 from selfdrive.mapd.lib.WayCollection import WayCollection
@@ -260,6 +260,10 @@ class MapD():
 
 # provides live map data information
 def mapd_thread(sm=None, pm=None):
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("mapd: failed to set core affinity")
   mapd = MapD()
   rk = Ratekeeper(1., print_delay_threshold=None)  # Keeps rate at 1 hz
 

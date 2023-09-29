@@ -205,7 +205,7 @@ class Controls:
     self.reverse_acc_change = False
 
     self.live_torque = self.params.get_bool("LiveTorque")
-    self.custom_torque = self.params.get_bool("CustomTorqueLateral")
+    self.torqued_override = self.params.get_bool("TorquedOverride")
 
     self.process_not_running = False
 
@@ -635,7 +635,7 @@ class Controls:
     # Update Torque Params
     if self.CP.lateralTuning.which() == 'torque':
       torque_params = self.sm['liveTorqueParameters']
-      if self.sm.all_checks(['liveTorqueParameters']) and (torque_params.useParams or self.live_torque) and not self.custom_torque:
+      if self.sm.all_checks(['liveTorqueParameters']) and (torque_params.useParams or self.live_torque) and not self.torqued_override:
         self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
 
@@ -917,6 +917,9 @@ class Controls:
 
     self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
+
+    if self.sm.frame % int(2.5 / DT_CTRL) == 0:
+      self.live_torque = self.params.get_bool("LiveTorque")
 
     # Sample data from sockets and get a carState
     CS = self.data_sample()

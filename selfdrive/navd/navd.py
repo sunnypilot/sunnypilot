@@ -48,8 +48,8 @@ class RouteEngine:
 
     self.reroute_counter = 0
 
-    if self.params.get_bool("CustomMapbox") or "MAPBOX_TOKEN" in os.environ:
-      self.mapbox_token = self.params.get("CustomMapboxTokenSk") if self.params.get_bool("CustomMapbox") else os.environ["MAPBOX_TOKEN"]
+    if "MAPBOX_TOKEN" in os.environ:
+      self.mapbox_token = os.environ["MAPBOX_TOKEN"]
       self.mapbox_host = "https://api.mapbox.com"
     else:
       try:
@@ -58,6 +58,10 @@ class RouteEngine:
         cloudlog.exception("Failed to generate mapbox token due to missing private key. Ensure device is registered.")
         self.mapbox_token = ""
       self.mapbox_host = "https://maps.comma.ai"
+
+    if self.mapbox_token != "" and self.params.get("CustomMapboxTokenSk") is not None:
+      self.mapbox_token = self.params.get("CustomMapboxTokenSk")
+      self.mapbox_host = "https://api.mapbox.com"
 
   def update(self):
     self.sm.update(0)

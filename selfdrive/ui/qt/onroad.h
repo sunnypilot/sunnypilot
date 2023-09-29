@@ -20,6 +20,7 @@ const int btn_size = 192;
 const int img_size = (btn_size / 4) * 3;
 const int subsign_img_size = 35;
 
+const int blinker_size = 120;
 
 // ***** onroad widgets *****
 class OnroadAlerts : public QWidget {
@@ -117,8 +118,8 @@ private:
 
   void drawE2eStatus(QPainter &p, int x, int y, int w, int h, int e2e_long_status);
 
-  void drawLeftTurnSignal(QPainter &painter, int x, int y, int state);
-  void drawRightTurnSignal(QPainter &painter, int x, int y, int state);
+  void drawLeftTurnSignal(QPainter &painter, int x, int y, int circle_size, int state);
+  void drawRightTurnSignal(QPainter &painter, int x, int y, int circle_size, int state);
   int blinkerPulse(int frame);
   void updateButtonsLayout();
 
@@ -170,7 +171,7 @@ private:
 
   bool showDebugUI = false;
 
-  QString roadName;
+  QString roadName = "";
 
   bool showSpeedLimit = false;
   float speedLimitSLC;

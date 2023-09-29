@@ -10,12 +10,13 @@ RADAR_MSG_COUNT = 32
 
 
 def get_radar_can_parser(CP):
-  if (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None:
-    messages = ("ESCC", 50)
-    return CANParser(DBC[CP.carFingerprint]['pt'], messages, 0)
-  else:
-    if DBC[CP.carFingerprint]['radar'] is None:
+  if DBC[CP.carFingerprint]['radar'] is None:
+    if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
+      lead_src, bus = "ESCC", 0
+    else:
       return None
+    messages = [(lead_src, 50)]
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, bus)
 
   messages = [(f"RADAR_TRACK_{addr:x}", 50) for addr in range(RADAR_START_ADDR, RADAR_START_ADDR + RADAR_MSG_COUNT)]
   return CANParser(DBC[CP.carFingerprint]['radar'], messages, 1)

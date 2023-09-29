@@ -120,6 +120,16 @@ class TorqueEstimator:
       self.offline_friction = CP.lateralTuning.torque.friction
       self.offline_latAccelFactor = CP.lateralTuning.torque.latAccelFactor
 
+    params = Params()
+    if params.get_bool("EnforceTorqueLateral"):
+      if params.get_bool("CustomTorqueLateral"):
+        self.offline_friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.01
+        self.offline_latAccelFactor = float(params.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
+      if params.get_bool("LiveTorqueRelaxed"):
+        self.min_bucket_points = np.array([0, 200, 300, 500, 500, 300, 200, 0]) / (10 if decimated else 1)
+        self.factor_sanity = FACTOR_SANITY_QLOG if decimated else 1.0
+        self.friction_sanity = FRICTION_SANITY_QLOG if decimated else 1.0
+
     self.reset()
 
     initial_params = {
@@ -135,7 +145,6 @@ class TorqueEstimator:
     self.max_friction = (1.0 + self.friction_sanity) * self.offline_friction
 
     # try to restore cached params
-    params = Params()
     params_cache = params.get("LiveTorqueCarParams")
     torque_cache = params.get("LiveTorqueParameters")
     if params_cache is not None and torque_cache is not None:

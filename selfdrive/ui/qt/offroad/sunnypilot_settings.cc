@@ -202,16 +202,28 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_calibration.png",
     },
     {
-      "CustomTorqueLateral",
-      tr("Torque Lateral Control Live Tune"),
-      tr("Enables live tune for Torque lateral control."),
-      "../assets/offroad/icon_calibration.png",
+      "LiveTorque",
+      tr("Enable Self-Tune"),
+      tr("Enables self-tune for Torque lateral control for platforms that do not use Torque lateral control by default."),
+      "../assets/offroad/icon_blank.png",
     },
     {
-      "LiveTorque",
-      tr("Torque Lateral Controller Self-Tune"),
-      tr("Enables self-tune for Torque lateral control."),
-      "../assets/offroad/icon_calibration.png",
+      "LiveTorqueRelaxed",
+      tr("Less Restrict Settings for Self-Tune (Beta)"),
+      tr("Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "CustomTorqueLateral",
+      tr("Enable Custom Tuning"),
+      tr("Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within \"selfdrive/torque_data\". The values will also be used live when \"Override Self-Tune\" toggle is enabled."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "TorquedOverride",
+      tr("Manual Real-Time Tuning"),
+      tr("Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values."),
+      "../assets/offroad/icon_blank.png",
     },
     {
       "HandsOnWheelMonitoring",
@@ -267,19 +279,15 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
-    "EnableMads", "CustomOffsets", "EnforceTorqueLateral",
-    "SpeedLimitPercOffset", "SpeedLimitControl"
+    "EnableMads", "CustomOffsets", "EnforceTorqueLateral", "SpeedLimitPercOffset", "SpeedLimitControl",
+    "CustomTorqueLateral", "LiveTorque", "TorquedOverride"
   };
   connect(dynamic_lane_profile, &DynamicLaneProfile::updateExternalToggles, this, &SPControlsPanel::updateToggles);
 
-  // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
-  std::vector<std::string> updateTogglesNamesAlert{
-    "CustomTorqueLateral", "LiveTorque"
-  };
-  // toggle names to trigger updateToggles() when toggleFlipped and display ConfirmationDialog::alert
+  // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
     "EnableMads", "DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain", "BelowSpeedPause", "EnforceTorqueLateral",
-    "CustomTorqueLateral", "LiveTorque"
+    "LiveTorqueRelaxed"
   };
 
   // Controls: Camera Offset (cm)
@@ -336,7 +344,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       addItem(auto_lane_change_timer);
     }
 
-    if (param == "CustomTorqueLateral") {
+    if (param == "TorquedOverride") {
       // Control: FRICTION
       addItem(friction);
 
@@ -359,14 +367,6 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       });
     }
 
-    // trigger updateToggles() and display ConfirmationDialog::alert when toggleFlipped
-    if (std::find(updateTogglesNamesAlert.begin(), updateTogglesNamesAlert.end(), param.toStdString()) != updateTogglesNamesAlert.end()) {
-      connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
-        updateToggles();
-        ConfirmationDialog::alert(tr("You must restart your car or your device to apply these changes."), this);
-      });
-    }
-
     // trigger offroadTransition when going onroad/offroad
     if (std::find(toggleOffroad.begin(), toggleOffroad.end(), param.toStdString()) != toggleOffroad.end()) {
       connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
@@ -383,6 +383,27 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       params.remove("OsmLocalDb");
     }
   });
+
+  // update "FRICTION" and "LAT_ACCEL_FACTOR" titles when going onroad/offroad
+  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+    friction->setEnabled(offroad);
+    lat_accel_factor->setEnabled(offroad);
+
+    friction->refresh();
+    lat_accel_factor->refresh();
+  });
+
+  // update "FRICTION" and "LAT_ACCEL_FACTOR" titles when TorquedOverride is flipped
+  connect(toggles["TorquedOverride"], &ToggleControl::toggleFlipped, [=](bool state) {
+    friction->setEnabled(params.getBool("IsOffroad") || state);
+    lat_accel_factor->setEnabled(params.getBool("IsOffroad") || state);
+
+    friction->setTitle(state ? "FRICTION - Live && Offline" : "FRICTION - Offline Only");
+    lat_accel_factor->setTitle(state ? "LAT_ACCEL_FACTOR - Live && Offline" : "LAT_ACCEL_FACTOR - Offline Only");
+
+    friction->refresh();
+    lat_accel_factor->refresh();
+  });
 }
 
 void SPControlsPanel::showEvent(QShowEvent *event) {
@@ -394,7 +415,7 @@ void SPControlsPanel::updateToggles() {
   std::vector<std::string> enableMadsGroup{"DisengageLateralOnBrake", "AccMadsCombo", "MadsCruiseMain"};
   for (const auto& enableMadstoggle : enableMadsGroup) {
     if (toggles.find(enableMadstoggle) != toggles.end()) {
-      toggles[enableMadstoggle]->setVisible(params.getBool("EnableMads"));
+      toggles[enableMadstoggle]->setVisible(toggles["EnableMads"]->isToggled());
     }
   }
 
@@ -404,55 +425,44 @@ void SPControlsPanel::updateToggles() {
   // toggle names to update when CustomOffsets is flipped
   std::vector<AbstractControl*> customOffsetsGroup{camera_offset, path_offset};
   for (const auto& customOffsetsControl : customOffsetsGroup) {
-    customOffsetsControl->setVisible(params.getBool("CustomOffsets"));
+    customOffsetsControl->setVisible(toggles["CustomOffsets"]->isToggled());
   }
 
   // toggle names to update when AutoLaneChangeTimer is not "Nudge"
   toggles["AutoLaneChangeBsmDelay"]->setVisible(QString::fromStdString(params.get("AutoLaneChangeTimer")) != "0");
 
+  auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
   auto live_torque = toggles["LiveTorque"];
+  auto live_torque_relaxed = toggles["LiveTorqueRelaxed"];
+  auto torqued_override = toggles["TorquedOverride"];
+
+  auto speed_limit_control = toggles["SpeedLimitControl"];
+  auto speed_limit_perc_offset = toggles["SpeedLimitPercOffset"];
 
   // toggle names to update when EnforceTorqueLateral is flipped
-  std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque"};
+  std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque", "TorquedOverride"};
   for (const auto& enforceTorqueToggle : enforceTorqueGroup) {
     if (toggles.find(enforceTorqueToggle) != toggles.end()) {
-      toggles[enforceTorqueToggle]->setVisible(params.getBool("EnforceTorqueLateral"));
+      toggles[enforceTorqueToggle]->setVisible(enforce_torque_lateral->isToggled());
     }
   }
 
   // toggle names to update when CustomTorqueLateral is flipped
   std::vector<AbstractControl*> customTorqueGroup{friction, lat_accel_factor};
   for (const auto& customTorqueControl : customTorqueGroup) {
-    customTorqueControl->setVisible(params.getBool("CustomTorqueLateral"));
+    customTorqueControl->setVisible(custom_torque_lateral->isToggled());
   }
 
   // toggle names to update when SpeedLimitControl is flipped
   std::vector<AbstractControl*> speedLimitControlGroup{slo_type, slvo};
   for (const auto& speedLimitControl : speedLimitControlGroup) {
-    speedLimitControl->setVisible(params.getBool("SpeedLimitControl"));
+    speedLimitControl->setVisible(speed_limit_control->isToggled());
   }
 
-  if (params.getBool("EnforceTorqueLateral")) {
-    if (params.getBool("CustomTorqueLateral")) {
-      live_torque->setEnabled(false);
-      params.putBool("LiveTorque", false);
-    } else {
-      live_torque->setEnabled(true);
-    }
-
-    if (params.getBool("LiveTorque")) {
-      custom_torque_lateral->setEnabled(false);
-      params.putBool("CustomTorqueLateral", false);
-      for (const auto& customTorqueControl : customTorqueGroup) {
-        customTorqueControl->setVisible(false);
-      }
-    } else {
-      custom_torque_lateral->setEnabled(true);
-    }
-
-    live_torque->refresh();
-    custom_torque_lateral->refresh();
+  if (enforce_torque_lateral->isToggled()) {
+    live_torque_relaxed->setVisible(live_torque->isToggled());
+    torqued_override->setVisible(custom_torque_lateral->isToggled());
   } else {
     params.putBool("LiveTorque", false);
     params.putBool("CustomTorqueLateral", false);
@@ -461,8 +471,8 @@ void SPControlsPanel::updateToggles() {
     }
   }
 
-  if (params.getBool("SpeedLimitControl")) {
-    if (params.getBool("SpeedLimitPercOffset")) {
+  if (speed_limit_control->isToggled()) {
+    if (speed_limit_perc_offset->isToggled()) {
       slvo->setVisible(QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
       slo_type->setVisible(true);
     } else {
@@ -477,7 +487,7 @@ void SPControlsPanel::updateToggles() {
   }
 
   // toggle names to update when SpeedLimitControl is flipped
-  toggles["SpeedLimitPercOffset"]->setVisible(params.getBool("SpeedLimitControl"));
+  speed_limit_perc_offset->setVisible(speed_limit_control->isToggled());
 
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
@@ -486,7 +496,7 @@ void SPControlsPanel::updateToggles() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
     if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
-      toggles["EnforceTorqueLateral"]->setEnabled(false);
+      enforce_torque_lateral->setEnabled(false);
       params.remove("EnforceTorqueLateral");
     }
   }
@@ -548,6 +558,8 @@ SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
 
 SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWidget(parent) {
   setSpacing(50);
+
+  // Hyundai/Kia/Genesis
   addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
   auto hkgSmoothStop = new ParamControl(
     "HkgSmoothStop",
@@ -558,6 +570,18 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   hkgSmoothStop->setConfirmation(true, false);
   addItem(hkgSmoothStop);
 
+  // Subaru
+  addItem(new LabelControl(tr("Subaru")));
+  auto subaruManualParkingBrakeSng = new ParamControl(
+    "SubaruManualParkingBrakeSng",
+    tr("Manual Parking Brake: Stop and Go (Beta)"),
+    tr("Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!"),
+    "../assets/offroad/icon_blank.png"
+  );
+  subaruManualParkingBrakeSng->setConfirmation(true, false);
+  addItem(subaruManualParkingBrakeSng);
+
+  // Toyota/Lexus
   addItem(new LabelControl(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControl(
     "StockLongToyota",
@@ -589,10 +613,20 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
+  auto toyotaSngHack = new ParamControl(
+    "ToyotaSnG",
+    "Enable Stop and Go Hack",
+    "sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models. Use at your own risk.",
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaSngHack->setConfirmation(true, false);
+  addItem(toyotaSngHack);
+
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
+    toyotaSngHack->setEnabled(offroad);
   });
 }
 
@@ -636,19 +670,6 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_calibration.png",
     },
     {
-      "CustomMapbox",
-      tr("Enable Mapbox Navigation*"),
-      QString("%1<br>"
-              "%2<br>"
-              "%3<br>"
-              "<h4>%4</h4>")
-      .arg(tr("Enable built-in navigation on sunnypilot, powered by Mapbox."))
-      .arg(tr("Access via the web interface: \"http://<device_ip>:8082\""))
-      .arg(tr("If you do not have comma Prime, you will need to provide your own Mapbox token at https://mapbox.com/. Reach out to sunnyhaibin#0865 on Discord for more information."))
-      .arg(tr("Huge thanks to the dragonpilot team for making this possible!")),
-      "../assets/img_map.png",
-    },
-    {
       "TrueVEgoUi",
       tr("Speedometer: Display True Speed"),
       tr("Display the true vehicle current speed from wheel speed sensors."),
@@ -665,6 +686,12 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
       tr("Display End-to-end Longitudinal Status (Beta)"),
       tr("Enable this will display an icon that appears when the End-to-end model decides to start or stop."),
       "../assets/offroad/icon_road.png",
+    },
+    {
+      "Map3DBuildings",
+      tr("Map: Display 3D Buildings"),
+      tr("Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation."),
+      "../assets/img_map.png",
     },
   };
 
@@ -701,14 +728,6 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
 
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    toggles["CustomMapbox"]->setEnabled(offroad);
-  });
-
-  // trigger hardwrae reboot if user confirms the selection
-  connect(toggles["CustomMapbox"], &ToggleControl::toggleFlipped, [=](bool state) {
-    if (ConfirmationDialog::confirm(tr("\"Enable Mapbox Navigation\"\nYou must restart your car or your device to apply these changes.\nReboot now?"), "Reboot", parent)) {
-      Hardware::reboot();
-    }
   });
 }
 
@@ -717,7 +736,7 @@ void SPVisualsPanel::showEvent(QShowEvent *event) {
 }
 
 void SPVisualsPanel::updateToggles() {
-  dev_ui_info->setVisible(params.getBool("DevUI"));
+  dev_ui_info->setVisible(toggles["DevUI"]->isToggled());
 }
 
 // Max Time Offroad (Shutdown timer)
@@ -835,10 +854,10 @@ void BrightnessControl::refresh() {
 // Camera Offset Value
 CameraOffset::CameraOffset() : SPOptionControl (
   "CameraOffset",
-  tr("Camera Offset (cm)"),
-  tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately."),
+  tr("Camera Offset - Laneful Only (cm)"),
+  tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm"),
   "../assets/offroad/icon_blank.png",
-  {-10, 10}) {
+  {-20, 20}) {
 
   refresh();
 }
@@ -896,7 +915,7 @@ void AutoLaneChangeTimer::refresh() {
 TorqueFriction::TorqueFriction() : SPOptionControl (
   "TorqueFriction",
   tr("FRICTION"),
-  tr("Adjust Friction for the Torque Lateral Controller"),
+  tr("Adjust Friction for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
   "../assets/offroad/icon_blank.png",
   {0, 50}) {
 
@@ -906,13 +925,14 @@ TorqueFriction::TorqueFriction() : SPOptionControl (
 void TorqueFriction::refresh() {
   QString torqueFrictionStr = QString::fromStdString(params.get("TorqueFriction"));
   float valuef = torqueFrictionStr.toInt() * 0.01;
+  setTitle(params.getBool("TorquedOverride") ? "FRICTION - Live && Offline" : "FRICTION - Offline Only");
   setLabel(QString::number(valuef));
 }
 
 TorqueMaxLatAccel::TorqueMaxLatAccel() : SPOptionControl (
   "TorqueMaxLatAccel",
   tr("LAT_ACCEL_FACTOR"),
-  tr("Adjust Max Lateral Acceleration for the Torque Lateral Controller"),
+  tr("Adjust Max Lateral Acceleration for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
   "../assets/offroad/icon_blank.png",
   {1, 500}) {
 
@@ -922,6 +942,7 @@ TorqueMaxLatAccel::TorqueMaxLatAccel() : SPOptionControl (
 void TorqueMaxLatAccel::refresh() {
   QString torqueMaxLatAccelStr = QString::fromStdString(params.get("TorqueMaxLatAccel"));
   float valuef = torqueMaxLatAccelStr.toInt() * 0.01;
+  setTitle(params.getBool("TorquedOverride") ? "LAT_ACCEL_FACTOR - Live && Offline" : "LAT_ACCEL_FACTOR - Offline Only");
   setLabel(QString::number(valuef));
 }
 
@@ -1043,7 +1064,7 @@ void SidebarTemp::showEvent(QShowEvent *event) {
 }
 
 void SidebarTemp::updateToggles() {
-  sidebar_temp_setting->setVisible(params.getBool("SidebarTemperature"));
+  sidebar_temp_setting->setVisible(sidebarTemperature->isToggled());
 }
 
 DynamicLaneProfile::DynamicLaneProfile(QWidget *parent) : QWidget(parent), outer_layout(this) {
@@ -1090,7 +1111,7 @@ void DynamicLaneProfile::showEvent(QShowEvent *event) {
 
 void DynamicLaneProfile::updateToggles() {
   // toggle names to update when DynamicLaneProfile is flipped
-  dlp_settings->setVisible(params.getBool("DynamicLaneProfileToggle"));
+  dlp_settings->setVisible(dynamicLaneProfile->isToggled());
 }
 
 void DynamicLaneProfile::updateButtons() {

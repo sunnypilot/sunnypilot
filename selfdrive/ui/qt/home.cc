@@ -172,15 +172,15 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
 #else
     left_widget->addWidget(new DriveStats);
 #endif
-    custom_mapbox = params.getBool("CustomMapbox") && QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
+    custom_mapbox = QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
     if (!custom_mapbox) {
       left_widget->addWidget(new PrimeAdWidget);
     }
     left_widget->setStyleSheet("border-radius: 10px;");
 
-    left_widget->setCurrentIndex(!custom_mapbox ? uiState()->hasPrime() ? 0 : 1 : 0);
-    connect(uiState(), &UIState::primeChanged, [=](int prime) {
-      left_widget->setCurrentIndex(!custom_mapbox ? prime ? 0 : 1 : 0);
+    left_widget->setCurrentIndex((uiState()->hasPrime() || custom_mapbox) ? 0 : 1);
+    connect(uiState(), &UIState::primeChanged, [=](bool prime) {
+      left_widget->setCurrentIndex((prime || custom_mapbox) ? 0 : 1);
     });
 
     home_layout->addWidget(left_widget, 1);

@@ -235,8 +235,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 void OnroadWindow::offroadTransition(bool offroad) {
   if (!offroad) {
 #ifdef ENABLE_MAPS
-    bool custom_mapbox = params.getBool("CustomMapbox") && QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
-    if (map == nullptr && (uiState()->hasPrime() || !MAPBOX_TOKEN.isEmpty() || custom_mapbox)) {
+    if (map == nullptr && (uiState()->hasPrime() || !MAPBOX_TOKEN.isEmpty())) {
       auto m = new MapPanel(get_mapbox_settings());
       map = m;
 
@@ -480,8 +479,10 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 
 #ifdef ENABLE_DASHCAM
 void AnnotatedCameraWidget::offroadTransition(bool offroad) {
-  if (offroad && recorder) {
-    recorder->stop();
+  if (offroad) {
+    if (recorder) recorder->stop();
+
+    roadName = "";
   }
 }
 #endif
@@ -586,7 +587,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   steeringTorqueEps = car_state.getSteeringTorqueEps();
   bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
   bearingDeg = gpsLocationExternal.getBearingDeg();
-  torquedUseParams = s.scene.live_torque_toggle && !s.scene.custom_torque_toggle;
+  torquedUseParams = ltp.getUseParams() || s.scene.live_torque_toggle;
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
@@ -642,11 +643,11 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     showDebugUI = s.scene.show_debug_ui;
 
     const auto lmd = sm["liveMapData"].getLiveMapData();
-    QString road_name = QString::fromStdString(lmd.getCurrentRoadName());
 
     const auto data_type = int(lmd.getDataType());
     const QString data_type_draw(data_type == 2 ? "🌐  " : "");
-    roadName = !road_name.isEmpty() ? data_type_draw + road_name : "";
+    roadName = QString::fromStdString(lmd.getCurrentRoadName());
+    roadName = !roadName.isEmpty() ? data_type_draw + roadName : "";
 
     float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
@@ -1417,7 +1418,7 @@ void AnnotatedCameraWidget::drawE2eStatus(QPainter &p, int x, int y, int w, int 
   p.drawEllipse(e2eStatusIcon);
 }
 
-void AnnotatedCameraWidget::drawLeftTurnSignal(QPainter &painter, int x, int y, int state) {
+void AnnotatedCameraWidget::drawLeftTurnSignal(QPainter &painter, int x, int y, int circle_size, int state) {
   painter.setRenderHint(QPainter::Antialiasing, true);
 
   QColor circle_color, circle_color_0, circle_color_1;
@@ -1443,17 +1444,16 @@ void AnnotatedCameraWidget::drawLeftTurnSignal(QPainter &painter, int x, int y, 
   }
 
   // Draw the circle
-  int circleSize = 120;
   int circleX = x;
   int circleY = y;
   painter.setPen(Qt::NoPen);
   painter.setBrush(circle_color);
-  painter.drawEllipse(circleX, circleY, circleSize, circleSize);
+  painter.drawEllipse(circleX, circleY, circle_size, circle_size);
 
   // Draw the arrow
   int arrowSize = 50;
-  int arrowX = circleX + (circleSize - arrowSize) / 4;
-  int arrowY = circleY + (circleSize - arrowSize) / 2;
+  int arrowX = circleX + (circle_size - arrowSize) / 4;
+  int arrowY = circleY + (circle_size - arrowSize) / 2;
   painter.setPen(Qt::NoPen);
   painter.setBrush(arrow_color);
 
@@ -1474,7 +1474,7 @@ void AnnotatedCameraWidget::drawLeftTurnSignal(QPainter &painter, int x, int y, 
   painter.fillRect(tailRect, arrow_color);
 }
 
-void AnnotatedCameraWidget::drawRightTurnSignal(QPainter &painter, int x, int y, int state) {
+void AnnotatedCameraWidget::drawRightTurnSignal(QPainter &painter, int x, int y, int circle_size, int state) {
   painter.setRenderHint(QPainter::Antialiasing, true);
 
   QColor circle_color, circle_color_0, circle_color_1;
@@ -1501,17 +1501,16 @@ void AnnotatedCameraWidget::drawRightTurnSignal(QPainter &painter, int x, int y,
 
 
   // Draw the circle
-  int circleSize = 120;
   int circleX = x;
   int circleY = y;
   painter.setPen(Qt::NoPen);
   painter.setBrush(circle_color);
-  painter.drawEllipse(circleX, circleY, circleSize, circleSize);
+  painter.drawEllipse(circleX, circleY, circle_size, circle_size);
 
   // Draw the arrow
   int arrowSize = 50;
-  int arrowX = circleX + (circleSize - arrowSize) / 2 + (arrowSize / 2.5) - 3;
-  int arrowY = circleY + (circleSize - arrowSize) / 2;
+  int arrowX = circleX + (circle_size - arrowSize) / 2 + (arrowSize / 2.5) - 3;
+  int arrowY = circleY + (circle_size - arrowSize) / 2;
   painter.setPen(Qt::NoPen);
   painter.setBrush(arrow_color);
 
@@ -1966,11 +1965,13 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   if (left_blinker || right_blinker) {
     blinker_frame++;
     int state = blinkerPulse(blinker_frame);
+    int blinker_x = splitPanelVisible ? 150 : 180;
+    int blinker_y = splitPanelVisible ? 220 : 90;
     if (left_blinker) {
-      drawLeftTurnSignal(painter, rect().center().x() - 300, splitPanelVisible ? 210 : 90, state);
+      drawLeftTurnSignal(painter, rect().center().x() - (blinker_x + blinker_size), blinker_y, blinker_size, state);
     }
     if (right_blinker) {
-      drawRightTurnSignal(painter, rect().center().x() + 180, splitPanelVisible ? 210 : 90, state);
+      drawRightTurnSignal(painter, rect().center().x() + blinker_x, blinker_y, blinker_size, state);
     }
   } else {
     blinker_frame = 0;

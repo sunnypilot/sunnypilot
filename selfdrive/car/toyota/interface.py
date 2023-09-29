@@ -4,7 +4,7 @@ from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params, put_nonblocking
 from panda import Panda
 from panda.python import uds
-from openpilot.selfdrive.car.toyota.values import Ecu, CAR, DBC, ToyotaFlags, CarControllerParams, TSS2_CAR, RADAR_ACC_CAR, NO_DSU_CAR, \
+from openpilot.selfdrive.car.toyota.values import Ecu, CAR, DBC, ToyotaFlags, ToyotaFlagsSP, CarControllerParams, TSS2_CAR, RADAR_ACC_CAR, NO_DSU_CAR, \
                                         MIN_ACC_SPEED, EPS_SCALE, EV_HYBRID_CAR, UNSUPPORTED_DSU_CAR, NO_STOP_TIMER_CAR, ANGLE_CONTROL_CAR
 from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
@@ -51,21 +51,25 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.25
       ret.steerLimitTimer = 0.8
 
+      if 0x23 in fingerprint[0]:  # Detect if ZSS is present
+        ret.spFlags |= ToyotaFlagsSP.SP_ZSS.value
+
     ret.stoppingControl = False  # Toyota starts braking more when it thinks you want to stop
 
     stop_and_go = candidate in TSS2_CAR
 
     if candidate == CAR.PRIUS:
+      zss = ret.spFlags & ToyotaFlagsSP.SP_ZSS
       stop_and_go = True
       ret.wheelbase = 2.70
-      ret.steerRatio = 15.74   # unknown end-to-end spec
+      ret.steerRatio = 15.0 if zss else 15.74   # unknown end-to-end spec
       ret.tireStiffnessFactor = 0.6371   # hand-tune
-      ret.mass = 3045. * CV.LB_TO_KG
+      ret.mass = (3370. if zss else 3045.) * CV.LB_TO_KG
       # Only give steer angle deadzone to for bad angle sensor prius
       for fw in car_fw:
         if fw.ecu == "eps" and not fw.fwVersion == b'8965B47060\x00\x00\x00\x00\x00\x00':
           ret.steerActuatorDelay = 0.25
-          CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning, steering_angle_deadzone_deg=0.2)
+          CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning, steering_angle_deadzone_deg=0.0 if zss else 0.2)
 
     elif candidate == CAR.PRIUS_V:
       stop_and_go = True
@@ -324,7 +328,9 @@ class CarInterface(CarInterfaceBase):
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
       if not self.CP.openpilotLongitudinalControl:
         self.CS.gac_tr_cluster = 3
-        put_nonblocking("LongitudinalPersonality", 2)
+        if self.CS.gac_tr != 2:
+          self.CS.gac_tr = 2
+          put_nonblocking("LongitudinalPersonality", "2")
       else:
         gap_dist_button = bool(self.CS.gap_dist_button)
         if gap_dist_button:

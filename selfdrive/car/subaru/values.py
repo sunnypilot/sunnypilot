@@ -60,6 +60,10 @@ class SubaruFlags(IntFlag):
   SEND_INFOTAINMENT = 1
 
 
+class SubaruFlagsSP(IntFlag):
+  SP_SUBARU_SNG = 1
+
+
 class CanBus:
   main = 0
   alt = 1

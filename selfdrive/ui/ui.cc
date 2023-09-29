@@ -252,6 +252,8 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_light = params.getBool("EndToEndLongAlertLight");
   s->scene.e2e_long_alert_lead = params.getBool("EndToEndLongAlertLead");
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
+  s->scene.map_3d_buildings = params.getBool("Map3DBuildings");
+  s->scene.live_torque_toggle = params.getBool("LiveTorque");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -304,23 +306,12 @@ void UIState::updateStatus() {
     if (scene.started) {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
-      scene.live_torque_toggle = params.getBool("LiveTorque");
-      scene.custom_torque_toggle = params.getBool("CustomTorqueLateral");
     }
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
   }
 
   if (scene.started) {
-    // Update live params when the camera view is on
-    {
-      if (sm->frame % (UI_FREQ / 2) == 0) {  // Update every 2 Hz
-        scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
-        scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
-        scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
-      }
-    }
-
     // Auto hide UI button state machine
     {
       if (scene.button_auto_hide) {
