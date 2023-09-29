@@ -79,6 +79,12 @@ public:
 
   inline void setLabel(const QString &text) { label.setText(text); }
 
+  void setEnabled(bool enabled) {
+    for (auto btn : button_group->buttons()) {
+      btn->setEnabled(enabled);
+    }
+  }
+
 signals:
   void updateLabels();
   void updateOtherToggles();
