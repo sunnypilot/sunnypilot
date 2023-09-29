@@ -290,6 +290,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SpeedLimitOffsetType", PERSISTENT},
     {"StandStillTimer", PERSISTENT},
     {"StockLongToyota", PERSISTENT},
+    {"SubaruManualParkingBrakeSng", PERSISTENT},
     {"TorqueDeadzoneDeg", PERSISTENT},
     {"TorqueFriction", PERSISTENT},
     {"TorqueMaxLatAccel", PERSISTENT},

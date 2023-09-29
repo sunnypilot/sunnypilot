@@ -562,6 +562,17 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(SPVehiclesPanel *parent) : ListWi
   hkgSmoothStop->setConfirmation(true, false);
   addItem(hkgSmoothStop);
 
+  // Subaru
+  addItem(new LabelControl(tr("Subaru")));
+  auto subaruManualParkingBrakeSng = new ParamControl(
+    "SubaruManualParkingBrakeSng",
+    tr("Manual Parking Brake: Stop and Go (Beta)"),
+    tr("Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!"),
+    "../assets/offroad/icon_blank.png"
+  );
+  subaruManualParkingBrakeSng->setConfirmation(true, false);
+  addItem(subaruManualParkingBrakeSng);
+
   // Toyota/Lexus
   addItem(new LabelControl(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControl(

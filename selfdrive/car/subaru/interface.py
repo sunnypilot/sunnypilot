@@ -2,7 +2,7 @@ from cereal import car
 from panda import Panda
 from openpilot.selfdrive.car import get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.subaru.values import CAR, LKAS_ANGLE, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, SubaruFlags
+from openpilot.selfdrive.car.subaru.values import CAR, LKAS_ANGLE, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, SubaruFlags, SubaruFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -34,6 +34,11 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.subaru)]
       if candidate in GLOBAL_GEN2:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_GEN2
+
+    if candidate not in (GLOBAL_GEN2 | HYBRID_CARS):
+      ret.autoResumeSng = True
+      ret.spFlags |= SubaruFlagsSP.SP_SUBARU_SNG.value
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_SNG
 
     ret.steerLimitTimer = 0.4
     ret.steerActuatorDelay = 0.1
