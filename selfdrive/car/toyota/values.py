@@ -46,6 +46,10 @@ class ToyotaFlags(IntFlag):
   DISABLE_RADAR = 4
 
 
+class ToyotaFlagsSP(IntFlag):
+  SP_ZSS = 1
+
+
 class CAR:
   # Toyota
   ALPHARD_TSS2 = "TOYOTA ALPHARD 2020"

@@ -58,7 +58,7 @@ def manager_init() -> None:
     ("CustomTorqueLateral", "0"),
     ("CameraControl", "2"),
     ("CameraControlToggle", "0"),
-    ("CameraOffset", "0"),
+    ("CameraOffset", "4"),
     ("CarModel", ""),
     ("CarModelText", ""),
     ("ChevronInfo", "1"),
@@ -285,9 +285,6 @@ def main() -> None:
   elif params.get_bool("DoShutdown"):
     cloudlog.warning("shutdown")
     HARDWARE.shutdown()
-
-  if params.get_bool("HotspotOnBoot"):
-    os.system('nmcli con up Hotspot')
 
 
 if __name__ == "__main__":

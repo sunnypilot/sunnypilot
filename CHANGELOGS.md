@@ -1,10 +1,36 @@
-sunnypilot - 0.9.5.1 (202x-xx-xx)
+sunnypilot - 0.9.5.1 (2023-09-27)
 ========================
-* UPDATED: Synced with commaai's master commit 338288d
+* UPDATED: Synced with commaai's 0.9.5 release
 * NEW❗: Non-Inflatable driving model
+* NEW❗: Onroad Settings Panel
+  * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
+    * Driving Personality
+    * Dynamic Lane Profile (DLP)
+    * Speed Limit Control (SLC)
+* NEW❗: Display main feature status on onroad view in real-time
+  * GAP - Driving Personality
+  * DLP - Dynamic Lane Profile
+  * SLC - Speed Limit Control
+* NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!
+  * Global (excluding Gen 2 and Hybrid) and Pre-Global support
+* NEW❗: Toyota - Stop and Go hack
+  * Allow some Toyota/Lexus cars to auto resume during stop and go traffic
+  * Only applicable to certain models and model years
 * NEW❗: Wide camera view when the steering angle is more than 45°
-* Custom Stock Longitudinal Control
+* NEW❗: Toyota: ZSS support thanks to dragonpilot-community and ErichMoraga!
+* openpilot Longitudianl Control capable cars only
+  * UPDATED: Gap Adjust Cruise is now a part of Driving Personality
+    * [DISTANCE/FOLLOW DISTANCE/GAP DISTANCE] physical button on the steering wheel to select Driving Personality on by default
+    * Status now viewable in onroad view or Onroad Settings Panel
+    * REMOVED: Gap Adjust Cruise toggle
+* UPDATED: Custom Stock Longitudinal Control
   * RE-ENABLED: Hyundai/Kia/Genesis CAN-FD platforms
+* UPDATED: Auto-detect custom Mapbox token
+  * REMOVED: "Enable Mapbox Navigation" toggle
+* UPDATED: Developer UI: Bottom row now hidden when there are active alerts
+* FIXED: Map stuck in "Map Loading" if comma Prime is active
+* FIXED: UI elements adjustments
+* Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
 ========================
