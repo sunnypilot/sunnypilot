@@ -24,8 +24,9 @@
 import os
 import time
 from common.params import Params
-from common.realtime import Ratekeeper
+from common.realtime import set_core_affinity, Ratekeeper
 from selfdrive.athena.registration import register
+from system.swaglog import cloudlog
 from system.version import get_version
 
 # for uploader
@@ -139,10 +140,18 @@ class GpxUploader():
       print(f'Upload error: {e}')
       return False
 
+  def gpx_uploader_thread(self):
+    try:
+      set_core_affinity([0, 1, 2, 3])
+    except Exception:
+      cloudlog.exception("gpx_uploader: failed to set core affinity")
+
+    self.update()
+
 
 def main():
   gpx_uploader = GpxUploader()
-  gpx_uploader.update()
+  gpx_uploader.gpx_uploader_thread()
 
 
 if __name__ == "__main__":

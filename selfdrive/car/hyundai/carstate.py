@@ -115,6 +115,7 @@ class CarState(CarStateBase):
       ret.cruiseState.available = cp.vl["TCS13"]["ACCEnable"] == 0 and self.mainEnabled
       ret.cruiseState.enabled = cp.vl["TCS13"]["ACC_REQ"] == 1
       ret.cruiseState.standstill = False
+      ret.cruiseState.nonAdaptive = False
     elif self.CP.carFingerprint in NON_SCC_CAR:
       ret.cruiseState.available = cp.vl['EMS16']['CRUISE_LAMP_M'] != 0
       ret.cruiseState.enabled = cp.vl["LVR12"]['CF_Lvr_CruiseSet'] != 0

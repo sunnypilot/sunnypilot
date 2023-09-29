@@ -60,13 +60,13 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
   options_layout->setContentsMargins(0, 32, 0, 32);
   options_layout->setSpacing(20);
 
-  // Dynamic Lane Profile
-  options_layout->addWidget(dlp_widget = new OptionWidget(this));
-  QObject::connect(dlp_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeDynamicLaneProfile);
-
   // Gap Adjust Cruise
   options_layout->addWidget(gac_widget = new OptionWidget(this));
   QObject::connect(gac_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeGapAdjustCruise);
+
+  // Dynamic Lane Profile
+  options_layout->addWidget(dlp_widget = new OptionWidget(this));
+  QObject::connect(dlp_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeDynamicLaneProfile);
 
   // Speed Limit Control
   options_layout->addWidget(slc_widget = new OptionWidget(this));
@@ -146,6 +146,12 @@ void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicLaneProfileToggle");
   param_watcher->addParam("LongitudinalPersonality");
   param_watcher->addParam("SpeedLimitControl");
+
+  UIScene &scene = uiState()->scene;
+  // Update live params on Feature Status on camera view
+  scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
+  scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
+  scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
 
   if (!isVisible()) return;
 

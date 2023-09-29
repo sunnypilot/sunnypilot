@@ -27,7 +27,7 @@ import datetime
 import signal
 import subprocess
 import threading
-from common.realtime import Ratekeeper
+from common.realtime import set_core_affinity, Ratekeeper
 from cereal import log
 from system.swaglog import cloudlog
 
@@ -164,6 +164,10 @@ class GpxD:
     return gpx_str
 
   def gpxd_thread(self):
+    try:
+      set_core_affinity([0, 1, 2, 3])
+    except Exception:
+      cloudlog.exception("gpxd: failed to set core affinity")
     while True:
       self.sm.update(0)
       self.log()

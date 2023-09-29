@@ -183,6 +183,8 @@ public:
     refresh();
   }
 
+  bool isToggled() { return params.getBool(key); }
+
 private:
   void setIcon(bool state) {
     if (state && !active_icon_pixmap.isNull()) {

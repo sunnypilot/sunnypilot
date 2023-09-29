@@ -29,6 +29,8 @@ import requests
 import math
 from common.basedir import BASEDIR
 from common.params import Params
+from common.realtime import set_core_affinity
+from system.swaglog import cloudlog
 params = Params()
 
 hostName = ""
@@ -407,6 +409,10 @@ class OtisServ(BaseHTTPRequestHandler):
     params.put("ApiCache_NavDestinations", json.dumps(dests).rstrip("\n\r"))
 
 def main():
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("otisserv: failed to set core affinity")
   webServer = HTTPServer((hostName, serverPort), OtisServ)
 
   try:
