@@ -152,6 +152,7 @@ class LateralPlanner:
     pm.send('lateralPlan', plan_send)
 
     plan_sp_send = messaging.new_message('lateralPlanSP')
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
 
     lateralPlanSP = plan_sp_send.lateralPlanSP
     lateralPlanSP.laneChangePrev = self.DH.prev_lane_change

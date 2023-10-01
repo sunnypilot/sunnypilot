@@ -191,6 +191,8 @@ class LongitudinalPlanner:
 
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
 
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
+
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
 
     longitudinalPlanSP.longitudinalPlanSource = self.mpc.source if self.mpc.source != 'cruise' else self.cruise_source
