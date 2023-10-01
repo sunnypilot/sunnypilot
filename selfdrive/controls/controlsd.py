@@ -68,7 +68,7 @@ class Controls:
     self.pm = pm
     if self.pm is None:
       self.pm = messaging.PubMaster(['sendcan', 'controlsState', 'carState',
-                                     'carControl', 'carEvents', 'carParams'])
+                                     'carControl', 'carEvents', 'carParams', 'controlsStateSP'])
 
     self.camera_packets = ["roadCameraState", "driverCameraState", "wideRoadCameraState"]
 
@@ -95,7 +95,8 @@ class Controls:
         ignore += ['driverMonitoringState']
       self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                      'driverMonitoringState', 'longitudinalPlan', 'lateralPlan', 'liveLocationKalman',
-                                     'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters', 'testJoystick'] + self.camera_packets,
+                                     'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters', 'testJoystick',
+                                     'longitudinalPlanSP', 'lateralPlanSP'] + self.camera_packets,
                                     ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'])
 
     if CI is None:
@@ -284,7 +285,7 @@ class Controls:
     if not self.CP.notCar:
       if not self.d_camera_hardware_missing:
         self.events.add_from_msg(self.sm['driverMonitoringState'].events)
-      self.events.add_from_msg(self.sm['longitudinalPlan'].eventsDEPRECATED)
+      self.events.add_from_msg(self.sm['longitudinalPlanSP'].events)
 
     # Add car events, ignore if CAN isn't valid
     if CS.canValid:
@@ -327,11 +328,11 @@ class Controls:
         self.events.add(EventName.calibrationInvalid)
 
     # Handle lane change
-    if self.sm['lateralPlan'].laneChangeEdgeBlock:
+    if self.sm['lateralPlanSP'].laneChangeEdgeBlock:
       self.events.add(EventName.laneChangeRoadEdge)
     elif self.sm['lateralPlan'].laneChangeState == LaneChangeState.preLaneChange:
       direction = self.sm['lateralPlan'].laneChangeDirection
-      lc_prev = self.sm['lateralPlan'].laneChangePrev
+      lc_prev = self.sm['lateralPlanSP'].laneChangePrev
       if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
          (CS.rightBlindspot and direction == LaneChangeDirection.right):
         self.events.add(EventName.laneChangeBlocked)
@@ -866,9 +867,15 @@ class Controls:
       controlsState.lateralControlState.pidState = lac_log
     elif lat_tuning == 'torque':
       controlsState.lateralControlState.torqueState = lac_log
-    controlsState.lateralState = lat_tuning
 
     self.pm.send('controlsState', dat)
+
+    dat_sp = messaging.new_message('controlsStateSP')
+    controlsStateSP = dat_sp.controlsStateSP
+
+    controlsStateSP.lateralState = lat_tuning
+
+    self.pm.send('controlsStateSP', dat_sp)
 
     # carState
     car_events = self.events.to_msg()
