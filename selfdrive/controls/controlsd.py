@@ -68,7 +68,7 @@ class Controls:
     self.pm = pm
     if self.pm is None:
       self.pm = messaging.PubMaster(['sendcan', 'controlsState', 'carState',
-                                     'carControl', 'carEvents', 'carParams'])
+                                     'carControl', 'carEvents', 'carParams', 'controlsStateSP'])
 
     self.camera_packets = ["roadCameraState", "driverCameraState", "wideRoadCameraState"]
 
@@ -95,7 +95,8 @@ class Controls:
         ignore += ['driverMonitoringState']
       self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                      'driverMonitoringState', 'longitudinalPlan', 'lateralPlan', 'liveLocationKalman',
-                                     'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters', 'testJoystick'] + self.camera_packets,
+                                     'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters', 'testJoystick',
+                                     'longitudinalPlanSP', 'lateralPlanSP'] + self.camera_packets,
                                     ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'])
 
     if CI is None:
@@ -181,7 +182,6 @@ class Controls:
     self.active = False
     self.soft_disable_timer = 0
     self.mismatch_counter = 0
-    self.mismatch_counter_long = 0
     self.cruise_mismatch_counter = 0
     self.can_rcv_timeout_counter = 0      # conseuctive timeout count
     self.can_rcv_cum_timeout_counter = 0  # cumulative timeout count
@@ -285,7 +285,7 @@ class Controls:
     if not self.CP.notCar:
       if not self.d_camera_hardware_missing:
         self.events.add_from_msg(self.sm['driverMonitoringState'].events)
-      self.events.add_from_msg(self.sm['longitudinalPlan'].eventsDEPRECATED)
+      self.events.add_from_msg(self.sm['longitudinalPlanSP'].events)
 
     # Add car events, ignore if CAN isn't valid
     if CS.canValid:
@@ -328,11 +328,11 @@ class Controls:
         self.events.add(EventName.calibrationInvalid)
 
     # Handle lane change
-    if self.sm['lateralPlan'].laneChangeEdgeBlock:
+    if self.sm['lateralPlanSP'].laneChangeEdgeBlock:
       self.events.add(EventName.laneChangeRoadEdge)
     elif self.sm['lateralPlan'].laneChangeState == LaneChangeState.preLaneChange:
       direction = self.sm['lateralPlan'].laneChangeDirection
-      lc_prev = self.sm['lateralPlan'].laneChangePrev
+      lc_prev = self.sm['lateralPlanSP'].laneChangePrev
       if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
          (CS.rightBlindspot and direction == LaneChangeDirection.right):
         self.events.add(EventName.laneChangeBlocked)
@@ -358,8 +358,6 @@ class Controls:
 
       if safety_mismatch or pandaState.safetyRxChecksInvalid or self.mismatch_counter >= 200:
         self.events.add(EventName.controlsMismatch)
-        if self.mismatch_counter_long >= 200:
-          self.events.add(EventName.controlsMismatchLong)
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
         self.events.add(EventName.relayMalfunction)
@@ -511,16 +509,11 @@ class Controls:
     # Therefore we allow a mismatch for two samples, then we trigger the disengagement.
     if not self.enabled:
       self.mismatch_counter = 0
-    if not self.enabled_long:
-      self.mismatch_counter_long = 0
 
     # All pandas not in silent mode must have controlsAllowed when openpilot is enabled
     if self.enabled and any(not ps.controlsAllowed for ps in self.sm['pandaStates']
            if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
-    if self.enabled_long and any(not ps.controlsAllowedLong for ps in self.sm['pandaStates']
-           if ps.safetyModel not in IGNORED_SAFETY_MODES):
-      self.mismatch_counter_long += 1
 
     self.distance_traveled += CS.vEgo * DT_CTRL
 
@@ -874,9 +867,15 @@ class Controls:
       controlsState.lateralControlState.pidState = lac_log
     elif lat_tuning == 'torque':
       controlsState.lateralControlState.torqueState = lac_log
-    controlsState.lateralState = lat_tuning
 
     self.pm.send('controlsState', dat)
+
+    dat_sp = messaging.new_message('controlsStateSP')
+    controlsStateSP = dat_sp.controlsStateSP
+
+    controlsStateSP.lateralState = lat_tuning
+
+    self.pm.send('controlsStateSP', dat_sp)
 
     # carState
     car_events = self.events.to_msg()

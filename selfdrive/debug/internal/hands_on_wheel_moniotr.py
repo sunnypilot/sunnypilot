@@ -7,11 +7,11 @@ import signal
 import sys
 
 import cereal.messaging as messaging
-from cereal import log
+from cereal import custom
 from selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus
 from selfdrive.controls.lib.events import Events
 
-HandsOnWheelState = log.DriverMonitoringState.HandsOnWheelState
+HandsOnWheelState = custom.DriverMonitoringStateSP.HandsOnWheelState
 
 
 def sigint_handler(signal, frame):

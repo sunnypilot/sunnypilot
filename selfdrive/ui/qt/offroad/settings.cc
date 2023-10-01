@@ -470,6 +470,10 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   sidebar_layout->setMargin(0);
   panel_widget = new QStackedWidget();
 
+  // setup layout for close button
+  QVBoxLayout *close_btn_layout = new QVBoxLayout;
+  close_btn_layout->setContentsMargins(0, 0, 0, 20);
+
   // close button
   QPushButton *close_btn = new QPushButton(tr("×"));
   close_btn->setStyleSheet(R"(
@@ -477,7 +481,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       font-size: 140px;
       padding-bottom: 20px;
       border 1px grey solid;
-      border-radius: 30px;
+      border-radius: 76px;
       background-color: #292929;
       font-weight: 400;
     }
@@ -485,11 +489,15 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       background-color: #3B3B3B;
     }
   )");
-  close_btn->setFixedSize(300, 110);
-  sidebar_layout->addSpacing(10);
-  sidebar_layout->addWidget(close_btn, 0, Qt::AlignRight);
-  sidebar_layout->addSpacing(10);
+  close_btn->setFixedSize(152, 152);
+  close_btn_layout->addWidget(close_btn, 0, Qt::AlignLeft);
   QObject::connect(close_btn, &QPushButton::clicked, this, &SettingsWindow::closeSettings);
+
+  // setup buttons widget
+  QWidget *buttons_widget = new QWidget;
+  QVBoxLayout *buttons_layout = new QVBoxLayout(buttons_widget);
+  buttons_layout->setMargin(0);
+  buttons_layout->addSpacing(10);
 
   // setup panels
   DevicePanel *device = new DevicePanel(this);
@@ -500,22 +508,24 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QObject::connect(this, &SettingsWindow::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
 
   QList<QPair<QString, QWidget *>> panels = {
-    {tr("Device"), device},
-    {tr("Network"), new Networking(this)},
-    {tr("Toggles"), toggles},
-    {tr("Software"), new SoftwarePanel(this)},
+    {tr("  Device"), device},
+    {tr("  Network"), new Networking(this)},
+    {tr("  Toggles"), toggles},
+    {tr("  Software"), new SoftwarePanel(this)},
   };
 
-  panels.push_back({tr("SP - General"), new SPGeneralPanel(this)});
-  panels.push_back({tr("SP - Controls"), new SPControlsPanel(this)});
-  panels.push_back({tr("SP - Vehicles"), new SPVehiclesPanel(this)});
-  panels.push_back({tr("SP - Visuals"), new SPVisualsPanel(this)});
+  panels.push_back({tr("  SP - General"), new SPGeneralPanel(this)});
+  panels.push_back({tr("  SP - Controls"), new SPControlsPanel(this)});
+  panels.push_back({tr("  SP - Vehicles"), new SPVehiclesPanel(this)});
+  panels.push_back({tr("  SP - Visuals"), new SPVisualsPanel(this)});
 
   nav_btns = new QButtonGroup(this);
   for (auto &[name, panel] : panels) {
     QPushButton *btn = new QPushButton(name);
     btn->setCheckable(true);
     btn->setChecked(nav_btns->buttons().size() == 0);
+    btn->setIcon(QIcon(QPixmap("../assets/offroad/icon_blank.png")));
+    btn->setIconSize(QSize(45, 45));
     btn->setStyleSheet(R"(
       QPushButton {
         color: grey;
@@ -533,7 +543,8 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     )");
     btn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     nav_btns->addButton(btn);
-    sidebar_layout->addWidget(btn, 0, Qt::AlignRight);
+    buttons_layout->addWidget(btn, 0, Qt::AlignLeft | Qt::AlignBottom);
+    buttons_layout->addSpacing(25);
 
     const int lr_margin = name != tr("Network") ? 50 : 0;  // Network panel handles its own margins
     panel->setContentsMargins(lr_margin, 25, lr_margin, 25);
@@ -546,10 +557,17 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       panel_widget->setCurrentWidget(w);
     });
   }
-  sidebar_layout->setContentsMargins(50, 50, 100, 50);
+  sidebar_layout->setContentsMargins(50, 50, 50, 50);
 
   // main settings layout, sidebar + main panel
   QHBoxLayout *main_layout = new QHBoxLayout(this);
+
+  // add layout for close button
+  sidebar_layout->addLayout(close_btn_layout);
+
+  // add layout for buttons scrolling
+  ScrollView *buttons_scrollview  = new ScrollView(buttons_widget, this);
+  sidebar_layout->addWidget(buttons_scrollview);
 
   sidebar_widget->setFixedWidth(500);
   main_layout->addWidget(sidebar_widget);
