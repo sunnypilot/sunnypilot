@@ -254,6 +254,7 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
   s->scene.map_3d_buildings = params.getBool("Map3DBuildings");
   s->scene.live_torque_toggle = params.getBool("LiveTorque");
+  s->scene.torqued_override = params.getBool("TorquedOverride");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {

@@ -238,6 +238,8 @@ typedef struct UIScene {
   bool onroad_settings_visible;
 
   bool map_3d_buildings;
+
+  bool torqued_override;
 } UIScene;
 
 class UIState : public QObject {
