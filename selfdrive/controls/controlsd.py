@@ -181,7 +181,6 @@ class Controls:
     self.active = False
     self.soft_disable_timer = 0
     self.mismatch_counter = 0
-    self.mismatch_counter_long = 0
     self.cruise_mismatch_counter = 0
     self.can_rcv_timeout_counter = 0      # conseuctive timeout count
     self.can_rcv_cum_timeout_counter = 0  # cumulative timeout count
@@ -358,8 +357,6 @@ class Controls:
 
       if safety_mismatch or pandaState.safetyRxChecksInvalid or self.mismatch_counter >= 200:
         self.events.add(EventName.controlsMismatch)
-        if self.mismatch_counter_long >= 200:
-          self.events.add(EventName.controlsMismatchLong)
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
         self.events.add(EventName.relayMalfunction)
@@ -511,16 +508,11 @@ class Controls:
     # Therefore we allow a mismatch for two samples, then we trigger the disengagement.
     if not self.enabled:
       self.mismatch_counter = 0
-    if not self.enabled_long:
-      self.mismatch_counter_long = 0
 
     # All pandas not in silent mode must have controlsAllowed when openpilot is enabled
     if self.enabled and any(not ps.controlsAllowed for ps in self.sm['pandaStates']
            if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
-    if self.enabled_long and any(not ps.controlsAllowedLong for ps in self.sm['pandaStates']
-           if ps.safetyModel not in IGNORED_SAFETY_MODES):
-      self.mismatch_counter_long += 1
 
     self.distance_traveled += CS.vEgo * DT_CTRL
 
