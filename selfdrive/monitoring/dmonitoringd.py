@@ -95,9 +95,9 @@ def dmonitoringd_thread(sm=None, pm=None):
 
     sp_dat = messaging.new_message('driverMonitoringStateSP')
     sp_dat.driverMonitoringStateSP = {
-      "handsOnWheelStateSP": hands_on_wheel_status.hands_on_wheel_state,
+      "handsOnWheelState": hands_on_wheel_status.hands_on_wheel_state,
     }
-    pm.send('handsOnWheelStateSP', sp_dat)
+    pm.send('driverMonitoringStateSP', sp_dat)
 
     # save rhd virtual toggle every 5 mins
     if (sm['driverStateV2'].frameId % 6000 == 0 and
