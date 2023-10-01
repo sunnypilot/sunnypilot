@@ -148,9 +148,16 @@ class LateralPlanner:
     lateralPlan.useLaneLines = False
     lateralPlan.laneChangeState = self.DH.lane_change_state
     lateralPlan.laneChangeDirection = self.DH.lane_change_direction
-    lateralPlan.laneChangePrev = self.DH.prev_lane_change
-
-    lateralPlan.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
-    lateralPlan.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
 
     pm.send('lateralPlan', plan_send)
+
+    plan_sp_send = messaging.new_message('lateralPlanSP')
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
+
+    lateralPlanSP = plan_sp_send.lateralPlanSP
+    lateralPlanSP.laneChangePrev = self.DH.prev_lane_change
+
+    lateralPlanSP.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
+    lateralPlanSP.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
+
+    pm.send('lateralPlanSP', plan_sp_send)

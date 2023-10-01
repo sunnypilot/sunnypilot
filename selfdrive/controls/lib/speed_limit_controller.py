@@ -2,7 +2,7 @@ import numpy as np
 import time
 from common.numpy_fast import interp
 from enum import IntEnum
-from cereal import log, car
+from cereal import custom, car
 from common.params import Params
 from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_ACC, LIMIT_MAX_ACC, LIMIT_SPEED_OFFSET_TH, \
   LIMIT_MAX_MAP_DATA_AGE, CONTROL_N
@@ -17,7 +17,7 @@ _TEMP_INACTIVE_GUARD_PERIOD = 1.  # secs. Time to wait after activation before c
 _LIMIT_PERC_OFFSET_V = [0.1, 0.05, 0.038]  # 55, 105, 135 km/h
 _LIMIT_PERC_OFFSET_BP = [13.9, 27.8, 36.1]  # 50, 100, 130 km/h
 
-SpeedLimitControlState = log.LongitudinalPlan.SpeedLimitControlState
+SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 EventName = car.CarEvent.EventName
 
 _DEBUG = False
@@ -81,7 +81,7 @@ class SpeedLimitResolver():
 
   def _get_from_map_data(self):
     # Ignore if no live map data
-    sock = 'liveMapData'
+    sock = 'liveMapDataSP'
     if self._sm.logMonoTime[sock] is None:
       self._limit_solutions[SpeedLimitResolver.Source.map_data] = 0.
       self._distance_solutions[SpeedLimitResolver.Source.map_data] = 0.

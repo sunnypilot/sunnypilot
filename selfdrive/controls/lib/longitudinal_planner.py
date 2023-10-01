@@ -181,28 +181,38 @@ class LongitudinalPlanner:
     longitudinalPlan.jerks = self.j_desired_trajectory.tolist()
 
     longitudinalPlan.hasLead = sm['radarState'].leadOne.status
-    longitudinalPlan.longitudinalPlanSource = self.mpc.source if self.mpc.source != 'cruise' else self.cruise_source
+    longitudinalPlan.longitudinalPlanSource = self.mpc.source
     longitudinalPlan.fcw = self.fcw
 
     longitudinalPlan.solverExecutionTime = self.mpc.solve_time
     longitudinalPlan.personality = self.personality
 
-    longitudinalPlan.visionTurnControllerState = self.vision_turn_controller.state
-    longitudinalPlan.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
-
-    longitudinalPlan.speedLimitControlState = self.speed_limit_controller.state
-    longitudinalPlan.speedLimit = float(self.speed_limit_controller.speed_limit)
-    longitudinalPlan.speedLimitOffset = float(self.speed_limit_controller.speed_limit_offset)
-    longitudinalPlan.distToSpeedLimit = float(self.speed_limit_controller.distance)
-    longitudinalPlan.isMapSpeedLimit = bool(self.speed_limit_controller.source == SpeedLimitResolver.Source.map_data)
-    longitudinalPlan.eventsDEPRECATED = self.events.to_msg()
-
-    longitudinalPlan.turnSpeedControlState = self.turn_speed_controller.state
-    longitudinalPlan.turnSpeed = float(self.turn_speed_controller.speed_limit)
-    longitudinalPlan.distToTurn = float(self.turn_speed_controller.distance)
-    longitudinalPlan.turnSign = int(self.turn_speed_controller.turn_sign)
-
     pm.send('longitudinalPlan', plan_send)
+
+    plan_sp_send = messaging.new_message('longitudinalPlanSP')
+
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
+
+    longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
+
+    longitudinalPlanSP.longitudinalPlanSource = self.mpc.source if self.mpc.source != 'cruise' else self.cruise_source
+
+    longitudinalPlanSP.visionTurnControllerState = self.vision_turn_controller.state
+    longitudinalPlanSP.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
+
+    longitudinalPlanSP.speedLimitControlState = self.speed_limit_controller.state
+    longitudinalPlanSP.speedLimit = float(self.speed_limit_controller.speed_limit)
+    longitudinalPlanSP.speedLimitOffset = float(self.speed_limit_controller.speed_limit_offset)
+    longitudinalPlanSP.distToSpeedLimit = float(self.speed_limit_controller.distance)
+    longitudinalPlanSP.isMapSpeedLimit = bool(self.speed_limit_controller.source == SpeedLimitResolver.Source.map_data)
+    longitudinalPlanSP.events = self.events.to_msg()
+
+    longitudinalPlanSP.turnSpeedControlState = self.turn_speed_controller.state
+    longitudinalPlanSP.turnSpeed = float(self.turn_speed_controller.speed_limit)
+    longitudinalPlanSP.distToTurn = float(self.turn_speed_controller.distance)
+    longitudinalPlanSP.turnSign = int(self.turn_speed_controller.turn_sign)
+
+    pm.send('longitudinalPlanSP', plan_sp_send)
 
   def cruise_solutions(self, enabled, v_ego, a_ego, v_cruise, sm):
     # Update controllers

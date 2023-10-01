@@ -332,7 +332,7 @@ def joystick_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster,
   return NormalPermanentAlert("Joystick Mode", vals)
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
-  speedLimit = sm['longitudinalPlan'].speedLimit
+  speedLimit = sm['longitudinalPlanSP'].speedLimit
   speed = round(speedLimit * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
   message = f'Adjusting to {speed} {"km/h" if metric else "mph"} speed limit'
   return Alert(
