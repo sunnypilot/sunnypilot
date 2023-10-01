@@ -214,15 +214,15 @@ static void update_state(UIState *s) {
     scene.light_sensor = std::max(100.0f - scale * cam_state.getExposureValPercent(), 0.0f);
   }
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
-  if (sm.updated("lateralPlan")) {
-    scene.dynamic_lane_profile_status = sm["lateralPlan"].getLateralPlan().getDynamicLaneProfileStatus();
+  if (sm.updated("lateralPlanSP")) {
+    scene.dynamic_lane_profile_status = sm["lateralPlanSP"].getLateralPlanSP().getDynamicLaneProfileStatus();
   }
   if (sm.updated("controlsState")) {
     scene.controlsState = sm["controlsState"].getControlsState();
   }
-  if (sm.updated("longitudinalPlan")) {
+  if (sm.updated("longitudinalPlanSP")) {
     for (int i = 0; i < std::size(scene.e2eX); i++) {
-      scene.e2eX[i] = sm["longitudinalPlan"].getLongitudinalPlan().getE2eX()[i];
+      scene.e2eX[i] = sm["longitudinalPlanSP"].getLongitudinalPlanSP().getE2eX()[i];
     }
   }
 }
@@ -254,6 +254,7 @@ void ui_update_params(UIState *s) {
   s->scene.e2e_long_alert_ui = params.getBool("EndToEndLongAlertUI");
   s->scene.map_3d_buildings = params.getBool("Map3DBuildings");
   s->scene.live_torque_toggle = params.getBool("LiveTorque");
+  s->scene.torqued_override = params.getBool("TorquedOverride");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -374,8 +375,8 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
-    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlan", "liveMapData",
-    "carControl", "lateralPlan", "gpsLocationExternal", "liveParameters", "liveTorqueParameters",
+    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlanSP", "liveMapDataSP",
+    "carControl", "lateralPlanSP", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
   });
 
   Params params;

@@ -227,7 +227,7 @@ private:
   int blinker_frame;
   int blinker_state = 0;
 
-  cereal::LongitudinalPlan::SpeedLimitControlState slcState;
+  cereal::LongitudinalPlanSP::SpeedLimitControlState slcState;
   int longitudinalPersonality;
   int dynamicLaneProfile;
 

@@ -114,7 +114,7 @@ class LateralPlanner:
 
     low_speed = v_ego_car < 10 * CV.MPH_TO_MS
 
-    if not self.get_dynamic_lane_profile(sm['longitudinalPlan']) and not low_speed:
+    if not self.get_dynamic_lane_profile(sm['longitudinalPlanSP']) and not low_speed:
       self.path_xyz = self.LP.get_d_path(self.v_ego, self.t_idxs, self.path_xyz)
       self.dynamic_lane_profile_status = False
     else:
@@ -161,7 +161,7 @@ class LateralPlanner:
     else:
       self.solution_invalid_cnt = 0
 
-  def get_dynamic_lane_profile(self, longitudinal_plan):
+  def get_dynamic_lane_profile(self, longitudinal_plan_sp):
     if not self.dynamic_lane_profile_enabled:
       return True
     elif self.dynamic_lane_profile == 1:
@@ -176,11 +176,11 @@ class LateralPlanner:
       elif self.DH.lane_change_state == LaneChangeState.off:
         # laneline probability too low, we switch to laneless mode
         if (self.LP.lll_prob + self.LP.rll_prob) / 2 < 0.3 \
-          or ((longitudinal_plan.visionCurrentLatAcc > 1.0 or longitudinal_plan.visionMaxPredLatAcc > 1.4)
+          or ((longitudinal_plan_sp.visionCurrentLatAcc > 1.0 or longitudinal_plan_sp.visionMaxPredLatAcc > 1.4)
            and self.vision_curve_laneless):
           self.dynamic_lane_profile_status_buffer = True
         if (self.LP.lll_prob + self.LP.rll_prob) / 2 > 0.5 \
-          and ((longitudinal_plan.visionCurrentLatAcc < 0.6 and longitudinal_plan.visionMaxPredLatAcc < 0.7)
+          and ((longitudinal_plan_sp.visionCurrentLatAcc < 0.6 and longitudinal_plan_sp.visionMaxPredLatAcc < 0.7)
            or not self.vision_curve_laneless):
           self.dynamic_lane_profile_status_buffer = False
         if self.dynamic_lane_profile_status_buffer:  # in buffer mode, always laneless
@@ -194,15 +194,11 @@ class LateralPlanner:
 
     lateralPlan = plan_send.lateralPlan
     lateralPlan.modelMonoTime = sm.logMonoTime['modelV2']
-    lateralPlan.laneWidth = float(self.LP.lane_width)
     lateralPlan.dPathPoints = self.y_pts.tolist()
     lateralPlan.psis = self.lat_mpc.x_sol[0:CONTROL_N, 2].tolist()
 
     lateralPlan.curvatures = (self.lat_mpc.x_sol[0:CONTROL_N, 3]/self.v_ego).tolist()
     lateralPlan.curvatureRates = [float(x.item() / self.v_ego) for x in self.lat_mpc.u_sol[0:CONTROL_N - 1]] + [0.0]
-    lateralPlan.lProb = float(self.LP.lll_prob)
-    lateralPlan.rProb = float(self.LP.rll_prob)
-    lateralPlan.dProb = float(self.LP.d_prob)
 
     lateralPlan.mpcSolutionValid = bool(plan_solution_valid)
     lateralPlan.solverExecutionTime = self.lat_mpc.solve_time
@@ -216,19 +212,32 @@ class LateralPlanner:
     lateralPlan.useLaneLines = self.use_lanelines
     lateralPlan.laneChangeState = self.DH.lane_change_state
     lateralPlan.laneChangeDirection = self.DH.lane_change_direction
-    lateralPlan.laneChangePrev = self.DH.prev_lane_change
-    lateralPlan.laneChangeEdgeBlock = bool((self.DH.lane_change_state == LaneChangeState.preLaneChange) and self.DH.road_edge)
 
-    lateralPlan.dynamicLaneProfile = int(self.dynamic_lane_profile)
-    lateralPlan.dynamicLaneProfileStatus = bool(self.dynamic_lane_profile_status)
+    pm.send('lateralPlan', plan_send)
 
-    lateralPlan.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
-    lateralPlan.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
+    plan_sp_send = messaging.new_message('lateralPlanSP')
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
+
+    lateralPlanSP = plan_sp_send.lateralPlanSP
+
+    lateralPlanSP.laneWidth = float(self.LP.lane_width)
+    lateralPlanSP.lProb = float(self.LP.lll_prob)
+    lateralPlanSP.rProb = float(self.LP.rll_prob)
+    lateralPlanSP.dProb = float(self.LP.d_prob)
+
+    lateralPlanSP.laneChangePrev = self.DH.prev_lane_change
+    lateralPlanSP.laneChangeEdgeBlock = bool((self.DH.lane_change_state == LaneChangeState.preLaneChange) and self.DH.road_edge)
+
+    lateralPlanSP.dynamicLaneProfile = int(self.dynamic_lane_profile)
+    lateralPlanSP.dynamicLaneProfileStatus = bool(self.dynamic_lane_profile_status)
+
+    lateralPlanSP.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
+    lateralPlanSP.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
 
     if self.standstill:
       self.standstill_elapsed += DT_MDL
     else:
       self.standstill_elapsed = 0.0
-    lateralPlan.standstillElapsed = int(self.standstill_elapsed)
+    lateralPlanSP.standstillElapsed = int(self.standstill_elapsed)
 
-    pm.send('lateralPlan', plan_send)
+    pm.send('lateralPlanSP', plan_sp_send)

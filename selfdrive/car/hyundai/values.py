@@ -72,7 +72,8 @@ class HyundaiFlagsSP(IntFlag):
   SP_ENHANCED_SCC = 1
   SP_CAN_LFA_BTN = 2
   SP_NAV_MSG = 4
-  SP_UPSTREAM_TACO = 8
+  SP_CAMERA_SCC_LEAD = 8
+  SP_UPSTREAM_TACO = 16
 
 
 class CAR:
