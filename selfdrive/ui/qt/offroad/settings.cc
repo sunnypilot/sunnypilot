@@ -185,7 +185,7 @@ void TogglesPanel::updateToggles() {
     if (!CP.getCustomStockLongAvailable()) {
       params.remove("CustomStockLongControl");
     }
-    custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
+    custom_stock_long_toggle->setVisible(CP.getCustomStockLongAvailable());
 
     if (hasLongitudinalControl(CP)) {
       // normal description and toggle
@@ -221,7 +221,7 @@ void TogglesPanel::updateToggles() {
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
     op_long_toggle->setVisible(false);
-    custom_stock_long_toggle->setEnabled(false);
+    custom_stock_long_toggle->setVisible(false);
   }
 }
 
