@@ -1,12 +1,12 @@
 import overpy
 import subprocess
 import numpy as np
-from cereal import log
+from cereal import custom
 from common.params import Params
 from selfdrive.mapd.lib.geo import R
 from selfdrive.mapd.lib.helpers import is_local_osm_installed, OSM_QUERY
 
-DataType = log.LiveMapData.DataType
+DataType = custom.LiveMapDataSP.DataType
 
 
 def create_way(way_id, node_ids, from_way):

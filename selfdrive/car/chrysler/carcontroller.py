@@ -25,7 +25,7 @@ class CarController:
     self.packer = CANPacker(dbc_name)
     self.params = CarControllerParams(CP)
 
-    self.sm = messaging.SubMaster(['longitudinalPlan'])
+    self.sm = messaging.SubMaster(['longitudinalPlanSP'])
     self.param_s = Params()
     self.is_metric = self.param_s.get_bool("IsMetric")
     self.speed_limit_control_enabled = False
@@ -60,14 +60,14 @@ class CarController:
     if not self.CP.pcmCruiseSpeed:
       self.sm.update(0)
 
-      if self.sm.updated['longitudinalPlan']:
-        self.v_tsc_state = self.sm['longitudinalPlan'].visionTurnControllerState
-        self.slc_state = self.sm['longitudinalPlan'].speedLimitControlState
-        self.m_tsc_state = self.sm['longitudinalPlan'].turnSpeedControlState
-        self.speed_limit = self.sm['longitudinalPlan'].speedLimit
-        self.speed_limit_offset = self.sm['longitudinalPlan'].speedLimitOffset
-        self.v_tsc = self.sm['longitudinalPlan'].visionTurnSpeed
-        self.m_tsc = self.sm['longitudinalPlan'].turnSpeed
+      if self.sm.updated['longitudinalPlanSP']:
+        self.v_tsc_state = self.sm['longitudinalPlanSP'].visionTurnControllerState
+        self.slc_state = self.sm['longitudinalPlanSP'].speedLimitControlState
+        self.m_tsc_state = self.sm['longitudinalPlanSP'].turnSpeedControlState
+        self.speed_limit = self.sm['longitudinalPlanSP'].speedLimit
+        self.speed_limit_offset = self.sm['longitudinalPlanSP'].speedLimitOffset
+        self.v_tsc = self.sm['longitudinalPlanSP'].visionTurnSpeed
+        self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
       if self.frame % 200 == 0:
         self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")

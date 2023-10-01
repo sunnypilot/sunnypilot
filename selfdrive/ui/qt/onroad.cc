@@ -125,8 +125,8 @@ void OnroadWindow::updateState(const UIState &s) {
 
 
 void issue_debug_snapshot(SubMaster &sm) {
-  auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
-  auto live_map_data = sm["liveMapData"].getLiveMapData();
+  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  auto live_map_data_sp = sm["liveMapDataSP"].getLiveMapDataSP();
   auto car_state = sm["carState"].getCarState();
 
   auto t = std::time(nullptr);
@@ -139,30 +139,30 @@ void issue_debug_snapshot(SubMaster &sm) {
   os.precision(2);
   os << "Datetime: " << param_name_os.str() << ", vEgo: " << car_state.getVEgo() * 3.6 << "\n\n";
   os.precision(6);
-  os << "Location: (" << live_map_data.getLastGpsLatitude() << ", " << live_map_data.getLastGpsLongitude()  << ")\n";
+  os << "Location: (" << live_map_data_sp.getLastGpsLatitude() << ", " << live_map_data_sp.getLastGpsLongitude()  << ")\n";
   os.precision(2);
-  os << "Bearing: " << live_map_data.getLastGpsBearingDeg() << "; ";
-  os << "GPSSpeed: " << live_map_data.getLastGpsSpeed() * 3.6 << "\n\n";
+  os << "Bearing: " << live_map_data_sp.getLastGpsBearingDeg() << "; ";
+  os << "GPSSpeed: " << live_map_data_sp.getLastGpsSpeed() * 3.6 << "\n\n";
   os.precision(1);
-  os << "Speed Limit: " << live_map_data.getSpeedLimit() * 3.6 << ", ";
-  os << "Valid: " << live_map_data.getSpeedLimitValid() << "\n";
-  os << "Speed Limit Ahead: " << live_map_data.getSpeedLimitAhead() * 3.6 << ", ";
-  os << "Valid: " << live_map_data.getSpeedLimitAheadValid() << ", ";
-  os << "Distance: " << live_map_data.getSpeedLimitAheadDistance() << "\n";
-  os << "Turn Speed Limit: " << live_map_data.getTurnSpeedLimit() * 3.6 << ", ";
-  os << "Valid: " << live_map_data.getTurnSpeedLimitValid() << ", ";
-  os << "End Distance: " << live_map_data.getTurnSpeedLimitEndDistance() << ", ";
-  os << "Sign: " << live_map_data.getTurnSpeedLimitSign() << "\n\n";
+  os << "Speed Limit: " << live_map_data_sp.getSpeedLimit() * 3.6 << ", ";
+  os << "Valid: " << live_map_data_sp.getSpeedLimitValid() << "\n";
+  os << "Speed Limit Ahead: " << live_map_data_sp.getSpeedLimitAhead() * 3.6 << ", ";
+  os << "Valid: " << live_map_data_sp.getSpeedLimitAheadValid() << ", ";
+  os << "Distance: " << live_map_data_sp.getSpeedLimitAheadDistance() << "\n";
+  os << "Turn Speed Limit: " << live_map_data_sp.getTurnSpeedLimit() * 3.6 << ", ";
+  os << "Valid: " << live_map_data_sp.getTurnSpeedLimitValid() << ", ";
+  os << "End Distance: " << live_map_data_sp.getTurnSpeedLimitEndDistance() << ", ";
+  os << "Sign: " << live_map_data_sp.getTurnSpeedLimitSign() << "\n\n";
 
-  const auto turn_speeds = live_map_data.getTurnSpeedLimitsAhead();
+  const auto turn_speeds = live_map_data_sp.getTurnSpeedLimitsAhead();
   os << "Turn Speed Limits Ahead:\n";
   os << "VALUE\tDIST\tSIGN\n";
 
   if (turn_speeds.size() == 0) {
     os << "-\t-\t-" << "\n\n";
   } else {
-    const auto distances = live_map_data.getTurnSpeedLimitsAheadDistances();
-    const auto signs = live_map_data.getTurnSpeedLimitsAheadSigns();
+    const auto distances = live_map_data_sp.getTurnSpeedLimitsAheadDistances();
+    const auto signs = live_map_data_sp.getTurnSpeedLimitsAheadSigns();
     for(int i = 0; i < turn_speeds.size(); i++) {
       os << turn_speeds[i] * 3.6 << "\t" << distances[i] << "\t" << signs[i] << "\n";
     }
@@ -170,17 +170,17 @@ void issue_debug_snapshot(SubMaster &sm) {
   }
 
   os << "SPEED LIMIT CONTROLLER:\n";
-  os << "sl: " << longitudinal_plan.getSpeedLimit() * 3.6  << ", ";
-  os << "state: " << int(longitudinal_plan.getSpeedLimitControlState()) << ", ";
-  os << "isMap: " << longitudinal_plan.getIsMapSpeedLimit() << "\n\n";
+  os << "sl: " << longitudinal_plan_sp.getSpeedLimit() * 3.6  << ", ";
+  os << "state: " << int(longitudinal_plan_sp.getSpeedLimitControlState()) << ", ";
+  os << "isMap: " << longitudinal_plan_sp.getIsMapSpeedLimit() << "\n\n";
 
   os << "TURN SPEED CONTROLLER:\n";
-  os << "speed: " << longitudinal_plan.getTurnSpeed() * 3.6 << ", ";
-  os << "state: " << int(longitudinal_plan.getTurnSpeedControlState()) << "\n\n";
+  os << "speed: " << longitudinal_plan_sp.getTurnSpeed() * 3.6 << ", ";
+  os << "state: " << int(longitudinal_plan_sp.getTurnSpeedControlState()) << "\n\n";
 
   os << "VISION TURN CONTROLLER:\n";
-  os << "speed: " << longitudinal_plan.getVisionTurnSpeed() * 3.6 << ", ";
-  os << "state: " << int(longitudinal_plan.getVisionTurnControllerState());
+  os << "speed: " << longitudinal_plan_sp.getVisionTurnSpeed() * 3.6 << ", ";
+  os << "state: " << int(longitudinal_plan_sp.getVisionTurnControllerState());
 
   Params().put(param_name_os.str().c_str(), os.str().c_str(), os.str().length());
   uiState()->scene.display_debug_alert_frame = sm.frame;
@@ -193,12 +193,12 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   UIState *s = uiState();
   UIScene &scene = s->scene;
   SubMaster &sm = *(uiState()->sm);
-  auto longitudinal_plan = sm["longitudinalPlan"].getLongitudinalPlan();
+  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
 
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
   QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (longitudinal_plan.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
     // If touching the speed limit sign area when visible
     scene.last_speed_limit_sign_tap = seconds_since_boot();
     params.putBool("LastSpeedLimitSignTap", true);
@@ -373,8 +373,8 @@ void ExperimentalButton::changeMode() {
 
 void ExperimentalButton::updateState(const UIState &s) {
   const auto cs = (*s.sm)["controlsState"].getControlsState();
-  const auto lp = (*s.sm)["longitudinalPlan"].getLongitudinalPlan();
-  bool eng = (cs.getEngageable() || cs.getEnabled()) && !(lp.getVisionTurnControllerState() > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED);
+  const auto lp_sp = (*s.sm)["longitudinalPlanSP"].getLongitudinalPlanSP();
+  bool eng = (cs.getEngageable() || cs.getEnabled()) && !(lp_sp.getVisionTurnControllerState() > cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED);
   if ((cs.getExperimentalMode() != experimental_mode) || (eng != engageable)) {
     engageable = eng;
     experimental_mode = cs.getExperimentalMode();
@@ -437,7 +437,7 @@ void OnroadSettingsButton::updateState(const UIState &s) {
 // Window that shows camera view and variety of info drawn on top
 AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
   pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"uiDebug"});
-  e2e_state = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"e2eLongState"});
+  e2e_state = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"e2eLongStateSP"});
 
   main_layout = new QVBoxLayout(this);
   main_layout->setMargin(UI_BORDER_SIZE);
@@ -515,13 +515,14 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const bool cs_alive = sm.alive("controlsState");
   const bool nav_alive = sm.alive("navInstruction") && sm["navInstruction"].getValid();
   const auto cs = sm["controlsState"].getControlsState();
+  const auto cs_sp = sm["controlsStateSP"].getControlsStateSP();
   const auto car_state = sm["carState"].getCarState();
   const auto nav_instruction = sm["navInstruction"].getNavInstruction();
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
   const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
-  const auto lateral_plan = sm["lateralPlan"].getLateralPlan();
+  const auto lateral_plan_sp = sm["lateralPlanSP"].getLateralPlanSP();
 
   // Handle older routes where vCruiseCluster is not set
   float v_cruise =  cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
@@ -562,7 +563,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   standStillTimer = s.scene.stand_still_timer;
   standStill = car_state.getStandstill();
-  standstillElapsedTime = lateral_plan.getStandstillElapsed();
+  standstillElapsedTime = lateral_plan_sp.getStandstillElapsed();
 
   hideVEgoUi = s.scene.hide_vego_ui;
 
@@ -572,7 +573,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   lead_d_rel = radar_state.getLeadOne().getDRel();
   lead_v_rel = radar_state.getLeadOne().getVRel();
   lead_status = radar_state.getLeadOne().getStatus();
-  lateralState = QString::fromStdString(cs.getLateralState());
+  lateralState = QString::fromStdString(cs_sp.getLateralState());
   angleSteers = car_state.getSteeringAngleDeg();
   steerAngleDesired = cs.getLateralControlState().getPidState().getSteeringAngleDesiredDeg();
   curvature = cs.getCurvature();
@@ -587,7 +588,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   steeringTorqueEps = car_state.getSteeringTorqueEps();
   bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
   bearingDeg = gpsLocationExternal.getBearingDeg();
-  torquedUseParams = ltp.getUseParams() || s.scene.live_torque_toggle;
+  torquedUseParams = (ltp.getUseParams() || s.scene.live_torque_toggle) && !s.scene.torqued_override;
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
@@ -597,7 +598,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   left_blinker = car_state.getLeftBlinker();
   right_blinker = car_state.getRightBlinker();
-  lane_change_edge_block = lateral_plan.getLaneChangeEdgeBlock();
+  lane_change_edge_block = lateral_plan_sp.getLaneChangeEdgeBlock();
 
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
@@ -627,37 +628,37 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
   }
 
-  const auto lp = sm["longitudinalPlan"].getLongitudinalPlan();
-  slcState = lp.getSpeedLimitControlState();
+  const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  slcState = lp_sp.getSpeedLimitControlState();
 
   if (sm.frame % (UI_FREQ / 2) == 0) {
-    const auto vtcState = lp.getVisionTurnControllerState();
-    const float vtc_speed = lp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const auto lpSoruce = lp.getLongitudinalPlanSource();
+    const auto vtcState = lp_sp.getVisionTurnControllerState();
+    const float vtc_speed = lp_sp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const auto lpSoruce = lp_sp.getLongitudinalPlanSource();
     QColor vtc_color = tcs_colors[int(vtcState)];
-    vtc_color.setAlpha(lpSoruce == cereal::LongitudinalPlan::LongitudinalPlanSource::TURN ? 255 : 100);
+    vtc_color.setAlpha(lpSoruce == cereal::LongitudinalPlanSP::LongitudinalPlanSource::TURN ? 255 : 100);
 
-    showVTC = vtcState > cereal::LongitudinalPlan::VisionTurnControllerState::DISABLED;
+    showVTC = vtcState > cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED;
     vtcSpeed = QString::number(std::nearbyint(vtc_speed));
     vtcColor = vtc_color;
     showDebugUI = s.scene.show_debug_ui;
 
-    const auto lmd = sm["liveMapData"].getLiveMapData();
+    const auto lmd_sp = sm["liveMapDataSP"].getLiveMapDataSP();
 
-    const auto data_type = int(lmd.getDataType());
+    const auto data_type = int(lmd_sp.getDataType());
     const QString data_type_draw(data_type == 2 ? "🌐  " : "");
-    roadName = QString::fromStdString(lmd.getCurrentRoadName());
+    roadName = QString::fromStdString(lmd_sp.getCurrentRoadName());
     roadName = !roadName.isEmpty() ? data_type_draw + roadName : "";
 
-    float speed_limit_slc = lp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const float speed_limit_offset = lp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    float speed_limit_slc = lp_sp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const float speed_limit_offset = lp_sp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const bool sl_force_active = s.scene.speed_limit_control_enabled &&
                                  seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
     const bool sl_inactive = !sl_force_active && (!s.scene.speed_limit_control_enabled ||
-                             slcState == cereal::LongitudinalPlan::SpeedLimitControlState::INACTIVE);
+                             slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE);
     const bool sl_temp_inactive = !sl_force_active && (s.scene.speed_limit_control_enabled &&
-                                  slcState == cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE);
-    const int sl_distance = int(lp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
+                                  slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
+    const int sl_distance = int(lp_sp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
     const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
                                 "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
@@ -670,21 +671,21 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     speedLimitSLC = speed_limit_slc;
     slcSubText = sl_substring;
     slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
-    mapSourcedSpeedLimit = lp.getIsMapSpeedLimit();
+    mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
     slcActive = !sl_inactive && !sl_temp_inactive;
     overSpeedLimit = (((speed_limit_slc + speed_limit_offset) < speed) && !sl_inactive && !sl_temp_inactive) ||
                                   ((speed_limit_slc < speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive));
 
-    const float tsc_speed = lp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const auto tscState = lp.getTurnSpeedControlState();
-    const int t_distance = int(lp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
+    const float tsc_speed = lp_sp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+    const auto tscState = lp_sp.getTurnSpeedControlState();
+    const int t_distance = int(lp_sp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
 
     showTurnSpeedLimit = tsc_speed > 0.0 && (tsc_speed < speed || s.scene.show_debug_ui);
     turnSpeedLimit = QString::number(std::nearbyint(tsc_speed));
     tscSubText = t_distance > 0 ? t_distance_str : QString("");
-    tscActive = tscState > cereal::LongitudinalPlan::SpeedLimitControlState::TEMP_INACTIVE;
-    curveSign = lp.getTurnSign();
+    tscActive = tscState > cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE;
+    curveSign = lp_sp.getTurnSign();
   }
 
   longitudinalPersonality = s.scene.longitudinal_personality;
@@ -1992,9 +1993,9 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   pm->send("uiDebug", msg);
 
   MessageBuilder e2e_long_msg;
-  auto e2eLongStatus = e2e_long_msg.initEvent().initE2eLongState();
+  auto e2eLongStatus = e2e_long_msg.initEvent().initE2eLongStateSP();
   e2eLongStatus.setStatus(e2eStatus);
-  e2e_state->send("e2eLongState", e2e_long_msg);
+  e2e_state->send("e2eLongStateSP", e2e_long_msg);
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {

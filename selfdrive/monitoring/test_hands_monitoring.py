@@ -2,7 +2,7 @@
 
 import unittest
 import numpy as np
-from cereal import car, log
+from cereal import car, custom
 from common.realtime import DT_DMON
 from selfdrive.controls.lib.events import Events
 from selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus, _PRE_ALERT_THRESHOLD, \
@@ -10,7 +10,7 @@ from selfdrive.monitoring.hands_on_wheel_monitor import HandsOnWheelStatus, _PRE
                                   _MIN_MONITORING_SPEED
 
 EventName = car.CarEvent.EventName
-HandsOnWheelState = log.DriverMonitoringState.HandsOnWheelState
+HandsOnWheelState = custom.DriverMonitoringStateSP.HandsOnWheelState
 
 _TEST_TIMESPAN = 120  # seconds
 

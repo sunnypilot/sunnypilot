@@ -7,7 +7,7 @@ import sys
 import traceback
 from typing import List, Tuple, Union
 
-from cereal import log
+from cereal import custom
 import cereal.messaging as messaging
 import openpilot.selfdrive.sentry as sentry
 from openpilot.common.basedir import BASEDIR
@@ -47,7 +47,7 @@ def manager_init() -> None:
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
-    ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+    ("LongitudinalPersonality", str(custom.LongitudinalPersonalitySP.standard)),
 
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
