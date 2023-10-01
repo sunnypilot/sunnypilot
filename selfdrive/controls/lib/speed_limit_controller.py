@@ -17,7 +17,7 @@ _TEMP_INACTIVE_GUARD_PERIOD = 1.  # secs. Time to wait after activation before c
 _LIMIT_PERC_OFFSET_V = [0.1, 0.05, 0.038]  # 55, 105, 135 km/h
 _LIMIT_PERC_OFFSET_BP = [13.9, 27.8, 36.1]  # 50, 100, 130 km/h
 
-SpeedLimitControlState = custom.longitudinalPlanSP.SpeedLimitControlState
+SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 EventName = car.CarEvent.EventName
 
 _DEBUG = False

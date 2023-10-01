@@ -13,7 +13,7 @@ _ACTIVE_LIMIT_MAX_ACC = 0.5   # m/s^2 Maximum acelration allowed while active.
 
 _DEBUG = False
 
-TurnSpeedControlState = custom.longitudinalPlanSP.SpeedLimitControlState
+TurnSpeedControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 
 
 def _debug(msg):
