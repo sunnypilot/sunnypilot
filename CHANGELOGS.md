@@ -27,7 +27,6 @@ sunnypilot - 0.9.5.1 (2023-09-27)
   * RE-ENABLED: Hyundai/Kia/Genesis CAN-FD platforms
 * UPDATED: Auto-detect custom Mapbox token
   * REMOVED: "Enable Mapbox Navigation" toggle
-* UPDATED: Developer UI: Bottom row now hidden when there are active alerts
 * FIXED: Map stuck in "Map Loading" if comma Prime is active
 * FIXED: UI elements adjustments
 * Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!

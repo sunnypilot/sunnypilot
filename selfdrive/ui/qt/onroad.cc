@@ -889,7 +889,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
-    if (!hideBottomIcons && devUiEnabled && !splitPanelVisible && devUiInfo == 1) {
+    if (devUiEnabled && !splitPanelVisible && devUiInfo == 1) {
       p.setPen(Qt::NoPen);
       p.setBrush(QColor(0, 0, 0, 100));
       p.drawRect(bar_rect1);
