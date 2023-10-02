@@ -68,6 +68,10 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
   options_layout->addWidget(dlp_widget = new OptionWidget(this));
   QObject::connect(dlp_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeDynamicLaneProfile);
 
+  // Dynamic Experimental Control
+  options_layout->addWidget(dec_widget = new OptionWidget(this));
+  QObject::connect(dec_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeDynamicExperimentalControl);
+
   // Speed Limit Control
   options_layout->addWidget(slc_widget = new OptionWidget(this));
   QObject::connect(slc_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeSpeedLimitControl);
@@ -127,6 +131,17 @@ void OnroadSettings::changeGapAdjustCruise() {
   refresh();
 }
 
+void OnroadSettings::changeDynamicExperimentalControl() {
+  UIScene &scene = uiState()->scene;
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  bool can_change = hasLongitudinalControl(cp) && scene.dynamic_experimental_control_toggle;
+  if (can_change) {
+    scene.dynamic_experimental_control = !scene.dynamic_experimental_control;
+    params.putBool("DynamicExperimentalControl", scene.dynamic_experimental_control);
+  }
+  refresh();
+}
+
 void OnroadSettings::changeSpeedLimitControl() {
   UIScene &scene = uiState()->scene;
   bool can_change = true;
@@ -145,12 +160,15 @@ void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicLaneProfile");
   param_watcher->addParam("DynamicLaneProfileToggle");
   param_watcher->addParam("LongitudinalPersonality");
+  param_watcher->addParam("DynamicExperimentalControl");
+  param_watcher->addParam("DynamicExperimentalControlToggle");
   param_watcher->addParam("SpeedLimitControl");
 
   UIScene &scene = uiState()->scene;
   // Update live params on Feature Status on camera view
   scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
   scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
+  scene.dynamic_experimental_control = params.getBool("DynamicExperimentalControl");
   scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
 
   if (!isVisible()) return;
@@ -166,6 +184,10 @@ void OnroadSettings::refresh() {
   // Gap Adjust Cruise
   gac_widget->updateGapAdjustCruise("LongitudinalPersonality");
   gac_widget->setVisible(hasLongitudinalControl(cp));
+
+  // Dynamic Experimental Control
+  dec_widget->updateDynamicExperimentalControl("DynamicExperimentalControl");
+  dec_widget->setVisible(params.getBool("DynamicExperimentalControlToggle"));
 
   // Speed Limit Control
   slc_widget->updateSpeedLimitControl("SpeedLimitControl");
@@ -261,6 +283,29 @@ void OptionWidget::updateGapAdjustCruise(QString param) {
   } else if (lp == 3) {
     title_text = "Relax Gap";
     icon_color = "#6a0ac9";
+  }
+
+  icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color));
+
+  title->setText(title_text);
+  subtitle->setText(subtitle_text);
+  subtitle->setVisible(true);
+
+  setStyleSheet(styleSheet());
+}
+
+void OptionWidget::updateDynamicExperimentalControl(QString param) {
+  auto icon_color = "#3B4356";
+  auto title_text = "";
+  auto subtitle_text = "Dynamic Experimental";
+  auto long_personality = atoi(params.get(param.toStdString()).c_str());
+
+  if (long_personality == 0) {
+    title_text = "Disabled";
+    icon_color = "#3B4356";
+  } else if (long_personality == 1) {
+    title_text = "Enabled";
+    icon_color = "#0df87a";
   }
 
   icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color));

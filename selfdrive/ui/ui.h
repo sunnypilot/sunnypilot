@@ -240,6 +240,8 @@ typedef struct UIScene {
   bool map_3d_buildings;
 
   bool torqued_override;
+
+  bool dynamic_experimental_control_toggle, dynamic_experimental_control;
 } UIScene;
 
 class UIState : public QObject {

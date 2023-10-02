@@ -177,12 +177,12 @@ class VCruiseHelper:
         self.button_timers[b.type.raw] = 1 if b.pressed else 0
         self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
 
-  def initialize_v_cruise(self, CS, experimental_mode: bool, is_metric) -> None:
+  def initialize_v_cruise(self, CS, experimental_mode: bool, is_metric, dynamic_experimental_control: bool) -> None:
     # initializing is handled by the PCM
     if self.CP.pcmCruise and self.CP.pcmCruiseSpeed:
       return
 
-    initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode else V_CRUISE_INITIAL
+    initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode and not dynamic_experimental_control else V_CRUISE_INITIAL
 
     resume_buttons = (ButtonType.accelCruise, ButtonType.resumeCruise)
 

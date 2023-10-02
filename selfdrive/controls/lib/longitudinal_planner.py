@@ -18,6 +18,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL
 from openpilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
 from openpilot.selfdrive.controls.lib.speed_limit_controller import SpeedLimitController, SpeedLimitResolver
 from openpilot.selfdrive.controls.lib.turn_speed_controller import TurnSpeedController
+from openpilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.system.swaglog import cloudlog
 
@@ -79,8 +80,14 @@ class LongitudinalPlanner:
     self.speed_limit_controller = SpeedLimitController()
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
+    self.dynamic_experimental_controller = DynamicExperimentalController()
 
   def read_param(self):
+    try:
+      self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl") and
+                                                       self.params.get_bool("DynamicExperimentalControlToggle"))
+    except AttributeError:
+      self.dynamic_experimental_controller = DynamicExperimentalController()
     try:
       self.personality = int(self.params.get('LongitudinalPersonality'))
     except (ValueError, TypeError):
@@ -106,7 +113,10 @@ class LongitudinalPlanner:
     if self.param_read_counter % 50 == 0:
       self.read_param()
     self.param_read_counter += 1
-    self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
+    if self.dynamic_experimental_controller.is_enabled():
+      self.mpc.mode = self.dynamic_experimental_controller.get_mpc_mode(self.mpc.mode, self.CP.radarUnavailable, sm['carState'], sm['radarState'].leadOne, sm['modelV2'])
+    else:
+      self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 
     v_ego = sm['carState'].vEgo
     v_cruise_kph = min(sm['controlsState'].vCruise, V_CRUISE_MAX)
@@ -224,6 +234,8 @@ class LongitudinalPlanner:
     longitudinalPlanSP.turnSign = int(self.turn_speed_controller.turn_sign)
 
     longitudinalPlanSP.personality = self.personality
+
+    longitudinalPlanSP.e2eBlended = self.mpc.mode
 
     pm.send('longitudinalPlanSP', plan_sp_send)
 

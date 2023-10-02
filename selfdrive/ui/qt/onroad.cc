@@ -414,7 +414,7 @@ OnroadSettingsButton::OnroadSettingsButton(QWidget *parent) : QPushButton(parent
   setFixedSize(152, 152);
   settings_img = loadPixmap("../assets/navigation/icon_settings.svg", {114, 114});
 
-  // hidden by default, made visible if Driving Personality / GAC, DLP, or SLC is enabled
+  // hidden by default, made visible if Driving Personality / GAC, DLP, DEC, or SLC is enabled
   setVisible(false);
   setEnabled(false);
 }
@@ -427,7 +427,8 @@ void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
 void OnroadSettingsButton::updateState(const UIState &s) {
   const auto cp = (*s.sm)["carParams"].getCarParams();
   auto dlp_enabled = s.scene.dynamic_lane_profile_toggle;
-  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
+  auto dec_enabled = s.scene.dynamic_experimental_control_toggle;
+  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || dec_enabled || !cp.getPcmCruiseSpeed();
 
   setVisible(allow_btn);
   setEnabled(allow_btn);
@@ -690,6 +691,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   longitudinalPersonality = s.scene.longitudinal_personality;
   dynamicLaneProfile = s.scene.dynamic_lane_profile;
+  mpcMode = QString::fromStdString(lp_sp.getE2eBlended());
+  mpcMode = (mpcMode == "blended") ? mpcMode.replace(0, 1, mpcMode[0].toUpper()) : mpcMode.toUpper();
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -1586,6 +1589,27 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   // Dynamic Lane Profile
   if (uiState()->scene.dynamic_lane_profile_toggle) {
     drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");
+  }
+
+  if (uiState()->scene.dynamic_experimental_control_toggle) {
+    bool cruise_enabled = (*uiState()->sm)["carState"].getCarState().getCruiseState().getEnabled();
+    bool dec_enabled = uiState()->scene.dynamic_experimental_control_toggle && uiState()->scene.dynamic_experimental_control;
+    bool experimental_mode = (*uiState()->sm)["controlsState"].getControlsState().getExperimentalMode();
+    QColor dec_color((cruise_enabled && dec_enabled) ? "#4bff66" : "#ffffff");
+    QRect dec_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
+    QRect dec_btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(shadow_color);
+    p.drawEllipse(dec_btn_shadow);
+    p.setBrush(dec_color);
+    p.drawEllipse(dec_btn);
+    QString dec_status_text;
+    dec_status_text.sprintf("DEC: %s\n", dec_enabled ? (experimental_mode ? QString(mpcMode).toStdString().c_str() : QString("Inactive").toStdString().c_str()) : "OFF");
+    p.setPen(QPen(shadow_color, 2));
+    p.drawText(x + drop_shadow_size, y + drop_shadow_size, dec_status_text);
+    p.setPen(QPen(text_color, 2));
+    p.drawText(x, y, dec_status_text);
+    y += text_height;
   }
 
   // Speed Limit Control

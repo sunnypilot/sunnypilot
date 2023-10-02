@@ -11,6 +11,11 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
   * GAP - Driving Personality
   * DLP - Dynamic Lane Profile
   * SLC - Speed Limit Control
+* NEW❗: Dynamic Experimental Control (DEC) thanks to dragonpilot-community!
+  * Automatically determines and selects between openpilot ACC and openpilot End to End longitudinal based on conditions for a more natural drive
+  * Dynamic Experimental Control is only active while in Experimental Mode
+  * Dynamic Experimental Control must be enabled via "SP - Controls", then toggle via the new Onroad Settings Panel
+  * When Dynamic Experimental Control is ON, initially setting cruise speed will set to the vehicle's current speed
 * NEW❗: Hyundai CAN longitudinal: Parse lead info for camera-based SCC platforms
   * Improve lead tracking when using openpilot longitudinal
 * NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!

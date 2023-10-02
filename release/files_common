@@ -203,6 +203,7 @@ selfdrive/controls/lib/alertmanager.py
 selfdrive/controls/lib/alerts_offroad.json
 selfdrive/controls/lib/desire_helper.py
 selfdrive/controls/lib/drive_helpers.py
+selfdrive/controls/lib/dynamic_experimental_controller.py
 selfdrive/controls/lib/events.py
 selfdrive/controls/lib/lane_planner.py
 selfdrive/controls/lib/latcontrol_angle.py

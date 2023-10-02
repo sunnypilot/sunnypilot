@@ -255,6 +255,7 @@ void ui_update_params(UIState *s) {
   s->scene.map_3d_buildings = params.getBool("Map3DBuildings");
   s->scene.live_torque_toggle = params.getBool("LiveTorque");
   s->scene.torqued_override = params.getBool("TorquedOverride");
+  s->scene.dynamic_experimental_control_toggle = params.getBool("DynamicExperimentalControlToggle");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {

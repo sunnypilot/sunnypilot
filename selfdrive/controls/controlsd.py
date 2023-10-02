@@ -203,6 +203,7 @@ class Controls:
 
     self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = False
+    self.dynamic_experimental_control = False
 
     self.live_torque = self.params.get_bool("LiveTorque")
     self.torqued_override = self.params.get_bool("TorquedOverride")
@@ -546,7 +547,7 @@ class Controls:
         # ENABLED
         if self.state == State.enabled:
           if CS.cruiseState.enabled and not self.CS_prev.cruiseState.enabled:
-            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric)
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric, self.dynamic_experimental_control)
           # Block resume if cruise never previously enabled
           resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
           if not self.CP.pcmCruise and not self.v_cruise_helper.v_cruise_initialized and resume_pressed:
@@ -590,7 +591,7 @@ class Controls:
           else:
             self.current_alert_types += [ET.OVERRIDE_LATERAL, ET.OVERRIDE_LONGITUDINAL]
           if CS.cruiseState.enabled and not self.CS_prev.cruiseState.enabled:
-            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric)
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric, self.dynamic_experimental_control)
 
     # DISABLED
     elif self.state == State.disabled:
@@ -607,7 +608,7 @@ class Controls:
             self.state = State.enabled
           self.current_alert_types.append(ET.ENABLE)
           if CS.cruiseState.enabled:
-            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric)
+            self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.is_metric, self.dynamic_experimental_control)
 
     # Check if openpilot is engaged and actuators are enabled
     self.enabled = self.state in ENABLED_STATES
@@ -916,6 +917,7 @@ class Controls:
 
     self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
+    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
 
     if self.sm.frame % int(2.5 / DT_CTRL) == 0:
       self.live_torque = self.params.get_bool("LiveTorque")

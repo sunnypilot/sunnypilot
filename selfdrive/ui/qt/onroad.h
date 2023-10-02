@@ -230,6 +230,7 @@ private:
   cereal::LongitudinalPlanSP::SpeedLimitControlState slcState;
   int longitudinalPersonality;
   int dynamicLaneProfile;
+  QString mpcMode;
 
 protected:
   void paintGL() override;
