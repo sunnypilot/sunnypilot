@@ -27,6 +27,7 @@ class CarController:
 
     self.param_s = Params()
 
+    self.subaru_sng = False
     if CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
       self.subaru_sng = True
       self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
