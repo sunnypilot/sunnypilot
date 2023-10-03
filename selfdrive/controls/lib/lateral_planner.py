@@ -111,11 +111,12 @@ class LateralPlanner:
     if self.DH.desire == log.LateralPlan.Desire.laneChangeRight or self.DH.desire == log.LateralPlan.Desire.laneChangeLeft:
       self.LP.lll_prob *= self.DH.lane_change_ll_prob
       self.LP.rll_prob *= self.DH.lane_change_ll_prob
+    self.d_path_w_lines_xyz = self.LP.get_d_path(self.v_ego, self.t_idxs, self.path_xyz)
 
     low_speed = v_ego_car < 10 * CV.MPH_TO_MS
 
     if not self.get_dynamic_lane_profile(sm['longitudinalPlanSP']) and not low_speed:
-      self.path_xyz = self.LP.get_d_path(self.v_ego, self.t_idxs, self.path_xyz)
+      self.path_xyz = self.d_path_w_lines_xyz
       self.dynamic_lane_profile_status = False
     else:
       self.path_xyz[:, 1] += self.LP.path_offset
