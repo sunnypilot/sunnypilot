@@ -31,8 +31,6 @@ class CarController:
     if CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
       self.subaru_sng = True
       self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
-      self.throttle_cnt = -1
-      self.brake_pedal_cnt = -1
       self.prev_close_distance = 0
       self.prev_standstill = False
       self.standstill_start = 0
@@ -121,7 +119,7 @@ class CarController:
         can_sends.append(subarucan.create_preglobal_es_distance(self.packer, cruise_button, CS.es_distance_msg))
 
       if self.subaru_sng:
-        can_sends.append(subarucan.create_preglobal_throttle(self.packer, CS.throttle_msg, throttle_cmd))
+        can_sends.append(subarucan.create_preglobal_throttle(self.packer, CS.throttle_msg["COUNTER"] + 1, CS.throttle_msg, throttle_cmd))
 
     else:
       if self.frame % 10 == 0:
@@ -136,10 +134,10 @@ class CarController:
           can_sends.append(subarucan.create_es_infotainment(self.packer, self.frame // 10, CS.es_infotainment_msg, hud_control.visualAlert))
 
       if self.subaru_sng:
-        can_sends.append(subarucan.create_throttle(self.packer, CS.throttle_msg, throttle_cmd))
+        can_sends.append(subarucan.create_throttle(self.packer, CS.throttle_msg["COUNTER"] + 1, CS.throttle_msg, throttle_cmd))
 
         if self.frame % 2 == 0:
-          can_sends.append(subarucan.create_brake_pedal(self.packer, CS.brake_pedal_msg, speed_cmd, pcm_cancel_cmd))
+          can_sends.append(subarucan.create_brake_pedal(self.packer, self.frame // 2, CS.brake_pedal_msg, speed_cmd, pcm_cancel_cmd))
 
       if self.CP.openpilotLongitudinalControl:
         if self.frame % 5 == 0:
