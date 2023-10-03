@@ -72,7 +72,7 @@ class CarInterface(CarInterfaceBase):
       # Certain Impreza / Crosstrek EPS use 3071 max value and do not work with stock value/scaling.
       if any(fw.ecu == "eps" and fw.fwVersion in (b'z\xc0\x00\x00', b'z\xc0\x04\x00', b'z\xc0\x08\x00', b'\x8a\xc0\x00\x00',
                                                   b'\x8a\xc0\x10\x00') for fw in car_fw):
-        ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
         ret.steerActuatorDelay = 0.18  # measured
         ret.lateralTuning.pid.kf = 0.00003333
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.133, 0.2], [0.0133, 0.02]]
@@ -112,7 +112,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.1
 
     elif candidate in (CAR.FORESTER_PREGLOBAL, CAR.OUTBACK_PREGLOBAL_2018):
-      ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_LEGACY_FLIP_DRIVER_TORQUE  # Outback 2018-2019 and Forester have reversed driver torque signal
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_LEGACY_FLIP_DRIVER_TORQUE  # Outback 2018-2019 and Forester have reversed driver torque signal
       ret.mass = 1568
       ret.wheelbase = 2.67
       ret.centerToFront = ret.wheelbase * 0.5
