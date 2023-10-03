@@ -110,10 +110,11 @@ class CarController:
         # Mazda Stop and Go requires a RES button (or gas) press if the car stops more than 3 seconds
         # Send Resume button when planner wants car to move
         can_sends.append(mazdacan.create_button_cmd(self.packer, self.CP.carFingerprint, CS.crz_btns_counter, Buttons.RESUME))
-      elif CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed and self.frame % 10 == 0:
+      elif CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
         self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
         if self.cruise_button is not None:
-          can_sends.append(mazdacan.create_button_cmd(self.packer, self.CP.carFingerprint, CS.crz_btns_counter, self.cruise_button))
+          if self.frame % 10 == 0:
+            can_sends.append(mazdacan.create_button_cmd(self.packer, self.CP.carFingerprint, self.frame // 10, self.cruise_button))
 
     self.apply_steer_last = apply_steer
 
