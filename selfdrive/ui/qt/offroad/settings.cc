@@ -53,6 +53,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_speed_limit.png",
     },
     {
+      "CustomStockLongPlanner",
+      tr("Use Planner Speed"),
+      "",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "ExperimentalMode",
       tr("Experimental Mode"),
       "",
@@ -129,6 +135,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
   });
+  connect(toggles["CustomStockLong"], &ToggleControl::toggleFlipped, [=]() {
+    updateToggles();
+  });
 
   param_watcher = new ParamWatcher(this);
 
@@ -150,6 +159,7 @@ void TogglesPanel::updateToggles() {
   auto experimental_mode_toggle = toggles["ExperimentalMode"];
   auto op_long_toggle = toggles["ExperimentalLongitudinalEnabled"];
   auto custom_stock_long_toggle = toggles["CustomStockLong"];
+  auto custom_stock_long_planner = toggles["CustomStockLongPlanner"];
   const QString e2e_description = QString("%1<br>"
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
@@ -194,6 +204,12 @@ void TogglesPanel::updateToggles() {
       long_personality_setting->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
       params.remove("CustomStockLong");
+    } else if (custom_stock_long_toggle->isToggled()) {
+      experimental_mode_toggle->setEnabled(true);
+      experimental_mode_toggle->setDescription(e2e_description);
+      long_personality_setting->setEnabled(false);
+      op_long_toggle->setEnabled(false);
+      custom_stock_long_planner->setEnabled(true);
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
@@ -214,14 +230,19 @@ void TogglesPanel::updateToggles() {
       experimental_mode_toggle->setDescription("<b>" + long_desc + "</b><br><br>" + e2e_description);
 
       custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
+      custom_stock_long_planner->setEnabled(false);
+      op_long_toggle->setVisible(CP.getExperimentalLongitudinalAvailable() && !is_release);
+      op_long_toggle->setEnabled(CP.getExperimentalLongitudinalAvailable() && !is_release);
     }
 
     experimental_mode_toggle->refresh();
     custom_stock_long_toggle->refresh();
+    op_long_toggle->refresh();
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
     op_long_toggle->setVisible(false);
     custom_stock_long_toggle->setVisible(false);
+    custom_stock_long_planner->setVisible(false);
   }
 }
 

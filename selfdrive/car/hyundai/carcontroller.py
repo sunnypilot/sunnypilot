@@ -63,7 +63,7 @@ class CarController:
     self.lat_disengage_init = False
     self.lat_active_last = False
 
-    self.sm = messaging.SubMaster(['longitudinalPlanSP'])
+    self.sm = messaging.SubMaster(['longitudinalPlan', 'longitudinalPlanSP'])
     self.param_s = Params()
     self.is_metric = self.param_s.get_bool("IsMetric")
     self.speed_limit_control_enabled = False
@@ -92,11 +92,18 @@ class CarController:
     self.v_tsc = 0
     self.m_tsc = 0
     self.steady_speed = 0
+    self.speeds = 0
+    self.v_target_plan = 0
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
+    self.custom_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
 
   def update(self, CC, CS, now_nanos):
     if not self.CP.pcmCruiseSpeed:
       self.sm.update(0)
+
+      if self.sm.updated['longitudinalPlan']:
+        _speeds = self.sm['longitudinalPlan'].speeds
+        self.speeds = _speeds[-1] if len(_speeds) else 0
 
       if self.sm.updated['longitudinalPlanSP']:
         self.v_tsc_state = self.sm['longitudinalPlanSP'].visionTurnControllerState
@@ -110,8 +117,10 @@ class CarController:
       if self.frame % 200 == 0:
         self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")
         self.is_metric = self.param_s.get_bool("IsMetric")
+        self.custom_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
       self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")
       self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[self.is_metric] * (CV.KPH_TO_MPH if not self.is_metric else 1)
+      self.v_target_plan = min(CC.vCruise * CV.KPH_TO_MS, self.speeds)
 
     actuators = CC.actuators
     hud_control = CC.hudControl
@@ -428,6 +437,8 @@ class CarController:
         target_speed_kph = set_speed_kph
       else:
         target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
+      if self.custom_planner_speed:
+        target_speed_kph = self.curve_speed_hysteresis(self.v_target_plan)
       if self.v_tsc_state != 0 or self.m_tsc_state > 1:
         self.final_speed_kph = self.get_curve_speed(target_speed_kph, v_cruise_kph_prev)
       else:
