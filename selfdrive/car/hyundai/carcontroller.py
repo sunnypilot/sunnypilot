@@ -221,16 +221,15 @@ class CarController:
       else:
         # button presses
         can_sends.extend(self.create_button_messages(CC, CS, use_clu11=False))
-        if CS.buttons_counter != self.last_button_frame:
-          self.last_button_frame = CS.buttons_counter
-          if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
-            if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
-              # TODO: resume for alt button cars
-              pass
-            else:
-              self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
-              if self.cruise_button is not None:
-                can_sends.append(hyundaicanfd.create_buttons(self.packer, self.CP, self.CAN, CS.buttons_counter+1, self.cruise_button))
+        if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
+          if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
+            # TODO: resume for alt button cars
+            pass
+          else:
+            self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
+            if self.cruise_button is not None:
+              if self.frame % 2 == 0:
+                can_sends.append(hyundaicanfd.create_buttons(self.packer, self.CP, self.CAN, ((self.frame // 2) + 1) % 0x10, self.cruise_button))
     else:
       can_sends.append(hyundaican.create_lkas11(self.packer, self.frame, self.car_fingerprint, apply_steer, apply_steer_req,
                                                 torque_fault, CS.lkas11, sys_warning, sys_state, CC.enabled,
@@ -243,15 +242,8 @@ class CarController:
         if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
           self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
           if self.cruise_button is not None:
-            send_freq = 1
-            if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
-              send_freq = 5
-            # send resume at a max freq of 10Hz
-            if (self.frame - self.last_button_frame) * DT_CTRL > 0.1 * send_freq:
-              # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
-              can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
-              if (self.frame - self.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
-                self.last_button_frame = self.frame
+            if self.frame % 2 == 0:
+              can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
 
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
         if self.hkg_can_smooth_stop:
