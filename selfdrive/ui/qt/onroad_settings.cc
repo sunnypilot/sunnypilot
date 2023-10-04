@@ -110,7 +110,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
 
 void OnroadSettings::changeDynamicLaneProfile() {
   UIScene &scene = uiState()->scene;
-  bool can_change = scene.dynamic_lane_profile_toggle;
+  bool can_change = true;
   if (can_change) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
@@ -158,7 +158,6 @@ void OnroadSettings::showEvent(QShowEvent *event) {
 
 void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicLaneProfile");
-  param_watcher->addParam("DynamicLaneProfileToggle");
   param_watcher->addParam("LongitudinalPersonality");
   param_watcher->addParam("DynamicExperimentalControl");
   param_watcher->addParam("DynamicExperimentalControlToggle");
@@ -179,7 +178,7 @@ void OnroadSettings::refresh() {
 
   // Dynamic Lane Profile
   dlp_widget->updateDynamicLaneProfile("DynamicLaneProfile");
-  dlp_widget->setVisible(params.getBool("DynamicLaneProfileToggle"));
+  dlp_widget->setVisible(true);
 
   // Gap Adjust Cruise
   gac_widget->updateGapAdjustCruise("LongitudinalPersonality");

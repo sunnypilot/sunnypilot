@@ -232,7 +232,6 @@ void ui_update_params(UIState *s) {
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
 
-  s->scene.dynamic_lane_profile_toggle = params.getBool("DynamicLaneProfileToggle");
   s->scene.visual_brake_lights = params.getBool("BrakeLights");
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
@@ -367,7 +366,6 @@ void UIState::updateStatus() {
   }
 
   if (sm->frame % UI_FREQ == 0) { // Update every 1 Hz
-    scene.sidebar_temp = params.getBool("SidebarTemperature");
     scene.sidebar_temp_options = std::atoi(params.get("SidebarTemperatureOptions").c_str());
   }
 }

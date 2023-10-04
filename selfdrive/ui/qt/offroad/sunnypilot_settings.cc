@@ -280,15 +280,11 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     },
   };
 
-  // Controls: Dynamic Lane Profile group
-  auto dynamic_lane_profile = new DynamicLaneProfile(this);
-
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
     "EnableMads", "CustomOffsets", "EnforceTorqueLateral", "SpeedLimitPercOffset", "SpeedLimitControl",
     "CustomTorqueLateral", "LiveTorque", "TorquedOverride"
   };
-  connect(dynamic_lane_profile, &DynamicLaneProfile::updateExternalToggles, this, &SPControlsPanel::updateToggles);
 
   // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
@@ -328,6 +324,14 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
   lat_accel_factor = new TorqueMaxLatAccel();
   connect(lat_accel_factor, &SPOptionControl::updateLabels, lat_accel_factor, &TorqueMaxLatAccel::refresh);
 
+  std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
+  dlp_settings = new ButtonParamControl(
+    "DynamicLaneProfile", "Dynamic Lane Profile", "Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions.",
+    "../assets/offroad/icon_blank.png",
+    dlp_settings_texts
+  );
+  dlp_settings->showDescription();
+
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
 
@@ -336,7 +340,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
 
     if (param == "RoadEdge") {
       // Controls: Dynamic Lane Profile group
-      addItem(dynamic_lane_profile);
+      addItem(dlp_settings);
     }
 
     if (param == "CustomOffsets") {
@@ -410,10 +414,18 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     friction->refresh();
     lat_accel_factor->refresh();
   });
+
+  param_watcher = new ParamWatcher(this);
+
+  QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    updateToggles();
+    updateButtons();
+  });
 }
 
 void SPControlsPanel::showEvent(QShowEvent *event) {
   updateToggles();
+  updateButtons();
 }
 
 void SPControlsPanel::updateToggles() {
@@ -425,8 +437,8 @@ void SPControlsPanel::updateToggles() {
     }
   }
 
-  // toggle names to update when DynamicLaneProfileToggle is flipped
-  toggles["VisionCurveLaneless"]->setVisible(params.getBool("DynamicLaneProfileToggle"));
+  // toggle VisionCurveLaneless when DynamicLaneProfile == 2/Auto
+  toggles["VisionCurveLaneless"]->setEnabled(QString::fromStdString(params.get("DynamicLaneProfile")) == "2");
 
   // toggle names to update when CustomOffsets is flipped
   std::vector<AbstractControl*> customOffsetsGroup{camera_offset, path_offset};
@@ -506,6 +518,14 @@ void SPControlsPanel::updateToggles() {
       params.remove("EnforceTorqueLateral");
     }
   }
+}
+
+void SPControlsPanel::updateButtons() {
+  param_watcher->addParam("DynamicLaneProfile");
+
+  if (!isVisible()) return;
+
+  dlp_settings->setButton("DynamicLaneProfile");
 }
 
 SPVehiclesPanel::SPVehiclesPanel(QWidget *parent) : QWidget(parent) {
@@ -724,8 +744,15 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
     }
   }
 
-  auto sidebar_temp = new SidebarTemp(this);
-  addItem(sidebar_temp);
+  std::vector<QString> sidebar_temp_texts{tr("Off"), tr("Ambient"), tr("RAM"), tr("CPU"), tr("GPU"), tr("Max")};
+  sidebar_temp_setting = new ButtonParamControl(
+    "SidebarTemperatureOptions", "Display Temperature on Sidebar", "",
+    "../assets/offroad/icon_blank.png",
+    sidebar_temp_texts,
+    255
+  );
+  sidebar_temp_setting->showDescription();
+  addItem(sidebar_temp_setting);
 
   // trigger updateToggles() when toggleFlipped
   connect(toggles["DevUI"], &ToggleControl::toggleFlipped, [=](bool state) {
@@ -1033,97 +1060,4 @@ void ChevronInfo::refresh() {
   } else if (option == "2") {
     setLabel(tr("Speed"));
   }
-}
-
-SidebarTemp::SidebarTemp(QWidget *parent) : QWidget(parent), outer_layout(this) {
-  outer_layout.setMargin(0);
-  outer_layout.setSpacing(0);
-  outer_layout.addLayout(&inner_layout);
-  inner_layout.setMargin(0);
-  //inner_layout.setSpacing(25); // default spacing is 25
-  outer_layout.addStretch();
-
-  sidebarTemperature = new ParamControl(
-    "SidebarTemperature",
-    tr("Display Temperature on Sidebar"),
-    tr("Display Ambient temperature, memory temperature, CPU core with the highest temperature, GPU temperature, or max of Memory/CPU/GPU on the sidebar."),
-    "../assets/offroad/icon_calibration.png"
-  );
-
-  std::vector<QString> sidebar_temp_texts{tr("Ambient"), tr("Memory"), tr("CPU"), tr("GPU"), tr("Max")};
-  sidebar_temp_setting = new ButtonParamControl(
-    "SidebarTemperatureOptions", "", "",
-    "../assets/offroad/icon_blank.png",
-    sidebar_temp_texts
-  );
-
-  connect(sidebarTemperature, &ToggleControl::toggleFlipped, [=](bool state) {
-    updateToggles();
-  });
-
-  addItem(sidebarTemperature);
-  addItem(sidebar_temp_setting);
-}
-
-void SidebarTemp::showEvent(QShowEvent *event) {
-  updateToggles();
-}
-
-void SidebarTemp::updateToggles() {
-  sidebar_temp_setting->setVisible(sidebarTemperature->isToggled());
-}
-
-DynamicLaneProfile::DynamicLaneProfile(QWidget *parent) : QWidget(parent), outer_layout(this) {
-  outer_layout.setMargin(0);
-  outer_layout.setSpacing(0);
-  outer_layout.addLayout(&inner_layout);
-  inner_layout.setMargin(0);
-  //inner_layout.setSpacing(25); // default spacing is 25
-  outer_layout.addStretch();
-
-  dynamicLaneProfile = new ParamControl(
-    "DynamicLaneProfileToggle",
-    tr("Enable Dynamic Lane Profile"),
-    tr("Enable toggle to use Dynamic Lane Profile. Disable toggle to use Laneless only."),
-    "../assets/offroad/icon_road.png"
-  );
-
-  std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
-  dlp_settings = new ButtonParamControl(
-    "DynamicLaneProfile", "", "",
-    "../assets/offroad/icon_blank.png",
-    dlp_settings_texts
-  );
-
-  connect(dynamicLaneProfile, &ToggleControl::toggleFlipped, [=]() {
-    updateToggles();
-    emit updateExternalToggles();
-  });
-
-  addItem(dynamicLaneProfile);
-  addItem(dlp_settings);
-
-  param_watcher = new ParamWatcher(this);
-
-  QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
-    updateButtons();
-  });
-}
-
-void DynamicLaneProfile::showEvent(QShowEvent *event) {
-  updateToggles();
-  updateButtons();
-}
-
-void DynamicLaneProfile::updateToggles() {
-  // toggle names to update when DynamicLaneProfile is flipped
-  dlp_settings->setVisible(dynamicLaneProfile->isToggled());
-}
-
-void DynamicLaneProfile::updateButtons() {
-  param_watcher->addParam("DynamicLaneProfile");
-
-  if (!isVisible()) return;
-
-  dlp_settings->setButton("DynamicLaneProfile");
 }

@@ -57,7 +57,6 @@ class LateralPlanner:
     self.reset_mpc(np.zeros(4))
 
     self.param_s = Params()
-    self.dynamic_lane_profile_enabled = self.param_s.get_bool("DynamicLaneProfileToggle")
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding="utf8"))
     self.dynamic_lane_profile_status = True
     self.dynamic_lane_profile_status_buffer = False
@@ -73,7 +72,6 @@ class LateralPlanner:
   def read_param(self):
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))
     if self.param_read_counter % 50 == 0:
-      self.dynamic_lane_profile_enabled = self.param_s.get_bool("DynamicLaneProfileToggle")
       self.vision_curve_laneless = self.param_s.get_bool("VisionCurveLaneless")
     self.param_read_counter += 1
 
@@ -163,9 +161,7 @@ class LateralPlanner:
       self.solution_invalid_cnt = 0
 
   def get_dynamic_lane_profile(self, longitudinal_plan_sp):
-    if not self.dynamic_lane_profile_enabled:
-      return True
-    elif self.dynamic_lane_profile == 1:
+    if self.dynamic_lane_profile == 1:
       return True
     elif self.dynamic_lane_profile == 0:
       return False

@@ -194,7 +194,6 @@ typedef struct UIScene {
 
   int dynamic_lane_profile;
   bool dynamic_lane_profile_status = true;
-  bool dynamic_lane_profile_toggle;
 
   bool visual_brake_lights;
 
@@ -229,7 +228,6 @@ typedef struct UIScene {
   bool e2e_long_alert_light, e2e_long_alert_lead, e2e_long_alert_ui;
   float e2eX[13] = {0};
 
-  bool sidebar_temp;
   int sidebar_temp_options;
 
   float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;

@@ -95,12 +95,14 @@ void Sidebar::updateState(const UIState &s) {
   if (sm.frame % UI_FREQ == 0) { // Update every 1 Hz
     switch (s.scene.sidebar_temp_options) {
       case 0:
-        sidebar_temp = QString::number((int)deviceState.getAmbientTempC());
         break;
       case 1:
+        sidebar_temp = QString::number((int)deviceState.getAmbientTempC());
+        break;
+      case 2:
         sidebar_temp = QString::number((int)deviceState.getMemoryTempC());
         break;
-      case 2: {
+      case 3: {
         const auto& cpu_temp_list = deviceState.getCpuTempC();
         float max_cpu_temp = std::numeric_limits<float>::lowest();
 
@@ -113,7 +115,7 @@ void Sidebar::updateState(const UIState &s) {
         }
         break;
       }
-      case 3: {
+      case 4: {
         const auto& gpu_temp_list = deviceState.getGpuTempC();
         float max_gpu_temp = std::numeric_limits<float>::lowest();
 
@@ -126,7 +128,7 @@ void Sidebar::updateState(const UIState &s) {
         }
         break;
       }
-      case 4:
+      case 5:
         sidebar_temp = QString::number((int)deviceState.getMaxTempC());
         break;
       default:
@@ -136,12 +138,13 @@ void Sidebar::updateState(const UIState &s) {
     setProperty("sidebarTemp", sidebar_temp + "°C");
   }
 
-  ItemStatus tempStatus = {{tr("TEMP"), s.scene.sidebar_temp ? sidebar_temp_str : tr("HIGH")}, danger_color};
+  bool show_sidebar_temp = s.scene.sidebar_temp_options != 0;
+  ItemStatus tempStatus = {{tr("TEMP"), show_sidebar_temp ? sidebar_temp_str : tr("HIGH")}, danger_color};
   auto ts = deviceState.getThermalStatus();
   if (ts == cereal::DeviceState::ThermalStatus::GREEN) {
-    tempStatus = {{tr("TEMP"), s.scene.sidebar_temp ? sidebar_temp_str : tr("GOOD")}, good_color};
+    tempStatus = {{tr("TEMP"), show_sidebar_temp ? sidebar_temp_str : tr("GOOD")}, good_color};
   } else if (ts == cereal::DeviceState::ThermalStatus::YELLOW) {
-    tempStatus = {{tr("TEMP"), s.scene.sidebar_temp ? sidebar_temp_str : tr("OK")}, warning_color};
+    tempStatus = {{tr("TEMP"), show_sidebar_temp ? sidebar_temp_str : tr("OK")}, warning_color};
   }
   setProperty("tempStatus", QVariant::fromValue(tempStatus));
 

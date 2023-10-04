@@ -201,17 +201,53 @@ private:
   bool store_confirm = false;
 };
 
-class ButtonParamControl : public AbstractControl {
+class SPAbstractControl : public QFrame {
+  Q_OBJECT
+
+public:
+  void setDescription(const QString &desc) {
+    if (description) description->setText(desc);
+  }
+
+  void setTitle(const QString &title) {
+    title_label->setText(title);
+  }
+
+  const QString getDescription() {
+    return description->text();
+  }
+
+public slots:
+  void showDescription() {
+    description->setVisible(true);
+  }
+
+signals:
+  void showDescriptionEvent();
+
+protected:
+  SPAbstractControl(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  void hideEvent(QHideEvent *e) override;
+
+  QHBoxLayout *hlayout;
+  QPushButton *title_label;
+
+private:
+  QLabel *description = nullptr;
+};
+
+class ButtonParamControl : public SPAbstractControl {
   Q_OBJECT
 public:
   ButtonParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 225) : AbstractControl(title, desc, icon) {
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : SPAbstractControl(title, desc, icon) {
     const QString style = R"(
       QPushButton {
-        border-radius: 50px;
-        font-size: 40px;
-        font-weight: 500;
-        height:100px;
+        border: 0px;
+        border-radius: 0px;
+        font-size: 50px;
+        font-weight: 450;
+        height:125px;
         padding: 0 25 0 25;
         color: #E4E4E4;
         background-color: #393939;
@@ -220,7 +256,7 @@ public:
         background-color: #4a4a4a;
       }
       QPushButton:checked:enabled {
-        background-color: #1e79e8;
+        background-color: #696868;
       }
       QPushButton:disabled {
         color: #33E4E4E4;
@@ -239,7 +275,12 @@ public:
       button->setMinimumWidth(minimum_button_width);
       hlayout->addWidget(button);
       button_group->addButton(button, i);
+
+      if (i == 0) button->setStyleSheet(style + "QPushButton { border-top-left-radius: 15px; border-bottom-left-radius: 15px; }");
+      else if (i == button_texts.size() - 1) button->setStyleSheet(style + "QPushButton { border-top-right-radius: 15px; border-bottom-right-radius: 15px; }");
     }
+
+    hlayout->setAlignment(Qt::AlignLeft);
 
     QObject::connect(button_group, QOverload<int, bool>::of(&QButtonGroup::buttonToggled), [=](int id, bool checked) {
       if (checked) {
