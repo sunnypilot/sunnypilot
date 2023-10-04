@@ -330,6 +330,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
     "../assets/offroad/icon_blank.png",
     dlp_settings_texts
   );
+  dlp_settings->showDescription();
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -750,6 +751,7 @@ SPVisualsPanel::SPVisualsPanel(QWidget *parent) : ListWidget(parent) {
     sidebar_temp_texts,
     255
   );
+  sidebar_temp_setting->showDescription();
   addItem(sidebar_temp_setting);
 
   // trigger updateToggles() when toggleFlipped

@@ -82,7 +82,7 @@ SPAbstractControl::SPAbstractControl(const QString &title, const QString &desc, 
   description->setContentsMargins(0, 20, 40, 20);
   description->setStyleSheet("font-size: 40px; color: grey");
   description->setWordWrap(true);
-  description->setVisible(true);
+  description->setVisible(false);
   main_layout->addWidget(description);
 
   main_layout->addStretch();

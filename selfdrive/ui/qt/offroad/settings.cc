@@ -105,6 +105,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                              "In relaxed mode openpilot will stay further away from lead cars."),
                                           "../assets/offroad/icon_speed_limit.png",
                                           longi_button_texts);
+  long_personality_setting->showDescription();
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
 
