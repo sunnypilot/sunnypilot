@@ -1654,6 +1654,8 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   const UIScene &scene = s->scene;
   SubMaster &sm = *(s->sm);
 
+  const auto car_state = sm["carState"].getCarState();
+
   // Shane's colored lanelines
   for (int i = 0; i < std::size(scene.lane_line_vertices); ++i) {
     if (i == 1 || i == 2) {
@@ -1683,12 +1685,12 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
 
   // paint path
   QLinearGradient bg(0, height(), 0, height() / 4);
-  if (madsEnabled || sm["carState"].getCarState().getCruiseState().getEnabled()) {
+  if (madsEnabled || car_state.getCruiseState().getEnabled()) {
     if (steerOverride && latActive) {
       bg.setColorAt(0.0, QColor::fromHslF(20 / 360., 0.94, 0.51, 0.17));
       bg.setColorAt(0.5, QColor::fromHslF(20 / 360., 1.0, 0.68, 0.17));
       bg.setColorAt(1.0, QColor::fromHslF(20 / 360., 1.0, 0.68, 0.0));
-    } else if (!(latActive || sm["carState"].getCarState().getCruiseState().getEnabled())) {
+    } else if (!(latActive || car_state.getCruiseState().getEnabled())) {
       bg.setColorAt(0, whiteColor());
       bg.setColorAt(1, whiteColor(0));
     } else if (sm["controlsState"].getControlsState().getExperimentalMode()) {
