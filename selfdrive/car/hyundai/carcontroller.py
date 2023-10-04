@@ -430,7 +430,7 @@ class CarController:
       else:
         target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
       if self.custom_planner_speed:
-        target_speed_kph = self.curve_speed_hysteresis(self.v_target_plan)
+        target_speed_kph = self.curve_speed_hysteresis(self.v_target_plan * CV.MS_TO_KPH)
       if self.v_tsc_state != 0 or self.m_tsc_state > 1:
         self.final_speed_kph = self.get_curve_speed(target_speed_kph, v_cruise_kph_prev)
       else:
