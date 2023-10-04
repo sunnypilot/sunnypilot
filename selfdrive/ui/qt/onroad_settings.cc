@@ -134,7 +134,7 @@ void OnroadSettings::changeGapAdjustCruise() {
 void OnroadSettings::changeDynamicExperimentalControl() {
   UIScene &scene = uiState()->scene;
   const auto cp = (*uiState()->sm)["carParams"].getCarParams();
-  bool can_change = hasLongitudinalControl(cp) && scene.dynamic_experimental_control_toggle;
+  bool can_change = (hasLongitudinalControl(cp) || (cp.getCustomStockLongAvailable() && params.getBool("CustomStockLongPlanner"))) && scene.dynamic_experimental_control_toggle;
   if (can_change) {
     scene.dynamic_experimental_control = !scene.dynamic_experimental_control;
     params.putBool("DynamicExperimentalControl", scene.dynamic_experimental_control);
