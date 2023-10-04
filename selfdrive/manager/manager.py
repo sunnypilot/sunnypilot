@@ -70,7 +70,6 @@ def manager_init() -> None:
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
     ("DynamicLaneProfile", "1"),
-    ("DynamicLaneProfileToggle", "0"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
     ("GpxDeleteAfterUpload", "1"),

@@ -61,6 +61,36 @@ void AbstractControl::hideEvent(QHideEvent *e) {
   }
 }
 
+SPAbstractControl::SPAbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
+  QVBoxLayout *main_layout = new QVBoxLayout(this);
+  main_layout->setMargin(0);
+
+  hlayout = new QHBoxLayout;
+  hlayout->setMargin(0);
+  hlayout->setSpacing(0);
+
+  // title
+  title_label = new QPushButton(title);
+  title_label->setFixedHeight(120);
+  title_label->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left; border: none;");
+  main_layout->addWidget(title_label, 1);
+
+  main_layout->addLayout(hlayout);
+
+  // description
+  description = new QLabel(desc);
+  description->setContentsMargins(0, 20, 40, 20);
+  description->setStyleSheet("font-size: 40px; color: grey");
+  description->setWordWrap(true);
+  description->setVisible(true);
+  main_layout->addWidget(description);
+
+  main_layout->addStretch();
+}
+
+void SPAbstractControl::hideEvent(QHideEvent *e) {
+}
+
 // controls
 
 ButtonControl::ButtonControl(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControl(title, desc, "", parent) {

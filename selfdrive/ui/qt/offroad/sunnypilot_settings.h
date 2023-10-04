@@ -258,56 +258,6 @@ private:
   Params params;
 };
 
-class SidebarTemp : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit SidebarTemp(QWidget *parent = nullptr);
-  void showEvent(QShowEvent *event) override;
-
-public slots:
-  void updateToggles();
-
-private:
-  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
-  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
-  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
-  QVBoxLayout outer_layout;
-  QVBoxLayout inner_layout;
-  Params params;
-
-  ParamControl *sidebarTemperature;
-  ButtonParamControl *sidebar_temp_setting;
-};
-
-class DynamicLaneProfile : public QWidget {
-  Q_OBJECT
-
-public:
-  explicit DynamicLaneProfile(QWidget *parent = nullptr);
-  void showEvent(QShowEvent *event) override;
-
-signals:
-  void updateExternalToggles();
-
-public slots:
-  void updateToggles();
-
-private:
-  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
-  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
-  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
-  QVBoxLayout outer_layout;
-  QVBoxLayout inner_layout;
-  Params params;
-
-  ParamControl *dynamicLaneProfile;
-  ButtonParamControl *dlp_settings;
-
-  ParamWatcher *param_watcher;
-  void updateButtons();
-};
-
 class SPGeneralPanel : public ListWidget {
   Q_OBJECT
 
@@ -339,6 +289,7 @@ public slots:
 private:
   Params params;
   std::map<std::string, ParamControl*> toggles;
+  ParamWatcher *param_watcher;
 
   CameraOffset *camera_offset;
   PathOffset *path_offset;
@@ -347,6 +298,9 @@ private:
   SpeedLimitValueOffset *slvo;
   TorqueFriction *friction;
   TorqueMaxLatAccel *lat_accel_factor;
+  ButtonParamControl *dlp_settings;
+
+  void updateButtons();
 };
 
 class SPVehiclesPanel : public QWidget {
@@ -388,6 +342,7 @@ private:
 
   DevUiInfo *dev_ui_info;
   ChevronInfo *chevron_info;
+  ButtonParamControl *sidebar_temp_setting;
 
   void updateToggles();
 };

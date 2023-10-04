@@ -426,7 +426,7 @@ void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
 
 void OnroadSettingsButton::updateState(const UIState &s) {
   const auto cp = (*s.sm)["carParams"].getCarParams();
-  auto dlp_enabled = s.scene.dynamic_lane_profile_toggle;
+  auto dlp_enabled = true;
   auto dec_enabled = s.scene.dynamic_experimental_control_toggle;
   bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || dec_enabled || !cp.getPcmCruiseSpeed();
 
@@ -1587,9 +1587,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Dynamic Lane Profile
-  if (uiState()->scene.dynamic_lane_profile_toggle) {
-    drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");
-  }
+  drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
 
   if (uiState()->scene.dynamic_experimental_control_toggle) {
     bool cruise_enabled = (*uiState()->sm)["carState"].getCarState().getCruiseState().getEnabled();
