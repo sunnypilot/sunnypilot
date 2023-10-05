@@ -44,6 +44,7 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
 * UPDATED: Auto-detect custom Mapbox token if a personal Mapbox token is provided
   * REMOVED: "Enable Mapbox Navigation" toggle
 * UPDATED: Update color from Green 🟢 to Blue 🔵 for settings toggles and buttons
+* UPDATED: Button redesign for Driving Personality, Dynamic Lane Profile, and Sidebar Temperature
 * FIXED: Retain hotspot/tethering state was not consistently saved
 * FIXED: Map stuck in "Map Loading" if comma Prime is active
 * FIXED: UI elements adjustments
