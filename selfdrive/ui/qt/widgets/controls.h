@@ -253,13 +253,18 @@ public:
       QPushButton:pressed {
         background-color: #4a4a4a;
       }
+      QPushButton:enabled {
+        color: #33E4E4E4;
+      }
       QPushButton:checked:enabled {
         background-color: #696868;
+        color: #E4E4E4;
       }
       QPushButton:checked:enabled:hover {
         border: 4px solid #696868;
         border-radius: 15px;
         background-color: #696868;
+        color: #E4E4E4;
       }
       QPushButton:disabled {
         color: #33E4E4E4;
@@ -310,24 +315,22 @@ protected:
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    if (button_group_enabled) {
-      // Calculate the total width and height for the background rectangle
-      int w = 0;
-      int h = 124;
+    // Calculate the total width and height for the background rectangle
+    int w = 0;
+    int h = 124;
 
-      for (int i = 0; i < hlayout->count(); ++i) {
-        QPushButton *button = qobject_cast<QPushButton *>(hlayout->itemAt(i)->widget());
-        if (button) {
-          w += button->width();
-        }
+    for (int i = 0; i < hlayout->count(); ++i) {
+      QPushButton *button = qobject_cast<QPushButton *>(hlayout->itemAt(i)->widget());
+      if (button) {
+        w += button->width();
       }
-
-      // Draw the background rectangle
-      QRect rect(0 + 2, h + 2, w, h);
-      p.setBrush(Qt::NoBrush); // Background color
-      p.setPen(QPen(QColor("#696868"), 3));
-      p.drawRoundedRect(rect, 15, 15);
     }
+
+    // Draw the background rectangle
+    QRect rect(0 + 2, h + 2, w, h);
+    p.setBrush(button_group_enabled ? QColor(0, 0, 0, 0) : QColor("#393939")); // Background color
+    p.setPen(button_group_enabled ? (QPen(QColor("#696868"), 3)) : QPen(Qt::NoPen));
+    p.drawRoundedRect(rect, 15, 15);
   }
 
 private:
