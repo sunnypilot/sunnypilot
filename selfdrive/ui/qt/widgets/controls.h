@@ -243,19 +243,22 @@ public:
                      const std::vector<QString> &button_texts, const int minimum_button_width = 300) : SPAbstractControl(title, desc, icon) {
     const QString style = R"(
       QPushButton {
-        border: 0px;
-        border-radius: 0px;
+        border-radius: 15px;
         font-size: 50px;
         font-weight: 450;
-        height:125px;
+        height:124px;
         padding: 0 25 0 25;
         color: #E4E4E4;
-        background-color: #393939;
       }
       QPushButton:pressed {
         background-color: #4a4a4a;
       }
       QPushButton:checked:enabled {
+        background-color: #696868;
+      }
+      QPushButton:checked:enabled:hover {
+        border: 4px solid #696868;
+        border-radius: 15px;
         background-color: #696868;
       }
       QPushButton:disabled {
@@ -273,11 +276,9 @@ public:
       button->setChecked(i == value);
       button->setStyleSheet(style);
       button->setMinimumWidth(minimum_button_width);
+      if (i == 0) hlayout->addSpacing(2);
       hlayout->addWidget(button);
       button_group->addButton(button, i);
-
-      if (i == 0) button->setStyleSheet(style + "QPushButton { border-top-left-radius: 15px; border-bottom-left-radius: 15px; }");
-      else if (i == button_texts.size() - 1) button->setStyleSheet(style + "QPushButton { border-top-right-radius: 15px; border-bottom-right-radius: 15px; }");
     }
 
     hlayout->setAlignment(Qt::AlignLeft);
@@ -293,6 +294,7 @@ public:
     for (auto btn : button_group->buttons()) {
       btn->setEnabled(enable);
     }
+    button_group_enabled = enable;
   }
 
   void setButton(QString param) {
@@ -303,10 +305,37 @@ public:
     }
   }
 
+protected:
+  void paintEvent(QPaintEvent *event) override {
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+
+    if (button_group_enabled) {
+      // Calculate the total width and height for the background rectangle
+      int w = 0;
+      int h = 124;
+
+      for (int i = 0; i < hlayout->count(); ++i) {
+        QPushButton *button = qobject_cast<QPushButton *>(hlayout->itemAt(i)->widget());
+        if (button) {
+          w += button->width();
+        }
+      }
+
+      // Draw the background rectangle
+      QRect rect(0 + 2, h + 2, w, h);
+      p.setBrush(Qt::NoBrush); // Background color
+      p.setPen(QPen(QColor("#696868"), 3));
+      p.drawRoundedRect(rect, 15, 15);
+    }
+  }
+
 private:
   std::string key;
   Params params;
   QButtonGroup *button_group;
+
+  bool button_group_enabled = true;
 };
 
 class ListWidget : public QWidget {
