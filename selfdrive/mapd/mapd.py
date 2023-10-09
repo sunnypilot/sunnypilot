@@ -7,7 +7,7 @@ from time import strftime, gmtime
 from cereal import custom
 import cereal.messaging as messaging
 from common.params import Params
-from common.realtime import set_core_affinity, Ratekeeper
+from common.realtime import set_core_affinity, set_thread_affinity, Ratekeeper
 from selfdrive.mapd.lib.osm import OSM
 from selfdrive.mapd.lib.geo import distance_to_points
 from selfdrive.mapd.lib.WayCollection import WayCollection
@@ -131,6 +131,7 @@ class MapD():
 
     self._query_thread = threading.Thread(target=query, args=(self.osm, self.location_deg, self.location_rad,
                                                               QUERY_RADIUS_OFFLINE if self.data_type == DataType.offline else QUERY_RADIUS))
+    set_thread_affinity(self._query_thread, [0, 1, 2, 3])
     self._query_thread.start()
 
   def updated_osm_data(self):
