@@ -9,6 +9,8 @@ import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
+from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
 from openpilot.selfdrive.modeld.constants import T_IDXS
 from openpilot.selfdrive.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
@@ -16,7 +18,6 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import Longi
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N, get_speed_error
 from openpilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
-from openpilot.selfdrive.controls.lib.speed_limit_controller import SpeedLimitController, SpeedLimitResolver
 from openpilot.selfdrive.controls.lib.turn_speed_controller import TurnSpeedController
 from openpilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
 from openpilot.selfdrive.controls.lib.events import Events
@@ -225,7 +226,7 @@ class LongitudinalPlanner:
     longitudinalPlanSP.speedLimit = float(self.speed_limit_controller.speed_limit)
     longitudinalPlanSP.speedLimitOffset = float(self.speed_limit_controller.speed_limit_offset)
     longitudinalPlanSP.distToSpeedLimit = float(self.speed_limit_controller.distance)
-    longitudinalPlanSP.isMapSpeedLimit = bool(self.speed_limit_controller.source not in (SpeedLimitResolver.Source.none, SpeedLimitResolver.Source.nav))
+    longitudinalPlanSP.isMapSpeedLimit = bool(self.speed_limit_controller.source not in (Source.none, Source.nav))
     longitudinalPlanSP.events = self.events.to_msg()
 
     longitudinalPlanSP.turnSpeedControlState = self.turn_speed_controller.state
