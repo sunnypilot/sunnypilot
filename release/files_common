@@ -214,10 +214,14 @@ selfdrive/controls/lib/lateral_planner.py
 selfdrive/controls/lib/longcontrol.py
 selfdrive/controls/lib/longitudinal_planner.py
 selfdrive/controls/lib/pid.py
-selfdrive/controls/lib/speed_limit_controller.py
 selfdrive/controls/lib/turn_speed_controller.py
 selfdrive/controls/lib/vehicle_model.py
 selfdrive/controls/lib/vision_turn_controller.py
+selfdrive/controls/lib/sunnypilot/__init__.py
+selfdrive/controls/lib/sunnypilot/common.py
+selfdrive/controls/lib/sunnypilot/helpers.py
+selfdrive/controls/lib/sunnypilot/speed_limit_controller.py
+selfdrive/controls/lib/sunnypilot/speed_limit_resolver.py
 
 selfdrive/controls/lib/lateral_mpc_lib/.gitignore
 selfdrive/controls/lib/longitudinal_mpc_lib/.gitignore
