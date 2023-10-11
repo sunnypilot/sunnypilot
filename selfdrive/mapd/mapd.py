@@ -254,7 +254,7 @@ class MapD():
 
     liveMapDataSP.currentRoadName = str(current_road_name if current_road_name is not None else "")
 
-    map_data_msg.liveMapDataSP.dataType = self.data_type
+    liveMapDataSP.dataType = self.data_type
 
     pm.send('liveMapDataSP', map_data_msg)
     _debug(f'Mapd *****: Publish: \n{map_data_msg}\n********', log_to_cloud=False)
