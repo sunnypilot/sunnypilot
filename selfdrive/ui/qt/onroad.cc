@@ -5,6 +5,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <sstream>
 
 #include <QDebug>
 #include <QMouseEvent>
@@ -560,7 +561,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   latActive = car_control.getLatActive();
   madsEnabled = car_state.getMadsEnabled();
 
-  brakeLights = car_state.getBrakeLights() && s.scene.visual_brake_lights;
+  brakeLights = car_state.getBrakeLightsDEPRECATED() && s.scene.visual_brake_lights;
 
   standStillTimer = s.scene.stand_still_timer;
   standStill = car_state.getStandstill();
@@ -733,7 +734,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     }
   }
 
-  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLightsDEPRECATED()) && !car_state.getGasPressed() && car_state.getStandstill()) {
     if (e2eLStatus == 2 && !radar_state.getLeadOne().getStatus()) {
       if (chime_sent) {
         chime_count = 0;
