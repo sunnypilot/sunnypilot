@@ -522,7 +522,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto nav_instruction = sm["navInstruction"].getNavInstruction();
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
-  const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto lateral_plan_sp = sm["lateralPlanSP"].getLateralPlanSP();
 
@@ -572,6 +571,29 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   splitPanelVisible = s.scene.map_visible || s.scene.onroad_settings_visible;
 
   // ############################## DEV UI START ##############################
+
+  if (sm.updated("liveLocationKalman")) {
+      auto locationd_location = sm["liveLocationKalman"].getLiveLocationKalman();
+      auto locationd_pos = locationd_location.getPositionGeodetic();
+      auto locationd_orientation = locationd_location.getCalibratedOrientationNED();
+      auto locationd_velocity = locationd_location.getVelocityCalibrated();
+
+      // Check std norm
+      auto pos_ecef_std = locationd_location.getPositionECEF().getStd();
+      bool pos_accurate_enough = sqrt(pow(pos_ecef_std[0], 2) + pow(pos_ecef_std[1], 2) + pow(pos_ecef_std[2], 2)) < 100;
+
+      auto locationd_valid = (locationd_pos.getValid() && locationd_orientation.getValid() && locationd_velocity.getValid() && pos_accurate_enough);
+
+      if (locationd_valid) {
+        gpsAccuracy = 1.0; //Hardcoding to 1 because not available in liveLocationKalman
+        altitude = locationd_pos.getValue()[2];
+
+        bearingAccuracyDeg = 1.0; //Hardcoding to 1 because not available in liveLocationKalman
+        bearingDeg = locationd_orientation.getValue()[2];
+
+      }
+    }
+
   lead_d_rel = radar_state.getLeadOne().getDRel();
   lead_v_rel = radar_state.getLeadOne().getVRel();
   lead_status = radar_state.getLeadOne().getStatus();
@@ -583,13 +605,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
   devUiEnabled = s.scene.dev_ui_enabled;
   devUiInfo = s.scene.dev_ui_info;
-  gpsAccuracy = gpsLocationExternal.getAccuracy();
-  altitude = gpsLocationExternal.getAltitude();
   vEgo = car_state.getVEgo();
   aEgo = car_state.getAEgo();
   steeringTorqueEps = car_state.getSteeringTorqueEps();
-  bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
-  bearingDeg = gpsLocationExternal.getBearingDeg();
   torquedUseParams = (ltp.getUseParams() || s.scene.live_torque_toggle) && !s.scene.torqued_override;
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();

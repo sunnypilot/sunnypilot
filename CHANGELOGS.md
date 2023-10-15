@@ -48,6 +48,10 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
 * FIXED: Retain hotspot/tethering state was not consistently saved
 * FIXED: Map stuck in "Map Loading" if comma Prime is active
 * FIXED: UI elements adjustments
+* FIXED: OpenStreetMap implementation on C3X devices
+  * M-TSC
+  * Altitude (ALT.) display on Developer UI
+  * Current street name on top of driving screen when "OSM Debug UI" is enabled
 * Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
