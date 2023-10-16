@@ -458,6 +458,7 @@ void panda_state_thread(std::vector<Panda *> pandas, bool spoofing_started) {
 
   Params params;
   SubMaster sm({"controlsState"});
+  PubMaster pm({"pandaStates", "peripheralState"});
 
   Panda *peripheral_panda = pandas[0];
   bool is_onroad = false;
