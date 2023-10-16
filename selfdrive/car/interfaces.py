@@ -448,7 +448,7 @@ class CarInterfaceBase(ABC):
     cs_out.madsEnabled = CS.madsEnabled
     cs_out.accEnabled = CS.accEnabled
     cs_out.disengageByBrake = CS.disengageByBrake
-    cs_out.brakeLights |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
+    cs_out.brakeLightsDEPRECATED |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
 
     return cs_out, CS
 
