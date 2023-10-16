@@ -26,6 +26,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   // param, title, desc, icon
@@ -403,7 +404,7 @@ void DevicePanel::refreshPin() {
 void DevicePanel::updateCalibDescription() {
   QString desc =
       tr("sunnypilot requires the device to be mounted within 4° left or right and "
-         "within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.");
+         "within 5° up or 8° down. sunnypilot is continuously calibrating, resetting is rarely required.");
   std::string calib_bytes = params.get("CalibrationParams");
   if (!calib_bytes.empty()) {
     try {

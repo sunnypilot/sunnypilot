@@ -107,8 +107,7 @@ void DBCFile::parse(const QString &content) {
   int multiplexor_cnt = 0;
   while (!stream.atEnd()) {
     ++line_num;
-    QString raw_line = stream.readLine();
-    line = raw_line.trimmed();
+    line = stream.readLine().trimmed();
     if (line.startsWith("BO_ ")) {
       multiplexor_cnt = 0;
       auto match = bo_regexp.match(line);
@@ -171,7 +170,7 @@ void DBCFile::parse(const QString &content) {
       }
     } else if (line.startsWith("CM_ BO_")) {
       if (!line.endsWith("\";")) {
-        int pos = stream.pos() - raw_line.length() - 1;
+        int pos = stream.pos() - line.length() - 1;
         line = content.mid(pos, content.indexOf("\";", pos));
       }
       auto match = msg_comment_regexp.match(line);
@@ -181,7 +180,7 @@ void DBCFile::parse(const QString &content) {
       }
     } else if (line.startsWith("CM_ SG_ ")) {
       if (!line.endsWith("\";")) {
-        int pos = stream.pos() - raw_line.length() - 1;
+        int pos = stream.pos() - line.length() - 1;
         line = content.mid(pos, content.indexOf("\";", pos));
       }
       auto match = sg_comment_regexp.match(line);

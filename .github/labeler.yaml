@@ -1,6 +1,8 @@
 CI / testing:
   - all:
-    - changed-files: ['.github/**', '**/test_*', 'Jenkinsfile']
+    - changed-files: ['.github/**']
+  - all:
+    - changed-files: ['**/test_*']
 
 car: 
   - all:
@@ -57,9 +59,3 @@ multilanguage:
   - all:
     - changed-files: ['selfdrive/ui/translations/**']
 
-research:
-  - all:
-    - changed-files: [
-        'selfdrive/modeld/models/**',
-        'selfdrive/test/process_replay/model_replay_ref_commit',
-      ]

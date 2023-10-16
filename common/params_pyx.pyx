@@ -14,7 +14,7 @@ cdef extern from "common/params.h":
     ALL
 
   cdef cppclass c_Params "Params":
-    c_Params(string) except + nogil
+    c_Params(string) nogil
     string get(string, bool) nogil
     bool getBool(string, bool) nogil
     int remove(string) nogil

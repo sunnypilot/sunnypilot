@@ -11,6 +11,8 @@
 
 #ifdef ENABLE_MAPS
 #include "selfdrive/ui/qt/maps/map_settings.h"
+#else
+#include "selfdrive/ui/qt/widgets/drive_stats.h"
 #endif
 
 // HomeWindow: the container for the offroad and onroad UIs
@@ -168,7 +170,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
 #ifdef ENABLE_MAPS
     left_widget->addWidget(new MapSettings);
 #else
-    left_widget->addWidget(new QWidget);
+    left_widget->addWidget(new DriveStats);
 #endif
     custom_mapbox = QString::fromStdString(params.get("CustomMapboxTokenSk")) != "";
     if (!custom_mapbox) {

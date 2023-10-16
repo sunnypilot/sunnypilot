@@ -78,6 +78,7 @@ selfdrive/__init__.py
 selfdrive/sentry.py
 selfdrive/tombstoned.py
 selfdrive/updated.py
+selfdrive/rtshield.py
 selfdrive/statsd.py
 
 system/logmessaged.py
@@ -226,6 +227,8 @@ selfdrive/controls/lib/lateral_mpc_lib/.gitignore
 selfdrive/controls/lib/longitudinal_mpc_lib/.gitignore
 selfdrive/controls/lib/lateral_mpc_lib/*
 selfdrive/controls/lib/longitudinal_mpc_lib/*
+
+selfdrive/hardware
 
 system/__init__.py
 

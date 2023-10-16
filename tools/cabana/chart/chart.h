@@ -3,7 +3,6 @@
 #include <tuple>
 #include <utility>
 
-#include <QMenu>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsProxyWidget>
 #include <QtCharts/QChartView>
@@ -66,7 +65,6 @@ private slots:
 private:
   void createToolButtons();
   void addSeries(QXYSeries *series);
-  void contextMenuEvent(QContextMenuEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
   void mouseMoveEvent(QMouseEvent *ev) override;
@@ -100,9 +98,7 @@ private:
   int align_to = 0;
   QValueAxis *axis_x;
   QValueAxis *axis_y;
-  QMenu *menu;
   QAction *split_chart_act;
-  QAction *close_act;
   QGraphicsPixmapItem *move_icon;
   QGraphicsProxyWidget *close_btn_proxy;
   QGraphicsProxyWidget *manage_btn_proxy;

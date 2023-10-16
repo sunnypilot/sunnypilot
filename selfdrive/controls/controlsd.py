@@ -37,6 +37,7 @@ LANE_DEPARTURE_THRESHOLD = 0.1
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
 TESTING_CLOSET = "TESTING_CLOSET" in os.environ
+NOSENSOR = "NOSENSOR" in os.environ
 IGNORE_PROCESSES = {"loggerd", "encoderd", "statsd", "mapd", "gpxd", "gpxd_uploader", "mapd", "otisserv", "fleet_manager"}
 
 ThermalStatus = log.DeviceState.ThermalStatus
@@ -70,7 +71,6 @@ class Controls:
       self.pm = messaging.PubMaster(['sendcan', 'controlsState', 'carState',
                                      'carControl', 'carEvents', 'carParams', 'controlsStateSP'])
 
-    self.sensor_packets = ["accelerometer", "gyroscope"]
     self.camera_packets = ["roadCameraState", "driverCameraState", "wideRoadCameraState"]
 
     self.can_sock = can_sock
@@ -89,16 +89,15 @@ class Controls:
 
     self.sm = sm
     if self.sm is None:
-      ignore = self.sensor_packets + ['testJoystick']
+      ignore = ['testJoystick']
       if SIMULATION:
         ignore += ['driverCameraState', 'managerState']
       if self.d_camera_hardware_missing:
         ignore += ['driverMonitoringState']
       self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                      'driverMonitoringState', 'longitudinalPlan', 'lateralPlan', 'liveLocationKalman',
-                                     'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
-                                     'testJoystick',
-                                     'longitudinalPlanSP', 'lateralPlanSP'] + self.camera_packets + self.sensor_packets,
+                                     'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters', 'testJoystick',
+                                     'longitudinalPlanSP', 'lateralPlanSP'] + self.camera_packets,
                                     ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'])
 
     if CI is None:
@@ -428,14 +427,13 @@ class Controls:
       self.events.add(EventName.posenetInvalid)
     if not self.sm['liveLocationKalman'].deviceStable:
       self.events.add(EventName.deviceFalling)
+    if not (self.sm['liveParameters'].sensorValid or self.sm['liveLocationKalman'].sensorsOK):
+      if self.sm.frame > 5 / DT_CTRL:  # Give locationd some time to receive sensor inputs
+        self.events.add(EventName.sensorDataInvalid)
     if not self.sm['liveLocationKalman'].inputsOK:
       self.events.add(EventName.locationdTemporaryError)
     if not self.sm['liveParameters'].valid and not TESTING_CLOSET and (not SIMULATION or REPLAY):
       self.events.add(EventName.paramsdTemporaryError)
-
-    # conservative HW alert. if the data or frequency are off, locationd will throw an error
-    if any((self.sm.frame - self.sm.rcv_frame[s])*DT_CTRL > 10. for s in self.sensor_packets):
-      self.events.add(EventName.sensorDataInvalid)
 
     if not REPLAY:
       # Check for mismatch between openpilot and car's PCM
@@ -464,9 +462,10 @@ class Controls:
 
     # TODO: fix simulator
     if not SIMULATION or REPLAY:
-      if not self.sm['liveLocationKalman'].gpsOK and self.sm['liveLocationKalman'].inputsOK and (self.distance_traveled > 1000):
-        # Not show in first 1 km to allow for driving out of garage. This event shows after 5 minutes
-        self.events.add(EventName.noGps)
+      if not NOSENSOR:
+        if not self.sm['liveLocationKalman'].gpsOK and self.sm['liveLocationKalman'].inputsOK and (self.distance_traveled > 1000):
+          # Not show in first 1 km to allow for driving out of garage. This event shows after 5 minutes
+          self.events.add(EventName.noGps)
 
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
@@ -691,8 +690,8 @@ class Controls:
 
         if CC.latActive:
           steer = clip(self.sm['testJoystick'].axes[1], -1, 1)
-          # max angle is 45 for angle-based cars, max curvature is 0.02
-          actuators.steer, actuators.steeringAngleDeg, actuators.curvature = steer, steer * 45., steer * -0.02
+          # max angle is 45 for angle-based cars
+          actuators.steer, actuators.steeringAngleDeg = steer, steer * 45.
 
         lac_log.active = self.active
         lac_log.steeringAngleDeg = CS.steeringAngleDeg

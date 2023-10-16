@@ -1,4 +1,3 @@
-from enum import StrEnum
 from typing import Dict
 
 from cereal import car
@@ -22,7 +21,7 @@ class CarControllerParams:
     pass
 
 
-class CAR(StrEnum):
+class CAR:
   BODY = "COMMA BODY"
 
 
