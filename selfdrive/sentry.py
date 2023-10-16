@@ -77,11 +77,11 @@ def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
 
 
-def init(project: SentryProject) -> None:
+def init(project: SentryProject) -> bool:
   # forks like to mess with this, so double check
   #comma_remote = is_comma_remote() and "commaai" in get_origin(default="")
   #if not comma_remote or not is_registered_device() or PC:
-  #  return
+  #  return False
 
   #env = "release" if is_tested_branch() else "master"
   env = get_branch_type()
@@ -113,3 +113,5 @@ def init(project: SentryProject) -> None:
 
   if project == SentryProject.SELFDRIVE:
     sentry_sdk.Hub.current.start_session()
+
+  return True

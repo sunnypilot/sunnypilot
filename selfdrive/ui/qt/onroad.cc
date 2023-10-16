@@ -5,6 +5,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <sstream>
 
 #include <QDebug>
 #include <QMouseEvent>

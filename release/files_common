@@ -78,7 +78,6 @@ selfdrive/__init__.py
 selfdrive/sentry.py
 selfdrive/tombstoned.py
 selfdrive/updated.py
-selfdrive/rtshield.py
 selfdrive/statsd.py
 
 system/logmessaged.py
@@ -228,8 +227,6 @@ selfdrive/controls/lib/longitudinal_mpc_lib/.gitignore
 selfdrive/controls/lib/lateral_mpc_lib/*
 selfdrive/controls/lib/longitudinal_mpc_lib/*
 
-selfdrive/hardware
-
 system/__init__.py
 
 system/hardware/__init__.py
@@ -276,6 +273,7 @@ selfdrive/locationd/models/gnss_helpers.py
 
 selfdrive/locationd/torqued.py
 selfdrive/locationd/calibrationd.py
+selfdrive/locationd/helpers.py
 
 system/logcatd/.gitignore
 system/logcatd/SConscript
@@ -314,7 +312,6 @@ system/sensord/SConscript
 system/sensord/sensors_qcom2.cc
 system/sensord/sensors/*.cc
 system/sensord/sensors/*.h
-system/sensord/sensord
 system/sensord/pigeond.py
 
 selfdrive/thermald/thermald.py
