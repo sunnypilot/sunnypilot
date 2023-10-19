@@ -63,11 +63,7 @@ class CarController:
     self.lat_disengage_init = False
     self.lat_active_last = False
 
-    sub_service = 'longitudinalPlanSP' if not CP.pcmCruiseSpeed else \
-                  'radarState' if CP.openpilotLongitudinalControl else \
-                  None
-    if sub_service is not None:
-      self.sm = messaging.SubMaster([sub_service])
+    self.sm = messaging.SubMaster(['longitudinalPlanSP'])
     self.param_s = Params()
     self.is_metric = self.param_s.get_bool("IsMetric")
     self.speed_limit_control_enabled = False
@@ -97,24 +93,11 @@ class CarController:
     self.m_tsc = 0
     self.steady_speed = 0
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
-    self.lead_distance = 0
-
-  def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
-    lead_one = self.sm["radarState"].leadOne
-    lead_two = self.sm["radarState"].leadTwo
-
-    if lead_one.status and (not lead_two.status or lead_one.dRel < lead_two.dRel):
-      return lead_one.dRel
-    if lead_two.status:
-      return lead_two.dRel
-
-    return 19 if hud_control.leadVisible else 0
 
   def update(self, CC, CS, now_nanos):
-    if not self.CP.pcmCruiseSpeed or (self.CP.openpilotLongitudinalControl and self.frame % 5 == 0):
+    if not self.CP.pcmCruiseSpeed:
       self.sm.update(0)
 
-    if not self.CP.pcmCruiseSpeed:
       if self.sm.updated['longitudinalPlanSP']:
         self.v_tsc_state = self.sm['longitudinalPlanSP'].visionTurnControllerState
         self.slc_state = self.sm['longitudinalPlanSP'].speedLimitControlState
@@ -262,19 +245,14 @@ class CarController:
             if self.frame % 2 == 0:
               can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
 
-      # Parse lead distance from radarState and display the corresponding distance in the car's cluster
-      if self.sm.updated['radarState'] and self.frame % 5 == 0 and self.CP.openpilotLongitudinalControl:
-        self.lead_distance = self.calculate_lead_distance(hud_control)
-
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
         if self.hkg_can_smooth_stop:
           stopping = stopping and CS.out.vEgoRaw < 0.05
-
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
         can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, jerk, int(self.frame / 2),
-                                                        self.lead_distance, set_speed_in_units, stopping,
+                                                        hud_control.leadVisible, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS.mainEnabled, CS, escc, self.CP.carFingerprint))
 
       # 20 Hz LFA MFA message
