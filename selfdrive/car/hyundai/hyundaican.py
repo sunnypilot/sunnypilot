@@ -129,7 +129,7 @@ def create_lfahda_mfc(packer, enabled, lat_active, lateral_paused, blinking_icon
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca,
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_distance, set_speed, stopping, long_override, use_fca,
                         main_enabled, CS, escc, car_fingerprint):
   commands = []
 
@@ -176,7 +176,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
     "JerkLowerLimit": 5.0, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
-    "ObjGap": 2 if lead_visible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
+    "ObjGap": get_object_gap(lead_distance) # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
   }
   commands.append(packer.make_can_msg("SCC14", 0, scc14_values))
 
@@ -236,3 +236,25 @@ def create_frt_radar_opt(packer):
     "CF_FCA_Equip_Front_Radar": 1,
   }
   return packer.make_can_msg("FRT_RADAR11", 0, frt_radar11_values)
+
+
+def get_object_gap(lead_distance: float) -> int:
+  if lead_distance <= 0:
+    return 0
+
+  # Define distance ranges and corresponding values.
+  ranges = [(30, 5),
+            (25, 4),
+            (20, 3),
+            (0,  2)]
+
+  # The next function scans through 'ranges' in ascending order,
+  # returning the associated distance range for the first range
+  # whose lower bound is exceeded by lead_distance.
+  #
+  # If lead_distance does not exceed any bounds, it defaults to 0 (no lead).
+  #
+  # For example: if lead_distance is 22, then 3 (20-25 m) is returned.
+  # This is because 22 is greater than the lower bound of this range (20),
+  # but does not exceed the next range's lower bound (25).
+  return next((gap for dist, gap in ranges if lead_distance > dist), 0)
