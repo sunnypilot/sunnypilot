@@ -645,7 +645,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // hide onroad settings button for alerts and flip for right hand DM
   if (onroad_settings_btn->isEnabled()) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
