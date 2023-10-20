@@ -626,6 +626,11 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update onroad settings button state
   onroad_settings_btn->updateState(s);
 
+#ifdef ENABLE_DASHCAM
+  // update screen recorder button
+  recorder->updateState(s);
+#endif
+
   // update buttons layout
   updateButtonsLayout();
 
@@ -647,6 +652,14 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
     main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
+
+#ifdef ENABLE_DASHCAM
+  // hide screen recorder button for alerts and flip for right hand DM
+  if (recorder->isEnabled()) {
+    recorder->setVisible(!hideBottomIcons);
+    main_layout->setAlignment(recorder, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+  }
+#endif
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   slcState = lp_sp.getSpeedLimitControlState();
@@ -783,10 +796,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
-
-#ifdef ENABLE_DASHCAM
-  recorder->updateState(s);
-#endif
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {

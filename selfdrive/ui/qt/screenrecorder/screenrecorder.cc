@@ -28,6 +28,7 @@ ScreenRecoder::ScreenRecoder(QWidget *parent) : QPushButton(parent), image_queue
   rec_btn_size = 150;
 
   setVisible(false);
+  setEnabled(false);
   setFixedSize(rec_btn_size, rec_btn_size);
   setFocusPolicy(Qt::NoFocus);
   QObject::connect(this, &QPushButton::clicked, [=]() {
@@ -183,4 +184,5 @@ void ScreenRecoder::update_screen() {
 void ScreenRecoder::updateState(const UIState &s) {
   bool show_toggle = params.getBool("ScreenRecorder") || recording;
   setVisible(show_toggle);
+  setEnabled(show_toggle);
 }
