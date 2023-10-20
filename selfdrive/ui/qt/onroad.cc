@@ -1282,19 +1282,19 @@ void AnnotatedCameraWidget::drawRightDevUi(QPainter &p, int x, int y) {
     ry = y + rh;
   }
 
-  // Add Device Memory Usage
+  // Add Device Memory (RAM) Usage
   // Unit: Percent
   if (true) {
     char val_str[16];
     QColor valueColor = QColor(255, 255, 255, 255);
 
-    if (memoryUsagePercent > 75) {
+    if (memoryUsagePercent > 85) {
       valueColor = QColor(255, 188, 0, 255);
     }
 
     snprintf(val_str, sizeof(val_str), "%d%s", (int)memoryUsagePercent, "%");
 
-    rh += drawDevUiElementRight(p, x, ry, val_str, "MEMORY", "", valueColor);
+    rh += drawDevUiElementRight(p, x, ry, val_str, "RAM", "", valueColor);
     ry = y + rh;
   }
 
