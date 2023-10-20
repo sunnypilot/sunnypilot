@@ -1,6 +1,6 @@
 sunnypilot - 0.9.5.1 (2023-10-xx)
 ========================
-* UPDATED: Synced with commaai's 0.9.5 release
+* UPDATED: Synced with commaai's master commit 41a04b4
 * NEW❗: Night Strike driving model
 * NEW❗: Onroad Settings Panel
   * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
