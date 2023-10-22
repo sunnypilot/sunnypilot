@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-from enum import IntFlag
+from enum import IntFlag, StrEnum
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
@@ -20,7 +20,7 @@ class ChryslerFlagsSP(IntFlag):
   SP_RAM_HD_PARAMSD_IGNORE = 1
 
 
-class CAR:
+class CAR(StrEnum):
   # Chrysler
   PACIFICA_2017_HYBRID = "CHRYSLER PACIFICA HYBRID 2017"
   PACIFICA_2018_HYBRID = "CHRYSLER PACIFICA HYBRID 2018"

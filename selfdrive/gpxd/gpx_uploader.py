@@ -23,6 +23,8 @@
 
 import os
 import time
+from cereal import log
+import cereal.messaging as messaging
 from common.params import Params
 from common.realtime import set_core_affinity, Ratekeeper
 from selfdrive.athena.registration import register
@@ -34,6 +36,8 @@ from system.loggerd.xattr_cache import getxattr, setxattr
 import glob
 import requests
 import json
+
+NetworkType = log.DeviceState.NetworkType
 
 RATE = 1
 
@@ -78,8 +82,9 @@ def _get_files_to_be_uploaded():
   return files_to_be_uploaded
 
 
-class GpxUploader():
-  def __init__(self):
+class GpxUploader:
+  def __init__(self, sm):
+    self.sm = sm
     self.param_s = Params()
     self.rk = Ratekeeper(RATE, print_delay_threshold=None)
 
@@ -97,9 +102,13 @@ class GpxUploader():
 
   def update(self):
     while True:
+      self.sm.update(0)
       files = _get_files_to_be_uploaded()
+      network_type = self.sm['deviceState'].networkType
       if len(files) == 0 or not self._is_online():
         _debug("run - not online or no files")
+      elif network_type != NetworkType.wifi:
+        _debug("run - not on Wi-Fi")
       elif not self.param_s.get_bool("DisableOnroadUploads") or self.param_s.get_bool("IsOffroad"):
         for file in files:
           if self._do_upload(file):
@@ -149,8 +158,11 @@ class GpxUploader():
     self.update()
 
 
-def main():
-  gpx_uploader = GpxUploader()
+def main(sm=None):
+  if sm is None:
+    sm = messaging.SubMaster(['deviceState'])
+
+  gpx_uploader = GpxUploader(sm)
   gpx_uploader.gpx_uploader_thread()
 
 

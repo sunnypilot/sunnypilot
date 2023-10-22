@@ -1,7 +1,7 @@
 sunnypilot - 0.9.5.1 (2023-10-xx)
 ========================
-* UPDATED: Synced with commaai's 0.9.5 release
-* NEW❗: Non-Inflatable driving model
+* UPDATED: Synced with commaai's master commit 41a04b4
+* NEW❗: Night Strike driving model
 * NEW❗: Onroad Settings Panel
   * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
     * Driving Personality
@@ -16,8 +16,12 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
   * Dynamic Experimental Control is only active while in Experimental Mode
   * Dynamic Experimental Control must be enabled via "SP - Controls", then toggle via the new Onroad Settings Panel
   * When Dynamic Experimental Control is ON, initially setting cruise speed will set to the vehicle's current speed
-* NEW❗: Hyundai CAN longitudinal: Parse lead info for camera-based SCC platforms
-  * Improve lead tracking when using openpilot longitudinal
+* NEW❗: Hyundai CAN longitudinal:
+  * NEW❗: Parse lead info for camera-based SCC platforms
+    * Improve lead tracking when using openpilot longitudinal
+  * NEW❗: Parse lead distance to display on car cluster
+    * Introduced better lead distance calculation to display on the car's cluster, replacing the binary "lead visible" indication on the SCC cluster
+    * Lead distance is now categorized into different ranges for more detailed and comprehensive information to the driver similar to how stock ACC does it
 * NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!
   * Global (excluding Gen 2 and Hybrid) and Pre-Global support
 * NEW❗: Toyota - Stop and Go hack
@@ -44,9 +48,14 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
 * UPDATED: Auto-detect custom Mapbox token if a personal Mapbox token is provided
   * REMOVED: "Enable Mapbox Navigation" toggle
 * UPDATED: Update color from Green 🟢 to Blue 🔵 for settings toggles and buttons
+* UPDATED: Button redesign for Driving Personality, Dynamic Lane Profile, and Sidebar Temperature
 * FIXED: Retain hotspot/tethering state was not consistently saved
 * FIXED: Map stuck in "Map Loading" if comma Prime is active
 * FIXED: UI elements adjustments
+* FIXED: OpenStreetMap implementation on C3X devices
+  * M-TSC
+  * Altitude (ALT.) display on Developer UI
+  * Current street name on top of driving screen when "OSM Debug UI" is enabled
 * Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)

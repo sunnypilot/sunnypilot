@@ -5,6 +5,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <sstream>
 
 #include <QDebug>
 #include <QMouseEvent>
@@ -522,7 +523,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto nav_instruction = sm["navInstruction"].getNavInstruction();
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
-  const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto lateral_plan_sp = sm["lateralPlanSP"].getLateralPlanSP();
 
@@ -561,7 +561,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   latActive = car_control.getLatActive();
   madsEnabled = car_state.getMadsEnabled();
 
-  brakeLights = car_state.getBrakeLights() && s.scene.visual_brake_lights;
+  brakeLights = car_state.getBrakeLightsDEPRECATED() && s.scene.visual_brake_lights;
 
   standStillTimer = s.scene.stand_still_timer;
   standStill = car_state.getStandstill();
@@ -572,6 +572,29 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   splitPanelVisible = s.scene.map_visible || s.scene.onroad_settings_visible;
 
   // ############################## DEV UI START ##############################
+
+  if (sm.updated("liveLocationKalman")) {
+      auto locationd_location = sm["liveLocationKalman"].getLiveLocationKalman();
+      auto locationd_pos = locationd_location.getPositionGeodetic();
+      auto locationd_orientation = locationd_location.getCalibratedOrientationNED();
+      auto locationd_velocity = locationd_location.getVelocityCalibrated();
+
+      // Check std norm
+      auto pos_ecef_std = locationd_location.getPositionECEF().getStd();
+      bool pos_accurate_enough = sqrt(pow(pos_ecef_std[0], 2) + pow(pos_ecef_std[1], 2) + pow(pos_ecef_std[2], 2)) < 100;
+
+      auto locationd_valid = (locationd_pos.getValid() && locationd_orientation.getValid() && locationd_velocity.getValid() && pos_accurate_enough);
+
+      if (locationd_valid) {
+        gpsAccuracy = 1.0; //Hardcoding to 1 because not available in liveLocationKalman
+        altitude = locationd_pos.getValue()[2];
+
+        bearingAccuracyDeg = 1.0; //Hardcoding to 1 because not available in liveLocationKalman
+        bearingDeg = locationd_orientation.getValue()[2];
+
+      }
+    }
+
   lead_d_rel = radar_state.getLeadOne().getDRel();
   lead_v_rel = radar_state.getLeadOne().getVRel();
   lead_status = radar_state.getLeadOne().getStatus();
@@ -583,13 +606,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
   devUiEnabled = s.scene.dev_ui_enabled;
   devUiInfo = s.scene.dev_ui_info;
-  gpsAccuracy = gpsLocationExternal.getAccuracy();
-  altitude = gpsLocationExternal.getAltitude();
   vEgo = car_state.getVEgo();
   aEgo = car_state.getAEgo();
   steeringTorqueEps = car_state.getSteeringTorqueEps();
-  bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
-  bearingDeg = gpsLocationExternal.getBearingDeg();
   torquedUseParams = (ltp.getUseParams() || s.scene.live_torque_toggle) && !s.scene.torqued_override;
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
@@ -607,6 +626,11 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // update onroad settings button state
   onroad_settings_btn->updateState(s);
+
+#ifdef ENABLE_DASHCAM
+  // update screen recorder button
+  recorder->updateState(s);
+#endif
 
   // update buttons layout
   updateButtonsLayout();
@@ -627,8 +651,16 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // hide onroad settings button for alerts and flip for right hand DM
   if (onroad_settings_btn->isEnabled()) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
+
+#ifdef ENABLE_DASHCAM
+  // hide screen recorder button for alerts and flip for right hand DM
+  if (recorder->isEnabled()) {
+    recorder->setVisible(!hideBottomIcons);
+    main_layout->setAlignment(recorder, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+  }
+#endif
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   slcState = lp_sp.getSpeedLimitControlState();
@@ -734,7 +766,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     }
   }
 
-  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLightsDEPRECATED()) && !car_state.getGasPressed() && car_state.getStandstill()) {
     if (e2eLStatus == 2 && !radar_state.getLeadOne().getStatus()) {
       if (chime_sent) {
         chime_count = 0;
@@ -765,10 +797,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
-
-#ifdef ENABLE_DASHCAM
-  recorder->updateState(s);
-#endif
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
@@ -1255,19 +1283,19 @@ void AnnotatedCameraWidget::drawRightDevUi(QPainter &p, int x, int y) {
     ry = y + rh;
   }
 
-  // Add Device Memory Usage
+  // Add Device Memory (RAM) Usage
   // Unit: Percent
   if (true) {
     char val_str[16];
     QColor valueColor = QColor(255, 255, 255, 255);
 
-    if (memoryUsagePercent > 75) {
+    if (memoryUsagePercent > 85) {
       valueColor = QColor(255, 188, 0, 255);
     }
 
     snprintf(val_str, sizeof(val_str), "%d%s", (int)memoryUsagePercent, "%");
 
-    rh += drawDevUiElementRight(p, x, ry, val_str, "MEMORY", "", valueColor);
+    rh += drawDevUiElementRight(p, x, ry, val_str, "RAM", "", valueColor);
     ry = y + rh;
   }
 

@@ -78,7 +78,6 @@ selfdrive/__init__.py
 selfdrive/sentry.py
 selfdrive/tombstoned.py
 selfdrive/updated.py
-selfdrive/rtshield.py
 selfdrive/statsd.py
 
 system/logmessaged.py
@@ -214,17 +213,19 @@ selfdrive/controls/lib/lateral_planner.py
 selfdrive/controls/lib/longcontrol.py
 selfdrive/controls/lib/longitudinal_planner.py
 selfdrive/controls/lib/pid.py
-selfdrive/controls/lib/speed_limit_controller.py
 selfdrive/controls/lib/turn_speed_controller.py
 selfdrive/controls/lib/vehicle_model.py
 selfdrive/controls/lib/vision_turn_controller.py
+selfdrive/controls/lib/sunnypilot/__init__.py
+selfdrive/controls/lib/sunnypilot/common.py
+selfdrive/controls/lib/sunnypilot/helpers.py
+selfdrive/controls/lib/sunnypilot/speed_limit_controller.py
+selfdrive/controls/lib/sunnypilot/speed_limit_resolver.py
 
 selfdrive/controls/lib/lateral_mpc_lib/.gitignore
 selfdrive/controls/lib/longitudinal_mpc_lib/.gitignore
 selfdrive/controls/lib/lateral_mpc_lib/*
 selfdrive/controls/lib/longitudinal_mpc_lib/*
-
-selfdrive/hardware
 
 system/__init__.py
 
@@ -272,6 +273,7 @@ selfdrive/locationd/models/gnss_helpers.py
 
 selfdrive/locationd/torqued.py
 selfdrive/locationd/calibrationd.py
+selfdrive/locationd/helpers.py
 
 system/logcatd/.gitignore
 system/logcatd/SConscript
@@ -310,7 +312,6 @@ system/sensord/SConscript
 system/sensord/sensors_qcom2.cc
 system/sensord/sensors/*.cc
 system/sensord/sensors/*.h
-system/sensord/sensord
 system/sensord/pigeond.py
 
 selfdrive/thermald/thermald.py
@@ -627,9 +628,16 @@ tinygrad_repo/extra/onnx.py
 tinygrad_repo/extra/onnx_ops.py
 tinygrad_repo/extra/thneed.py
 tinygrad_repo/extra/utils.py
-tinygrad_repo/tinygrad/codegen/ast.py
-tinygrad_repo/tinygrad/codegen/gpu.py
+tinygrad_repo/tinygrad/codegen/kernel.py
+tinygrad_repo/tinygrad/codegen/linearizer.py
+tinygrad_repo/tinygrad/codegen/optimizer.py
+tinygrad_repo/tinygrad/features/image.py
 tinygrad_repo/tinygrad/nn/*
+tinygrad_repo/tinygrad/renderer/cstyle.py
+tinygrad_repo/tinygrad/renderer/opencl.py
+tinygrad_repo/tinygrad/runtime/lib.py
+tinygrad_repo/tinygrad/runtime/ops_cpu.py
+tinygrad_repo/tinygrad/runtime/ops_disk.py
 tinygrad_repo/tinygrad/runtime/ops_gpu.py
 tinygrad_repo/tinygrad/shape/*
 tinygrad_repo/tinygrad/*.py
