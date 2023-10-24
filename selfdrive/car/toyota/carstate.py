@@ -356,7 +356,7 @@ class CarState(CarStateBase):
       messages.append(("SDSU", 33))
 
     if CP.spFlags & ToyotaFlagsSP.SP_ZSS:
-      messages.apend(("SECONDARY_STEER_ANGLE", 0))
+      messages.append(("SECONDARY_STEER_ANGLE", 0))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
 
