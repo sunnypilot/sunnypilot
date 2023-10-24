@@ -134,9 +134,7 @@ commit changes for public branch:
     - git config --global --add safe.directory ${OUTPUT_DIR}
     - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
   rules:
-    - if: $CI_MERGE_REQUEST_IID && $NEW_BRANCH
-      when: on_success
-    - if: $CI_MERGE_REQUEST_IID == "null" && $NEW_BRANCH
+    - if: $NEW_BRANCH
       when: on_success
     - when: never
 
