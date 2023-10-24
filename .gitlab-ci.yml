@@ -1,0 +1,163 @@
+variables:
+  BUILD_DIR: "/data/openpilot"
+  OUTPUT_DIR: "${CI_PROJECT_DIR}/output"
+  CI_DIR: "${CI_PROJECT_DIR}/release/ci"
+  VERSION: "unknown"
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+  DEV_C3_SOURCE_BRANCH: "master-dev-c3"
+
+stages:
+  - build
+  - commit_changes
+  - publish
+
+default:
+  tags:
+    - sunnypilot
+    - x86
+
+.default_before_script: &default_before_script
+  - 'export VERSION=$(date "+%Y.%m.%d")-${CI_PIPELINE_IID}'
+  - 'mkdir -p "${BUILD_DIR}/"'
+  - 'git config --global user.email "gitlab@pipeline.com"'
+  - 'git config --global user.name "Gitlab Pipeline"'
+
+
+workflow: # If running on any branch other than main, use the `aws-datacontracts-dev` account; otherwise use `aws-datacontracts`
+  rules:
+    # We are an MR, but it's a draft, we won't proceed with anything.
+    - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
+      when: never
+    # We are a merge request
+    - if: $CI_MERGE_REQUEST_IID #|| $CI_COMMIT_REF_NAME == "gitlab-pipelines" # TBD once merged
+      variables:
+        NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
+      when: always
+
+    # Below are the rules when a commit is done (code has been added to the branch)
+    # Commit to master-dev-c3
+    - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
+      variables:
+        NEW_BRANCH: "dev-c3"
+      when: always
+    #commit made to main (master)
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      variables:
+        NEW_BRANCH: "staging-c3"
+      when: always
+    # if tag
+    - if: $CI_COMMIT_TAG
+      variables:
+        NEW_BRANCH: "release-c3"
+    - when: always
+
+
+build:
+  stage: build
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - "${CI_DIR}/scons_cache"
+  before_script:
+    - *default_before_script
+    - "echo Starting build stage..."
+    - "echo BUILD_DIR: ${BUILD_DIR}"
+    - "echo CI_DIR: ${CI_DIR}"
+    - "echo VERSION: ${VERSION}"
+    - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
+    - git config --global --add safe.directory ${CI_PROJECT_DIR}
+  script:
+    - export PYTHONPATH="$BUILD_DIR"
+    - "echo Calling to build [${CI_DIR}/build.sh ${CI_PROJECT_DIR} ${BUILD_DIR} ${VERSION}]"
+    - "echo Building Panda..."
+    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache ${CI_PROJECT_DIR}/panda
+    - mkdir -p ${BUILD_DIR}
+    - ls -la ${BUILD_DIR}
+    - "echo Building Rest..."
+    - cp -pR --parents $(cat release/files_common release/files_tici) $BUILD_DIR/
+    - cd $BUILD_DIR
+    - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
+    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache
+
+    # Cleanup
+    - echo "Doing cleanup for prebuilt\n\n"
+    - echo "Deleting specified files..."
+    - find ${BUILD_DIR} \( -name '*.a' -o -name '*.o' -o -name '*.os' -o -name '*.pyc' -o -name 'moc_*' -o -name '*.cc' -o -name "Jenkinsfile" -o -name "supercombo.onnx" -o -name ".sconsign.dblite" \) -print -delete
+
+    - echo "Deleting Headers from selfdrive/ui path..."
+    - find ${BUILD_DIR}/selfdrive/ui -type f -name '*.h' -print -delete
+
+    - echo "Deleting the following folders and subdirectories..."
+    - find "${BUILD_DIR}" -type d \( -path "*panda/board" -o -path "*panda/certs" -o -path "*panda/crypto" -o -path "*release" -o -path "*.github" -o -path "*selfdrive/ui/replay" -o -path "*__pycache__" \) -print -exec rm -rf {} +
+
+    # Move back signed panda fw
+    - mkdir -p ${BUILD_DIR}/panda/board/obj
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/panda.bin.signed ${BUILD_DIR}/panda/board/obj/panda.bin.signed
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/panda_h7.bin.signed ${BUILD_DIR}/panda/board/obj/panda_h7.bin.signed
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/bootstub.panda.bin ${BUILD_DIR}/panda/board/obj/bootstub.panda.bin
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/bootstub.panda_h7.bin ${BUILD_DIR}/panda/board/obj/bootstub.panda_h7.bin
+    - touch ${BUILD_DIR}/prebuilt
+    - mkdir -p ${OUTPUT_DIR}
+    - shopt -s dotglob && mv ${BUILD_DIR}/* ${OUTPUT_DIR}
+  artifacts:
+    paths:
+      - ${OUTPUT_DIR}/
+  tags: [ 'sunnypilot', 'tici' ]
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      when: manual
+    - if: $NEW_BRANCH
+      when: always
+
+
+commit changes for public branch:
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  stage: commit_changes
+  dependencies:
+    - build
+  before_script:
+    - 'apk update && apk upgrade'
+    - 'apk add git bash openssh'
+    - 'eval $(ssh-agent -s)'
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - 'mkdir -p ~/.ssh/'
+    - 'chmod 700 ~/.ssh'
+    - 'ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+    - 'chmod 644 ~/.ssh/known_hosts'
+    - *default_before_script
+  script:
+    - GIT_ORIGIN=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@|ssh://git@|g')
+    - echo "${GIT_ORIGIN}"
+    - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
+    - git config --global --add safe.directory ${OUTPUT_DIR}
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
+  rules:
+    - if: $CI_MERGE_REQUEST_IID && $NEW_BRANCH
+      when: on_success
+    - if: $CI_MERGE_REQUEST_IID == "null" && $NEW_BRANCH
+      when: on_success
+    - when: never
+
+publish to github:
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  stage: publish
+  dependencies:
+    - build
+  before_script:
+    - 'apk update && apk upgrade'
+    - 'apk add git bash openssh'
+    - 'eval $(ssh-agent -s)'
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - 'mkdir -p ~/.ssh/'
+    - 'chmod 700 ~/.ssh'
+    - 'ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+    - 'chmod 644 ~/.ssh/known_hosts'
+    - *default_before_script
+  script:
+    - echo "This part is not yet implemented intentionally, just an example"
+  rules:
+    - if: $NEW_BRANCH
+      when: manual

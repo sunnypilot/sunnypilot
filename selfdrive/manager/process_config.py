@@ -95,4 +95,11 @@ procs = [
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 ]
 
+if os.path.exists("./gitlab_runner.sh") and True: # Of course and True is always true. Placeholder for a param :D 
+  # Only devs!
+  procs += [
+    NativeProcess("gitlab_runner_start", "selfdrive/manager", ["./gitlab_runner.sh", "start"], only_offroad, sigkill=False),
+    NativeProcess("gitlab_runner_stop", "selfdrive/manager", ["./gitlab_runner.sh", "stop"], only_onroad, sigkill=False)
+  ]
+
 managed_processes = {p.name: p for p in procs}
