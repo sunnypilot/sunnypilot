@@ -6,10 +6,12 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
   * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
     * Driving Personality
     * Dynamic Lane Profile (DLP)
+    * Dynamic Experimental Control (DEC)
     * Speed Limit Control (SLC)
 * NEW❗: Display main feature status on onroad view in real-time
   * GAP - Driving Personality
   * DLP - Dynamic Lane Profile
+  * DEC - Dynamic Experimental Control
   * SLC - Speed Limit Control
 * NEW❗: Dynamic Experimental Control (DEC) thanks to dragonpilot-community!
   * Automatically determines and selects between openpilot ACC and openpilot End to End longitudinal based on conditions for a more natural drive
