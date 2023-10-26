@@ -129,6 +129,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
   });
+  connect(toggles["CustomStockLong"], &ToggleControl::toggleFlipped, [=]() {
+    updateToggles();
+  });
 
   param_watcher = new ParamWatcher(this);
 
@@ -183,7 +186,7 @@ void TogglesPanel::updateToggles() {
     op_long_toggle->setVisible(CP.getExperimentalLongitudinalAvailable() && !is_release);
 
     if (!CP.getCustomStockLongAvailable()) {
-      params.remove("CustomStockLongControl");
+      params.remove("CustomStockLong");
     }
     custom_stock_long_toggle->setVisible(CP.getCustomStockLongAvailable());
 
@@ -192,8 +195,15 @@ void TogglesPanel::updateToggles() {
       experimental_mode_toggle->setEnabled(true);
       experimental_mode_toggle->setDescription(e2e_description);
       long_personality_setting->setEnabled(true);
+      op_long_toggle->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
       params.remove("CustomStockLong");
+    } else if (custom_stock_long_toggle->isToggled()) {
+      op_long_toggle->setEnabled(false);
+      experimental_mode_toggle->setEnabled(false);
+      long_personality_setting->setEnabled(false);
+      params.remove("ExperimentalLongitudinalEnabled");
+      params.remove("ExperimentalMode");
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
@@ -213,10 +223,12 @@ void TogglesPanel::updateToggles() {
       }
       experimental_mode_toggle->setDescription("<b>" + long_desc + "</b><br><br>" + e2e_description);
 
+      op_long_toggle->setEnabled(CP.getExperimentalLongitudinalAvailable() && !is_release);
       custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
     }
 
     experimental_mode_toggle->refresh();
+    op_long_toggle->refresh();
     custom_stock_long_toggle->refresh();
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
