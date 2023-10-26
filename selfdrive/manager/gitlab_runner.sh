@@ -10,7 +10,7 @@ control_service() {
 }
 
 service_exists_and_is_loaded() {
-    systemctl --quiet is-enabled ${SERVICE_NAME}
+    sudo systemctl --quiet is-enabled ${SERVICE_NAME}
 }
 
 # Check for required argument
@@ -19,20 +19,17 @@ if [[ -z $1 ]] || { [[ $1 != "start" ]] && [[ $1 != "stop" ]]; }; then
     exit 1
 fi
 
-# Check if the service is actually present on the system
-if ! service_exists_and_is_loaded; then
-    echo "Service ${SERVICE_NAME} does not exist on the system."
-    exit 0  # Graceful exit because it's not an error
-fi
-
 # Store the script argument in a descriptive variable
 ACTION=$1
 
 # Trap EXIT signal (Ctrl+C) and stop the service
-trap 'control_service stop' SIGINT SIGKILL EXIT
+trap 'control_service stop ; exit 1' SIGINT SIGKILL EXIT
 
 # Enter the main loop
 while true; do
-    control_service $ACTION  # Call the function with the specified action
+    # Check if the service is actually present on the system
+    if service_exists_and_is_loaded; then
+        control_service $ACTION  # Call the function with the specified action
+    fi
     sleep 1  # Pause before the next iteration
 done
