@@ -114,6 +114,7 @@ build:
 commit changes for public branch:
   variables:
     GIT_SUBMODULE_STRATEGY: normal
+    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
   stage: commit_changes
   dependencies:
     - build
@@ -128,7 +129,7 @@ commit changes for public branch:
     - 'chmod 644 ~/.ssh/known_hosts'
     - *default_before_script
   script:
-    - GIT_ORIGIN=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@|ssh://git@|g')
+    #- GIT_ORIGIN=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@|ssh://git@|g')
     - echo "${GIT_ORIGIN}"
     - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
     - git config --global --add safe.directory ${OUTPUT_DIR}
