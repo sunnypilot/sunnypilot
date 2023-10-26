@@ -9,10 +9,20 @@ control_service() {
     sudo systemctl $action ${SERVICE_NAME}
 }
 
+service_exists_and_is_loaded() {
+    systemctl --quiet is-enabled ${SERVICE_NAME}
+}
+
 # Check for required argument
 if [[ -z $1 ]] || { [[ $1 != "start" ]] && [[ $1 != "stop" ]]; }; then
     echo "Usage: $0 {start|stop}"
     exit 1
+fi
+
+# Check if the service is actually present on the system
+if ! service_exists_and_is_loaded; then
+    echo "Service ${SERVICE_NAME} does not exist on the system."
+    exit 0  # Graceful exit because it's not an error
 fi
 
 # Store the script argument in a descriptive variable
