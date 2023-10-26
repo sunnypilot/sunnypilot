@@ -10,7 +10,12 @@ control_service() {
 }
 
 service_exists_and_is_loaded() {
-    sudo systemctl --quiet is-enabled ${SERVICE_NAME}
+    sudo systemctl status ${SERVICE_NAME} &>/dev/null
+    if [[ $? -ne 4 ]]; then
+        return 0  # Service is known to systemd (i.e., loaded)
+    else
+        return 1  # Service is unknown to systemd (i.e., not loaded)
+    fi
 }
 
 # Check for required argument
@@ -23,7 +28,7 @@ fi
 ACTION=$1
 
 # Trap EXIT signal (Ctrl+C) and stop the service
-trap 'control_service stop ; exit 1' SIGINT SIGKILL EXIT
+trap 'control_service stop ; exit' SIGINT SIGKILL EXIT
 
 # Enter the main loop
 while true; do
