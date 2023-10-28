@@ -58,6 +58,7 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
   * M-TSC
   * Altitude (ALT.) display on Developer UI
   * Current street name on top of driving screen when "OSM Debug UI" is enabled
+* Hyundai Kona Non-SCC 2019 support thanks to Quex!
 * Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
