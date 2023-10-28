@@ -1,5 +1,48 @@
-sunnypilot - 0.9.5.1 (202x-xx-xx)
+sunnypilot - 0.9.5.1 (2023-10-xx)
 ========================
+* UPDATED: Synced with commaai's 0.9.5 release
+* NEW❗: Non-Inflatable driving model
+* NEW❗: Onroad Settings Panel
+  * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
+    * Driving Personality
+    * Dynamic Lane Profile (DLP)
+    * Speed Limit Control (SLC)
+* NEW❗: Display main feature status on onroad view in real-time
+  * GAP - Driving Personality
+  * DLP - Dynamic Lane Profile
+  * SLC - Speed Limit Control
+* NEW❗: Hyundai CAN longitudinal: Parse lead info for camera-based SCC platforms
+  * Improve lead tracking when using openpilot longitudinal
+* NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!
+  * Global (excluding Gen 2 and Hybrid) and Pre-Global support
+* NEW❗: Toyota - Stop and Go hack
+  * Allow some Toyota/Lexus cars to auto resume during stop and go traffic
+  * Only applicable to certain models and model years
+* NEW❗: Toyota: ZSS support thanks to dragonpilot-community and ErichMoraga!
+* NEW❗: MSPA (Cereal structs refactor)
+  * Make sunnypilot Parsable Again - @sshane
+  * sunnypilot is now parsable with stock openpilot tools
+* NEW❗: Display 3D buildings on map thanks to jakethesnake420!
+* openpilot Longitudianl Control capable cars only
+  * UPDATED: Gap Adjust Cruise is now a part of Driving Personality
+    * [DISTANCE/FOLLOW DISTANCE/GAP DISTANCE] physical button on the steering wheel to select Driving Personality on by default
+    * Status now viewable in onroad view or Onroad Settings Panel
+    * REMOVED: Gap Adjust Cruise toggle
+* UPDATED: Custom Stock Longitudinal Control
+  * RE-ENABLED: Hyundai/Kia/Genesis CAN-FD platforms
+* UPDATED: Custom Offsets reimplementation
+  * Camera Offset only works in Laneful (Laneful Only or Laneful in Auto mode when using Dynamic Lane Profile)
+  * Path Offset can be applied to both Laneless and Laneful
+* UPDATED: Refactored Torque Lateral Control custom tuning menu
+  * NEW❗: Less Restrict Settings for Self-Tune (Beta)
+  * NEW❗: Custom Tuning for setting offline and live values in real-time
+* UPDATED: Auto-detect custom Mapbox token if a personal Mapbox token is provided
+  * REMOVED: "Enable Mapbox Navigation" toggle
+* UPDATED: Update color from Green 🟢 to Blue 🔵 for settings toggles and buttons
+* FIXED: Retain hotspot/tethering state was not consistently saved
+* FIXED: Map stuck in "Map Loading" if comma Prime is active
+* FIXED: UI elements adjustments
+* Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
 ========================

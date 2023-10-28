@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QApplication>
 #include <QByteArray>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
 #include <QGroupBox>
 #include <QLineEdit>
+#include <QSettings>
 #include <QSpinBox>
 
 #define LIGHT_THEME 1
@@ -22,10 +24,12 @@ public:
     AlwaysBE,
   };
 
-  Settings();
-  void save();
+  Settings() {}
+  QSettings::Status save();
   void load();
+  inline static QString filePath() { return QApplication::applicationDirPath() + "/settings"; }
 
+  bool absolute_time = false;
   int fps = 10;
   int max_cached_minutes = 30;
   int chart_height = 200;

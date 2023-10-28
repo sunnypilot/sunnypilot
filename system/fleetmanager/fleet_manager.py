@@ -3,8 +3,8 @@ import os
 import random
 import secrets
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
-import system.fleetmanager.helpers as fleet
-from system.loggerd.config import ROOT as REALDATA
+import openpilot.system.fleetmanager.helpers as fleet
+from openpilot.system.hardware.hw import Paths
 
 app = Flask(__name__)
 
@@ -39,7 +39,7 @@ def login():
 def full(cameratype, route):
   chunk_size = 1024 * 512  # 5KiB
   file_name = cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
-  vidlist = "|".join(REALDATA + "/" + segment + "/" + file_name for segment in fleet.segments_in_route(route))
+  vidlist = "|".join(Paths.log_root() + "/" + segment + "/" + file_name for segment in fleet.segments_in_route(route))
 
   def generate_buffered_stream():
     with fleet.ffmpeg_mp4_concat_wrap_process_builder(vidlist, cameratype, chunk_size) as process:
@@ -53,7 +53,7 @@ def full(cameratype, route):
 def fcamera(cameratype, segment):
   if not fleet.is_valid_segment(segment):
     return render_template("error.html", error="invalid segment")
-  file_name = REALDATA + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
+  file_name = Paths.log_root() + "/" + segment + "/" + cameratype + (".ts" if cameratype == "qcamera" else ".hevc")
   return Response(fleet.ffmpeg_mp4_wrap_process_builder(file_name).stdout.read(), status=200, mimetype='video/mp4')
 
 

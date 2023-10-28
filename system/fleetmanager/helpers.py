@@ -3,9 +3,9 @@ import subprocess
 from flask import render_template, request, session
 from functools import wraps
 from pathlib import Path
-from system.hardware import PC
-from system.loggerd.config import ROOT as REALDATA
-from system.loggerd.uploader import listdir_by_creation
+from openpilot.system.hardware import PC
+from openpilot.system.hardware.hw import Paths
+from openpilot.system.loggerd.uploader import listdir_by_creation
 from tools.lib.route import SegmentName
 
 
@@ -36,7 +36,7 @@ def list_files(path):
 
 def is_valid_segment(segment):
   try:
-    segment_to_segment_name(REALDATA, segment)
+    segment_to_segment_name(Paths.log_root(), segment)
     return True
   except AssertionError:
     return False
@@ -49,9 +49,9 @@ def segment_to_segment_name(data_dir, segment):
 
 def all_segment_names():
   segments = []
-  for segment in listdir_by_creation(REALDATA):
+  for segment in listdir_by_creation(Paths.log_root()):
     try:
-      segments.append(segment_to_segment_name(REALDATA, segment))
+      segments.append(segment_to_segment_name(Paths.log_root(), segment))
     except AssertionError:
       pass
   return segments

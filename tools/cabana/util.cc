@@ -1,7 +1,6 @@
 #include "tools/cabana/util.h"
 
 #include <algorithm>
-#include <array>
 #include <csignal>
 #include <limits>
 #include <memory>
@@ -20,7 +19,7 @@
 
 // SegmentTree
 
-void SegmentTree::build(const QVector<QPointF> &arr) {
+void SegmentTree::build(const std::vector<QPointF> &arr) {
   size = arr.size();
   tree.resize(4 * size);  // size of the tree is 4 times the size of the array
   if (size > 0) {
@@ -28,7 +27,7 @@ void SegmentTree::build(const QVector<QPointF> &arr) {
   }
 }
 
-void SegmentTree::build_tree(const QVector<QPointF> &arr, int n, int left, int right) {
+void SegmentTree::build_tree(const std::vector<QPointF> &arr, int n, int left, int right) {
   if (left == right) {
     const double y = arr[left].y();
     tree[n] = {y, y};
@@ -56,6 +55,10 @@ std::pair<double, double> SegmentTree::get_minmax(int n, int left, int right, in
 MessageBytesDelegate::MessageBytesDelegate(QObject *parent, bool multiple_lines) : multiple_lines(multiple_lines), QStyledItemDelegate(parent) {
   fixed_font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
   byte_size = QFontMetrics(fixed_font).size(Qt::TextSingleLine, "00 ") + QSize(0, 2);
+  for (int i = 0; i < 256; ++i) {
+    hex_text_table[i].setText(QStringLiteral("%1").arg(i, 2, 16, QLatin1Char('0')).toUpper());
+    hex_text_table[i].prepare({}, fixed_font);
+  }
 }
 
 int MessageBytesDelegate::widthForBytes(int n) const {
@@ -107,7 +110,7 @@ void MessageBytesDelegate::paint(QPainter *painter, const QStyleOptionViewItem &
     } else if (option.state & QStyle::State_Selected) {
       painter->setPen(option.palette.color(QPalette::HighlightedText));
     }
-    painter->drawText(r, Qt::AlignCenter, toHex(byte_list[i]));
+    utils::drawStaticText(painter, r, hex_text_table[(uint8_t)(byte_list[i])]);
   }
   painter->setFont(old_font);
   painter->setPen(old_pen);
@@ -237,6 +240,13 @@ void setTheme(int theme) {
       w->setPalette(new_palette);
     }
   }
+}
+
+QString formatSeconds(double sec, bool include_milliseconds, bool absolute_time) {
+  QString format = absolute_time ? "yyyy-MM-dd hh:mm:ss"
+                                 : (sec > 60 * 60 ? "hh:mm:ss" : "mm:ss");
+  if (include_milliseconds) format += ".zzz";
+  return QDateTime::fromMSecsSinceEpoch(sec * 1000).toString(format);
 }
 
 }  // namespace utils

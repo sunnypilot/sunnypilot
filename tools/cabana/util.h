@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <deque>
 #include <vector>
@@ -10,8 +11,10 @@
 #include <QDateTime>
 #include <QDoubleValidator>
 #include <QFont>
+#include <QPainter>
 #include <QRegExpValidator>
 #include <QSocketNotifier>
+#include <QStaticText>
 #include <QStringBuilder>
 #include <QStyledItemDelegate>
 #include <QToolButton>
@@ -54,12 +57,12 @@ enum {
 class SegmentTree {
 public:
   SegmentTree() = default;
-  void build(const QVector<QPointF> &arr);
+  void build(const std::vector<QPointF> &arr);
   inline std::pair<double, double> minmax(int left, int right) const { return get_minmax(1, 0, size - 1, left, right); }
 
 private:
   std::pair<double, double> get_minmax(int n, int left, int right, int range_left, int range_right) const;
-  void build_tree(const QVector<QPointF> &arr, int n, int left, int right);
+  void build_tree(const std::vector<QPointF> &arr, int n, int left, int right);
   std::vector<std::pair<double, double>> tree;
   int size = 0;
 };
@@ -75,6 +78,7 @@ public:
   int widthForBytes(int n) const;
 
 private:
+  std::array<QStaticText, 256> hex_text_table;
   QFont fixed_font;
   QSize byte_size = {};
   bool multiple_lines = false;
@@ -99,8 +103,10 @@ public:
 namespace utils {
 QPixmap icon(const QString &id);
 void setTheme(int theme);
-inline QString formatSeconds(int seconds) {
-  return QDateTime::fromSecsSinceEpoch(seconds, Qt::UTC).toString(seconds > 60 * 60 ? "hh:mm:ss" : "mm:ss");
+QString formatSeconds(double sec, bool include_milliseconds = false, bool absolute_time = false);
+inline void drawStaticText(QPainter *p, const QRect &r, const QStaticText &text) {
+  auto size = (r.size() - text.size()) / 2;
+  p->drawStaticText(r.left() + size.width(), r.top() + size.height(), text);
 }
 }
 

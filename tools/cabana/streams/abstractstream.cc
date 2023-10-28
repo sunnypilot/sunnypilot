@@ -1,7 +1,6 @@
 #include "tools/cabana/streams/abstractstream.h"
 
 #include <algorithm>
-#include <vector>
 
 #include <QTimer>
 
@@ -27,6 +26,11 @@ AbstractStream::AbstractStream(QObject *parent) : QObject(parent) {
     emit StreamNotifier::instance()->changingStream();
     delete can;
     can = this;
+    // TODO: add method stop() to class AbstractStream
+    QObject::connect(qApp, &QApplication::aboutToQuit, can, []() {
+      qDebug() << "stopping stream thread";
+      can->pause(true);
+    });
     emit StreamNotifier::instance()->streamStarted();
   });
 }
@@ -134,9 +138,10 @@ void AbstractStream::updateLastMsgsTo(double sec) {
 }
 
 void AbstractStream::mergeEvents(std::vector<Event *>::const_iterator first, std::vector<Event *>::const_iterator last) {
-  static std::unordered_map<MessageId, std::deque<const CanEvent *>> new_events_map;
+  static MessageEventsMap msg_events;
   static  std::vector<const CanEvent *> new_events;
-  new_events_map.clear();
+
+  std::for_each(msg_events.begin(), msg_events.end(), [](auto &e) { e.second.clear(); });
   new_events.clear();
 
   for (auto it = first; it != last; ++it) {
@@ -151,29 +156,25 @@ void AbstractStream::mergeEvents(std::vector<Event *>::const_iterator first, std
         e->size = dat.size();
         memcpy(e->dat, (uint8_t *)dat.begin(), e->size);
 
-        new_events_map[{.source = e->src, .address = e->address}].push_back(e);
+        msg_events[{.source = e->src, .address = e->address}].push_back(e);
         new_events.push_back(e);
       }
     }
   }
 
-  auto compare = [](const CanEvent *l, const CanEvent *r) {
-    return l->mono_time < r->mono_time;
-  };
-
-  for (auto &[id, new_e] : new_events_map) {
-    auto &e = events_[id];
-    auto insert_pos = std::upper_bound(e.cbegin(), e.cend(), new_e.front(), compare);
-    e.insert(insert_pos, new_e.cbegin(), new_e.cend());
-  }
-
   if (!new_events.empty()) {
-    auto insert_pos = std::upper_bound(all_events_.cbegin(), all_events_.cend(), new_events.front(), compare);
-    all_events_.insert(insert_pos, new_events.cbegin(), new_events.cend());
+    for (auto &[id, new_e] : msg_events) {
+      if (!new_e.empty()) {
+        auto &e = events_[id];
+        auto pos = std::upper_bound(e.cbegin(), e.cend(), new_e.front()->mono_time, CompareCanEvent());
+        e.insert(pos, new_e.cbegin(), new_e.cend());
+      }
+    }
+    auto pos = std::upper_bound(all_events_.cbegin(), all_events_.cend(), new_events.front()->mono_time, CompareCanEvent());
+    all_events_.insert(pos, new_events.cbegin(), new_events.cend());
+    emit eventsMerged(msg_events);
   }
-
   lastest_event_ts = all_events_.empty() ? 0 : all_events_.back()->mono_time;
-  emit eventsMerged();
 }
 
 // CanData
@@ -196,15 +197,11 @@ inline QColor blend(const QColor &a, const QColor &b) {
 
 // Calculate the frequency of the past minute.
 double calc_freq(const MessageId &msg_id, double current_sec) {
-  auto compare = [](const CanEvent *e, uint64_t mono_time) {
-    return e->mono_time < mono_time;
-  };
-
   const auto &events = can->events(msg_id);
   uint64_t cur_mono_time = (can->routeStartTime() + current_sec) * 1e9;
   uint64_t first_mono_time = std::max<int64_t>(0, cur_mono_time - 59 * 1e9);
-  auto first = std::lower_bound(events.begin(), events.end(), first_mono_time, compare);
-  auto second = std::lower_bound(first, events.end(), cur_mono_time, compare);
+  auto first = std::lower_bound(events.begin(), events.end(), first_mono_time, CompareCanEvent());
+  auto second = std::lower_bound(first, events.end(), cur_mono_time, CompareCanEvent());
   if (first != events.end() && second != events.end()) {
     double duration = ((*second)->mono_time - (*first)->mono_time) / 1e9;
     uint32_t count = std::distance(first, second);

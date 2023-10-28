@@ -64,7 +64,9 @@ bool create_params_path(const std::string &param_path, const std::string &key_pa
 std::string ensure_params_path(const std::string &prefix, const std::string &path = {}) {
   std::string params_path = path.empty() ? Path::params() : path;
   if (!create_params_path(params_path, params_path + prefix)) {
-    throw std::runtime_error(util::string_format("Failed to ensure params path, errno=%d", errno));
+    throw std::runtime_error(util::string_format(
+        "Failed to ensure params path, errno=%d, path=%s, param_prefix=%s",
+        errno, params_path.c_str(), prefix.c_str()));
   }
   return params_path;
 }
@@ -86,7 +88,6 @@ private:
 std::unordered_map<std::string, uint32_t> keys = {
     {"AccessToken", CLEAR_ON_MANAGER_START | DONT_LOG},
     {"ApiCache_Device", PERSISTENT},
-    {"ApiCache_DriveStats", PERSISTENT},
     {"ApiCache_NavDestinations", PERSISTENT},
     {"AssistNowToken", PERSISTENT},
     {"AthenadPid", PERSISTENT},
@@ -179,7 +180,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Offroad_UpdateFailed", CLEAR_ON_MANAGER_START},
     {"OpenpilotEnabledToggle", PERSISTENT},
     {"PandaHeartbeatLost", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
-    {"PandaLogState", PERSISTENT},
     {"PandaSignatures", CLEAR_ON_MANAGER_START},
     {"Passive", PERSISTENT},
     {"PrimeType", PERSISTENT},
@@ -224,7 +224,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CarModelText", PERSISTENT},
     {"ChevronInfo", PERSISTENT},
     {"CustomBootScreen", PERSISTENT},
-    {"CustomMapbox", PERSISTENT},
     {"CustomMapboxTokenPk", PERSISTENT},
     {"CustomMapboxTokenSk", PERSISTENT},
     {"CustomOffsets", PERSISTENT},
@@ -234,6 +233,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DevUIInfo", PERSISTENT},
     {"DisableOnroadUploads", PERSISTENT},
     {"DisengageLateralOnBrake", PERSISTENT},
+    {"DynamicExperimentalControl", PERSISTENT},
+    {"DynamicExperimentalControlToggle", PERSISTENT},
     {"DynamicLaneProfile", PERSISTENT},
     {"DynamicLaneProfileToggle", PERSISTENT},
     {"EnableAmap", PERSISTENT},

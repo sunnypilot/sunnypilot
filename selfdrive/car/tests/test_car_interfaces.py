@@ -87,9 +87,6 @@ class TestCarInterfaces(unittest.TestCase):
         self.assertTrue(not math.isnan(tune.torque.kf) and tune.torque.kf > 0)
         self.assertTrue(not math.isnan(tune.torque.friction) and tune.torque.friction > 0)
 
-      elif tune.which() == 'indi':
-        self.assertTrue(len(tune.indi.outerLoopGainV))
-
     cc_msg = FuzzyGenerator.get_random_msg(data.draw, car.CarControl, real_floats=True)
     # Run car interface
     now_nanos = 0
@@ -136,7 +133,7 @@ class TestCarInterfaces(unittest.TestCase):
 
     # Make sure we can combine dicts
     ret = get_interface_attr('DBC', combine_brands=True)
-    self.assertGreaterEqual(len(ret), 170)
+    self.assertGreaterEqual(len(ret), 160)
 
     # We don't support combining non-dicts
     ret = get_interface_attr('CAR', combine_brands=True)

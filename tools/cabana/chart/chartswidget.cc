@@ -12,7 +12,7 @@
 #include "tools/cabana/chart/chart.h"
 
 const int MAX_COLUMN_COUNT = 4;
-const int CHART_SPACING = 10;
+const int CHART_SPACING = 4;
 
 ChartsWidget::ChartsWidget(QWidget *parent) : align_timer(this), auto_scroll_timer(this), QFrame(parent) {
   setFrameStyle(QFrame::StyledPanel | QFrame::Plain);
@@ -78,8 +78,9 @@ ChartsWidget::ChartsWidget(QWidget *parent) : align_timer(this), auto_scroll_tim
 
   // charts
   charts_container = new ChartsContainer(this);
-
+  charts_container->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
   charts_scroll = new QScrollArea(this);
+  charts_scroll->viewport()->setBackgroundRole(QPalette::Base);
   charts_scroll->setFrameStyle(QFrame::NoFrame);
   charts_scroll->setWidgetResizable(true);
   charts_scroll->setWidget(charts_container);
@@ -149,11 +150,10 @@ void ChartsWidget::updateTabBar() {
   }
 }
 
-void ChartsWidget::eventsMerged() {
+void ChartsWidget::eventsMerged(const MessageEventsMap &new_events) {
   QFutureSynchronizer<void> future_synchronizer;
-  bool clear = !can->liveStreaming();
   for (auto c : charts) {
-    future_synchronizer.addFuture(QtConcurrent::run(c, &ChartView::updateSeries, nullptr, clear));
+    future_synchronizer.addFuture(QtConcurrent::run(c, &ChartView::updateSeries, nullptr, &new_events));
   }
 }
 
@@ -190,7 +190,7 @@ void ChartsWidget::updateState() {
     if (pos < 0 || pos > 0.8) {
       display_range.first = std::max(0.0, cur_sec - max_chart_range * 0.1);
     }
-    double max_sec = std::min(std::floor(display_range.first + max_chart_range), can->totalSeconds());
+    double max_sec = std::min(display_range.first + max_chart_range, can->totalSeconds());
     display_range.first = std::max(0.0, max_sec - max_chart_range);
     display_range.second = display_range.first + max_chart_range;
   } else if (cur_sec < (zoomed_range.first - 0.1) || cur_sec >= zoomed_range.second) {
@@ -219,7 +219,7 @@ void ChartsWidget::updateToolBar() {
   undo_zoom_action->setVisible(is_zoomed);
   redo_zoom_action->setVisible(is_zoomed);
   reset_zoom_action->setVisible(is_zoomed);
-  reset_zoom_btn->setText(is_zoomed ? tr("%1-%2").arg(zoomed_range.first, 0, 'f', 1).arg(zoomed_range.second, 0, 'f', 1) : "");
+  reset_zoom_btn->setText(is_zoomed ? tr("%1-%2").arg(zoomed_range.first, 0, 'f', 2).arg(zoomed_range.second, 0, 'f', 2) : "");
   remove_all_btn->setEnabled(!charts.isEmpty());
   dock_btn->setIcon(docking ? "arrow-up-right-square" : "arrow-down-left-square");
   dock_btn->setToolTip(docking ? tr("Undock charts") : tr("Dock charts"));
@@ -277,14 +277,19 @@ void ChartsWidget::splitChart(ChartView *src_chart) {
     for (auto it = src_chart->sigs.begin() + 1; it != src_chart->sigs.end(); /**/) {
       auto c = createChart();
       src_chart->chart()->removeSeries(it->series);
+
+      // Restore to the original color
+      it->series->setColor(it->sig->color);
+
       c->addSeries(it->series);
-      c->sigs.push_back(*it);
+      c->sigs.emplace_back(std::move(*it));
       c->updateAxisY();
       c->updateTitle();
       it = src_chart->sigs.erase(it);
     }
     src_chart->updateAxisY();
     src_chart->updateTitle();
+    QTimer::singleShot(0, src_chart, &ChartView::resetChartCache);
   }
 }
 
@@ -317,7 +322,7 @@ void ChartsWidget::updateLayout(bool force) {
     }
     for (int i = 0; i < current_charts.size(); ++i) {
       charts_layout->addWidget(current_charts[i], i / n, i % n);
-      if (current_charts[i]->sigs.isEmpty()) {
+      if (current_charts[i]->sigs.empty()) {
         // the chart will be resized after add signal. delay setVisible to reduce flicker.
         QTimer::singleShot(0, [c = current_charts[i]]() { c->setVisible(true); });
       } else {
@@ -365,6 +370,10 @@ void ChartsWidget::doAutoScroll() {
   }
 }
 
+QSize ChartsWidget::minimumSizeHint() const {
+  return QSize(CHART_MIN_WIDTH, QWidget::minimumSizeHint().height());
+}
+
 void ChartsWidget::resizeEvent(QResizeEvent *event) {
   QWidget::resizeEvent(event);
   updateLayout();
@@ -400,16 +409,15 @@ void ChartsWidget::removeAll() {
     tabbar->removeTab(1);
   }
   tab_charts.clear();
-  zoomReset();
 
   if (!charts.isEmpty()) {
     for (auto c : charts) {
       delete c;
     }
     charts.clear();
-    updateToolBar();
     emit seriesChanged();
   }
+  zoomReset();
 }
 
 void ChartsWidget::alignCharts() {
@@ -466,8 +474,9 @@ bool ChartsWidget::event(QEvent *event) {
 
 ChartsContainer::ChartsContainer(ChartsWidget *parent) : charts_widget(parent), QWidget(parent) {
   setAcceptDrops(true);
+  setBackgroundRole(QPalette::Window);
   QVBoxLayout *charts_main_layout = new QVBoxLayout(this);
-  charts_main_layout->setContentsMargins(0, 10, 0, 0);
+  charts_main_layout->setContentsMargins(0, CHART_SPACING, 0, CHART_SPACING);
   charts_layout = new QGridLayout();
   charts_layout->setSpacing(CHART_SPACING);
   charts_main_layout->addLayout(charts_layout);
@@ -511,15 +520,11 @@ void ChartsContainer::paintEvent(QPaintEvent *ev) {
       r.setHeight(CHART_SPACING);
     }
 
-    const int margin = (CHART_SPACING - 2) / 2;
-    QPainterPath path;
-    path.addPolygon(QPolygonF({r.topLeft(), QPointF(r.left() + CHART_SPACING, r.top() + r.height() / 2), r.bottomLeft()}));
-    path.addPolygon(QPolygonF({r.topRight(), QPointF(r.right() - CHART_SPACING, r.top() + r.height() / 2), r.bottomRight()}));
-
     QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.fillPath(path, palette().highlight());
-    p.fillRect(r.adjusted(2, margin, -2, -margin), palette().highlight());
+    p.setPen(QPen(palette().highlight(), 2));
+    p.drawLine(r.topLeft() + QPoint(1, 0), r.bottomLeft() + QPoint(1, 0));
+    p.drawLine(r.topLeft() + QPoint(0, r.height() / 2), r.topRight() + QPoint(0, r.height() / 2));
+    p.drawLine(r.topRight(), r.bottomRight());
   }
 }
 

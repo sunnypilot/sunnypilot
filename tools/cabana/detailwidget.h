@@ -21,6 +21,7 @@ public:
   QString original_name;
   QDialogButtonBox *btn_box;
   QLineEdit *name_edit;
+  QLineEdit *node;
   QTextEdit *comment_edit;
   QLabel *error_label;
   QSpinBox *size_spin;
@@ -41,7 +42,7 @@ private:
   void updateState(const QHash<MessageId, CanData> * msgs = nullptr);
 
   MessageId msg_id;
-  QLabel *time_label, *warning_icon, *warning_label;
+  QLabel *warning_icon, *warning_label;
   ElidedLabel *name_label;
   QWidget *warning_widget;
   TabBar *tabbar;
