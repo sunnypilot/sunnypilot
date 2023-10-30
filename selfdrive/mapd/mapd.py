@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import json
-import math
 import threading
 from traceback import print_exception
 import numpy as np
@@ -37,16 +36,6 @@ def excepthook(args):
 
 threading.excepthook = excepthook
 
-class GPSData:
-  def __init__(self, unixTimestampMillis, latitude, longitude, speed, bearingDeg, accuracy, bearingAccuracyDeg):
-    self.unixTimestampMillis = unixTimestampMillis
-    self.latitude = latitude
-    self.longitude = longitude
-    self.speed = speed
-    self.bearingDeg = bearingDeg
-    self.accuracy = accuracy
-    self.bearingAccuracyDeg = bearingAccuracyDeg
-
 
 class MapD():
   def __init__(self):
@@ -68,6 +57,7 @@ class MapD():
     self._disengaging = False
     self._query_thread = None
     self._lock = threading.RLock()
+    self.gps_sock = 'gpsLocationExternal'
 
     # dp - use LastGPSPosition as init position (if we are in a undercover car park?)
     # this way we can prefetch osm data before we get a fix.
@@ -91,37 +81,27 @@ class MapD():
     self._op_enabled = hud_control.speedVisible
 
   def update_gps(self, sm):
-    sock = 'liveLocationKalman'
-    if not sm.updated[sock] or not sm.valid[sock]:
+    self.gps_sock = 'gpsLocationExternal' if sm.rcv_frame['gpsLocationExternal'] > 1 else 'gpsLocation'
+    if not sm.updated[self.gps_sock] or not sm.valid[self.gps_sock]:
       return
 
-    log = sm[sock]
-
+    log = sm[self.gps_sock]
+    self.last_gps = log
 
     # ignore the message if the fix is invalid
-    if not log.positionGeodetic.valid:
+    if log.flags % 2 == 0:
       return
 
     self.last_gps_fix_timestamp = log.unixTimestampMillis  # Unix TS. Milliseconds since January 1, 1970.
-    self.location_rad = np.radians(np.array([log.positionGeodetic.value[0], log.positionGeodetic.value[1]], dtype=float))
-    self.location_deg = (log.positionGeodetic.value[0], log.positionGeodetic.value[1])
-    self.bearing_rad = math.degrees(log.calibratedOrientationNED.value[2])
-    self.gps_speed = log.velocityCalibrated.value[2]
-    self.location_stdev = 1  # hardcoding, this is not available in liveLocationKalman
-
-    self.last_gps = GPSData(
-      unixTimestampMillis=self.last_gps_fix_timestamp,
-      latitude=self.location_deg[0],
-      longitude=self.location_deg[1],
-      speed=self.gps_speed,
-      bearingDeg=self.bearing_rad,
-      accuracy=self.location_stdev,  # assuming this is equivalent information
-      bearingAccuracyDeg=1.  # you'll need to assign this if available
-    )
+    self.location_rad = np.radians(np.array([log.latitude, log.longitude], dtype=float))
+    self.location_deg = (log.latitude, log.longitude)
+    self.bearing_rad = np.radians(log.bearingDeg, dtype=float)
+    self.gps_speed = log.speed
+    self.location_stdev = log.accuracy if self.gps_sock == 'gpsLocationExternal' else 1  # gpsLocation doesn't report accuracy
 
     _debug('Mapd: ********* Got GPS fix'
            + f'Pos: {self.location_deg} +/- {self.location_stdev * 2.} mts.\n'
-           + f'Bearing: {log.calibratedOrientationNED.value[2]} +/- {1. * 2.} deg.\n'
+           + f'Bearing: {log.bearingDeg} +/- {log.bearingAccuracyDeg * 2.} deg.\n'
            + f'timestamp: {strftime("%d-%m-%y %H:%M:%S", gmtime(self.last_gps_fix_timestamp * 1e-3))}'
            + '*******', log_to_cloud=False)
 
@@ -242,8 +222,8 @@ class MapD():
     current_road_name = self.route.current_road_name
 
     map_data_msg = messaging.new_message('liveMapDataSP')
-    map_data_msg.valid = sm.all_alive(service_list=['liveLocationKalman']) and \
-                         sm.all_valid(service_list=['liveLocationKalman'])
+    map_data_msg.valid = sm.all_alive(service_list=[self.gps_sock]) and \
+                         sm.all_valid(service_list=[self.gps_sock])
 
     liveMapDataSP = map_data_msg.liveMapDataSP
     liveMapDataSP.lastGpsTimestamp = self.last_gps.unixTimestampMillis
@@ -251,7 +231,7 @@ class MapD():
     liveMapDataSP.lastGpsLongitude = float(self.last_gps.longitude)
     liveMapDataSP.lastGpsSpeed = float(self.last_gps.speed)
     liveMapDataSP.lastGpsBearingDeg = float(self.last_gps.bearingDeg)
-    liveMapDataSP.lastGpsAccuracy = float(self.last_gps.accuracy)
+    liveMapDataSP.lastGpsAccuracy = float(self.last_gps.accuracy if self.gps_sock == 'gpsLocationExternal' else 1)  # gpsLocation doesnt report accuracy
     liveMapDataSP.lastGpsBearingAccuracyDeg = float(self.last_gps.bearingAccuracyDeg)
 
     liveMapDataSP.speedLimitValid = bool(speed_limit is not None)
@@ -292,7 +272,7 @@ def mapd_thread(sm=None, pm=None):
 
   # *** setup messaging
   if sm is None:
-    sm = messaging.SubMaster(['liveLocationKalman', 'carControl'])
+    sm = messaging.SubMaster(['gpsLocation', 'gpsLocationExternal', 'carControl'])
   if pm is None:
     pm = messaging.PubMaster(['liveMapDataSP'])
 
