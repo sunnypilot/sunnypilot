@@ -194,7 +194,8 @@ class CarState(CarStateBase):
     if self.CP.flags & ToyotaFlags.SMART_DSU:
       self.gap_dist_button = cp.vl["SDSU"]["FD_BUTTON"]
 
-    self.follow_distance = cp.vl["PCM_CRUISE_2"]["PCM_FOLLOW_DISTANCE"]
+    fd_src = "PCM_CRUISE_ALT" if self.CP.carFingerprint in UNSUPPORTED_DSU_CAR else "PCM_CRUISE_2"
+    self.follow_distance = cp.vl[fd_src]["PCM_FOLLOW_DISTANCE"]
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.
