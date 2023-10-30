@@ -998,9 +998,9 @@ void SpeedLimitOffsetType::refresh() {
   if (option == "0") {
     setLabel(tr("Default"));
   } else if (option == "1") {
-    setLabel(tr("%"));
-  } else if (option == "2") {
     setLabel(tr("Value"));
+  } else if (option == "2") {
+    setLabel(tr("%"));
   }
 }
 
