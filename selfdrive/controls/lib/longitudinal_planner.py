@@ -87,8 +87,7 @@ class LongitudinalPlanner:
 
   def read_param(self):
     try:
-      self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl") and
-                                                       self.params.get_bool("DynamicExperimentalControlToggle"))
+      self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
     try:

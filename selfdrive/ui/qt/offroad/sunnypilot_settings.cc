@@ -184,7 +184,7 @@ SPControlsPanel::SPControlsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
-      "DynamicExperimentalControlToggle",
+      "DynamicExperimentalControl",
       tr("Enable Dynamic Experimental Control"),
       tr("Enable toggle to allow the model to determine when to use openpilot ACC or openpilot End to End Longitudinal."),
       "../assets/offroad/icon_speed_limit.png",

@@ -237,7 +237,7 @@ typedef struct UIScene {
 
   bool torqued_override;
 
-  bool dynamic_experimental_control_toggle, dynamic_experimental_control;
+  bool dynamic_experimental_control;
 
   QRect sl_sign_rect;
 } UIScene;

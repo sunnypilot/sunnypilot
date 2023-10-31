@@ -419,8 +419,7 @@ void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
 void OnroadSettingsButton::updateState(const UIState &s) {
   const auto cp = (*s.sm)["carParams"].getCarParams();
   auto dlp_enabled = true;
-  auto dec_enabled = s.scene.dynamic_experimental_control_toggle;
-  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || dec_enabled || !cp.getPcmCruiseSpeed();
+  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
 
   setVisible(allow_btn);
   setEnabled(allow_btn);
@@ -1616,9 +1615,9 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   // Dynamic Lane Profile
   drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
 
-  if (uiState()->scene.dynamic_experimental_control_toggle) {
+  if (longitudinal) {
     bool cruise_enabled = (*uiState()->sm)["carState"].getCarState().getCruiseState().getEnabled();
-    bool dec_enabled = uiState()->scene.dynamic_experimental_control_toggle && uiState()->scene.dynamic_experimental_control;
+    bool dec_enabled = uiState()->scene.dynamic_experimental_control;
     bool experimental_mode = (*uiState()->sm)["controlsState"].getControlsState().getExperimentalMode();
     QColor dec_color((cruise_enabled && dec_enabled) ? "#4bff66" : "#ffffff");
     QRect dec_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
