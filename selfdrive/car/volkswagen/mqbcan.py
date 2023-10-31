@@ -31,7 +31,7 @@ def create_lka_hud_control(packer, bus, ldw_stock_values, enabled, lat_active, s
   return packer.make_can_msg("LDW_02", bus, values)
 
 
-def create_acc_buttons_control(packer, bus, gra_stock_values, buttons=0, cancel=False, resume=False):
+def create_acc_buttons_control(packer, bus, gra_stock_values, frame=0, buttons=0, cancel=False, resume=False, custom_stock_long=False):
   values = {s: gra_stock_values[s] for s in [
     "GRA_Hauptschalter",           # ACC button, on/off
     "GRA_Typ_Hauptschalter",       # ACC main button type
@@ -46,7 +46,7 @@ def create_acc_buttons_control(packer, bus, gra_stock_values, buttons=0, cancel=
   set_cruise = 1 if buttons == 4 else 0
 
   values.update({
-    "COUNTER": (gra_stock_values["COUNTER"] + 1) % 16,
+    "COUNTER": (frame + 1) % 0x10 if custom_stock_long else (gra_stock_values["COUNTER"] + 1) % 16,
     "GRA_Abbrechen": cancel,
     "GRA_Tip_Wiederaufnahme": resume or resume_cruise,
     "GRA_Tip_Setzen": set_cruise,

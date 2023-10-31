@@ -170,12 +170,9 @@ class CarController:
       can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values,
                                                            cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
     if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled:
-      if gra_send_ready and not self.CP.pcmCruiseSpeed:
+      if not self.CP.pcmCruiseSpeed:
         self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
         if self.cruise_button is not None:
-          send_freq = (self.frame % 10 == 0)
-          if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
-            send_freq = (self.frame - self.last_button_frame) * DT_CTRL > 0.01
           if self.acc_type == -1:
             if self.button_count >= 2 and self.v_set_dis_prev != self.v_set_dis:
               self.acc_type = 1 if abs(self.v_set_dis - self.v_set_dis_prev) >= 10 and self.last_cruise_button in (1, 2) else \
@@ -186,10 +183,9 @@ class CarController:
             self.cruise_button = 1 if self.cruise_button == 1 else 2  # accel, decel
           elif self.acc_type == 1:
             self.cruise_button = 3 if self.cruise_button == 1 else 4  # resume, set
-          if send_freq:
-            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values,
-                                                                 buttons=self.cruise_button))
-            self.last_button_frame = self.frame
+          if self.frame % self.CCP.BTN_STEP == 0:
+            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values, frame=(self.frame // self.CCP.BTN_STEP),
+                                                                 buttons=self.cruise_button, custom_stock_long=True))
             self.send_count += 1
         else:
           self.send_count = 0
