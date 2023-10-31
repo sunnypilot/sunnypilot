@@ -202,6 +202,7 @@ class Controls:
 
     self.live_torque = self.params.get_bool("LiveTorque")
     self.torqued_override = self.params.get_bool("TorquedOverride")
+    self.custom_stock_planner_speed = self.params.get_bool("CustomStockLongPlanner")
 
     self.process_not_running = False
 
@@ -908,11 +909,13 @@ class Controls:
     self.prof.checkpoint("Ratekeeper", ignore=True)
 
     self.is_metric = self.params.get_bool("IsMetric")
-    self.experimental_mode = self.params.get_bool("ExperimentalMode") and (self.CP.openpilotLongitudinalControl or not self.CP.pcmCruiseSpeed)
+    self.experimental_mode = self.params.get_bool("ExperimentalMode") and (self.CP.openpilotLongitudinalControl or
+                                                                           (not self.CP.pcmCruiseSpeed and self.custom_stock_planner_speed))
 
     self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
     self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+    self.custom_stock_planner_speed = self.params.get_bool("CustomStockLongPlanner")
 
     if self.sm.frame % int(2.5 / DT_CTRL) == 0:
       self.live_torque = self.params.get_bool("LiveTorque")
