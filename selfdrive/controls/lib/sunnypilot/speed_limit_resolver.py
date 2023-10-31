@@ -15,8 +15,8 @@ class SpeedLimitResolver:
     self._policy = policy
     self._policy_to_sources_map = {
       Policy.car_state_only: [Source.car_state],
-      Policy.car_state_priority: [Source.car_state, Source.map_data],
-      Policy.map_data_priority: [Source.map_data, Source.car_state],
+      Policy.car_state_priority: [Source.car_state, Source.nav, Source.map_data],
+      Policy.map_data_priority: [Source.map_data, Source.nav, Source.car_state],
       Policy.nav_priority: [Source.nav, Source.map_data, Source.car_state],
       Policy.map_data_only: [Source.map_data],
       Policy.combined: [Source.car_state, Source.nav, Source.map_data],
@@ -86,7 +86,7 @@ class SpeedLimitResolver:
     self._limit_solutions[Source.map_data] = speed_limit
     self._distance_solutions[Source.map_data] = 0.
 
-    if next_speed_limit > 0. and next_speed_limit < self._v_ego:
+    if 0. < next_speed_limit < self._v_ego:
       adapt_time = (next_speed_limit - self._v_ego) / LIMIT_ADAPT_ACC
       adapt_distance = self._v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time**2
 
@@ -95,57 +95,28 @@ class SpeedLimitResolver:
         self._distance_solutions[Source.map_data] = distance_to_speed_limit_ahead
 
   def _consolidate(self):
-    solutions = self._get_solutions_according_to_policy()
-    limits = solutions['limits']
-    distances = solutions['distances']
-    sources = solutions['sources']
-    extra_sources = []
-
-    # Get all non-zero values and set the minimum if any, otherwise 0.
-    mask = limits > 0.
-    limits = limits[mask]
-    distances = distances[mask]
-    sources = sources[mask]
-
-    if len(limits) > 0:
-      min_idx = np.argmin(limits)
-      self.speed_limit = limits[min_idx]
-      self.distance = distances[min_idx]
-      self.source = Source(sources[min_idx])
-    elif self._policy in [Policy.car_state_priority, Policy.nav_priority, Policy.map_data_priority]:
-      # If policy is car_state_priority -> append map data
-      if self._policy == Policy.car_state_priority:
-        extra_sources = [Source.map_data]
-      # If policy is map_data_priority --> append car state
-      elif self._policy == Policy.map_data_priority:
-        extra_sources = [Source.car_state]
-      # If policy is nav_priority -> append map data then car state
-      elif self._policy == Policy.nav_priority:
-        extra_sources = [Source.map_data, Source.car_state]
-
-      for src in extra_sources:
-        if self._limit_solutions[src] > 0:
-          # If the speed limit from the source is above 0, then choose this source
-          self.speed_limit = self._limit_solutions[src]
-          self.distance = self._distance_solutions[src]
-          self.source = src
-          break
-      else:
-        self.speed_limit = 0.
-        self.distance = 0.
-        self.source = Source.none
-
-    else:
-      self.speed_limit = 0.
-      self.distance = 0.
-      self.source = Source.none
+    source = self._get_source_solution_according_to_policy()
+    self.speed_limit = self._limit_solutions[source] if source else 0.
+    self.distance = self._distance_solutions[source] if source else 0.
+    self.source = source or Source.none
 
     debug(f'SL: *** Speed Limit set: {self.speed_limit}, distance: {self.distance}, source: {self.source}')
     return self.speed_limit, self.distance, self.source
 
-  def _get_solutions_according_to_policy(self):
-    source_codes = self._policy_to_sources_map[self._policy]
-    limits = np.array([self._limit_solutions[source] for source in source_codes], dtype=float)
-    distances = np.array([self._distance_solutions[source] for source in source_codes], dtype=float)
-    sources = np.array([source.value for source in source_codes], dtype=int)
-    return {'limits': limits, 'distances': distances, 'sources': sources}
+  def _get_source_solution_according_to_policy(self) -> Source | None:
+    sources_for_policy = self._policy_to_sources_map[self._policy]
+
+    if self._policy != Policy.combined:
+      # They are ordered in the order of preference, so we pick the first that's non zero
+      for source in sources_for_policy:
+        if self._limit_solutions[source] > 0.:
+          return source
+
+    limits = np.array([self._limit_solutions[source] for source in sources_for_policy], dtype=float)
+    sources = np.array([source.value for source in sources_for_policy], dtype=int)
+
+    if len(limits) > 0:
+      min_idx = np.argmin(limits)
+      return sources[min_idx]
+
+    return None

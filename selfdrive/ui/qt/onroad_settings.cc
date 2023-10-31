@@ -134,7 +134,7 @@ void OnroadSettings::changeGapAdjustCruise() {
 void OnroadSettings::changeDynamicExperimentalControl() {
   UIScene &scene = uiState()->scene;
   const auto cp = (*uiState()->sm)["carParams"].getCarParams();
-  bool can_change = (hasLongitudinalControl(cp) || (cp.getCustomStockLongAvailable() && params.getBool("CustomStockLongPlanner"))) && scene.dynamic_experimental_control_toggle;
+  bool can_change = (hasLongitudinalControl(cp) || (cp.getCustomStockLongAvailable() && params.getBool("CustomStockLongPlanner")));
   if (can_change) {
     scene.dynamic_experimental_control = !scene.dynamic_experimental_control;
     params.putBool("DynamicExperimentalControl", scene.dynamic_experimental_control);
@@ -160,7 +160,6 @@ void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicLaneProfile");
   param_watcher->addParam("LongitudinalPersonality");
   param_watcher->addParam("DynamicExperimentalControl");
-  param_watcher->addParam("DynamicExperimentalControlToggle");
   param_watcher->addParam("SpeedLimitControl");
 
   UIScene &scene = uiState()->scene;
@@ -186,7 +185,7 @@ void OnroadSettings::refresh() {
 
   // Dynamic Experimental Control
   dec_widget->updateDynamicExperimentalControl("DynamicExperimentalControl");
-  dec_widget->setVisible(params.getBool("DynamicExperimentalControlToggle"));
+  dec_widget->setVisible(hasLongitudinalControl(cp));
 
   // Speed Limit Control
   slc_widget->updateSpeedLimitControl("SpeedLimitControl");

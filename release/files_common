@@ -140,10 +140,6 @@ selfdrive/car/tesla/*.py
 selfdrive/car/toyota/*.py
 selfdrive/car/volkswagen/*.py
 
-system/clocksd/.gitignore
-system/clocksd/SConscript
-system/clocksd/clocksd.cc
-
 selfdrive/debug/can_printer.py
 selfdrive/debug/check_freq.py
 selfdrive/debug/dump.py
@@ -257,7 +253,6 @@ system/ubloxd/*.cc
 selfdrive/locationd/__init__.py
 selfdrive/locationd/SConscript
 selfdrive/locationd/.gitignore
-selfdrive/locationd/laikad.py
 selfdrive/locationd/locationd.h
 selfdrive/locationd/locationd.cc
 selfdrive/locationd/paramsd.py
@@ -348,8 +343,12 @@ selfdrive/ui/qt/network/*.h
 selfdrive/ui/qt/offroad/*.cc
 selfdrive/ui/qt/offroad/*.h
 selfdrive/ui/qt/offroad/*.qml
+selfdrive/ui/qt/offroad/sunnypilot/*.cc
+selfdrive/ui/qt/offroad/sunnypilot/*.h
 selfdrive/ui/qt/widgets/*.cc
 selfdrive/ui/qt/widgets/*.h
+selfdrive/ui/qt/widgets/sunnypilot/*.cc
+selfdrive/ui/qt/widgets/sunnypilot/*.h
 selfdrive/ui/qt/maps/*.cc
 selfdrive/ui/qt/maps/*.h
 selfdrive/ui/qt/screenrecorder/*
@@ -390,6 +389,9 @@ selfdrive/modeld/.gitignore
 selfdrive/modeld/__init__.py
 selfdrive/modeld/SConscript
 selfdrive/modeld/modeld.py
+selfdrive/modeld/parse_model_outputs.py
+selfdrive/modeld/fill_model_msg.py
+selfdrive/modeld/get_model_metadata.py
 selfdrive/modeld/navmodeld.py
 selfdrive/modeld/dmonitoringmodeld.py
 selfdrive/modeld/constants.py
@@ -402,8 +404,6 @@ selfdrive/modeld/models/*.pyx
 selfdrive/modeld/models/commonmodel.cc
 selfdrive/modeld/models/commonmodel.h
 
-selfdrive/modeld/models/driving.cc
-selfdrive/modeld/models/driving.h
 selfdrive/modeld/models/supercombo.onnx
 
 selfdrive/modeld/models/dmonitoring_model_q.dlc

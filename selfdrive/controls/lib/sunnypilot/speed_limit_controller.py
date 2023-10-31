@@ -12,7 +12,7 @@ from openpilot.selfdrive.controls.lib.events import Events, ET
 from openpilot.selfdrive.controls.lib.sunnypilot.common import Source, Policy
 from openpilot.selfdrive.controls.lib.sunnypilot.helpers import description_for_state, debug
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_resolver import SpeedLimitResolver
-from openpilot.selfdrive.modeld.constants import T_IDXS
+from openpilot.selfdrive.modeld.constants import ModelConstants
 
 
 class SpeedLimitController:
@@ -23,7 +23,6 @@ class SpeedLimitController:
     self._last_op_enabled_time = 0.0
     self._is_metric = self._params.get_bool("IsMetric")
     self._is_enabled = self._params.get_bool("SpeedLimitControl")
-    self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
     self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._op_enabled = False
     self._op_enabled_prev = False
@@ -96,13 +95,12 @@ class SpeedLimitController:
 
   @property
   def speed_limit_offset(self):
-    if self._offset_enabled:
-      if self._offset_type == 0:
-        return interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
-      elif self._offset_type == 1:
-        return self._offset_value * 0.01 * self._speed_limit
-      elif self._offset_type == 2:
-        return self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+    if self._offset_type == 0:
+      return interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
+    elif self._offset_type == 1:
+      return self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+    elif self._offset_type == 2:
+      return self._offset_value * 0.01 * self._speed_limit
     return 0.
 
   @property
@@ -121,10 +119,9 @@ class SpeedLimitController:
     t = time.monotonic()
     if t > self._last_params_update + PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("SpeedLimitControl")
-      self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
       self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
       self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
-      debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_enabled}')
+      debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_type}')
       self._last_params_update = t
 
   def _update_calculations(self):
@@ -196,11 +193,11 @@ class SpeedLimitController:
     if self.distance > 0:
       return (self.speed_limit_offseted**2 - self._v_ego**2) / (2. * self.distance)
 
-    return self._v_offset / T_IDXS[CONTROL_N]
+    return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
 
   def get_active_state_target_acceleration(self):
     """ In active state, aim to keep speed constant around control time horizon """
-    return self._v_offset / T_IDXS[CONTROL_N]
+    return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
 
   def _update_solution(self):
     a_target = self.acceleration_solutions[self.state]()

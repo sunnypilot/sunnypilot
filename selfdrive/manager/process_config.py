@@ -45,7 +45,6 @@ procs = [
   DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
 
   NativeProcess("camerad", "system/camerad", ["./camerad"], driverview),
-  NativeProcess("clocksd", "system/clocksd", ["./clocksd"], only_onroad),
   NativeProcess("logcatd", "system/logcatd", ["./logcatd"], only_onroad),
   NativeProcess("proclogd", "system/proclogd", ["./proclogd"], only_onroad),
   PythonProcess("logmessaged", "system.logmessaged", always_run),
@@ -68,7 +67,6 @@ procs = [
   PythonProcess("controlsd", "selfdrive.controls.controlsd", only_onroad),
   PythonProcess("deleter", "system.loggerd.deleter", always_run),
   PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", driverview, enabled=(not PC or WEBCAM)),
-  PythonProcess("laikad", "selfdrive.locationd.laikad", only_onroad),
   PythonProcess("rawgpsd", "system.sensord.rawgps.rawgpsd", qcomgps, enabled=TICI),
   PythonProcess("navd", "selfdrive.navd.navd", only_onroad),
   PythonProcess("pandad", "selfdrive.boardd.pandad", always_run),
@@ -84,15 +82,20 @@ procs = [
   PythonProcess("statsd", "selfdrive.statsd", always_run),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None), always_watchdog=True),
 
-  PythonProcess("gpxd", "selfdrive.gpxd.gpxd", only_onroad),
-  PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", only_offroad),
   PythonProcess("mapd", "selfdrive.mapd.mapd", only_onroad),
   PythonProcess("otisserv", "selfdrive.navd.otisserv", always_run),
-  PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", only_offroad),
+  PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", always_run),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 ]
+
+if os.path.exists("./gitlab_runner.sh") and True: # Of course and True is always true. Placeholder for a param :D
+  # Only devs!
+  procs += [
+    NativeProcess("gitlab_runner_start", "selfdrive/manager", ["./gitlab_runner.sh", "start"], only_offroad, sigkill=False),
+    NativeProcess("gitlab_runner_stop", "selfdrive/manager", ["./gitlab_runner.sh", "stop"], only_onroad, sigkill=False)
+  ]
 
 managed_processes = {p.name: p for p in procs}

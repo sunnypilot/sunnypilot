@@ -130,6 +130,18 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   list->addItem(tetheringToggle);
   QObject::connect(tetheringToggle, &ToggleControl::toggleFlipped, this, &AdvancedNetworking::toggleTethering);
 
+  hotspotOnBootToggle = new ToggleControl(
+    tr("Retain hotspot/tethering state"),
+    tr("Enabling this toggle will retain the hotspot/tethering toggle state across reboots."),
+    "",
+    params.getBool("HotspotOnBoot")
+  );
+  hotspotOnBootToggle->setEnabled(wifi->isTetheringEnabled() || set_hotspot_on_boot);
+  QObject::connect(hotspotOnBootToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    params.putBool("HotspotOnBoot", state);
+  });
+  list->addItem(hotspotOnBootToggle);
+
   // Change tethering password
   ButtonControl *editPasswordButton = new ButtonControl(tr("Tethering Password"), tr("EDIT"));
   connect(editPasswordButton, &ButtonControl::clicked, [=]() {
@@ -205,6 +217,11 @@ void AdvancedNetworking::toggleTethering(bool enabled) {
   params.putBool("HotspotOnBootConfirmed", enabled);
   wifi->setTetheringEnabled(enabled);
   tetheringToggle->setEnabled(false);
+
+  hotspotOnBootToggle->setEnabled(enabled);
+  if (!enabled) {
+    params.remove("HotspotOnBoot");
+  }
 }
 
 // WifiUI functions
