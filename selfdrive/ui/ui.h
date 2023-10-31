@@ -162,7 +162,6 @@ typedef struct UIScene {
 
   // Speed limit control
   bool speed_limit_control_enabled;
-  bool speed_limit_perc_offset;
   double last_speed_limit_sign_tap;
 
   // modelV2
@@ -210,7 +209,6 @@ typedef struct UIScene {
   int longitudinal_personality;
 
   bool map_visible;
-  bool dev_ui_enabled;
   int dev_ui_info;
   int rn_offset;
   bool live_torque_toggle;

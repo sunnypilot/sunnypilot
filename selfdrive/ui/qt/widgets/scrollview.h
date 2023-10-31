@@ -9,4 +9,11 @@ public:
   explicit ScrollView(QWidget *w = nullptr, QWidget *parent = nullptr);
 protected:
   void hideEvent(QHideEvent *e) override;
+
+public slots:
+  void setLastScrollPosition();
+  void restoreScrollPosition();
+
+private:
+  int lastScrollPosition = 0;
 };

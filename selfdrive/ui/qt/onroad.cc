@@ -596,7 +596,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   curvature = cs.getCurvature();
   roll = sm["liveParameters"].getLiveParameters().getRoll();
   memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
-  devUiEnabled = s.scene.dev_ui_enabled;
   devUiInfo = s.scene.dev_ui_info;
   gpsAccuracy = is_gps_location_external ? gpsLocation.getAccuracy() : 1.0; //External reports accuracy, internal does not.
   altitude = gpsLocation.getAltitude();
@@ -918,7 +917,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
-    if (devUiEnabled && !splitPanelVisible && devUiInfo == 1) {
+    if (!splitPanelVisible && devUiInfo == 2) {
       p.setPen(Qt::NoPen);
       p.setBrush(QColor(0, 0, 0, 100));
       p.drawRect(bar_rect1);
@@ -927,12 +926,12 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // ####### 1 COLUMN ########
     QRect rc2(rect().right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 152);
-    if (devUiEnabled) {
+    if (devUiInfo != 0) {
       drawRightDevUi(p, rect().right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rc2.height());
     }
 
     int rn_btn = 0;
-    rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 35 : 0;
+    rn_btn = !splitPanelVisible && devUiInfo == 2 ? 35 : 0;
     uiState()->scene.rn_offset = rn_btn;
 
     // Stand Still Timer

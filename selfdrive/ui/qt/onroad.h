@@ -203,7 +203,6 @@ private:
   float curvature;
   float roll;
   int memoryUsagePercent;
-  bool devUiEnabled;
   int devUiInfo;
   float gpsAccuracy;
   float altitude;

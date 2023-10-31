@@ -66,6 +66,8 @@ private:
   WifiManager* wifi = nullptr;
   Params params;
 
+  ToggleControl* hotspotOnBootToggle;
+
 signals:
   void backPress();
 

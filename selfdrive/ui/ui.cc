@@ -238,13 +238,11 @@ void ui_update_params(UIState *s) {
   s->scene.onroadScreenOffEvent = params.getBool("OnroadScreenOffEvent");
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
-  s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
   s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
-  s->scene.dev_ui_enabled = params.getBool("DevUI");
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.button_auto_hide = params.getBool("ButtonAutoHide");
   s->scene.reverse_dm_cam = params.getBool("ReverseDmCam");

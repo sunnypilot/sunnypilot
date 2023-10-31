@@ -17,7 +17,7 @@
 #include "common/watchdog.h"
 #include "common/util.h"
 #include "system/hardware/hw.h"
-#include "selfdrive/ui/qt/offroad/sunnypilot_settings.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot_main.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
@@ -34,7 +34,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "OpenpilotEnabledToggle",
       tr("Enable sunnypilot"),
       tr("Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off."),
-      "../assets/offroad/icon_openpilot.png",
+      "../assets/offroad/icon_blank.png",
     },
     {
       "ExperimentalLongitudinalEnabled",
@@ -43,67 +43,86 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       .arg(tr("WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB)."))
       .arg(tr("On this car, openpilot defaults to the car's built-in ACC instead of openpilot's longitudinal control. "
               "Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.")),
-      "../assets/offroad/icon_speed_limit.png",
+      "../assets/offroad/icon_blank.png",
     },
     {
       "CustomStockLong",
       tr("Custom Stock Longitudinal Control"),
       tr("When enabled, sunnypilot will attempt to control stock longitudinal control with ACC button presses.\nThis feature must be used along with SLC, and/or V-TSC, and/or M-TSC."),
-      "../assets/offroad/icon_speed_limit.png",
+      "../assets/offroad/icon_blank.png",
     },
     {
       "ExperimentalMode",
       tr("Experimental Mode"),
       "",
-      "../assets/img_experimental_white.svg",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "DynamicExperimentalControl",
+      tr("Enable Dynamic Experimental Control"),
+      tr("Enable toggle to allow the model to determine when to use openpilot ACC or openpilot End to End Longitudinal."),
+      "../assets/offroad/icon_blank.png",
     },
     {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
-      "../assets/offroad/icon_disengage_on_accelerator.svg",
+      "../assets/offroad/icon_blank.png",
     },
     {
       "IsLdwEnabled",
       tr("Enable Lane Departure Warnings"),
       tr("Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h)."),
-      "../assets/offroad/icon_warning.png",
+      "../assets/offroad/icon_blank.png",
     },
     {
       "RecordFront",
       tr("Record and Upload Driver Camera"),
       tr("Upload data from the driver facing camera and help improve the driver monitoring algorithm."),
-      "../assets/offroad/icon_monitoring.png",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "DisableOnroadUploads",
+      tr("Disable Onroad Uploads"),
+      tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "EnableDebugSnapshot",
+      tr("Debug snapshot on screen center tap"),
+      tr("Stores snapshot file with current state of some modules."),
+      "../assets/offroad/icon_blank.png"
     },
     {
       "IsMetric",
       tr("Use Metric System"),
       tr("Display speed in km/h instead of mph."),
-      "../assets/offroad/icon_metric.png",
+      "../assets/offroad/icon_blank.png",
     },
 #ifdef ENABLE_MAPS
     {
       "NavSettingTime24h",
       tr("Show ETA in 24h Format"),
       tr("Use 24h format instead of am/pm"),
-      "../assets/offroad/icon_metric.png",
+      "../assets/offroad/icon_blank.png",
     },
     {
       "NavSettingLeftSide",
       tr("Show Map on Left Side of UI"),
       tr("Show map on left side when in split screen view."),
-      "../assets/offroad/icon_road.png",
+      "../assets/offroad/icon_blank.png",
     },
 #endif
   };
 
 
-  std::vector<QString> longi_button_texts{tr("Maniac"), tr("Aggro"), tr("Stock"), tr("Relaxed")};
+  std::vector<QString> longi_button_texts{tr("Maniac"), tr("Aggressive"), tr("Stock"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
                                           tr("Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
                                              "In relaxed mode openpilot will stay further away from lead cars."),
-                                          "../assets/offroad/icon_speed_limit.png",
-                                          longi_button_texts);
+                                          "../assets/offroad/icon_blank.png",
+                                          longi_button_texts,
+                                          380);
   long_personality_setting->showDescription();
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -121,7 +140,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   }
 
   // Toggles with confirmation dialogs
-  toggles["ExperimentalMode"]->setActiveIcon("../assets/img_experimental.svg");
+  //toggles["ExperimentalMode"]->setActiveIcon("../assets/img_experimental.svg");
   toggles["ExperimentalMode"]->setConfirmation(true, true);
   toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
   toggles["CustomStockLong"]->setConfirmation(true, false);
@@ -136,7 +155,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   param_watcher = new ParamWatcher(this);
 
   QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
-    updateButtons();
+    updateToggles();
   });
 }
 
@@ -146,13 +165,19 @@ void TogglesPanel::expandToggleDescription(const QString &param) {
 
 void TogglesPanel::showEvent(QShowEvent *event) {
   updateToggles();
-  updateButtons();
 }
 
 void TogglesPanel::updateToggles() {
+  param_watcher->addParam("LongitudinalPersonality");
+
+  if (!isVisible()) return;
+
+  long_personality_setting->setButton("LongitudinalPersonality");
+
   auto experimental_mode_toggle = toggles["ExperimentalMode"];
   auto op_long_toggle = toggles["ExperimentalLongitudinalEnabled"];
   auto custom_stock_long_toggle = toggles["CustomStockLong"];
+  auto dec_toggle = toggles["DynamicExperimentalControl"];
   const QString e2e_description = QString("%1<br>"
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
@@ -198,6 +223,7 @@ void TogglesPanel::updateToggles() {
       op_long_toggle->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
       params.remove("CustomStockLong");
+      dec_toggle->setEnabled(true);
     } else if (custom_stock_long_toggle->isToggled()) {
       op_long_toggle->setEnabled(false);
       experimental_mode_toggle->setEnabled(false);
@@ -225,24 +251,20 @@ void TogglesPanel::updateToggles() {
 
       op_long_toggle->setEnabled(CP.getExperimentalLongitudinalAvailable() && !is_release);
       custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
+      dec_toggle->setEnabled(false);
+      params.remove("DynamicExperimentalControl");
     }
 
     experimental_mode_toggle->refresh();
     op_long_toggle->refresh();
     custom_stock_long_toggle->refresh();
+    dec_toggle->refresh();
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
     op_long_toggle->setVisible(false);
     custom_stock_long_toggle->setVisible(false);
+    dec_toggle->setVisible(false);
   }
-}
-
-void TogglesPanel::updateButtons() {
-  param_watcher->addParam("LongitudinalPersonality");
-
-  if (!isVisible()) return;
-
-  long_personality_setting->setButton("LongitudinalPersonality");
 }
 
 DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
@@ -519,34 +541,42 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   TogglesPanel *toggles = new TogglesPanel(this);
   QObject::connect(this, &SettingsWindow::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
 
-  QList<QPair<QString, QWidget *>> panels = {
-    {tr("  Device"), device},
-    {tr("  Network"), new Networking(this)},
-    {tr("  Toggles"), toggles},
-    {tr("  Software"), new SoftwarePanel(this)},
+  QList<PanelInfo> panels = {
+    PanelInfo("   " + tr("Device"), device, "../assets/navigation/icon_home.svg"),
+    PanelInfo("   " + tr("Network"), new Networking(this), "../assets/offroad/icon_network.png"),
+    PanelInfo("   " + tr("Toggles"), toggles, "../assets/offroad/icon_toggle.png"),
+    PanelInfo("   " + tr("Software"), new SoftwarePanel(this), "../assets/offroad/icon_software.png"),
+    PanelInfo("   " + tr("sunnypilot"), new SunnypilotPanel(this), "../assets/offroad/icon_openpilot.png"),
+    PanelInfo("   " + tr("OSM"), new OsmPanel(this), "../assets/offroad/icon_map.png"),
+    PanelInfo("   " + tr("Monitoring"), new MonitoringPanel(this), "../assets/offroad/icon_monitoring.png"),
+    PanelInfo("   " + tr("Visuals"), new VisualsPanel(this), "../assets/offroad/icon_visuals.png"),
+    PanelInfo("   " + tr("Display"), new DisplayPanel(this), "../assets/offroad/icon_display.png"),
+    PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../assets/offroad/icon_trips.png"),
+    PanelInfo("   " + tr("Vehicle"), new VehiclePanel(this), "../assets/offroad/icon_vehicle.png"),
   };
 
-  panels.push_back({tr("  SP - General"), new SPGeneralPanel(this)});
-  panels.push_back({tr("  SP - Controls"), new SPControlsPanel(this)});
-  panels.push_back({tr("  SP - Vehicles"), new SPVehiclesPanel(this)});
-  panels.push_back({tr("  SP - Visuals"), new SPVisualsPanel(this)});
-
   nav_btns = new QButtonGroup(this);
-  for (auto &[name, panel] : panels) {
+  for (auto &[name, panel, icon] : panels) {
     QPushButton *btn = new QPushButton(name);
     btn->setCheckable(true);
     btn->setChecked(nav_btns->buttons().size() == 0);
-    btn->setIcon(QIcon(QPixmap("../assets/offroad/icon_blank.png")));
-    btn->setIconSize(QSize(45, 45));
+    btn->setIcon(QIcon(QPixmap(icon)));
+    btn->setIconSize(QSize(70, 70));
     btn->setStyleSheet(R"(
       QPushButton {
-        color: grey;
+        border-radius: 20px;
+        width: 400px;
+        height: 98px;
+        color: #bdbdbd;
         border: none;
         background: none;
         font-size: 50px;
         font-weight: 500;
+        text-align: left;
+        padding-left: 22px;
       }
       QPushButton:checked {
+        background-color: #696868;
         color: white;
       }
       QPushButton:pressed {
@@ -556,9 +586,8 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     btn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     nav_btns->addButton(btn);
     buttons_layout->addWidget(btn, 0, Qt::AlignLeft | Qt::AlignBottom);
-    buttons_layout->addSpacing(25);
 
-    const int lr_margin = name != tr("Network") ? 50 : 0;  // Network panel handles its own margins
+    const int lr_margin = (name != ("   " + tr("Network")) || (name != ("   " + tr("sunnypilot")))) ? 50 : 0;  // Network and sunnypilot panel handles its own margins
     panel->setContentsMargins(lr_margin, 25, lr_margin, 25);
 
     ScrollView *panel_frame = new ScrollView(panel, this);
@@ -569,7 +598,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       panel_widget->setCurrentWidget(w);
     });
   }
-  sidebar_layout->setContentsMargins(50, 50, 50, 50);
+  sidebar_layout->setContentsMargins(50, 50, 25, 50);
 
   // main settings layout, sidebar + main panel
   QHBoxLayout *main_layout = new QHBoxLayout(this);
@@ -594,7 +623,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       background-color: black;
     }
     QStackedWidget, ScrollView {
-      background-color: #292929;
+      background-color: black;
       border-radius: 30px;
     }
   )");
