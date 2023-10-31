@@ -89,7 +89,7 @@ class ManagerProcess(ABC):
     self.stop(sig=signal.SIGKILL)
     self.start()
 
-  def check_watchdog(self, started: bool, params: Params) -> None:
+  def check_watchdog(self, started: bool) -> None:
     if self.watchdog_max_dt is None or self.proc is None:
       return
 
@@ -103,7 +103,7 @@ class ManagerProcess(ABC):
 
     dt = time.monotonic() - self.last_watchdog_time / 1e9
 
-    always_watchdog = self.always_watchdog and params.get_bool("IsOffroad") and self.proc.exitcode is not None
+    always_watchdog = self.always_watchdog and not started and self.proc.exitcode is not None
 
     if dt > self.watchdog_max_dt:
       if (self.watchdog_seen or always_watchdog) and ENABLE_WATCHDOG:
@@ -291,6 +291,6 @@ def ensure_running(procs: ValuesView[ManagerProcess], started: bool, params=None
     else:
       p.stop(block=False)
 
-    p.check_watchdog(started, params)
+    p.check_watchdog(started)
 
   return running
