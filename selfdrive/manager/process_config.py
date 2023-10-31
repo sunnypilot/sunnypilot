@@ -86,14 +86,14 @@ procs = [
   PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", only_offroad),
   PythonProcess("mapd", "selfdrive.mapd.mapd", only_onroad),
   PythonProcess("otisserv", "selfdrive.navd.otisserv", always_run),
-  PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", only_offroad),
+  PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", always_run),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 ]
 
-if os.path.exists("./gitlab_runner.sh") and True: # Of course and True is always true. Placeholder for a param :D 
+if os.path.exists("./gitlab_runner.sh") and True: # Of course and True is always true. Placeholder for a param :D
   # Only devs!
   procs += [
     NativeProcess("gitlab_runner_start", "selfdrive/manager", ["./gitlab_runner.sh", "start"], only_offroad, sigkill=False),
