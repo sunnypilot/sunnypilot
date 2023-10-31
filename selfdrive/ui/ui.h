@@ -20,8 +20,6 @@
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
-const QRect speed_sgn_rc(UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2.5 + 202, 184, 184);
-
 struct FeatureStatusText {
   const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
   const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
@@ -240,6 +238,8 @@ typedef struct UIScene {
   bool torqued_override;
 
   bool dynamic_experimental_control_toggle, dynamic_experimental_control;
+
+  QRect sl_sign_rect;
 } UIScene;
 
 class UIState : public QObject {

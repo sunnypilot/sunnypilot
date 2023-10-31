@@ -124,6 +124,8 @@ private:
   void updateButtonsLayout();
 
   void drawFeatureStatusText(QPainter &p, int x, int y);
+  void mousePressEvent(QMouseEvent* e) override;
+  Params params;
 
   QVBoxLayout *main_layout;
   QHBoxLayout *buttons_layout;
@@ -295,8 +297,6 @@ private:
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QWidget *map = nullptr;
   QHBoxLayout* split;
-
-  Params params;
 
   QWidget *onroad_settings = nullptr;
 

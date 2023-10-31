@@ -193,20 +193,11 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 
   UIState *s = uiState();
   UIScene &scene = s->scene;
-  SubMaster &sm = *(uiState()->sm);
-  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  SubMaster &sm = *(s->sm);
 
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
-  QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
-    // If touching the speed limit sign area when visible
-    scene.last_speed_limit_sign_tap = seconds_since_boot();
-    params.putBool("LastSpeedLimitSignTap", true);
-    scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
-    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
-    propagate_event = false;
-  } else if (scene.debug_snapshot_enabled && debug_tap_rect.contains(e->x(), e->y())) {
+  if (scene.debug_snapshot_enabled && debug_tap_rect.contains(e->x(), e->y())) {
     issue_debug_snapshot(sm);
     propagate_event = false;
   }
@@ -477,6 +468,30 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
   updateButtonsLayout();
+}
+
+void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
+  bool propagate_event = true;
+
+  UIState *s = uiState();
+  UIScene &scene = s->scene;
+  const SubMaster &sm = *(s->sm);
+  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+
+  QRect speed_limit_touch_rect = scene.sl_sign_rect;
+
+  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+    // If touching the speed limit sign area when visible
+    scene.last_speed_limit_sign_tap = seconds_since_boot();
+    params.putBool("LastSpeedLimitSignTap", true);
+    scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
+    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
+    propagate_event = false;
+  }
+
+  if (propagate_event) {
+    QWidget::mousePressEvent(e);
+  }
 }
 
 #ifdef ENABLE_DASHCAM
@@ -851,6 +866,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 
   const QRect sign_rect = set_speed_rect.adjusted(sign_margin, default_size.height(), -sign_margin, -sign_margin);
+  uiState()->scene.sl_sign_rect = sign_rect;
   // US/Canada (MUTCD style) sign
   if ((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) {
     p.setPen(Qt::NoPen);
@@ -943,8 +959,8 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // Turn Speed Sign
     if (showTurnSpeedLimit) {
-      QRect rc = speed_sgn_rc;
-      rc.moveTop(speed_sgn_rc.bottom() + UI_BORDER_SIZE);
+      QRect rc = uiState()->scene.sl_sign_rect;
+      rc.moveTop(uiState()->scene.sl_sign_rect.bottom() + UI_BORDER_SIZE);
       drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
     }
   }
