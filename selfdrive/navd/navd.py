@@ -174,6 +174,7 @@ class RouteEngine:
           place_name = nav_destination_data.get('place_name', 'Default Place Name')
           first_route['Destination'] = place_name
           first_route['CurrentStep'] = 0
+          first_route['Metric'] = self.params.get_bool("IsMetric")
         except json.JSONDecodeError as e:
           print(f"Error decoding JSON: {e}")
 	  # Save slim json as file

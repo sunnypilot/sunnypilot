@@ -111,7 +111,9 @@ class OtisServ(BaseHTTPRequestHandler):
       if self.get_app_token() is None:
         self.display_page_app_token()
         return
-      if params.get("NavDestination") is not None:
+      if params.get_int("PrimeType") != 0:
+        self.display_prime_directions()
+      elif params.get("NavDestination") is not None:
         self.display_nav_directions()
       else :
         self.display_page_addr_input() 
@@ -312,6 +314,10 @@ class OtisServ(BaseHTTPRequestHandler):
 
   def display_page_nav_confirmation(self, addr, lon, lat):
     content = self.get_parsed_template("addr_input", {"{{msg}}": ""}) + self.get_parsed_template("nav_confirmation", {"{{token}}": self.get_public_token(), "{{lon}}": lon, "{{lat}}": lat, "{{addr}}": addr})
+    self.wfile.write(bytes(self.get_parsed_template("body", {"{{content}}": content }), "utf-8"))
+
+  def display_prime_directions(self, msg = ""):
+    content = self.get_parsed_template("nav_directions", {"{{msg}}": msg})
     self.wfile.write(bytes(self.get_parsed_template("body", {"{{content}}": content }), "utf-8"))
 
   def display_page_gmap(self):
