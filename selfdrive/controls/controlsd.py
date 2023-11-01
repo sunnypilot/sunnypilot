@@ -915,10 +915,10 @@ class Controls:
     self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
     self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
-    self.custom_stock_planner_speed = self.params.get_bool("CustomStockLongPlanner")
 
     if self.sm.frame % int(2.5 / DT_CTRL) == 0:
       self.live_torque = self.params.get_bool("LiveTorque")
+      self.custom_stock_planner_speed = self.params.get_bool("CustomStockLongPlanner")
 
     # Sample data from sockets and get a carState
     CS = self.data_sample()
