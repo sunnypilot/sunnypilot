@@ -164,7 +164,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
-    "EnableMads", "BelowSpeedPause", "EnforceTorqueLateral", "LiveTorqueRelaxed"
+    "EnableMads", "EnforceTorqueLateral", "LiveTorqueRelaxed"
   };
 
   // Controls: Speed Limit Offset Values (% or actual value)
