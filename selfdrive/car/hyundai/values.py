@@ -1363,7 +1363,7 @@ FW_VERSIONS = {
   },
   CAR.GENESIS_G80: {
     (Ecu.fwdRadar, 0x7d0, None): [
-      b'\xf1\x00DH__ SCC F-CUP      1.00 1.01 96400-B1120         ',
+      b'\xf1\x00DH__ SCC F-CUP      1.00 1.01 96400-D2100         ',
     ],
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\x00DH  LKAS AT USA LHD 1.01 1.03 95895-B1500 180713',
@@ -2253,7 +2253,7 @@ EV_CAR = {CAR.IONIQ_EV_2020, CAR.IONIQ_EV_LTD, CAR.KONA_EV, CAR.KIA_NIRO_EV, CAR
 
 # these cars require a special panda safety mode due to missing counters and checksums in the messages
 LEGACY_SAFETY_MODE_CAR = {CAR.HYUNDAI_GENESIS, CAR.IONIQ_EV_LTD, CAR.KIA_OPTIMA_G4,
-                          CAR.VELOSTER, CAR.GENESIS_G70, CAR.GENESIS_G80, CAR.KIA_CEED, CAR.ELANTRA, CAR.IONIQ_HEV_2022,
+                          CAR.VELOSTER, CAR.GENESIS_G70, CAR.KIA_CEED, CAR.ELANTRA, CAR.IONIQ_HEV_2022,
                           CAR.KIA_OPTIMA_H, CAR.ELANTRA_GT_I30}
 
 # these cars have not been verified to work with longitudinal yet - radar disable, sending correct messages, etc.
@@ -2278,7 +2278,7 @@ DBC = {
   CAR.GENESIS_G70: dbc_dict('hyundai_kia_generic', None),
   CAR.GENESIS_G70_2020: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
   CAR.GENESIS_G70_2021_NON_SCC: dbc_dict('hyundai_kia_generic', None),
-  CAR.GENESIS_G80: dbc_dict('hyundai_kia_generic', None),
+  CAR.GENESIS_G80: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
   CAR.GENESIS_G90: dbc_dict('hyundai_kia_generic', None),
   CAR.HYUNDAI_GENESIS: dbc_dict('hyundai_kia_generic', None),
   CAR.IONIQ_PHEV_2019: dbc_dict('hyundai_kia_generic', None),
