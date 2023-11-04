@@ -93,8 +93,8 @@ class CarInterface(CarInterfaceBase):
     elif candidate == CAR.PALISADE:
       ret.mass = 1999.
       ret.wheelbase = 2.90
-      ret.steerRatio = 15.6 * 1.15
-      ret.tireStiffnessFactor = 0.63
+      ret.steerRatio = 15.6 * 1.20
+      ret.tireStiffnessFactor = 0.65
     elif candidate in (CAR.ELANTRA, CAR.ELANTRA_GT_I30):
       ret.mass = 1275.
       ret.wheelbase = 2.7
@@ -272,7 +272,7 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
     else:
-      ret.longitudinalTuning.kpV = [0.5]
+      ret.longitudinalTuning.kpV = [0.3]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
@@ -280,10 +280,10 @@ class CarInterface(CarInterfaceBase):
 
     ret.stoppingControl = True
     ret.startingState = True
-    ret.vEgoStarting = 0.1
-    ret.startAccel = 1.0
-    ret.longitudinalActuatorDelayLowerBound = 0.5
-    ret.longitudinalActuatorDelayUpperBound = 0.5
+    ret.vEgoStarting = 0.07
+    ret.startAccel = .70
+    ret.longitudinalActuatorDelayLowerBound = 0.25
+    ret.longitudinalActuatorDelayUpperBound = 0.25
 
     # *** feature detection ***
     if candidate in CANFD_CAR:
