@@ -306,7 +306,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   QString modified_time = modifiedTime.toString("yyyy-MM-dd hh:mm:ss ");
   connect(errorBtn, &ButtonControl::clicked, [=]() {
     const std::string txt = util::read_file("/data/community/crashes/error.txt");
-    ConfirmationDialog::rich(modified_time + QString::fromStdString(txt), this);
+    ConfirmationDialog::rich(modified_time + QString::fromStdString(txt), true, this);
   });
   addItem(errorBtn);
 
@@ -359,7 +359,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     auto regulatoryBtn = new ButtonControl(tr("Regulatory"), tr("VIEW"), "");
     connect(regulatoryBtn, &ButtonControl::clicked, [=]() {
       const std::string txt = util::read_file("../assets/offroad/fcc.html");
-      ConfirmationDialog::rich(QString::fromStdString(txt), this);
+      ConfirmationDialog::rich(QString::fromStdString(txt), false, this);
     });
     addItem(regulatoryBtn);
   }

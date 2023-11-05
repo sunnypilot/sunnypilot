@@ -55,10 +55,10 @@ class ConfirmationDialog : public DialogBase {
 
 public:
   explicit ConfirmationDialog(const QString &prompt_text, const QString &confirm_text,
-                              const QString &cancel_text, const bool rich, QWidget* parent);
+                              const QString &cancel_text, const bool rich, const bool error_btn, QWidget* parent);
   static bool alert(const QString &prompt_text, QWidget *parent);
   static bool confirm(const QString &prompt_text, const QString &confirm_text, QWidget *parent);
-  static bool rich(const QString &prompt_text, QWidget *parent);
+  static bool rich(const QString &prompt_text, const bool error_btn, QWidget *parent);
 };
 
 class MultiOptionDialog : public DialogBase {
