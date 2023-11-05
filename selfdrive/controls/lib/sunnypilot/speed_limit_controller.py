@@ -8,7 +8,7 @@ from openpilot.selfdrive.controls.lib.sunnypilot import LIMIT_PERC_OFFSET_BP, LI
 
 from openpilot.selfdrive.controls.lib.drive_helpers import LIMIT_MIN_ACC, LIMIT_MAX_ACC, LIMIT_SPEED_OFFSET_TH, \
   CONTROL_N
-from openpilot.selfdrive.controls.lib.events import Events, ET
+from openpilot.selfdrive.controls.lib.events import ET
 from openpilot.selfdrive.controls.lib.sunnypilot.common import Source, Policy
 from openpilot.selfdrive.controls.lib.sunnypilot.helpers import description_for_state, debug
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_resolver import SpeedLimitResolver
@@ -215,7 +215,7 @@ class SpeedLimitController:
     elif self._speed_limit_changed != 0:
       events.add(EventName.speedLimitValueChange)
 
-  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events=Events()):
+  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events):
     _car_state = sm['carState']
     self._op_enabled = enabled and sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
                        not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
