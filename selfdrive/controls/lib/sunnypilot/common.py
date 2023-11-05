@@ -9,10 +9,10 @@ class Source(IntEnum):
 
 
 class Policy(IntEnum):
-  car_state_only = 0
+  nav_only = 0
   map_data_only = 1
-  car_state_priority = 2
-  map_data_priority = 3
-  combined = 4
-  nav_only = 5
-  nav_priority = 6
+  car_state_only = 2
+  nav_priority = 3
+  map_data_priority = 4
+  car_state_priority = 5
+  combined = 6

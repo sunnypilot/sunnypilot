@@ -5,7 +5,6 @@ from common.conversions import Conversions as CV
 from common.params import Params
 from openpilot.selfdrive.controls.lib.sunnypilot import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
   PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, EventName, SpeedLimitControlState
-
 from openpilot.selfdrive.controls.lib.drive_helpers import LIMIT_MIN_ACC, LIMIT_MAX_ACC, LIMIT_SPEED_OFFSET_TH, \
   CONTROL_N
 from openpilot.selfdrive.controls.lib.events import ET
@@ -18,11 +17,12 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 class SpeedLimitController:
   def __init__(self):
     self._params = Params()
-    self._resolver = SpeedLimitResolver()
+    self._policy = Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+    self._resolver = SpeedLimitResolver(self._policy)
     self._last_params_update = 0.0
     self._last_op_enabled_time = 0.0
     self._is_metric = self._params.get_bool("IsMetric")
-    self._is_enabled = self._params.get_bool("SpeedLimitControl")
+    self._is_enabled = self._params.get_bool("EnableSlc")
     self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._op_enabled = False
     self._op_enabled_prev = False
@@ -116,13 +116,15 @@ class SpeedLimitController:
     return self._source
 
   def _update_params(self):
-    t = time.monotonic()
-    if t > self._last_params_update + PARAMS_UPDATE_PERIOD:
-      self._is_enabled = self._params.get_bool("SpeedLimitControl")
+    current_timestamp = time.monotonic()
+    if current_timestamp > self._last_params_update + PARAMS_UPDATE_PERIOD:
+      self._is_enabled = self._params.get_bool("EnableSlc")
       self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
       self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
+      self._policy = Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+      self._resolver.change_policy(self._policy)
       debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_type}')
-      self._last_params_update = t
+      self._last_params_update = current_timestamp
 
   def _update_calculations(self):
     # Update current velocity offset (error)

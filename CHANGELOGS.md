@@ -39,6 +39,9 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
     * [DISTANCE/FOLLOW DISTANCE/GAP DISTANCE] physical button on the steering wheel to select Driving Personality on by default
     * Status now viewable in onroad view or Onroad Settings Panel
     * REMOVED: Gap Adjust Cruise toggle
+* UPDATED: Speed Limit Control (SLC)
+  * NEW❗: Speed limit source selector
+    * Select the desired precedence order of sources used to adapt cruise speed to road limits
 * UPDATED: Custom Stock Longitudinal Control
   * RE-ENABLED: Hyundai/Kia/Genesis CAN-FD platforms
 * UPDATED: Custom Offsets reimplementation

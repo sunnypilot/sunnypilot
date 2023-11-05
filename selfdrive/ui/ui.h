@@ -162,6 +162,7 @@ typedef struct UIScene {
 
   // Speed limit control
   bool speed_limit_control_enabled;
+  int speed_limit_control_policy;
   double last_speed_limit_sign_tap;
 
   // modelV2

@@ -484,7 +484,7 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
     scene.last_speed_limit_sign_tap = seconds_since_boot();
     params.putBool("LastSpeedLimitSignTap", true);
     scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
-    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
+    params.putBool("EnableSlc", scene.speed_limit_control_enabled);
     propagate_event = false;
   }
 

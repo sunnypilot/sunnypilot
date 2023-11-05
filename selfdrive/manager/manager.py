@@ -86,7 +86,7 @@ def manager_init() -> None:
     ("ReverseAccChange", "0"),
     ("ScreenRecorder", "1"),
     ("ShowDebugUI", "1"),
-    ("SpeedLimitControl", "1"),
+    ("SpeedLimitControlPolicy", "3"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
     ("StandStillTimer", "0"),
