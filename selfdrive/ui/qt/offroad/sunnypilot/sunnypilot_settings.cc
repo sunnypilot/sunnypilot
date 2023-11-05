@@ -358,6 +358,8 @@ void SunnypilotPanel::updateToggles() {
     return;
   }
 
+  dlp_settings->setButton("DynamicLaneProfile");
+
   // toggle VisionCurveLaneless when DynamicLaneProfile == 2/Auto
   auto dynamic_lane_profile_param = QString::fromStdString(params.get("DynamicLaneProfile"));
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
