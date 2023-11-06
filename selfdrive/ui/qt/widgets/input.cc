@@ -2,7 +2,6 @@
 
 #include <QPushButton>
 #include <QButtonGroup>
-#include <QScrollBar>
 
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
@@ -189,7 +188,7 @@ void InputDialog::setMinLength(int length) {
 // ConfirmationDialog
 
 ConfirmationDialog::ConfirmationDialog(const QString &prompt_text, const QString &confirm_text, const QString &cancel_text,
-                                       const bool rich, const bool error_btn, QWidget *parent) : DialogBase(parent) {
+                                       const bool rich, QWidget *parent) : DialogBase(parent) {
   QFrame *container = new QFrame(this);
   container->setStyleSheet(R"(
     QFrame { background-color: #1B1B1B; color: #C9C9C9; }
@@ -203,16 +202,7 @@ ConfirmationDialog::ConfirmationDialog(const QString &prompt_text, const QString
   prompt->setWordWrap(true);
   prompt->setAlignment(rich ? Qt::AlignLeft : Qt::AlignHCenter);
   prompt->setStyleSheet((rich ? "font-size: 42px; font-weight: light;" : "font-size: 70px; font-weight: bold;") + QString(" margin: 45px;"));
-  ScrollView *scroll = new ScrollView(prompt);
-  scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  main_layout->addWidget(rich ? scroll : (QWidget*)prompt, 1, Qt::AlignTop);
-
-  // Scroll to the bottom
-  QObject::connect(scroll->verticalScrollBar(), &QAbstractSlider::rangeChanged, [=]() {
-    if (error_btn) {
-      scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());
-    }
-  });
+  main_layout->addWidget(rich ? (QWidget*)new ScrollView(prompt, this) : (QWidget*)prompt, 1, Qt::AlignTop);
 
   // cancel + confirm buttons
   QHBoxLayout *btn_layout = new QHBoxLayout();
@@ -239,17 +229,17 @@ ConfirmationDialog::ConfirmationDialog(const QString &prompt_text, const QString
 }
 
 bool ConfirmationDialog::alert(const QString &prompt_text, QWidget *parent) {
-  ConfirmationDialog d = ConfirmationDialog(prompt_text, tr("Ok"), "", false, false, parent);
+  ConfirmationDialog d = ConfirmationDialog(prompt_text, tr("Ok"), "", false, parent);
   return d.exec();
 }
 
 bool ConfirmationDialog::confirm(const QString &prompt_text, const QString &confirm_text, QWidget *parent) {
-  ConfirmationDialog d = ConfirmationDialog(prompt_text, confirm_text, tr("Cancel"), false, false, parent);
+  ConfirmationDialog d = ConfirmationDialog(prompt_text, confirm_text, tr("Cancel"), false, parent);
   return d.exec();
 }
 
-bool ConfirmationDialog::rich(const QString &prompt_text, const bool error_btn, QWidget *parent) {
-  ConfirmationDialog d = ConfirmationDialog(prompt_text, tr("Ok"), "", true, error_btn, parent);
+bool ConfirmationDialog::rich(const QString &prompt_text, QWidget *parent) {
+  ConfirmationDialog d = ConfirmationDialog(prompt_text, tr("Ok"), "", true, parent);
   return d.exec();
 }
 
