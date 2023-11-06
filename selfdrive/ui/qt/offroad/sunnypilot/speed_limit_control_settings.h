@@ -41,20 +41,24 @@ private:
   ButtonParamControl *speed_limit_offset_settings;
   ParamWatcher *param_watcher;
 
-  QString slcPolicyDescriptionBuilder(QString param) {
+  QString slcDescriptionBuilder(QString param, std::vector<QString> descriptions) {
     std::string key = param.toStdString();
     int value = atoi(params.get(key).c_str());
-    QString description = tr("Select the precedence order of sources used to adapt cruise speed to road limits:");
-    description += "<br><br>";
+    value += 1;  // always bump one due to first line being generic description
+    QString description = "";
 
-    for (int i = 0; i < speed_limit_control_policy_descriptions.size(); i++) {
-      if (i == value) {
-        description += "<b>" + speed_limit_control_policy_descriptions[i] + "</b>";
-      } else {
-        description += speed_limit_control_policy_descriptions[i];
+    for (int i = 0; i < descriptions.size(); i++) {
+      if (i == 1) {
+        description += "<br><br>";
       }
 
-      if (i < speed_limit_control_policy_descriptions.size() - 1) {
+      if (i == value) {
+        description += "<b>" + descriptions[i] + "</b>";
+      } else {
+        description += descriptions[i];
+      }
+
+      if ((i > 0) && (i < descriptions.size() - 1)) {
         description += "<br>";
       }
     }
@@ -74,6 +78,7 @@ inline const std::vector<QString> SlcSettings::speed_limit_control_policy_texts{
 };
 
 inline const std::vector<QString> SlcSettings::speed_limit_control_policy_descriptions{
+  tr("Select the precedence order of sources used to adapt cruise speed to road limits:"),
   tr("Nav Only: Data from Mapbox active navigation only."),
   tr("Map Only: Data from OpenStreetMap only."),
   tr("Car Only: Data from the car's built-in sources (if available)."),

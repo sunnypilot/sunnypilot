@@ -66,7 +66,7 @@ void SlcSettings::updateToggles() {
   auto custom_stock_long_param = params.getBool("CustomStockLong");
   auto speed_limit_control = params.getBool("EnableSlc");
 
-  speed_limit_control_policy->setDescription(slcPolicyDescriptionBuilder("SpeedLimitControlPolicy"));
+  speed_limit_control_policy->setDescription(slcDescriptionBuilder("SpeedLimitControlPolicy", speed_limit_control_policy_descriptions));
 
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
