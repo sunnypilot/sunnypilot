@@ -48,6 +48,7 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   MadsSettings* mads_settings = nullptr;
+  SubPanelButton *slcSettings = nullptr;
   SlcSettings* slc_settings = nullptr;
   LaneChangeSettings* lane_change_settings = nullptr;
   CustomOffsetsSettings* custom_offsets_settings = nullptr;

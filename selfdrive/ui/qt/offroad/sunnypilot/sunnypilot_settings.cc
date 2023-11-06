@@ -164,7 +164,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   });
 
   // SLC. Settings
-  SubPanelButton *slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 900, this);
+  slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 900, this);
   slcSettings->setObjectName("slc_btn");
   // Set margin on the outside of the button
   QVBoxLayout* slcSettingsLayout = new QVBoxLayout;
@@ -377,6 +377,7 @@ void SunnypilotPanel::updateToggles() {
   auto v_tsc = toggles["TurnVisionControl"];
   auto m_tsc = toggles["TurnSpeedControl"];
   auto reverse_acc = toggles["ReverseAccChange"];
+  auto slc_toggle = toggles["EnableSlc"];
 
   // toggle names to update when EnforceTorqueLateral is flipped
   std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
@@ -418,15 +419,24 @@ void SunnypilotPanel::updateToggles() {
       v_tsc->setEnabled(true);
       m_tsc->setEnabled(true);
       reverse_acc->setEnabled(true);
+      slc_toggle->setEnabled(true);
     } else {
       v_tsc->setEnabled(false);
       m_tsc->setEnabled(false);
       reverse_acc->setEnabled(false);
+      slc_toggle->setEnabled(false);
+      params.remove("EnableSlc");
+      slcSettings->setEnabled(false);
     }
+
+    enforce_torque_lateral->refresh();
+    slc_toggle->refresh();
   } else {
     v_tsc->setEnabled(false);
     m_tsc->setEnabled(false);
     reverse_acc->setEnabled(false);
+    slc_toggle->setEnabled(false);
+    slcSettings->setEnabled(false);
   }
 }
 
