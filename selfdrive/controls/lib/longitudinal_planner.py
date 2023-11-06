@@ -9,8 +9,6 @@ import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
-from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
