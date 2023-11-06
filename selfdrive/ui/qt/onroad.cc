@@ -865,8 +865,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   const QRect sign_rect = set_speed_rect.adjusted(sign_margin, default_size.height(), -sign_margin, -sign_margin);
   uiState()->scene.sl_sign_rect = sign_rect;
+
+  speedLimitWarning(p, sign_rect, sign_margin);
+
   // US/Canada (MUTCD style) sign
-  if ((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) {
+  if (((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) && slcShowSign) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawRoundedRect(sign_rect, 24, 24);
@@ -888,7 +891,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // EU (Vienna style) sign
-  if ((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) {
+  if (((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) && slcShowSign) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawEllipse(sign_rect);
@@ -1570,6 +1573,14 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
   return blinker_state;
 }
 
+void AnnotatedCameraWidget::speedLimitSignPulse(int frame) {
+  if (frame % UI_FREQ < (UI_FREQ / 2.5)) {
+    slcShowSign = false;
+  } else {
+    slcShowSign = true;
+  }
+}
+
 void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   const FeatureStatusText feature_text;
   const FeatureStatusColor feature_color;
@@ -1638,6 +1649,17 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   // Speed Limit Control
   if (longitudinal || !cp.getPcmCruiseSpeed()) {
     drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
+  }
+}
+
+void AnnotatedCameraWidget::speedLimitWarning(QPainter &p, QRect sign_rect, const int sign_margin) {
+  // current speed over speed limit
+  if (overSpeedLimit) {
+    speed_limit_frame++;
+    speedLimitSignPulse(speed_limit_frame);
+  } else {
+    speed_limit_frame = 0;
+    slcShowSign = true;
   }
 }
 
