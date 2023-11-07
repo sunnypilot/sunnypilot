@@ -211,7 +211,7 @@ class CarState(CarStateBase):
     self.mads_enabled = False if not self.control_initialized else ret.cruiseState.available
 
     if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
-      self._update_traffic_signals(self.CP, cp, cp_cam)
+      self._update_traffic_signals(cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
     return ret
@@ -301,15 +301,19 @@ class CarState(CarStateBase):
                                           else cp_cam.vl["CAM_0x2a4"])
 
     if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
-      self._update_traffic_signals(self.CP, cp, cp_cam)
+      self._update_traffic_signals(cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_factor
 
     return ret
 
-  def _update_traffic_signals(self, CP, cp, cp_cam):
-    speed_limit_clu_canfd = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
-    self._speed_limit_clu = speed_limit_clu_canfd.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_1"] if CP.carFingerprint in CANFD_CAR else \
-      cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+  def _update_traffic_signals(self, cp, cp_cam):
+    if self.CP.carFingerprint in CANFD_CAR:
+      speed_limit_clu_bus_canfd = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
+      self._speed_limit_clu = speed_limit_clu_bus_canfd.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_1"]
+    else:
+      speed_limit_can_nav = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+      speed_limit_can_cam = cp_cam.vl["LKAS12"]["CF_Lkas_TsrSpeed_Display_Clu"]
+      self._speed_limit_clu = speed_limit_can_cam if speed_limit_can_cam not in (0, 255) else speed_limit_can_nav
 
   def _calculate_speed_limit(self):
     return self._speed_limit_clu if self._speed_limit_clu not in (0, 255) else 0
@@ -380,7 +384,8 @@ class CarState(CarStateBase):
       return CarState.get_cam_can_parser_canfd(CP)
 
     messages = [
-      ("LKAS11", 100)
+      ("LKAS11", 100),
+      ("LKAS12", 10)
     ]
 
     if not CP.openpilotLongitudinalControl and CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_CAR - NON_SCC_NO_FCA_CAR - NON_SCC_RADAR_FCA_CAR)):
