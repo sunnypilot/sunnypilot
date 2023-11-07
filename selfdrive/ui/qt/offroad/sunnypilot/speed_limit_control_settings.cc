@@ -30,7 +30,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
 
   speed_limit_control_policy = new ButtonParamControl(
     "SpeedLimitControlPolicy",
-    tr("Speed Limit Control Policy"),
+    tr("Source Policy"),
     "",
     "../assets/offroad/icon_blank.png",
     speed_limit_control_policy_texts,

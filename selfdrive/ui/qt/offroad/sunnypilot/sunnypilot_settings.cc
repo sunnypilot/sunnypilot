@@ -19,6 +19,35 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "EnableSlc",
+      tr("Enable Speed Limit Control (SLC)"),
+      tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "TurnVisionControl",
+      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
+      tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "TurnSpeedControl",
+      tr("Enable Map Data Turn Speed Control (M-TSC)"),
+      tr("Use curvature information from map data to define speed limits to take turns ahead."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "ReverseAccChange",
+      tr("ACC +/-: Long Press Reverse"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>"
+              "<h4>%3</h4><br>")
+      .arg(tr("Change the ACC +/- buttons behavior with cruise speed change in sunnypilot."))
+      .arg(tr("Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)"))
+      .arg(tr("Enabled: Short = 5 (imperial) / 10 (metric), Long=1")),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "CustomOffsets",
       tr("Custom Offsets"),
       tr("Add custom offsets to Camera and Path in sunnypilot."),
@@ -52,35 +81,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "TorquedOverride",
       tr("Manual Real-Time Tuning"),
       tr("Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "EnableSlc",
-      tr("Enable Speed Limit Control (SLC)"),
-      tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "TurnVisionControl",
-      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
-      tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "TurnSpeedControl",
-      tr("Enable Map Data Turn Speed Control (M-TSC)"),
-      tr("Use curvature information from map data to define speed limits to take turns ahead."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "ReverseAccChange",
-      tr("ACC +/-: Long Press Reverse"),
-      QString("%1<br>"
-              "<h4>%2</h4><br>"
-              "<h4>%3</h4><br>")
-      .arg(tr("Change the ACC +/- buttons behavior with cruise speed change in sunnypilot."))
-      .arg(tr("Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)"))
-      .arg(tr("Enabled: Short = 5 (imperial) / 10 (metric), Long=1")),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -223,13 +223,17 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(dlp_settings);
     }
 
+    if (param == "VisionCurveLaneless") {
+      list->addItem(laneChangeSettingsLayout);
+      list->addItem(horizontal_line());
+    }
+
     if (param == "EnableSlc") {
       list->addItem(slcSettingsLayout);
       list->addItem(horizontal_line());
     }
 
-    if (param == "VisionCurveLaneless") {
-      list->addItem(laneChangeSettingsLayout);
+    if (param == "ReverseAccChange") {
       list->addItem(horizontal_line());
     }
 
@@ -248,10 +252,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(horizontal_line());
     }
 
-    if (param == "ReverseAccChange") {
-      list->addItem(horizontal_line());
-    }
-
     // trigger updateToggles() when toggleFlipped
     if (std::find(updateTogglesNames.begin(), updateTogglesNames.end(), param.toStdString()) != updateTogglesNames.end()) {
       connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
@@ -266,7 +266,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       });
     }
   }
-  toggles["EnableSlc"]->showDescription();
 
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
