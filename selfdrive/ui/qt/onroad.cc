@@ -702,8 +702,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
     mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
     slcActive = !sl_inactive && !sl_temp_inactive;
-    overSpeedLimit = (std::nearbyint(speed_limit_slc + speed_limit_offset) < std::nearbyint(speed)) &&
-                     (std::nearbyint(speed_limit_slc + speed_limit_offset) > 0);
+    overSpeedLimit = showSpeedLimit && (std::nearbyint(speed_limit_slc + speed_limit_offset) < std::nearbyint(speed));
 
     const float tsc_speed = lp_sp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const auto tscState = lp_sp.getTurnSpeedControlState();
