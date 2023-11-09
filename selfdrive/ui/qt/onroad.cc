@@ -1979,7 +1979,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
 
     if (reversing && s->scene.reverse_dm_cam) {
-      CameraWidget::setStreamType(VISION_STREAM_DRIVER);
+      CameraWidget::setStreamType(VISION_STREAM_DRIVER, s->scene.reverse_dm_cam);
     }
 
     s->scene.wide_cam = CameraWidget::getStreamType() == VISION_STREAM_WIDE_ROAD;

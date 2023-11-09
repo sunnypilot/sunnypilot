@@ -38,7 +38,7 @@ public:
   ~CameraWidget();
   void setBackgroundColor(const QColor &color) { bg = color; }
   void setFrameId(int frame_id) { draw_frame_id = frame_id; }
-  void setStreamType(VisionStreamType type) { requested_stream_type = type; }
+  void setStreamType(VisionStreamType type, bool reverse = false) { requested_stream_type = type; is_reverse = reverse;}
   VisionStreamType getStreamType() { return active_stream_type; }
   void stopVipcThread();
 
@@ -99,6 +99,9 @@ protected slots:
   void vipcConnected(VisionIpcClient *vipc_client);
   void vipcFrameReceived();
   void availableStreamsUpdated(std::set<VisionStreamType> streams);
+
+private:
+  bool is_reverse = false;
 };
 
 Q_DECLARE_METATYPE(std::set<VisionStreamType>);
