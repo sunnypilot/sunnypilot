@@ -21,10 +21,8 @@ SERVICE_NAME="gitlab-runner"
 
 create_gitlab_runner_directories() {
     sudo mkdir -p "$GITLAB_BIN_DIR" "$GITLAB_BUILDS_DIR" "$GITLAB_LOGS_DIR" "$GITLAB_CACHE_DIR" "$GITLAB_OPENPILOT_DIR"
-    if [[ ! -d "/data/openpilot" ]]; then
-      sudo mkdir -p "/data/openpilot"
-      sudo chown -R comma:comma "/data/openpilot"
-    fi
+    sudo mkdir -p "/data/openpilot"
+    sudo chown -R comma:comma "/data/openpilot"
 }
 
 download_and_setup_gitlab_runner() {
