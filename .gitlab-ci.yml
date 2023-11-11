@@ -100,6 +100,8 @@ build:
     - touch ${BUILD_DIR}/prebuilt
     - mkdir -p ${OUTPUT_DIR}
     - shopt -s dotglob && mv ${BUILD_DIR}/* ${OUTPUT_DIR}
+  after_script:
+    - sudo chown -R comma:comma ${OUTPUT_DIR}
   artifacts:
     paths:
       - ${OUTPUT_DIR}/

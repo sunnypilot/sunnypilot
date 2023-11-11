@@ -15,7 +15,7 @@ OPENPILOT_DIR="$BASE_DIR/openpilot"
 LOGS_DIR="$BASE_DIR/logs"
 CACHE_DIR="$BASE_DIR/cache"
 GITLAB_RUNNER_USERNAME="gitlab-runner"
-GROUPS_NEEDED="comma,gpu,gpio"
+GROUPS_NEEDED="comma,gpu,gpio,sudo"
 
 # Create necessary directories
 sudo mkdir -p "$BIN_DIR" "$BUILDS_DIR" "$LOGS_DIR" "$CACHE_DIR" "$OPENPILOT_DIR"
@@ -28,6 +28,7 @@ sudo chmod +x "$BIN_DIR/gitlab-runner"
 
 # Create a GitLab Runner user
 sudo useradd --comment 'GitLab Runner' --create-home --home-dir ${BASE_DIR} ${GITLAB_RUNNER_USERNAME} --shell /bin/bash -G ${GROUPS_NEEDED} || sudo usermod -aG ${GROUPS_NEEDED} gitlab-runner
+grep -qxF 'gitlab-runner ALL=(ALL) NOPASSWD: ALL' /etc/sudoers || echo 'gitlab-runner ALL=(ALL) NOPASSWD: ALL' | sudo tee -a /etc/sudoers #Giving us SUDO rights
 
 # Clean bash_logout as it break gitlab pipelines
 sudo truncate -s 0 ${BASE_DIR}/.bash_logout
