@@ -392,7 +392,7 @@ Pull requests should be against the most current `master` branch.
 
 ---
 
-By default, sunnypilot uploads the driving data to comma servers. You can also access your data through [comma connect](https://connect.comma.ai/).
+By default, sunnypilot uploads the driving data to comma servers and to OpenStreetMaps. You can also access your data through [comma connect](https://connect.comma.ai/).
 
 sunnypilot is open source software. The user is free to disable data collection if they wish to do so.
 
