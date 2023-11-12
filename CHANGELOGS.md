@@ -24,6 +24,7 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
   * NEW❗: Parse lead distance to display on car cluster
     * Introduced better lead distance calculation to display on the car's cluster, replacing the binary "lead visible" indication on the SCC cluster
     * Lead distance is now categorized into different ranges for more detailed and comprehensive information to the driver similar to how stock ACC does it
+  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!
   * Global (excluding Gen 2 and Hybrid) and Pre-Global support
 * NEW❗: Toyota - Stop and Go hack
