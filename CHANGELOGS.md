@@ -1,6 +1,6 @@
 sunnypilot - 0.9.5.1 (2023-11-xx)
 ========================
-* UPDATED: Synced with commaai's master commit 9528383
+* UPDATED: Synced with commaai's master commit e94c3c5
 * NEW❗: Farmville driving model
 * NEW❗: Onroad Settings Panel
   * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
