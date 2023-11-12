@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Night Strike (October 3, 2023)"
+#define CURRENT_MODEL "Farmville (November 7, 2023)"
