@@ -268,10 +268,8 @@ class CarInterface(CarInterfaceBase):
                                                (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR))
       ret.customStockLongAvailable = False
     else:
-      ret.longitudinalTuning.kpBP = [2.0, 7.0]
-      ret.longitudinalTuning.kpV = [0.4, 0.9]
-      ret.longitudinalTuning.kiBP = [2.0, 7.0]
-      ret.longitudinalTuning.kiV = [0.0, 0.19]
+      ret.longitudinalTuning.kpV = [0.5]
+      ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (UNSUPPORTED_LONGITUDINAL_CAR | CAMERA_SCC_CAR | NON_SCC_CAR)
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
     ret.pcmCruise = not ret.openpilotLongitudinalControl
