@@ -1,12 +1,15 @@
 #include "tools/cabana/mainwin.h"
 
+#include <algorithm>
 #include <iostream>
+#include <string>
+
 #include <QClipboard>
 #include <QDesktopWidget>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QMenu>
+#include <QJsonObject>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QResizeEvent>
@@ -18,22 +21,19 @@
 
 #include "tools/cabana/commands.h"
 #include "tools/cabana/streamselector.h"
-#include "tools/cabana/streams/replaystream.h"
 #include "tools/cabana/tools/findsignal.h"
-
-static MainWindow *main_win = nullptr;
-void qLogMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-  if (type == QtDebugMsg) std::cout << msg.toStdString() << std::endl;
-  if (main_win) emit main_win->showMessage(msg, 2000);
-}
+#include "tools/replay/replay.h"
 
 MainWindow::MainWindow() : QMainWindow() {
+  loadFingerprints();
   createDockWindows();
-  center_widget = new CenterWidget(charts_widget, this);
-  setCentralWidget(center_widget);
+  setCentralWidget(center_widget = new CenterWidget(this));
   createActions();
   createStatusBar();
   createShortcuts();
+
+  // save default window state to allow resetting it
+  default_state = saveState();
 
   // restore states
   restoreGeometry(settings.geometry);
@@ -42,24 +42,21 @@ MainWindow::MainWindow() : QMainWindow() {
   }
   restoreState(settings.window_state);
 
+  // install handlers
+  static auto static_main_win = this;
   qRegisterMetaType<uint64_t>("uint64_t");
   qRegisterMetaType<SourceSet>("SourceSet");
   qRegisterMetaType<ReplyMsgType>("ReplyMsgType");
-  installMessageHandler([this](ReplyMsgType type, const std::string msg) {
-    // use queued connection to recv the log messages from replay.
-    emit showMessage(QString::fromStdString(msg), 2000);
+  installDownloadProgressHandler([](uint64_t cur, uint64_t total, bool success) {
+    emit static_main_win->updateProgressBar(cur, total, success);
   });
-  installDownloadProgressHandler([this](uint64_t cur, uint64_t total, bool success) {
-    emit updateProgressBar(cur, total, success);
+  qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    if (type == QtDebugMsg) std::cout << msg.toStdString() << std::endl;
+    emit static_main_win->showMessage(msg, 2000);
   });
-
-  main_win = this;
-  qInstallMessageHandler(qLogMessageHandler);
-
-  QFile json_file(QApplication::applicationDirPath() + "/dbc/car_fingerprint_to_dbc.json");
-  if (json_file.open(QIODevice::ReadOnly)) {
-    fingerprint_to_dbc = QJsonDocument::fromJson(json_file.readAll());
-  }
+  installMessageHandler([](ReplyMsgType type, const std::string msg) {
+    qInfo() << QString::fromStdString(msg);
+  });
 
   setStyleSheet(QString(R"(QMainWindow::separator {
     width: %1px; /* when vertical */
@@ -68,26 +65,34 @@ MainWindow::MainWindow() : QMainWindow() {
 
   QObject::connect(this, &MainWindow::showMessage, statusBar(), &QStatusBar::showMessage);
   QObject::connect(this, &MainWindow::updateProgressBar, this, &MainWindow::updateDownloadProgress);
-  QObject::connect(messages_widget, &MessagesWidget::msgSelectionChanged, center_widget, &CenterWidget::setMessage);
-  QObject::connect(charts_widget, &ChartsWidget::dock, this, &MainWindow::dockCharts);
-  QObject::connect(can, &AbstractStream::streamStarted, this, &MainWindow::streamStarted);
-  QObject::connect(can, &AbstractStream::sourcesUpdated, dbc(), &DBCManager::updateSources);
-  QObject::connect(can, &AbstractStream::sourcesUpdated, this, &MainWindow::updateLoadSaveMenus);
   QObject::connect(dbc(), &DBCManager::DBCFileChanged, this, &MainWindow::DBCFileChanged);
   QObject::connect(UndoStack::instance(), &QUndoStack::cleanChanged, this, &MainWindow::undoStackCleanChanged);
   QObject::connect(UndoStack::instance(), &QUndoStack::indexChanged, this, &MainWindow::undoStackIndexChanged);
   QObject::connect(&settings, &Settings::changed, this, &MainWindow::updateStatus);
+  QObject::connect(StreamNotifier::instance(), &StreamNotifier::changingStream, this, &MainWindow::changingStream);
+  QObject::connect(StreamNotifier::instance(), &StreamNotifier::streamStarted, this, &MainWindow::streamStarted);
+}
+
+void MainWindow::loadFingerprints() {
+  QFile json_file(QApplication::applicationDirPath() + "/dbc/car_fingerprint_to_dbc.json");
+  if (json_file.open(QIODevice::ReadOnly)) {
+    fingerprint_to_dbc = QJsonDocument::fromJson(json_file.readAll());
+    auto dbc_names = fingerprint_to_dbc.object().toVariantMap().values();
+    std::transform(dbc_names.begin(), dbc_names.end(), std::inserter(opendbc_names, opendbc_names.begin()),
+                   [](const auto &name) { return name.toString(); });
+  }
 }
 
 void MainWindow::createActions() {
+  // File menu
   QMenu *file_menu = menuBar()->addMenu(tr("&File"));
-  if (!can->liveStreaming()) {
-    file_menu->addAction(tr("Open Route..."), this, &MainWindow::openRoute);
-    file_menu->addSeparator();
-  }
+  file_menu->addAction(tr("Open Stream..."), this, &MainWindow::openStream);
+  close_stream_act = file_menu->addAction(tr("Close stream"), this, &MainWindow::closeStream);
+  close_stream_act->setEnabled(false);
+  file_menu->addSeparator();
 
-  file_menu->addAction(tr("New DBC File"), [this]() { newFile(); })->setShortcuts(QKeySequence::New);
-  file_menu->addAction(tr("Open DBC File..."), [this]() { openFile(); })->setShortcuts(QKeySequence::Open);
+  file_menu->addAction(tr("New DBC File"), [this]() { newFile(); }, QKeySequence::New);
+  file_menu->addAction(tr("Open DBC File..."), [this]() { openFile(); }, QKeySequence::Open);
 
   manage_dbcs_menu = file_menu->addMenu(tr("Manage &DBC Files"));
 
@@ -103,30 +108,24 @@ void MainWindow::createActions() {
   file_menu->addSeparator();
   QMenu *load_opendbc_menu = file_menu->addMenu(tr("Load DBC from commaai/opendbc"));
   // load_opendbc_menu->setStyleSheet("QMenu { menu-scrollable: true; }");
-  auto dbc_names = allDBCNames();
-  std::sort(dbc_names.begin(), dbc_names.end());
-  for (const auto &name : dbc_names) {
-    QString dbc_name = QString::fromStdString(name);
-    load_opendbc_menu->addAction(dbc_name, [=]() { loadDBCFromOpendbc(dbc_name); });
+  for (const auto &dbc_name : opendbc_names) {
+    load_opendbc_menu->addAction(dbc_name, [this, name = dbc_name]() { loadDBCFromOpendbc(name); });
   }
 
   file_menu->addAction(tr("Load DBC From Clipboard"), [=]() { loadFromClipboard(); });
 
   file_menu->addSeparator();
-  save_dbc = file_menu->addAction(tr("Save DBC..."), this, &MainWindow::save);
-  save_dbc->setShortcuts(QKeySequence::Save);
-
-  save_dbc_as = file_menu->addAction(tr("Save DBC As..."), this, &MainWindow::saveAs);
-  save_dbc_as->setShortcuts(QKeySequence::SaveAs);
-
+  save_dbc = file_menu->addAction(tr("Save DBC..."), this, &MainWindow::save, QKeySequence::Save);
+  save_dbc_as = file_menu->addAction(tr("Save DBC As..."), this, &MainWindow::saveAs, QKeySequence::SaveAs);
   copy_dbc_to_clipboard = file_menu->addAction(tr("Copy DBC To Clipboard"), this, &MainWindow::saveToClipboard);
 
   file_menu->addSeparator();
-  file_menu->addAction(tr("Settings..."), this, &MainWindow::setOption)->setShortcuts(QKeySequence::Preferences);
+  file_menu->addAction(tr("Settings..."), this, &MainWindow::setOption, QKeySequence::Preferences);
 
   file_menu->addSeparator();
-  file_menu->addAction(tr("E&xit"), qApp, &QApplication::closeAllWindows)->setShortcuts(QKeySequence::Quit);
+  file_menu->addAction(tr("E&xit"), qApp, &QApplication::closeAllWindows, QKeySequence::Quit);
 
+  // Edit Menu
   QMenu *edit_menu = menuBar()->addMenu(tr("&Edit"));
   auto undo_act = UndoStack::instance()->createUndoAction(this, tr("&Undo"));
   undo_act->setShortcuts(QKeySequence::Undo);
@@ -141,24 +140,44 @@ void MainWindow::createActions() {
   commands_act->setDefaultWidget(new QUndoView(UndoStack::instance()));
   commands_menu->addAction(commands_act);
 
-  QMenu *tools_menu = menuBar()->addMenu(tr("&Tools"));
+  // View Menu
+  QMenu *view_menu = menuBar()->addMenu(tr("&View"));
+  auto act = view_menu->addAction(tr("Full Screen"), this, &MainWindow::toggleFullScreen, QKeySequence::FullScreen);
+  addAction(act);
+  view_menu->addSeparator();
+  view_menu->addAction(messages_dock->toggleViewAction());
+  view_menu->addAction(video_dock->toggleViewAction());
+  view_menu->addSeparator();
+  view_menu->addAction(tr("Reset Window Layout"), [this]() { restoreState(default_state); });
+
+  // Tools Menu
+  tools_menu = menuBar()->addMenu(tr("&Tools"));
   tools_menu->addAction(tr("Find &Similar Bits"), this, &MainWindow::findSimilarBits);
   tools_menu->addAction(tr("&Find Signal"), this, &MainWindow::findSignal);
 
+  // Help Menu
   QMenu *help_menu = menuBar()->addMenu(tr("&Help"));
-  help_menu->addAction(tr("Help"), this, &MainWindow::onlineHelp)->setShortcuts(QKeySequence::HelpContents);
+  help_menu->addAction(tr("Help"), this, &MainWindow::onlineHelp, QKeySequence::HelpContents);
   help_menu->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
 }
 
 void MainWindow::createDockWindows() {
-  // left panel
+  messages_dock = new QDockWidget(tr("MESSAGES"), this);
+  messages_dock->setObjectName("MessagesPanel");
+  messages_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+  messages_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
+  addDockWidget(Qt::LeftDockWidgetArea, messages_dock);
+
+  video_dock = new QDockWidget("", this);
+  video_dock->setObjectName(tr("VideoPanel"));
+  video_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+  video_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetClosable);
+  addDockWidget(Qt::RightDockWidgetArea, video_dock);
+}
+
+void MainWindow::createDockWidgets() {
   messages_widget = new MessagesWidget(this);
-  QDockWidget *dock = new QDockWidget(tr("MESSAGES"), this);
-  dock->setObjectName("MessagesPanel");
-  dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-  dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
-  dock->setWidget(messages_widget);
-  addDockWidget(Qt::LeftDockWidgetArea, dock);
+  messages_dock->setWidget(messages_widget);
 
   // right panel
   charts_widget = new ChartsWidget(this);
@@ -171,22 +190,14 @@ void MainWindow::createDockWindows() {
   video_splitter = new QSplitter(Qt::Vertical, this);
   video_widget = new VideoWidget(this);
   video_splitter->addWidget(video_widget);
-  QObject::connect(charts_widget, &ChartsWidget::rangeChanged, video_widget, &VideoWidget::rangeChanged);
+  QObject::connect(charts_widget, &ChartsWidget::rangeChanged, video_widget, &VideoWidget::updateTimeRange);
 
   video_splitter->addWidget(charts_container);
   video_splitter->setStretchFactor(1, 1);
   video_splitter->restoreState(settings.video_splitter_state);
-  if (can->liveStreaming() || video_splitter->sizes()[0] == 0) {
-    // display video at minimum size.
-    video_splitter->setSizes({1, 1});
-  }
-
-  video_dock = new QDockWidget(can->routeName(), this);
-  video_dock->setObjectName(tr("VideoPanel"));
-  video_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-  video_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+  video_splitter->handle(1)->setEnabled(!can->liveStreaming());
   video_dock->setWidget(video_splitter);
-  addDockWidget(Qt::RightDockWidgetArea, video_dock);
+  QObject::connect(charts_widget, &ChartsWidget::dock, this, &MainWindow::dockCharts);
 }
 
 void MainWindow::createStatusBar() {
@@ -205,8 +216,6 @@ void MainWindow::createStatusBar() {
 void MainWindow::createShortcuts() {
   auto shortcut = new QShortcut(QKeySequence(Qt::Key_Space), this, nullptr, nullptr, Qt::ApplicationShortcut);
   QObject::connect(shortcut, &QShortcut::activated, []() { can->pause(!can->isPaused()); });
-  shortcut = new QShortcut(QKeySequence(QKeySequence::FullScreen), this, nullptr, nullptr, Qt::ApplicationShortcut);
-  QObject::connect(shortcut, &QShortcut::activated, this, &MainWindow::toggleFullScreen);
   // TODO: add more shortcuts here.
 }
 
@@ -242,16 +251,25 @@ void MainWindow::DBCFileChanged() {
   updateLoadSaveMenus();
 }
 
-void MainWindow::openRoute() {
-  StreamSelector dlg(this);
-  dlg.addStreamWidget(ReplayStream::widget(&can));
+void MainWindow::openStream() {
+  AbstractStream *stream = nullptr;
+  StreamSelector dlg(&stream, this);
   if (dlg.exec()) {
-    center_widget->clear();
-    charts_widget->removeAll();
+    if (!dlg.dbcFile().isEmpty()) {
+      loadFile(dlg.dbcFile());
+    }
+    stream->start();
     statusBar()->showMessage(tr("Route %1 loaded").arg(can->routeName()), 2000);
-  } else if (dlg.failed()) {
-    close();
   }
+}
+
+void MainWindow::closeStream() {
+  AbstractStream *stream = new DummyStream(this);
+  stream->start();
+  if (dbc()->nonEmptyDBCCount() > 0) {
+    emit dbc()->DBCFileChanged();
+  }
+  statusBar()->showMessage(tr("stream closed"));
 }
 
 void MainWindow::newFile(SourceSet s) {
@@ -319,30 +337,52 @@ void MainWindow::loadFromClipboard(SourceSet s, bool close_all) {
   }
 }
 
-void MainWindow::streamStarted() {
-  auto fingerprint = can->carFingerprint();
-  if (can->liveStreaming()) {
-    video_dock->setWindowTitle(can->routeName());
-  } else {
-    video_dock->setWindowTitle(tr("ROUTE: %1  FINGERPRINT: %2").arg(can->routeName()).arg(fingerprint.isEmpty() ? tr("Unknown Car") : fingerprint));
-  }
+void MainWindow::changingStream() {
+  center_widget->clear();
+  delete messages_widget;
+  delete video_splitter;
+}
 
+void MainWindow::streamStarted() {
+  bool has_stream = dynamic_cast<DummyStream *>(can) == nullptr;
+  close_stream_act->setEnabled(has_stream);
+  tools_menu->setEnabled(has_stream);
+  createDockWidgets();
+
+  video_dock->setWindowTitle(can->routeName());
+  if (can->liveStreaming() || video_splitter->sizes()[0] == 0) {
+    // display video at minimum size.
+    video_splitter->setSizes({1, 1});
+  }
   // Don't overwrite already loaded DBC
   if (!dbc()->msgCount()) {
-    if (!fingerprint.isEmpty()) {
-      auto dbc_name = fingerprint_to_dbc[fingerprint];
+    newFile();
+  }
+
+  QObject::connect(messages_widget, &MessagesWidget::msgSelectionChanged, center_widget, &CenterWidget::setMessage);
+  QObject::connect(can, &AbstractStream::eventsMerged, this, &MainWindow::eventsMerged);
+  QObject::connect(can, &AbstractStream::sourcesUpdated, this, &MainWindow::updateLoadSaveMenus);
+}
+
+void MainWindow::eventsMerged() {
+  if (!can->liveStreaming() && std::exchange(car_fingerprint, can->carFingerprint()) != car_fingerprint) {
+    video_dock->setWindowTitle(tr("ROUTE: %1  FINGERPRINT: %2")
+                                    .arg(can->routeName())
+                                    .arg(car_fingerprint.isEmpty() ? tr("Unknown Car") : car_fingerprint));
+    // Don't overwrite already loaded DBC
+    if (!dbc()->msgCount() && !car_fingerprint.isEmpty()) {
+      auto dbc_name = fingerprint_to_dbc[car_fingerprint];
       if (dbc_name != QJsonValue::Undefined) {
-        loadDBCFromOpendbc(dbc_name.toString());
-        return;
+        // Prevent dialog that load autosaved file from blocking replay->start().
+        QTimer::singleShot(0, this, [dbc_name, this]() { loadDBCFromOpendbc(dbc_name.toString()); });
       }
     }
-    newFile();
   }
 }
 
 void MainWindow::save() {
   // Save all open DBC files
-  for (auto &[s, dbc_file] : dbc()->dbc_files) {
+  for (auto dbc_file : dbc()->allDBCFiles()) {
     if (dbc_file->isEmpty()) continue;
     saveFile(dbc_file);
   }
@@ -350,7 +390,7 @@ void MainWindow::save() {
 
 void MainWindow::saveAs() {
   // Save as all open DBC files. Should not be called with more than 1 file open
-  for (auto &[s, dbc_file] : dbc()->dbc_files) {
+  for (auto dbc_file : dbc()->allDBCFiles()) {
     if (dbc_file->isEmpty()) continue;
     saveFileAs(dbc_file);
   }
@@ -358,7 +398,7 @@ void MainWindow::saveAs() {
 
 void MainWindow::autoSave() {
   if (!UndoStack::instance()->isClean()) {
-    for (auto &[_, dbc_file] : dbc()->dbc_files) {
+    for (auto dbc_file : dbc()->allDBCFiles()) {
       if (!dbc_file->filename.isEmpty()) {
         dbc_file->autoSave();
       }
@@ -367,7 +407,7 @@ void MainWindow::autoSave() {
 }
 
 void MainWindow::cleanupAutoSaveFile() {
-  for (auto &[_, dbc_file] : dbc()->dbc_files) {
+  for (auto dbc_file : dbc()->allDBCFiles()) {
     dbc_file->cleanupAutoSaveFile();
   }
 }
@@ -396,34 +436,28 @@ void MainWindow::saveFile(DBCFile *dbc_file) {
   if (!dbc_file->filename.isEmpty()) {
     dbc_file->save();
     updateLoadSaveMenus();
+    UndoStack::instance()->setClean();
+    statusBar()->showMessage(tr("File saved"), 2000);
   } else if (!dbc_file->isEmpty()) {
     saveFileAs(dbc_file);
   }
-  UndoStack::instance()->setClean();
-  statusBar()->showMessage(tr("File saved"), 2000);
 }
 
 void MainWindow::saveFileAs(DBCFile *dbc_file) {
-  auto it = std::find_if(dbc()->dbc_files.begin(), dbc()->dbc_files.end(), [=](auto &f) { return f.second == dbc_file; });
-  assert(it != dbc()->dbc_files.end());
-  QString title = tr("Save File (bus: %1)").arg(toString(it->first));
+  QString title = tr("Save File (bus: %1)").arg(toString(dbc()->sources(dbc_file)));
   QString fn = QFileDialog::getSaveFileName(this, title, QDir::cleanPath(settings.last_dir + "/untitled.dbc"), tr("DBC (*.dbc)"));
   if (!fn.isEmpty()) {
     dbc_file->saveAs(fn);
+    UndoStack::instance()->setClean();
+    statusBar()->showMessage(tr("File saved as %1").arg(fn), 2000);
     updateRecentFiles(fn);
     updateLoadSaveMenus();
   }
 }
 
-void MainWindow::removeBusFromFile(DBCFile *dbc_file, uint8_t source) {
-  assert(dbc_file != nullptr);
-  SourceSet ss = {source, uint8_t(source + 128), uint8_t(source + 192)};
-  dbc()->removeSourcesFromFile(dbc_file, ss);
-}
-
 void MainWindow::saveToClipboard() {
   // Copy all open DBC files to clipboard. Should not be called with more than 1 file open
-  for (auto &[s, dbc_file] : dbc()->dbc_files) {
+  for (auto dbc_file : dbc()->allDBCFiles()) {
     if (dbc_file->isEmpty()) continue;
     saveFileToClipboard(dbc_file);
   }
@@ -437,23 +471,17 @@ void MainWindow::saveFileToClipboard(DBCFile *dbc_file) {
 
 void MainWindow::updateLoadSaveMenus() {
   int cnt = dbc()->nonEmptyDBCCount();
-  if (cnt > 1) {
-    save_dbc->setText(tr("Save %1 DBCs...").arg(dbc()->dbcCount()));
-  } else {
-    save_dbc->setText(tr("Save DBC..."));
-  }
+  save_dbc->setText(cnt > 1 ? tr("Save %1 DBCs...").arg(cnt) : tr("Save DBC..."));
   save_dbc->setEnabled(cnt > 0);
   save_dbc_as->setEnabled(cnt == 1);
 
   // TODO: Support clipboard for multiple files
   copy_dbc_to_clipboard->setEnabled(cnt == 1);
 
-  QList<uint8_t> sources_sorted = can->sources.toList();
-  std::sort(sources_sorted.begin(), sources_sorted.end());
-
   manage_dbcs_menu->clear();
+  manage_dbcs_menu->setEnabled(dynamic_cast<DummyStream *>(can) == nullptr);
 
-  for (uint8_t source : sources_sorted) {
+  for (int source : can->sources) {
     if (source >= 64) continue; // Sent and blocked buses are handled implicitly
 
     SourceSet ss = {source, uint8_t(source + 128), uint8_t(source + 192)};
@@ -464,32 +492,26 @@ void MainWindow::updateLoadSaveMenus() {
     bus_menu->addAction(tr("Load DBC From Clipboard..."), [=]() { loadFromClipboard(ss, false); });
 
     // Show sub-menu for each dbc for this source.
-    QStringList bus_menu_fns;
-    for (auto it : dbc()->dbc_files) {
-      auto &[src, dbc_file] = it;
-      if (!src.contains(source) && (src != SOURCE_ALL)) {
-        continue;
-      }
-
+    QString file_name = "No DBCs loaded";
+    if (auto dbc_file = dbc()->findDBCFile(source)) {
       bus_menu->addSeparator();
-      bus_menu->addAction(dbc_file->name() + " (" + toString(src) + ")")->setEnabled(false);
-      bus_menu->addAction(tr("Save..."), [=]() { saveFile(it.second); });
-      bus_menu->addAction(tr("Save As..."), [=]() { saveFileAs(it.second); });
-      bus_menu->addAction(tr("Copy to Clipboard..."), [=]() { saveFileToClipboard(it.second); });
-      bus_menu->addAction(tr("Remove from this bus..."), [=]() { removeBusFromFile(it.second, source); });
-      bus_menu->addAction(tr("Remove from all buses..."), [=]() { closeFile(it.second); });
+      bus_menu->addAction(dbc_file->name() + " (" + toString(dbc()->sources(dbc_file)) + ")")->setEnabled(false);
+      bus_menu->addAction(tr("Save..."), [=]() { saveFile(dbc_file); });
+      bus_menu->addAction(tr("Save As..."), [=]() { saveFileAs(dbc_file); });
+      bus_menu->addAction(tr("Copy to Clipboard..."), [=]() { saveFileToClipboard(dbc_file); });
+      bus_menu->addAction(tr("Remove from this bus..."), [=]() { closeFile(ss); });
+      bus_menu->addAction(tr("Remove from all buses..."), [=]() { closeFile(dbc_file); });
 
-      bus_menu_fns << dbc_file->name();
+      file_name = dbc_file->name();
     }
 
     manage_dbcs_menu->addMenu(bus_menu);
-    QString bus_menu_title = bus_menu_fns.size() ? bus_menu_fns.join(", ") : "No DBCs loaded";
-    bus_menu->setTitle(tr("Bus %1 (%2)").arg(source).arg(bus_menu_title));
+    bus_menu->setTitle(tr("Bus %1 (%2)").arg(source).arg(file_name));
   }
 
   QStringList title;
-  for (auto &[src, dbc_file] : dbc()->dbc_files) {
-    title.push_back(tr("(%1) %2").arg(toString(src), dbc_file->name()));
+  for (auto f : dbc()->allDBCFiles()) {
+    title.push_back(tr("(%1) %2").arg(toString(dbc()->sources(f)), f->name()));
   }
   setWindowFilePath(title.join(" | "));
 }
@@ -568,7 +590,9 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   cleanupAutoSaveFile();
   remindSaveChanges();
 
-  main_win = nullptr;
+  installDownloadProgressHandler(nullptr);
+  qInstallMessageHandler(nullptr);
+
   if (floating_window)
     floating_window->deleteLater();
 
@@ -579,7 +603,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     settings.video_splitter_state = video_splitter->saveState();
   }
   settings.message_header_state = messages_widget->saveHeaderState();
-  settings.save();
+
   QWidget::closeEvent(event);
 }
 

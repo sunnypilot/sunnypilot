@@ -7,19 +7,20 @@ import sys
 import traceback
 from typing import List, Tuple, Union
 
+from cereal import log
 import cereal.messaging as messaging
-import selfdrive.sentry as sentry
-from common.basedir import BASEDIR
-from common.params import Params, ParamKeyType
-from common.text_window import TextWindow
-from selfdrive.boardd.set_time import set_time
-from system.hardware import HARDWARE, PC
-from selfdrive.manager.helpers import unblock_stdout, write_onroad_params
-from selfdrive.manager.process import ensure_running
-from selfdrive.manager.process_config import managed_processes
-from selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
-from system.swaglog import cloudlog, add_file_handler
-from system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
+import openpilot.selfdrive.sentry as sentry
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params, ParamKeyType
+from openpilot.common.text_window import TextWindow
+from openpilot.selfdrive.boardd.set_time import set_time
+from openpilot.system.hardware import HARDWARE, PC
+from openpilot.selfdrive.manager.helpers import unblock_stdout, write_onroad_params
+from openpilot.selfdrive.manager.process import ensure_running
+from openpilot.selfdrive.manager.process_config import managed_processes
+from openpilot.selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID
+from openpilot.system.swaglog import cloudlog, add_file_handler
+from openpilot.system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
                            get_normalized_origin, terms_version, training_version, \
                            is_tested_branch, is_release_branch
 
@@ -36,6 +37,8 @@ def manager_init() -> None:
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
+  params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
+  params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
     ("CompletedTrainingVersion", "0"),
@@ -44,9 +47,11 @@ def manager_init() -> None:
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
+    ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
 
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
+    ("AutoLaneChangeBsmDelay", "1"),
     ("BelowSpeedPause", "0"),
     ("BrakeLights", "0"),
     ("BrightnessControl", "0"),
@@ -57,10 +62,11 @@ def manager_init() -> None:
     ("CarModel", ""),
     ("CarModelText", ""),
     ("ChevronInfo", "1"),
+    ("MadsCruiseMain", "1"),
     ("CustomBootScreen", "0"),
     ("CustomOffsets", "0"),
     ("DevUI", "1"),
-    ("DevUIRow", "1"),
+    ("DevUIInfo", "1"),
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
     ("DynamicLaneProfile", "1"),
@@ -71,22 +77,24 @@ def manager_init() -> None:
     ("GapAdjustCruiseMax", "0"),
     ("GapAdjustCruiseMin", "0"),
     ("GapAdjustCruiseMode", "0"),
-    ("GapAdjustCruiseTr", "4"),
+    ("GapAdjustCruiseTr", "3"),
     ("GpxDeleteAfterUpload", "1"),
     ("GpxDeleteIfUploaded", "1"),
     ("HandsOnWheelMonitoring", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
+    ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
     ("MaxTimeOffroad", "9"),
-    ("OnroadScreenOff", "0"),
+    ("OnroadScreenOff", "-2"),
     ("OnroadScreenOffBrightness", "50"),
+    ("OnroadScreenOffEvent", "1"),
     ("PathOffset", "0"),
     ("ReverseAccChange", "0"),
+    ("ScreenRecorder", "1"),
     ("ShowDebugUI", "1"),
     ("SpeedLimitControl", "1"),
     ("SpeedLimitPercOffset", "1"),
-    ("SpeedLimitStyle", "0"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
     ("StandStillTimer", "0"),

@@ -13,7 +13,10 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <streambuf>
+#include <string>
+#include <vector>
 
 #include "common/params.h"
 #include "common/swaglog.h"
@@ -21,9 +24,12 @@
 
 // ***** log metadata *****
 kj::Array<capnp::word> logger_build_init_data() {
+  uint64_t wall_time = nanos_since_epoch();
+
   MessageBuilder msg;
   auto init = msg.initEvent().initInitData();
 
+  init.setWallTimeNanos(wall_time);
   init.setVersion(COMMA_VERSION);
   init.setDirty(!getenv("CLEAN"));
   init.setDeviceType(Hardware::get_device_type());
@@ -83,7 +89,7 @@ kj::Array<capnp::word> logger_build_init_data() {
   }
 
   int i = log_commands.size();
-  for (auto [key, value] : hw_logs) {
+  for (auto &[key, value] : hw_logs) {
     auto lentry = commands[i];
     lentry.setKey(key);
     lentry.setValue(capnp::Data::Reader((const kj::byte*)value.data(), value.size()));

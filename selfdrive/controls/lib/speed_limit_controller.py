@@ -2,13 +2,12 @@ import numpy as np
 import time
 from common.numpy_fast import interp
 from enum import IntEnum
-from cereal import log, car
+from cereal import custom, car
 from common.params import Params
-from common.realtime import sec_since_boot
 from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_ACC, LIMIT_MAX_ACC, LIMIT_SPEED_OFFSET_TH, \
   LIMIT_MAX_MAP_DATA_AGE, CONTROL_N
 from selfdrive.controls.lib.events import Events
-from selfdrive.modeld.constants import T_IDXS
+from selfdrive.modeld.constants import ModelConstants
 
 
 _PARAMS_UPDATE_PERIOD = 2.  # secs. Time between parameter updates.
@@ -18,7 +17,7 @@ _TEMP_INACTIVE_GUARD_PERIOD = 1.  # secs. Time to wait after activation before c
 _LIMIT_PERC_OFFSET_V = [0.1, 0.05, 0.038]  # 55, 105, 135 km/h
 _LIMIT_PERC_OFFSET_BP = [13.9, 27.8, 36.1]  # 50, 100, 130 km/h
 
-SpeedLimitControlState = log.LongitudinalPlan.SpeedLimitControlState
+SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 EventName = car.CarEvent.EventName
 
 _DEBUG = False
@@ -82,7 +81,7 @@ class SpeedLimitResolver():
 
   def _get_from_map_data(self):
     # Ignore if no live map data
-    sock = 'liveMapData'
+    sock = 'liveMapDataSP'
     if self._sm.logMonoTime[sock] is None:
       self._limit_solutions[SpeedLimitResolver.Source.map_data] = 0.
       self._distance_solutions[SpeedLimitResolver.Source.map_data] = 0.
@@ -198,6 +197,7 @@ class SpeedLimitController():
     self._is_metric = self._params.get_bool("IsMetric")
     self._is_enabled = self._params.get_bool("SpeedLimitControl")
     self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
+    self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._op_enabled = False
     self._op_enabled_prev = False
     self._v_ego = 0.
@@ -263,12 +263,12 @@ class SpeedLimitController():
     return self._source
 
   def _update_params(self):
-    time = sec_since_boot()
-    if time > self._last_params_update + _PARAMS_UPDATE_PERIOD:
+    t = time.monotonic()
+    if t > self._last_params_update + _PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("SpeedLimitControl")
       self._offset_enabled = self._params.get_bool("SpeedLimitPercOffset")
       _debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_enabled}')
-      self._last_params_update = time
+      self._last_params_update = t
 
   def _update_calculations(self):
     # Update current velocity offset (error)
@@ -279,7 +279,7 @@ class SpeedLimitController():
     # cause a temp inactive transition if the controller is updated before controlsd sets actual cruise
     # speed.
     if not self._op_enabled_prev and self._op_enabled:
-      self._last_op_enabled_time = sec_since_boot()
+      self._last_op_enabled_time = time.monotonic()
 
     # Update change tracking variables
     self._speed_limit_changed = self._speed_limit != self._speed_limit_prev
@@ -293,7 +293,7 @@ class SpeedLimitController():
 
     # In any case, if op is disabled, or speed limit control is disabled
     # or the reported speed limit is 0 or gas is pressed, deactivate.
-    if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or (self._gas_pressed and self._disengage_on_accelerator):
       self.state = SpeedLimitControlState.inactive
       return
 
@@ -301,7 +301,7 @@ class SpeedLimitController():
     # Ignore if a minimum amount of time has not passed since activation. This is to prevent temp inactivations
     # due to controlsd logic changing cruise setpoint when going active.
     if self._v_cruise_setpoint_changed and \
-       sec_since_boot() > (self._last_op_enabled_time + _TEMP_INACTIVE_GUARD_PERIOD):
+      time.monotonic() > (self._last_op_enabled_time + _TEMP_INACTIVE_GUARD_PERIOD):
       self.state = SpeedLimitControlState.tempInactive
       return
 
@@ -342,11 +342,11 @@ class SpeedLimitController():
       if self.distance > 0:
         a_target = (self.speed_limit_offseted**2 - self._v_ego**2) / (2. * self.distance)
       else:
-        a_target = self._v_offset / T_IDXS[CONTROL_N]
+        a_target = self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
     # active
     elif self.state == SpeedLimitControlState.active:
       # When active we are trying to keep the speed constant around the control time horizon.
-      a_target = self._v_offset / T_IDXS[CONTROL_N]
+      a_target = self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
 
     # Keep solution limited.
     self._a_target = np.clip(a_target, LIMIT_MIN_ACC, LIMIT_MAX_ACC)

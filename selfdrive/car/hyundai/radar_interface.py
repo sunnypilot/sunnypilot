@@ -1,53 +1,31 @@
-#!/usr/bin/env python3
 import math
 
 from cereal import car
 from opendbc.can.parser import CANParser
-from selfdrive.car.interfaces import RadarInterfaceBase
-from selfdrive.car.hyundai.values import DBC, HyundaiFlags
+from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
+from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP
 
 RADAR_START_ADDR = 0x500
 RADAR_MSG_COUNT = 32
 
+# POC for parsing corner radars: https://github.com/commaai/openpilot/pull/24221/
 
 def get_radar_can_parser(CP):
-  if (CP.flags & HyundaiFlags.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None:
-    msg = "ESCC"
-    signals = [
-      ("ObjValid", msg),
-      ("ACC_ObjStatus", msg),
-      ("ACC_ObjLatPos", msg),
-      ("ACC_ObjDist", msg),
-      ("ACC_ObjRelSpd", msg),
-    ]
-    checks = [
-      (msg, 50),
-    ]
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)
+  if (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None:
+    messages = ("ESCC", 50)
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, 0)
   else:
     if DBC[CP.carFingerprint]['radar'] is None:
       return None
 
-    signals = []
-    checks = []
-
-    for addr in range(RADAR_START_ADDR, RADAR_START_ADDR + RADAR_MSG_COUNT):
-      msg = f"RADAR_TRACK_{addr:x}"
-      signals += [
-        ("STATE", msg),
-        ("AZIMUTH", msg),
-        ("LONG_DIST", msg),
-        ("REL_ACCEL", msg),
-        ("REL_SPEED", msg),
-      ]
-      checks += [(msg, 50)]
-    return CANParser(DBC[CP.carFingerprint]['radar'], signals, checks, 1)
+  messages = [(f"RADAR_TRACK_{addr:x}", 50) for addr in range(RADAR_START_ADDR, RADAR_START_ADDR + RADAR_MSG_COUNT)]
+  return CANParser(DBC[CP.carFingerprint]['radar'], messages, 1)
 
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
-    self.enhanced_scc = (CP.flags & HyundaiFlags.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None
+    self.enhanced_scc = (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None
     self.updated_messages = set()
     self.trigger_msg = 0x2AB if self.enhanced_scc else RADAR_START_ADDR + RADAR_MSG_COUNT - 1
     self.track_id = 0

@@ -1,8 +1,8 @@
 from opendbc.can.packer import CANPacker
-from common.realtime import DT_CTRL
-from selfdrive.car import apply_meas_steer_torque_limits
-from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, create_cruise_buttons
-from selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags
+from openpilot.common.realtime import DT_CTRL
+from openpilot.selfdrive.car import apply_meas_steer_torque_limits
+from openpilot.selfdrive.car.chrysler import chryslercan
+from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags
 
 
 class CarController:
@@ -31,17 +31,18 @@ class CarController:
       # ACC cancellation
       if CC.cruiseControl.cancel:
         self.last_button_frame = self.frame
-        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, cancel=True))
+        can_sends.append(chryslercan.create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, cancel=True))
 
       # ACC resume from standstill
       elif CC.cruiseControl.resume:
         self.last_button_frame = self.frame
-        can_sends.append(create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, resume=True))
+        can_sends.append(chryslercan.create_cruise_buttons(self.packer, CS.button_counter + 1, das_bus, resume=True))
 
     # HUD alerts
     if self.frame % 25 == 0:
       if CS.lkas_car_model != -1:
-        can_sends.append(create_lkas_hud(self.packer, self.CP, lkas_active, CC.hudControl.visualAlert, self.hud_count, CS.lkas_car_model, CS.auto_high_beam))
+        can_sends.append(chryslercan.create_lkas_hud(self.packer, self.CP, lkas_active, CC.hudControl.visualAlert,
+                                                     self.hud_count, CS.lkas_car_model, CS.auto_high_beam))
         self.hud_count += 1
 
     # steering
@@ -50,9 +51,9 @@ class CarController:
       # TODO: can we make this more sane? why is it different for all the cars?
       lkas_control_bit = self.lkas_control_bit_prev
       if self.CP.carFingerprint in RAM_DT:
-        if CS.out.vEgo >= self.CP.minEnableSpeed and CS.out.vEgo <= self.CP.minEnableSpeed + 0.5:
+        if self.CP.minEnableSpeed <= CS.out.vEgo <= self.CP.minEnableSpeed + 0.5:
           lkas_control_bit = True
-        if (self.CP.minEnableSpeed >= 14.5) and (CS.out.gearShifter != 2) :
+        if (self.CP.minEnableSpeed >= 14.5) and (CS.out.gearShifter != 2):
           lkas_control_bit = False
       elif CS.out.vEgo > self.CP.minSteerSpeed:
         lkas_control_bit = True
@@ -77,7 +78,7 @@ class CarController:
         apply_steer = 0
       self.apply_steer_last = apply_steer
 
-      can_sends.append(create_lkas_command(self.packer, self.CP, int(apply_steer), lkas_control_bit))
+      can_sends.append(chryslercan.create_lkas_command(self.packer, self.CP, int(apply_steer), lkas_control_bit))
 
     self.frame += 1
 

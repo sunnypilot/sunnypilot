@@ -17,10 +17,11 @@ _DIVERTION_SEARCH_RANGE = [-200., 50.]  # mt. Range of distance to current locat
 
 
 def nodes_raw_data_array_for_wr(wr, drop_last=False):
-  """Provides an array of raw node data (id, lat, lon, speed_limit) for all nodes in way relation
+  """Provides an array of raw node data (id, lat, lon, speed_limit, advisory_speed_limit) for all nodes in way relation
   """
   sl = wr.speed_limit
-  data = np.array([(n.id, n.lat, n.lon, sl) for n in wr.way.nodes], dtype=float)
+  asl = wr.advisory_speed_limit
+  data = np.array([(n.id, n.lat, n.lon, sl, asl) for n in wr.way.nodes], dtype=float)
 
   # reverse the order if way direction is backwards
   if wr.direction == DIRECTION.BACKWARD:
@@ -243,12 +244,13 @@ class NodeDataIdx(Enum):
   lat = 1
   lon = 2
   speed_limit = 3
-  x = 4             # x value of cartesian vector representing the section between last node and this node.
-  y = 5             # y value of cartesian vector representing the section between last node and this node.
-  dist_prev = 6     # distance to previous node.
-  dist_next = 7     # distance to next node
-  dist_route = 8    # cumulative distance on route
-  bearing = 9       # bearing of the vector departing from this node.
+  advisory_speed_limit = 4
+  x = 5             # x value of cartesian vector representing the section between last node and this node.
+  y = 6             # y value of cartesian vector representing the section between last node and this node.
+  dist_prev = 7     # distance to previous node.
+  dist_next = 8     # distance to next node
+  dist_route = 9    # cumulative distance on route
+  bearing = 10       # bearing of the vector departing from this node.
 
 
 class NodesData:
@@ -282,7 +284,7 @@ class NodesData:
     vect, dist_prev, dist_next, dist_route, bearing = node_calculations(points)
 
     # append calculations to nodes_data
-    # nodes_data structure: [id, lat, lon, speed_limit, x, y, dist_prev, dist_next, dist_route, bearing]
+    # nodes_data structure: [id, lat, lon, speed_limit, advisory_speed_limit, x, y, dist_prev, dist_next, dist_route, bearing]
     self._nodes_data = np.column_stack((nodes_data, vect, dist_prev, dist_next, dist_route, bearing))
 
     # Build route diversion options data from the wr_index.
@@ -335,6 +337,35 @@ class NodesData:
 
     return limits_ahead
 
+
+  def advisory_speed_limits_ahead(self, ahead_idx, distance_to_node_ahead):
+    """Returns and array of SpeedLimitSection objects for the actual route ahead of current location
+    """
+    if len(self._nodes_data) == 0 or ahead_idx is None:
+      return []
+
+    # Find the cumulative distances where speed limit changes. Build Speed limit sections for those.
+    dist = np.concatenate(([distance_to_node_ahead], self.get(NodeDataIdx.dist_next)[ahead_idx:]))
+    dist = np.cumsum(dist, axis=0)
+    sl = self.get(NodeDataIdx.advisory_speed_limit)[ahead_idx - 1:]
+    sl_next = np.concatenate((sl[1:], [0.]))
+
+    # Create a boolean mask where speed limit changes and filter values
+    sl_change = sl != sl_next
+    distances = dist[sl_change]
+    speed_limits = sl[sl_change]
+
+    # Create speed limits sections combining all continuous nodes that have same speed limit value.
+    start = 0.
+    limits_ahead = []
+    for idx, end in enumerate(distances):
+      if speed_limits[idx] != None and speed_limits[idx] > 0:
+        limits_ahead.append(SpeedLimitSection(start, end, speed_limits[idx]))
+      start = end
+
+    return limits_ahead
+
+
   def distance_to_end(self, ahead_idx, distance_to_node_ahead):
     if len(self._nodes_data) == 0 or ahead_idx is None:
       return None
@@ -360,6 +391,13 @@ class NodesData:
 
     # Create speed limits sections
     limits_ahead = [TurnSpeedLimitSection(max(0., d[0]), d[1], d[2], d[3]) for d in data]
+
+    advisory_speed_limits_ahead = self.advisory_speed_limits_ahead(ahead_idx, distance_to_node_ahead)
+    for advisory_limit in advisory_speed_limits_ahead:
+      for limit in limits_ahead:
+        if limit.start >= advisory_limit.start and limit.end <= advisory_limit.end:
+          limit.value = advisory_limit.value
+
 
     return limits_ahead
 

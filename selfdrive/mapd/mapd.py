@@ -158,7 +158,7 @@ class MapD():
 
       # Do not attempt to update the route if the car is going close to a full stop, as the bearing can start
       # jumping and creating unnecessary losing of the route. Since the route update timestamp has been updated
-      # a new liveMapData message will be published with the current values (which is desirable)
+      # a new liveMapDataSP message will be published with the current values (which is desirable)
       if self.gps_speed < FULL_STOP_MAX_SPEED:
         _debug('Mapd *****: Route Not updated as car has Stopped ********')
         return
@@ -183,12 +183,12 @@ class MapD():
   def publish(self, pm, sm):
     # Ensure we have a route currently located
     if self.route is None or not self.route.located:
-      _debug('Mapd: Skipping liveMapData message as there is no route or is not located.')
+      _debug('Mapd: Skipping liveMapDataSP message as there is no route or is not located.')
       return
 
     # Ensure we have a route update since last publish
     if self.last_publish_fix_timestamp == self.last_route_update_fix_timestamp:
-      _debug('Mapd: Skipping liveMapData since there is no new gps fix.')
+      _debug('Mapd: Skipping liveMapDataSP since there is no new gps fix.')
       return
 
     self.last_publish_fix_timestamp = self.last_route_update_fix_timestamp
@@ -200,40 +200,41 @@ class MapD():
     next_turn_speed_limit_sections = self.route.next_curvature_speed_limit_sections(horizon_mts)
     current_road_name = self.route.current_road_name
 
-    map_data_msg = messaging.new_message('liveMapData')
+    map_data_msg = messaging.new_message('liveMapDataSP')
     map_data_msg.valid = sm.all_alive(service_list=['gpsLocationExternal']) and \
                          sm.all_valid(service_list=['gpsLocationExternal'])
 
-    map_data_msg.liveMapData.lastGpsTimestamp = self.last_gps.unixTimestampMillis
-    map_data_msg.liveMapData.lastGpsLatitude = float(self.last_gps.latitude)
-    map_data_msg.liveMapData.lastGpsLongitude = float(self.last_gps.longitude)
-    map_data_msg.liveMapData.lastGpsSpeed = float(self.last_gps.speed)
-    map_data_msg.liveMapData.lastGpsBearingDeg = float(self.last_gps.bearingDeg)
-    map_data_msg.liveMapData.lastGpsAccuracy = float(self.last_gps.accuracy)
-    map_data_msg.liveMapData.lastGpsBearingAccuracyDeg = float(self.last_gps.bearingAccuracyDeg)
+    liveMapDataSP = map_data_msg.liveMapDataSP
+    liveMapDataSP.lastGpsTimestamp = self.last_gps.unixTimestampMillis
+    liveMapDataSP.lastGpsLatitude = float(self.last_gps.latitude)
+    liveMapDataSP.lastGpsLongitude = float(self.last_gps.longitude)
+    liveMapDataSP.lastGpsSpeed = float(self.last_gps.speed)
+    liveMapDataSP.lastGpsBearingDeg = float(self.last_gps.bearingDeg)
+    liveMapDataSP.lastGpsAccuracy = float(self.last_gps.accuracy)
+    liveMapDataSP.lastGpsBearingAccuracyDeg = float(self.last_gps.bearingAccuracyDeg)
 
-    map_data_msg.liveMapData.speedLimitValid = bool(speed_limit is not None)
-    map_data_msg.liveMapData.speedLimit = float(speed_limit if speed_limit is not None else 0.0)
-    map_data_msg.liveMapData.speedLimitAheadValid = bool(next_speed_limit_section is not None)
-    map_data_msg.liveMapData.speedLimitAhead = float(next_speed_limit_section.value
+    liveMapDataSP.speedLimitValid = bool(speed_limit is not None)
+    liveMapDataSP.speedLimit = float(speed_limit if speed_limit is not None else 0.0)
+    liveMapDataSP.speedLimitAheadValid = bool(next_speed_limit_section is not None)
+    liveMapDataSP.speedLimitAhead = float(next_speed_limit_section.value
                                                      if next_speed_limit_section is not None else 0.0)
-    map_data_msg.liveMapData.speedLimitAheadDistance = float(next_speed_limit_section.start
+    liveMapDataSP.speedLimitAheadDistance = float(next_speed_limit_section.start
                                                              if next_speed_limit_section is not None else 0.0)
 
-    map_data_msg.liveMapData.turnSpeedLimitValid = bool(turn_speed_limit_section is not None)
-    map_data_msg.liveMapData.turnSpeedLimit = float(turn_speed_limit_section.value
+    liveMapDataSP.turnSpeedLimitValid = bool(turn_speed_limit_section is not None)
+    liveMapDataSP.turnSpeedLimit = float(turn_speed_limit_section.value
                                                     if turn_speed_limit_section is not None else 0.0)
-    map_data_msg.liveMapData.turnSpeedLimitSign = int(turn_speed_limit_section.curv_sign
+    liveMapDataSP.turnSpeedLimitSign = int(turn_speed_limit_section.curv_sign
                                                       if turn_speed_limit_section is not None else 0)
-    map_data_msg.liveMapData.turnSpeedLimitEndDistance = float(turn_speed_limit_section.end
+    liveMapDataSP.turnSpeedLimitEndDistance = float(turn_speed_limit_section.end
                                                                if turn_speed_limit_section is not None else 0.0)
-    map_data_msg.liveMapData.turnSpeedLimitsAhead = [float(s.value) for s in next_turn_speed_limit_sections]
-    map_data_msg.liveMapData.turnSpeedLimitsAheadDistances = [float(s.start) for s in next_turn_speed_limit_sections]
-    map_data_msg.liveMapData.turnSpeedLimitsAheadSigns = [float(s.curv_sign) for s in next_turn_speed_limit_sections]
+    liveMapDataSP.turnSpeedLimitsAhead = [float(s.value) for s in next_turn_speed_limit_sections]
+    liveMapDataSP.turnSpeedLimitsAheadDistances = [float(s.start) for s in next_turn_speed_limit_sections]
+    liveMapDataSP.turnSpeedLimitsAheadSigns = [float(s.curv_sign) for s in next_turn_speed_limit_sections]
 
-    map_data_msg.liveMapData.currentRoadName = str(current_road_name if current_road_name is not None else "")
+    liveMapDataSP.currentRoadName = str(current_road_name if current_road_name is not None else "")
 
-    pm.send('liveMapData', map_data_msg)
+    pm.send('liveMapDataSP', map_data_msg)
     _debug(f'Mapd *****: Publish: \n{map_data_msg}\n********', log_to_cloud=False)
 
 
@@ -246,7 +247,7 @@ def mapd_thread(sm=None, pm=None):
   if sm is None:
     sm = messaging.SubMaster(['gpsLocationExternal', 'controlsState'])
   if pm is None:
-    pm = messaging.PubMaster(['liveMapData'])
+    pm = messaging.PubMaster(['liveMapDataSP'])
 
   while True:
     sm.update()

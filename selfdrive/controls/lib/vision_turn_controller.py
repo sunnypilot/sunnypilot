@@ -1,9 +1,9 @@
 import numpy as np
 import math
-from cereal import log
+import time
+from cereal import custom
 from common.numpy_fast import interp
 from common.params import Params
-from common.realtime import sec_since_boot
 from common.conversions import Conversions as CV
 from selfdrive.controls.lib.lateral_planner import TRAJECTORY_SIZE
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
@@ -51,7 +51,7 @@ def _debug(msg):
   print(msg)
 
 
-VisionTurnControllerState = log.LongitudinalPlan.VisionTurnControllerState
+VisionTurnControllerState = custom.LongitudinalPlanSP.VisionTurnControllerState
 
 
 def eval_curvature(poly, x_vals):
@@ -98,6 +98,7 @@ class VisionTurnController():
     self._op_enabled = False
     self._gas_pressed = False
     self._is_enabled = self._params.get_bool("TurnVisionControl")
+    self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._last_params_update = 0.
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
@@ -143,16 +144,16 @@ class VisionTurnController():
     self._lat_acc_overshoot_ahead = False
 
   def _update_params(self):
-    time = sec_since_boot()
-    if time > self._last_params_update + 5.0:
+    t = time.monotonic()
+    if t > self._last_params_update + 5.0:
       self._is_enabled = self._params.get_bool("TurnVisionControl")
-      self._last_params_update = time
+      self._last_params_update = t
 
   def _update_calculations(self, sm):
     # Get path polynomial approximation for curvature estimation from model data.
     path_poly = None
     model_data = sm['modelV2'] if sm.valid.get('modelV2', False) else None
-    lat_planner_data = sm['lateralPlan'] if sm.valid.get('lateralPlan', False) else None
+    lat_planner_data = sm['lateralPlanSP'] if sm.valid.get('lateralPlanSP', False) else None
 
     # 1. When the probability of lanes is good enough, compute polynomial from lanes as they are way more stable
     # on current mode than drving path.
@@ -217,7 +218,7 @@ class VisionTurnController():
 
   def _state_transition(self):
     # In any case, if system is disabled or the feature is disabeld or gas is pressed, disable.
-    if not self._op_enabled or not self._is_enabled or self._gas_pressed:
+    if not self._op_enabled or not self._is_enabled or (self._gas_pressed and self._disengage_on_accelerator):
       self.state = VisionTurnControllerState.disabled
       return
 

@@ -1,12 +1,12 @@
+import time
 import threading
 from typing import Optional
 
-from common.numpy_fast import interp
-from common.params import Params, put_nonblocking
-from common.realtime import sec_since_boot
-from system.hardware import HARDWARE
-from system.swaglog import cloudlog
-from selfdrive.statsd import statlog
+from openpilot.common.numpy_fast import interp
+from openpilot.common.params import Params, put_nonblocking
+from openpilot.system.hardware import HARDWARE
+from openpilot.system.swaglog import cloudlog
+from openpilot.selfdrive.statsd import statlog
 
 CAR_VOLTAGE_LOW_PASS_K = 0.011 # LPF gain for 45s tau (dt/tau / (dt/tau + 1))
 
@@ -41,7 +41,7 @@ class PowerMonitoring:
   # Calculation tick
   def calculate(self, voltage: Optional[int], ignition: bool):
     try:
-      now = sec_since_boot()
+      now = time.monotonic()
 
       # If peripheralState is None, we're probably not in a car, so we don't care
       if voltage is None:
@@ -116,8 +116,7 @@ class PowerMonitoring:
     max_time_offroad_s = interp(int(self.params.get("MaxTimeOffroad", encoding="utf8")),
                                 [0, 1,  2,  3,   4,   5,   6,    7,    8,     9,    10,    11,     12],
                                 [0, 5, 30, 60, 180, 300, 600, 1800, 3600, 10800, 18000, 36000, 108000])
-
-    now = sec_since_boot()
+    now = time.monotonic()
     should_shutdown = False
     offroad_time = (now - offroad_timestamp)
     low_voltage_shutdown = (self.car_voltage_mV < (VBATT_PAUSE_CHARGING * 1e3) and

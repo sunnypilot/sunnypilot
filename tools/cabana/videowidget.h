@@ -1,17 +1,18 @@
 #pragma once
 
-#include <atomic>
-#include <mutex>
+#include <map>
+#include <memory>
+#include <set>
 
 #include <QHBoxLayout>
-#include <QFuture>
-#include <QLabel>
-#include <QPushButton>
+#include <QFrame>
 #include <QSlider>
-#include <QTimer>
+#include <QTabBar>
+#include <QToolButton>
 
 #include "selfdrive/ui/qt/widgets/cameraview.h"
-#include "tools/cabana/streams/abstractstream.h"
+#include "tools/cabana/util.h"
+#include "tools/replay/logreader.h"
 
 struct AlertInfo {
   cereal::ControlsState::AlertStatus status;
@@ -35,7 +36,14 @@ class Slider : public QSlider {
 
 public:
   Slider(QWidget *parent);
-  ~Slider();
+  double currentSecond() const { return value() / factor; }
+  void setCurrentSecond(double sec) { setValue(sec * factor); }
+  void setTimeRange(double min, double max);
+  AlertInfo alertInfo(double sec);
+  QPixmap thumbnail(double sec);
+  void parseQLog(int segnum, std::shared_ptr<LogReader> qlog);
+
+  const double factor = 1000.0;
 
 signals:
   void updateMaximumTime(double);
@@ -44,22 +52,11 @@ private:
   void mousePressEvent(QMouseEvent *e) override;
   void mouseMoveEvent(QMouseEvent *e) override;
   bool event(QEvent *event) override;
-  void sliderChange(QAbstractSlider::SliderChange change) override;
   void paintEvent(QPaintEvent *ev) override;
-  void streamStarted();
-  void loadThumbnails();
 
-  double max_sec = 0;
-  int slider_x = -1;
-  std::vector<std::tuple<int, int, TimelineType>> timeline;
-  std::mutex thumbnail_lock;
-  std::atomic<bool> abort_load_thumbnail = false;
   QMap<uint64_t, QPixmap> thumbnails;
   std::map<uint64_t, AlertInfo> alerts;
-  QFuture<void> thumnail_future;
-  InfoLabel thumbnail_label;
-  QTimer timer;
-  friend class VideoWidget;
+  InfoLabel *thumbnail_label;
 };
 
 class VideoWidget : public QFrame {
@@ -67,20 +64,28 @@ class VideoWidget : public QFrame {
 
 public:
   VideoWidget(QWidget *parnet = nullptr);
-  void rangeChanged(double min, double max, bool is_zommed);
+  void updateTimeRange(double min, double max, bool is_zommed);
   void setMaximumTime(double sec);
 
 protected:
+  QString formatTime(double sec, bool include_milliseconds = false);
   void updateState();
   void updatePlayBtnState();
   QWidget *createCameraWidget();
+  QHBoxLayout *createPlaybackController();
+  void loopPlaybackClicked();
+  void vipcAvailableStreamsUpdated(std::set<VisionStreamType> streams);
 
   CameraWidget *cam_widget;
   double maximum_time = 0;
-  QLabel *end_time_label;
-  QLabel *time_label;
-  QHBoxLayout *slider_layout;
-  QPushButton *play_btn;
-  InfoLabel *alert_label;
-  Slider *slider;
+  QToolButton *time_btn = nullptr;
+  ToolButton *seek_backward_btn = nullptr;
+  ToolButton *play_btn = nullptr;
+  ToolButton *seek_forward_btn = nullptr;
+  ToolButton *loop_btn = nullptr;
+  QToolButton *speed_btn = nullptr;
+  ToolButton *skip_to_end_btn = nullptr;
+  InfoLabel *alert_label = nullptr;
+  Slider *slider = nullptr;
+  QTabBar *camera_tab = nullptr;
 };

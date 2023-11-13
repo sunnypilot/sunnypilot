@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
+import pytest
 import time
 import unittest
 import struct
 
-from common.params import Params
+from openpilot.common.params import Params
 import cereal.messaging as messaging
-import system.sensord.pigeond as pd
-from system.hardware import TICI
-from selfdrive.test.helpers import with_processes
+import openpilot.system.sensord.pigeond as pd
+from openpilot.selfdrive.test.helpers import with_processes
 
 
 def read_events(service, duration_sec):
@@ -30,7 +30,7 @@ def create_backup(pigeon):
   pigeon.send(b"\xB5\x62\x09\x14\x04\x00\x00\x00\x00\x00\x21\xEC")
   try:
     if not pigeon.wait_for_ack(ack=pd.UBLOX_SOS_ACK, nack=pd.UBLOX_SOS_NACK):
-      assert False, "Could not store almanac"
+      raise RuntimeError("Could not store almanac")
   except TimeoutError:
     pass
 
@@ -107,12 +107,10 @@ def verify_time_to_first_fix(pigeon):
   assert ttff < 40, f"Time to first fix > 40s, {ttff}"
 
 
+@pytest.mark.tici
 class TestGPS(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
-    if not TICI:
-      raise unittest.SkipTest
-
     ublox_available = Params().get_bool("UbloxAvailable")
     if not ublox_available:
       raise unittest.SkipTest

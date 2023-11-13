@@ -4,9 +4,9 @@ import sys
 import time
 import json
 
-from common.basedir import BASEDIR
-from common.params import Params
-from selfdrive.controls.lib.alertmanager import set_offroad_alert
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
 
 if __name__ == "__main__":
   params = Params()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
   while True:
     print("setting alert update")
     params.put_bool("UpdateAvailable", True)
-    r = open(os.path.join(BASEDIR, "RELEASES.md")).read()
+    r = open(os.path.join(BASEDIR, "CHANGELOGS.md")).read()
     r = r[:r.find('\n\n')]  # Slice latest release notes
     params.put("UpdaterNewReleaseNotes", r + "\n")
 

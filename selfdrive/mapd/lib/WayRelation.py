@@ -151,6 +151,7 @@ class WayRelation():
     self.reset_location_variables()
     self.direction = DIRECTION.NONE
     self._speed_limit = None
+    self._advisory_speed_limit = None
     self._one_way = way.tags.get("oneway")
     self.name = way.tags.get('name')
     self.ref = way.tags.get('ref')
@@ -293,9 +294,11 @@ class WayRelation():
     self.location_rad = location_rad
     self.bearing_rad = bearing_rad
     self._speed_limit = None
+    self._advisory_speed_limit = None
 
   def update_direction_from_starting_node(self, start_node_id):
     self._speed_limit = None
+    self._advisory_speed_limit = None
     if self.edge_nodes_ids[0] == start_node_id:
       self.direction = DIRECTION.FORWARD
     elif self.edge_nodes_ids[-1] == start_node_id:
@@ -340,6 +343,19 @@ class WayRelation():
 
     self._speed_limit = limit
     return self._speed_limit
+
+
+  @property
+  def advisory_speed_limit(self):
+    if self._advisory_speed_limit is not None:
+      return self._advisory_speed_limit
+
+    limit_string = self.way.tags.get("maxspeed:advisory")
+    limit = speed_limit_for_osm_tag_limit_string(limit_string)
+
+    self._advisory_speed_limit = limit
+    return self._advisory_speed_limit
+
 
   @property
   def active_bearing_delta(self):

@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 import math
 import numpy as np
-from common.numpy_fast import clip, interp
+from openpilot.common.numpy_fast import clip, interp
+from openpilot.common.params import Params
+from cereal import log
 
 import cereal.messaging as messaging
-from common.conversions import Conversions as CV
-from common.filter_simple import FirstOrderFilter
-from common.realtime import DT_MDL
-from selfdrive.modeld.constants import T_IDXS
-from selfdrive.controls.lib.longcontrol import LongCtrlState
-from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc, MIN_ACCEL, MAX_ACCEL
-from selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
-from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N, get_speed_error
-from selfdrive.controls.lib.vision_turn_controller import VisionTurnController
-from selfdrive.controls.lib.speed_limit_controller import SpeedLimitController, SpeedLimitResolver
-from selfdrive.controls.lib.turn_speed_controller import TurnSpeedController
-from selfdrive.controls.lib.events import Events
-from system.swaglog import cloudlog
+from openpilot.common.conversions import Conversions as CV
+from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.selfdrive.car.interfaces import ACCEL_MIN, ACCEL_MAX
+from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
+from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc
+from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
+from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N, get_speed_error
+from openpilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
+from openpilot.selfdrive.controls.lib.speed_limit_controller import SpeedLimitController, SpeedLimitResolver
+from openpilot.selfdrive.controls.lib.turn_speed_controller import TurnSpeedController
+from openpilot.selfdrive.controls.lib.events import Events
+from openpilot.system.swaglog import cloudlog
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
@@ -61,6 +64,10 @@ class LongitudinalPlanner:
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
+    self.params = Params()
+    self.param_read_counter = 0
+    self.read_param()
+    self.personality = log.LongitudinalPersonality.standard
 
     self.cruise_source = 'cruise'
     self.vision_turn_controller = VisionTurnController(CP)
@@ -68,14 +75,20 @@ class LongitudinalPlanner:
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
 
+  def read_param(self):
+    try:
+      self.personality = int(self.params.get('LongitudinalPersonality'))
+    except (ValueError, TypeError):
+      self.personality = log.LongitudinalPersonality.standard
+
   @staticmethod
   def parse_model(model_msg, model_error):
     if (len(model_msg.position.x) == 33 and
        len(model_msg.velocity.x) == 33 and
        len(model_msg.acceleration.x) == 33):
-      x = np.interp(T_IDXS_MPC, T_IDXS, model_msg.position.x) - model_error * T_IDXS_MPC
-      v = np.interp(T_IDXS_MPC, T_IDXS, model_msg.velocity.x) - model_error
-      a = np.interp(T_IDXS_MPC, T_IDXS, model_msg.acceleration.x)
+      x = np.interp(T_IDXS_MPC, ModelConstants.T_IDXS, model_msg.position.x) - model_error * T_IDXS_MPC
+      v = np.interp(T_IDXS_MPC, ModelConstants.T_IDXS, model_msg.velocity.x) - model_error
+      a = np.interp(T_IDXS_MPC, ModelConstants.T_IDXS, model_msg.acceleration.x)
       j = np.zeros(len(T_IDXS_MPC))
     else:
       x = np.zeros(len(T_IDXS_MPC))
@@ -85,11 +98,13 @@ class LongitudinalPlanner:
     return x, v, a, j
 
   def update(self, sm):
+    if self.param_read_counter % 50 == 0:
+      self.read_param()
+    self.param_read_counter += 1
     self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 
     v_ego = sm['carState'].vEgo
-    v_cruise_kph = sm['controlsState'].vCruise
-    v_cruise_kph = min(v_cruise_kph, V_CRUISE_MAX)
+    v_cruise_kph = min(sm['controlsState'].vCruise, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
 
     long_control_off = sm['controlsState'].longControlState == LongCtrlState.off
@@ -105,8 +120,8 @@ class LongitudinalPlanner:
       accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
       accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
     else:
-      accel_limits = [MIN_ACCEL, MAX_ACCEL]
-      accel_limits_turns = [MIN_ACCEL, MAX_ACCEL]
+      accel_limits = [ACCEL_MIN, ACCEL_MAX]
+      accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
     if reset_state:
       self.v_desired_filter.x = v_ego
@@ -130,17 +145,17 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05, a_min_sol)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint)
+    self.mpc.set_weights(prev_accel_constraint, personality=self.personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise_sol, x, v, a, j)
+    self.mpc.update(sm['radarState'], v_cruise_sol, x, v, a, j, personality=self.personality)
 
-    self.v_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
-    self.a_desired_trajectory_full = np.interp(T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
+    self.v_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
+    self.a_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
     self.v_desired_trajectory = self.v_desired_trajectory_full[:CONTROL_N]
     self.a_desired_trajectory = self.a_desired_trajectory_full[:CONTROL_N]
-    self.j_desired_trajectory = np.interp(T_IDXS[:CONTROL_N], T_IDXS_MPC[:-1], self.mpc.j_solution)
+    self.j_desired_trajectory = np.interp(ModelConstants.T_IDXS[:CONTROL_N], T_IDXS_MPC[:-1], self.mpc.j_solution)
 
     # TODO counter is only needed because radar is glitchy, remove once radar is gone
     self.fcw = self.mpc.crash_cnt > 2 and not sm['carState'].standstill
@@ -149,7 +164,7 @@ class LongitudinalPlanner:
 
     # Interpolate 0.05 seconds and save as starting point for next iteration
     a_prev = self.a_desired
-    self.a_desired = float(interp(DT_MDL, T_IDXS[:CONTROL_N], self.a_desired_trajectory))
+    self.a_desired = float(interp(DT_MDL, ModelConstants.T_IDXS[:CONTROL_N], self.a_desired_trajectory))
     self.v_desired_filter.x = self.v_desired_filter.x + DT_MDL * (self.a_desired + a_prev) / 2.0
 
   def publish(self, sm, pm):
@@ -166,27 +181,38 @@ class LongitudinalPlanner:
     longitudinalPlan.jerks = self.j_desired_trajectory.tolist()
 
     longitudinalPlan.hasLead = sm['radarState'].leadOne.status
-    longitudinalPlan.longitudinalPlanSource = self.mpc.source if self.mpc.source != 'cruise' else self.cruise_source
+    longitudinalPlan.longitudinalPlanSource = self.mpc.source
     longitudinalPlan.fcw = self.fcw
 
     longitudinalPlan.solverExecutionTime = self.mpc.solve_time
-
-    longitudinalPlan.visionTurnControllerState = self.vision_turn_controller.state
-    longitudinalPlan.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
-
-    longitudinalPlan.speedLimitControlState = self.speed_limit_controller.state
-    longitudinalPlan.speedLimit = float(self.speed_limit_controller.speed_limit)
-    longitudinalPlan.speedLimitOffset = float(self.speed_limit_controller.speed_limit_offset)
-    longitudinalPlan.distToSpeedLimit = float(self.speed_limit_controller.distance)
-    longitudinalPlan.isMapSpeedLimit = bool(self.speed_limit_controller.source == SpeedLimitResolver.Source.map_data)
-    longitudinalPlan.eventsDEPRECATED = self.events.to_msg()
-
-    longitudinalPlan.turnSpeedControlState = self.turn_speed_controller.state
-    longitudinalPlan.turnSpeed = float(self.turn_speed_controller.speed_limit)
-    longitudinalPlan.distToTurn = float(self.turn_speed_controller.distance)
-    longitudinalPlan.turnSign = int(self.turn_speed_controller.turn_sign)
+    longitudinalPlan.personality = self.personality
 
     pm.send('longitudinalPlan', plan_send)
+
+    plan_sp_send = messaging.new_message('longitudinalPlanSP')
+
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
+
+    longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
+
+    longitudinalPlanSP.longitudinalPlanSource = self.mpc.source if self.mpc.source != 'cruise' else self.cruise_source
+
+    longitudinalPlanSP.visionTurnControllerState = self.vision_turn_controller.state
+    longitudinalPlanSP.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
+
+    longitudinalPlanSP.speedLimitControlState = self.speed_limit_controller.state
+    longitudinalPlanSP.speedLimit = float(self.speed_limit_controller.speed_limit)
+    longitudinalPlanSP.speedLimitOffset = float(self.speed_limit_controller.speed_limit_offset)
+    longitudinalPlanSP.distToSpeedLimit = float(self.speed_limit_controller.distance)
+    longitudinalPlanSP.isMapSpeedLimit = bool(self.speed_limit_controller.source == SpeedLimitResolver.Source.map_data)
+    longitudinalPlanSP.events = self.events.to_msg()
+
+    longitudinalPlanSP.turnSpeedControlState = self.turn_speed_controller.state
+    longitudinalPlanSP.turnSpeed = float(self.turn_speed_controller.speed_limit)
+    longitudinalPlanSP.distToTurn = float(self.turn_speed_controller.distance)
+    longitudinalPlanSP.turnSign = int(self.turn_speed_controller.turn_sign)
+
+    pm.send('longitudinalPlanSP', plan_sp_send)
 
   def cruise_solutions(self, enabled, v_ego, a_ego, v_cruise, sm):
     # Update controllers

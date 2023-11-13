@@ -1,7 +1,7 @@
 from cereal import log
-from common.conversions import Conversions as CV
-from common.params import Params
-from common.realtime import DT_MDL
+from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
@@ -81,6 +81,7 @@ class DesireHelper:
         self.lane_change_wait_timer += DT_MDL
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
+          self.lane_change_direction = LaneChangeDirection.none
           self.prev_lane_change = False
         elif (torque_applied or ((lane_change_auto_timer and self.lane_change_wait_timer > lane_change_auto_timer) and not self.prev_lane_change)) and \
           not blindspot_detected:

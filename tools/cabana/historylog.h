@@ -1,6 +1,8 @@
 #pragma once
 
 #include <deque>
+#include <vector>
+
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHeaderView>
@@ -44,9 +46,9 @@ public slots:
 public:
   struct Message {
     uint64_t mono_time = 0;
-    QVector<double> sig_values;
-    QByteArray data;
-    QVector<QColor> colors;
+    std::vector<double> sig_values;
+    std::vector<uint8_t> data;
+    std::vector<QColor> colors;
   };
 
   template <class InputIt>
@@ -62,7 +64,7 @@ public:
   uint64_t last_fetch_time = 0;
   std::function<bool(double, double)> filter_cmp = nullptr;
   std::deque<Message> messages;
-  std::vector<const cabana::Signal *> sigs;
+  std::vector<cabana::Signal *> sigs;
   bool dynamic_mode = true;
   bool display_signals_mode = true;
 };

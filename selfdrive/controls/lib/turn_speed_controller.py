@@ -1,11 +1,10 @@
 import numpy as np
 import time
 from common.params import Params
-from cereal import log
-from common.realtime import sec_since_boot
+from cereal import custom
 from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_SPEED, LIMIT_MAX_MAP_DATA_AGE, \
   LIMIT_SPEED_OFFSET_TH, CONTROL_N, LIMIT_MIN_ACC, LIMIT_MAX_ACC
-from selfdrive.modeld.constants import T_IDXS
+from selfdrive.modeld.constants import ModelConstants
 
 
 _ACTIVE_LIMIT_MIN_ACC = -0.5  # m/s^2 Maximum deceleration allowed while active.
@@ -14,7 +13,7 @@ _ACTIVE_LIMIT_MAX_ACC = 0.5   # m/s^2 Maximum acelration allowed while active.
 
 _DEBUG = False
 
-TurnSpeedControlState = log.LongitudinalPlan.SpeedLimitControlState
+TurnSpeedControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 
 
 def _debug(msg):
@@ -99,7 +98,7 @@ class TurnSpeedController():
     """Provides the speed limit, distance and turn sign to it for turns based on map data.
     """
     # Ignore if no live map data
-    sock = 'liveMapData'
+    sock = 'liveMapDataSP'
     if sm.logMonoTime[sock] is None:
       _debug('TS: No map data for turn speed limit')
       return 0., 0., 0
@@ -163,10 +162,10 @@ class TurnSpeedController():
     return speed_limit, 0., turn_sign
 
   def _update_params(self):
-    time = sec_since_boot()
-    if time > self._last_params_update + 5.0:
+    t = time.monotonic()
+    if t > self._last_params_update + 5.0:
       self._is_enabled = self._params.get_bool("TurnSpeedControl")
-      self._last_params_update = time
+      self._last_params_update = t
 
   def _update_calculations(self):
     # Update current velocity offset (error)
@@ -224,7 +223,7 @@ class TurnSpeedController():
     elif self.state == TurnSpeedControlState.active:
       # When active we are trying to keep the speed constant around the control time horizon.
       # but under constrained acceleration limits since we are in a turn.
-      a_target = self._v_offset / T_IDXS[CONTROL_N]
+      a_target = self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
       a_target = np.clip(a_target, _ACTIVE_LIMIT_MIN_ACC, _ACTIVE_LIMIT_MAX_ACC)
 
     # update solution values.
