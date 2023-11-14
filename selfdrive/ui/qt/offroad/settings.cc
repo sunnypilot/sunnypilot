@@ -229,6 +229,7 @@ void TogglesPanel::updateToggles() {
       long_personality_setting->setEnabled(true);
       op_long_toggle->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
+      custom_stock_long_planner->setEnabled(false);
       params.remove("CustomStockLong");
       dec_toggle->setEnabled(true);
     } else if (custom_stock_long_toggle->isToggled()) {
