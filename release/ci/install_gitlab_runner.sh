@@ -1,80 +1,106 @@
 #!/bin/bash
+set -e
 
-# We need RW for the install process
-sudo mount -o remount rw /
+# Check if script arguments are present, if not exit the script
+if [ $# -eq 0 ]; then
+    echo "No arguments provided. A GitLab token is required to run this script."
+    exit 1
+fi
 
-# Ensure filesystem is remounted as read-only on script exit
-trap "sudo mount -o remount ro /" EXIT
+# Constants
+GITLAB_RUNNER_DOWNLOAD_URL="https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-arm64"
+GITLAB_RUNNER_USER_NAME="gitlab-runner"
+USER_GROUPS="comma,gpu,gpio,sudo"
+GITLAB_BASE_DIR="/data/gitlab"
+GITLAB_BIN_DIR="${GITLAB_BASE_DIR}/bin"
+GITLAB_BUILDS_DIR="${GITLAB_BASE_DIR}/builds"
+GITLAB_LOGS_DIR="${GITLAB_BASE_DIR}/logs"
+GITLAB_CACHE_DIR="${GITLAB_BASE_DIR}/cache"
+GITLAB_OPENPILOT_DIR="${GITLAB_BASE_DIR}/openpilot"
+SERVICE_NAME="gitlab-runner"
 
-# Define directories
-BASE_DIR="/data/gitlab"
-BIN_DIR="$BASE_DIR/bin"
-CONFIG_DIR="$BASE_DIR"
-BUILDS_DIR="$BASE_DIR/builds"
-OPENPILOT_DIR="$BASE_DIR/openpilot"
-LOGS_DIR="$BASE_DIR/logs"
-CACHE_DIR="$BASE_DIR/cache"
-GITLAB_RUNNER_USERNAME="gitlab-runner"
-GROUPS_NEEDED="comma,gpu,gpio"
+create_gitlab_runner_directories() {
+    sudo mkdir -p "$GITLAB_BIN_DIR" "$GITLAB_BUILDS_DIR" "$GITLAB_LOGS_DIR" "$GITLAB_CACHE_DIR" "$GITLAB_OPENPILOT_DIR"
+    mkdir -p "/data/openpilot"
+    sudo chown -R comma:comma "/data/openpilot"
+}
 
-# Create necessary directories
-sudo mkdir -p "$BIN_DIR" "$BUILDS_DIR" "$LOGS_DIR" "$CACHE_DIR" "$OPENPILOT_DIR"
+download_and_setup_gitlab_runner() {
+    sudo curl -L --output "$GITLAB_BIN_DIR/gitlab-runner" "$GITLAB_RUNNER_DOWNLOAD_URL"
+    sudo chmod +x "$GITLAB_BIN_DIR/gitlab-runner"
+}
 
-# Download the GitLab Runner binary
-sudo curl -L --output "$BIN_DIR/gitlab-runner" "https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-arm64"
+setup_gitlab_runner_user() {
+    sudo useradd --comment 'GitLab Runner' --create-home --home-dir ${GITLAB_BASE_DIR} ${GITLAB_RUNNER_USER_NAME} --shell /bin/bash -G ${USER_GROUPS} || sudo usermod -aG ${USER_GROUPS} ${GITLAB_RUNNER_USER_NAME}
+    export GITLAB_BASE_DIR # Export it to make it available to sub-processes
+    sudo -u ${GITLAB_RUNNER_USER_NAME} bash -c "truncate -s 0 '${GITLAB_BASE_DIR}/.bash_logout'"
+}
 
-# Give it permission to execute
-sudo chmod +x "$BIN_DIR/gitlab-runner"
+create_sudoers_entry() {
+    sudo grep -qxF "${GITLAB_RUNNER_USER_NAME} ALL=(ALL) NOPASSWD: ALL" /etc/sudoers || echo "${GITLAB_RUNNER_USER_NAME} ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers
+}
 
-# Create a GitLab Runner user
-sudo useradd --comment 'GitLab Runner' --create-home --home-dir ${BASE_DIR} ${GITLAB_RUNNER_USERNAME} --shell /bin/bash -G ${GROUPS_NEEDED} || sudo usermod -aG ${GROUPS_NEEDED} gitlab-runner
-
-# Clean bash_logout as it break gitlab pipelines
-sudo truncate -s 0 ${BASE_DIR}/.bash_logout
-
-# Create a configuration file
-cat <<EOL | sudo tee "$CONFIG_DIR/config.toml"
+generate_gitlab_config_file() {
+    cat <<EOL | sudo tee "$GITLAB_BASE_DIR/config.toml"
 [[runners]]
   name = "tici"
   url = "https://gitlab.com/"
   token = "$1"
   executor = "shell"
-  builds_dir = "$BUILDS_DIR"
+  builds_dir = "$GITLAB_BUILDS_DIR"
   [runners.custom_build_dir]
   [runners.docker]
-    volumes = ["$CACHE_DIR:/cache"]
+    volumes = ["$GITLAB_CACHE_DIR:/cache"]
   [runners.cache]
     MaxUploadedArchiveSize = 0
   [runners.custom]
-    config_exec = "$LOGS_DIR"
+    config_exec = "$GITLAB_LOGS_DIR"
 EOL
+}
 
-# Set permissions
-sudo chown -R ${GITLAB_RUNNER_USERNAME}:comma "$BASE_DIR"
-sudo chmod g+rwx "$BASE_DIR"
-sudo chmod g+s "$BASE_DIR"
+set_gitlab_directory_permissions() {
+    sudo chown -R ${GITLAB_RUNNER_USER_NAME}:comma "$GITLAB_BASE_DIR"
+    sudo chmod g+rwx "$GITLAB_BASE_DIR"
+    sudo chmod g+s "$GITLAB_BASE_DIR"
+}
 
-
-# Create a systemd service file for gitlab-runner
-cat <<EOL | sudo tee /etc/systemd/system/gitlab-runner.service
+create_gitlab_runner_service() {
+    cat <<EOL | sudo tee /etc/systemd/system/${SERVICE_NAME}.service
 [Unit]
 Description=GitLab Runner
 After=syslog.target network.target
-ConditionFileIsExecutable=$BIN_DIR/gitlab-runner
-
+ConditionFileIsExecutable=$GITLAB_BIN_DIR/gitlab-runner
 [Service]
 StartLimitInterval=5
 StartLimitBurst=10
-ExecStart=/usr/bin/unshare -m -- sh -c 'mount --bind $OPENPILOT_DIR /data/openpilot && exec $BIN_DIR/gitlab-runner "run" "--working-directory" "$BUILDS_DIR" "--config" "$CONFIG_DIR/config.toml" "--service" "gitlab-runner" "--syslog" "--user" "${GITLAB_RUNNER_USERNAME}"'
-
+ExecStart=/usr/bin/unshare -m -- sh -c 'mount --bind $GITLAB_OPENPILOT_DIR /data/openpilot && exec $GITLAB_BIN_DIR/gitlab-runner "run" "--working-directory" "$GITLAB_BUILDS_DIR" "--config" "$GITLAB_BASE_DIR/config.toml" "--service" "gitlab-runner" "--syslog" "--user" "${GITLAB_RUNNER_USER_NAME}"'
 Restart=always
 RestartSec=120
-
 [Install]
 WantedBy=multi-user.target
 EOL
+}
 
-# Reload systemd and start gitlab-runner
-sudo systemctl daemon-reload
-sudo systemctl disable gitlab-runner # Intentionally, making sure the service is NOT enabled on boot.
-sudo systemctl start gitlab-runner
+start_gitlab_runner_service() {
+    sudo systemctl daemon-reload
+    sudo systemctl disable gitlab-runner # Intentionally making sure the service is NOT enabled on boot.
+    sudo systemctl start gitlab-runner
+}
+
+# Make the filesystem writable
+sudo mount -o remount,rw /
+
+# Ensure filesystem is remounted as read-only on script exit
+trap "sudo mount -o remount,ro /" EXIT
+
+# Call functions
+setup_gitlab_runner_user
+create_sudoers_entry
+create_gitlab_runner_directories
+download_and_setup_gitlab_runner
+generate_gitlab_config_file "$1"
+set_gitlab_directory_permissions
+create_gitlab_runner_service
+start_gitlab_runner_service
+
+# End of install script

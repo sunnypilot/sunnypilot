@@ -7,7 +7,6 @@ from openpilot.selfdrive.controls.lib.sunnypilot.helpers import debug
 
 
 class SpeedLimitResolver:
-
   def __init__(self, policy=Policy.nav_priority):
     self._limit_solutions = {}  # Store for speed limit solutions from different sources
     self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
@@ -23,6 +22,9 @@ class SpeedLimitResolver:
       Policy.nav_only: [Source.nav]
     }
     self._reset_limit_sources()
+
+  def change_policy(self, policy: Policy):
+    self._policy = policy
 
   def _reset_limit_sources(self):
     self._limit_solutions.clear()

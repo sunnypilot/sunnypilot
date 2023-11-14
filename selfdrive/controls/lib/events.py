@@ -657,10 +657,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.speedLimitActive: {
     ET.WARNING: Alert(
-      "Cruise set to speed limit",
+      "Set speed changed to match posted speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
   },
 
   EventName.speedLimitValueChange: {
@@ -673,6 +673,22 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       "",
       AlertStatus.normal, AlertSize.none,
       Priority.MID, VisualAlert.none, AudibleAlert.promptStarting, 1.5),
+  },
+
+  EventName.speedLimitPreActive: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleLow, .45),
+  },
+
+  EventName.speedLimitConfirmed: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleHigh, .45),
   },
 
   # ********** events that affect controls state transitions **********

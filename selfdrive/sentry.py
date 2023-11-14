@@ -58,7 +58,11 @@ def save_exception(exc_text):
 
   for file in files:
     with open(file, 'w') as f:
-      f.write(exc_text)
+      if file.endswith("error.txt"):
+        lines = exc_text.splitlines()[-3:]
+        f.write("\n".join(lines))
+      else:
+        f.write(exc_text)
 
   print('Logged current crash to {}'.format(files))
 

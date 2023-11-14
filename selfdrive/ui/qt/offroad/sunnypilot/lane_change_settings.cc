@@ -14,6 +14,12 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {
+      "BelowSpeedPause",
+      tr("Pause Lateral Below Speed w/ Blinker"),
+      tr("Enable this toggle to pause lateral actuation with blinker when traveling below 20 MPH or 32 km/h."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "AutoLaneChangeBsmDelay",
       tr("Auto Lane Change: Delay with Blind Spot"),
       tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering."),

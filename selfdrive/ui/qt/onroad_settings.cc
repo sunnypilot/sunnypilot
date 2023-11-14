@@ -7,6 +7,7 @@
 
 #include "common/util.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_control_settings.h"
 
 OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent) {
   setContentsMargins(0, 0, 0, 0);
@@ -144,10 +145,25 @@ void OnroadSettings::changeDynamicExperimentalControl() {
 
 void OnroadSettings::changeSpeedLimitControl() {
   UIScene &scene = uiState()->scene;
-  bool can_change = true;
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  bool can_change = hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
+  int max_policy = SlcSettings::speed_limit_control_policy_texts.size() - 1;
+
   if (can_change) {
-    scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
-    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
+    if (!scene.speed_limit_control_enabled) {
+      // If EnableSlc is OFF, set it to ON and reset SpeedLimitControlPolicy
+      scene.speed_limit_control_enabled = true;
+      scene.speed_limit_control_policy = 0;
+    } else if(scene.speed_limit_control_policy < max_policy) {
+      // If EnableSlc is already ON then increase SpeedLimitControlPolicy till it reaches 6
+      scene.speed_limit_control_policy++;
+    } else {
+      // Once we cycle through all SpeedLimitControlPolicy, set EnableSlc to OFF and reset SpeedLimitControlPolicy
+      scene.speed_limit_control_enabled = false;
+      scene.speed_limit_control_policy = 0;
+    }
+    params.putBool("EnableSlc", scene.speed_limit_control_enabled);
+    params.put("SpeedLimitControlPolicy", std::to_string(scene.speed_limit_control_policy));
   }
   refresh();
 }
@@ -160,14 +176,15 @@ void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicLaneProfile");
   param_watcher->addParam("LongitudinalPersonality");
   param_watcher->addParam("DynamicExperimentalControl");
-  param_watcher->addParam("SpeedLimitControl");
+  param_watcher->addParam("EnableSlc");
 
   UIScene &scene = uiState()->scene;
   // Update live params on Feature Status on camera view
   scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
   scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
   scene.dynamic_experimental_control = params.getBool("DynamicExperimentalControl");
-  scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
+  scene.speed_limit_control_enabled = params.getBool("EnableSlc");
+  scene.speed_limit_control_policy = std::atoi(params.get("SpeedLimitControlPolicy").c_str());
 
   if (!isVisible()) return;
 
@@ -188,8 +205,8 @@ void OnroadSettings::refresh() {
   dec_widget->setVisible(hasLongitudinalControl(cp));
 
   // Speed Limit Control
-  slc_widget->updateSpeedLimitControl("SpeedLimitControl");
-  slc_widget->setVisible(true);
+  slc_widget->updateSpeedLimitControl("EnableSlc");
+  slc_widget->setVisible(hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed());
 
   setUpdatesEnabled(true);
 }
@@ -316,21 +333,36 @@ void OptionWidget::updateDynamicExperimentalControl(QString param) {
 }
 
 void OptionWidget::updateSpeedLimitControl(QString param) {
-  auto icon_color = "#3B4356";
-  auto title_text = "";
-  auto subtitle_text = "Speed Limit Conrol";
-  auto speed_limit_control = atoi(params.get(param.toStdString()).c_str());
+  auto subtitle_text = "Speed Limit Control";
+  std::string icon_color; // Declare icon_color here
 
-  if (speed_limit_control == 0) {
+  // Define the speed_limit_control_policy_texts
+  const auto& speed_limit_control_policy_texts = SlcSettings::speed_limit_control_policy_texts;
+
+  auto enable_slc_status = atoi(params.get(param.toStdString()).c_str());
+  auto speed_limit_control_policy_status = atoi(params.get("SpeedLimitControlPolicy").c_str());
+  auto title_text = QString(speed_limit_control_policy_texts.at(speed_limit_control_policy_status)).replace("\n", " ");
+
+  std::map<int, std::string> color_map = {
+    {0, "#1f77b4"}, // Muted blue for "Nav Only"
+    {1, "#2ca02c"}, // Cooked asparagus green for "Map Only"
+    {2, "#d62728"}, // Brick red for "Car Only"
+    {3, "#9467bd"}, // Muted purple for "Nav First"
+    {4, "#8c564b"}, // Chestnut brown for "Map First"
+    {5, "#e377c2"}, // Raspberry yogurt pink for "Car First"
+    {6, "#FFA500"}, // Orange for "Combined"
+  };
+
+  if (enable_slc_status == 0) {
     title_text = "Disabled";
-    icon_color = "#3B4356";
-  } else if (speed_limit_control == 1) {
-    title_text = "Enabled";
-    icon_color = "#0df87a";
+    icon_color = "#3B4356"; // Color for "Disabled status"
+  }
+  else if (enable_slc_status == 1) {
+    title_text = title_text;
+    icon_color = color_map[speed_limit_control_policy_status]; // Color for "Enabled status"
   }
 
-  icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color));
-
+  icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color.c_str()));
   title->setText(title_text);
   subtitle->setText(subtitle_text);
   subtitle->setVisible(true);

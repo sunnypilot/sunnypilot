@@ -134,7 +134,7 @@ class CarController:
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
       if self.frame % 200 == 0:
-        self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")
+        self.speed_limit_control_enabled = self.param_s.get_bool("EnableSlc")
         self.is_metric = self.param_s.get_bool("IsMetric")
         self.custom_stock_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
       self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")

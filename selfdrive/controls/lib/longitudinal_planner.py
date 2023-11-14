@@ -9,8 +9,6 @@ import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
-from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
@@ -245,7 +243,7 @@ class LongitudinalPlanner:
     # Update controllers
     self.vision_turn_controller.update(enabled, v_ego, a_ego, v_cruise, sm)
     self.events = Events()
-    self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.events)
+    self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.CP, self.events)
     self.turn_speed_controller.update(enabled, v_ego, a_ego, sm)
 
     # Pick solution with the lowest velocity target.

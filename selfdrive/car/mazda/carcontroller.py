@@ -66,7 +66,7 @@ class CarController:
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
       if self.frame % 200 == 0:
-        self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")
+        self.speed_limit_control_enabled = self.param_s.get_bool("EnableSlc")
         self.is_metric = self.param_s.get_bool("IsMetric")
       self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")
       self.v_cruise_min = MAZDA_V_CRUISE_MIN[self.is_metric] * (CV.KPH_TO_MPH if not self.is_metric else 1)

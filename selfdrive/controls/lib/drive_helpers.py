@@ -1,6 +1,6 @@
 import math
 
-from cereal import car, log
+from cereal import car, log, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_MDL
@@ -66,6 +66,8 @@ VOLKSWAGEN_V_CRUISE_MIN = {
   False: int(20 * CV.MPH_TO_KPH),
 }
 
+SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
+
 
 class VCruiseHelper:
   def __init__(self, CP):
@@ -76,17 +78,28 @@ class VCruiseHelper:
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
 
+    self.is_metric_prev = None
+    self.v_cruise_min = V_CRUISE_MIN
+    self.slc_state = SpeedLimitControlState.inactive
+    self.slc_state_prev = SpeedLimitControlState.inactive
+    self.slc_speed_limit_offsetted = 0
+
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc):
+  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, long_plan_sp):
     self.v_cruise_kph_last = self.v_cruise_kph
+    self.slc_state = long_plan_sp.speedLimitControlState
+
+    if not self.CP.pcmCruiseSpeed:
+      self._update_v_cruise_min(is_metric)
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
+        self._update_v_cruise_slc(long_plan_sp)
         self.v_cruise_cluster_kph = self.v_cruise_kph
         self.update_button_timers(CS, enabled)
       else:
@@ -100,6 +113,9 @@ class VCruiseHelper:
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
     # would have the effect of both enabling and changing speed is checked after the state transition
     if not enabled:
+      return
+
+    if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev == SpeedLimitControlState.preActive:
       return
 
     long_press = False
@@ -150,20 +166,7 @@ class VCruiseHelper:
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
       self.v_cruise_kph = max(self.v_cruise_kph, CS.vEgo * CV.MS_TO_KPH)
 
-    v_cruise_min = V_CRUISE_MIN
-    if not self.CP.pcmCruiseSpeed:
-      if self.CP.carName == "honda":
-        v_cruise_min = HONDA_V_CRUISE_MIN[is_metric]
-      elif self.CP.carName == "hyundai":
-        v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
-      elif self.CP.carName == "chrysler":
-        v_cruise_min = FCA_V_CRUISE_MIN[is_metric]
-      elif self.CP.carName == "mazda":
-        v_cruise_min = MAZDA_V_CRUISE_MIN[is_metric]
-      elif self.CP.carName == "volkswagen":
-        v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
-
-    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), v_cruise_min, V_CRUISE_MAX)
+    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), self.v_cruise_min, V_CRUISE_MAX)
 
   def update_button_timers(self, CS, enabled):
     # increment timer for buttons still pressed
@@ -207,6 +210,33 @@ class VCruiseHelper:
       self.v_cruise_kph = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
+
+  def _update_v_cruise_slc(self, long_plan_sp):
+    if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev != SpeedLimitControlState.preActive:
+      return
+
+    speed_limit = int(round(long_plan_sp.speedLimit * CV.MS_TO_KPH))
+    speed_limit_offset = int(round(long_plan_sp.speedLimitOffset * CV.MS_TO_KPH))
+    self.slc_speed_limit_offsetted = speed_limit + speed_limit_offset
+
+    if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev == SpeedLimitControlState.preActive:
+      self.v_cruise_kph = clip(round(self.slc_speed_limit_offsetted, 1), self.v_cruise_min, V_CRUISE_MAX)
+
+    self.slc_state_prev = self.slc_state
+
+  def _update_v_cruise_min(self, is_metric):
+    if is_metric != self.is_metric_prev:
+      if self.CP.carName == "honda":
+        self.v_cruise_min = HONDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "hyundai":
+        self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "chrysler":
+        self.v_cruise_min = FCA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "mazda":
+        self.v_cruise_min = MAZDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "volkswagen":
+        self.v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
+    self.is_metric_prev = is_metric
 
 
 def apply_deadzone(error, deadzone):

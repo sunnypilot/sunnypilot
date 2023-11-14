@@ -485,7 +485,7 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
     scene.last_speed_limit_sign_tap = seconds_since_boot();
     params.putBool("LastSpeedLimitSignTap", true);
     scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
-    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
+    params.putBool("EnableSlc", scene.speed_limit_control_enabled);
     propagate_event = false;
   }
 
@@ -688,23 +688,27 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
                              slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE);
     const bool sl_temp_inactive = !sl_force_active && (s.scene.speed_limit_control_enabled &&
                                   slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
+    const bool sl_pre_active = !sl_force_active && (s.scene.speed_limit_control_enabled &&
+                               slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE);
     const int sl_distance = int(lp_sp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
     const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
                                 "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
                                 "+" + QString::number(std::nearbyint(speed_limit_offset)) : "");
-    const QString sl_inactive_str(sl_temp_inactive ? "TEMP" : "");
-    const QString sl_substring(sl_inactive || sl_temp_inactive ? sl_inactive_str :
+    const QString sl_inactive_str(sl_temp_inactive && s.scene.speed_limit_control_engage_type == 1 ? "TEMP" : "");
+    const QString sl_substring(sl_inactive || sl_temp_inactive || sl_pre_active ? sl_inactive_str :
                                sl_distance > 0 ? sl_distance_str : sl_offset_str);
 
     showSpeedLimit = speed_limit_slc > 0.0;
     speedLimitSLC = speed_limit_slc;
+    speedLimitSLCOffset = speed_limit_offset;
     slcSubText = sl_substring;
     slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
     mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
     slcActive = !sl_inactive && !sl_temp_inactive;
-    overSpeedLimit = (((speed_limit_slc + speed_limit_offset) < speed) && !sl_inactive && !sl_temp_inactive) ||
-                                  ((speed_limit_slc < speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive));
+    overSpeedLimit = showSpeedLimit && (std::nearbyint(speed_limit_slc + speed_limit_offset) < std::nearbyint(speed));
+    plus_arrow_up_img = loadPixmap("../assets/img_plus_arrow_up", {105, 105});
+    minus_arrow_down_img = loadPixmap("../assets/img_minus_arrow_down", {105, 105});
 
     const float tsc_speed = lp_sp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const auto tscState = lp_sp.getTurnSpeedControlState();
@@ -866,8 +870,11 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
   const QRect sign_rect = set_speed_rect.adjusted(sign_margin, default_size.height(), -sign_margin, -sign_margin);
   uiState()->scene.sl_sign_rect = sign_rect;
+
+  speedLimitWarning(p, sign_rect, sign_margin);
+
   // US/Canada (MUTCD style) sign
-  if ((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) {
+  if (((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) && slcShowSign) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawRoundedRect(sign_rect, 24, 24);
@@ -889,7 +896,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // EU (Vienna style) sign
-  if ((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) {
+  if (((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) && slcShowSign) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawEllipse(sign_rect);
@@ -1571,6 +1578,14 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
   return blinker_state;
 }
 
+void AnnotatedCameraWidget::speedLimitSignPulse(int frame) {
+  if (frame % UI_FREQ < (UI_FREQ / 2.5)) {
+    slcShowSign = false;
+  } else {
+    slcShowSign = true;
+  }
+}
+
 void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   const FeatureStatusText feature_text;
   const FeatureStatusColor feature_color;
@@ -1639,6 +1654,40 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   // Speed Limit Control
   if (longitudinal || !cp.getPcmCruiseSpeed()) {
     drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
+  }
+}
+
+void AnnotatedCameraWidget::speedLimitWarning(QPainter &p, QRect sign_rect, const int sign_margin) {
+  // PRE ACTIVE
+  if (slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE) {
+    int set_speed = std::nearbyint(setSpeed);
+    int speed_limit_offsetted = std::nearbyint(speedLimitSLC + speedLimitSLCOffset);
+
+    // Calculate the vertical offset using a sinusoidal function for smooth bouncing
+    double bounce_frequency = 2.0 * M_PI / 20.0;  // 20 frames for one full oscillation
+    int bounce_offset = 20 * sin(speed_limit_frame * bounce_frequency);  // Adjust the amplitude (20 pixels) as needed
+
+    if (set_speed < speed_limit_offsetted) {
+      QPoint iconPosition(sign_rect.right() + sign_margin * 3, sign_rect.center().y() - plus_arrow_up_img.height() / 2 + bounce_offset);
+      p.drawPixmap(iconPosition, plus_arrow_up_img);
+    } else if (set_speed > speed_limit_offsetted) {
+      QPoint iconPosition(sign_rect.right() + sign_margin * 3, sign_rect.center().y() - minus_arrow_down_img.height() / 2 - bounce_offset);
+      p.drawPixmap(iconPosition, minus_arrow_down_img);
+    }
+
+    speed_limit_frame++;
+    speedLimitSignPulse(speed_limit_frame);
+  }
+
+  // current speed over speed limit
+  else if (overSpeedLimit && uiState()->scene.speed_limit_control_engage_type == 0) {
+    speed_limit_frame++;
+    speedLimitSignPulse(speed_limit_frame);
+  }
+
+  else {
+    speed_limit_frame = 0;
+    slcShowSign = true;
   }
 }
 
@@ -1959,7 +2008,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
 
     if (reversing && s->scene.reverse_dm_cam) {
-      CameraWidget::setStreamType(VISION_STREAM_DRIVER);
+      CameraWidget::setStreamType(VISION_STREAM_DRIVER, s->scene.reverse_dm_cam);
     }
 
     s->scene.wide_cam = CameraWidget::getStreamType() == VISION_STREAM_WIDE_ROAD;

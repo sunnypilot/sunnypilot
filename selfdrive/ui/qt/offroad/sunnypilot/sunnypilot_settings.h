@@ -4,21 +4,10 @@
 #include "selfdrive/ui/qt/offroad/sunnypilot/custom_offsets_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/lane_change_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/mads_settings.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_control_settings.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
-
-class SpeedLimitValueOffset : public SPOptionControl {
-  Q_OBJECT
-
-public:
-  SpeedLimitValueOffset();
-
-  void refresh();
-
-private:
-  Params params;
-};
 
 class TorqueFriction : public SPOptionControl {
   Q_OBJECT
@@ -59,18 +48,17 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   MadsSettings* mads_settings = nullptr;
+  SubPanelButton *slcSettings = nullptr;
+  SlcSettings* slc_settings = nullptr;
   LaneChangeSettings* lane_change_settings = nullptr;
   CustomOffsetsSettings* custom_offsets_settings = nullptr;
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ParamWatcher *param_watcher;
 
-  SpeedLimitValueOffset *slvo;
   TorqueFriction *friction;
   TorqueMaxLatAccel *lat_accel_factor;
   ButtonParamControl *dlp_settings;
-  ButtonParamControl *speed_limit_control_settings;
-  ButtonParamControl *speed_limit_offset_settings;
 
   ScrollView *scrollView = nullptr;
 };

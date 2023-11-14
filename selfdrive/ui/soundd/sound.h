@@ -19,6 +19,8 @@ const std::tuple<AudibleAlert, QString, int, float> sound_list[] = {
   {AudibleAlert::REFUSE, "refuse.wav", 0, MAX_VOLUME},
 
   {AudibleAlert::PROMPT, "prompt.wav", 0, MAX_VOLUME},
+  {AudibleAlert::PROMPT_SINGLE_LOW, "prompt_single_low.wav", 0, MAX_VOLUME},
+  {AudibleAlert::PROMPT_SINGLE_HIGH, "prompt_single_high.wav", 0, MAX_VOLUME},
   {AudibleAlert::PROMPT_REPEAT, "prompt.wav", QSoundEffect::Infinite, MAX_VOLUME},
   {AudibleAlert::PROMPT_STARTING, "prompt.wav", 0, MAX_VOLUME},
   {AudibleAlert::PROMPT_DISTRACTED, "prompt_distracted.wav", QSoundEffect::Infinite, MAX_VOLUME},

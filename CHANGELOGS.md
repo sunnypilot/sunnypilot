@@ -1,7 +1,7 @@
 sunnypilot - 0.9.5.1 (2023-11-xx)
 ========================
-* UPDATED: Synced with commaai's master commit 9528383
-* NEW❗: Night Strike driving model
+* UPDATED: Synced with commaai's master commit e94c3c5
+* NEW❗: Farmville driving model
 * NEW❗: Onroad Settings Panel
   * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
     * Driving Personality
@@ -24,6 +24,7 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
   * NEW❗: Parse lead distance to display on car cluster
     * Introduced better lead distance calculation to display on the car's cluster, replacing the binary "lead visible" indication on the SCC cluster
     * Lead distance is now categorized into different ranges for more detailed and comprehensive information to the driver similar to how stock ACC does it
+  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!
   * Global (excluding Gen 2 and Hybrid) and Pre-Global support
 * NEW❗: Toyota - Stop and Go hack
@@ -39,6 +40,19 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
     * [DISTANCE/FOLLOW DISTANCE/GAP DISTANCE] physical button on the steering wheel to select Driving Personality on by default
     * Status now viewable in onroad view or Onroad Settings Panel
     * REMOVED: Gap Adjust Cruise toggle
+* UPDATED: Speed Limit Control (SLC)
+  * NEW❗: Speed Limit Engage Mode
+    * Select the desired mode to set the cruising speed to the speed limit
+      * Warning Only: Warn the driver when the vehicle is driven faster than the speed limit
+      * Auto: Automatic speed adjustment on motorways based on speed limit data
+      * User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit
+    * Supported platforms
+      * openpilot Longitudinal Control available cars (Excluding certain Toyota/Lexus, Ford, explained below)
+      * Custom Stock Longitudinal Control available cars
+    * Unsupported platforms
+      * Toyota/Lexus and Ford - most platforms do not allow us to control the PCM's set speed, requires testers to verify
+  * NEW❗: Speed limit source selector
+    * Select the desired precedence order of sources used to adapt cruise speed to road limits
 * UPDATED: Custom Stock Longitudinal Control
   * RE-ENABLED: Hyundai/Kia/Genesis CAN-FD platforms
 * UPDATED: Custom Offsets reimplementation

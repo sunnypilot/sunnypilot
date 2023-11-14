@@ -19,6 +19,35 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "EnableSlc",
+      tr("Enable Speed Limit Control (SLC)"),
+      tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "TurnVisionControl",
+      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
+      tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "TurnSpeedControl",
+      tr("Enable Map Data Turn Speed Control (M-TSC)"),
+      tr("Use curvature information from map data to define speed limits to take turns ahead."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "ReverseAccChange",
+      tr("ACC +/-: Long Press Reverse"),
+      QString("%1<br>"
+              "<h4>%2</h4><br>"
+              "<h4>%3</h4><br>")
+      .arg(tr("Change the ACC +/- buttons behavior with cruise speed change in sunnypilot."))
+      .arg(tr("Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)"))
+      .arg(tr("Enabled: Short = 5 (imperial) / 10 (metric), Long=1")),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "CustomOffsets",
       tr("Custom Offsets"),
       tr("Add custom offsets to Camera and Path in sunnypilot."),
@@ -52,29 +81,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "TorquedOverride",
       tr("Manual Real-Time Tuning"),
       tr("Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "TurnVisionControl",
-      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
-      tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "TurnSpeedControl",
-      tr("Enable Map Data Turn Speed Control (M-TSC)"),
-      tr("Use curvature information from map data to define speed limits to take turns ahead."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
-      "ReverseAccChange",
-      tr("ACC +/-: Long Press Reverse"),
-      QString("%1<br>"
-              "<h4>%2</h4><br>"
-              "<h4>%3</h4><br>")
-      .arg(tr("Change the ACC +/- buttons behavior with cruise speed change in sunnypilot."))
-      .arg(tr("Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)"))
-      .arg(tr("Enabled: Short = 5 (imperial) / 10 (metric), Long=1")),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -157,6 +163,24 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
 
+  // SLC. Settings
+  slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 900, this);
+  slcSettings->setObjectName("slc_btn");
+  // Set margin on the outside of the button
+  QVBoxLayout* slcSettingsLayout = new QVBoxLayout;
+  slcSettingsLayout->setContentsMargins(0, 0, 0, 30);
+  slcSettingsLayout->addWidget(slcSettings);
+  connect(slcSettings, &QPushButton::clicked, [=]() {
+    scrollView->setLastScrollPosition();
+    main_layout->setCurrentWidget(slc_settings);
+  });
+
+  slc_settings = new SlcSettings(this);
+  connect(slc_settings, &SlcSettings::backPress, [=]() {
+    scrollView->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
     "EnforceTorqueLateral", "CustomTorqueLateral", "LiveTorque", "TorquedOverride"
@@ -164,12 +188,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
-    "EnableMads", "BelowSpeedPause", "EnforceTorqueLateral", "LiveTorqueRelaxed"
+    "EnableMads", "EnforceTorqueLateral", "LiveTorqueRelaxed"
   };
-
-  // Controls: Speed Limit Offset Values (% or actual value)
-  slvo = new SpeedLimitValueOffset();
-  connect(slvo, &SPOptionControl::updateLabels, slvo, &SpeedLimitValueOffset::refresh);
 
   // Controls: Torque - FRICTION
   friction = new TorqueFriction();
@@ -187,26 +207,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     340
   );
   dlp_settings->showDescription();
-
-  std::vector<QString> speed_limit_control_settings_texts{tr("Disabled"), tr("Enabled")};
-  speed_limit_control_settings = new ButtonParamControl(
-    "SpeedLimitControl", "Speed Limit Control (SLC)", "When SLC is Enabled, it uses map data and car interface for speed adjustment.",
-    "../assets/offroad/icon_blank.png",
-    speed_limit_control_settings_texts,
-    340
-  );
-  speed_limit_control_settings->showDescription();
-  connect(speed_limit_control_settings, &ButtonParamControl::buttonToggled, this, &SunnypilotPanel::updateToggles);
-
-  std::vector<QString> speed_limit_offset_settings_texts{tr("Default"), tr("Fixed"), tr("Percentage")};
-  speed_limit_offset_settings = new ButtonParamControl(
-    "SpeedLimitOffsetType", "Offset", "Set speed limit slightly higher than actual speed limit for a more natural drive.",
-    "../assets/offroad/icon_blank.png",
-    speed_limit_offset_settings_texts,
-    380
-  );
-  connect(speed_limit_offset_settings, &ButtonParamControl::buttonToggled, this, &SunnypilotPanel::updateToggles);
-  connect(speed_limit_offset_settings, &ButtonParamControl::buttonToggled, slvo, &SpeedLimitValueOffset::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
@@ -228,6 +228,15 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(horizontal_line());
     }
 
+    if (param == "EnableSlc") {
+      list->addItem(slcSettingsLayout);
+      list->addItem(horizontal_line());
+    }
+
+    if (param == "ReverseAccChange") {
+      list->addItem(horizontal_line());
+    }
+
     if (param == "CustomOffsets") {
       list->addItem(customOffsetsSettingsLayout);
       list->addItem(horizontal_line());
@@ -240,21 +249,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       // Controls: LAT_ACCEL_FACTOR
       list->addItem(lat_accel_factor);
 
-      list->addItem(horizontal_line());
-
-      // Controls: Speed Limit Control
-      list->addItem(speed_limit_control_settings);
-
-      // Controls: Speed Limit Offset Type
-      list->addItem(speed_limit_offset_settings);
-
-      // Controls: Speed Limit Offset Values (% or actual value)
-      list->addItem(slvo);
-
-      list->addItem(horizontal_line());
-    }
-
-    if (param == "ReverseAccChange") {
       list->addItem(horizontal_line());
     }
 
@@ -281,6 +275,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     madsSettings->setEnabled(state);
   });
   madsSettings->setEnabled(toggles["EnableMads"]->isToggled());
+
+  connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, slc_settings, &SlcSettings::updateToggles);
+  connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, [=](bool state) {
+    slcSettings->setEnabled(state);
+  });
+  slcSettings->setEnabled(toggles["EnableSlc"]->isToggled());
 
   connect(toggles["CustomOffsets"], &ToggleControl::toggleFlipped, [=](bool state) {
     customOffsetsSettings->setEnabled(state);
@@ -324,6 +324,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   main_layout->addWidget(mads_settings);
   main_layout->addWidget(lane_change_settings);
   main_layout->addWidget(custom_offsets_settings);
+  main_layout->addWidget(slc_settings);
 
   setStyleSheet(R"(
     #back_btn {
@@ -358,6 +359,8 @@ void SunnypilotPanel::updateToggles() {
     return;
   }
 
+  dlp_settings->setButton("DynamicLaneProfile");
+
   // toggle VisionCurveLaneless when DynamicLaneProfile == 2/Auto
   auto dynamic_lane_profile_param = QString::fromStdString(params.get("DynamicLaneProfile"));
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
@@ -369,11 +372,11 @@ void SunnypilotPanel::updateToggles() {
   auto live_torque_relaxed = toggles["LiveTorqueRelaxed"];
   auto torqued_override = toggles["TorquedOverride"];
 
-  auto speed_limit_control = QString::fromStdString(params.get("SpeedLimitControl")) != "0";
   auto custom_stock_long_param = params.getBool("CustomStockLong");
   auto v_tsc = toggles["TurnVisionControl"];
   auto m_tsc = toggles["TurnSpeedControl"];
   auto reverse_acc = toggles["ReverseAccChange"];
+  auto slc_toggle = toggles["EnableSlc"];
 
   // toggle names to update when EnforceTorqueLateral is flipped
   std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
@@ -412,27 +415,27 @@ void SunnypilotPanel::updateToggles() {
     }
 
     if (hasLongitudinalControl(CP) || custom_stock_long_param) {
-      speed_limit_offset_settings->setEnabled(speed_limit_control);
-      slvo->setEnabled(speed_limit_control && QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
-      speed_limit_control_settings->setEnabled(true);
       v_tsc->setEnabled(true);
       m_tsc->setEnabled(true);
       reverse_acc->setEnabled(true);
+      slc_toggle->setEnabled(true);
     } else {
-      speed_limit_control_settings->setEnabled(false);
-      speed_limit_offset_settings->setEnabled(false);
-      slvo->setEnabled(false);
       v_tsc->setEnabled(false);
       m_tsc->setEnabled(false);
       reverse_acc->setEnabled(false);
+      slc_toggle->setEnabled(false);
+      params.remove("EnableSlc");
+      slcSettings->setEnabled(false);
     }
+
+    enforce_torque_lateral->refresh();
+    slc_toggle->refresh();
   } else {
-    speed_limit_control_settings->setEnabled(false);
-    speed_limit_offset_settings->setEnabled(false);
-    slvo->setEnabled(false);
     v_tsc->setEnabled(false);
     m_tsc->setEnabled(false);
     reverse_acc->setEnabled(false);
+    slc_toggle->setEnabled(false);
+    slcSettings->setEnabled(false);
   }
 }
 
@@ -467,36 +470,4 @@ void TorqueMaxLatAccel::refresh() {
   QString unit = "m/s²";
   setTitle(params.getBool("TorquedOverride") ? "LAT_ACCEL_FACTOR - Live && Offline" : "LAT_ACCEL_FACTOR - Offline Only");
   setLabel(QString::number(torqueMaxLatAccelVal) + " " + unit);
-}
-
-// Speed Limit Control Custom Offset
-SpeedLimitValueOffset::SpeedLimitValueOffset() : SPOptionControl (
-  "SpeedLimitValueOffset",
-  "",
-  "",
-  "../assets/offroad/icon_blank.png",
-  {-30, 30}) {
-
-  refresh();
-}
-
-void SpeedLimitValueOffset::refresh() {
-  QString option = QString::fromStdString(params.get("SpeedLimitValueOffset"));
-  QString offset_type = QString::fromStdString(params.get("SpeedLimitOffsetType"));
-  bool is_metric = params.getBool("IsMetric");
-  QString unit = "";
-
-  if (option.toInt() >= 0) {
-    option = "+" + option;
-  }
-
-  if (offset_type == "0") {
-    option = "";
-    unit = "N/A";
-  } else if (offset_type == "1") {
-    unit = is_metric ? " km/h" : " mph";
-  } else if (offset_type == "2") {
-    unit = " %";
-  }
-  setLabel(option + unit);
 }

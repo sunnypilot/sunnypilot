@@ -124,6 +124,8 @@ private:
   void updateButtonsLayout();
 
   void drawFeatureStatusText(QPainter &p, int x, int y);
+  void speedLimitSignPulse(int frame);
+  void speedLimitWarning(QPainter &p, QRect sign_rect, const int sign_margin);
   void mousePressEvent(QMouseEvent* e) override;
   Params params;
 
@@ -177,6 +179,7 @@ private:
 
   bool showSpeedLimit = false;
   float speedLimitSLC;
+  float speedLimitSLCOffset;
   QString slcSubText;
   float slcSubTextSize = 0.0;
   bool overSpeedLimit;
@@ -232,6 +235,11 @@ private:
   int longitudinalPersonality;
   int dynamicLaneProfile;
   QString mpcMode;
+
+  int speed_limit_frame;
+  bool slcShowSign = true;
+  QPixmap plus_arrow_up_img;
+  QPixmap minus_arrow_down_img;
 
 protected:
   void paintGL() override;
