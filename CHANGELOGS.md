@@ -1,18 +1,30 @@
-sunnypilot - 0.9.5.1 (2023-10-xx)
+sunnypilot - 0.9.5.1 (2023-11-xx)
 ========================
-* UPDATED: Synced with commaai's 0.9.5 release
-* NEW❗: Non-Inflatable driving model
+* UPDATED: Synced with commaai's master commit e94c3c5
+* NEW❗: Farmville driving model
 * NEW❗: Onroad Settings Panel
   * Onroad buttons (i.e., DLP, GAC) moved to its dedicated panel
     * Driving Personality
     * Dynamic Lane Profile (DLP)
+    * Dynamic Experimental Control (DEC)
     * Speed Limit Control (SLC)
 * NEW❗: Display main feature status on onroad view in real-time
   * GAP - Driving Personality
   * DLP - Dynamic Lane Profile
+  * DEC - Dynamic Experimental Control
   * SLC - Speed Limit Control
-* NEW❗: Hyundai CAN longitudinal: Parse lead info for camera-based SCC platforms
-  * Improve lead tracking when using openpilot longitudinal
+* NEW❗: Dynamic Experimental Control (DEC) thanks to dragonpilot-community!
+  * Automatically determines and selects between openpilot ACC and openpilot End to End longitudinal based on conditions for a more natural drive
+  * Dynamic Experimental Control is only active while in Experimental Mode
+  * Dynamic Experimental Control must be enabled via "SP - Controls", then toggle via the new Onroad Settings Panel
+  * When Dynamic Experimental Control is ON, initially setting cruise speed will set to the vehicle's current speed
+* NEW❗: Hyundai CAN longitudinal:
+  * NEW❗: Parse lead info for camera-based SCC platforms
+    * Improve lead tracking when using openpilot longitudinal
+  * NEW❗: Parse lead distance to display on car cluster
+    * Introduced better lead distance calculation to display on the car's cluster, replacing the binary "lead visible" indication on the SCC cluster
+    * Lead distance is now categorized into different ranges for more detailed and comprehensive information to the driver similar to how stock ACC does it
+  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * NEW❗: Subaru - Stop and Go auto-resume support thanks to martinl!
   * Global (excluding Gen 2 and Hybrid) and Pre-Global support
 * NEW❗: Toyota - Stop and Go hack
@@ -28,6 +40,19 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
     * [DISTANCE/FOLLOW DISTANCE/GAP DISTANCE] physical button on the steering wheel to select Driving Personality on by default
     * Status now viewable in onroad view or Onroad Settings Panel
     * REMOVED: Gap Adjust Cruise toggle
+* UPDATED: Speed Limit Control (SLC)
+  * NEW❗: Speed Limit Engage Mode
+    * Select the desired mode to set the cruising speed to the speed limit
+      * Warning Only: Warn the driver when the vehicle is driven faster than the speed limit
+      * Auto: Automatic speed adjustment on motorways based on speed limit data
+      * User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit
+    * Supported platforms
+      * openpilot Longitudinal Control available cars (Excluding certain Toyota/Lexus, Ford, explained below)
+      * Custom Stock Longitudinal Control available cars
+    * Unsupported platforms
+      * Toyota/Lexus and Ford - most platforms do not allow us to control the PCM's set speed, requires testers to verify
+  * NEW❗: Speed limit source selector
+    * Select the desired precedence order of sources used to adapt cruise speed to road limits
 * UPDATED: Custom Stock Longitudinal Control
   * RE-ENABLED: Hyundai/Kia/Genesis CAN-FD platforms
 * UPDATED: Custom Offsets reimplementation
@@ -38,10 +63,15 @@ sunnypilot - 0.9.5.1 (2023-10-xx)
   * NEW❗: Custom Tuning for setting offline and live values in real-time
 * UPDATED: Auto-detect custom Mapbox token if a personal Mapbox token is provided
   * REMOVED: "Enable Mapbox Navigation" toggle
-* UPDATED: Update color from Green 🟢 to Blue 🔵 for settings toggles and buttons
+* UI updates
+  * New Settings menu redesign and improved interactions
 * FIXED: Retain hotspot/tethering state was not consistently saved
 * FIXED: Map stuck in "Map Loading" if comma Prime is active
-* FIXED: UI elements adjustments
+* FIXED: OpenStreetMap implementation on C3X devices
+  * M-TSC
+  * Altitude (ALT.) display on Developer UI
+  * Current street name on top of driving screen when "OSM Debug UI" is enabled
+* Hyundai Kona Non-SCC 2019 support thanks to Quex!
 * Kia Seltos Non-SCC 2023-24 support thanks to Moodkiller and jeroid_!
 
 sunnypilot - 0.9.4.1 (2023-08-11)
