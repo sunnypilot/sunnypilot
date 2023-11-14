@@ -25,6 +25,7 @@ public:
   void showEvent(QShowEvent *event) override;
   static const std::vector<QString> speed_limit_control_policy_texts;
   static const std::vector<QString> speed_limit_control_policy_descriptions;
+  static const std::vector<QString> speed_limit_engage_descriptions;
 
 signals:
   void backPress();
@@ -39,6 +40,7 @@ private:
   SpeedLimitValueOffset *slvo;
   ButtonParamControl *speed_limit_control_policy;
   ButtonParamControl *speed_limit_offset_settings;
+  ButtonParamControl *speed_limit_engage_settings;
   ParamWatcher *param_watcher;
 
   QString slcDescriptionBuilder(QString param, std::vector<QString> descriptions) {
@@ -85,4 +87,11 @@ inline const std::vector<QString> SlcSettings::speed_limit_control_policy_descri
   tr("Nav First: Nav -> Map -> Car"),
   tr("Map First: Map -> Nav -> Car"),
   tr("Car First: Car -> Nav -> Map"),
+};
+
+inline const std::vector<QString> SlcSettings::speed_limit_engage_descriptions{
+  tr("Select the desired mode to set the cruising speed to the speed limit:"),
+  tr("Warning Only: Warn the driver when the vehicle is driven faster than the speed limit."),
+  tr("Auto: Automatic speed adjustment on motorways based on speed limit data."),
+  tr("User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit."),
 };

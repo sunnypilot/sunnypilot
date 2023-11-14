@@ -23,13 +23,13 @@ const int UI_HEADER_HEIGHT = 420;
 struct FeatureStatusText {
   const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
   const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
-  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active" };
+  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active", "Pre Active" };
 };
 
 struct FeatureStatusColor {
   const QStringList dlp_list_color = { "#2020f8",      "#0df87a",  "#0df8f8"            };
   const QStringList gac_list_color = { "#ff4b4b",      "#fcff4b",  "#4bff66", "#6a0ac9" };
-  const QStringList slc_list_color = { "#ffffff",      "#ffffff",  "#fcff4b", "#4bff66" };
+  const QStringList slc_list_color = { "#ffffff",      "#ffffff",  "#fcff4b", "#4bff66", "#fcff4b" };
 };
 
 const float DRIVING_PATH_WIDE = 0.9;
@@ -239,6 +239,8 @@ typedef struct UIScene {
   bool dynamic_experimental_control;
 
   QRect sl_sign_rect;
+
+  int speed_limit_control_engage_type;
 } UIScene;
 
 class UIState : public QObject {

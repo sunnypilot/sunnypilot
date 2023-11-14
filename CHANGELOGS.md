@@ -41,6 +41,16 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
     * Status now viewable in onroad view or Onroad Settings Panel
     * REMOVED: Gap Adjust Cruise toggle
 * UPDATED: Speed Limit Control (SLC)
+  * NEW❗: Speed Limit Engage Mode
+    * Select the desired mode to set the cruising speed to the speed limit
+      * Warning Only: Warn the driver when the vehicle is driven faster than the speed limit
+      * Auto: Automatic speed adjustment on motorways based on speed limit data
+      * User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit
+    * Supported platforms
+      * openpilot Longitudinal Control available cars (Excluding certain Toyota/Lexus, Ford, explained below)
+      * Custom Stock Longitudinal Control available cars
+    * Unsupported platforms
+      * Toyota/Lexus and Ford - most platforms do not allow us to control the PCM's set speed, requires testers to verify
   * NEW❗: Speed limit source selector
     * Select the desired precedence order of sources used to adapt cruise speed to road limits
 * UPDATED: Custom Stock Longitudinal Control

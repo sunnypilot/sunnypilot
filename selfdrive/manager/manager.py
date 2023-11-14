@@ -87,6 +87,7 @@ def manager_init() -> None:
     ("ScreenRecorder", "1"),
     ("ShowDebugUI", "1"),
     ("SpeedLimitControlPolicy", "3"),
+    ("SpeedLimitEngageType", "0"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
     ("StandStillTimer", "0"),

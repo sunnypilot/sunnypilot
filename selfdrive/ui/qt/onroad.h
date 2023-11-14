@@ -179,6 +179,7 @@ private:
 
   bool showSpeedLimit = false;
   float speedLimitSLC;
+  float speedLimitSLCOffset;
   QString slcSubText;
   float slcSubTextSize = 0.0;
   bool overSpeedLimit;
@@ -237,6 +238,8 @@ private:
 
   int speed_limit_frame;
   bool slcShowSign = true;
+  QPixmap plus_arrow_up_img;
+  QPixmap minus_arrow_down_img;
 
 protected:
   void paintGL() override;

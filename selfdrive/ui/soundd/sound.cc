@@ -70,6 +70,6 @@ bool Sound::shouldPlaySound(const Alert &alert) {
   bool isQuietDrive = params.getBool("QuietDrive");
     return (alert.sound == AudibleAlert::WARNING_SOFT || alert.sound == AudibleAlert::WARNING_IMMEDIATE ||
             alert.sound == AudibleAlert::PROMPT_DISTRACTED || alert.sound == AudibleAlert::PROMPT_REPEAT ||
-            alert.sound == AudibleAlert::PROMPT_STARTING) ||
-            (!isQuietDrive && alert.sound != AudibleAlert::NONE);
+            alert.sound == AudibleAlert::PROMPT_STARTING || alert.sound == AudibleAlert::PROMPT_SINGLE_LOW ||
+            alert.sound == AudibleAlert::PROMPT_SINGLE_HIGH) || (!isQuietDrive && alert.sound != AudibleAlert::NONE);
 }

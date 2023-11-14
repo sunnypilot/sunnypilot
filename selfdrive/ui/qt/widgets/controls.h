@@ -318,6 +318,13 @@ public:
     }
   }
 
+  void setDisabledSelectedButton(std::string val) {
+    int value = atoi(val.c_str());
+    for (int i = 0; i < button_group->buttons().size(); i++) {
+      button_group->buttons()[i]->setEnabled(i != value);
+    }
+  }
+
 protected:
   void paintEvent(QPaintEvent *event) override {
     QPainter p(this);
