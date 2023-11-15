@@ -129,7 +129,6 @@ class CarState(CarStateBase):
       # speed in m/s
       self._vLimit = vLimit * speed_factor
 
-
   @staticmethod
   def get_can_parser(CP):
     messages = [
