@@ -118,8 +118,8 @@ class CarState(CarStateBase):
   def _update_traffic_signals(self, CP, cp, cp_cam):
     if CP.carFingerprint in CANFD_CAR:
       # we'll start with CANFD - not sure if and how to check if this message is in non CANFD
-      origVLimit = cp_cam.vl["Traffic_recognitnData"]["TsrVLim1MsgTxt_D_Rq"]
-      origVLimitUnit = cp_cam.vl["Traffic_recognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
+      origVLimit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
+      origVLimitUnit = cp_cam.vl["Traffic_RecognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
 
       # convert to m/s from whatever came in
       speed_factor = CV.MPH_TO_MS if origVLimitUnit == 2 else CV.KPH_TO_MS if origVLimitUnit == 1 else 0              
@@ -188,7 +188,7 @@ class CarState(CarStateBase):
       #
       # 1 is the freq in Cabana
       messages += [
-        ("Traffic_recognitnData", 1),
+        ("Traffic_RecognitnData", 1),
       ]
 
     if CP.enableBsm and CP.carFingerprint in CANFD_CAR:
