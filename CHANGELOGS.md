@@ -1,4 +1,4 @@
-sunnypilot - 0.9.5.1 (2023-11-xx)
+sunnypilot - 0.9.5.1 (2023-11-17)
 ========================
 * UPDATED: Synced with commaai's master commit e94c3c5
 * NEW❗: Farmville driving model
