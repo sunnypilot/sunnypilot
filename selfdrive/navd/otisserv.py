@@ -51,7 +51,10 @@ class OtisServ(BaseHTTPRequestHandler):
     if self.path == '/navdirections.json':
       self.get_navdirections()
       return
-    if self.path == '/?reset=1':
+    elif self.path == '/CurrentStep.json':
+      self.get_currentstep()
+      return
+    elif self.path == '/?reset=1':
       params.put("NavDestination", "")
     if use_amap:
       if self.path == '/style.css':
@@ -112,6 +115,7 @@ class OtisServ(BaseHTTPRequestHandler):
         self.display_page_app_token()
         return
       if params.get_int("PrimeType") != 0:
+
         self.display_prime_directions()
       elif params.get("NavDestination") is not None:
         self.display_nav_directions()
@@ -242,6 +246,13 @@ class OtisServ(BaseHTTPRequestHandler):
     self.wfile.write(f.read())
     f.close()
 
+  def get_currentstep(self):
+    self.send_response(200)
+    self.send_header('Content-type','application/json')
+    self.end_headers()
+    f = open("%s/selfdrive/manager/CurrentStep.json" % BASEDIR, "rb")
+    self.wfile.write(f.read())
+    f.close()
   def get_gmap_css(self):
     self.wfile.write(bytes(self.get_parsed_template("gmap/style.css"), "utf-8"))
 
