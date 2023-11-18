@@ -1,3 +1,6 @@
+sunnypilot - 0.9.5.2 (2023-xx-xx)
+========================
+
 sunnypilot - 0.9.5.1 (2023-11-17)
 ========================
 * UPDATED: Synced with commaai's master commit e94c3c5
