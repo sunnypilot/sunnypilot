@@ -272,6 +272,10 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = (candidate in (HYBRID_CAR | EV_CAR) and candidate not in
                                                (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR))
+      if (candidate in (HYBRID_CAR | EV_CAR) and candidate not in
+        (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR)):  # TODO: Gate radar disable cars until we can verify the signals match
+        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
+        ret.radarUnavailable = False
     else:
       ret.longitudinalTuning.kpV = [0.5]
       ret.longitudinalTuning.kiV = [0.0]
