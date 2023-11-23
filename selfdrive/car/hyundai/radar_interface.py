@@ -3,6 +3,7 @@ import math
 from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
+from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP, CANFD_CAR
 
 RADAR_START_ADDR = 0x500
@@ -13,8 +14,8 @@ RADAR_MSG_COUNT = 32
 def get_radar_can_parser(CP):
   if DBC[CP.carFingerprint]['radar'] is None:
     if CP.carFingerprint in CANFD_CAR:
-      if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
-        lead_src, bus = "SCC_CONTROL", 2
+      if CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD:
+        lead_src, bus = "SCC_CONTROL", CanBus(CP).CAM
       else:
         return None
     else:
