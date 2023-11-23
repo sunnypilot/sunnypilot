@@ -1,5 +1,8 @@
 sunnypilot - 0.9.5.2 (2023-xx-xx)
 ========================
+* NEW❗: Hyundai CAN-FD longitudinal:
+  * NEW❗: Parse lead info for camera-based SCC platforms
+    * Improve lead tracking when using openpilot longitudinal
 
 sunnypilot - 0.9.5.1 (2023-11-17)
 ========================
