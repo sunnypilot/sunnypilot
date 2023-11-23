@@ -151,9 +151,6 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.756
       ret.steerRatio = 16.
       ret.tireStiffnessFactor = 0.385
-      if candidate == CAR.TUCSON_HYBRID_4TH_GEN:
-        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
-        ret.radarUnavailable = False
     elif candidate == CAR.SANTA_CRUZ_1ST_GEN:
       ret.mass = 1870.  # weight from Limited trim - the only supported trim
       ret.wheelbase = 3.000
@@ -275,6 +272,10 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = (candidate in (HYBRID_CAR | EV_CAR) and candidate not in
                                                (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR))
+      if (candidate in (HYBRID_CAR | EV_CAR) and candidate not in
+         (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR)) and not ret.flags & HyundaiFlags.CANFD_HDA2:
+        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
+        ret.radarUnavailable = False
     else:
       ret.longitudinalTuning.kpV = [0.5]
       ret.longitudinalTuning.kiV = [0.0]
