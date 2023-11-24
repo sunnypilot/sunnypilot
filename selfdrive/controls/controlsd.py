@@ -333,17 +333,14 @@ class Controls:
       self.events.add(EventName.laneChangeRoadEdge)
     elif self.sm['lateralPlan'].laneChangeState == LaneChangeState.preLaneChange:
       direction = self.sm['lateralPlan'].laneChangeDirection
-      lc_prev = self.sm['lateralPlanSP'].laneChangePrev
       if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
          (CS.rightBlindspot and direction == LaneChangeDirection.right):
         self.events.add(EventName.laneChangeBlocked)
       else:
         if direction == LaneChangeDirection.left:
-          self.events.add(EventName.preLaneChangeLeft) if self.lane_change_set_timer == 0 or lc_prev else \
-            self.events.add(EventName.laneChange)
+          self.events.add(EventName.preLaneChangeLeft)
         else:
-          self.events.add(EventName.preLaneChangeRight) if self.lane_change_set_timer == 0 or lc_prev else \
-            self.events.add(EventName.laneChange)
+          self.events.add(EventName.preLaneChangeRight)
     elif self.sm['lateralPlan'].laneChangeState in (LaneChangeState.laneChangeStarting,
                                                     LaneChangeState.laneChangeFinishing):
       self.events.add(EventName.laneChange)

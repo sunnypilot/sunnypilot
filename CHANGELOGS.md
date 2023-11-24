@@ -1,5 +1,6 @@
 sunnypilot - 0.9.5.2 (2023-xx-xx)
 ========================
+* NEW❗: Lane Change: When manually braking with steering engaged, turning on the turn signal will default to Nudge mode
 
 sunnypilot - 0.9.5.1 (2023-11-17)
 ========================

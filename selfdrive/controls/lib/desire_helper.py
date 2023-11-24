@@ -53,6 +53,7 @@ class DesireHelper:
     self.param_s = Params()
     self.lane_change_wait_timer = 0
     self.prev_lane_change = False
+    self.prev_brake_pressed = False
     self.road_edge = False
     self.param_read_counter = 0
     self.read_param()
@@ -104,9 +105,10 @@ class DesireHelper:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
       self.prev_lane_change = False
+      self.prev_brake_pressed = False
     else:
       # LaneChangeState.off
-      if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed and not carstate.brakePressed:
+      if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
         self.lane_change_wait_timer = 0
@@ -134,11 +136,17 @@ class DesireHelper:
           else:
             self.lane_change_wait_timer = lane_change_auto_timer - 1
 
+        auto_lane_change_allowed = lane_change_auto_timer and self.lane_change_wait_timer > lane_change_auto_timer
+
+        if carstate.brakePressed and not self.prev_brake_pressed:
+          self.prev_brake_pressed = carstate.brakePressed
+
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
           self.lane_change_direction = LaneChangeDirection.none
           self.prev_lane_change = False
-        elif (torque_applied or ((lane_change_auto_timer and self.lane_change_wait_timer > lane_change_auto_timer) and not self.prev_lane_change)) and \
+          self.prev_brake_pressed = False
+        elif (torque_applied or (auto_lane_change_allowed and not self.prev_lane_change and not self.prev_brake_pressed)) and \
           not blindspot_detected:
           self.lane_change_state = LaneChangeState.laneChangeStarting
           self.prev_lane_change = True
@@ -164,6 +172,7 @@ class DesireHelper:
           else:
             self.lane_change_state = LaneChangeState.off
             self.prev_lane_change = False
+            self.prev_brake_pressed = False
 
     if self.lane_change_state in (LaneChangeState.off, LaneChangeState.preLaneChange):
       self.lane_change_timer = 0.0
