@@ -72,6 +72,7 @@ class HyundaiFlagsSP(IntFlag):
   SP_CAN_LFA_BTN = 2
   SP_NAV_MSG = 4
   SP_CAMERA_SCC_LEAD = 8
+  SP_LKAS12 = 16
 
 
 class CAR(StrEnum):

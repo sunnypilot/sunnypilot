@@ -210,7 +210,7 @@ class CarState(CarStateBase):
 
     self.mads_enabled = False if not self.control_initialized else ret.cruiseState.available
 
-    if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
+    if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG or self.CP.spFlags & HyundaiFlagsSP.SP_LKAS12:
       self._update_traffic_signals(cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
@@ -311,9 +311,9 @@ class CarState(CarStateBase):
       speed_limit_clu_bus_canfd = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
       self._speed_limit_clu = speed_limit_clu_bus_canfd.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_1"]
     else:
-      speed_limit_can_nav = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
-      speed_limit_can_cam = cp_cam.vl["LKAS12"]["CF_Lkas_TsrSpeed_Display_Clu"]
-      self._speed_limit_clu = speed_limit_can_cam if speed_limit_can_cam not in (0, 255) else speed_limit_can_nav
+      sl_can_nav = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+      sl_can_cam = cp_cam.vl["LKAS12"]["CF_Lkas_TsrSpeed_Display_Clu"] if self.CP.spFlags & HyundaiFlagsSP.SP_LKAS12 else None
+      self._speed_limit_clu = sl_can_cam if sl_can_cam is not None and sl_can_cam not in (0, 255) else sl_can_nav
 
   def _calculate_speed_limit(self):
     return self._speed_limit_clu if self._speed_limit_clu not in (0, 255) else 0
@@ -385,7 +385,6 @@ class CarState(CarStateBase):
 
     messages = [
       ("LKAS11", 100),
-      ("LKAS12", 10)
     ]
 
     if not CP.openpilotLongitudinalControl and CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_CAR - NON_SCC_NO_FCA_CAR - NON_SCC_RADAR_FCA_CAR)):
@@ -404,6 +403,9 @@ class CarState(CarStateBase):
           ("FCA11", 50),
           ("FCA12", 50),
         ]
+
+    if CP.spFlags & HyundaiFlagsSP.SP_LKAS12:
+      messages.append(("LKAS12", 10))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
 
