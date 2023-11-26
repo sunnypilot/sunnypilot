@@ -1651,7 +1651,23 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Speed Limit Control
-  if (longitudinal || !cp.getPcmCruiseSpeed()) {
+  if (uiState()->scene.speed_limit_control_engage_type == 0) {
+    QColor slc_color("#ffffff");
+    QRect slc_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
+    QRect slc_btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(shadow_color);
+    p.drawEllipse(slc_btn_shadow);
+    p.setBrush(slc_color);
+    p.drawEllipse(slc_btn);
+    QString slc_status_text;
+    slc_status_text.sprintf("SLC: %s\n", QString("Warn Only").toStdString().c_str());
+    p.setPen(QPen(shadow_color, 2));
+    p.drawText(x + drop_shadow_size, y + drop_shadow_size, slc_status_text);
+    p.setPen(QPen(text_color, 2));
+    p.drawText(x, y, slc_status_text);
+    y += text_height;
+  } else if (longitudinal || !cp.getPcmCruiseSpeed()) {
     drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
   }
 }
