@@ -193,14 +193,10 @@ class SpeedLimitController:
       if self._speed_limit_changed:
         self._last_op_enabled_time = self._current_time - 2.  # immediately prompt confirmation
       elif self._v_cruise_prev_rounded < self._speed_limit_offsetted_rounded:
-        if self._v_cruise_setpoint < self._v_cruise_setpoint_prev:
-          self.state = SpeedLimitControlState.tempInactive
-        elif self._v_cruise_setpoint > self._v_cruise_setpoint_prev:
+        if self._v_cruise_setpoint > self._v_cruise_setpoint_prev:
           self.state = SpeedLimitControlState.active
       elif self._v_cruise_prev_rounded > self._speed_limit_offsetted_rounded:
-        if self._v_cruise_setpoint > self._v_cruise_setpoint_prev:
-          self.state = SpeedLimitControlState.tempInactive
-        elif self._v_cruise_setpoint < self._v_cruise_setpoint_prev:
+        if self._v_cruise_setpoint < self._v_cruise_setpoint_prev:
           self.state = SpeedLimitControlState.active
       elif self._v_cruise_prev_rounded == self._speed_limit_offsetted_rounded:
         self.state = SpeedLimitControlState.active
