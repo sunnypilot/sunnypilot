@@ -53,6 +53,7 @@ class SpeedLimitController:
     self._v_cruise_rounded = 0.
     self._v_cruise_prev_rounded = 0.
     self._speed_limit_offsetted_rounded = 0.
+    self._ms_to_local = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
 
     # Mapping functions to state transitions
     self.state_transition_strategy = {
@@ -130,6 +131,8 @@ class SpeedLimitController:
       self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
       self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
       self._policy = Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+      self._is_metric = self._params.get_bool("IsMetric")
+      self._ms_to_local = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
       pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
       self._engage_type = clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), 0, 1) if pcm_cruise_op_long else \
@@ -155,9 +158,9 @@ class SpeedLimitController:
     self._op_enabled_prev = self._op_enabled
     self._brake_pressed_prev = self._brake_pressed
 
-    self._v_cruise_rounded = int(round(self._v_cruise_setpoint * CV.MS_TO_KPH))
-    self._v_cruise_prev_rounded = int(round(self._v_cruise_setpoint_prev * CV.MS_TO_KPH))
-    self._speed_limit_offsetted_rounded = int(round(self._speed_limit * CV.MS_TO_KPH)) + int(round(self.speed_limit_offset * CV.MS_TO_KPH))
+    self._v_cruise_rounded = int(round(self._v_cruise_setpoint * self._ms_to_local))
+    self._v_cruise_prev_rounded = int(round(self._v_cruise_setpoint_prev * self._ms_to_local))
+    self._speed_limit_offsetted_rounded = int(round((self._speed_limit + self.speed_limit_offset) * self._ms_to_local))
 
   def transition_state_from_inactive(self):
     """ Make state transition from inactive state """

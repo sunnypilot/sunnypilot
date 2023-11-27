@@ -215,9 +215,7 @@ class VCruiseHelper:
     if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev != SpeedLimitControlState.preActive:
       return
 
-    speed_limit = int(round(long_plan_sp.speedLimit * CV.MS_TO_KPH))
-    speed_limit_offset = int(round(long_plan_sp.speedLimitOffset * CV.MS_TO_KPH))
-    self.slc_speed_limit_offsetted = speed_limit + speed_limit_offset
+    self.slc_speed_limit_offsetted = long_plan_sp.speedLimit + long_plan_sp.speedLimitOffset
 
     if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev == SpeedLimitControlState.preActive:
       self.v_cruise_kph = clip(round(self.slc_speed_limit_offsetted, 1), self.v_cruise_min, V_CRUISE_MAX)
