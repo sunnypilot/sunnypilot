@@ -111,6 +111,9 @@ class CarInterfaceBase(ABC):
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
     self.lkas_toggle = self.param_s.get_bool("LkasToggle")
+    self.last_mads_init = 0.
+    self.madsEnabledInit = False
+    self.madsEnabledInitPrev = False
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -414,6 +417,20 @@ class CarInterfaceBase(ABC):
       mads_enabled = cs_out.cruiseState.available
 
     return mads_enabled
+
+  def get_sp_started_mads(self, mads_enabled, cruiseState_available):
+    if not self.mads_main_toggle or self.prev_acc_mads_combo:
+      return mads_enabled
+    if not self.madsEnabledInit and mads_enabled:
+      self.madsEnabledInit = True
+      self.last_mads_init = time.monotonic()
+    if self.madsEnabledInit and not self.madsEnabledInitPrev:
+      if time.monotonic() < self.last_mads_init + 1.:
+        return False
+      self.madsEnabledInitPrev = True
+      return cruiseState_available
+    else:
+      return mads_enabled
 
   def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \

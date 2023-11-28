@@ -254,6 +254,7 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
       ret, self.CS = self.toggle_gac(ret, self.CS, bool(self.CS.gap_dist_button), 1, 3, 3, "-")
+      self.CS.madsEnabled = self.get_sp_started_mads(self.CS.madsEnabled, ret.cruiseState.available)
     else:
       self.CS.madsEnabled = False
 
