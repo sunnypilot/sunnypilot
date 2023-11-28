@@ -1,6 +1,7 @@
 """Install exception handler for process crash."""
 import sentry_sdk
 from enum import Enum
+from typing import Tuple
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from openpilot.common.params import Params
@@ -41,13 +42,15 @@ def capture_exception(*args, **kwargs) -> None:
   cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))
 
   try:
+    dongle_id, ip, gitname = get_properties()
+    bind_user(id=dongle_id, ip_address=ip, name=gitname)
     sentry_sdk.capture_exception(*args, **kwargs)
     sentry_sdk.flush()  # https://github.com/getsentry/sentry-python/issues/291
   except Exception:
     cloudlog.exception("sentry exception")
 
 
-def save_exception(exc_text):
+def save_exception(exc_text: str) -> None:
   if not os.path.exists(CRASHES_DIR):
     os.makedirs(CRASHES_DIR)
 
@@ -67,18 +70,41 @@ def save_exception(exc_text):
   print('Logged current crash to {}'.format(files))
 
 
-def capture_warning(warning_string):
+def bind_user(**kwargs) -> None:
+  sentry_sdk.set_user(kwargs)
+
+
+def capture_warning(warning_string: str) -> None:
+  dongle_id, ip, gitname = get_properties()
+  bind_user(id=dongle_id, ip_address=ip, name=gitname)
   sentry_sdk.capture_message(warning_string, level='warning')
   sentry_sdk.flush()
 
 
-def capture_info(info_string):
+def capture_info(info_string: str) -> None:
+  dongle_id, ip, gitname = get_properties()
+  bind_user(id=dongle_id, ip_address=ip, name=gitname)
   sentry_sdk.capture_message(info_string, level='info')
   sentry_sdk.flush()
 
 
 def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
+
+
+def get_properties() -> Tuple[str, str, str]:
+  params = Params()
+  try:
+    dongle_id = params.get("DongleId", encoding='utf-8')
+  except AttributeError:
+    dongle_id = "None"
+  try:
+    gitname = params.get("GithubUsername", encoding='utf-8')
+  except Exception:
+    gitname = ""
+  ip = IP_ADDRESS
+
+  return dongle_id, ip, gitname
 
 
 def init(project: SentryProject) -> bool:
@@ -108,7 +134,7 @@ def init(project: SentryProject) -> bool:
 
   sentry_sdk.set_user({"id": dongle_id})
   sentry_sdk.set_user({"ip_address": IP_ADDRESS})
-  sentry_sdk.set_user({"username": gitname})
+  sentry_sdk.set_user({"name": gitname})
   sentry_sdk.set_tag("dirty", is_dirty())
   sentry_sdk.set_tag("origin", get_origin())
   sentry_sdk.set_tag("branch", get_branch())
