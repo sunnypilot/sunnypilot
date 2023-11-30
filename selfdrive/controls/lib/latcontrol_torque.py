@@ -107,18 +107,13 @@ class LatControlTorque(LatControl):
       # Note that LAT_PLAN_MIN_IDX is defined above and is used in order to prevent
       # using a "future" value that is actually planned to occur before the "current" desired
       # value, which is offset by the steerActuatorDelay.
-      self.friction_look_ahead_v = [0.3, 1.2] # how many seconds in the future to look ahead in [0, ~2.1] in 0.1 increments
+      self.friction_look_ahead_v = [0.8, 1.8] # how many seconds in the future to look ahead in [0, ~2.1] in 0.1 increments"
       self.friction_look_ahead_bp = [9.0, 35.0] # corresponding speeds in m/s in [0, ~40] in 1.0 increments
-      # Additionally, we use a deadzone to make sure that we only put additional torque
-      # when the jerk is large enough to be significant.
-      self.lat_jerk_deadzone = 0.0 # m/s^3 in [0, ∞] in 0.05 increments
-      # Finally, lateral jerk error is downscaled so it doesn't dominate the friction error
-      # term.
-      self.lat_jerk_friction_factor = 1.0 # in [0, 1] in 0.01 increments
-
-      # Scaling the lateral acceleration "friction response" could be helpful for some.
-      # Increase for a stronger response, decrease for a weaker response.
-      self.lat_accel_friction_factor = 1.0 # in [0, 5], in 0.05 increments. 5 is arbitrary safety limit
+      
+      # Additionally, lateral jerk and lateral accel together can be too great a friction response, 
+      # so they're independently scaled so they amount to a reasonable combination.
+      self.lat_jerk_friction_factor = 0.4
+      self.lat_accel_friction_factor = 0.7
 
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
@@ -197,7 +192,6 @@ class LatControlTorque(LatControl):
         future_planned_lateral_accels = [interp(t, ModelConstants.T_IDXS[:CONTROL_N], lat_plan.curvatures) * CS.vEgo ** 2 for t in adjusted_future_times]
 
         # compute NN error response.
-        lookahead_lateral_jerk = apply_deadzone(lookahead_lateral_jerk, self.lat_jerk_deadzone)
         lateral_jerk_setpoint = self.lat_jerk_friction_factor * lookahead_lateral_jerk
         lateral_jerk_measurement = self.lat_jerk_friction_factor * actual_lateral_jerk
         if self.use_steering_angle or lookahead_lateral_jerk == 0.0:
