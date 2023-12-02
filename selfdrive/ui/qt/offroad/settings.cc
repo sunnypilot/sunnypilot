@@ -157,7 +157,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(toggles["CustomStockLong"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
   });
-
+  connect(toggles["CustomStockLongPlanner"], &ToggleControl::toggleFlipped, [=]() {
+    updateToggles();
+  });
+  connect(toggles["ExperimentalMode"], &ToggleControl::toggleFlipped, [=]() {
+    updateToggles();
+  });  
+  
   param_watcher = new ParamWatcher(this);
 
   QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
@@ -234,12 +240,15 @@ void TogglesPanel::updateToggles() {
       dec_toggle->setEnabled(true);
     } else if (custom_stock_long_toggle->isToggled()) {
       op_long_toggle->setEnabled(false);
-      experimental_mode_toggle->setEnabled(true);
+      experimental_mode_toggle->setEnabled(custom_stock_long_planner->isToggled());
       experimental_mode_toggle->setDescription(e2e_description);
-      long_personality_setting->setEnabled(false);
       custom_stock_long_planner->setEnabled(true);
+      long_personality_setting->setEnabled(custom_stock_long_planner->isToggled());
+      dec_toggle->setEnabled(experimental_mode_toggle->isToggled());
+      if(!custom_stock_long_planner->isToggled()) {
+        params.remove("ExperimentalMode");
+      }
       params.remove("ExperimentalLongitudinalEnabled");
-      params.remove("ExperimentalMode");
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
@@ -269,6 +278,7 @@ void TogglesPanel::updateToggles() {
     experimental_mode_toggle->refresh();
     op_long_toggle->refresh();
     custom_stock_long_toggle->refresh();
+    custom_stock_long_planner->refresh();
     dec_toggle->refresh();
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
