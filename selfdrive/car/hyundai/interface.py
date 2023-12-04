@@ -2,6 +2,7 @@ from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
+from openpilot.selfdrive.car.hyundai.enable_radar_tracks import enable_radar_tracks
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, \
                                          CANFD_UNSUPPORTED_LONGITUDINAL_CAR, NON_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, \
@@ -84,6 +85,10 @@ class CarInterface(CarInterfaceBase):
       # Values from optimizer
       ret.steerRatio = 16.55  # 13.8 is spec end-to-end
       ret.tireStiffnessFactor = 0.82
+      if candidate in (CAR.SANTA_FE_2022, CAR.SANTA_FE_HEV_2022, CAR.SANTA_FE_PHEV_2022):
+        if any(fw.ecu == "fwdRadar" and fw.fwVersion is not None for fw in car_fw):
+          ret.radarUnavailable = False
+          ret.spFlags |= HyundaiFlagsSP.SP_RADAR_TRACKS.value
     elif candidate in (CAR.SONATA, CAR.SONATA_HYBRID):
       ret.mass = 1513.
       ret.wheelbase = 2.84
@@ -370,6 +375,12 @@ class CarInterface(CarInterfaceBase):
     # for blinkers
     if CP.flags & HyundaiFlags.ENABLE_BLINKERS:
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')
+
+    # for enabling radar tracks on startup
+    # some CAN platforms are able to enable radar tracks config at the radar ECU,
+    # but the config is reset after ignition cycle
+    if CP.openpilotLongitudinalControl and (CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS):
+      enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
 
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
