@@ -1,5 +1,8 @@
 sunnypilot - 0.9.5.2 (2023-xx-xx)
 ========================
+* NEW❗: MADS: Allow Navigate on openpilot in Chill Mode
+  * Allow navigation to feed map view into the driving model while using Chill Mode
+  * Support all platforms, including platforms that do not support openpilot longitudinal control & Experimental Mode
 * NEW❗: Hyundai CAN longitudinal:
   * NEW❗: Enable radar tracks for certain Santa Fe platforms
     * Internal Combustion Engine (ICE) 2021-23
