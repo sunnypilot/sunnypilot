@@ -3,6 +3,9 @@ sunnypilot - 0.9.5.2 (2023-xx-xx)
 * NEW❗: MADS: Allow Navigate on openpilot in Chill Mode
   * Allow navigation to feed map view into the driving model while using Chill Mode
   * Support all platforms, including platforms that do not support openpilot longitudinal control & Experimental Mode
+* NEW❗: Neural Network Lateral Controller
+  * Formerly known as "NNFF", this replaces the lateral "torque" controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy
+  * Contact @twilsonco in the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported
 * NEW❗: Hyundai CAN longitudinal:
   * NEW❗: Enable radar tracks for certain Santa Fe platforms
     * Internal Combustion Engine (ICE) 2021-23
