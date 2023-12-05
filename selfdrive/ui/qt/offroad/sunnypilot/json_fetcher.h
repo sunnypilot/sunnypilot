@@ -20,7 +20,7 @@ public:
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
     loop.exec();
 
-    if(reply->error() != QNetworkReply::NoError) {
+    if (reply->error() != QNetworkReply::NoError) {
       qWarning() << "Failed to fetch data from URL: " << reply->errorString();
       return QJsonObject();
     }

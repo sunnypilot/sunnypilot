@@ -6,6 +6,11 @@ sunnypilot - 0.9.5.2 (2023-xx-xx)
 * NEW❗: Neural Network Lateral Controller
   * Formerly known as "NNFF", this replaces the lateral "torque" controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy
   * Contact @twilsonco in the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported
+* NEW❗: Driving Model Selector
+  * Easily switch between driving models without reinstalling branches. Offering immediate access to the latest models upon release
+    * An internet connection is required for downloading models. Each model switch currently involves downloading the model again. Future updates may allow for offline switching
+  * Warning is displayed for metered connections to avoid unexpected data usage if on cellular data
+  * Change driving models via **Settings -> Software -> Current Driving Model**.
 * NEW❗: Hyundai CAN longitudinal:
   * NEW❗: Enable radar tracks for certain Santa Fe platforms
     * Internal Combustion Engine (ICE) 2021-23

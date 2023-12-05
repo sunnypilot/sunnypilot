@@ -22,7 +22,7 @@ void SoftwarePanel::checkForUpdates() {
 }
 
 SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
-  currentModelLbl = new LabelControl(tr("Current Driving Model"), CURRENT_MODEL);
+  currentModelLbl = new LabelControl(tr("Driving Model"), CURRENT_MODEL);
   addItem(currentModelLbl);
 
   onroadLbl = new QLabel(tr("Updates are only downloaded while the car is off."));
