@@ -84,6 +84,12 @@ class CarInterface(CarInterfaceBase):
 
     else:
       raise ValueError(f"Unsupported car: {candidate}")
+    
+    ret.longitudinalTuning.kpBP = [0.]
+    ret.longitudinalTuning.kpV = [0.5]
+    ret.longitudinalTuning.kiV = [0.]
+    ret.longitudinalTuning.deadzoneBP = [0., 9.]
+    ret.longitudinalTuning.deadzoneV = [.0, .20]
 
     # Auto Transmission: 0x732 ECU or Gear_Shift_by_Wire_FD1
     found_ecus = [fw.ecu for fw in car_fw]
