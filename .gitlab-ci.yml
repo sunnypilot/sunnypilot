@@ -6,6 +6,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
   DEV_C3_SOURCE_BRANCH: "master-dev-c3"
+  GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
+  GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
 
 stages:
   - build
@@ -18,10 +20,10 @@ default:
     - x86
 
 .default_before_script: &default_before_script
-  - 'export VERSION=$(date "+%Y.%m.%d")-${CI_PIPELINE_IID}'
+  - 'export VERSION=$(date "+%Y.%m.%d")${EXTRA_VERSION_IDENTIFIER}'
   - 'mkdir -p "${BUILD_DIR}/"'
-  - 'git config --global user.email "gitlab@pipeline.com"'
-  - 'git config --global user.name "Gitlab Pipeline"'
+  - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
+  - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
 
 
 workflow: # If running on any branch other than main, use the `aws-datacontracts-dev` account; otherwise use `aws-datacontracts`
@@ -32,6 +34,7 @@ workflow: # If running on any branch other than main, use the `aws-datacontracts
     # We are a merge request
     - if: $CI_MERGE_REQUEST_IID #|| $CI_COMMIT_REF_NAME == "gitlab-pipelines" # TBD once merged
       variables:
+        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
         NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
       when: always
 
@@ -39,6 +42,7 @@ workflow: # If running on any branch other than main, use the `aws-datacontracts
     # Commit to master-dev-c3
     - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
       variables:
+        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
         NEW_BRANCH: "dev-c3"
       when: always
     #commit made to main (master)
@@ -117,8 +121,9 @@ commit changes for public branch:
     GIT_SUBMODULE_STRATEGY: normal
     GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
   stage: commit_changes
-  dependencies:
-    - build
+  needs:
+    - job: build
+      artifacts: true
   before_script:
     - 'apk update && apk upgrade'
     - 'apk add git bash openssh'
@@ -138,14 +143,18 @@ commit changes for public branch:
   rules:
     - if: $NEW_BRANCH
       when: on_success
-    - when: never
-
+    - when: never      
+      
 publish to github:
   variables:
     GIT_SUBMODULE_STRATEGY: normal
+    GIT_ORIGIN: git@github.com:sunnypilot/openpilot-special.git
+    GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
+    GIT_CONFIG_USER_NAME: "Jason Wen"
   stage: publish
-  dependencies:
-    - build
+  needs:
+    - job: build
+      artifacts: true
   before_script:
     - 'apk update && apk upgrade'
     - 'apk add git bash openssh'
@@ -153,11 +162,16 @@ publish to github:
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - 'mkdir -p ~/.ssh/'
     - 'chmod 700 ~/.ssh'
-    - 'ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+    - 'ssh-keyscan -H github.com >> ~/.ssh/known_hosts' # Adding gitlab to trusted
     - 'chmod 644 ~/.ssh/known_hosts'
     - *default_before_script
   script:
-    - echo "This part is not yet implemented intentionally, just an example"
+    #- GIT_ORIGIN=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@|ssh://git@|g')
+    - echo "${GIT_ORIGIN}"
+    - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
+    - git config --global --add safe.directory ${OUTPUT_DIR}
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
   rules:
     - if: $NEW_BRANCH
       when: manual
+    - when: never
