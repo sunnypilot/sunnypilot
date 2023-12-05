@@ -125,6 +125,9 @@ class SpeedLimitController:
   def source(self):
     return self._source
 
+  def _update_v_cruise_setpoint_prev(self):
+    self._v_cruise_setpoint_prev = self._v_cruise_setpoint
+
   def _update_params(self, CP):
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("EnableSlc")
@@ -155,6 +158,8 @@ class SpeedLimitController:
     self._speed_limit_changed = self._speed_limit != self._speed_limit_prev
     self._v_cruise_setpoint_changed = self._v_cruise_setpoint != self._v_cruise_setpoint_prev
     self._speed_limit_prev = self._speed_limit
+    if self._engage_type != 2:
+      self._update_v_cruise_setpoint_prev()
     self._op_enabled_prev = self._op_enabled
     self._brake_pressed_prev = self._brake_pressed
 
@@ -239,7 +244,8 @@ class SpeedLimitController:
 
     self.state_transition_strategy[self.state]()
 
-    self._v_cruise_setpoint_prev = self._v_cruise_setpoint
+    if self._engage_type == 2:
+      self._update_v_cruise_setpoint_prev()
 
   def get_current_acceleration_as_target(self):
     """ When state is inactive or tempInactive, preserve current acceleration """
