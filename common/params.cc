@@ -308,6 +308,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DriverCameraHardwareMissing", PERSISTENT},
     {"VisionCurveLaneless", PERSISTENT},
     {"VwAccType", PERSISTENT},
+    {"VwCCOnly", PERSISTENT},
     {"Offroad_SupersededUpdate", PERSISTENT},
 };
 
