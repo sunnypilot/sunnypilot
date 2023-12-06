@@ -149,7 +149,7 @@ commit changes for public branch:
 publish to github:
   variables:
     GIT_SUBMODULE_STRATEGY: normal
-    GIT_ORIGIN: git@github.com:sunnypilot/openpilot-special.git
+    GIT_ORIGIN: git@github.com:sunnyhaibin/sunnypilot.git
     GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
     GIT_CONFIG_USER_NAME: "Jason Wen"
   stage: publish
