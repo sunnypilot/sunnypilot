@@ -15,6 +15,7 @@ stages:
   - publish
 
 default:
+  retry: 2
   tags:
     - sunnypilot
     - x86
@@ -104,7 +105,7 @@ build:
     - touch ${BUILD_DIR}/prebuilt
     - mkdir -p ${OUTPUT_DIR}
     - shopt -s dotglob && mv ${BUILD_DIR}/* ${OUTPUT_DIR}
-    - sudo chown -R comma:comma ${OUTPUT_DIR}    
+    - sudo chown -R comma:comma ${OUTPUT_DIR}
   artifacts:
     paths:
       - ${OUTPUT_DIR}/
@@ -143,8 +144,8 @@ commit changes for public branch:
   rules:
     - if: $NEW_BRANCH
       when: on_success
-    - when: never      
-      
+    - when: never
+
 publish to github:
   variables:
     GIT_SUBMODULE_STRATEGY: normal
