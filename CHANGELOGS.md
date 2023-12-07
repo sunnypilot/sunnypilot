@@ -1,4 +1,4 @@
-sunnypilot - 0.9.5.2 (2023-12-05)
+sunnypilot - 0.9.5.2 (2023-12-07)
 ========================
 * NEW❗: MADS: Allow Navigate on openpilot in Chill Mode
   * Allow navigation to feed map view into the driving model while using Chill Mode
