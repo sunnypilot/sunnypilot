@@ -17,6 +17,9 @@ sunnypilot - 0.9.5.2 (2023-12-07)
     * Hybrid 2022-23
     * Plug-in Hybrid 2022-23
 * NEW❗: Lane Change: When manually braking with steering engaged, turning on the turn signal will default to Nudge mode
+* Ford F-150 2022-23 support
+* Ford F-150 Lightning 2021-23 support
+* Ford Mustang Mach-E 2021-23 support
 * Volkswagen MQB CC only platforms (radar or no radar) support thanks to jyoung8607!
 
 sunnypilot - 0.9.5.1 (2023-11-17)
