@@ -1,4 +1,4 @@
-sunnypilot - 0.9.5.2 (2023-12-05)
+sunnypilot - 0.9.5.2 (2023-12-07)
 ========================
 * NEW❗: MADS: Allow Navigate on openpilot in Chill Mode
   * Allow navigation to feed map view into the driving model while using Chill Mode
@@ -17,6 +17,7 @@ sunnypilot - 0.9.5.2 (2023-12-05)
     * Hybrid 2022-23
     * Plug-in Hybrid 2022-23
 * NEW❗: Lane Change: When manually braking with steering engaged, turning on the turn signal will default to Nudge mode
+* Volkswagen MQB CC only platforms (radar or no radar) support thanks to jyoung8607!
 
 sunnypilot - 0.9.5.1 (2023-11-17)
 ========================
