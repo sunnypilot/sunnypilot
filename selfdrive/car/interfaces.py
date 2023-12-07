@@ -264,7 +264,7 @@ class CarInterfaceBase(ABC):
         if params.get_bool("CustomTorqueLateral"):
           ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
 
-      if params.get_bool("NNFF") and ret.lateralTuning.which() == 'torque':
+      if ret.lateralTuning.which() == 'torque':
         eps_firmware = str(next((fw.fwVersion for fw in car_fw if fw.ecu == "eps"), ""))
         model, similarity_score = get_nn_model_path(candidate, eps_firmware)
         if model is not None:

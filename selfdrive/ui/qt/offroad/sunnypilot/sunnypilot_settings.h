@@ -61,4 +61,14 @@ private:
   ButtonParamControl *dlp_settings;
 
   ScrollView *scrollView = nullptr;
+
+  const QString nnff_description = QString("%1<br>"
+                                           "%2")
+                                   .arg(tr("Formerly known as <b>\"NNFF\"</b>, this replaces the lateral <b>\"torque\"</b> controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy."))
+                                   .arg(tr("Contact @twilsonco in the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported."));
+
+  QString nnffDescriptionBuilder(const QString &custom_description) {
+    QString description = "<b>" + custom_description + "</b><br><br>" + nnff_description;
+    return description;
+  }
 };

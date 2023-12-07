@@ -61,8 +61,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     },
     {
       "NNFF",
-      tr("Neural Network Lateral Control"),
-      tr("Formerly known as \"NNFF\", this replaces the lateral \"torque\" controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy. Contact @twilsonco in the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported."),
+      tr("Neural Network Lateral Control (NNLC)"),
+      "",
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -391,12 +391,43 @@ void SunnypilotPanel::updateToggles() {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
-      enforce_torque_lateral->setEnabled(false);
-      params.remove("EnforceTorqueLateral");
+    // NNLC/NNFF
+    {
+      QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
+      QString nnff_fuzzy_desc = tr("([Match = Exact] is ideal, but [Match = Fuzzy] is fine too. Contact @twilsonco in the sunnypilot Discord server if there are any issues.)");
 
-      nnff_toggle->setEnabled(false);
-      params.remove("NNFF");
+      if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+        enforce_torque_lateral->setEnabled(false);
+        params.remove("EnforceTorqueLateral");
+
+        nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_available_desc));
+        nnff_toggle->setEnabled(false);
+        params.remove("NNFF");
+      }
+
+      else if (nnff_toggle->isToggled()) {
+        QString nn_model_name = QString::fromStdString(CP.getLateralTuning().getTorque().getNnModelName());
+        QString nn_fuzzy = QString::fromUtf8(CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? "Fuzzy" : "Exact");
+        QString nn_status = nn_model_name == "" ? "<font color='yellow'>⚠️ NNLC Not Loaded </font>" : "<font color='green'>✅ NNLC Loaded</font>";
+        if (nn_model_name == "") {
+          nnff_toggle->setDescription(nnffDescriptionBuilder(nn_status + "<br>Contact @twilsonco in the sunnypilot Discord server and donate logs to get NNLC loaded for your car."));
+        } else {
+          int has_eps = nn_model_name.indexOf("b'");
+          if (has_eps != -1) {
+            QString _car = nn_model_name.left(has_eps);
+            QString _eps = nn_model_name.mid(has_eps);
+            nnff_toggle->setDescription(nnffDescriptionBuilder(nn_status + " | Match = " + nn_fuzzy + " | " + _car + "<br>EPS: " + _eps + "<br>" + nnff_fuzzy_desc));
+          } else {
+            nnff_toggle->setDescription(nnffDescriptionBuilder(nn_status + " | Match = " + nn_fuzzy + "<br>" + nn_model_name + "<br>" + nnff_fuzzy_desc));
+          }
+        }
+
+        if (nnff_toggle->getDescription() != nnff_description) {
+          nnff_toggle->showDescription();
+        }
+      } else {
+        nnff_toggle->setDescription(nnff_description);
+      }
     }
 
     if (hasLongitudinalControl(CP) || custom_stock_long_param) {
@@ -422,6 +453,7 @@ void SunnypilotPanel::updateToggles() {
     reverse_acc->setEnabled(false);
     slc_toggle->setEnabled(false);
     slcSettings->setEnabled(false);
+    nnff_toggle->setDescription(nnff_description);
   }
 
   // toggle names to update when EnforceTorqueLateral is flipped

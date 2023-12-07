@@ -262,27 +262,19 @@ def no_gps_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, m
 def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
   model_name = CP.lateralTuning.torque.nnModelName
   fuzzy = CP.lateralTuning.torque.nnModelFuzzyMatch
+  match_str = "Fuzzy" if fuzzy else "Exact"
   if model_name == "":
     return Alert(
-      "NN torque controller not loaded",
-      "go donate logs to twilsonco to get loaded!",
+      "NN Lateral Controller Not Loaded",
+      "Go to \"sunnypilot\" Settings for more details",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
   else:
-    if 'b\'' in model_name:
-      _car, eps = model_name.split('b\'')
-      eps = 'b\'' + eps
-      return Alert(
-        f"NN torque ({fuzzy = }): {_car}",
-        f"eps: {eps}",
-        AlertStatus.userPrompt, AlertSize.mid,
-        Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
-    else:
-      return Alert(
-        f"NN torque controller loaded ({fuzzy = })",
-        model_name,
-        AlertStatus.userPrompt, AlertSize.mid,
-        Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
+    return Alert(
+      "NN Lateral Controller Loaded",
+      f"⚙️ -> \"sunnypilot\" for more details [Match = {match_str}]",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
 
 # *** debug alerts ***
 
