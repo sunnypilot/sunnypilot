@@ -721,8 +721,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     curveSign = lp_sp.getTurnSign();
   }
 
-  longitudinalPersonality = s.scene.longitudinal_personality;
-  dynamicLaneProfile = s.scene.dynamic_lane_profile;
+  longitudinalPersonality = int(lp_sp.getPersonality());
+  dynamicLaneProfile = int(lateral_plan_sp.getDynamicLaneProfile());
   mpcMode = QString::fromStdString(lp_sp.getE2eBlended());
   mpcMode = (mpcMode == "blended") ? mpcMode.replace(0, 1, mpcMode[0].toUpper()) : mpcMode.toUpper();
 
@@ -1629,6 +1629,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   // Dynamic Lane Profile
   drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
 
+  // TODO: Add toggle variables to cereal, and parse from cereal
   if (longitudinal) {
     bool cruise_enabled = (*uiState()->sm)["carState"].getCarState().getCruiseState().getEnabled();
     bool dec_enabled = uiState()->scene.dynamic_experimental_control;
@@ -1650,6 +1651,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
     y += text_height;
   }
 
+  // TODO: Add toggle variables to cereal, and parse from cereal
   // Speed Limit Control
   if (uiState()->scene.speed_limit_control_engage_type == 0) {
     QColor slc_color("#ffffff");

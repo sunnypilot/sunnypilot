@@ -1,9 +1,11 @@
 from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
 from openpilot.selfdrive.car import get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES
+from openpilot.selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES, \
+                                                      VolkswagenFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -89,6 +91,13 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_VOLKSWAGEN_LONG_CONTROL
       if ret.transmissionType == TransmissionType.manual:
         ret.minEnableSpeed = 4.5
+
+    if Params().get_bool("VwCCOnly"):
+      if car_fw is not None and not any(fw.ecu == "fwdRadar" for fw in car_fw):
+        ret.spFlags |= VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR.value
+      else:
+        ret.spFlags |= VolkswagenFlagsSP.SP_CC_ONLY.value
+      ret.openpilotLongitudinalControl = False
 
     ret.pcmCruise = not ret.openpilotLongitudinalControl
     ret.customStockLongAvailable = True

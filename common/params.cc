@@ -226,6 +226,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CarModelText", PERSISTENT},
     {"ChevronInfo", PERSISTENT},
     {"CustomBootScreen", PERSISTENT},
+    {"CustomDrivingModel", PERSISTENT},
     {"CustomMapboxTokenPk", PERSISTENT},
     {"CustomMapboxTokenSk", PERSISTENT},
     {"CustomOffsets", PERSISTENT},
@@ -234,6 +235,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DevUIInfo", PERSISTENT},
     {"DisableOnroadUploads", PERSISTENT},
     {"DisengageLateralOnBrake", PERSISTENT},
+    {"DrivingModelName", PERSISTENT},
+    {"DrivingModelText", PERSISTENT},
+    {"DrivingModelUrl", PERSISTENT},
     {"DynamicExperimentalControl", PERSISTENT},
     {"DynamicLaneProfile", PERSISTENT},
     {"EnableAmap", PERSISTENT},
@@ -266,6 +270,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"MapboxFullScreen", PERSISTENT},
     {"Map3DBuildings", PERSISTENT},
     {"MaxTimeOffroad", PERSISTENT},
+    {"NNFF", PERSISTENT},
     {"OnroadScreenOff", PERSISTENT},
     {"OnroadScreenOffBrightness", PERSISTENT},
     {"OnroadScreenOffEvent", PERSISTENT},
@@ -303,6 +308,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DriverCameraHardwareMissing", PERSISTENT},
     {"VisionCurveLaneless", PERSISTENT},
     {"VwAccType", PERSISTENT},
+    {"VwCCOnly", PERSISTENT},
     {"Offroad_SupersededUpdate", PERSISTENT},
 };
 

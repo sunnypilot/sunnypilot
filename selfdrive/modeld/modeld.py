@@ -32,6 +32,9 @@ MODEL_PATHS = {
 
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
+CUSTOM_MODEL_PATH = "/data/media/0/models"
+
+
 class FrameMeta:
   frame_id: int = 0
   timestamp_sof: int = 0
@@ -70,7 +73,15 @@ class ModelState:
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    self.model = ModelRunner(MODEL_PATHS, self.output, Runtime.GPU, False, context)
+    self.param_s = Params()
+
+    if self.param_s.get_bool("CustomDrivingModel"):
+      _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
+      _model_paths = {
+        ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/supercombo-{_model_name}.thneed"}
+    else:
+      _model_paths = MODEL_PATHS
+    self.model = ModelRunner(_model_paths, self.output, Runtime.GPU, False, context)
     self.model.addInput("input_imgs", None)
     self.model.addInput("big_input_imgs", None)
     for k,v in self.inputs.items():
@@ -224,7 +235,7 @@ def main():
     # Enable/disable nav features
     timestamp_llk = sm["navModel"].locationMonoTime
     nav_valid = sm.valid["navModel"] # and (nanos_since_boot() - timestamp_llk < 1e9)
-    nav_enabled = nav_valid and params.get_bool("ExperimentalMode")
+    nav_enabled = nav_valid
 
     if not nav_enabled:
       nav_features[:] = 0

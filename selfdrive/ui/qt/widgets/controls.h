@@ -373,6 +373,23 @@ class ListWidget : public QWidget {
   inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
   inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
 
+  inline void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
+  inline void RemoveWidgetAt(const int index) {
+    if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) {
+      if(item->widget()) delete item->widget();
+      delete item;
+    }
+  }
+
+  inline void ReplaceOrAddWidget(QWidget *old_widget, QWidget *new_widget) {
+    if (const int index = inner_layout.indexOf(old_widget); index != -1) {
+      RemoveWidgetAt(index);
+      AddWidgetAt(index, new_widget);
+    } else {
+      addItem(new_widget);
+    }
+  }
+
 private:
   void paintEvent(QPaintEvent *) override {
     QPainter p(this);

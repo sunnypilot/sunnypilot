@@ -29,7 +29,7 @@ if [ -z "$GIT_ORIGIN" ]; then
 fi
 
 # "Tagging"
-echo "#define COMMA_VERSION \"$VERSION-dev\"" > ${OUTPUT_DIR}/common/version.h
+echo "#define COMMA_VERSION \"$VERSION\"" > ${OUTPUT_DIR}/common/version.h
 
 ## set git identity
 #source $DIR/identity.sh
