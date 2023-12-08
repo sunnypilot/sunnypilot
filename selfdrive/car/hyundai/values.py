@@ -72,6 +72,8 @@ class HyundaiFlagsSP(IntFlag):
   SP_CAN_LFA_BTN = 2
   SP_NAV_MSG = 4
   SP_CAMERA_SCC_LEAD = 8
+  SP_LKAS12 = 16
+  SP_RADAR_TRACKS = 32
 
 
 class CAR(StrEnum):
@@ -2309,9 +2311,9 @@ DBC = {
   CAR.KONA_EV_2022: dbc_dict('hyundai_kia_generic', None),
   CAR.KONA_HEV: dbc_dict('hyundai_kia_generic', None),
   CAR.SANTA_FE: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
-  CAR.SANTA_FE_2022: dbc_dict('hyundai_kia_generic', None),
-  CAR.SANTA_FE_HEV_2022: dbc_dict('hyundai_kia_generic', None),
-  CAR.SANTA_FE_PHEV_2022: dbc_dict('hyundai_kia_generic', None),
+  CAR.SANTA_FE_2022: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
+  CAR.SANTA_FE_HEV_2022: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
+  CAR.SANTA_FE_PHEV_2022: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
   CAR.SONATA: dbc_dict('hyundai_kia_generic', 'hyundai_kia_mando_front_radar_generated'),
   CAR.SONATA_LF: dbc_dict('hyundai_kia_generic', None), # Has 0x5XX messages, but different format
   CAR.TUCSON: dbc_dict('hyundai_kia_generic', None),

@@ -123,6 +123,7 @@ selfdrive/car/isotp_parallel_query.py
 selfdrive/car/sunnypilot_carname.json
 selfdrive/car/tests/__init__.py
 selfdrive/car/tests/test_car_interfaces.py
+selfdrive/car/torque_data/lat_models/*
 selfdrive/car/torque_data/params.yaml
 selfdrive/car/torque_data/substitute.yaml
 selfdrive/car/torque_data/override.yaml

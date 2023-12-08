@@ -1,6 +1,6 @@
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
-from enum import Enum, StrEnum
+from enum import Enum, StrEnum, IntFlag
 from typing import Dict, List, Union
 
 from cereal import car
@@ -109,6 +109,11 @@ class CarControllerParams:
 class CANBUS:
   pt = 0
   cam = 2
+
+
+class VolkswagenFlagsSP(IntFlag):
+  SP_CC_ONLY = 1
+  SP_CC_ONLY_NO_RADAR = 2
 
 
 BUTTON_STATES = {

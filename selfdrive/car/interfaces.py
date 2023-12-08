@@ -4,6 +4,8 @@ import os
 import time
 import numpy as np
 from abc import abstractmethod, ABC
+from difflib import SequenceMatcher
+from json import load
 from typing import Any, Dict, Optional, Tuple, List, Callable
 
 from cereal import car
@@ -32,8 +34,16 @@ FRICTION_THRESHOLD = 0.3
 TORQUE_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/params.yaml')
 TORQUE_OVERRIDE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/override.yaml')
 TORQUE_SUBSTITUTE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/substitute.yaml')
+TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/lat_models')
+
+# dict used to rename activation functions whose names aren't valid python identifiers
+ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
 
 GAC_DICT = {1: 1, 2: 2, 3: 3}
+
+
+def similarity(s1: str, s2: str) -> float:
+  return SequenceMatcher(None, s1, s2).ratio()
 
 
 def get_torque_params(candidate):
@@ -58,6 +68,111 @@ def get_torque_params(candidate):
   else:
     raise NotImplementedError(f"Did not find torque params for {candidate}")
   return {key: out[i] for i, key in enumerate(params['legend'])}
+
+
+# lateral neural network feedforward
+class FluxModel:
+  def __init__(self, params_file, zero_bias=False):
+    with open(params_file, "r") as f:
+      params = load(f)
+
+    self.input_size = params["input_size"]
+    self.output_size = params["output_size"]
+    self.input_mean = np.array(params["input_mean"], dtype=np.float32).T
+    self.input_std = np.array(params["input_std"], dtype=np.float32).T
+    self.layers = []
+    self.friction_override = False
+
+    for layer_params in params["layers"]:
+      W = np.array(layer_params[next(key for key in layer_params.keys() if key.endswith('_W'))], dtype=np.float32).T
+      b = np.array(layer_params[next(key for key in layer_params.keys() if key.endswith('_b'))], dtype=np.float32).T
+      if zero_bias:
+        b = np.zeros_like(b)
+      activation = layer_params["activation"]
+      for k, v in ACTIVATION_FUNCTION_NAMES.items():
+        activation = activation.replace(k, v)
+      self.layers.append((W, b, activation))
+
+    self.validate_layers()
+    self.check_for_friction_override()
+
+  # Begin activation functions.
+  # These are called by name using the keys in the model json file
+  @staticmethod
+  def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+  @staticmethod
+  def identity(x):
+    return x
+  # End activation functions
+
+  def forward(self, x):
+    for W, b, activation in self.layers:
+      x = getattr(self, activation)(x.dot(W) + b)
+    return x
+
+  def evaluate(self, input_array):
+    in_len = len(input_array)
+    if in_len != self.input_size:
+      # If the input is length 2-4, then it's a simplified evaluation.
+      # In that case, need to add on zeros to fill out the input array to match the correct length.
+      if 2 <= in_len:
+        input_array = input_array + [0] * (self.input_size - in_len)
+      else:
+        raise ValueError(f"Input array length {len(input_array)} must be length 2 or greater")
+
+    input_array = np.array(input_array, dtype=np.float32)
+
+    # Rescale the input array using the input_mean and input_std
+    input_array = (input_array - self.input_mean) / self.input_std
+
+    output_array = self.forward(input_array)
+
+    return float(output_array[0, 0])
+
+  def validate_layers(self):
+    for W, b, activation in self.layers:
+      if not hasattr(self, activation):
+        raise ValueError(f"Unknown activation: {activation}")
+
+  def check_for_friction_override(self):
+    y = self.evaluate([10.0, 0.0, 0.2])
+    self.friction_override = (y < 0.1)
+
+
+def get_nn_model_path(_car, eps_firmware) -> Tuple[Optional[str], float]:
+  def check_nn_path(_check_model):
+    _model_path = None
+    _max_similarity = -1.0
+    for f in os.listdir(TORQUE_NN_MODEL_PATH):
+      if f.endswith(".json"):
+        model = f.replace(".json", "").replace(f"{TORQUE_NN_MODEL_PATH}/", "")
+        similarity_score = similarity(model, _check_model)
+        if similarity_score > _max_similarity:
+          _max_similarity = similarity_score
+          _model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
+    return _model_path, _max_similarity
+
+  if len(eps_firmware) > 3:
+    eps_firmware = eps_firmware.replace("\\", "")
+    check_model = f"{_car} {eps_firmware}"
+  else:
+    check_model = _car
+  model_path, max_similarity = check_nn_path(check_model)
+  if 0.0 <= max_similarity < 0.9:
+    check_model = _car
+    model_path, max_similarity = check_nn_path(check_model)
+    if 0.0 <= max_similarity < 0.9:
+      model_path = None
+  return model_path, max_similarity
+
+
+def get_nn_model(_car, eps_firmware) -> Tuple[Optional[FluxModel], float]:
+  model, similarity_score = get_nn_model_path(_car, eps_firmware)
+  if model is not None:
+    model = FluxModel(model)
+  return model, similarity_score
 
 
 # generic car and radar interfaces
@@ -111,6 +226,20 @@ class CarInterfaceBase(ABC):
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
     self.lkas_toggle = self.param_s.get_bool("LkasToggle")
+    self.last_mads_init = 0.
+    self.madsEnabledInit = False
+    self.madsEnabledInitPrev = False
+
+    self.lat_torque_nn_model = None
+    eps_firmware = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
+    self.has_lateral_torque_nn = self.initialize_lat_torque_nn(CP.carFingerprint, eps_firmware)
+
+  def get_ff_nn(self, x):
+    return self.lat_torque_nn_model.evaluate(x)
+
+  def initialize_lat_torque_nn(self, _car, eps_firmware) -> bool:
+    self.lat_torque_nn_model, _ = get_nn_model(_car, eps_firmware)
+    return self.lat_torque_nn_model is not None and self.param_s.get_bool("NNFF")
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -129,10 +258,18 @@ class CarInterfaceBase(ABC):
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
 
     params = Params()
-    if params.get_bool("EnforceTorqueLateral") and ret.steerControlType != car.CarParams.SteerControlType.angle:
-      ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
-      if params.get_bool("CustomTorqueLateral"):
-        ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
+    if ret.steerControlType != car.CarParams.SteerControlType.angle:
+      if params.get_bool("EnforceTorqueLateral") or params.get_bool("NNFF"):
+        ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
+        if params.get_bool("CustomTorqueLateral"):
+          ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
+
+      if ret.lateralTuning.which() == 'torque':
+        eps_firmware = str(next((fw.fwVersion for fw in car_fw if fw.ecu == "eps"), ""))
+        model, similarity_score = get_nn_model_path(candidate, eps_firmware)
+        if model is not None:
+          ret.lateralTuning.torque.nnModelName = os.path.splitext(os.path.basename(model))[0]
+          ret.lateralTuning.torque.nnModelFuzzyMatch = (similarity_score < 0.99)
 
     # Vehicle mass is published curb weight plus assumed payload such as a human driver; notCars have no assumed payload
     if not ret.notCar:
@@ -414,6 +551,20 @@ class CarInterfaceBase(ABC):
       mads_enabled = cs_out.cruiseState.available
 
     return mads_enabled
+
+  def get_sp_started_mads(self, mads_enabled, cruiseState_available):
+    if not self.mads_main_toggle or self.prev_acc_mads_combo:
+      return mads_enabled
+    if not self.madsEnabledInit and mads_enabled:
+      self.madsEnabledInit = True
+      self.last_mads_init = time.monotonic()
+    if self.madsEnabledInit and not self.madsEnabledInitPrev:
+      if time.monotonic() < self.last_mads_init + 1.:
+        return False
+      self.madsEnabledInitPrev = True
+      return cruiseState_available
+    else:
+      return mads_enabled
 
   def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \

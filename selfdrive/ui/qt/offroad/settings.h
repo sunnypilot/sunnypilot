@@ -94,9 +94,9 @@ class SoftwarePanel : public ListWidget {
 public:
   explicit SoftwarePanel(QWidget* parent = nullptr);
 
-private:
+protected:
   void showEvent(QShowEvent *event) override;
-  void updateLabels();
+  virtual void updateLabels();
   void checkForUpdates();
 
   bool is_onroad = false;

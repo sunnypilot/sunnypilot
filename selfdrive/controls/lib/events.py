@@ -258,6 +258,27 @@ def no_gps_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, m
     AlertStatus.normal, AlertSize.mid,
     Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=300.)
 
+
+def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
+  model_name = CP.lateralTuning.torque.nnModelName
+  if model_name == "":
+    return Alert(
+      "NN Lateral Controller Not Loaded",
+      '⚙️ -> "sunnypilot" for more details',
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
+  else:
+    fuzzy = CP.lateralTuning.torque.nnModelFuzzyMatch
+    alert_text_2 = '⚙️ -> "sunnypilot" for more details [Match = Fuzzy]' if fuzzy else ""
+    alert_status = AlertStatus.userPrompt if fuzzy else AlertStatus.normal
+    alert_size = AlertSize.mid if fuzzy else AlertSize.small
+    audible_alert = AudibleAlert.prompt if fuzzy else AudibleAlert.none
+    return Alert(
+      "NN Lateral Controller Loaded",
+      alert_text_2,
+      alert_status, alert_size,
+      Priority.LOW, VisualAlert.none, audible_alert, 6.0)
+
 # *** debug alerts ***
 
 def out_of_space_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
@@ -1114,6 +1135,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Vehicle Sensors Invalid"),
     ET.PERMANENT: NormalPermanentAlert("Vehicle Sensors Calibrating", "Drive to Calibrate"),
     ET.NO_ENTRY: NoEntryAlert("Vehicle Sensors Calibrating"),
+  },
+
+  EventName.torqueNNLoad: {
+    ET.PERMANENT: torque_nn_load_alert,
   },
 
 }

@@ -120,10 +120,22 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaSngHack->setConfirmation(true, false);
   addItem(toyotaSngHack);
 
+  // Volkswagen
+  addItem(new LabelControl(tr("Volkswagen")));
+  auto volkswagenCCOnly = new ParamControl(
+    "VwCCOnly",
+    tr("Enable CC Only support"),
+    tr("sunnypilot supports Volkswagen MQB CC only platforms with this toggle enabled. Only enable this toggle if your car does not have ACC from the factory."),
+    "../assets/offroad/icon_blank.png"
+  );
+  volkswagenCCOnly->setConfirmation(true, false);
+  addItem(volkswagenCCOnly);
+
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
     toyotaSngHack->setEnabled(offroad);
+    volkswagenCCOnly->setEnabled(offroad);
   });
 }

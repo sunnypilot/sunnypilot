@@ -2,6 +2,7 @@ from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
+from openpilot.selfdrive.car.hyundai.enable_radar_tracks import enable_radar_tracks
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, \
                                          CANFD_UNSUPPORTED_LONGITUDINAL_CAR, NON_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, \
@@ -67,6 +68,9 @@ class CarInterface(CarInterfaceBase):
         ret.spFlags |= HyundaiFlagsSP.SP_ENHANCED_SCC.value
         ret.radarUnavailable = False
 
+      if 0x53E in fingerprint[2]:
+        ret.spFlags |= HyundaiFlagsSP.SP_LKAS12.value
+
     ret.steerActuatorDelay = 0.1  # Default delay
     ret.steerLimitTimer = 0.4
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
@@ -81,6 +85,10 @@ class CarInterface(CarInterfaceBase):
       # Values from optimizer
       ret.steerRatio = 16.55  # 13.8 is spec end-to-end
       ret.tireStiffnessFactor = 0.82
+      if candidate in (CAR.SANTA_FE_2022, CAR.SANTA_FE_HEV_2022, CAR.SANTA_FE_PHEV_2022):
+        if any(fw.ecu == "fwdRadar" and fw.fwVersion is not None for fw in car_fw):
+          ret.radarUnavailable = False
+          ret.spFlags |= HyundaiFlagsSP.SP_RADAR_TRACKS.value
     elif candidate in (CAR.SONATA, CAR.SONATA_HYBRID):
       ret.mass = 1513.
       ret.wheelbase = 2.84
@@ -121,9 +129,6 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = {CAR.KONA_EV_2ND_GEN: 2.66, }.get(candidate, 2.6)
       ret.steerRatio = {CAR.KONA_EV_2ND_GEN: 13.6, }.get(candidate, 13.42)  # Spec
       ret.tireStiffnessFactor = 0.385
-      if candidate == CAR.KONA_EV_2022:
-        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
-        ret.radarUnavailable = False
     elif candidate in (CAR.IONIQ, CAR.IONIQ_EV_LTD, CAR.IONIQ_PHEV_2019, CAR.IONIQ_HEV_2022, CAR.IONIQ_EV_2020, CAR.IONIQ_PHEV):
       ret.mass = 1490.  # weight per hyundai site https://www.hyundaiusa.com/ioniq-electric/specifications.aspx
       ret.wheelbase = 2.7
@@ -280,6 +285,9 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kpV = [0.5]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
+      if candidate in CAMERA_SCC_CAR:
+        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
+        ret.radarUnavailable = False
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
@@ -371,6 +379,12 @@ class CarInterface(CarInterfaceBase):
     # for blinkers
     if CP.flags & HyundaiFlags.ENABLE_BLINKERS:
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')
+
+    # for enabling radar tracks on startup
+    # some CAN platforms are able to enable radar tracks config at the radar ECU,
+    # but the config is reset after ignition cycle
+    if CP.openpilotLongitudinalControl and (CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS):
+      enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
 
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
