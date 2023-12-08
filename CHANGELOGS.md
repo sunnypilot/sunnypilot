@@ -1,3 +1,6 @@
+sunnypilot - 0.9.6.1 (2023-xx-xx)
+========================
+
 sunnypilot - 0.9.5.2 (2023-12-07)
 ========================
 * NEW❗: MADS: Allow Navigate on openpilot in Chill Mode
