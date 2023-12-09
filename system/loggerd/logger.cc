@@ -99,6 +99,28 @@ kj::Array<capnp::word> logger_build_init_data() {
   return capnp::messageToFlatArray(msg);
 }
 
+kj::Array<capnp::word> logger_build_params_data_car_start() {
+  MessageBuilder msg;
+  auto init = msg.initEvent().initInitData();
+
+  // log params
+  auto params = Params();
+  std::map<std::string, std::string> params_map = params.readAll();
+
+  auto lparams = init.initParams().initEntries(params_map.size());
+  int j = 0;
+  for (auto& [key, value] : params_map) {
+    auto lentry = lparams[j];
+    lentry.setKey(key);
+    if ( !(params.getKeyType(key) & DONT_LOG) ) {
+      lentry.setValue(capnp::Data::Reader((const kj::byte*)value.data(), value.size()));
+    }
+    j++;
+  }
+
+  return capnp::messageToFlatArray(msg);
+}
+
 std::string logger_get_route_name() {
   char route_name[64] = {'\0'};
   time_t rawtime = time(NULL);

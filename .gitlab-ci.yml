@@ -8,11 +8,12 @@ variables:
   DEV_C3_SOURCE_BRANCH: "master-dev-c3"
   GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
+  PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
 
 stages:
   - build
-  - commit_changes
   - publish
+  - notify
 
 default:
   retry: 2
@@ -116,42 +117,9 @@ build:
     - if: $NEW_BRANCH
       when: always
 
-
-commit changes for public branch:
+.publish_base: &publish_base
   variables:
     GIT_SUBMODULE_STRATEGY: normal
-    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
-  stage: commit_changes
-  needs:
-    - job: build
-      artifacts: true
-  before_script:
-    - 'apk update && apk upgrade'
-    - 'apk add git bash openssh'
-    - 'eval $(ssh-agent -s)'
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - 'mkdir -p ~/.ssh/'
-    - 'chmod 700 ~/.ssh'
-    - 'ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts' # Adding gitlab to trusted
-    - 'chmod 644 ~/.ssh/known_hosts'
-    - *default_before_script
-  script:
-    #- GIT_ORIGIN=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@|ssh://git@|g')
-    - echo "${GIT_ORIGIN}"
-    - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
-    - git config --global --add safe.directory ${OUTPUT_DIR}
-    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
-  rules:
-    - if: $NEW_BRANCH
-      when: on_success
-    - when: never
-
-publish to github:
-  variables:
-    GIT_SUBMODULE_STRATEGY: normal
-    GIT_ORIGIN: git@github.com:sunnyhaibin/sunnypilot.git
-    GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
-    GIT_CONFIG_USER_NAME: "Jason Wen"
   stage: publish
   needs:
     - job: build
@@ -163,16 +131,70 @@ publish to github:
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - 'mkdir -p ~/.ssh/'
     - 'chmod 700 ~/.ssh'
-    - 'ssh-keyscan -H github.com >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+    - export HOST=$(echo ${GIT_ORIGIN} | cut -d'@' -f2 | cut -d':' -f1)
+    - echo fetching ssh pub keys for ${HOST}
+    - 'ssh-keyscan -H ${HOST} >> ~/.ssh/known_hosts' # Adding gitlab to trusted
     - 'chmod 644 ~/.ssh/known_hosts'
     - *default_before_script
   script:
-    #- GIT_ORIGIN=$(echo "${CI_REPOSITORY_URL}" | sed -e 's|https\?://gitlab-ci-token:.*@|ssh://git@|g')
     - echo "${GIT_ORIGIN}"
     - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
     - git config --global --add safe.directory ${OUTPUT_DIR}
     - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
+
+publish to private gitlab prebuilt:
+  extends: ".publish_base"
+  variables:
+    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
+
+publish to public github prebuilt:
+  extends: ".publish_base"
+  variables:
+    GIT_ORIGIN: git@github.com:sunnyhaibin/sunnypilot.git
+    GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
+    GIT_CONFIG_USER_NAME: "Jason Wen"
   rules:
     - if: $NEW_BRANCH
       when: manual
     - when: never
+
+.notify_discord: &notify_discord
+  stage: notify
+  needs: ["build"]
+  variables:
+    DISCORD_HOOK: "${DISCORD_MANUAL_BUILD_WEBHOOK_URL}" # Default hook if not overriden by children
+  before_script:
+    - 'apk add curl jq envsubst'
+  script:
+    - echo using [${TEMPLATE}]
+    - cat release/ci/${TEMPLATE} | envsubst | tee payload.json
+    - 'curl -X POST -H "Content-Type: application/json" -d "$(cat payload.json)" ${DISCORD_HOOK} | jq .'
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
+  allow_failure: true
+
+notify pending action:
+  extends: ".notify_discord"
+  variables:
+    TEMPLATE: "discord_template_notify_dev_private.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export AVATAR_URL=$(curl -s -X GET "https://gitlab.com/api/v4/avatar?email=${GITLAB_USER_EMAIL}" | jq -r '.avatar_url')
+
+notify new dev build:
+  extends: ".notify_discord"
+  stage: notify
+  needs: ["publish to public github prebuilt"] # This notify shall only happen after a publish to github public
+  variables:
+    TEMPLATE: "discord_template_notify_dev_public.json"
+  rules:
+    - if: $NEW_BRANCH == "dev-c3"
+      variables:
+        DISCORD_HOOK: "${DISCORD_NEW_BUILD_WEBHOOK_URL}" # Overriding hook because we know we are dev-c3
+    - !reference [".notify_discord", "rules"]

@@ -66,6 +66,7 @@ typedef struct LoggerState {
 } LoggerState;
 
 kj::Array<capnp::word> logger_build_init_data();
+kj::Array<capnp::word> logger_build_params_data_car_start();
 std::string logger_get_route_name();
 void logger_init(LoggerState *s, bool has_qlog);
 int logger_next(LoggerState *s, const char* root_path,
