@@ -1,5 +1,6 @@
 sunnypilot - 0.9.6.1 (2023-xx-xx)
 ========================
+* DISABLED: Toyota: ZSS support
 
 sunnypilot - 0.9.5.2 (2023-12-07)
 ========================
