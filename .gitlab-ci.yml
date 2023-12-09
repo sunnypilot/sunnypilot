@@ -51,14 +51,14 @@ workflow: # If running on any branch other than main, use the `aws-datacontracts
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
       variables:
         NEW_BRANCH: "staging-c3"
-        VERSION: '$(cat common/version.h | awk -F[\"-]  "{print $2}")'
+        VERSION: $(awk '/#define COMMA_VERSION/ { gsub(/["]/, "", $3); gsub(/[\047]/, "", $3); print $3 }' common/version.h)
         EXTRA_VERSION_IDENTIFIER: "-staging"
       when: always
     # if tag
     - if: $CI_COMMIT_TAG
       variables:
         NEW_BRANCH: "release-c3"
-        VERSION: '$(cat common/version.h | awk -F[\"-]  "{print $2}")'
+        VERSION: $(awk '/#define COMMA_VERSION/ { gsub(/["]/, "", $3); gsub(/[\047]/, "", $3); print $3 }' common/version.h)
         EXTRA_VERSION_IDENTIFIER: "-release"
     - when: always
 
