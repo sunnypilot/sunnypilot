@@ -31,6 +31,7 @@ def report_tombstone(fn: str, message: str, contents: str) -> None:
   cloudlog.error({'tombstone': message})
 
   with sentry_sdk.configure_scope() as scope:
+    bind_user()
     scope.set_extra("tombstone_fn", fn)
     scope.set_extra("tombstone", contents)
     sentry_sdk.capture_message(message=message)
@@ -42,8 +43,7 @@ def capture_exception(*args, **kwargs) -> None:
   cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))
 
   try:
-    dongle_id, ip, gitname = get_properties()
-    bind_user(id=dongle_id, ip_address=ip, name=gitname)
+    bind_user()
     sentry_sdk.capture_exception(*args, **kwargs)
     sentry_sdk.flush()  # https://github.com/getsentry/sentry-python/issues/291
   except Exception:
@@ -70,20 +70,19 @@ def save_exception(exc_text: str) -> None:
   print('Logged current crash to {}'.format(files))
 
 
-def bind_user(**kwargs) -> None:
-  sentry_sdk.set_user(kwargs)
+def bind_user() -> None:
+  dongle_id, ip, gitname = get_properties()
+  sentry_sdk.set_user({"id": dongle_id, "ip_address": ip, "name": gitname})
 
 
 def capture_warning(warning_string: str) -> None:
-  dongle_id, ip, gitname = get_properties()
-  bind_user(id=dongle_id, ip_address=ip, name=gitname)
+  bind_user()
   sentry_sdk.capture_message(warning_string, level='warning')
   sentry_sdk.flush()
 
 
 def capture_info(info_string: str) -> None:
-  dongle_id, ip, gitname = get_properties()
-  bind_user(id=dongle_id, ip_address=ip, name=gitname)
+  bind_user()
   sentry_sdk.capture_message(info_string, level='info')
   sentry_sdk.flush()
 
@@ -102,9 +101,8 @@ def get_properties() -> Tuple[str, str, str]:
     gitname = params.get("GithubUsername", encoding='utf-8')
   except Exception:
     gitname = ""
-  ip = IP_ADDRESS
 
-  return dongle_id, ip, gitname
+  return dongle_id, IP_ADDRESS, gitname
 
 
 def init(project: SentryProject) -> bool:
