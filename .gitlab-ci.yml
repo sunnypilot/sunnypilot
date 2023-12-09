@@ -8,11 +8,13 @@ variables:
   DEV_C3_SOURCE_BRANCH: "master-dev-c3"
   GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
+  PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
 
 stages:
   - build
   - commit_changes
   - publish
+  - notify
 
 default:
   retry: 2
@@ -176,3 +178,40 @@ publish to github:
     - if: $NEW_BRANCH
       when: manual
     - when: never
+
+.notify_discord: &notify_discord
+  stage: notify
+  needs: ["build"]
+  variables:
+    DISCORD_HOOK: "${DISCORD_MANUAL_BUILD_WEBHOOK_URL}" # Default hook if not overriden by children
+  before_script:
+    - 'apk add curl jq envsubst'
+  script:
+    - echo using [${TEMPLATE}]
+    - cat release/ci/${TEMPLATE} | envsubst | tee payload.json
+    - 'curl -X POST -H "Content-Type: application/json" -d "$(cat payload.json)" ${DISCORD_HOOK} | jq .'
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
+  allow_failure: true
+
+notify pending action:
+  extends: ".notify_discord"
+  variables:
+    TEMPLATE: "discord_template_notify_dev_private.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export AVATAR_URL=$(curl -s -X GET "https://gitlab.com/api/v4/avatar?email=${GITLAB_USER_EMAIL}" | jq -r '.avatar_url')
+
+notify new dev build:
+  extends: ".notify_discord"
+  stage: notify
+  needs: ["publish to github"] # This notify shall only happen after a publish to github public
+  variables:
+    TEMPLATE: "discord_template_notify_dev_public.json"
+  rules:
+    - if: $NEW_BRANCH == "dev-c3"
+      variables:
+        DISCORD_HOOK: "${DISCORD_NEW_BUILD_WEBHOOK_URL}" # Overriding hook because we know we are dev-c3
+    - !reference [".notify_discord", "rules"]
