@@ -1,9 +1,11 @@
 """Install exception handler for process crash."""
 import sentry_sdk
+import subprocess
 from enum import Enum
 from typing import Tuple
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
+from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 #from openpilot.selfdrive.athena.registration import is_registered_device
 from openpilot.system.hardware import HARDWARE, PC
@@ -103,6 +105,16 @@ def get_properties() -> Tuple[str, str, str]:
     gitname = ""
 
   return dongle_id, IP_ADDRESS, gitname
+
+
+def get_init() -> None:
+  params = Params()
+  dongle_id = params.get("DongleId", encoding='utf-8')
+  route_name = params.get("CurrentRoute", encoding='utf-8')
+  subprocess.call(["./bootlog", "--started"], cwd=os.path.join(BASEDIR, "system/loggerd"))
+  with sentry_sdk.configure_scope() as scope:
+    sentry_sdk.set_tag("route_name", dongle_id + "|" + route_name)
+    scope.add_attachment(path=os.path.join("/data/media/0/realdata/params", route_name))
 
 
 def init(project: SentryProject) -> bool:
