@@ -42,7 +42,6 @@ class SpeedLimitController:
     self._state = SpeedLimitControlState.inactive
     self._state_prev = SpeedLimitControlState.inactive
     self._gas_pressed = False
-    self._a_target = 0.
 
     self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
     self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
@@ -74,10 +73,6 @@ class SpeedLimitController:
       SpeedLimitControlState.active: self.get_active_state_target_acceleration,
       SpeedLimitControlState.preActive: self.get_current_acceleration_as_target,
     }
-
-  @property
-  def a_target(self):
-    return self._a_target if self.is_active else self._a_ego
 
   @property
   def state(self):
@@ -262,12 +257,6 @@ class SpeedLimitController:
     """ In active state, aim to keep speed constant around control time horizon """
     return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
 
-  def _update_solution(self):
-    a_target = self.acceleration_solutions[self.state]()
-
-    # Keep solution limited.
-    self._a_target = np.clip(a_target, LIMIT_MIN_ACC, LIMIT_MAX_ACC)
-
   def _update_events(self, events):
     if not self.is_active:
       if self._state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive and \
@@ -301,5 +290,4 @@ class SpeedLimitController:
     self._update_params(CP)
     self._update_calculations()
     self._state_transition()
-    self._update_solution()
     self._update_events(events)

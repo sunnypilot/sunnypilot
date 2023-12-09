@@ -52,12 +52,6 @@ class TurnSpeedController():
 
     self._next_speed_limit_prev = 0.
 
-    self._a_target = 0.
-
-  @property
-  def a_target(self):
-    return self._a_target if self.is_active else self._a_ego
-
   @property
   def state(self):
     return self._state
@@ -209,26 +203,6 @@ class TurnSpeedController():
       if self._v_offset < LIMIT_SPEED_OFFSET_TH and self.distance > 0.:
         self.state = TurnSpeedControlState.adapting
 
-  def _update_solution(self):
-    # inactive or tempInactive state
-    if self.state <= TurnSpeedControlState.tempInactive:
-      # Preserve current values
-      a_target = self._a_ego
-    # adapting
-    elif self.state == TurnSpeedControlState.adapting:
-      # When adapting we target to achieve the speed limit on the distance.
-      a_target = (self.speed_limit**2 - self._v_ego**2) / (2. * self.distance)
-      a_target = np.clip(a_target, LIMIT_MIN_ACC, LIMIT_MAX_ACC)
-    # active
-    elif self.state == TurnSpeedControlState.active:
-      # When active we are trying to keep the speed constant around the control time horizon.
-      # but under constrained acceleration limits since we are in a turn.
-      a_target = self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
-      a_target = np.clip(a_target, _ACTIVE_LIMIT_MIN_ACC, _ACTIVE_LIMIT_MAX_ACC)
-
-    # update solution values.
-    self._a_target = a_target
-
   def update(self, enabled, v_ego, a_ego, sm):
     self._op_enabled = enabled
     self._v_ego = v_ego
@@ -240,4 +214,3 @@ class TurnSpeedController():
     self._update_params()
     self._update_calculations()
     self._state_transition(sm)
-    self._update_solution()

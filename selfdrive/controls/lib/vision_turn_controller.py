@@ -103,7 +103,6 @@ class VisionTurnController():
     self._v_cruise_setpoint = 0.
     self._v_ego = 0.
     self._a_ego = 0.
-    self._a_target = 0.
     self._v_overshoot = 0.
     self._state = VisionTurnControllerState.disabled
 
@@ -122,15 +121,11 @@ class VisionTurnController():
     self._state = value
 
   @property
-  def a_target(self):
-    return self._a_target if self.is_active else self._a_ego
-
-  @property
   def v_turn(self):
     if not self.is_active:
       return self._v_cruise_setpoint
     return self._v_overshoot if self._lat_acc_overshoot_ahead \
-      else self._v_ego + self._a_target * _NO_OVERSHOOT_TIME_HORIZON
+      else self._v_ego
 
   @property
   def is_active(self):
@@ -260,34 +255,6 @@ class VisionTurnController():
       elif self._current_lat_acc < _FINISH_LAT_ACC_TH:
         self.state = VisionTurnControllerState.disabled
 
-  def _update_solution(self):
-    # DISABLED
-    if self.state == VisionTurnControllerState.disabled:
-      # when not overshooting, calculate v_turn as the speed at the prediction horizon when following
-        # the smooth deceleration.
-      a_target = self._a_ego
-    # ENTERING
-    elif self.state == VisionTurnControllerState.entering:
-      # when not overshooting, target a smooth deceleration in preparation for a sharp turn to come.
-      a_target = interp(self._max_pred_lat_acc, _ENTERING_SMOOTH_DECEL_BP, _ENTERING_SMOOTH_DECEL_V)
-      if self._lat_acc_overshoot_ahead:
-        # when overshooting, target the acceleration needed to achieve the overshoot speed at
-        # the required distance
-        a_target = min((self._v_overshoot**2 - self._v_ego**2) / (2 * self._v_overshoot_distance), a_target)
-      _debug(f'TVC Entering: Overshooting: {self._lat_acc_overshoot_ahead}')
-      _debug(f'    Decel: {a_target:.2f}, target v: {self.v_turn * CV.MS_TO_KPH}')
-    # TURNING
-    elif self.state == VisionTurnControllerState.turning:
-      # When turning we provide a target acceleration that is comfortable for the lateral accelearation felt.
-      a_target = interp(self._current_lat_acc, _TURNING_ACC_BP, _TURNING_ACC_V)
-    # LEAVING
-    elif self.state == VisionTurnControllerState.leaving:
-      # When leaving we provide a comfortable acceleration to regain speed.
-      a_target = _LEAVING_ACC
-
-    # update solution values.
-    self._a_target = a_target
-
   def update(self, enabled, v_ego, a_ego, v_cruise_setpoint, sm):
     self._op_enabled = enabled
     self._gas_pressed = sm['carState'].gasPressed
@@ -298,4 +265,3 @@ class VisionTurnController():
     self._update_params()
     self._update_calculations(sm)
     self._state_transition()
-    self._update_solution()
