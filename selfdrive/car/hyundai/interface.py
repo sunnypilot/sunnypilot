@@ -379,7 +379,7 @@ class CarInterface(CarInterfaceBase):
     # for enabling radar tracks on startup
     # some CAN platforms are able to enable radar tracks config at the radar ECU,
     # but the config is reset after ignition cycle
-    if CP.openpilotLongitudinalControl and (CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS):
+    if CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS:
       enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
 
   def _update(self, c):
