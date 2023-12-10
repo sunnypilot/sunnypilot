@@ -58,7 +58,7 @@ workflow: # If running on any branch other than main, use the `aws-datacontracts
     - if: $CI_COMMIT_TAG
       variables:
         NEW_BRANCH: "release-c3"
-        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'        
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
         EXTRA_VERSION_IDENTIFIER: "-release"
     - when: always
 
@@ -144,7 +144,7 @@ build:
     - echo "${GIT_ORIGIN}"
     - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
     - git config --global --add safe.directory ${OUTPUT_DIR}
-    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "${EXTRA_VERSION_IDENTIFIER}"
 
 publish to private gitlab prebuilt:
   extends: ".publish_base"

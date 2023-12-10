@@ -11,6 +11,7 @@ OUTPUT_DIR=$2
 DEV_BRANCH=$3
 VERSION=$4
 GIT_ORIGIN=$5
+EXTRA_VERSION_IDENTIFIER=$6
 
 # Check parameters
 if [ -z "$SOURCE_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
@@ -45,7 +46,7 @@ git init
 git rm -rf $OUTPUT_DIR/.git || true # Doing cleanup, but it might fail if the .git doesn't exist or not allowed to delete
 git remote remove origin || true # ensure cleanup
 git remote add origin $GIT_ORIGIN
-#git push origin -d $DEV_BRANCH || true # Ensuring we delete the remote branch if it exists as we are wiping it out 
+#git push origin -d $DEV_BRANCH || true # Ensuring we delete the remote branch if it exists as we are wiping it out
 git fetch origin $DEV_BRANCH || (git checkout -b $DEV_BRANCH && git commit --allow-empty -m "sunnypilot v$VERSION release" && git push -u origin $DEV_BRANCH)
 
 echo "[-] committing version $VERSION T=$SECONDS"
@@ -60,11 +61,16 @@ SP_VERSION=$(cat $SOURCE_DIR/common/version.h | awk -F\" '{print $2}')
 
 # Add built files to git
 git add -f .
-git commit --amend -m "sunnypilot v$VERSION
-version: sunnypilot v$SP_VERSION release
-date: $DATETIME
-master commit: $GIT_HASH
-"
+if [ "$EXTRA_VERSION_IDENTIFIER" = "-release" ] || [ "$EXTRA_VERSION_IDENTIFIER" = "-staging" ]; then
+  export VERSION=${VERSION%"$EXTRA_VERSION_IDENTIFIER"}
+  git commit --amend -m "sunnypilot v$VERSION"
+else
+  git commit --amend -m "sunnypilot v$VERSION
+  version: sunnypilot v$SP_VERSION release
+  date: $DATETIME
+  master commit: $GIT_HASH
+  "
+fi
 git branch -m $DEV_BRANCH
 
 # Push!
