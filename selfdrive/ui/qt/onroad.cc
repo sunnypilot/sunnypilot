@@ -796,6 +796,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
+
+  experimental_btn->setVisible(!showVTC);
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
@@ -948,7 +950,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // V-TSC
     if (showDebugUI && showVTC) {
-      drawVisionTurnControllerUI(p, rect().right() - 184 - UI_BORDER_SIZE, int(UI_BORDER_SIZE * 1.5), 184, vtcColor, vtcSpeed, 100);
+      drawVisionTurnControllerUI(p, rect().right() - 184 - (UI_BORDER_SIZE * 1.5), int(UI_BORDER_SIZE * 1.5), 184, vtcColor, vtcSpeed, 100);
     }
 
     // Bottom bar road name

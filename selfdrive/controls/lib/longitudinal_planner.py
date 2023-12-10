@@ -153,8 +153,8 @@ class LongitudinalPlanner:
 
     # Get active solutions for custom long mpc.
     self.cruise_source, v_cruise_sol = self.cruise_solutions(
-      not reset_state and (self.CP.openpilotLongitudinalControl or not self.CP.pcmCruiseSpeed), self.v_desired_filter.x,
-      self.a_desired, v_cruise, sm)
+      prev_accel_constraint and (self.CP.openpilotLongitudinalControl or not self.CP.pcmCruiseSpeed),
+      self.v_desired_filter.x, self.a_desired, v_cruise, sm)
 
     # clip limits, cannot init MPC outside of bounds
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
@@ -217,7 +217,7 @@ class LongitudinalPlanner:
     longitudinalPlanSP.e2eX = self.mpc.e2e_x.tolist()
 
     longitudinalPlanSP.visionTurnControllerState = self.vision_turn_controller.state
-    longitudinalPlanSP.visionTurnSpeed = float(self.vision_turn_controller.v_turn)
+    longitudinalPlanSP.visionTurnSpeed = float(self.vision_turn_controller.v_target)
     longitudinalPlanSP.visionCurrentLatAcc = float(self.vision_turn_controller.current_lat_acc)
     longitudinalPlanSP.visionMaxPredLatAcc = float(self.vision_turn_controller.max_pred_lat_acc)
 
@@ -241,7 +241,7 @@ class LongitudinalPlanner:
 
   def cruise_solutions(self, enabled, v_ego, a_ego, v_cruise, sm):
     # Update controllers
-    self.vision_turn_controller.update(enabled, v_ego, a_ego, v_cruise, sm)
+    self.vision_turn_controller.update(enabled, v_ego, v_cruise, sm)
     self.events = Events()
     self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.CP, self.events)
     self.turn_speed_controller.update(enabled, v_ego, a_ego, sm)
@@ -250,7 +250,7 @@ class LongitudinalPlanner:
     v_solutions = {'cruise': v_cruise}
 
     if self.vision_turn_controller.is_active:
-      v_solutions['turn'] = self.vision_turn_controller.v_turn
+      v_solutions['turn'] = self.vision_turn_controller.v_target
 
     if self.speed_limit_controller.is_active:
       v_solutions['limit'] = self.speed_limit_controller.speed_limit_offseted

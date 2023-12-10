@@ -26,7 +26,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     },
     {
       "TurnVisionControl",
-      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
+      tr("Enable Vision-based Turn Speed Control (V-TSC)"),
       tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
       "../assets/offroad/icon_blank.png",
     },
