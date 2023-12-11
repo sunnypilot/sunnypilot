@@ -797,7 +797,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
 
-  experimental_btn->setVisible(!showVTC);
+  experimental_btn->setVisible(!(showDebugUI && showVTC));
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
