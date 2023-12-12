@@ -7,7 +7,7 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
-#from openpilot.selfdrive.athena.registration import is_registered_device
+from openpilot.selfdrive.athena.registration import UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.swaglog import cloudlog
 from openpilot.system.version import get_branch, get_commit, get_origin, get_version, \
@@ -73,8 +73,8 @@ def save_exception(exc_text: str) -> None:
 
 
 def bind_user() -> None:
-  dongle_id, ip, gitname = get_properties()
-  sentry_sdk.set_user({"id": dongle_id, "ip_address": ip, "name": gitname})
+  dongle_id, gitname = get_properties()
+  sentry_sdk.set_user({"id": dongle_id, "ip_address": IP_ADDRESS, "name": gitname})
 
 
 def capture_warning(warning_string: str) -> None:
@@ -93,28 +93,27 @@ def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
 
 
-def get_properties() -> Tuple[str, str, str]:
+def get_properties() -> Tuple[str, str]:
   params = Params()
-  try:
-    dongle_id = params.get("DongleId", encoding='utf-8')
-  except AttributeError:
-    dongle_id = "None"
-  try:
-    gitname = params.get("GithubUsername", encoding='utf-8')
-  except Exception:
+  dongle_id = params.get("DongleId", encoding='utf-8')
+  if dongle_id in (None, UNREGISTERED_DONGLE_ID):
+    dongle_id = UNREGISTERED_DONGLE_ID
+  gitname = params.get("GithubUsername", encoding='utf-8')
+  if gitname is None:
     gitname = ""
 
-  return dongle_id, IP_ADDRESS, gitname
+  return dongle_id, gitname
 
 
 def get_init() -> None:
   params = Params()
-  dongle_id = params.get("DongleId", encoding='utf-8')
+  dongle_id, _ = get_properties()
   route_name = params.get("CurrentRoute", encoding='utf-8')
   subprocess.call(["./bootlog", "--started"], cwd=os.path.join(BASEDIR, "system/loggerd"))
   with sentry_sdk.configure_scope() as scope:
-    sentry_sdk.set_tag("route_name", dongle_id + "|" + route_name)
-    scope.add_attachment(path=os.path.join("/data/media/0/realdata/params", route_name))
+    if route_name is not None:
+      sentry_sdk.set_tag("route_name", dongle_id + "|" + route_name)
+      scope.add_attachment(path=os.path.join("/data/media/0/realdata/params", route_name))
 
 
 def init(project: SentryProject) -> bool:
@@ -125,8 +124,7 @@ def init(project: SentryProject) -> bool:
 
   #env = "release" if is_tested_branch() else "master"
   env = get_branch_type()
-  dongle_id = Params().get("DongleId", encoding='utf-8')
-  gitname = Params().get("GithubUsername", encoding='utf-8')
+  dongle_id, gitname = get_properties()
 
   integrations = []
   if project == SentryProject.SELFDRIVE:
