@@ -1,5 +1,7 @@
 sunnypilot - 0.9.6.1 (2023-xx-xx)
 ========================
+* UPDATED: Dynamic Experimental Control (DEC)
+  * Synced with dragonpilot-community/dragonpilot:beta3 commit dd4c663
 * UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
   * Refactored implementation thanks to pfeiferj!
   * More accurate and consistent velocity calculation to achieve smoother longitudinal control in curves
