@@ -40,7 +40,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
                          CAR.SANTA_FE_2022, CAR.KIA_K5_2021, CAR.IONIQ_HEV_2022, CAR.SANTA_FE_HEV_2022,
                          CAR.SANTA_FE_PHEV_2022, CAR.KIA_STINGER_2022, CAR.KIA_K5_HEV_2020, CAR.KIA_CEED,
                          CAR.AZERA_6TH_GEN, CAR.AZERA_HEV_6TH_GEN, CAR.CUSTIN_1ST_GEN, CAR.ELANTRA_2022_NON_SCC,
-                         CAR.GENESIS_G70_2021_NON_SCC, CAR.KIA_SELTOS_2023_NON_SCC):
+                         CAR.GENESIS_G70_2021_NON_SCC, CAR.KIA_SELTOS_2023_NON_SCC, CAR.BAYON_1ST_GEN_NON_SCC):
     values["CF_Lkas_LdwsActivemode"] = int(left_lane) + (int(right_lane) << 1)
     values["CF_Lkas_LdwsOpt_USM"] = 2
 

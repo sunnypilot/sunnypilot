@@ -104,6 +104,10 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.90
       ret.steerRatio = 15.6 * 1.15
       ret.tireStiffnessFactor = 0.63
+    elif candidate == CAR.BAYON_1ST_GEN_NON_SCC:
+      ret.mass = 1150.
+      ret.wheelbase = 2.58
+      ret.steerRatio = 13.27 * 1.15   # Variable steering ratio? https://www.hyundai.news/newsroom/dam/eu/uk/20210302_bayon_technical_data/hyundai-reveals-all-new_bayon-technical-data.pdf
     elif candidate in (CAR.ELANTRA, CAR.ELANTRA_GT_I30):
       ret.mass = 1275.
       ret.wheelbase = 2.7

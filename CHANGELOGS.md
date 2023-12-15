@@ -5,6 +5,7 @@ sunnypilot - 0.9.6.1 (2023-xx-xx)
 * UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
   * Refactored implementation thanks to pfeiferj!
   * More accurate and consistent velocity calculation to achieve smoother longitudinal control in curves
+* Hyundai Bayon Non-SCC 2019 support thanks to polein78!
 
 sunnypilot - 0.9.5.2 (2023-12-07)
 ========================

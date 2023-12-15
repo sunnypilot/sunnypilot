@@ -80,6 +80,7 @@ class CAR(StrEnum):
   # Hyundai
   AZERA_6TH_GEN = "HYUNDAI AZERA 6TH GEN"
   AZERA_HEV_6TH_GEN = "HYUNDAI AZERA HYBRID 6TH GEN"
+  BAYON_1ST_GEN_NON_SCC = "HYUNDAI BAYON 1ST GEN NON-SCC"
   ELANTRA = "HYUNDAI ELANTRA 2017"
   ELANTRA_GT_I30 = "HYUNDAI I30 N LINE 2019 & GT 2018 DCT"
   ELANTRA_2021 = "HYUNDAI ELANTRA 2021"
@@ -310,6 +311,7 @@ CAR_INFO: Dict[str, Optional[Union[HyundaiCarInfo, List[HyundaiCarInfo]]]] = {
   CAR.GENESIS_GV80: HyundaiCarInfo("Genesis GV80 2023", "All", car_parts=CarParts.common([CarHarness.hyundai_m])),
 
   # Non-SCC Cars
+  CAR.BAYON_1ST_GEN_NON_SCC: HyundaiCarInfo("Hyundai Bayon Non-SCC 2021", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_n])),
   CAR.ELANTRA_2022_NON_SCC: HyundaiCarInfo("Hyundai Elantra Non-SCC 2022", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_k])),
   CAR.KONA_NON_SCC: HyundaiCarInfo("Hyundai Kona Non-SCC 2019", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_b])),
   CAR.KIA_FORTE_2019_NON_SCC: HyundaiCarInfo("Kia Forte Non-SCC 2019", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_g])),
@@ -1813,6 +1815,12 @@ FW_VERSIONS = {
       b'\xf1\x816H6D1051\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
+  CAR.BAYON_1ST_GEN_NON_SCC: {
+    # TODO: Check working route for more FW
+    (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00BC3 LKA  AT EUR LHD 1.00 1.01 99211-Q0100 261'
+    ],
+  },
   CAR.ELANTRA: {
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\x00ADP LKAS AT USA LHD 1.00 1.03 99211-F2000 X31',
@@ -2216,7 +2224,8 @@ FW_VERSIONS = {
 CHECKSUM = {
   "crc8": [CAR.SANTA_FE, CAR.SONATA, CAR.PALISADE, CAR.KIA_SELTOS, CAR.ELANTRA_2021, CAR.ELANTRA_HEV_2021,
            CAR.SONATA_HYBRID, CAR.SANTA_FE_2022, CAR.KIA_K5_2021, CAR.SANTA_FE_HEV_2022, CAR.SANTA_FE_PHEV_2022,
-           CAR.KIA_K5_HEV_2020, CAR.CUSTIN_1ST_GEN, CAR.ELANTRA_2022_NON_SCC, CAR.GENESIS_G70_2021_NON_SCC, CAR.KIA_SELTOS_2023_NON_SCC],
+           CAR.KIA_K5_HEV_2020, CAR.CUSTIN_1ST_GEN, CAR.ELANTRA_2022_NON_SCC, CAR.GENESIS_G70_2021_NON_SCC,
+           CAR.KIA_SELTOS_2023_NON_SCC, CAR.BAYON_1ST_GEN_NON_SCC],
   "6B": [CAR.KIA_SORENTO, CAR.HYUNDAI_GENESIS],
 }
 
@@ -2262,7 +2271,7 @@ UNSUPPORTED_LONGITUDINAL_CAR = LEGACY_SAFETY_MODE_CAR | {CAR.KIA_NIRO_PHEV, CAR.
                                                          CAR.KIA_OPTIMA_H_G4_FL}
 
 NON_SCC_CAR = {CAR.KIA_FORTE_2021_NON_SCC, CAR.ELANTRA_2022_NON_SCC, CAR.KIA_FORTE_2019_NON_SCC, CAR.GENESIS_G70_2021_NON_SCC,
-               CAR.KIA_SELTOS_2023_NON_SCC, CAR.KONA_NON_SCC}
+               CAR.KIA_SELTOS_2023_NON_SCC, CAR.KONA_NON_SCC, CAR.BAYON_1ST_GEN_NON_SCC}
 NON_SCC_NO_FCA_CAR = {CAR.KIA_FORTE_2019_NON_SCC, }
 NON_SCC_RADAR_FCA_CAR = {CAR.GENESIS_G70_2021_NON_SCC, }
 
@@ -2271,6 +2280,7 @@ NON_SCC_RADAR_FCA_CAR = {CAR.GENESIS_G70_2021_NON_SCC, }
 DBC = {
   CAR.AZERA_6TH_GEN: dbc_dict('hyundai_kia_generic', None),
   CAR.AZERA_HEV_6TH_GEN: dbc_dict('hyundai_kia_generic', None),
+  CAR.BAYON_1ST_GEN_NON_SCC: dbc_dict('hyundai_kia_generic', None),
   CAR.ELANTRA: dbc_dict('hyundai_kia_generic', None),
   CAR.ELANTRA_GT_I30: dbc_dict('hyundai_kia_generic', None),
   CAR.ELANTRA_2021: dbc_dict('hyundai_kia_generic', None),
