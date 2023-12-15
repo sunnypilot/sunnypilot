@@ -66,6 +66,10 @@ public slots:
     description->setVisible(true);
   }
 
+  void hideDescription() {
+    description->setVisible(false);
+  }
+
 signals:
   void showDescriptionEvent();
 
