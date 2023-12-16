@@ -241,6 +241,8 @@ typedef struct UIScene {
   QRect sl_sign_rect;
 
   int speed_limit_control_engage_type;
+
+  bool mapbox_fullscreen;
 } UIScene;
 
 class UIState : public QObject {

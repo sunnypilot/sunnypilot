@@ -253,6 +253,7 @@ void ui_update_params(UIState *s) {
   s->scene.live_torque_toggle = params.getBool("LiveTorque");
   s->scene.torqued_override = params.getBool("TorquedOverride");
   s->scene.speed_limit_control_engage_type = std::atoi(params.get("SpeedLimitEngageType").c_str());
+  s->scene.mapbox_fullscreen = params.getBool("MapboxFullScreen");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {

@@ -109,7 +109,7 @@ void OnroadWindow::updateState(const UIState &s) {
   Alert alert = Alert::get(*(s.sm), s.scene.started_frame, s.scene.display_debug_alert_frame);
   alerts->updateAlert(alert);
 
-  if (s.scene.map_on_left) {
+  if (s.scene.map_on_left || s.scene.mapbox_fullscreen) {
     split->setDirection(QBoxLayout::LeftToRight);
   } else {
     split->setDirection(QBoxLayout::RightToLeft);
@@ -208,6 +208,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
         // Switch between map and sidebar when using navigate on openpilot
         bool sidebarVisible = geometry().x() > 0;
         bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
+        updateMapSize(scene);
         map->setVisible(show_map && !map->isVisible());
       }
     }
@@ -236,7 +237,8 @@ void OnroadWindow::offroadTransition(bool offroad) {
       QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
       nvg->map_settings_btn->setEnabled(true);
 
-      m->setFixedWidth(topWidget(this)->width() / 2 - UI_BORDER_SIZE);
+      m->setFixedWidth(uiState()->scene.mapbox_fullscreen ? topWidget(this)->width() :
+                                                            topWidget(this)->width() / 2 - UI_BORDER_SIZE);
       split->insertWidget(0, m);
 
       // hidden by default, made visible when navRoute is published
@@ -261,6 +263,12 @@ void OnroadWindow::offroadTransition(bool offroad) {
   }
 
   alerts->updateAlert({});
+}
+
+void OnroadWindow::updateMapSize(const UIScene &scene) {
+  map->setFixedWidth(scene.mapbox_fullscreen ? topWidget(this)->width() :
+                                               topWidget(this)->width() / 2 - UI_BORDER_SIZE);
+  split->insertWidget(0, map);
 }
 
 void OnroadWindow::primeChanged(bool prime) {

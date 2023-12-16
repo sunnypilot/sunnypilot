@@ -306,9 +306,11 @@ private:
   QHBoxLayout* split;
 
   QWidget *onroad_settings = nullptr;
+  Params params;
 
 private slots:
   void offroadTransition(bool offroad);
   void primeChanged(bool prime);
   void updateState(const UIState &s);
+  void updateMapSize(const UIScene &scene);
 };
