@@ -757,6 +757,7 @@ class CarStateBase(ABC):
     self.mads_enabled = False
     self.prev_mads_enabled = False
     self.control_initialized = False
+    self.pcm_cruise_enabled = False
     self.gap_dist_button = 0
     self.gac_tr = int(self.param_s.get("LongitudinalPersonality"))
     self.gac_tr_cluster = clip(int(self.param_s.get("LongitudinalPersonality")), 1, 3)
