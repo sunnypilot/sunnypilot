@@ -1,4 +1,3 @@
-import numpy as np
 import time
 from common.numpy_fast import clip, interp
 from common.conversions import Conversions as CV
@@ -160,7 +159,7 @@ class SpeedLimitController:
 
     self._v_cruise_rounded = int(round(self._v_cruise_setpoint * self._ms_to_local))
     self._v_cruise_prev_rounded = int(round(self._v_cruise_setpoint_prev * self._ms_to_local))
-    self._speed_limit_offsetted_rounded = int(round((self._speed_limit + self.speed_limit_offset) * self._ms_to_local))
+    self._speed_limit_offsetted_rounded = int(0) if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_offset) * self._ms_to_local))
 
   def transition_state_from_inactive(self):
     """ Make state transition from inactive state """
