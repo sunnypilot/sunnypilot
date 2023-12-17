@@ -24,7 +24,7 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = None
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
-    self._vLimit = 0
+    self.prev_vLimit = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -79,7 +79,7 @@ class CarState(CarStateBase):
 
     # SpeedLimit
     self.update_traffic_signals(self.CP, cp, cp_cam)
-    ret.cruiseState.speedLimit = self._vLimit
+    ret.cruiseState.speedLimit = self.prev_vLimit
 
     if not self.CP.openpilotLongitudinalControl:
       ret.accFaulted = ret.accFaulted or cp_cam.vl["ACCDATA"]["CmbbDeny_B_Actl"] == 1
@@ -146,7 +146,7 @@ class CarState(CarStateBase):
       vLimit = origVLimit if origVLimit not in (0, 255) else 0
 
       # speed in m/s
-      self._vLimit = vLimit * speed_factor
+      self.prev_vLimit = vLimit * speed_factor
 
   @staticmethod
   def get_can_parser(CP):
