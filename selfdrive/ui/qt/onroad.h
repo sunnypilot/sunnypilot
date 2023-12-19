@@ -127,6 +127,7 @@ private:
   void speedLimitSignPulse(int frame);
   void speedLimitWarning(QPainter &p, QRect sign_rect, const int sign_margin);
   void mousePressEvent(QMouseEvent* e) override;
+  void drawRoadNameText(QPainter &p, int x, int y, const QString &text, QColor color);
   Params params;
 
   QVBoxLayout *main_layout;

@@ -4,6 +4,7 @@ from cereal import car
 from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.selfdrive.manager.process import PythonProcess, NativeProcess, DaemonProcess
+from openpilot.selfdrive.mapd_manager import MAPD_PATH, COMMON_DIR
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
 
@@ -82,7 +83,11 @@ procs = [
   PythonProcess("statsd", "selfdrive.statsd", always_run),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None), always_watchdog=True),
 
-  PythonProcess("mapd", "selfdrive.mapd.mapd", only_onroad),
+  # PFEIFER - MAPD {{
+  NativeProcess("mapd", COMMON_DIR, [MAPD_PATH], always_run),
+  PythonProcess("mapd_manager", "selfdrive.mapd_manager", always_run),
+  # }} PFEIFER - MAPD
+
   PythonProcess("otisserv", "selfdrive.navd.otisserv", always_run),
   PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", always_run),
 

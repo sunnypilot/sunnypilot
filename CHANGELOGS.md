@@ -5,6 +5,18 @@ sunnypilot - 0.9.6.1 (2023-xx-xx)
 * UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
   * Refactored implementation thanks to pfeiferj!
   * More accurate and consistent velocity calculation to achieve smoother longitudinal control in curves
+* UPDATED: OpenStreetMap (OSM) implementation
+  * Refactored implementation thanks to pfeiferj!
+    * Less resource impact
+    * Significantly smaller sizes with databases
+    * All regions are available to download
+    * Weekly map updates thanks to pfeiferj!
+    * Increased the font size of the road name
+  * C3X-specific changes
+    * Altitude (ALT.) display on Developer UI
+    * Current street name on top of driving screen when "OSM Debug UI" is enabled
+  * DISABLED: Map-based Turn Speed Control (M-TSC)
+    * Reimplementation in near future updates
 * UI updates
   * RE-ENABLED: Navigation: Full screen support
     * Display the map view in full screen

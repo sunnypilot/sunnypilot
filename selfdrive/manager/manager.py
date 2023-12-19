@@ -16,6 +16,7 @@ from openpilot.common.text_window import TextWindow
 from openpilot.selfdrive.boardd.set_time import set_time
 from openpilot.system.hardware import HARDWARE, PC
 from openpilot.selfdrive.manager.helpers import unblock_stdout, write_onroad_params
+from openpilot.selfdrive.manager.mapd_installer import VERSION
 from openpilot.selfdrive.manager.process import ensure_running
 from openpilot.selfdrive.manager.process_config import managed_processes
 from openpilot.selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
@@ -100,6 +101,10 @@ def manager_init() -> None:
     ("TurnVisionControl", "0"),
     ("VisionCurveLaneless", "0"),
     ("VwAccType", "0"),
+    ("OsmDbUpdatesCheck", "0"),
+    ("OsmDownloadedDate", "0"),
+    ("OSMDownloadProgress", "{}"),
+    ("MapdVersion", f"{VERSION}"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

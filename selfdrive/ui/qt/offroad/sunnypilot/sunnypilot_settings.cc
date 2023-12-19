@@ -482,6 +482,9 @@ void SunnypilotPanel::updateToggles() {
       customTorqueControl->setVisible(false);
     }
   }
+
+  m_tsc->setVisible(false);  // TODO: temporarily disable M-TSC until the reimplementation is in place. Remove this line to re-enable the toggle.
+  m_tsc->setEnabled(false);  // TODO: temporarily disable M-TSC until the reimplementation is in place. Remove this line to re-enable the toggle.
 }
 
 TorqueFriction::TorqueFriction() : SPOptionControl (

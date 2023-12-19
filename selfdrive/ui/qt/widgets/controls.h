@@ -109,6 +109,7 @@ public:
   ButtonControl(const QString &title, const QString &text, const QString &desc = "", QWidget *parent = nullptr);
   inline void setText(const QString &text) { btn.setText(text); }
   inline QString text() const { return btn.text(); }
+  inline void click() { btn.click(); }
 
 signals:
   void clicked();

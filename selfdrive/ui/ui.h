@@ -20,6 +20,8 @@
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
+const int UI_ROAD_NAME_MARGIN_X = 14;
+
 struct FeatureStatusText {
   const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
   const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };

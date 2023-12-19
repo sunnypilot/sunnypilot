@@ -21,20 +21,20 @@ class SpeedLimitResolver:
       Policy.combined: [Source.car_state, Source.nav, Source.map_data],
       Policy.nav_only: [Source.nav]
     }
-    self._reset_limit_sources()
+    for source in Source:
+      self._reset_limit_sources(source)
 
   def change_policy(self, policy: Policy):
     self._policy = policy
 
-  def _reset_limit_sources(self):
-    self._limit_solutions.clear()
-    self._distance_solutions.clear()
-    for source in Source:
-      self._limit_solutions[source] = 0.
-      self._distance_solutions[source] = 0.
+  def _reset_limit_sources(self, source):
+    self._limit_solutions[source] = 0.
+    self._distance_solutions[source] = 0.
+
+  def _is_sock_updated(self, sock):
+    return self._sm.alive[sock] and self._sm.updated[sock]
 
   def resolve(self, v_ego, current_speed_limit, sm):
-    self._reset_limit_sources()
     self._v_ego = v_ego
     self._current_speed_limit = current_speed_limit
     self._sm = sm
@@ -49,35 +49,43 @@ class SpeedLimitResolver:
     self._get_from_map_data()
 
   def _get_from_car_state(self):
+    if not self._is_sock_updated('carState'):
+      debug('SL: No carState instruction for speed limit')
+      return
+
+    self._reset_limit_sources(Source.car_state)
     self._limit_solutions[Source.car_state] = self._sm['carState'].cruiseState.speedLimit
     self._distance_solutions[Source.car_state] = 0.
 
   def _get_from_nav(self):
-    if not self._sm.alive['navInstruction']:
+    if not self._is_sock_updated('navInstruction'):
       debug('SL: No nav instruction for speed limit')
       return
 
     # Load limits from nav instruction
+    self._reset_limit_sources(Source.nav)
     self._limit_solutions[Source.nav] = self._sm['navInstruction'].speedLimit
     self._distance_solutions[Source.nav] = 0.
 
   def _get_from_map_data(self):
     sock = 'liveMapDataSP'
-    if self._sm.logMonoTime[sock] is None:
+
+    if not self._is_sock_updated(sock):
       debug('SL: No map data for speed limit')
       return
 
     # Load limits from map_data
+    self._reset_limit_sources(Source.map_data)
     self._process_map_data(self._sm[sock])
 
   def _process_map_data(self, map_data):
-    speed_limit = map_data.speedLimit if map_data.speedLimitValid else 0.
-    next_speed_limit = map_data.speedLimitAhead if map_data.speedLimitAheadValid else 0.
-
     gps_fix_age = time.time() - map_data.lastGpsTimestamp * 1e-3
     if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
       debug(f'SL: Ignoring map data as is too old. Age: {gps_fix_age}')
       return
+
+    speed_limit = map_data.speedLimit if map_data.speedLimitValid else 0.
+    next_speed_limit = map_data.speedLimitAhead if map_data.speedLimitAheadValid else 0.
 
     self._calculate_map_data_limits(speed_limit, next_speed_limit, map_data)
 

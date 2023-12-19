@@ -963,13 +963,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // Bottom bar road name
     if (showDebugUI && !roadName.isEmpty()) {
-      const int h = 38;
-      QRect bar_rc(rect().left(), rect().top(), rect().width(), h);
-      p.setPen(Qt::NoPen);
-      p.setBrush(QColor(0, 0, 0, 100));
-      p.drawRect(bar_rc);
-      p.setFont(InterFont(28, QFont::Bold));
-      drawCenteredText(p, bar_rc.center().x(), bar_rc.center().y(), roadName, QColor(255, 255, 255, 200));
+      int font_size = splitPanelVisible ? 38 : 50;
+      int h = splitPanelVisible ? 18 : 26;
+      p.setFont(InterFont(font_size, QFont::Bold));
+      drawRoadNameText(p, rect().center().x(), h, roadName, QColor(255, 255, 255, 255));
     }
 
     // Turn Speed Sign
@@ -1011,6 +1008,22 @@ void AnnotatedCameraWidget::drawColoredText(QPainter &p, int x, int y, const QSt
 void AnnotatedCameraWidget::drawCenteredText(QPainter &p, int x, int y, const QString &text, QColor color) {
   QRect real_rect = p.fontMetrics().boundingRect(text);
   real_rect.moveCenter({x, y});
+
+  p.setPen(color);
+  p.drawText(real_rect, Qt::AlignCenter, text);
+}
+
+void AnnotatedCameraWidget::drawRoadNameText(QPainter &p, int x, int y, const QString &text, QColor color) {
+  QRect real_rect = p.fontMetrics().boundingRect(text);
+  real_rect.moveCenter({x, y});
+
+  QRect real_rect_adjusted(real_rect);
+  real_rect_adjusted.adjust(-UI_ROAD_NAME_MARGIN_X, 5, UI_ROAD_NAME_MARGIN_X, 0);
+  QPainterPath path;
+  path.addRoundedRect(real_rect_adjusted, 10, 10);
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 100));
+  p.drawPath(path);
 
   p.setPen(color);
   p.drawText(real_rect, Qt::AlignCenter, text);

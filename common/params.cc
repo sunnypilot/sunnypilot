@@ -178,6 +178,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Offroad_TemperatureTooHigh", CLEAR_ON_MANAGER_START},
     {"Offroad_UnofficialHardware", CLEAR_ON_MANAGER_START},
     {"Offroad_UpdateFailed", CLEAR_ON_MANAGER_START},
+    {"Offroad_OSMUpdateRequired", CLEAR_ON_MANAGER_START},
     {"OpenpilotEnabledToggle", PERSISTENT},
     {"PandaHeartbeatLost", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"PandaSomResetTriggered", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
@@ -274,9 +275,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"OnroadScreenOff", PERSISTENT},
     {"OnroadScreenOffBrightness", PERSISTENT},
     {"OnroadScreenOffEvent", PERSISTENT},
-    {"OsmDbUpdatesCheck", PERSISTENT},
     {"OsmLocal", PERSISTENT},
-    {"OsmLocalDb", PERSISTENT},
     {"OsmLocationName", PERSISTENT},
     {"OsmLocationTitle", PERSISTENT},
     {"OsmLocationUrl", PERSISTENT},
@@ -310,6 +309,21 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"VwAccType", PERSISTENT},
     {"VwCCOnly", PERSISTENT},
     {"Offroad_SupersededUpdate", PERSISTENT},
+
+    // PFEIFER - MAPD {{
+    {"MapdVersion", PERSISTENT},
+    {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
+    {"MapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"NextMapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"OSMDownloadBounds", PERSISTENT},
+    {"OSMDownloadLocations", PERSISTENT},
+    {"OsmDownloadedDate", PERSISTENT},
+    {"OsmStateTitle", PERSISTENT},
+    {"OsmStateName", PERSISTENT},
+    {"OSMDownloadProgress", CLEAR_ON_MANAGER_START},
+    {"OsmDbUpdatesCheck", CLEAR_ON_MANAGER_START},  // mapd database update happens with device ON, reset on boot
+    // }} PFEIFER - MAPD
 };
 
 } // namespace
