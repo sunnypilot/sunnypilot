@@ -77,9 +77,8 @@ class CarState(CarStateBase):
     ret.cruiseState.standstill = cp.vl["EngBrakeData"]["AccStopMde_D_Rq"] == 3
     ret.accFaulted = cp.vl["EngBrakeData"]["CcStat_D_Actl"] in (1, 2)
 
-    # SpeedLimit
-    self.update_traffic_signals(self.CP, cp, cp_cam)
-    ret.cruiseState.speedLimit = self.prev_vLimit
+    if self.CP.carFingerprint in CANFD_CAR:
+      ret.cruiseState.speedLimit = self.update_traffic_signals(cp_cam)
 
     if not self.CP.openpilotLongitudinalControl:
       ret.accFaulted = ret.accFaulted or cp_cam.vl["ACCDATA"]["CmbbDeny_B_Actl"] == 1
@@ -133,20 +132,15 @@ class CarState(CarStateBase):
 
     return ret
 
+  def update_traffic_signals(self, cp_cam):
+    # TODO: Check if CAN platforms have the same signals
+    if self.CP.carFingerprint in CANFD_CAR:
+      v_limit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
+      v_limit_unit = cp_cam.vl["Traffic_RecognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
 
-  def update_traffic_signals(self, CP, cp, cp_cam):
-    if CP.carFingerprint in CANFD_CAR:
-      # we'll start with CANFD - not sure if and how to check if this message is in non CANFD
-      origVLimit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
-      origVLimitUnit = cp_cam.vl["Traffic_RecognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
+      speed_factor = CV.MPH_TO_MS if v_limit_unit == 2 else CV.KPH_TO_MS if v_limit_unit == 1 else 0
 
-      # convert to m/s from whatever came in
-      speed_factor = CV.MPH_TO_MS if origVLimitUnit == 2 else CV.KPH_TO_MS if origVLimitUnit == 1 else 0              
-
-      vLimit = origVLimit if origVLimit not in (0, 255) else 0
-
-      # speed in m/s
-      self.prev_vLimit = vLimit * speed_factor
+      return v_limit * speed_factor if v_limit not in (0, 255) else 0
 
   @staticmethod
   def get_can_parser(CP):
@@ -175,16 +169,12 @@ class CarState(CarStateBase):
     if CP.transmissionType == TransmissionType.automatic:
       messages += [
         ("Gear_Shift_by_Wire_FD1", 10),
+        ("Traffic_RecognitnData", 1),
       ]
     elif CP.transmissionType == TransmissionType.manual:
       messages += [
         ("Engine_Clutch_Data", 33),
         ("BCM_Lamp_Stat_FD1", 1),
-      ]
-
-    if CP.carFingerprint in CANFD_CAR:
-      messages += [
-        ("Traffic_RecognitnData", 1),
       ]
 
     if CP.enableBsm and CP.carFingerprint not in CANFD_CAR:
