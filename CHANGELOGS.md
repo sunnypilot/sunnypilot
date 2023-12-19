@@ -1,5 +1,7 @@
 sunnypilot - 0.9.6.1 (2023-xx-xx)
 ========================
+* NEW❗: Ford CAN-FD longitudinal
+  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:beta3 commit dd4c663
 * UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
