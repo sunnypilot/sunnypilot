@@ -24,7 +24,7 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = None
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
-    self.prev_vLimit = 0
+    self.v_limit = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -135,12 +135,12 @@ class CarState(CarStateBase):
   def update_traffic_signals(self, cp_cam):
     # TODO: Check if CAN platforms have the same signals
     if self.CP.carFingerprint in CANFD_CAR:
-      v_limit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
+      self.v_limit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
       v_limit_unit = cp_cam.vl["Traffic_RecognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
 
       speed_factor = CV.MPH_TO_MS if v_limit_unit == 2 else CV.KPH_TO_MS if v_limit_unit == 1 else 0
 
-      return v_limit * speed_factor if v_limit not in (0, 255) else 0
+      return self.v_limit * speed_factor if self.v_limit not in (0, 255) else 0
 
   @staticmethod
   def get_can_parser(CP):
