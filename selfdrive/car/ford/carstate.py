@@ -169,7 +169,6 @@ class CarState(CarStateBase):
     if CP.transmissionType == TransmissionType.automatic:
       messages += [
         ("Gear_Shift_by_Wire_FD1", 10),
-        ("Traffic_RecognitnData", 1),
       ]
     elif CP.transmissionType == TransmissionType.manual:
       messages += [
@@ -194,6 +193,11 @@ class CarState(CarStateBase):
       ("ACCDATA_3", 5),
       ("IPMA_Data", 1),
     ]
+
+    if CP.carFingerprint in CANFD_CAR:
+      messages += [
+        ("Traffic_RecognitnData", 1),
+      ]
 
     if CP.enableBsm and CP.carFingerprint in CANFD_CAR:
       messages += [
