@@ -257,18 +257,22 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
       list->addItem(horizontal_line());
     }
+  }
 
-    // trigger updateToggles() when toggleFlipped
-    if (std::find(updateTogglesNames.begin(), updateTogglesNames.end(), param.toStdString()) != updateTogglesNames.end()) {
-      connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
+  // trigger updateToggles() when toggleFlipped
+  for (const auto& updateToggleName : updateTogglesNames) {
+    if (toggles.find(updateToggleName) != toggles.end()) {
+      connect(toggles[updateToggleName], &ToggleControl::toggleFlipped, [=](bool state) {
         updateToggles();
       });
     }
+  }
 
-    // trigger offroadTransition when going onroad/offroad
-    if (std::find(toggleOffroad.begin(), toggleOffroad.end(), param.toStdString()) != toggleOffroad.end()) {
+  // trigger offroadTransition when going onroad/offroad
+  for (const auto& offroadName : toggleOffroad) {
+    if (toggles.find(offroadName) != toggles.end()) {
       connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-        toggle->setEnabled(offroad);
+        toggles[offroadName]->setEnabled(offroad);
       });
     }
   }
