@@ -54,15 +54,15 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
-      "EnforceTorqueLateral",
-      tr("Enforce Torque Lateral Control"),
-      tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
       "NNFF",
       tr("Neural Network Lateral Control (NNLC)"),
       "",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "EnforceTorqueLateral",
+      tr("Enforce Torque Lateral Control"),
+      tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -194,7 +194,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
-    "EnableMads", "EnforceTorqueLateral", "LiveTorqueRelaxed", "NNFF"
+    "EnableMads", "EnforceTorqueLateral", "CustomTorqueLateral", "LiveTorqueRelaxed", "NNFF"
   };
 
   // Controls: Torque - FRICTION
@@ -258,6 +258,19 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(horizontal_line());
     }
   }
+
+  connect(toggles["NNFF"], &ToggleControl::toggleFlipped, [=](bool state) {
+    if (state) {
+      toggles["EnforceTorqueLateral"]->setEnabled(false);
+      params.putBool("EnforceTorqueLateral", false);
+      toggles["EnforceTorqueLateral"]->refresh();
+    } else {
+      toggles["NNFF"]->hideDescription();
+
+      toggles["EnforceTorqueLateral"]->setEnabled(true);
+      toggles["EnforceTorqueLateral"]->refresh();
+    }
+  });
 
   // trigger updateToggles() when toggleFlipped
   for (const auto& updateToggleName : updateTogglesNames) {
@@ -364,6 +377,7 @@ void SunnypilotPanel::hideEvent(QHideEvent *event) {
 
 void SunnypilotPanel::updateToggles() {
   param_watcher->addParam("DynamicLaneProfile");
+  param_watcher->addParam("IsOffroad");
 
   if (!isVisible()) {
     return;
@@ -389,6 +403,16 @@ void SunnypilotPanel::updateToggles() {
   auto reverse_acc = toggles["ReverseAccChange"];
   auto slc_toggle = toggles["EnableSlc"];
 
+  auto is_offroad = params.getBool("IsOffroad");
+
+  // NNLC/NNFF
+  QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
+  QString nnff_fuzzy_desc = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the <font color='white'>#tuning-nnlc channel at the sunnypilot Discord server</font> if there are any issues.");
+  QString nnff_status_init = tr("<font color='yellow'>⚠️ Start the car to check car compatibility</font>");
+  QString nnff_not_loaded = tr("<font color='yellow'>⚠️ NNLC Not Loaded</font>");
+  QString nnff_loaded = tr("<font color=#00ff00>✅ NNLC Loaded</font>");
+  auto _car_model = QString::fromStdString(params.get("NNFFCarModel"));
+
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
@@ -397,9 +421,6 @@ void SunnypilotPanel::updateToggles() {
 
     // NNLC/NNFF
     {
-      QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
-      QString nnff_fuzzy_desc = tr("([Match = Exact] is ideal, but [Match = Fuzzy] is fine too. Contact @twilsonco in the sunnypilot Discord server if there are any issues.)");
-
       if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
         enforce_torque_lateral->setEnabled(false);
         params.remove("EnforceTorqueLateral");
@@ -407,27 +428,17 @@ void SunnypilotPanel::updateToggles() {
         nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_available_desc));
         nnff_toggle->setEnabled(false);
         params.remove("NNFF");
-      }
+      } else if (nnff_toggle->isToggled()) {
+        if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
+          QString nn_model_name = QString::fromStdString(CP.getLateralTuning().getTorque().getNnModelName());
+          QString nn_fuzzy = QString::fromUtf8(CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? "Fuzzy" : "Exact");
 
-      else if (nnff_toggle->isToggled()) {
-        QString nn_model_name = QString::fromStdString(CP.getLateralTuning().getTorque().getNnModelName());
-        QString nn_fuzzy = QString::fromUtf8(CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? "Fuzzy" : "Exact");
-        QString nn_status = nn_model_name == "" ? "<font color='yellow'>⚠️ NNLC Not Loaded </font>" : "<font color='green'>✅ NNLC Loaded</font>";
-        if (nn_model_name == "") {
-          nnff_toggle->setDescription(nnffDescriptionBuilder(nn_status + "<br>Contact @twilsonco in the sunnypilot Discord server and donate logs to get NNLC loaded for your car."));
+          nnff_toggle->setDescription(nnffDescriptionBuilder((nn_model_name == "")     ? nnff_status_init :
+                                                             (nn_model_name == "mock") ? (nnff_not_loaded + "<br>Reach out to the sunnypilot team in the <font color='white'>#tuning-nnlc channel at the sunnypilot Discord server</font> and donate logs to get NNLC loaded for your car.") :
+                                                                                         (nnff_loaded + " | Match = " + nn_fuzzy + " | " + _car_model + "<br><br>" + nnff_fuzzy_desc)));
+          enforce_torque_lateral->setEnabled(false);
         } else {
-          int has_eps = nn_model_name.indexOf("b'");
-          if (has_eps != -1) {
-            QString _car = nn_model_name.left(has_eps);
-            QString _eps = nn_model_name.mid(has_eps);
-            nnff_toggle->setDescription(nnffDescriptionBuilder(nn_status + " | Match = " + nn_fuzzy + " | " + _car + "<br>EPS: " + _eps + "<br>" + nnff_fuzzy_desc));
-          } else {
-            nnff_toggle->setDescription(nnffDescriptionBuilder(nn_status + " | Match = " + nn_fuzzy + "<br>" + nn_model_name + "<br>" + nnff_fuzzy_desc));
-          }
-        }
-
-        if (nnff_toggle->getDescription() != nnff_description) {
-          nnff_toggle->showDescription();
+          nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_status_init));
         }
       } else {
         nnff_toggle->setDescription(nnff_description);
@@ -457,23 +468,30 @@ void SunnypilotPanel::updateToggles() {
     reverse_acc->setEnabled(false);
     slc_toggle->setEnabled(false);
     slcSettings->setEnabled(false);
-    nnff_toggle->setDescription(nnff_description);
+
+    nnff_toggle->setDescription(nnff_toggle->isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
+  }
+
+  if (nnff_toggle->getDescription() != nnff_description) {
+    nnff_toggle->showDescription();
   }
 
   // toggle names to update when EnforceTorqueLateral is flipped
   std::vector<std::string> torqueLateralGroup{"CustomTorqueLateral", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
   for (const auto& torqueLateralToggle : torqueLateralGroup) {
     if (toggles.find(torqueLateralToggle) != toggles.end()) {
-      toggles[torqueLateralToggle]->setVisible(enforce_torque_lateral->isToggled());
-      toggles[torqueLateralToggle]->setEnabled(!nnff_toggle->isToggled());
+      if (nnff_toggle->isToggled()) {
+        toggles[torqueLateralToggle]->setVisible(false);
+        toggles[torqueLateralToggle]->setEnabled(false);
+      }
     }
   }
 
-  // toggle names to update when CustomTorqueLateral is flipped
-  std::vector<SPAbstractControl*> customTorqueGroup{friction, lat_accel_factor};
-  for (const auto& customTorqueControl : customTorqueGroup) {
-    customTorqueControl->setVisible(custom_torque_lateral->isToggled());
-    customTorqueControl->setEnabled(!nnff_toggle->isToggled());
+  for (const auto& torqueLateralToggle : torqueLateralGroup) {
+    if (toggles.find(torqueLateralToggle) != toggles.end()) {
+      toggles[torqueLateralToggle]->setVisible(enforce_torque_lateral->isToggled());
+      toggles[torqueLateralToggle]->setEnabled(enforce_torque_lateral->isToggled());
+    }
   }
 
   if (enforce_torque_lateral->isToggled()) {
@@ -482,13 +500,18 @@ void SunnypilotPanel::updateToggles() {
   } else {
     params.putBool("LiveTorque", false);
     params.putBool("CustomTorqueLateral", false);
-    for (const auto& customTorqueControl : customTorqueGroup) {
-      customTorqueControl->setVisible(false);
-    }
   }
 
-  m_tsc->setVisible(false);  // TODO: temporarily disable M-TSC until the reimplementation is in place. Remove this line to re-enable the toggle.
-  m_tsc->setEnabled(false);  // TODO: temporarily disable M-TSC until the reimplementation is in place. Remove this line to re-enable the toggle.
+  // toggle names to update when CustomTorqueLateral is flipped
+  std::vector<SPAbstractControl*> customTorqueGroup{friction, lat_accel_factor};
+  for (const auto& customTorqueControl : customTorqueGroup) {
+    customTorqueControl->setVisible(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
+    customTorqueControl->setEnabled(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
+  }
+
+  toggles["CustomTorqueLateral"]->setEnabled(is_offroad);
+  toggles["LiveTorque"]->setEnabled(is_offroad);
+  toggles["LiveTorqueRelaxed"]->setEnabled(is_offroad);
 }
 
 TorqueFriction::TorqueFriction() : SPOptionControl (

@@ -160,10 +160,10 @@ def get_nn_model_path(_car, eps_firmware) -> Tuple[Optional[str], float]:
   else:
     check_model = _car
   model_path, max_similarity = check_nn_path(check_model)
-  if 0.0 <= max_similarity < 0.9:
+  if _car not in model_path or 0.0 <= max_similarity < 0.9:
     check_model = _car
     model_path, max_similarity = check_nn_path(check_model)
-    if 0.0 <= max_similarity < 0.9:
+    if _car not in model_path or 0.0 <= max_similarity < 0.9:
       model_path = None
   return model_path, max_similarity
 
@@ -268,8 +268,15 @@ class CarInterfaceBase(ABC):
         eps_firmware = str(next((fw.fwVersion for fw in car_fw if fw.ecu == "eps"), ""))
         model, similarity_score = get_nn_model_path(candidate, eps_firmware)
         if model is not None:
-          ret.lateralTuning.torque.nnModelName = os.path.splitext(os.path.basename(model))[0]
+          ret.lateralTuning.torque.nnModelName = nn_model_name = os.path.splitext(os.path.basename(model))[0]
           ret.lateralTuning.torque.nnModelFuzzyMatch = (similarity_score < 0.99)
+          if 'b\'' in nn_model_name:
+            nn_model, _ = nn_model_name.split('b\'')
+          else:
+            nn_model = nn_model_name
+          params.put("NNFFCarModel", nn_model)
+        else:
+          ret.lateralTuning.torque.nnModelName = "mock"
 
     # Vehicle mass is published curb weight plus assumed payload such as a human driver; notCars have no assumed payload
     if not ret.notCar:

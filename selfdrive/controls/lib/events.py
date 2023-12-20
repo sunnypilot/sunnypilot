@@ -261,7 +261,7 @@ def no_gps_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, m
 
 def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
   model_name = CP.lateralTuning.torque.nnModelName
-  if model_name == "":
+  if model_name in ("", "mock"):
     return Alert(
       "NN Lateral Controller Not Loaded",
       '⚙️ -> "sunnypilot" for more details',
