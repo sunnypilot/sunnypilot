@@ -5,6 +5,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <sstream>
 
 #include <QDebug>
 #include <QMouseEvent>
@@ -108,7 +109,7 @@ void OnroadWindow::updateState(const UIState &s) {
   Alert alert = Alert::get(*(s.sm), s.scene.started_frame, s.scene.display_debug_alert_frame);
   alerts->updateAlert(alert);
 
-  if (s.scene.map_on_left) {
+  if (s.scene.map_on_left || s.scene.mapbox_fullscreen) {
     split->setDirection(QBoxLayout::LeftToRight);
   } else {
     split->setDirection(QBoxLayout::RightToLeft);
@@ -192,20 +193,11 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 
   UIState *s = uiState();
   UIScene &scene = s->scene;
-  SubMaster &sm = *(uiState()->sm);
-  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  SubMaster &sm = *(s->sm);
 
   QRect debug_tap_rect = QRect(rect().center().x() - 200, rect().center().y() - 200, 400, 400);
-  QRect speed_limit_touch_rect = speed_sgn_rc.adjusted(-50, -50, 50, 50);
 
-  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
-    // If touching the speed limit sign area when visible
-    scene.last_speed_limit_sign_tap = seconds_since_boot();
-    params.putBool("LastSpeedLimitSignTap", true);
-    scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
-    params.putBool("SpeedLimitControl", scene.speed_limit_control_enabled);
-    propagate_event = false;
-  } else if (scene.debug_snapshot_enabled && debug_tap_rect.contains(e->x(), e->y())) {
+  if (scene.debug_snapshot_enabled && debug_tap_rect.contains(e->x(), e->y())) {
     issue_debug_snapshot(sm);
     propagate_event = false;
   }
@@ -216,6 +208,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
         // Switch between map and sidebar when using navigate on openpilot
         bool sidebarVisible = geometry().x() > 0;
         bool show_map = uiState()->scene.navigate_on_openpilot ? sidebarVisible : !sidebarVisible;
+        updateMapSize(scene);
         map->setVisible(show_map && !map->isVisible());
       }
     }
@@ -244,7 +237,8 @@ void OnroadWindow::offroadTransition(bool offroad) {
       QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
       nvg->map_settings_btn->setEnabled(true);
 
-      m->setFixedWidth(topWidget(this)->width() / 2 - UI_BORDER_SIZE);
+      m->setFixedWidth(uiState()->scene.mapbox_fullscreen ? topWidget(this)->width() :
+                                                            topWidget(this)->width() / 2 - UI_BORDER_SIZE);
       split->insertWidget(0, m);
 
       // hidden by default, made visible when navRoute is published
@@ -269,6 +263,12 @@ void OnroadWindow::offroadTransition(bool offroad) {
   }
 
   alerts->updateAlert({});
+}
+
+void OnroadWindow::updateMapSize(const UIScene &scene) {
+  map->setFixedWidth(scene.mapbox_fullscreen ? topWidget(this)->width() :
+                                               topWidget(this)->width() / 2 - UI_BORDER_SIZE);
+  split->insertWidget(0, map);
 }
 
 void OnroadWindow::primeChanged(bool prime) {
@@ -414,7 +414,7 @@ OnroadSettingsButton::OnroadSettingsButton(QWidget *parent) : QPushButton(parent
   setFixedSize(152, 152);
   settings_img = loadPixmap("../assets/navigation/icon_settings.svg", {114, 114});
 
-  // hidden by default, made visible if Driving Personality / GAC, DLP, or SLC is enabled
+  // hidden by default, made visible if Driving Personality / GAC, DLP, DEC, or SLC is enabled
   setVisible(false);
   setEnabled(false);
 }
@@ -426,7 +426,7 @@ void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
 
 void OnroadSettingsButton::updateState(const UIState &s) {
   const auto cp = (*s.sm)["carParams"].getCarParams();
-  auto dlp_enabled = s.scene.dynamic_lane_profile_toggle;
+  auto dlp_enabled = true;
   bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
 
   setVisible(allow_btn);
@@ -477,6 +477,30 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   updateButtonsLayout();
 }
 
+void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
+  bool propagate_event = true;
+
+  UIState *s = uiState();
+  UIScene &scene = s->scene;
+  const SubMaster &sm = *(s->sm);
+  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+
+  QRect speed_limit_touch_rect = scene.sl_sign_rect;
+
+  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+    // If touching the speed limit sign area when visible
+    scene.last_speed_limit_sign_tap = seconds_since_boot();
+    params.putBool("LastSpeedLimitSignTap", true);
+    scene.speed_limit_control_enabled = !scene.speed_limit_control_enabled;
+    params.putBool("EnableSlc", scene.speed_limit_control_enabled);
+    propagate_event = false;
+  }
+
+  if (propagate_event) {
+    QWidget::mousePressEvent(e);
+  }
+}
+
 #ifdef ENABLE_DASHCAM
 void AnnotatedCameraWidget::offroadTransition(bool offroad) {
   if (offroad) {
@@ -520,7 +544,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto nav_instruction = sm["navInstruction"].getNavInstruction();
   const auto car_control = sm["carControl"].getCarControl();
   const auto radar_state = sm["radarState"].getRadarState();
-  const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
+  const auto is_gps_location_external = sm.rcv_frame("gpsLocationExternal") > 1;
+  const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto lateral_plan_sp = sm["lateralPlanSP"].getLateralPlanSP();
 
@@ -559,7 +584,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   latActive = car_control.getLatActive();
   madsEnabled = car_state.getMadsEnabled();
 
-  brakeLights = car_state.getBrakeLights() && s.scene.visual_brake_lights;
+  brakeLights = car_state.getBrakeLightsDEPRECATED() && s.scene.visual_brake_lights;
 
   standStillTimer = s.scene.stand_still_timer;
   standStill = car_state.getStandstill();
@@ -579,15 +604,14 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   curvature = cs.getCurvature();
   roll = sm["liveParameters"].getLiveParameters().getRoll();
   memoryUsagePercent = sm["deviceState"].getDeviceState().getMemoryUsagePercent();
-  devUiEnabled = s.scene.dev_ui_enabled;
   devUiInfo = s.scene.dev_ui_info;
-  gpsAccuracy = gpsLocationExternal.getAccuracy();
-  altitude = gpsLocationExternal.getAltitude();
+  gpsAccuracy = is_gps_location_external ? gpsLocation.getAccuracy() : 1.0; //External reports accuracy, internal does not.
+  altitude = gpsLocation.getAltitude();
   vEgo = car_state.getVEgo();
   aEgo = car_state.getAEgo();
   steeringTorqueEps = car_state.getSteeringTorqueEps();
-  bearingAccuracyDeg = gpsLocationExternal.getBearingAccuracyDeg();
-  bearingDeg = gpsLocationExternal.getBearingDeg();
+  bearingAccuracyDeg = gpsLocation.getBearingAccuracyDeg();
+  bearingDeg = gpsLocation.getBearingDeg();
   torquedUseParams = (ltp.getUseParams() || s.scene.live_torque_toggle) && !s.scene.torqued_override;
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
@@ -605,6 +629,11 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   // update onroad settings button state
   onroad_settings_btn->updateState(s);
+
+#ifdef ENABLE_DASHCAM
+  // update screen recorder button
+  recorder->updateState(s);
+#endif
 
   // update buttons layout
   updateButtonsLayout();
@@ -625,8 +654,16 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // hide onroad settings button for alerts and flip for right hand DM
   if (onroad_settings_btn->isEnabled()) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
+
+#ifdef ENABLE_DASHCAM
+  // hide screen recorder button for alerts and flip for right hand DM
+  if (recorder->isEnabled()) {
+    recorder->setVisible(!hideBottomIcons);
+    main_layout->setAlignment(recorder, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+  }
+#endif
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   slcState = lp_sp.getSpeedLimitControlState();
@@ -658,23 +695,27 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
                              slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE);
     const bool sl_temp_inactive = !sl_force_active && (s.scene.speed_limit_control_enabled &&
                                   slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
+    const bool sl_pre_active = !sl_force_active && (s.scene.speed_limit_control_enabled &&
+                               slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE);
     const int sl_distance = int(lp_sp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
     const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
                                 "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
                                 "+" + QString::number(std::nearbyint(speed_limit_offset)) : "");
-    const QString sl_inactive_str(sl_temp_inactive ? "TEMP" : "");
-    const QString sl_substring(sl_inactive || sl_temp_inactive ? sl_inactive_str :
+    const QString sl_inactive_str(sl_temp_inactive && s.scene.speed_limit_control_engage_type == 1 ? "TEMP" : "");
+    const QString sl_substring(sl_inactive || sl_temp_inactive || sl_pre_active ? sl_inactive_str :
                                sl_distance > 0 ? sl_distance_str : sl_offset_str);
 
     showSpeedLimit = speed_limit_slc > 0.0;
     speedLimitSLC = speed_limit_slc;
+    speedLimitSLCOffset = speed_limit_offset;
     slcSubText = sl_substring;
     slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
     mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
     slcActive = !sl_inactive && !sl_temp_inactive;
-    overSpeedLimit = (((speed_limit_slc + speed_limit_offset) < speed) && !sl_inactive && !sl_temp_inactive) ||
-                                  ((speed_limit_slc < speed) && (speed_limit_slc > 0.0) && (sl_inactive || sl_temp_inactive));
+    overSpeedLimit = showSpeedLimit && (std::nearbyint(speed_limit_slc + speed_limit_offset) < std::nearbyint(speed));
+    plus_arrow_up_img = loadPixmap("../assets/img_plus_arrow_up", {105, 105});
+    minus_arrow_down_img = loadPixmap("../assets/img_minus_arrow_down", {105, 105});
 
     const float tsc_speed = lp_sp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const auto tscState = lp_sp.getTurnSpeedControlState();
@@ -688,8 +729,10 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     curveSign = lp_sp.getTurnSign();
   }
 
-  longitudinalPersonality = s.scene.longitudinal_personality;
-  dynamicLaneProfile = s.scene.dynamic_lane_profile;
+  longitudinalPersonality = int(lp_sp.getPersonality());
+  dynamicLaneProfile = int(lateral_plan_sp.getDynamicLaneProfile());
+  mpcMode = QString::fromStdString(lp_sp.getE2eBlended());
+  mpcMode = (mpcMode == "blended") ? mpcMode.replace(0, 1, mpcMode[0].toUpper()) : mpcMode.toUpper();
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -730,7 +773,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     }
   }
 
-  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLights()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLightsDEPRECATED()) && !car_state.getGasPressed() && car_state.getStandstill()) {
     if (e2eLStatus == 2 && !radar_state.getLeadOne().getStatus()) {
       if (chime_sent) {
         chime_count = 0;
@@ -762,9 +805,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
 
-#ifdef ENABLE_DASHCAM
-  recorder->updateState(s);
-#endif
+  experimental_btn->setVisible(!(showDebugUI && showVTC));
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
@@ -837,8 +878,12 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 
   const QRect sign_rect = set_speed_rect.adjusted(sign_margin, default_size.height(), -sign_margin, -sign_margin);
+  uiState()->scene.sl_sign_rect = sign_rect;
+
+  speedLimitWarning(p, sign_rect, sign_margin);
+
   // US/Canada (MUTCD style) sign
-  if ((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) {
+  if (((mapSourcedSpeedLimit && !is_metric && !isNavSpeedLimit) || has_us_speed_limit) && slcShowSign) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawRoundedRect(sign_rect, 24, 24);
@@ -860,7 +905,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   // EU (Vienna style) sign
-  if ((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) {
+  if (((mapSourcedSpeedLimit && is_metric && !isNavSpeedLimit) || has_eu_speed_limit) && slcShowSign) {
     p.setPen(Qt::NoPen);
     p.setBrush(whiteColor());
     p.drawEllipse(sign_rect);
@@ -889,7 +934,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   if (!reversing) {
     // ####### 1 ROW #######
     QRect bar_rect1(rect().left(), rect().bottom() - 60, rect().width(), 61);
-    if (!hideBottomIcons && devUiEnabled && !splitPanelVisible && devUiInfo == 1) {
+    if (!splitPanelVisible && devUiInfo == 2) {
       p.setPen(Qt::NoPen);
       p.setBrush(QColor(0, 0, 0, 100));
       p.drawRect(bar_rect1);
@@ -898,12 +943,12 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // ####### 1 COLUMN ########
     QRect rc2(rect().right() - (UI_BORDER_SIZE * 2), UI_BORDER_SIZE * 1.5, 184, 152);
-    if (devUiEnabled) {
+    if (devUiInfo != 0) {
       drawRightDevUi(p, rect().right() - 184 - UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2 + rc2.height());
     }
 
     int rn_btn = 0;
-    rn_btn = devUiEnabled && !splitPanelVisible && devUiInfo == 1 ? 35 : 0;
+    rn_btn = !splitPanelVisible && devUiInfo == 2 ? 35 : 0;
     uiState()->scene.rn_offset = rn_btn;
 
     // Stand Still Timer
@@ -913,24 +958,21 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // V-TSC
     if (showDebugUI && showVTC) {
-      drawVisionTurnControllerUI(p, rect().right() - 184 - UI_BORDER_SIZE, int(UI_BORDER_SIZE * 1.5), 184, vtcColor, vtcSpeed, 100);
+      drawVisionTurnControllerUI(p, rect().right() - 184 - (UI_BORDER_SIZE * 1.5), int(UI_BORDER_SIZE * 1.5), 184, vtcColor, vtcSpeed, 100);
     }
 
     // Bottom bar road name
     if (showDebugUI && !roadName.isEmpty()) {
-      const int h = 38;
-      QRect bar_rc(rect().left(), rect().top(), rect().width(), h);
-      p.setPen(Qt::NoPen);
-      p.setBrush(QColor(0, 0, 0, 100));
-      p.drawRect(bar_rc);
-      p.setFont(InterFont(28, QFont::Bold));
-      drawCenteredText(p, bar_rc.center().x(), bar_rc.center().y(), roadName, QColor(255, 255, 255, 200));
+      int font_size = splitPanelVisible ? 38 : 50;
+      int h = splitPanelVisible ? 18 : 26;
+      p.setFont(InterFont(font_size, QFont::Bold));
+      drawRoadNameText(p, rect().center().x(), h, roadName, QColor(255, 255, 255, 255));
     }
 
     // Turn Speed Sign
     if (showTurnSpeedLimit) {
-      QRect rc = speed_sgn_rc;
-      rc.moveTop(speed_sgn_rc.bottom() + UI_BORDER_SIZE);
+      QRect rc = uiState()->scene.sl_sign_rect;
+      rc.moveTop(uiState()->scene.sl_sign_rect.bottom() + UI_BORDER_SIZE);
       drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
     }
   }
@@ -966,6 +1008,22 @@ void AnnotatedCameraWidget::drawColoredText(QPainter &p, int x, int y, const QSt
 void AnnotatedCameraWidget::drawCenteredText(QPainter &p, int x, int y, const QString &text, QColor color) {
   QRect real_rect = p.fontMetrics().boundingRect(text);
   real_rect.moveCenter({x, y});
+
+  p.setPen(color);
+  p.drawText(real_rect, Qt::AlignCenter, text);
+}
+
+void AnnotatedCameraWidget::drawRoadNameText(QPainter &p, int x, int y, const QString &text, QColor color) {
+  QRect real_rect = p.fontMetrics().boundingRect(text);
+  real_rect.moveCenter({x, y});
+
+  QRect real_rect_adjusted(real_rect);
+  real_rect_adjusted.adjust(-UI_ROAD_NAME_MARGIN_X, 5, UI_ROAD_NAME_MARGIN_X, 0);
+  QPainterPath path;
+  path.addRoundedRect(real_rect_adjusted, 10, 10);
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 100));
+  p.drawPath(path);
 
   p.setPen(color);
   p.drawText(real_rect, Qt::AlignCenter, text);
@@ -1251,19 +1309,19 @@ void AnnotatedCameraWidget::drawRightDevUi(QPainter &p, int x, int y) {
     ry = y + rh;
   }
 
-  // Add Device Memory Usage
+  // Add Device Memory (RAM) Usage
   // Unit: Percent
   if (true) {
     char val_str[16];
     QColor valueColor = QColor(255, 255, 255, 255);
 
-    if (memoryUsagePercent > 75) {
+    if (memoryUsagePercent > 85) {
       valueColor = QColor(255, 188, 0, 255);
     }
 
     snprintf(val_str, sizeof(val_str), "%d%s", (int)memoryUsagePercent, "%");
 
-    rh += drawDevUiElementRight(p, x, ry, val_str, "MEMORY", "", valueColor);
+    rh += drawDevUiElementRight(p, x, ry, val_str, "RAM", "", valueColor);
     ry = y + rh;
   }
 
@@ -1542,6 +1600,14 @@ int AnnotatedCameraWidget::blinkerPulse(int frame) {
   return blinker_state;
 }
 
+void AnnotatedCameraWidget::speedLimitSignPulse(int frame) {
+  if (frame % UI_FREQ < (UI_FREQ / 2.5)) {
+    slcShowSign = false;
+  } else {
+    slcShowSign = true;
+  }
+}
+
 void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   const FeatureStatusText feature_text;
   const FeatureStatusColor feature_color;
@@ -1584,13 +1650,84 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Dynamic Lane Profile
-  if (uiState()->scene.dynamic_lane_profile_toggle) {
-    drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, uiState()->scene.dynamic_lane_profile_toggle, "OFF", "DLP");
+  drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
+
+  // TODO: Add toggle variables to cereal, and parse from cereal
+  if (longitudinal) {
+    bool cruise_enabled = (*uiState()->sm)["carState"].getCarState().getCruiseState().getEnabled();
+    bool dec_enabled = uiState()->scene.dynamic_experimental_control;
+    bool experimental_mode = (*uiState()->sm)["controlsState"].getControlsState().getExperimentalMode();
+    QColor dec_color((cruise_enabled && dec_enabled) ? "#4bff66" : "#ffffff");
+    QRect dec_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
+    QRect dec_btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(shadow_color);
+    p.drawEllipse(dec_btn_shadow);
+    p.setBrush(dec_color);
+    p.drawEllipse(dec_btn);
+    QString dec_status_text;
+    dec_status_text.sprintf("DEC: %s\n", dec_enabled ? (experimental_mode ? QString(mpcMode).toStdString().c_str() : QString("Inactive").toStdString().c_str()) : "OFF");
+    p.setPen(QPen(shadow_color, 2));
+    p.drawText(x + drop_shadow_size, y + drop_shadow_size, dec_status_text);
+    p.setPen(QPen(text_color, 2));
+    p.drawText(x, y, dec_status_text);
+    y += text_height;
   }
 
+  // TODO: Add toggle variables to cereal, and parse from cereal
   // Speed Limit Control
-  if (longitudinal || !cp.getPcmCruiseSpeed()) {
+  if (uiState()->scene.speed_limit_control_engage_type == 0) {
+    QColor slc_color("#ffffff");
+    QRect slc_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
+    QRect slc_btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
+    p.setPen(Qt::NoPen);
+    p.setBrush(shadow_color);
+    p.drawEllipse(slc_btn_shadow);
+    p.setBrush(slc_color);
+    p.drawEllipse(slc_btn);
+    QString slc_status_text;
+    slc_status_text.sprintf("SLC: %s\n", QString("Warn Only").toStdString().c_str());
+    p.setPen(QPen(shadow_color, 2));
+    p.drawText(x + drop_shadow_size, y + drop_shadow_size, slc_status_text);
+    p.setPen(QPen(text_color, 2));
+    p.drawText(x, y, slc_status_text);
+    y += text_height;
+  } else if (longitudinal || !cp.getPcmCruiseSpeed()) {
     drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
+  }
+}
+
+void AnnotatedCameraWidget::speedLimitWarning(QPainter &p, QRect sign_rect, const int sign_margin) {
+  // PRE ACTIVE
+  if (slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE) {
+    int set_speed = std::nearbyint(setSpeed);
+    int speed_limit_offsetted = std::nearbyint(speedLimitSLC + speedLimitSLCOffset);
+
+    // Calculate the vertical offset using a sinusoidal function for smooth bouncing
+    double bounce_frequency = 2.0 * M_PI / 20.0;  // 20 frames for one full oscillation
+    int bounce_offset = 20 * sin(speed_limit_frame * bounce_frequency);  // Adjust the amplitude (20 pixels) as needed
+
+    if (set_speed < speed_limit_offsetted) {
+      QPoint iconPosition(sign_rect.right() + sign_margin * 3, sign_rect.center().y() - plus_arrow_up_img.height() / 2 + bounce_offset);
+      p.drawPixmap(iconPosition, plus_arrow_up_img);
+    } else if (set_speed > speed_limit_offsetted) {
+      QPoint iconPosition(sign_rect.right() + sign_margin * 3, sign_rect.center().y() - minus_arrow_down_img.height() / 2 - bounce_offset);
+      p.drawPixmap(iconPosition, minus_arrow_down_img);
+    }
+
+    speed_limit_frame++;
+    speedLimitSignPulse(speed_limit_frame);
+  }
+
+  // current speed over speed limit
+  else if (overSpeedLimit && uiState()->scene.speed_limit_control_engage_type == 0) {
+    speed_limit_frame++;
+    speedLimitSignPulse(speed_limit_frame);
+  }
+
+  else {
+    speed_limit_frame = 0;
+    slcShowSign = true;
   }
 }
 
@@ -1630,6 +1767,8 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   const UIScene &scene = s->scene;
   SubMaster &sm = *(s->sm);
 
+  const auto car_state = sm["carState"].getCarState();
+
   // Shane's colored lanelines
   for (int i = 0; i < std::size(scene.lane_line_vertices); ++i) {
     if (i == 1 || i == 2) {
@@ -1659,12 +1798,12 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
 
   // paint path
   QLinearGradient bg(0, height(), 0, height() / 4);
-  if (madsEnabled || sm["carState"].getCarState().getCruiseState().getEnabled()) {
+  if (madsEnabled || car_state.getCruiseState().getEnabled()) {
     if (steerOverride && latActive) {
       bg.setColorAt(0.0, QColor::fromHslF(20 / 360., 0.94, 0.51, 0.17));
       bg.setColorAt(0.5, QColor::fromHslF(20 / 360., 1.0, 0.68, 0.17));
       bg.setColorAt(1.0, QColor::fromHslF(20 / 360., 1.0, 0.68, 0.0));
-    } else if (!(latActive || sm["carState"].getCarState().getCruiseState().getEnabled())) {
+    } else if (!(latActive || car_state.getCruiseState().getEnabled())) {
       bg.setColorAt(0, whiteColor());
       bg.setColorAt(1, whiteColor(0));
     } else if (sm["controlsState"].getControlsState().getExperimentalMode()) {
@@ -1909,7 +2048,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     CameraWidget::setStreamType(wide_cam_requested ? VISION_STREAM_WIDE_ROAD : VISION_STREAM_ROAD);
 
     if (reversing && s->scene.reverse_dm_cam) {
-      CameraWidget::setStreamType(VISION_STREAM_DRIVER);
+      CameraWidget::setStreamType(VISION_STREAM_DRIVER, s->scene.reverse_dm_cam);
     }
 
     s->scene.wide_cam = CameraWidget::getStreamType() == VISION_STREAM_WIDE_ROAD;

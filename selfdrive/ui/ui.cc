@@ -232,20 +232,17 @@ void ui_update_params(UIState *s) {
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
 
-  s->scene.dynamic_lane_profile_toggle = params.getBool("DynamicLaneProfileToggle");
   s->scene.visual_brake_lights = params.getBool("BrakeLights");
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffEvent = params.getBool("OnroadScreenOffEvent");
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
-  s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
   s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
-  s->scene.dev_ui_enabled = params.getBool("DevUI");
   s->scene.dev_ui_info = std::atoi(params.get("DevUIInfo").c_str());
   s->scene.button_auto_hide = params.getBool("ButtonAutoHide");
   s->scene.reverse_dm_cam = params.getBool("ReverseDmCam");
@@ -255,6 +252,8 @@ void ui_update_params(UIState *s) {
   s->scene.map_3d_buildings = params.getBool("Map3DBuildings");
   s->scene.live_torque_toggle = params.getBool("LiveTorque");
   s->scene.torqued_override = params.getBool("TorquedOverride");
+  s->scene.speed_limit_control_engage_type = std::atoi(params.get("SpeedLimitEngageType").c_str());
+  s->scene.mapbox_fullscreen = params.getBool("MapboxFullScreen");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -366,7 +365,6 @@ void UIState::updateStatus() {
   }
 
   if (sm->frame % UI_FREQ == 0) { // Update every 1 Hz
-    scene.sidebar_temp = params.getBool("SidebarTemperature");
     scene.sidebar_temp_options = std::atoi(params.get("SidebarTemperatureOptions").c_str());
   }
 }
@@ -376,7 +374,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlanSP", "liveMapDataSP",
-    "carControl", "lateralPlanSP", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
+    "carControl", "lateralPlanSP", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
   });
 
   Params params;

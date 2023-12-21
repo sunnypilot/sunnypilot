@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum, IntFlag
+from enum import Enum, IntFlag, StrEnum
 from typing import Dict, List, Optional, Union
 
 from cereal import car
@@ -72,7 +72,7 @@ VISUAL_HUD = {
 }
 
 
-class CAR:
+class CAR(StrEnum):
   ACCORD = "HONDA ACCORD 2018"
   ACCORDH = "HONDA ACCORD HYBRID 2018"
   ACCORD_NIDEC_4CYL = "HONDA ACCORD 4CYL 9TH GEN"
@@ -139,8 +139,8 @@ CAR_INFO: Dict[str, Optional[Union[HondaCarInfo, List[HondaCarInfo]]]] = {
   ],
   CAR.CIVIC_BOSCH_DIESEL: None,  # same platform
   CAR.CIVIC_2022: [
-    HondaCarInfo("Honda Civic 2022", "All", video_link="https://youtu.be/ytiOT5lcp6Q"),
-    HondaCarInfo("Honda Civic Hatchback 2022", "All", video_link="https://youtu.be/ytiOT5lcp6Q"),
+    HondaCarInfo("Honda Civic 2022-23", "All", video_link="https://youtu.be/ytiOT5lcp6Q"),
+    HondaCarInfo("Honda Civic Hatchback 2022-23", "All", video_link="https://youtu.be/ytiOT5lcp6Q"),
   ],
   CAR.ACURA_ILX: HondaCarInfo("Acura ILX 2016-19", "AcuraWatch Plus", min_steer_speed=25. * CV.MPH_TO_MS),
   CAR.CRV: HondaCarInfo("Honda CR-V 2015-16", "Touring Trim", min_steer_speed=12. * CV.MPH_TO_MS),
@@ -638,6 +638,16 @@ FW_VERSIONS = {
       b'39990-TGG-J510\x00\x00',
       b'39990-TGL-E130\x00\x00',
       b'39990-TGN-E120\x00\x00',
+      # modded EPS bosch civic
+      b'39990-TBA,C020\x00\x00',
+      b'39990-TBA,C120\x00\x00',
+      b'39990-TEA,T820\x00\x00',
+      b'39990-TEZ,T020\x00\x00',
+      b'39990-TGG,A020\x00\x00',
+      b'39990-TGG,A120\x00\x00',
+      b'39990-TGG,J510\x00\x00',
+      b'39990-TGL,E130\x00\x00',
+      b'39990-TGN,E120\x00\x00',
     ],
     (Ecu.srs, 0x18da53f1, None): [
       b'77959-TBA-A060\x00\x00',
@@ -1384,6 +1394,7 @@ FW_VERSIONS = {
       b'78109-T6Z-A910\x00\x00',
       b'78109-T6Z-AA10\x00\x00',
       b'78109-T6Z-C620\x00\x00',
+      b'78109-T6Z-C910\x00\x00',
       b'78109-TJZ-A510\x00\x00',
     ],
     (Ecu.srs, 0x18da53f1, None): [
@@ -1544,6 +1555,7 @@ FW_VERSIONS = {
       b'77959-T47-A940\x00\x00',
       b'77959-T47-A950\x00\x00',
       b'77959-T20-M820\x00\x00',
+      b'77959-T20-A980\x00\x00',
     ],
     (Ecu.combinationMeter, 0x18DA60F1, None): [
       b'78108-T21-A220\x00\x00',
@@ -1552,6 +1564,7 @@ FW_VERSIONS = {
       b'78108-T21-A230\x00\x00',
       b'78108-T22-A020\x00\x00',
       b'78108-T21-MB10\x00\x00',
+      b'78108-T21-A740\x00\x00',
     ],
     (Ecu.fwdRadar, 0x18dab0f1, None): [
       b'36161-T20-A070\x00\x00',
@@ -1579,6 +1592,7 @@ FW_VERSIONS = {
       b'37805-64A-A540\x00\x00',
       b'37805-64A-A620\x00\x00',
       b'37805-64D-P510\x00\x00',
+      b'37805-64S-AA10\x00\x00',
     ],
   },
   CAR.CLARITY: {

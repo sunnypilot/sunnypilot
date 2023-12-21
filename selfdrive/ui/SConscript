@@ -21,12 +21,19 @@ if arch == "Darwin":
   qt_env['FRAMEWORKS'] += ['OpenCL']
 
 qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"], LIBS=base_libs)
-widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/drive_stats.cc", "qt/widgets/wifi.cc",
+widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
                "qt/widgets/ssh_keys.cc", "qt/widgets/toggle.cc", "qt/widgets/controls.cc",
                "qt/widgets/offroad_alerts.cc", "qt/widgets/prime.cc", "qt/widgets/keyboard.cc",
                "qt/widgets/scrollview.cc", "qt/widgets/cameraview.cc", "#third_party/qrcode/QrCode.cc",
-               "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc",
-               "qt/offroad/sunnypilot_settings.cc"]
+               "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"]
+
+widgets_src += ["qt/offroad/sunnypilot/display_settings.cc", "qt/offroad/sunnypilot/sunnypilot_settings.cc",
+                "qt/offroad/sunnypilot/vehicle_settings.cc", "qt/offroad/sunnypilot/visuals_settings.cc",
+                "qt/offroad/sunnypilot/trips_settings.cc", "qt/offroad/sunnypilot/mads_settings.cc",
+                "qt/offroad/sunnypilot/lane_change_settings.cc", "qt/offroad/sunnypilot/speed_limit_control_settings.cc",
+                "qt/offroad/sunnypilot/monitoring_settings.cc", "qt/offroad/sunnypilot/osm_settings.cc",
+                "qt/offroad/sunnypilot/custom_offsets_settings.cc", "qt/widgets/sunnypilot/drive_stats.cc",
+                "qt/offroad/sunnypilot/software_settings_sp.cc", "qt/offroad/sunnypilot/models_fetcher.cc"]                 
 
 qt_env['CPPDEFINES'] = []
 if maps:

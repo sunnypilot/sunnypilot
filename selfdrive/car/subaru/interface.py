@@ -1,8 +1,9 @@
 from cereal import car
 from panda import Panda
 from openpilot.selfdrive.car import get_safety_config, create_mads_event
+from openpilot.selfdrive.car.disable_ecu import disable_ecu
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.subaru.values import CAR, LKAS_ANGLE, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, SubaruFlags, SubaruFlagsSP
+from openpilot.selfdrive.car.subaru.values import CAR, GLOBAL_ES_ADDR, LKAS_ANGLE, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, SubaruFlags, SubaruFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -72,7 +73,7 @@ class CarInterface(CarInterfaceBase):
       # Certain Impreza / Crosstrek EPS use 3071 max value and do not work with stock value/scaling.
       if any(fw.ecu == "eps" and fw.fwVersion in (b'z\xc0\x00\x00', b'z\xc0\x04\x00', b'z\xc0\x08\x00', b'\x8a\xc0\x00\x00',
                                                   b'\x8a\xc0\x10\x00') for fw in car_fw):
-        ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
         ret.steerActuatorDelay = 0.18  # measured
         ret.lateralTuning.pid.kf = 0.00003333
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.133, 0.2], [0.0133, 0.02]]
@@ -112,7 +113,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.1
 
     elif candidate in (CAR.FORESTER_PREGLOBAL, CAR.OUTBACK_PREGLOBAL_2018):
-      ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_LEGACY_FLIP_DRIVER_TORQUE  # Outback 2018-2019 and Forester have reversed driver torque signal
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_PREGLOBAL_REVERSED_DRIVER_TORQUE  # Outback 2018-2019 and Forester have reversed driver torque signal
       ret.mass = 1568
       ret.wheelbase = 2.67
       ret.centerToFront = ret.wheelbase * 0.5
@@ -135,6 +136,9 @@ class CarInterface(CarInterfaceBase):
 
     #ret.experimentalLongitudinalAvailable = candidate not in (GLOBAL_GEN2 | PREGLOBAL_CARS | LKAS_ANGLE | HYBRID_CARS)
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
+
+    if candidate in GLOBAL_GEN2 and ret.openpilotLongitudinalControl:
+      ret.flags |= SubaruFlags.DISABLE_EYESIGHT
 
     if ret.openpilotLongitudinalControl:
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
@@ -206,6 +210,11 @@ class CarInterface(CarInterfaceBase):
     ret.events = events.to_msg()
 
     return ret
+
+  @staticmethod
+  def init(CP, logcan, sendcan):
+    if CP.flags & SubaruFlags.DISABLE_EYESIGHT:
+      disable_ecu(logcan, sendcan, bus=2, addr=GLOBAL_ES_ADDR, com_cont_req=b'\x28\x03\x01')
 
   def apply(self, c, now_nanos):
     return self.CC.update(c, self.CS, now_nanos)

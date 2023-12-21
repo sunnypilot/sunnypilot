@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Non-Inflatable (August 9, 2023)"
+#define CURRENT_MODEL "Farmville (November 7, 2023)"

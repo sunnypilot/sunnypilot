@@ -131,10 +131,10 @@ class CarState(CarStateBase):
 
     # TODO: Find brake pressure
     ret.brake = 0
-    ret.brakePressed = cp.vl["TCS13"]["DriverBraking"] != 0
+    ret.brakePressed = cp.vl["TCS13"]["DriverOverride"] == 2  # 2 includes regen braking by user on HEV/EV
     ret.brakeHoldActive = cp.vl["TCS15"]["AVH_LAMP"] == 2  # 0 OFF, 1 ERROR, 2 ACTIVE, 3 READY
     ret.parkingBrake = cp.vl["TCS13"]["PBRAKE_ACT"] == 1
-    ret.brakeLights = bool(cp.vl["TCS13"]["BrakeLight"])
+    ret.brakeLightsDEPRECATED = bool(cp.vl["TCS13"]["BrakeLight"])
     ret.accFaulted = cp.vl["TCS13"]["ACCEnable"] != 0  # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
 
     if self.CP.carFingerprint in (HYBRID_CAR | EV_CAR):
@@ -149,12 +149,12 @@ class CarState(CarStateBase):
 
     # Gear Selection via Cluster - For those Kia/Hyundai which are not fully discovered, we can use the Cluster Indicator for Gear Selection,
     # as this seems to be standard over all cars, but is not the preferred method.
-    if self.CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
+    if self.CP.carFingerprint in (HYBRID_CAR | EV_CAR):
+      gear = cp.vl["ELECT_GEAR"]["Elect_Gear_Shifter"]
+    elif self.CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
       gear = cp.vl["CLU15"]["CF_Clu_Gear"]
     elif self.CP.carFingerprint in CAN_GEARS["use_tcu_gears"]:
       gear = cp.vl["TCU12"]["CUR_GR"]
-    elif self.CP.carFingerprint in CAN_GEARS["use_elect_gears"]:
-      gear = cp.vl["ELECT_GEAR"]["Elect_Gear_Shifter"]
     else:
       gear = cp.vl["LVR12"]["CF_Lvr_Gear"]
 
@@ -210,8 +210,8 @@ class CarState(CarStateBase):
 
     self.mads_enabled = False if not self.control_initialized else ret.cruiseState.available
 
-    if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
-      self._update_traffic_signals(self.CP, cp, cp_cam)
+    if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG or self.CP.spFlags & HyundaiFlagsSP.SP_LKAS12:
+      self._update_traffic_signals(cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_conv
 
     return ret
@@ -229,7 +229,7 @@ class CarState(CarStateBase):
     else:
       ret.gasPressed = bool(cp.vl[self.accelerator_msg_canfd]["ACCELERATOR_PEDAL_PRESSED"])
 
-    ret.brakePressed = ret.brakeLights = cp.vl["TCS"]["DriverBraking"] == 1
+    ret.brakePressed = ret.brakeLightsDEPRECATED = cp.vl["TCS"]["DriverBraking"] == 1
 
     ret.doorOpen = cp.vl["DOORS_SEATBELTS"]["DRIVER_DOOR"] == 1
     ret.seatbeltUnlatched = cp.vl["DOORS_SEATBELTS"]["DRIVER_SEATBELT"] == 0
@@ -301,15 +301,19 @@ class CarState(CarStateBase):
                                           else cp_cam.vl["CAM_0x2a4"])
 
     if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
-      self._update_traffic_signals(self.CP, cp, cp_cam)
+      self._update_traffic_signals(cp, cp_cam)
       ret.cruiseState.speedLimit = self._calculate_speed_limit() * speed_factor
 
     return ret
 
-  def _update_traffic_signals(self, CP, cp, cp_cam):
-    speed_limit_clu_canfd = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
-    self._speed_limit_clu = speed_limit_clu_canfd.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_1"] if CP.carFingerprint in CANFD_CAR else \
-      cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+  def _update_traffic_signals(self, cp, cp_cam):
+    if self.CP.carFingerprint in CANFD_CAR:
+      speed_limit_clu_bus_canfd = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
+      self._speed_limit_clu = speed_limit_clu_bus_canfd.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_1"]
+    else:
+      sl_can_nav = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+      sl_can_cam = cp_cam.vl["LKAS12"]["CF_Lkas_TsrSpeed_Display_Clu"] if self.CP.spFlags & HyundaiFlagsSP.SP_LKAS12 else None
+      self._speed_limit_clu = sl_can_cam if sl_can_cam is not None and sl_can_cam not in (0, 255) else sl_can_nav
 
   def _calculate_speed_limit(self):
     return self._speed_limit_clu if self._speed_limit_clu not in (0, 255) else 0
@@ -354,12 +358,12 @@ class CarState(CarStateBase):
         ("EMS16", 100),
       ]
 
-    if CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
+    if CP.carFingerprint in (HYBRID_CAR | EV_CAR):
+      messages.append(("ELECT_GEAR", 20))
+    elif CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
       pass
     elif CP.carFingerprint in CAN_GEARS["use_tcu_gears"]:
       messages.append(("TCU12", 100))
-    elif CP.carFingerprint in CAN_GEARS["use_elect_gears"]:
-      messages.append(("ELECT_GEAR", 20))
     else:
       messages.append(("LVR12", 100))
 
@@ -380,7 +384,7 @@ class CarState(CarStateBase):
       return CarState.get_cam_can_parser_canfd(CP)
 
     messages = [
-      ("LKAS11", 100)
+      ("LKAS11", 100),
     ]
 
     if not CP.openpilotLongitudinalControl and CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_CAR - NON_SCC_NO_FCA_CAR - NON_SCC_RADAR_FCA_CAR)):
@@ -399,6 +403,9 @@ class CarState(CarStateBase):
           ("FCA11", 50),
           ("FCA12", 50),
         ]
+
+    if CP.spFlags & HyundaiFlagsSP.SP_LKAS12:
+      messages.append(("LKAS12", 10))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
 

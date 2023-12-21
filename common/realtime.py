@@ -2,6 +2,8 @@
 import gc
 import os
 import time
+import threading
+import psutil
 from collections import deque
 from typing import Optional, List, Union
 
@@ -43,6 +45,14 @@ def config_realtime_process(cores: Union[int, List[int]], priority: int) -> None
   set_realtime_priority(priority)
   c = cores if isinstance(cores, list) else [cores, ]
   set_core_affinity(c)
+
+
+def set_thread_affinity(thread: threading.Thread, cores: List[int]) -> None:
+  try:
+    process = psutil.Process(thread.ident)
+    process.cpu_affinity(cores)
+  except Exception as e:
+    print(f"Error setting thread affinity: {e}")
 
 
 class Ratekeeper:

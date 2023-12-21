@@ -248,6 +248,30 @@ def create_es_infotainment(packer, frame, es_infotainment_msg, visual_alert):
   return packer.make_can_msg("ES_Infotainment", CanBus.main, values)
 
 
+def create_es_highbeamassist(packer):
+  values = {
+    "HBA_Available": False,
+  }
+
+  return packer.make_can_msg("ES_HighBeamAssist", CanBus.main, values)
+
+
+def create_es_static_1(packer):
+  values = {
+    "SET_3": 3,
+  }
+
+  return packer.make_can_msg("ES_STATIC_1", CanBus.main, values)
+
+
+def create_es_static_2(packer):
+  values = {
+    "SET_3": 3,
+  }
+
+  return packer.make_can_msg("ES_STATIC_2", CanBus.main, values)
+
+
 # *** Subaru Pre-global ***
 
 def subaru_preglobal_checksum(packer, values, addr, checksum_byte=7):
@@ -293,9 +317,8 @@ def create_preglobal_es_distance(packer, cruise_button, es_distance_msg):
   return packer.make_can_msg("ES_Distance", CanBus.main, values)
 
 
-def create_brake_pedal(packer, brake_pedal_msg, speed_cmd, brake_cmd):
+def create_brake_pedal(packer, frame, brake_pedal_msg, speed_cmd, brake_cmd):
   values = {s: brake_pedal_msg[s] for s in [
-    "COUNTER",
     "Signal1",
     "Speed",
     "Signal2",
@@ -304,6 +327,8 @@ def create_brake_pedal(packer, brake_pedal_msg, speed_cmd, brake_cmd):
     "Brake_Pedal",
     "Signal4",
   ]}
+
+  values["COUNTER"] = frame % 0x10
 
   if speed_cmd:
     values["Speed"] = 3
@@ -314,10 +339,9 @@ def create_brake_pedal(packer, brake_pedal_msg, speed_cmd, brake_cmd):
   return packer.make_can_msg("Brake_Pedal", CanBus.camera, values)
 
 
-def create_throttle(packer, throttle_msg, throttle_cmd):
+def create_throttle(packer, frame, throttle_msg, throttle_cmd):
   values = {s: throttle_msg[s] for s in [
     "CHECKSUM",
-    "COUNTER",
     "Signal1",
     "Engine_RPM",
     "Signal2",
@@ -328,16 +352,17 @@ def create_throttle(packer, throttle_msg, throttle_cmd):
     "Off_Accel",
   ]}
 
+  values["COUNTER"] = frame % 0x10
+
   if throttle_cmd:
     values["Throttle_Pedal"] = 5
 
   return packer.make_can_msg("Throttle", 2, values)
 
 
-def create_preglobal_throttle(packer, throttle_msg, throttle_cmd):
+def create_preglobal_throttle(packer, frame, throttle_msg, throttle_cmd):
   values = {s: throttle_msg[s] for s in [
     "Throttle_Pedal",
-    "COUNTER",
     "Signal1",
     "Not_Full_Throttle",
     "Signal2",
@@ -350,6 +375,8 @@ def create_preglobal_throttle(packer, throttle_msg, throttle_cmd):
     "Off_Throttle_2",
     "Signal4",
   ]}
+
+  values["COUNTER"] = frame % 0x10
 
   if throttle_cmd:
     values["Throttle_Pedal"] = 5

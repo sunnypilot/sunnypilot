@@ -65,6 +65,7 @@ class CarState(CarStateBase):
       self.zss_compute = False
       self.zss_cruise_active_last = False
       self.zss_angle_offset = 0.
+      self.zss_threshold_count = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -81,14 +82,12 @@ class CarState(CarStateBase):
 
     ret.brakePressed = cp.vl["BRAKE_MODULE"]["BRAKE_PRESSED"] != 0
     ret.brakeHoldActive = cp.vl["ESP_CONTROL"]["BRAKE_HOLD_ACTIVE"] == 1
-    ret.brakeLights = bool(cp.vl["ESP_CONTROL"]["BRAKE_LIGHTS_ACC"])
+    ret.brakeLightsDEPRECATED = bool(cp.vl["ESP_CONTROL"]["BRAKE_LIGHTS_ACC"])
     if self.CP.enableGasInterceptor:
       ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) // 2
       ret.gasPressed = ret.gas > 805
     else:
-      # TODO: find a new, common signal
-      msg = "GAS_PEDAL_HYBRID" if (self.CP.flags & ToyotaFlags.HYBRID) else "GAS_PEDAL"
-      ret.gas = cp.vl[msg]["GAS_PEDAL"]
+      # TODO: find a common gas pedal percentage signal
       ret.gasPressed = cp.vl["PCM_CRUISE"]["GAS_RELEASED"] == 0
 
     ret.wheelSpeeds = self.get_wheel_speeds(
@@ -118,6 +117,7 @@ class CarState(CarStateBase):
       self.prev_lkas_enabled = self.lkas_enabled
 
     ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_ANGLE"] + cp.vl["STEER_ANGLE_SENSOR"]["STEER_FRACTION"]
+    ret.steeringRateDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_RATE"]
     torque_sensor_angle_deg = cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE"]
 
     # On some cars, the angle measurement is non-zero while initializing
@@ -125,8 +125,8 @@ class CarState(CarStateBase):
       self.accurate_steer_angle_seen = True
 
     if self.accurate_steer_angle_seen:
-      # Offset seems to be invalid for large steering angles
-      if abs(ret.steeringAngleDeg) < 90 and cp.can_valid:
+      # Offset seems to be invalid for large steering angles and high angle rates
+      if abs(ret.steeringAngleDeg) < 90 and abs(ret.steeringRateDeg) < 100 and cp.can_valid:
         self.angle_offset.update(torque_sensor_angle_deg - ret.steeringAngleDeg)
 
       if self.angle_offset.initialized:
@@ -135,20 +135,27 @@ class CarState(CarStateBase):
 
     # ZSS support thanks to dragonpilot and ErichMoraga
     if self.CP.spFlags & ToyotaFlagsSP.SP_ZSS:
-      zorro_steer = cp.vl["SECONDARY_STEER_ANGLE"]["ZORRO_STEER"]
-      # Only compute ZSS offset when acc is active
-      if bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"]) and not self.zss_cruise_active_last:
-        self.zss_compute = True # Cruise was just activated, so allow offset to be recomputed
-      self.zss_cruise_active_last = bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
+      if self.zss_threshold_count <= 10:
+        zorro_steer = cp.vl["SECONDARY_STEER_ANGLE"]["ZORRO_STEER"]
+        # Only compute ZSS offset when control is active
+        control_active = self.madsEnabled or bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
+        if control_active and not self.zss_cruise_active_last:
+          self.zss_threshold_count = 0
+          self.zss_compute = True  # Control was just activated, so allow offset to be recomputed
+        self.zss_cruise_active_last = control_active
 
-      # Compute ZSS offset
-      if self.zss_compute:
-        if abs(ret.steeringAngleDeg) > 1e-3 and abs(zorro_steer) > 1e-3:
-          self.zss_angle_offset = zorro_steer - ret.steeringAngleDeg
-      # Apply offset
-      ret.steeringAngleDeg = zorro_steer - self.zss_angle_offset
+        # Compute ZSS offset
+        if self.zss_compute:
+          if abs(ret.steeringAngleDeg) > 1e-3 and abs(zorro_steer) > 1e-3:
+            self.zss_compute = False
+            self.zss_angle_offset = zorro_steer - ret.steeringAngleDeg
 
-    ret.steeringRateDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_RATE"]
+        # Safety checks
+        steering_angle_deg = zorro_steer - self.zss_angle_offset
+        if abs(ret.steeringAngleDeg - steering_angle_deg) > 4:
+          self.zss_threshold_count += 1
+        else:
+          ret.steeringAngleDeg = steering_angle_deg
 
     can_gear = int(cp.vl["GEAR_PACKET"]["GEAR"])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
@@ -197,7 +204,8 @@ class CarState(CarStateBase):
     if self.CP.flags & ToyotaFlags.SMART_DSU:
       self.gap_dist_button = cp.vl["SDSU"]["FD_BUTTON"]
 
-    self.follow_distance = cp.vl["PCM_CRUISE_2"]["PCM_FOLLOW_DISTANCE"]
+    fd_src = "PCM_CRUISE_ALT" if self.CP.carFingerprint in UNSUPPORTED_DSU_CAR else "PCM_CRUISE_2"
+    self.follow_distance = cp.vl[fd_src]["PCM_FOLLOW_DISTANCE"]
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.
@@ -328,11 +336,6 @@ class CarState(CarStateBase):
       ("STEER_TORQUE_SENSOR", 50),
     ]
 
-    if CP.flags & ToyotaFlags.HYBRID:
-      messages.append(("GAS_PEDAL_HYBRID", 33))
-    else:
-      messages.append(("GAS_PEDAL", 33))
-
     if CP.carFingerprint in UNSUPPORTED_DSU_CAR:
       messages.append(("DSU_CRUISE", 5))
       messages.append(("PCM_CRUISE_ALT", 1))
@@ -364,7 +367,7 @@ class CarState(CarStateBase):
       messages.append(("SDSU", 33))
 
     if CP.spFlags & ToyotaFlagsSP.SP_ZSS:
-      messages.apend(("SECONDARY_STEER_ANGLE", 0))
+      messages.append(("SECONDARY_STEER_ANGLE", 0))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
 

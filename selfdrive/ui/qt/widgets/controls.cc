@@ -3,6 +3,18 @@
 #include <QPainter>
 #include <QStyleOption>
 
+QFrame *horizontal_line(QWidget *parent) {
+  QFrame *line = new QFrame(parent);
+  line->setFrameShape(QFrame::StyledPanel);
+  line->setStyleSheet(R"(
+    border-width: 2px;
+    border-bottom-style: solid;
+    border-color: gray;
+  )");
+  line->setFixedHeight(10);
+  return line;
+}
+
 AbstractControl::AbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setMargin(0);
@@ -23,7 +35,7 @@ AbstractControl::AbstractControl(const QString &title, const QString &desc, cons
   // title
   title_label = new QPushButton(title);
   title_label->setFixedHeight(120);
-  title_label->setStyleSheet("font-size: 50px; font-weight: 400; text-align: left; border: none;");
+  title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none;");
   hlayout->addWidget(title_label, 1);
 
   // value next to control button
@@ -59,6 +71,51 @@ void AbstractControl::hideEvent(QHideEvent *e) {
   if (description != nullptr) {
     description->hide();
   }
+}
+
+SPAbstractControl::SPAbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
+  QVBoxLayout *main_layout = new QVBoxLayout(this);
+  main_layout->setMargin(0);
+
+  hlayout = new QHBoxLayout;
+  hlayout->setMargin(0);
+  hlayout->setSpacing(0);
+
+  // title
+  if (!title.isEmpty()) {
+    title_label = new QPushButton(title);
+    title_label->setFixedHeight(120);
+    title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none;");
+    main_layout->addWidget(title_label, 1);
+
+    connect(title_label, &QPushButton::clicked, [=]() {
+      if (!description->isVisible()) {
+        emit showDescriptionEvent();
+      }
+
+      if (!description->text().isEmpty()) {
+        description->setVisible(!description->isVisible());
+      }
+    });
+  } else {
+    main_layout->addSpacing(20);
+  }
+
+  main_layout->addLayout(hlayout);
+  main_layout->addSpacing(2);
+
+  // description
+  description = new QLabel(desc);
+  description->setContentsMargins(0, 20, 40, 20);
+  description->setStyleSheet("font-size: 40px; color: grey");
+  description->setWordWrap(true);
+  description->setVisible(false);
+  main_layout->addWidget(description);
+
+  main_layout->addStretch();
+}
+
+void SPAbstractControl::hideEvent(QHideEvent *e) {
 }
 
 // controls

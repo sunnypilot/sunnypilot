@@ -69,9 +69,8 @@ def load_interfaces(brand_names):
 def _get_interface_names() -> Dict[str, List[str]]:
   # returns a dict of brand name and its respective models
   brand_names = {}
-  for brand_name, model_names in get_interface_attr("CAR").items():
-    model_names = [getattr(model_names, c) for c in model_names.__dict__.keys() if not c.startswith("__")]
-    brand_names[brand_name] = model_names
+  for brand_name, brand_models in get_interface_attr("CAR").items():
+    brand_names[brand_name] = [model.value for model in brand_models]
 
   return brand_names
 
@@ -208,6 +207,7 @@ def crash_log(candidate):
   no_internet = 0
   while True:
     if is_connected_to_internet():
+      sentry.get_init()
       sentry.capture_warning("fingerprinted %s" % candidate)
       break
     else:
@@ -221,6 +221,7 @@ def crash_log2(fingerprints, fw):
   no_internet = 0
   while True:
     if is_connected_to_internet():
+      sentry.get_init()
       sentry.capture_warning("car doesn't match any fingerprints: %s" % fingerprints)
       sentry.capture_warning("car doesn't match any fw: %s" % fw)
       break

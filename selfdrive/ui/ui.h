@@ -20,18 +20,18 @@
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
-const QRect speed_sgn_rc(UI_BORDER_SIZE * 2, UI_BORDER_SIZE * 2.5 + 202, 184, 184);
+const int UI_ROAD_NAME_MARGIN_X = 14;
 
 struct FeatureStatusText {
   const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
   const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
-  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active" };
+  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active", "Pre Active" };
 };
 
 struct FeatureStatusColor {
   const QStringList dlp_list_color = { "#2020f8",      "#0df87a",  "#0df8f8"            };
   const QStringList gac_list_color = { "#ff4b4b",      "#fcff4b",  "#4bff66", "#6a0ac9" };
-  const QStringList slc_list_color = { "#ffffff",      "#ffffff",  "#fcff4b", "#4bff66" };
+  const QStringList slc_list_color = { "#ffffff",      "#ffffff",  "#fcff4b", "#4bff66", "#fcff4b" };
 };
 
 const float DRIVING_PATH_WIDE = 0.9;
@@ -43,7 +43,7 @@ typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
 const mat3 DEFAULT_CALIBRATION = {{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 }};
 
-const vec3 default_face_kpts_3d[] = {
+constexpr vec3 default_face_kpts_3d[] = {
   {-5.98, -51.20, 8.00}, {-17.64, -49.14, 8.00}, {-23.81, -46.40, 8.00}, {-29.98, -40.91, 8.00}, {-32.04, -37.49, 8.00},
   {-34.10, -32.00, 8.00}, {-36.16, -21.03, 8.00}, {-36.16, 6.40, 8.00}, {-35.47, 10.51, 8.00}, {-32.73, 19.43, 8.00},
   {-29.30, 26.29, 8.00}, {-24.50, 33.83, 8.00}, {-19.01, 41.37, 8.00}, {-14.21, 46.17, 8.00}, {-12.16, 47.54, 8.00},
@@ -164,7 +164,7 @@ typedef struct UIScene {
 
   // Speed limit control
   bool speed_limit_control_enabled;
-  bool speed_limit_perc_offset;
+  int speed_limit_control_policy;
   double last_speed_limit_sign_tap;
 
   // modelV2
@@ -194,7 +194,6 @@ typedef struct UIScene {
 
   int dynamic_lane_profile;
   bool dynamic_lane_profile_status = true;
-  bool dynamic_lane_profile_toggle;
 
   bool visual_brake_lights;
 
@@ -213,7 +212,6 @@ typedef struct UIScene {
   int longitudinal_personality;
 
   bool map_visible;
-  bool dev_ui_enabled;
   int dev_ui_info;
   int rn_offset;
   bool live_torque_toggle;
@@ -229,7 +227,6 @@ typedef struct UIScene {
   bool e2e_long_alert_light, e2e_long_alert_lead, e2e_long_alert_ui;
   float e2eX[13] = {0};
 
-  bool sidebar_temp;
   int sidebar_temp_options;
 
   float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;
@@ -240,6 +237,14 @@ typedef struct UIScene {
   bool map_3d_buildings;
 
   bool torqued_override;
+
+  bool dynamic_experimental_control;
+
+  QRect sl_sign_rect;
+
+  int speed_limit_control_engage_type;
+
+  bool mapbox_fullscreen;
 } UIScene;
 
 class UIState : public QObject {
