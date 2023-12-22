@@ -23,7 +23,7 @@ from openpilot.selfdrive.athena.registration import register, UNREGISTERED_DONGL
 from openpilot.system.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
                            get_normalized_origin, terms_version, training_version, \
-                           is_tested_branch, is_release_branch
+                           is_tested_branch, is_release_branch, is_release_sp_branch
 
 
 sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
@@ -146,6 +146,7 @@ def manager_init() -> None:
   params.put("GitRemote", get_origin(default=""))
   params.put_bool("IsTestedBranch", is_tested_branch())
   params.put_bool("IsReleaseBranch", is_release_branch())
+  params.put_bool("IsReleaseSPBranch", is_release_sp_branch())
 
   # set dongle id
   reg_res = register(show_spinner=True)

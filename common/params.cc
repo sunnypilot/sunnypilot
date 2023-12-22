@@ -140,6 +140,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"IsOnroad", PERSISTENT},
     {"IsRhdDetected", PERSISTENT},
     {"IsReleaseBranch", CLEAR_ON_MANAGER_START},
+    {"IsReleaseSPBranch", CLEAR_ON_MANAGER_START},
     {"IsTakingSnapshot", CLEAR_ON_MANAGER_START},
     {"IsTestedBranch", CLEAR_ON_MANAGER_START},
     {"IsUpdateAvailable", CLEAR_ON_MANAGER_START},
