@@ -40,6 +40,8 @@ TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/lat_mode
 ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
 
 GAC_DICT = {1: 1, 2: 2, 3: 3}
+FORWARD_GEARS = [GearShifter.drive, GearShifter.low, GearShifter.eco,
+                 GearShifter.sport, GearShifter.manumatic, GearShifter.brake]
 
 
 def similarity(s1: str, s2: str) -> float:
@@ -559,19 +561,25 @@ class CarInterfaceBase(ABC):
 
     return mads_enabled
 
-  def get_sp_started_mads(self, mads_enabled, cruiseState_available):
+  def get_sp_started_mads(self, cs_out, CS):
+    if not cs_out.cruiseState.available and CS.out.cruiseState.available:
+      self.madsEnabledInit = False
+      self.madsEnabledInitPrev = False
+      return False
     if not self.mads_main_toggle or self.prev_acc_mads_combo:
-      return mads_enabled
-    if not self.madsEnabledInit and mads_enabled:
+      return CS.mads_enabled
+    if not self.madsEnabledInit and CS.mads_enabled:
       self.madsEnabledInit = True
       self.last_mads_init = time.monotonic()
-    if self.madsEnabledInit and not self.madsEnabledInitPrev:
+    if cs_out.gearShifter not in FORWARD_GEARS:
+      self.last_mads_init = time.monotonic()
+    if self.madsEnabledInit and (not self.madsEnabledInitPrev or cs_out.gearShifter not in FORWARD_GEARS):
       if time.monotonic() < self.last_mads_init + 1.:
         return False
       self.madsEnabledInitPrev = True
-      return cruiseState_available
+      return cs_out.cruiseState.available
     else:
-      return mads_enabled
+      return CS.mads_enabled
 
   def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
