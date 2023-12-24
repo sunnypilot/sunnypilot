@@ -20,7 +20,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     },
     {
       "EnableSlc",
-      tr("Enable Speed Limit Control (SLC)"),
+      tr("Speed Limit Control (SLC)"),
       tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
       "../assets/offroad/icon_blank.png",
     },
@@ -170,7 +170,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   });
 
   // SLC. Settings
-  slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 900, this);
+  slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 980, this);
   slcSettings->setObjectName("slc_btn");
   // Set margin on the outside of the button
   QVBoxLayout* slcSettingsLayout = new QVBoxLayout;
@@ -186,6 +186,42 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     scrollView->restoreScrollPosition();
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
+
+  // Speed Limit Warning Settings
+  slwSettings = new SubPanelButton(tr("Customize Warning"), 720, this);
+  slwSettings->setObjectName("slw_btn");
+  connect(slwSettings, &QPushButton::clicked, [=]() {
+    scrollView->setLastScrollPosition();
+    main_layout->setCurrentWidget(slw_settings);
+  });
+
+  slw_settings = new SpeedLimitWarningSettings(this);
+  connect(slw_settings, &SpeedLimitWarningSettings::backPress, [=]() {
+    scrollView->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+
+  // Speed Limit Warning Settings
+  slpSettings = new SubPanelButton(tr("Customize Source"), 720, this);
+  slpSettings->setObjectName("slp_btn");
+  connect(slpSettings, &QPushButton::clicked, [=]() {
+    scrollView->setLastScrollPosition();
+    main_layout->setCurrentWidget(slp_settings);
+  });
+
+  slp_settings = new SpeedLimitPolicySettings(this);
+  connect(slp_settings, &SpeedLimitPolicySettings::backPress, [=]() {
+    scrollView->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+
+  // Speed Limit Warning and Speed Limit Policy in the same horizontal space
+  QHBoxLayout *warning_policy_layout = new QHBoxLayout;
+  warning_policy_layout->setContentsMargins(0, 0, 0, 30);
+  warning_policy_layout->addWidget(slwSettings);
+  warning_policy_layout->addSpacing(10);
+  warning_policy_layout->addWidget(slpSettings);
+  warning_policy_layout->setAlignment(Qt::AlignLeft);
 
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
@@ -232,10 +268,14 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     if (param == "VisionCurveLaneless") {
       list->addItem(laneChangeSettingsLayout);
       list->addItem(horizontal_line());
+
+      list->addItem(new LabelControl(tr("Speed Limit Assist")));
     }
 
     if (param == "EnableSlc") {
       list->addItem(slcSettingsLayout);
+
+      list->addItem(warning_policy_layout);
       list->addItem(horizontal_line());
     }
 
@@ -302,8 +342,10 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, slc_settings, &SlcSettings::updateToggles);
   connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, [=](bool state) {
     slcSettings->setEnabled(state);
+    slcSettings->setVisible(state);
   });
   slcSettings->setEnabled(toggles["EnableSlc"]->isToggled());
+  slcSettings->setVisible(toggles["EnableSlc"]->isToggled());
 
   connect(toggles["CustomOffsets"], &ToggleControl::toggleFlipped, [=](bool state) {
     customOffsetsSettings->setEnabled(state);
@@ -348,6 +390,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   main_layout->addWidget(lane_change_settings);
   main_layout->addWidget(custom_offsets_settings);
   main_layout->addWidget(slc_settings);
+  main_layout->addWidget(slw_settings);
+  main_layout->addWidget(slp_settings);
 
   setStyleSheet(R"(
     #back_btn {

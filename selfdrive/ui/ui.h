@@ -245,6 +245,10 @@ typedef struct UIScene {
   int speed_limit_control_engage_type;
 
   bool mapbox_fullscreen;
+
+  bool speed_limit_warning_flash;
+  int speed_limit_warning_type;
+  int speed_limit_warning_value_offset;
 } UIScene;
 
 class UIState : public QObject {

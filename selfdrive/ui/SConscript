@@ -33,7 +33,8 @@ widgets_src += ["qt/offroad/sunnypilot/display_settings.cc", "qt/offroad/sunnypi
                 "qt/offroad/sunnypilot/lane_change_settings.cc", "qt/offroad/sunnypilot/speed_limit_control_settings.cc",
                 "qt/offroad/sunnypilot/monitoring_settings.cc", "qt/offroad/sunnypilot/osm_settings.cc",
                 "qt/offroad/sunnypilot/custom_offsets_settings.cc", "qt/widgets/sunnypilot/drive_stats.cc",
-                "qt/offroad/sunnypilot/software_settings_sp.cc", "qt/offroad/sunnypilot/models_fetcher.cc"]                 
+                "qt/offroad/sunnypilot/software_settings_sp.cc", "qt/offroad/sunnypilot/models_fetcher.cc",
+                "qt/offroad/sunnypilot/speed_limit_warning_settings.cc", "qt/offroad/sunnypilot/speed_limit_policy_settings.cc"]
 
 qt_env['CPPDEFINES'] = []
 if maps:

@@ -702,7 +702,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
                                 "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
                                 "+" + QString::number(std::nearbyint(speed_limit_offset)) : "");
-    const QString sl_inactive_str(sl_temp_inactive && s.scene.speed_limit_control_engage_type == 1 ? "TEMP" : "");
+    const QString sl_inactive_str(sl_temp_inactive && s.scene.speed_limit_control_engage_type == 0 ? "TEMP" : "");
     const QString sl_substring(sl_inactive || sl_temp_inactive || sl_pre_active ? sl_inactive_str :
                                sl_distance > 0 ? sl_distance_str : sl_offset_str);
 
@@ -713,7 +713,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
     mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
     slcActive = !sl_inactive && !sl_temp_inactive;
-    overSpeedLimit = showSpeedLimit && (std::nearbyint(speed_limit_slc + speed_limit_offset) < std::nearbyint(speed));
+    overSpeedLimit = showSpeedLimit && s.scene.speed_limit_warning_type != 0 &&
+                     (std::nearbyint(speed_limit_slc + s.scene.speed_limit_warning_value_offset) < std::nearbyint(speed));
     plus_arrow_up_img = loadPixmap("../assets/img_plus_arrow_up", {105, 105});
     minus_arrow_down_img = loadPixmap("../assets/img_minus_arrow_down", {105, 105});
 
@@ -1677,23 +1678,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
 
   // TODO: Add toggle variables to cereal, and parse from cereal
   // Speed Limit Control
-  if (uiState()->scene.speed_limit_control_engage_type == 0) {
-    QColor slc_color("#ffffff");
-    QRect slc_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
-    QRect slc_btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
-    p.setPen(Qt::NoPen);
-    p.setBrush(shadow_color);
-    p.drawEllipse(slc_btn_shadow);
-    p.setBrush(slc_color);
-    p.drawEllipse(slc_btn);
-    QString slc_status_text;
-    slc_status_text.sprintf("SLC: %s\n", QString("Warn Only").toStdString().c_str());
-    p.setPen(QPen(shadow_color, 2));
-    p.drawText(x + drop_shadow_size, y + drop_shadow_size, slc_status_text);
-    p.setPen(QPen(text_color, 2));
-    p.drawText(x, y, slc_status_text);
-    y += text_height;
-  } else if (longitudinal || !cp.getPcmCruiseSpeed()) {
+  if (longitudinal || !cp.getPcmCruiseSpeed()) {
     drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
   }
 }
@@ -1721,7 +1706,7 @@ void AnnotatedCameraWidget::speedLimitWarning(QPainter &p, QRect sign_rect, cons
   }
 
   // current speed over speed limit
-  else if (overSpeedLimit && uiState()->scene.speed_limit_control_engage_type == 0) {
+  else if (overSpeedLimit && uiState()->scene.speed_limit_warning_flash) {
     speed_limit_frame++;
     speedLimitSignPulse(speed_limit_frame);
   }

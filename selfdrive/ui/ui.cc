@@ -254,6 +254,9 @@ void ui_update_params(UIState *s) {
   s->scene.torqued_override = params.getBool("TorquedOverride");
   s->scene.speed_limit_control_engage_type = std::atoi(params.get("SpeedLimitEngageType").c_str());
   s->scene.mapbox_fullscreen = params.getBool("MapboxFullScreen");
+  s->scene.speed_limit_warning_flash = params.getBool("SpeedLimitWarningFlash");
+  s->scene.speed_limit_warning_type = std::atoi(params.get("SpeedLimitWarningType").c_str());
+  s->scene.speed_limit_warning_value_offset = std::atoi(params.get("SpeedLimitWarningValueOffset").c_str());
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {

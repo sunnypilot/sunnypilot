@@ -78,7 +78,7 @@ class LongitudinalPlanner:
 
     self.cruise_source = 'cruise'
     self.vision_turn_controller = VisionTurnController(CP)
-    self.speed_limit_controller = SpeedLimitController()
+    self.speed_limit_controller = SpeedLimitController(CP)
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
     self.dynamic_experimental_controller = DynamicExperimentalController()
@@ -241,7 +241,7 @@ class LongitudinalPlanner:
     # Update controllers
     self.vision_turn_controller.update(enabled, v_ego, v_cruise, sm)
     self.events = Events()
-    self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.CP, self.events)
+    self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.events)
     self.turn_speed_controller.update(enabled, v_ego, sm, v_cruise)
 
     # Pick solution with the lowest velocity target.
