@@ -2,6 +2,10 @@ sunnypilot - 0.9.6.1 (2023-xx-xx)
 ========================
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:lp-dp-beta2 commit 578d38b
+* UPDATED: Driving Model Selector v2
+  * Driving models sort in descending order based on availability date
+  * Experimental/unmerged driving models are only available in "dev-c3" branch
+    * To select and use experimental driving models, navigate to "Software" panel, select the "dev-c3" branch, and check for update
 * UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
   * Refactored implementation thanks to pfeiferj!
   * More accurate and consistent velocity calculation to achieve smoother longitudinal control in curves

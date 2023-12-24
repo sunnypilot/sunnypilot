@@ -26,6 +26,8 @@ public:
     fullName = json["full_name"].toString();
     fileName = json["file_name"].toString();
     downloadUri = json["download_uri"].toString();
+    index = json["index"].toString();
+    environment = json["environment"].toString();
   }
 
   QJsonObject toJson() const {
@@ -34,6 +36,8 @@ public:
     json["full_name"] = fullName;
     json["file_name"] = fileName;
     json["download_uri"] = downloadUri;
+    json["index"] = index;
+    json["environment"] = environment;
     return json;
   }
 
@@ -41,6 +45,8 @@ public:
   QString fullName;
   QString fileName;
   QString downloadUri;
+  QString index;
+  QString environment;
 };
 
 class ModelsFetcher : public QObject {

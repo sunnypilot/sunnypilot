@@ -56,12 +56,26 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
 
   checkNetwork();
   const auto currentModelName = QString::fromStdString(params.get("DrivingModelName"));
+  const bool is_release_sp = params.getBool("IsReleaseSPBranch");
   const auto models = models_fetcher.getModelsFromURL();
-  QStringList modelNames;
 
-  // Collecting model names
-  for (const auto &model: models) {
-    modelNames.push_back(model.displayName);
+  QMap<QString, QString> index_to_model;
+
+  // Collecting indices with display names
+  for (const auto &model : models) {
+    if ((is_release_sp && model.environment == "release") || !is_release_sp) {
+      index_to_model.insert(model.index, model.displayName);
+    }
+  }
+
+  QStringList modelNames;
+  QStringList indices = index_to_model.keys();
+  std::sort(indices.begin(), indices.end(), [&](const QString &index1, const QString &index2) {
+    return index1.toInt() > index2.toInt();
+  });
+
+  for (const QString &index : indices) {
+    modelNames.push_back(index_to_model[index]);
   }
 
   currentModelLblBtn->setEnabled(!is_onroad);
