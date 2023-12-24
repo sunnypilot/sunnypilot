@@ -93,7 +93,7 @@ class CarController:
     lkas_active = CC.latActive and CS.madsEnabled
 
     if self.frame % 10 == 0 and self.CP.carFingerprint not in RAM_CARS:
-      can_sends.append(chryslercan.create_lkas_heartbit(self.packer, CS.madsEnabled, CS.lkas_heartbit))
+      can_sends.append(chryslercan.create_lkas_heartbit(self.packer, CS.lkas_disabled, CS.lkas_heartbit))
 
     ram_cars = self.CP.carFingerprint in RAM_CARS
 

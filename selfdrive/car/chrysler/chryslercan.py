@@ -81,8 +81,8 @@ def create_cruise_buttons(packer, frame, bus, CP, cruise_buttons_msg=None, butto
   return packer.make_can_msg("CRUISE_BUTTONS", bus, values)
 
 
-def create_lkas_heartbit(packer, mads_enabled, lkas_heartbit):
+def create_lkas_heartbit(packer, lkas_disabled, lkas_heartbit):
   # LKAS_HEARTBIT (697) LKAS heartbeat
   values = lkas_heartbit.copy()  # forward what we parsed
-  values["LKAS_DISABLED"] = 0 if mads_enabled else 1
+  values["LKAS_DISABLED"] = 1 if lkas_disabled else 0
   return packer.make_can_msg("LKAS_HEARTBIT", 0, values)

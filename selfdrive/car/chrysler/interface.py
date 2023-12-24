@@ -124,6 +124,7 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         if self.CS.prev_lkas_enabled != 1 and self.CS.lkas_enabled == 1:
           self.CS.madsEnabled = not self.CS.madsEnabled
+          self.CS.lkas_disabled = not self.CS.lkas_disabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
