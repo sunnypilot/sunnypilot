@@ -1,5 +1,42 @@
-sunnypilot - 0.9.5.3 (2023-xx-xx)
+sunnypilot - 0.9.5.3 (2023-12-24)
 ========================
+* UPDATED: Dynamic Experimental Control (DEC)
+  * Synced with dragonpilot-community/dragonpilot:lp-dp-beta2 commit 578d38b
+* UPDATED: Driving Model Selector v2
+  * Driving models sort in descending order based on availability date
+  * Experimental/unmerged driving models are only available in "dev-c3" branch
+    * To select and use experimental driving models, navigate to "Software" panel, select the "dev-c3" branch, and check for update
+* UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
+  * Refactored implementation thanks to pfeiferj!
+  * More accurate and consistent velocity calculation to achieve smoother longitudinal control in curves
+* NEW❗: Speed Limit Warning
+  * Display alert and/or chime to warn the driver when the cruising speed is faster than the speed limit plus the Warning Offset
+  * Customizable Warning Offset, independent of Speed Limit Control (SLC)'s Limit Offset
+* UPDATED: Speed Limit Source Policy
+  * Selectable speed limit source for Speed Limit Control and Speed Limit Warning
+  * Applicable to: Speed Limit Control, Speed Limit Warning
+* UPDATED: Speed Limit Control (SLC)
+  * Engage Mode: Removed "Warning Only" mode - this has been replaced by the new Speed Limit Warning sub-menu
+* UPDATED: OpenStreetMap (OSM) implementation
+  * Refactored implementation thanks to pfeiferj!
+    * Less resource impact
+    * Significantly smaller sizes with databases
+    * All regions are available to download
+    * Weekly map updates thanks to pfeiferj!
+    * Increased the font size of the road name
+  * C3X-specific changes
+    * Altitude (ALT.) display on Developer UI
+    * Current street name on top of driving screen when "OSM Debug UI" is enabled
+* UPDATED: Map-based Turn Speed Control (M-TSC) implementation
+  * Only available in "staging-c3" and "dev-c3" branches. If you are using "release-c3" branch, navigate to "Software" panel, select the desired target branch, and check for update
+  * Refactored implementation thanks to pfeiferj!
+  * Based on the new OpenStreetMap implementation
+  * Improved predicted curvature calculations from OpenStreetMap data
+* UI updates
+  * RE-ENABLED: Navigation: Full screen support
+    * Display the map view in full screen
+    * To switch back to driving view, tap on the border edge
+* Hyundai Bayon Non-SCC 2019 support thanks to polein78!
 
 sunnypilot - 0.9.5.2 (2023-12-07)
 ========================
