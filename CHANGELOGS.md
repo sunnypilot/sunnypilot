@@ -15,8 +15,11 @@ sunnypilot - 0.9.6.1 (2023-xx-xx)
   * C3X-specific changes
     * Altitude (ALT.) display on Developer UI
     * Current street name on top of driving screen when "OSM Debug UI" is enabled
-  * DISABLED: Map-based Turn Speed Control (M-TSC)
-    * Reimplementation in near future updates
+* UPDATED: Map-based Turn Speed Control (M-TSC) implementation
+  * Only available in "staging-c3" and "dev-c3" branches. If you are using "release-c3" branch, navigate to "Software" panel, select the desired target branch, and check for update
+  * Refactored implementation thanks to pfeiferj!
+  * Based on the new OpenStreetMap implementation
+  * Improved predicted curvature calculations from OpenStreetMap data
 * UI updates
   * RE-ENABLED: Navigation: Full screen support
     * Display the map view in full screen

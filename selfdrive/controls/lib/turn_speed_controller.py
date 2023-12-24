@@ -1,56 +1,63 @@
-import numpy as np
+import json
+import math
 import time
-from common.params import Params
 from cereal import custom
-from selfdrive.controls.lib.drive_helpers import LIMIT_ADAPT_ACC, LIMIT_MIN_SPEED, LIMIT_MAX_MAP_DATA_AGE, \
-  LIMIT_SPEED_OFFSET_TH, CONTROL_N, LIMIT_MIN_ACC, LIMIT_MAX_ACC
-from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.common.params import Params
+from openpilot.system.version import is_release_sp_branch
+
+R = 6373000.0  # approximate radius of earth in meters
+TO_RADIANS = math.pi / 180
+TO_DEGREES = 180 / math.pi
+TARGET_JERK = -0.6  # m/s^3 There's some jounce limits that are not consistent so we're fudging this some
+TARGET_ACCEL = -1.2  # m/s^2 should match up with the long planner limit
+TARGET_OFFSET = 1.0  # seconds - This controls how soon before the curve you reach the target velocity. It also helps
+                     # reach the target velocity when innacuracies in the distance modeling logic would cause overshoot.
+                     # The value is multiplied against the target velocity to determine the additional distance. This is
+                     # done to keep the distance calculations consistent but results in the offset actually being less
+                     # time than specified depending on how much of a speed diffrential there is between v_ego and the
+                     # target velocity.
 
 
-_ACTIVE_LIMIT_MIN_ACC = -0.5  # m/s^2 Maximum deceleration allowed while active.
-_ACTIVE_LIMIT_MAX_ACC = 0.5   # m/s^2 Maximum acelration allowed while active.
+def calculate_accel(t, target_jerk, a_ego):
+  return a_ego + target_jerk * t
 
 
-_DEBUG = False
+def calculate_velocity(t, target_jerk, a_ego, v_ego):
+  return v_ego + a_ego * t + target_jerk/2 * (t ** 2)
+
+
+def calculate_distance(t, target_jerk, a_ego, v_ego):
+  return t * v_ego + a_ego/2 * (t ** 2) + target_jerk/6 * (t ** 3)
+
+
+PARAMS_UPDATE_PERIOD = 5.
 
 TurnSpeedControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 
 
-def _debug(msg):
-  if not _DEBUG:
-    return
-  print(msg)
+# points should be in radians
+# output is meters
+def distance_to_point(ax, ay, bx, by):
+  a = math.sin((bx-ax)/2)*math.sin((bx-ax)/2) + math.cos(ax) * math.cos(bx)*math.sin((by-ay)/2)*math.sin((by-ay)/2)
+  c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+  return R * c  # in meters
 
 
-def _description_for_state(turn_speed_control_state):
-  if turn_speed_control_state == TurnSpeedControlState.inactive:
-    return 'INACTIVE'
-  if turn_speed_control_state == TurnSpeedControlState.tempInactive:
-    return 'TEMP INACTIVE'
-  if turn_speed_control_state == TurnSpeedControlState.adapting:
-    return 'ADAPTING'
-  if turn_speed_control_state == TurnSpeedControlState.active:
-    return 'ACTIVE'
-
-
-class TurnSpeedController():
+class TurnSpeedController:
   def __init__(self):
-    self._params = Params()
-    self._last_params_update = 0.
-    self._is_enabled = self._params.get_bool("TurnSpeedControl")
+    self.params = Params()
+    self.mem_params = Params("/dev/shm/params")
+    self.enabled = self.params.get_bool("TurnSpeedControl") and not is_release_sp_branch()
+    self.last_params_update = 0
     self._op_enabled = False
-    self._v_ego = 0.
-    self._a_ego = 0.
-    self._v_cruise_setpoint = 0.
-
-    self._v_offset = 0.
-    self._speed_limit = 0.
-    self._speed_limit_temp_inactive = 0.
-    self._distance = 0.
-    self._turn_sign = 0
+    self._gas_pressed = False
     self._state = TurnSpeedControlState.inactive
-
-    self._next_speed_limit_prev = 0.
+    self._v_cruise = 0
+    self._min_v = 0
+    self.target_lat = 0.0
+    self.target_lon = 0.0
+    self.target_v = 0.0
 
   @property
   def state(self):
@@ -58,18 +65,6 @@ class TurnSpeedController():
 
   @state.setter
   def state(self, value):
-    if value != self._state:
-      _debug(f'Turn Speed Controller state: {_description_for_state(value)}')
-
-      if value == TurnSpeedControlState.adapting:
-        _debug('TSC: Enteriing Adapting as speed offset is below threshold')
-        _debug(f'_v_offset: {self._v_offset * 3.6}\nspeed_limit: {self.speed_limit * 3.6}')
-        _debug(f'_v_ego: {self._v_ego * 3.6}\ndistance: {self.distance}')
-
-      if value == TurnSpeedControlState.tempInactive:
-        # Track the speed limit value when controller was set to temp inactive.
-        self._speed_limit_temp_inactive = self._speed_limit
-
     self._state = value
 
   @property
@@ -77,140 +72,156 @@ class TurnSpeedController():
     return self.state > TurnSpeedControlState.tempInactive
 
   @property
-  def speed_limit(self):
-    return max(self._speed_limit, LIMIT_MIN_SPEED) if self._speed_limit > 0. else 0.
+  def v_target(self):
+    return self._min_v
 
-  @property
-  def distance(self):
-    return max(self._distance, 0.)
-
-  @property
-  def turn_sign(self):
-    return self._turn_sign
-
-  def _get_limit_from_map_data(self, sm):
-    """Provides the speed limit, distance and turn sign to it for turns based on map data.
-    """
-    # Ignore if no live map data
-    sock = 'liveMapDataSP'
-    if sm.logMonoTime[sock] is None:
-      _debug('TS: No map data for turn speed limit')
-      return 0., 0., 0
-
-    # Load map_data and initialize
-    map_data = sm[sock]
-    speed_limit = 0.
-
-    # Calculate the age of the gps fix. Ignore if too old.
-    gps_fix_age = time.time() - map_data.lastGpsTimestamp * 1e-3
-    if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
-      _debug(f'TS: Ignoring map data as is too old. Age: {gps_fix_age}')
-      return 0., 0., 0
-
-    # Load turn ahead sections info from map_data with distances corrected by gps_fix_age
-    distance_since_fix = self._v_ego * gps_fix_age
-    distances_to_sections_ahead = np.maximum(0., np.array(map_data.turnSpeedLimitsAheadDistances) - distance_since_fix)
-    speed_limit_in_sections_ahead = map_data.turnSpeedLimitsAhead
-    turn_signs_in_sections_ahead = map_data.turnSpeedLimitsAheadSigns
-
-    # Ensure current speed limit is considered only if we are inside the section.
-    if map_data.turnSpeedLimitValid and self._v_ego > 0.:
-      speed_limit_end_time = (map_data.turnSpeedLimitEndDistance / self._v_ego) - gps_fix_age
-      if speed_limit_end_time > 0.:
-        speed_limit = map_data.turnSpeedLimit
-
-    # When we have no ahead speed limit to consider or all are greater than current speed limit
-    # or car has stopped, then provide current value and reset tracking.
-    turn_sign = map_data.turnSpeedLimitSign if map_data.turnSpeedLimitValid else 0
-    if len(speed_limit_in_sections_ahead) == 0 or self._v_ego <= 0. or \
-       (speed_limit > 0 and np.amin(speed_limit_in_sections_ahead) > speed_limit):
-      self._next_speed_limit_prev = 0.
-      return speed_limit, 0., turn_sign
-
-    # Calculated the time needed to adapt to the limits ahead and the corresponding distances.
-    adapt_times = (np.maximum(speed_limit_in_sections_ahead, LIMIT_MIN_SPEED) - self._v_ego) / LIMIT_ADAPT_ACC
-    adapt_distances = self._v_ego * adapt_times + 0.5 * LIMIT_ADAPT_ACC * adapt_times**2
-    distance_gaps = distances_to_sections_ahead - adapt_distances
-
-    # We select as next speed limit, the one that have the lowest distance gap.
-    next_idx = np.argmin(distance_gaps)
-    next_speed_limit = speed_limit_in_sections_ahead[next_idx]
-    distance_to_section_ahead = distances_to_sections_ahead[next_idx]
-    next_turn_sign = turn_signs_in_sections_ahead[next_idx]
-    distance_gap = distance_gaps[next_idx]
-
-    # When we have a next_speed_limit value that has not changed from a provided next speed limit value
-    # in previous resolutions, we keep providing it along with the updated distance to it.
-    if next_speed_limit == self._next_speed_limit_prev:
-      return next_speed_limit, distance_to_section_ahead, next_turn_sign
-
-    # Reset tracking
-    self._next_speed_limit_prev = 0.
-
-    # When we detect we are close enough, we provide the next limit value and track it.
-    if distance_gap <= 0.:
-      self._next_speed_limit_prev = next_speed_limit
-      return next_speed_limit, distance_to_section_ahead, next_turn_sign
-
-    # Otherwise we just provide the calculated speed_limit
-    return speed_limit, 0., turn_sign
-
-  def _update_params(self):
+  def update_params(self):
     t = time.monotonic()
-    if t > self._last_params_update + 5.0:
-      self._is_enabled = self._params.get_bool("TurnSpeedControl")
-      self._last_params_update = t
+    if t > self.last_params_update + PARAMS_UPDATE_PERIOD:
+      self.enabled = self.params.get_bool("TurnSpeedControl") and not is_release_sp_branch()
+      self.last_params_update = t
 
-  def _update_calculations(self):
-    # Update current velocity offset (error)
-    self._v_offset = self.speed_limit - self._v_ego
+  def target_speed(self, v_ego, a_ego) -> float:
+    if not self.enabled:
+      return 0.0
 
-  def _state_transition(self, sm):
-    # In any case, if op is disabled, or turn speed limit control is disabled
-    # or the reported speed limit is 0, deactivate.
-    if not self._op_enabled or not self._is_enabled or self.speed_limit == 0.:
+    lat = 0.0
+    lon = 0.0
+    try:
+      position = json.loads(self.mem_params.get("LastGPSPosition"))
+      lat = position["latitude"]
+      lon = position["longitude"]
+    except: return 0.0
+
+    try:
+      target_velocities = json.loads(self.mem_params.get("MapTargetVelocities"))
+    except: return 0.0
+
+    min_dist = 1000
+    min_idx = 0
+    distances = []
+
+    # find our location in the path
+    for i in range(len(target_velocities)):
+      target_velocity = target_velocities[i]
+      tlat = target_velocity["latitude"]
+      tlon = target_velocity["longitude"]
+      d = distance_to_point(lat * TO_RADIANS, lon * TO_RADIANS, tlat * TO_RADIANS, tlon * TO_RADIANS)
+      distances.append(d)
+      if d < min_dist:
+        min_dist = d
+        min_idx = i
+
+    # only look at values from our current position forward
+    forward_points = target_velocities[min_idx:]
+    forward_distances = distances[min_idx:]
+
+    # find velocities that we are within the distance we need to adjust for
+    valid_velocities = []
+    for i in range(len(forward_points)):
+      target_velocity = forward_points[i]
+      tlat = target_velocity["latitude"]
+      tlon = target_velocity["longitude"]
+      tv = target_velocity["velocity"]
+      if tv > v_ego:
+        continue
+
+      d = forward_distances[i]
+
+      a_diff = (a_ego - TARGET_ACCEL)
+      accel_t = abs(a_diff / TARGET_JERK)
+      min_accel_v = calculate_velocity(accel_t, TARGET_JERK, a_ego, v_ego)
+
+      max_d = 0
+      if tv > min_accel_v:
+        # calculate time needed based on target jerk
+        a = 0.5 * TARGET_JERK
+        b = a_ego
+        c = v_ego - tv
+        t_a = -1 * ((b**2 - 4 * a * c) ** 0.5 + b) / 2 * a
+        t_b = ((b**2 - 4 * a * c) ** 0.5 - b) / 2 * a
+        if not isinstance(t_a, complex) and t_a > 0:
+          t = t_a
+        else:
+          t = t_b
+        if isinstance(t, complex):
+          continue
+
+        max_d = max_d + calculate_distance(t, TARGET_JERK, a_ego, v_ego)
+      else:
+        t = accel_t
+        max_d = calculate_distance(t, TARGET_JERK, a_ego, v_ego)
+
+        # calculate additional time needed based on target accel
+        t = abs((min_accel_v - tv) / TARGET_ACCEL)
+        max_d += calculate_distance(t, 0, TARGET_ACCEL, min_accel_v)
+
+      if d < max_d + tv * TARGET_OFFSET:
+        valid_velocities.append((float(tv), tlat, tlon))
+
+    # Find the smallest velocity we need to adjust for
+    min_v = 100.0
+    target_lat = 0.0
+    target_lon = 0.0
+    for tv, lat, lon in valid_velocities:
+      if tv < min_v:
+        min_v = tv
+        target_lat = lat
+        target_lon = lon
+
+    if self.target_v < min_v and not (self.target_lat == 0 and self.target_lon == 0):
+      for i in range(len(forward_points)):
+        target_velocity = forward_points[i]
+        tlat = target_velocity["latitude"]
+        tlon = target_velocity["longitude"]
+        tv = target_velocity["velocity"]
+        if tv > v_ego:
+          continue
+
+        if tlat == self.target_lat and tlon == self.target_lon and tv == self.target_v:
+          return float(self.target_v)
+      # not found so lets reset
+      self.target_v = 0.0
+      self.target_lat = 0.0
+      self.target_lon = 0.0
+
+    self.target_v = min_v
+    self.target_lat = target_lat
+    self.target_lon = target_lon
+
+    return min_v
+
+  def _state_transition(self):
+    if not self._op_enabled or not self.enabled:
       self.state = TurnSpeedControlState.inactive
       return
 
-    # In any case, we deactivate the speed limit controller temporarily
-    # if gas is pressed (to support gas override implementations).
-    if sm['carState'].gasPressed:
+    if self._gas_pressed:
       self.state = TurnSpeedControlState.tempInactive
       return
 
-    # inactive
+    # INACTIVE
     if self.state == TurnSpeedControlState.inactive:
-      # If the limit speed offset is negative (i.e. reduce speed) and lower than threshold and distanct to turn limit
-      # is positive (not in turn yet) we go to adapting state to reduce speed, otherwise we go directly to active
-      if self._v_offset < LIMIT_SPEED_OFFSET_TH and self.distance > 0.:
-        self.state = TurnSpeedControlState.adapting
-      else:
+      if self._v_cruise > self._min_v != 0:
         self.state = TurnSpeedControlState.active
-    # tempInactive
+
+    # TEMP INACTIVE
     elif self.state == TurnSpeedControlState.tempInactive:
-      # if the speed limit recorded when going to temp Inactive changes
-      # then set to inactive, activation will happen on next cycle
-      if self._speed_limit != self._speed_limit_temp_inactive:
-        self.state = TurnSpeedControlState.inactive
-    # adapting
-    elif self.state == TurnSpeedControlState.adapting:
-      # Go to active once the speed offset is over threshold or the distance to turn is now 0.
-      if self._v_offset >= LIMIT_SPEED_OFFSET_TH or self.distance == 0.:
+      if self._v_cruise > self._min_v != 0:
         self.state = TurnSpeedControlState.active
-    # active
+      else:
+        self.state = TurnSpeedControlState.inactive
+
+    # ACTIVE
     elif self.state == TurnSpeedControlState.active:
-      # Go to adapting if the speed offset goes below threshold as long as the distance to turn is still positive.
-      if self._v_offset < LIMIT_SPEED_OFFSET_TH and self.distance > 0.:
-        self.state = TurnSpeedControlState.adapting
+      if not (self._v_cruise > self._min_v != 0):
+        self.state = TurnSpeedControlState.inactive
 
-  def update(self, enabled, v_ego, a_ego, sm):
-    self._op_enabled = enabled
-    self._v_ego = v_ego
-    self._a_ego = a_ego
+  def update(self, op_enabled, v_ego, sm, v_cruise):
+    self.update_params()
+    self._op_enabled = op_enabled
+    self._gas_pressed = sm['carState'].gasPressed
+    self._v_cruise = v_cruise
+    self._min_v = self.target_speed(v_ego, sm['carState'].aEgo)
 
-    # Get the speed limit from Map Data
-    self._speed_limit, self._distance, self._turn_sign = self._get_limit_from_map_data(sm)
-
-    self._update_params()
-    self._update_calculations()
-    self._state_transition(sm)
+    self._state_transition()

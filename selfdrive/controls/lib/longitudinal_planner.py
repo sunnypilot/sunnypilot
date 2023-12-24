@@ -229,9 +229,7 @@ class LongitudinalPlanner:
     longitudinalPlanSP.events = self.events.to_msg()
 
     longitudinalPlanSP.turnSpeedControlState = self.turn_speed_controller.state
-    longitudinalPlanSP.turnSpeed = float(self.turn_speed_controller.speed_limit)
-    longitudinalPlanSP.distToTurn = float(self.turn_speed_controller.distance)
-    longitudinalPlanSP.turnSign = int(self.turn_speed_controller.turn_sign)
+    longitudinalPlanSP.turnSpeed = float(self.turn_speed_controller.v_target)
 
     longitudinalPlanSP.personality = self.personality
 
@@ -244,7 +242,7 @@ class LongitudinalPlanner:
     self.vision_turn_controller.update(enabled, v_ego, v_cruise, sm)
     self.events = Events()
     self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.CP, self.events)
-    self.turn_speed_controller.update(enabled, v_ego, a_ego, sm)
+    self.turn_speed_controller.update(enabled, v_ego, sm, v_cruise)
 
     # Pick solution with the lowest velocity target.
     v_solutions = {'cruise': v_cruise}
@@ -256,7 +254,7 @@ class LongitudinalPlanner:
       v_solutions['limit'] = self.speed_limit_controller.speed_limit_offseted
 
     if self.turn_speed_controller.is_active:
-      v_solutions['turnlimit'] = self.turn_speed_controller.speed_limit
+      v_solutions['turnlimit'] = self.turn_speed_controller.v_target
 
     source = min(v_solutions, key=v_solutions.get)
 

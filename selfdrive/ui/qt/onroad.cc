@@ -722,7 +722,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     const int t_distance = int(lp_sp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
 
-    showTurnSpeedLimit = tsc_speed > 0.0 && (tsc_speed < speed || s.scene.show_debug_ui);
+    showTurnSpeedLimit = tsc_speed > 0.0 && std::round(tsc_speed) < 224 && (tsc_speed < speed || s.scene.show_debug_ui);
     turnSpeedLimit = QString::number(std::nearbyint(tsc_speed));
     tscSubText = t_distance > 0 ? t_distance_str : QString("");
     tscActive = tscState > cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE;
@@ -1097,8 +1097,8 @@ void AnnotatedCameraWidget::drawTrunSpeedSign(QPainter &p, QRect rc, const QStri
   const QColor text_color = QColor(0, 0, 0, is_active ? 255 : 85);
 
   const int x = rc.center().x();
-  const int y = rc.center().y();
-  const int width = rc.width();
+  const int y = 184 * 2 + UI_BORDER_SIZE + 202;
+  const int width = 184;
 
   const float stroke_w = 15.0;
   const float cS = stroke_w / 2.0 + 4.5;  // half width of the stroke on the corners of the triangle

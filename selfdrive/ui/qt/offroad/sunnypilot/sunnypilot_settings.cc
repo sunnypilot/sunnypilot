@@ -32,7 +32,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     },
     {
       "TurnSpeedControl",
-      tr("Enable Map Data Turn Speed Control (M-TSC)"),
+      tr("Enable Map Data Turn Speed Control (M-TSC) (Beta)"),
       tr("Use curvature information from map data to define speed limits to take turns ahead."),
       "../assets/offroad/icon_blank.png",
     },
@@ -413,6 +413,7 @@ void SunnypilotPanel::updateToggles() {
   QString nnff_loaded = tr("<font color=#00ff00>✅ NNLC Loaded</font>");
   auto _car_model = QString::fromStdString(params.get("NNFFCarModel"));
 
+  const bool is_release_sp = params.getBool("IsReleaseSPBranch");
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
@@ -445,6 +446,11 @@ void SunnypilotPanel::updateToggles() {
       }
     }
 
+    if (is_release_sp) {
+      params.remove("TurnSpeedControl");
+    }
+    m_tsc->setVisible(!is_release_sp);
+
     if (hasLongitudinalControl(CP) || custom_stock_long_param) {
       v_tsc->setEnabled(true);
       m_tsc->setEnabled(true);
@@ -462,9 +468,10 @@ void SunnypilotPanel::updateToggles() {
     enforce_torque_lateral->refresh();
     slc_toggle->refresh();
     nnff_toggle->refresh();
+    m_tsc->refresh();
   } else {
     v_tsc->setEnabled(false);
-    m_tsc->setEnabled(false);
+    m_tsc->setVisible(false);  // TODO: temporarily disable M-TSC until the reimplementation is in place. Remove this line to re-enable the toggle.
     reverse_acc->setEnabled(false);
     slc_toggle->setEnabled(false);
     slcSettings->setEnabled(false);
