@@ -729,8 +729,9 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     curveSign = lp_sp.getTurnSign();
   }
 
-  longitudinalPersonality = int(lp_sp.getPersonality());
-  dynamicLaneProfile = int(lateral_plan_sp.getDynamicLaneProfile());
+  // TODO: Add toggle variables to cereal, and parse from cereal
+  longitudinalPersonality = s.scene.longitudinal_personality;
+  dynamicLaneProfile = s.scene.dynamic_lane_profile;
   mpcMode = QString::fromStdString(lp_sp.getE2eBlended());
   mpcMode = (mpcMode == "blended") ? mpcMode.replace(0, 1, mpcMode[0].toUpper()) : mpcMode.toUpper();
 
