@@ -69,8 +69,8 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
 
   const QString selectedModelName = MultiOptionDialog::getSelection(tr("Select a Driving Model"), modelNames, currentModelName, this);
 
-  // Bail if the user doesn't want to continue while on metered
-  if (!canContinueOnMeteredDialog()) {
+  // Bail if no selected model or the user doesn't want to continue while on metered
+  if (selectedModelName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
   }
 
