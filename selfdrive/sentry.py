@@ -97,7 +97,9 @@ def get_properties() -> Tuple[str, str]:
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf-8')
   if dongle_id in (None, UNREGISTERED_DONGLE_ID):
-    dongle_id = UNREGISTERED_DONGLE_ID
+    hardware_serial = params.get("HardwareSerial", encoding='utf-8')
+    hardware_serial = "" if hardware_serial is None else hardware_serial
+    dongle_id = UNREGISTERED_DONGLE_ID + hardware_serial
   gitname = params.get("GithubUsername", encoding='utf-8')
   if gitname is None:
     gitname = ""

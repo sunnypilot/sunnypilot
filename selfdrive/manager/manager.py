@@ -155,6 +155,12 @@ def manager_init() -> None:
   else:
     serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
+  if params.get("HardwareSerial") is None:
+    try:
+      serial = HARDWARE.get_serial()
+      params.put("HardwareSerial", serial)
+    except Exception:
+      cloudlog.exception("Error getting serial for device")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
 
   if not is_dirty():
