@@ -50,7 +50,7 @@ class CarController:
     actuators = CC.actuators
     hud_control = CC.hudControl
     pcm_cancel_cmd = CC.cruiseControl.cancel
-    lat_active = CC.latActive and abs(CS.out.steeringTorque) < MAX_USER_TORQUE
+    lat_active = CC.latActive and abs(CS.out.steeringTorque) < MAX_USER_TORQUE and abs(CS.out.steeringAngleDeg) < MAX_USER_TORQUE
 
     # *** control msgs ***
     can_sends = []
@@ -88,7 +88,7 @@ class CarController:
     # toyota can trace shows this message at 42Hz, with counter adding alternatively 1 and 2;
     # sending it at 100Hz seem to allow a higher rate limit, as the rate limit seems imposed
     # on consecutive messages
-    can_sends.append(toyotacan.create_steer_command(self.packer, apply_steer, apply_steer_req))
+    can_sends.append(toyotacan.create_steer_command(self.packer, apply_steer, apply_steer_req and lat_active))
     if self.frame % 2 == 0 and self.CP.carFingerprint in TSS2_CAR:
       lta_active = lat_active and self.CP.steerControlType == SteerControlType.angle
       full_torque_condition = (abs(CS.out.steeringTorqueEps) < self.params.STEER_MAX and
@@ -173,7 +173,7 @@ class CarController:
       if self.frame % 20 == 0 or send_ui:
         can_sends.append(toyotacan.create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, hud_control.leftLaneVisible,
                                                      hud_control.rightLaneVisible, hud_control.leftLaneDepart,
-                                                     hud_control.rightLaneDepart, CC.latActive, CS.lkas_hud, CS.madsEnabled))
+                                                     hud_control.rightLaneDepart, CC.latActive and lat_active, CS.lkas_hud, CS.madsEnabled))
 
       if (self.frame % 100 == 0 or send_ui) and (self.CP.enableDsu or self.CP.flags & ToyotaFlags.DISABLE_RADAR.value):
         can_sends.append(toyotacan.create_fcw_command(self.packer, fcw_alert))
