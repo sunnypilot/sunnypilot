@@ -94,6 +94,10 @@ class CarInterface(CarInterfaceBase):
     ret.centerToFront = ret.wheelbase * 0.44
     ret.enableBsm = 720 in fingerprint[0]
 
+    if 0x4FF in fingerprint[0]:
+      ret.spFlags |= ChryslerFlagsSP.SP_WP_S20.value
+      ret.minSteerSpeed = 0.0
+
     return ret
 
   def _update(self, c):

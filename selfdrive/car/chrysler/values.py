@@ -18,6 +18,7 @@ class ChryslerFlags(IntFlag):
 
 class ChryslerFlagsSP(IntFlag):
   SP_RAM_HD_PARAMSD_IGNORE = 1
+  SP_WP_S20 = 2
 
 
 class CAR(StrEnum):

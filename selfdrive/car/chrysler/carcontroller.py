@@ -5,7 +5,8 @@ from openpilot.common.params import Params, put_bool_nonblocking
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_meas_steer_torque_limits
 from openpilot.selfdrive.car.chrysler import chryslercan
-from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags
+from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags, ChryslerFlagsSP
+from openpilot.selfdrive.car.interfaces import FORWARD_GEARS
 from openpilot.selfdrive.controls.lib.drive_helpers import FCA_V_CRUISE_MIN
 
 BUTTONS_STATES = ["accelCruise", "decelCruise", "cancel", "resumeCruise"]
@@ -151,6 +152,8 @@ class CarController:
           lkas_control_bit = True
         if (self.CP.minEnableSpeed >= 14.5) and (CS.out.gearShifter != 2):
           lkas_control_bit = False
+      elif self.CP.spFlags & ChryslerFlagsSP.SP_WP_S20:
+        lkas_control_bit = CC.latActive and CS.out.gearShifter in FORWARD_GEARS
       elif CS.out.vEgo > self.CP.minSteerSpeed:
         lkas_control_bit = True
       elif self.CP.flags & ChryslerFlags.HIGHER_MIN_STEERING_SPEED:
