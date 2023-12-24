@@ -1,4 +1,4 @@
-sunnypilot - 0.9.5.3 (2023-xx-xx)
+sunnypilot - 0.9.5.3 (2023-12-24)
 ========================
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:lp-dp-beta2 commit 578d38b
