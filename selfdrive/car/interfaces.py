@@ -690,7 +690,7 @@ class CarInterfaceBase(ABC):
           self.cruise_cancelled_btn = True
           events.add(EventName.manualLongitudinalRequired)
       # do disable on MADS button if ACC is disabled
-      if b.type == ButtonType.altButton1 and b.pressed:
+      if b.type == ButtonType.altButton1 and b.pressed and self.enable_mads:
         if not cs_out.madsEnabled:  # disabled MADS
           if not cs_out.cruiseState.enabled:
             events.add(EventName.buttonCancel)
