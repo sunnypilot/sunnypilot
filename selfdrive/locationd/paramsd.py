@@ -233,7 +233,8 @@ def main():
         0.2 <= liveParameters.stiffnessFactor <= 5.0,
         min_sr <= liveParameters.steerRatio <= max_sr,
       ))
-      if CP.carName == "chrysler" and CP.spFlags & ChryslerFlagsSP.SP_RAM_HD_PARAMSD_IGNORE:
+      if (CP.carName == "chrysler" and CP.spFlags & ChryslerFlagsSP.SP_RAM_HD_PARAMSD_IGNORE) or \
+         (CP.carName == "subaru" and CP.lateralTuning.which() == 'torque'):
         liveParameters.valid = True
       liveParameters.steerRatioStd = float(P[States.STEER_RATIO].item())
       liveParameters.stiffnessFactorStd = float(P[States.STIFFNESS].item())
