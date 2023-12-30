@@ -206,6 +206,10 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.9
       ret.steerRatio = 16.
       ret.tireStiffnessFactor = 0.65
+    elif candidate == CAR.KIA_EV9:
+      ref.mass = 2615
+      ref.wheelbase = 3.1
+      ret.steerRatio = 16.02
     elif candidate == CAR.KIA_SPORTAGE_HYBRID_5TH_GEN:
       ret.mass = 1767.  # SX Prestige trim support only
       ret.wheelbase = 2.756
