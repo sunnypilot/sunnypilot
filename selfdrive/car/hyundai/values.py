@@ -289,7 +289,7 @@ CAR_INFO: Dict[str, Optional[Union[HyundaiCarInfo, List[HyundaiCarInfo]]]] = {
   ],
   CAR.KIA_EV9: [
     HyundaiCarInfo("Kia EV9 (with HDA II) 2023", "Highway Driving Assist II", car_parts=CarParts.common([CarHarness.hyundai_r]))
-  ]
+  ],
   CAR.KIA_CARNIVAL_4TH_GEN: [
     HyundaiCarInfo("Kia Carnival 2023-24", car_parts=CarParts.common([CarHarness.hyundai_a])),
     HyundaiCarInfo("Kia Carnival (China only) 2023", car_parts=CarParts.common([CarHarness.hyundai_k]))
@@ -2052,10 +2052,10 @@ FW_VERSIONS = {
   CAR.KIA_EV9: {
     (Ecu.fwdRadar, 0x7d0, None): [
       b'\xf1\x00MV__ RDR -----      1.00 1.02 99110-DO700         ',
-    ]
-    (Ecu.adas, 0x730 None): [
+    ],
+    (Ecu.adas, 0x730, None): [
       b'\xf1\x00MV  FBL5 1.00 1.02 230602',
-    ]
+    ],
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\x00MV  MFC  AT KOR LHD 1.00 1.01 99211-DO000 230419',
     ],
