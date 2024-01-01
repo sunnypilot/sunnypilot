@@ -256,7 +256,7 @@ CAR_INFO: Dict[str, Union[VWCarInfo, List[VWCarInfo]]] = {
   CAR.TAOS_MK1: VWCarInfo("Volkswagen Taos 2022-23"),
   CAR.TCROSS_MK1: VWCarInfo("Volkswagen T-Cross 2021", footnotes=[Footnote.VW_MQB_A0]),
   CAR.TIGUAN_MK2: [
-    VWCarInfo("Volkswagen Tiguan 2018-23"),
+    VWCarInfo("Volkswagen Tiguan 2018-24"),
     VWCarInfo("Volkswagen Tiguan eHybrid 2021-23"),
   ],
   CAR.TOURAN_MK2: VWCarInfo("Volkswagen Touran 2016-23"),
@@ -855,6 +855,7 @@ FW_VERSIONS = {
       b'\xf1\x8783A907115K \xf1\x890002',
       b'\xf1\x8704E906024AP\xf1\x891461',
       b'\xf1\x8783A907115  \xf1\x890007',
+      b'\xf1\x8783A907115Q \xf1\x890001',
     ],
     (Ecu.transmission, 0x7e1, None): [
       b'\xf1\x8709G927158DT\xf1\x893698',
@@ -863,6 +864,7 @@ FW_VERSIONS = {
       b'\xf1\x8709G927158GD\xf1\x893820',
       b'\xf1\x8709G927158GM\xf1\x893936',
       b'\xf1\x8709G927158GN\xf1\x893938',
+      b'\xf1\x8709G927158HB\xf1\x894069',
       b'\xf1\x870D9300043  \xf1\x895202',
       b'\xf1\x870DL300011N \xf1\x892001',
       b'\xf1\x870DL300011N \xf1\x892012',
