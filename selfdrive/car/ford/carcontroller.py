@@ -1,5 +1,6 @@
 from cereal import car
 from openpilot.common.numpy_fast import clip
+from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_std_steer_angle_limits
 from openpilot.selfdrive.car.ford import fordcan
@@ -33,6 +34,8 @@ class CarController:
     self.main_on_last = False
     self.lkas_enabled_last = False
     self.steer_alert_last = False
+    self.gac_tr_cluster_last = -1
+    self.gac_tr_cluster_last_ts = 0
 
   def update(self, CC, CS, now_nanos):
     can_sends = []
@@ -99,9 +102,15 @@ class CarController:
       can_sends.append(fordcan.create_lkas_ui_msg(self.packer, self.CAN, main_on, CC.latActive, steer_alert, hud_control, CS.lkas_status_stock_values))
     # send acc ui msg at 5Hz or if ui state changes
     if (self.frame % CarControllerParams.ACC_UI_STEP) == 0 or send_ui:
+      if self.gac_tr_cluster_last > -1 and self.gac_tr_cluster_last != CS.gac_tr_cluster:
+        self.gac_tr_cluster_last_ts = self.frame * DT_CTRL
+
+      gapUiOn = 1 if ( self.gac_tr_cluster_last_ts > 0 and (self.frame * DT_CTRL - self.gac_tr_cluster_last_ts) < (400 * DT_CTRL) ) else 0
+
       can_sends.append(fordcan.create_acc_ui_msg(self.packer, self.CAN, self.CP, main_on, CC.latActive,
                                          fcw_alert, CS.out.cruiseState.standstill, hud_control,
-                                         CS.acc_tja_status_stock_values))
+                                         CS.acc_tja_status_stock_values, gapUiOn, CS.gac_tr_cluster))
+      self.gac_tr_cluster_last = CS.gac_tr_cluster
 
     self.main_on_last = main_on
     self.lkas_enabled_last = CC.latActive
