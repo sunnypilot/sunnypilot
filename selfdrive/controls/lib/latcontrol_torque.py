@@ -107,8 +107,8 @@ class LatControlTorque(LatControl):
       # Note that LAT_PLAN_MIN_IDX is defined above and is used in order to prevent
       # using a "future" value that is actually planned to occur before the "current" desired
       # value, which is offset by the steerActuatorDelay.
-      self.friction_look_ahead_v = [0.8, 1.8] # how many seconds in the future to look ahead in [0, ~2.1] in 0.1 increments
-      self.friction_look_ahead_bp = [9.0, 35.0] # corresponding speeds in m/s in [0, ~40] in 1.0 increments
+      self.friction_look_ahead_v = [1.4, 2.0] # how many seconds in the future to look ahead in [0, ~2.1] in 0.1 increments
+      self.friction_look_ahead_bp = [9.0, 30.0] # corresponding speeds in m/s in [0, ~40] in 1.0 increments
 
       # Additionally, lateral jerk and lateral accel together can be too great a friction response,
       # so they're independently scaled, so they amount to a reasonable combination.
@@ -191,10 +191,14 @@ class LatControlTorque(LatControl):
         past_lateral_accels_desired = [self.lateral_accel_desired_deque[min(len(self.lateral_accel_desired_deque)-1, i)] for i in self.history_frame_offsets]
         future_planned_lateral_accels = [interp(t, ModelConstants.T_IDXS[:CONTROL_N], lat_plan.curvatures) * CS.vEgo ** 2 for t in adjusted_future_times]
 
+        lat_accel_friction_factor = self.lat_accel_friction_factor
+        if self.use_steering_angle or lookahead_lateral_jerk == 0.0:
+          lookahead_lateral_jerk = 0.0
+          actual_lateral_jerk = 0.0
+          lat_accel_friction_factor = 1.0
+          
         lateral_jerk_setpoint = self.lat_jerk_friction_factor * lookahead_lateral_jerk
         lateral_jerk_measurement = self.lat_jerk_friction_factor * actual_lateral_jerk
-        if self.use_steering_angle or lookahead_lateral_jerk == 0.0:
-          lateral_jerk_measurement = 0.0
 
         # compute NNFF error response
         nnff_setpoint_input = [CS.vEgo, setpoint, lateral_jerk_setpoint, roll] \
@@ -210,7 +214,7 @@ class LatControlTorque(LatControl):
 
         # compute feedforward (same as nn setpoint output)
         error = setpoint - measurement
-        friction_input = self.lat_accel_friction_factor * error + self.lat_jerk_friction_factor * lookahead_lateral_jerk
+        friction_input = lat_accel_friction_factor * error + self.lat_jerk_friction_factor * lookahead_lateral_jerk
         nn_input = [CS.vEgo, desired_lateral_accel, friction_input, roll] \
                    + past_lateral_accels_desired + future_planned_lateral_accels \
                    + past_rolls + future_rolls
