@@ -180,6 +180,7 @@ class LatControlTorque(LatControl):
         # prepare "look-ahead" desired lateral jerk
         lookahead = interp(CS.vEgo, self.friction_look_ahead_bp, self.friction_look_ahead_v)
         friction_upper_idx = next((i for i, val in enumerate(ModelConstants.T_IDXS) if val > lookahead), 16)
+        desired_curvature_rate = (interp(0.4, ModelConstants.T_IDXS[:CONTROL_N], lat_plan.curvatures) - interp(0.1, ModelConstants.T_IDXS[:CONTROL_N], lat_plan.curvatures)) / 0.3
         lookahead_curvature_rate = get_lookahead_value(list(lat_plan.curvatureRates)[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_curvature_rate)
         lookahead_lateral_jerk = lookahead_curvature_rate * CS.vEgo**2
 
