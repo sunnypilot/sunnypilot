@@ -120,6 +120,7 @@ class CAR(StrEnum):
   KIA_FORTE = "KIA FORTE E 2018 & GT 2021"
   KIA_FORTE_2019_NON_SCC = "KIA FORTE 2019 NON-SCC"
   KIA_FORTE_2021_NON_SCC = "KIA FORTE LXS 2021 NON-SCC"
+  KIA_FORTE_GT_2023 = "KIA FORTE GT 2023"
   KIA_K5_2021 = "KIA K5 2021"
   KIA_K5_HEV_2020 = "KIA K5 HYBRID 2020"
   KIA_K8_HEV_1ST_GEN = "KIA K8 HYBRID 1ST GEN"
@@ -1455,6 +1456,32 @@ FW_VERSIONS = {
       b'\xf1\x006V2B0_C2\x00\x006V2C6051\x00\x00CBD0N20NL1\x00\x00\x00\x00',
       b'\xf1\x816U2VC051\x00\x00\xf1\x006U2V0_C2\x00\x006U2VC051\x00\x00DBD0T16SS0\x00\x00\x00\x00',
       b"\xf1\x816U2VC051\x00\x00\xf1\x006U2V0_C2\x00\x006U2VC051\x00\x00DBD0T16SS0\xcf\x1e'\xc3",
+    ],
+  },
+  CAR.KIA_FORTE_GT_2023: {
+    (Ecu.eps, 0x7d4, None): [
+      b'\xf1\x00BDm MDPS C A.01 1.03 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 4BPMC103',
+      b'\xf1\x87\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf1\x00BDm MDPS C A.01 1.03 \x00\x00\x00\x00'
+      b'\x00\x00\x00\x00\x00\x00\x00 4BPMC103',
+    ],
+    (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00BDP LKAS AT USA LHD 1.00 1.05 99211-M6500 744',
+    ],
+    (Ecu.fwdRadar, 0x7d0, None): [
+      b'\xf1\x00BDPE_SCC FHCUPC     1.01 1.04 99110-M6500\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.engine, 0x7e0, None): [
+      b'391202B207\x00',
+    ],
+    (Ecu.abs, 0x7d1, None): [
+      b'\xf1\x00\x00\x00\x00\x00\x00\x00',
+      b'\xf1\x8758900-M7AB0 \xf1\x816VQRAD00127.ELF\xf1\x00\x00\x00\x00\x00\x00\x00'
+    ],
+    (Ecu.transmission, 0x7e1, None): [
+      b'\xf1\x006U2V0_C2\x00\x006U2VJ051\x00\x00DBD1T16NS1\x00\x00\x00\x00',
+      b'\xf1\x816U2VJ051\x00\x00\xf1\x006U2V0_C2\x00\x006U2VJ051\x00\x00DBD1T16NS1\x00\x00\x00\x00',
+      b'DBD1T16NS1',
+      b'\xf1\x896U2VJ051\x00\x00\xf1\x82DBD1T16NS1',
     ],
   },
   CAR.KIA_K5_2021: {
