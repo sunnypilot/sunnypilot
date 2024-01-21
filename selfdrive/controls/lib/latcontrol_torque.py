@@ -173,6 +173,9 @@ class LatControlTorque(LatControl):
       setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
       
+      lateral_jerk_setpoint = 0
+      lateral_jerk_measurement = 0
+      
       if self.use_nn or self.use_lateral_jerk:
         # prepare "look-ahead" desired lateral jerk
         lookahead = interp(CS.vEgo, self.friction_look_ahead_bp, self.friction_look_ahead_v)
