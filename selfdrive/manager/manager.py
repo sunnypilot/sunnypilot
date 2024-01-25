@@ -9,6 +9,7 @@ from typing import List, Tuple, Union
 from cereal import log
 import cereal.messaging as messaging
 import openpilot.selfdrive.sentry as sentry
+from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
 from openpilot.selfdrive.boardd.set_time import set_time
