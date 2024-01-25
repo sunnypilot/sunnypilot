@@ -72,8 +72,9 @@ class CarInterface(CarInterfaceBase):
       if 0x38d in fingerprint[0] or 0x38d in fingerprint[2]:
         ret.flags |= HyundaiFlags.USE_FCA.value
 
-      if 0x2AB in fingerprint[0]:
-        ret.spFlags |= HyundaiFlagsSP.SP_ENHANCED_SCC.value
+      #todo: reenable ESCC after testing MR269
+      # if 0x2AB in fingerprint[0]:
+      #   ret.spFlags |= HyundaiFlagsSP.SP_ENHANCED_SCC.value
 
     ret.steerActuatorDelay = 0.1  # Default delay
     ret.steerLimitTimer = 0.4
