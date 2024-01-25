@@ -12,7 +12,7 @@ from openpilot.selfdrive.car.fw_query_definitions import AddrType, EcuAddrBusTyp
 from openpilot.selfdrive.car.interfaces import get_interface_attr
 from openpilot.selfdrive.car.fingerprints import FW_VERSIONS
 from openpilot.selfdrive.car.isotp_parallel_query import IsoTpParallelQuery
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 
 Ecu = car.CarParams.Ecu
 ESSENTIAL_ECUS = [Ecu.engine, Ecu.eps, Ecu.abs, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.vsa]
@@ -105,11 +105,14 @@ def match_fw_to_car_fuzzy(live_fw_versions, match_brand=None, log=True, exclude=
     return set()
 
 
-def match_fw_to_car_exact(live_fw_versions, match_brand=None, log=True) -> Set[str]:
+def match_fw_to_car_exact(live_fw_versions, match_brand=None, log=True, extra_fw_versions=None) -> Set[str]:
   """Do an exact FW match. Returns all cars that match the given
   FW versions for a list of "essential" ECUs. If an ECU is not considered
   essential the FW version can be missing to get a fingerprint, but if it's present it
   needs to match the database."""
+  if extra_fw_versions is None:
+    extra_fw_versions = {}
+
   invalid = set()
   candidates = {c: f for c, f in FW_VERSIONS.items() if
                 is_brand(MODEL_TO_BRAND[c], match_brand)}
@@ -117,12 +120,14 @@ def match_fw_to_car_exact(live_fw_versions, match_brand=None, log=True) -> Set[s
   for candidate, fws in candidates.items():
     config = FW_QUERY_CONFIGS[MODEL_TO_BRAND[candidate]]
     for ecu, expected_versions in fws.items():
+      expected_versions = expected_versions + extra_fw_versions.get(candidate, {}).get(ecu, [])
       ecu_type = ecu[0]
       addr = ecu[1:]
 
       found_versions = live_fw_versions.get(addr, set())
       if not len(found_versions):
         # Some models can sometimes miss an ecu, or show on two different addresses
+        # FIXME: this logic can be improved to be more specific, should require one of the two addresses
         if candidate in config.non_essential_ecus.get(ecu_type, []):
           continue
 
@@ -159,7 +164,7 @@ def match_fw_to_car(fw_versions, allow_exact=True, allow_fuzzy=True, log=True):
       # If specified and no matches so far, fall back to brand's fuzzy fingerprinting function
       config = FW_QUERY_CONFIGS[brand]
       if not exact_match and not len(matches) and config.match_fw_to_car_fuzzy is not None:
-        matches |= config.match_fw_to_car_fuzzy(fw_versions_dict)
+        matches |= config.match_fw_to_car_fuzzy(fw_versions_dict, VERSIONS[brand])
 
     if len(matches):
       return exact_match, matches

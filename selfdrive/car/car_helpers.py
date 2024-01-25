@@ -10,7 +10,7 @@ from openpilot.selfdrive.car.interfaces import get_interface_attr
 from openpilot.selfdrive.car.fingerprints import eliminate_incompatible_cars, all_legacy_fingerprint_cars
 from openpilot.selfdrive.car.vin import get_vin, is_valid_vin, VIN_UNKNOWN
 from openpilot.selfdrive.car.fw_versions import get_fw_versions_ordered, get_present_ecus, match_fw_to_car, set_obd_multiplexing
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
 from openpilot.selfdrive.car import gen_empty_fingerprint
 
@@ -207,3 +207,15 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
   CP.fuzzyFingerprint = not exact_match
 
   return CarInterface(CP, CarController, CarState), CP
+
+def write_car_param(fingerprint="mock"):
+  params = Params()
+  CarInterface, _, _ = interfaces[fingerprint]
+  CP = CarInterface.get_non_essential_params(fingerprint)
+  params.put("CarParams", CP.to_bytes())
+
+def get_demo_car_params():
+  fingerprint="mock"
+  CarInterface, _, _ = interfaces[fingerprint]
+  CP = CarInterface.get_non_essential_params(fingerprint)
+  return CP
