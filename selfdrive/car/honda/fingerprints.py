@@ -1400,4 +1400,43 @@ FW_VERSIONS = {
       b'37805-64S-AA10\x00\x00',
     ],
   },
+  CAR.CLARITY: {
+    (Ecu.shiftByWire, 0x18da0bf1, None): [
+      b'54008-TRW-A910\x00\x00',
+    ],
+    (Ecu.vsa, 0x18da28f1, None): [
+      b'57114-TRW-A010\x00\x00',
+      b'57114-TRW-A020\x00\x00',
+    ],
+    (Ecu.eps, 0x18da30f1, None): [
+      b'39990-TRW-A020\x00\x00',
+      b'39990-TRW,A020\x00\x00',  # modified firmware
+      b'39990,TRW,A020\x00\x00',  # extra modified firmware
+    ],
+    (Ecu.srs, 0x18da53f1, None): [
+      b'77959-TRW-A210\x00\x00',
+      b'77959-TRW-A220\x00\x00',
+    ],
+    (Ecu.gateway, 0x18daeff1, None): [
+      b'38897-TRW-A010\x00\x00',
+    ],
+    (Ecu.combinationMeter, 0x18da60f1, None): [
+      b'78109-TRW-A020\x00\x00',
+      b'78109-TRW-A030\x00\x00',
+    ],
+  },
+  CAR.ACCORD_NIDEC_4CYL: {
+    (Ecu.vsa, 0x18DA28F1, None): [
+      b'57114-T2F-X840\x00\x00',
+    ],
+    (Ecu.fwdRadar, 0x18DAB0F1, None): [
+      b'36161-T2F-A140\x00\x00',
+    ],
+    (Ecu.combinationMeter, 0x18DA60F1, None): [
+      b'78109-T2F-L110\x00\x00',
+    ],
+    (Ecu.srs, 0x18DA53F1, None): [
+      b'77959-T2F-A030\x00\x00',
+    ],
+  },
 }
