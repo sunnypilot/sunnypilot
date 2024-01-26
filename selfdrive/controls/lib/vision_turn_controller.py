@@ -153,7 +153,7 @@ class VisionTurnController():
     # Get path polynomial approximation for curvature estimation from model data.
     path_poly = None
     model_data = sm['modelV2'] if sm.valid.get('modelV2', False) else None
-    lat_planner_data = sm['lateralPlanSP'] if sm.valid.get('lateralPlanSP', False) else None
+    lat_planner_data = sm['lateralPlanSPDEPRECATED'] if sm.valid.get('lateralPlanSPDEPRECATED', False) else None
 
     # 1. When the probability of lanes is good enough, compute polynomial from lanes as they are way more stable
     # on current mode than drving path.
