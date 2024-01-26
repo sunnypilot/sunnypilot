@@ -34,6 +34,13 @@ def sign(x):
 
 LAT_PLAN_MIN_IDX = 5
 
+def get_predicted_lateral_jerk(lat_accels, t_diffs):
+  # compute finite difference between subsequent model_data.acceleration.y values
+  # this is just two calls of np.diff followed by an element-wise division
+  lat_accel_diffs = np.diff(lat_accels)
+  lat_jerk = lat_accel_diffs / t_diffs
+  # return as python list
+  return lat_jerk.tolist()
 
 def get_lookahead_value(future_vals, current_val):
   if len(future_vals) == 0:
@@ -97,6 +104,10 @@ class LatControlTorque(LatControl):
       self.lateral_accel_desired_deque = deque(maxlen=history_check_frames[0])
       self.roll_deque = deque(maxlen=history_check_frames[0])
       self.past_future_len = len(self.past_times) + len(self.nn_future_times)
+      
+      # precompute time differences between ModelConstants.T_IDXS
+      self.t_diffs = np.diff(ModelConstants.T_IDXS)
+      self.desired_lat_jerk_time = CP.steerActuatorDelay + 0.3
 
       # Setup adjustable parameters
 
@@ -135,7 +146,7 @@ class LatControlTorque(LatControl):
   def pid_long_sp(self):
     return self._pid_long_sp
 
-  def update(self, active, CS, VM, params, last_actuators, steer_limited, desired_curvature, desired_curvature_rate, llk, lat_plan=None, model_data=None):
+  def update(self, active, CS, VM, params, last_actuators, steer_limited, desired_curvature, llk, model_data=None):
     self.update_live_tune()
     pid_log = log.ControlsState.LateralTorqueState.new_message()
 
@@ -168,8 +179,8 @@ class LatControlTorque(LatControl):
       low_speed_factor = interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y if not self.use_nn else LOW_SPEED_Y_NN)**2
       setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
-      model_planner_good = None not in [lat_plan, model_data] and all([len(i) >= CONTROL_N for i in [model_data.orientation.x, lat_plan.curvatures]])
-      if self.use_nn and model_planner_good:
+      model_good = model_data is not None and len(model_data.orientation.x) >= CONTROL_N
+      if self.use_nn and model_good:
         # update past data
         roll = params.roll
         pitch = self.pitch.update(llk.calibratedOrientationNED.value[1])
@@ -180,8 +191,9 @@ class LatControlTorque(LatControl):
         # prepare "look-ahead" desired lateral jerk
         lookahead = interp(CS.vEgo, self.friction_look_ahead_bp, self.friction_look_ahead_v)
         friction_upper_idx = next((i for i, val in enumerate(ModelConstants.T_IDXS) if val > lookahead), 16)
-        lookahead_curvature_rate = get_lookahead_value(list(lat_plan.curvatureRates)[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_curvature_rate)
-        lookahead_lateral_jerk = lookahead_curvature_rate * CS.vEgo**2
+        predicted_lateral_jerk = get_predicted_lateral_jerk(model_data.acceleration.y, self.t_diffs)
+        desired_lateral_jerk = (interp(self.desired_lat_jerk_time, ModelConstants.T_IDXS, model_data.acceleration.y) - actual_lateral_accel) / 0.3
+        lookahead_lateral_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_lateral_jerk)
 
         # prepare past and future values
         # adjust future times to account for longitudinal acceleration
@@ -189,7 +201,7 @@ class LatControlTorque(LatControl):
         past_rolls = [self.roll_deque[min(len(self.roll_deque)-1, i)] for i in self.history_frame_offsets]
         future_rolls = [roll_pitch_adjust(interp(t, ModelConstants.T_IDXS, model_data.orientation.x) + roll, interp(t, ModelConstants.T_IDXS, model_data.orientation.y) + pitch) for t in adjusted_future_times]
         past_lateral_accels_desired = [self.lateral_accel_desired_deque[min(len(self.lateral_accel_desired_deque)-1, i)] for i in self.history_frame_offsets]
-        future_planned_lateral_accels = [interp(t, ModelConstants.T_IDXS[:CONTROL_N], lat_plan.curvatures) * CS.vEgo ** 2 for t in adjusted_future_times]
+        future_planned_lateral_accels = [interp(t, ModelConstants.T_IDXS[:CONTROL_N], model_data.acceleration.y) for t in adjusted_future_times]
 
         lat_accel_friction_factor = self.lat_accel_friction_factor
         if self.use_steering_angle or lookahead_lateral_jerk == 0.0:
