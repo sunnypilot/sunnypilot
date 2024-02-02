@@ -376,7 +376,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Reset sunnypilot Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>重置sunnypilot设置</translation>
     </message>
     <message>
         <source>Are you sure you want to reset all sunnypilot settings?</source>
@@ -411,7 +411,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable Screen Recorder</source>
-        <translation type="unfinished"></translation>
+        <translation>启用录屏</translation>
     </message>
     <message>
         <source>Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.</source>
@@ -507,11 +507,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Block Lane Change: Road Edge Detection</source>
-        <translation type="unfinished"></translation>
+        <translation>道路边缘检测</translation>
     </message>
     <message>
         <source>Enable this toggle to block lane change when road edge is detected on the stalk actuated side.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用此开关可在检测到道路边缘时阻止变道。</translation>
     </message>
 </context>
 <context>
@@ -522,7 +522,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Engage both M.A.D.S. and ACC with a single press of RES+ or SET- button.</source>
-        <translation type="unfinished"></translation>
+        <translation>单击 RES+ 或 SET- 按钮开启 M.A.D.S.和 ACC </translation>
     </message>
     <message>
         <source>Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.</source>
@@ -621,7 +621,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>MonitoringPanel</name>
     <message>
         <source>Enable Hands on Wheel Monitoring</source>
-        <translation type="unfinished"></translation>
+        <translation>启用方向盘离手监测</translation>
     </message>
     <message>
         <source>Monitor and alert when driver is not keeping the hands on the steering wheel.</source>
@@ -801,15 +801,15 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Downloaded Maps</source>
-        <translation type="unfinished"></translation>
+        <translation>下载地图</translation>
     </message>
     <message>
         <source>Delete Maps</source>
-        <translation type="unfinished"></translation>
+        <translation>删除地图</translation>
     </message>
     <message>
         <source>Database Update</source>
-        <translation type="unfinished"></translation>
+        <translation>数据更新</translation>
     </message>
     <message>
         <source>CHECK</source>
@@ -1122,11 +1122,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Visuals</source>
-        <translation type="unfinished"></translation>
+        <translation>UI显示设置</translation>
     </message>
     <message>
         <source>Display</source>
-        <translation type="unfinished"></translation>
+        <translation>屏幕设置</translation>
     </message>
     <message>
         <source>Trips</source>
@@ -1134,7 +1134,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation>车辆设置</translation>
     </message>
 </context>
 <context>
