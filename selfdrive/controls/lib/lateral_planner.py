@@ -77,6 +77,6 @@ class LateralPlanner:
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
 
     lateralPlanSPDEPRECATED = plan_sp_send.lateralPlanSPDEPRECATED
-    lateralPlanSPDEPRECATED.laneChangePrev = self.DH.prev_lane_change
+    lateralPlanSPDEPRECATED.laneChangePrevDEPRECATED = self.DH.prev_lane_change
 
     pm.send('lateralPlanSPDEPRECATED', plan_sp_send)

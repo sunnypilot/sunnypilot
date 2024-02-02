@@ -272,12 +272,14 @@ def main():
 
     if model_output is not None:
       modelv2_send = messaging.new_message('modelV2')
+      modelv2_sp_send = messaging.new_message('modelV2SP')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
                       meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen)
 
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
       pm.send('modelV2', modelv2_send)
+      pm.send('modelV2SP', modelv2_sp_send)
       pm.send('cameraOdometry', posenet_send)
 
     last_vipc_frame_id = meta_main.frame_id
