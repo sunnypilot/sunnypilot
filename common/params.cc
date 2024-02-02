@@ -255,8 +255,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"GapAdjustCruiseMode", PERSISTENT},
     {"GapAdjustCruiseTr", PERSISTENT},
     {"GmapKey", PERSISTENT},
-    {"GpxDeleteAfterUpload", PERSISTENT},
-    {"GpxDeleteIfUploaded", PERSISTENT},
     {"HandsOnWheelMonitoring", PERSISTENT},
     {"HideVEgoUi", PERSISTENT},
     {"HkgSmoothStop", PERSISTENT},

@@ -75,8 +75,6 @@ def manager_init() -> None:
     ("GapAdjustCruiseMin", "0"),
     ("GapAdjustCruiseMode", "0"),
     ("GapAdjustCruiseTr", "3"),
-    ("GpxDeleteAfterUpload", "1"),
-    ("GpxDeleteIfUploaded", "1"),
     ("HandsOnWheelMonitoring", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
