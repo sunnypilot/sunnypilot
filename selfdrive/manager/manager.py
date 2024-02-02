@@ -109,6 +109,7 @@ def manager_init() -> None:
     ("VwAccType", "0"),
     ("OsmDbUpdatesCheck", "0"),
     ("OsmDownloadedDate", "0"),
+    ("EnableAmap", "1"),
     ("OSMDownloadProgress", "{}"),
     ("MapdVersion", f"{VERSION}"),
   ]
