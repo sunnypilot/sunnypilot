@@ -42,7 +42,7 @@ def plannerd_thread():
   lateral_planner = LateralPlanner(CP, debug=debug_mode)
 
   pm = messaging.PubMaster(['longitudinalPlan', 'lateralPlan', 'uiPlan', 'longitudinalPlanSP', 'lateralPlanSP'])
-  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'radarState', 'modelV2', 'lateralPlanSP', 'liveMapDataSP'],
+  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'radarState', 'modelV2'],
                            poll=['radarState', 'modelV2'], ignore_avg_freq=['radarState'])
 
   while True:
