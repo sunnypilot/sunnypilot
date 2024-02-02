@@ -74,13 +74,13 @@ class LateralPlanner:
 
     pm.send('lateralPlan', plan_send)
 
-    plan_sp_send = messaging.new_message('lateralPlanSP')
+    plan_sp_send = messaging.new_message('lateralPlanSPDEPRECATED')
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
 
-    lateralPlanSP = plan_sp_send.lateralPlanSP
-    lateralPlanSP.laneChangePrev = self.DH.prev_lane_change
+    lateralPlanSPDEPRECATED = plan_sp_send.lateralPlanSPDEPRECATED
+    lateralPlanSPDEPRECATED.laneChangePrev = self.DH.prev_lane_change
 
-    lateralPlanSP.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
-    lateralPlanSP.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
+    lateralPlanSPDEPRECATED.dPathWLinesX = [float(x) for x in self.d_path_w_lines_xyz[:, 0]]
+    lateralPlanSPDEPRECATED.dPathWLinesY = [float(y) for y in self.d_path_w_lines_xyz[:, 1]]
 
-    pm.send('lateralPlanSP', plan_sp_send)
+    pm.send('lateralPlanSPDEPRECATED', plan_sp_send)
