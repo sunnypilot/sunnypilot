@@ -29,12 +29,11 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_TOYOTA_ALT_BRAKE
 
     if candidate in ANGLE_CONTROL_CAR:
-      ret.dashcamOnly = True
       ret.steerControlType = SteerControlType.angle
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_TOYOTA_LTA
 
       # LTA control can be more delayed and winds up more often
-      ret.steerActuatorDelay = 0.25
+      ret.steerActuatorDelay = 0.18
       ret.steerLimitTimer = 0.8
     else:
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
@@ -78,7 +77,7 @@ class CarInterface(CarInterfaceBase):
       ret.tireStiffnessFactor = 0.444  # not optimized yet
       ret.mass = 2860. * CV.LB_TO_KG  # mean between normal and hybrid
 
-    elif candidate in (CAR.LEXUS_RX, CAR.LEXUS_RXH, CAR.LEXUS_RX_TSS2):
+    elif candidate in (CAR.LEXUS_RX, CAR.LEXUS_RX_TSS2):
       stop_and_go = True
       ret.wheelbase = 2.79
       ret.steerRatio = 16.  # 14.8 is spec end-to-end
@@ -100,7 +99,8 @@ class CarInterface(CarInterfaceBase):
       ret.tireStiffnessFactor = 0.7933
       ret.mass = 3400. * CV.LB_TO_KG  # mean between normal and hybrid
 
-    elif candidate in (CAR.HIGHLANDER, CAR.HIGHLANDERH, CAR.HIGHLANDER_TSS2):
+    elif candidate in (CAR.HIGHLANDER, CAR.HIGHLANDER_TSS2):
+      # TODO: TSS-P models can do stop and go, but unclear if it requires sDSU or unplugging DSU
       stop_and_go = True
       ret.wheelbase = 2.8194  # average of 109.8 and 112.2 in
       ret.steerRatio = 16.0
@@ -143,9 +143,7 @@ class CarInterface(CarInterfaceBase):
       ret.tireStiffnessFactor = 0.444  # not optimized yet
       ret.mass = 3060. * CV.LB_TO_KG
 
-    elif candidate in (CAR.LEXUS_ES, CAR.LEXUS_ESH, CAR.LEXUS_ES_TSS2):
-      if candidate not in (CAR.LEXUS_ES,):  # TODO: LEXUS_ES may have sng
-        stop_and_go = True
+    elif candidate in (CAR.LEXUS_ES, CAR.LEXUS_ES_TSS2):
       ret.wheelbase = 2.8702
       ret.steerRatio = 16.0  # not optimized
       ret.tireStiffnessFactor = 0.444  # not optimized yet
@@ -163,6 +161,12 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 13.3
       ret.tireStiffnessFactor = 0.444
       ret.mass = 3736.8 * CV.LB_TO_KG
+
+    elif candidate == CAR.LEXUS_GS_F:
+      ret.wheelbase = 2.84988
+      ret.steerRatio = 13.3
+      ret.tireStiffnessFactor = 0.444
+      ret.mass = 4034. * CV.LB_TO_KG
 
     elif candidate == CAR.LEXUS_CTH:
       stop_and_go = True
@@ -217,6 +221,9 @@ class CarInterface(CarInterfaceBase):
     ret.enableDsu = len(found_ecus) > 0 and Ecu.dsu not in found_ecus and candidate not in (NO_DSU_CAR | UNSUPPORTED_DSU_CAR) \
                                         and not (ret.flags & ToyotaFlags.SMART_DSU)
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
+
+    if ret.enableGasInterceptor:
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_TOYOTA_GAS_INTERCEPTOR
 
     # if the smartDSU is detected, openpilot can send ACC_CONTROL and the smartDSU will block it from the DSU or radar.
     # since we don't yet parse radar on TSS2/TSS-P radar-based ACC cars, gate longitudinal behind experimental toggle
