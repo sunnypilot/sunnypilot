@@ -256,7 +256,7 @@ def no_gps_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, m
     "Poor GPS reception",
     "Hardware malfunctioning if sky is visible",
     AlertStatus.normal, AlertSize.mid,
-    Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=300.)
+    Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=3000000000000000000000.)
 
 
 def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
