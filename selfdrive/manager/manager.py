@@ -24,9 +24,6 @@ from openpilot.system.version import is_dirty, get_commit, get_version, get_orig
                            is_tested_branch, is_release_branch
 
 
-sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
-
-
 def manager_init() -> None:
   # update system time from panda
   set_time(cloudlog)
@@ -79,8 +76,6 @@ def manager_init() -> None:
     ("GapAdjustCruiseMin", "0"),
     ("GapAdjustCruiseMode", "0"),
     ("GapAdjustCruiseTr", "3"),
-    ("GpxDeleteAfterUpload", "1"),
-    ("GpxDeleteIfUploaded", "1"),
     ("HandsOnWheelMonitoring", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),

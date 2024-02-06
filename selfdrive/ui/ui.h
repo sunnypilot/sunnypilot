@@ -59,17 +59,12 @@ struct Alert {
     return text1 == a2.text1 && text2 == a2.text2 && type == a2.type && sound == a2.sound;
   }
 
-  static Alert get(const SubMaster &sm, uint64_t started_frame, uint64_t display_debug_alert_frame = 0) {
+  static Alert get(const SubMaster &sm, uint64_t started_frame) {
     const cereal::ControlsState::Reader &cs = sm["controlsState"].getControlsState();
     const uint64_t controls_frame = sm.rcv_frame("controlsState");
 
     Alert alert = {};
-    if (display_debug_alert_frame > 0 && (sm.frame - display_debug_alert_frame) <= 1 * UI_FREQ) {
-      return {"Debug snapshot collected", "",
-              "debugTapDetected", cereal::ControlsState::AlertSize::SMALL,
-              cereal::ControlsState::AlertStatus::NORMAL,
-              AudibleAlert::WARNING_SOFT};
-    } else if (controls_frame >= started_frame) {  // Don't get old alert.
+    if (controls_frame >= started_frame) {  // Don't get old alert.
       alert = {cs.getAlertText1().cStr(), cs.getAlertText2().cStr(),
                cs.getAlertType().cStr(), cs.getAlertSize(),
                cs.getAlertStatus(),
@@ -134,13 +129,6 @@ static std::map<cereal::ControlsState::AlertStatus, QColor> alert_colors = {
   {cereal::ControlsState::AlertStatus::CRITICAL, QColor(0xC9, 0x22, 0x31, 0xf1)},
 };
 
-const QColor tcs_colors [] = {
-  [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED)] =  QColor(0x0, 0x0, 0x0, 0xff),
-  [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::ENTERING)] = QColor(0xC9, 0x22, 0x31, 0xf1),
-  [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::TURNING)] = QColor(0xDA, 0x6F, 0x25, 0xf1),
-  [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::LEAVING)] = QColor(0x17, 0x86, 0x44, 0xf1),
-};
-
 typedef struct UIScene {
   bool calibration_valid = false;
   bool calibration_wide_valid  = false;
@@ -148,16 +136,6 @@ typedef struct UIScene {
   mat3 view_from_calib = DEFAULT_CALIBRATION;
   mat3 view_from_wide_calib = DEFAULT_CALIBRATION;
   cereal::PandaState::PandaType pandaType;
-
-  // Debug UI
-  bool show_debug_ui;
-  bool debug_snapshot_enabled;
-  uint64_t display_debug_alert_frame;
-
-  // Speed limit control
-  bool speed_limit_control_enabled;
-  bool speed_limit_perc_offset;
-  double last_speed_limit_sign_tap;
 
   // modelV2
   float lane_line_probs[4];

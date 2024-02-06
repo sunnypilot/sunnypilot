@@ -219,10 +219,6 @@ void ui_update_params(UIState *s) {
   auto params = Params();
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
-  s->scene.speed_limit_control_enabled = params.getBool("SpeedLimitControl");
-  s->scene.speed_limit_perc_offset = params.getBool("SpeedLimitPercOffset");
-  s->scene.show_debug_ui = params.getBool("ShowDebugUI");
-  s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
 }
 
 void UIState::updateStatus() {
@@ -252,7 +248,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
-    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlanSP", "liveMapDataSP",
+    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan",
   });
 
   Params params;

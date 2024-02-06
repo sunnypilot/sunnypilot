@@ -79,7 +79,7 @@ function launch {
   # start manager
   cd selfdrive/manager
   if [ ! -f $DIR/prebuilt ]; then
-    ./custom_dep.py && ./build.py
+    ./build.py
   fi
   ./manager.py
 

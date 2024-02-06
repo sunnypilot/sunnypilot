@@ -79,8 +79,8 @@ class Controls:
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'driverMonitoringState', 'longitudinalPlan', 'liveLocationKalman',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
-                                   'testJoystick', 'longitudinalPlanSP', 'lateralPlanSPDEPRECATED'] + self.camera_packets + self.sensor_packets,
-                                  ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'], ignore_valid=['testJoystick', ])
+                                   'testJoystick', 'longitudinalPlanSP', 'lateralPlanSPDEPRECATED', 'modelV2SP'] + self.camera_packets + self.sensor_packets,
+                                  ignore_alive=ignore, ignore_avg_freq=['radarState', 'testJoystick'])
 
     if CI is None:
       # wait for one pandaState and one CAN packet
@@ -294,7 +294,7 @@ class Controls:
     lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     if self.sm['modelV2'].meta.laneChangeState == LaneChangeState.preLaneChange:
       direction = self.sm['modelV2'].meta.laneChangeDirection
-      lc_prev = self.sm['lateralPlanSPDEPRECATED'].laneChangePrev
+      lc_prev = self.sm['lateralPlanSPDEPRECATED'].laneChangePrevDEPRECATED
       if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
          (CS.rightBlindspot and direction == LaneChangeDirection.right):
         self.events.add(EventName.laneChangeBlocked)

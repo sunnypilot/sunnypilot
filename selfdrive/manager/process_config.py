@@ -82,9 +82,6 @@ procs = [
   PythonProcess("uploader", "system.loggerd.uploader", always_run),
   PythonProcess("statsd", "selfdrive.statsd", always_run),
 
-  PythonProcess("gpxd", "selfdrive.gpxd.gpxd", only_onroad),
-  PythonProcess("gpxd_uploader", "selfdrive.gpxd.gpx_uploader", always_run),
-  PythonProcess("mapd", "selfdrive.mapd.mapd", only_onroad),
   PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", only_offroad),
 
   # debug procs
