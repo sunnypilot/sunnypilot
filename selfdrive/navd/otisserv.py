@@ -27,10 +27,10 @@ from urllib.parse import parse_qs, unquote
 import json
 import requests
 import math
-from common.basedir import BASEDIR
-from common.params import Params
-from common.realtime import set_core_affinity
-from system.swaglog import cloudlog
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.common.realtime import set_core_affinity
+from openpilot.common.swaglog import cloudlog
 params = Params()
 
 hostName = ""

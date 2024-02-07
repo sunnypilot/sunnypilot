@@ -151,33 +151,7 @@ class ParamControl : public ToggleControl {
   Q_OBJECT
 
 public:
-  ParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr) : ToggleControl(title, desc, icon, false, parent) {
-    key = param.toStdString();
-    QObject::connect(this, &ParamControl::toggleFlipped, [=](bool state) {
-      QString content("<body><h2 style=\"text-align: center;\">" + title + "</h2><br>"
-                      "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + getDescription() + "</p></body>");
-      ConfirmationDialog dialog(content, tr("Enable"), tr("Cancel"), true, this);
-
-      bool confirmed = store_confirm && params.getBool(key + "Confirmed");
-      if (!confirm || confirmed || !state || dialog.exec()) {
-        if (store_confirm && state) params.putBool(key + "Confirmed", true);
-        params.putBool(key, state);
-        setIcon(state);
-      } else {
-        toggle.togglePosition();
-      }
-    });
-
-    hlayout->removeWidget(&toggle);
-    hlayout->insertWidget(0, &toggle);
-
-    hlayout->removeWidget(this->icon_label);
-    this->icon_pixmap = QPixmap(icon).scaledToWidth(20, Qt::SmoothTransformation);
-    this->icon_label->setPixmap(this->icon_pixmap);
-    this->icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
-    hlayout->insertWidget(1, this->icon_label);
-  }
-
+  ParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
   void setConfirmation(bool _confirm, bool _store_confirm) {
     confirm = _confirm;
     store_confirm = _store_confirm;
@@ -202,6 +176,7 @@ public:
   bool isToggled() { return params.getBool(key); }
 
 private:
+  void toggleClicked(bool state);
   void setIcon(bool state) {
     if (state && !active_icon_pixmap.isNull()) {
       icon_label->setPixmap(active_icon_pixmap);

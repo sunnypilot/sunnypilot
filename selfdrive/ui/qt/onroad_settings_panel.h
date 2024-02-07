@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QFrame>
-#include <QMapboxGL>
+#include <QMapLibre/Settings>
 #include <QStackedLayout>
 
 class OnroadSettingsPanel : public QFrame {

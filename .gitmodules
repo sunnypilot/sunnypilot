@@ -4,9 +4,6 @@
 [submodule "opendbc"]
   path = opendbc
   url = https://github.com/sunnyhaibin/opendbc.git
-[submodule "laika_repo"]
-  path = laika_repo
-  url = https://github.com/commaai/laika.git
 [submodule "cereal"]
   path = cereal
   url = https://github.com/sunnyhaibin/cereal.git
@@ -16,6 +13,9 @@
 [submodule "body"]
   path = body
   url = https://github.com/commaai/body.git
+[submodule "teleoprtc_repo"]
+  path = teleoprtc_repo
+  url = https://github.com/commaai/teleoprtc
 [submodule "tinygrad"]
   path = tinygrad_repo
   url = https://github.com/geohot/tinygrad.git

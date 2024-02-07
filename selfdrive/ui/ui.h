@@ -3,7 +3,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <optional>
 
 #include <QObject>
 #include <QTimer>
@@ -13,9 +12,10 @@
 #include <QTransform>
 
 #include "cereal/messaging/messaging.h"
-#include "common/modeldata.h"
+#include "common/mat.h"
 #include "common/params.h"
 #include "common/timing.h"
+#include "system/hardware/hw.h"
 
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
@@ -41,7 +41,18 @@ const int UI_FREQ = 20; // Hz
 const int BACKLIGHT_OFFROAD = 50;
 typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
-const mat3 DEFAULT_CALIBRATION = {{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 }};
+const float MIN_DRAW_DISTANCE = 10.0;
+const float MAX_DRAW_DISTANCE = 100.0;
+constexpr mat3 DEFAULT_CALIBRATION = {{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 }};
+constexpr mat3 FCAM_INTRINSIC_MATRIX = (mat3){{2648.0, 0.0, 1928.0 / 2,
+                                           0.0, 2648.0, 1208.0 / 2,
+                                           0.0, 0.0, 1.0}};
+// tici ecam focal probably wrong? magnification is not consistent across frame
+// Need to retrain model before this can be changed
+constexpr mat3 ECAM_INTRINSIC_MATRIX = (mat3){{567.0, 0.0, 1928.0 / 2,
+                                           0.0, 567.0, 1208.0 / 2,
+                                           0.0, 0.0, 1.0}};
+
 
 constexpr vec3 default_face_kpts_3d[] = {
   {-5.98, -51.20, 8.00}, {-17.64, -49.14, 8.00}, {-23.81, -46.40, 8.00}, {-29.98, -40.91, 8.00}, {-32.04, -37.49, 8.00},
@@ -65,17 +76,12 @@ struct Alert {
     return text1 == a2.text1 && text2 == a2.text2 && type == a2.type && sound == a2.sound;
   }
 
-  static Alert get(const SubMaster &sm, uint64_t started_frame, uint64_t display_debug_alert_frame = 0) {
+  static Alert get(const SubMaster &sm, uint64_t started_frame) {
     const cereal::ControlsState::Reader &cs = sm["controlsState"].getControlsState();
     const uint64_t controls_frame = sm.rcv_frame("controlsState");
 
     Alert alert = {};
-    if (display_debug_alert_frame > 0 && (sm.frame - display_debug_alert_frame) <= 1 * UI_FREQ) {
-      return {"Debug snapshot collected", "",
-              "debugTapDetected", cereal::ControlsState::AlertSize::SMALL,
-              cereal::ControlsState::AlertStatus::NORMAL,
-              AudibleAlert::WARNING_SOFT};
-    } else if (controls_frame >= started_frame) {  // Don't get old alert.
+    if (controls_frame >= started_frame) {  // Don't get old alert.
       alert = {cs.getAlertText1().cStr(), cs.getAlertText2().cStr(),
                cs.getAlertType().cStr(), cs.getAlertSize(),
                cs.getAlertStatus(),
@@ -126,6 +132,7 @@ enum PrimeType {
   LITE = 2,
   BLUE = 3,
   MAGENTA_NEW = 4,
+  PURPLE = 5,
 };
 
 const QColor bg_colors [] = {
@@ -159,8 +166,6 @@ typedef struct UIScene {
 
   // Debug UI
   bool show_debug_ui;
-  bool debug_snapshot_enabled;
-  uint64_t display_debug_alert_frame;
 
   // Speed limit control
   bool speed_limit_control_enabled;
@@ -190,6 +195,7 @@ typedef struct UIScene {
 
   float light_sensor;
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
+  bool world_objects_visible = false;
   uint64_t started_frame;
 
   int dynamic_lane_profile;
@@ -257,9 +263,6 @@ class UIState : public QObject {
 public:
   UIState(QObject* parent = 0);
   void updateStatus();
-  inline bool worldObjectsVisible() const {
-    return sm->rcv_frame("liveCalibration") > scene.started_frame;
-  }
   inline bool engaged() const {
     return scene.started && (*sm)["controlsState"].getControlsState().getEnabled();
   }

@@ -27,14 +27,14 @@ def rk_loop(function, hz, exit_event: threading.Event):
 class SimulatorBridge(ABC):
   TICKS_PER_FRAME = 5
 
-  def __init__(self, arguments):
+  def __init__(self, dual_camera, high_quality):
     set_params_enabled()
     self.params = Params()
 
     self.rk = Ratekeeper(100, None)
 
-    self.dual_camera = arguments.dual_camera
-    self.high_quality = arguments.high_quality
+    self.dual_camera = dual_camera
+    self.high_quality = high_quality
 
     self._exit_event = threading.Event()
     self._threads = []
@@ -147,7 +147,7 @@ Ignition: {self.simulator_state.ignition} Engaged: {self.simulator_state.is_enga
 
       self.simulator_state.user_brake = brake_manual
       self.simulator_state.user_gas = throttle_manual
-      self.simulator_state.user_torque = steer_manual * 10000
+      self.simulator_state.user_torque = steer_manual * -10000
 
       steer_manual = steer_manual * -40
 
