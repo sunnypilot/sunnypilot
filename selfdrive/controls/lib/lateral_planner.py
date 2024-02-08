@@ -31,8 +31,7 @@ MODEL_USE_LATERAL_PLANNER = False
 
 
 class LateralPlanner:
-  def __init__(self, CP, debug=False, use_lanelines=True):
-    self.use_lanelines = use_lanelines
+  def __init__(self, CP, debug=False):
     self.LP = LanePlanner()
     self.DH = DesireHelper()
 
@@ -253,7 +252,7 @@ class LateralPlanner:
         lateralPlanDEPRECATED.solverState.u = self.lat_mpc.u_sol.flatten().tolist()
 
     lateralPlanDEPRECATED.desire = self.DH.desire
-    lateralPlanDEPRECATED.useLaneLines = self.use_lanelines
+    lateralPlanDEPRECATED.useLaneLines = not self.dynamic_lane_profile_status
     lateralPlanDEPRECATED.laneChangeState = self.DH.lane_change_state
     lateralPlanDEPRECATED.laneChangeDirection = self.DH.lane_change_direction
 

@@ -48,13 +48,9 @@ def plannerd_thread():
 
   debug_mode = bool(int(os.getenv("DEBUG", "0")))
 
-  use_lanelines = False
-
-  cloudlog.event("e2e mode", on=use_lanelines)
-
   longitudinal_planner = LongitudinalPlanner(CP)
   # TODO: SP - Reimplement lateral planner with legacy models
-  lateral_planner = LateralPlanner(CP, debug=debug_mode, use_lanelines=use_lanelines) if USE_LATERAL_PLANNER else None
+  lateral_planner = LateralPlanner(CP, debug=debug_mode) if USE_LATERAL_PLANNER else None
   lateral_planner_svs = ['lateralPlanDEPRECATED', 'lateralPlanSPDEPRECATED'] if USE_LATERAL_PLANNER else []
 
   pm = messaging.PubMaster(['longitudinalPlan', 'uiPlan', 'longitudinalPlanSP'] + lateral_planner_svs)
