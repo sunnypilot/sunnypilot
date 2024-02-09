@@ -8,7 +8,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc import LateralMpc
 from openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc import N as LAT_MPC_N
 from openpilot.selfdrive.controls.lib.lane_planner import LanePlanner, TRAJECTORY_SIZE
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, MIN_SPEED, get_speed_error
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, MIN_SPEED, get_speed_error, get_road_edge
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 
 import cereal.messaging as messaging
@@ -97,18 +97,18 @@ class LateralPlanner:
 
     # Parse model predictions
     md = sm['modelV2']
-    self.LP.parse_model(md)
 
     # TODO: SP - Refactor to work with legacy models
     if MODEL_USE_LATERAL_PLANNER:
+      self.LP.parse_model(md)
       if len(md.position.x) == TRAJECTORY_SIZE and (len(md.orientation.x) == TRAJECTORY_SIZE or
-                                                    (len(md.velocity.x) == TRAJECTORY_SIZE and len(md.lateralPlannerSolution.x) == TRAJECTORY_SIZE)):
+                                                    (len(md.velocity.x) == TRAJECTORY_SIZE and len(md.lateralPlannerSolutionDEPRECATED.x) == TRAJECTORY_SIZE)):
         if len(md.orientation.x) == TRAJECTORY_SIZE:
           self.t_idxs = np.array(md.position.t)
           self.plan_yaw = np.array(md.orientation.z)
           self.plan_yaw_rate = np.array(md.orientationRate.z)
         if len(md.velocity.x) == TRAJECTORY_SIZE and len(md.lateralPlannerSolution.x) == TRAJECTORY_SIZE:
-          self.x_sol = np.column_stack([md.lateralPlannerSolution.x, md.lateralPlannerSolution.y, md.lateralPlannerSolution.yaw, md.lateralPlannerSolution.yawRate])
+          self.x_sol = np.column_stack([md.lateralPlannerSolutionDEPRECATED.x, md.lateralPlannerSolutionDEPRECATED.y, md.lateralPlannerSolutionDEPRECATED.yaw, md.lateralPlannerSolutionDEPRECATED.yawRate])
         self.path_xyz = np.column_stack([md.position.x, md.position.y, md.position.z])
         self.velocity_xyz = np.column_stack([md.velocity.x, md.velocity.y, md.velocity.z])
         car_speed = np.linalg.norm(self.velocity_xyz, axis=1) - get_speed_error(md, v_ego_car)
@@ -117,7 +117,7 @@ class LateralPlanner:
 
       # Lane change logic
       lane_change_prob = self.LP.l_lane_change_prob + self.LP.r_lane_change_prob
-      self.DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, md)
+      self.DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, model_data=md)
 
       # Turn off lanes during lane change
       if self.DH.desire == log.LateralPlan.Desire.laneChangeRight or self.DH.desire == log.LateralPlan.Desire.laneChangeLeft:
@@ -175,7 +175,8 @@ class LateralPlanner:
         else:
           self.solution_invalid_cnt = 0
 
-    self.get_road_edge(sm['carState'], md)
+    if not MODEL_USE_LATERAL_PLANNER:
+      self.road_edge = get_road_edge(sm['carState'], md, self.edge_toggle)
 
   def get_dynamic_lane_profile(self, longitudinal_plan_sp):
     if self.dynamic_lane_profile == 1:
@@ -200,34 +201,6 @@ class LateralPlanner:
         if self.dynamic_lane_profile_status_buffer:  # in buffer mode, always laneless
           return True
     return False
-
-  def get_road_edge(self, carstate, model_v2):
-    # Lane detection by FrogAi
-    one_blinker = carstate.leftBlinker != carstate.rightBlinker
-    if not self.edge_toggle:
-      self.road_edge = False
-    elif one_blinker:
-      # Set the minimum lane threshold to 3.0 meters
-      min_lane_threshold = 3.0
-      # Set the blinker index based on which signal is on
-      blinker_index = 0 if carstate.leftBlinker else 1
-      desired_edge = model_v2.roadEdges[blinker_index]
-      current_lane = model_v2.laneLines[blinker_index + 1]
-      # Check if both the desired lane and the current lane have valid x and y values
-      if all([desired_edge.x, desired_edge.y, current_lane.x, current_lane.y]) and len(desired_edge.x) == len(current_lane.x):
-        # Interpolate the x and y values to the same length
-        x = np.linspace(desired_edge.x[0], desired_edge.x[-1], num=len(desired_edge.x))
-        lane_y = np.interp(x, current_lane.x, current_lane.y)
-        desired_y = np.interp(x, desired_edge.x, desired_edge.y)
-        # Calculate the width of the lane we're wanting to change into
-        lane_width = np.abs(desired_y - lane_y)
-        # Set road_edge to False if the lane width is not larger than the threshold
-        self.road_edge = not (np.amax(lane_width) > min_lane_threshold)
-      else:
-        self.road_edge = True
-    else:
-      # Default to setting "road_edge" to False
-      self.road_edge = False
 
   def publish(self, sm, pm):
     plan_solution_valid = self.solution_invalid_cnt < 2

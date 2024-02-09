@@ -1,9 +1,11 @@
 import math
+import numpy as np
 
 from cereal import car, log, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.realtime import DT_CTRL
+from openpilot.common.realtime import DT_MDL, DT_CTRL
+from openpilot.selfdrive.modeld.constants import ModelConstants
 
 # WARNING: this value was determined based on the model's training distribution,
 #          model predictions above this speed can be unpredictable
@@ -265,6 +267,32 @@ def clip_curvature(v_ego, prev_curvature, new_curvature):
   return safe_desired_curvature
 
 
+def get_lag_adjusted_curvature(CP, v_ego, psis, curvatures):
+  if len(psis) != CONTROL_N:
+    psis = [0.0]*CONTROL_N
+    curvatures = [0.0]*CONTROL_N
+  v_ego = max(MIN_SPEED, v_ego)
+
+  # TODO this needs more thought, use .2s extra for now to estimate other delays
+  delay = CP.steerActuatorDelay + .2
+
+  # MPC can plan to turn the wheel and turn back before t_delay. This means
+  # in high delay cases some corrections never even get commanded. So just use
+  # psi to calculate a simple linearization of desired curvature
+  current_curvature_desired = curvatures[0]
+  psi = interp(delay, ModelConstants.T_IDXS[:CONTROL_N], psis)
+  average_curvature_desired = psi / (v_ego * delay)
+  desired_curvature = 2 * average_curvature_desired - current_curvature_desired
+
+  # This is the "desired rate of the setpoint" not an actual desired rate
+  max_curvature_rate = MAX_LATERAL_JERK / (v_ego**2) # inexact calculation, check https://github.com/commaai/openpilot/pull/24755
+  safe_desired_curvature = clip(desired_curvature,
+                                current_curvature_desired - max_curvature_rate * DT_MDL,
+                                current_curvature_desired + max_curvature_rate * DT_MDL)
+
+  return safe_desired_curvature
+
+
 def get_friction(lateral_accel_error: float, lateral_accel_deadzone: float, friction_threshold: float,
                  torque_params: car.CarParams.LateralTorqueTuning, friction_compensation: bool) -> float:
   friction_interp = interp(
@@ -282,3 +310,34 @@ def get_speed_error(modelV2: log.ModelDataV2, v_ego: float) -> float:
     vel_err = clip(modelV2.temporalPose.trans[0] - v_ego, -MAX_VEL_ERR, MAX_VEL_ERR)
     return float(vel_err)
   return 0.0
+
+
+def get_road_edge(carstate, model_v2, toggle):
+  # Lane detection by FrogAi
+  one_blinker = carstate.leftBlinker != carstate.rightBlinker
+  if not toggle:
+    road_edge = False
+  elif one_blinker:
+    # Set the minimum lane threshold to 3.0 meters
+    min_lane_threshold = 3.0
+    # Set the blinker index based on which signal is on
+    blinker_index = 0 if carstate.leftBlinker else 1
+    desired_edge = model_v2.roadEdges[blinker_index]
+    current_lane = model_v2.laneLines[blinker_index + 1]
+    # Check if both the desired lane and the current lane have valid x and y values
+    if all([desired_edge.x, desired_edge.y, current_lane.x, current_lane.y]) and len(desired_edge.x) == len(current_lane.x):
+      # Interpolate the x and y values to the same length
+      x = np.linspace(desired_edge.x[0], desired_edge.x[-1], num=len(desired_edge.x))
+      lane_y = np.interp(x, current_lane.x, current_lane.y)
+      desired_y = np.interp(x, desired_edge.x, desired_edge.y)
+      # Calculate the width of the lane we're wanting to change into
+      lane_width = np.abs(desired_y - lane_y)
+      # Set road_edge to False if the lane width is not larger than the threshold
+      road_edge = not (np.amax(lane_width) > min_lane_threshold)
+    else:
+      road_edge = True
+  else:
+    # Default to setting "road_edge" to False
+    road_edge = False
+
+  return road_edge

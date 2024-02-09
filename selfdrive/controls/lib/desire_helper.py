@@ -2,12 +2,15 @@ from cereal import log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.controls.lib.drive_helpers import get_road_edge
 
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
+
+MODEL_USE_LATERAL_PLANNER = False
 
 DESIRES = {
   LaneChangeDirection.none: {
@@ -53,16 +56,19 @@ class DesireHelper:
     self.lane_change_wait_timer = 0
     self.prev_lane_change = False
     self.prev_brake_pressed = False
+    self.road_edge = False
     self.param_read_counter = 0
     self.read_param()
+    self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
   def read_param(self):
+    self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
-  def update(self, carstate, lateral_active, lane_change_prob, lat_plan_sp):
+  def update(self, carstate, lateral_active, lane_change_prob, model_data=None, lat_plan_sp=None):
     if self.param_read_counter % 50 == 0:
       self.read_param()
     self.param_read_counter += 1
@@ -70,6 +76,9 @@ class DesireHelper:
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
+
+    if MODEL_USE_LATERAL_PLANNER:
+      self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
 
     if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
       self.lane_change_state = LaneChangeState.off
@@ -84,7 +93,7 @@ class DesireHelper:
         self.lane_change_wait_timer = 0
 
       # LaneChangeState.preLaneChange
-      elif self.lane_change_state == LaneChangeState.preLaneChange and lat_plan_sp.laneChangeEdgeBlockDEPRECATED:
+      elif self.lane_change_state == LaneChangeState.preLaneChange and (self.road_edge if MODEL_USE_LATERAL_PLANNER else lat_plan_sp.laneChangeEdgeBlockDEPRECATED):
         self.lane_change_direction = LaneChangeDirection.none
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
