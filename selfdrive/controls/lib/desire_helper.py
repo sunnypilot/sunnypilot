@@ -63,7 +63,7 @@ class DesireHelper:
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
     self.custom_model, self.model_gen = get_model_generation()
-    self.model_use_lateral_planner = self.custom_model and self.model_gen == "1"
+    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
 
   def read_param(self):
     self.edge_toggle = self.param_s.get_bool("RoadEdge")

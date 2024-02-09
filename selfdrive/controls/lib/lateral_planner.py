@@ -75,7 +75,7 @@ class LateralPlanner:
     self.read_param()
 
     self.custom_model, self.model_gen = get_model_generation()
-    self.model_use_lateral_planner = self.custom_model and self.model_gen == "1"
+    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
 
   def read_param(self):
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))

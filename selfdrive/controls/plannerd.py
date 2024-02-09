@@ -17,7 +17,7 @@ def cumtrapz(x, t):
 
 def publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner):
   custom_model, model_gen = get_model_generation()
-  model_use_lateral_planner = custom_model and model_gen == "1"
+  model_use_lateral_planner = custom_model and model_gen == 1
   if model_use_lateral_planner:
     plan_odo = cumtrapz(longitudinal_planner.v_desired_trajectory_full, ModelConstants.T_IDXS)
     model_odo = cumtrapz(lateral_planner.v_plan, ModelConstants.T_IDXS)
