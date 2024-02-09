@@ -1579,7 +1579,9 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Dynamic Lane Profile
-  drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
+  if (uiState()->scene.driving_model_gen == 1) {
+    drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
+  }
 
   // TODO: Add toggle variables to cereal, and parse from cereal
   if (longitudinal) {

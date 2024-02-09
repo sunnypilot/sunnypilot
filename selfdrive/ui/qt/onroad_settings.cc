@@ -185,6 +185,7 @@ void OnroadSettings::refresh() {
   scene.dynamic_experimental_control = params.getBool("DynamicExperimentalControl");
   scene.speed_limit_control_enabled = params.getBool("EnableSlc");
   scene.speed_limit_control_policy = std::atoi(params.get("SpeedLimitControlPolicy").c_str());
+  scene.driving_model_gen = std::atoi(params.get("DrivingModelGeneration").c_str());
 
   if (!isVisible()) return;
 
@@ -194,7 +195,7 @@ void OnroadSettings::refresh() {
 
   // Dynamic Lane Profile
   dlp_widget->updateDynamicLaneProfile("DynamicLaneProfile");
-  dlp_widget->setVisible(true);
+  dlp_widget->setVisible(scene.driving_model_gen == 1);
 
   // Gap Adjust Cruise
   gac_widget->updateGapAdjustCruise("LongitudinalPersonality");

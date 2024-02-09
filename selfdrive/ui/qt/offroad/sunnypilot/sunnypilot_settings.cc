@@ -434,6 +434,10 @@ void SunnypilotPanel::updateToggles() {
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
   toggles["VisionCurveLaneless"]->refresh();
 
+  auto driving_model_gen = QString::fromStdString(params.get("DrivingModelGeneration"));
+  dlp_settings->setVisible(driving_model_gen == "1");
+  toggles["VisionCurveLaneless"]->setVisible(driving_model_gen == "1");
+
   auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
   auto live_torque = toggles["LiveTorque"];
