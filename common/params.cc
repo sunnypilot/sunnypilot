@@ -236,6 +236,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DevUIInfo", PERSISTENT},
     {"DisableOnroadUploads", PERSISTENT},
     {"DisengageLateralOnBrake", PERSISTENT},
+    {"DrivingModelGeneration", PERSISTENT},
     {"DrivingModelName", PERSISTENT},
     {"DrivingModelText", PERSISTENT},
     {"DrivingModelUrl", PERSISTENT},

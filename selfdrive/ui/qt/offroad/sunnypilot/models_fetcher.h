@@ -28,6 +28,7 @@ public:
     downloadUri = json["download_uri"].toString();
     index = json["index"].toString();
     environment = json["environment"].toString();
+    generation = json["generation"].toString();
   }
 
   QJsonObject toJson() const {
@@ -38,6 +39,7 @@ public:
     json["download_uri"] = downloadUri;
     json["index"] = index;
     json["environment"] = environment;
+    json["generation"] = generation;
     return json;
   }
 
@@ -47,6 +49,7 @@ public:
   QString downloadUri;
   QString index;
   QString environment;
+  QString generation;
 };
 
 class ModelsFetcher : public QObject {

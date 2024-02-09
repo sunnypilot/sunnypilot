@@ -28,6 +28,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.events import Events, ET
 from openpilot.selfdrive.controls.lib.alertmanager import AlertManager, set_offroad_alert
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
+from openpilot.selfdrive.sunnypilot import get_model_generation
 from openpilot.system.hardware import HARDWARE
 
 SOFT_DISABLE_TIME = 3  # seconds
@@ -56,8 +57,6 @@ CSID_MAP = {"1": EventName.roadCameraError, "2": EventName.wideRoadCameraError, 
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
-
-MODEL_USE_LATERAL_PLANNER = False
 
 
 class Controls:
@@ -211,6 +210,9 @@ class Controls:
 
     self.process_not_running = False
 
+    self.custom_model, self.model_gen = get_model_generation()
+    self.model_use_lateral_planner = self.custom_model and self.model_gen == "1"
+
     self.can_log_mono_time = 0
 
     self.startup_event = get_startup_event(car_recognized, controller_available, len(self.CP.carFw) > 0)
@@ -363,8 +365,8 @@ class Controls:
         self.events.add(EventName.calibrationInvalid)
 
     # Handle lane change
-    lane_change_edge_block = self.sm['lateralPlanSPDEPRECATED'].laneChangeEdgeBlockDEPRECATED if MODEL_USE_LATERAL_PLANNER else self.sm['modelV2SP'].laneChangeEdgeBlock
-    lane_change_svs = self.sm['lateralPlanDEPRECATED'] if MODEL_USE_LATERAL_PLANNER else self.sm['modelV2'].meta
+    lane_change_edge_block = self.sm['lateralPlanSPDEPRECATED'].laneChangeEdgeBlockDEPRECATED if self.model_use_lateral_planner else self.sm['modelV2SP'].laneChangeEdgeBlock
+    lane_change_svs = self.sm['lateralPlanDEPRECATED'] if self.model_use_lateral_planner else self.sm['modelV2'].meta
     if lane_change_svs.laneChangeState == LaneChangeState.preLaneChange and lane_change_edge_block:
       self.events.add(EventName.laneChangeRoadEdge)
     elif lane_change_svs.laneChangeState == LaneChangeState.preLaneChange:
@@ -454,7 +456,7 @@ class Controls:
       self.logged_comm_issue = None
 
     if not (self.CP.notCar and self.joystick_mode):
-      if MODEL_USE_LATERAL_PLANNER:
+      if self.model_use_lateral_planner:
         if not self.sm['lateralPlan'].mpcSolutionValid:
           self.events.add(EventName.plannerErrorDEPRECATED)
       if not self.sm['liveLocationKalman'].posenetOK:
@@ -671,7 +673,7 @@ class Controls:
     lat_plan = self.sm['lateralPlan']
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
-    blinker_svs = lat_plan if MODEL_USE_LATERAL_PLANNER else model_v2.meta
+    blinker_svs = lat_plan if self.model_use_lateral_planner else model_v2.meta
 
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
@@ -710,7 +712,7 @@ class Controls:
       actuators.accel = self.LoC.update(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan)
 
       # Steering PID loop and lateral MPC
-      if MODEL_USE_LATERAL_PLANNER:
+      if self.model_use_lateral_planner:
         self.desired_curvature = get_lag_adjusted_curvature(self.CP, CS.vEgo, lat_plan.psis, lat_plan.curvatures)
       else:
         self.desired_curvature = clip_curvature(CS.vEgo, self.desired_curvature, model_v2.action.desiredCurvature)
@@ -719,7 +721,7 @@ class Controls:
                                                                              self.steer_limited, self.desired_curvature,
                                                                              self.sm['liveLocationKalman'],
                                                                              model_data=model_v2)
-      if MODEL_USE_LATERAL_PLANNER:
+      if self.model_use_lateral_planner:
         actuators.curvature = self.desired_curvature
     else:
       lac_log = log.ControlsState.LateralDebugState.new_message()
@@ -759,7 +761,7 @@ class Controls:
           lac_log.active and self.events.add(EventName.steerSaturated)
       elif lac_log.saturated:
         # TODO probably should not use dpath_points but curvature
-        dpath_points = lat_plan.dPathPoints if MODEL_USE_LATERAL_PLANNER else model_v2.position.y
+        dpath_points = lat_plan.dPathPoints if self.model_use_lateral_planner else model_v2.position.y
         if len(dpath_points):
           # Check if we deviated from the path
           # TODO use desired vs actual curvature
@@ -868,7 +870,7 @@ class Controls:
 
     # Curvature & Steering angle
     lp = self.sm['liveParameters']
-    lp_mono_time_svs = 'lateralPlanDEPRECATED' if MODEL_USE_LATERAL_PLANNER else 'modelV2'
+    lp_mono_time_svs = 'lateralPlanDEPRECATED' if self.model_use_lateral_planner else 'modelV2'
 
     steer_angle_without_offset = math.radians(CS.steeringAngleDeg - lp.angleOffsetDeg)
     curvature = -self.VM.calc_curvature(steer_angle_without_offset, CS.vEgo, lp.roll)

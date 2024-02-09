@@ -3,14 +3,13 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.drive_helpers import get_road_edge
+from openpilot.selfdrive.sunnypilot import get_model_generation
 
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
-
-MODEL_USE_LATERAL_PLANNER = False
 
 DESIRES = {
   LaneChangeDirection.none: {
@@ -63,6 +62,9 @@ class DesireHelper:
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
+    self.custom_model, self.model_gen = get_model_generation()
+    self.model_use_lateral_planner = self.custom_model and self.model_gen == "1"
+
   def read_param(self):
     self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
@@ -77,7 +79,7 @@ class DesireHelper:
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    if MODEL_USE_LATERAL_PLANNER:
+    if self.model_use_lateral_planner:
       self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
 
     if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
@@ -93,7 +95,7 @@ class DesireHelper:
         self.lane_change_wait_timer = 0
 
       # LaneChangeState.preLaneChange
-      elif self.lane_change_state == LaneChangeState.preLaneChange and (self.road_edge if MODEL_USE_LATERAL_PLANNER else lat_plan_sp.laneChangeEdgeBlockDEPRECATED):
+      elif self.lane_change_state == LaneChangeState.preLaneChange and (self.road_edge if self.model_use_lateral_planner else lat_plan_sp.laneChangeEdgeBlockDEPRECATED):
         self.lane_change_direction = LaneChangeDirection.none
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
