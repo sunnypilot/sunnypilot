@@ -76,7 +76,7 @@ def fill_model_msg(msg: capnp._DynamicStructBuilder, net_output_data: Dict[str, 
 
   # lateral planning
   if custom_model and model_gen == 1:
-    solution = modelV2.lateralPlannerSolution
+    solution = modelV2.lateralPlannerSolutionDEPRECATED
     solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
     solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]
   else:
