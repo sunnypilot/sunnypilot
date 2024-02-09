@@ -128,10 +128,9 @@ void OnroadWindow::updateState(const UIState &s) {
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   bool propagate_event = true;
 
+#ifdef ENABLE_MAPS
   UIState *s = uiState();
   UIScene &scene = s->scene;
-
-#ifdef ENABLE_MAPS
   if (map != nullptr && !isOnroadSettingsVisible()) {
     if (wakeScreenTimeout()) {
       // Switch between map and sidebar when using navigate on openpilot
