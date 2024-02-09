@@ -260,7 +260,7 @@ def main(demo=False):
 
     # TODO: path planner timeout?
     sm.update(0)
-    desire = sm["lateralPlan"].desire.raw if custom_model and model_gen == "1" else DH.desire
+    desire = sm["lateralPlanDEPRECATED"].desire.raw if custom_model and model_gen == "1" else DH.desire
     v_ego = sm["carState"].vEgo
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
