@@ -457,7 +457,7 @@ class Controls:
 
     if not (self.CP.notCar and self.joystick_mode):
       if self.model_use_lateral_planner:
-        if not self.sm['lateralPlan'].mpcSolutionValid:
+        if not self.sm['lateralPlanDEPRECATED'].mpcSolutionValid:
           self.events.add(EventName.plannerErrorDEPRECATED)
       if not self.sm['liveLocationKalman'].posenetOK:
         self.events.add(EventName.posenetInvalid)
