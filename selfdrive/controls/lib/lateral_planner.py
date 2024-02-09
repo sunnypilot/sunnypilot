@@ -108,7 +108,7 @@ class LateralPlanner:
           self.t_idxs = np.array(md.position.t)
           self.plan_yaw = np.array(md.orientation.z)
           self.plan_yaw_rate = np.array(md.orientationRate.z)
-        if len(md.velocity.x) == TRAJECTORY_SIZE and len(md.lateralPlannerSolution.x) == TRAJECTORY_SIZE:
+        if len(md.velocity.x) == TRAJECTORY_SIZE and len(md.lateralPlannerSolutionDEPRECATED.x) == TRAJECTORY_SIZE:
           self.x_sol = np.column_stack([md.lateralPlannerSolutionDEPRECATED.x, md.lateralPlannerSolutionDEPRECATED.y, md.lateralPlannerSolutionDEPRECATED.yaw, md.lateralPlannerSolutionDEPRECATED.yawRate])
         self.path_xyz = np.column_stack([md.position.x, md.position.y, md.position.z])
         self.velocity_xyz = np.column_stack([md.velocity.x, md.velocity.y, md.velocity.z])
