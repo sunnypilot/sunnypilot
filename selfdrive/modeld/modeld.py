@@ -25,6 +25,7 @@ from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
+from openpilot.selfdrive.sunnypilot import get_model_generation
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -38,9 +39,6 @@ METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 CUSTOM_MODEL_PATH = "/data/media/0/models"
 
 LaneChangeState = log.LaneChangeState
-
-MODEL_USE_LATERAL_PLANNER = False
-MODEL_USE_DESIRED_CURVATURES = False
 
 
 class FrameMeta:
@@ -61,6 +59,7 @@ class ModelState:
   model: ModelRunner
 
   def __init__(self, context: CLContext):
+    self.custom_model, self.model_gen = get_model_generation()
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
@@ -74,11 +73,11 @@ class ModelState:
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
-    if MODEL_USE_LATERAL_PLANNER:
+    if self.custom_model and self.model_gen == "1":
       self.inputs['lat_planner_state'] = np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32)
     else:
       self.inputs['lateral_control_params'] = np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32)
-      if MODEL_USE_DESIRED_CURVATURES:
+      if self.custom_model and self.model_gen == "2":
         self.inputs['prev_desired_curvs'] = np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32)
       else:
         self.inputs['prev_desired_curv'] = np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32)
@@ -121,7 +120,7 @@ class ModelState:
     self.prev_desire[:] = inputs['desire']
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    if not MODEL_USE_LATERAL_PLANNER:
+    if not (self.custom_model and self.model_gen == "1"):
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
     self.inputs['nav_features'][:] = inputs['nav_features']
     self.inputs['nav_instructions'][:] = inputs['nav_instructions']
@@ -139,10 +138,10 @@ class ModelState:
 
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
-    if MODEL_USE_LATERAL_PLANNER:
+    if self.custom_model and self.model_gen == "1":
       self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
       self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
-    elif MODEL_USE_DESIRED_CURVATURES:
+    elif self.custom_model and self.model_gen == "2":
       self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
       self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
     else:
@@ -160,6 +159,8 @@ def main(demo=False):
   cl_context = CLContext()
   model = ModelState(cl_context)
   cloudlog.warning("models loaded, modeld starting")
+
+  custom_model, model_gen = get_model_generation()
 
   # visionipc clients
   while True:
@@ -191,7 +192,7 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
-  if not MODEL_USE_LATERAL_PLANNER:
+  if not (custom_model and model_gen == "1"):
     with car.CarParams.from_bytes(params.get("CarParams", block=True)) as msg:
       steer_delay = msg.steerActuatorDelay + .2
     #steer_delay = 0.4
@@ -205,7 +206,7 @@ def main(demo=False):
   model_transform_main = np.zeros((3, 3), dtype=np.float32)
   model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
-  if MODEL_USE_LATERAL_PLANNER:
+  if custom_model and model_gen == "1":
     driving_style = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
   nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
   nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
@@ -260,11 +261,11 @@ def main(demo=False):
 
     # TODO: path planner timeout?
     sm.update(0)
-    desire = sm["lateralPlan"].desire.raw if MODEL_USE_LATERAL_PLANNER else DH.desire
+    desire = sm["lateralPlan"].desire.raw if custom_model and model_gen == "1" else DH.desire
     v_ego = sm["carState"].vEgo
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
-    if not MODEL_USE_LATERAL_PLANNER:
+    if not (custom_model and model_gen == "1"):
       # TODO add lag
       lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"]:
@@ -324,7 +325,7 @@ def main(demo=False):
       'nav_features': nav_features,
       'nav_instructions': nav_instructions}
 
-    if MODEL_USE_LATERAL_PLANNER:
+    if custom_model and model_gen == "1":
       inputs['driving_style'] = driving_style
     else:
       inputs['lateral_control_params'] = lateral_control_params
@@ -342,7 +343,7 @@ def main(demo=False):
       fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
                       meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, v_ego, steer_delay, live_calib_seen)
 
-      if not MODEL_USE_LATERAL_PLANNER:
+      if not (custom_model and model_gen == "1"):
         desire_state = modelv2_send.modelV2.meta.desireState
         l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
         r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
@@ -355,7 +356,7 @@ def main(demo=False):
       pm.send('modelV2', modelv2_send)
       pm.send('cameraOdometry', posenet_send)
 
-      if not MODEL_USE_LATERAL_PLANNER:
+      if not (custom_model and model_gen == "1"):
         modelv2_sp_send = messaging.new_message('modelV2SP')
         modelv2_sp_send.valid = True
         modelv2_sp_send.modelV2SP.laneChangePrev = DH.prev_lane_change

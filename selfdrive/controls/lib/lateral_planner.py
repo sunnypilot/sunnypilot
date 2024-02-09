@@ -10,6 +10,7 @@ from openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc import N as LAT_MP
 from openpilot.selfdrive.controls.lib.lane_planner import LanePlanner, TRAJECTORY_SIZE
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, MIN_SPEED, get_speed_error, get_road_edge
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
+from openpilot.selfdrive.sunnypilot import get_model_generation
 
 import cereal.messaging as messaging
 from cereal import log
@@ -26,8 +27,6 @@ LATERAL_JERK_COST = 0.04
 # TODO this cost should be lowered when low
 # speed lateral control is stable on all cars
 STEERING_RATE_COST = 700.0
-
-MODEL_USE_LATERAL_PLANNER = False
 
 
 class LateralPlanner:
@@ -75,6 +74,9 @@ class LateralPlanner:
     self.param_read_counter = 0
     self.read_param()
 
+    self.custom_model, self.model_gen = get_model_generation()
+    self.model_use_lateral_planner = self.custom_model and self.model_gen == "1"
+
   def read_param(self):
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))
     if self.param_read_counter % 50 == 0:
@@ -99,7 +101,7 @@ class LateralPlanner:
     md = sm['modelV2']
 
     # TODO: SP - Refactor to work with legacy models
-    if MODEL_USE_LATERAL_PLANNER:
+    if self.model_use_lateral_planner:
       self.LP.parse_model(md)
       if len(md.position.x) == TRAJECTORY_SIZE and (len(md.orientation.x) == TRAJECTORY_SIZE or
                                                     (len(md.velocity.x) == TRAJECTORY_SIZE and len(md.lateralPlannerSolutionDEPRECATED.x) == TRAJECTORY_SIZE)):
@@ -175,7 +177,7 @@ class LateralPlanner:
         else:
           self.solution_invalid_cnt = 0
 
-    if not MODEL_USE_LATERAL_PLANNER:
+    if not self.model_use_lateral_planner:
       self.road_edge = get_road_edge(sm['carState'], md, self.edge_toggle)
 
   def get_dynamic_lane_profile(self, longitudinal_plan_sp):

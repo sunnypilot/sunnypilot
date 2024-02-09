@@ -44,6 +44,7 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
     params.put("DrivingModelText", selectedModelToDownload->fullName.toStdString());
     params.put("DrivingModelName", selectedModelToDownload->displayName.toStdString());
     //params.put("DrivingModelUrl", selectedModelToDownload->downloadUri.toStdString());  // TODO: Placeholder for future implementations
+    params.put("DrivingModelGeneration", selectedModelToDownload->generation.toStdString());
     selectedModelToDownload.reset();
     params.putBool("CustomDrivingModel", true);
   }
