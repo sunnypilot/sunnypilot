@@ -54,7 +54,7 @@ class ModelState:
     if self.param_s.get_bool("CustomDrivingModel"):
       _model_name = self.param_s.get("NavModelText", encoding="utf8")
       _model_paths = {
-        ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.thneed"}
+        ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.dlc"}
     else:
       _model_paths = MODEL_PATHS
     self.inputs = {'input_img': np.zeros(NAV_INPUT_SIZE, dtype=np.uint8)}
