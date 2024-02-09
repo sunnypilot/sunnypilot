@@ -92,7 +92,6 @@ class ModelState:
 
     self.param_s = Params()
 
-    # TODO: SP - Refactor Driving Model Selector to support legacy models
     if self.param_s.get_bool("CustomDrivingModel"):
       _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
       _model_paths = {

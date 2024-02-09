@@ -380,7 +380,6 @@ void UIState::updateStatus() {
 }
 
 UIState::UIState(QObject *parent) : QObject(parent) {
-  // TODO: SP - Set this dynamically on init with manual toggle or driving model selection
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
   "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",

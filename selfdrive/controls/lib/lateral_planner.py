@@ -100,7 +100,6 @@ class LateralPlanner:
     # Parse model predictions
     md = sm['modelV2']
 
-    # TODO: SP - Refactor to work with legacy models
     if self.model_use_lateral_planner:
       self.LP.parse_model(md)
       if len(md.position.x) == TRAJECTORY_SIZE and (len(md.orientation.x) == TRAJECTORY_SIZE or

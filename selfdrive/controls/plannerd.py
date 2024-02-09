@@ -16,7 +16,6 @@ def cumtrapz(x, t):
   return np.concatenate([[0], np.cumsum(((x[0:-1] + x[1:])/2) * np.diff(t))])
 
 def publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner):
-  # TODO: SP - Reimplement lateral planner with legacy models
   custom_model, model_gen = get_model_generation()
   model_use_lateral_planner = custom_model and model_gen == "1"
   if model_use_lateral_planner:
@@ -27,7 +26,6 @@ def publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner):
   ui_send.valid = sm.all_checks(service_list=['carState', 'controlsState', 'modelV2'])
   uiPlan = ui_send.uiPlan
   uiPlan.frameId = sm['modelV2'].frameId
-  # TODO: SP - Reimplement lateral planner with legacy models
   if model_use_lateral_planner:
     x_fp = (lateral_planner.x_sol if lateral_planner.dynamic_lane_profile_status else lateral_planner.lat_mpc.x_sol)[:,0]
     y_fp = (lateral_planner.x_sol if lateral_planner.dynamic_lane_profile_status else lateral_planner.lat_mpc.x_sol)[:,1]
@@ -49,7 +47,6 @@ def plannerd_thread():
   debug_mode = bool(int(os.getenv("DEBUG", "0")))
 
   longitudinal_planner = LongitudinalPlanner(CP)
-  # TODO: SP - Reimplement lateral planner with legacy models
   lateral_planner = LateralPlanner(CP, debug=debug_mode)
   lateral_planner_svs = ['lateralPlanDEPRECATED', 'lateralPlanSPDEPRECATED']
 
