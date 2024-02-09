@@ -670,7 +670,7 @@ class Controls:
         self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
 
-    lat_plan = self.sm['lateralPlan']
+    lat_plan = self.sm['lateralPlanDEPRECATED']
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
     blinker_svs = lat_plan if self.model_use_lateral_planner else model_v2.meta
