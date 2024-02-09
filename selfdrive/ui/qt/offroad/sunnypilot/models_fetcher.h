@@ -26,6 +26,9 @@ public:
     fullName = json["full_name"].toString();
     fileName = json["file_name"].toString();
     downloadUri = json["download_uri"].toString();
+    fullNameNav = json["full_name"].toString();
+    fileNameNav = json["file_name"].toString();
+    downloadUriNav = json["download_uri_nav"].toString();
     index = json["index"].toString();
     environment = json["environment"].toString();
     generation = json["generation"].toString();
@@ -37,6 +40,9 @@ public:
     json["full_name"] = fullName;
     json["file_name"] = fileName;
     json["download_uri"] = downloadUri;
+    json["full_name_nav"] = fullNameNav;
+    json["file_name_nav"] = fileNameNav;
+    json["download_uri_nav"] = downloadUriNav;
     json["index"] = index;
     json["environment"] = environment;
     json["generation"] = generation;
@@ -47,6 +53,9 @@ public:
   QString fullName;
   QString fileName;
   QString downloadUri;
+  QString fullNameNav;
+  QString fileNameNav;
+  QString downloadUriNav;
   QString index;
   QString environment;
   QString generation;

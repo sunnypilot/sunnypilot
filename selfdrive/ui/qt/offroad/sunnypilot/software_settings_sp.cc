@@ -45,6 +45,7 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
     params.put("DrivingModelName", selectedModelToDownload->displayName.toStdString());
     //params.put("DrivingModelUrl", selectedModelToDownload->downloadUri.toStdString());  // TODO: Placeholder for future implementations
     params.put("DrivingModelGeneration", selectedModelToDownload->generation.toStdString());
+    params.put("NavModelText", selectedModelToDownload->fullNameNav.toStdString());
     selectedModelToDownload.reset();
     params.putBool("CustomDrivingModel", true);
   }
@@ -103,6 +104,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     currentModelLblBtn->setValue(selectedModelToDownload->displayName);
     currentModelLblBtn->setDescription(selectedModelToDownload->displayName);
     models_fetcher.download(selectedModelToDownload->downloadUri, selectedModelToDownload->fileName);
+    models_fetcher.download(selectedModelToDownload->downloadUriNav, selectedModelToDownload->fileNameNav);
 
     // Disable select button until download completes
     currentModelLblBtn->setEnabled(false);

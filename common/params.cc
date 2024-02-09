@@ -270,6 +270,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"MapTargetVelocities", PERSISTENT},
     {"Map3DBuildings", PERSISTENT},
     {"MaxTimeOffroad", PERSISTENT},
+    {"NavModelText", PERSISTENT},
+    {"NavModelUrl", PERSISTENT},
     {"NNFF", PERSISTENT},
     {"NNFFCarModel", PERSISTENT},
     {"OnroadScreenOff", PERSISTENT},
