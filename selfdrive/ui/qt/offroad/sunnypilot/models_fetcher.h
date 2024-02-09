@@ -26,8 +26,8 @@ public:
     fullName = json["full_name"].toString();
     fileName = json["file_name"].toString();
     downloadUri = json["download_uri"].toString();
-    fullNameNav = json["full_name"].toString();
-    fileNameNav = json["file_name"].toString();
+    fullNameNav = json["full_name_nav"].toString();
+    fileNameNav = json["file_name_nav"].toString();
     downloadUriNav = json["download_uri_nav"].toString();
     index = json["index"].toString();
     environment = json["environment"].toString();
