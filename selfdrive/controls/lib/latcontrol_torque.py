@@ -83,7 +83,7 @@ class LatControlTorque(LatControl):
     self.torqued_override = self.param_s.get_bool("TorquedOverride")
     self._frame = 0
 
-    self.use_lateral_jerk = True  # TODO: make this a parameter in the UI
+    self.use_lateral_jerk = False  # TODO: make this a parameter in the UI
 
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
