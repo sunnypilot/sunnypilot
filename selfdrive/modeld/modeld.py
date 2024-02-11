@@ -328,6 +328,7 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
+    # TODO: SP - Refactor in the future if any model input/output issues
     inputs:Dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
