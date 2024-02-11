@@ -6,16 +6,33 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget* parent) : SoftwarePanel(parent) {
   currentModelLblBtn = new ButtonControl(tr("Driving Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
-  // Connect downloadProgress from models_fetcher to local slot
-  connect(&models_fetcher, &ModelsFetcher::downloadProgress, this, [=](const double progress) {
-    modelDownloadProgress = progress;
-    HandleModelDownloadProgressReport();
+  connect(&models_fetcher, &ModelsFetcher::downloadProgress, this, [this](const double progress) {
+    handleDownloadProgress(progress, "driving");
+  });
+  
+  connect(&nav_models_fetcher, &ModelsFetcher::downloadProgress, this, [this](const double progress) {
+      handleDownloadProgress(progress, "navigation");
+  });
+
+  connect(&metadata_fetcher, &ModelsFetcher::downloadProgress, this, [this](const double progress) {
+    handleDownloadProgress(progress, "metadata");
   });
 
   // Connect click event from currentModelLblBtn to local slot
   connect(currentModelLblBtn, &ButtonControl::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
 
   ReplaceOrAddWidget(currentModelLbl, currentModelLblBtn);
+}
+
+void SoftwarePanelSP::handleDownloadProgress(const double progress, const QString &modelType) {
+  if (modelType == "driving") {
+    modelDownloadProgress = progress;
+  } else if (modelType == "navigation") {
+    navModelDownloadProgress = progress;
+  } else if (modelType == "metadata") {
+    metadataDownloadProgress = progress;
+  }
+  HandleModelDownloadProgressReport();
 }
 
 QString SoftwarePanelSP::GetModelName() {
@@ -30,25 +47,85 @@ QString SoftwarePanelSP::GetModelName() {
   return CURRENT_MODEL;
 }
 
-void SoftwarePanelSP::HandleModelDownloadProgressReport() {
-  const auto _progress_str = QString::number(modelDownloadProgress, 'f', 2);
-  const auto description = isDownloadingModel() ? QString("Downloading [%1]... (%2%)") : QString("%1 downloaded");
+QString SoftwarePanelSP::GetNavModelName() {
+  if (selectedNavModelToDownload.has_value()) {
+    return selectedNavModelToDownload->fullNameNav;
+  }
+  
+  return QString::fromStdString(params.get("NavModelText"));
+}
 
-  // Update UI with new description
-  currentModelLblBtn->setDescription(description.arg(GetModelName(), _progress_str));
+QString SoftwarePanelSP::GetMetadataName() {
+  if (selectedMetadataToDownload.has_value()) {
+    // Assuming your metadata structure has a 'name' or similar field
+    return selectedMetadataToDownload->fullNameMetadata;
+  }
+
+  // Return a default name or an empty string if there's no metadata selected
+  return QString::fromStdString(params.get("ModelMetadataText"));
+}
+
+void SoftwarePanelSP::HandleModelDownloadProgressReport() {
+  // Template strings for download status
+  const QString downloadingTemplate = "Downloading %1 model [%2]... (%3%)";
+  const QString downloadedTemplate = "%1 model [%2] downloaded";
+
+  // Get model names
+  QString drivingModelName = GetModelName();
+  QString navModelName = GetNavModelName();
+  QString metadataName = GetMetadataName();
+  QString description;
+
+  // Driving model status
+  if (isDownloadingModel()) {
+    description += downloadingTemplate.arg("Driving", drivingModelName, QString::number(modelDownloadProgress, 'f', 2));
+  } else {
+    description += downloadedTemplate.arg("Driving", drivingModelName);
+  }
+
+  // Navigation model status
+  if (isDownloadingNavModel()) {
+    if (!description.isEmpty()) description += "\n"; // Add newline if driving model status is already appended
+    description += downloadingTemplate.arg("Navigation", navModelName, QString::number(navModelDownloadProgress, 'f', 2));
+  } else {
+    if (!description.isEmpty()) description += "\n"; // Ensure newline separation
+    description += downloadedTemplate.arg("Navigation", navModelName);
+  }
+
+  if (isDownloadingMetadata()) {
+    if (!description.isEmpty()) description += "\n";
+    description += downloadingTemplate.arg("Metadata", metadataName, QString::number(metadataDownloadProgress, 'f', 2));
+  } else {
+    if (!description.isEmpty()) description += "\n";
+    description += downloadedTemplate.arg("Metadata", metadataName);
+  }
+
+  
+  currentModelLblBtn->setDescription(description);
   currentModelLblBtn->showDescription();
   currentModelLblBtn->setEnabled(!(is_onroad || isDownloadingModel()));
 
   // If not downloading and there is a selected model, update parameters
-  if (!isDownloadingModel() && selectedModelToDownload.has_value()) {
+  if (!isDownloadingNavModel() && !isDownloadingModel() && selectedModelToDownload.has_value()) {
     params.put("DrivingModelText", selectedModelToDownload->fullName.toStdString());
     params.put("DrivingModelName", selectedModelToDownload->displayName.toStdString());
-    //params.put("DrivingModelUrl", selectedModelToDownload->downloadUri.toStdString());  // TODO: Placeholder for future implementations
-    params.put("DrivingModelGeneration", selectedModelToDownload->generation.toStdString());
-    params.put("NavModelText", selectedModelToDownload->fullNameNav.toStdString());
+    //params.put("DrivingModelUrl", selectedModelToDownload->downloadUri.toStdString());  // TODO: Placeholder for future implementation
     selectedModelToDownload.reset();
     params.putBool("CustomDrivingModel", true);
   }
+
+  // If not downloading and there is a selected model, update parameters
+  if (!isDownloadingNavModel() && selectedNavModelToDownload.has_value()) {
+      params.put("DrivingModelGeneration", selectedNavModelToDownload->generation.toStdString());
+      params.put("NavModelText", selectedNavModelToDownload->fullNameNav.toStdString());
+      selectedNavModelToDownload.reset();
+  }
+
+  if (!isDownloadingModel() && !isDownloadingNavModel() && !isDownloadingMetadata() && selectedMetadataToDownload.has_value()) {
+    params.put("ModelMetadataText", selectedMetadataToDownload->fullNameMetadata.toStdString());
+    selectedMetadataToDownload.reset();
+  }
+
 }
 
 void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
@@ -59,7 +136,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   checkNetwork();
   const auto currentModelName = QString::fromStdString(params.get("DrivingModelName"));
   const bool is_release_sp = params.getBool("IsReleaseSPBranch");
-  const auto models = models_fetcher.getModelsFromURL();
+  const auto models = ModelsFetcher::getModelsFromURL();
 
   QMap<QString, QString> index_to_model;
 
@@ -94,6 +171,8 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   for (auto &model: models) {
     if (model.displayName == selectedModelName) {
       selectedModelToDownload = model;
+      selectedNavModelToDownload = model;
+      selectedMetadataToDownload = model;
       params.putBool("CustomDrivingModel", false);
       break;
     }
@@ -104,7 +183,8 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     currentModelLblBtn->setValue(selectedModelToDownload->displayName);
     currentModelLblBtn->setDescription(selectedModelToDownload->displayName);
     models_fetcher.download(selectedModelToDownload->downloadUri, selectedModelToDownload->fileName);
-    models_fetcher.download(selectedModelToDownload->downloadUriNav, selectedModelToDownload->fileNameNav);
+    nav_models_fetcher.download(selectedNavModelToDownload->downloadUriNav, selectedNavModelToDownload->fileNameNav);
+    metadata_fetcher.download(selectedMetadataToDownload->downloadUriMetadata, selectedMetadataToDownload->fileNameMetadata);
 
     // Disable select button until download completes
     currentModelLblBtn->setEnabled(false);

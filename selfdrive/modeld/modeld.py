@@ -92,8 +92,19 @@ class ModelState:
       **_inputs_middle,
       **_inputs_end,
     }
+    
+    self.param_s = Params()
 
-    with open(METADATA_PATH, 'rb') as f:
+    if self.param_s.get_bool("CustomDrivingModel"):
+      _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
+      _model_paths = {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/supercombo-{_model_name}.thneed"}
+      _metadata_name = self.param_s.get("ModelMetadataText", encoding="utf8")
+      _metadata_path = f"{CUSTOM_MODEL_PATH}/supercombo_metadata_{_metadata_name}.pkl" if _model_name else METADATA_PATH
+    else:
+      _model_paths = MODEL_PATHS
+      _metadata_path = METADATA_PATH
+
+    with open(_metadata_path, 'rb') as f:
       model_metadata = pickle.load(f)
 
     self.output_slices = model_metadata['output_slices']
@@ -101,14 +112,6 @@ class ModelState:
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    self.param_s = Params()
-
-    if self.param_s.get_bool("CustomDrivingModel"):
-      _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
-      _model_paths = {
-        ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/supercombo-{_model_name}.thneed"}
-    else:
-      _model_paths = MODEL_PATHS
     self.model = ModelRunner(_model_paths, self.output, Runtime.GPU, False, context)
     self.model.addInput("input_imgs", None)
     self.model.addInput("big_input_imgs", None)

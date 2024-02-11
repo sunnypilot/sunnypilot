@@ -11,17 +11,31 @@ class SoftwarePanelSP final : public SoftwarePanel {
 public:
   explicit SoftwarePanelSP(QWidget *parent = nullptr);
 
+
 private:
   QString GetModelName();
+  QString GetNavModelName();
+  QString GetMetadataName();
+
   void checkNetwork();
   bool isDownloadingModel() const {
     return selectedModelToDownload.has_value() && modelDownloadProgress > 0.0 && modelDownloadProgress < 100.0;
+  }
+
+  bool isDownloadingNavModel() const {
+    return selectedNavModelToDownload.has_value() && navModelDownloadProgress > 0.0 && navModelDownloadProgress < 100.0;
+  }
+
+  bool isDownloadingMetadata() const {
+    return selectedMetadataToDownload.has_value() && metadataDownloadProgress > 0.0 && metadataDownloadProgress < 100.0;
   }
 
   // UI update related methods
   void updateLabels() override;
   void handleCurrentModelLblBtnClicked();
   void HandleModelDownloadProgressReport();
+  void handleDownloadProgress(double progress, const QString&modelType);
+  void HandleNavModelDownloadProgressReport();
   void showResetParamsDialog();
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;
@@ -40,10 +54,16 @@ private:
     return ConfirmationDialog::confirm(final_message, final_buttonText, parent);
   }
 
-  bool is_metered;
-  bool is_wifi;
+  bool is_metered{};
+  bool is_wifi{};
   double modelDownloadProgress = 0.0;
+  double navModelDownloadProgress = 0.0;
+  double metadataDownloadProgress = 0.0;
   std::optional<Model> selectedModelToDownload;
+  std::optional<Model> selectedNavModelToDownload;
+  std::optional<Model> selectedMetadataToDownload;
   ButtonControl *currentModelLblBtn;
   ModelsFetcher models_fetcher;
+  ModelsFetcher nav_models_fetcher;
+  ModelsFetcher metadata_fetcher;
 };

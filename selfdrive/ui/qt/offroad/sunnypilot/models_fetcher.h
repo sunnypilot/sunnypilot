@@ -29,6 +29,9 @@ public:
     fullNameNav = json["full_name_nav"].toString();
     fileNameNav = json["file_name_nav"].toString();
     downloadUriNav = json["download_uri_nav"].toString();
+    fullNameMetadata = json["full_name_metadata"].toString();
+    fileNameMetadata = json["file_name_metadata"].toString();
+    downloadUriMetadata = json["download_uri_metadata"].toString();
     index = json["index"].toString();
     environment = json["environment"].toString();
     generation = json["generation"].toString();
@@ -43,6 +46,9 @@ public:
     json["full_name_nav"] = fullNameNav;
     json["file_name_nav"] = fileNameNav;
     json["download_uri_nav"] = downloadUriNav;
+    json["full_name_metadata"] = fullNameMetadata;
+    json["file_name_metadata"] = fileNameMetadata;
+    json["download_uri_metadata"] = downloadUriMetadata;
     json["index"] = index;
     json["environment"] = environment;
     json["generation"] = generation;
@@ -59,6 +65,9 @@ public:
   QString index;
   QString environment;
   QString generation;
+  QString fullNameMetadata;
+  QString fileNameMetadata;
+  QString downloadUriMetadata;
 };
 
 class ModelsFetcher : public QObject {
