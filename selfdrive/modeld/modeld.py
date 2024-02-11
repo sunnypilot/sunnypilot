@@ -325,18 +325,21 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    # TODO: SP - Refactor in the future if any model input/output issues
+    if custom_model and model_gen == 1:
+      _inputs = {
+        'driving_style': driving_style
+      }
+    else:
+      _inputs = {
+        'lateral_control_params': lateral_control_params
+      }
+
     inputs:Dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
-      #'lateral_control_params': lateral_control_params,
+      **_inputs,
       'nav_features': nav_features,
       'nav_instructions': nav_instructions}
-
-    if custom_model and model_gen == 1:
-      inputs['driving_style'] = driving_style
-    else:
-      inputs['lateral_control_params'] = lateral_control_params
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
