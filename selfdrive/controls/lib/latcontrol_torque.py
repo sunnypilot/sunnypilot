@@ -87,7 +87,7 @@ class LatControlTorque(LatControl):
 
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
-    self.use_lateral_jerk = CI.use_lateral_jerk
+    #self.use_lateral_jerk = CI.use_lateral_jerk
 
     if self.use_nn or self.use_lateral_jerk:
       # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
