@@ -242,7 +242,7 @@ class LatControlTorque(LatControl):
 
         # apply friction override for cars with low NN friction response
         if self.nn_friction_override:
-          pid_log.error += self.torque_from_lateral_accel(0.0, self.torque_params,
+          pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
                                                           friction_input,
                                                           lateral_accel_deadzone, friction_compensation=True, gravity_adjusted=False)
         nn_log = nn_input + nnff_setpoint_input + nnff_measurement_input
