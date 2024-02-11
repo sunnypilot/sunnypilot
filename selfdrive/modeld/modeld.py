@@ -63,24 +63,30 @@ class ModelState:
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    # TODO: SP - Refactor for cleaner code/future model adoption
     self.inputs = {
       'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
       'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
-      #'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
-      #'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
+      'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),  # gen1
+      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),  # gen2/3
+      'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),  # gen2
+      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),  # gen3
       'nav_features': np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32),
       'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
+    # TODO: SP - Refactor for cleaner code/future model adoption
     if self.custom_model and self.model_gen == 1:
-      self.inputs['lat_planner_state'] = np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32)
-    else:
-      self.inputs['lateral_control_params'] = np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32)
-      if self.custom_model and self.model_gen == 2:
-        self.inputs['prev_desired_curvs'] = np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32)
-      else:
-        self.inputs['prev_desired_curv'] = np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32)
+      del self.inputs['lateral_control_params']
+      del self.inputs['prev_desired_curvs']
+      del self.inputs['prev_desired_curv']
+    if self.custom_model and self.model_gen in (2, 3):  # gen2/3
+      del self.inputs['lat_planner_state']
+    if self.custom_model and self.model_gen == 2:
+      del self.inputs['prev_desired_curv']
+    if self.custom_model and self.model_gen == 3:  # gen3
+      del self.inputs['prev_desired_curvs']
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
