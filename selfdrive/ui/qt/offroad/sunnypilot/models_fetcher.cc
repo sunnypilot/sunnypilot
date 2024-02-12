@@ -4,15 +4,51 @@ ModelsFetcher::ModelsFetcher(QObject* parent) : QObject(parent) {
   manager = new QNetworkAccessManager(this);
 }
 
-void ModelsFetcher::download(const QUrl& url, const QString& filename, const QString& destinationPath) {
-  if (!QDir(destinationPath).exists() && !QDir().mkpath(destinationPath)) {
-    LOGE("Failed to create directory: [%s]", destinationPath.toStdString().c_str());
+QByteArray ModelsFetcher::verifyFileHash(const QString& filePath, const QString& expectedHash, bool& hashMatches) {
+  hashMatches = false; // Default to false
+  QByteArray fileData;
+
+  if (expectedHash.isEmpty()) {
+    // If no hash is provided, assume verification isn't required but return the file data
+    hashMatches = true;
+  } else {
+    QFile file(filePath);
+    if (file.open(QIODevice::ReadOnly)) {
+      QCryptographicHash hash(QCryptographicHash::Sha256); // Or your chosen algorithm
+      fileData = file.readAll(); // Read the file data once
+      hash.addData(fileData);
+      file.close();
+
+      QString currentHash = QString(hash.result().toHex());
+      hashMatches = (currentHash == expectedHash);
+    }
   }
-  const QNetworkRequest request(url);
+
+  // Return the file data if hash matches or no hash was provided; empty otherwise
+  return hashMatches ? fileData : QByteArray();
+}
+
+
+void ModelsFetcher::download(const DownloadInfo& downloadInfo, const QString& filename, const QString& destinationPath) {
+  QString fullPath = destinationPath + "/" + filename;
+  QFileInfo fileInfo(fullPath);
+  bool hashMatches = false;
+  QByteArray data = verifyFileHash(fullPath, downloadInfo.sha256, hashMatches);
+
+  if (fileInfo.exists() && hashMatches) {
+    // Hash matches or no hash provided, and we have the file data
+    LOGD("File already downloaded and verified: %s", filename.toStdString().c_str());
+    emit downloadProgress(100);
+    emit downloadComplete(data, true); // Use the data returned from verifyFileHash
+    return; // Exit early
+  }
+
+  // Proceed with download if file does not exist or hash verification failed
+  QNetworkRequest request(downloadInfo.url);
   QNetworkReply* reply = manager->get(request);
   connect(reply, &QNetworkReply::downloadProgress, this, &ModelsFetcher::onDownloadProgress);
-  connect(reply, &QNetworkReply::finished, this, [this, reply, destinationPath, filename]() {
-    onFinished(reply, destinationPath, filename);
+  connect(reply, &QNetworkReply::finished, this, [this, reply, destinationPath, filename, downloadInfo]() {
+    onFinished(reply, destinationPath, filename, downloadInfo.sha256);
   });
 }
 
@@ -31,10 +67,10 @@ QString extractFileName(const QString& contentDisposition) {
   return filename;
 }
 
-void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationPath, const QString& filename) {
+void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationPath, const QString& filename, const QString& expectedHash) {
   // Handle download error
   if (reply->error()) {
-    return;
+    return; // Possibly emit a signal or log an error as per your error handling policy
   }
 
   const QByteArray data = reply->readAll();
@@ -46,16 +82,30 @@ void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationP
 
   QString finalPath = QDir(destinationPath).filePath(finalFilename);
 
-  // handle file open error
+  // Save the downloaded file
   QFile file(finalPath);
   if (!file.open(QIODevice::WriteOnly)) {
-    return;
+    return; // Consider emitting a signal or logging an error here as well
   }
 
   file.write(data);
   file.close();
 
-  emit downloadComplete(data);
+  bool hashMatches = false;
+  verifyFileHash(finalPath, expectedHash, hashMatches);
+
+  // Verify the file hash if expectedHash is provided
+  if (!expectedHash.isEmpty() && !hashMatches) {
+    LOGE("The downloaded file didn't pass the hash validation!: %s", filename.toStdString().c_str());
+    // Hash verification failed, handle accordingly
+    // This could involve deleting the file, logging an error, or emitting a failure signal
+    QFile::remove(finalPath); // Example action: Remove the invalid file
+    emit downloadFailed(filename);
+    return; // Stop further processing
+  }
+  
+
+  emit downloadComplete(data, false); // Emit your success signal
 }
 
 void ModelsFetcher::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal) {

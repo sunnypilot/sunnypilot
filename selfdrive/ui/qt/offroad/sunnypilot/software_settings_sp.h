@@ -19,15 +19,18 @@ private:
 
   void checkNetwork();
   bool isDownloadingModel() const {
-    return selectedModelToDownload.has_value() && modelDownloadProgress > 0.0 && modelDownloadProgress < 100.0;
+    LOGD("isDownloadingModel: selectedModelToDownload.has_value() [%s] && modelDownloadProgress [%f]",selectedModelToDownload.has_value() ?"true": "false", modelDownloadProgress.value_or(0.0));
+    return selectedModelToDownload.has_value() && modelDownloadProgress.value_or(0.0) > 0.0 && modelDownloadProgress.value_or(0.0) < 100.0;
   }
 
   bool isDownloadingNavModel() const {
-    return selectedNavModelToDownload.has_value() && navModelDownloadProgress > 0.0 && navModelDownloadProgress < 100.0;
+    LOGD("isDownloadingNavModel: selectedNavModelToDownload.has_value() [%s] && navModelDownloadProgress [%f]",selectedNavModelToDownload.has_value() ?"true": "false", navModelDownloadProgress.value_or(0.0));
+    return selectedNavModelToDownload.has_value() && navModelDownloadProgress.value_or(0.0) > 0.0 && navModelDownloadProgress.value_or(0.0) < 100.0;
   }
 
   bool isDownloadingMetadata() const {
-    return selectedMetadataToDownload.has_value() && metadataDownloadProgress > 0.0 && metadataDownloadProgress < 100.0;
+    LOGD("isDownloadingMetadata: selectedMetadataToDownload.has_value() [%s] && metadataDownloadProgress [%f]",selectedMetadataToDownload.has_value() ?"true": "false", metadataDownloadProgress.value_or(0.0));
+    return selectedMetadataToDownload.has_value() && metadataDownloadProgress.value_or(0.0) > 0.0 && metadataDownloadProgress.value_or(0.0) < 100.0;
   }
 
   // UI update related methods
@@ -36,6 +39,7 @@ private:
   void HandleModelDownloadProgressReport();
   void handleDownloadProgress(double progress, const QString&modelType);
   void HandleNavModelDownloadProgressReport();
+  void handleDownloadFailed(const QString &modelType);
   void showResetParamsDialog();
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;
@@ -56,9 +60,12 @@ private:
 
   bool is_metered{};
   bool is_wifi{};
-  double modelDownloadProgress = 0.0;
-  double navModelDownloadProgress = 0.0;
-  double metadataDownloadProgress = 0.0;
+  bool modelFromCache;
+  bool navModelFromCache;
+  bool metadataFromCache;
+  std::optional<double> modelDownloadProgress;
+  std::optional<double> navModelDownloadProgress;
+  std::optional<double> metadataDownloadProgress;
   std::optional<Model> selectedModelToDownload;
   std::optional<Model> selectedNavModelToDownload;
   std::optional<Model> selectedMetadataToDownload;
@@ -66,4 +73,6 @@ private:
   ModelsFetcher models_fetcher;
   ModelsFetcher nav_models_fetcher;
   ModelsFetcher metadata_fetcher;
+  bool model_download_failed;
+  QString failed_downloads_description = "";
 };
