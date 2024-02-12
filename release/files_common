@@ -128,9 +128,6 @@ selfdrive/debug/uiview.py
 selfdrive/debug/hyundai_enable_radar_points.py
 selfdrive/debug/vw_mqb_config.py
 
-selfdrive/gpxd/gpx_uploader.py
-selfdrive/gpxd/gpxd.py
-
 selfdrive/mapd_manager.py
 selfdrive/sunnypilot/*.py
 selfdrive/sunnypilot/live_map_data/*.py
