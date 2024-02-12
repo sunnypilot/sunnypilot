@@ -15,9 +15,7 @@ import cereal.messaging as messaging
 def cumtrapz(x, t):
   return np.concatenate([[0], np.cumsum(((x[0:-1] + x[1:])/2) * np.diff(t))])
 
-def publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner):
-  custom_model, model_gen = get_model_generation()
-  model_use_lateral_planner = custom_model and model_gen == 1
+def publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner, model_use_lateral_planner):
   if model_use_lateral_planner:
     plan_odo = cumtrapz(longitudinal_planner.v_desired_trajectory_full, ModelConstants.T_IDXS)
     model_odo = cumtrapz(lateral_planner.v_plan, ModelConstants.T_IDXS)
@@ -47,7 +45,10 @@ def plannerd_thread():
   debug_mode = bool(int(os.getenv("DEBUG", "0")))
 
   longitudinal_planner = LongitudinalPlanner(CP)
-  lateral_planner = LateralPlanner(CP, debug=debug_mode)
+
+  custom_model, model_gen = get_model_generation(params)
+  model_use_lateral_planner = custom_model and model_gen == 1
+  lateral_planner = LateralPlanner(CP, debug=debug_mode, model_use_lateral_planner=model_use_lateral_planner)
   lateral_planner_svs = ['lateralPlanDEPRECATED', 'lateralPlanSPDEPRECATED']
 
   pm = messaging.PubMaster(['longitudinalPlan', 'uiPlan', 'longitudinalPlanSP'] + lateral_planner_svs)
@@ -64,7 +65,7 @@ def plannerd_thread():
       lateral_planner.publish(sm, pm)
       longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)
-      publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner)
+      publish_ui_plan(sm, pm, lateral_planner, longitudinal_planner, model_use_lateral_planner)
 
 def main():
   plannerd_thread()

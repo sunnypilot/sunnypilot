@@ -4,7 +4,6 @@ import numpy as np
 from typing import Dict
 from cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
-from openpilot.selfdrive.sunnypilot import get_model_generation
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -47,8 +46,7 @@ def fill_xyvat(builder, t, x, y, v, a, x_std=None, y_std=None, v_std=None, a_std
 def fill_model_msg(msg: capnp._DynamicStructBuilder, net_output_data: Dict[str, np.ndarray], publish_state: PublishState,
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
                    timestamp_eof: int, timestamp_llk: int, model_execution_time: float,
-                   nav_enabled: bool, v_ego: float, steer_delay: float, valid: bool) -> None:
-  custom_model, model_gen = get_model_generation()
+                   nav_enabled: bool, v_ego: float, steer_delay: float, valid: bool, model_use_lateral_planner: bool) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   msg.valid = valid
 
@@ -75,7 +73,7 @@ def fill_model_msg(msg: capnp._DynamicStructBuilder, net_output_data: Dict[str, 
   fill_xyzt(orientation_rate, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.ORIENTATION_RATE].T)
 
   # lateral planning
-  if custom_model and model_gen == 1:
+  if model_use_lateral_planner:
     solution = modelV2.lateralPlannerSolutionDEPRECATED
     solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
     solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]

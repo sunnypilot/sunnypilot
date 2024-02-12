@@ -10,7 +10,6 @@ from openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc import N as LAT_MP
 from openpilot.selfdrive.controls.lib.lane_planner import LanePlanner, TRAJECTORY_SIZE
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, MIN_SPEED, get_speed_error, get_road_edge
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
-from openpilot.selfdrive.sunnypilot import get_model_generation
 
 import cereal.messaging as messaging
 from cereal import log
@@ -30,7 +29,7 @@ STEERING_RATE_COST = 700.0
 
 
 class LateralPlanner:
-  def __init__(self, CP, debug=False):
+  def __init__(self, CP, debug=False, model_use_lateral_planner=False):
     self.LP = LanePlanner()
     self.DH = DesireHelper()
 
@@ -74,8 +73,7 @@ class LateralPlanner:
     self.param_read_counter = 0
     self.read_param()
 
-    self.custom_model, self.model_gen = get_model_generation()
-    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
+    self.model_use_lateral_planner = model_use_lateral_planner
 
   def read_param(self):
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))

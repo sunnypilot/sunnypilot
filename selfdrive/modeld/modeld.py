@@ -59,23 +59,24 @@ class ModelState:
   model: ModelRunner
 
   def __init__(self, context: CLContext):
-    self.custom_model, self.model_gen = get_model_generation()
+    self.param_s = Params()
+    self.custom_model, self.model_gen = get_model_generation(self.param_s)
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     _inputs = {
-      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),  # gen2/3
-      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),  # gen3
+      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
+      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
     }
     if self.custom_model:
       if self.model_gen == 1:
         _inputs = {
-          'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),  # gen1
+          'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),
         }
-      if self.model_gen == 2:  # gen2
+      if self.model_gen == 2:
         _inputs = {
-          'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),  # gen2/3
-          'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),  # gen2
+          'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
+          'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),
         }
 
     self.inputs = {
@@ -86,8 +87,6 @@ class ModelState:
       'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
-
-    self.param_s = Params()
 
     if self.param_s.get_bool("CustomDrivingModel"):
       _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
@@ -167,8 +166,6 @@ def main(demo=False):
   model = ModelState(cl_context)
   cloudlog.warning("models loaded, modeld starting")
 
-  custom_model, model_gen = get_model_generation()
-
   # visionipc clients
   while True:
     available_streams = VisionIpcClient.available_streams("camerad", block=False)
@@ -199,6 +196,7 @@ def main(demo=False):
 
   publish_state = PublishState()
   params = Params()
+  custom_model, model_gen = get_model_generation(params)
   if not (custom_model and model_gen == 1):
     with car.CarParams.from_bytes(params.get("CarParams", block=True)) as msg:
       steer_delay = msg.steerActuatorDelay + .2
@@ -352,7 +350,7 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
-                      meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, v_ego, steer_delay, live_calib_seen)
+                      meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, v_ego, steer_delay, live_calib_seen, custom_model and model_gen == 1)
 
       if not (custom_model and model_gen == 1):
         desire_state = modelv2_send.modelV2.meta.desireState

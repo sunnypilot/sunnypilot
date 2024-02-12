@@ -211,7 +211,7 @@ class Controls:
 
     self.process_not_running = False
 
-    self.custom_model, self.model_gen = get_model_generation()
+    self.custom_model, self.model_gen = get_model_generation(self.params)
     self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
 
     self.can_log_mono_time = 0
