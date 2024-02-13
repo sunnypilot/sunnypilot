@@ -50,7 +50,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     {
       "CustomOffsets",
       tr("Custom Offsets"),
-      tr("Add custom offsets to Camera and Path in sunnypilot."),
+      "",
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -332,6 +332,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
+  toggles["CustomOffsets"]->showDescription();
 
   connect(toggles["EnableMads"], &ToggleControl::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
   connect(toggles["EnableMads"], &ToggleControl::toggleFlipped, [=](bool state) {
@@ -442,6 +443,9 @@ void SunnypilotPanel::updateToggles() {
   dlp_settings->setEnabled(model_use_lateral_planner);
   toggles["VisionCurveLaneless"]->setVisible(model_use_lateral_planner);
   auto dlp_incompatible_desc = tr("<font color='yellow'>Dynamic Lane Profile is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
+
+  toggles["CustomOffsets"]->setEnabled(model_use_lateral_planner);
+  auto custom_offsets_incompatible_desc = tr("<font color='yellow'>Custom Offsets is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
 
   auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
@@ -573,6 +577,7 @@ void SunnypilotPanel::updateToggles() {
   toggles["LiveTorque"]->setEnabled(is_offroad);
   toggles["LiveTorqueRelaxed"]->setEnabled(is_offroad);
 
+  toggles["CustomOffsets"]->setDescription((model_use_lateral_planner ? "" : custom_offsets_incompatible_desc + "<br><br>") + custom_offsets_description);
   dlp_settings->setDescription((model_use_lateral_planner ? "" : dlp_incompatible_desc + "<br><br>") + dlp_description);
 }
 

@@ -79,5 +79,6 @@ private:
     return description;
   }
 
+  const QString custom_offsets_description = QString(tr("Add custom offsets to Camera and Path in sunnypilot."));
   const QString dlp_description = QString(tr("Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions."));
 };
