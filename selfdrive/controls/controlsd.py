@@ -967,13 +967,6 @@ class Controls:
   def step(self):
     start_time = time.monotonic()
 
-    self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
-    self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
-    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
-
-    if self.sm.frame % int(2.5 / DT_CTRL) == 0:
-      self.live_torque = self.params.get_bool("LiveTorque")
-
     # Sample data from sockets and get a carState
     CS = self.data_sample()
     cloudlog.timestamp("Data sampled")
@@ -999,6 +992,13 @@ class Controls:
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
+
+      self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
+      self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
+      self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+
+      if self.sm.frame % int(2.5 / DT_CTRL) == 0:
+        self.live_torque = self.params.get_bool("LiveTorque")
       time.sleep(0.1)
 
   def controlsd_thread(self):
