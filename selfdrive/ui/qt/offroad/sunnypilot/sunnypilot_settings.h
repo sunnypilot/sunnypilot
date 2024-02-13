@@ -1,10 +1,13 @@
 #pragma once
 
+#include "common/model.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/custom_offsets_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/lane_change_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/mads_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_control_settings.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_warning_settings.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_policy_settings.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
@@ -50,6 +53,10 @@ private:
   MadsSettings* mads_settings = nullptr;
   SubPanelButton *slcSettings = nullptr;
   SlcSettings* slc_settings = nullptr;
+  SubPanelButton *slwSettings = nullptr;
+  SpeedLimitWarningSettings* slw_settings = nullptr;
+  SubPanelButton *slpSettings = nullptr;
+  SpeedLimitPolicySettings* slp_settings = nullptr;
   LaneChangeSettings* lane_change_settings = nullptr;
   CustomOffsetsSettings* custom_offsets_settings = nullptr;
   Params params;
@@ -71,4 +78,7 @@ private:
     QString description = "<b>" + custom_description + "</b><br><br>" + nnff_description;
     return description;
   }
+
+  const QString custom_offsets_description = QString(tr("Add custom offsets to Camera and Path in sunnypilot."));
+  const QString dlp_description = QString(tr("Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions."));
 };

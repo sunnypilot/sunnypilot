@@ -1,5 +1,5 @@
 from cereal import custom
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 
 LOOK_AHEAD_HORIZON_TIME = 15.  # s. Time horizon for look ahead of turn speed sections to provide on liveMapDataSP msg.
 _DEBUG = False

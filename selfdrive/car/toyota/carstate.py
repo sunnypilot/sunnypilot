@@ -100,7 +100,7 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = ret.vEgo * 1.015  # minimum of all the cars
 
-    ret.standstill = ret.vEgoRaw == 0
+    ret.standstill = abs(ret.vEgoRaw) < 1e-3
 
     if self.CP.carFingerprint != CAR.PRIUS_V:
       self.lta_status = cp_cam.vl["LKAS_HUD"]["SET_ME_X02"]
