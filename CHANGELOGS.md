@@ -1,4 +1,96 @@
-sunnypilot - 0.9.5.1 (2023-11-xx)
+sunnypilot - 0.9.6.0 (2024-xx-xx)
+========================
+* UPDATED: Synced with commaai's master commit c9bd4e4 (February 2, 2024)
+* NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
+* UPDATED: Driving Model Selector v3
+  * NEW❗: Driving Model additions
+    * Certified Herbalist (February 5, 2024) - CH
+    * Los Angeles v2 (January 24, 2024) - LAv2
+    * Los Angeles (January 22, 2024) - LAv1
+  * NEW❗: Model Caching thanks to DevTekVE!
+    * Model caching allows the selection of previously downloaded Driving Model
+    * Users can now access cached versions of selected models, eliminating redundant downloads for previously fetched models
+  * Legacy Driving Models support
+    * New Delhi (December 21, 2023) - ND
+    * Blue Diamond v2 (December 11, 2023) - BDv2
+    * Blue Diamond (November 18, 2023) - BDv1
+    * Farmville (November 7, 2023) - FV
+    * Night Strike (October 3, 2023) - NS
+  * Certain features are deprecated with Legacy Driving Models
+    * Dynamic Lane Profile
+    * Custom Offsets
+* UPDATED: Dynamic Lane Profile (DLP)
+  * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
+  * Deprecate support for newer Driving Models (e.g., CH, LAv2, LAv1)
+* UPDATED: Custom Offsets
+  * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
+  * Deprecate support for newer Driving Models (e.g., CH, LAv2, LAv1)
+* FIXED: New comma 3X support
+* FIXED: New comma eSIM support
+* Bug fixes and performance improvements
+
+sunnypilot - 0.9.5.3 (2023-12-24)
+========================
+* UPDATED: Dynamic Experimental Control (DEC)
+  * Synced with dragonpilot-community/dragonpilot:lp-dp-beta2 commit 578d38b
+* UPDATED: Driving Model Selector v2
+  * Driving models sort in descending order based on availability date
+  * Experimental/unmerged driving models are only available in "dev-c3" branch
+    * To select and use experimental driving models, navigate to "Software" panel, select the "dev-c3" branch, and check for update
+* UPDATED: Vision-based Turn Speed Control (V-TSC) implementation
+  * Refactored implementation thanks to pfeiferj!
+  * More accurate and consistent velocity calculation to achieve smoother longitudinal control in curves
+* NEW❗: Speed Limit Warning
+  * Display alert and/or chime to warn the driver when the cruising speed is faster than the speed limit plus the Warning Offset
+  * Customizable Warning Offset, independent of Speed Limit Control (SLC)'s Limit Offset
+* UPDATED: Speed Limit Source Policy
+  * Selectable speed limit source for Speed Limit Control and Speed Limit Warning
+  * Applicable to: Speed Limit Control, Speed Limit Warning
+* UPDATED: Speed Limit Control (SLC)
+  * Engage Mode: Removed "Warning Only" mode - this has been replaced by the new Speed Limit Warning sub-menu
+* UPDATED: OpenStreetMap (OSM) implementation
+  * Refactored implementation thanks to pfeiferj!
+    * Less resource impact
+    * Significantly smaller sizes with databases
+    * All regions are available to download
+    * Weekly map updates thanks to pfeiferj!
+    * Increased the font size of the road name
+  * C3X-specific changes
+    * Altitude (ALT.) display on Developer UI
+    * Current street name on top of driving screen when "OSM Debug UI" is enabled
+* UPDATED: Map-based Turn Speed Control (M-TSC) implementation
+  * Only available in "staging-c3" and "dev-c3" branches. If you are using "release-c3" branch, navigate to "Software" panel, select the desired target branch, and check for update
+  * Refactored implementation thanks to pfeiferj!
+  * Based on the new OpenStreetMap implementation
+  * Improved predicted curvature calculations from OpenStreetMap data
+* UI updates
+  * RE-ENABLED: Navigation: Full screen support
+    * Display the map view in full screen
+    * To switch back to driving view, tap on the border edge
+* Hyundai Bayon Non-SCC 2019 support thanks to polein78!
+
+sunnypilot - 0.9.5.2 (2023-12-07)
+========================
+* NEW❗: MADS: Allow Navigate on openpilot in Chill Mode
+  * Allow navigation to feed map view into the driving model while using Chill Mode
+  * Support all platforms, including platforms that do not support openpilot longitudinal control & Experimental Mode
+* NEW❗: Neural Network Lateral Controller
+  * Formerly known as "NNFF", this replaces the lateral "torque" controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy
+  * Contact @twilsonco in the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported
+* NEW❗: Driving Model Selector
+  * Easily switch between driving models without reinstalling branches. Offering immediate access to the latest models upon release
+    * An internet connection is required for downloading models. Each model switch currently involves downloading the model again. Future updates may allow for offline switching
+  * Warning is displayed for metered connections to avoid unexpected data usage if on cellular data
+  * Change driving models via **Settings -> Software -> Current Driving Model**.
+* NEW❗: Hyundai CAN longitudinal:
+  * NEW❗: Enable radar tracks for certain Santa Fe platforms
+    * Internal Combustion Engine (ICE) 2021-23
+    * Hybrid 2022-23
+    * Plug-in Hybrid 2022-23
+* NEW❗: Lane Change: When manually braking with steering engaged, turning on the turn signal will default to Nudge mode
+* Volkswagen MQB CC only platforms (radar or no radar) support thanks to jyoung8607!
+
+sunnypilot - 0.9.5.1 (2023-11-17)
 ========================
 * UPDATED: Synced with commaai's master commit e94c3c5
 * NEW❗: Farmville driving model
@@ -16,7 +108,6 @@ sunnypilot - 0.9.5.1 (2023-11-xx)
 * NEW❗: Dynamic Experimental Control (DEC) thanks to dragonpilot-community!
   * Automatically determines and selects between openpilot ACC and openpilot End to End longitudinal based on conditions for a more natural drive
   * Dynamic Experimental Control is only active while in Experimental Mode
-  * Dynamic Experimental Control must be enabled via "SP - Controls", then toggle via the new Onroad Settings Panel
   * When Dynamic Experimental Control is ON, initially setting cruise speed will set to the vehicle's current speed
 * NEW❗: Hyundai CAN longitudinal:
   * NEW❗: Parse lead info for camera-based SCC platforms

@@ -16,3 +16,14 @@ class Policy(IntEnum):
   map_data_priority = 4
   car_state_priority = 5
   combined = 6
+
+
+class Engage(IntEnum):
+  auto = 0
+  user_confirm = 1
+
+
+class OffsetType(IntEnum):
+  default = 0
+  fixed = 1
+  percentage = 2

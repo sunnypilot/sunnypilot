@@ -1,9 +1,11 @@
 from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
 from openpilot.selfdrive.car import get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES
+from openpilot.selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, VolkswagenFlags, \
+                                                      BUTTON_STATES, VolkswagenFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -69,6 +71,9 @@ class CarInterface(CarInterfaceBase):
       else:
         ret.networkLocation = NetworkLocation.fwdCamera
 
+      if 0x126 in fingerprint[2]:  # HCA_01
+        ret.flags |= VolkswagenFlags.STOCK_HCA_PRESENT.value
+
     # Global lateral tuning defaults, can be overridden per-vehicle
 
     ret.steerActuatorDelay = 0.1
@@ -90,14 +95,19 @@ class CarInterface(CarInterfaceBase):
       if ret.transmissionType == TransmissionType.manual:
         ret.minEnableSpeed = 4.5
 
+    if Params().get_bool("VwCCOnly"):
+      if car_fw is not None and not any(fw.ecu == "fwdRadar" for fw in car_fw):
+        ret.spFlags |= VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR.value
+      else:
+        ret.spFlags |= VolkswagenFlagsSP.SP_CC_ONLY.value
+      ret.openpilotLongitudinalControl = False
+
     ret.pcmCruise = not ret.openpilotLongitudinalControl
     ret.customStockLongAvailable = True
     ret.stoppingControl = True
-    ret.startingState = True
-    ret.startAccel = 1.0
     ret.stopAccel = -0.55
-    ret.vEgoStarting = 1.0
-    ret.vEgoStopping = 1.0
+    ret.vEgoStarting = 0.1
+    ret.vEgoStopping = 0.5
     ret.longitudinalTuning.kpV = [0.1]
     ret.longitudinalTuning.kiV = [0.0]
 
@@ -256,6 +266,7 @@ class CarInterface(CarInterfaceBase):
       ret, self.CS = self.toggle_gac(ret, self.CS, bool(self.CS.gap_dist_button), 1, 3, 3, "-")
     else:
       self.CS.madsEnabled = False
+    self.CS.madsEnabled = self.get_sp_started_mads(ret, self.CS)
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in buttonEvents):

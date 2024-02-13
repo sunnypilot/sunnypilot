@@ -7,7 +7,7 @@
 
 #include "common/util.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
-#include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_control_settings.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot/speed_limit_policy_settings.h"
 
 OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent) {
   setContentsMargins(0, 0, 0, 0);
@@ -147,7 +147,7 @@ void OnroadSettings::changeSpeedLimitControl() {
   UIScene &scene = uiState()->scene;
   const auto cp = (*uiState()->sm)["carParams"].getCarParams();
   bool can_change = hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
-  int max_policy = SlcSettings::speed_limit_control_policy_texts.size() - 1;
+  int max_policy = SpeedLimitPolicySettings::speed_limit_policy_texts.size() - 1;
 
   if (can_change) {
     if (!scene.speed_limit_control_enabled) {
@@ -194,7 +194,7 @@ void OnroadSettings::refresh() {
 
   // Dynamic Lane Profile
   dlp_widget->updateDynamicLaneProfile("DynamicLaneProfile");
-  dlp_widget->setVisible(true);
+  dlp_widget->setVisible(scene.driving_model_gen == 1);
 
   // Gap Adjust Cruise
   gac_widget->updateGapAdjustCruise("LongitudinalPersonality");
@@ -336,12 +336,12 @@ void OptionWidget::updateSpeedLimitControl(QString param) {
   auto subtitle_text = "Speed Limit Control";
   std::string icon_color; // Declare icon_color here
 
-  // Define the speed_limit_control_policy_texts
-  const auto& speed_limit_control_policy_texts = SlcSettings::speed_limit_control_policy_texts;
+  // Define the speed_limit_policy_texts
+  const auto& speed_limit_policy_texts = SpeedLimitPolicySettings::speed_limit_policy_texts;
 
   auto enable_slc_status = atoi(params.get(param.toStdString()).c_str());
   auto speed_limit_control_policy_status = atoi(params.get("SpeedLimitControlPolicy").c_str());
-  auto title_text = QString(speed_limit_control_policy_texts.at(speed_limit_control_policy_status)).replace("\n", " ");
+  auto title_text = QString(speed_limit_policy_texts.at(speed_limit_control_policy_status)).replace("\n", " ");
 
   std::map<int, std::string> color_map = {
     {0, "#1f77b4"}, // Muted blue for "Nav Only"

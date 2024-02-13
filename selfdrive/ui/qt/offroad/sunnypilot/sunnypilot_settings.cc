@@ -20,19 +20,19 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     },
     {
       "EnableSlc",
-      tr("Enable Speed Limit Control (SLC)"),
+      tr("Speed Limit Control (SLC)"),
       tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
       "../assets/offroad/icon_blank.png",
     },
     {
       "TurnVisionControl",
-      tr("Enable Vision Based Turn Speed Control (V-TSC)"),
+      tr("Enable Vision-based Turn Speed Control (V-TSC)"),
       tr("Use vision path predictions to estimate the appropriate speed to drive through turns ahead."),
       "../assets/offroad/icon_blank.png",
     },
     {
       "TurnSpeedControl",
-      tr("Enable Map Data Turn Speed Control (M-TSC)"),
+      tr("Enable Map Data Turn Speed Control (M-TSC) (Beta)"),
       tr("Use curvature information from map data to define speed limits to take turns ahead."),
       "../assets/offroad/icon_blank.png",
     },
@@ -50,7 +50,13 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     {
       "CustomOffsets",
       tr("Custom Offsets"),
-      tr("Add custom offsets to Camera and Path in sunnypilot."),
+      "",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "NNFF",
+      tr("Neural Network Lateral Control (NNLC)"),
+      "",
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -164,7 +170,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   });
 
   // SLC. Settings
-  slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 900, this);
+  slcSettings = new SubPanelButton(tr("Customize Speed Limit Control"), 980, this);
   slcSettings->setObjectName("slc_btn");
   // Set margin on the outside of the button
   QVBoxLayout* slcSettingsLayout = new QVBoxLayout;
@@ -181,14 +187,50 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
 
+  // Speed Limit Warning Settings
+  slwSettings = new SubPanelButton(tr("Customize Warning"), 720, this);
+  slwSettings->setObjectName("slw_btn");
+  connect(slwSettings, &QPushButton::clicked, [=]() {
+    scrollView->setLastScrollPosition();
+    main_layout->setCurrentWidget(slw_settings);
+  });
+
+  slw_settings = new SpeedLimitWarningSettings(this);
+  connect(slw_settings, &SpeedLimitWarningSettings::backPress, [=]() {
+    scrollView->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+
+  // Speed Limit Warning Settings
+  slpSettings = new SubPanelButton(tr("Customize Source"), 720, this);
+  slpSettings->setObjectName("slp_btn");
+  connect(slpSettings, &QPushButton::clicked, [=]() {
+    scrollView->setLastScrollPosition();
+    main_layout->setCurrentWidget(slp_settings);
+  });
+
+  slp_settings = new SpeedLimitPolicySettings(this);
+  connect(slp_settings, &SpeedLimitPolicySettings::backPress, [=]() {
+    scrollView->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+
+  // Speed Limit Warning and Speed Limit Policy in the same horizontal space
+  QHBoxLayout *warning_policy_layout = new QHBoxLayout;
+  warning_policy_layout->setContentsMargins(0, 0, 0, 30);
+  warning_policy_layout->addWidget(slwSettings);
+  warning_policy_layout->addSpacing(10);
+  warning_policy_layout->addWidget(slpSettings);
+  warning_policy_layout->setAlignment(Qt::AlignLeft);
+
   // toggle names to trigger updateToggles() when toggleFlipped
   std::vector<std::string> updateTogglesNames{
-    "EnforceTorqueLateral", "CustomTorqueLateral", "LiveTorque", "TorquedOverride"
+    "EnforceTorqueLateral", "CustomTorqueLateral", "LiveTorque", "TorquedOverride", "NNFF"
   };
 
   // toggle for offroadTransition when going onroad/offroad
   std::vector<std::string> toggleOffroad{
-    "EnableMads", "EnforceTorqueLateral", "LiveTorqueRelaxed"
+    "EnableMads", "EnforceTorqueLateral", "CustomTorqueLateral", "LiveTorqueRelaxed", "NNFF"
   };
 
   // Controls: Torque - FRICTION
@@ -201,7 +243,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
   dlp_settings = new ButtonParamControl(
-    "DynamicLaneProfile", "Dynamic Lane Profile", "Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions.",
+    "DynamicLaneProfile", "Dynamic Lane Profile", "",
     "../assets/offroad/icon_blank.png",
     dlp_settings_texts,
     340
@@ -226,10 +268,14 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     if (param == "VisionCurveLaneless") {
       list->addItem(laneChangeSettingsLayout);
       list->addItem(horizontal_line());
+
+      list->addItem(new LabelControl(tr("Speed Limit Assist")));
     }
 
     if (param == "EnableSlc") {
       list->addItem(slcSettingsLayout);
+
+      list->addItem(warning_policy_layout);
       list->addItem(horizontal_line());
     }
 
@@ -251,24 +297,42 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
       list->addItem(horizontal_line());
     }
+  }
 
-    // trigger updateToggles() when toggleFlipped
-    if (std::find(updateTogglesNames.begin(), updateTogglesNames.end(), param.toStdString()) != updateTogglesNames.end()) {
-      connect(toggle, &ToggleControl:: toggleFlipped, [=](bool state) {
+  connect(toggles["NNFF"], &ToggleControl::toggleFlipped, [=](bool state) {
+    if (state) {
+      toggles["EnforceTorqueLateral"]->setEnabled(false);
+      params.putBool("EnforceTorqueLateral", false);
+      toggles["EnforceTorqueLateral"]->refresh();
+    } else {
+      toggles["NNFF"]->hideDescription();
+
+      toggles["EnforceTorqueLateral"]->setEnabled(true);
+      toggles["EnforceTorqueLateral"]->refresh();
+    }
+  });
+
+  // trigger updateToggles() when toggleFlipped
+  for (const auto& updateToggleName : updateTogglesNames) {
+    if (toggles.find(updateToggleName) != toggles.end()) {
+      connect(toggles[updateToggleName], &ToggleControl::toggleFlipped, [=](bool state) {
         updateToggles();
       });
     }
+  }
 
-    // trigger offroadTransition when going onroad/offroad
-    if (std::find(toggleOffroad.begin(), toggleOffroad.end(), param.toStdString()) != toggleOffroad.end()) {
+  // trigger offroadTransition when going onroad/offroad
+  for (const auto& offroadName : toggleOffroad) {
+    if (toggles.find(offroadName) != toggles.end()) {
       connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-        toggle->setEnabled(offroad);
+        toggles[offroadName]->setEnabled(offroad);
       });
     }
   }
 
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
+  toggles["CustomOffsets"]->showDescription();
 
   connect(toggles["EnableMads"], &ToggleControl::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
   connect(toggles["EnableMads"], &ToggleControl::toggleFlipped, [=](bool state) {
@@ -279,8 +343,10 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, slc_settings, &SlcSettings::updateToggles);
   connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, [=](bool state) {
     slcSettings->setEnabled(state);
+    slcSettings->setVisible(state);
   });
   slcSettings->setEnabled(toggles["EnableSlc"]->isToggled());
+  slcSettings->setVisible(toggles["EnableSlc"]->isToggled());
 
   connect(toggles["CustomOffsets"], &ToggleControl::toggleFlipped, [=](bool state) {
     customOffsetsSettings->setEnabled(state);
@@ -325,6 +391,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   main_layout->addWidget(lane_change_settings);
   main_layout->addWidget(custom_offsets_settings);
   main_layout->addWidget(slc_settings);
+  main_layout->addWidget(slw_settings);
+  main_layout->addWidget(slp_settings);
 
   setStyleSheet(R"(
     #back_btn {
@@ -354,6 +422,7 @@ void SunnypilotPanel::hideEvent(QHideEvent *event) {
 
 void SunnypilotPanel::updateToggles() {
   param_watcher->addParam("DynamicLaneProfile");
+  param_watcher->addParam("IsOffroad");
 
   if (!isVisible()) {
     return;
@@ -366,11 +435,24 @@ void SunnypilotPanel::updateToggles() {
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
   toggles["VisionCurveLaneless"]->refresh();
 
+  bool custom_driving_model = params.getBool("CustomDrivingModel");
+  auto driving_model_gen = QString::fromStdString(params.get("DrivingModelGeneration"));
+  bool model_use_lateral_planner = custom_driving_model && driving_model_gen == "1";
+  auto driving_model_name = custom_driving_model && driving_model_gen != "0" ? QString::fromStdString(params.get("DrivingModelName")) : CURRENT_MODEL;
+  QString driving_model_text = QString("<font color='yellow'>" + driving_model_name + "</font>");
+  dlp_settings->setEnabled(model_use_lateral_planner);
+  toggles["VisionCurveLaneless"]->setVisible(model_use_lateral_planner);
+  auto dlp_incompatible_desc = tr("<font color='yellow'>Dynamic Lane Profile is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
+
+  toggles["CustomOffsets"]->setEnabled(model_use_lateral_planner);
+  auto custom_offsets_incompatible_desc = tr("<font color='yellow'>Custom Offsets is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
+
   auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
   auto live_torque = toggles["LiveTorque"];
   auto live_torque_relaxed = toggles["LiveTorqueRelaxed"];
   auto torqued_override = toggles["TorquedOverride"];
+  auto nnff_toggle = toggles["NNFF"];
 
   auto custom_stock_long_param = params.getBool("CustomStockLong");
   auto v_tsc = toggles["TurnVisionControl"];
@@ -378,41 +460,53 @@ void SunnypilotPanel::updateToggles() {
   auto reverse_acc = toggles["ReverseAccChange"];
   auto slc_toggle = toggles["EnableSlc"];
 
-  // toggle names to update when EnforceTorqueLateral is flipped
-  std::vector<std::string> enforceTorqueGroup{"CustomTorqueLateral", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
-  for (const auto& enforceTorqueToggle : enforceTorqueGroup) {
-    if (toggles.find(enforceTorqueToggle) != toggles.end()) {
-      toggles[enforceTorqueToggle]->setVisible(enforce_torque_lateral->isToggled());
-    }
-  }
+  auto is_offroad = params.getBool("IsOffroad");
 
-  // toggle names to update when CustomTorqueLateral is flipped
-  std::vector<SPAbstractControl*> customTorqueGroup{friction, lat_accel_factor};
-  for (const auto& customTorqueControl : customTorqueGroup) {
-    customTorqueControl->setVisible(custom_torque_lateral->isToggled());
-  }
+  // NNLC/NNFF
+  QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
+  QString nnff_fuzzy_desc = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the <font color='white'>#tuning-nnlc channel at the sunnypilot Discord server</font> if there are any issues.");
+  QString nnff_status_init = tr("<font color='yellow'>⚠️ Start the car to check car compatibility</font>");
+  QString nnff_not_loaded = tr("<font color='yellow'>⚠️ NNLC Not Loaded</font>");
+  QString nnff_loaded = tr("<font color=#00ff00>✅ NNLC Loaded</font>");
+  auto _car_model = QString::fromStdString(params.get("NNFFCarModel"));
 
-  if (enforce_torque_lateral->isToggled()) {
-    live_torque_relaxed->setVisible(live_torque->isToggled());
-    torqued_override->setVisible(custom_torque_lateral->isToggled());
-  } else {
-    params.putBool("LiveTorque", false);
-    params.putBool("CustomTorqueLateral", false);
-    for (const auto& customTorqueControl : customTorqueGroup) {
-      customTorqueControl->setVisible(false);
-    }
-  }
-
+  const bool is_release_sp = params.getBool("IsReleaseSPBranch");
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
-      enforce_torque_lateral->setEnabled(false);
-      params.remove("EnforceTorqueLateral");
+    // NNLC/NNFF
+    {
+      if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+        enforce_torque_lateral->setEnabled(false);
+        params.remove("EnforceTorqueLateral");
+
+        nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_available_desc));
+        nnff_toggle->setEnabled(false);
+        params.remove("NNFF");
+      } else if (nnff_toggle->isToggled()) {
+        if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
+          QString nn_model_name = QString::fromStdString(CP.getLateralTuning().getTorque().getNnModelName());
+          QString nn_fuzzy = QString::fromUtf8(CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? "Fuzzy" : "Exact");
+
+          nnff_toggle->setDescription(nnffDescriptionBuilder((nn_model_name == "")     ? nnff_status_init :
+                                                             (nn_model_name == "mock") ? (nnff_not_loaded + "<br>Reach out to the sunnypilot team in the <font color='white'>#tuning-nnlc channel at the sunnypilot Discord server</font> and donate logs to get NNLC loaded for your car.") :
+                                                                                         (nnff_loaded + " | Match = " + nn_fuzzy + " | " + _car_model + "<br><br>" + nnff_fuzzy_desc)));
+          enforce_torque_lateral->setEnabled(false);
+        } else {
+          nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_status_init));
+        }
+      } else {
+        nnff_toggle->setDescription(nnff_description);
+      }
     }
+
+    if (is_release_sp) {
+      params.remove("TurnSpeedControl");
+    }
+    m_tsc->setVisible(!is_release_sp);
 
     if (hasLongitudinalControl(CP) || custom_stock_long_param) {
       v_tsc->setEnabled(true);
@@ -430,13 +524,61 @@ void SunnypilotPanel::updateToggles() {
 
     enforce_torque_lateral->refresh();
     slc_toggle->refresh();
+    nnff_toggle->refresh();
+    m_tsc->refresh();
   } else {
     v_tsc->setEnabled(false);
-    m_tsc->setEnabled(false);
+    m_tsc->setVisible(false);  // TODO: temporarily disable M-TSC until the reimplementation is in place. Remove this line to re-enable the toggle.
     reverse_acc->setEnabled(false);
     slc_toggle->setEnabled(false);
     slcSettings->setEnabled(false);
+
+    nnff_toggle->setDescription(nnff_toggle->isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
   }
+
+  if (nnff_toggle->getDescription() != nnff_description) {
+    nnff_toggle->showDescription();
+  }
+
+  // toggle names to update when EnforceTorqueLateral is flipped
+  std::vector<std::string> torqueLateralGroup{"CustomTorqueLateral", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
+  for (const auto& torqueLateralToggle : torqueLateralGroup) {
+    if (toggles.find(torqueLateralToggle) != toggles.end()) {
+      if (nnff_toggle->isToggled()) {
+        toggles[torqueLateralToggle]->setVisible(false);
+        toggles[torqueLateralToggle]->setEnabled(false);
+      }
+    }
+  }
+
+  for (const auto& torqueLateralToggle : torqueLateralGroup) {
+    if (toggles.find(torqueLateralToggle) != toggles.end()) {
+      toggles[torqueLateralToggle]->setVisible(enforce_torque_lateral->isToggled());
+      toggles[torqueLateralToggle]->setEnabled(enforce_torque_lateral->isToggled());
+    }
+  }
+
+  if (enforce_torque_lateral->isToggled()) {
+    live_torque_relaxed->setVisible(live_torque->isToggled());
+    torqued_override->setVisible(custom_torque_lateral->isToggled());
+  } else {
+    params.putBool("LiveTorque", false);
+    params.putBool("CustomTorqueLateral", false);
+  }
+
+  // toggle names to update when CustomTorqueLateral is flipped
+  std::vector<SPAbstractControl*> customTorqueGroup{friction, lat_accel_factor};
+  for (const auto& customTorqueControl : customTorqueGroup) {
+    customTorqueControl->setVisible(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
+    customTorqueControl->setEnabled(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
+  }
+
+  toggles["CustomTorqueLateral"]->setEnabled(is_offroad);
+  toggles["LiveTorque"]->setEnabled(is_offroad);
+  toggles["LiveTorqueRelaxed"]->setEnabled(is_offroad);
+
+  toggles["CustomOffsets"]->setDescription((model_use_lateral_planner ? "" : custom_offsets_incompatible_desc + "<br><br>") + custom_offsets_description);
+  dlp_settings->setDescription((model_use_lateral_planner ? "" : dlp_incompatible_desc + "<br><br>") + dlp_description);
 }
 
 TorqueFriction::TorqueFriction() : SPOptionControl (

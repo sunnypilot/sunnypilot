@@ -2,7 +2,6 @@
 import datetime
 import os
 import signal
-import subprocess
 import sys
 import traceback
 from typing import List, Tuple, Union
@@ -10,35 +9,29 @@ from typing import List, Tuple, Union
 from cereal import custom
 import cereal.messaging as messaging
 import openpilot.selfdrive.sentry as sentry
-from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
-from openpilot.selfdrive.boardd.set_time import set_time
 from openpilot.system.hardware import HARDWARE, PC
-from openpilot.selfdrive.manager.helpers import unblock_stdout, write_onroad_params
+from openpilot.selfdrive.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
+from openpilot.selfdrive.manager.mapd_installer import VERSION
 from openpilot.selfdrive.manager.process import ensure_running
 from openpilot.selfdrive.manager.process_config import managed_processes
 from openpilot.selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
-from openpilot.system.swaglog import cloudlog, add_file_handler
+from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
                            get_normalized_origin, terms_version, training_version, \
-                           is_tested_branch, is_release_branch
-
-
-sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
+                           is_tested_branch, is_release_branch, is_release_sp_branch
 
 
 def manager_init() -> None:
-  # update system time from panda
-  set_time(cloudlog)
-
-  # save boot log
-  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "system/loggerd"))
+  save_bootlog()
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
   params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
   params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
+  if is_release_branch():
+    params.clear_all(ParamKeyType.DEVELOPMENT_ONLY)
 
   default_params: List[Tuple[str, Union[str, bytes]]] = [
     ("CompletedTrainingVersion", "0"),
@@ -68,17 +61,17 @@ def manager_init() -> None:
     ("DevUIInfo", "0"),
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
+    ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
-    ("GpxDeleteAfterUpload", "1"),
-    ("GpxDeleteIfUploaded", "1"),
     ("HandsOnWheelMonitoring", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
     ("MaxTimeOffroad", "9"),
+    ("NNFF", "0"),
     ("OnroadScreenOff", "-2"),
     ("OnroadScreenOffBrightness", "50"),
     ("OnroadScreenOffEvent", "1"),
@@ -90,6 +83,9 @@ def manager_init() -> None:
     ("SpeedLimitEngageType", "0"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
+    ("SpeedLimitWarningType", "0"),
+    ("SpeedLimitWarningValueOffset", "0"),
+    ("SpeedLimitWarningOffsetType", "0"),
     ("StandStillTimer", "0"),
     ("StockLongToyota", "0"),
     ("TorqueDeadzoneDeg", "0"),
@@ -100,6 +96,10 @@ def manager_init() -> None:
     ("TurnVisionControl", "0"),
     ("VisionCurveLaneless", "0"),
     ("VwAccType", "0"),
+    ("OsmDbUpdatesCheck", "0"),
+    ("OsmDownloadedDate", "0"),
+    ("OSMDownloadProgress", "{}"),
+    ("MapdVersion", f"{VERSION}"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -115,13 +115,6 @@ def manager_init() -> None:
   # parameters set by Environment Variables
   if os.getenv("HANDSMONITORING") is not None:
     params.put_bool("HandsOnWheelMonitoring", bool(int(os.getenv("HANDSMONITORING", "0"))))
-
-  # is this dashcam?
-  if os.getenv("PASSIVE") is not None:
-    params.put_bool("Passive", bool(int(os.getenv("PASSIVE", "0"))))
-
-  if params.get("Passive") is None:
-    raise Exception("Passive must be set to continue")
 
   # Create folders needed for msgq
   try:
@@ -140,6 +133,7 @@ def manager_init() -> None:
   params.put("GitRemote", get_origin(default=""))
   params.put_bool("IsTestedBranch", is_tested_branch())
   params.put_bool("IsReleaseBranch", is_release_branch())
+  params.put_bool("IsReleaseSPBranch", is_release_sp_branch())
 
   # set dongle id
   reg_res = register(show_spinner=True)
@@ -148,6 +142,12 @@ def manager_init() -> None:
   else:
     serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
+  if params.get("HardwareSerial") is None:
+    try:
+      serial = HARDWARE.get_serial()
+      params.put("HardwareSerial", serial)
+    except Exception:
+      cloudlog.exception("Error getting serial for device")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
 
   if not is_dirty():
@@ -166,8 +166,7 @@ def manager_init() -> None:
   if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
     os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
 
-
-def manager_prepare() -> None:
+  # preimport all processes
   for p in managed_processes.values():
     p.prepare()
 
@@ -232,7 +231,7 @@ def manager_thread() -> None:
     cloudlog.debug(running)
 
     # send managerState
-    msg = messaging.new_message('managerState')
+    msg = messaging.new_message('managerState', valid=True)
     msg.managerState.processes = [p.get_process_state_msg() for p in managed_processes.values()]
     pm.send('managerState', msg)
 
@@ -249,17 +248,8 @@ def manager_thread() -> None:
 
 
 def main() -> None:
-  prepare_only = os.getenv("PREPAREONLY") is not None
-
   manager_init()
-
-  # Start UI early so prepare can happen in the background
-  #if not prepare_only:
-  #  managed_processes['ui'].start()
-
-  manager_prepare()
-
-  if prepare_only:
+  if os.getenv("PREPAREONLY") is not None:
     return
 
   # SystemExit on sigterm
@@ -290,6 +280,8 @@ if __name__ == "__main__":
 
   try:
     main()
+  except KeyboardInterrupt:
+    print("got CTRL-C, exiting")
   except Exception:
     add_file_handler(cloudlog)
     cloudlog.exception("Manager failed to start")

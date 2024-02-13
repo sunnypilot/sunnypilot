@@ -46,6 +46,12 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "MapboxFullScreen",
+      tr("Navigation: Display in Full Screen"),
+      QString(tr("Enable this will display the built-in navigation in full screen.<br>To switch back to driving view, <font color='yellow'>tap on the border edge</font>.")),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "Map3DBuildings",
       tr("Map: Display 3D Buildings"),
       tr("Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation."),
@@ -100,5 +106,9 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
 
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  });
+
+  QObject::connect(toggles["MapboxFullScreen"], &ToggleControl::toggleFlipped, [=](bool state) {
+    toggles["MapboxFullScreen"]->showDescription();
   });
 }
