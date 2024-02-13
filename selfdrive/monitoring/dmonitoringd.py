@@ -3,8 +3,7 @@ import gc
 
 import cereal.messaging as messaging
 from cereal import car
-from cereal import log
-from openpilot.common.params import Params, put_bool_nonblocking
+from openpilot.common.params import Params
 from openpilot.common.realtime import set_realtime_priority
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.selfdrive.monitoring.driver_monitor import DriverStatus
@@ -15,26 +14,21 @@ def dmonitoringd_thread():
   gc.disable()
   set_realtime_priority(2)
 
+  params = Params()
   pm = messaging.PubMaster(['driverMonitoringState', 'driverMonitoringStateSP'])
   sm = messaging.SubMaster(['driverStateV2', 'liveCalibration', 'carState', 'controlsState', 'modelV2'], poll=['driverStateV2'])
 
-  driver_status = DriverStatus(rhd_saved=Params().get_bool("IsRhdDetected"))
+  driver_status = DriverStatus(rhd_saved=params.get_bool("IsRhdDetected"))
   hands_on_wheel_status = HandsOnWheelStatus()
-
-  sm['liveCalibration'].calStatus = log.LiveCalibrationData.Status.invalid
-  sm['liveCalibration'].rpyCalib = [0, 0, 0]
-  sm['carState'].buttonEvents = []
-  sm['carState'].standstill = True
 
   v_cruise_last = 0
   driver_engaged = False
   steering_wheel_engaged = False
-  hands_on_wheel_monitoring_enabled = Params().get_bool("HandsOnWheelMonitoring")
+  hands_on_wheel_monitoring_enabled = params.get_bool("HandsOnWheelMonitoring")
 
   # 10Hz <- dmonitoringmodeld
   while True:
     sm.update()
-
     if not sm.updated['driverStateV2']:
       continue
 
@@ -55,7 +49,9 @@ def dmonitoringd_thread():
 
     # Get data from dmonitoringmodeld
     events = Events()
-    driver_status.update_states(sm['driverStateV2'], sm['liveCalibration'].rpyCalib, sm['carState'].vEgo, sm['controlsState'].enabled)
+
+    if sm.all_checks():
+      driver_status.update_states(sm['driverStateV2'], sm['liveCalibration'].rpyCalib, sm['carState'].vEgo, sm['controlsState'].enabled)
 
     # Block engaging after max number of distrations
     if driver_status.terminal_alert_cnt >= driver_status.settings._MAX_TERMINAL_ALERTS or \
@@ -69,7 +65,7 @@ def dmonitoringd_thread():
       hands_on_wheel_status.update(events, steering_wheel_engaged, sm['controlsState'].enabled, sm['carState'].vEgo)
 
     # build driverMonitoringState packet
-    dat = messaging.new_message('driverMonitoringState')
+    dat = messaging.new_message('driverMonitoringState', valid=sm.all_checks())
     dat.driverMonitoringState = {
       "events": events.to_msg(),
       "faceDetected": driver_status.face_detected,
@@ -100,7 +96,7 @@ def dmonitoringd_thread():
     if (sm['driverStateV2'].frameId % 6000 == 0 and
      driver_status.wheelpos_learner.filtered_stat.n > driver_status.settings._WHEELPOS_FILTER_MIN_COUNT and
      driver_status.wheel_on_right == (driver_status.wheelpos_learner.filtered_stat.M > driver_status.settings._WHEELPOS_THRESHOLD)):
-      put_bool_nonblocking("IsRhdDetected", driver_status.wheel_on_right)
+      params.put_bool_nonblocking("IsRhdDetected", driver_status.wheel_on_right)
 
 def main():
   dmonitoringd_thread()

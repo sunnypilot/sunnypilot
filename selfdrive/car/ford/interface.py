@@ -26,6 +26,10 @@ class CarInterface(CarInterfaceBase):
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
 
+    ret.longitudinalTuning.kpBP = [0.]
+    ret.longitudinalTuning.kpV = [0.5]
+    ret.longitudinalTuning.kiV = [0.]
+
     CAN = CanBus(fingerprint=fingerprint)
     cfgs = [get_safety_config(car.CarParams.SafetyModel.ford)]
     if CAN.main >= 4:
@@ -170,7 +174,7 @@ class CarInterface(CarInterfaceBase):
 
     if not self.CS.vehicle_sensors_valid:
       events.add(car.CarEvent.EventName.vehicleSensorsInvalid)
-    if self.CS.hybrid_platform and self.CP.carFingerprint not in CANFD_CAR:
+    if self.CS.unsupported_platform:
       events.add(car.CarEvent.EventName.startupNoControl)
 
     ret.events = events.to_msg()

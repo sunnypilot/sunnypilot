@@ -5,10 +5,11 @@ from typing import List, Optional
 from functools import lru_cache
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 
-RELEASE_BRANCHES = ['release3-staging', 'dashcam3-staging', 'release3', 'dashcam3', 'nightly']
-TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'staging-c3', 'release-c3']
+RELEASE_BRANCHES = ['release3-staging', 'release3', 'nightly']
+RELEASE_SP_BRANCHES = ['release-c3']
+TESTED_BRANCHES = RELEASE_BRANCHES + RELEASE_SP_BRANCHES + ['devel', 'devel-staging', 'staging-c3']
 
 training_version: bytes = b"0.2.0"
 terms_version: bytes = b"2"
@@ -100,6 +101,10 @@ def is_tested_branch() -> bool:
 @cache
 def is_release_branch() -> bool:
   return get_short_branch() in RELEASE_BRANCHES
+
+@cache
+def is_release_sp_branch() -> bool:
+  return get_short_branch() in RELEASE_SP_BRANCHES
 
 @cache
 def is_dirty() -> bool:

@@ -2,7 +2,7 @@ variables:
   BUILD_DIR: "/data/openpilot"
   OUTPUT_DIR: "${CI_PROJECT_DIR}/output"
   CI_DIR: "${CI_PROJECT_DIR}/release/ci"
-  VERSION: "unknown"
+  VERSION: 'echo $(date "+%Y.%m.%d")'
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
   DEV_C3_SOURCE_BRANCH: "master-dev-c3"
@@ -22,7 +22,7 @@ default:
     - x86
 
 .default_before_script: &default_before_script
-  - 'export VERSION=$(date "+%Y.%m.%d")${EXTRA_VERSION_IDENTIFIER}'
+  - 'export VERSION=$(eval $VERSION)${EXTRA_VERSION_IDENTIFIER}'
   - 'mkdir -p "${BUILD_DIR}/"'
   - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
   - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
@@ -51,11 +51,15 @@ workflow: # If running on any branch other than main, use the `aws-datacontracts
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
       variables:
         NEW_BRANCH: "staging-c3"
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
+        EXTRA_VERSION_IDENTIFIER: "-staging"
       when: always
     # if tag
     - if: $CI_COMMIT_TAG
       variables:
         NEW_BRANCH: "release-c3"
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
+        EXTRA_VERSION_IDENTIFIER: "-release"
     - when: always
 
 
@@ -140,7 +144,7 @@ build:
     - echo "${GIT_ORIGIN}"
     - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
     - git config --global --add safe.directory ${OUTPUT_DIR}
-    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}"
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "${EXTRA_VERSION_IDENTIFIER}"
 
 publish to private gitlab prebuilt:
   extends: ".publish_base"
