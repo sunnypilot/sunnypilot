@@ -1,3 +1,34 @@
+sunnypilot - 0.9.6.0 (2024-xx-xx)
+========================
+* UPDATED: Synced with commaai's master commit c9bd4e4 (February 2, 2024)
+* NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
+* UPDATED: Driving Model Selector v3
+  * NEW❗: Driving Model additions
+    * Certified Herbalist (February 5, 2024) - CH
+    * Los Angeles v2 (January 24, 2024) - LAv2
+    * Los Angeles (January 22, 2024) - LAv1
+  * NEW❗: Model Caching thanks to DevTekVE!
+    * Model caching allows the selection of previously downloaded Driving Model
+    * Users can now access cached versions of selected models, eliminating redundant downloads for previously fetched models
+  * Legacy Driving Models support
+    * New Delhi (December 21, 2023) - ND
+    * Blue Diamond v2 (December 11, 2023) - BDv2
+    * Blue Diamond (November 18, 2023) - BDv1
+    * Farmville (November 7, 2023) - FV
+    * Night Strike (October 3, 2023) - NS
+  * Certain features are deprecated with Legacy Driving Models
+    * Dynamic Lane Profile
+    * Custom Offsets
+* UPDATED: Dynamic Lane Profile (DLP)
+  * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
+  * Deprecate support for newer Driving Models (e.g., CH, LAv2, LAv1)
+* UPDATED: Custom Offsets
+  * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
+  * Deprecate support for newer Driving Models (e.g., CH, LAv2, LAv1)
+* FIXED: New comma 3X support
+* FIXED: New comma eSIM support
+* Bug fixes and performance improvements
+
 sunnypilot - 0.9.5.3 (2023-12-24)
 ========================
 * UPDATED: Dynamic Experimental Control (DEC)
