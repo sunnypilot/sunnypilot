@@ -17,7 +17,7 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
     * Blue Diamond (November 18, 2023) - BDv1
     * Farmville (November 7, 2023) - FV
     * Night Strike (October 3, 2023) - NS
-  * Certain features are deprecated with Legacy Driving Models
+  * Certain features are deprecated with newer Driving Models
     * Dynamic Lane Profile
     * Custom Offsets
 * UPDATED: Dynamic Lane Profile (DLP)
