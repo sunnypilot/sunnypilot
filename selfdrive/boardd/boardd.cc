@@ -1,11 +1,5 @@
 #include "selfdrive/boardd/boardd.h"
 
-#include <sched.h>
-#include <sys/cdefs.h>
-#include <sys/resource.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -13,10 +7,6 @@
 #include <cassert>
 #include <cerrno>
 #include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 #include <future>
 #include <memory>
 #include <thread>
@@ -361,7 +351,6 @@ std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> 
     ps.setIgnitionLine(health.ignition_line_pkt);
     ps.setIgnitionCan(health.ignition_can_pkt);
     ps.setControlsAllowed(health.controls_allowed_pkt);
-    ps.setGasInterceptorDetected(health.gas_interceptor_detected_pkt);
     ps.setTxBufferOverflow(health.tx_buffer_overflow_pkt);
     ps.setRxBufferOverflow(health.rx_buffer_overflow_pkt);
     ps.setGmlanSendErrs(health.gmlan_send_errs_pkt);
@@ -457,7 +446,7 @@ void panda_state_thread(std::vector<Panda *> pandas, bool spoofing_started) {
   util::set_thread_name("boardd_panda_state");
 
   Params params;
-  SubMaster sm({"controlsState", "carState"});
+  SubMaster sm({"controlsState"});
   PubMaster pm({"pandaStates", "peripheralState"});
 
   Panda *peripheral_panda = pandas[0];
@@ -472,12 +461,15 @@ void panda_state_thread(std::vector<Panda *> pandas, bool spoofing_started) {
 
   LOGD("start panda state thread");
 
-  // run at 2hz
-  RateKeeper rk("panda_state_thread", 2);
+  // run at 10hz
+  RateKeeper rk("panda_state_thread", 10);
 
   while (!do_exit && check_all_connected(pandas)) {
-    // send out peripheralState
-    send_peripheral_state(&pm, peripheral_panda);
+    // send out peripheralState at 2Hz
+    if (sm.frame % 5 == 0) {
+      send_peripheral_state(&pm, peripheral_panda);
+    }
+
     auto ignition_opt = send_panda_states(&pm, pandas, spoofing_started);
 
     if (!ignition_opt) {
@@ -530,10 +522,9 @@ void panda_state_thread(std::vector<Panda *> pandas, bool spoofing_started) {
 
     sm.update(0);
     const bool engaged = sm.allAliveAndValid({"controlsState"}) && sm["controlsState"].getControlsState().getEnabled();
-    const bool parked = sm.allAliveAndValid({"carState"}) && (int(sm["carState"].getCarState().getGearShifter()) == 1);
 
     for (const auto &panda : pandas) {
-      panda->send_heartbeat(engaged && !parked);
+      panda->send_heartbeat(engaged);
     }
 
     rk.keepTime();

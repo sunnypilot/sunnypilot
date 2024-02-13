@@ -61,11 +61,10 @@ to go back to the default values.
 
 1) Create a free mapbox account. Account will ask for a credit card for verification. You will not be charged for the free tier.
 2) On the Dashboard, you will see a section called Access Tokens. Click `Create a Token`. Name it whatever you like. Set the scopes to allow everything for both Public and Secret. Copy both of these keys. **YOU WON'T BE ABLE TO ACCESS THE SECRET KEY AFTER THIS WINDOW.**
-3) On your C3, go to `SP - Visuals` and toggle `Enable Mapbox Navigation*`. Accept the reboot.
-4) Once rebooted, connect your C3 to a network with internet access and find the C3’s IP address.
-5) In a browser, navigate to that IP with **port 8082** (i.e 192.168.1.69:8082). You should be greeted with the Comma logo and a public key input field.
-6) Paste your Public token (pk.xx), click enter, paste your Secret key (sk.xx), click enter. You can now search for places. This page will be available at your devices’s IP address/port 8082 to search for destinations.
-7) To set Home and Work addresses, search for a place, select Home/Work from the dropdown and click Navigate. For non-Home/Work destinations, select Recent Places.<br>*At this time, it is not possible to search directly on the C3.*
+3) Once rebooted, connect your C3 to a network with internet access and find the C3’s IP address.
+4) In a browser, navigate to that IP with **port 8082** (i.e 192.168.1.69:8082). You should be greeted with the Comma logo and a public key input field.
+5) Paste your Public token (pk.xx), click enter, paste your Secret key (sk.xx), click enter. You can now search for places. This page will be available at your devices’s IP address/port 8082 to search for destinations.
+6) To set Home and Work addresses, search for a place, select Home/Work from the dropdown and click Navigate. For non-Home/Work destinations, select Recent Places.<br>*At this time, it is not possible to search directly on the C3.*
 
 **TIPS:**
 - If your C3 is showing a black screen that says “Map Loading”, performing a reboot via the UI should fix it.

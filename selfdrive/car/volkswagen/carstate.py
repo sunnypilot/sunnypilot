@@ -4,7 +4,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.volkswagen.values import DBC, CANBUS, PQ_CARS, NetworkLocation, TransmissionType, GearShifter, \
-                                            CarControllerParams, BUTTON_STATES
+                                            CarControllerParams, VolkswagenFlags, BUTTON_STATES, VolkswagenFlagsSP
 
 
 class CarState(CarStateBase):
@@ -14,6 +14,7 @@ class CarState(CarStateBase):
     self.button_states = {button.event_type: False for button in self.CCP.BUTTONS}
     self.esp_hold_confirmation = False
     self.upscale_lead_car_signal = False
+    self.eps_stock_values = False
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
 
@@ -65,6 +66,11 @@ class CarState(CarStateBase):
     ret.steerFaultPermanent = hca_status in ("DISABLED", "FAULT")
     ret.steerFaultTemporary = hca_status in ("INITIALIZING", "REJECTED")
 
+    # VW Emergency Assist status tracking and mitigation
+    self.eps_stock_values = pt_cp.vl["LH_EPS_03"]
+    if self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
+      ret.carFaultedNonCritical = bool(cam_cp.vl["HCA_01"]["EA_Ruckfreigabe"]) or cam_cp.vl["HCA_01"]["EA_ACC_Sollstatus"] > 0
+
     # Update gas, brakes, and gearshift.
     ret.gas = pt_cp.vl["Motor_20"]["MO_Fahrpedalrohwert_01"] / 100.0
     ret.gasPressed = ret.gas > 0
@@ -73,7 +79,7 @@ class CarState(CarStateBase):
     brake_pressure_detected = bool(pt_cp.vl["ESP_05"]["ESP_Fahrer_bremst"])
     ret.brakePressed = brake_pedal_pressed or brake_pressure_detected
     ret.parkingBrake = bool(pt_cp.vl["Kombi_01"]["KBI_Handbremse"])  # FIXME: need to include an EPB check as well
-    ret.brakeLights = bool(pt_cp.vl["ESP_05"]['ESP_Status_Bremsdruck'])
+    ret.brakeLightsDEPRECATED = bool(pt_cp.vl["ESP_05"]['ESP_Status_Bremsdruck'])
 
     # Update gear and/or clutch position data.
     if trans_type == TransmissionType.automatic:
@@ -112,11 +118,14 @@ class CarState(CarStateBase):
     # braking release bits are set.
     # Refer to VW Self Study Program 890253: Volkswagen Driver Assistance
     # Systems, chapter on Front Assist with Braking: Golf Family for all MQB
-    ret.stockFcw = bool(ext_cp.vl["ACC_10"]["AWV2_Freigabe"])
-    ret.stockAeb = bool(ext_cp.vl["ACC_10"]["ANB_Teilbremsung_Freigabe"]) or bool(ext_cp.vl["ACC_10"]["ANB_Zielbremsung_Freigabe"])
+    if not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
+      ret.stockFcw = bool(ext_cp.vl["ACC_10"]["AWV2_Freigabe"])
+      ret.stockAeb = bool(ext_cp.vl["ACC_10"]["ANB_Teilbremsung_Freigabe"]) or bool(ext_cp.vl["ACC_10"]["ANB_Zielbremsung_Freigabe"])
 
     # Update ACC radar status.
-    self.acc_type = ext_cp.vl["ACC_06"]["ACC_Typ"]
+    if not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR or self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY:
+      _acc_type = 0 if self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY else ext_cp.vl["ACC_06"]["ACC_Typ"]
+      self.acc_type = _acc_type
     if pt_cp.vl["TSK_06"]["TSK_Status"] == 2:
       # ACC okay and enabled, but not currently engaged
       ret.cruiseState.available = True
@@ -135,7 +144,7 @@ class CarState(CarStateBase):
 
     # Update ACC setpoint. When the setpoint is zero or there's an error, the
     # radar sends a set-speed of ~90.69 m/s / 203mph.
-    if self.CP.pcmCruise:
+    if self.CP.pcmCruise and not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
       ret.cruiseState.speed = ext_cp.vl["ACC_02"]["ACC_Wunschgeschw_02"] * CV.KPH_TO_MS
       if ret.cruiseState.speed > 90:
         ret.cruiseState.speed = 0
@@ -201,7 +210,7 @@ class CarState(CarStateBase):
     ret.brake = pt_cp.vl["Bremse_5"]["Bremsdruck"] / 250.0  # FIXME: this is pressure in Bar, not sure what OP expects
     ret.brakePressed = bool(pt_cp.vl["Motor_2"]["Bremslichtschalter"])
     ret.parkingBrake = bool(pt_cp.vl["Kombi_1"]["Bremsinfo"])
-    ret.brakeLights = bool(pt_cp.vl["Motor_2"]['Bremstestschalter'])
+    ret.brakeLightsDEPRECATED = bool(pt_cp.vl["Motor_2"]['Bremstestschalter'])
 
     # Update gear and/or clutch position data.
     if trans_type == TransmissionType.automatic:
@@ -310,7 +319,10 @@ class CarState(CarStateBase):
 
     if CP.networkLocation == NetworkLocation.fwdCamera:
       # Radars are here on CANBUS.pt
-      messages += MqbExtraSignals.fwd_radar_messages
+      if not CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
+        messages += MqbExtraSignals.fwd_radar_messages
+        if CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY:
+          messages.remove(("ACC_06", 50))
       if CP.enableBsm:
         messages += MqbExtraSignals.bsm_radar_messages
 
@@ -323,6 +335,11 @@ class CarState(CarStateBase):
 
     messages = []
 
+    if CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
+      messages += [
+        ("HCA_01", 1),  # From R242 Driver assistance camera, 50Hz if steering/1Hz if not
+      ]
+
     if CP.networkLocation == NetworkLocation.fwdCamera:
       messages += [
         # sig_address, frequency
@@ -330,7 +347,10 @@ class CarState(CarStateBase):
       ]
     else:
       # Radars are here on CANBUS.cam
-      messages += MqbExtraSignals.fwd_radar_messages
+      if not CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
+        messages += MqbExtraSignals.fwd_radar_messages
+        if CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY:
+          messages.remove(("ACC_06", 50))
       if CP.enableBsm:
         messages += MqbExtraSignals.bsm_radar_messages
 

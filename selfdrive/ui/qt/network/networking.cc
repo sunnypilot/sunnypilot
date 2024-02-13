@@ -48,6 +48,7 @@ Networking::Networking(QWidget* parent, bool show_advanced) : QFrame(parent) {
 
   an = new AdvancedNetworking(this, wifi);
   connect(an, &AdvancedNetworking::backPress, [=]() { main_layout->setCurrentWidget(wifiScreen); });
+  connect(an, &AdvancedNetworking::requestWifiScreen, [=]() { main_layout->setCurrentWidget(wifiScreen); });
   main_layout->addWidget(an);
 
   QPalette pal = palette();
@@ -105,6 +106,7 @@ void Networking::showEvent(QShowEvent *event) {
 }
 
 void Networking::hideEvent(QHideEvent *event) {
+  main_layout->setCurrentWidget(wifiScreen);
   wifi->stop();
 }
 
@@ -129,6 +131,18 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   tetheringToggle = new ToggleControl(tr("Enable Tethering"), "", "", wifi->isTetheringEnabled() || set_hotspot_on_boot);
   list->addItem(tetheringToggle);
   QObject::connect(tetheringToggle, &ToggleControl::toggleFlipped, this, &AdvancedNetworking::toggleTethering);
+
+  hotspotOnBootToggle = new ToggleControl(
+    tr("Retain hotspot/tethering state"),
+    tr("Enabling this toggle will retain the hotspot/tethering toggle state across reboots."),
+    "",
+    params.getBool("HotspotOnBoot")
+  );
+  hotspotOnBootToggle->setEnabled(wifi->isTetheringEnabled() || set_hotspot_on_boot);
+  QObject::connect(hotspotOnBootToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    params.putBool("HotspotOnBoot", state);
+  });
+  list->addItem(hotspotOnBootToggle);
 
   // Change tethering password
   ButtonControl *editPasswordButton = new ButtonControl(tr("Tethering Password"), tr("EDIT"));
@@ -181,6 +195,25 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   });
   list->addItem(meteredToggle);
 
+  // Hidden Network
+  hiddenNetworkButton = new ButtonControl(tr("Hidden Network"), tr("CONNECT"));
+  connect(hiddenNetworkButton, &ButtonControl::clicked, [=]() {
+    QString ssid = InputDialog::getText(tr("Enter SSID"), this, "", false, 1);
+    if (!ssid.isEmpty()) {
+      QString pass = InputDialog::getText(tr("Enter password"), this, tr("for \"%1\"").arg(ssid), true, -1);
+      Network hidden_network;
+      hidden_network.ssid = ssid.toUtf8();
+      if (!pass.isEmpty()) {
+        hidden_network.security_type = SecurityType::WPA;
+        wifi->connect(hidden_network, pass);
+      } else {
+        wifi->connect(hidden_network);
+      }
+      emit requestWifiScreen();
+    }
+  });
+  list->addItem(hiddenNetworkButton);
+
   // Set initial config
   wifi->updateGsmSettings(roamingEnabled, QString::fromStdString(params.get("GsmApn")), metered);
 
@@ -205,6 +238,11 @@ void AdvancedNetworking::toggleTethering(bool enabled) {
   params.putBool("HotspotOnBootConfirmed", enabled);
   wifi->setTetheringEnabled(enabled);
   tetheringToggle->setEnabled(false);
+
+  hotspotOnBootToggle->setEnabled(enabled);
+  if (!enabled) {
+    params.remove("HotspotOnBoot");
+  }
 }
 
 // WifiUI functions

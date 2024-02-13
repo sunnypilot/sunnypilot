@@ -3,11 +3,11 @@ import cereal.messaging as messaging
 from opendbc.can.packer import CANPacker
 from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.params import Params, put_bool_nonblocking
+from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits
 from openpilot.selfdrive.car.volkswagen import mqbcan, pqcan
-from openpilot.selfdrive.car.volkswagen.values import CANBUS, PQ_CARS, CarControllerParams
+from openpilot.selfdrive.car.volkswagen.values import CANBUS, PQ_CARS, CarControllerParams, VolkswagenFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import VOLKSWAGEN_V_CRUISE_MIN
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -78,7 +78,7 @@ class CarController:
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
       if self.frame % 200 == 0:
-        self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")
+        self.speed_limit_control_enabled = self.param_s.get_bool("EnableSlc")
         self.is_metric = self.param_s.get_bool("IsMetric")
       self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")
       self.v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[self.is_metric] * (CV.KPH_TO_MPH if not self.is_metric else 1)
@@ -89,7 +89,7 @@ class CarController:
     if not self.CP.pcmCruiseSpeed:
       if not self.last_speed_limit_sign_tap_prev and self.last_speed_limit_sign_tap:
         self.sl_force_active_timer = self.frame
-        put_bool_nonblocking("LastSpeedLimitSignTap", False)
+        self.param_s.put_bool_nonblocking("LastSpeedLimitSignTap", False)
       self.last_speed_limit_sign_tap_prev = self.last_speed_limit_sign_tap
 
       sl_force_active = self.speed_limit_control_enabled and (self.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
@@ -134,13 +134,22 @@ class CarController:
       self.apply_steer_last = apply_steer
       can_sends.append(self.CCS.create_steering_control(self.packer_pt, CANBUS.pt, apply_steer, hca_enabled))
 
+      if self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
+        # Pacify VW Emergency Assist driver inactivity detection by changing its view of driver steering input torque
+        # to the greatest of actual driver input or 2x openpilot's output (1x openpilot output is not enough to
+        # consistently reset inactivity detection on straight level roads). See commaai/openpilot#23274 for background.
+        ea_simulated_torque = clip(apply_steer * 2, -self.CCP.STEER_MAX, self.CCP.STEER_MAX)
+        if abs(CS.out.steeringTorque) > abs(ea_simulated_torque):
+          ea_simulated_torque = CS.out.steeringTorque
+        can_sends.append(self.CCS.create_eps_update(self.packer_pt, CANBUS.cam, CS.eps_stock_values, ea_simulated_torque))
+
     # **** Acceleration Controls ******************************************** #
 
     if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl:
       acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.longActive)
       accel = clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if CC.longActive else 0
       stopping = actuators.longControlState == LongCtrlState.stopping
-      starting = actuators.longControlState == LongCtrlState.starting
+      starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStopping)
       can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, CANBUS.pt, CS.acc_type, CC.longActive, accel,
                                                          acc_control, stopping, starting, CS.esp_hold_confirmation))
 
@@ -170,12 +179,9 @@ class CarController:
       can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values,
                                                            cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
     if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled:
-      if gra_send_ready and not self.CP.pcmCruiseSpeed:
+      if not self.CP.pcmCruiseSpeed:
         self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
         if self.cruise_button is not None:
-          send_freq = (self.frame % 10 == 0)
-          if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
-            send_freq = (self.frame - self.last_button_frame) * DT_CTRL > 0.01
           if self.acc_type == -1:
             if self.button_count >= 2 and self.v_set_dis_prev != self.v_set_dis:
               self.acc_type = 1 if abs(self.v_set_dis - self.v_set_dis_prev) >= 10 and self.last_cruise_button in (1, 2) else \
@@ -186,10 +192,9 @@ class CarController:
             self.cruise_button = 1 if self.cruise_button == 1 else 2  # accel, decel
           elif self.acc_type == 1:
             self.cruise_button = 3 if self.cruise_button == 1 else 4  # resume, set
-          if send_freq:
-            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values,
-                                                                 buttons=self.cruise_button))
-            self.last_button_frame = self.frame
+          if self.frame % self.CCP.BTN_STEP == 0:
+            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, ext_bus, CS.gra_stock_values, frame=(self.frame // self.CCP.BTN_STEP),
+                                                                 buttons=self.cruise_button, custom_stock_long=True))
             self.send_count += 1
         else:
           self.send_count = 0

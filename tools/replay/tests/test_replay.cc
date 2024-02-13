@@ -12,6 +12,8 @@
 const std::string TEST_RLOG_URL = "https://commadataci.blob.core.windows.net/openpilotci/0c94aa1e1296d7c6/2021-05-05--19-48-37/0/rlog.bz2";
 const std::string TEST_RLOG_CHECKSUM = "5b966d4bb21a100a8c4e59195faeb741b975ccbe268211765efd1763d892bfb3";
 
+const int TEST_REPLAY_SEGMENTS = std::getenv("TEST_REPLAY_SEGMENTS") ? atoi(std::getenv("TEST_REPLAY_SEGMENTS")) : 1;
+
 bool download_to_file(const std::string &url, const std::string &local_file, int chunk_size = 5 * 1024 * 1024, int retries = 3) {
   do {
     if (httpDownload(url, local_file, chunk_size)) {
@@ -126,9 +128,6 @@ std::string download_demo_route() {
       std::string log_path = util::string_format("%s/%s--%d/", data_dir.c_str(), route_name.c_str(), i);
       util::create_directories(log_path, 0755);
       REQUIRE(download_to_file(remote_route.at(i).rlog.toStdString(), log_path + "rlog.bz2"));
-      REQUIRE(download_to_file(remote_route.at(i).road_cam.toStdString(), log_path + "fcamera.hevc"));
-      REQUIRE(download_to_file(remote_route.at(i).driver_cam.toStdString(), log_path + "dcamera.hevc"));
-      REQUIRE(download_to_file(remote_route.at(i).wide_road_cam.toStdString(), log_path + "ecamera.hevc"));
       REQUIRE(download_to_file(remote_route.at(i).qcamera.toStdString(), log_path + "qcamera.ts"));
     }
   }
@@ -137,33 +136,32 @@ std::string download_demo_route() {
 }
 
 
-TEST_CASE("Route") {
+TEST_CASE("Local route") {
   std::string data_dir = download_demo_route();
 
-  SECTION("Local route") {
-    auto flags = GENERATE(REPLAY_FLAG_DCAM | REPLAY_FLAG_ECAM, REPLAY_FLAG_QCAMERA);
-    Route route(DEMO_ROUTE, QString::fromStdString(data_dir));
-    REQUIRE(route.load());
-    REQUIRE(route.segments().size() == 2);
-    for (int i = 0; i < route.segments().size(); ++i) {
-      read_segment(i, route.at(i), flags);
-    }
-  };
-  SECTION("Remote route") {
-    auto flags = GENERATE(REPLAY_FLAG_DCAM | REPLAY_FLAG_ECAM, REPLAY_FLAG_QCAMERA);
-    Route route(DEMO_ROUTE);
-    REQUIRE(route.load());
-    REQUIRE(route.segments().size() == 13);
-    for (int i = 0; i < 2; ++i) {
-      read_segment(i, route.at(i), flags);
-    }
-  };
+  auto flags = GENERATE(0, REPLAY_FLAG_QCAMERA);
+  Route route(DEMO_ROUTE, QString::fromStdString(data_dir));
+  REQUIRE(route.load());
+  REQUIRE(route.segments().size() == 2);
+  for (int i = 0; i < TEST_REPLAY_SEGMENTS; ++i) {
+    read_segment(i, route.at(i), flags);
+  }
+}
+
+TEST_CASE("Remote route") {
+  auto flags = GENERATE(0, REPLAY_FLAG_QCAMERA);
+  Route route(DEMO_ROUTE);
+  REQUIRE(route.load());
+  REQUIRE(route.segments().size() == 13);
+  for (int i = 0; i < TEST_REPLAY_SEGMENTS; ++i) {
+    read_segment(i, route.at(i), flags);
+  }
 }
 
 // helper class for unit tests
 class TestReplay : public Replay {
  public:
-  TestReplay(const QString &route, uint32_t flags = REPLAY_FLAG_NO_FILE_CACHE | REPLAY_FLAG_NO_VIPC) : Replay(route, {}, {}, {}, nullptr, flags) {}
+  TestReplay(const QString &route, uint32_t flags = REPLAY_FLAG_NO_FILE_CACHE | REPLAY_FLAG_NO_VIPC) : Replay(route, {}, {}, nullptr, flags) {}
   void test_seek();
   void testSeekTo(int seek_to);
 };

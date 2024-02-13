@@ -678,9 +678,10 @@ void Localizer::configure_gnss_source(const LocalizerGnssSource &source) {
 }
 
 int Localizer::locationd_thread() {
+  Params params;
   LocalizerGnssSource source;
   const char* gps_location_socket;
-  if (Params().getBool("UbloxAvailable")) {
+  if (params.getBool("UbloxAvailable")) {
     source = LocalizerGnssSource::UBLOX;
     gps_location_socket = "gpsLocationExternal";
   } else {
@@ -720,7 +721,7 @@ int Localizer::locationd_thread() {
     // 100Hz publish for notcars, 20Hz for cars
     const char* trigger_msg = sm["carParams"].getCarParams().getNotCar() ? "accelerometer" : "cameraOdometry";
     if (sm.updated(trigger_msg)) {
-      bool inputsOK = sm.allAliveAndValid() && this->are_inputs_ok();
+      bool inputsOK = sm.allValid() && this->are_inputs_ok();
       bool gpsOK = this->is_gps_ok();
       bool sensorsOK = sm.allAliveAndValid({"accelerometer", "gyroscope"});
 
@@ -737,10 +738,7 @@ int Localizer::locationd_thread() {
         VectorXd posGeo = this->get_position_geodetic();
         std::string lastGPSPosJSON = util::string_format(
           "{\"latitude\": %.15f, \"longitude\": %.15f, \"altitude\": %.15f}", posGeo(0), posGeo(1), posGeo(2));
-
-        std::thread([] (const std::string gpsjson) {
-          Params().put("LastGPSPosition", gpsjson);
-        }, lastGPSPosJSON).detach();
+        params.putNonBlocking("LastGPSPosition", lastGPSPosJSON);
       }
       cnt++;
     }

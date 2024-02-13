@@ -5,7 +5,8 @@ from openpilot.common.params import Params
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fault_avoidance
 from openpilot.selfdrive.car.subaru import subarucan
-from openpilot.selfdrive.car.subaru.values import DBC, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, STEER_RATE_LIMITED, CanBus, CarControllerParams, SubaruFlags, SubaruFlagsSP
+from openpilot.selfdrive.car.subaru.values import DBC, GLOBAL_ES_ADDR, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, STEER_RATE_LIMITED, \
+                                                  CanBus, CarControllerParams, SubaruFlags, SubaruFlagsSP
 
 # FIXME: These limits aren't exact. The real limit is more than likely over a larger time period and
 # involves the total steering angle change rather than rate, but these limits work well for now
@@ -27,11 +28,10 @@ class CarController:
 
     self.param_s = Params()
 
+    self.subaru_sng = False
     if CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
       self.subaru_sng = True
       self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
-      self.throttle_cnt = -1
-      self.brake_pedal_cnt = -1
       self.prev_close_distance = 0
       self.prev_standstill = False
       self.standstill_start = 0
@@ -120,12 +120,12 @@ class CarController:
         can_sends.append(subarucan.create_preglobal_es_distance(self.packer, cruise_button, CS.es_distance_msg))
 
       if self.subaru_sng:
-        can_sends.append(subarucan.create_preglobal_throttle(self.packer, CS.throttle_msg, throttle_cmd))
+        can_sends.append(subarucan.create_preglobal_throttle(self.packer, CS.throttle_msg["COUNTER"] + 1, CS.throttle_msg, throttle_cmd))
 
     else:
       if self.frame % 10 == 0:
-        can_sends.append(subarucan.create_es_dashstatus(self.packer, self.frame // 10, CS.es_dashstatus_msg, CC.enabled, self.CP.openpilotLongitudinalControl,
-                                                        CC.longActive, hud_control.leadVisible))
+        can_sends.append(subarucan.create_es_dashstatus(self.packer, self.frame // 10, CS.es_dashstatus_msg, CC.enabled,
+                                                        self.CP.openpilotLongitudinalControl, CC.longActive, hud_control.leadVisible))
 
         can_sends.append(subarucan.create_es_lkas_state(self.packer, self.frame // 10, CS.es_lkas_state_msg, CC.latActive, CS.madsEnabled, hud_control.visualAlert,
                                                         hud_control.leftLaneVisible, hud_control.rightLaneVisible,
@@ -135,17 +135,18 @@ class CarController:
           can_sends.append(subarucan.create_es_infotainment(self.packer, self.frame // 10, CS.es_infotainment_msg, hud_control.visualAlert))
 
       if self.subaru_sng:
-        can_sends.append(subarucan.create_throttle(self.packer, CS.throttle_msg, throttle_cmd))
+        can_sends.append(subarucan.create_throttle(self.packer, CS.throttle_msg["COUNTER"] + 1, CS.throttle_msg, throttle_cmd))
 
         if self.frame % 2 == 0:
-          can_sends.append(subarucan.create_brake_pedal(self.packer, CS.brake_pedal_msg, speed_cmd, pcm_cancel_cmd))
+          can_sends.append(subarucan.create_brake_pedal(self.packer, self.frame // 2, CS.brake_pedal_msg, speed_cmd, pcm_cancel_cmd))
 
       if self.CP.openpilotLongitudinalControl:
         if self.frame % 5 == 0:
           can_sends.append(subarucan.create_es_status(self.packer, self.frame // 5, CS.es_status_msg,
                                                       self.CP.openpilotLongitudinalControl, CC.longActive, cruise_rpm))
 
-          can_sends.append(subarucan.create_es_brake(self.packer, self.frame // 5, CS.es_brake_msg, CC.enabled, cruise_brake))
+          can_sends.append(subarucan.create_es_brake(self.packer, self.frame // 5, CS.es_brake_msg,
+                                                     self.CP.openpilotLongitudinalControl, CC.longActive, cruise_brake))
 
           can_sends.append(subarucan.create_es_distance(self.packer, self.frame // 5, CS.es_distance_msg, 0, pcm_cancel_cmd,
                                                         self.CP.openpilotLongitudinalControl, cruise_brake > 0, cruise_throttle))
@@ -154,6 +155,21 @@ class CarController:
           if self.CP.carFingerprint not in HYBRID_CARS:
             bus = CanBus.alt if self.CP.carFingerprint in GLOBAL_GEN2 else CanBus.main
             can_sends.append(subarucan.create_es_distance(self.packer, CS.es_distance_msg["COUNTER"] + 1, CS.es_distance_msg, bus, pcm_cancel_cmd))
+
+      if self.CP.flags & SubaruFlags.DISABLE_EYESIGHT:
+        # Tester present (keeps eyesight disabled)
+        if self.frame % 100 == 0:
+          can_sends.append([GLOBAL_ES_ADDR, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", CanBus.camera])
+
+        # Create all of the other eyesight messages to keep the rest of the car happy when eyesight is disabled
+        if self.frame % 5 == 0:
+          can_sends.append(subarucan.create_es_highbeamassist(self.packer))
+
+        if self.frame % 10 == 0:
+          can_sends.append(subarucan.create_es_static_1(self.packer))
+
+        if self.frame % 2 == 0:
+          can_sends.append(subarucan.create_es_static_2(self.packer))
 
     new_actuators = actuators.copy()
     new_actuators.steer = self.apply_steer_last / self.p.STEER_MAX

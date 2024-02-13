@@ -10,19 +10,21 @@ from typing import Tuple, Dict
 from cereal import messaging
 from cereal.messaging import PubMaster, SubMaster
 from cereal.visionipc import VisionIpcClient, VisionStreamType
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_realtime_priority
-from openpilot.selfdrive.modeld.constants import IDX_N
+from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
 
 NAV_INPUT_SIZE = 256*256
 NAV_FEATURE_LEN = 256
 NAV_DESIRE_LEN = 32
-NAV_OUTPUT_SIZE = 2*2*IDX_N + NAV_DESIRE_LEN + NAV_FEATURE_LEN
+NAV_OUTPUT_SIZE = 2*2*ModelConstants.IDX_N + NAV_DESIRE_LEN + NAV_FEATURE_LEN
 MODEL_PATHS = {
   ModelRunner.SNPE: Path(__file__).parent / 'models/navmodel_q.dlc',
   ModelRunner.ONNX: Path(__file__).parent / 'models/navmodel.onnx'}
+
+CUSTOM_MODEL_PATH = "/data/media/0/models"
 
 class NavModelOutputXY(ctypes.Structure):
   _fields_ = [
@@ -31,8 +33,8 @@ class NavModelOutputXY(ctypes.Structure):
 
 class NavModelOutputPlan(ctypes.Structure):
   _fields_ = [
-    ("mean", NavModelOutputXY*IDX_N),
-    ("std", NavModelOutputXY*IDX_N)]
+    ("mean", NavModelOutputXY*ModelConstants.IDX_N),
+    ("std", NavModelOutputXY*ModelConstants.IDX_N)]
 
 class NavModelResult(ctypes.Structure):
   _fields_ = [
@@ -48,8 +50,15 @@ class ModelState:
   def __init__(self):
     assert ctypes.sizeof(NavModelResult) == NAV_OUTPUT_SIZE * ctypes.sizeof(ctypes.c_float)
     self.output = np.zeros(NAV_OUTPUT_SIZE, dtype=np.float32)
+    self.param_s = Params()
+    if self.param_s.get_bool("CustomDrivingModel"):
+      _model_name = self.param_s.get("NavModelText", encoding="utf8")
+      _model_paths = {
+        ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.dlc"}
+    else:
+      _model_paths = MODEL_PATHS
     self.inputs = {'input_img': np.zeros(NAV_INPUT_SIZE, dtype=np.uint8)}
-    self.model = ModelRunner(MODEL_PATHS, self.output, Runtime.DSP, True, None)
+    self.model = ModelRunner(_model_paths, self.output, Runtime.DSP, True, None)
     self.model.addInput("input_img", None)
 
   def run(self, buf:np.ndarray) -> Tuple[np.ndarray, float]:

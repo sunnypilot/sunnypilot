@@ -2,13 +2,13 @@ from cereal import car
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip
-from openpilot.common.params import Params, put_bool_nonblocking
+from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fault_avoidance
 from openpilot.selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
-from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, Buttons, CarControllerParams, CANFD_CAR, CAR, CAMERA_SCC_CAR
+from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, Buttons, CarControllerParams, CANFD_CAR, CAR, CAMERA_SCC_CAR, LEGACY_SAFETY_MODE_CAR
 from openpilot.selfdrive.controls.lib.drive_helpers import HYUNDAI_V_CRUISE_MIN
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -63,7 +63,13 @@ class CarController:
     self.lat_disengage_init = False
     self.lat_active_last = False
 
-    self.sm = messaging.SubMaster(['longitudinalPlanSP'])
+    sub_services = ['longitudinalPlanSP']
+    if CP.openpilotLongitudinalControl:
+      sub_services.append('radarState')
+    # TODO: Always true, prep for future conditional refactoring
+    if sub_services:
+      self.sm = messaging.SubMaster(sub_services)
+
     self.param_s = Params()
     self.is_metric = self.param_s.get_bool("IsMetric")
     self.speed_limit_control_enabled = False
@@ -93,11 +99,24 @@ class CarController:
     self.m_tsc = 0
     self.steady_speed = 0
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
+    self.lead_distance = 0
+
+  def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
+    lead_one = self.sm["radarState"].leadOne
+    lead_two = self.sm["radarState"].leadTwo
+
+    if lead_one.status and (not lead_two.status or lead_one.dRel < lead_two.dRel):
+      return lead_one.dRel
+    if lead_two.status:
+      return lead_two.dRel
+
+    return 19 if hud_control.leadVisible else 0
 
   def update(self, CC, CS, now_nanos):
-    if not self.CP.pcmCruiseSpeed:
+    if not self.CP.pcmCruiseSpeed or (self.CP.openpilotLongitudinalControl and self.frame % 5 == 0):
       self.sm.update(0)
 
+    if not self.CP.pcmCruiseSpeed:
       if self.sm.updated['longitudinalPlanSP']:
         self.v_tsc_state = self.sm['longitudinalPlanSP'].visionTurnControllerState
         self.slc_state = self.sm['longitudinalPlanSP'].speedLimitControlState
@@ -108,7 +127,7 @@ class CarController:
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
       if self.frame % 200 == 0:
-        self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")
+        self.speed_limit_control_enabled = self.param_s.get_bool("EnableSlc")
         self.is_metric = self.param_s.get_bool("IsMetric")
       self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")
       self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[self.is_metric] * (CV.KPH_TO_MPH if not self.is_metric else 1)
@@ -157,7 +176,7 @@ class CarController:
     if not self.CP.pcmCruiseSpeed:
       if not self.last_speed_limit_sign_tap_prev and self.last_speed_limit_sign_tap:
         self.sl_force_active_timer = self.frame
-        put_bool_nonblocking("LastSpeedLimitSignTap", False)
+        self.param_s.put_bool_nonblocking("LastSpeedLimitSignTap", False)
       self.last_speed_limit_sign_tap_prev = self.last_speed_limit_sign_tap
 
       sl_force_active = self.speed_limit_control_enabled and (self.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
@@ -221,16 +240,15 @@ class CarController:
       else:
         # button presses
         can_sends.extend(self.create_button_messages(CC, CS, use_clu11=False))
-        if CS.buttons_counter != self.last_button_frame:
-          self.last_button_frame = CS.buttons_counter
-          if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
-            if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
-              # TODO: resume for alt button cars
-              pass
-            else:
-              self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
-              if self.cruise_button is not None:
-                can_sends.append(hyundaicanfd.create_buttons(self.packer, self.CP, self.CAN, CS.buttons_counter+1, self.cruise_button))
+        if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
+          if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
+            # TODO: resume for alt button cars
+            pass
+          else:
+            self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
+            if self.cruise_button is not None:
+              if self.frame % 2 == 0:
+                can_sends.append(hyundaicanfd.create_buttons(self.packer, self.CP, self.CAN, ((self.frame // 2) + 1) % 0x10, self.cruise_button))
     else:
       can_sends.append(hyundaican.create_lkas11(self.packer, self.frame, self.car_fingerprint, apply_steer, apply_steer_req,
                                                 torque_fault, CS.lkas11, sys_warning, sys_state, CC.enabled,
@@ -243,24 +261,32 @@ class CarController:
         if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled and not self.CP.pcmCruiseSpeed:
           self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
           if self.cruise_button is not None:
-            send_freq = 1
-            if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
-              send_freq = 5
-            # send resume at a max freq of 10Hz
-            if (self.frame - self.last_button_frame) * DT_CTRL > 0.1 * send_freq:
-              # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
-              can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
-              if (self.frame - self.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
-                self.last_button_frame = self.frame
+            if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
+              send_freq = 1
+              if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
+                send_freq = 5
+              # send resume at a max freq of 10Hz
+              if (self.frame - self.last_button_frame) * DT_CTRL > 0.1 * send_freq:
+                # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
+                can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
+                if (self.frame - self.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
+                  self.last_button_frame = self.frame
+            elif self.frame % 2 == 0:
+              can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
+
+      # Parse lead distance from radarState and display the corresponding distance in the car's cluster
+      if self.CP.openpilotLongitudinalControl and self.sm.updated['radarState'] and self.frame % 5 == 0:
+        self.lead_distance = self.calculate_lead_distance(hud_control)
 
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
         if self.hkg_can_smooth_stop:
           stopping = stopping and CS.out.vEgoRaw < 0.05
+
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
         can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, jerk, int(self.frame / 2),
-                                                        hud_control.leadVisible, set_speed_in_units, stopping,
+                                                        self.lead_distance, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS.mainEnabled, CS, escc, self.CP.carFingerprint))
 
       # 20 Hz LFA MFA message
