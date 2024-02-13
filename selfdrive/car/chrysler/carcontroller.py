@@ -1,11 +1,12 @@
 import cereal.messaging as messaging
 from common.conversions import Conversions as CV
 from opendbc.can.packer import CANPacker
-from openpilot.common.params import Params, put_bool_nonblocking
+from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_meas_steer_torque_limits
 from openpilot.selfdrive.car.chrysler import chryslercan
-from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags
+from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags, ChryslerFlagsSP
+from openpilot.selfdrive.car.interfaces import FORWARD_GEARS
 from openpilot.selfdrive.controls.lib.drive_helpers import FCA_V_CRUISE_MIN
 
 BUTTONS_STATES = ["accelCruise", "decelCruise", "cancel", "resumeCruise"]
@@ -70,7 +71,7 @@ class CarController:
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
       if self.frame % 200 == 0:
-        self.speed_limit_control_enabled = self.param_s.get_bool("SpeedLimitControl")
+        self.speed_limit_control_enabled = self.param_s.get_bool("EnableSlc")
         self.is_metric = self.param_s.get_bool("IsMetric")
       self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")
       self.v_cruise_min = FCA_V_CRUISE_MIN[self.is_metric] * (CV.KPH_TO_MPH if not self.is_metric else 1)
@@ -80,7 +81,7 @@ class CarController:
     if not self.CP.pcmCruiseSpeed:
       if not self.last_speed_limit_sign_tap_prev and self.last_speed_limit_sign_tap:
         self.sl_force_active_timer = self.frame
-        put_bool_nonblocking("LastSpeedLimitSignTap", False)
+        self.param_s.put_bool_nonblocking("LastSpeedLimitSignTap", False)
       self.last_speed_limit_sign_tap_prev = self.last_speed_limit_sign_tap
 
       sl_force_active = self.speed_limit_control_enabled and (self.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
@@ -93,7 +94,7 @@ class CarController:
     lkas_active = CC.latActive and CS.madsEnabled
 
     if self.frame % 10 == 0 and self.CP.carFingerprint not in RAM_CARS:
-      can_sends.append(chryslercan.create_lkas_heartbit(self.packer, CS.madsEnabled, CS.lkas_heartbit))
+      can_sends.append(chryslercan.create_lkas_heartbit(self.packer, CS.lkas_disabled, CS.lkas_heartbit))
 
     ram_cars = self.CP.carFingerprint in RAM_CARS
 
@@ -151,6 +152,8 @@ class CarController:
           lkas_control_bit = True
         if (self.CP.minEnableSpeed >= 14.5) and (CS.out.gearShifter != 2):
           lkas_control_bit = False
+      elif self.CP.spFlags & ChryslerFlagsSP.SP_WP_S20:
+        lkas_control_bit = CC.latActive and CS.out.gearShifter in FORWARD_GEARS
       elif CS.out.vEgo > self.CP.minSteerSpeed:
         lkas_control_bit = True
       elif self.CP.flags & ChryslerFlags.HIGHER_MIN_STEERING_SPEED:

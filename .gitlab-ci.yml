@@ -1,0 +1,204 @@
+variables:
+  BUILD_DIR: "/data/openpilot"
+  OUTPUT_DIR: "${CI_PROJECT_DIR}/output"
+  CI_DIR: "${CI_PROJECT_DIR}/release/ci"
+  VERSION: 'echo $(date "+%Y.%m.%d")'
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+  DEV_C3_SOURCE_BRANCH: "master-dev-c3"
+  GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
+  GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
+  PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
+
+stages:
+  - build
+  - publish
+  - notify
+
+default:
+  retry: 2
+  tags:
+    - sunnypilot
+    - x86
+
+.default_before_script: &default_before_script
+  - 'export VERSION=$(eval $VERSION)${EXTRA_VERSION_IDENTIFIER}'
+  - 'mkdir -p "${BUILD_DIR}/"'
+  - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
+  - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
+
+
+workflow: # If running on any branch other than main, use the `aws-datacontracts-dev` account; otherwise use `aws-datacontracts`
+  rules:
+    # We are an MR, but it's a draft, we won't proceed with anything.
+    - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
+      when: never
+    # We are a merge request
+    - if: $CI_MERGE_REQUEST_IID #|| $CI_COMMIT_REF_NAME == "gitlab-pipelines" # TBD once merged
+      variables:
+        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
+        NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
+      when: always
+
+    # Below are the rules when a commit is done (code has been added to the branch)
+    # Commit to master-dev-c3
+    - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
+      variables:
+        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
+        NEW_BRANCH: "dev-c3"
+      when: always
+    #commit made to main (master)
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      variables:
+        NEW_BRANCH: "staging-c3"
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
+        EXTRA_VERSION_IDENTIFIER: "-staging"
+      when: always
+    # if tag
+    - if: $CI_COMMIT_TAG
+      variables:
+        NEW_BRANCH: "release-c3"
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
+        EXTRA_VERSION_IDENTIFIER: "-release"
+    - when: always
+
+
+build:
+  stage: build
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - "${CI_DIR}/scons_cache"
+  before_script:
+    - *default_before_script
+    - "echo Starting build stage..."
+    - "echo BUILD_DIR: ${BUILD_DIR}"
+    - "echo CI_DIR: ${CI_DIR}"
+    - "echo VERSION: ${VERSION}"
+    - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
+    - git config --global --add safe.directory ${CI_PROJECT_DIR}
+  script:
+    - export PYTHONPATH="$BUILD_DIR"
+    - "echo Calling to build [${CI_DIR}/build.sh ${CI_PROJECT_DIR} ${BUILD_DIR} ${VERSION}]"
+    - "echo Building Panda..."
+    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache ${CI_PROJECT_DIR}/panda
+    - mkdir -p ${BUILD_DIR}
+    - ls -la ${BUILD_DIR}
+    - "echo Building Rest..."
+    - cp -pR --parents $(cat release/files_common release/files_tici | sort | uniq) $BUILD_DIR/ 2> >(grep -v 'warning:' >&2)
+    - cd $BUILD_DIR
+    - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
+    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache
+
+    # Cleanup
+    - echo "Doing cleanup for prebuilt\n\n"
+    - echo "Deleting specified files..."
+    - find ${BUILD_DIR} \( -name '*.a' -o -name '*.o' -o -name '*.os' -o -name '*.pyc' -o -name 'moc_*' -o -name '*.cc' -o -name "Jenkinsfile" -o -name "supercombo.onnx" -o -name ".sconsign.dblite" \) -print -delete
+
+    - echo "Deleting Headers from selfdrive/ui path..."
+    - find ${BUILD_DIR}/selfdrive/ui -type f -name '*.h' -print -delete
+
+    - echo "Deleting the following folders and subdirectories..."
+    - find "${BUILD_DIR}" -type d \( -path "*panda/board" -o -path "*panda/certs" -o -path "*panda/crypto" -o -path "*release" -o -path "*.github" -o -path "*selfdrive/ui/replay" -o -path "*__pycache__" \) -print -exec rm -rf {} +
+
+    # Move back signed panda fw
+    - mkdir -p ${BUILD_DIR}/panda/board/obj
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/panda.bin.signed ${BUILD_DIR}/panda/board/obj/panda.bin.signed
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/panda_h7.bin.signed ${BUILD_DIR}/panda/board/obj/panda_h7.bin.signed
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/bootstub.panda.bin ${BUILD_DIR}/panda/board/obj/bootstub.panda.bin
+    - cp ${CI_PROJECT_DIR}/panda/board/obj/bootstub.panda_h7.bin ${BUILD_DIR}/panda/board/obj/bootstub.panda_h7.bin
+    - touch ${BUILD_DIR}/prebuilt
+    - mkdir -p ${OUTPUT_DIR}
+    - shopt -s dotglob && mv ${BUILD_DIR}/* ${OUTPUT_DIR}
+    - sudo chown -R comma:comma ${OUTPUT_DIR}
+  artifacts:
+    paths:
+      - ${OUTPUT_DIR}/
+  tags: [ 'sunnypilot', 'tici' ]
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      when: manual
+    - if: $NEW_BRANCH
+      when: always
+
+.publish_base: &publish_base
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  stage: publish
+  needs:
+    - job: build
+      artifacts: true
+  before_script:
+    - 'apk update && apk upgrade'
+    - 'apk add git bash openssh'
+    - 'eval $(ssh-agent -s)'
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - 'mkdir -p ~/.ssh/'
+    - 'chmod 700 ~/.ssh'
+    - export HOST=$(echo ${GIT_ORIGIN} | cut -d'@' -f2 | cut -d':' -f1)
+    - echo fetching ssh pub keys for ${HOST}
+    - 'ssh-keyscan -H ${HOST} >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+    - 'chmod 644 ~/.ssh/known_hosts'
+    - *default_before_script
+  script:
+    - echo "${GIT_ORIGIN}"
+    - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
+    - git config --global --add safe.directory ${OUTPUT_DIR}
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "${EXTRA_VERSION_IDENTIFIER}"
+
+publish to private gitlab prebuilt:
+  extends: ".publish_base"
+  variables:
+    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
+
+publish to public github prebuilt:
+  extends: ".publish_base"
+  variables:
+    GIT_ORIGIN: git@github.com:sunnyhaibin/sunnypilot.git
+    GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
+    GIT_CONFIG_USER_NAME: "Jason Wen"
+  rules:
+    - if: $NEW_BRANCH
+      when: manual
+    - when: never
+
+.notify_discord: &notify_discord
+  stage: notify
+  needs: ["build"]
+  variables:
+    DISCORD_HOOK: "${DISCORD_MANUAL_BUILD_WEBHOOK_URL}" # Default hook if not overriden by children
+  before_script:
+    - 'apk add curl jq envsubst'
+  script:
+    - echo using [${TEMPLATE}]
+    - cat release/ci/${TEMPLATE} | envsubst | tee payload.json
+    - 'curl -X POST -H "Content-Type: application/json" -d "$(cat payload.json)" ${DISCORD_HOOK} | jq .'
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
+  allow_failure: true
+
+notify pending action:
+  extends: ".notify_discord"
+  variables:
+    TEMPLATE: "discord_template_notify_dev_private.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export AVATAR_URL=$(curl -s -X GET "https://gitlab.com/api/v4/avatar?email=${GITLAB_USER_EMAIL}" | jq -r '.avatar_url')
+
+notify new dev build:
+  extends: ".notify_discord"
+  stage: notify
+  needs: ["publish to public github prebuilt"] # This notify shall only happen after a publish to github public
+  variables:
+    TEMPLATE: "discord_template_notify_dev_public.json"
+  rules:
+    - if: $NEW_BRANCH == "dev-c3"
+      variables:
+        DISCORD_HOOK: "${DISCORD_NEW_BUILD_WEBHOOK_URL}" # Overriding hook because we know we are dev-c3
+    - !reference [".notify_discord", "rules"]

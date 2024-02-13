@@ -9,10 +9,10 @@ from cereal import messaging, log, car
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper, Priority, config_realtime_process
+from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlagsSP
-from openpilot.system.swaglog import cloudlog
 
-from openpilot.common.kalman.simple_kalman import KF1D
+from openpilot.common.simple_kalman import KF1D
 
 
 # Default lead acceleration decay set to 50% at 1s
@@ -93,7 +93,7 @@ class Track:
     self.aLeadTau = aLeadTau
 
   def get_RadarState(self, CP: car.CarParams = None, lead_msg_y: float = 0.0, model_prob: float = 0.0):
-    y_rel_vision = False if CP is None else CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD
+    y_rel_vision = False if CP is None or CP.carName != "hyundai" else CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD
     return {
       "dRel": float(self.dRel),
       "yRel": float(-lead_msg_y) if y_rel_vision else float(self.yRel),
@@ -274,6 +274,7 @@ class RadarD:
 
     # publish tracks for UI debugging (keep last)
     tracks_msg = messaging.new_message('liveTracks', len(self.tracks))
+    tracks_msg.valid = self.radar_state_valid
     for index, tid in enumerate(sorted(self.tracks.keys())):
       tracks_msg.liveTracks[index] = {
         "trackId": tid,

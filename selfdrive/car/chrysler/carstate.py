@@ -24,6 +24,7 @@ class CarState(CarStateBase):
     self.lkas_enabled = False
     self.prev_lkas_enabled = False
     self.lkas_heartbit = None
+    self.lkas_disabled = False
 
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
@@ -46,7 +47,7 @@ class CarState(CarStateBase):
     # brake pedal
     ret.brake = 0
     ret.brakePressed = cp.vl["ESP_1"]['Brake_Pedal_State'] == 1  # Physical brake pedal switch
-    ret.brakeLights = bool(cp.vl["ESP_1"]["BRAKE_PRESSED_ACC"])
+    ret.brakeLightsDEPRECATED = bool(cp.vl["ESP_1"]["BRAKE_PRESSED_ACC"])
 
     # gas pedal
     ret.gas = cp.vl["ECM_5"]["Accelerator_Position"]
@@ -99,6 +100,8 @@ class CarState(CarStateBase):
     else:
       self.lkas_enabled = cp.vl["TRACTION_BUTTON"]["TOGGLE_LKAS"] == 1
       self.lkas_heartbit = cp_cam.vl["LKAS_HEARTBIT"]
+      if not self.control_initialized:
+        self.lkas_disabled = bool(cp_cam.vl["LKAS_HEARTBIT"]["LKAS_DISABLED"])
       ret.steerFaultTemporary = cp.vl["EPS_2"]["LKAS_TEMPORARY_FAULT"] == 1
       ret.steerFaultPermanent = cp.vl["EPS_2"]["LKAS_STATE"] == 4
 

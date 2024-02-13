@@ -1,17 +1,20 @@
-import yaml
+import json
 import operator
 import os
 import time
 import numpy as np
+import tomllib
 from abc import abstractmethod, ABC
-from typing import Any, Dict, Optional, Tuple, List, Callable
+from difflib import SequenceMatcher
+from enum import StrEnum
+from typing import Any, Dict, Optional, Tuple, List, Callable, NamedTuple
 
 from cereal import car
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.kalman.simple_kalman import KF1D, get_kalman_gain
+from openpilot.common.simple_kalman import KF1D, get_kalman_gain
 from openpilot.common.numpy_fast import clip
-from openpilot.common.params import Params, put_nonblocking, put_bool_nonblocking
+from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG
 from openpilot.selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
@@ -22,30 +25,49 @@ from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 ButtonType = car.CarState.ButtonEvent.Type
 GearShifter = car.CarState.GearShifter
 EventName = car.CarEvent.EventName
-TorqueFromLateralAccelCallbackType = Callable[[float, car.CarParams.LateralTorqueTuning, float, float, bool], float]
 
 MAX_CTRL_SPEED = (V_CRUISE_MAX + 4) * CV.KPH_TO_MS
 ACCEL_MAX = 2.0
 ACCEL_MIN = -3.5
 FRICTION_THRESHOLD = 0.3
 
-TORQUE_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/params.yaml')
-TORQUE_OVERRIDE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/override.yaml')
-TORQUE_SUBSTITUTE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/substitute.yaml')
+TORQUE_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/params.toml')
+TORQUE_OVERRIDE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/override.toml')
+TORQUE_SUBSTITUTE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/substitute.toml')
+TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/lat_models')
+
+# dict used to rename activation functions whose names aren't valid python identifiers
+ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
 
 GAC_DICT = {1: 1, 2: 2, 3: 3}
+FORWARD_GEARS = [GearShifter.drive, GearShifter.low, GearShifter.eco,
+                 GearShifter.sport, GearShifter.manumatic, GearShifter.brake]
+
+
+def similarity(s1: str, s2: str) -> float:
+  return SequenceMatcher(None, s1, s2).ratio()
+
+
+class LatControlInputs(NamedTuple):
+  lateral_acceleration: float
+  roll_compensation: float
+  vego: float
+  aego: float
+
+
+TorqueFromLateralAccelCallbackType = Callable[[LatControlInputs, car.CarParams.LateralTorqueTuning, float, float, bool, bool], float]
 
 
 def get_torque_params(candidate):
-  with open(TORQUE_SUBSTITUTE_PATH) as f:
-    sub = yaml.load(f, Loader=yaml.CSafeLoader)
+  with open(TORQUE_SUBSTITUTE_PATH, 'rb') as f:
+    sub = tomllib.load(f)
   if candidate in sub:
     candidate = sub[candidate]
 
-  with open(TORQUE_PARAMS_PATH) as f:
-    params = yaml.load(f, Loader=yaml.CSafeLoader)
-  with open(TORQUE_OVERRIDE_PATH) as f:
-    override = yaml.load(f, Loader=yaml.CSafeLoader)
+  with open(TORQUE_PARAMS_PATH, 'rb') as f:
+    params = tomllib.load(f)
+  with open(TORQUE_OVERRIDE_PATH, 'rb') as f:
+    override = tomllib.load(f)
 
   # Ensure no overlap
   if sum([candidate in x for x in [sub, params, override]]) > 1:
@@ -58,6 +80,111 @@ def get_torque_params(candidate):
   else:
     raise NotImplementedError(f"Did not find torque params for {candidate}")
   return {key: out[i] for i, key in enumerate(params['legend'])}
+
+
+# lateral neural network feedforward
+class FluxModel:
+  def __init__(self, params_file, zero_bias=False):
+    with open(params_file, "r") as f:
+      params = json.load(f)
+
+    self.input_size = params["input_size"]
+    self.output_size = params["output_size"]
+    self.input_mean = np.array(params["input_mean"], dtype=np.float32).T
+    self.input_std = np.array(params["input_std"], dtype=np.float32).T
+    self.layers = []
+    self.friction_override = False
+
+    for layer_params in params["layers"]:
+      W = np.array(layer_params[next(key for key in layer_params.keys() if key.endswith('_W'))], dtype=np.float32).T
+      b = np.array(layer_params[next(key for key in layer_params.keys() if key.endswith('_b'))], dtype=np.float32).T
+      if zero_bias:
+        b = np.zeros_like(b)
+      activation = layer_params["activation"]
+      for k, v in ACTIVATION_FUNCTION_NAMES.items():
+        activation = activation.replace(k, v)
+      self.layers.append((W, b, activation))
+
+    self.validate_layers()
+    self.check_for_friction_override()
+
+  # Begin activation functions.
+  # These are called by name using the keys in the model json file
+  @staticmethod
+  def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+  @staticmethod
+  def identity(x):
+    return x
+  # End activation functions
+
+  def forward(self, x):
+    for W, b, activation in self.layers:
+      x = getattr(self, activation)(x.dot(W) + b)
+    return x
+
+  def evaluate(self, input_array):
+    in_len = len(input_array)
+    if in_len != self.input_size:
+      # If the input is length 2-4, then it's a simplified evaluation.
+      # In that case, need to add on zeros to fill out the input array to match the correct length.
+      if 2 <= in_len:
+        input_array = input_array + [0] * (self.input_size - in_len)
+      else:
+        raise ValueError(f"Input array length {len(input_array)} must be length 2 or greater")
+
+    input_array = np.array(input_array, dtype=np.float32)
+
+    # Rescale the input array using the input_mean and input_std
+    input_array = (input_array - self.input_mean) / self.input_std
+
+    output_array = self.forward(input_array)
+
+    return float(output_array[0, 0])
+
+  def validate_layers(self):
+    for W, b, activation in self.layers:
+      if not hasattr(self, activation):
+        raise ValueError(f"Unknown activation: {activation}")
+
+  def check_for_friction_override(self):
+    y = self.evaluate([10.0, 0.0, 0.2])
+    self.friction_override = (y < 0.1)
+
+
+def get_nn_model_path(_car, eps_firmware) -> Tuple[Optional[str], float]:
+  def check_nn_path(_check_model):
+    _model_path = None
+    _max_similarity = -1.0
+    for f in os.listdir(TORQUE_NN_MODEL_PATH):
+      if f.endswith(".json"):
+        model = f.replace(".json", "").replace(f"{TORQUE_NN_MODEL_PATH}/", "")
+        similarity_score = similarity(model, _check_model)
+        if similarity_score > _max_similarity:
+          _max_similarity = similarity_score
+          _model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
+    return _model_path, _max_similarity
+
+  if len(eps_firmware) > 3:
+    eps_firmware = eps_firmware.replace("\\", "")
+    check_model = f"{_car} {eps_firmware}"
+  else:
+    check_model = _car
+  model_path, max_similarity = check_nn_path(check_model)
+  if _car not in model_path or 0.0 <= max_similarity < 0.9:
+    check_model = _car
+    model_path, max_similarity = check_nn_path(check_model)
+    if _car not in model_path or 0.0 <= max_similarity < 0.9:
+      model_path = None
+  return model_path, max_similarity
+
+
+def get_nn_model(_car, eps_firmware) -> Tuple[Optional[FluxModel], float]:
+  model, similarity_score = get_nn_model_path(_car, eps_firmware)
+  if model is not None:
+    model = FluxModel(model)
+  return model, similarity_score
 
 
 # generic car and radar interfaces
@@ -111,6 +238,20 @@ class CarInterfaceBase(ABC):
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
     self.lkas_toggle = self.param_s.get_bool("LkasToggle")
+    self.last_mads_init = 0.
+    self.madsEnabledInit = False
+    self.madsEnabledInitPrev = False
+
+    self.lat_torque_nn_model = None
+    eps_firmware = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
+    self.has_lateral_torque_nn = self.initialize_lat_torque_nn(CP.carFingerprint, eps_firmware)
+
+  def get_ff_nn(self, x):
+    return self.lat_torque_nn_model.evaluate(x)
+
+  def initialize_lat_torque_nn(self, _car, eps_firmware) -> bool:
+    self.lat_torque_nn_model, _ = get_nn_model(_car, eps_firmware)
+    return self.lat_torque_nn_model is not None and self.param_s.get_bool("NNFF")
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -129,10 +270,25 @@ class CarInterfaceBase(ABC):
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
 
     params = Params()
-    if params.get_bool("EnforceTorqueLateral") and ret.steerControlType != car.CarParams.SteerControlType.angle:
-      ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
-      if params.get_bool("CustomTorqueLateral"):
-        ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
+    if ret.steerControlType != car.CarParams.SteerControlType.angle:
+      if params.get_bool("EnforceTorqueLateral") or params.get_bool("NNFF"):
+        ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
+        if params.get_bool("CustomTorqueLateral"):
+          ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
+
+      if ret.lateralTuning.which() == 'torque':
+        eps_firmware = str(next((fw.fwVersion for fw in car_fw if fw.ecu == "eps"), ""))
+        model, similarity_score = get_nn_model_path(candidate, eps_firmware)
+        if model is not None:
+          ret.lateralTuning.torque.nnModelName = nn_model_name = os.path.splitext(os.path.basename(model))[0]
+          ret.lateralTuning.torque.nnModelFuzzyMatch = (similarity_score < 0.99)
+          if 'b\'' in nn_model_name:
+            nn_model, _ = nn_model_name.split('b\'')
+          else:
+            nn_model = nn_model_name
+          params.put("NNFFCarModel", nn_model)
+        else:
+          ret.lateralTuning.torque.nnModelName = "mock"
 
     # Vehicle mass is published curb weight plus assumed payload such as a human driver; notCars have no assumed payload
     if not ret.notCar:
@@ -157,17 +313,16 @@ class CarInterfaceBase(ABC):
   @staticmethod
   def get_steer_feedforward_default(desired_angle, v_ego):
     # Proportional to realigning tire momentum: lateral acceleration.
-    # TODO: something with lateralPlan.curvatureRates
     return desired_angle * (v_ego**2)
 
   def get_steer_feedforward_function(self):
     return self.get_steer_feedforward_default
 
-  def torque_from_lateral_accel_linear(self, lateral_accel_value: float, torque_params: car.CarParams.LateralTorqueTuning,
-                                       lateral_accel_error: float, lateral_accel_deadzone: float, friction_compensation: bool) -> float:
+  def torque_from_lateral_accel_linear(self, latcontrol_inputs: LatControlInputs, torque_params: car.CarParams.LateralTorqueTuning,
+                                       lateral_accel_error: float, lateral_accel_deadzone: float, friction_compensation: bool, gravity_adjusted: bool) -> float:
     # The default is a linear relationship between torque and lateral acceleration (accounting for road roll and steering friction)
     friction = get_friction(lateral_accel_error, lateral_accel_deadzone, FRICTION_THRESHOLD, torque_params, friction_compensation)
-    return (lateral_accel_value / float(torque_params.latAccelFactor)) + friction
+    return (latcontrol_inputs.lateral_acceleration / float(torque_params.latAccelFactor)) + friction
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
     return self.torque_from_lateral_accel_linear
@@ -415,6 +570,26 @@ class CarInterfaceBase(ABC):
 
     return mads_enabled
 
+  def get_sp_started_mads(self, cs_out, CS):
+    if not cs_out.cruiseState.available and CS.out.cruiseState.available:
+      self.madsEnabledInit = False
+      self.madsEnabledInitPrev = False
+      return False
+    if not self.mads_main_toggle or self.prev_acc_mads_combo:
+      return CS.madsEnabled
+    if not self.madsEnabledInit and CS.madsEnabled:
+      self.madsEnabledInit = True
+      self.last_mads_init = time.monotonic()
+    if cs_out.gearShifter not in FORWARD_GEARS:
+      self.last_mads_init = time.monotonic()
+    if self.madsEnabledInit and (not self.madsEnabledInitPrev or cs_out.gearShifter not in FORWARD_GEARS):
+      if time.monotonic() < self.last_mads_init + 1.:
+        return False
+      self.madsEnabledInitPrev = True
+      return cs_out.cruiseState.available
+    else:
+      return CS.madsEnabled
+
   def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
                                  cs_out.cruiseState.enabled
@@ -448,7 +623,7 @@ class CarInterfaceBase(ABC):
     cs_out.madsEnabled = CS.madsEnabled
     cs_out.accEnabled = CS.accEnabled
     cs_out.disengageByBrake = CS.disengageByBrake
-    cs_out.brakeLights |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
+    cs_out.brakeLightsDEPRECATED |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
 
     return cs_out, CS
 
@@ -461,7 +636,7 @@ class CarInterfaceBase(ABC):
         if self.gap_button_counter > 50:
           self.gap_button_counter = 0
           self.experimental_mode_hold = True
-          put_bool_nonblocking("ExperimentalMode", not self.experimental_mode)
+          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.experimental_mode)
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
@@ -485,14 +660,14 @@ class CarInterfaceBase(ABC):
       CS.gac_tr_cluster = gac_default
       if CS.gac_tr != 2:
         CS.gac_tr = 2
-        put_nonblocking("LongitudinalPersonality", "2")
+        self.param_s.put_nonblocking("LongitudinalPersonality", "2")
       return cs_out, CS
     if gac_button:
       self.gac_button_counter += 1
     elif self.prev_gac_button and not gac_button and self.gac_button_counter < 50:
       self.gac_button_counter = 0
       CS.gac_tr = self.get_sp_gac_state(CS.gac_tr, 0, 2, inc_dec)
-      put_nonblocking("LongitudinalPersonality", str(CS.gac_tr))
+      self.param_s.put_nonblocking("LongitudinalPersonality", str(CS.gac_tr))
     else:
       self.gac_button_counter = 0
     CS.gac_tr_cluster = clip(CS.gac_tr + 1, gac_min, gac_max)  # always 1 higher
@@ -524,7 +699,7 @@ class CarInterfaceBase(ABC):
           self.cruise_cancelled_btn = True
           events.add(EventName.manualLongitudinalRequired)
       # do disable on MADS button if ACC is disabled
-      if b.type == ButtonType.altButton1 and b.pressed:
+      if b.type == ButtonType.altButton1 and b.pressed and self.enable_mads:
         if not cs_out.madsEnabled:  # disabled MADS
           if not cs_out.cruiseState.enabled:
             events.add(EventName.buttonCancel)
@@ -606,6 +781,7 @@ class CarStateBase(ABC):
     self.mads_enabled = False
     self.prev_mads_enabled = False
     self.control_initialized = False
+    self.pcm_cruise_enabled = False
     self.gap_dist_button = 0
     self.gac_tr = int(self.param_s.get("LongitudinalPersonality"))
     self.gac_tr_cluster = clip(int(self.param_s.get("LongitudinalPersonality")), 1, 3)
@@ -620,7 +796,7 @@ class CarStateBase(ABC):
 
   def update_speed_kf(self, v_ego_raw):
     if abs(v_ego_raw - self.v_ego_kf.x[0][0]) > 2.0:  # Prevent large accelerations when car starts at non zero speed
-      self.v_ego_kf.x = [[v_ego_raw], [0.0]]
+      self.v_ego_kf.set_x([[v_ego_raw], [0.0]])
 
     v_ego_x = self.v_ego_kf.update(v_ego_raw)
     return float(v_ego_x[0]), float(v_ego_x[1])
@@ -717,9 +893,14 @@ class CarStateBase(ABC):
     return None
 
 
+INTERFACE_ATTR_FILE = {
+  "FINGERPRINTS": "fingerprints",
+  "FW_VERSIONS": "fingerprints",
+}
+
 # interface-specific helpers
 
-def get_interface_attr(attr: str, combine_brands: bool = False, ignore_none: bool = False) -> Dict[str, Any]:
+def get_interface_attr(attr: str, combine_brands: bool = False, ignore_none: bool = False) -> Dict[str | StrEnum, Any]:
   # read all the folders in selfdrive/car and return a dict where:
   # - keys are all the car models or brand names
   # - values are attr values from all car folders
@@ -727,7 +908,7 @@ def get_interface_attr(attr: str, combine_brands: bool = False, ignore_none: boo
   for car_folder in sorted([x[0] for x in os.walk(BASEDIR + '/selfdrive/car')]):
     try:
       brand_name = car_folder.split('/')[-1]
-      brand_values = __import__(f'openpilot.selfdrive.car.{brand_name}.values', fromlist=[attr])
+      brand_values = __import__(f'openpilot.selfdrive.car.{brand_name}.{INTERFACE_ATTR_FILE.get(attr, "values")}', fromlist=[attr])
       if hasattr(brand_values, attr) or not ignore_none:
         attr_data = getattr(brand_values, attr, None)
       else:
@@ -743,3 +924,35 @@ def get_interface_attr(attr: str, combine_brands: bool = False, ignore_none: boo
       pass
 
   return result
+
+
+class NanoFFModel:
+  def __init__(self, weights_loc: str, platform: str):
+    self.weights_loc = weights_loc
+    self.platform = platform
+    self.load_weights(platform)
+
+  def load_weights(self, platform: str):
+    with open(self.weights_loc, 'r') as fob:
+      self.weights = {k: np.array(v) for k, v in json.load(fob)[platform].items()}
+
+  def relu(self, x: np.ndarray):
+    return np.maximum(0.0, x)
+
+  def forward(self, x: np.ndarray):
+    assert x.ndim == 1
+    x = (x - self.weights['input_norm_mat'][:, 0]) / (self.weights['input_norm_mat'][:, 1] - self.weights['input_norm_mat'][:, 0])
+    x = self.relu(np.dot(x, self.weights['w_1']) + self.weights['b_1'])
+    x = self.relu(np.dot(x, self.weights['w_2']) + self.weights['b_2'])
+    x = self.relu(np.dot(x, self.weights['w_3']) + self.weights['b_3'])
+    x = np.dot(x, self.weights['w_4']) + self.weights['b_4']
+    return x
+
+  def predict(self, x: List[float], do_sample: bool = False):
+    x = self.forward(np.array(x))
+    if do_sample:
+      pred = np.random.laplace(x[0], np.exp(x[1]) / self.weights['temperature'])
+    else:
+      pred = x[0]
+    pred = pred * (self.weights['output_norm_mat'][1] - self.weights['output_norm_mat'][0]) + self.weights['output_norm_mat'][0]
+    return pred

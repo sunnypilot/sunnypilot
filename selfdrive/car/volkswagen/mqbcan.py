@@ -10,6 +10,24 @@ def create_steering_control(packer, bus, apply_steer, lkas_enabled):
   return packer.make_can_msg("HCA_01", bus, values)
 
 
+def create_eps_update(packer, bus, eps_stock_values, ea_simulated_torque):
+  values = {s: eps_stock_values[s] for s in [
+    "COUNTER",                     # Sync counter value to EPS output
+    "EPS_Lenkungstyp",             # EPS rack type
+    "EPS_Berechneter_LW",          # Absolute raw steering angle
+    "EPS_VZ_BLW",                  # Raw steering angle sign
+    "EPS_HCA_Status",              # EPS HCA control status
+  ]}
+
+  values.update({
+    # Absolute driver torque input and sign, with EA inactivity mitigation
+    "EPS_Lenkmoment": abs(ea_simulated_torque),
+    "EPS_VZ_Lenkmoment": 1 if ea_simulated_torque < 0 else 0,
+  })
+
+  return packer.make_can_msg("LH_EPS_03", bus, values)
+
+
 def create_lka_hud_control(packer, bus, ldw_stock_values, enabled, lat_active, steering_pressed, hud_alert, hud_control):
   values = {}
   if len(ldw_stock_values):
@@ -31,7 +49,7 @@ def create_lka_hud_control(packer, bus, ldw_stock_values, enabled, lat_active, s
   return packer.make_can_msg("LDW_02", bus, values)
 
 
-def create_acc_buttons_control(packer, bus, gra_stock_values, buttons=0, cancel=False, resume=False):
+def create_acc_buttons_control(packer, bus, gra_stock_values, frame=0, buttons=0, cancel=False, resume=False, custom_stock_long=False):
   values = {s: gra_stock_values[s] for s in [
     "GRA_Hauptschalter",           # ACC button, on/off
     "GRA_Typ_Hauptschalter",       # ACC main button type
@@ -46,7 +64,7 @@ def create_acc_buttons_control(packer, bus, gra_stock_values, buttons=0, cancel=
   set_cruise = 1 if buttons == 4 else 0
 
   values.update({
-    "COUNTER": (gra_stock_values["COUNTER"] + 1) % 16,
+    "COUNTER": (frame + 1) % 0x10 if custom_stock_long else (gra_stock_values["COUNTER"] + 1) % 16,
     "GRA_Abbrechen": cancel,
     "GRA_Tip_Wiederaufnahme": resume or resume_cruise,
     "GRA_Tip_Setzen": set_cruise,
@@ -102,7 +120,7 @@ def create_acc_accel_control(packer, bus, acc_type, acc_enabled, accel, acc_cont
     acc_hold_type = 0
 
   acc_07_values = {
-    "ACC_Anhalteweg": 0.75 if stopping else 20.46,  # Distance to stop (stopping coordinator handles terminal roll-out)
+    "ACC_Anhalteweg": 0.3 if stopping else 20.46,  # Distance to stop (stopping coordinator handles terminal roll-out)
     "ACC_Freilauf_Info": 2 if acc_enabled else 0,
     "ACC_Folgebeschl": 3.02,  # Not using secondary controller accel unless and until we understand its impact
     "ACC_Sollbeschleunigung_02": accel if acc_enabled else 3.01,

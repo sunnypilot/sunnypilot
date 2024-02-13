@@ -2,6 +2,20 @@
 
 set -e
 
+if [ -z "$SKIP_PROMPT" ]; then
+  echo "---------------   macOS support   ---------------"
+  echo "Running openpilot natively on macOS is not officially supported."
+  echo "It might build, some parts of it might work, but it's not fully tested, so there might be some issues."
+  echo 
+  echo "Check out devcontainers for a seamless experience (see tools/README.md)."
+  echo "-------------------------------------------------"
+  echo -n "Are you sure you want to continue? [y/N] "
+  read -r response
+  if [[ ! "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    exit 1
+  fi
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 ROOT="$(cd $DIR/../ && pwd)"
 ARCH=$(uname -m)
@@ -94,6 +108,10 @@ if [ -n "$QT_BIN_LOCATION" ]; then
 else
   brew link qt@5
 fi
+
+ln -s /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnp.1.0.2.dylib /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnp.1.0.1.dylib || true
+ln -s /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnpc.1.0.2.dylib /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnpc.1.0.1.dylib || true
+ln -s /opt/homebrew/Cellar/capnp/1.0.2/lib/libkj.1.0.2.dylib /opt/homebrew/Cellar/capnp/1.0.2/lib/libkj.1.0.1.dylib || true
 
 echo
 echo "----   OPENPILOT SETUP DONE   ----"
