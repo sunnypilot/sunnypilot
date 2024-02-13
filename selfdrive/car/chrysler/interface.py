@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
     if candidate not in RAM_CARS:
       # Newer FW versions standard on the following platforms, or flashed by a dealer onto older platforms have a higher minimum steering speed.
-      new_eps_platform = candidate in (CAR.PACIFICA_2019_HYBRID, CAR.PACIFICA_2020, CAR.JEEP_CHEROKEE_2019)
+      new_eps_platform = candidate in (CAR.PACIFICA_2019_HYBRID, CAR.PACIFICA_2020, CAR.JEEP_GRAND_CHEROKEE_2019)
       new_eps_firmware = any(fw.ecu == 'eps' and fw.fwVersion[:4] >= b"6841" for fw in car_fw)
       if new_eps_platform or new_eps_firmware:
         ret.flags |= ChryslerFlags.HIGHER_MIN_STEERING_SPEED.value
@@ -53,7 +53,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.00006
 
     # Jeep
-    elif candidate in (CAR.JEEP_CHEROKEE, CAR.JEEP_CHEROKEE_2019):
+    elif candidate in (CAR.JEEP_GRAND_CHEROKEE, CAR.JEEP_GRAND_CHEROKEE_2019):
       ret.mass = 1778
       ret.wheelbase = 2.71
       ret.steerRatio = 16.7
@@ -94,6 +94,10 @@ class CarInterface(CarInterfaceBase):
     ret.centerToFront = ret.wheelbase * 0.44
     ret.enableBsm = 720 in fingerprint[0]
 
+    if 0x4FF in fingerprint[0]:
+      ret.spFlags |= ChryslerFlagsSP.SP_WP_S20.value
+      ret.minSteerSpeed = 0.0
+
     return ret
 
   def _update(self, c):
@@ -124,9 +128,11 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         if self.CS.prev_lkas_enabled != 1 and self.CS.lkas_enabled == 1:
           self.CS.madsEnabled = not self.CS.madsEnabled
+          self.CS.lkas_disabled = not self.CS.lkas_disabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
+    self.CS.madsEnabled = self.get_sp_started_mads(ret, self.CS)
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in buttonEvents):

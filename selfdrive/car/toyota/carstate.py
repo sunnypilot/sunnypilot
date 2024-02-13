@@ -65,6 +65,7 @@ class CarState(CarStateBase):
       self.zss_compute = False
       self.zss_cruise_active_last = False
       self.zss_angle_offset = 0.
+      self.zss_threshold_count = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -99,7 +100,7 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = ret.vEgo * 1.015  # minimum of all the cars
 
-    ret.standstill = ret.vEgoRaw == 0
+    ret.standstill = abs(ret.vEgoRaw) < 1e-3
 
     if self.CP.carFingerprint != CAR.PRIUS_V:
       self.lta_status = cp_cam.vl["LKAS_HUD"]["SET_ME_X02"]
@@ -134,18 +135,27 @@ class CarState(CarStateBase):
 
     # ZSS support thanks to dragonpilot and ErichMoraga
     if self.CP.spFlags & ToyotaFlagsSP.SP_ZSS:
-      zorro_steer = cp.vl["SECONDARY_STEER_ANGLE"]["ZORRO_STEER"]
-      # Only compute ZSS offset when acc is active
-      if bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"]) and not self.zss_cruise_active_last:
-        self.zss_compute = True # Cruise was just activated, so allow offset to be recomputed
-      self.zss_cruise_active_last = bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
+      if self.zss_threshold_count <= 10:
+        zorro_steer = cp.vl["SECONDARY_STEER_ANGLE"]["ZORRO_STEER"]
+        # Only compute ZSS offset when control is active
+        control_active = self.madsEnabled or bool(cp.vl["PCM_CRUISE"]["CRUISE_ACTIVE"])
+        if control_active and not self.zss_cruise_active_last:
+          self.zss_threshold_count = 0
+          self.zss_compute = True  # Control was just activated, so allow offset to be recomputed
+        self.zss_cruise_active_last = control_active
 
-      # Compute ZSS offset
-      if self.zss_compute:
-        if abs(ret.steeringAngleDeg) > 1e-3 and abs(zorro_steer) > 1e-3:
-          self.zss_angle_offset = zorro_steer - ret.steeringAngleDeg
-      # Apply offset
-      ret.steeringAngleDeg = zorro_steer - self.zss_angle_offset
+        # Compute ZSS offset
+        if self.zss_compute:
+          if abs(ret.steeringAngleDeg) > 1e-3 and abs(zorro_steer) > 1e-3:
+            self.zss_compute = False
+            self.zss_angle_offset = zorro_steer - ret.steeringAngleDeg
+
+        # Safety checks
+        steering_angle_deg = zorro_steer - self.zss_angle_offset
+        if abs(ret.steeringAngleDeg - steering_angle_deg) > 4:
+          self.zss_threshold_count += 1
+        else:
+          ret.steeringAngleDeg = steering_angle_deg
 
     can_gear = int(cp.vl["GEAR_PACKET"]["GEAR"])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))

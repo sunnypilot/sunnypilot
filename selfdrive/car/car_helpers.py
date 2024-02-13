@@ -12,10 +12,10 @@ from openpilot.selfdrive.car.interfaces import get_interface_attr
 from openpilot.selfdrive.car.fingerprints import eliminate_incompatible_cars, all_legacy_fingerprint_cars
 from openpilot.selfdrive.car.vin import get_vin, is_valid_vin, VIN_UNKNOWN
 from openpilot.selfdrive.car.fw_versions import get_fw_versions_ordered, get_present_ecus, match_fw_to_car, set_obd_multiplexing
-import openpilot.selfdrive.sentry as sentry
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
 from openpilot.selfdrive.car import gen_empty_fingerprint
+import openpilot.selfdrive.sentry as sentry
 
 FRAME_FINGERPRINT = 100  # 1s
 
@@ -130,9 +130,6 @@ def fingerprint(logcan, sendcan, num_pandas):
 
   start_time = time.monotonic()
   if not skip_fw_query:
-    # Vin query only reliably works through OBDII
-    bus = 1
-
     cached_params = params.get("CarParamsCache")
     if cached_params is not None:
       with car.CarParams.from_bytes(cached_params) as cached_params:
@@ -142,20 +139,22 @@ def fingerprint(logcan, sendcan, num_pandas):
     if cached_params is not None and len(cached_params.carFw) > 0 and \
        cached_params.carVin is not VIN_UNKNOWN and not disable_fw_cache:
       cloudlog.warning("Using cached CarParams")
-      vin, vin_rx_addr = cached_params.carVin, 0
+      vin_rx_addr, vin_rx_bus, vin = -1, -1, cached_params.carVin
       car_fw = list(cached_params.carFw)
       cached = True
     else:
       cloudlog.warning("Getting VIN & FW versions")
+      # enable OBD multiplexing for Vin query, also allows time for sendcan subscriber to connect
       set_obd_multiplexing(params, True)
-      vin_rx_addr, vin = get_vin(logcan, sendcan, bus)
+      # Vin query only reliably works through OBDII
+      vin_rx_addr, vin_rx_bus, vin = get_vin(logcan, sendcan, (0, 1))
       ecu_rx_addrs = get_present_ecus(logcan, sendcan, num_pandas=num_pandas)
       car_fw = get_fw_versions_ordered(logcan, sendcan, ecu_rx_addrs, num_pandas=num_pandas)
       cached = False
 
     exact_fw_match, fw_candidates = match_fw_to_car(car_fw)
   else:
-    vin, vin_rx_addr = VIN_UNKNOWN, 0
+    vin_rx_addr, vin_rx_bus, vin = -1, -1, VIN_UNKNOWN
     exact_fw_match, fw_candidates, car_fw = True, set(), []
     cached = False
 
@@ -190,8 +189,8 @@ def fingerprint(logcan, sendcan, num_pandas):
     source = car.CarParams.FingerprintSource.fixed
 
   cloudlog.event("fingerprinted", car_fingerprint=car_fingerprint, source=source, fuzzy=not exact_match, cached=cached,
-                 fw_count=len(car_fw), ecu_responses=list(ecu_rx_addrs), vin_rx_addr=vin_rx_addr, fingerprints=finger,
-                 fw_query_time=fw_query_time, error=True)
+                 fw_count=len(car_fw), ecu_responses=list(ecu_rx_addrs), vin_rx_addr=vin_rx_addr, vin_rx_bus=vin_rx_bus,
+                 fingerprints=finger, fw_query_time=fw_query_time, error=True)
   return car_fingerprint, finger, vin, car_fw, source, exact_match
 
 
@@ -207,6 +206,7 @@ def crash_log(candidate):
   no_internet = 0
   while True:
     if is_connected_to_internet():
+      sentry.get_init()
       sentry.capture_warning("fingerprinted %s" % candidate)
       break
     else:
@@ -220,6 +220,7 @@ def crash_log2(fingerprints, fw):
   no_internet = 0
   while True:
     if is_connected_to_internet():
+      sentry.get_init()
       sentry.capture_warning("car doesn't match any fingerprints: %s" % fingerprints)
       sentry.capture_warning("car doesn't match any fw: %s" % fw)
       break
@@ -255,3 +256,15 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
   CP.fuzzyFingerprint = not exact_match
 
   return CarInterface(CP, CarController, CarState), CP
+
+def write_car_param(fingerprint="mock"):
+  params = Params()
+  CarInterface, _, _ = interfaces[fingerprint]
+  CP = CarInterface.get_non_essential_params(fingerprint)
+  params.put("CarParams", CP.to_bytes())
+
+def get_demo_car_params():
+  fingerprint="mock"
+  CarInterface, _, _ = interfaces[fingerprint]
+  CP = CarInterface.get_non_essential_params(fingerprint)
+  return CP

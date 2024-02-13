@@ -1,33 +1,34 @@
-import numpy as np
 from cereal import log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.controls.lib.drive_helpers import get_road_edge
+from openpilot.selfdrive.sunnypilot import get_model_generation
 
-LaneChangeState = log.LateralPlan.LaneChangeState
-LaneChangeDirection = log.LateralPlan.LaneChangeDirection
+LaneChangeState = log.LaneChangeState
+LaneChangeDirection = log.LaneChangeDirection
 
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
 
 DESIRES = {
   LaneChangeDirection.none: {
-    LaneChangeState.off: log.LateralPlan.Desire.none,
-    LaneChangeState.preLaneChange: log.LateralPlan.Desire.none,
-    LaneChangeState.laneChangeStarting: log.LateralPlan.Desire.none,
-    LaneChangeState.laneChangeFinishing: log.LateralPlan.Desire.none,
+    LaneChangeState.off: log.Desire.none,
+    LaneChangeState.preLaneChange: log.Desire.none,
+    LaneChangeState.laneChangeStarting: log.Desire.none,
+    LaneChangeState.laneChangeFinishing: log.Desire.none,
   },
   LaneChangeDirection.left: {
-    LaneChangeState.off: log.LateralPlan.Desire.none,
-    LaneChangeState.preLaneChange: log.LateralPlan.Desire.none,
-    LaneChangeState.laneChangeStarting: log.LateralPlan.Desire.laneChangeLeft,
-    LaneChangeState.laneChangeFinishing: log.LateralPlan.Desire.laneChangeLeft,
+    LaneChangeState.off: log.Desire.none,
+    LaneChangeState.preLaneChange: log.Desire.none,
+    LaneChangeState.laneChangeStarting: log.Desire.laneChangeLeft,
+    LaneChangeState.laneChangeFinishing: log.Desire.laneChangeLeft,
   },
   LaneChangeDirection.right: {
-    LaneChangeState.off: log.LateralPlan.Desire.none,
-    LaneChangeState.preLaneChange: log.LateralPlan.Desire.none,
-    LaneChangeState.laneChangeStarting: log.LateralPlan.Desire.laneChangeRight,
-    LaneChangeState.laneChangeFinishing: log.LateralPlan.Desire.laneChangeRight,
+    LaneChangeState.off: log.Desire.none,
+    LaneChangeState.preLaneChange: log.Desire.none,
+    LaneChangeState.laneChangeStarting: log.Desire.laneChangeRight,
+    LaneChangeState.laneChangeFinishing: log.Desire.laneChangeRight,
   },
 }
 
@@ -48,7 +49,7 @@ class DesireHelper:
     self.lane_change_ll_prob = 1.0
     self.keep_pulse_timer = 0.0
     self.prev_one_blinker = False
-    self.desire = log.LateralPlan.Desire.none
+    self.desire = log.Desire.none
 
     self.param_s = Params()
     self.lane_change_wait_timer = 0
@@ -61,12 +62,15 @@ class DesireHelper:
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
+    self.custom_model, self.model_gen = get_model_generation(self.param_s)
+    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
+
   def read_param(self):
     self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
-  def update(self, carstate, lateral_active, lane_change_prob, model_data):
+  def update(self, carstate, lateral_active, lane_change_prob, model_data=None, lat_plan_sp=None):
     if self.param_read_counter % 50 == 0:
       self.read_param()
     self.param_read_counter += 1
@@ -75,31 +79,8 @@ class DesireHelper:
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    # Lane detection by FrogAi
-    if not self.edge_toggle:
-      self.road_edge = False
-    elif one_blinker:
-      # Set the minimum lane threshold to 3.0 meters
-      min_lane_threshold = 3.0
-      # Set the blinker index based on which signal is on
-      blinker_index = 0 if carstate.leftBlinker else 1
-      desired_edge = model_data.roadEdges[blinker_index]
-      current_lane = model_data.laneLines[blinker_index + 1]
-      # Check if both the desired lane and the current lane have valid x and y values
-      if all([desired_edge.x, desired_edge.y, current_lane.x, current_lane.y]) and len(desired_edge.x) == len(current_lane.x):
-        # Interpolate the x and y values to the same length
-        x = np.linspace(desired_edge.x[0], desired_edge.x[-1], num=len(desired_edge.x))
-        lane_y = np.interp(x, current_lane.x, current_lane.y)
-        desired_y = np.interp(x, desired_edge.x, desired_edge.y)
-        # Calculate the width of the lane we're wanting to change into
-        lane_width = np.abs(desired_y - lane_y)
-        # Set road_edge to False if the lane width is not larger than the threshold
-        self.road_edge = not (np.amax(lane_width) > min_lane_threshold)
-      else:
-        self.road_edge = True
-    else:
-      # Default to setting "road_edge" to False
-      self.road_edge = False
+    if self.model_use_lateral_planner:
+      self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
 
     if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
       self.lane_change_state = LaneChangeState.off
@@ -114,7 +95,7 @@ class DesireHelper:
         self.lane_change_wait_timer = 0
 
       # LaneChangeState.preLaneChange
-      elif self.lane_change_state == LaneChangeState.preLaneChange and self.road_edge:
+      elif self.lane_change_state == LaneChangeState.preLaneChange and (self.road_edge if self.model_use_lateral_planner else lat_plan_sp.laneChangeEdgeBlockDEPRECATED):
         self.lane_change_direction = LaneChangeDirection.none
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
@@ -190,5 +171,5 @@ class DesireHelper:
       self.keep_pulse_timer += DT_MDL
       if self.keep_pulse_timer > 1.0:
         self.keep_pulse_timer = 0.0
-      elif self.desire in (log.LateralPlan.Desire.keepLeft, log.LateralPlan.Desire.keepRight):
-        self.desire = log.LateralPlan.Desire.none
+      elif self.desire in (log.Desire.keepLeft, log.Desire.keepRight):
+        self.desire = log.Desire.none

@@ -127,6 +127,7 @@ private:
   void speedLimitSignPulse(int frame);
   void speedLimitWarning(QPainter &p, QRect sign_rect, const int sign_margin);
   void mousePressEvent(QMouseEvent* e) override;
+  void drawRoadNameText(QPainter &p, int x, int y, const QString &text, QColor color);
   Params params;
 
   QVBoxLayout *main_layout;
@@ -180,6 +181,7 @@ private:
   bool showSpeedLimit = false;
   float speedLimitSLC;
   float speedLimitSLCOffset;
+  float speedLimitWarningOffset;
   QString slcSubText;
   float slcSubTextSize = 0.0;
   bool overSpeedLimit;
@@ -306,9 +308,11 @@ private:
   QHBoxLayout* split;
 
   QWidget *onroad_settings = nullptr;
+  Params params;
 
 private slots:
   void offroadTransition(bool offroad);
   void primeChanged(bool prime);
   void updateState(const UIState &s);
+  void updateMapSize(const UIScene &scene);
 };

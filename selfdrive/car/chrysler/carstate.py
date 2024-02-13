@@ -24,6 +24,7 @@ class CarState(CarStateBase):
     self.lkas_enabled = False
     self.prev_lkas_enabled = False
     self.lkas_heartbit = None
+    self.lkas_disabled = False
 
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
@@ -99,6 +100,8 @@ class CarState(CarStateBase):
     else:
       self.lkas_enabled = cp.vl["TRACTION_BUTTON"]["TOGGLE_LKAS"] == 1
       self.lkas_heartbit = cp_cam.vl["LKAS_HEARTBIT"]
+      if not self.control_initialized:
+        self.lkas_disabled = bool(cp_cam.vl["LKAS_HEARTBIT"]["LKAS_DISABLED"])
       ret.steerFaultTemporary = cp.vl["EPS_2"]["LKAS_TEMPORARY_FAULT"] == 1
       ret.steerFaultPermanent = cp.vl["EPS_2"]["LKAS_STATE"] == 4
 

@@ -103,9 +103,9 @@ git branch -m release-c3
 #selfdrive/car/tests/test_car_interfaces.py
 #rm -rf $TEST_FILES
 
-if [ ! -z "$PUSH" ]; then
-  echo "[-] pushing T=$SECONDS"
-  git push -f origin $RELEASE_BRANCH
+if [ ! -z "$RELEASE_BRANCH" ]; then
+  echo "[-] pushing release T=$SECONDS"
+  git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
 fi
 
 echo "[-] done T=$SECONDS"

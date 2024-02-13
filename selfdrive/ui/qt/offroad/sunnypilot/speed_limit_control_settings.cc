@@ -12,7 +12,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
 
   ListWidget *list = new ListWidget(this, false);
 
-  std::vector<QString> speed_limit_engage_texts{tr("Warning Only"), tr("Auto"), tr("User Confirm")};
+  std::vector<QString> speed_limit_engage_texts{tr("Auto"), tr("User Confirm")};
   speed_limit_engage_settings = new ButtonParamControl(
     "SpeedLimitEngageType", tr("Engage Mode"),
     "",
@@ -25,7 +25,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
 
   std::vector<QString> speed_limit_offset_settings_texts{tr("Default"), tr("Fixed"), tr("Percentage")};
   speed_limit_offset_settings = new ButtonParamControl(
-    "SpeedLimitOffsetType", tr("Offset"), tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
+    "SpeedLimitOffsetType", tr("Limit Offset"), tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
     "../assets/offroad/icon_blank.png",
     speed_limit_offset_settings_texts,
     380
@@ -38,18 +38,6 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
 
   connect(speed_limit_offset_settings, &ButtonParamControl::buttonToggled, this, &SlcSettings::updateToggles);
   connect(speed_limit_offset_settings, &ButtonParamControl::buttonToggled, slvo, &SpeedLimitValueOffset::refresh);
-
-  speed_limit_control_policy = new ButtonParamControl(
-    "SpeedLimitControlPolicy",
-    tr("Source Policy"),
-    "",
-    "../assets/offroad/icon_blank.png",
-    speed_limit_control_policy_texts,
-    250
-  );
-  speed_limit_control_policy->showDescription();
-  connect(speed_limit_control_policy, &ButtonParamControl::buttonToggled, this, &SlcSettings::updateToggles);
-  list->addItem(speed_limit_control_policy);
 
   param_watcher = new ParamWatcher(this);
 
@@ -65,21 +53,21 @@ void SlcSettings::showEvent(QShowEvent *event) {
 }
 
 void SlcSettings::updateToggles() {
-  param_watcher->addParam("SpeedLimitControlPolicy");
   param_watcher->addParam("SpeedLimitEngageType");
 
   if (!isVisible()) {
     return;
   }
 
-  speed_limit_control_policy->setButton("SpeedLimitControlPolicy");
+  if (QString::fromStdString(params.get("SpeedLimitEngageType")) == "2") {
+    params.put("SpeedLimitEngageType", "1");
+  }
+
   speed_limit_engage_settings->setButton("SpeedLimitEngageType");
 
   auto cp_bytes = params.get("CarParamsPersistent");
   auto custom_stock_long_param = params.getBool("CustomStockLong");
   auto speed_limit_control = params.getBool("EnableSlc");
-
-  speed_limit_control_policy->setDescription(slcDescriptionBuilder("SpeedLimitControlPolicy", speed_limit_control_policy_descriptions));
 
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
@@ -90,24 +78,21 @@ void SlcSettings::updateToggles() {
 
     if (hasLongitudinalControl(CP) || custom_stock_long_param) {
       speed_limit_offset_settings->setEnabled(speed_limit_control);
-      speed_limit_control_policy->setEnabled(true);
       slvo->setEnabled(speed_limit_control && QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
 
       QString speed_limit_engage_condition_text = pcm_cruise_op_long ? "This platform defaults to <b>Auto</b> mode. <b>User Confirm</b> mode is not supported on this platform.<br><br>" : "";
-      QString speed_limit_engage_condition_param = pcm_cruise_op_long ? "1" : "SpeedLimitEngageType";
+      QString speed_limit_engage_condition_param = pcm_cruise_op_long ? "0" : "SpeedLimitEngageType";
       if (pcm_cruise_op_long) {
-        speed_limit_engage_settings->setDisabledSelectedButton("2");  // "User Confirm" disabled
+        speed_limit_engage_settings->setDisabledSelectedButton("1");  // "User Confirm" disabled
       }
       speed_limit_engage_settings->setDescription(speed_limit_engage_condition_text + slcDescriptionBuilder(speed_limit_engage_condition_param, speed_limit_engage_descriptions));
     } else {
       slvo->setEnabled(false);
-      speed_limit_control_policy->setEnabled(false);
       speed_limit_offset_settings->setEnabled(false);
       speed_limit_engage_settings->setEnabled(false);
     }
   } else {
     slvo->setEnabled(false);
-    speed_limit_control_policy->setEnabled(false);
     speed_limit_offset_settings->setEnabled(false);
     speed_limit_engage_settings->setEnabled(false);
     speed_limit_engage_settings->setDescription(slcDescriptionBuilder("SpeedLimitEngageType", speed_limit_engage_descriptions));
