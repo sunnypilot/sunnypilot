@@ -67,7 +67,7 @@ class VisionTurnController:
 
   @property
   def is_active(self):
-    return self._state != VisionTurnControllerState.disabled and self._is_enabled
+    return self._state != VisionTurnControllerState.disabled
 
   @property
   def current_lat_acc(self):
@@ -105,7 +105,7 @@ class VisionTurnController:
 
     # Get the target velocity for the maximum curve
     self._v_target = (TARGET_LAT_A / max_curve) ** 0.5
-    self._v_target = max(self._v_target, MIN_TARGET_V)
+    self._v_target = max(self.v_target, MIN_TARGET_V)
 
   def _state_transition(self):
     if not self._op_enabled or not self._is_enabled or self._gas_pressed or self._v_ego < MIN_TARGET_V:
@@ -114,11 +114,11 @@ class VisionTurnController:
 
     # DISABLED
     if self.state == VisionTurnControllerState.disabled:
-      if self._v_cruise > self._v_target:
+      if self._v_cruise > self.v_target:
         self.state = VisionTurnControllerState.turning
     # TURNING
     elif self.state == VisionTurnControllerState.turning:
-      if not (self._v_cruise > self._v_target):
+      if not (self._v_cruise > self.v_target):
         self.state = VisionTurnControllerState.disabled
 
   def update(self, enabled, v_ego, v_cruise, sm):
