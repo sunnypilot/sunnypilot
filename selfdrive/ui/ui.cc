@@ -38,7 +38,7 @@ static bool calib_frame_to_full_frame(const UIState *s, float in_x, float in_y, 
 int get_path_length_idx(const cereal::XYZTData::Reader &line, const float path_height) {
   const auto line_x = line.getX();
   int max_idx = 0;
-  for (int i = 1; i < TRAJECTORY_SIZE && line_x[i] <= path_height; ++i) {
+  for (int i = 1; i < line_x.size() && line_x[i] <= path_height; ++i) {
     max_idx = i;
   }
   return max_idx;
@@ -84,10 +84,10 @@ void update_model(UIState *s,
                   const cereal::UiPlan::Reader &plan) {
   UIScene &scene = s->scene;
   auto plan_position = plan.getPosition();
-  if (plan_position.getX().size() < TRAJECTORY_SIZE){
+  if (plan_position.getX().size() < model.getPosition().getX().size()) {
     plan_position = model.getPosition();
   }
-  float max_distance = std::clamp(plan_position.getX()[TRAJECTORY_SIZE - 1],
+  float max_distance = std::clamp(*(plan_position.getX().end() - 1),
                                   MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 
   // update lane lines
@@ -214,8 +214,15 @@ static void update_state(UIState *s) {
     scene.light_sensor = std::max(100.0f - scale * cam_state.getExposureValPercent(), 0.0f);
   }
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
-  if (sm.updated("lateralPlanSP")) {
-    scene.dynamic_lane_profile_status = sm["lateralPlanSP"].getLateralPlanSP().getDynamicLaneProfileStatus();
+
+  scene.world_objects_visible = scene.world_objects_visible ||
+                                (scene.started &&
+                                 sm.rcv_frame("liveCalibration") > scene.started_frame &&
+                                 sm.rcv_frame("modelV2") > scene.started_frame &&
+                                 sm.rcv_frame("uiPlan") > scene.started_frame);
+  // TODO: SP - Set this dynamically on init with manual toggle or driving model selection
+  if (sm.updated("lateralPlanSPDEPRECATED")) {
+    scene.dynamic_lane_profile_status = sm["lateralPlanSPDEPRECATED"].getLateralPlanSPDEPRECATED().getDynamicLaneProfileStatus();
   }
   if (sm.updated("controlsState")) {
     scene.controlsState = sm["controlsState"].getControlsState();
@@ -239,7 +246,6 @@ void ui_update_params(UIState *s) {
   s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
-  s->scene.debug_snapshot_enabled = params.getBool("EnableDebugSnapshot");
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
   s->scene.true_vego_ui = params.getBool("TrueVEgoUi");
   s->scene.chevron_data = std::atoi(params.get("ChevronInfo").c_str());
@@ -254,6 +260,10 @@ void ui_update_params(UIState *s) {
   s->scene.torqued_override = params.getBool("TorquedOverride");
   s->scene.speed_limit_control_engage_type = std::atoi(params.get("SpeedLimitEngageType").c_str());
   s->scene.mapbox_fullscreen = params.getBool("MapboxFullScreen");
+  s->scene.speed_limit_warning_flash = params.getBool("SpeedLimitWarningFlash");
+  s->scene.speed_limit_warning_type = std::atoi(params.get("SpeedLimitWarningType").c_str());
+  s->scene.speed_limit_warning_value_offset = std::atoi(params.get("SpeedLimitWarningValueOffset").c_str());
+  s->scene.driving_model_gen = std::atoi(params.get("DrivingModelGeneration").c_str());
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -308,6 +318,7 @@ void UIState::updateStatus() {
       scene.started_frame = sm->frame;
     }
     started_prev = scene.started;
+    scene.world_objects_visible = false;
     emit offroadTransition(!scene.started);
   }
 
@@ -371,10 +382,10 @@ void UIState::updateStatus() {
 
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
-    "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
+  "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlanSP", "liveMapDataSP",
-    "carControl", "lateralPlanSP", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
+    "carControl", "lateralPlanSPDEPRECATED", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
   });
 
   Params params;

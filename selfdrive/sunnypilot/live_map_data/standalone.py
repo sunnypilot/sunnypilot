@@ -9,7 +9,7 @@ import traceback
 from openpilot.common.realtime import Ratekeeper, set_core_affinity
 from openpilot.selfdrive.sunnypilot.live_map_data import get_debug
 from openpilot.selfdrive.sunnypilot.live_map_data.osm_map_data import OsmMapData
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 
 
 def excepthook(args):

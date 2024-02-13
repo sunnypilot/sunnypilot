@@ -181,6 +181,7 @@ private:
   bool showSpeedLimit = false;
   float speedLimitSLC;
   float speedLimitSLCOffset;
+  float speedLimitWarningOffset;
   QString slcSubText;
   float slcSubTextSize = 0.0;
   bool overSpeedLimit;

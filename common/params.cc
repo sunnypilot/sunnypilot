@@ -4,9 +4,11 @@
 #include <sys/file.h>
 
 #include <algorithm>
+#include <cassert>
 #include <csignal>
 #include <unordered_map>
 
+#include "common/queue.h"
 #include "common/swaglog.h"
 #include "common/util.h"
 #include "system/hardware/hw.h"
@@ -92,6 +94,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"AssistNowToken", PERSISTENT},
     {"AthenadPid", PERSISTENT},
     {"AthenadUploadQueue", PERSISTENT},
+    {"AthenadRecentlyViewedRoutes", PERSISTENT},
+    {"BootCount", PERSISTENT},
     {"CalibrationParams", PERSISTENT},
     {"CameraDebugExpGain", CLEAR_ON_MANAGER_START},
     {"CameraDebugExpTime", CLEAR_ON_MANAGER_START},
@@ -114,7 +118,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DoReboot", CLEAR_ON_MANAGER_START},
     {"DoShutdown", CLEAR_ON_MANAGER_START},
     {"DoUninstall", CLEAR_ON_MANAGER_START},
-    {"ExperimentalLongitudinalEnabled", PERSISTENT},
+    {"ExperimentalLongitudinalEnabled", PERSISTENT | DEVELOPMENT_ONLY},
     {"ExperimentalMode", PERSISTENT},
     {"ExperimentalModeConfirmed", PERSISTENT},
     {"FirmwareQueryDone", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
@@ -140,18 +144,16 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"IsOnroad", PERSISTENT},
     {"IsRhdDetected", PERSISTENT},
     {"IsReleaseBranch", CLEAR_ON_MANAGER_START},
+    {"IsReleaseSPBranch", CLEAR_ON_MANAGER_START},
     {"IsTakingSnapshot", CLEAR_ON_MANAGER_START},
     {"IsTestedBranch", CLEAR_ON_MANAGER_START},
-    {"IsUpdateAvailable", CLEAR_ON_MANAGER_START},
     {"JoystickDebugMode", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
-    {"LaikadEphemerisV3", PERSISTENT | DONT_LOG},
     {"LanguageSetting", PERSISTENT},
     {"LastAthenaPingTime", CLEAR_ON_MANAGER_START},
     {"LastGPSPosition", PERSISTENT},
     {"LastManagerExitReason", CLEAR_ON_MANAGER_START},
     {"LastOffroadStatusPacket", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"LastPowerDropDetected", CLEAR_ON_MANAGER_START},
-    {"LastSystemShutdown", CLEAR_ON_MANAGER_START},
     {"LastUpdateException", CLEAR_ON_MANAGER_START},
     {"LastUpdateTime", PERSISTENT},
     {"LiveParameters", PERSISTENT},
@@ -162,7 +164,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"NavPastDestinations", PERSISTENT},
     {"NavSettingLeftSide", PERSISTENT},
     {"NavSettingTime24h", PERSISTENT},
-    {"NavdRender", PERSISTENT},
+    {"NetworkMetered", PERSISTENT},
     {"ObdMultiplexingChanged", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"ObdMultiplexingEnabled", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"Offroad_BadNvme", CLEAR_ON_MANAGER_START},
@@ -183,22 +185,19 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"PandaHeartbeatLost", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"PandaSomResetTriggered", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"PandaSignatures", CLEAR_ON_MANAGER_START},
-    {"Passive", PERSISTENT},
     {"PrimeType", PERSISTENT},
     {"RecordFront", PERSISTENT},
     {"RecordFrontLock", PERSISTENT},  // for the internal fleet
     {"ReplayControlsState", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
-    {"ShouldDoUpdate", CLEAR_ON_MANAGER_START},
     {"SnoozeUpdate", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"SshEnabled", PERSISTENT},
-    {"SubscriberInfo", PERSISTENT},
     {"TermsVersion", PERSISTENT},
     {"Timezone", PERSISTENT},
     {"TrainingVersion", PERSISTENT},
     {"UbloxAvailable", PERSISTENT},
     {"UpdateAvailable", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"UpdateFailedCount", CLEAR_ON_MANAGER_START},
-    {"UpdaterAvailableBranches", CLEAR_ON_MANAGER_START},
+    {"UpdaterAvailableBranches", PERSISTENT},
     {"UpdaterCurrentDescription", CLEAR_ON_MANAGER_START},
     {"UpdaterCurrentReleaseNotes", CLEAR_ON_MANAGER_START},
     {"UpdaterFetchAvailable", CLEAR_ON_MANAGER_START},
@@ -206,6 +205,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterNewReleaseNotes", CLEAR_ON_MANAGER_START},
     {"UpdaterState", CLEAR_ON_MANAGER_START},
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
+    {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},
     {"WheeledBody", PERSISTENT},
@@ -236,13 +236,14 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DevUIInfo", PERSISTENT},
     {"DisableOnroadUploads", PERSISTENT},
     {"DisengageLateralOnBrake", PERSISTENT},
+    {"DrivingModelGeneration", PERSISTENT},
+    {"DrivingModelMetadataText", PERSISTENT},
     {"DrivingModelName", PERSISTENT},
     {"DrivingModelText", PERSISTENT},
     {"DrivingModelUrl", PERSISTENT},
     {"DynamicExperimentalControl", PERSISTENT},
     {"DynamicLaneProfile", PERSISTENT},
     {"EnableAmap", PERSISTENT},
-    {"EnableDebugSnapshot", PERSISTENT},
     {"EnableGmap", PERSISTENT},
     {"EnableMads", PERSISTENT},
     {"EnableSlc", PERSISTENT},
@@ -254,8 +255,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EnhancedScc", PERSISTENT},
     {"FleetManagerPin", PERSISTENT},
     {"GmapKey", PERSISTENT},
-    {"GpxDeleteAfterUpload", PERSISTENT},
-    {"GpxDeleteIfUploaded", PERSISTENT},
     {"HandsOnWheelMonitoring", PERSISTENT},
     {"HideVEgoUi", PERSISTENT},
     {"HkgSmoothStop", PERSISTENT},
@@ -269,8 +268,11 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"MadsCruiseMain", PERSISTENT},
     {"MadsIconToggle", PERSISTENT},
     {"MapboxFullScreen", PERSISTENT},
+    {"MapTargetVelocities", PERSISTENT},
     {"Map3DBuildings", PERSISTENT},
     {"MaxTimeOffroad", PERSISTENT},
+    {"NavModelText", PERSISTENT},
+    {"NavModelUrl", PERSISTENT},
     {"NNFF", PERSISTENT},
     {"NNFFCarModel", PERSISTENT},
     {"OnroadScreenOff", PERSISTENT},
@@ -281,6 +283,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"OsmLocationTitle", PERSISTENT},
     {"OsmLocationUrl", PERSISTENT},
     {"OsmWayTest", PERSISTENT},
+    {"OsmDownloadedDate", PERSISTENT},
     {"PathOffset", PERSISTENT},
     {"QuietDrive", PERSISTENT},
     {"RoadEdge", PERSISTENT},
@@ -293,6 +296,10 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SpeedLimitEngageType", PERSISTENT},
     {"SpeedLimitValueOffset", PERSISTENT},
     {"SpeedLimitOffsetType", PERSISTENT},
+    {"SpeedLimitWarningFlash", PERSISTENT},
+    {"SpeedLimitWarningType", PERSISTENT},
+    {"SpeedLimitWarningValueOffset", PERSISTENT},
+    {"SpeedLimitWarningOffsetType", PERSISTENT},
     {"StandStillTimer", PERSISTENT},
     {"StockLongToyota", PERSISTENT},
     {"SubaruManualParkingBrakeSng", PERSISTENT},
@@ -331,8 +338,15 @@ std::unordered_map<std::string, uint32_t> keys = {
 
 
 Params::Params(const std::string &path) {
-  prefix = "/" + util::getenv("OPENPILOT_PREFIX", "d");
-  params_path = ensure_params_path(prefix, path);
+  params_prefix = "/" + util::getenv("OPENPILOT_PREFIX", "d");
+  params_path = ensure_params_path(params_prefix, path);
+}
+
+Params::~Params() {
+  if (future.valid()) {
+    future.wait();
+  }
+  assert(queue.empty());
 }
 
 std::vector<std::string> Params::allKeys() const {
@@ -444,4 +458,21 @@ void Params::clearAll(ParamKeyType key_type) {
   }
 
   fsync_dir(getParamPath());
+}
+
+void Params::putNonBlocking(const std::string &key, const std::string &val) {
+   queue.push(std::make_pair(key, val));
+  // start thread on demand
+  if (!future.valid() || future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+    future = std::async(std::launch::async, &Params::asyncWriteThread, this);
+  }
+}
+
+void Params::asyncWriteThread() {
+  // TODO: write the latest one if a key has multiple values in the queue.
+  std::pair<std::string, std::string> p;
+  while (queue.try_pop(p, 0)) {
+    // Params::put is Thread-Safe
+    put(p.first, p.second);
+  }
 }

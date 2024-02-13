@@ -9,7 +9,7 @@ from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
 from openpilot.selfdrive.navd.helpers import Coordinate
 from openpilot.selfdrive.sunnypilot.live_map_data import QUERY_RADIUS
 from openpilot.common.realtime import Ratekeeper, set_core_affinity
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 import os
 import glob
 import shutil

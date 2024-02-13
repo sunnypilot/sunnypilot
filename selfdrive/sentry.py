@@ -9,7 +9,7 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.selfdrive.athena.registration import UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.system.hardware import HARDWARE, PC
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_branch, get_commit, get_origin, get_version, \
                               is_comma_remote, is_dirty, is_tested_branch, get_branch_type
 
@@ -97,7 +97,9 @@ def get_properties() -> Tuple[str, str]:
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf-8')
   if dongle_id in (None, UNREGISTERED_DONGLE_ID):
-    dongle_id = UNREGISTERED_DONGLE_ID
+    hardware_serial = params.get("HardwareSerial", encoding='utf-8')
+    hardware_serial = "" if hardware_serial is None else hardware_serial
+    dongle_id = UNREGISTERED_DONGLE_ID + hardware_serial
   gitname = params.get("GithubUsername", encoding='utf-8')
   if gitname is None:
     gitname = ""
@@ -129,14 +131,13 @@ def init(project: SentryProject) -> bool:
   integrations = []
   if project == SentryProject.SELFDRIVE:
     integrations.append(ThreadingIntegration(propagate_hub=True))
-  else:
-    sentry_sdk.utils.MAX_STRING_LENGTH = 8192
 
   sentry_sdk.init(project.value,
                   default_integrations=False,
                   release=get_version(),
                   integrations=integrations,
                   traces_sample_rate=1.0,
+                  max_value_length=8192,
                   environment=env,
                   send_default_pii=True)
 

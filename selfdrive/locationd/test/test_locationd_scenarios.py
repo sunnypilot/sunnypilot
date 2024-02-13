@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
+import pytest
 import unittest
 import numpy as np
 from collections import defaultdict
 from enum import Enum
 
-
-from openpilot.selfdrive.test.openpilotci import get_url
 from openpilot.tools.lib.logreader import LogReader
 from openpilot.selfdrive.test.process_replay.process_replay import replay_process_with_name
 
-TEST_ROUTE, TEST_SEG_NUM = "ff2bd20623fcaeaa|2023-09-05--10-14-54", 4
+TEST_ROUTE = "ff2bd20623fcaeaa|2023-09-05--10-14-54/4"
 GPS_MESSAGES = ['gpsLocationExternal', 'gpsLocation']
 SELECT_COMPARE_FIELDS = {
   'yaw_rate': ['angularVelocityCalibrated', 'value', 2],
@@ -97,6 +96,8 @@ def run_scenarios(scenario, logs):
   return get_select_fields_data(logs), get_select_fields_data(replayed_logs)
 
 
+@pytest.mark.xdist_group("test_locationd_scenarios")
+@pytest.mark.shared_download_cache
 class TestLocationdScenarios(unittest.TestCase):
   """
   Test locationd with different scenarios. In all these scenarios, we expect the following:
@@ -106,7 +107,7 @@ class TestLocationdScenarios(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls.logs = list(LogReader(get_url(TEST_ROUTE, TEST_SEG_NUM)))
+    cls.logs = list(LogReader(TEST_ROUTE))
 
   def test_base(self):
     """

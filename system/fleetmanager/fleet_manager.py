@@ -8,7 +8,7 @@ from flask import Flask, render_template, Response, request, send_from_directory
 from openpilot.common.realtime import set_core_affinity
 import openpilot.system.fleetmanager.helpers as fleet
 from openpilot.system.hardware.hw import Paths
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 
 app = Flask(__name__)
 
