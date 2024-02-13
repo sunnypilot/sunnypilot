@@ -68,7 +68,7 @@ class ModelState:
       'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
       'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
     }
-    if self.custom_model:
+    if self.custom_model and self.model_gen != 0:
       if self.model_gen == 1:
         _inputs = {
           'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),
@@ -88,10 +88,10 @@ class ModelState:
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
-    if self.param_s.get_bool("CustomDrivingModel"):
+    if self.custom_model and self.model_gen != 0:
       _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
       _model_paths = {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/supercombo-{_model_name}.thneed"}
-      _metadata_name = self.param_s.get("ModelMetadataText", encoding="utf8")
+      _metadata_name = self.param_s.get("DrivingModelMetadataText", encoding="utf8")
       _metadata_path = f"{CUSTOM_MODEL_PATH}/supercombo_metadata_{_metadata_name}.pkl" if _model_name else METADATA_PATH
     else:
       _model_paths = MODEL_PATHS
@@ -144,12 +144,13 @@ class ModelState:
 
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
-    if self.custom_model and self.model_gen == 1:
-      self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
-      self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
-    elif self.custom_model and self.model_gen == 2:
-      self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
-      self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
+    if self.custom_model and self.model_gen != 0:
+      if self.model_gen == 1:
+        self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
+        self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
+      elif self.model_gen == 2:
+        self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
+        self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
     else:
       self.inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
       self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][0, :]

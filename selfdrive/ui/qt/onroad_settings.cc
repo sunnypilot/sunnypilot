@@ -185,7 +185,6 @@ void OnroadSettings::refresh() {
   scene.dynamic_experimental_control = params.getBool("DynamicExperimentalControl");
   scene.speed_limit_control_enabled = params.getBool("EnableSlc");
   scene.speed_limit_control_policy = std::atoi(params.get("SpeedLimitControlPolicy").c_str());
-  scene.driving_model_gen = std::atoi(params.get("DrivingModelGeneration").c_str());
 
   if (!isVisible()) return;
 

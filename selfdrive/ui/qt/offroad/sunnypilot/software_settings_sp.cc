@@ -17,17 +17,17 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   connect(&metadata_fetcher, &ModelsFetcher::downloadProgress, this, [this](const double progress) {
     handleDownloadProgress(progress, "metadata");
   });
-  
+
   connect(&models_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
     modelFromCache = fromCache;
     updateLabels();
   });
-  
+
   connect(&nav_models_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
     navModelFromCache = fromCache;
     updateLabels();
   });
-  
+
   connect(&metadata_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
     metadataFromCache = fromCache;
     updateLabels();
@@ -59,7 +59,7 @@ void SoftwarePanelSP::handleDownloadProgress(const double progress, const QStrin
   } else if (modelType == "metadata") {
     metadataDownloadProgress = progress;
   }
-  
+
   HandleModelDownloadProgressReport();
 }
 
@@ -90,7 +90,7 @@ QString SoftwarePanelSP::GetMetadataName() {
   }
 
   // Return a default name or an empty string if there's no metadata selected
-  return QString::fromStdString(params.get("ModelMetadataText"));
+  return QString::fromStdString(params.get("DrivingModelMetadataText"));
 }
 
 void SoftwarePanelSP::HandleModelDownloadProgressReport() {
@@ -166,7 +166,7 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
   }
 
   if (!isDownloadingMetadata() && metadataDownloadProgress.has_value()) {
-    params.put("ModelMetadataText", selectedMetadataToDownload->fullNameMetadata.toStdString());
+    params.put("DrivingModelMetadataText", selectedMetadataToDownload->fullNameMetadata.toStdString());
     LOGD("Resetting selectedMetadataToDownload");
     selectedMetadataToDownload.reset();
     metadataDownloadProgress.reset();
@@ -238,7 +238,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
 
     // Disable select button until download completes
     currentModelLblBtn->setEnabled(false);
-    showResetParamsDialog(); 
+    showResetParamsDialog();
   }
   updateLabels();
 }
@@ -255,7 +255,7 @@ void SoftwarePanelSP::updateLabels() {
   if (!isVisible()) {
     return;
   }
-  
+
   if(!model_download_failed)
     failed_downloads_description = "";
 
