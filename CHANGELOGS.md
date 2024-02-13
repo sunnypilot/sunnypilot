@@ -4,6 +4,7 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
 * NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
 * UPDATED: Driving Model Selector v3
   * NEW❗: Driving Model additions
+    * Certified Herbalist v2 (February 13, 2024) - CHv2
     * Certified Herbalist (February 5, 2024) - CH
     * Los Angeles v2 (January 24, 2024) - LAv2
     * Los Angeles (January 22, 2024) - LAv1
@@ -21,10 +22,10 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
     * Custom Offsets
 * UPDATED: Dynamic Lane Profile (DLP)
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
-  * Deprecate support for newer Driving Models (e.g., CH, LAv2, LAv1)
+  * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
 * UPDATED: Custom Offsets
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
-  * Deprecate support for newer Driving Models (e.g., CH, LAv2, LAv1)
+  * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
 * FIXED: New comma 3X support
 * FIXED: New comma eSIM support
 * Bug fixes and performance improvements
