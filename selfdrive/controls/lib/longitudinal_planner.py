@@ -153,8 +153,8 @@ class LongitudinalPlanner:
       v_cruise = 0.0
 
     # Get active solutions for custom long mpc.
-    self.cruise_source, v_cruise_sol = self.cruise_solutions(
-      prev_accel_constraint and (self.CP.openpilotLongitudinalControl or not self.CP.pcmCruiseSpeed),
+    v_cruise = self.cruise_solutions(
+      not reset_state and (self.CP.openpilotLongitudinalControl or not self.CP.pcmCruiseSpeed),
       self.v_desired_filter.x, self.a_desired, v_cruise, sm)
 
     # clip limits, cannot init MPC outside of bounds
@@ -245,21 +245,14 @@ class LongitudinalPlanner:
     self.speed_limit_controller.update(enabled, v_ego, a_ego, sm, v_cruise, self.events)
     self.turn_speed_controller.update(enabled, v_ego, sm, v_cruise)
 
+    v_tsc_target = self.vision_turn_controller.v_target if self.vision_turn_controller.is_active else 255
+    slc_target = self.speed_limit_controller.speed_limit_offseted if self.speed_limit_controller.is_active else 255
+    m_tsc_target = self.turn_speed_controller.v_target if self.turn_speed_controller.is_active else 255
+
     # Pick solution with the lowest velocity target.
-    v_solutions = {'cruise': v_cruise}
+    v_solutions = min(v_cruise, v_tsc_target, slc_target, m_tsc_target)
 
-    if self.vision_turn_controller.is_active:
-      v_solutions['turn'] = self.vision_turn_controller.v_target
-
-    if self.speed_limit_controller.is_active:
-      v_solutions['limit'] = self.speed_limit_controller.speed_limit_offseted
-
-    if self.turn_speed_controller.is_active:
-      v_solutions['turnlimit'] = self.turn_speed_controller.v_target
-
-    source = min(v_solutions, key=v_solutions.get)
-
-    return source, v_solutions[source]
+    return v_solutions
 
   def e2e_events(self, sm):
     e2e_long_status = sm['e2eLongStateSP'].status

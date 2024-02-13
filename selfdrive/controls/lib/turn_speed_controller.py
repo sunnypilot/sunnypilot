@@ -69,7 +69,7 @@ class TurnSpeedController:
 
   @property
   def is_active(self):
-    return self.state > TurnSpeedControlState.tempInactive
+    return self.state > TurnSpeedControlState.tempInactive and self.enabled
 
   @property
   def v_target(self):
