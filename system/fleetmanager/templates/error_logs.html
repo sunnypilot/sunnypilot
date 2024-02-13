@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Error Logs
+{% endblock %}
+
+{% block main %}
+    <br>
+    <h1>Error Logs</h1>
+    <br>
+    {% for row in rows %}
+        <a href="error_logs/{{ row }}">{{ row }}</a><br>
+    {% endfor %}
+{% endblock %}

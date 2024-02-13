@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ -f /TICI ] && [ ! -f qt/spinner ]; then
+  cp qt/spinner_larch64 qt/spinner
+fi
+
+exec ./qt/spinner "$1"
