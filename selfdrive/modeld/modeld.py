@@ -365,12 +365,12 @@ def main(demo=False):
       pm.send('modelV2', modelv2_send)
       pm.send('cameraOdometry', posenet_send)
 
+      modelv2_sp_send = messaging.new_message('modelV2SP')
+      modelv2_sp_send.valid = True
       if not (custom_model and model_gen == 1):
-        modelv2_sp_send = messaging.new_message('modelV2SP')
-        modelv2_sp_send.valid = True
         modelv2_sp_send.modelV2SP.laneChangePrev = DH.prev_lane_change
         modelv2_sp_send.modelV2SP.laneChangeEdgeBlock = lat_plan_sp.laneChangeEdgeBlockDEPRECATED
-        pm.send('modelV2SP', modelv2_sp_send)
+      pm.send('modelV2SP', modelv2_sp_send)
 
     last_vipc_frame_id = meta_main.frame_id
 
