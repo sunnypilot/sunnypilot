@@ -243,7 +243,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
   dlp_settings = new ButtonParamControl(
-    "DynamicLaneProfile", "Dynamic Lane Profile", "Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions.",
+    "DynamicLaneProfile", "Dynamic Lane Profile", "",
     "../assets/offroad/icon_blank.png",
     dlp_settings_texts,
     340
@@ -434,9 +434,14 @@ void SunnypilotPanel::updateToggles() {
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
   toggles["VisionCurveLaneless"]->refresh();
 
+  bool custom_driving_model = params.getBool("CustomDrivingModel");
   auto driving_model_gen = QString::fromStdString(params.get("DrivingModelGeneration"));
-  dlp_settings->setVisible(driving_model_gen == "1");
-  toggles["VisionCurveLaneless"]->setVisible(driving_model_gen == "1");
+  bool model_use_lateral_planner = custom_driving_model && driving_model_gen == "1";
+  auto driving_model_name = custom_driving_model ? QString::fromStdString(params.get("DrivingModelName")) : CURRENT_MODEL;
+  QString driving_model_text = QString("<font color='yellow'>" + driving_model_name + "</font>");
+  dlp_settings->setEnabled(model_use_lateral_planner);
+  toggles["VisionCurveLaneless"]->setVisible(model_use_lateral_planner);
+  auto dlp_incompatible_desc = tr("<font color='yellow'>Dynamic Lane Profile is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
 
   auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
@@ -567,6 +572,8 @@ void SunnypilotPanel::updateToggles() {
   toggles["CustomTorqueLateral"]->setEnabled(is_offroad);
   toggles["LiveTorque"]->setEnabled(is_offroad);
   toggles["LiveTorqueRelaxed"]->setEnabled(is_offroad);
+
+  dlp_settings->setDescription((model_use_lateral_planner ? "" : dlp_incompatible_desc + "<br><br>") + dlp_description);
 }
 
 TorqueFriction::TorqueFriction() : SPOptionControl (

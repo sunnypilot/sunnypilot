@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/model.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/custom_offsets_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/lane_change_settings.h"
@@ -77,4 +78,6 @@ private:
     QString description = "<b>" + custom_description + "</b><br><br>" + nnff_description;
     return description;
   }
+
+  const QString dlp_description = QString(tr("Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions."));
 };
