@@ -70,6 +70,13 @@ class Soundd:
     self.param_s = Params()
     self.quiet_drive = self.param_s.get_bool("QuietDrive")
 
+    self._frame = 0
+
+  def load_param(self):
+    self._frame += 1
+    if self._frame == 50:
+      self.quiet_drive = self.param_s.get_bool("QuietDrive")
+
   def should_play_sound(self):
     return (self.current_alert == AudibleAlert.warningSoft or self.current_alert == AudibleAlert.warningImmediate or
       self.current_alert == AudibleAlert.promptDistracted or self.current_alert == AudibleAlert.promptRepeat or
@@ -157,6 +164,7 @@ class Soundd:
 
       cloudlog.info(f"soundd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
       while True:
+        self.load_param()
         sm.update(0)
 
         if sm.updated['microphone'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert
