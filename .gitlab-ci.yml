@@ -12,6 +12,7 @@ variables:
 
 stages:
   - build
+  - sanity
   - publish
   - notify
 
@@ -70,6 +71,7 @@ build:
     paths:
       - "${CI_DIR}/scons_cache"
   before_script:
+    - find $BUILD_DIR/ -mindepth 1 -delete
     - *default_before_script
     - "echo Starting build stage..."
     - "echo BUILD_DIR: ${BUILD_DIR}"
@@ -79,7 +81,6 @@ build:
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
   script:
     - export PYTHONPATH="$BUILD_DIR"
-    - "echo Calling to build [${CI_DIR}/build.sh ${CI_PROJECT_DIR} ${BUILD_DIR} ${VERSION}]"
     - "echo Building Panda..."
     - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache ${CI_PROJECT_DIR}/panda
     - mkdir -p ${BUILD_DIR}
@@ -89,28 +90,49 @@ build:
     - cd $BUILD_DIR
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
     - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache
-
-    # Cleanup
-    - echo "Doing cleanup for prebuilt\n\n"
-    - echo "Deleting specified files..."
-    - find ${BUILD_DIR} \( -name '*.a' -o -name '*.o' -o -name '*.os' -o -name '*.pyc' -o -name 'moc_*' -o -name '*.cc' -o -name "Jenkinsfile" -o -name "supercombo.onnx" -o -name ".sconsign.dblite" \) -print -delete
-
-    - echo "Deleting Headers from selfdrive/ui path..."
-    - find ${BUILD_DIR}/selfdrive/ui -type f -name '*.h' -print -delete
-
-    - echo "Deleting the following folders and subdirectories..."
-    - find "${BUILD_DIR}" -type d \( -path "*panda/board" -o -path "*panda/certs" -o -path "*panda/crypto" -o -path "*release" -o -path "*.github" -o -path "*selfdrive/ui/replay" -o -path "*__pycache__" \) -print -exec rm -rf {} +
-
-    # Move back signed panda fw
-    - mkdir -p ${BUILD_DIR}/panda/board/obj
-    - cp ${CI_PROJECT_DIR}/panda/board/obj/panda.bin.signed ${BUILD_DIR}/panda/board/obj/panda.bin.signed
-    - cp ${CI_PROJECT_DIR}/panda/board/obj/panda_h7.bin.signed ${BUILD_DIR}/panda/board/obj/panda_h7.bin.signed
-    - cp ${CI_PROJECT_DIR}/panda/board/obj/bootstub.panda.bin ${BUILD_DIR}/panda/board/obj/bootstub.panda.bin
-    - cp ${CI_PROJECT_DIR}/panda/board/obj/bootstub.panda_h7.bin ${BUILD_DIR}/panda/board/obj/bootstub.panda_h7.bin
     - touch ${BUILD_DIR}/prebuilt
+    - sudo rm -rf ${OUTPUT_DIR} 
     - mkdir -p ${OUTPUT_DIR}
-    - shopt -s dotglob && mv ${BUILD_DIR}/* ${OUTPUT_DIR}
-    - sudo chown -R comma:comma ${OUTPUT_DIR}
+    # We first include the paths we want to keep, even if we later will be excluding the other things on those paths
+    - rsync -av
+      --include='**/panda/board/'
+      --include='**/panda/board/obj'
+      --include='**/panda/board/obj/panda.bin.signed'
+      --include='**/panda/board/obj/panda_h7.bin.signed'
+      --include='**/panda/board/obj/bootstub.panda.bin'
+      --include='**/panda/board/obj/bootstub.panda_h7.bin'
+      --exclude='.sconsign.dblite'
+      --exclude='*.a'
+      --exclude='*.A'
+      --exclude='*.o'
+      --exclude='*.O'
+      --exclude='*.os'
+      --exclude='*.OS'
+      --exclude='*.pyc'
+      --exclude='*.PYC'
+      --exclude='moc_*'
+      --exclude='MOC_*'
+      --exclude='*.cc'
+      --exclude='*.CC'
+      --exclude='Jenkinsfile'
+      --exclude='supercombo.onnx'
+      --exclude='**/panda/board/*'
+      --exclude='**/panda/board/obj/**'
+      --exclude='**/panda/certs/'
+      --exclude='**/panda/crypto/'
+      --exclude='**/release/'
+      --exclude='**/.github/'
+      --exclude='**/selfdrive/ui/replay/'
+      --exclude='**/__pycache__/'
+      --exclude='**/selfdrive/ui/**/*.h'
+      --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/'
+      --exclude='**/.git/'
+      --delete-excluded
+      --chown=comma:comma
+      ${BUILD_DIR}/ ${OUTPUT_DIR}/
+  after_script:
+    # cleanup build dir after doing work 
+    - find $BUILD_DIR/ -mindepth 1 -delete
   artifacts:
     paths:
       - ${OUTPUT_DIR}/
@@ -120,6 +142,27 @@ build:
       when: manual
     - if: $NEW_BRANCH
       when: always
+      
+check no source code sent:
+  stage: sanity
+  variables:
+    FORBIDDEN_FILE_EXTENSIONS: "*.a,*.o,*.os,*.pyc,moc_*,*.cc,Jenkinsfile,supercombo.onnx,.sconsign.dblite"
+    FORBIDDEN_DIR_PATTERNS: "*panda/certs,*panda/crypto,*release,*.github,*selfdrive/ui/replay,*__pycache__"
+    REQUIRED_FILE_EXTENSIONS: "*.py,*.json"
+    REQUIRED_DIR_PATTERNS: "*selfdrive/ui,*openpilot"
+  before_script:
+    - apk update && apk upgrade
+    - apk add bash findutils
+  script:
+    - cd ${OUTPUT_DIR}
+    - echo "Checking that we have properly cleaned up"
+    - ${CI_DIR}/sanity_check.sh "$FORBIDDEN_FILE_EXTENSIONS" "$FORBIDDEN_DIR_PATTERNS" true
+    - echo "Checking that our sanity check works and also checking that some required files are indeed found"
+    - ${CI_DIR}/sanity_check.sh "$REQUIRED_FILE_EXTENSIONS" "$REQUIRED_DIR_PATTERNS" false
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
 
 .publish_base: &publish_base
   variables:
@@ -128,6 +171,9 @@ build:
   needs:
     - job: build
       artifacts: true
+    - job: "check no source code sent"
+      artifacts: false
+      optional: false
   before_script:
     - 'apk update && apk upgrade'
     - 'apk add git bash openssh'
