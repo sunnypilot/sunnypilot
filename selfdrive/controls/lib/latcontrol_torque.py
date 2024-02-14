@@ -189,7 +189,8 @@ class LatControlTorque(LatControl):
       lateral_jerk_measurement = 0
       lookahead_lateral_jerk = 0
 
-      if self.use_nn or self.use_lateral_jerk:
+      model_good = model_data is not None and len(model_data.orientation.x) >= CONTROL_N
+      if model_good and (self.use_nn or self.use_lateral_jerk):
         # prepare "look-ahead" desired lateral jerk
         lookahead = interp(CS.vEgo, self.friction_look_ahead_bp, self.friction_look_ahead_v)
         friction_upper_idx = next((i for i, val in enumerate(ModelConstants.T_IDXS) if val > lookahead), 16)
@@ -203,7 +204,6 @@ class LatControlTorque(LatControl):
         lateral_jerk_setpoint = self.lat_jerk_friction_factor * lookahead_lateral_jerk
         lateral_jerk_measurement = self.lat_jerk_friction_factor * actual_lateral_jerk
 
-      model_good = model_data is not None and len(model_data.orientation.x) >= CONTROL_N
       if self.use_nn and model_good:
         # update past data
         roll = params.roll
