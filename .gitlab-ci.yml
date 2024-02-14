@@ -124,6 +124,7 @@ build:
       --exclude='**/.github/'
       --exclude='**/selfdrive/ui/replay/'
       --exclude='**/__pycache__/'
+      --exclude='**/selfdrive/ui/*.h'
       --exclude='**/selfdrive/ui/**/*.h'
       --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/'
       --exclude='**/.git/'
