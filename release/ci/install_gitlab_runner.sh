@@ -64,6 +64,7 @@ set_gitlab_directory_permissions() {
     sudo chmod g+s "$GITLAB_BASE_DIR"
 }
 
+# Please note that when the gitlab runner is started, linux implicitly executes "source /etc/profile" for every logged shell. This will make scons available
 create_gitlab_runner_service() {
     cat <<EOL | sudo tee /etc/systemd/system/${SERVICE_NAME}.service
 [Unit]
