@@ -166,6 +166,10 @@ def manager_init() -> None:
   if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
     os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
 
+  models_dir = "/data/media/0/models"
+  if not os.path.exists(models_dir):
+    os.makedirs(models_dir)
+
   # preimport all processes
   for p in managed_processes.values():
     p.prepare()

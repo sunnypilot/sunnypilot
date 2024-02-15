@@ -68,7 +68,7 @@ QString SoftwarePanelSP::GetModelName() {
     return selectedModelToDownload->displayName;
   }
 
-  if (params.getBool("CustomDrivingModel")) {
+  if (params.getBool("CustomDrivingModel") && QString::fromStdString(params.get("DrivingModelGeneration")) != "0") {
     return QString::fromStdString(params.get("DrivingModelName"));
   }
 

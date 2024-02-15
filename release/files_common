@@ -102,6 +102,7 @@ selfdrive/car/tests/__init__.py
 selfdrive/car/tests/test_car_interfaces.py
 selfdrive/car/torque_data/*.toml
 selfdrive/car/torque_data/lat_models/*
+selfdrive/car/torque_data/neural_ff_weights.json
 
 selfdrive/car/body/*.py
 selfdrive/car/chrysler/*.py
