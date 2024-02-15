@@ -11,8 +11,8 @@ from openpilot.selfdrive.car.docs_definitions import CarFootnote, CarHarness, Ca
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, p16
 
 Ecu = car.CarParams.Ecu
-
-
+# 100 Hz
+# 100 Hz
 class CarControllerParams:
   ACCEL_MIN = -3.5 # m/s
   ACCEL_MAX = 2.0 # m/s
