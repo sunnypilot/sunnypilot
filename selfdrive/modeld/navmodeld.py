@@ -15,6 +15,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import set_realtime_priority
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
+from openpilot.selfdrive.sunnypilot import get_model_generation
 
 NAV_INPUT_SIZE = 256*256
 NAV_FEATURE_LEN = 256
@@ -51,7 +52,8 @@ class ModelState:
     assert ctypes.sizeof(NavModelResult) == NAV_OUTPUT_SIZE * ctypes.sizeof(ctypes.c_float)
     self.output = np.zeros(NAV_OUTPUT_SIZE, dtype=np.float32)
     self.param_s = Params()
-    if self.param_s.get_bool("CustomDrivingModel"):
+    self.custom_model, self.model_gen = get_model_generation(self.param_s)
+    if self.custom_model and self.model_gen != 0:
       _model_name = self.param_s.get("NavModelText", encoding="utf8")
       _model_paths = {
         ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.dlc"}
