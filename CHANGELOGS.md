@@ -26,7 +26,7 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
 * UPDATED: Custom Offsets
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
   * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
-* NEW❗: Hyundai CAN-FD longitudinal:
+* NEW❗: Hyundai CAN-FD longitudinal
   * NEW❗: Parse lead info for camera-based SCC platforms
     * Improve lead tracking when using openpilot longitudinal
 * FIXED: New comma 3X support
