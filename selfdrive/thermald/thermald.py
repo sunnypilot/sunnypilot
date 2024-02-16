@@ -168,7 +168,7 @@ def hw_state_thread(end_event, hw_queue):
 
 def thermald_thread(end_event, hw_queue) -> None:
   pm = messaging.PubMaster(['deviceState'])
-  sm = messaging.SubMaster(["peripheralState", "gpsLocationExternal", "controlsState", "pandaStates"], poll=["pandaStates"])
+  sm = messaging.SubMaster(["peripheralState", "gpsLocationExternal", "controlsState", "pandaStates"], poll="pandaStates")
 
   count = 0
 
@@ -235,7 +235,7 @@ def thermald_thread(end_event, hw_queue) -> None:
         if TICI:
           fan_controller = TiciFanController()
 
-    elif (time.monotonic() - sm.rcv_time['pandaStates']) > DISCONNECT_TIMEOUT:
+    elif (time.monotonic() - sm.recv_time['pandaStates']) > DISCONNECT_TIMEOUT:
       if onroad_conditions["ignition"]:
         onroad_conditions["ignition"] = False
         cloudlog.error("panda timed out onroad")

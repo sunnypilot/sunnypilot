@@ -43,7 +43,7 @@ class CarState(CarStateBase):
 
     # Match panda speed reading
     speed_kph = cp.vl["ENGINE_DATA"]["SPEED"]
-    ret.standstill = speed_kph < .1
+    ret.standstill = speed_kph <= .1
 
     self.lkas_enabled = not self.lkas_disabled
 
