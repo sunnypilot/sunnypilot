@@ -242,8 +242,16 @@ private:
   bool slcShowSign = true;
   QPixmap plus_arrow_up_img;
   QPixmap minus_arrow_down_img;
+  QRect sl_sign_rect;
+  int rn_offset = 0;
+  bool e2eLongAlertUi, dynamicExperimentalControlToggle, speedLimitControlToggle, speedLimitWarningFlash;
+  cereal::CarParams::Reader car_params;
+  bool cruiseStateEnabled;
+  bool experimentalMode;
 
   bool featureStatusToggle;
+
+  int drivingModelGen;
 
 protected:
   void paintGL() override;

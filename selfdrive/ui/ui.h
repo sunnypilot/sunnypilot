@@ -219,7 +219,6 @@ typedef struct UIScene {
 
   bool map_visible;
   int dev_ui_info;
-  int rn_offset;
   bool live_torque_toggle;
 
   bool touch_to_wake = false;
@@ -245,8 +244,6 @@ typedef struct UIScene {
   bool torqued_override;
 
   bool dynamic_experimental_control;
-
-  QRect sl_sign_rect;
 
   int speed_limit_control_engage_type;
 

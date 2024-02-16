@@ -126,8 +126,6 @@ void OnroadWindow::updateState(const UIState &s) {
 
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
-  bool propagate_event = true;
-
 #ifdef ENABLE_MAPS
   UIState *s = uiState();
   UIScene &scene = s->scene;
@@ -147,9 +145,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     }
   }
   // propagation event to parent(HomeWindow)
-  if (propagate_event) {
-    QWidget::mousePressEvent(e);
-  }
+  QWidget::mousePressEvent(e);
 }
 
 void OnroadWindow::offroadTransition(bool offroad) {
@@ -410,11 +406,9 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
   UIState *s = uiState();
   UIScene &scene = s->scene;
   const SubMaster &sm = *(s->sm);
-  auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  const auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
 
-  QRect speed_limit_touch_rect = scene.sl_sign_rect;
-
-  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && speed_limit_touch_rect.contains(e->x(), e->y())) {
+  if (longitudinal_plan_sp.getSpeedLimit() > 0.0 && sl_sign_rect.contains(e->x(), e->y())) {
     // If touching the speed limit sign area when visible
     scene.last_speed_limit_sign_tap = seconds_since_boot();
     params.putBool("LastSpeedLimitSignTap", true);
@@ -444,7 +438,7 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
     delete item;
   }
 
-  buttons_layout->setContentsMargins(0, 0, 10, uiState()->scene.rn_offset != 0 ? uiState()->scene.rn_offset + 10 : 20);
+  buttons_layout->setContentsMargins(0, 0, 10, rn_offset != 0 ? rn_offset + 10 : 20);
 
   buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
   buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
@@ -475,6 +469,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto gpsLocation = is_gps_location_external ? sm["gpsLocationExternal"].getGpsLocationExternal() : sm["gpsLocation"].getGpsLocation();
   const auto ltp = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto lateral_plan_sp = sm["lateralPlanSPDEPRECATED"].getLateralPlanSPDEPRECATED();
+  car_params = sm["carParams"].getCarParams();
 
   // Handle older routes where vCruiseCluster is not set
   float v_cruise =  cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
@@ -595,6 +590,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   slcState = lp_sp.getSpeedLimitControlState();
 
+  speedLimitControlToggle = s.scene.speed_limit_control_enabled;
+
   if (sm.frame % (UI_FREQ / 2) == 0) {
     const auto vtcState = lp_sp.getVisionTurnControllerState();
     const float vtc_speed = lp_sp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
@@ -616,13 +613,13 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
     float speed_limit_slc = lp_sp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
     const float speed_limit_offset = lp_sp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const bool sl_force_active = s.scene.speed_limit_control_enabled &&
+    const bool sl_force_active = speedLimitControlToggle &&
                                  seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
-    const bool sl_inactive = !sl_force_active && (!s.scene.speed_limit_control_enabled ||
+    const bool sl_inactive = !sl_force_active && (!speedLimitControlToggle ||
                              slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE);
-    const bool sl_temp_inactive = !sl_force_active && (s.scene.speed_limit_control_enabled &&
+    const bool sl_temp_inactive = !sl_force_active && (speedLimitControlToggle &&
                                   slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
-    const bool sl_pre_active = !sl_force_active && (s.scene.speed_limit_control_enabled &&
+    const bool sl_pre_active = !sl_force_active && (speedLimitControlToggle &&
                                slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE);
     const int sl_distance = int(lp_sp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
     const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
@@ -677,6 +674,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   reversing = reverse_allowed;
 
+  cruiseStateEnabled = car_state.getCruiseState().getEnabled();
+
   int e2eLStatus = 0;
   static bool chime_sent = false;
   static int chime_count = 0;
@@ -702,7 +701,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     }
   }
 
-  if ((car_state.getCruiseState().getEnabled() || car_state.getBrakeLightsDEPRECATED()) && !car_state.getGasPressed() && car_state.getStandstill()) {
+  if ((cruiseStateEnabled || car_state.getBrakeLightsDEPRECATED()) && !car_state.getGasPressed() && car_state.getStandstill()) {
     if (e2eLStatus == 2 && !radar_state.getLeadOne().getStatus()) {
       if (chime_sent) {
         chime_count = 0;
@@ -733,10 +732,15 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
+  e2eLongAlertUi = s.scene.e2e_long_alert_ui;
+  dynamicExperimentalControlToggle = s.scene.dynamic_experimental_control;
+  speedLimitWarningFlash = s.scene.speed_limit_warning_flash;
+  experimentalMode = cs.getExperimentalMode();
 
   featureStatusToggle = s.scene.feature_status_toggle;
 
   experimental_btn->setVisible(!(showDebugUI && showVTC));
+  drivingModelGen = s.scene.driving_model_gen;
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
@@ -809,7 +813,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   p.drawText(set_speed_rect.adjusted(0, 77, 0, 0), Qt::AlignTop | Qt::AlignHCenter, setSpeedStr);
 
   const QRect sign_rect = set_speed_rect.adjusted(sign_margin, default_size.height(), -sign_margin, -sign_margin);
-  uiState()->scene.sl_sign_rect = sign_rect;
+  sl_sign_rect = sign_rect;
 
   speedLimitWarning(p, sign_rect, sign_margin);
 
@@ -880,7 +884,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     int rn_btn = 0;
     rn_btn = !splitPanelVisible && devUiInfo == 2 ? 35 : 0;
-    uiState()->scene.rn_offset = rn_btn;
+    rn_offset = rn_btn;
 
     // Stand Still Timer
     if (standStillTimer && standStill && !splitPanelVisible) {
@@ -902,19 +906,19 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
 
     // Turn Speed Sign
     if (showTurnSpeedLimit) {
-      QRect rc = uiState()->scene.sl_sign_rect;
-      rc.moveTop(uiState()->scene.sl_sign_rect.bottom() + UI_BORDER_SIZE);
+      QRect rc = sign_rect;
+      rc.moveTop(sign_rect.bottom() + UI_BORDER_SIZE);
       drawTrunSpeedSign(p, rc, turnSpeedLimit, tscSubText, curveSign, tscActive);
     }
   }
 
   // E2E Status
-  if (uiState()->scene.e2e_long_alert_ui && e2eState != 0) {
+  if (e2eLongAlertUi && e2eState != 0) {
     drawE2eStatus(p, UI_BORDER_SIZE * 2 + 190, 45, 150, 150, e2eState);
   }
 
   if (!hideBottomIcons && featureStatusToggle) {
-    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - uiState()->scene.rn_offset);
+    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - rn_offset);
   }
 
   p.restore();
@@ -1551,8 +1555,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   const int w = 16;
   const int h = 16;
 
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
-  const bool longitudinal = hasLongitudinalControl(cp);
+  const bool longitudinal = hasLongitudinalControl(car_params);
 
   p.setFont(InterFont(32, QFont::Bold));
 
@@ -1581,16 +1584,13 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Dynamic Lane Profile
-  if (uiState()->scene.driving_model_gen == 1) {
+  if (drivingModelGen == 1) {
     drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
   }
 
   // TODO: Add toggle variables to cereal, and parse from cereal
   if (longitudinal) {
-    bool cruise_enabled = (*uiState()->sm)["carState"].getCarState().getCruiseState().getEnabled();
-    bool dec_enabled = uiState()->scene.dynamic_experimental_control;
-    bool experimental_mode = (*uiState()->sm)["controlsState"].getControlsState().getExperimentalMode();
-    QColor dec_color((cruise_enabled && dec_enabled) ? "#4bff66" : "#ffffff");
+    QColor dec_color((cruiseStateEnabled && dynamicExperimentalControlToggle) ? "#4bff66" : "#ffffff");
     QRect dec_btn(x - eclipse_x_offset, y - eclipse_y_offset, w, h);
     QRect dec_btn_shadow(x - eclipse_x_offset + drop_shadow_size, y - eclipse_y_offset + drop_shadow_size, w, h);
     p.setPen(Qt::NoPen);
@@ -1599,7 +1599,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
     p.setBrush(dec_color);
     p.drawEllipse(dec_btn);
     QString dec_status_text;
-    dec_status_text.sprintf("DEC: %s\n", dec_enabled ? (experimental_mode ? QString(mpcMode).toStdString().c_str() : QString("Inactive").toStdString().c_str()) : "OFF");
+    dec_status_text.sprintf("DEC: %s\n", dynamicExperimentalControlToggle ? (experimentalMode ? QString(mpcMode).toStdString().c_str() : QString("Inactive").toStdString().c_str()) : "OFF");
     p.setPen(QPen(shadow_color, 2));
     p.drawText(x + drop_shadow_size, y + drop_shadow_size, dec_status_text);
     p.setPen(QPen(text_color, 2));
@@ -1609,8 +1609,8 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
 
   // TODO: Add toggle variables to cereal, and parse from cereal
   // Speed Limit Control
-  if (longitudinal || !cp.getPcmCruiseSpeed()) {
-    drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, uiState()->scene.speed_limit_control_enabled, "OFF", "SLC");
+  if (longitudinal || !car_params.getPcmCruiseSpeed()) {
+    drawFeatureStatusElement(int(slcState), feature_text.slc_list_text, feature_color.slc_list_color, speedLimitControlToggle, "OFF", "SLC");
   }
 }
 
@@ -1637,7 +1637,7 @@ void AnnotatedCameraWidget::speedLimitWarning(QPainter &p, QRect sign_rect, cons
   }
 
   // current speed over speed limit
-  else if (overSpeedLimit && uiState()->scene.speed_limit_warning_flash) {
+  else if (overSpeedLimit && speedLimitWarningFlash) {
     speed_limit_frame++;
     speedLimitSignPulse(speed_limit_frame);
   }
@@ -1791,7 +1791,7 @@ void AnnotatedCameraWidget::drawDriverState(QPainter &painter, const UIState *s)
   // base icon
   int offset = UI_BORDER_SIZE + btn_size / 2;
   int x = rightHandDM ? width() - offset : offset;
-  int y = height() - offset - scene.rn_offset;
+  int y = height() - offset - rn_offset;
   float opacity = dmActive ? 0.65 : 0.2;
   drawIcon(painter, QPoint(x, y), dm_img, blackColor(70), opacity);
 
