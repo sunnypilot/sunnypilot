@@ -257,6 +257,9 @@ typedef struct UIScene {
   int speed_limit_warning_value_offset;
 
   int driving_model_gen;
+
+  bool feature_status_toggle;
+  bool onroad_settings_toggle;
 } UIScene;
 
 class UIState : public QObject {

@@ -26,6 +26,11 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
 * UPDATED: Custom Offsets
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
   * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+* UI Updates
+  * NEW❗: Visuals: Display Feature Status toggle
+    * Display the statuses of certain features on the driving screen
+  * NEW❗: Visuals: Enable Onroad Settings toggle
+    * Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu
 * FIXED: New comma 3X support
 * FIXED: New comma eSIM support
 * Bug fixes and performance improvements

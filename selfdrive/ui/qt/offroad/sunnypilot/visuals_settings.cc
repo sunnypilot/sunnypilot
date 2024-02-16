@@ -28,6 +28,18 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "FeatureStatus",
+      tr("Display Feature Status"),
+      tr("Display the statuses of certain features on the driving screen."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "OnroadSettings",
+      tr("Enable Onroad Settings"),
+      tr("Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "TrueVEgoUi",
       tr("Speedometer: Display True Speed"),
       tr("Display the true vehicle current speed from wheel speed sensors."),

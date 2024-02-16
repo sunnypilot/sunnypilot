@@ -354,7 +354,7 @@ void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
 void OnroadSettingsButton::updateState(const UIState &s) {
   const auto cp = (*s.sm)["carParams"].getCarParams();
   auto dlp_enabled = true;
-  bool allow_btn = dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
+  bool allow_btn = s.scene.onroad_settings_toggle && (dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed());
 
   setVisible(allow_btn);
   setEnabled(allow_btn);
@@ -734,6 +734,8 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   e2eStatus = chime_prompt;
   e2eState = e2eLStatus;
 
+  featureStatusToggle = s.scene.feature_status_toggle;
+
   experimental_btn->setVisible(!(showDebugUI && showVTC));
 }
 
@@ -911,7 +913,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
     drawE2eStatus(p, UI_BORDER_SIZE * 2 + 190, 45, 150, 150, e2eState);
   }
 
-  if (!hideBottomIcons) {
+  if (!hideBottomIcons && featureStatusToggle) {
     drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - uiState()->scene.rn_offset);
   }
 

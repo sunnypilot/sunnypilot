@@ -243,6 +243,8 @@ private:
   QPixmap plus_arrow_up_img;
   QPixmap minus_arrow_down_img;
 
+  bool featureStatusToggle;
+
 protected:
   void paintGL() override;
   void initializeGL() override;
