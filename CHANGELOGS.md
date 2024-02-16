@@ -1,6 +1,6 @@
 sunnypilot - 0.9.6.0 (2024-xx-xx)
 ========================
-* UPDATED: Synced with commaai's master commit c9bd4e4 (February 2, 2024)
+* UPDATED: Synced with commaai's master commit 9acc558 (February 14, 2024)
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:beta3 commit f4ee52f
 * NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
