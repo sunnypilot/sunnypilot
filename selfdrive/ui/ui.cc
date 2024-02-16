@@ -264,6 +264,7 @@ void ui_update_params(UIState *s) {
   s->scene.speed_limit_warning_type = std::atoi(params.get("SpeedLimitWarningType").c_str());
   s->scene.speed_limit_warning_value_offset = std::atoi(params.get("SpeedLimitWarningValueOffset").c_str());
   s->scene.driving_model_gen = std::atoi(params.get("DrivingModelGeneration").c_str());
+  s->scene.speed_limit_control_enabled = params.getBool("EnableSlc");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
