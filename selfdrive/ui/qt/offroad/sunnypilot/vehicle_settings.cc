@@ -6,8 +6,8 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* fcr_layout = new QVBoxLayout(home);
   fcr_layout->setContentsMargins(0, 20, 0, 20);
 
-  QString set = QString::fromStdString(params.get("CarModelText"));
-  QPushButton* setCarBtn = new QPushButton(((set == "=== Not Selected ===") || (set.length() == 0)) ? "Select your car" : set);
+  set = QString::fromStdString(params.get("CarModelText"));
+  setCarBtn = new QPushButton(((set == "=== Not Selected ===") || (set.length() == 0)) ? "Select your car" : set);
   setCarBtn->setObjectName("setCarBtn");
   setCarBtn->setStyleSheet("margin-right: 30px;");
   connect(setCarBtn, &QPushButton::clicked, [=]() {
@@ -17,9 +17,9 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
     if (!selection.isEmpty()) {
       params.put("CarModel", cars[selection].toStdString());
       params.put("CarModelText", selection.toStdString());
-      qApp->exit(18);
-      watchdog_kick(0);
+      ConfirmationDialog::alert(tr("Updating this setting takes effect when the car is powered off."), this);
     }
+    updateToggles();
   });
   fcr_layout->addSpacing(10);
   fcr_layout->addWidget(setCarBtn, 0, Qt::AlignRight);
@@ -52,6 +52,19 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
 
   auto toggle_panel = new SPVehiclesTogglesPanel(this);
   toggle_layout->addWidget(toggle_panel);
+}
+
+void VehiclePanel::showEvent(QShowEvent *event) {
+  updateToggles();
+}
+
+void VehiclePanel::updateToggles() {
+  if (!isVisible()) {
+    return;
+  }
+
+  set = QString::fromStdString(params.get("CarModelText"));
+  setCarBtn->setText(((set == "=== Not Selected ===") || (set.length() == 0)) ? "Select your car" : set);
 }
 
 SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidget(parent, false) {

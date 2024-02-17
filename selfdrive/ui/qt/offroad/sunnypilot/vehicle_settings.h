@@ -13,12 +13,19 @@ class VehiclePanel : public QWidget {
 
 public:
   explicit VehiclePanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateToggles();
 
 private:
   Params params;
 
   QStackedLayout* main_layout = nullptr;
   QWidget* home = nullptr;
+
+  QPushButton* setCarBtn;
+  QString set;
 
   QWidget* home_widget;
 };

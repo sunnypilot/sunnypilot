@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 import threading
@@ -237,8 +238,13 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
 
   params = Params()
   if params.get("CarModel") is not None:
-    car_model = params.get("CarModel")
-    candidate = car_model.decode("utf-8")
+    candidate = params.get("CarModel").decode("utf-8")
+    with open(os.path.join(BASEDIR, "selfdrive/car/sunnypilot_carname.json")) as f:
+      car_models = json.load(f)
+    if candidate not in car_models.values():
+      candidate = None
+      params.put("CarModel", "")
+      params.put("CarModelText", "")
 
   if candidate is None:
     cloudlog.event("car doesn't match any fingerprints", fingerprints=repr(fingerprints), error=True)
@@ -246,8 +252,9 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
     y = threading.Thread(target=crash_log2, args=(fingerprints, car_fw,))
     y.start()
 
-  x = threading.Thread(target=crash_log, args=(candidate,))
-  x.start()
+  if candidate != "mock":
+    x = threading.Thread(target=crash_log, args=(candidate,))
+    x.start()
 
   CarInterface, CarController, CarState = interfaces[candidate]
   CP = CarInterface.get_params(candidate, fingerprints, car_fw, experimental_long_allowed, docs=False)
