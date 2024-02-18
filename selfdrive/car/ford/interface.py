@@ -43,6 +43,11 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.67
       ret.steerRatio = 17.7
       ret.mass = 1625
+      
+    elif candidate == CAR.EDGE_MK2:
+      ret.wheelbase = 2.824
+      ret.steerRatio = 15.3
+      ret.mass = 1933
 
     elif candidate == CAR.ESCAPE_MK4:
       ret.wheelbase = 2.71
