@@ -169,19 +169,20 @@ class CarState(CarStateBase):
       ret.stockFcw = (aeb_warning or scc_warning) and not aeb_braking
       ret.stockAeb = aeb_warning and aeb_braking
     elif self.CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
-      aeb_src = "ESCC"
+      aeb_src = "FCA11" if self.CP.flags & HyundaiFlags.USE_FCA else "ESCC"
       aeb_sig = "FCA_CmdAct" if self.CP.flags & HyundaiFlags.USE_FCA.value else "AEB_CmdAct"
-      aeb_warning_sig = "CF_VSM_Warn_FCA11" if self.CP.flags & HyundaiFlags.USE_FCA.value else "CF_VSM_Warn_SCC12"
-      aeb_braking_sig = "CF_VSM_DecCmdAct_FCA11" if self.CP.flags & HyundaiFlags.USE_FCA.value else "CF_VSM_DecCmdAct_SCC12"
+      aeb_warning_sig = "CF_VSM_Warn" if self.CP.flags & HyundaiFlags.USE_FCA.value else "CF_VSM_Warn_SCC12"
+      aeb_braking_sig = "CF_VSM_DecCmdAct" if self.CP.flags & HyundaiFlags.USE_FCA.value else "CF_VSM_DecCmdAct_SCC12"
       aeb_braking_cmd = "CR_VSM_DecCmd_FCA11" if self.CP.flags & HyundaiFlags.USE_FCA.value else "CR_VSM_DecCmd_SCC12"
       aeb_warning = cp.vl[aeb_src][aeb_warning_sig] != 0
       aeb_braking = cp.vl[aeb_src][aeb_braking_sig] != 0 or cp.vl[aeb_src][aeb_sig] != 0
       ret.stockFcw = aeb_warning and not aeb_braking
       ret.stockAeb = aeb_warning and aeb_braking
-      self.escc_aeb_warning = cp.vl[aeb_src][aeb_warning_sig]
-      self.escc_aeb_dec_cmd_act = cp.vl[aeb_src][aeb_braking_sig]
-      self.escc_cmd_act = cp.vl[aeb_src][aeb_sig]
-      self.escc_aeb_dec_cmd = cp.vl[aeb_src][aeb_braking_cmd]
+      if not self.CP.flags & HyundaiFlags.USE_FCA:
+        self.escc_aeb_warning = cp.vl[aeb_src][aeb_warning_sig]
+        self.escc_aeb_dec_cmd_act = cp.vl[aeb_src][aeb_braking_sig]
+        self.escc_cmd_act = cp.vl[aeb_src][aeb_sig]
+        self.escc_aeb_dec_cmd = cp.vl[aeb_src][aeb_braking_cmd]
 
     if self.CP.enableBsm:
       ret.leftBlindspot = cp.vl["LCA11"]["CF_Lca_IndLeft"] != 0
@@ -373,6 +374,9 @@ class CarState(CarStateBase):
 
     if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC.value:
       messages.append(("ESCC", 50))
+
+      if CP.flags & HyundaiFlags.USE_FCA.value and not any([msg[0] == "FCA11" for msg in messages]):
+        messages.append(("FCA11", 50))
 
     if CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG:
       messages.append(("Navi_HU", 5))

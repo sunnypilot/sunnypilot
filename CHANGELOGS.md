@@ -28,6 +28,8 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
 * UPDATED: Custom Offsets
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
   * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+* UPDATED: Hyundai/Kia/Genesis - ESCC Radar Interceptor
+  * Message parsing improvements with the latest firmware update: https://github.com/sunnypilot/panda/tree/test-escc-smdps
 * UI Updates
   * NEW❗: Visuals: Display Feature Status toggle
     * Display the statuses of certain features on the driving screen

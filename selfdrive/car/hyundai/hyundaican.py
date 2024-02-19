@@ -152,18 +152,18 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_distance, 
     "aReqRaw": accel,
     "aReqValue": accel,  # stock ramps up and down respecting jerk limit until it reaches aReqRaw
     "CR_VSM_Alive": idx % 0xF,
-
-    "AEB_CmdAct": CS.escc_cmd_act,
-    "CF_VSM_Warn": CS.escc_aeb_warning,
-    "CF_VSM_DecCmdAct": CS.escc_aeb_dec_cmd_act,
-    "CR_VSM_DecCmd": CS.escc_aeb_dec_cmd,
   }
 
   # show AEB disabled indicator on dash with SCC12 if not sending FCA messages.
   # these signals also prevent a TCS fault on non-FCA cars with alpha longitudinal
   if not use_fca:
     scc12_values["CF_VSM_ConfMode"] = 1
-    scc12_values["AEB_Status"] = 1  # AEB disabled
+    scc12_values["AEB_Status"] = 2 if escc else 1  # AEB disabled
+    if escc:
+      scc12_values["AEB_CmdAct"] = CS.escc_cmd_act
+      scc12_values["CF_VSM_Warn"] = CS.escc_aeb_warning
+      scc12_values["CF_VSM_DecCmdAct"] = CS.escc_aeb_dec_cmd_act
+      scc12_values["CR_VSM_DecCmd"] = CS.escc_aeb_dec_cmd
 
   scc12_dat = packer.make_can_msg("SCC12", 0, scc12_values)[2]
   scc12_values["CR_VSM_ChkSum"] = 0x10 - sum(sum(divmod(i, 16)) for i in scc12_dat) % 0x10
@@ -181,7 +181,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_distance, 
   commands.append(packer.make_can_msg("SCC14", 0, scc14_values))
 
   # Only send FCA11 on cars where it exists on the bus
-  if use_fca:
+  if use_fca and not escc:
     if car_fingerprint in CAMERA_SCC_CAR:
       fca11_values = CS.fca11
       fca11_values["PAINT1_Status"] = 1
@@ -192,14 +192,9 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_distance, 
       # https://github.com/commaai/opendbc/commit/9ddcdb22c4929baf310295e832668e6e7fcfa602
       fca11_values = {
         "CR_FCA_Alive": idx % 0xF,
-        "PAINT1_Status": 0 if escc else 1,
-        "FCA_DrvSetStatus": 0 if escc else 1,
-        "FCA_Status": 0 if escc else 1,  # AEB disabled
-
-        "FCA_CmdAct": CS.escc_cmd_act,
-        "CF_VSM_Warn": CS.escc_aeb_warning,
-        "CF_VSM_DecCmdAct": CS.escc_aeb_dec_cmd_act,
-        "CR_VSM_DecCmd": CS.escc_aeb_dec_cmd,
+        "PAINT1_Status": 1,
+        "FCA_DrvSetStatus": 1,
+        "FCA_Status": 1,  # AEB disabled
       }
     fca11_dat = packer.make_can_msg("FCA11", 0, fca11_values)[2]
     fca11_values["CR_FCA_ChkSum"] = hyundai_checksum(fca11_dat[:7])
@@ -217,17 +212,18 @@ def create_acc_opt(packer, escc, CS, car_fingerprint):
   }
   commands.append(packer.make_can_msg("SCC13", 0, scc13_values))
 
-  # TODO: this needs to be detected and conditionally sent on unsupported long cars
-  if car_fingerprint in CAMERA_SCC_CAR:
-    fca12_values = CS.fca12
-    fca12_values["FCA_DrvSetState"] = 2
-    fca12_values["FCA_USM"] = 1  # AEB disabled, until a route with AEB or FCW trigger is verified
-  else:
-    fca12_values = {
-      "FCA_DrvSetState": 0 if escc else 2,
-      "FCA_USM": 0 if escc else 1, # AEB disabled
-    }
-  commands.append(packer.make_can_msg("FCA12", 0, fca12_values))
+  if not escc:
+    # TODO: this needs to be detected and conditionally sent on unsupported long cars
+    if car_fingerprint in CAMERA_SCC_CAR:
+      fca12_values = CS.fca12
+      fca12_values["FCA_DrvSetState"] = 2
+      fca12_values["FCA_USM"] = 1  # AEB disabled, until a route with AEB or FCW trigger is verified
+    else:
+      fca12_values = {
+        "FCA_DrvSetState": 2,
+        "FCA_USM": 1, # AEB disabled
+      }
+    commands.append(packer.make_can_msg("FCA12", 0, fca12_values))
 
   return commands
 
