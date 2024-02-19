@@ -131,7 +131,7 @@ void ScreenRecoder::start() {
 }
 
 void ScreenRecoder::encoding_thread_func() {
-  uint64_t start_time = nanos_since_boot() -1;
+  uint64_t start_time = nanos_since_boot();
 
   while (recording && encoder) {
     QImage popImage;
@@ -155,10 +155,11 @@ void ScreenRecoder::stop() {
     recording = false;
     update();
 
+    if (encoding_thread.joinable()) {
+      encoding_thread.join();
+    }
     closeEncoder();
     image_queue.clear();
-    if (encoding_thread.joinable())
-      encoding_thread.join();
   }
 }
 
