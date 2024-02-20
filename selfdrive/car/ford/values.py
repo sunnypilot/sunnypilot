@@ -39,7 +39,6 @@ class CarControllerParams:
   def __init__(self, CP):
     pass
 
-
 BUTTON_STATES = {
   "accelCruise": False,
   "decelCruise": False,
@@ -134,3 +133,5 @@ FW_QUERY_CONFIG = FwQueryConfig(
     (Ecu.shiftByWire, 0x732, None),
   ],
 )
+class FordFlagsSP(IntFlag):
+  SP_ENHANCED_LAT_CONTROL = 1
