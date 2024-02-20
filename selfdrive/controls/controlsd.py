@@ -310,7 +310,7 @@ class Controls:
     if (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator) or \
       (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
       (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
-      if CS.cruiseState.enabled:
+      if CS.cruiseState.enabled or not self.enable_mads:
         self.events.add(EventName.pedalPressed)
       elif not self.mads_ndlob:
         self.events.add(EventName.silentPedalPressed)
