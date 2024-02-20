@@ -1,3 +1,63 @@
+sunnypilot - 0.9.6.1 (2024-02-22)
+========================
+* New driving model
+  * Vision model trained on more data
+  * Improved driving performance
+  * Directly outputs curvature for lateral control
+* New driver monitoring model
+  * Trained on larger dataset
+* AGNOS 9
+* comma body streaming and controls over WebRTC
+* Improved fuzzy fingerprinting for many makes and models
+* Chevrolet Equinox 2019-22 support thanks to JasonJShuler and nworb-cire!
+* Dodge Duranago 2020-21 support
+* Hyundai Staria 2023 support thanks to sunnyhaibin!
+* Kia Niro Plug-in Hybrid 2022 support thanks to sunnyhaibin!
+* Lexus LC 2024 support thanks to nelsonjchen!
+* Toyota RAV4 2023-24 support
+* Toyota RAV4 Hybrid 2023-24 support
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 9acc558 (February 14, 2024)
+  * v0.9.6 release (February 22, 2024)
+* UPDATED: Dynamic Experimental Control (DEC)
+  * Synced with dragonpilot-community/dragonpilot:beta3 commit f4ee52f
+* NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
+* UPDATED: Driving Model Selector v3
+  * NEW❗: Driving Model additions
+    * Certified Herbalist v2 (February 13, 2024) - CHv2
+    * Certified Herbalist (February 5, 2024) - CH
+    * Los Angeles v2 (January 24, 2024) - LAv2
+    * Los Angeles (January 22, 2024) - LAv1
+  * NEW❗: Model Caching thanks to DevTekVE!
+    * Model caching allows the selection of previously downloaded Driving Model
+    * Users can now access cached versions of selected models, eliminating redundant downloads for previously fetched models
+  * Legacy Driving Models support
+    * New Delhi (December 21, 2023) - ND
+    * Blue Diamond v2 (December 11, 2023) - BDv2
+    * Blue Diamond (November 18, 2023) - BDv1
+    * Farmville (November 7, 2023) - FV
+    * Night Strike (October 3, 2023) - NS
+  * Certain features are deprecated with newer Driving Models
+    * Dynamic Lane Profile (DLP)
+    * Custom Offsets
+* UPDATED: Dynamic Lane Profile (DLP)
+  * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
+  * Deprecated support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+* UPDATED: Custom Offsets
+  * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
+  * Deprecated support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+* UPDATED: Hyundai/Kia/Genesis - ESCC Radar Interceptor
+  * Message parsing improvements with the latest firmware update: https://github.com/sunnypilot/panda/tree/test-escc-smdps
+* UI Updates
+  * NEW❗: Visuals: Display Feature Status toggle
+    * Display the statuses of certain features on the driving screen
+  * NEW❗: Visuals: Enable Onroad Settings toggle
+    * Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu
+* FIXED: New comma 3X support
+* FIXED: New comma eSIM support
+* Bug fixes and performance improvements
+
 sunnypilot - 0.9.5.3 (2023-12-24)
 ========================
 * UPDATED: Dynamic Experimental Control (DEC)
