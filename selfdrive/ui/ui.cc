@@ -243,7 +243,6 @@ void ui_update_params(UIState *s) {
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffEvent = params.getBool("OnroadScreenOffEvent");
-  s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
@@ -381,11 +380,13 @@ void UIState::updateStatus() {
   if (sm->frame % UI_FREQ == 0) { // Update every 1 Hz
     scene.sidebar_temp_options = std::atoi(params.get("SidebarTemperatureOptions").c_str());
   }
+
+  scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
 }
 
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
-  "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
+    "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlanSP", "liveMapDataSP",
     "carControl", "lateralPlanSPDEPRECATED", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
