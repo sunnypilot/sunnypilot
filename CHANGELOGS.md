@@ -1,6 +1,25 @@
-sunnypilot - 0.9.6.0 (2024-xx-xx)
+sunnypilot - 0.9.6.1 (2024-02-22)
 ========================
-* UPDATED: Synced with commaai's master commit 9acc558 (February 14, 2024)
+* New driving model
+  * Vision model trained on more data
+  * Improved driving performance
+  * Directly outputs curvature for lateral control
+* New driver monitoring model
+  * Trained on larger dataset
+* AGNOS 9
+* comma body streaming and controls over WebRTC
+* Improved fuzzy fingerprinting for many makes and models
+* Chevrolet Equinox 2019-22 support thanks to JasonJShuler and nworb-cire!
+* Dodge Duranago 2020-21 support
+* Hyundai Staria 2023 support thanks to sunnyhaibin!
+* Kia Niro Plug-in Hybrid 2022 support thanks to sunnyhaibin!
+* Lexus LC 2024 support thanks to nelsonjchen!
+* Toyota RAV4 2023-24 support
+* Toyota RAV4 Hybrid 2023-24 support
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 9acc558 (February 14, 2024)
+  * v0.9.6 release (February 22, 2024)
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:beta3 commit f4ee52f
 * NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
@@ -20,14 +39,14 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
     * Farmville (November 7, 2023) - FV
     * Night Strike (October 3, 2023) - NS
   * Certain features are deprecated with newer Driving Models
-    * Dynamic Lane Profile
+    * Dynamic Lane Profile (DLP)
     * Custom Offsets
 * UPDATED: Dynamic Lane Profile (DLP)
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
-  * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+  * Deprecated support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
 * UPDATED: Custom Offsets
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
-  * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+  * Deprecated support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
 * UPDATED: Hyundai/Kia/Genesis - ESCC Radar Interceptor
   * Message parsing improvements with the latest firmware update: https://github.com/sunnypilot/panda/tree/test-escc-smdps
 * UI Updates
