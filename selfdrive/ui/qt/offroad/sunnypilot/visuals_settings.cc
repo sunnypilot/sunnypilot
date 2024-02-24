@@ -106,7 +106,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
     }
   }
 
-  std::vector<QString> sidebar_temp_texts{tr("Off"), tr("Ambient"), tr("RAM"), tr("CPU"), tr("GPU"), tr("Max")};
+  std::vector<QString> sidebar_temp_texts{tr("Off"), tr("RAM"), tr("CPU"), tr("GPU"), tr("Max")};
   sidebar_temp_setting = new ButtonParamControl(
     "SidebarTemperatureOptions", "Display Temperature on Sidebar", "",
     "../assets/offroad/icon_blank.png",

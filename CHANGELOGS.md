@@ -54,6 +54,7 @@ sunnypilot - 0.9.6.1 (2024-02-22)
     * Display the statuses of certain features on the driving screen
   * NEW❗: Visuals: Enable Onroad Settings toggle
     * Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu
+  * REMOVED: "Device ambient" temperature option on the sidebar
 * FIXED: New comma 3X support
 * FIXED: New comma eSIM support
 * Bug fixes and performance improvements
