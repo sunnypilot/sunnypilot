@@ -19,8 +19,8 @@ sunnypilot - 0.9.6.1 (2024-02-27)
 * Toyota RAV4 Hybrid 2023-24 support
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit 9acc558 (February 14, 2024)
-  * v0.9.6 release (February 22, 2024)
+  * master commit db57a21 (February 22, 2024)
+  * v0.9.6 release (February 27, 2024)
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:beta3 commit f4ee52f
 * NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
