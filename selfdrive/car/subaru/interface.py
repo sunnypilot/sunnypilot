@@ -1,6 +1,7 @@
 from cereal import car
 from panda import Panda
 from openpilot.selfdrive.car import get_safety_config
+from openpilot.selfdrive.car.values import Platform
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.subaru.values import CAR, GLOBAL_ES_ADDR, LKAS_ANGLE, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, SubaruFlags
@@ -9,7 +10,7 @@ from openpilot.selfdrive.car.subaru.values import CAR, GLOBAL_ES_ADDR, LKAS_ANGL
 class CarInterface(CarInterfaceBase):
 
   @staticmethod
-  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
+  def _get_params(ret, candidate: Platform, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "subaru"
     ret.radarUnavailable = True
     # for HYBRID CARS to be upstreamed, we need:
@@ -39,9 +40,6 @@ class CarInterface(CarInterfaceBase):
       ret.steerControlType = car.CarParams.SteerControlType.angle
     else:
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-
-
-    ret.centerToFront = ret.wheelbase * 0.5
 
     if candidate in (CAR.ASCENT, CAR.ASCENT_2023):
       ret.steerActuatorDelay = 0.3   # end-to-end angle controller
