@@ -23,7 +23,7 @@ sunnypilot - 0.9.6.1 (2024-02-27)
   * v0.9.6 release (February 27, 2024)
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:beta3 commit f4ee52f
-* NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
+* NEW❗: Default Driving Model: Certified Herbalist v2 (February 13, 2024)
 * UPDATED: Driving Model Selector v3
   * NEW❗: Driving Model additions
     * Certified Herbalist v2 (February 13, 2024) - CHv2
