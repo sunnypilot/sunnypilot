@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum, IntFlag, StrEnum
-from typing import Dict, List, Optional, Union
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
@@ -126,7 +125,7 @@ class HondaCarInfo(CarInfo):
       self.car_parts = CarParts.common([CarHarness.nidec])
 
 
-CAR_INFO: Dict[str, Optional[Union[HondaCarInfo, List[HondaCarInfo]]]] = {
+CAR_INFO: dict[str, HondaCarInfo | list[HondaCarInfo] | None] = {
   CAR.ACCORD: [
     HondaCarInfo("Honda Accord 2018-22", "All", video_link="https://www.youtube.com/watch?v=mrUwlj3Mi58", min_steer_speed=3. * CV.MPH_TO_MS),
     HondaCarInfo("Honda Inspire 2018", "All", min_steer_speed=3. * CV.MPH_TO_MS),
@@ -220,6 +219,8 @@ FW_QUERY_CONFIG = FwQueryConfig(
     Ecu.combinationMeter: [CAR.CIVIC_BOSCH, CAR.CRV_5G],
     Ecu.gateway: [CAR.CIVIC_BOSCH, CAR.CRV_5G],
     Ecu.electricBrakeBooster: [CAR.CIVIC_BOSCH, CAR.CRV_5G],
+    Ecu.shiftByWire: [CAR.ACCORD],  # existence correlates with transmission type for ICE
+    Ecu.hud: [CAR.ACCORD, CAR.ACCORDH],  # existence correlates with trim level
   },
   extra_ecus=[
     # The only other ECU on PT bus accessible by camera on radarless Civic
