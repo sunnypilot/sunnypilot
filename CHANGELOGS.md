@@ -1,3 +1,11 @@
+sunnypilot - 0.9.7.0 (2024-xx-xx)
+========================
+* New driving model
+* Support for many hybrid Ford models
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 56e343b (February 27, 2024)
+
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
 * New driving model
