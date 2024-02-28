@@ -1,6 +1,6 @@
 # functions common among cars
 from collections import namedtuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import ReprEnum
 
 import capnp
@@ -246,7 +246,7 @@ class CanSignalRateCalculator:
 CarInfos = CarInfo | list[CarInfo]
 
 
-@dataclass(kw_only=True)
+@dataclass(frozen=True, kw_only=True)
 class CarSpecs:
   mass: float
   wheelbase: float
@@ -256,7 +256,7 @@ class CarSpecs:
   minEnableSpeed: float = field(default=-1.)
 
 
-@dataclass(order=True)
+@dataclass(frozen=True, order=True)
 class PlatformConfig:
   platform_str: str
   car_info: CarInfos
@@ -266,6 +266,9 @@ class PlatformConfig:
 
   def __hash__(self) -> int:
     return hash(self.platform_str)
+
+  def override(self, **kwargs):
+    return replace(self, **kwargs)
 
 
 class Platforms(str, ReprEnum):
