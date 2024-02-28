@@ -1,3 +1,11 @@
+sunnypilot - 0.9.7.0 (2024-xx-xx)
+========================
+* New driving model
+* Support for many hybrid Ford models
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 56e343b (February 27, 2024)
+
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
 * New driving model
@@ -55,6 +63,7 @@ sunnypilot - 0.9.6.1 (2024-02-27)
     * Display the statuses of certain features on the driving screen
   * NEW❗: Visuals: Enable Onroad Settings toggle
     * Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu
+  * REMOVED: "Device ambient" temperature option on the sidebar
 * FIXED: New comma 3X support
 * FIXED: New comma eSIM support
 * Bug fixes and performance improvements
