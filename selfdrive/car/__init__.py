@@ -1,8 +1,7 @@
 # functions common among cars
 from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from enum import ReprEnum
-from typing import Dict, List, Optional, Union
 
 import capnp
 
@@ -27,9 +26,9 @@ def apply_hysteresis(val: float, val_steady: float, hyst_gap: float) -> float:
   return val_steady
 
 
-def create_button_events(cur_btn: int, prev_btn: int, buttons_dict: Dict[int, capnp.lib.capnp._EnumModule],
-                         unpressed_btn: int = 0) -> List[capnp.lib.capnp._DynamicStructBuilder]:
-  events: List[capnp.lib.capnp._DynamicStructBuilder] = []
+def create_button_events(cur_btn: int, prev_btn: int, buttons_dict: dict[int, capnp.lib.capnp._EnumModule],
+                         unpressed_btn: int = 0) -> list[capnp.lib.capnp._DynamicStructBuilder]:
+  events: list[capnp.lib.capnp._DynamicStructBuilder] = []
 
   if cur_btn == prev_btn:
     return events
@@ -82,7 +81,8 @@ def scale_tire_stiffness(mass, wheelbase, center_to_front, tire_stiffness_factor
   return tire_stiffness_front, tire_stiffness_rear
 
 
-DbcDict = Dict[str, str]
+DbcDict = dict[str, str]
+
 
 def dbc_dict(pt_dbc, radar_dbc, chassis_dbc=None, body_dbc=None) -> DbcDict:
   return {'pt': pt_dbc, 'radar': radar_dbc, 'chassis': chassis_dbc, 'body': body_dbc}
@@ -219,7 +219,7 @@ def get_safety_config(safety_model, safety_param = None):
 class CanBusBase:
   offset: int
 
-  def __init__(self, CP, fingerprint: Optional[Dict[int, Dict[int, int]]]) -> None:
+  def __init__(self, CP, fingerprint: dict[int, dict[int, int]] | None) -> None:
     if CP is None:
       assert fingerprint is not None
       num = max([k for k, v in fingerprint.items() if len(v)], default=0) // 4 + 1
@@ -249,16 +249,32 @@ class CanSignalRateCalculator:
     return self.rate
 
 
-CarInfos = Union[CarInfo, List[CarInfo]]
+CarInfos = CarInfo | list[CarInfo]
 
-@dataclass(order=True)
+
+@dataclass(frozen=True, kw_only=True)
+class CarSpecs:
+  mass: float
+  wheelbase: float
+  steerRatio: float
+  centerToFrontRatio: float = field(default=0.5)
+  minSteerSpeed: float = field(default=0.)
+  minEnableSpeed: float = field(default=-1.)
+
+
+@dataclass(frozen=True, order=True)
 class PlatformConfig:
   platform_str: str
   car_info: CarInfos
   dbc_dict: DbcDict
 
+  specs: CarSpecs | None = None
+
   def __hash__(self) -> int:
     return hash(self.platform_str)
+
+  def override(self, **kwargs):
+    return replace(self, **kwargs)
 
 
 class Platforms(str, ReprEnum):
@@ -271,9 +287,9 @@ class Platforms(str, ReprEnum):
     return member
 
   @classmethod
-  def create_dbc_map(cls) -> Dict[str, DbcDict]:
-    return {p.config.platform_str: p.config.dbc_dict for p in cls}
+  def create_dbc_map(cls) -> dict[str, DbcDict]:
+    return {p: p.config.dbc_dict for p in cls}
 
   @classmethod
-  def create_carinfo_map(cls) -> Dict[str, CarInfos]:
-    return {p.config.platform_str: p.config.car_info for p in cls}
+  def create_carinfo_map(cls) -> dict[str, CarInfos]:
+    return {p: p.config.car_info for p in cls}

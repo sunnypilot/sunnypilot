@@ -18,7 +18,6 @@ class CarState(CarStateBase):
       self.shifter_values = can_define.dv["Gear_Shift_by_Wire_FD1"]["TrnRng_D_RqGsm"]
 
     self.vehicle_sensors_valid = False
-    self.unsupported_platform = False
 
     self.lkas_enabled = None
     self.prev_lkas_enabled = None
@@ -31,12 +30,6 @@ class CarState(CarStateBase):
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lkas_enabled = self.lkas_enabled
     self.buttonStatesPrev = self.buttonStates.copy()
-
-    # Ford Q3 hybrid variants experience a bug where a message from the PCM sends invalid checksums,
-    # this must be root-caused before enabling support. Ford Q4 hybrids do not have this problem.
-    # TrnAin_Tq_Actl and its quality flag are only set on ICE platform variants
-    self.unsupported_platform = (cp.vl["VehicleOperatingModes"]["TrnAinTq_D_Qf"] == 0 and
-                                 self.CP.carFingerprint not in CANFD_CAR)
 
     # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
     # The vehicle usually recovers out of this state within a minute of normal driving
