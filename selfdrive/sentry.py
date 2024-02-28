@@ -2,7 +2,6 @@
 import sentry_sdk
 import subprocess
 from enum import Enum
-from typing import Tuple
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from openpilot.common.basedir import BASEDIR
@@ -93,7 +92,7 @@ def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
 
 
-def get_properties() -> Tuple[str, str]:
+def get_properties() -> tuple[str, str]:
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf-8')
   if dongle_id in (None, UNREGISTERED_DONGLE_ID):

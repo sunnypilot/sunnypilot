@@ -155,7 +155,7 @@ class FluxModel:
     self.friction_override = (y < 0.1)
 
 
-def get_nn_model_path(_car, eps_firmware) -> Tuple[Optional[str], float]:
+def get_nn_model_path(_car, eps_firmware) -> tuple[str | None, float]:
   def check_nn_path(_check_model):
     _model_path = None
     _max_similarity = -1.0
@@ -182,7 +182,7 @@ def get_nn_model_path(_car, eps_firmware) -> Tuple[Optional[str], float]:
   return model_path, max_similarity
 
 
-def get_nn_model(_car, eps_firmware) -> Tuple[Optional[FluxModel], float]:
+def get_nn_model(_car, eps_firmware) -> tuple[FluxModel | None, float]:
   model, similarity_score = get_nn_model_path(_car, eps_firmware)
   if model is not None:
     model = FluxModel(model)

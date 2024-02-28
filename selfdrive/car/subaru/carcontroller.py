@@ -1,5 +1,4 @@
 from cereal import car
-from typing import Tuple
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
 from opendbc.can.packer import CANPacker
@@ -179,7 +178,7 @@ class CarController:
     return new_actuators, can_sends
 
   # Stop and Go auto-resume thanks to martinl from subaru-community
-  def stop_and_go(self, CC: car.CarControl, CS: car.CarState, throttle_cmd: bool = False, speed_cmd: bool = False) -> Tuple[bool, bool]:
+  def stop_and_go(self, CC: car.CarControl, CS: car.CarState, throttle_cmd: bool = False, speed_cmd: bool = False) -> tuple[bool, bool]:
     if not self.subaru_sng:
       return throttle_cmd, speed_cmd
     if self.CP.carFingerprint in PREGLOBAL_CARS:

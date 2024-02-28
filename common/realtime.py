@@ -46,7 +46,7 @@ def config_realtime_process(cores: int | list[int], priority: int) -> None:
   set_core_affinity(c)
 
 
-def set_thread_affinity(thread: threading.Thread, cores: List[int]) -> None:
+def set_thread_affinity(thread: threading.Thread, cores: list[int]) -> None:
   try:
     process = psutil.Process(thread.ident)
     process.cpu_affinity(cores)
