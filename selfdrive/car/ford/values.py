@@ -85,7 +85,7 @@ class CAR(Platforms):
     FordCarInfo("Ford Bronco Sport 2021-22"),
     specs=CarSpecs(mass=1625, wheelbase=2.67, steerRatio=17.7),
   )
-  CAR.EDGE_MK2 = FordPlatformConfig(
+ EDGE_MK2 = FordPlatformConfig(
     "FORD EDGE 2ND GEN",
     FordCarInfo ("Ford Edge 2020-23", "Adaptive Cruise Control with Lane Centering"),
     specs=CarSpecs(mass=1933, wheelbase=2.824, steerRatio=15.3),
