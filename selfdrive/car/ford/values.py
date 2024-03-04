@@ -87,7 +87,9 @@ class CAR(Platforms):
   )
  EDGE_MK2 = FordPlatformConfig(
     "FORD EDGE 2ND GEN",
+   [
     FordCarInfo ("Ford Edge 2020-23", "Adaptive Cruise Control with Lane Centering"),
+     ],
     specs=CarSpecs(mass=1933, wheelbase=2.824, steerRatio=15.3),
      )
   ESCAPE_MK4 = FordPlatformConfig(
