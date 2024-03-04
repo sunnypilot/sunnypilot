@@ -85,6 +85,10 @@ class CAR(Platforms):
     FordCarInfo("Ford Bronco Sport 2021-22"),
     specs=CarSpecs(mass=1625, wheelbase=2.67, steerRatio=17.7),
   )
+  CAR.EDGE_MK2 = FordPlatformConfig(
+    "FORD EDGE 2ND GEN",
+    FordCarInfo ("Ford Edge 2020-23", "Adaptive Cruise Control with Lane Centering"),
+    specs=CarSpecs(mass=1933, wheelbase=2.824, steerRatio=15.3),
   ESCAPE_MK4 = FordPlatformConfig(
     "FORD ESCAPE 4TH GEN",
     [
@@ -149,7 +153,7 @@ class CAR(Platforms):
 
 
 CANFD_CAR = {CAR.F_150_MK14, CAR.F_150_LIGHTNING_MK1, CAR.MUSTANG_MACH_E_MK1}
-
+CAN_EDGE = {CAR.EDGE_MK2}
 
 DATA_IDENTIFIER_FORD_ASBUILT = 0xDE00
 
