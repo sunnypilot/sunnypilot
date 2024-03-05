@@ -60,7 +60,7 @@ def manager_init() -> None:
     ("DevUIInfo", "0"),
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
-    ("DrivingModeltheThree generations", "1"),
+    ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
     ("EnableMads", "1"),
     ("EnableAmap", "1"),
