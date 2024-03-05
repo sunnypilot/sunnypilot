@@ -5,6 +5,9 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit 56e343b (February 27, 2024)
+* RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
+  * openpilot Longitudianl Control available cars
+  * Custom Stock Longitudinal Control available cars
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
