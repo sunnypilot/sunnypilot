@@ -96,7 +96,7 @@ def manager_init() -> None:
     ("TrueVEgoUi", "0"),
     ("TurnSpeedControl", "1"),
     ("TurnVisionControl", "1"),
-    ("VisionCurveLaneless", "0"),
+    ("VisionCurveLaneless", "1"),
     ("VwAccType", "0"),
     ("OsmDbUpdatesCheck", "0"),
     ("OsmDownloadedDate", "0"),
