@@ -84,7 +84,7 @@ class LatControlTorque(LatControl):
     self._frame = 0
 
     self.use_lateral_jerk = False  # TODO: make this a parameter in the UI
-    self.nnff_no_lateraj_jerk = False  # TODO: make this a parameter in the UI
+    self.nnff_no_lateraj_jerk = True  # TODO: make this a parameter in the UI
 
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
