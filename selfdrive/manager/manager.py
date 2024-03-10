@@ -63,6 +63,7 @@ def manager_init() -> None:
     ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
     ("EnableMads", "1"),
+    ("EnableAmap", "1"),
     ("EnhancedScc", "0"),
     ("FeatureStatus", "1"),
     ("HandsOnWheelMonitoring", "0"),
