@@ -4,7 +4,7 @@ from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.ford.fordcan import CanBus
-from openpilot.selfdrive.car.ford.values import CANFD_CAR, CarControllerParams, DBC, BUTTON_STATES
+from openpilot.selfdrive.car.ford.values import CANFD_CAR, CAN_EXPLORER,CarControllerParams, DBC, BUTTON_STATES
 
 GearShifter = car.CarState.GearShifter
 TransmissionType = car.CarParams.TransmissionType
@@ -32,9 +32,20 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = self.lkas_enabled
     self.buttonStatesPrev = self.buttonStates.copy()
 
-    # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
-    # The vehicle usually recovers out of this state within a minute of normal driving
-    self.vehicle_sensors_valid = cp.vl["SteeringPinion_Data"]["StePinCompAnEst_D_Qf"] == 3
+    # Ford Q3 hybrid variants experience a bug where a message from the PCM sends invalid checksums,
+    # this must be root-caused before enabling support. Ford Q4 hybrids do not have this problem.
+    # TrnAin_Tq_Actl and its quality flag are only set on ICE platform variants
+    self.unsupported_platform = (cp.vl["VehicleOperatingModes"]["TrnAinTq_D_Qf"] == 0 and
+                                 self.CP.carFingerprint not in CANFD_CAR)
+    
+    if self.CP.carFingerprint in CAN_EXPLORER:
+      # Ford EXPLORER calibrated steering wheel angle comes from the IPMA_ADAS instead of PSCM
+      # Check for Ford EXPLORER Unknown/Invalid steering wheel position
+      self.vehicle_sensors_valid = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"] < 32766
+    else:
+      # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
+      # The vehicle usually recovers out of this state within a minute of normal driving
+      self.vehicle_sensors_valid = cp.vl["SteeringPinion_Data"]["StePinCompAnEst_D_Qf"] == 3
 
     # car speed
     ret.vEgoRaw = cp.vl["BrakeSysFeatures"]["Veh_V_ActlBrk"] * CV.KPH_TO_MS
@@ -52,7 +63,10 @@ class CarState(CarStateBase):
     ret.parkingBrake = cp.vl["DesiredTorqBrk"]["PrkBrkStatus"] in (1, 2)
 
     # steering wheel
-    ret.steeringAngleDeg = cp.vl["SteeringPinion_Data"]["StePinComp_An_Est"]
+    if self.CP.carFingerprint in CAN_EDGE:
+      ret.steeringAngleDeg = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"]
+    else:
+      ret.steeringAngleDeg = cp.vl["SteeringPinion_Data"]["StePinComp_An_Est"]
     ret.steeringTorque = cp.vl["EPAS_INFO"]["SteeringColumnTorque"]
     ret.steeringPressed = self.update_steering_pressed(abs(ret.steeringTorque) > CarControllerParams.STEER_DRIVER_ALLOWANCE, 5)
     ret.steerFaultTemporary = cp.vl["EPAS_INFO"]["EPAS_Failure"] == 1
@@ -158,6 +172,16 @@ class CarState(CarStateBase):
     if CP.carFingerprint in CANFD_CAR:
       messages += [
         ("Lane_Assist_Data3_FD1", 33),
+      ]
+
+    # Ford EXPLORER gets steering wheel angle from IPMA instead of PSCM
+    if CP.carFingerprint in CAN_EXPLORER:
+      messages += [
+        ("ParkAid_Data", 50),
+      ]
+    else:
+      messages += [
+        ("SteeringPinion_Data", 100),
       ]
 
     if CP.transmissionType == TransmissionType.automatic:
