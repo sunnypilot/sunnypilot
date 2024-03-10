@@ -223,20 +223,15 @@ class LatControlTorque(LatControl):
         future_planned_lateral_accels = [interp(t, ModelConstants.T_IDXS[:CONTROL_N], model_data.acceleration.y) for t in adjusted_future_times]
 
         # compute NNFF error response
-        nnff_setpoint_input = [CS.vEgo, setpoint, lateral_jerk_setpoint, roll] \
-                              + [setpoint] * self.past_future_len \
-                              + past_rolls + future_rolls
+        nnff_setpoint_input = [CS.vEgo, setpoint, lateral_jerk_setpoint, roll]
         # past lateral accel error shouldn't count, so use past desired like the setpoint input
-        nnff_measurement_input = [CS.vEgo, measurement, lateral_jerk_measurement, roll] \
-                                 + [measurement] * self.past_future_len \
-                                 + past_rolls + future_rolls
+        nnff_measurement_input = [CS.vEgo, measurement, lateral_jerk_measurement, roll]
         nnff_error_input = [CS.vEgo, setpoint - measurement, lateral_jerk_setpoint - lateral_jerk_measurement, 0.0]
         torque_from_setpoint = self.torque_from_nn(nnff_setpoint_input)
         torque_from_measurement = self.torque_from_nn(nnff_measurement_input)
         torque_from_error = self.torque_from_nn(nnff_error_input)
-        if abs(torque_from_setpoint - torque_from_measurement) > abs(torque_from_error):
-          pid_log.error = torque_from_setpoint - torque_from_measurement
-        else:
+        pid_log.error = torque_from_setpoint - torque_from_measurement
+        if sign(pid_log.error) == sign(torque_from_error) and abs(pid_log.error) < abs(torque_from_error):
           pid_log.error = torque_from_error
 
         # compute feedforward (same as nn setpoint output)
