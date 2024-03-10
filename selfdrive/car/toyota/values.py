@@ -72,6 +72,7 @@ class CAR(StrEnum):
   RAV4H = "TOYOTA RAV4 HYBRID 2017"
   RAV4_TSS2 = "TOYOTA RAV4 2019"
   RAV4_TSS2_2022 = "TOYOTA RAV4 2022"
+  RAV4_TSS2_CN2022 = "TOYOTA RAV4 CN 2022"
   RAV4_TSS2_2023 = "TOYOTA RAV4 2023"
   MIRAI = "TOYOTA MIRAI 2021"  # TSS 2.5
   SIENNA = "TOYOTA SIENNA 2018"
@@ -181,6 +182,10 @@ CAR_INFO: dict[str, ToyotaCarInfo | list[ToyotaCarInfo]] = {
   CAR.RAV4_TSS2_2022: [
     ToyotaCarInfo("Toyota RAV4 2022"),
     ToyotaCarInfo("Toyota RAV4 Hybrid 2022", video_link="https://youtu.be/U0nH9cnrFB0"),
+  ],
+  CAR.RAV4_TSS2_CN2022: [
+    ToyotaCarInfo("Toyota RAV4 CN 2022"),
+    ToyotaCarInfo("Toyota RAV4 Hybrid CN 2022", video_link="https://youtu.be/U0nH9cnrFB0"),
   ],
   CAR.RAV4_TSS2_2023: [
     ToyotaCarInfo("Toyota RAV4 2023-24"),
@@ -464,6 +469,7 @@ DBC = {
   CAR.AVALON_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.RAV4_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.RAV4_TSS2_2022: dbc_dict('toyota_nodsu_pt_generated', None),
+  CAR.RAV4_TSS2_CN2022: dbc_dict('toyota_nodsu_pt_generated', None),
   CAR.RAV4_TSS2_2023: dbc_dict('toyota_nodsu_pt_generated', None),
   CAR.COROLLA_TSS2: dbc_dict('toyota_nodsu_pt_generated', 'toyota_tss2_adas'),
   CAR.LEXUS_ES: dbc_dict('toyota_new_mc_pt_generated', 'toyota_adas'),
@@ -484,7 +490,7 @@ DBC = {
 EPS_SCALE = defaultdict(lambda: 73, {CAR.PRIUS: 66, CAR.COROLLA: 88, CAR.LEXUS_IS: 77, CAR.LEXUS_RC: 77, CAR.LEXUS_CTH: 100, CAR.PRIUS_V: 100})
 
 # Toyota/Lexus Safety Sense 2.0 and 2.5
-TSS2_CAR = {CAR.RAV4_TSS2, CAR.RAV4_TSS2_2022, CAR.RAV4_TSS2_2023, CAR.COROLLA_TSS2, CAR.LEXUS_ES_TSS2,
+TSS2_CAR = {CAR.RAV4_TSS2, CAR.RAV4_TSS2_2022, CAR.RAV4_TSS2_CN2022, CAR.RAV4_TSS2_2023, CAR.COROLLA_TSS2, CAR.LEXUS_ES_TSS2,
             CAR.LEXUS_RX_TSS2, CAR.HIGHLANDER_TSS2, CAR.PRIUS_TSS2, CAR.CAMRY_TSS2, CAR.LEXUS_IS_TSS2,
             CAR.MIRAI, CAR.LEXUS_NX_TSS2, CAR.LEXUS_LC_TSS2, CAR.ALPHARD_TSS2, CAR.AVALON_TSS2,
             CAR.CHR_TSS2}
