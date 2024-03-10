@@ -110,7 +110,7 @@ class CAR(Platforms):
       FordCarInfo("Lincoln Aviator 2020-23", "Co-Pilot360 Plus"),
       FordCarInfo("Lincoln Aviator Plug-in Hybrid 2020-23", "Co-Pilot360 Plus"),  # Grand Touring only
     ],
-    specs=CarSpecs(mass=2050, wheelbase=3.025, steerRatio=16.8),
+    specs=CarSpecs(mass=1933, wheelbase=2.824, steerRatio=15.3),
   )
   F_150_MK14 = FordPlatformConfig(
     "FORD F-150 14TH GEN",
