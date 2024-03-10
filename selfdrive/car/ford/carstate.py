@@ -63,7 +63,7 @@ class CarState(CarStateBase):
     ret.parkingBrake = cp.vl["DesiredTorqBrk"]["PrkBrkStatus"] in (1, 2)
 
     # steering wheel
-    if self.CP.carFingerprint in CAN_EDGE:
+    if self.CP.carFingerprint in CAN_EXPLORER:
       ret.steeringAngleDeg = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"]
     else:
       ret.steeringAngleDeg = cp.vl["SteeringPinion_Data"]["StePinComp_An_Est"]
