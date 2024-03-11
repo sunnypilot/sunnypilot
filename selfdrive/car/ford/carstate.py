@@ -38,7 +38,7 @@ class CarState(CarStateBase):
     self.unsupported_platform = (cp.vl["VehicleOperatingModes"]["TrnAinTq_D_Qf"] == 0 and
                                  self.CP.carFingerprint not in CANFD_CAR)
     
-    if self.CP.carFingerprint in CAN_EXPLORER:
+    if self.CP.carFingerprint in CAN_CANFD:
       # Ford EXPLORER calibrated steering wheel angle comes from the IPMA_ADAS instead of PSCM
       # Check for Ford EXPLORER Unknown/Invalid steering wheel position
       self.vehicle_sensors_valid = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"] < 32766
@@ -175,7 +175,7 @@ class CarState(CarStateBase):
       ]
 
     # Ford EXPLORER gets steering wheel angle from IPMA instead of PSCM
-    if CP.carFingerprint in CAN_EXPLORER:
+    if CP.carFingerprint in CAN_CANFD:
       messages += [
         ("ParkAid_Data", 50),
       ]
