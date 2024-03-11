@@ -1854,7 +1854,7 @@ First</source>
     </message>
     <message>
         <source>&lt;font color=#00ff00&gt;✅ NNLC Loaded&lt;/font&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>字体颜色=#00ff00>✅ NNLC 已加载</translation>
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
@@ -1862,15 +1862,15 @@ First</source>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the &lt;font color=&apos;white&apos;&gt;&lt;b&gt;#tuning-nnlc channel at the sunnypilot Discord server&lt;/b&gt;&lt;/font&gt; with feedback, or to provide log data for your car if your car is currently unsupported.</source>
-        <translation type="unfinished"></translation>
+        <translation>在sunnypilot Discord 服务器上的<font color='white'>&lt;b&gt;#tuning-nnlc 频道联系sunnypilot 团队</b></font> 提供反馈，或者在您的汽车当前不受支持的情况下提供您汽车的日志数据</translation>
     </message>
     <message>
         <source>Add custom offsets to Camera and Path in sunnypilot.</source>
-        <translation type="unfinished"></translation>
+        <translation>在 sunnypilot 中向相机和路径添加自定义偏移</translation>
     </message>
     <message>
         <source>Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions.</source>
-        <translation type="unfinished"></translation>
+        <translation>默认为无车道。 在自动模式下，sunnypilot 根据道路上的车道识别置信度和某些条件动态选择 Laneline 或 Laneless 模型</translation>
     </message>
 </context>
 <context>
@@ -1896,11 +1896,11 @@ First</source>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>
-        <translation type="vanished">启用openpilot</translation>
+        <translation>启用openpilot</translation>
     </message>
     <message>
         <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="vanished">使用openpilot进行自适应巡航和车道保持辅助。使用此功能时您必须时刻保持注意力。该设置的更改在熄火时生效。</translation>
+        <translation>使用openpilot进行自适应巡航和车道保持辅助。使用此功能时您必须时刻保持注意力。该设置的更改在熄火时生效。</translation>
     </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
@@ -1956,7 +1956,7 @@ First</source>
     </message>
     <message>
         <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>openpilot 默认 &lt;b&gt;轻松模式&lt;/b&gt;驾驶车辆。试验模式启用一些轻松模式之外的 &lt;b&gt;试验性功能&lt;/b&gt;。试验性功能包括：</translation>
+        <translation>openpilot> 默认 &lt;b&gt;轻松模式&lt;/b&gt;驾驶车辆。试验模式启用一些轻松模式之外的 &lt;b&gt;试验性功能&lt;/b&gt;。试验性功能包括：</translation>
     </message>
     <message>
         <source>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
@@ -1992,7 +1992,7 @@ First</source>
     </message>
     <message>
         <source>Standard</source>
-        <translation type="vanished">标准</translation>
+        <translation>标准</translation>
     </message>
     <message>
         <source>Relaxed</source>
@@ -2004,7 +2004,7 @@ First</source>
     </message>
     <message>
         <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars.</source>
-        <translation type="vanished">推荐使用标准模式。在积极模式中，openpilot 会更靠近前车并在加速和刹车方面更积极。在舒适模式中，openpilot 会与前车保持较远的距离。</translation>
+        <translation>推荐使用标准模式。在积极模式中，openpilot 会更靠近前车并在加速和刹车方面更积极。在舒适模式中，openpilot 会与前车保持较远的距离。</translation>
     </message>
     <message>
         <source>An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
@@ -2032,63 +2032,63 @@ First</source>
     </message>
     <message>
         <source>Enable sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>启用sunnypilot</translation>
     </message>
     <message>
         <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用 sunnypilot 系统进行自适应巡航控制和车道保持驾驶员辅助。 使用此功能时需要始终保持注意力。 更改此设置会在汽车关闭时生效。</translation>
     </message>
     <message>
         <source>Custom Stock Longitudinal Control</source>
-        <translation type="unfinished"></translation>
+        <translation>定制库存纵向控制</translation>
     </message>
     <message>
         <source>When enabled, sunnypilot will attempt to control stock longitudinal control with ACC button presses.
 This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用后，sunnypilot 将尝试通过按下 ACC 按钮来控制库存纵向控制 此功能必须与 SLC、和/或 V-TSC、和/或 M-TSC 一起使用。</translation>
     </message>
     <message>
         <source>Use Planner Speed</source>
-        <translation type="unfinished"></translation>
+        <translation>使用规划器速度</translation>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
+        <translation>启用动态实验控制</translation>
     </message>
     <message>
         <source>Enable toggle to allow the model to determine when to use openpilot ACC or openpilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用切换以允许模型确定何时使用 openpilot ACC 或 openpilot End to End</translation>
     </message>
     <message>
         <source>Disable Onroad Uploads</source>
-        <translation type="unfinished"></translation>
+        <translation>禁用路上上传</translation>
     </message>
     <message>
         <source>Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC).</source>
-        <translation type="unfinished"></translation>
+        <translation>在路上时完全禁用上传。 连接时需要避免高数据使用量</translation>
     </message>
     <message>
         <source>Maniac</source>
-        <translation type="unfinished"></translation>
+        <translation>疯子</translation>
     </message>
     <message>
         <source>Stock</source>
-        <translation type="unfinished"></translation>
+        <translation>库存</translation>
     </message>
     <message>
         <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars.</source>
-        <translation type="unfinished"></translation>
+        <translation>推荐库存。 在激进/疯狂模式下，openpilot 将跟随领先车辆更接近，并更加激进地使用油门和制动。 在放松模式下，openpilot 将与领先车辆保持更远的距离</translation>
     </message>
 </context>
 <context>
     <name>TorqueFriction</name>
     <message>
         <source>FRICTION</source>
-        <translation type="unfinished"></translation>
+        <translation>摩擦</translation>
     </message>
     <message>
         <source>Adjust Friction for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
-        <translation type="unfinished"></translation>
+        <translation>调整横向扭矩的摩擦力</translation>
     </message>
 </context>
 <context>
@@ -2099,7 +2099,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Adjust Max Lateral Acceleration for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
-        <translation type="unfinished"></translation>
+        <translation>调整扭矩横向控制器的最大横向加速度</translation>
     </message>
 </context>
 <context>
@@ -2141,130 +2141,130 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     <name>VehiclePanel</name>
     <message>
         <source>Updating this setting takes effect when the car is powered off.</source>
-        <translation type="unfinished"></translation>
+        <translation>更新此设置在汽车断电时生效</translation>
     </message>
 </context>
 <context>
     <name>VisualsPanel</name>
     <message>
         <source>Display Braking Status</source>
-        <translation type="unfinished"></translation>
+        <translation>显示制动状态</translation>
     </message>
     <message>
         <source>Enable this will turn the current speed value to red while the brake is used.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用此功能将在使用刹车时将当前速度值变为红色</translation>
     </message>
     <message>
         <source>Display Stand Still Timer</source>
-        <translation type="unfinished"></translation>
+        <translation>显示静止定时器</translation>
     </message>
     <message>
         <source>Enable this will display time spent at a stop (i.e., at a stop lights, stop signs, traffic congestions).</source>
-        <translation type="unfinished"></translation>
+        <translation>启用此功能将显示在停车处花费的时间（即在停车灯、停车标志、交通拥堵处）</translation>
     </message>
     <message>
         <source>Display DM Camera in Reverse Gear</source>
-        <translation type="unfinished"></translation>
+        <translation>显示倒车档中的 DM 摄像头</translation>
     </message>
     <message>
         <source>Show Driver Monitoring camera while the car is in reverse gear.</source>
-        <translation type="unfinished"></translation>
+        <translation>当汽车处于倒档时显示驾驶员监控摄像头</translation>
     </message>
     <message>
         <source>OSM: Show debug UI elements</source>
-        <translation type="unfinished"></translation>
+        <translation>OSM：显示调试 UI 元素</translation>
     </message>
     <message>
         <source>OSM: Show UI elements that aid debugging.</source>
-        <translation type="unfinished"></translation>
+        <translation>OSM：显示有助于调试的 UI 元素</translation>
     </message>
     <message>
         <source>Display Feature Status</source>
-        <translation type="unfinished"></translation>
+        <translation>显示功能状态</translation>
     </message>
     <message>
         <source>Display the statuses of certain features on the driving screen.</source>
-        <translation type="unfinished"></translation>
+        <translation>在驾驶屏幕上显示某些功能的状态</translation>
     </message>
     <message>
         <source>Enable Onroad Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>启用道路设置</translation>
     </message>
     <message>
         <source>Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu.</source>
-        <translation type="unfinished"></translation>
+        <translation>在驾驶屏幕上显示“道路设置”按钮，以调整驾驶屏幕上的功能选项，而无需导航到设置菜单</translation>
     </message>
     <message>
         <source>Speedometer: Display True Speed</source>
-        <translation type="unfinished"></translation>
+        <translation>车速表：显示真实速度</translation>
     </message>
     <message>
         <source>Display the true vehicle current speed from wheel speed sensors.</source>
-        <translation type="unfinished"></translation>
+        <translation>通过轮速传感器显示真实的车辆当前速度</translation>
     </message>
     <message>
         <source>Speedometer: Hide from Onroad Screen</source>
-        <translation type="unfinished"></translation>
+        <translation>车速表：从道路屏幕上隐藏</translation>
     </message>
     <message>
         <source>Display End-to-end Longitudinal Status (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>显示端到端纵向状态（测试版）</translation>
     </message>
     <message>
         <source>Enable this will display an icon that appears when the End-to-end model decides to start or stop.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用此选项将显示一个图标，当端到端模型决定启动或停止时出现该图标</translation>
     </message>
     <message>
         <source>Navigation: Display in Full Screen</source>
-        <translation type="unfinished"></translation>
+        <translation>导航：全屏显示</translation>
     </message>
     <message>
         <source>Enable this will display the built-in navigation in full screen.&lt;br&gt;To switch back to driving view, &lt;font color=&apos;yellow&apos;&gt;tap on the border edge&lt;/font&gt;.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用此选项将以全屏方式显示内置导航</translation>
     </message>
     <message>
         <source>Map: Display 3D Buildings</source>
-        <translation type="unfinished"></translation>
+        <translation>显示 3D 建筑物</translation>
     </message>
     <message>
         <source>Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation.</source>
-        <translation type="unfinished"></translation>
+        <translation>解析并在地图上显示 3D 建筑物</translation>
     </message>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>离开</translation>
     </message>
     <message>
         <source>5 Metrics</source>
-        <translation type="unfinished"></translation>
+        <translation>指标</translation>
     </message>
     <message>
         <source>10 Metrics</source>
-        <translation type="unfinished"></translation>
+        <translation>指标</translation>
     </message>
     <message>
         <source>Distance</source>
-        <translation type="unfinished"></translation>
+        <translation>距离</translation>
     </message>
     <message>
         <source>Speed</source>
-        <translation type="unfinished"></translation>
+        <translation>速度</translation>
     </message>
     <message>
         <source>RAM</source>
-        <translation type="unfinished"></translation>
+        <translation>RAM</translation>
     </message>
     <message>
         <source>CPU</source>
-        <translation type="unfinished"></translation>
+        <translation>CPU</translation>
     </message>
     <message>
         <source>GPU</source>
-        <translation type="unfinished"></translation>
+        <translation>GPU</translation>
     </message>
     <message>
         <source>Max</source>
-        <translation type="unfinished"></translation>
+        <translation>Max</translation>
     </message>
 </context>
 <context>
