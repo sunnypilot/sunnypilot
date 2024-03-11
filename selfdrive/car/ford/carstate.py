@@ -149,7 +149,6 @@ class CarState(CarStateBase):
       ("EngBrakeData", 10),
       ("Cluster_Info1_FD1", 10),
       ("ParkAid_Data", 50),
-      ("SteeringPinion_Data", 100),
       ("EPAS_INFO", 50),
       ("Steering_Data_FD1", 10),
       ("BodyInfo_3_FD1", 2),
