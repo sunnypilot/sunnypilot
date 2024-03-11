@@ -32,20 +32,9 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = self.lkas_enabled
     self.buttonStatesPrev = self.buttonStates.copy()
 
-    # Ford Q3 hybrid variants experience a bug where a message from the PCM sends invalid checksums,
-    # this must be root-caused before enabling support. Ford Q4 hybrids do not have this problem.
-    # TrnAin_Tq_Actl and its quality flag are only set on ICE platform variants
-    self.unsupported_platform = (cp.vl["VehicleOperatingModes"]["TrnAinTq_D_Qf"] == 0 and
-                                 self.CP.carFingerprint not in CANFD_CAR)
-    
-    if self.CP.carFingerprint in CAN_CANFD:
-      # Ford EXPLORER calibrated steering wheel angle comes from the IPMA_ADAS instead of PSCM
-      # Check for Ford EXPLORER Unknown/Invalid steering wheel position
-      self.vehicle_sensors_valid = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"] < 32766
-    else:
-      # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
-      # The vehicle usually recovers out of this state within a minute of normal driving
-      self.vehicle_sensors_valid = cp.vl["SteeringPinion_Data"]["StePinCompAnEst_D_Qf"] == 3
+    # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
+    # The vehicle usually recovers out of this state within a minute of normal driving
+    self.vehicle_sensors_valid = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"] < 32766
 
     # car speed
     ret.vEgoRaw = cp.vl["BrakeSysFeatures"]["Veh_V_ActlBrk"] * CV.KPH_TO_MS
@@ -63,10 +52,7 @@ class CarState(CarStateBase):
     ret.parkingBrake = cp.vl["DesiredTorqBrk"]["PrkBrkStatus"] in (1, 2)
 
     # steering wheel
-    if self.CP.carFingerprint in CANFD_CAR:
-      ret.steeringAngleDeg = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"]
-    else:
-      ret.steeringAngleDeg = cp.vl["SteeringPinion_Data"]["StePinComp_An_Est"]
+    ret.steeringAngleDeg = cp.vl["ParkAid_Data"]["ExtSteeringAngleReq2"]
     ret.steeringTorque = cp.vl["EPAS_INFO"]["SteeringColumnTorque"]
     ret.steeringPressed = self.update_steering_pressed(abs(ret.steeringTorque) > CarControllerParams.STEER_DRIVER_ALLOWANCE, 5)
     ret.steerFaultTemporary = cp.vl["EPAS_INFO"]["EPAS_Failure"] == 1
