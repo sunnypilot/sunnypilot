@@ -148,6 +148,7 @@ class CarState(CarStateBase):
       ("BrakeSnData_4", 50),
       ("EngBrakeData", 10),
       ("Cluster_Info1_FD1", 10),
+      ("ParkAid_Data", 50),
       ("SteeringPinion_Data", 100),
       ("EPAS_INFO", 50),
       ("Steering_Data_FD1", 10),
@@ -158,16 +159,6 @@ class CarState(CarStateBase):
     if CP.carFingerprint in CANFD_CAR:
       messages += [
         ("Lane_Assist_Data3_FD1", 33),
-      ]
-
-    # Ford EXPLORER gets steering wheel angle from IPMA instead of PSCM
-    if CP.carFingerprint in CAN_CANFD:
-      messages += [
-        ("ParkAid_Data", 50),
-      ]
-    else:
-      messages += [
-        ("SteeringPinion_Data", 100),
       ]
 
     if CP.transmissionType == TransmissionType.automatic:
