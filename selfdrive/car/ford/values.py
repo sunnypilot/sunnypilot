@@ -52,6 +52,7 @@ BUTTON_STATES = {
 class RADAR:
   DELPHI_ESR = 'ford_fusion_2018_adas'
   DELPHI_MRR = 'FORD_CADS'
+  STEER_ASSIST_DATA = 'ford_lincoln_base_pt'
 
 
 class Footnote(Enum):
@@ -76,7 +77,7 @@ class FordCarInfo(CarInfo):
 
 @dataclass(frozen=True)
 class FordPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR))
+  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('ford_lincoln_base_pt', RADAR.STEER_ASSIST_DATA))
 
 
 class CAR(Platforms):
