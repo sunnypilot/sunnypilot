@@ -8,6 +8,10 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
+* UI Updates
+  * Display Metrics Below Chevron
+    * NEW❗: Metrics is now being displayed below the chevron instead of above
+    * NEW❗: Display both Distance and Speed simultaneously
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
