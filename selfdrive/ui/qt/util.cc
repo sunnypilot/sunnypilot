@@ -43,6 +43,16 @@ std::optional<QString> getDongleId() {
   }
 }
 
+std::optional<QString> getSunnylinkDongleId() {
+  std::string id = Params().get("SunnylinkDongleId");
+
+  if (!id.empty() && (id != "UnregisteredDevice")) {
+    return QString::fromStdString(id);
+  } else {
+    return {};
+  }
+}
+
 QMap<QString, QString> getSupportedLanguages() {
   QFile f(":/languages.json");
   f.open(QIODevice::ReadOnly | QIODevice::Text);

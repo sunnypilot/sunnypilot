@@ -135,6 +135,27 @@ enum PrimeType {
   PURPLE = 5,
 };
 
+enum SunnylinkRoleType {
+  SL_UNKNOWN = -1,
+  SL_READ_ONLY = 0,
+  SL_SPONSOR = 1,
+  SL_ADMIN = 2,  // Internal use only
+};
+
+inline const QMap<QString, int> sunnylinkRoleTypeConverted() {
+  QMap<QString, int> map;
+  map["Unknown"] = SunnylinkRoleType::SL_UNKNOWN;
+  map["ReadOnly"] = SunnylinkRoleType::SL_READ_ONLY;
+  map["Sponsor"] = SunnylinkRoleType::SL_SPONSOR;
+  map["Admin"] = SunnylinkRoleType::SL_ADMIN;  // Internal use only
+  return map;
+}
+
+inline const int sunnylinkRoleTypeValue(const QString &roleType) {
+  static QMap<QString, int> map = sunnylinkRoleTypeConverted();
+  return map.value(roleType, SunnylinkRoleType::SL_UNKNOWN);  // Default to UNKNOWN if not found
+}
+
 const QColor bg_colors [] = {
   [STATUS_DISENGAGED] = QColor(0x17, 0x33, 0x49, 0xc8),
   [STATUS_OVERRIDE] = QColor(0x91, 0x9b, 0x95, 0xf1),
@@ -273,6 +294,10 @@ public:
   inline PrimeType primeType() const { return prime_type; }
   inline bool hasPrime() const { return prime_type != PrimeType::UNKNOWN && prime_type != PrimeType::NONE; }
 
+  void setSunnylinkRoleType(SunnylinkRoleType type);
+  inline SunnylinkRoleType sunnylinkRoleType() const { return role_type; }
+  inline bool isSubscriber() const { return role_type != SunnylinkRoleType::SL_UNKNOWN && role_type != SunnylinkRoleType::SL_READ_ONLY; }
+
   int fb_w = 0, fb_h = 0;
 
   std::unique_ptr<SubMaster> sm;
@@ -290,6 +315,9 @@ signals:
   void primeChanged(bool prime);
   void primeTypeChanged(PrimeType prime_type);
 
+  void sunnylinkRoleChanged(bool subscriber);
+  void sunnylinkRoleTypeChanged(SunnylinkRoleType role_type);
+
 private slots:
   void update();
 
@@ -297,6 +325,7 @@ private:
   QTimer *timer;
   bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
+  SunnylinkRoleType role_type = SunnylinkRoleType::SL_UNKNOWN;
 
   bool last_mads_enabled = false;
   bool mads_path_state = false;

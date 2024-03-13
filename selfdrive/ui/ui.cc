@@ -431,6 +431,20 @@ void UIState::setPrimeType(PrimeType type) {
   }
 }
 
+void UIState::setSunnylinkRoleType(SunnylinkRoleType type) {
+  if (type != role_type) {
+    bool prev_subscriber = isSubscriber();
+
+    role_type = type;
+    emit sunnylinkRoleTypeChanged(role_type);
+
+    bool subscriber = isSubscriber();
+    if (prev_subscriber != subscriber) {
+      emit sunnylinkRoleChanged(subscriber);
+    }
+  }
+}
+
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
   setAwake(true);
   resetInteractiveTimeout();

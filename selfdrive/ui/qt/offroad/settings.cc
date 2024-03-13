@@ -534,6 +534,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QList<PanelInfo> panels = {
     PanelInfo("   " + tr("Device"), device, "../assets/navigation/icon_home.svg"),
     PanelInfo("   " + tr("Network"), new Networking(this), "../assets/offroad/icon_network.png"),
+    PanelInfo("   " + tr("sunnylink"), new SunnylinkPanel(this), "../assets/offroad/icon_wifi_strength_full.svg"),
     PanelInfo("   " + tr("Toggles"), toggles, "../assets/offroad/icon_toggle.png"),
     PanelInfo("   " + tr("Software"), new SoftwarePanelSP(this), "../assets/offroad/icon_software.png"),
     PanelInfo("   " + tr("sunnypilot"), new SunnypilotPanel(this), "../assets/offroad/icon_openpilot.png"),

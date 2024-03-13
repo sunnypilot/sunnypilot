@@ -1,7 +1,7 @@
 #include "selfdrive/ui/qt/request_repeater.h"
 
 RequestRepeater::RequestRepeater(QObject *parent, const QString &requestURL, const QString &cacheKey,
-                                 int period, bool while_onroad) : HttpRequest(parent) {
+                                 int period, bool while_onroad, bool sunnylink) : HttpRequest(parent, true, 20000, sunnylink) {
   timer = new QTimer(this);
   timer->setTimerType(Qt::VeryCoarseTimer);
   QObject::connect(timer, &QTimer::timeout, [=]() {

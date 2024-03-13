@@ -17,6 +17,7 @@ QString getVersion();
 QString getBrand();
 QString getUserAgent();
 std::optional<QString> getDongleId();
+std::optional<QString> getSunnylinkDongleId();
 QMap<QString, QString> getSupportedLanguages();
 QMap<QString, QString> getCarNames();
 void setQtSurfaceFormat();

@@ -13,7 +13,7 @@ ExperimentalModeButton::ExperimentalModeButton(QWidget *parent) : QPushButton(pa
   experimental_pixmap = QPixmap("../assets/img_experimental_grey.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
 
   // go to toggles and expand experimental mode description
-  connect(this, &QPushButton::clicked, [=]() { emit openSettings(2, "ExperimentalMode"); });
+  connect(this, &QPushButton::clicked, [=]() { emit openSettings(3, "ExperimentalMode"); });
 
   setFixedHeight(125);
   QHBoxLayout *main_layout = new QHBoxLayout;

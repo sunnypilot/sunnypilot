@@ -5,6 +5,14 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit 56e343b (February 27, 2024)
+* NEW❗: Config Backup (Alpha access only for GitHub Sponsors and Patreon supporters)
+  * Remotely back up and restore sunnypilot settings easily
+  * Device registration with sunnylink ensures a secure, integrated experience across services
+  * AES encryption derived from the device's RSA private key is used for utmost security
+  * Settings are encrypted on-device, transmitted securely via HTTPS, and stored encrypted on sunnylink
+  * Prevents loss of settings after device resets, offering peace of mind through end-to-end encryption
+  * Early alpha access to all current and previous GitHub Sponsors and Patreon supporters
+    * Go to https://discord.gg/sunnypilot and reach out to one of the moderators to confirm your alpha access
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
