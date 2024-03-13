@@ -44,6 +44,9 @@ common/transformations/transformations.pxd
 common/transformations/transformations.pyx
 
 common/api/__init__.py
+common/api/base.py
+common/api/comma_connect.py
+common/api/sunnylink.py
 
 release/*
 
@@ -329,6 +332,7 @@ selfdrive/manager/__init__.py
 selfdrive/manager/build.py
 selfdrive/manager/helpers.py
 selfdrive/manager/mapd_installer.py
+selfdrive/manager/sunnylink.py
 selfdrive/manager/manager.py
 selfdrive/manager/process_config.py
 selfdrive/manager/process.py

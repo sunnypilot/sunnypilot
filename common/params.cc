@@ -305,6 +305,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"StandStillTimer", PERSISTENT | BACKUP},
     {"StockLongToyota", PERSISTENT | BACKUP},
     {"SubaruManualParkingBrakeSng", PERSISTENT | BACKUP},
+    {"SunnylinkDongleId", PERSISTENT},
     {"TorqueDeadzoneDeg", PERSISTENT | BACKUP},
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
