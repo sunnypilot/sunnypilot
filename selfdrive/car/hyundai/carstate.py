@@ -313,7 +313,7 @@ class CarState(CarStateBase):
       speed_limit_clu_bus_canfd = cp if self.CP.flags & HyundaiFlags.CANFD_HDA2 else cp_cam
       self._speed_limit_clu = speed_limit_clu_bus_canfd.vl["CLUSTER_SPEED_LIMIT"]["SPEED_LIMIT_1"]
     else:
-      sl_can_nav = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+      sl_can_nav = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"] if self.CP.spFlags & HyundaiFlagsSP.SP_NAV_MSG else 0
       sl_can_cam = cp_cam.vl["LKAS12"]["CF_Lkas_TsrSpeed_Display_Clu"] if self.CP.spFlags & HyundaiFlagsSP.SP_LKAS12 else None
       self._speed_limit_clu = sl_can_cam if sl_can_cam is not None and sl_can_cam not in (0, 255) else sl_can_nav
 
