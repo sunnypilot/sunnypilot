@@ -122,31 +122,31 @@
     <name>AutoLaneChangeTimer</name>
     <message>
         <source>Auto Lane Change Timer</source>
-        <translation type="unfinished"></translation>
+        <translation>自动变道定时器</translation>
     </message>
     <message>
         <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set.
 Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置定时以在打开转向灯后延迟自动变道操作。如果设置了定时器，则无需轻推方向盘即可自动变道。使用此功能时请注意安全，请在交通和道路条件允许的情况下才能使用自动变道功能。</translation>
     </message>
     <message>
         <source>s</source>
-        <translation type="unfinished"></translation>
+        <translation>秒</translation>
     </message>
     <message>
         <source>Nudge</source>
-        <translation type="unfinished"></translation>
+        <translation>轻推方向盘</translation>
     </message>
     <message>
         <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
+        <translation>无需轻推方向盘</translation>
     </message>
 </context>
 <context>
     <name>BackupSettings</name>
     <message>
         <source>Settings updated successfully, but no additional data was returned by the server.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置已成功更新，但服务未返回其他数据</translation>
     </message>
     <message>
         <source>OOPS! We made a booboo.</source>
@@ -154,7 +154,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Please try again later.</source>
-        <translation type="unfinished"></translation>
+        <translation>请稍后重试</translation>
     </message>
     <message>
         <source>Settings restored. Confirm to restart the interface.</source>
@@ -173,22 +173,22 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>BrightnessControl</name>
     <message>
         <source>Brightness</source>
-        <translation type="unfinished"></translation>
+        <translation>屏幕亮度</translation>
     </message>
     <message>
         <source>Manually adjusts the global brightness of the screen.</source>
-        <translation type="unfinished"></translation>
+        <translation>手动调节屏幕亮度</translation>
     </message>
     <message>
         <source>Auto</source>
-        <translation type="unfinished"></translation>
+        <translation>自动调节屏幕亮度</translation>
     </message>
 </context>
 <context>
     <name>CameraOffset</name>
     <message>
         <source>Camera Offset - Laneful Only</source>
-        <translation type="unfinished"></translation>
+        <translation>相机偏移（仅完全车道模式可用）</translation>
     </message>
     <message>
         <source>Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm</source>
@@ -196,7 +196,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source> cm</source>
-        <translation type="unfinished"></translation>
+        <translation>厘米</translation>
     </message>
 </context>
 <context>
@@ -415,19 +415,19 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Reset Mapbox Access Token</source>
-        <translation type="unfinished"></translation>
+        <translation>重置Mapbox密钥</translation>
     </message>
     <message>
         <source>Are you sure you want to reset the Mapbox access token?</source>
-        <translation type="unfinished"></translation>
+        <translation>确认重置Mapbox密钥？</translation>
     </message>
     <message>
         <source>Reset sunnypilot Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>重置sunnypilot设定</translation>
     </message>
     <message>
         <source>Are you sure you want to reset all sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation>确认重置sunnypilot设定？</translation>
     </message>
     <message>
         <source>Review the rules, features, and limitations of sunnypilot</source>
@@ -1282,11 +1282,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Visuals</source>
-        <translation type="unfinished"></translation>
+        <translation>视觉</translation>
     </message>
     <message>
         <source>Display</source>
-        <translation type="unfinished"></translation>
+        <translation>屏幕</translation>
     </message>
     <message>
         <source>Trips</source>
@@ -1294,7 +1294,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Vehicle</source>
-        <translation type="unfinished"></translation>
+        <translation>车辆</translation>
     </message>
 </context>
 <context>
@@ -1636,7 +1636,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Driving model</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶模型</translation>
     </message>
     <message>
         <source>downloaded</source>
@@ -1648,11 +1648,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Downloading Navigation model</source>
-        <translation type="unfinished"></translation>
+        <translation>正在下载导航模型</translation>
     </message>
     <message>
         <source>Navigation model</source>
-        <translation type="unfinished"></translation>
+        <translation>导航模型</translation>
     </message>
     <message>
         <source>Downloading Metadata model</source>
