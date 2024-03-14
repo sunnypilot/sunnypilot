@@ -88,11 +88,11 @@
     </message>
     <message>
         <source>Retain hotspot/tethering state</source>
-        <translation type="unfinished"></translation>
+        <translation>持续热点状态</translation>
     </message>
     <message>
         <source>Enabling this toggle will retain the hotspot/tethering toggle state across reboots.</source>
-        <translation type="unfinished"></translation>
+        <translation>启动此开关将在设备重启后持续热点状态。</translation>
     </message>
 </context>
 <context>
