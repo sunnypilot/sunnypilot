@@ -1,5 +1,6 @@
 import jwt
 import requests
+import unicodedata
 from datetime import datetime, timedelta
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.version import get_version
@@ -39,11 +40,17 @@ class BaseApi:
   def get_token(self, expiry_hours=1):
     return self._get_token(expiry_hours)
 
+  def remove_non_ascii_chars(self, text):
+    normalized_text = unicodedata.normalize('NFD', text)
+    ascii_encoded_text = normalized_text.encode('ascii', 'ignore')
+    return ascii_encoded_text.decode()
+
   def api_get(self, endpoint, method='GET', timeout=None, access_token=None, **params):
     headers = {}
     if access_token is not None:
       headers['Authorization'] = "JWT " + access_token
 
-    headers['User-Agent'] = self.user_agent + get_version()
+    version = self.remove_non_ascii_chars(get_version())
+    headers['User-Agent'] = self.user_agent + version
 
     return requests.request(method, self.api_host + "/" + endpoint, timeout=timeout, headers=headers, params=params)
