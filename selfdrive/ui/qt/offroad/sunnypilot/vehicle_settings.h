@@ -28,6 +28,7 @@ private:
   QString set;
 
   QWidget* home_widget;
+  QString prompt_select = tr("Select your car");
 };
 
 class SPVehiclesTogglesPanel : public ListWidget {

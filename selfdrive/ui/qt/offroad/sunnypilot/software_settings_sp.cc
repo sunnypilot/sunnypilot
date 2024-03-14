@@ -106,35 +106,44 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
 
   // Driving model status
   if (isDownloadingModel()) {
-    description += downloadingTemplate.arg("Driving", drivingModelName, QString::number(modelDownloadProgress.value_or(0.0), 'f', 2));
+    description += QString(tr("Downloading Driving model") + " [%1]... (%2%)")
+                   .arg(drivingModelName)
+                   .arg(QString::number(modelDownloadProgress.value_or(0.0), 'f', 2));
   } else {
-    if (modelFromCache) drivingModelName += " (CACHED)";
-    description += downloadedTemplate.arg("Driving", drivingModelName);
+    if (modelFromCache) drivingModelName += QString(" " + tr("(CACHED)"));
+    description += QString(tr("Driving model") + " [%1] " + tr("downloaded")
+                   .arg(drivingModelName));
   }
 
   // Navigation model status
   if (isDownloadingNavModel()) {
     if (!description.isEmpty()) description += "\n"; // Add newline if driving model status is already appended
-    description += downloadingTemplate.arg("Navigation", navModelName,
-                                           QString::number(navModelDownloadProgress.value_or(0.0), 'f', 2));
+    description += QString(tr("Downloading Navigation model") + " [%1]... (%2%)")
+                   .arg(navModelName)
+                   .arg(QString::number(navModelDownloadProgress.value_or(0.0), 'f', 2));
   } else {
-    if (navModelFromCache) navModelName += " (CACHED)";
+    if (navModelFromCache) navModelName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n"; // Ensure newline separation
-    description += downloadedTemplate.arg("Navigation", navModelName);
+    description += QString(tr("Navigation model") + " [%1] " + tr("downloaded")
+                   .arg(navModelName));
   }
 
+  // Metadata status
   if (isDownloadingMetadata()) {
     if (!description.isEmpty()) description += "\n";
-    description += downloadingTemplate.arg("Metadata", metadataName, QString::number(metadataDownloadProgress.value_or(0.0), 'f', 2));
+    description += QString(tr("Downloading Metadata model") + " [%1]... (%2%)")
+                   .arg(metadataName)
+                   .arg(QString::number(metadataDownloadProgress.value_or(0.0), 'f', 2));
   } else {
-    if (metadataFromCache) metadataName += " (CACHED)";
+    if (metadataFromCache) metadataName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n";
-    description += downloadedTemplate.arg("Metadata", metadataName);
+    description += QString(tr("Metadata model") + " [%1] " + tr("downloaded")
+                   .arg(metadataName));
   }
 
   if (model_download_failed) {
-    description = "Downloads have failed, please try swapping the model!\n"
-                  "Failed:\n" + failed_downloads_description;
+    description = tr("Downloads have failed, please try swapping the model!") + "\n" +
+                  tr("Failed:") + "\n" + failed_downloads_description;
     LOGE("MODEL DOWNLOADS FAILED!!!");
   }
 
@@ -178,7 +187,7 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
 void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   // Disabling label button and displaying fetching message
   currentModelLblBtn->setEnabled(false);
-  currentModelLblBtn->setValue("Fetching models...");
+  currentModelLblBtn->setValue(tr("Fetching models..."));
 
   checkNetwork();
   const auto currentModelName = QString::fromStdString(params.get("DrivingModelName"));
@@ -265,8 +274,8 @@ void SoftwarePanelSP::updateLabels() {
 }
 
 void SoftwarePanelSP::showResetParamsDialog() {
-  const auto confirmMsg = tr(
-      "Download has started in the background.\nWe STRONGLY suggest you to reset calibration, would you like to do that now?");
+  const auto confirmMsg = tr("Download has started in the background.") + "\n" +
+                          tr("We STRONGLY suggest you to reset calibration. Would you like to do that now?");
   const auto button_text = tr("Reset Calibration");
 
   // If user confirms, remove specified parameters

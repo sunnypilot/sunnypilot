@@ -66,7 +66,7 @@ private:
   Params params;
 
   ButtonControl *fleetManagerPin;
-  const char *pin_title = "Fleet Manager PIN: ";
+  QString pin_title = tr("Fleet Manager PIN:") + " ";
   QString pin = "OFF";
   QFileSystemWatcher *fs_watch;
 };

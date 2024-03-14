@@ -267,7 +267,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(new LabelControl(tr("Serial"), params.get("HardwareSerial").c_str()));
 
   fleetManagerPin = new ButtonControl(
-    tr(pin_title) + pin, tr("TOGGLE"),
+    pin_title + pin, tr("TOGGLE"),
     tr("Enable or disable PIN requirement for Fleet Manager access."));
   connect(fleetManagerPin, &ButtonControl::clicked, [=]() {
     if (params.getBool("FleetManagerPin")) {
@@ -417,12 +417,12 @@ void DevicePanel::refreshPin() {
   QFile require("/data/params/d/FleetManagerPin");
   if (!require.exists()) {
     setSpacing(50);
-    fleetManagerPin->setTitle(QString(pin_title) + "OFF");
+    fleetManagerPin->setTitle(pin_title + tr("OFF"));
   } else if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
     pin = f.readAll();
     f.close();
     setSpacing(50);
-    fleetManagerPin->setTitle(QString(pin_title) + pin);
+    fleetManagerPin->setTitle(pin_title + pin);
   }
 }
 

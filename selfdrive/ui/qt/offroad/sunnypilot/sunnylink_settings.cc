@@ -33,7 +33,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
     is_backup = true;
     backup_settings->started();
     if (uiState()->isSubscriber()) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to backup sunnypilot settings?"), tr("Backup"), this)) {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to backup sunnypilot settings?"), tr("Back Up"), this)) {
         backup_settings->sendParams(backup_settings->backupParams());
       } else {
         backup_settings->finished();
@@ -233,7 +233,7 @@ void BackupSettings::sendParams(const QByteArray &payload) {
     HttpRequest *request = new HttpRequest(this, true, 10000, true);
     QObject::connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
       if (success && resp != "[]") {
-        ConfirmationDialog::alert(tr("Settings backed up for sunnylink Device ID: ") + *sl_dongle_id, this);
+        ConfirmationDialog::alert(tr("Settings backed up for sunnylink Device ID:") + " " + *sl_dongle_id, this);
       } else if (resp == "[]") {
         ConfirmationDialog::alert(tr("Settings updated successfully, but no additional data was returned by the server."), this);
       } else {

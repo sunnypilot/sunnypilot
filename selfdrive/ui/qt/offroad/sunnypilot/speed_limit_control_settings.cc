@@ -80,7 +80,7 @@ void SlcSettings::updateToggles() {
       speed_limit_offset_settings->setEnabled(speed_limit_control);
       slvo->setEnabled(speed_limit_control && QString::fromStdString(params.get("SpeedLimitOffsetType")) != "0");
 
-      QString speed_limit_engage_condition_text = pcm_cruise_op_long ? "This platform defaults to <b>Auto</b> mode. <b>User Confirm</b> mode is not supported on this platform.<br><br>" : "";
+      QString speed_limit_engage_condition_text = pcm_cruise_op_long ? tr("This platform defaults to <b>Auto</b> mode. <b>User Confirm</b> mode is not supported on this platform.") + "<br><br>" : "";
       QString speed_limit_engage_condition_param = pcm_cruise_op_long ? "0" : "SpeedLimitEngageType";
       if (pcm_cruise_op_long) {
         speed_limit_engage_settings->setDisabledSelectedButton("1");  // "User Confirm" disabled
@@ -124,7 +124,7 @@ void SpeedLimitValueOffset::refresh() {
     option = "";
     unit = "N/A";
   } else if (offset_type == "1") {
-    unit = is_metric ? " km/h" : " mph";
+    unit = " " + (is_metric ? tr("km/h") : tr("mph"));
   } else if (offset_type == "2") {
     unit = " %";
   }
