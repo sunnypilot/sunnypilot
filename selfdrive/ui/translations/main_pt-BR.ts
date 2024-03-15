@@ -92,8 +92,7 @@
     </message>
     <message>
         <source>Enabling this toggle will retain the hotspot/tethering toggle state across reboots.</source>
-        <translatorcomment>Ativar esta chave manterá o estado do hotspot/tethering persistente entre reinicializações.</translatorcomment>
-        <translation></translation>
+        <translation>Ativar esta chave manterá o estado do hotspot/tethering persistente entre reinicializações.</translation>
     </message>
 </context>
 <context>
