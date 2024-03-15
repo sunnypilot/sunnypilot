@@ -1167,15 +1167,15 @@ This may take up to a minute.</source>
     <name>SPVehiclesTogglesPanel</name>
     <message>
         <source>Hyundai/Kia/Genesis</source>
-        <translation type="unfinished"></translation>
+        <translation>现代\起亚\捷尼赛思</translation>
     </message>
     <message>
         <source>Subaru</source>
-        <translation type="unfinished"></translation>
+        <translation>斯巴鲁</translation>
     </message>
     <message>
         <source>Manual Parking Brake: Stop and Go (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>手刹车型：自动跟车（测试版）</translation>
     </message>
     <message>
         <source>Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!</source>
@@ -1183,7 +1183,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Toyota/Lexus</source>
-        <translation type="unfinished"></translation>
+        <translation>丰田/雷克萨斯</translation>
     </message>
     <message>
         <source>Allow M.A.D.S. toggling w/ LKAS Button (Beta)</source>
@@ -1199,15 +1199,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Volkswagen</source>
-        <translation type="unfinished"></translation>
+        <translation>大众</translation>
     </message>
     <message>
         <source>Enable CC Only support</source>
-        <translation type="unfinished"></translation>
+        <translation>启用仅定速巡航车型支持</translation>
     </message>
     <message>
         <source>sunnypilot supports Volkswagen MQB CC only platforms with this toggle enabled. Only enable this toggle if your car does not have ACC from the factory.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot仅限大众MQB配备定速巡航（无ACC）的车型启用此功能</translation>
     </message>
     <message>
         <source>HKG CAN: Smoother Stopping Performance (Beta)</source>
@@ -1278,7 +1278,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Monitoring</source>
-        <translation type="unfinished"></translation>
+        <translatio>监控</translation>
     </message>
     <message>
         <source>Visuals</source>
@@ -1290,7 +1290,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Trips</source>
-        <translation type="unfinished"></translation>
+        <translation>行程</translation>
     </message>
     <message>
         <source>Vehicle</source>
@@ -1482,19 +1482,19 @@ This may take up to a minute.</source>
     <name>SlcSettings</name>
     <message>
         <source>Auto</source>
-        <translation type="unfinished"></translation>
+        <translation>自动</translation>
     </message>
     <message>
         <source>User Confirm</source>
-        <translation type="unfinished"></translation>
+        <translation>用户确认</translation>
     </message>
     <message>
         <source>Engage Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>激活模式</translation>
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished"></translation>
+        <translation>默认</translation>
     </message>
     <message>
         <source>Fixed</source>
@@ -1612,7 +1612,7 @@ This may take up to a minute.</source>
     <name>SoftwarePanelSP</name>
     <message>
         <source>Driving Model</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶模型</translation>
     </message>
     <message>
         <source>SELECT</source>
@@ -1620,7 +1620,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Select a Driving Model</source>
-        <translation type="unfinished"></translation>
+        <translation>请选择一个驾驶模型</translation>
     </message>
     <message>
         <source>Reset Calibration</source>
