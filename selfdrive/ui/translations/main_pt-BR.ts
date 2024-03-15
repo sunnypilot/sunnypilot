@@ -88,11 +88,12 @@
     </message>
     <message>
         <source>Retain hotspot/tethering state</source>
-        <translation type="unfinished"></translation>
+        <translation>Reter o estado do hotspot/tethering</translation>
     </message>
     <message>
         <source>Enabling this toggle will retain the hotspot/tethering toggle state across reboots.</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>Ativar esta chave manterá o estado do hotspot/tethering persistente entre reinicializações.</translatorcomment>
+        <translation></translation>
     </message>
 </context>
 <context>
