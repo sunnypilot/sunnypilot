@@ -431,7 +431,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Review the rules, features, and limitations of sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>回顾sunnypilot的功能、使用说明和注意事项</translation>
     </message>
     <message>
         <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
@@ -466,11 +466,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable Screen Recorder</source>
-        <translation>启用屏幕录像</translation>
+        <translation>启用录屏</translation>
     </message>
     <message>
         <source>Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.</source>
-        <translation type="unfinished"></translation>
+        <translation>打开次开关将进行屏幕录像</translation>
     </message>
 </context>
 <context>
@@ -545,20 +545,20 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished">返回</translation>
     </message>
     <message>
-        <source>Pause Lateral Below Speed w/ Blinker</source>
-        <translation type="unfinished"></translation>
+        <source>低速关闭自动变道</source>
+        <translation></translation>
     </message>
     <message>
         <source>Enable this toggle to pause lateral actuation with blinker when traveling below 20 MPH or 32 km/h.</source>
-        <translation type="unfinished"></translation>
+        <translation>当行驶速度低于20英里/小时或32公里/小时时，启用此开关将暂停打灯自动变道功能</translation>
     </message>
     <message>
         <source>Auto Lane Change: Delay with Blind Spot</source>
-        <translation type="unfinished"></translation>
+        <translation>盲区有车延迟变道</translation>
     </message>
     <message>
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
-        <translation type="unfinished"></translation>
+        <translation>盲点监测（BSM）检测到有障碍车辆时启用延迟计时器，以实现无缝变道，从而确保安全。</translation>
     </message>
     <message>
         <source>Block Lane Change: Road Edge Detection</source>
@@ -566,18 +566,18 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable this toggle to block lane change when road edge is detected on the stalk actuated side.</source>
-        <translation>打开此开关后当检测到道路编译会阻止自动变道</translation>
+        <translation>打开此开关后当检测到道路边缘会阻止想边缘方向自动变道</translation>
     </message>
 </context>
 <context>
     <name>MadsSettings</name>
     <message>
         <source>Enable ACC+MADS with RES+/SET-</source>
-        <translation type="unfinished"></translation>
+        <translation>使用RES+/SET-启用ACC+MADS</translation>
     </message>
     <message>
         <source>Engage both M.A.D.S. and ACC with a single press of RES+ or SET- button.</source>
-        <translation type="unfinished"></translation>
+        <translation>通过短按RES+或 SET-案件同时启动ACC和MADS</translation>
     </message>
     <message>
         <source>Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.</source>
