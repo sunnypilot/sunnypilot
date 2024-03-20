@@ -135,11 +135,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Nudge</source>
-        <translation>轻推方向盘</translation>
+        <translation>轻推</translation>
     </message>
     <message>
         <source>Nudgeless</source>
-        <translation>无需轻推方向盘</translation>
+        <translation>全自动</translation>
     </message>
 </context>
 <context>
@@ -391,7 +391,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>TOGGLE</source>
-        <translation type="unfinished"></translation>
+        <translation>设定</translation>
     </message>
     <message>
         <source>Enable or disable PIN requirement for Fleet Manager access.</source>
@@ -403,15 +403,15 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Turn Off</source>
-        <translation type="unfinished"></translation>
+        <translation>关机</translation>
     </message>
     <message>
         <source>Error Troubleshoot</source>
-        <translation type="unfinished"></translation>
+        <translation>错误日志</translation>
     </message>
     <message>
         <source>Display error from the tmux session when an error has occurred from a system process.</source>
-        <translation type="unfinished"></translation>
+        <translation>显示系统进程错误</translation>
     </message>
     <message>
         <source>Reset Mapbox Access Token</source>
@@ -855,7 +855,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <name>OsmPanel</name>
     <message>
         <source>Mapd Version</source>
-        <translation type="unfinished"></translation>
+        <translation>地图版本</translation>
     </message>
     <message>
         <source>Offline Maps ETA</source>
@@ -867,7 +867,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Downloaded Maps</source>
-        <translation type="unfinished"></translation>
+        <translation>已下载地图</translation>
     </message>
     <message>
         <source>DELETE</source>
