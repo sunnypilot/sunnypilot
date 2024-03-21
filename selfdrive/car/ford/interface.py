@@ -56,9 +56,9 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1750
 
     elif candidate == CAR.EXPLORER_MK6:
-      ret.wheelbase = 3.025
-      ret.steerRatio = 16.8
-      ret.mass = 2050
+      ret.wheelbase = 2.842
+      ret.steerRatio = 15.3
+      ret.mass = 1993
 
     elif candidate == CAR.F_150_MK14:
       # required trim only on SuperCrew
