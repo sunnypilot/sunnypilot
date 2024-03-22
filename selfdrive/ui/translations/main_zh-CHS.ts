@@ -1761,7 +1761,7 @@ This may take up to a minute.</source>
     <name>SpeedLimitWarningSettings</name>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>关</translation>
     </message>
     <message>
         <source>Display</source>
@@ -1979,11 +1979,11 @@ This may take up to a minute.</source>
     <name>SunnypilotPanel</name>
     <message>
         <source>Enable M.A.D.S.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用 M.A.D.S.</translation>
     </message>
     <message>
         <source>Enable the beloved M.A.D.S. feature. Disable toggle to revert back to stock openpilot engagement/disengagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用全时车道保持</translation>
     </message>
     <message>
         <source>Laneless for Curves in &quot;Auto&quot; Mode</source>
@@ -2003,7 +2003,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable Vision-based Turn Speed Control (V-TSC)</source>
-        <translation type="unfinished"></translation>
+        <translation>启用视觉过弯速度控制</translation>
     </message>
     <message>
         <source>Use vision path predictions to estimate the appropriate speed to drive through turns ahead.</source>
