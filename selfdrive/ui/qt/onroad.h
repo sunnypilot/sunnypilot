@@ -110,10 +110,35 @@ private:
 
   // ############################## DEV UI START ##############################
   void drawRightDevUi(QPainter &p, int x, int y);
-  int drawDevUiElementRight(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color);
-  int drawNewDevUiElement(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color);
+  int drawDevUiElementRight(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
+  int drawNewDevUiElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   void drawNewDevUi2(QPainter &p, int x, int y);
   void drawCenteredLeftText(QPainter &p, int x, int y, const QString &text1, QColor color1, const QString &text2, const QString &text3, QColor color2);
+  struct UiElement {
+    QString value;
+    QString label;
+    QString units;
+    QColor color;
+
+    UiElement(const QString &value, const QString &label, const QString &units, const QColor &color = QColor(255, 255, 255, 255))
+      : value(value), label(label), units(units), color(color) {}
+  };
+
+  UiElement getDRel();
+  UiElement getVRel();
+  UiElement getSteeringAngleDeg();
+  UiElement getActualLateralAccel();
+  UiElement getSteeringAngleDesiredDeg();
+  UiElement getMemoryUsagePercent();
+
+  UiElement getAEgo();
+  UiElement getVEgoLead();
+  UiElement getFrictionCoefficientFiltered();
+  UiElement getLatAccelFactorFiltered();
+  UiElement getSteeringTorqueEps();
+  UiElement getBearingDeg();
+  UiElement getAltitude();
+
   // ############################## DEV UI END ##############################
 
   void drawE2eStatus(QPainter &p, int x, int y, int w, int h, int e2e_long_status);

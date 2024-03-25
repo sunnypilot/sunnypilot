@@ -1104,22 +1104,185 @@ void AnnotatedCameraWidget::drawCenteredLeftText(QPainter &p, int x, int y, cons
   p.drawText(real_rect3, Qt::AlignLeft | Qt::AlignVCenter, text3);
 }
 
-int AnnotatedCameraWidget::drawDevUiElementRight(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color) {
+int AnnotatedCameraWidget::drawDevUiElementRight(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {
   p.setFont(InterFont(30 * 2, QFont::Bold));
-  drawColoredText(p, x + 92, y + 80, QString(value), color);
+  drawColoredText(p, x + 92, y + 80, value, color);
 
   p.setFont(InterFont(28, QFont::Bold));
-  drawText(p, x + 92, y + 80 + 42, QString(label), 255);
+  drawText(p, x + 92, y + 80 + 42, label, 255);
 
-  if (strlen(units) > 0) {
+  if (units.length() > 0) {
     p.save();
     p.translate(x + 54 + 30 - 3 + 92 + 30, y + 37 + 25);
     p.rotate(-90);
-    drawText(p, 0, 0, QString(units), 255);
+    drawText(p, 0, 0, units, 255);
     p.restore();
   }
 
   return 110;
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getDRel() {
+  QString value = lead_status ? QString::number(lead_d_rel, 'f', 0) : "-";
+  QColor color = QColor(255, 255, 255, 255);
+
+  if (lead_status) {
+    // Orange if close, Red if very close
+    if (lead_d_rel < 5) {
+      color = QColor(255, 0, 0, 255);
+    } else if (lead_d_rel < 15) {
+      color = QColor(255, 188, 0, 255);
+    }
+  }
+
+  return UiElement(value, "REL DIST", "m", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getVRel() {
+  QString value = lead_status ? QString::number(lead_v_rel * (is_metric ? MS_TO_KPH : MS_TO_MPH), 'f', 0) : "-";
+  QColor color = QColor(255, 255, 255, 255);
+
+  if (lead_status) {
+    // Red if approaching faster than 10mph
+    // Orange if approaching (negative)
+    if (lead_v_rel < -4.4704) {
+      color = QColor(255, 0, 0, 255);
+    } else if (lead_v_rel < 0) {
+      color = QColor(255, 188, 0, 255);
+    }
+  }
+
+  return UiElement(value, "REL SPEED", speedUnit, color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getSteeringAngleDeg() {
+  QString value = QString("%1%2%3").arg(QString::number(angleSteers, 'f', 1)).arg("°").arg("");
+  QColor color = (madsEnabled && latActive) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+
+  // Red if large steering angle
+  // Orange if moderate steering angle
+  if (std::fabs(angleSteers) > 180) {
+    color = QColor(255, 0, 0, 255);
+  } else if (std::fabs(angleSteers) > 90) {
+    color = QColor(255, 188, 0, 255);
+  }
+
+  return UiElement(value, "REAL STEER", "", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getActualLateralAccel() {
+  float actualLateralAccel = (curvature * pow(vEgo, 2)) - (roll * 9.81);
+
+  QString value = QString::number(actualLateralAccel, 'f', 2);
+  QColor color = (madsEnabled && latActive) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+
+  return UiElement(value, "ACTUAL LAT", "m/s²", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getSteeringAngleDesiredDeg() {
+  QString value = (madsEnabled && latActive) ? QString("%1%2%3").arg(QString::number(steerAngleDesired, 'f', 1)).arg("°").arg("") : "-";
+  QColor color = QColor(255, 255, 255, 255);
+
+  if (madsEnabled && latActive) {
+    // Red if large steering angle
+    // Orange if moderate steering angle
+    if (std::fabs(angleSteers) > 180) {
+      color = QColor(255, 0, 0, 255);
+    } else if (std::fabs(angleSteers) > 90) {
+      color = QColor(255, 188, 0, 255);
+    }
+  }
+
+  return UiElement(value, "DESIR STEER", "", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getMemoryUsagePercent() {
+  QString value = QString("%1%2").arg(QString::number(memoryUsagePercent, 'd', 0)).arg("%");
+  QColor color = (memoryUsagePercent > 85) ? QColor(255, 188, 0, 255) : QColor(255, 255, 255, 255);
+
+  return UiElement(value, "RAM", "", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getAEgo() {
+  QString value = QString::number(aEgo, 'f', 1);
+  QColor color = QColor(255, 255, 255, 255);
+
+  return UiElement(value, "ACC.", "m/s²", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getVEgoLead() {
+  QString value = lead_status ? QString::number((lead_v_rel + vEgo) * (is_metric ? MS_TO_KPH : MS_TO_MPH), 'f', 0) : "-";
+  QColor color = QColor(255, 255, 255, 255);
+
+  if (lead_status) {
+    // Red if approaching faster than 10mph
+    // Orange if approaching (negative)
+    if (lead_v_rel < -4.4704) {
+      color = QColor(255, 0, 0, 255);
+    } else if (lead_v_rel < 0) {
+      color = QColor(255, 188, 0, 255);
+    }
+  }
+
+  return UiElement(value, "L.S.", speedUnit, color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getFrictionCoefficientFiltered() {
+  QString value = QString::number(frictionCoefficientFiltered, 'f', 3);
+  QColor color = liveValid ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+
+  return UiElement(value, "FRIC.", "", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getLatAccelFactorFiltered() {
+  QString value = QString::number(latAccelFactorFiltered, 'f', 3);
+  QColor color = liveValid ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
+
+  return UiElement(value, "L.A.", "m/s²", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getSteeringTorqueEps() {
+  QString value = QString::number(std::fabs(steeringTorqueEps), 'f', 1);
+  QColor color = QColor(255, 255, 255, 255);
+
+  return UiElement(value, "E.T.", "N·dm", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getBearingDeg() {
+  QString value = (bearingAccuracyDeg != 180.00) ? QString("%1%2%3").arg(QString::number(bearingDeg, 'd', 0)).arg("°").arg("") : "-";
+  QColor color = QColor(255, 255, 255, 255);
+  QString dir_value;
+
+  if (bearingAccuracyDeg != 180.00) {
+    if (((bearingDeg >= 337.5) && (bearingDeg <= 360)) || ((bearingDeg >= 0) && (bearingDeg <= 22.5))) {
+      dir_value = "N";
+    } else if ((bearingDeg > 22.5) && (bearingDeg < 67.5)) {
+      dir_value = "NE";
+    } else if ((bearingDeg >= 67.5) && (bearingDeg <= 112.5)) {
+      dir_value = "E";
+    } else if ((bearingDeg > 112.5) && (bearingDeg < 157.5)) {
+      dir_value = "SE";
+    } else if ((bearingDeg >= 157.5) && (bearingDeg <= 202.5)) {
+      dir_value = "S";
+    } else if ((bearingDeg > 202.5) && (bearingDeg < 247.5)) {
+      dir_value = "SW";
+    } else if ((bearingDeg >= 247.5) && (bearingDeg <= 292.5)) {
+      dir_value = "W";
+    } else if ((bearingDeg > 292.5) && (bearingDeg < 337.5)) {
+      dir_value = "NW";
+    }
+  } else {
+    dir_value = "OFF";
+  }
+
+  return UiElement("B.D.", QString("%1 | %2").arg(dir_value).arg(value), "", color);
+}
+
+AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getAltitude() {
+  QString value = (gpsAccuracy != 0.00) ? QString::number(altitude, 'f', 1) : "-";
+  QColor color = QColor(255, 255, 255, 255);
+
+  return UiElement(value, "ALT.", "m", color);
 }
 
 void AnnotatedCameraWidget::drawRightDevUi(QPainter &p, int x, int y) {
@@ -1128,146 +1291,49 @@ void AnnotatedCameraWidget::drawRightDevUi(QPainter &p, int x, int y) {
 
   // Add Relative Distance to Primary Lead Car
   // Unit: Meters
-  if (true) {
-    char val_str[16];
-    char units_str[8];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    if (lead_status) {
-      // Orange if close, Red if very close
-      if (lead_d_rel < 5) {
-        valueColor = QColor(255, 0, 0, 255);
-      } else if (lead_d_rel < 15) {
-        valueColor = QColor(255, 188, 0, 255);
-      }
-      snprintf(val_str, sizeof(val_str), "%d", (int)lead_d_rel);
-    } else {
-      snprintf(val_str, sizeof(val_str), "-");
-    }
-
-    snprintf(units_str, sizeof(units_str), "m");
-
-    rh += drawDevUiElementRight(p, x, ry, val_str, "REL DIST", units_str, valueColor);
-    ry = y + rh;
-  }
+  UiElement dRelElement = getDRel();
+  rh += drawDevUiElementRight(p, x, ry, dRelElement.value, dRelElement.label, dRelElement.units, dRelElement.color);
+  ry = y + rh;
 
   // Add Relative Velocity vs Primary Lead Car
   // Unit: kph if metric, else mph
-  if (true) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-     if (lead_status) {
-       // Red if approaching faster than 10mph
-       // Orange if approaching (negative)
-       if (lead_v_rel < -4.4704) {
-        valueColor = QColor(255, 0, 0, 255);
-       } else if (lead_v_rel < 0) {
-         valueColor = QColor(255, 188, 0, 255);
-       }
-
-       if (speedUnit == "mph") {
-         snprintf(val_str, sizeof(val_str), "%d", (int)(lead_v_rel * 2.236936)); //mph
-       } else {
-         snprintf(val_str, sizeof(val_str), "%d", (int)(lead_v_rel * 3.6)); //kph
-       }
-     } else {
-       snprintf(val_str, sizeof(val_str), "-");
-     }
-
-    rh += drawDevUiElementRight(p, x, ry, val_str, "REL SPEED", speedUnit.toStdString().c_str(), valueColor);
-    ry = y + rh;
-  }
+  UiElement vRelElement = getVRel();
+  rh += drawDevUiElementRight(p, x, ry, vRelElement.value, vRelElement.label, vRelElement.units, vRelElement.color);
+  ry = y + rh;
 
   // Add Real Steering Angle
   // Unit: Degrees
-  if (true) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-    if (madsEnabled && latActive) {
-      valueColor = QColor(0, 255, 0, 255);
-    } else {
-      valueColor = QColor(255, 255, 255, 255);
-    }
+  UiElement steeringAngleDegElement = getSteeringAngleDeg();
+  rh += drawDevUiElementRight(p, x, ry, steeringAngleDegElement.value, steeringAngleDegElement.label, steeringAngleDegElement.units, steeringAngleDegElement.color);
+  ry = y + rh;
 
-    // Red if large steering angle
-    // Orange if moderate steering angle
-    if (std::fabs(angleSteers) > 180) {
-      valueColor = QColor(255, 0, 0, 255);
-    } else if (std::fabs(angleSteers) > 90) {
-      valueColor = QColor(255, 188, 0, 255);
-    }
-
-    snprintf(val_str, sizeof(val_str), "%.1f%s%s", angleSteers , "°", "");
-
-    rh += drawDevUiElementRight(p, x, ry, val_str, "REAL STEER", "", valueColor);
-    ry = y + rh;
-  }
-
-  // Add Actual Lateral Acceleration (roll compensated) when using Torque
-  // Unit: m/s²
-  // Add Desired Steering Angle when using PID
-  // Unit: Degrees
   if (lateralState == "torque") {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    float actualLateralAccel = (curvature * pow(vEgo, 2)) - (roll * 9.81);
-
-    if (madsEnabled && latActive) {
-      snprintf(val_str, sizeof(val_str), "%.2f", actualLateralAccel);
-    } else {
-      snprintf(val_str, sizeof(val_str), "-");
-    }
-
-    rh += drawDevUiElementRight(p, x, ry, val_str, "ACTUAL LAT", "m/s²", valueColor);
-    ry = y + rh;
+    // Add Actual Lateral Acceleration (roll compensated) when using Torque
+    // Unit: m/s²
+    UiElement actualLateralAccelElement = getActualLateralAccel();
+    rh += drawDevUiElementRight(p, x, ry, actualLateralAccelElement.value, actualLateralAccelElement.label, actualLateralAccelElement.units, actualLateralAccelElement.color);
   } else {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    if (madsEnabled && latActive) {
-      // Red if large steering angle
-      // Orange if moderate steering angle
-      if (std::fabs(angleSteers) > 180) {
-        valueColor = QColor(255, 0, 0, 255);
-      } else if (std::fabs(angleSteers) > 90) {
-        valueColor = QColor(255, 188, 0, 255);
-      }
-
-      snprintf(val_str, sizeof(val_str), "%.1f%s%s", steerAngleDesired, "°", "");
-    } else {
-      snprintf(val_str, sizeof(val_str), "-");
-    }
-
-    rh += drawDevUiElementRight(p, x, ry, val_str, "DESIR STEER", "", valueColor);
-    ry = y + rh;
+    // Add Desired Steering Angle when using PID
+    // Unit: Degrees
+    UiElement steeringAngleDesiredDegElement = getSteeringAngleDesiredDeg();
+    rh += drawDevUiElementRight(p, x, ry, steeringAngleDesiredDegElement.value, steeringAngleDesiredDegElement.label, steeringAngleDesiredDegElement.units, steeringAngleDesiredDegElement.color);
   }
+  ry = y + rh;
 
   // Add Device Memory (RAM) Usage
   // Unit: Percent
-  if (true) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    if (memoryUsagePercent > 85) {
-      valueColor = QColor(255, 188, 0, 255);
-    }
-
-    snprintf(val_str, sizeof(val_str), "%d%s", (int)memoryUsagePercent, "%");
-
-    rh += drawDevUiElementRight(p, x, ry, val_str, "RAM", "", valueColor);
-    ry = y + rh;
-  }
+  UiElement memoryUsagePercentElement = getMemoryUsagePercent();
+  rh += drawDevUiElementRight(p, x, ry, memoryUsagePercentElement.value, memoryUsagePercentElement.label, memoryUsagePercentElement.units, memoryUsagePercentElement.color);
+  ry = y + rh;
 
   rh += 25;
   p.setBrush(QColor(0, 0, 0, 0));
   QRect ldu(x, y, 184, rh);
 }
 
-int AnnotatedCameraWidget::drawNewDevUiElement(QPainter &p, int x, int y, const char* value, const char* label, const char* units, QColor &color) {
+int AnnotatedCameraWidget::drawNewDevUiElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color) {
   p.setFont(InterFont(38, QFont::Bold));
-  drawCenteredLeftText(p, x, y, QString(label), whiteColor(), QString(value), QString(units), color);
+  drawCenteredLeftText(p, x, y, label, whiteColor(), value, units, color);
 
   return 430;
 }
@@ -1277,120 +1343,40 @@ void AnnotatedCameraWidget::drawNewDevUi2(QPainter &p, int x, int y) {
 
   // Add Acceleration from Car
   // Unit: Meters per Second Squared
-  if (true) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    snprintf(val_str, sizeof(val_str), "%.1f", aEgo);
-
-    rw += drawNewDevUiElement(p, rw, y, val_str, "ACC.", "m/s²", valueColor);
-  }
+  UiElement aEgoElement = getAEgo();
+  rw += drawNewDevUiElement(p, rw, y, aEgoElement.value, aEgoElement.label, aEgoElement.units, aEgoElement.color);
 
   // Add Velocity of Primary Lead Car
   // Unit: kph if metric, else mph
-  if (true) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
+  UiElement vEgoLeadElement = getVEgoLead();
+  rw += drawNewDevUiElement(p, rw, y, vEgoLeadElement.value, vEgoLeadElement.label, vEgoLeadElement.units, vEgoLeadElement.color);
 
-     if (lead_status) {
-       if (speedUnit == "mph") {
-         snprintf(val_str, sizeof(val_str), "%d", (int)((lead_v_rel + vEgo) * 2.236936)); //mph
-       } else {
-         snprintf(val_str, sizeof(val_str), "%d", (int)((lead_v_rel + vEgo) * 3.6)); //kph
-       }
-     } else {
-       snprintf(val_str, sizeof(val_str), "-");
-     }
-
-    rw += drawNewDevUiElement(p, rw, y, val_str, "L.S.", speedUnit.toStdString().c_str(), valueColor);
-  }
-
-  // Add Friction Coefficient Raw from torqued
-  // Unit: None
   if (torquedUseParams) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
+    // Add Friction Coefficient Raw from torqued
+    // Unit: None
+    UiElement frictionCoefficientFilteredElement = getFrictionCoefficientFiltered();
+    rw += drawNewDevUiElement(p, rw, y, frictionCoefficientFilteredElement.value, frictionCoefficientFilteredElement.label, frictionCoefficientFilteredElement.units, frictionCoefficientFilteredElement.color);
 
-    if (liveValid) valueColor = QColor(0, 255, 0, 255);
-    snprintf(val_str, sizeof(val_str), "%.3f", frictionCoefficientFiltered);
+    // Add Lateral Acceleration Factor Raw from torqued
+    // Unit: m/s²
+    UiElement latAccelFactorFilteredElement = getLatAccelFactorFiltered();
+    rw += drawNewDevUiElement(p, rw, y, latAccelFactorFilteredElement.value, latAccelFactorFilteredElement.label, latAccelFactorFilteredElement.units, latAccelFactorFilteredElement.color);
+  } else {
+    // Add Steering Torque from Car EPS
+    // Unit: Newton Meters
+    UiElement steeringTorqueEpsElement = getSteeringTorqueEps();
+    rw += drawNewDevUiElement(p, rw, y, steeringTorqueEpsElement.value, steeringTorqueEpsElement.label, steeringTorqueEpsElement.units, steeringTorqueEpsElement.color);
 
-    rw += drawNewDevUiElement(p, rw, y, val_str, "FRIC.", "", valueColor);
-  }
-
-  // Add Steering Torque from Car EPS
-  // Unit: Newton Meters
-  else {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    snprintf(val_str, sizeof(val_str), "%.1f", std::fabs(steeringTorqueEps));
-
-    rw += drawNewDevUiElement(p, rw, y, val_str, "E.T.", "N·dm", valueColor);
-  }
-
-  // Add Lateral Acceleration Factor Raw from torqued
-  // Unit: m/s²
-  if (torquedUseParams) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    if (liveValid) valueColor = QColor(0, 255, 0, 255);
-    snprintf(val_str, sizeof(val_str), "%.3f", latAccelFactorFiltered);
-
-    rw += drawNewDevUiElement(p, rw, y, val_str, "L.A.", "m/s²", valueColor);
-  }
-
-  // Add Bearing Degree and Direction from Car (Compass)
-  // Unit: Meters
-  else {
-    char val_str[16];
-    char dir_str[8];
-    char data_string[30];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    if (bearingAccuracyDeg != 180.00) {
-      snprintf(val_str, sizeof(val_str), "%.0d%s%s", (int)bearingDeg, "°", "");
-      if (((bearingDeg >= 337.5) && (bearingDeg <= 360)) || ((bearingDeg >= 0) && (bearingDeg <= 22.5))) {
-        snprintf(dir_str, sizeof(dir_str), "N");
-      } else if ((bearingDeg > 22.5) && (bearingDeg < 67.5)) {
-        snprintf(dir_str, sizeof(dir_str), "NE");
-      } else if ((bearingDeg >= 67.5) && (bearingDeg <= 112.5)) {
-        snprintf(dir_str, sizeof(dir_str), "E");
-      } else if ((bearingDeg > 112.5) && (bearingDeg < 157.5)) {
-        snprintf(dir_str, sizeof(dir_str), "SE");
-      } else if ((bearingDeg >= 157.5) && (bearingDeg <= 202.5)) {
-        snprintf(dir_str, sizeof(dir_str), "S");
-      } else if ((bearingDeg > 202.5) && (bearingDeg < 247.5)) {
-        snprintf(dir_str, sizeof(dir_str), "SW");
-      } else if ((bearingDeg >= 247.5) && (bearingDeg <= 292.5)) {
-        snprintf(dir_str, sizeof(dir_str), "W");
-      } else if ((bearingDeg > 292.5) && (bearingDeg < 337.5)) {
-        snprintf(dir_str, sizeof(dir_str), "NW");
-      }
-    } else {
-      snprintf(dir_str, sizeof(dir_str), "OFF");
-      snprintf(val_str, sizeof(val_str), "-");
-    }
-
-    snprintf(data_string, sizeof(data_string), "%s | %s", dir_str, val_str);
-
-    rw += drawNewDevUiElement(p, rw, y, "B.D.", data_string, "", valueColor);
+    // Add Bearing Degree and Direction from Car (Compass)
+    // Unit: Meters
+    UiElement bearingDegElement = getBearingDeg();
+    rw += drawNewDevUiElement(p, rw, y, bearingDegElement.value, bearingDegElement.label, bearingDegElement.units, bearingDegElement.color);
   }
 
   // Add Altitude of Current Location
   // Unit: Meters
-  if (true) {
-    char val_str[16];
-    QColor valueColor = QColor(255, 255, 255, 255);
-
-    if (gpsAccuracy != 0.00) {
-      snprintf(val_str, sizeof(val_str), "%.1f", altitude);
-    } else {
-      snprintf(val_str, sizeof(val_str), "-");
-    }
-
-    rw += drawNewDevUiElement(p, rw, y, val_str, "ALT.", "m", valueColor);
-  }
+  UiElement altitudeElement = getAltitude();
+  rw += drawNewDevUiElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
 }
 
 // ############################## DEV UI END ##############################
