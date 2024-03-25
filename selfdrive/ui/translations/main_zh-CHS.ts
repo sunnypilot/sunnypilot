@@ -1278,7 +1278,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Monitoring</source>
-        <translatio>监控</translation>
+        <translation>监控</translation>
     </message>
     <message>
         <source>Visuals</source>
