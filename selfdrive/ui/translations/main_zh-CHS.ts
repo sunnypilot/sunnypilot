@@ -1889,7 +1889,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Sponsor Status</source>
-        <translation type="unfinished"></translation>
+        <translation>Sponsor状态</translation>
     </message>
     <message>
         <source>SPONSOR</source>
@@ -1897,19 +1897,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sponsor可以抢先体验sunnylink的功能</translation>
     </message>
     <message>
         <source>Manage Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>管理设置</translation>
     </message>
     <message>
         <source>Backup Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>备份设置</translation>
     </message>
     <message>
         <source>Are you sure you want to backup sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation>确认备份sunnypilot设置？</translation>
     </message>
     <message>
         <source>Early alpha access only. Become a sponsor to get early access to sunnylink features.</source>
@@ -1917,23 +1917,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Become a Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>成为Sponsor</translation>
     </message>
     <message>
         <source>Restore Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>恢复设置</translation>
     </message>
     <message>
         <source>Are you sure you want to restore the last backed up sunnypilot settings?</source>
-        <translation type="unfinished"></translation>
+        <translation>确认恢复最后一次备份的sunnypilot设置？</translation>
     </message>
     <message>
         <source>Restore</source>
-        <translation type="unfinished"></translation>
+        <translation>恢复</translation>
     </message>
     <message>
         <source>THANKS</source>
-        <translation type="unfinished"></translation>
+        <translation>谢谢</translation>
     </message>
     <message>
         <source>Sponsor</source>
@@ -1941,15 +1941,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Not Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>您还不是Sponsor</translation>
     </message>
     <message>
         <source>Backing up...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在进行备份</translation>
     </message>
     <message>
         <source>Restoring...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在恢复</translation>
     </message>
     <message>
         <source>Back Up</source>
@@ -1995,11 +1995,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Speed Limit Control (SLC)</source>
-        <translation type="unfinished"></translation>
+        <translation>限速控制（SLC）</translation>
     </message>
     <message>
         <source>When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed.</source>
-        <translation type="unfinished"></translation>
+        <translation>当您启用ACC时，系统将提示您将巡航速度设置为通过指定的偏移和源策略调整的道路速度限制或当前行驶速度。最大巡航速度将始终为最大设定速度。</translation>
     </message>
     <message>
         <source>Enable Vision-based Turn Speed Control (V-TSC)</source>
@@ -2007,23 +2007,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Use vision path predictions to estimate the appropriate speed to drive through turns ahead.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用视觉路径预测来估计通过前方转弯的适当速度</translation>
     </message>
     <message>
         <source>Enable Map Data Turn Speed Control (M-TSC) (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>启用地图数据速度控制（M-TSC）</translation>
     </message>
     <message>
         <source>Use curvature information from map data to define speed limits to take turns ahead.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用地图数据中的曲率信息来定义转弯前的速度限制。</translation>
     </message>
     <message>
         <source>ACC +/-: Long Press Reverse</source>
-        <translation type="unfinished"></translation>
+        <translation>ACC +/-长按自定义</translation>
     </message>
     <message>
         <source>Change the ACC +/- buttons behavior with cruise speed change in sunnypilot.</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义长按ACC+/-的效果</translation>
     </message>
     <message>
         <source>Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)</source>
@@ -2039,27 +2039,27 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Neural Network Lateral Control (NNLC)</source>
-        <translation type="unfinished"></translation>
+        <translation>神经网络横向控制</translation>
     </message>
     <message>
         <source>Enforce Torque Lateral Control</source>
-        <translation type="unfinished"></translation>
+        <translation>强制扭矩横向控制</translation>
     </message>
     <message>
         <source>Enable this to enforce sunnypilot to steer with Torque lateral control.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用此功能可强制sunnypilot使用扭矩横向控制进行转向。</translation>
     </message>
     <message>
         <source>Enable Self-Tune</source>
-        <translation type="unfinished"></translation>
+        <translation>启用自调整</translation>
     </message>
     <message>
         <source>Enables self-tune for Torque lateral control for platforms that do not use Torque lateral control by default.</source>
-        <translation type="unfinished"></translation>
+        <translation>为默认情况下不使用扭矩横向控制的平台启用扭矩横向控制自调整。</translation>
     </message>
     <message>
         <source>Less Restrict Settings for Self-Tune (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>自调整的限制设置较少（测试版）</translation>
     </message>
     <message>
         <source>Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values.</source>
@@ -2067,7 +2067,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable Custom Tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>启用自定义调整</translation>
     </message>
     <message>
         <source>Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within &quot;selfdrive/torque_data&quot;. The values will also be used live when &quot;Override Self-Tune&quot; toggle is enabled.</source>
@@ -2083,15 +2083,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Quiet Drive 🤫</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶时静音</translation>
     </message>
     <message>
         <source>sunnypilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot将显示警报，但只播放最重要的警告声音。此功能可以在汽车行驶时切换</translation>
     </message>
     <message>
         <source>Green Traffic Light Chime (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>绿灯提示</translation>
     </message>
     <message>
         <source>A chime will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. If you are waiting behind another vehicle, the chime will play once the vehicle advances unless ACC is engaged.</source>
@@ -2103,11 +2103,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Lead Vehicle Departure Alert</source>
-        <translation type="unfinished"></translation>
+        <translation>前车驶离提醒</translation>
     </message>
     <message>
         <source>Enable this will notify when the leading vehicle drives away.</source>
-        <translation type="unfinished"></translation>
+        <translation>前车启动之后发出提醒</translation>
     </message>
     <message>
         <source>Customize M.A.D.S.</source>
