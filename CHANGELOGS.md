@@ -13,6 +13,8 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
   * Prevents loss of settings after device resets, offering peace of mind through end-to-end encryption
   * Early alpha access to all current and previous GitHub Sponsors and Patreon supporters
     * Go to https://discord.gg/sunnypilot and reach out to one of the moderators to confirm your alpha access
+* UPDATED: Neutral Network Lateral Control (NNLC)
+  * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
