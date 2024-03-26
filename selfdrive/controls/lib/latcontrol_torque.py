@@ -84,7 +84,7 @@ class LatControlTorque(LatControl):
     self._frame = 0
 
     self.use_lateral_jerk = False  # TODO: make this a parameter in the UI
-    self.nnff_no_lateraj_jerk = False  # TODO: make this a parameter in the UI
+    self.nnff_no_lateral_jerk = False  # TODO: make this a parameter in the UI
 
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
@@ -198,7 +198,7 @@ class LatControlTorque(LatControl):
         predicted_lateral_jerk = get_predicted_lateral_jerk(model_data.acceleration.y, self.t_diffs)
         desired_lateral_jerk = (interp(self.desired_lat_jerk_time, ModelConstants.T_IDXS, model_data.acceleration.y) - desired_lateral_accel) / self.desired_lat_jerk_time
         lookahead_lateral_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_lateral_jerk)
-        if self.nnff_no_lateraj_jerk or self.use_steering_angle or lookahead_lateral_jerk == 0.0:
+        if self.nnff_no_lateral_jerk or self.use_steering_angle or lookahead_lateral_jerk == 0.0:
           lookahead_lateral_jerk = 0.0
           actual_lateral_jerk = 0.0
           self.lat_accel_friction_factor = 1.0
