@@ -188,7 +188,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>CameraOffset</name>
     <message>
         <source>Camera Offset - Laneful Only</source>
-        <translation>相机偏移（仅完全车道模式可用）</translation>
+        <translation>相机偏移（仅车道线模式有效）</translation>
     </message>
     <message>
         <source>Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm</source>
@@ -214,7 +214,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>CustomOffsetsSettings</name>
     <message>
         <source>Back</source>
-        <translation type="unfinished">返回</translation>
+        <translation>返回</translation>
     </message>
 </context>
 <context>
@@ -395,11 +395,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable or disable PIN requirement for Fleet Manager access.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用或禁用Fleet Manager访问的PIN要求</translation>
     </message>
     <message>
         <source>Are you sure you want to turn off PIN requirement?</source>
-        <translation type="unfinished"></translation>
+        <translation>您确定要关闭PIN要求吗？</translation>
     </message>
     <message>
         <source>Turn Off</source>
@@ -435,11 +435,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot要求设备安装偏航角4°范围内，俯仰角上5°或下9°范围内。sunnypilot是连续校准，很少需要重置。</translation>
     </message>
     <message>
         <source>OFF</source>
-        <translation type="unfinished"></translation>
+        <translation>关</translation>
     </message>
     <message>
         <source>Fleet Manager PIN:</source>
@@ -450,7 +450,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>DisplayPanel</name>
     <message>
         <source>Driving Screen Off: Non-Critical Events</source>
-        <translation type="unfinished"></translation>
+        <translation>非关键事件关闭屏幕</translation>
     </message>
     <message>
         <source>When &lt;b&gt;Driving Screen Off Timer&lt;/b&gt; is not set to &lt;b&gt;&quot;Always On&quot;&lt;/b&gt;:</source>
@@ -458,11 +458,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enabled: Wake the brightness of the screen to display all events.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用：显示所有事件</translation>
     </message>
     <message>
         <source>Disabled: Wake the brightness of the screen to display critical events.</source>
-        <translation type="unfinished"></translation>
+        <translation>停用：仅显示关键事件</translation>
     </message>
     <message>
         <source>Enable Screen Recorder</source>
@@ -477,27 +477,27 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>DriveStats</name>
     <message>
         <source>Drives</source>
-        <translation type="unfinished"></translation>
+        <translation>行程数量</translation>
     </message>
     <message>
         <source>Hours</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶时长（小时）</translation>
     </message>
     <message>
         <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
+        <translation>全部</translation>
     </message>
     <message>
         <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
+        <translation>最近一周</translation>
     </message>
     <message>
         <source>KM</source>
-        <translation type="unfinished"></translation>
+        <translation>公里</translation>
     </message>
     <message>
         <source>Miles</source>
-        <translation type="unfinished"></translation>
+        <translation">英里</translation>
     </message>
 </context>
 <context>
@@ -581,34 +581,37 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.</source>
-        <translation type="unfinished"></translation>
+        <translation>注意：一旦M.A.D.S.通过该模式接合，它将保持接合，直到通过M.A.D.S按钮手动禁用或关闭汽车</translation>
     </message>
     <message>
         <source>Toggle M.A.D.S. with Cruise Main</source>
-        <translation type="unfinished"></translation>
+        <translation>通过Main按键开关M.A.D.S.</translation>
     </message>
     <message>
         <source>Allows M.A.D.S. engagement/disengagement with &quot;Cruise Main&quot; cruise control button from the steering wheel.</source>
-        <translation type="unfinished"></translation>
+        <translation>允许通过方向盘按键main启用或关闭M.A.D.S. </translation>
     </message>
     <message>
         <source>Remain Active</source>
-        <translation type="unfinished"></translation>
+        <translation>保持激活</translation>
     </message>
     <message>
         <source>Pause Steering</source>
-        <translation type="unfinished"></translation>
+        <translation>暂停保持</translation>
     </message>
     <message>
         <source>Steering Mode After Braking</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义踩刹车后车道保持状态</translation>
     </message>
     <message>
         <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.
 
 Remain Active: ALC will remain active even after the brake pedal is pressed.
 Pause Steering: ALC will be paused after the brake pedal is manually pressed.</source>
-        <translation type="unfinished"></translation>
+        <translation>选择在sunnypilot中踩下制动踏板后自动车道居中状态。
+
+保持激活：即使踩下制动踏板，自动车道保持不会中断。
+暂停保持：踩下制动踏板后，车道保持将暂停。</translation>
     </message>
 </context>
 <context>
@@ -691,7 +694,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Monitor and alert when driver is not keeping the hands on the steering wheel.</source>
-        <translation type="unfinished"></translation>
+        <translation>当驾驶员没有把手放在方向盘上时，进行监测并发出警报</translation>
     </message>
 </context>
 <context>
@@ -810,7 +813,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Turn off the device screen or reduce brightness to protect the screen after driving starts. It automatically brightens or turns on when a touch or event occurs.</source>
-        <translation type="unfinished"></translation>
+        <translation>车辆行驶中，关闭屏幕或降低亮度以保护屏幕。触摸屏幕，它会自动变亮或打开</translation>
     </message>
     <message>
         <source>s</source>
@@ -829,7 +832,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <name>OnroadScreenOffBrightness</name>
     <message>
         <source>Driving Screen Off Brightness (%)</source>
-        <translation type="unfinished"></translation>
+        <translation>行驶中屏幕亮度控制</translation>
     </message>
     <message>
         <source>When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio.</source>
@@ -837,18 +840,18 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Dark</source>
-        <translation type="unfinished"></translation>
+        <translation>较暗</translation>
     </message>
 </context>
 <context>
     <name>OnroadSettings</name>
     <message>
         <source>ONROAD OPTIONS</source>
-        <translation type="unfinished"></translation>
+        <translation>行车设置</translation>
     </message>
     <message>
         <source>&lt;b&gt;ONROAD SETTINGS | SUNNYPILOT&lt;/b&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;b&gt;行车设置 | SUNNYPILOT&lt;/b&gt;</translation>
     </message>
 </context>
 <context>
