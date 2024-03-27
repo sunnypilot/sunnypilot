@@ -26,6 +26,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
+    ret.tireStiffnessFactor = 1.0
 
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [0.5]
