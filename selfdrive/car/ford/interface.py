@@ -52,7 +52,7 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.Navigator_MK2:
       ret.wheelbase = 2.824
-      ret.steerRatio = 15.3
+      ret.steerRatio = 16.3
       ret.mass = 1933
       
     elif candidate == CAR.ESCAPE_MK4:
