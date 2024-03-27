@@ -2111,75 +2111,75 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Customize M.A.D.S.</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义M.A.D.S.</translation>
     </message>
     <message>
         <source>Customize Lane Change</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义变道设置</translation>
     </message>
     <message>
         <source>Customize Offsets</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义偏移量</translation>
     </message>
     <message>
         <source>Customize Speed Limit Control</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义限速控制</translation>
     </message>
     <message>
         <source>Customize Warning</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义提醒</translation>
     </message>
     <message>
         <source>Customize Source</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义来源</translation>
     </message>
     <message>
         <source>Laneful</source>
-        <translation type="unfinished"></translation>
+        <translation>车道线模式</translation>
     </message>
     <message>
         <source>Laneless</source>
-        <translation type="unfinished"></translation>
+        <translation>忽略车道线模式</translation>
     </message>
     <message>
         <source>Auto</source>
-        <translation type="unfinished"></translation>
+        <translation>自动</translation>
     </message>
     <message>
         <source>Speed Limit Assist</source>
-        <translation type="unfinished"></translation>
+        <translation>限速辅助</translation>
     </message>
     <message>
         <source>NNLC is currently not available on this platform.</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC目前在此平台上不可用。</translation>
     </message>
     <message>
         <source>Add custom offsets to Camera and Path in sunnypilot.</source>
-        <translation type="unfinished"></translation>
+        <translation>将自定义偏移添加到sunnypilot中的“相机”和“路径”。</translation>
     </message>
     <message>
         <source>Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions.</source>
-        <translation type="unfinished"></translation>
+        <translation>默认为“忽略车道线”。在自动模式下，sunnnypilot根据道路上的车道识别状态和特定条件，自动在车道线或忽略车道模型之间进行动态选择。</translation>
     </message>
     <message>
         <source>Dynamic Lane Profile</source>
-        <translation type="unfinished"></translation>
+        <translation>动态车道模式</translation>
     </message>
     <message>
         <source>Offline Only</source>
-        <translation type="unfinished"></translation>
+        <translation>仅离线</translation>
     </message>
     <message>
         <source>Real-time and Offline</source>
-        <translation type="unfinished"></translation>
+        <translation>实时或离线</translation>
     </message>
     <message>
         <source>Dynamic Lane Profile is not available with the current Driving Model</source>
-        <translation type="unfinished"></translation>
+        <translation>当前驾驶模型不支持动态车道模式</translation>
     </message>
     <message>
         <source>Custom Offsets is not available with the current Driving Model</source>
-        <translation type="unfinished"></translation>
+        <translation>当前驾驶模型不支持自定义偏移</translation>
     </message>
     <message>
         <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: </source>
@@ -2187,7 +2187,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Start the car to check car compatibility</source>
-        <translation type="unfinished"></translation>
+        <translation>启动汽车以检查汽车兼容性</translation>
     </message>
     <message>
         <source>NNLC Not Loaded</source>
@@ -2195,23 +2195,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>NNLC Loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC已载入</translation>
     </message>
     <message>
         <source>Fuzzy</source>
-        <translation type="unfinished"></translation>
+        <translation>模糊</translation>
     </message>
     <message>
         <source>Exact</source>
-        <translation type="unfinished"></translation>
+        <translation>精确</translation>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: </source>
-        <translation type="unfinished"></translation>
+        <translation>通过sunnypilot Discord服务器联系sunnypiot团队，并捐赠日志，为您的汽车加载NNLC</translation>
     </message>
     <message>
         <source>Match</source>
-        <translation type="unfinished"></translation>
+        <translation>匹配</translation>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported: </source>
