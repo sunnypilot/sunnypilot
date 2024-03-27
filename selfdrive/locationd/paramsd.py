@@ -162,7 +162,7 @@ def main():
       'carFingerprint': CP.carFingerprint,
       'steerRatio': CP.steerRatio,
       'stiffnessFactor': 1.0,
-      'angleOffsetAverageDeg': 0.0,
+      'angleOffsetAverageDeg': -0.07627719640731812,
     }
     cloudlog.info("Parameter learner resetting to default values")
 
