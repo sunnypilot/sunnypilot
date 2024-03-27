@@ -20,7 +20,7 @@ FW_VERSIONS = {
       b'M1PT-14F397-AC\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
-  CAR.EDGE_MK2: {
+  CAR.Navigator_MK2: {
     (Ecu.eps, 0x730, None): [
       b'K2GC-14D003-AJ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
