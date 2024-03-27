@@ -55,6 +55,7 @@ class CAR(StrEnum):
   ESCAPE_MK4 = "FORD ESCAPE 4TH GEN"
   EXPLORER_MK6 = "FORD EXPLORER 6TH GEN"
   F_150_MK14 = "FORD F-150 14TH GEN"
+  Navigator_MK2 = "Lincoln Navigator 2ND GEN"
   FOCUS_MK4 = "FORD FOCUS 4TH GEN"
   MAVERICK_MK1 = "FORD MAVERICK 1ST GEN"
   F_150_LIGHTNING_MK1 = "FORD F-150 LIGHTNING 1ST GEN"
@@ -62,7 +63,7 @@ class CAR(StrEnum):
 
 
 CANFD_CAR = {CAR.F_150_MK14, CAR.F_150_LIGHTNING_MK1, CAR.MUSTANG_MACH_E_MK1}
-
+CAN_Navigator = {CAR.Navigator_MK2}
 
 class RADAR:
   DELPHI_ESR = 'ford_fusion_2018_adas'
@@ -99,12 +100,14 @@ class FordCarInfo(CarInfo):
 
 CAR_INFO: Dict[str, Union[CarInfo, List[CarInfo]]] = {
   CAR.BRONCO_SPORT_MK1: FordCarInfo("Ford Bronco Sport 2021-22"),
+  CAR.Navigator_MK2: FordCarInfo("Lincoln Navigator 2020-23", "Adaptive Cruise Control with Lane Centering"),
   CAR.ESCAPE_MK4: [
     FordCarInfo("Ford Escape 2020-22"),
     FordCarInfo("Ford Kuga 2020-22", "Adaptive Cruise Control with Lane Centering"),
   ],
   CAR.EXPLORER_MK6: [
     FordCarInfo("Ford Explorer 2020-23"),
+    FordCarInfo("Lincoln Navigator 2020-23", "Co-Pilot360 Plus"),
     FordCarInfo("Lincoln Aviator 2020-21", "Co-Pilot360 Plus"),
   ],
   CAR.F_150_MK14: FordCarInfo("Ford F-150 2023", "Co-Pilot360 Active 2.0"),

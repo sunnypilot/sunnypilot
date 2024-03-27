@@ -26,6 +26,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
+    ret.tireStiffnessFactor = 1.0
 
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [0.5]
@@ -50,15 +51,20 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 17.7
       ret.mass = 1625
 
+    elif candidate == CAR.Navigator_MK2:
+      ret.wheelbase = 2.824
+      ret.steerRatio = 16.3
+      ret.mass = 1933
+      
     elif candidate == CAR.ESCAPE_MK4:
       ret.wheelbase = 2.71
       ret.steerRatio = 16.7
       ret.mass = 1750
 
     elif candidate == CAR.EXPLORER_MK6:
-      ret.wheelbase = 3.025
-      ret.steerRatio = 16.8
-      ret.mass = 2050
+      ret.wheelbase = 2.842
+      ret.steerRatio = 15.3
+      ret.mass = 1993
 
     elif candidate == CAR.F_150_MK14:
       # required trim only on SuperCrew
