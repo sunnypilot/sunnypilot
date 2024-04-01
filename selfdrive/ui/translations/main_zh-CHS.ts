@@ -68,23 +68,23 @@
     </message>
     <message>
         <source>Hidden Network</source>
-        <translation type="unfinished"></translation>
+        <translation>隐藏的网络</translation>
     </message>
     <message>
         <source>CONNECT</source>
-        <translation type="unfinished">CONNECT</translation>
+        <translation>连接</translation>
     </message>
     <message>
         <source>Enter SSID</source>
-        <translation type="unfinished">输入SSID</translation>
+        <translation>输入SSID</translation>
     </message>
     <message>
         <source>Enter password</source>
-        <translation type="unfinished">输入密码</translation>
+        <translation>输入密码</translation>
     </message>
     <message>
         <source>for &quot;%1&quot;</source>
-        <translation type="unfinished">网络名称：&quot;%1&quot;</translation>
+        <translation>网络名称：&quot;%1&quot;</translation>
     </message>
     <message>
         <source>Retain hotspot/tethering state</source>
@@ -150,7 +150,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>OOPS! We made a booboo.</source>
-        <translation type="unfinished"></translation>
+        <translation>出错了</translation>
     </message>
     <message>
         <source>Please try again later.</source>
@@ -158,11 +158,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Settings restored. Confirm to restart the interface.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置已恢复</translation>
     </message>
     <message>
         <source>No settings found to restore.</source>
-        <translation type="unfinished"></translation>
+        <translation>没有可用的设置备份</translation>
     </message>
     <message>
         <source>Settings backed up for sunnylink Device ID:</source>
@@ -192,7 +192,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm</source>
-        <translation type="unfinished"></translation>
+        <translation>>欺骗车辆在其车道上向左或向右偏移。减小该值将使汽车保持更左，增大该值将保持更右。更改立即生效。默认值：+4厘米</translation>
     </message>
     <message>
         <source> cm</source>
@@ -542,7 +542,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>LaneChangeSettings</name>
     <message>
         <source>Back</source>
-        <translation type="unfinished">返回</translation>
+        <translation>返回</translation>
     </message>
     <message>
         <source>低速关闭自动变道</source>
@@ -787,7 +787,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <source>OpenStreetMap database is out of date. New maps must be downloaded if you wish to continue using OpenStreetMap data for Enhanced Speed Control and road name display.
 
 %1</source>
-        <translation type="unfinished"></translation>
+        <translation>OpenStreetMap数据库已过期。如果您希望继续使用OpenStreetMap数据进行速度控制和道路名称显示，则必须下载新地图</translation>
     </message>
 </context>
 <context>
@@ -836,7 +836,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用驾驶屏幕关闭功能时，亮度会根据自动亮度比降低</translation>
     </message>
     <message>
         <source>Dark</source>
@@ -862,11 +862,11 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Offline Maps ETA</source>
-        <translation type="unfinished"></translation>
+        <translation>离线地图预计下载时间</translation>
     </message>
     <message>
         <source>Time Elapsed</source>
-        <translation type="unfinished"></translation>
+        <translation>已用时间</translation>
     </message>
     <message>
         <source>Downloaded Maps</source>
@@ -880,19 +880,19 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <source>This will delete ALL downloaded maps
 
 Are you sure you want to delete all the maps?</source>
-        <translation type="unfinished"></translation>
+        <translation>确定删除全部地图？</translation>
     </message>
     <message>
         <source>Yes, delete all the maps.</source>
-        <translation type="unfinished"></translation>
+        <translation>确定，删除所有地图</translation>
     </message>
     <message>
         <source>Database Update</source>
-        <translation type="unfinished"></translation>
+        <translation>数据更新</translation>
     </message>
     <message>
         <source>CHECK</source>
-        <translation type="unfinished">查看</translation>
+        <translation>查看</translation>
     </message>
     <message>
         <source>Country</source>
@@ -900,7 +900,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>SELECT</source>
-        <translation type="unfinished">选择</translation>
+        <translation>选择</translation>
     </message>
     <message>
         <source>Fetching Country list...</source>
@@ -908,7 +908,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>State</source>
-        <translation type="unfinished"></translation>
+        <translation>省</translation>
     </message>
     <message>
         <source>Fetching State list...</source>
@@ -916,73 +916,73 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>All</source>
-        <translation type="unfinished"></translation>
+        <translation>全部</translation>
     </message>
     <message>
         <source>REFRESH</source>
-        <translation type="unfinished"></translation>
+        <translation>刷新</translation>
     </message>
     <message>
         <source>UPDATE</source>
-        <translation type="unfinished">更新</translation>
+        <translation>更新</translation>
     </message>
     <message>
         <source>Download starting...</source>
-        <translation type="unfinished"></translation>
+        <translation>开始下载……</translation>
     </message>
     <message>
         <source>Error: Invalid download. Retry.</source>
-        <translation type="unfinished"></translation>
+        <translation>下载失败</translation>
     </message>
     <message>
         <source>Download complete!</source>
-        <translation type="unfinished"></translation>
+        <translation>下载完成</translation>
     </message>
     <message>
         <source>
 
 Warning: You are on a metered connection!</source>
-        <translation type="unfinished"></translation>
+        <translation>警告：您使用的是按流量计费的连接！</translation>
     </message>
     <message>
         <source>This will start the download process and it might take a while to complete.</source>
-        <translation type="unfinished"></translation>
+        <translation>即将开始下载，可能需要一段时间才能完成</translation>
     </message>
     <message>
         <source>Continue on Metered</source>
-        <translation type="unfinished"></translation>
+        <translation>使用流量继续下载</translation>
     </message>
     <message>
         <source>Start Download</source>
-        <translation type="unfinished"></translation>
+        <translation>开始下载</translation>
     </message>
     <message>
         <source>m </source>
-        <translation type="unfinished"></translation>
+        <translation>分</translation>
     </message>
     <message>
         <source>s</source>
-        <translation type="unfinished"></translation>
+        <translation>秒</translation>
     </message>
     <message>
         <source>Calculating...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在计算</translation>
     </message>
     <message>
         <source>Downloaded</source>
-        <translation type="unfinished"></translation>
+        <translation>已下载</translation>
     </message>
     <message>
         <source>Calculating ETA...</source>
-        <translation type="unfinished"></translation>
+        <translation>计算预计时间……</translation>
     </message>
     <message>
         <source>Ready</source>
-        <translation type="unfinished"></translation>
+        <translation>准备</translation>
     </message>
     <message>
         <source>Time remaining: </source>
-        <translation type="unfinished"></translation>
+        <translation>剩余时间</translation>
     </message>
 </context>
 <context>
@@ -1019,15 +1019,15 @@ Warning: You are on a metered connection!</source>
     <name>PathOffset</name>
     <message>
         <source>Path Offset</source>
-        <translation type="unfinished"></translation>
+        <translation>路径偏移</translation>
     </message>
     <message>
         <source>Hack to trick the model path to be left or right biased of the lane. Decreasing the value will shift the model more left, increasing will shift the model more right. Changes take effect immediately.</source>
-        <translation type="unfinished"></translation>
+        <translation>欺骗模型路径向左或向右偏离车道。值越小，模型越向左移动，值越大，模型越向右移动。更改立即生效。</translation>
     </message>
     <message>
         <source> cm</source>
-        <translation type="unfinished"></translation>
+        <translation>厘米</translation>
     </message>
 </context>
 <context>
@@ -1163,7 +1163,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>System reset triggered. Press confirm to erase all content and settings. Press cancel to resume boot.</source>
-        <translation type="unfinished"></translation>
+        <translation>系统重置已触发。按confirm可擦除所有内容和设置。按“取消”继续引导系统启动。</translation>
     </message>
 </context>
 <context>
@@ -1182,7 +1182,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!</source>
-        <translation type="unfinished"></translation>
+        <translation>实验功能，使斯巴鲁手动驻车车型能够自动停止和起步。配备电动驻车制动器的车型应禁用此功能。感谢martinl的实现！</translation>
     </message>
     <message>
         <source>Toyota/Lexus</source>
@@ -1190,15 +1190,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Allow M.A.D.S. toggling w/ LKAS Button (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>允许LKAS按钮开关M.A.D.S.（Beta版）</translation>
     </message>
     <message>
         <source>Allows M.A.D.S. engagement/disengagement with &quot;LKAS&quot; button from the steering wheel.</source>
-        <translation type="unfinished"></translation>
+        <translation>允许LKAS按钮开关M.A.D.S.（测试版）</translation>
     </message>
     <message>
         <source>Note: Enabling this toggle may have unexpected behavior with steering control. It is the driver&apos;s responsibility to observe their environment and make decisions accordingly.</source>
-        <translation type="unfinished"></translation>
+        <translation>注意：启用此切换可能会对转向控制产生意外行为。请观察环境并做出相应决定</translation>
     </message>
     <message>
         <source>Volkswagen</source>
@@ -1214,35 +1214,35 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>HKG CAN: Smoother Stopping Performance (Beta)</source>
-        <translation type="unfinished"></translation>
+        <translation>HKG CAN：更平稳的制动性能（测试版）</translation>
     </message>
     <message>
         <source>Smoother stopping behind a stopped car or desired stopping event. This is only applicable to HKG CAN platforms using openpilot longitudinal control.</source>
-        <translation type="unfinished"></translation>
+        <translation>更平稳地停车。这仅适用于使用openpilot纵向控制的HKG CAN平台。</translation>
     </message>
     <message>
         <source>Enable Stock Toyota Longitudinal Control</source>
-        <translation type="unfinished"></translation>
+        <translation>启用原生丰田纵向控制</translation>
     </message>
     <message>
         <source>sunnypilot will &lt;b&gt;not&lt;/b&gt; take over control of gas and brakes. Stock Toyota longitudinal control will be used.</source>
-        <translation type="unfinished"></translation>
+        <translation>保留使用丰田原车的纵向控制</translation>
     </message>
     <message>
         <source>Toyota TSS2 Longitudinal: Custom Tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>丰田TSS2纵向：自定义调节</translation>
     </message>
     <message>
         <source>Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars. Big thanks to dragonpilot-community for this implementation.</source>
-        <translation type="unfinished"></translation>
+        <translation>丰田/雷克萨斯TSS2/LSS2汽车的纵向性能更平稳。非常感谢dragonpilot社区的实施。</translation>
     </message>
     <message>
         <source>Enable Toyota Stop and Go Hack</source>
-        <translation type="unfinished"></translation>
+        <translation>启用Toyota走走停停破解</translation>
     </message>
     <message>
         <source>sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models. Use at your own risk.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot将允许一些丰田/雷克萨斯汽车在走走停停的交通中自动恢复。此功能仅适用于某些型号。使用时风险自负。</translation>
     </message>
 </context>
 <context>
@@ -1608,7 +1608,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Driving Model</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶模型</translation>
     </message>
 </context>
 <context>
@@ -1619,7 +1619,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>SELECT</source>
-        <translation type="unfinished">选择</translation>
+        <translation>选择</translation>
     </message>
     <message>
         <source>Select a Driving Model</source>
@@ -1627,15 +1627,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Reset Calibration</source>
-        <translation type="unfinished">重置设备校准</translation>
+        <translation>重置设备校准</translation>
     </message>
     <message>
         <source>Warning: You are on a metered connection!</source>
-        <translation type="unfinished"></translation>
+        <translation>警告：您使用的是按流量计费的连接！</translation>
     </message>
     <message>
         <source>Downloading Driving model</source>
-        <translation type="unfinished"></translation>
+        <translation>正在下载驾驶模型</translation>
     </message>
     <message>
         <source>Driving model</source>
@@ -1643,7 +1643,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>downloaded</source>
-        <translation type="unfinished"></translation>
+        <translation>已下载</translation>
     </message>
     <message>
         <source>(CACHED)</source>
@@ -1659,39 +1659,39 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Downloading Metadata model</source>
-        <translation type="unfinished"></translation>
+        <translation>下载Metadata模型</translation>
     </message>
     <message>
         <source>Metadata model</source>
-        <translation type="unfinished"></translation>
+        <translation>Metadata模型</translation>
     </message>
     <message>
         <source>Downloads have failed, please try swapping the model!</source>
-        <translation type="unfinished"></translation>
+        <translation>下载失败，请尝试更换模型！</translation>
     </message>
     <message>
         <source>Failed:</source>
-        <translation type="unfinished"></translation>
+        <translation>失败：</translation>
     </message>
     <message>
         <source>Fetching models...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在获取模型……</translation>
     </message>
     <message>
         <source>We STRONGLY suggest you to reset calibration. Would you like to do that now?</source>
-        <translation type="unfinished"></translation>
+        <translation>我们强烈建议您重新设置校准。你想现在就这么做吗？</translation>
     </message>
     <message>
         <source>Continue</source>
-        <translation type="unfinished">继续</translation>
+        <translation>继续</translation>
     </message>
     <message>
         <source>on Metered</source>
-        <translation type="unfinished"></translation>
+        <translation>使用流量</translation>
     </message>
     <message>
         <source>Download has started in the background.</source>
-        <translation type="unfinished"></translation>
+        <translation>下载已在后台开始</translation>
     </message>
 </context>
 <context>
