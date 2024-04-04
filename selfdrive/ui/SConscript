@@ -11,6 +11,7 @@ if arch == 'larch64':
 
 maps = arch in ['larch64', 'aarch64', 'x86_64']
 screenrecorder = arch in ['larch64']
+screenrecorder = False # Disabling due to https://discord.com/channels/880416502577266699/1223238728852574269
 
 if arch == "Darwin":
   del base_libs[base_libs.index('OpenCL')]
