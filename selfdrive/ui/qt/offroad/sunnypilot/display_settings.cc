@@ -14,12 +14,13 @@ DisplayPanel::DisplayPanel(QWidget *parent) : ListWidget(parent, false) {
       .arg(tr("Disabled: Wake the brightness of the screen to display critical events.")),
       "../assets/offroad/icon_blank.png",
     },
-    {
-      "ScreenRecorder",
-      tr("Enable Screen Recorder"),
-      tr("Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements."),
-      "../assets/offroad/icon_blank.png"
-    }
+    // Disabling due to https://discord.com/channels/880416502577266699/1223238728852574269
+    //{
+    //  "ScreenRecorder",
+    //  tr("Enable Screen Recorder"),
+    //  tr("Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements."),
+    //  "../assets/offroad/icon_blank.png"
+    //}
   };
 
   // General: Max Time Offroad (Shutdown timer)
