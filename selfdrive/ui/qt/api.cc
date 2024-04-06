@@ -216,7 +216,7 @@ void HttpRequest::sendRequest(const QString &requestURL, const HttpRequest::Meth
 
   QNetworkRequest request;
   request.setUrl(QUrl(requestURL));
-  request.setRawHeader("User-Agent", getUserAgent().toUtf8());
+  request.setRawHeader("User-Agent", getUserAgent(sunnylink).toUtf8());
   if (!payload.isEmpty()) {
     request.setRawHeader("Content-Type", "application/json");
   }

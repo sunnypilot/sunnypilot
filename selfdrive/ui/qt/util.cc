@@ -29,8 +29,8 @@ QString getBrand() {
   return QObject::tr("sunnypilot");
 }
 
-QString getUserAgent() {
-  return "openpilot-" + getVersion();
+QString getUserAgent(bool sunnylink) {
+  return (sunnylink ? "sunnypilot-" : "openpilot-") + getVersion();
 }
 
 std::optional<QString> getDongleId() {
