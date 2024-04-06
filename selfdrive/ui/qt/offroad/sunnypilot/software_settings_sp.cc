@@ -129,38 +129,32 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
   // Driving model status
   if (isDownloadingModel()) {
     description += QString(tr("Downloading Driving model") + " [%1]... (%2%)")
-                   .arg(drivingModelName)
-                   .arg(QString::number(modelDownloadProgress.value_or(0.0), 'f', 2));
+                   .arg(drivingModelName, QString::number(modelDownloadProgress.value_or(0.0), 'f', 2));
   } else {
     if (modelFromCache) drivingModelName += QString(" " + tr("(CACHED)"));
-    description += QString(tr("Driving model") + " [%1] " + tr("downloaded")
-                   .arg(drivingModelName));
+    description += QString(tr("Driving model") + " [%1] " + tr("downloaded")).arg(drivingModelName);
   }
 
   // Navigation model status
   if (isDownloadingNavModel()) {
     if (!description.isEmpty()) description += "\n"; // Add newline if driving model status is already appended
     description += QString(tr("Downloading Navigation model") + " [%1]... (%2%)")
-                   .arg(navModelName)
-                   .arg(QString::number(navModelDownloadProgress.value_or(0.0), 'f', 2));
+                   .arg(navModelName, QString::number(navModelDownloadProgress.value_or(0.0), 'f', 2));
   } else {
     if (navModelFromCache) navModelName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n"; // Ensure newline separation
-    description += QString(tr("Navigation model") + " [%1] " + tr("downloaded")
-                   .arg(navModelName));
+    description += QString(tr("Navigation model") + " [%1] " + tr("downloaded")).arg(navModelName);
   }
 
   // Metadata status
   if (isDownloadingMetadata()) {
     if (!description.isEmpty()) description += "\n";
     description += QString(tr("Downloading Metadata model") + " [%1]... (%2%)")
-                   .arg(metadataName)
-                   .arg(QString::number(metadataDownloadProgress.value_or(0.0), 'f', 2));
+                   .arg(metadataName, QString::number(metadataDownloadProgress.value_or(0.0), 'f', 2));
   } else {
     if (metadataFromCache) metadataName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n";
-    description += QString(tr("Metadata model") + " [%1] " + tr("downloaded")
-                   .arg(metadataName));
+    description += QString(tr("Metadata model") + " [%1] " + tr("downloaded")).arg(metadataName);
   }
 
   if (model_download_failed) {
