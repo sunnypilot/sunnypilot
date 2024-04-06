@@ -18,19 +18,41 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
     handleDownloadProgress(progress, "metadata");
   });
 
-  connect(&models_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
+  connect(&models_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray& data, bool fromCache) {
     modelFromCache = fromCache;
-    updateLabels();
+    if (!isDownloadingModel() && modelDownloadProgress.has_value()) {
+      params.put("DrivingModelText", selectedModelToDownload->fullName.toStdString());
+      params.put("DrivingModelName", selectedModelToDownload->displayName.toStdString());
+      selectedModelToDownload.reset();
+      modelDownloadProgress.reset();
+      params.putBool("CustomDrivingModel", !model_download_failed);
+    }
+    nav_models_fetcher.download(selectedNavModelToDownload->downloadUriNav, selectedNavModelToDownload->fileNameNav);
+    HandleModelDownloadProgressReport();
   });
 
   connect(&nav_models_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
     navModelFromCache = fromCache;
-    updateLabels();
+    if (!isDownloadingNavModel() && navModelDownloadProgress.has_value()) {
+      params.put("DrivingModelGeneration", selectedNavModelToDownload->generation.toStdString());
+      params.put("NavModelText", selectedNavModelToDownload->fullNameNav.toStdString());
+      selectedNavModelToDownload.reset();
+      navModelDownloadProgress.reset();
+    }
+    metadata_fetcher.download(selectedMetadataToDownload->downloadUriMetadata, selectedMetadataToDownload->fileNameMetadata);
+    HandleModelDownloadProgressReport();
+    // updateLabels();
   });
 
   connect(&metadata_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
     metadataFromCache = fromCache;
-    updateLabels();
+    if (!isDownloadingMetadata() && metadataDownloadProgress.has_value()) {
+      params.put("DrivingModelMetadataText", selectedMetadataToDownload->fullNameMetadata.toStdString());
+      selectedMetadataToDownload.reset();
+      metadataDownloadProgress.reset();
+    }
+    HandleModelDownloadProgressReport();
+    // updateLabels();
   });
 
   connect(&models_fetcher, &ModelsFetcher::downloadFailed, this, &SoftwarePanelSP::handleDownloadFailed);
@@ -151,37 +173,6 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
   currentModelLblBtn->showDescription();
   currentModelLblBtn->setEnabled(
       !(is_onroad || (isDownloadingModel() || isDownloadingMetadata() || isDownloadingNavModel())));
-
-  // If not downloading and there is a selected model, update parameters
-  if (!isDownloadingModel() && modelDownloadProgress.has_value()) {
-    params.put("DrivingModelText", selectedModelToDownload->fullName.toStdString());
-    params.put("DrivingModelName", selectedModelToDownload->displayName.toStdString());
-    //params.put("DrivingModelUrl", selectedModelToDownload->downloadUri.toStdString());  // TODO: Placeholder for future implementation
-    LOGD("Resetting selectedModelToDownload");
-    selectedModelToDownload.reset();
-    modelDownloadProgress.reset();
-    modelFromCache = false;
-    params.putBool("CustomDrivingModel", !model_download_failed);
-  }
-
-  // If not downloading and there is a selected model, update parameters
-  if (!isDownloadingNavModel() && navModelDownloadProgress.has_value()) {
-    params.put("DrivingModelGeneration", selectedNavModelToDownload->generation.toStdString());
-    params.put("NavModelText", selectedNavModelToDownload->fullNameNav.toStdString());
-    LOGD("Resetting selectedNavModelToDownload");
-    selectedNavModelToDownload.reset();
-    navModelDownloadProgress.reset();
-    navModelFromCache = false;
-  }
-
-  if (!isDownloadingMetadata() && metadataDownloadProgress.has_value()) {
-    params.put("DrivingModelMetadataText", selectedMetadataToDownload->fullNameMetadata.toStdString());
-    LOGD("Resetting selectedMetadataToDownload");
-    selectedMetadataToDownload.reset();
-    metadataDownloadProgress.reset();
-    metadataFromCache = false;
-  }
-
 }
 
 void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
@@ -240,14 +231,24 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     model_download_failed = false;
     currentModelLblBtn->setValue(selectedModelToDownload->displayName);
     currentModelLblBtn->setDescription(selectedModelToDownload->displayName);
+
+    // So we reset the cache status
+    modelFromCache = false;
+    navModelFromCache = false;
+    metadataFromCache = false;
+
+    // So we can signal them as pending
+    navModelDownloadProgress = 0.01;
+    modelDownloadProgress = 0.01;
+    metadataDownloadProgress = 0.01;
+
+    //Start the download, we download the other models on emit of downloadComplete
+    if(params.get("DrivingModelGeneration") != selectedModelToDownload->generation.toStdString())
+      showResetParamsDialog();
     models_fetcher.download(selectedModelToDownload->downloadUri, selectedModelToDownload->fileName);
-    nav_models_fetcher.download(selectedNavModelToDownload->downloadUriNav, selectedNavModelToDownload->fileNameNav);
-    metadata_fetcher.download(selectedMetadataToDownload->downloadUriMetadata,
-                              selectedMetadataToDownload->fileNameMetadata);
 
     // Disable select button until download completes
     currentModelLblBtn->setEnabled(false);
-    showResetParamsDialog();
   }
   updateLabels();
 }
