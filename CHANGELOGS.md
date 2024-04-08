@@ -5,6 +5,7 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit 56e343b (February 27, 2024)
+* UPDATED: Bumping mapd by pfeiferj to version 1.9.0. (https://github.com/pfeiferj/mapd/releases/tag/v1.9.0)
 * NEW❗: Config Backup (Alpha access only for GitHub Sponsors and Patreon supporters)
   * Remotely back up and restore sunnypilot settings easily
   * Device registration with sunnylink ensures a secure, integrated experience across services
