@@ -17,6 +17,7 @@
 #include <string>
 
 #include "common/params.h"
+#include "common/swaglog.h"
 #include "common/util.h"
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
@@ -201,6 +202,7 @@ bool HttpRequest::timeout() const {
 }
 
 void HttpRequest::sendRequest(const QString &requestURL, const HttpRequest::Method method, const QByteArray &payload) {
+  LOGD("Requesting %s", qPrintable(requestURL));
   if (active()) {
     qDebug() << "HttpRequest is active";
     return;

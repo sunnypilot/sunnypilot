@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <QObject>
@@ -15,6 +16,9 @@
 #include "common/mat.h"
 #include "common/params.h"
 #include "common/timing.h"
+#include "qt/network/sunnylink/models/role_model.h"
+#include "qt/network/sunnylink/models/sponsor_role_model.h"
+#include "qt/network/sunnylink/models/user_model.h"
 #include "system/hardware/hw.h"
 
 const int UI_BORDER_SIZE = 30;
@@ -134,27 +138,6 @@ enum PrimeType {
   MAGENTA_NEW = 4,
   PURPLE = 5,
 };
-
-enum SunnylinkRoleType {
-  SL_UNKNOWN = -1,
-  SL_READ_ONLY = 0,
-  SL_SPONSOR = 1,
-  SL_ADMIN = 2,  // Internal use only
-};
-
-inline const QMap<QString, int> sunnylinkRoleTypeConverted() {
-  QMap<QString, int> map;
-  map["Unknown"] = SunnylinkRoleType::SL_UNKNOWN;
-  map["ReadOnly"] = SunnylinkRoleType::SL_READ_ONLY;
-  map["Sponsor"] = SunnylinkRoleType::SL_SPONSOR;
-  map["Admin"] = SunnylinkRoleType::SL_ADMIN;  // Internal use only
-  return map;
-}
-
-inline const int sunnylinkRoleTypeValue(const QString &roleType) {
-  static QMap<QString, int> map = sunnylinkRoleTypeConverted();
-  return map.value(roleType, SunnylinkRoleType::SL_UNKNOWN);  // Default to UNKNOWN if not found
-}
 
 const QColor bg_colors [] = {
   [STATUS_DISENGAGED] = QColor(0x17, 0x33, 0x49, 0xc8),
@@ -294,9 +277,41 @@ public:
   inline PrimeType primeType() const { return prime_type; }
   inline bool hasPrime() const { return prime_type != PrimeType::UNKNOWN && prime_type != PrimeType::NONE; }
 
-  void setSunnylinkRoleType(SunnylinkRoleType type);
-  inline SunnylinkRoleType sunnylinkRoleType() const { return role_type; }
-  inline bool isSubscriber() const { return role_type != SunnylinkRoleType::SL_UNKNOWN && role_type != SunnylinkRoleType::SL_READ_ONLY; }
+  void setSunnylinkRoles(const std::vector<RoleModel> &roles);
+  void setSunnylinkDeviceUsers(const std::vector<UserModel> &users);
+
+  inline std::vector<RoleModel> sunnylinkDeviceRoles() const { return sunnylinkRoles; }
+  inline bool isSunnylinkAdmin() const {
+    return std::any_of(sunnylinkRoles.begin(), sunnylinkRoles.end(), [](const RoleModel &role) {
+      return role.roleType == RoleType::Admin;
+    });
+  }
+  inline bool isSunnylinkSponsor() const {
+    return std::any_of(sunnylinkRoles.begin(), sunnylinkRoles.end(), [](const RoleModel &role) {
+      return role.roleType == RoleType::Sponsor && role.as<SponsorRoleModel>().roleTier != SponsorTier::Free;
+    });
+  }
+  inline SponsorRoleModel sunnylinkSponsorRole() const {
+    std::optional<SponsorRoleModel> sponsorRoleWithHighestTier = std::nullopt;
+    for (const auto &role : sunnylinkRoles) {
+      if(role.roleType != RoleType::Sponsor)
+        continue;
+      
+      if (auto sponsorRole = role.as<SponsorRoleModel>(); !sponsorRoleWithHighestTier.has_value() || sponsorRoleWithHighestTier->roleTier < sponsorRole.roleTier) {
+        sponsorRoleWithHighestTier = sponsorRole;
+      }
+    }
+    return sponsorRoleWithHighestTier.value_or(SponsorRoleModel(RoleType::Sponsor, SponsorTier::Free));
+  }
+  inline SponsorTier sunnylinkSponsorTier() const {
+    return sunnylinkSponsorRole().roleTier;
+  }
+  inline std::vector<UserModel> sunnylinkDeviceUsers() const { return sunnylinkUsers; }
+  inline bool isSunnylinkPaired() const {
+    return std::any_of(sunnylinkUsers.begin(), sunnylinkUsers.end(), [](const UserModel &user) {
+      return user.user_id.toLower() != "unregisteredsponsor" && user.user_id.toLower() != "temporarysponsor";
+    });
+  }
 
   int fb_w = 0, fb_h = 0;
 
@@ -316,7 +331,8 @@ signals:
   void primeTypeChanged(PrimeType prime_type);
 
   void sunnylinkRoleChanged(bool subscriber);
-  void sunnylinkRoleTypeChanged(SunnylinkRoleType role_type);
+  void sunnylinkRolesChanged(std::vector<RoleModel> roles);
+  void sunnylinkDeviceUsersChanged(std::vector<UserModel> users);
 
 private slots:
   void update();
@@ -325,7 +341,8 @@ private:
   QTimer *timer;
   bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
-  SunnylinkRoleType role_type = SunnylinkRoleType::SL_UNKNOWN;
+  std::vector<RoleModel> sunnylinkRoles = {};
+  std::vector<UserModel> sunnylinkUsers = {};
 
   bool last_mads_enabled = false;
   bool mads_path_state = false;

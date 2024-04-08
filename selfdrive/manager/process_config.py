@@ -98,6 +98,11 @@ procs = [
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 ]
 
+if os.path.exists("../athena/manage_sunnylinkd.py") and Params().get_bool("SunnylinkEnabled"):
+  procs += [
+    DaemonProcess("manage_sunnylinkd", "selfdrive.athena.manage_sunnylinkd", "SunnylinkdPid"),
+  ]
+
 if os.path.exists("./gitlab_runner.sh") and True: # Of course and True is always true. Placeholder for a param :D
   # Only devs!
   procs += [

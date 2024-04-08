@@ -263,6 +263,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"HotspotOnBootConfirmed", PERSISTENT},
     {"LastCarModel", PERSISTENT | BACKUP},
     {"LastSpeedLimitSignTap", PERSISTENT},
+    {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
     {"LiveTorque", PERSISTENT | BACKUP},
     {"LiveTorqueRelaxed", PERSISTENT | BACKUP},
     {"LkasToggle", PERSISTENT | BACKUP},
@@ -306,6 +307,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"StockLongToyota", PERSISTENT | BACKUP},
     {"SubaruManualParkingBrakeSng", PERSISTENT | BACKUP},
     {"SunnylinkDongleId", PERSISTENT},
+    {"SunnylinkEnabled", PERSISTENT},
+    {"SunnylinkdPid", PERSISTENT},
     {"TorqueDeadzoneDeg", PERSISTENT | BACKUP},
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
@@ -320,6 +323,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"VwAccType", PERSISTENT | BACKUP},
     {"VwCCOnly", PERSISTENT | BACKUP},
     {"Offroad_SupersededUpdate", PERSISTENT},
+
+    {"SunnylinkCache_Users", PERSISTENT},
+    {"SunnylinkCache_Roles", PERSISTENT},
 
     // PFEIFER - MAPD {{
     {"MapdVersion", PERSISTENT},
