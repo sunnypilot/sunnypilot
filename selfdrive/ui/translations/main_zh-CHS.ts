@@ -177,7 +177,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Manually adjusts the global brightness of the screen.</source>
-        <translation>手动调节亮度</translation>
+        <translation>手动调节亮度。</translation>
     </message>
     <message>
         <source>Auto</source>
@@ -192,11 +192,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm</source>
-        <translation>>欺骗车辆在其车道上向左或向右偏移。减小该值将使汽车保持更左，增大该值将保持更右。更改立即生效。默认值：+4厘米</translation>
+        <translation>欺骗车辆在其车道上向左或向右偏移。减小该值将使汽车保持更左，增大该值将保持更右。更改立即生效。默认值：+4厘米</translation>
     </message>
     <message>
         <source> cm</source>
-        <translation>厘米</translation>
+        <translation> 厘米</translation>
     </message>
 </context>
 <context>
@@ -395,7 +395,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable or disable PIN requirement for Fleet Manager access.</source>
-        <translation>启用或禁用Fleet Manager访问的PIN要求</translation>
+        <translation>启用或禁用Fleet Manager访问的PIN要求。</translation>
     </message>
     <message>
         <source>Are you sure you want to turn off PIN requirement?</source>
@@ -411,7 +411,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Display error from the tmux session when an error has occurred from a system process.</source>
-        <translation>显示系统进程错误</translation>
+        <translation>显示系统进程错误。</translation>
     </message>
     <message>
         <source>Reset Mapbox Access Token</source>
@@ -458,11 +458,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enabled: Wake the brightness of the screen to display all events.</source>
-        <translation>启用：显示所有事件</translation>
+        <translation>启用：显示所有事件。</translation>
     </message>
     <message>
         <source>Disabled: Wake the brightness of the screen to display critical events.</source>
-        <translation>停用：仅显示关键事件</translation>
+        <translation>停用：仅显示关键事件。</translation>
     </message>
     <message>
         <source>Enable Screen Recorder</source>
@@ -470,7 +470,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.</source>
-        <translation>打开次开关将进行屏幕录像</translation>
+        <translation>打开次开关将进行屏幕录像。</translation>
     </message>
 </context>
 <context>
@@ -545,12 +545,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>返回</translation>
     </message>
     <message>
-        <source>低速关闭自动变道</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Enable this toggle to pause lateral actuation with blinker when traveling below 20 MPH or 32 km/h.</source>
-        <translation>当行驶速度低于20英里/小时或32公里/小时时，启用此开关将暂停打灯自动变道功能</translation>
+        <translation>当行驶速度低于20英里/小时或32公里/小时时，启用此开关将暂停打灯自动变道功能。</translation>
     </message>
     <message>
         <source>Auto Lane Change: Delay with Blind Spot</source>
@@ -566,7 +562,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Enable this toggle to block lane change when road edge is detected on the stalk actuated side.</source>
-        <translation>打开此开关后当检测到道路边缘会阻止想边缘方向自动变道</translation>
+        <translation>打开此开关后当检测到道路边缘会阻止想边缘方向自动变道。</translation>
+    </message>
+    <message>
+        <source>Pause Lateral Below Speed w/ Blinker</source>
+        <translation>低速关闭自动变道</translation>
     </message>
 </context>
 <context>
@@ -1768,7 +1768,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Display</source>
-        <translation type="unfinished"></translation>
+        <translation>屏幕</translation>
     </message>
     <message>
         <source>Chime</source>
@@ -1788,7 +1788,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished"></translation>
+        <translation>默认</translation>
     </message>
     <message>
         <source>Fixed</source>
@@ -2440,11 +2440,11 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Real-time and Offline</source>
-        <translation type="unfinished"></translation>
+        <translation>实时或离线</translation>
     </message>
     <message>
         <source>Offline Only</source>
-        <translation type="unfinished"></translation>
+        <translation>仅离线</translation>
     </message>
 </context>
 <context>
@@ -2459,11 +2459,11 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Real-time and Offline</source>
-        <translation type="unfinished"></translation>
+        <translation>实时或离线</translation>
     </message>
     <message>
         <source>Offline Only</source>
-        <translation type="unfinished"></translation>
+        <translation>仅离线</translation>
     </message>
 </context>
 <context>
