@@ -497,7 +497,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Miles</source>
-        <translation">英里</translation>
+        <translation>英里</translation>
     </message>
 </context>
 <context>
@@ -2608,7 +2608,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>10 Metrics</source>
-        <translation">10个指标</translation>
+        <translation>10个指标</translation>
     </message>
     <message>
         <source>Distance</source>
