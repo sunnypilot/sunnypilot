@@ -1269,7 +1269,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnylink</source>
-        <translation type="unfinished"></translation>
+        <translation>SP-link云端</translation>
     </message>
     <message>
         <source>sunnypilot</source>
@@ -2022,23 +2022,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>ACC +/-: Long Press Reverse</source>
-        <translation>ACC +/-长按自定义</translation>
+        <translation>ACC +/按键自定义</translation>
     </message>
     <message>
         <source>Change the ACC +/- buttons behavior with cruise speed change in sunnypilot.</source>
-        <translation>自定义长按ACC+/-的效果</translation>
+        <translation>自定义ACC+/-按键的功能</translation>
     </message>
     <message>
         <source>Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)</source>
-        <translation type="unfinished"></translation>
+        <translation>未启用，短按+-1KM，长按+-5或+-10KM</translation>
     </message>
     <message>
         <source>Enabled: Short = 5 (imperial) / 10 (metric), Long=1</source>
-        <translation type="unfinished"></translation>
+        <translation>开启后：短按+-5或+-10KM，长按+-1KM</translation>
     </message>
     <message>
         <source>Custom Offsets</source>
-        <translation type="unfinished"></translation>
+        <translation>自定义相机或路径偏移量</translation>
     </message>
     <message>
         <source>Neural Network Lateral Control (NNLC)</source>
@@ -2066,7 +2066,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Less strict settings when using Self-Tune. This allows torqued to be more forgiving when learning values.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用“自调整”时设置不那么严格。使得扭矩学习时更加宽容。</translation>
     </message>
     <message>
         <source>Enable Custom Tuning</source>
@@ -2384,48 +2384,49 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>启用sunnypilot</translation>
     </message>
     <message>
         <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="unfinished"></translation>
+        <translation>使用sunnypilot系统进行自适应巡航控制和车道保持辅助。要使用此功能，您必须时刻注意道路安全。重启启动设备才能生效。</translation>
     </message>
     <message>
         <source>Custom Stock Longitudinal Control</source>
-        <translation type="unfinished"></translation>
+        <translation>自带ACC自动车速控制</translation>
     </message>
     <message>
         <source>When enabled, sunnypilot will attempt to control stock longitudinal control with ACC button presses.
 This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用后，sunnypilot将尝试通过自动调整车辆自带ACC的速度设定值实现速度控制。
+此功能必须与SLC和/或V-TSC和/或M-TSC一起使用。</translation>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>
-        <translation type="unfinished"></translation>
+        <translation>车速控制模式动态切换</translation>
     </message>
     <message>
         <source>Enable toggle to allow the model to determine when to use openpilot ACC or openpilot End to End Longitudinal.</source>
-        <translation type="unfinished"></translation>
+        <translation>打开此开关以允许模型确定何时使用视觉ACC控制车速或AI模型控制车速。</translation>
     </message>
     <message>
         <source>Disable Onroad Uploads</source>
-        <translation type="unfinished"></translation>
+        <translation>行驶中停止上传</translation>
     </message>
     <message>
         <source>Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC).</source>
-        <translation type="unfinished"></translation>
+        <translation>在路上完全禁止上传。连接到Wi-Fi热点时避免大量数据使用率是必要的。如果您希望使用基于地图的功能，如限速控制（SLC）和基于地图的转弯速度控制（MTSC），请启用此功能</translation>
     </message>
     <message>
         <source>Maniac</source>
-        <translation type="unfinished"></translation>
+        <translation>疯狂</translation>
     </message>
     <message>
         <source>Stock</source>
-        <translation type="unfinished"></translation>
+        <translation>普通</translation>
     </message>
     <message>
         <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars.</source>
-        <translation type="unfinished"></translation>
+        <translation>建议普通模式。在疯狂模式下，跟车距离很近，并在加油和刹车时更猛。在舒适模式下，跟车距离会较远。</translation>
     </message>
 </context>
 <context>
