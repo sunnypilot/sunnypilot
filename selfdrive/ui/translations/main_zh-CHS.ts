@@ -146,7 +146,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>BackupSettings</name>
     <message>
         <source>Settings updated successfully, but no additional data was returned by the server.</source>
-        <translation>设置已成功更新，但服务未返回其他数据</translation>
+        <translation>设置已成功更新，但服务器未返回其他数据</translation>
     </message>
     <message>
         <source>OOPS! We made a booboo.</source>
@@ -166,7 +166,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Settings backed up for sunnylink Device ID:</source>
-        <translation type="unfinished"></translation>
+        <translation>设置已备份</translation>
     </message>
 </context>
 <context>
@@ -443,7 +443,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Fleet Manager PIN:</source>
-        <translation type="unfinished"></translation>
+        <translation>Fleet管理器PIN</translation>
     </message>
 </context>
 <context>
@@ -454,7 +454,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>When &lt;b&gt;Driving Screen Off Timer&lt;/b&gt; is not set to &lt;b&gt;&quot;Always On&quot;&lt;/b&gt;:</source>
-        <translation type="unfinished"></translation>
+        <translation>当息屏计时器没有设置为常亮</translation>
     </message>
     <message>
         <source>Enabled: Wake the brightness of the screen to display all events.</source>
@@ -896,7 +896,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Country</source>
-        <translation type="unfinished"></translation>
+        <translation>国家</translation>
     </message>
     <message>
         <source>SELECT</source>
@@ -904,7 +904,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Fetching Country list...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在查找国家列表</translation>
     </message>
     <message>
         <source>State</source>
@@ -912,7 +912,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Fetching State list...</source>
-        <translation type="unfinished"></translation>
+        <translation>正在查找省份列表</translation>
     </message>
     <message>
         <source>All</source>
@@ -1501,35 +1501,35 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Fixed</source>
-        <translation type="unfinished"></translation>
+        <translation>固定值</translation>
     </message>
     <message>
         <source>Percentage</source>
-        <translation type="unfinished"></translation>
+        <translation>百分比</translation>
     </message>
     <message>
         <source>Limit Offset</source>
-        <translation type="unfinished"></translation>
+        <translation>限制偏移量</translation>
     </message>
     <message>
         <source>Set speed limit slightly higher than actual speed limit for a more natural drive.</source>
-        <translation type="unfinished"></translation>
+        <translation>将速度限制设置为略高于实际速度限制，以实现更自然的驾驶体验</translation>
     </message>
     <message>
         <source>Select the desired mode to set the cruising speed to the speed limit:</source>
-        <translation type="unfinished"></translation>
+        <translation>选择所需模式以将巡航速度设置为速度限制：</translation>
     </message>
     <message>
         <source>Auto: Automatic speed adjustment on motorways based on speed limit data.</source>
-        <translation type="unfinished"></translation>
+        <translation>自动模式：根据限速数据自动调整速度。</translation>
     </message>
     <message>
         <source>User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit.</source>
-        <translation type="unfinished"></translation>
+        <translation>用户模式：通知驾驶员更改自适应巡航控制的设定速度，以帮助驾驶员保持在限速范围内。</translation>
     </message>
     <message>
         <source>This platform defaults to &lt;b&gt;Auto&lt;/b&gt; mode. &lt;b&gt;User Confirm&lt;/b&gt; mode is not supported on this platform.</source>
-        <translation type="unfinished"></translation>
+        <translation>此平台默认使用自动模式，不支持用户模式</translation>
     </message>
 </context>
 <context>
@@ -1647,7 +1647,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>(CACHED)</source>
-        <translation type="unfinished"></translation>
+        <translation>（缓存）</translation>
     </message>
     <message>
         <source>Downloading Navigation model</source>
@@ -1698,66 +1698,66 @@ This may take up to a minute.</source>
     <name>SpeedLimitPolicySettings</name>
     <message>
         <source>Speed Limit Source Policy</source>
-        <translation type="unfinished"></translation>
+        <translation>限速源策略</translation>
     </message>
     <message>
         <source>Select the precedence order of sources. Utilized by Speed Limit Control and Speed Limit Warning</source>
-        <translation type="unfinished"></translation>
+        <translation>选择源的优先级。用于限速控制和限速警告</translation>
     </message>
     <message>
         <source>Nav Only: Data from Mapbox active navigation only.</source>
-        <translation type="unfinished"></translation>
+        <translation>仅导航：仅使用来自Mapbox导航数据。</translation>
     </message>
     <message>
         <source>Map Only: Data from OpenStreetMap only.</source>
-        <translation type="unfinished"></translation>
+        <translation>仅地图：仅使用来自OpenStreetMap的数据</translation>
     </message>
     <message>
         <source>Car Only: Data from the car&apos;s built-in sources (if available).</source>
-        <translation type="unfinished"></translation>
+        <translation>仅汽车：仅使用来自汽车的内置的限速资源（如果可用）。</translation>
     </message>
     <message>
         <source>Nav First: Nav -&gt; Map -&gt; Car</source>
-        <translation type="unfinished"></translation>
+        <translation>导航优先</translation>
     </message>
     <message>
         <source>Map First: Map -&gt; Nav -&gt; Car</source>
-        <translation type="unfinished"></translation>
+        <translation>地图优先</translation>
     </message>
     <message>
         <source>Car First: Car -&gt; Nav -&gt; Map</source>
-        <translation type="unfinished"></translation>
+        <translation>汽车优先</translation>
     </message>
     <message>
         <source>Nav</source>
-        <translation type="unfinished"></translation>
+        <translation>导航</translation>
     </message>
     <message>
         <source>Only</source>
-        <translation type="unfinished"></translation>
+        <translation>仅</translation>
     </message>
     <message>
         <source>Map</source>
-        <translation type="unfinished"></translation>
+        <translation>地图</translation>
     </message>
     <message>
         <source>Car</source>
-        <translation type="unfinished"></translation>
+        <translation>汽车</translation>
     </message>
     <message>
         <source>First</source>
-        <translation type="unfinished"></translation>
+        <translation>优先</translation>
     </message>
 </context>
 <context>
     <name>SpeedLimitValueOffset</name>
     <message>
         <source>km/h</source>
-        <translation type="unfinished">km/h</translation>
+        <translation>km/h</translation>
     </message>
     <message>
         <source>mph</source>
-        <translation type="unfinished">mph</translation>
+        <translation>mph</translation>
     </message>
 </context>
 <context>
@@ -1776,15 +1776,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Speed Limit Warning</source>
-        <translation type="unfinished"></translation>
+        <translation>限速提醒</translation>
     </message>
     <message>
         <source>Warning with speed limit flash</source>
-        <translation type="unfinished"></translation>
+        <translation>带限速闪光灯的警告</translation>
     </message>
     <message>
         <source>When Speed Limit Warning is enabled, the speed limit sign will alert the driver when the cruising speed is faster than then speed limit plus the offset.</source>
-        <translation type="unfinished"></translation>
+        <translation>当限速警告启用时，当巡航速度快于限速加上偏移量时，限速标志将闪烁来提醒驾驶员</translation>
     </message>
     <message>
         <source>Default</source>
@@ -1792,46 +1792,46 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Fixed</source>
-        <translation type="unfinished"></translation>
+        <translation>固定值</translation>
     </message>
     <message>
         <source>Percentage</source>
-        <translation type="unfinished"></translation>
+        <translation>百分比</translation>
     </message>
     <message>
         <source>Warning Offset</source>
-        <translation type="unfinished"></translation>
+        <translation>警告偏差</translation>
     </message>
     <message>
         <source>Select the desired offset to warn the driver when the vehicle is driving faster than the speed limit.</source>
-        <translation type="unfinished"></translation>
+        <translation>当车辆行驶速度超过限速时，选择所需的偏差量以警告驾驶员。</translation>
     </message>
     <message>
         <source>Off: When the cruising speed is faster than the speed limit plus the offset, there will be no warning.</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭：当巡航速度快于速度限制加上偏移量时，也不会发出警告。</translation>
     </message>
     <message>
         <source>Display: The speed on the speed limit sign turns red to alert the driver when the cruising speed is faster than the speed limit plus the offset.</source>
-        <translation type="unfinished"></translation>
+        <translation>仅显示：当巡航速度快于限速加上偏移量时，限速标志上的速度变为红色，以提醒驾驶员。</translation>
     </message>
     <message>
         <source>Chime: The speed on the speed limit sign turns red and chimes to alert the driver when the cruising speed is faster than the speed limit plus the offset.</source>
-        <translation type="unfinished"></translation>
+        <translation>声音提醒：当巡航速度超过限速加上偏移量时，限速标志上的速度变红并发出声音提醒驾驶员。</translation>
     </message>
 </context>
 <context>
     <name>SpeedLimitWarningValueOffset</name>
     <message>
         <source>km/h</source>
-        <translation type="unfinished">km/h</translation>
+        <translation>km/h</translation>
     </message>
     <message>
         <source>mph</source>
-        <translation type="unfinished">mph</translation>
+        <translation>mph</translation>
     </message>
     <message>
         <source>N/A</source>
-        <translation type="unfinished">N/A</translation>
+        <translation>无</translation>
     </message>
 </context>
 <context>
@@ -1884,11 +1884,11 @@ This may take up to a minute.</source>
     <name>SunnylinkPanel</name>
     <message>
         <source>sunnylink Dongle ID</source>
-        <translation type="unfinished"></translation>
+        <translation>SP-link注册ID</translation>
     </message>
     <message>
         <source>N/A</source>
-        <translation type="unfinished">N/A</translation>
+        <translation>无</translation>
     </message>
     <message>
         <source>Sponsor Status</source>
@@ -1896,11 +1896,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>SPONSOR</source>
-        <translation type="unfinished"></translation>
+        <translation">赞助者</translation>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features.</source>
-        <translation>Sponsor可以抢先体验sunnylink的功能</translation>
+        <translation>赞助者可以抢先体验sunnylink的功能</translation>
     </message>
     <message>
         <source>Manage Settings</source>
@@ -1916,11 +1916,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Early alpha access only. Become a sponsor to get early access to sunnylink features.</source>
-        <translation type="unfinished"></translation>
+        <translation>仅早期alpha访问。成为赞助者，提前使用sunnylink功能。</translation>
     </message>
     <message>
         <source>Become a Sponsor</source>
-        <translation>成为Sponsor</translation>
+        <translation>成为赞助者</translation>
     </message>
     <message>
         <source>Restore Settings</source>
@@ -1940,11 +1940,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>赞助者</translation>
     </message>
     <message>
         <source>Not Sponsor</source>
-        <translation>您还不是Sponsor</translation>
+        <translation>您还不是赞助者</translation>
     </message>
     <message>
         <source>Backing up...</source>
@@ -1956,26 +1956,26 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Back Up</source>
-        <translation type="unfinished"></translation>
+        <translation>后退</translation>
     </message>
 </context>
 <context>
     <name>SunnylinkSponsorPopup</name>
     <message>
         <source>Early Access: Become a sunnypilot Sponsor</source>
-        <translation type="unfinished"></translation>
+        <translation>优先权限：成为sunnypilot赞助者</translation>
     </message>
     <message>
         <source>Scan the QR code to visit sunnyhaibin&apos;s GitHub Sponsors page</source>
-        <translation type="unfinished"></translation>
+        <translation>扫描二维码访问赞助者页面</translation>
     </message>
     <message>
         <source>Choose your sponsorship tier and confirm your support</source>
-        <translation type="unfinished"></translation>
+        <translation>选择您的赞助级别并确认您的支持</translation>
     </message>
     <message>
         <source>Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status</source>
-        <translation type="unfinished"></translation>
+        <translation>在Discord上加入我们的社区https://discord.gg/sunnypilot并联系主持人确认您的赞助者身份</translation>
     </message>
 </context>
 <context>
@@ -1990,11 +1990,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Laneless for Curves in &quot;Auto&quot; Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>弯道自动切换无车道线模式</translation>
     </message>
     <message>
         <source>While in Auto Lane, switch to Laneless for current/future curves.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用自动车道模式时，在弯道自动切换成无车道线模式</translation>
     </message>
     <message>
         <source>Speed Limit Control (SLC)</source>
@@ -2098,11 +2098,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>A chime will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. If you are waiting behind another vehicle, the chime will play once the vehicle advances unless ACC is engaged.</source>
-        <translation type="unfinished"></translation>
+        <translation>当您正在等待的红绿灯变绿且您前方没有车辆时，将会响起一声蜂鸣声。如果您在另一辆车后面等候，除非ACC接合，否则一旦车辆前进，就会响起蜂鸣音。</translation>
     </message>
     <message>
         <source>Note: This chime is only designed as a notification. It is the driver&apos;s responsibility to observe their environment and make decisions accordingly.</source>
-        <translation type="unfinished"></translation>
+        <translation>注意：此蜂鸣音仅用于通知。驾驶员应观察环境并做出相应决定</translation>
     </message>
     <message>
         <source>Lead Vehicle Departure Alert</source>
@@ -2194,7 +2194,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>NNLC Not Loaded</source>
-        <translation type="unfinished"></translation>
+        <translation>NNLC未加载</translation>
     </message>
     <message>
         <source>NNLC Loaded</source>
@@ -2218,7 +2218,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported: </source>
-        <translation type="unfinished"></translation>
+        <translation>通过sunnypilot Discord服务器上的以下渠道联系sunnypiot团队，提供反馈，或者如果您的汽车目前不受支持，则提供汽车的日志数据：</translation>
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
