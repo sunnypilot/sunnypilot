@@ -226,6 +226,19 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   });
   list->addItem(hiddenNetworkButton);
 
+  // Ngrok
+  QProcess process;
+  process.start("sudo service ngrok status | grep running");
+  process.waitForFinished();
+  QString output = QString(process.readAllStandardOutput());
+  bool ngrokRunning = !output.isEmpty();
+  ToggleControl *ngrokToggle = new ToggleControl(tr("Ngrok Service"), "", "", ngrokRunning);
+  connect(ngrokToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    if (state) std::system("sudo ngrok service start");
+    else std::system("sudo ngrok service stop");
+  });
+  list->addItem(ngrokToggle);
+
   // Set initial config
   wifi->updateGsmSettings(roamingEnabled, QString::fromStdString(params.get("GsmApn")), metered);
 
