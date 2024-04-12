@@ -37,6 +37,9 @@ widgets_src += ["qt/offroad/sunnypilot/display_settings.cc", "qt/offroad/sunnypi
                 "qt/offroad/sunnypilot/speed_limit_warning_settings.cc", "qt/offroad/sunnypilot/speed_limit_policy_settings.cc",
                 "qt/offroad/sunnypilot/sunnylink_settings.cc"]
 
+widgets_src += ["qt/network/sunnylink/sunnylink_client.cc", "qt/network/sunnylink/services/base_device_service.cc",
+                "qt/network/sunnylink/services/role_service.cc", "qt/network/sunnylink/services/user_service.cc"]
+
 qt_env['CPPDEFINES'] = []
 if maps:
   base_libs += ['QMapLibre']
@@ -103,7 +106,7 @@ if GetOption('extras'):
   qt_env.Program('tests/ui_snapshot', [asset_obj, "tests/ui_snapshot.cc"] + qt_src, LIBS=qt_libs)
 
 
-if GetOption('extras') and arch != "Darwin":
+if GetOption('extras') and arch in ['larch64']:
   # setup and factory resetter
   qt_env.Program("qt/setup/reset", ["qt/setup/reset.cc"], LIBS=qt_libs)
   qt_env.Program("qt/setup/setup", ["qt/setup/setup.cc", asset_obj],

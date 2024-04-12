@@ -20,6 +20,13 @@ class SunnylinkApi(BaseApi):
     super().__init__(dongle_id, API_HOST)
     self.user_agent = "sunnypilot-"
     self.spinner = None
+    self.params = Params()
+
+  def api_get(self, endpoint, method='GET', timeout=10, **kwargs):
+    if not self.params.get_bool("SunnylinkEnabled"):
+      return None
+
+    return super().api_get(endpoint, method, timeout, **kwargs)
 
   def get_token(self, expiry_hours=1):
     # Add your additional data here
@@ -32,39 +39,38 @@ class SunnylinkApi(BaseApi):
       self.spinner.update(message)
       time.sleep(0.5)
 
-  def _resolve_dongle_ids(self, params):
-    sunnylink_dongle_id = params.get("SunnylinkDongleId", encoding='utf-8')
-    comma_dongle_id = self.dongle_id or params.get("DongleId", encoding='utf-8')
+  def _resolve_dongle_ids(self):
+    sunnylink_dongle_id = self.params.get("SunnylinkDongleId", encoding='utf-8')
+    comma_dongle_id = self.dongle_id or self.params.get("DongleId", encoding='utf-8')
     return sunnylink_dongle_id, comma_dongle_id
 
-  def _resolve_imeis(self, params):
+  def _resolve_imeis(self):
     imei1, imei2 = None, None
     imei_try = 0
     while imei1 is None and imei2 is None and imei_try < MAX_RETRIES:
       try:
-        imei1, imei2 = params.get("IMEI", encoding='utf8') or HARDWARE.get_imei(0), HARDWARE.get_imei(1)
+        imei1, imei2 = self.params.get("IMEI", encoding='utf8') or HARDWARE.get_imei(0), HARDWARE.get_imei(1)
       except Exception:
         self._status_update(f"Error getting imei, trying again... [{imei_try+1}/{MAX_RETRIES}]")
         time.sleep(1)
       imei_try += 1
     return imei1, imei2
 
-  def _resolve_serial(self, params):
-    serial = params.get("HardwareSerial", encoding='utf8') or HARDWARE.get_serial()
+  def _resolve_serial(self):
+    serial = self.params.get("HardwareSerial", encoding='utf8') or HARDWARE.get_serial()
     return serial
 
   def register_device(self, spinner=None, timeout=60, verbose=False):
     self.spinner = spinner
-    params = Params()
 
-    sunnylink_dongle_id, comma_dongle_id = self._resolve_dongle_ids(params)
+    sunnylink_dongle_id, comma_dongle_id = self._resolve_dongle_ids()
 
     if comma_dongle_id is None:
       self._status_update("Comma dongle ID not found, deferring sunnylink's registration to comma's registration process.")
       return None
 
-    imei1, imei2 = self._resolve_imeis(params)
-    serial = self._resolve_serial(params)
+    imei1, imei2 = self._resolve_imeis()
+    serial = self._resolve_serial()
 
     if sunnylink_dongle_id not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
       return sunnylink_dongle_id
@@ -96,7 +102,7 @@ class SunnylinkApi(BaseApi):
             raise Exception(f"Failed to register with sunnylink. Status code: {resp.status_code}")
           else:
             dongleauth = json.loads(resp.text)
-            sunnylink_dongle_id = dongleauth["dongle_id"]
+            sunnylink_dongle_id = dongleauth["device_id"]
             if sunnylink_dongle_id:
               self._status_update("Device registered successfully.")
               break
@@ -112,7 +118,7 @@ class SunnylinkApi(BaseApi):
           break
 
     if sunnylink_dongle_id:
-      params.put("SunnylinkDongleId", sunnylink_dongle_id)
+      self.params.put("SunnylinkDongleId", sunnylink_dongle_id)
 
     self.spinner = None
     return sunnylink_dongle_id

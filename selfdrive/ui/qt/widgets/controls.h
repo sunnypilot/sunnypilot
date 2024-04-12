@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,10 @@ class ElidedLabel : public QLabel {
 public:
   explicit ElidedLabel(QWidget *parent = 0);
   explicit ElidedLabel(const QString &text, QWidget *parent = 0);
+
+  void setColor(const QString &color) {
+    setStyleSheet("QLabel { color : " + color + "; }");
+  }
 
 signals:
   void clicked();
@@ -50,8 +55,11 @@ public:
     title_label->setText(title);
   }
 
-  void setValue(const QString &val) {
+  void setValue(const QString &val, std::optional<QString> color = std::nullopt) {
     value->setText(val);
+    if (color.has_value()) {
+      value->setColor(color.value());
+    }
   }
 
   const QString getDescription() {

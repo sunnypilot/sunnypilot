@@ -70,6 +70,7 @@ def manager_init() -> None:
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
+    ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "9"),
     ("NNFF", "0"),
     ("OnroadScreenOff", "-2"),
@@ -100,7 +101,7 @@ def manager_init() -> None:
     ("OsmDbUpdatesCheck", "0"),
     ("OsmDownloadedDate", "0"),
     ("OSMDownloadProgress", "{}"),
-    ("MapdVersion", f"{VERSION}"),
+    ("SunnylinkEnabled", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

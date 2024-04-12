@@ -321,11 +321,19 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(resetCalibBtn);
 
-  auto resetMapboxTokenBtn = new ButtonControl(tr("Reset Mapbox Access Token"), tr("RESET"), "");
+  auto resetMapboxTokenBtn = new ButtonControl(tr("Reset Access Tokens for Map Services"), tr("RESET"), tr("Reset self-service access tokens for Mapbox, Amap, and Google Maps."));
   connect(resetMapboxTokenBtn, &ButtonControl::clicked, [=]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset the Mapbox access token?"), tr("Reset"), this)) {
-      params.remove("CustomMapboxTokenPk");
-      params.remove("CustomMapboxTokenSk");
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset access tokens for all map services?"), tr("Reset"), this)) {
+      std::vector<std::string> tokens = {
+        "CustomMapboxTokenPk",
+        "CustomMapboxTokenSk",
+        "AmapKey1",
+        "AmapKey2",
+        "GmapKey"
+      };
+      for (const auto& token : tokens) {
+        params.remove(token);
+      }
     }
   });
   addItem(resetMapboxTokenBtn);

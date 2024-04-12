@@ -127,8 +127,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"GitCommit", PERSISTENT},
     {"GitCommitDate", PERSISTENT},
     {"GitDiff", PERSISTENT},
-    {"GithubSshKeys", PERSISTENT},
-    {"GithubUsername", PERSISTENT},
+    {"GithubSshKeys", PERSISTENT | BACKUP},
+    {"GithubUsername", PERSISTENT | BACKUP},
     {"GitRemote", PERSISTENT},
     {"GsmApn", PERSISTENT | BACKUP},
     {"GsmMetered", PERSISTENT | BACKUP},
@@ -191,7 +191,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"RecordFrontLock", PERSISTENT},  // for the internal fleet
     {"ReplayControlsState", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"SnoozeUpdate", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
-    {"SshEnabled", PERSISTENT},
+    {"SshEnabled", PERSISTENT | BACKUP},
     {"TermsVersion", PERSISTENT},
     {"Timezone", PERSISTENT},
     {"TrainingVersion", PERSISTENT},
@@ -263,6 +263,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"HotspotOnBootConfirmed", PERSISTENT},
     {"LastCarModel", PERSISTENT | BACKUP},
     {"LastSpeedLimitSignTap", PERSISTENT},
+    {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
     {"LiveTorque", PERSISTENT | BACKUP},
     {"LiveTorqueRelaxed", PERSISTENT | BACKUP},
     {"LkasToggle", PERSISTENT | BACKUP},
@@ -306,6 +307,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"StockLongToyota", PERSISTENT | BACKUP},
     {"SubaruManualParkingBrakeSng", PERSISTENT | BACKUP},
     {"SunnylinkDongleId", PERSISTENT},
+    {"SunnylinkEnabled", PERSISTENT},
+    {"SunnylinkdPid", PERSISTENT},
     {"TorqueDeadzoneDeg", PERSISTENT | BACKUP},
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
@@ -320,6 +323,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"VwAccType", PERSISTENT | BACKUP},
     {"VwCCOnly", PERSISTENT | BACKUP},
     {"Offroad_SupersededUpdate", PERSISTENT},
+
+    {"SunnylinkCache_Users", PERSISTENT},
+    {"SunnylinkCache_Roles", PERSISTENT},
 
     // PFEIFER - MAPD {{
     {"MapdVersion", PERSISTENT},

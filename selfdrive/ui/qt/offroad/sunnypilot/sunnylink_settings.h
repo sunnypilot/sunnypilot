@@ -1,26 +1,22 @@
 #pragma once
 
-#include <QApplication>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QtCore/qjsonobject.h>
 
 #include <QrCode.hpp>
+#include "selfdrive/ui/qt/network/sunnylink/sunnylink_client.h"
 
-#include "common/watchdog.h"
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/api.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/qt/request_repeater.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
+const QString SUNNYLINK_BASE_URL = util::getenv("SUNNYLINK_API_HOST", "https://stg.api.sunnypilot.ai").c_str();
 // sponsor QR code
 class SunnylinkSponsorQRWidget : public QWidget {
   Q_OBJECT
 
 public:
-  explicit SunnylinkSponsorQRWidget(QWidget* parent = 0);
+  explicit SunnylinkSponsorQRWidget(bool sponsor_pair = false, QWidget* parent = 0);
   void paintEvent(QPaintEvent*) override;
 
 private:
@@ -29,6 +25,8 @@ private:
   void updateQrCode(const QString &text);
   void showEvent(QShowEvent *event) override;
   void hideEvent(QHideEvent *event) override;
+
+  bool sponsor_pair = false;
 
 private slots:
   void refresh();
@@ -40,7 +38,11 @@ class SunnylinkSponsorPopup : public DialogBase {
   Q_OBJECT
 
 public:
-  explicit SunnylinkSponsorPopup(QWidget* parent);
+  explicit SunnylinkSponsorPopup(bool sponsor_pair = false, QWidget* parent = 0);
+
+private:
+  static QStringList getInstructions(bool sponsor_pair);
+  bool sponsor_pair = false;
 };
 
 class BackupSettings : public QFrame {
@@ -50,7 +52,7 @@ public:
   explicit BackupSettings(QWidget *parent = nullptr);
   void sendParams(const QByteArray &payload);
   void getParams();
-  QByteArray backupParams(const bool encrypt = true);
+  QByteArray backupParams(bool encrypt = true);
   void restoreParams(const QString &resp);
   void started();
   void finished();
@@ -69,29 +71,33 @@ class SunnylinkPanel : public QFrame {
 public:
   explicit SunnylinkPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
-  void hideEvent(QHideEvent *event) override;
+  void paramsRefresh(const QString&param_name, const QString&param_value);
 
 public slots:
   void updateLabels();
 
 private:
-  void getSubscriber(bool poll = false);
-  void replyFinished(const QString &response, bool success);
 
+  ParamControl* sunnylinkEnabledBtn;
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnylinkScreen = nullptr;
   ScrollView *scrollView = nullptr;
-  RequestRepeater* sub_repeater = nullptr;
-  HttpRequest* init_sub_request = nullptr;
 
-  LabelControl *sunnylinkId;
   BackupSettings *backup_settings;
   SubPanelButton *restoreSettings;
   SubPanelButton *backupSettings;
-  SunnylinkSponsorPopup *popup;
+  SunnylinkSponsorPopup *status_popup;
+  SunnylinkSponsorPopup *pair_popup;
   ButtonControl* sponsorBtn;
+  ButtonControl* pairSponsorBtn;
+  SunnylinkClient* sunnylink_client;
 
   bool is_onroad = false;
   bool is_backup = false;
   bool is_restore = false;
+  bool is_sunnylink_enabled = false;
+  ParamWatcher *param_watcher;
+  QString sunnylinkBtnDescription;
+  void stopSunnylink() const;
+  void startSunnylink() const;
 };

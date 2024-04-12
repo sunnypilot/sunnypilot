@@ -70,7 +70,9 @@ system/version.py
 selfdrive/athena/__init__.py
 selfdrive/athena/athenad.py
 selfdrive/athena/manage_athenad.py
+selfdrive/athena/manage_sunnylinkd.py
 selfdrive/athena/registration.py
+selfdrive/athena/sunnylinkd.py
 
 selfdrive/boardd/.gitignore
 selfdrive/boardd/SConscript
@@ -298,6 +300,11 @@ selfdrive/ui/qt/*.cc
 selfdrive/ui/qt/*.h
 selfdrive/ui/qt/network/*.cc
 selfdrive/ui/qt/network/*.h
+selfdrive/ui/qt/network/sunnylink/*.cc
+selfdrive/ui/qt/network/sunnylink/*.h
+selfdrive/ui/qt/network/sunnylink/models/*.h
+selfdrive/ui/qt/network/sunnylink/services/*.cc
+selfdrive/ui/qt/network/sunnylink/services/*.h
 selfdrive/ui/qt/offroad/*.cc
 selfdrive/ui/qt/offroad/*.h
 selfdrive/ui/qt/offroad/*.qml
