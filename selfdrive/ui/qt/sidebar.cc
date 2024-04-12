@@ -156,7 +156,10 @@ void Sidebar::updateState(const UIState &s) {
   
   ItemStatus sunnylinkStatus;
   auto last_sunnylink_ping = std::strtol(params.get("LastSunnylinkPingTime").c_str(), nullptr, 10);
-  if (last_ping == 0) {
+  auto sunnylink_enabled = params.getBool("SunnylinkEnabled");
+  if (!sunnylink_enabled) {
+    sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("DISABLED")}, disabled_color};
+  } else if (last_ping == 0) {
     sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("OFFLINE")}, warning_color};
   } else {
     if (nanos_since_boot() - last_sunnylink_ping < 80e9)

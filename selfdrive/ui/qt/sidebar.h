@@ -54,6 +54,7 @@ protected:
   const QColor good_color = QColor(255, 255, 255);
   const QColor warning_color = QColor(218, 202, 37);
   const QColor danger_color = QColor(201, 34, 49);
+  const QColor disabled_color = QColor(128, 128, 128);
 
   ItemStatus connect_status, panda_status, temp_status, sunnylink_status;
   QString net_type;
