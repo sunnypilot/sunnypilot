@@ -19,6 +19,8 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
+* UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
+  * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UI Updates
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above
