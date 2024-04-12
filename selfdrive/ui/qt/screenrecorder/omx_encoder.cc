@@ -328,8 +328,9 @@ OmxEncoder::OmxEncoder(const char* path, int width, int height, int fps, int bit
   int err = OMX_GetHandle(&this->handle, component, this, &omx_callbacks);
   if (err != OMX_ErrorNone) {
     LOGE("error getting codec: %x", err);
+    qApp->exit(18);
+    watchdog_kick(0);
   }
-  watchdog_kick(0);
   // assert(err == OMX_ErrorNone);  // TODO: Investigate the insufficient memory issue in prebuilts
   // printf("handle: %p\n", this->handle);
 
