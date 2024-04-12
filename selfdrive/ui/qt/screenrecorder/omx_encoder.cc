@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <cstdio>
 
+#include <QApplication>
+
 #include <OMX_Component.h>
 #include <OMX_IndexExt.h>
 #include <OMX_QCOMExtns.h>
