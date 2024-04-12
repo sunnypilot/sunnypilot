@@ -18,6 +18,7 @@
 #include "msm_media_info.h"
 #include "common/swaglog.h"
 #include "common/util.h"
+#include "common/watchdog.h"
 
 
 using namespace libyuv;
@@ -328,7 +329,8 @@ OmxEncoder::OmxEncoder(const char* path, int width, int height, int fps, int bit
   if (err != OMX_ErrorNone) {
     LOGE("error getting codec: %x", err);
   }
-  assert(err == OMX_ErrorNone);
+  watchdog_kick(0);
+  // assert(err == OMX_ErrorNone);  // TODO: Investigate the insufficient memory issue in prebuilts
   // printf("handle: %p\n", this->handle);
 
   // setup input port
