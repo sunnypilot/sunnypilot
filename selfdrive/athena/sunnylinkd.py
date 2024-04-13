@@ -21,7 +21,8 @@ SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sun
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
 
-
+params = Params()
+sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   end_event = threading.Event()
 
@@ -55,7 +56,16 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
 
 def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
   last_ping = int(time.monotonic() * 1e9)
+  resume_requested = False
   while not end_event.is_set():
+    try:
+      if(not resume_requested):
+        sunnylink_api.resume_queued()
+        resume_requested = True
+    except Exception:
+      cloudlog.exception("sunnylinkd.resume_queued.exception")
+      resume_requested = False
+
     try:
       opcode, data = ws.recv_data(control_frame=True)
       if opcode in (ABNF.OPCODE_TEXT, ABNF.OPCODE_BINARY):
@@ -92,12 +102,9 @@ def main(exit_event: threading.Event = None):
   except Exception:
     cloudlog.exception("failed to set core affinity")
 
-  params = Params()
-  dongle_id = params.get("SunnylinkDongleId", encoding='utf-8')
   UploadQueueCache.initialize(upload_queue)
 
   ws_uri = SUNNYLINK_ATHENA_HOST
-  api = SunnylinkApi(dongle_id)
   conn_start = None
   conn_retries = 0
   while exit_event is None or not exit_event.is_set():
@@ -107,7 +114,7 @@ def main(exit_event: threading.Event = None):
 
       cloudlog.event("sunnylinkd.main.connecting_ws", ws_uri=ws_uri, retries=conn_retries)
       ws = create_connection(ws_uri,
-                             cookie="jwt=" + api.get_token(),
+                             cookie="jwt=" + sunnylink_api.get_token(),
                              enable_multithread=True,
                              timeout=30.0)
       cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
