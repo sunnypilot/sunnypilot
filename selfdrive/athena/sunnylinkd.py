@@ -3,12 +3,16 @@
 
 from __future__ import annotations
 
+import base64
+import gzip
+import json
 import os
 import threading
 import time
 
 from openpilot.selfdrive.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage
+from jsonrpc import dispatcher
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
 
@@ -94,6 +98,43 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
     time.sleep(RECONNECT_TIMEOUT_S * 0.8)  # Sleep about 80% before a timeout
+
+
+@dispatcher.add_method
+def getParamsAllKeys() -> list[str]:
+  keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+  return keys
+
+
+@dispatcher.add_method
+def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
+  try:
+    params = Params()
+    params_dict: dict[str, bytes] = {key: params.get(key) or b'' for key in params_keys}
+
+    # Compress the values before encoding to base64 as output from params.get is bytes and same for compression
+    if compression:
+      params_dict = {key: gzip.compress(value) for key, value in params_dict.items()}
+
+    # Last step is to encode the values to base64 and decode to utf-8 for JSON serialization
+    return {key: base64.b64encode(value).decode('utf-8') for key, value in params_dict.items()}
+
+  except Exception as e:
+    return cloudlog.exception("sunnylinkd.getParams.exception", e)
+
+@dispatcher.add_method
+def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
+  params = Params()
+  try:
+    params_dict = {key: base64.b64decode(value) for key, value in params_to_update.items()}
+
+    if compression:
+      params_dict = {key: gzip.decompress(value) for key, value in params_dict.items()}
+
+    for key, value in params_dict.items():
+      params.put(key, value)
+  except Exception as e:
+    return cloudlog.exception("sunnylinkd.saveParams.exception", e)
 
 
 def main(exit_event: threading.Event = None):
