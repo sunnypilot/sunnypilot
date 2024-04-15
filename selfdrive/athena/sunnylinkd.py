@@ -68,7 +68,9 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
         if opcode == ABNF.OPCODE_TEXT:
           data = data.decode("utf-8")
         recv_queue.put_nowait(data)
+        cloudlog.debug(f"sunnylinkd.ws_recv.recv {data}")
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
+        cloudlog.debug(f"sunnylinkd.ws_recv.pong {opcode}")
         last_ping = int(time.monotonic() * 1e9)
         Params().put("LastSunnylinkPingTime", str(last_ping))
     except WebSocketTimeoutException:
@@ -86,6 +88,7 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
   while not end_event.is_set():
     try:
       ws.ping()
+      cloudlog.debug(f"sunnylinkd.ws_recv.ws_ping: Pinging")
     except Exception:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
@@ -93,20 +96,22 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
 
 def ws_queue(end_event: threading.Event) -> None:
   resume_requested = False
-  backoff_time = 1  # Start with a delay of 1 second
-  max_backoff_time = 60  # Maximum delay of 60 seconds
+  tries = 0
 
-  while not end_event.is_set():
+  while not end_event.is_set() and not resume_requested:
     try:
       if not resume_requested:
+        cloudlog.debug(f"sunnylinkd.ws_queue.resume_queued")
         sunnylink_api.resume_queued(timeout=29)
         resume_requested = True
-        backoff_time = 1  # Reset backoff time after a successful request
+        tries = 0
     except Exception:
       cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
       resume_requested = False
-      time.sleep(backoff_time)  # Wait for the backoff time before the next attempt
-      backoff_time = min(backoff_time * 2, max_backoff_time)  # Double the backoff time for the next attempt, up to a maximum
+      tries += 1
+      time.sleep(backoff(tries))  # Wait for the backoff time before the next attempt
+  cloudlog.debug("Resume requested or end_event is set, exiting ws_queue thread")
+
 
 @dispatcher.add_method
 def getParamsAllKeys() -> list[str]:
