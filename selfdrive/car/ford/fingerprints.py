@@ -20,7 +20,8 @@ FW_VERSIONS = {
       b'M1PT-14F397-AC\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
-  CAR.Navigator_MK2: {
+
+      CAR.Navigator_MK2: {
     (Ecu.eps, 0x730, None): [
       b'K2GC-14D003-AJ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
@@ -32,10 +33,10 @@ FW_VERSIONS = {
       b'JX7T-14D049-AD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
     (Ecu.fwdCamera, 0x706, None): [
-      b'JX7T-14D049-AD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+      b'KA1T-14F397-AE\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
     (Ecu.engine, 0x7E0, None): [
-      b'M2GA-14C204-ND\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+      b'M2GA-14C204-KG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
   CAR.ESCAPE_MK4: {
