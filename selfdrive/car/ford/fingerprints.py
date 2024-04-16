@@ -21,7 +21,7 @@ FW_VERSIONS = {
     ],
   },
 
-      CAR.Navigator_MK2: {
+  CAR.Navigator_MK2: {
     (Ecu.eps, 0x730, None): [
       b'K2GC-14D003-AJ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
