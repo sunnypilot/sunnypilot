@@ -1,3 +1,16 @@
+sunnypilot - 0.9.7.0 (2024-xx-xx)
+========================
+* New driving model
+* Support for many hybrid Ford models
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 56e343b (February 27, 2024)
+* NEW❗: iOS Siri Shortcuts Navigation support thanks to twilsonco and mike86437!
+  * iOS and macOS Shortcuts to quickly set navigation destinations from your iOS device
+  * comma Prime support
+  * Personal Mapbox/Amap/Google Maps token support
+  * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
 * New driving model
