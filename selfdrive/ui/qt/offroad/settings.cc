@@ -409,11 +409,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   offroad_btn = new QPushButton(tr("Toggle Onroad/Offroad"));
   offroad_btn->setObjectName("offroad_btn");
   QObject::connect(offroad_btn, &QPushButton::clicked, this, &DevicePanel::forceoffroad);
-  if (!Hardware::PC()) {
-    connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-      offroad_btn->setVisible(params.getBool("ForceOffroad") && offroad);
-    });
-  }
   addItem(offroad_btn);
 
   setStyleSheet(R"(
@@ -535,7 +530,6 @@ void DevicePanel::updateLabels() {
   }
 
   offroad_btn->setText(is_onroad ? tr("Force Offroad") : tr("Unforce Offroad"));
-  offroad_btn->setVisible(params.getBool("ForceOffroad") || is_onroad);
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
