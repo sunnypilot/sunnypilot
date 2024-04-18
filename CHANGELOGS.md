@@ -16,6 +16,9 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
   * GitHub account pairing from device settings scanning QR code
     * Pairing your account will allow you to access features via our API (still WIP but accessible if you dig a little on our code 😉)
     * Allow inheritance of your sponsorship status, allowing you to get extra features and early access whenever applicable
+* NEW❗: Forced Offroad mode
+  * Force sunnypilot in the offroad state even when the car is on
+  * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
