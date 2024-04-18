@@ -1277,7 +1277,7 @@ AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getBearingDeg() {
     dir_value = "OFF";
   }
 
-  return UiElement("B.D.", QString("%1 | %2").arg(dir_value).arg(value), "", color);
+  return UiElement(QString("%1 | %2").arg(dir_value).arg(value), "B.D.", "", color);
 }
 
 AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getAltitude() {
