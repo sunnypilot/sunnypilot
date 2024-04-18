@@ -529,7 +529,7 @@ void DevicePanel::updateLabels() {
     return;
   }
 
-  offroad_btn->setText(is_onroad ? tr("Force Offroad") : tr("Unforce Offroad"));
+  offroad_btn->setText(params.getBool("ForceOffroad") ? tr("Unforce Offroad") : tr("Force Offroad"));
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
