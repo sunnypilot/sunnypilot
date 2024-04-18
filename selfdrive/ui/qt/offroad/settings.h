@@ -51,6 +51,8 @@ class DevicePanel : public ListWidget {
   Q_OBJECT
 public:
   explicit DevicePanel(SettingsWindow *parent);
+protected:
+  void showEvent(QShowEvent *event) override;
 signals:
   void reviewTrainingGuide();
   void showDriverView();
@@ -61,6 +63,9 @@ private slots:
   void updateCalibDescription();
   void onPinFileChanged(const QString &file_path);
   void refreshPin();
+  void forceoffroad();
+
+  void updateLabels();
 
 private:
   Params params;
@@ -69,6 +74,11 @@ private:
   QString pin_title = tr("Fleet Manager PIN:") + " ";
   QString pin = "OFF";
   QFileSystemWatcher *fs_watch;
+
+  QPushButton *offroad_btn;
+
+protected:
+  bool is_onroad = false;
 };
 
 class TogglesPanel : public ListWidget {

@@ -403,13 +403,34 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     connect(uiState(), &UIState::offroadTransition, poweroff_btn, &QPushButton::setVisible);
   }
 
+  addItem(power_layout);
+
+  // TODO: Add Force Onroad/Offroad toggle under power_layout
+  offroad_btn = new QPushButton(tr("Toggle Onroad/Offroad"));
+  offroad_btn->setObjectName("offroad_btn");
+  QObject::connect(offroad_btn, &QPushButton::clicked, this, &DevicePanel::forceoffroad);
+  if (!Hardware::PC()) {
+    connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+      offroad_btn->setVisible(params.getBool("ForceOffroad") && offroad);
+    });
+  }
+  addItem(offroad_btn);
+
   setStyleSheet(R"(
     #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #reboot_btn:pressed { background-color: #4a4a4a; }
     #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
+    #offroad_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #offroad_btn:pressed { background-color: #4a4a4a; }
   )");
-  addItem(power_layout);
+
+  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+    is_onroad = !offroad;
+    updateLabels();
+  });
+
+  updateLabels();
 }
 
 void DevicePanel::onPinFileChanged(const QString &file_path) {
@@ -482,6 +503,39 @@ void DevicePanel::poweroff() {
   } else {
     ConfirmationDialog::alert(tr("Disengage to Power Off"), this);
   }
+}
+
+void DevicePanel::forceoffroad() {
+  if (!uiState()->engaged()) {
+    if (is_onroad) {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to force offroad?"), tr("Force"), this)) {
+        if (!uiState()->engaged()) {
+          params.putBool("ForceOffroad", true);
+        }
+      }
+    } else {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to unforce offroad?"), tr("Unforce"), this)) {
+        if (!uiState()->engaged()) {
+          params.remove("ForceOFfroad");
+        }
+      }
+    }
+  } else {
+    ConfirmationDialog::alert(tr("Disengage to Force Offroad"), this);
+  }
+}
+
+void DevicePanel::showEvent(QShowEvent *event) {
+  updateLabels();
+}
+
+void DevicePanel::updateLabels() {
+  if (!isVisible()) {
+    return;
+  }
+
+  offroad_btn->setText(is_onroad ? tr("Force Offroad") : tr("Unforce Offroad"));
+  offroad_btn->setVisible(params.getBool("ForceOffroad") || is_onroad);
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {

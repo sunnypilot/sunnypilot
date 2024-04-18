@@ -255,6 +255,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EnhancedScc", PERSISTENT | BACKUP},
     {"FeatureStatus", PERSISTENT | BACKUP},
     {"FleetManagerPin", PERSISTENT},
+    {"ForceOffroad", CLEAR_ON_MANAGER_START},
     {"GmapKey", PERSISTENT | BACKUP},
     {"HandsOnWheelMonitoring", PERSISTENT | BACKUP},
     {"HideVEgoUi", PERSISTENT | BACKUP},
