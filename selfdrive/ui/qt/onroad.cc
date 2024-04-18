@@ -1888,7 +1888,7 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   if (num == 0) {  // Display metrics to the 0th lead car
     QStringList chevron_text[2];
     if (chevron_data == 1 || chevron_data == 3) {
-      chevron_text[0].append(QString::number(radar_d_rel,'f', 1) + " " + "m");
+      chevron_text[0].append(QString::number(radar_d_rel,'f', 0) + " " + "m");
     }
     if (chevron_data == 2 || chevron_data == 3) {
       chevron_text[chevron_data - 2].append(QString::number((radar_v_rel + v_ego) * (isMetric ? MS_TO_KPH : MS_TO_MPH),'f', 0) + " " + (isMetric ? "km/h" : "mph"));
