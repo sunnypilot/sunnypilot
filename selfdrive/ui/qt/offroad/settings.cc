@@ -516,7 +516,7 @@ void DevicePanel::forceoffroad() {
     } else {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to unforce offroad?"), tr("Unforce"), this)) {
         if (!uiState()->engaged()) {
-          params.remove("ForceOFfroad");
+          params.remove("ForceOffroad");
         }
       }
     }
