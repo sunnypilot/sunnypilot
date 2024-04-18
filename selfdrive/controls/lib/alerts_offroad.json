@@ -58,7 +58,7 @@
     "severity": 0
   },
   "Offroad_ForceStatus": {
-    "text": "sunnypilot is now in Forced Offroad mode. sunnypilot won't start until Forced Offroad mode is disabled. Go to \"Settings\" -> \"Device\" -> \"Unforce Offroad\" to get out of Force Offroad mode.",
+    "text": "sunnypilot is now in Forced Offroad mode. sunnypilot won't start until Forced Offroad mode is disabled. Go to \"Settings\" -> \"Device\" -> \"Unforce Offroad\" to exit Force Offroad mode.",
     "severity": 1
   }
 }
