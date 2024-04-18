@@ -76,9 +76,6 @@ private:
   QFileSystemWatcher *fs_watch;
 
   QPushButton *offroad_btn;
-
-protected:
-  bool is_onroad = false;
 };
 
 class TogglesPanel : public ListWidget {

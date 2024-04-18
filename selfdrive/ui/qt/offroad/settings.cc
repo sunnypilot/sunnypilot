@@ -420,11 +420,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     #offroad_btn:pressed { background-color: #4a4a4a; }
   )");
 
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    is_onroad = !offroad;
-    updateLabels();
-  });
-
   updateLabels();
 }
 
@@ -502,22 +497,24 @@ void DevicePanel::poweroff() {
 
 void DevicePanel::forceoffroad() {
   if (!uiState()->engaged()) {
-    if (is_onroad) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to force offroad?"), tr("Force"), this)) {
-        if (!uiState()->engaged()) {
-          params.putBool("ForceOffroad", true);
-        }
-      }
-    } else {
+    if (params.getBool("ForceOffroad")) {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to unforce offroad?"), tr("Unforce"), this)) {
         if (!uiState()->engaged()) {
           params.remove("ForceOffroad");
+        }
+      }
+    } else {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to force offroad?"), tr("Force"), this)) {
+        if (!uiState()->engaged()) {
+          params.putBool("ForceOffroad", true);
         }
       }
     }
   } else {
     ConfirmationDialog::alert(tr("Disengage to Force Offroad"), this);
   }
+
+  updateLabels();
 }
 
 void DevicePanel::showEvent(QShowEvent *event) {
