@@ -1190,10 +1190,12 @@ AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getSteeringAngleDesiredD
       color = QColor(255, 0, 0, 255);
     } else if (std::fabs(angleSteers) > 90) {
       color = QColor(255, 188, 0, 255);
+    } else {
+      color = QColor(0, 255, 0, 255);
     }
   }
 
-  return UiElement(value, "DESIR STEER", "", color);
+  return UiElement(value, "DESIRED STEER", "", color);
 }
 
 AnnotatedCameraWidget::UiElement AnnotatedCameraWidget::getMemoryUsagePercent() {
