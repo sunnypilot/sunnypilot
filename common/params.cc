@@ -323,6 +323,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"VisionCurveLaneless", PERSISTENT | BACKUP},
     {"VwAccType", PERSISTENT | BACKUP},
     {"VwCCOnly", PERSISTENT | BACKUP},
+    {"Offroad_ForceStatus", PERSISTENT},
     {"Offroad_SupersededUpdate", PERSISTENT},
 
     {"SunnylinkCache_Users", PERSISTENT},
