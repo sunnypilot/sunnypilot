@@ -311,8 +311,7 @@ def thermald_thread(end_event, hw_queue) -> None:
 
     # user-forced status
     startup_conditions["not_force_offroad"] = not params.get_bool("ForceOffroad")
-    if not startup_conditions["not_force_offroad"]:
-      set_offroad_alert("Offroad_ForceStatus", True)
+    set_offroad_alert("Offroad_ForceStatus", not startup_conditions["not_force_offroad"])
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger
