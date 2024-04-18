@@ -1896,7 +1896,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>SPONSOR</source>
-        <translation">赞助者</translation>
+        <translation>赞助者</translation>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features.</source>
