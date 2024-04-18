@@ -200,6 +200,11 @@ void SunnylinkPanel::updateLabels() {
   bool is_paired = uiState()->isSunnylinkPaired();
   auto paired_users = uiState()->sunnylinkDeviceUsers();
 
+  //little easter egg for Panda :D 
+  if(sunnylinkDongleId == "d689627422cefcbc") {
+    role_name = "Panda 🐼";
+  }
+
   sunnylinkEnabledBtn->setEnabled(!is_onroad);
   sunnylinkEnabledBtn->setValue(tr("Device ID ")+ sunnylinkDongleId);
 
