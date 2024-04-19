@@ -330,14 +330,19 @@ OmxEncoder::OmxEncoder(const char* path, int width, int height, int fps, int bit
   int err = OMX_GetHandle(&this->handle, component, this, &omx_callbacks);
   if (err != OMX_ErrorNone) {
     LOGE("error getting codec: %x", err);
+    // TODO: We force quit Qt UI, and trigger fast restart for now
+    qApp->exit(18);
+    watchdog_kick(0);
   }
   // TODO: Investigate the insufficient memory issue in prebuilts, we force quit Qt UI, and trigger fast restart for now
+  /*
   if (err == OMX_ErrorInsufficientResources) {
     qApp->exit(18);
     watchdog_kick(0);
   } else {
     assert(err == OMX_ErrorNone);
   }
+  */
   // printf("handle: %p\n", this->handle);
 
   // setup input port
