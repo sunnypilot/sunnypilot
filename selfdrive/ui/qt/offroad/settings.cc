@@ -403,22 +403,25 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     connect(uiState(), &UIState::offroadTransition, poweroff_btn, &QPushButton::setVisible);
   }
 
-  addItem(power_layout);
-
-  // TODO: Add Force Onroad/Offroad toggle under power_layout
   offroad_btn = new QPushButton(tr("Toggle Onroad/Offroad"));
   offroad_btn->setObjectName("offroad_btn");
   QObject::connect(offroad_btn, &QPushButton::clicked, this, &DevicePanel::forceoffroad);
-  addItem(offroad_btn);
+
+  QVBoxLayout *buttons_layout = new QVBoxLayout();
+  buttons_layout->setSpacing(24);
+  buttons_layout->addLayout(power_layout);
+  buttons_layout->addWidget(offroad_btn);
 
   setStyleSheet(R"(
     #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #reboot_btn:pressed { background-color: #4a4a4a; }
     #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
-    #offroad_btn { height: 120px; border-radius: 15px; background-color: #393939; }
-    #offroad_btn:pressed { background-color: #4a4a4a; }
+    #offroad_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
+    #offroad_btn:pressed { background-color: #FF2424; }
   )");
+
+  addItem(buttons_layout);
 
   updateLabels();
 }
@@ -526,7 +529,16 @@ void DevicePanel::updateLabels() {
     return;
   }
 
-  offroad_btn->setText(params.getBool("ForceOffroad") ? tr("Unforce Offroad") : tr("Force Offroad"));
+  bool force_offroad_param = params.getBool("ForceOffroad");
+  QString offroad_btn_style = force_offroad_param ? "#393939" : "#E22C2C";
+  QString offroad_btn_pressed_style = force_offroad_param ? "#4a4a4a" : "#FF2424";
+  QString btn_common_style = QString("QPushButton { height: 120px; border-radius: 15px; background-color:%1; }"
+                                     "QPushButton:pressed { background-color:%2; }")
+                             .arg(offroad_btn_style,
+                                  offroad_btn_pressed_style);
+
+  offroad_btn->setText(force_offroad_param ? tr("Unforce Offroad") : tr("Force Offroad"));
+  offroad_btn->setStyleSheet(btn_common_style + offroad_btn_style + offroad_btn_pressed_style);
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
