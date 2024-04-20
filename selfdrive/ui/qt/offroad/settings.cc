@@ -417,8 +417,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     #reboot_btn:pressed { background-color: #4a4a4a; }
     #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
-    #offroad_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
-    #offroad_btn:pressed { background-color: #FF2424; }
   )");
 
   addItem(buttons_layout);
