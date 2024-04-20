@@ -499,12 +499,14 @@ void DevicePanel::forceoffroad() {
   if (!uiState()->engaged()) {
     if (params.getBool("ForceOffroad")) {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to unforce offroad?"), tr("Unforce"), this)) {
+        // Check engaged again in case it changed while the dialog was open
         if (!uiState()->engaged()) {
           params.remove("ForceOffroad");
         }
       }
     } else {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to force offroad?"), tr("Force"), this)) {
+        // Check engaged again in case it changed while the dialog was open
         if (!uiState()->engaged()) {
           params.putBool("ForceOffroad", true);
         }
