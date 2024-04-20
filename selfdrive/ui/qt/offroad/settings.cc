@@ -531,8 +531,8 @@ void DevicePanel::updateLabels() {
   bool force_offroad_param = params.getBool("ForceOffroad");
   QString offroad_btn_style = force_offroad_param ? "#393939" : "#E22C2C";
   QString offroad_btn_pressed_style = force_offroad_param ? "#4a4a4a" : "#FF2424";
-  QString btn_common_style = QString("QPushButton { height: 120px; border-radius: 15px; background-color:%1; }"
-                                     "QPushButton:pressed { background-color:%2; }")
+  QString btn_common_style = QString("QPushButton { height: 120px; border-radius: 15px; background-color: %1; }"
+                                     "QPushButton:pressed { background-color: %2; }")
                              .arg(offroad_btn_style,
                                   offroad_btn_pressed_style);
 
