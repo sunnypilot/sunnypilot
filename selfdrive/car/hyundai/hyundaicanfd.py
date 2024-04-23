@@ -251,6 +251,18 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
   scc14_values["_CHECKSUM"] = scc14_checksum
   ret.append(packer.make_can_msg("SCC14", CAN.ECAN, scc14_values))
 
+  fca11_values = {
+    "CR_FCA_Alive": idx % 0xF,
+    "BYTE4": 0xC0,
+    "BYTE5": 0x3F,
+    "BYTE6": 0x7F,
+  }
+  fca11_dat = packer.make_can_msg("FCA11", CAN.ECAN, fca11_values)[2]
+  fca11_dat = fca11_dat[1:8]
+  fca11_checksum = hyundai_checksum(fca11_dat)
+  fca11_values["CR_FCA_ChkSum"] = fca11_checksum
+  ret.append(packer.make_can_msg("FCA11", CAN.ECAN, fca11_values))
+
   return ret
 
 def create_spas_messages(packer, CAN, frame, left_blink, right_blink):
