@@ -209,6 +209,50 @@ def create_acc_control(packer, CAN, enabled, accel_last, accel, stopping, gas_ov
   return packer.make_can_msg("SCC_CONTROL", CAN.ECAN, values)
 
 
+def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible, set_speed, stopping, long_override):
+  ret = []
+
+  scc11_values = {
+    "AliveCounterACC": idx % 0xF,
+    "aReqRaw": accel,
+    "aReqValue": accel,
+    "JerkUpperLimit": 3.0,
+    "JerkLowerLimit": 5 if enabled else 1,
+  }
+  scc11_dat = packer.make_can_msg("SCC11", CAN.ECAN, scc11_values)[2]
+  scc11_dat = scc11_dat[1:8]
+  scc11_checksum = hyundai_checksum(scc11_dat)
+  scc11_values["_CHECKSUM"] = scc11_checksum
+  ret.append(packer.make_can_msg("SCC11", CAN.ECAN, scc11_values))
+
+  scc12_values = {
+    "MainMode_ACC": 1,
+    "TauGapSet": 4,
+    "VSetDis": set_speed if enabled else 0,
+    "ObjValid": 0,
+    "ACC_ObjDist": 1,
+    "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,
+    "StopReq": 1 if stopping else 0,
+    "CR_VSM_Alive": idx % 0xF
+  }
+  scc12_dat = packer.make_can_msg("SCC12", CAN.ECAN, scc12_values)[2]
+  scc12_dat = scc12_dat[1:8]
+  scc12_checksum = hyundai_checksum(scc12_dat)
+  scc12_values["CR_VSM_ChkSum"] = scc12_checksum
+  ret.append(packer.make_can_msg("SCC12", CAN.ECAN, scc12_values))
+
+  scc14_values = {
+    "ACC_ObjLatPos": 0,
+    "ObjGap": 2 if lead_visible else 0,
+  }
+  scc14_dat = packer.make_can_msg("SCC14", CAN.ECAN, scc14_values)[2]
+  scc14_dat = scc14_dat[1:8]
+  scc14_checksum = hyundai_checksum(scc14_dat)
+  scc14_values["_CHECKSUM"] = scc14_checksum
+  ret.append(packer.make_can_msg("SCC14", CAN.ECAN, scc14_values))
+
+  return ret
+
 def create_spas_messages(packer, CAN, frame, left_blink, right_blink):
   ret = []
 
