@@ -1,5 +1,6 @@
 from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import CanBusBase
+from openpilot.selfdrive.car.hyundai.hyundaican import hyundai_checksum
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags
 
 
@@ -35,7 +36,10 @@ class CanBus(CanBusBase):
     return self._cam
 
 
-def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer):
+def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer,
+                             frame, torque_fault, lkas11,
+                             left_lane, right_lane,
+                             left_lane_depart, right_lane_depart):
 
   ret = []
 
@@ -54,7 +58,13 @@ def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer):
   if CP.flags & HyundaiFlags.CANFD_HDA2:
     hda2_lkas_msg = "LKAS_ALT" if CP.flags & HyundaiFlags.CANFD_HDA2_ALT_STEERING else "LKAS"
     if CP.openpilotLongitudinalControl:
-      ret.append(packer.make_can_msg("LFA", CAN.ECAN, values))
+      if CP.flags & HyundaiFlags.CAN_CANFD:
+        ret.append(create_lkas11_can_canfd(packer, CAN, frame, apply_steer, lat_active,
+                                           torque_fault, lkas11, enabled,
+                                           left_lane, right_lane,
+                                           left_lane_depart, right_lane_depart))
+      else:
+        ret.append(packer.make_can_msg("LFA", CAN.ECAN, values))
     ret.append(packer.make_can_msg(hda2_lkas_msg, CAN.ACAN, values))
   else:
     ret.append(packer.make_can_msg("LFA", CAN.ECAN, values))
@@ -72,6 +82,48 @@ def create_suppress_lfa(packer, CAN, hda2_lfa_block_msg, hda2_alt_steering):
   values["LEFT_LANE_LINE"] = 0
   values["RIGHT_LANE_LINE"] = 0
   return packer.make_can_msg(suppress_msg, CAN.ACAN, values)
+
+def create_lkas11_can_canfd(packer, CAN, frame, apply_steer, steer_req,
+                            torque_fault, lkas11, enabled,
+                            left_lane, right_lane,
+                            left_lane_depart, right_lane_depart):
+  values = {s: lkas11[s] for s in [
+    "CF_Lkas_LdwsActivemode",
+    #"CF_Lkas_LdwsSysState",
+    #"CF_Lkas_SysWarning",
+    "CF_Lkas_LdwsLHWarning",
+    "CF_Lkas_LdwsRHWarning",
+    #"CF_Lkas_HbaLamp",
+    #"CF_Lkas_FcwBasReq",
+    #"CF_Lkas_HbaSysState",
+    #"CF_Lkas_FcwOpt",
+    #"CF_Lkas_HbaOpt",
+    #"CF_Lkas_FcwSysState",
+    #"CF_Lkas_FcwCollisionWarning",
+    #"CF_Lkas_FusionState",
+    "CF_Lkas_FcwOpt_USM",
+    #"CF_Lkas_LdwsOpt_USM",
+  ]}
+  #values["CF_Lkas_LdwsSysState"] = sys_state
+  #values["CF_Lkas_SysWarning"] = 3 if sys_warning else 0
+  values["CF_Lkas_LdwsLHWarning"] = left_lane_depart
+  values["CF_Lkas_LdwsRHWarning"] = right_lane_depart
+  values["CR_Lkas_StrToqReq"] = apply_steer
+  values["CF_Lkas_ActToi"] = steer_req
+  values["CF_Lkas_ToiFlt"] = torque_fault  # seems to allow actuation on CR_Lkas_StrToqReq
+  values["CF_Lkas_MsgCount"] = frame % 0x10
+
+  values["CF_Lkas_FcwOpt_USM"] = 2 if enabled else 1
+  values["CF_Lkas_LdwsActivemode"] = int(left_lane) + (int(right_lane) << 1)
+
+  dat = packer.make_can_msg("LKAS11", CAN.ECAN, values)[2]
+
+  dat = dat[1:8]
+  checksum = hyundai_checksum(dat)
+
+  values["CF_Lkas_Chksum"] = checksum
+
+  return packer.make_can_msg("LKAS11", CAN.ECAN, values)
 
 def create_buttons(packer, CP, CAN, cnt, btn):
   values = {
