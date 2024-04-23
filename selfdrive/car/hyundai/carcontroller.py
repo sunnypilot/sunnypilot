@@ -109,7 +109,6 @@ class CarController(CarControllerBase):
     # CAN-FD platforms
     if self.CP.carFingerprint in CANFD_CAR or (hda2 and can_canfd):
       hda2_long = hda2 and self.CP.openpilotLongitudinalControl
-      can_canfd_hda2_long = can_canfd and hda2 and self.CP.openpilotLongitudinalControl
 
       # steering control
       can_sends.extend(hyundaicanfd.create_steering_messages(self.packer, self.CP, self.CAN, CC.enabled, apply_steer_req, apply_steer,
