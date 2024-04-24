@@ -229,14 +229,11 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
   ]
 
   for addr, values in msg_values:
-    values["COUNTER"] = idx % 0xF
-    dat = packer.make_can_msg(addr, CAN.ECAN, values)[2]
-    dat = dat[1:8]
-    checksum = hyundai_checksum(dat)
-    values["CHECKSUM"] = checksum
+    values = create_checksum_and_counter_can_canfd(packer, CAN, addr, values, idx)
     ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
+
 
 def create_spas_messages(packer, CAN, frame, left_blink, right_blink):
   ret = []
@@ -339,7 +336,17 @@ def create_radar_aux_messages(packer, CAN, frame):
 
   for addr, freq, values in msg_values:
     if frame % freq == 0:
-      values["COUNTER"] = frame % 0xF
+      values = create_checksum_and_counter_can_canfd(packer, CAN, addr, values, frame)
       ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
+
+
+def create_checksum_and_counter_can_canfd(packer, CAN, addr, values, frame):
+  values["COUNTER"] = frame % 0xF
+  dat = packer.make_can_msg(addr, CAN.ECAN, values)[2]
+  dat = dat[1:8]
+  checksum = hyundai_checksum(dat)
+  values["CHECKSUM"] = checksum
+
+  return values
