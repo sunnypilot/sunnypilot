@@ -94,7 +94,7 @@ def create_lkas11_can_canfd(packer, CAN, frame, apply_steer, steer_req,
     "CR_Lkas_StrToqReq": apply_steer,
     "CF_Lkas_ActToi": steer_req,
     "CF_Lkas_ToiFlt": torque_fault,  # seems to allow actuation on CR_Lkas_StrToqReq
-    "CF_Lkas_MsgCount": frame % 0x10,
+    "CF_Lkas_MsgCount": frame % 0xF,
     "CF_Lkas_FcwOpt_USM": 2 if enabled else 1,
     "CF_Lkas_LdwsActivemode": int(left_lane) + (int(right_lane) << 1),
   }
