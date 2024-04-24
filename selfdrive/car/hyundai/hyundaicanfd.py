@@ -205,7 +205,7 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
 
     ("SCC12", {
       "MainMode_ACC": 1,
-      "TauGapSet": 4,
+      "TauGapSet": 6,
       "VSetDis": set_speed if enabled else 0,
       "ObjValid": 0,
       "ACC_ObjDist": 1,
