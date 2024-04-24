@@ -233,6 +233,7 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
   scc14_values = {
     "ACC_ObjLatPos": 0,
     "ObjGap": 2 if lead_visible else 0,
+    "_COUNTER": idx % 0xF,
   }
   scc14_dat = packer.make_can_msg("SCC14", CAN.ECAN, scc14_values)[2]
   scc14_dat = scc14_dat[1:8]
