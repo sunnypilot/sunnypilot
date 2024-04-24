@@ -112,7 +112,7 @@ class CarController(CarControllerBase):
 
       # steering control
       can_sends.extend(hyundaicanfd.create_steering_messages(self.packer, self.CP, self.CAN, CC.enabled, apply_steer_req, apply_steer,
-                                                             self.frame, torque_fault, CS.lkas11,
+                                                             self.frame, torque_fault,
                                                              hud_control.leftLaneVisible, hud_control.rightLaneVisible,
                                                              left_lane_warning, right_lane_warning))
 
