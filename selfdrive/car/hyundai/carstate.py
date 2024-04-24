@@ -158,7 +158,7 @@ class CarState(CarStateBase):
       ret.rightBlindspot = cp.vl["LCA11"]["CF_Lca_IndRight"] != 0
 
     # save the entire LKAS11 and CLU11
-    if not (self.CP.flags & HyundaiFlags.CAN_CANFD and not self.CP.openpilotLongitudinalControl):
+    if not self.CP.flags & HyundaiFlags.CAN_CANFD:
       self.lkas11 = copy.copy(cp_cam.vl["LKAS11"])
     self.clu11 = copy.copy(cp.vl["CLU11"])
     if self.CP.flags & HyundaiFlags.CAN_CANFD and self.CP.flags & HyundaiFlags.CANFD_HDA2:
@@ -314,7 +314,7 @@ class CarState(CarStateBase):
 
     if CP.flags & HyundaiFlags.CAN_CANFD:
       messages.append(("CAM_0x2a4", 20))
-    if not (CP.flags & HyundaiFlags.CAN_CANFD and not CP.openpilotLongitudinalControl):
+    else:
       messages.append(("LKAS11", 100))
 
     if not CP.openpilotLongitudinalControl and CP.carFingerprint in CAMERA_SCC_CAR:
