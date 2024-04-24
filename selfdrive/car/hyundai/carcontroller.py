@@ -138,7 +138,7 @@ class CarController(CarControllerBase):
           if can_canfd:
             can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd(self.packer, self.CAN, CC.enabled, accel,
                                                                         int(self.frame / 2), hud_control.leadVisible,
-                                                                        set_speed_in_units, stopping, CC.cruiseControl.override))
+                                                                        set_speed_in_units, stopping, CC.cruiseControl.override, hud_control))
           else:
             can_sends.append(hyundaicanfd.create_acc_control(self.packer, self.CAN, CC.enabled, self.accel_last, accel, stopping, CC.cruiseControl.override,
                                                              set_speed_in_units, hud_control))
