@@ -158,6 +158,12 @@ def create_lfahda_cluster(packer, CAN, enabled, can_canfd):
   }
 
   msg = "LFAHDA_MFC" if can_canfd else "LFAHDA_CLUSTER"
+  if can_canfd:
+    lfahda_mfc_dat = packer.make_can_msg(msg, CAN.ECAN, values)[2]
+    lfahda_mfc_dat = lfahda_mfc_dat[1:8]
+    lfahda_mfc_checksum = hyundai_checksum(lfahda_mfc_dat)
+    values["_CHECKSUM"] = lfahda_mfc_checksum
+
   return packer.make_can_msg(msg, CAN.ECAN, values)
 
 
