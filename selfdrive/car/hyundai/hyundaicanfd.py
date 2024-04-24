@@ -208,6 +208,7 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
       "JerkUpperLimit": 3.0,
       "JerkLowerLimit": 5 if enabled else 1,
     }),
+
     ("SCC12", {
       "MainMode_ACC": 1,
       "TauGapSet": 4,
@@ -217,10 +218,12 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
       "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,
       "StopReq": 1 if stopping else 0,
     }),
+
     ("SCC14", {
       "ACC_ObjLatPos": 0,
       "ObjGap": 2 if lead_visible else 0,
     }),
+
     ("FCA11", {
       "BYTE4": 0xC0,
       "BYTE5": 0x3F,
