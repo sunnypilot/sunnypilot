@@ -201,57 +201,40 @@ def create_acc_control(packer, CAN, enabled, accel_last, accel, stopping, gas_ov
 def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible, set_speed, stopping, long_override):
   ret = []
 
-  scc11_values = {
-    "COUNTER": idx % 0xF,
-    "aReqRaw": accel,
-    "aReqValue": accel,
-    "JerkUpperLimit": 3.0,
-    "JerkLowerLimit": 5 if enabled else 1,
-  }
-  scc11_dat = packer.make_can_msg("SCC11", CAN.ECAN, scc11_values)[2]
-  scc11_dat = scc11_dat[1:8]
-  scc11_checksum = hyundai_checksum(scc11_dat)
-  scc11_values["CHECKSUM"] = scc11_checksum
-  ret.append(packer.make_can_msg("SCC11", CAN.ECAN, scc11_values))
+  msg_values = [
+    ("SCC11", {
+      "aReqRaw": accel,
+      "aReqValue": accel,
+      "JerkUpperLimit": 3.0,
+      "JerkLowerLimit": 5 if enabled else 1,
+    }),
+    ("SCC12", {
+      "MainMode_ACC": 1,
+      "TauGapSet": 4,
+      "VSetDis": set_speed if enabled else 0,
+      "ObjValid": 0,
+      "ACC_ObjDist": 1,
+      "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,
+      "StopReq": 1 if stopping else 0,
+    }),
+    ("SCC14", {
+      "ACC_ObjLatPos": 0,
+      "ObjGap": 2 if lead_visible else 0,
+    }),
+    ("FCA11", {
+      "BYTE4": 0xC0,
+      "BYTE5": 0x3F,
+      "BYTE6": 0x7F
+    }),
+  ]
 
-  scc12_values = {
-    "MainMode_ACC": 1,
-    "TauGapSet": 4,
-    "VSetDis": set_speed if enabled else 0,
-    "ObjValid": 0,
-    "ACC_ObjDist": 1,
-    "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,
-    "StopReq": 1 if stopping else 0,
-    "COUNTER": idx % 0xF
-  }
-  scc12_dat = packer.make_can_msg("SCC12", CAN.ECAN, scc12_values)[2]
-  scc12_dat = scc12_dat[1:8]
-  scc12_checksum = hyundai_checksum(scc12_dat)
-  scc12_values["CHECKSUM"] = scc12_checksum
-  ret.append(packer.make_can_msg("SCC12", CAN.ECAN, scc12_values))
-
-  scc14_values = {
-    "ACC_ObjLatPos": 0,
-    "ObjGap": 2 if lead_visible else 0,
-    "COUNTER": idx % 0xF,
-  }
-  scc14_dat = packer.make_can_msg("SCC14", CAN.ECAN, scc14_values)[2]
-  scc14_dat = scc14_dat[1:8]
-  scc14_checksum = hyundai_checksum(scc14_dat)
-  scc14_values["CHECKSUM"] = scc14_checksum
-  ret.append(packer.make_can_msg("SCC14", CAN.ECAN, scc14_values))
-
-  fca11_values = {
-    "COUNTER": idx % 0xF,
-    "BYTE4": 0xC0,
-    "BYTE5": 0x3F,
-    "BYTE6": 0x7F,
-  }
-  fca11_dat = packer.make_can_msg("FCA11", CAN.ECAN, fca11_values)[2]
-  fca11_dat = fca11_dat[1:8]
-  fca11_checksum = hyundai_checksum(fca11_dat)
-  fca11_values["CHECKSUM"] = fca11_checksum
-  ret.append(packer.make_can_msg("FCA11", CAN.ECAN, fca11_values))
+  for addr, values in msg_values:
+    values["COUNTER"] = idx % 0xF
+    dat = packer.make_can_msg(addr, CAN.ECAN, values)[2]
+    dat = dat[1:8]
+    checksum = hyundai_checksum(dat)
+    values["CHECKSUM"] = checksum
+    ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
 
