@@ -322,9 +322,9 @@ def create_radar_aux_messages(packer, CAN, frame):
     ("RADAR_0x43a", 20, {"BYTE2": 0x07}),
   ]
 
-  for addr, freq, value in msg_values:
+  for addr, freq, values in msg_values:
     if frame % freq == 0:
-      value["COUNTER"] = frame % 0xF
-      ret.append(packer.make_can_msg(addr, CAN.ECAN, value))
+      values["COUNTER"] = frame % 0xF
+      ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
