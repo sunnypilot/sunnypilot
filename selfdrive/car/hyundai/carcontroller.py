@@ -132,6 +132,8 @@ class CarController(CarControllerBase):
       if self.CP.openpilotLongitudinalControl:
         if hda2:
           can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame))
+          if can_canfd:
+            can_sends.extend(hyundaicanfd.create_radar_aux_messages(self.packer, self.CAN, self.frame))
         if self.frame % 2 == 0:
           if can_canfd:
             can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd(self.packer, self.CAN, CC.enabled, accel,

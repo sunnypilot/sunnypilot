@@ -324,3 +324,55 @@ def create_adrv_messages(packer, CAN, frame):
     ret.append(packer.make_can_msg("ADRV_0x1da", CAN.ECAN, values))
 
   return ret
+
+
+def create_radar_aux_messages(packer, CAN, frame):
+  ret = []
+
+  if frame % 2 == 0:
+    values = {
+      "COUNTER": frame % 0xF,
+      "FCA_ESA": 1,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x363", CAN.ECAN, values))
+
+  if frame % 5 == 0:
+    values = {
+      "COUNTER": frame % 0xF,
+      "BYTE4": 0x80,
+      "BYTE5": 0x5D,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x398", CAN.ECAN, values))
+
+    values = {
+      "COUNTER": frame % 0xF,
+      "BYTE2": 0x02,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x399", CAN.ECAN, values))
+
+    values = {
+      "COUNTER": frame % 0xF,
+      "BYTE7": 0xFF,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x39a", CAN.ECAN, values))
+
+    values = {
+      "COUNTER": frame % 0xF,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x39b", CAN.ECAN, values))
+
+    values = {
+      "COUNTER": frame % 0xF,
+      "BYTE5": 0xE0,
+      "BYTE6": 0x79,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x39c", CAN.ECAN, values))
+
+  if frame % 20 == 0:
+    values = {
+      "COUNTER": frame % 0xF,
+      "BYTE2": 0x07,
+    }
+    ret.append(packer.make_can_msg("RADAR_0x43a", CAN.ECAN, values))
+
+  return ret
