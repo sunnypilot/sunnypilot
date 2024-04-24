@@ -100,10 +100,8 @@ def create_lkas11_can_canfd(packer, CAN, frame, apply_steer, steer_req,
   }
 
   dat = packer.make_can_msg("LKAS11", CAN.ECAN, values)[2]
-
   dat = dat[1:8]
   checksum = hyundai_checksum(dat)
-
   values["CF_Lkas_Chksum"] = checksum
 
   return packer.make_can_msg("LKAS11", CAN.ECAN, values)
