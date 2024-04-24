@@ -99,9 +99,7 @@ def create_lkas11_can_canfd(packer, CAN, frame, apply_steer, steer_req,
     "CF_Lkas_LdwsActivemode": int(left_lane) + (int(right_lane) << 1),
   }
 
-  dat = packer.make_can_msg("LKAS11", CAN.ECAN, values)[2]
-  dat = dat[1:8]
-  checksum = hyundai_checksum(dat)
+  checksum = create_checksum_can_canfd(packer, CAN, "LKAS11", values)
   values["CF_Lkas_Chksum"] = checksum
 
   return packer.make_can_msg("LKAS11", CAN.ECAN, values)
@@ -157,9 +155,7 @@ def create_lfahda_cluster(packer, CAN, enabled, can_canfd):
 
   msg = "LFAHDA_MFC" if can_canfd else "LFAHDA_CLUSTER"
   if can_canfd:
-    dat = packer.make_can_msg(msg, CAN.ECAN, values)[2]
-    dat = dat[1:8]
-    checksum = hyundai_checksum(dat)
+    checksum = create_checksum_can_canfd(packer, CAN, msg, values)
     values["CHECKSUM"] = checksum
 
   return packer.make_can_msg(msg, CAN.ECAN, values)
@@ -230,7 +226,9 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
   ]
 
   for addr, values in msg_values:
-    values = create_checksum_and_counter_can_canfd(packer, CAN, addr, values, idx)
+    values["COUNTER"] = idx % 0xF
+    checksum = create_checksum_can_canfd(packer, CAN, addr, values)
+    values["CHECKSUM"] = checksum
     ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
@@ -337,17 +335,17 @@ def create_radar_aux_messages(packer, CAN, frame):
 
   for addr, freq, values in msg_values:
     if frame % freq == 0:
-      values = create_checksum_and_counter_can_canfd(packer, CAN, addr, values, frame)
+      values["COUNTER"] = frame % 0xF
+      checksum = create_checksum_can_canfd(packer, CAN, addr, values)
+      values["CHECKSUM"] = checksum
       ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
 
 
-def create_checksum_and_counter_can_canfd(packer, CAN, addr, values, frame):
-  values["COUNTER"] = frame % 0xF
+def create_checksum_can_canfd(packer, CAN, addr, values):
   dat = packer.make_can_msg(addr, CAN.ECAN, values)[2]
   dat = dat[1:8]
   checksum = hyundai_checksum(dat)
-  values["CHECKSUM"] = checksum
 
-  return values
+  return checksum
