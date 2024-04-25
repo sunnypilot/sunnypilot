@@ -1,9 +1,7 @@
 from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import CanBusBase
 from openpilot.selfdrive.car.hyundai.hyundaican import hyundai_checksum
-from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, TauGapSetCanCanfd
-
-DISTANCE_DICT_CAN_CANFD = {3: TauGapSetCanCanfd.DISTANCE_3, 2: TauGapSetCanCanfd.DISTANCE_2, 1: TauGapSetCanCanfd.DISTANCE_1}
+from openpilot.selfdrive.car.hyundai.values import HyundaiFlags
 
 
 class CanBus(CanBusBase):
@@ -207,8 +205,8 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
 
     ("SCC12", {
       "MainMode_ACC": 1,
-      "TauGapSet": DISTANCE_DICT_CAN_CANFD.get(hud_control.leadDistanceBars, TauGapSetCanCanfd.DISTANCE_3),
-      "VSetDis": set_speed if enabled else 0,
+      "TauGapSet": hud_control.leadDistanceBars,
+      "VSetDis": set_speed,
       "ObjValid": 0,
       "ACC_ObjDist": 1,
       "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,

@@ -563,13 +563,6 @@ class Buttons:
   CANCEL = 4  # on newer models, this is a pause/resume button
 
 
-class TauGapSetCanCanfd:
-  DISTANCE_4 = 1
-  DISTANCE_3 = 0
-  DISTANCE_2 = 7
-  DISTANCE_1 = 6
-
-
 def get_platform_codes(fw_versions: list[bytes]) -> set[tuple[bytes, bytes | None]]:
   # Returns unique, platform-specific identification codes for a set of versions
   codes = set()  # (code-Optional[part], date)
