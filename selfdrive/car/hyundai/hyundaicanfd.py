@@ -264,6 +264,8 @@ def create_adrv_messages(packer, CAN, frame):
   }
   ret.append(packer.make_can_msg("ADRV_0x51", CAN.ACAN, values))
 
+  return ret
+
   if frame % 2 == 0:
     values = {
       'AEB_SETTING': 0x1,  # show AEB disabled icon
