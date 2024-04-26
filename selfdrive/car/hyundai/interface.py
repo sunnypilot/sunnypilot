@@ -105,7 +105,7 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalActuatorDelayLowerBound = 0.5
     ret.longitudinalActuatorDelayUpperBound = 0.5
 
-    if ret.flags & HyundaiFlags.CAN_CANFD:
+    if ret.flags & HyundaiFlags.CAN_CANFD_HYBRID:
       ret.stoppingDecelRate = 0.4
 
     # *** feature detection ***
