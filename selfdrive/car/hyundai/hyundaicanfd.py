@@ -207,7 +207,6 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
       "MainMode_ACC": 1,
       "TauGapSet": hud_control.leadDistanceBars,
       "VSetDis": set_speed,
-      "ObjValid": 0,
       "ACC_ObjDist": 1,
       "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,
       "StopReq": 1 if stopping else 0,
@@ -215,6 +214,7 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
 
     ("SCC14", {
       "ACC_ObjLatPos": 0,
+      "ObjValid": 0,
       "ObjGap": 2 if lead_visible else 0,
     }),
 
