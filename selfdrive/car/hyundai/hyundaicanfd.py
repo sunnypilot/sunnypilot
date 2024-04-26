@@ -58,11 +58,11 @@ def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer,
   if CP.flags & HyundaiFlags.CANFD_HDA2:
     hda2_lkas_msg = "LKAS_ALT" if CP.flags & HyundaiFlags.CANFD_HDA2_ALT_STEERING else "LKAS"
     if CP.openpilotLongitudinalControl:
-      if CP.flags & HyundaiFlags.CAN_CANFD:
-        ret.append(create_lkas11_can_canfd(packer, CAN, frame, apply_steer, lat_active,
-                                           torque_fault, enabled,
-                                           left_lane, right_lane,
-                                           left_lane_depart, right_lane_depart))
+      if CP.flags & HyundaiFlags.CAN_CANFD_HYBRID:
+        ret.append(create_lkas11_can_canfd_hybrid(packer, CAN, frame, apply_steer, lat_active,
+                                                  torque_fault, enabled,
+                                                  left_lane, right_lane,
+                                                  left_lane_depart, right_lane_depart))
       else:
         ret.append(packer.make_can_msg("LFA", CAN.ECAN, values))
     ret.append(packer.make_can_msg(hda2_lkas_msg, CAN.ACAN, values))
@@ -83,10 +83,10 @@ def create_suppress_lfa(packer, CAN, hda2_lfa_block_msg, hda2_alt_steering):
   values["RIGHT_LANE_LINE"] = 0
   return packer.make_can_msg(suppress_msg, CAN.ACAN, values)
 
-def create_lkas11_can_canfd(packer, CAN, frame, apply_steer, steer_req,
-                            torque_fault, enabled,
-                            left_lane, right_lane,
-                            left_lane_depart, right_lane_depart):
+def create_lkas11_can_canfd_hybrid(packer, CAN, frame, apply_steer, steer_req,
+                                   torque_fault, enabled,
+                                   left_lane, right_lane,
+                                   left_lane_depart, right_lane_depart):
 
   values = {
     "CF_Lkas_LdwsLHWarning": left_lane_depart,
@@ -99,7 +99,7 @@ def create_lkas11_can_canfd(packer, CAN, frame, apply_steer, steer_req,
     "CF_Lkas_LdwsActivemode": int(left_lane) + (int(right_lane) << 1),
   }
 
-  checksum = create_checksum_can_canfd(packer, CAN, "LKAS11", values)
+  checksum = create_checksum_can_canfd_hybrid(packer, CAN, "LKAS11", values)
   values["CF_Lkas_Chksum"] = checksum
 
   return packer.make_can_msg("LKAS11", CAN.ECAN, values)
@@ -144,18 +144,18 @@ def create_acc_cancel(packer, CP, CAN, cruise_info_copy):
   })
   return packer.make_can_msg("SCC_CONTROL", CAN.ECAN, values)
 
-def create_lfahda_cluster(packer, CAN, enabled, can_canfd):
-  hda_icon = "HDA_Icon_State" if can_canfd else "HDA_ICON"
-  lfa_icon = "LFA_Icon_State" if can_canfd else "LFA_ICON"
+def create_lfahda_cluster(packer, CAN, enabled, can_canfd_hybrid):
+  hda_icon = "HDA_Icon_State" if can_canfd_hybrid else "HDA_ICON"
+  lfa_icon = "LFA_Icon_State" if can_canfd_hybrid else "LFA_ICON"
 
   values = {
     hda_icon: 1 if enabled else 0,
     lfa_icon: 2 if enabled else 0,
   }
 
-  msg = "LFAHDA_MFC" if can_canfd else "LFAHDA_CLUSTER"
-  if can_canfd:
-    checksum = create_checksum_can_canfd(packer, CAN, msg, values)
+  msg = "LFAHDA_MFC" if can_canfd_hybrid else "LFAHDA_CLUSTER"
+  if can_canfd_hybrid:
+    checksum = create_checksum_can_canfd_hybrid(packer, CAN, msg, values)
     values["CHECKSUM"] = checksum
 
   return packer.make_can_msg(msg, CAN.ECAN, values)
@@ -192,7 +192,7 @@ def create_acc_control(packer, CAN, enabled, accel_last, accel, stopping, gas_ov
   return packer.make_can_msg("SCC_CONTROL", CAN.ECAN, values)
 
 
-def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible, set_speed, stopping, long_override, hud_control):
+def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, idx, lead_visible, set_speed, stopping, long_override, hud_control):
   ret = []
 
   msg_values = [
@@ -228,7 +228,7 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
 
   for addr, values in msg_values:
     values["COUNTER"] = idx % 0xF
-    checksum = create_checksum_can_canfd(packer, CAN, addr, values)
+    checksum = create_checksum_can_canfd_hybrid(packer, CAN, addr, values)
     values["CHECKSUM"] = checksum
     ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
@@ -343,14 +343,14 @@ def create_radar_aux_messages(packer, CAN, frame):
   for addr, freq, values in msg_values:
     if frame % freq == 0:
       values["COUNTER"] = frame % 0xF
-      checksum = create_checksum_can_canfd(packer, CAN, addr, values)
+      checksum = create_checksum_can_canfd_hybrid(packer, CAN, addr, values)
       values["CHECKSUM"] = checksum
       ret.append(packer.make_can_msg(addr, CAN.ECAN, values))
 
   return ret
 
 
-def create_checksum_can_canfd(packer, CAN, addr, values):
+def create_checksum_can_canfd_hybrid(packer, CAN, addr, values):
   dat = packer.make_can_msg(addr, CAN.ECAN, values)[2]
   dat = dat[1:8]
   checksum = hyundai_checksum(dat)

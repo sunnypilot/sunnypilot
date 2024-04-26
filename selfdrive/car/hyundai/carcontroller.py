@@ -123,7 +123,7 @@ class CarController(CarControllerBase):
 
       # LFA and HDA icons
       if self.frame % 5 == 0 and (not hda2 or hda2_long):
-        can_sends.append(hyundaicanfd.create_lfahda_cluster(self.packer, self.CAN, CC.enabled, can_canfd))
+        can_sends.append(hyundaicanfd.create_lfahda_cluster(self.packer, self.CAN, CC.enabled, can_canfd_hybrid))
 
       # blinkers
       if hda2 and self.CP.flags & HyundaiFlags.ENABLE_BLINKERS:
@@ -132,14 +132,14 @@ class CarController(CarControllerBase):
       if self.CP.openpilotLongitudinalControl:
         if hda2:
           can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame))
-          if can_canfd:
+          if can_canfd_hybrid:
             stopping = stopping and CS.out.vEgoRaw < 0.1
             can_sends.extend(hyundaicanfd.create_radar_aux_messages(self.packer, self.CAN, self.frame))
         if self.frame % 2 == 0:
-          if can_canfd:
-            can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd(self.packer, self.CAN, CC.enabled, accel,
-                                                                        int(self.frame / 2), hud_control.leadVisible,
-                                                                        set_speed_in_units, stopping, CC.cruiseControl.override, hud_control))
+          if can_canfd_hybrid:
+            can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd_hybrid(self.packer, self.CAN, CC.enabled, accel,
+                                                                               int(self.frame / 2), hud_control.leadVisible,
+                                                                               set_speed_in_units, stopping, CC.cruiseControl.override, hud_control))
           else:
             can_sends.append(hyundaicanfd.create_acc_control(self.packer, self.CAN, CC.enabled, self.accel_last, accel, stopping, CC.cruiseControl.override,
                                                              set_speed_in_units, hud_control))
