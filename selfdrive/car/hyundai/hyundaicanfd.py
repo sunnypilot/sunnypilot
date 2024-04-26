@@ -216,7 +216,7 @@ def create_acc_commands_can_canfd(packer, CAN, enabled, accel, idx, lead_visible
     ("SCC14", {
       "ACC_ObjLatPos": 0,
       "ObjValid": 0,
-      "ObjStatus": 2 if lead_visible and enabled else 1,
+      "ObjStatus": 0 if not lead_visible else 2 if lead_visible and enabled else 1,
     }),
 
     ("FCA11", {
