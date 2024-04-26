@@ -3,7 +3,7 @@ from panda import Panda
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, \
                                          CANFD_UNSUPPORTED_LONGITUDINAL_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, \
-                                         UNSUPPORTED_LONGITUDINAL_CAR, Buttons, CAN_CANFD_CAR
+                                         UNSUPPORTED_LONGITUDINAL_CAR, Buttons, CAN_CANFD_HYBRID_CAR
 from openpilot.selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
 from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
@@ -36,14 +36,13 @@ class CarInterface(CarInterfaceBase):
     if hda2:
       ret.flags |= HyundaiFlags.CANFD_HDA2.value
 
-    if candidate in CANFD_CAR:
+    if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
       # detect if car is hybrid
       if 0x105 in fingerprint[CAN.ECAN]:
         ret.flags |= HyundaiFlags.HYBRID.value
       elif candidate in EV_CAR:
         ret.flags |= HyundaiFlags.EV.value
 
-      # detect HDA2 with ADAS Driving ECU
       if hda2:
         if 0x110 in fingerprint[CAN.CAM]:
           ret.flags |= HyundaiFlags.CANFD_HDA2_ALT_STEERING.value
@@ -65,10 +64,6 @@ class CarInterface(CarInterfaceBase):
         ret.flags |= HyundaiFlags.HYBRID.value
       elif candidate in EV_CAR:
         ret.flags |= HyundaiFlags.EV.value
-
-      # detect cars with hybrid definitions of CAN and CAN-FD
-      if candidate in CAN_CANFD_CAR:
-        ret.flags |= HyundaiFlags.CAN_CANFD.value
 
       # Send LFA message on cars with HDA
       if 0x485 in fingerprint[2]:
@@ -92,7 +87,7 @@ class CarInterface(CarInterfaceBase):
           CarInterfaceBase.configure_torque_tune(platform_str, ret.lateralTuning)
 
     # *** longitudinal control ***
-    if candidate in CANFD_CAR:
+    if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
       ret.longitudinalTuning.kpV = [0.1]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR)
@@ -114,44 +109,42 @@ class CarInterface(CarInterfaceBase):
       ret.stoppingDecelRate = 0.4
 
     # *** feature detection ***
-    if candidate in CANFD_CAR:
+    if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
       ret.enableBsm = 0x1e5 in fingerprint[CAN.ECAN]
     else:
-      bus = CAN.ECAN if ret.flags & HyundaiFlags.CAN_CANFD else 0
+      bus = CAN.ECAN if ret.flags & HyundaiFlags.CAN_CANFD_HYBRID else 0
       ret.enableBsm = 0x58b in fingerprint[bus]
 
     # *** panda safety config ***
-    if candidate in CANFD_CAR:
+    if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
       cfgs = [get_safety_config(car.CarParams.SafetyModel.hyundaiCanfd), ]
       if CAN.ECAN >= 4:
         cfgs.insert(0, get_safety_config(car.CarParams.SafetyModel.noOutput))
       ret.safetyConfigs = cfgs
-
-      if ret.flags & HyundaiFlags.CANFD_HDA2:
-        ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CANFD_HDA2
-        if ret.flags & HyundaiFlags.CANFD_HDA2_ALT_STEERING:
-          ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CANFD_HDA2_ALT_STEERING
       if ret.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
         ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CANFD_ALT_BUTTONS
       if ret.flags & HyundaiFlags.CANFD_CAMERA_SCC:
         ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CAMERA_SCC
     else:
-      if ret.flags & HyundaiFlags.CAN_CANFD:
+      if candidate in LEGACY_SAFETY_MODE_CAR:
+        # these cars require a special panda safety mode due to missing counters and checksums in the messages
+        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundaiLegacy)]
+      else:
         cfgs = [get_safety_config(car.CarParams.SafetyModel.hyundai), ]
         if CAN.ECAN >= 4:
           cfgs.insert(0, get_safety_config(car.CarParams.SafetyModel.noOutput))
         ret.safetyConfigs = cfgs
-        if ret.flags & HyundaiFlags.CANFD_HDA2:
-          ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CANFD_HDA2
-        ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CAN_CANFD
-      elif candidate in LEGACY_SAFETY_MODE_CAR:
-        # these cars require a special panda safety mode due to missing counters and checksums in the messages
-        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundaiLegacy)]
-      else:
-        ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundai, 0)]
+        if ret.flags & HyundaiFlags.CAN_CANFD_HYBRID:
+          ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CAN_CANFD_HYBRID
 
       if candidate in CAMERA_SCC_CAR:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HYUNDAI_CAMERA_SCC
+
+    # these flags apply to both CANFD_CAR and CAN_CANFD_HYBRID_CAR platforms
+    if ret.flags & HyundaiFlags.CANFD_HDA2:
+      ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CANFD_HDA2
+      if ret.flags & HyundaiFlags.CANFD_HDA2_ALT_STEERING:
+        ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CANFD_HDA2_ALT_STEERING
 
     if ret.openpilotLongitudinalControl:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_LONG
@@ -165,6 +158,10 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_ALT_LIMITS
 
     ret.centerToFront = ret.wheelbase * 0.4
+
+    # FIXME: Non-HDA2 2023-24 Hyundai Palisade / Kia Telluride is disabled in this branch;
+    # The non-HDA2 variant is supported in another PR: https://github.com/commaai/openpilot/pull/27478
+    ret.dashcamOnly |= candidate in (CAR.HYUNDAI_PALISADE_2023, ) and not hda2
 
     return ret
 

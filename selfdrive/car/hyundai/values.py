@@ -25,7 +25,7 @@ class CarControllerParams:
     self.STEER_THRESHOLD = 150
     self.STEER_STEP = 1  # 100 Hz
 
-    if CP.carFingerprint in CANFD_CAR:
+    if CP.carFingerprint in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
       self.STEER_MAX = 270
       self.STEER_DRIVER_ALLOWANCE = 250
       self.STEER_DRIVER_MULTIPLIER = 2
@@ -95,8 +95,8 @@ class HyundaiFlags(IntFlag):
 
   MIN_STEER_32_MPH = 2 ** 23
 
-  # CAN CAN-FD
-  CAN_CANFD = 2 ** 24
+  # CAN CAN-FD hybrid architecture
+  CAN_CANFD_HYBRID = 2 ** 24
 
 
 class Footnote(Enum):
@@ -126,9 +126,6 @@ class HyundaiPlatformConfig(PlatformConfig):
     if self.flags & HyundaiFlags.MIN_STEER_32_MPH:
       self.specs = self.specs.override(minSteerSpeed=32 * CV.MPH_TO_MS)
 
-    if self.flags & HyundaiFlags.CAN_CANFD:
-      self.dbc_dict = dbc_dict('hyundai_palisade_2023_generated', None)
-
 
 @dataclass
 class HyundaiCanFDPlatformConfig(PlatformConfig):
@@ -136,6 +133,9 @@ class HyundaiCanFDPlatformConfig(PlatformConfig):
 
   def init(self):
     self.flags |= HyundaiFlags.CANFD
+
+    if self.flags & HyundaiFlags.CAN_CANFD_HYBRID:
+      self.dbc_dict = dbc_dict('hyundai_palisade_2023_generated', None)
 
 
 class CAR(Platforms):
@@ -300,13 +300,13 @@ class CAR(Platforms):
     CarSpecs(mass=1999, wheelbase=2.9, steerRatio=15.6 * 1.15, tireStiffnessFactor=0.63),
     flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.CHECKSUM_CRC8,
   )
-  HYUNDAI_PALISADE_2023 = HyundaiPlatformConfig(
+  HYUNDAI_PALISADE_2023 = HyundaiCanFDPlatformConfig(
     [
       HyundaiCarDocs("Hyundai Palisade (with HDA II) 2023-24", "All", car_parts=CarParts.common([CarHarness.hyundai_r])),
       HyundaiCarDocs("Kia Telluride (with HDA II) 2023-24", "All", car_parts=CarParts.common([CarHarness.hyundai_p])),
     ],
     HYUNDAI_PALISADE.specs,
-    flags=HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.CAN_CANFD | HyundaiFlags.RADAR_SCC,
+    flags=HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.CAN_CANFD_HYBRID | HyundaiFlags.RADAR_SCC,
   )
   HYUNDAI_VELOSTER = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Veloster 2019-20", min_enable_speed=5. * CV.MPH_TO_MS, car_parts=CarParts.common([CarHarness.hyundai_e]))],
@@ -586,7 +586,7 @@ def match_fw_to_car_fuzzy(live_fw_versions, vin, offline_fw_versions) -> set[str
   # Non-electric CAN FD platforms often do not have platform code specifiers needed
   # to distinguish between hybrid and ICE. All EVs so far are either exclusively
   # electric or specify electric in the platform code.
-  fuzzy_platform_blacklist = {str(c) for c in (CANFD_CAR - EV_CAR - CANFD_FUZZY_WHITELIST)}
+  fuzzy_platform_blacklist = {str(c) for c in (CANFD_CAR - CAN_CANFD_HYBRID_CAR - EV_CAR - CANFD_FUZZY_WHITELIST)}
   candidates: set[str] = set()
 
   for candidate, fws in offline_fw_versions.items():
@@ -743,7 +743,7 @@ CAN_GEARS = {
 
 CANFD_CAR = CAR.with_flags(HyundaiFlags.CANFD)
 CANFD_RADAR_SCC_CAR = CAR.with_flags(HyundaiFlags.RADAR_SCC)
-CAN_CANFD_CAR = CAR.with_flags(HyundaiFlags.CAN_CANFD)
+CAN_CANFD_HYBRID_CAR = CAR.with_flags(HyundaiFlags.CAN_CANFD_HYBRID)
 
 # These CAN FD cars do not accept communication control to disable the ADAS ECU,
 # responds with 0x7F2822 - 'conditions not correct'
