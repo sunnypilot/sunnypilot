@@ -101,6 +101,10 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalActuatorDelayLowerBound = 0.5
     ret.longitudinalActuatorDelayUpperBound = 0.5
 
+    if ret.flags & HyundaiFlags.CAN_CANFD:
+      ret.vEgoStopping = 0.05
+      ret.stoppingDecelRate = 0.01
+
     # *** feature detection ***
     if candidate in CANFD_CAR:
       ret.enableBsm = 0x1e5 in fingerprint[CAN.ECAN]
