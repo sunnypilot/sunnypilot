@@ -82,6 +82,15 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
+    if candidate == CAR.HYUNDAI_PALISADE_2023:
+      for fw in car_fw:
+        if fw.ecu == "eps":
+          platform_str = "HYUNDAI_PALISADE_2023_EPS_4LXPC100" if fw.fwVersion.endswith(b'4LXPC100') else \
+                         "HYUNDAI_PALISADE_2023_EPS_2427" if fw.fwVersion.endswith(b'2027') else \
+                         candidate
+
+          CarInterfaceBase.configure_torque_tune(platform_str, ret.lateralTuning)
+
     # *** longitudinal control ***
     if candidate in CANFD_CAR:
       ret.longitudinalTuning.kpV = [0.1]
