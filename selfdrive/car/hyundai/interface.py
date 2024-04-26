@@ -86,7 +86,7 @@ class CarInterface(CarInterfaceBase):
       for fw in car_fw:
         if fw.ecu == "eps":
           platform_str = "HYUNDAI_PALISADE_2023_EPS_4LXPC100" if fw.fwVersion.endswith(b'4LXPC100') else \
-                         "HYUNDAI_PALISADE_2023_EPS_2427" if fw.fwVersion.endswith(b'2027') else \
+                         "HYUNDAI_PALISADE_2023_EPS_2427" if fw.fwVersion.endswith(b'2427') else \
                          candidate
 
           CarInterfaceBase.configure_torque_tune(platform_str, ret.lateralTuning)
