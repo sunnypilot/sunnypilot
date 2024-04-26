@@ -335,7 +335,7 @@ def create_radar_aux_messages(packer, CAN, frame):
     }),
     ("RADAR_0x447", 20, {
       "FCW_RELATED_1": 0x00,
-      "FVW_RELATED_2": 0x02,
+      "FCW_RELATED_2": 0x02,
     }),
   ]
 
