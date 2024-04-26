@@ -131,7 +131,7 @@ class CarController(CarControllerBase):
 
       if self.CP.openpilotLongitudinalControl:
         if hda2:
-          can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame))
+          can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame, can_canfd_hybrid))
           if can_canfd_hybrid:
             stopping = stopping and CS.out.vEgoRaw < 0.1
             can_sends.extend(hyundaicanfd.create_radar_aux_messages(self.packer, self.CAN, self.frame))
