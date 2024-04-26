@@ -137,7 +137,7 @@ class CarController(CarControllerBase):
             can_sends.extend(hyundaicanfd.create_radar_aux_messages(self.packer, self.CAN, self.frame))
         if self.frame % 2 == 0:
           if can_canfd_hybrid:
-            can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd_hybrid(self.packer, self.CAN, CC.enabled, accel,
+            can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd_hybrid(self.packer, self.CAN, CC.enabled, accel, self.accel_last,
                                                                                int(self.frame / 2), hud_control.leadVisible,
                                                                                set_speed_in_units, stopping, CC.cruiseControl.override, hud_control))
           else:
