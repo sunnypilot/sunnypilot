@@ -206,8 +206,8 @@ def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, accel_last
     ("SCC11", {
       "aReqRaw": a_raw,
       "aReqValue": a_val,
-      "JerkUpperLimit": jerk if enabled else 1,
-      "JerkLowerLimit": upper_jerk,
+      "JerkUpperLimit": upper_jerk,
+      "JerkLowerLimit": jerk if enabled else 1,
     }),
 
     ("SCC12", {
