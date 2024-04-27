@@ -49,6 +49,8 @@ class CarControllerParams:
     # Default for most HKG
     else:
       self.STEER_MAX = 384
+      if CAN_CANFD_HYBRID_CAR:
+        self.STEER_DRIVER_ALLOWANCE = 250
 
 
 class HyundaiFlags(IntFlag):
