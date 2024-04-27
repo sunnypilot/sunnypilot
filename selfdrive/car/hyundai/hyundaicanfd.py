@@ -218,6 +218,7 @@ def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, accel_last
       "VSetDis": set_speed,
       "ACC_ObjDist": 1,
       "ACCMode": 2 if enabled and long_override else 1 if enabled else 0,
+      "ACCEnabled": 1 if enabled else 0,
       "StopReq": 1 if stopping else 0,
     }),
 
