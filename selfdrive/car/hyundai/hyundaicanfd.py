@@ -192,7 +192,7 @@ def create_acc_control(packer, CAN, enabled, accel_last, accel, stopping, gas_ov
   return packer.make_can_msg("SCC_CONTROL", CAN.ECAN, values)
 
 
-def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, accel_last, idx, lead_visible, set_speed, stopping, long_override, hud_control):
+def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, accel_last, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, hud_control):
   jerk = 5
   jn = jerk / 50
   if not enabled or long_override:
@@ -206,8 +206,8 @@ def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, accel_last
     ("SCC11", {
       "aReqRaw": a_raw,
       "aReqValue": a_val,
-      "JerkUpperLimit": 3.0,
-      "JerkLowerLimit": jerk if enabled else 1,
+      "JerkUpperLimit": jerk if enabled else 1,
+      "JerkLowerLimit": upper_jerk,
     }),
 
     ("SCC12", {
