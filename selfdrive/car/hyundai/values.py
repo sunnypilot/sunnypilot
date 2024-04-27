@@ -51,8 +51,6 @@ class CarControllerParams:
       self.STEER_MAX = 330 if CP.flags & HyundaiFlags.ALT_LIMITS else 384
       self.STEER_DELTA_UP = 2 if CP.flags & HyundaiFlags.ALT_LIMITS else 3
       self.STEER_DELTA_DOWN = 3 if CP.flags & HyundaiFlags.ALT_LIMITS else 7
-      if CP.carFingerprint in CAN_CANFD_HYBRID_CAR:
-        self.STEER_DRIVER_ALLOWANCE = 250
 
 
 class HyundaiFlags(IntFlag):
