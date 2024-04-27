@@ -86,6 +86,10 @@ class CarInterface(CarInterfaceBase):
 
           CarInterfaceBase.configure_torque_tune(platform_str, ret.lateralTuning)
 
+          if platform_str == "HYUNDAI_PALISADE_2023_EPS_2427":
+            # We only limit in the controller, panda safety limits apply for both Palisade HDA2 and Telluride HDA2
+            ret.flags |= HyundaiFlags.ALT_LIMITS.value
+
     # *** longitudinal control ***
     if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
       ret.longitudinalTuning.kpV = [0.1]
