@@ -208,7 +208,6 @@ def create_acc_commands_can_canfd_hybrid(packer, CAN, enabled, accel, accel_last
       "aReqValue": a_val,
       "JerkUpperLimit": upper_jerk,
       "JerkLowerLimit": jerk if enabled else 1,
-      "OBJ_LOCATION": 2,
     }),
 
     ("SCC12", {
