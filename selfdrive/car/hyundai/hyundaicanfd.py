@@ -342,10 +342,6 @@ def create_radar_aux_messages(packer, CAN, frame):
     ("RADAR_0x43a", 20, {
       "BYTE2": 0x07,
     }),
-    ("RADAR_0x447", 20, {
-      "FCW_RELATED_1": 0x00,
-      "FCW_RELATED_2": 0x02,
-    }),
   ]
 
   for addr, freq, values in msg_values:
