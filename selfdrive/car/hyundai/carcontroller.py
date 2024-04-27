@@ -133,10 +133,10 @@ class CarController(CarControllerBase):
         if hda2:
           can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame, can_canfd_hybrid))
           if can_canfd_hybrid:
-            stopping = stopping and CS.out.vEgoRaw < 0.1
             can_sends.extend(hyundaicanfd.create_radar_aux_messages(self.packer, self.CAN, self.frame))
         if self.frame % 2 == 0:
           if can_canfd_hybrid:
+            stopping = stopping and CS.out.vEgoRaw < 0.1
             upper_jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
             can_sends.extend(hyundaicanfd.create_acc_commands_can_canfd_hybrid(self.packer, self.CAN, CC.enabled, accel, self.accel_last, upper_jerk,
                                                                                int(self.frame / 2), hud_control.leadVisible,
