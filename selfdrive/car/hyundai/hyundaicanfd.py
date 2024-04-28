@@ -149,7 +149,7 @@ def create_lfahda_cluster(packer, CAN, enabled, can_canfd_hybrid):
   lfa_icon = "LFA_Icon_State" if can_canfd_hybrid else "LFA_ICON"
 
   values = {
-    hda_icon: 1 if enabled else 0,
+    hda_icon: 1 if enabled and not can_canfd_hybrid else 0,
     lfa_icon: 2 if enabled else 0,
   }
 
