@@ -97,6 +97,8 @@ def create_lkas11_can_canfd_hybrid(packer, CAN, frame, apply_steer, steer_req,
     "CF_Lkas_MsgCount": frame % 0xF,
     "CF_Lkas_FcwOpt_USM": 2 if enabled else 1,
     "CF_Lkas_LdwsActivemode": int(left_lane) + (int(right_lane) << 1),
+    "NEW_SIGNAL_1": 0,
+    "NEW_SIGNAL_5": 100,
   }
 
   checksum = create_checksum_can_canfd_hybrid(packer, CAN, "LKAS11", values)
