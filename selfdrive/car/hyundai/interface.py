@@ -111,7 +111,6 @@ class CarInterface(CarInterfaceBase):
 
     if ret.flags & HyundaiFlags.CAN_CANFD_HYBRID:
       ret.stoppingDecelRate = 0.4
-      ret.steerActuatorDelay = 0.1 if ret.openpilotLongitudinalControl else 0.4  # bump delay if we do not take over LFA
 
     # *** feature detection ***
     if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
