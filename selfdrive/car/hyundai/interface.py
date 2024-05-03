@@ -115,6 +115,11 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.72
       ret.steerRatio = 12.9
       ret.tireStiffnessFactor = 0.65
+    elif candidate in (CAR.ELANTRA_N_2022):
+      ret.mass = 3296. * CV.LB_TO_KG
+      ret.wheelbase = 2.72
+      ret.steerRatio = 12.2
+      ret.tireStiffnessFactor = 0.65
     elif candidate == CAR.ELANTRA_HEV_2021:
       ret.mass = 3017. * CV.LB_TO_KG
       ret.wheelbase = 2.72
