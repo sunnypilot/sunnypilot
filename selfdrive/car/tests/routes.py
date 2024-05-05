@@ -295,6 +295,8 @@ routes = [
   CarTestRoute("66c1699b7697267d/2024-03-03--13-09-53", TESLA.TESLA_MODELS_RAVEN),
 
   # Segments that test specific issues
+  # Controls mismatch due to interceptor threshold
+  CarTestRoute("cfb32f0fb91b173b|2022-04-06--14-54-45", HONDA.CIVIC, segment=21),
   # Controls mismatch due to standstill threshold
   CarTestRoute("bec2dcfde6a64235|2022-04-08--14-21-32", HONDA.HONDA_CRV_HYBRID, segment=22),
 ]
