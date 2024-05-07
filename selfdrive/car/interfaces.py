@@ -1,5 +1,4 @@
 import json
-import operator
 import os
 import numpy as np
 import time
@@ -41,7 +40,6 @@ TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/lat_mode
 # dict used to rename activation functions whose names aren't valid python identifiers
 ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
 
-GAC_DICT = {1: 1, 2: 2, 3: 3}
 FORWARD_GEARS = [GearShifter.drive, GearShifter.low, GearShifter.eco,
                  GearShifter.sport, GearShifter.manumatic, GearShifter.brake]
 
@@ -234,9 +232,6 @@ class CarInterfaceBase(ABC):
     self.experimental_mode_hold = False
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
     self._frame = 0
-    self.op_lookup = {"+": operator.add, "-": operator.sub}
-    self.prev_gac_button = False
-    self.gac_button_counter = 0
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
     self.lkas_toggle = self.param_s.get_bool("LkasToggle")
@@ -602,6 +597,7 @@ class CarInterfaceBase(ABC):
     else:
       return CS.madsEnabled
 
+  # TODO: SP: add CS.distance_button to gap_button from upstream for supported platforms
   def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
                                  cs_out.cruiseState.enabled
@@ -652,39 +648,6 @@ class CarInterfaceBase(ABC):
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
-
-  def get_sp_gac_state(self, gac_tr, gac_min, gac_max, inc_dec):
-    op = self.op_lookup.get(inc_dec)
-    gac_tr = op(gac_tr, 1)
-    if inc_dec == "+":
-      gac_tr = gac_min if gac_tr > gac_max else gac_tr
-    else:
-      gac_tr = gac_max if gac_tr < gac_min else gac_tr
-    return int(gac_tr)
-
-  def get_sp_distance(self, gac_tr, gac_max, gac_dict=None):
-    if gac_dict is None:
-      gac_dict = GAC_DICT
-    return next((key for key, value in gac_dict.items() if value == gac_tr), gac_max)
-
-  def toggle_gac(self, cs_out, CS, gac_button, gac_min, gac_max, gac_default, inc_dec):
-    if not self.CP.openpilotLongitudinalControl:
-      CS.gac_tr_cluster = gac_default
-      if CS.gac_tr != 2:
-        CS.gac_tr = 2
-        self.param_s.put_nonblocking("LongitudinalPersonality", "2")
-      return cs_out, CS
-    if gac_button:
-      self.gac_button_counter += 1
-    elif self.prev_gac_button and not gac_button and self.gac_button_counter < 50:
-      self.gac_button_counter = 0
-      CS.gac_tr = self.get_sp_gac_state(CS.gac_tr, 0, 2, inc_dec)
-      self.param_s.put_nonblocking("LongitudinalPersonality", str(CS.gac_tr))
-    else:
-      self.gac_button_counter = 0
-    CS.gac_tr_cluster = clip(CS.gac_tr + 1, gac_min, gac_max)  # always 1 higher
-    self.prev_gac_button = gac_button
-    return cs_out, CS
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
                        enable_from_brake=False, enable_pressed_long=False,
@@ -747,14 +710,12 @@ class CarInterfaceBase(ABC):
 
     return events, cs_out
 
-  def sp_update_params(self, CS):
+  def sp_update_params(self):
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
-    CS.gac_tr = int(self.param_s.get("LongitudinalPersonality"))
     self._frame += 1
     if self._frame % 300 == 0:
       self._frame = 0
       self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
-    return CS
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
@@ -795,9 +756,6 @@ class CarStateBase(ABC):
     self.prev_mads_enabled = False
     self.control_initialized = False
     self.pcm_cruise_enabled = False
-    self.gap_dist_button = 0
-    self.gac_tr = int(self.param_s.get("LongitudinalPersonality"))
-    self.gac_tr_cluster = clip(int(self.param_s.get("LongitudinalPersonality")), 1, 3)
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3

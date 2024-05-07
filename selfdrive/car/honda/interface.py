@@ -352,7 +352,7 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
-    self.CS = self.sp_update_params(self.CS)
+    self.CS = self.sp_update_params()
 
     buttonEvents = [
       *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT),
@@ -371,7 +371,6 @@ class CarInterface(CarInterfaceBase):
         if self.CS.prev_cruise_setting != 1 and self.CS.cruise_setting == 1:
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      ret, self.CS = self.toggle_gac(ret, self.CS, (self.CS.cruise_setting == 3), 1, 3, 0, "-")
     else:
       self.CS.madsEnabled = False
 
@@ -387,9 +386,9 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = self.CS.pcm_cruise_enabled
 
+    # TODO: SP: add CS.distance_button to gap_button from upstream
     ret, self.CS = self.get_sp_common_state(ret, self.CS,
-                                            min_enable_speed_pcm=(self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed),
-                                            gap_button=(self.CS.cruise_setting == 3))
+                                            min_enable_speed_pcm=(self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed))
 
     ret.buttonEvents = buttonEvents
 

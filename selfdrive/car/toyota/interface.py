@@ -15,10 +15,6 @@ EventName = car.CarEvent.EventName
 SteerControlType = car.CarParams.SteerControlType
 GearShifter = car.CarState.GearShifter
 
-GAC_DICT = {3: 1, 2: 2, 1: 3}
-GAC_MIN = 1
-GAC_MAX = 3
-
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -310,9 +306,9 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
-    self.CS = self.sp_update_params(self.CS)
+    self.CS = self.sp_update_params()
 
-    buttonEvents = create_button_events(self.CS.gap_dist_button, self.CS.prev_gap_dist_button, {1: ButtonType.gapAdjustCruise})
+    buttonEvents = []
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
@@ -330,34 +326,6 @@ class CarInterface(CarInterfaceBase):
               (self.CS.prev_lkas_enabled == 1 and not self.CS.lkas_enabled):
               self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      if not self.CP.openpilotLongitudinalControl:
-        self.CS.gac_tr_cluster = 3
-        if self.CS.gac_tr != 2:
-          self.CS.gac_tr = 2
-          self.param_s.put_nonblocking("LongitudinalPersonality", "2")
-      else:
-        gap_dist_button = bool(self.CS.gap_dist_button)
-        if gap_dist_button:
-          self.gac_button_counter += 1
-        elif self.prev_gac_button and not gap_dist_button and self.gac_button_counter < 50:
-          self.gac_button_counter = 0
-          pre_calculated_distance = 3 if self.CS.gac_tr == 3 else self.CS.follow_distance
-          follow_distance_converted = self.get_sp_gac_state(pre_calculated_distance, GAC_MIN, GAC_MAX, "+")
-          gac_tr = self.get_sp_distance(follow_distance_converted, GAC_MAX, gac_dict=GAC_DICT) - 1  # always 1 lower
-          if gac_tr != self.CS.gac_tr:
-            self.param_s.put_nonblocking("LongitudinalPersonality", str(gac_tr))
-            self.CS.gac_tr = gac_tr
-        else:
-          self.gac_button_counter = 0
-        self.prev_gac_button = gap_dist_button
-        self.CS.gac_tr_cluster = clip(self.CS.gac_tr + 1, GAC_MIN, GAC_MAX)  # always 1 higher
-      gap_distance = self.get_sp_distance(self.CS.gac_tr_cluster, GAC_MAX, gac_dict=GAC_DICT)
-      if self.CS.gac_send_counter < 10 and gap_distance != self.CS.follow_distance:
-        self.CS.gac_send_counter += 1
-        self.CS.gac_send = 1
-      else:
-        self.CS.gac_send_counter = 0
-        self.CS.gac_send = 0
     else:
       self.CS.madsEnabled = False
 
@@ -366,7 +334,8 @@ class CarInterface(CarInterfaceBase):
       if not self.CP.pcmCruise:
         ret.cruiseState.enabled = self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(self.CS.gap_dist_button))
+    # TODO: SP: add CS.distance_button to gap_button from upstream
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     # CANCEL
     if self.CS.out.cruiseState.enabled and not ret.cruiseState.enabled:

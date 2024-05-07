@@ -57,9 +57,6 @@ class CarState(CarStateBase):
     self.lta_status = False
     self.prev_lta_status = False
     self.lta_status_active = False
-    self.gac_send = False
-    self.gac_send_counter = 0
-    self.follow_distance = 0
 
     if CP.spFlags & ToyotaFlagsSP.SP_ZSS:
       self.zss_compute = False
@@ -73,7 +70,6 @@ class CarState(CarStateBase):
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lkas_enabled = self.lkas_enabled
     self.prev_lta_status = self.lta_status
-    self.prev_gap_dist_button = self.gap_dist_button
 
     ret.doorOpen = any([cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_FL"], cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_FR"],
                         cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_RL"], cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_RR"]])
@@ -202,13 +198,7 @@ class CarState(CarStateBase):
         self.acc_type = cp_acc.vl["ACC_CONTROL"]["ACC_TYPE"]
       ret.stockFcw = bool(cp_acc.vl["PCS_HUD"]["FCW"])
 
-    if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
-      self.gap_dist_button = cp_cam.vl["ACC_CONTROL"]["DISTANCE"]
-    if self.CP.flags & ToyotaFlags.SMART_DSU:
-      self.gap_dist_button = cp.vl["SDSU"]["FD_BUTTON"]
-
     fd_src = "PCM_CRUISE_ALT" if self.CP.carFingerprint in UNSUPPORTED_DSU_CAR else "PCM_CRUISE_2"
-    self.follow_distance = cp.vl[fd_src]["PCM_FOLLOW_DISTANCE"]
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.

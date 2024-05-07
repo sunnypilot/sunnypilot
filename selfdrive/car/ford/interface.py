@@ -66,7 +66,7 @@ class CarInterface(CarInterfaceBase):
 
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
-    self.CS = self.sp_update_params(self.CS)
+    self.CS = self.sp_update_params()
 
     buttonEvents = []
 
@@ -89,7 +89,6 @@ class CarInterface(CarInterfaceBase):
         if not self.CS.prev_lkas_enabled and self.CS.lkas_enabled:
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      ret, self.CS = self.toggle_gac(ret, self.CS, self.CS.buttonStates["gapAdjustCruise"], 1, 3, 4, "-")
     else:
       self.CS.madsEnabled = False
 
@@ -105,6 +104,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
+    # TODO: SP: add CS.distance_button to gap_button from upstream
     ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
