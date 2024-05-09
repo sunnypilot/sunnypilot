@@ -63,6 +63,7 @@ void SlcSettings::updateToggles() {
     params.put("SpeedLimitEngageType", "1");
   }
 
+  // TODO: SP: use upstream's setCheckedButton
   speed_limit_engage_settings->setButton("SpeedLimitEngageType");
 
   auto cp_bytes = params.get("CarParamsPersistent");

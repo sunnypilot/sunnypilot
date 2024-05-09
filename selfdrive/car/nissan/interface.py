@@ -1,6 +1,6 @@
 from cereal import car
 from panda import Panda
-from openpilot.selfdrive.car import get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.nissan.values import CAR
 
@@ -23,7 +23,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.radarUnavailable = True
 
-    if candidate == CAR.ALTIMA:
+    if candidate == CAR.NISSAN_ALTIMA:
       # Altima has EPS on C-CAN unlike the others that have it on V-CAN
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_NISSAN_ALT_EPS_BUS
 
@@ -32,12 +32,9 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_adas, self.cp_cam)
-    self.CS = self.sp_update_params()
+    self.sp_update_params()
 
-    buttonEvents = []
-    #be = car.CarState.ButtonEvent.new_message()
-    #be.type = car.CarState.ButtonEvent.Type.accelCruise
-    #buttonEvents.append(be)
+    buttonEvents = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
@@ -86,6 +83,3 @@ class CarInterface(CarInterfaceBase):
     ret.events = events.to_msg()
 
     return ret
-
-  def apply(self, c, now_nanos):
-    return self.CC.update(c, self.CS, now_nanos)

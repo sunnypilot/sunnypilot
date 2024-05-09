@@ -16,6 +16,11 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
   * GitHub account pairing from device settings scanning QR code
     * Pairing your account will allow you to access features via our API (still WIP but accessible if you dig a little on our code 😉)
     * Allow inheritance of your sponsorship status, allowing you to get extra features and early access whenever applicable
+* NEW❗: iOS Siri Shortcuts Navigation support thanks to twilsonco and mike86437!
+  * iOS and macOS Shortcuts to quickly set navigation destinations from your iOS device
+  * comma Prime support
+  * Personal Mapbox/Amap/Google Maps token support
+  * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
