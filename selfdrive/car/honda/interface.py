@@ -304,9 +304,9 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = self.CS.pcm_cruise_enabled
 
-    # TODO: SP: add CS.distance_button to gap_button from upstream
     ret, self.CS = self.get_sp_common_state(ret, self.CS,
-                                            min_enable_speed_pcm=(self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed))
+                                            min_enable_speed_pcm=(self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed),
+                                            gap_button=(self.CS.cruise_setting == 3))
 
     ret.buttonEvents = buttonEvents
 

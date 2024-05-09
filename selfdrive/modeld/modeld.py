@@ -206,7 +206,7 @@ def main(demo=False):
   # messaging
   extended_svs = ["lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"]
   if custom_model and model_gen != 4:
-    extended_svs += ["navModelDEPRECATED", "navInstructionDEPRECATED"]
+    extended_svs += ["navModelDEPRECATED", "navInstruction"]
   pm = PubMaster(["modelV2", "modelV2SP", "cameraOdometry"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"] + extended_svs)
 
@@ -303,7 +303,7 @@ def main(demo=False):
       # Enable/disable nav features
       timestamp_llk = sm["navModelDEPRECATED"].locationMonoTime
       nav_valid = sm.valid["navModelDEPRECATED"] # and (nanos_since_boot() - timestamp_llk < 1e9)
-      nav_enabled = nav_valid and params.get_bool("ExperimentalMode")
+      nav_enabled = nav_valid
 
       if not nav_enabled:
         nav_features[:] = 0
@@ -312,9 +312,9 @@ def main(demo=False):
       if nav_enabled and sm.updated["navModelDEPRECATED"]:
         nav_features = np.array(sm["navModelDEPRECATED"].features)
 
-      if nav_enabled and sm.updated["navInstructionDEPRECATED"]:
+      if nav_enabled and sm.updated["navInstruction"]:
         nav_instructions[:] = 0
-        for maneuver in sm["navInstructionDEPRECATED"].allManeuvers:
+        for maneuver in sm["navInstruction"].allManeuvers:
           distance_idx = 25 + int(maneuver.distance / 20)
           direction_idx = 0
           if maneuver.modifier in ("left", "slight left", "sharp left"):

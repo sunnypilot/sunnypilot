@@ -208,6 +208,7 @@ class CarInterface(CarInterfaceBase):
     self.sp_update_params()
 
     buttonEvents = []
+    distance_button = 0
 
     # Don't add event if transitioning from INIT, unless it's to an actual button
     if self.CS.cruise_buttons != CruiseButtons.UNPRESS or self.CS.prev_cruise_buttons != CruiseButtons.INIT:
@@ -217,6 +218,7 @@ class CarInterface(CarInterfaceBase):
         *create_button_events(self.CS.distance_button, self.CS.prev_distance_button,
                               {1: ButtonType.gapAdjustCruise})
       ]
+      distance_button = self.CS.distance_button
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
@@ -249,8 +251,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    # TODO: SP: add CS.distance_button to gap_button from upstream
-    ret, self.CS = self.get_sp_common_state(ret, self.CS)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(distance_button))
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:

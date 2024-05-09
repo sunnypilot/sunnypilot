@@ -239,8 +239,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       ret.cruiseState.enabled = False if self.CP.pcmCruise else self.CS.accEnabled
 
-    # TODO: SP: add CS.distance_button to gap_button from upstream
-    ret, self.CS = self.get_sp_common_state(ret, self.CS)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.cruise_buttons[-1] == 3))
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
@@ -251,6 +250,8 @@ class CarInterface(CarInterfaceBase):
       if not self.mads_event_lock:
         buttonEvents.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = True
+
+    ret.buttonEvents = buttonEvents
 
     # On some newer model years, the CANCEL button acts as a pause/resume button based on the PCM state
     # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons

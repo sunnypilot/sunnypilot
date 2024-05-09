@@ -57,10 +57,10 @@ def fill_model_msg(msg: capnp._DynamicStructBuilder, net_output_data: dict[str, 
   modelV2.frameDropPerc = frame_drop * 100
   modelV2.timestampEof = timestamp_eof
   if model_use_nav:
-    modelV2.locationMonoTime = timestamp_llk
+    modelV2.locationMonoTimeDEPRECATED = timestamp_llk
   modelV2.modelExecutionTime = model_execution_time
   if model_use_nav:
-    modelV2.navEnabled = nav_enabled
+    modelV2.navEnabledDEPRECATED = nav_enabled
 
   # plan
   position = modelV2.position

@@ -593,7 +593,6 @@ class CarInterfaceBase(ABC):
     else:
       return CS.madsEnabled
 
-  # TODO: SP: add CS.distance_button to gap_button from upstream for supported platforms
   def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
                                  cs_out.cruiseState.enabled
@@ -604,7 +603,8 @@ class CarInterfaceBase(ABC):
       elif not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
         CS.madsEnabled = False
 
-    self.toggle_exp_mode(gap_button)
+    if self.CP.openpilotLongitudinalControl:
+      self.toggle_exp_mode(gap_button)
 
     cs_out.belowLaneChangeSpeed = cs_out.vEgo < LANE_CHANGE_SPEED_MIN and self.below_speed_pause
 
@@ -631,9 +631,8 @@ class CarInterfaceBase(ABC):
 
     return cs_out, CS
 
+  # TODO: SP: use upstream's buttonEvents counter checks from controlsd
   def toggle_exp_mode(self, gap_pressed):
-    if not self.CP.openpilotLongitudinalControl:
-      return None
     if gap_pressed:
       if not self.experimental_mode_hold:
         self.gap_button_counter += 1
