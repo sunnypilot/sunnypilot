@@ -1,5 +1,5 @@
 # functions common among cars
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 from dataclasses import dataclass
 from enum import IntFlag, ReprEnum, EnumType
 from dataclasses import replace
