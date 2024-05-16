@@ -62,7 +62,7 @@ private:
   void updateLabels();
   void updateDownloadProgress();
   static int extractIntFromJson(const QJsonObject& json, const QString& key);
-  std::string processUpdateStatus(bool pending_update_check, int total_files, int downloaded_files, const QJsonObject& json, bool failed_state);
+  QString processUpdateStatus(bool pending_update_check, int total_files, int downloaded_files, const QJsonObject& json, bool failed_state);
 
   ConfirmationDialog* confirmationDialog;
   LabelControl *mapdVersion;
@@ -101,25 +101,25 @@ private:
 
     QString formattedTime;
     if (minutes > 0) {
-      formattedTime = QString::number(minutes) + "m ";
+      formattedTime = QString::number(minutes) + tr("m ");
     }
-    formattedTime += QString::number(seconds) + "s";
+    formattedTime += QString::number(seconds) + tr("s");
     return formattedTime;
   }
 
   static QString calculateElapsedTime(const QJsonObject &jsonData, const std::chrono::system_clock::time_point &startTime) {
     using namespace std::chrono;
     if (!jsonData.contains("total_files") || !jsonData.contains("downloaded_files"))
-      return "Calculating...";
+      return tr("Calculating...");
 
     const int totalFiles = jsonData["total_files"].toInt();
     const int downloadedFiles = jsonData["downloaded_files"].toInt();
 
-    if (downloadedFiles >= totalFiles || totalFiles <= 0) return "Downloaded";
+    if (downloadedFiles >= totalFiles || totalFiles <= 0) return tr("Downloaded");
 
     const long elapsed = duration_cast<seconds>(system_clock::now() - startTime).count();
 
-    if (elapsed == 0 || downloadedFiles == 0) return "Calculating...";
+    if (elapsed == 0 || downloadedFiles == 0) return tr("Calculating...");
 
     return formatTime(elapsed);
   }
@@ -132,7 +132,7 @@ private:
     constexpr int minDataPoints = 3;
     constexpr int historySize = 10;
 
-    static QString lastETA = "Calculating ETA...";
+    static QString lastETA = tr("Calculating ETA...");
 
     if (duration_cast<seconds>(steady_clock::now() - lastUpdateTime).count() < 1) {
       return lastETA;
@@ -145,7 +145,7 @@ private:
     const int downloadedFiles = jsonData["downloaded_files"].toInt();
 
     if (totalFiles <= 0 || downloadedFiles >= totalFiles) {
-      return totalFiles <= 0 ? "Ready" : "Downloaded";
+      return totalFiles <= 0 ? tr("Ready") : tr("Downloaded");
     }
 
     const long elapsed = duration_cast<seconds>(system_clock::now() - startTime).count();
@@ -166,7 +166,7 @@ private:
     const long remainingTime = static_cast<long>((totalFiles - downloadedFiles) / avgRate);
     if (remainingTime <= 0) return lastETA;
 
-    lastETA = formatTime(remainingTime) + " remaining";
+    lastETA = tr("Time remaining: ") + formatTime(remainingTime);
     lastUpdateTime = steady_clock::now();
     return lastETA;
   }
@@ -179,8 +179,8 @@ private:
     const int total_files = json["total_files"].toInt();
     const int downloaded_files = json["downloaded_files"].toInt();
 
-    if (total_files <= 0) return "Ready";
-    if (downloaded_files >= total_files) return "Downloaded";
+    if (total_files <= 0) return tr("Ready");
+    if (downloaded_files >= total_files) return tr("Downloaded");
 
     const int percentage = static_cast<int>(100.0 * downloaded_files / total_files);
     return QString::asprintf("%d/%d (%d%%)", downloaded_files, total_files, percentage);
@@ -188,7 +188,7 @@ private:
 
   QString formatSize(quint64 size) const {
     if (size == 0 && (!mapSizeFuture.has_value() || mapSizeFuture.value().isRunning())) {
-      return QString("Calculating...");
+      return tr("Calculating...");
     }
 
     constexpr qint64 kb = 1024;

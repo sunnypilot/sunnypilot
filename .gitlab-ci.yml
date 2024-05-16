@@ -145,6 +145,7 @@ build:
       when: always
       
 check no source code sent:
+  image: alpine
   stage: sanity
   variables:
     FORBIDDEN_FILE_EXTENSIONS: "*.a,*.o,*.os,*.pyc,moc_*,*.cc,Jenkinsfile,supercombo.onnx,.sconsign.dblite"
@@ -166,6 +167,7 @@ check no source code sent:
     - when: never
 
 .publish_base: &publish_base
+  image: alpine
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   stage: publish
@@ -214,6 +216,7 @@ publish to public github prebuilt:
     - when: never
 
 .notify_discord: &notify_discord
+  image: alpine
   stage: notify
   needs: ["build"]
   variables:

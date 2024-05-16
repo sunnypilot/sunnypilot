@@ -21,6 +21,9 @@ class CarState(CarStateBase):
     else:
       self.shifter_values = can_define.dv["GEAR"]["PRNDL"]
 
+    self.prev_distance_button = 0
+    self.distance_button = 0
+
     self.lkas_enabled = False
     self.prev_lkas_enabled = False
     self.lkas_heartbit = None
@@ -32,6 +35,9 @@ class CarState(CarStateBase):
   def update(self, cp, cp_cam):
 
     ret = car.CarState.new_message()
+
+    self.prev_distance_button = self.distance_button
+    self.distance_button = cp.vl["CRUISE_BUTTONS"]["ACC_Distance_Dec"]
 
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lkas_enabled = self.lkas_enabled

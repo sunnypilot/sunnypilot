@@ -27,7 +27,7 @@ Table of Contents
 ---
 
 Join the official sunnypilot Discord server to stay up to date with all the latest features and be a part of shaping the future of sunnypilot!
-* https://discord.sunnypilot.com
+* https://discord.gg/sunnypilot
 
   ![](https://dcbadge.vercel.app/api/server/wRW3meAgtx?style=flat) ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
 
@@ -98,7 +98,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```bit.ly/sp-release-c3``` [^4] (note: `https://` is not requirement on the comma three)
+  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```release-c3.sunnypilot.ai``` [^4] (note: `https://` is not requirement on the comma three)
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed and you installed a version after 0.8.17?
@@ -106,6 +106,12 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
   2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
   4. Scroll to select the desired branch per [Recommended Branches](#-recommended-branches). Example: `release-c3`
+
+|    Branch    |         Installation URL         |
+|:------------:|:--------------------------------:|
+| `release-c3` | https://release-c3.sunnypilot.ai |
+| `staging-c3` | https://staging-c3.sunnypilot.ai |
+|   `dev-c3`   | https://dev-c3.sunnypilot.ai     |
 
 Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 

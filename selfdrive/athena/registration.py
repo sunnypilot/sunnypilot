@@ -3,10 +3,10 @@ import time
 import json
 import jwt
 from pathlib import Path
-from typing import Optional
 
 from datetime import datetime, timedelta
 from openpilot.common.api import api_get
+from openpilot.common.api.sunnylink import SunnylinkApi
 from openpilot.common.params import Params
 from openpilot.common.spinner import Spinner
 from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
@@ -23,12 +23,12 @@ def is_registered_device() -> bool:
   return dongle not in (None, UNREGISTERED_DONGLE_ID)
 
 
-def register(show_spinner=False) -> Optional[str]:
+def register(show_spinner=False) -> str | None:
   params = Params()
 
   IMEI = params.get("IMEI", encoding='utf8')
   HardwareSerial = params.get("HardwareSerial", encoding='utf8')
-  dongle_id: Optional[str] = params.get("DongleId", encoding='utf8')
+  dongle_id: str | None = params.get("DongleId", encoding='utf8')
   needs_registration = None in (IMEI, HardwareSerial, dongle_id)
 
   pubkey = Path(Paths.persist_root()+"/comma/id_rsa.pub")
@@ -48,8 +48,8 @@ def register(show_spinner=False) -> Optional[str]:
     # Block until we get the imei
     serial = HARDWARE.get_serial()
     start_time = time.monotonic()
-    imei1: Optional[str] = None
-    imei2: Optional[str] = None
+    imei1: str | None = None
+    imei2: str | None = None
     while imei1 is None and imei2 is None:
       try:
         imei1, imei2 = HARDWARE.get_imei(0), HARDWARE.get_imei(1)
@@ -86,6 +86,8 @@ def register(show_spinner=False) -> Optional[str]:
 
       if time.monotonic() - start_time > 60 and show_spinner:
         spinner.update(f"registering device - serial: {serial}, IMEI: ({imei1}, {imei2})")
+
+    SunnylinkApi(dongle_id).register_device(spinner if show_spinner else None)
 
     if show_spinner:
       spinner.close()
