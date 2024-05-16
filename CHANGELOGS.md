@@ -24,6 +24,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * comma Prime support
   * Personal Mapbox/Amap/Google Maps token support
   * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+* NEW❗: Ford CAN-FD longitudinal
+  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
@@ -110,8 +112,6 @@ sunnypilot - 0.9.6.1 (2024-02-27)
 
 sunnypilot - 0.9.5.3 (2023-12-24)
 ========================
-* NEW❗: Ford CAN-FD longitudinal
-  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:lp-dp-beta2 commit 578d38b
 * UPDATED: Driving Model Selector v2
