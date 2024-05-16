@@ -23,8 +23,6 @@ class SlcSettings : public QWidget {
 public:
   explicit SlcSettings(QWidget* parent = nullptr);
   void showEvent(QShowEvent *event) override;
-  static const std::vector<QString> speed_limit_control_policy_texts;
-  static const std::vector<QString> speed_limit_control_policy_descriptions;
   static const std::vector<QString> speed_limit_engage_descriptions;
 
 signals:
@@ -38,7 +36,6 @@ private:
   std::map<std::string, ParamControl*> toggles;
 
   SpeedLimitValueOffset *slvo;
-  ButtonParamControl *speed_limit_control_policy;
   ButtonParamControl *speed_limit_offset_settings;
   ButtonParamControl *speed_limit_engage_settings;
   ParamWatcher *param_watcher;
@@ -69,29 +66,8 @@ private:
   }
 };
 
-// Add this line outside the class definition
-inline const std::vector<QString> SlcSettings::speed_limit_control_policy_texts{
-  tr("Nav\nOnly"),
-  tr("Map\nOnly"),
-  tr("Car\nOnly"),
-  tr("Nav\nFirst"),
-  tr("Map\nFirst"),
-  tr("Car\nFirst"),
-};
-
-inline const std::vector<QString> SlcSettings::speed_limit_control_policy_descriptions{
-  tr("Select the precedence order of sources used to adapt cruise speed to road limits:"),
-  tr("Nav Only: Data from Mapbox active navigation only."),
-  tr("Map Only: Data from OpenStreetMap only."),
-  tr("Car Only: Data from the car's built-in sources (if available)."),
-  tr("Nav First: Nav -> Map -> Car"),
-  tr("Map First: Map -> Nav -> Car"),
-  tr("Car First: Car -> Nav -> Map"),
-};
-
 inline const std::vector<QString> SlcSettings::speed_limit_engage_descriptions{
   tr("Select the desired mode to set the cruising speed to the speed limit:"),
-  tr("Warning Only: Warn the driver when the vehicle is driven faster than the speed limit."),
   tr("Auto: Automatic speed adjustment on motorways based on speed limit data."),
   tr("User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit."),
 };

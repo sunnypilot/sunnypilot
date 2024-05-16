@@ -18,11 +18,11 @@
 
 
 void SoftwarePanel::checkForUpdates() {
-  std::system("pkill -SIGUSR1 -f selfdrive.updated");
+  std::system("pkill -SIGUSR1 -f selfdrive.updated.updated");
 }
 
 SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
-  currentModelLbl = new LabelControl(tr("Current Driving Model"), CURRENT_MODEL);
+  currentModelLbl = new LabelControl(tr("Driving Model"), CURRENT_MODEL);
   addItem(currentModelLbl);
 
   onroadLbl = new QLabel(tr("Updates are only downloaded while the car is off."));
@@ -40,7 +40,7 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
     if (downloadBtn->text() == tr("CHECK")) {
       checkForUpdates();
     } else {
-      std::system("pkill -SIGHUP -f selfdrive.updated");
+      std::system("pkill -SIGHUP -f selfdrive.updated.updated");
     }
   });
   addItem(downloadBtn);

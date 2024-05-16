@@ -5,9 +5,10 @@ import unittest
 from cereal import car
 from openpilot.selfdrive.car.fw_versions import build_fw_dict
 from openpilot.selfdrive.car.hyundai.values import CAMERA_SCC_CAR, CANFD_CAR, CAN_GEARS, CAR, CHECKSUM, DATE_FW_ECUS, \
-                                         HYBRID_CAR, EV_CAR, FW_QUERY_CONFIG, FW_VERSIONS, LEGACY_SAFETY_MODE_CAR, \
+                                         HYBRID_CAR, EV_CAR, FW_QUERY_CONFIG, LEGACY_SAFETY_MODE_CAR, CANFD_FUZZY_WHITELIST, \
                                          UNSUPPORTED_LONGITUDINAL_CAR, PLATFORM_CODE_ECUS, HYUNDAI_VERSION_REQUEST_LONG, \
                                          get_platform_codes
+from openpilot.selfdrive.car.hyundai.fingerprints import FW_VERSIONS
 
 Ecu = car.CarParams.Ecu
 ECU_NAME = {v: k for k, v in Ecu.schema.enumerants.items()}
@@ -17,25 +18,25 @@ ECU_NAME = {v: k for k, v in Ecu.schema.enumerants.items()}
 NO_DATES_PLATFORMS = {
   # CAN FD
   CAR.KIA_SPORTAGE_5TH_GEN,
-  CAR.KIA_SPORTAGE_HYBRID_5TH_GEN,
-  CAR.SANTA_CRUZ_1ST_GEN,
-  CAR.TUCSON_4TH_GEN,
-  CAR.TUCSON_HYBRID_4TH_GEN,
+  CAR.HYUNDAI_SANTA_CRUZ_1ST_GEN,
+  CAR.HYUNDAI_TUCSON_4TH_GEN,
   # CAN
-  CAR.ELANTRA,
-  CAR.ELANTRA_GT_I30,
+  CAR.HYUNDAI_ELANTRA,
+  CAR.HYUNDAI_ELANTRA_GT_I30,
   CAR.KIA_CEED,
   CAR.KIA_FORTE,
   CAR.KIA_OPTIMA_G4,
   CAR.KIA_OPTIMA_G4_FL,
   CAR.KIA_SORENTO,
-  CAR.KONA,
-  CAR.KONA_EV,
-  CAR.KONA_EV_2022,
-  CAR.KONA_HEV,
-  CAR.SONATA_LF,
-  CAR.VELOSTER,
+  CAR.HYUNDAI_KONA,
+  CAR.HYUNDAI_KONA_EV,
+  CAR.HYUNDAI_KONA_EV_2022,
+  CAR.HYUNDAI_KONA_HEV,
+  CAR.HYUNDAI_SONATA_LF,
+  CAR.HYUNDAI_VELOSTER,
 }
+
+CANFD_EXPECTED_ECUS = {Ecu.fwdCamera, Ecu.fwdRadar}
 
 
 class TestHyundaiFingerprint(unittest.TestCase):
@@ -48,23 +49,25 @@ class TestHyundaiFingerprint(unittest.TestCase):
     for car_model in CANFD_CAR:
       self.assertNotIn(car_model, can_specific_feature_list, "CAN FD car unexpectedly found in a CAN feature list")
 
-  def test_auxiliary_request_ecu_whitelist(self):
-    # Asserts only auxiliary Ecus can exist in database for CAN-FD cars
-    whitelisted_ecus = {ecu for r in FW_QUERY_CONFIG.requests for ecu in r.whitelist_ecus if r.auxiliary}
+  def test_hybrid_ev_sets(self):
+    self.assertEqual(HYBRID_CAR & EV_CAR, set(), "Shared cars between hybrid and EV")
+    self.assertEqual(CANFD_CAR & HYBRID_CAR, set(), "Hard coding CAN FD cars as hybrid is no longer supported")
 
+  def test_canfd_ecu_whitelist(self):
+    # Asserts only expected Ecus can exist in database for CAN-FD cars
     for car_model in CANFD_CAR:
       ecus = {fw[0] for fw in FW_VERSIONS[car_model].keys()}
-      ecus_not_in_whitelist = ecus - whitelisted_ecus
+      ecus_not_in_whitelist = ecus - CANFD_EXPECTED_ECUS
       ecu_strings = ", ".join([f"Ecu.{ECU_NAME[ecu]}" for ecu in ecus_not_in_whitelist])
       self.assertEqual(len(ecus_not_in_whitelist), 0,
-                       f"{car_model}: Car model has ECUs not in auxiliary request whitelists: {ecu_strings}")
+                       f"{car_model}: Car model has unexpected ECUs: {ecu_strings}")
 
   def test_blacklisted_parts(self):
     # Asserts no ECUs known to be shared across platforms exist in the database.
     # Tucson having Santa Cruz camera and EPS for example
     for car_model, ecus in FW_VERSIONS.items():
       with self.subTest(car_model=car_model.value):
-        if car_model == CAR.SANTA_CRUZ_1ST_GEN:
+        if car_model == CAR.HYUNDAI_SANTA_CRUZ_1ST_GEN:
           raise unittest.SkipTest("Skip checking Santa Cruz for its parts")
 
         for code, _ in get_platform_codes(ecus[(Ecu.fwdCamera, 0x7c4, None)]):
@@ -82,10 +85,8 @@ class TestHyundaiFingerprint(unittest.TestCase):
     for car_model, ecus in FW_VERSIONS.items():
       with self.subTest(car_model=car_model.value):
         for ecu, fws in ecus.items():
-          # TODO: enable for Ecu.fwdRadar, Ecu.abs, Ecu.eps, Ecu.transmission
-          if ecu[0] in (Ecu.fwdCamera,):
-            self.assertTrue(all(fw.startswith(expected_fw_prefix) for fw in fws),
-                            f"FW from unexpected request in database: {(ecu, fws)}")
+          self.assertTrue(all(fw.startswith(expected_fw_prefix) for fw in fws),
+                          f"FW from unexpected request in database: {(ecu, fws)}")
 
   @settings(max_examples=100)
   @given(data=st.data())
@@ -95,12 +96,29 @@ class TestHyundaiFingerprint(unittest.TestCase):
     fws = data.draw(fw_strategy)
     get_platform_codes(fws)
 
+  def test_expected_platform_codes(self):
+    # Ensures we don't accidentally add multiple platform codes for a car unless it is intentional
+    for car_model, ecus in FW_VERSIONS.items():
+      with self.subTest(car_model=car_model.value):
+        for ecu, fws in ecus.items():
+          if ecu[0] not in PLATFORM_CODE_ECUS:
+            continue
+
+          # Third and fourth character are usually EV/hybrid identifiers
+          codes = {code.split(b"-")[0][:2] for code, _ in get_platform_codes(fws)}
+          if car_model == CAR.HYUNDAI_PALISADE:
+            self.assertEqual(codes, {b"LX", b"ON"}, f"Car has unexpected platform codes: {car_model} {codes}")
+          elif car_model == CAR.HYUNDAI_KONA_EV and ecu[0] == Ecu.fwdCamera:
+            self.assertEqual(codes, {b"OE", b"OS"}, f"Car has unexpected platform codes: {car_model} {codes}")
+          else:
+            self.assertEqual(len(codes), 1, f"Car has multiple platform codes: {car_model} {codes}")
+
   # Tests for platform codes, part numbers, and FW dates which Hyundai will use to fuzzy
   # fingerprint in the absence of full FW matches:
   def test_platform_code_ecus_available(self):
     # TODO: add queries for these non-CAN FD cars to get EPS
     no_eps_platforms = CANFD_CAR | {CAR.KIA_SORENTO, CAR.KIA_OPTIMA_G4, CAR.KIA_OPTIMA_G4_FL, CAR.KIA_OPTIMA_H,
-                                    CAR.KIA_OPTIMA_H_G4_FL, CAR.SONATA_LF, CAR.TUCSON, CAR.GENESIS_G90, CAR.GENESIS_G80, CAR.ELANTRA}
+                                    CAR.KIA_OPTIMA_H_G4_FL, CAR.HYUNDAI_SONATA_LF, CAR.HYUNDAI_TUCSON, CAR.GENESIS_G90, CAR.GENESIS_G80, CAR.HYUNDAI_ELANTRA}
 
     # Asserts ECU keys essential for fuzzy fingerprinting are available on all platforms
     for car_model, ecus in FW_VERSIONS.items():
@@ -177,10 +195,8 @@ class TestHyundaiFingerprint(unittest.TestCase):
     excluded_platforms = {
       CAR.GENESIS_G70,            # shared platform code, part number, and date
       CAR.GENESIS_G70_2020,
-      CAR.TUCSON_4TH_GEN,         # shared platform code and part number
-      CAR.TUCSON_HYBRID_4TH_GEN,
     }
-    excluded_platforms |= CANFD_CAR - EV_CAR  # shared platform codes
+    excluded_platforms |= CANFD_CAR - EV_CAR - CANFD_FUZZY_WHITELIST  # shared platform codes
     excluded_platforms |= NO_DATES_PLATFORMS  # date codes are required to match
 
     platforms_with_shared_codes = set()
@@ -193,7 +209,7 @@ class TestHyundaiFingerprint(unittest.TestCase):
                          "subAddress": 0 if sub_addr is None else sub_addr})
 
       CP = car.CarParams.new_message(carFw=car_fw)
-      matches = FW_QUERY_CONFIG.match_fw_to_car_fuzzy(build_fw_dict(CP.carFw))
+      matches = FW_QUERY_CONFIG.match_fw_to_car_fuzzy(build_fw_dict(CP.carFw), CP.carVin, FW_VERSIONS)
       if len(matches) == 1:
         self.assertEqual(list(matches)[0], platform)
       else:

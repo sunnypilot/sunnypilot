@@ -8,7 +8,7 @@ from flask import Flask, render_template, Response, request, send_from_directory
 from openpilot.common.realtime import set_core_affinity
 import openpilot.system.fleetmanager.helpers as fleet
 from openpilot.system.hardware.hw import Paths
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 
 app = Flask(__name__)
 
@@ -93,7 +93,7 @@ def footage():
 @app.route("/screenrecords")
 @fleet.login_required
 def screenrecords():
-  rows = fleet.list_files(fleet.SCREENRECORD_PATH)
+  rows = fleet.list_files(fleet.SCREENRECORD_PATH, True)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + fleet.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])

@@ -28,6 +28,18 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "FeatureStatus",
+      tr("Display Feature Status"),
+      tr("Display the statuses of certain features on the driving screen."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "OnroadSettings",
+      tr("Enable Onroad Settings"),
+      tr("Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "TrueVEgoUi",
       tr("Speedometer: Display True Speed"),
       tr("Display the true vehicle current speed from wheel speed sensors."),
@@ -46,6 +58,12 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "MapboxFullScreen",
+      tr("Navigation: Display in Full Screen"),
+      QString(tr("Enable this will display the built-in navigation in full screen.<br>To switch back to driving view, <font color='yellow'>tap on the border edge</font>.")),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "Map3DBuildings",
       tr("Map: Display 3D Buildings"),
       tr("Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation."),
@@ -56,7 +74,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
   // Visuals: Developer UI Info (Dev UI)
   std::vector<QString> dev_ui_settings_texts{tr("Off"), tr("5 Metrics"), tr("10 Metrics")};
   dev_ui_settings = new ButtonParamControl(
-    "DevUIInfo", "Developer UI", "Display real-time parameters and metrics from various sources.",
+    "DevUIInfo", tr("Developer UI"), tr("Display real-time parameters and metrics from various sources."),
     "../assets/offroad/icon_blank.png",
     dev_ui_settings_texts,
     380
@@ -64,12 +82,12 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
   dev_ui_settings->showDescription();
 
   // Visuals: Display Metrics above Chevron
-  std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed")};
+  std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Distance\nSpeed")};
   chevron_info_settings = new ButtonParamControl(
-    "ChevronInfo", "Metrics above Chevron", "Display useful metrics above the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).",
+    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
     "../assets/offroad/icon_blank.png",
     chevron_info_settings_texts,
-    320
+    340
   );
   chevron_info_settings->showDescription();
 
@@ -88,9 +106,9 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
     }
   }
 
-  std::vector<QString> sidebar_temp_texts{tr("Off"), tr("Ambient"), tr("RAM"), tr("CPU"), tr("GPU"), tr("Max")};
+  std::vector<QString> sidebar_temp_texts{tr("Off"), tr("RAM"), tr("CPU"), tr("GPU"), tr("Max")};
   sidebar_temp_setting = new ButtonParamControl(
-    "SidebarTemperatureOptions", "Display Temperature on Sidebar", "",
+    "SidebarTemperatureOptions", tr("Display Temperature on Sidebar"), "",
     "../assets/offroad/icon_blank.png",
     sidebar_temp_texts,
     255
@@ -100,5 +118,9 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
 
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  });
+
+  QObject::connect(toggles["MapboxFullScreen"], &ToggleControl::toggleFlipped, [=](bool state) {
+    toggles["MapboxFullScreen"]->showDescription();
   });
 }

@@ -25,27 +25,9 @@ openpilot/**
 
 common/.gitignore
 common/__init__.py
-common/conversions.py
-common/gpio.py
-common/realtime.py
-common/timeout.py
-common/ffi_wrapper.py
-common/file_helpers.py
-common/logging_extra.py
-common/numpy_fast.py
-common/params.py
-common/params_pyx.pyx
-common/profiler.py
-common/basedir.py
-common/dict_helpers.py
-common/filter_simple.py
-common/stat_live.py
-common/spinner.py
-common/text_window.py
-common/time.py
-
-common/kalman/.gitignore
-common/kalman/*
+common/*.py
+common/*.pyx
+common/mock/*
 
 common/transformations/__init__.py
 common/transformations/camera.py
@@ -62,15 +44,17 @@ common/transformations/transformations.pxd
 common/transformations/transformations.pyx
 
 common/api/__init__.py
+common/api/base.py
+common/api/comma_connect.py
+common/api/sunnylink.py
 
 release/*
 
-installer/custom/install_osm.sh
-installer/custom/install_osm_db.sh
-
 tools/__init__.py
 tools/lib/*
-tools/bodyteleop/*
+tools/bodyteleop/.gitignore
+tools/bodyteleop/web.py
+tools/bodyteleop/static/*
 tools/joystick/*
 tools/replay/*.cc
 tools/replay/*.h
@@ -78,18 +62,22 @@ tools/replay/*.h
 selfdrive/__init__.py
 selfdrive/sentry.py
 selfdrive/tombstoned.py
-selfdrive/updated.py
 selfdrive/statsd.py
+
+selfdrive/updated/**
 
 system/logmessaged.py
 system/micd.py
-system/swaglog.py
 system/version.py
+
+selfdrive/SConscript
 
 selfdrive/athena/__init__.py
 selfdrive/athena/athenad.py
 selfdrive/athena/manage_athenad.py
+selfdrive/athena/manage_sunnylinkd.py
 selfdrive/athena/registration.py
+selfdrive/athena/sunnylinkd.py
 
 selfdrive/boardd/.gitignore
 selfdrive/boardd/SConscript
@@ -105,15 +93,16 @@ selfdrive/boardd/panda.h
 selfdrive/boardd/spi.cc
 selfdrive/boardd/panda_comms.h
 selfdrive/boardd/panda_comms.cc
-selfdrive/boardd/set_time.py
 selfdrive/boardd/pandad.py
 selfdrive/boardd/tests/test_boardd_loopback.py
 
 selfdrive/car/__init__.py
+selfdrive/car/card.py
 selfdrive/car/docs_definitions.py
 selfdrive/car/car_helpers.py
 selfdrive/car/fingerprints.py
 selfdrive/car/interfaces.py
+selfdrive/car/values.py
 selfdrive/car/vin.py
 selfdrive/car/disable_ecu.py
 selfdrive/car/fw_versions.py
@@ -123,9 +112,9 @@ selfdrive/car/isotp_parallel_query.py
 selfdrive/car/sunnypilot_carname.json
 selfdrive/car/tests/__init__.py
 selfdrive/car/tests/test_car_interfaces.py
-selfdrive/car/torque_data/params.yaml
-selfdrive/car/torque_data/substitute.yaml
-selfdrive/car/torque_data/override.yaml
+selfdrive/car/torque_data/*
+selfdrive/car/torque_data/lat_models/*
+selfdrive/car/torque_data/neural_ff_weights.json
 
 selfdrive/car/body/*.py
 selfdrive/car/chrysler/*.py
@@ -145,50 +134,23 @@ selfdrive/debug/can_printer.py
 selfdrive/debug/check_freq.py
 selfdrive/debug/dump.py
 selfdrive/debug/filter_log_message.py
+selfdrive/debug/format_fingerprints.py
 selfdrive/debug/get_fingerprint.py
 selfdrive/debug/uiview.py
 
 selfdrive/debug/hyundai_enable_radar_points.py
 selfdrive/debug/vw_mqb_config.py
 
-selfdrive/gpxd/gpx_uploader.py
-selfdrive/gpxd/gpxd.py
-
-selfdrive/mapd/assets/*
-selfdrive/mapd/config.py
-selfdrive/mapd/mapd.py
-selfdrive/mapd/lib/*
-selfdrive/mapd/README.md
+selfdrive/mapd_manager.py
+selfdrive/sunnypilot/*.py
+selfdrive/sunnypilot/live_map_data/*.py
 
 common/SConscript
 common/version.h
 common/model.h
 
-common/prefix.h
-common/swaglog.h
-common/swaglog.cc
-common/statlog.h
-common/statlog.cc
-common/util.cc
-common/util.h
-common/queue.h
-common/clutil.cc
-common/clutil.h
-common/params.h
-common/params.cc
-common/ratekeeper.cc
-common/ratekeeper.h
-common/watchdog.cc
-common/watchdog.h
-
-common/modeldata.h
-common/mat.h
-common/timing.h
-
-common/gpio.cc
-common/gpio.h
-common/i2c.cc
-common/i2c.h
+common/*.h
+common/*.cc
 
 selfdrive/controls/__init__.py
 selfdrive/controls/controlsd.py
@@ -225,6 +187,7 @@ selfdrive/controls/lib/lateral_mpc_lib/*
 selfdrive/controls/lib/longitudinal_mpc_lib/*
 
 system/__init__.py
+system/*.py
 
 system/hardware/__init__.py
 system/hardware/base.h
@@ -236,20 +199,23 @@ system/hardware/tici/hardware.h
 system/hardware/tici/hardware.py
 system/hardware/tici/pins.py
 system/hardware/tici/agnos.py
-system/hardware/tici/casync.py
 system/hardware/tici/agnos.json
 system/hardware/tici/amplifier.py
 system/hardware/tici/updater
 system/hardware/tici/iwlist.py
+system/hardware/tici/esim.nmconnection
 system/hardware/pc/__init__.py
 system/hardware/pc/hardware.h
 system/hardware/pc/hardware.py
 
 system/ubloxd/.gitignore
 system/ubloxd/SConscript
+system/ubloxd/pigeond.py
 system/ubloxd/generated/*
 system/ubloxd/*.h
 system/ubloxd/*.cc
+
+system/updated/*
 
 selfdrive/locationd/__init__.py
 selfdrive/locationd/SConscript
@@ -260,12 +226,10 @@ selfdrive/locationd/paramsd.py
 selfdrive/locationd/models/__init__.py
 selfdrive/locationd/models/.gitignore
 selfdrive/locationd/models/car_kf.py
-selfdrive/locationd/models/gnss_kf.py
 selfdrive/locationd/models/live_kf.py
 selfdrive/locationd/models/live_kf.h
 selfdrive/locationd/models/live_kf.cc
 selfdrive/locationd/models/constants.py
-selfdrive/locationd/models/gnss_helpers.py
 
 selfdrive/locationd/torqued.py
 selfdrive/locationd/calibrationd.py
@@ -308,7 +272,12 @@ system/sensord/SConscript
 system/sensord/sensors_qcom2.cc
 system/sensord/sensors/*.cc
 system/sensord/sensors/*.h
-system/sensord/pigeond.py
+
+system/webrtc/__init__.py
+system/webrtc/webrtcd.py
+system/webrtc/schema.py
+system/webrtc/device/audio.py
+system/webrtc/device/video.py
 
 selfdrive/thermald/thermald.py
 selfdrive/thermald/power_monitoring.py
@@ -325,13 +294,9 @@ selfdrive/ui/.gitignore
 selfdrive/ui/SConscript
 selfdrive/ui/*.cc
 selfdrive/ui/*.h
-selfdrive/ui/ui
 selfdrive/ui/text
 selfdrive/ui/spinner
-selfdrive/ui/soundd/*.cc
-selfdrive/ui/soundd/*.h
-selfdrive/ui/soundd/soundd
-selfdrive/ui/soundd/.gitignore
+selfdrive/ui/soundd.py
 selfdrive/ui/translations/*.ts
 selfdrive/ui/translations/languages.json
 selfdrive/ui/update_translations.py
@@ -341,9 +306,16 @@ selfdrive/ui/qt/*.cc
 selfdrive/ui/qt/*.h
 selfdrive/ui/qt/network/*.cc
 selfdrive/ui/qt/network/*.h
+selfdrive/ui/qt/network/sunnylink/*.cc
+selfdrive/ui/qt/network/sunnylink/*.h
+selfdrive/ui/qt/network/sunnylink/models/*.h
+selfdrive/ui/qt/network/sunnylink/services/*.cc
+selfdrive/ui/qt/network/sunnylink/services/*.h
 selfdrive/ui/qt/offroad/*.cc
 selfdrive/ui/qt/offroad/*.h
 selfdrive/ui/qt/offroad/*.qml
+selfdrive/ui/qt/onroad/*.cc
+selfdrive/ui/qt/onroad/*.h
 selfdrive/ui/qt/offroad/sunnypilot/*.cc
 selfdrive/ui/qt/offroad/sunnypilot/*.h
 selfdrive/ui/qt/widgets/*.cc
@@ -366,20 +338,16 @@ system/camerad/main.cc
 system/camerad/snapshot/*
 system/camerad/cameras/camera_common.h
 system/camerad/cameras/camera_common.cc
-system/camerad/cameras/sensor2_i2c.h
-
-system/camerad/imgproc/conv.cl
-system/camerad/imgproc/pool.cl
-system/camerad/imgproc/utils.cc
-system/camerad/imgproc/utils.h
+system/camerad/sensors/*.h
+system/camerad/sensors/*.cc
 
 system/fleetmanager/*
 
 selfdrive/manager/__init__.py
 selfdrive/manager/build.py
-selfdrive/manager/custom_dep.py
 selfdrive/manager/helpers.py
-selfdrive/manager/local_osm_install.py
+selfdrive/manager/mapd_installer.py
+selfdrive/manager/sunnylink.py
 selfdrive/manager/manager.py
 selfdrive/manager/process_config.py
 selfdrive/manager/process.py
@@ -408,8 +376,6 @@ selfdrive/modeld/models/commonmodel.h
 selfdrive/modeld/models/supercombo.onnx
 
 selfdrive/modeld/models/dmonitoring_model_q.dlc
-
-selfdrive/modeld/models/navmodel_q.dlc
 
 selfdrive/modeld/transforms/loadyuv.cc
 selfdrive/modeld/transforms/loadyuv.h
@@ -478,13 +444,18 @@ third_party/acados/acados_template/**
 
 third_party/bootstrap/**
 third_party/qt5/larch64/bin/**
+third_party/maplibre-native-qt/**
+
+third_party/pfeiferj-mapd/**
 
 scripts/update_now.sh
 scripts/stop_updater.sh
 
+teleoprtc/**
+
+rednose_repo/site_scons/site_tools/rednose_filter.py
 rednose/.gitignore
 rednose/**
-laika/**
 
 body/.gitignore
 body/board/SConscript
@@ -621,7 +592,8 @@ opendbc/vw_golf_mk4.dbc
 opendbc/vw_mqb_2010.dbc
 
 opendbc/tesla_can.dbc
-opendbc/tesla_radar.dbc
+opendbc/tesla_radar_bosch_generated.dbc
+opendbc/tesla_radar_continental_generated.dbc
 opendbc/tesla_powertrain.dbc
 
 tinygrad_repo/openpilot/compile2.py

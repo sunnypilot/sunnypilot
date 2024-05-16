@@ -27,10 +27,10 @@ from urllib.parse import parse_qs, unquote
 import json
 import requests
 import math
-from common.basedir import BASEDIR
-from common.params import Params
-from common.realtime import set_core_affinity
-from system.swaglog import cloudlog
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.common.realtime import set_core_affinity
+from openpilot.common.swaglog import cloudlog
 params = Params()
 
 hostName = ""
@@ -52,7 +52,10 @@ class OtisServ(BaseHTTPRequestHandler):
       return
     if self.path == '/?reset=1':
       params.put("NavDestination", "")
-    if use_amap:
+    if self.path == '/locations':
+      self.get_locations()
+      return
+    elif use_amap:
       if self.path == '/style.css':
         self.send_response(200)
         self.send_header("Content-type", "text/css")
@@ -110,16 +113,25 @@ class OtisServ(BaseHTTPRequestHandler):
       if self.get_app_token() is None:
         self.display_page_app_token()
         return
-      self.display_page_addr_input()
+      if self.path != '/locations':
+        self.display_page_addr_input()
 
   def do_POST(self):
     use_amap = params.get_bool("EnableAmap")
     use_gmap = not use_amap and params.get_bool("EnableGmap")
 
     postvars = self.parse_POST()
-    self.send_response(200)
-    self.send_header("Content-type", "text/html")
-    self.end_headers()
+    # set_destination endpoint
+    if self.path == '/set_destination':
+      self.send_response(200)
+      self.send_header("Content-type", "application/json")
+      self.end_headers()
+      response_data = {'success': True}
+      self.wfile.write(json.dumps(response_data).encode('utf-8'))
+    else:
+      self.send_response(200)
+      self.send_header("Content-type", "text/html")
+      self.end_headers()
 
     if use_amap:
       # amap token
@@ -174,6 +186,16 @@ class OtisServ(BaseHTTPRequestHandler):
           lng, lat = self.gcj02towgs84(lng, lat)
         params.put('NavDestination', "{\"latitude\": %f, \"longitude\": %f, \"place_name\": \"%s\"}" % (lat, lng, name))
         self.to_json(lat, lng, save_type, name)
+    if postvars is not None:
+      latitude_value = postvars.get("latitude")
+      longitude_value = postvars.get("longitude")
+      if latitude_value is not None and latitude_value != "" and longitude_value is not None and longitude_value != "":
+        lat = float(latitude_value)
+        lng = float(longitude_value)
+        save_type = "recent"
+        name = postvars.get("place_name", [""])
+        params.put('NavDestination', "{\"latitude\": %f, \"longitude\": %f, \"place_name\": \"%s\"}" % (lat, lng, name))
+        self.to_json(lat, lng, save_type, name)
       # favorites
       if not use_gmap and "fav_val" in postvars:
         addr = postvars.get("fav_val")[0]
@@ -210,12 +232,13 @@ class OtisServ(BaseHTTPRequestHandler):
           else:
             self.display_page_addr_input("Place Not Found")
             return
-    if use_amap:
-      self.display_page_amap()
-    elif use_gmap:
-      self.display_page_gmap()
-    else:
-      self.display_page_addr_input()
+    if self.path != '/set_destination':
+      if use_amap:
+        self.display_page_amap()
+      elif use_gmap:
+        self.display_page_gmap()
+      else:
+        self.display_page_addr_input()
 
   def get_logo(self):
     self.send_response(200)
@@ -224,6 +247,14 @@ class OtisServ(BaseHTTPRequestHandler):
     f = open("%s/selfdrive/assets/img_spinner_comma.png" % BASEDIR, "rb")
     self.wfile.write(f.read())
     f.close()
+
+  def get_locations(self):
+    self.send_response(200)
+    self.send_header('Content-type','application/json')
+    self.end_headers()
+    val = params.get("ApiCache_NavDestinations", encoding='utf-8')
+    if val is not None:
+      self.wfile.write(val.encode('utf-8'))
 
   def get_gmap_css(self):
     self.wfile.write(bytes(self.get_parsed_template("gmap/style.css"), "utf-8"))
@@ -337,6 +368,14 @@ class OtisServ(BaseHTTPRequestHandler):
       postvars = parse_qs(
         self.rfile.read(length).decode('utf-8'),
         keep_blank_values=1)
+    elif ctype == 'application/json':
+      length = int(self.headers['content-length'])
+      post_data = self.rfile.read(length).decode('utf-8')
+      try:
+        postvars = json.loads(post_data)
+      except json.JSONDecodeError:
+        self.send_error(400, 'Invalid JSON data')
+        return None
     else:
       postvars = {}
     return postvars

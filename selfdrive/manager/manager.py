@@ -2,45 +2,37 @@
 import datetime
 import os
 import signal
-import subprocess
 import sys
 import traceback
-from typing import List, Tuple, Union
 
 from cereal import custom
 import cereal.messaging as messaging
 import openpilot.selfdrive.sentry as sentry
-from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
-from openpilot.selfdrive.boardd.set_time import set_time
 from openpilot.system.hardware import HARDWARE, PC
-from openpilot.selfdrive.manager.helpers import unblock_stdout, write_onroad_params
+from openpilot.selfdrive.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
+from openpilot.selfdrive.manager.mapd_installer import VERSION
 from openpilot.selfdrive.manager.process import ensure_running
 from openpilot.selfdrive.manager.process_config import managed_processes
 from openpilot.selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
-from openpilot.system.swaglog import cloudlog, add_file_handler
-from openpilot.system.version import is_dirty, get_commit, get_version, get_origin, get_short_branch, \
-                           get_normalized_origin, terms_version, training_version, \
-                           is_tested_branch, is_release_branch
-
-
-sys.path.append(os.path.join(BASEDIR, "third_party/mapd"))
+from openpilot.common.swaglog import cloudlog, add_file_handler
+from openpilot.system.version import get_build_metadata, terms_version, training_version
 
 
 def manager_init() -> None:
-  # update system time from panda
-  set_time(cloudlog)
+  save_bootlog()
 
-  # save boot log
-  subprocess.call("./bootlog", cwd=os.path.join(BASEDIR, "system/loggerd"))
+  build_metadata = get_build_metadata()
 
   params = Params()
   params.clear_all(ParamKeyType.CLEAR_ON_MANAGER_START)
   params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
   params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
+  if build_metadata.release_channel:
+    params.clear_all(ParamKeyType.DEVELOPMENT_ONLY)
 
-  default_params: List[Tuple[str, Union[str, bytes]]] = [
+  default_params: list[tuple[str, str | bytes]] = [
     ("CompletedTrainingVersion", "0"),
     ("DisengageOnAccelerator", "0"),
     ("GsmMetered", "1"),
@@ -68,20 +60,23 @@ def manager_init() -> None:
     ("DevUIInfo", "0"),
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
+    ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
-    ("GpxDeleteAfterUpload", "1"),
-    ("GpxDeleteIfUploaded", "1"),
+    ("FeatureStatus", "1"),
     ("HandsOnWheelMonitoring", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
+    ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "9"),
+    ("NNFF", "0"),
     ("OnroadScreenOff", "-2"),
     ("OnroadScreenOffBrightness", "50"),
     ("OnroadScreenOffEvent", "1"),
+    ("OnroadSettings", "1"),
     ("PathOffset", "0"),
     ("ReverseAccChange", "0"),
     ("ScreenRecorder", "1"),
@@ -90,6 +85,9 @@ def manager_init() -> None:
     ("SpeedLimitEngageType", "0"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
+    ("SpeedLimitWarningType", "0"),
+    ("SpeedLimitWarningValueOffset", "0"),
+    ("SpeedLimitWarningOffsetType", "0"),
     ("StandStillTimer", "0"),
     ("StockLongToyota", "0"),
     ("TorqueDeadzoneDeg", "0"),
@@ -100,6 +98,10 @@ def manager_init() -> None:
     ("TurnVisionControl", "0"),
     ("VisionCurveLaneless", "0"),
     ("VwAccType", "0"),
+    ("OsmDbUpdatesCheck", "0"),
+    ("OsmDownloadedDate", "0"),
+    ("OSMDownloadProgress", "{}"),
+    ("SunnylinkEnabled", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -116,13 +118,6 @@ def manager_init() -> None:
   if os.getenv("HANDSMONITORING") is not None:
     params.put_bool("HandsOnWheelMonitoring", bool(int(os.getenv("HANDSMONITORING", "0"))))
 
-  # is this dashcam?
-  if os.getenv("PASSIVE") is not None:
-    params.put_bool("Passive", bool(int(os.getenv("PASSIVE", "0"))))
-
-  if params.get("Passive") is None:
-    raise Exception("Passive must be set to continue")
-
   # Create folders needed for msgq
   try:
     os.mkdir("/dev/shm")
@@ -132,14 +127,16 @@ def manager_init() -> None:
     print("WARNING: failed to make /dev/shm")
 
   # set version params
-  params.put("Version", get_version())
+  params.put("Version", build_metadata.openpilot.version)
   params.put("TermsVersion", terms_version)
   params.put("TrainingVersion", training_version)
-  params.put("GitCommit", get_commit(default=""))
-  params.put("GitBranch", get_short_branch(default=""))
-  params.put("GitRemote", get_origin(default=""))
-  params.put_bool("IsTestedBranch", is_tested_branch())
-  params.put_bool("IsReleaseBranch", is_release_branch())
+  params.put("GitCommit", build_metadata.openpilot.git_commit)
+  params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
+  params.put("GitBranch", build_metadata.channel)
+  params.put("GitRemote", build_metadata.openpilot.git_origin)
+  params.put_bool("IsTestedBranch", build_metadata.tested_channel)
+  params.put_bool("IsReleaseBranch", build_metadata.release_channel)
+  params.put_bool("IsReleaseSPBranch", build_metadata.release_sp_channel)
 
   # set dongle id
   reg_res = register(show_spinner=True)
@@ -148,26 +145,38 @@ def manager_init() -> None:
   else:
     serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
+  if params.get("HardwareSerial") is None:
+    try:
+      serial = HARDWARE.get_serial()
+      params.put("HardwareSerial", serial)
+    except Exception:
+      cloudlog.exception("Error getting serial for device")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
+  os.environ['GIT_ORIGIN'] = build_metadata.openpilot.git_normalized_origin # Needed for swaglog
+  os.environ['GIT_BRANCH'] = build_metadata.channel # Needed for swaglog
+  os.environ['GIT_COMMIT'] = build_metadata.openpilot.git_commit # Needed for swaglog
 
-  if not is_dirty():
+  if not build_metadata.openpilot.is_dirty:
     os.environ['CLEAN'] = '1'
 
   # init logging
   sentry.init(sentry.SentryProject.SELFDRIVE)
   cloudlog.bind_global(dongle_id=dongle_id,
-                       version=get_version(),
-                       origin=get_normalized_origin(),
-                       branch=get_short_branch(),
-                       commit=get_commit(),
-                       dirty=is_dirty(),
+                       version=build_metadata.openpilot.version,
+                       origin=build_metadata.openpilot.git_normalized_origin,
+                       branch=build_metadata.channel,
+                       commit=build_metadata.openpilot.git_commit,
+                       dirty=build_metadata.openpilot.is_dirty,
                        device=HARDWARE.get_device_type())
 
   if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
     os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
 
+  models_dir = "/data/media/0/models"
+  if not os.path.exists(models_dir):
+    os.makedirs(models_dir)
 
-def manager_prepare() -> None:
+  # preimport all processes
   for p in managed_processes.values():
     p.prepare()
 
@@ -191,7 +200,7 @@ def manager_thread() -> None:
 
   params = Params()
 
-  ignore: List[str] = []
+  ignore: list[str] = []
   if params.get("DongleId", encoding='utf8') in (None, UNREGISTERED_DONGLE_ID):
     ignore += ["manage_athenad", "uploader"]
   if os.getenv("NOBOARD") is not None:
@@ -200,7 +209,7 @@ def manager_thread() -> None:
   if params.get("DriverCameraHardwareMissing") and not is_registered_device():
     ignore += ["dmonitoringd", "dmonitoringmodeld"]
 
-  sm = messaging.SubMaster(['deviceState', 'carParams'], poll=['deviceState'])
+  sm = messaging.SubMaster(['deviceState', 'carParams'], poll='deviceState')
   pm = messaging.PubMaster(['managerState'])
 
   write_onroad_params(False, params)
@@ -209,7 +218,7 @@ def manager_thread() -> None:
   started_prev = False
 
   while True:
-    sm.update()
+    sm.update(1000)
 
     started = sm['deviceState'].started
 
@@ -226,13 +235,13 @@ def manager_thread() -> None:
 
     ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore)
 
-    running = ' '.join("%s%s\u001b[0m" % ("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
+    running = ' '.join("{}{}\u001b[0m".format("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
                        for p in managed_processes.values() if p.proc)
     print(running)
     cloudlog.debug(running)
 
     # send managerState
-    msg = messaging.new_message('managerState')
+    msg = messaging.new_message('managerState', valid=True)
     msg.managerState.processes = [p.get_process_state_msg() for p in managed_processes.values()]
     pm.send('managerState', msg)
 
@@ -249,17 +258,8 @@ def manager_thread() -> None:
 
 
 def main() -> None:
-  prepare_only = os.getenv("PREPAREONLY") is not None
-
   manager_init()
-
-  # Start UI early so prepare can happen in the background
-  #if not prepare_only:
-  #  managed_processes['ui'].start()
-
-  manager_prepare()
-
-  if prepare_only:
+  if os.getenv("PREPAREONLY") is not None:
     return
 
   # SystemExit on sigterm
@@ -290,6 +290,8 @@ if __name__ == "__main__":
 
   try:
     main()
+  except KeyboardInterrupt:
+    print("got CTRL-C, exiting")
   except Exception:
     add_file_handler(cloudlog)
     cloudlog.exception("Manager failed to start")

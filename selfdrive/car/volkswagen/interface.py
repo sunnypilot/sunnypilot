@@ -1,9 +1,10 @@
 from cereal import car
 from panda import Panda
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
 from openpilot.selfdrive.car import get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.volkswagen.values import CAR, PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, BUTTON_STATES
+from openpilot.selfdrive.car.volkswagen.values import CAR, CANBUS, CarControllerParams, NetworkLocation, TransmissionType, GearShifter, VolkswagenFlags, \
+                                                      BUTTON_STATES, VolkswagenFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -20,16 +21,14 @@ class CarInterface(CarInterfaceBase):
       self.ext_bus = CANBUS.cam
       self.cp_ext = self.cp_cam
 
-    self.eps_timer_soft_disable_alert = False
-
     self.buttonStatesPrev = BUTTON_STATES.copy()
 
   @staticmethod
-  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
+  def _get_params(ret, candidate: CAR, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "volkswagen"
     ret.radarUnavailable = True
 
-    if candidate in PQ_CARS:
+    if ret.flags & VolkswagenFlags.PQ:
       # Set global PQ35/PQ46/NMS parameters
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.volkswagenPq)]
       ret.enableBsm = 0x3BA in fingerprint[0]  # SWA_1
@@ -69,16 +68,22 @@ class CarInterface(CarInterfaceBase):
       else:
         ret.networkLocation = NetworkLocation.fwdCamera
 
+      if 0x126 in fingerprint[2]:  # HCA_01
+        ret.flags |= VolkswagenFlags.STOCK_HCA_PRESENT.value
+
     # Global lateral tuning defaults, can be overridden per-vehicle
 
-    ret.steerActuatorDelay = 0.1
     ret.steerLimitTimer = 0.4
-    ret.steerRatio = 15.6  # Let the params learner figure this out
-    ret.lateralTuning.pid.kpBP = [0.]
-    ret.lateralTuning.pid.kiBP = [0.]
-    ret.lateralTuning.pid.kf = 0.00006
-    ret.lateralTuning.pid.kpV = [0.6]
-    ret.lateralTuning.pid.kiV = [0.2]
+    if ret.flags & VolkswagenFlags.PQ:
+      ret.steerActuatorDelay = 0.2
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+    else:
+      ret.steerActuatorDelay = 0.1
+      ret.lateralTuning.pid.kpBP = [0.]
+      ret.lateralTuning.pid.kiBP = [0.]
+      ret.lateralTuning.pid.kf = 0.00006
+      ret.lateralTuning.pid.kpV = [0.6]
+      ret.lateralTuning.pid.kiV = [0.2]
 
     # Global longitudinal tuning defaults, can be overridden per-vehicle
 
@@ -90,146 +95,29 @@ class CarInterface(CarInterfaceBase):
       if ret.transmissionType == TransmissionType.manual:
         ret.minEnableSpeed = 4.5
 
+    if Params().get_bool("VwCCOnly"):
+      if car_fw is not None and not any(fw.ecu == "fwdRadar" for fw in car_fw):
+        ret.spFlags |= VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR.value
+      else:
+        ret.spFlags |= VolkswagenFlagsSP.SP_CC_ONLY.value
+      ret.openpilotLongitudinalControl = False
+
     ret.pcmCruise = not ret.openpilotLongitudinalControl
     ret.customStockLongAvailable = True
     ret.stoppingControl = True
-    ret.startingState = True
-    ret.startAccel = 1.0
     ret.stopAccel = -0.55
-    ret.vEgoStarting = 1.0
-    ret.vEgoStopping = 1.0
+    ret.vEgoStarting = 0.1
+    ret.vEgoStopping = 0.5
     ret.longitudinalTuning.kpV = [0.1]
     ret.longitudinalTuning.kiV = [0.0]
-
-    # Per-chassis tuning values, override tuning defaults here if desired
-
-    if candidate == CAR.ARTEON_MK1:
-      ret.mass = 1733
-      ret.wheelbase = 2.84
-
-    elif candidate == CAR.ATLAS_MK1:
-      ret.mass = 2011
-      ret.wheelbase = 2.98
-
-    elif candidate == CAR.CRAFTER_MK2:
-      ret.mass = 2100
-      ret.wheelbase = 3.64  # SWB, LWB is 4.49, TBD how to detect difference
-      ret.minSteerSpeed = 50 * CV.KPH_TO_MS
-
-    elif candidate == CAR.GOLF_MK7:
-      ret.mass = 1397
-      ret.wheelbase = 2.62
-
-    elif candidate == CAR.JETTA_MK7:
-      ret.mass = 1328
-      ret.wheelbase = 2.71
-
-    elif candidate == CAR.PASSAT_MK8:
-      ret.mass = 1551
-      ret.wheelbase = 2.79
-
-    elif candidate == CAR.PASSAT_NMS:
-      ret.mass = 1503
-      ret.wheelbase = 2.80
-      ret.minEnableSpeed = 20 * CV.KPH_TO_MS  # ACC "basic", no FtS
-      ret.minSteerSpeed = 50 * CV.KPH_TO_MS
-      ret.steerActuatorDelay = 0.2
-      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-
-    elif candidate == CAR.POLO_MK6:
-      ret.mass = 1230
-      ret.wheelbase = 2.55
-
-    elif candidate == CAR.SHARAN_MK2:
-      ret.mass = 1639
-      ret.wheelbase = 2.92
-      ret.minSteerSpeed = 50 * CV.KPH_TO_MS
-      ret.steerActuatorDelay = 0.2
-
-    elif candidate == CAR.TAOS_MK1:
-      ret.mass = 1498
-      ret.wheelbase = 2.69
-
-    elif candidate == CAR.TCROSS_MK1:
-      ret.mass = 1150
-      ret.wheelbase = 2.60
-
-    elif candidate == CAR.TIGUAN_MK2:
-      ret.mass = 1715
-      ret.wheelbase = 2.74
-
-    elif candidate == CAR.TOURAN_MK2:
-      ret.mass = 1516
-      ret.wheelbase = 2.79
-
-    elif candidate == CAR.TRANSPORTER_T61:
-      ret.mass = 1926
-      ret.wheelbase = 3.00  # SWB, LWB is 3.40, TBD how to detect difference
-      ret.minSteerSpeed = 14.0
-
-    elif candidate == CAR.TROC_MK1:
-      ret.mass = 1413
-      ret.wheelbase = 2.63
-
-    elif candidate == CAR.AUDI_A3_MK3:
-      ret.mass = 1335
-      ret.wheelbase = 2.61
-
-    elif candidate == CAR.AUDI_Q2_MK1:
-      ret.mass = 1205
-      ret.wheelbase = 2.61
-
-    elif candidate == CAR.AUDI_Q3_MK2:
-      ret.mass = 1623
-      ret.wheelbase = 2.68
-
-    elif candidate == CAR.SEAT_ATECA_MK1:
-      ret.mass = 1900
-      ret.wheelbase = 2.64
-
-    elif candidate == CAR.SEAT_LEON_MK3:
-      ret.mass = 1227
-      ret.wheelbase = 2.64
-
-    elif candidate == CAR.SKODA_FABIA_MK4:
-      ret.mass = 1266
-      ret.wheelbase = 2.56
-
-    elif candidate == CAR.SKODA_KAMIQ_MK1:
-      ret.mass = 1265
-      ret.wheelbase = 2.66
-
-    elif candidate == CAR.SKODA_KAROQ_MK1:
-      ret.mass = 1278
-      ret.wheelbase = 2.66
-
-    elif candidate == CAR.SKODA_KODIAQ_MK1:
-      ret.mass = 1569
-      ret.wheelbase = 2.79
-
-    elif candidate == CAR.SKODA_OCTAVIA_MK3:
-      ret.mass = 1388
-      ret.wheelbase = 2.68
-
-    elif candidate == CAR.SKODA_SCALA_MK1:
-      ret.mass = 1192
-      ret.wheelbase = 2.65
-
-    elif candidate == CAR.SKODA_SUPERB_MK3:
-      ret.mass = 1505
-      ret.wheelbase = 2.84
-
-    else:
-      raise ValueError(f"unsupported car {candidate}")
-
     ret.autoResumeSng = ret.minEnableSpeed == -1
-    ret.centerToFront = ret.wheelbase * 0.45
+
     return ret
 
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_ext, self.CP.transmissionType)
-    self.CS = self.sp_update_params(self.CS)
+    self.sp_update_params()
 
     buttonEvents = []
 
@@ -244,18 +132,18 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
-    self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                                          buttonEvents, c.vCruise,
-                                                                          enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            buttonEvents, c.vCruise,
+                                                            enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     if ret.cruiseState.available:
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      ret, self.CS = self.toggle_gac(ret, self.CS, bool(self.CS.gap_dist_button), 1, 3, 3, "-")
     else:
       self.CS.madsEnabled = False
+    self.CS.madsEnabled = self.get_sp_started_mads(ret, self.CS)
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in buttonEvents):
@@ -269,7 +157,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.gap_dist_button == 3))
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
@@ -291,7 +179,7 @@ class CarInterface(CarInterfaceBase):
                                         enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     # Low speed steer alert hysteresis logic
-    if self.CP.minSteerSpeed > 0. and ret.vEgo < (self.CP.minSteerSpeed + 1.):
+    if (self.CP.minSteerSpeed - 1e-3) > CarControllerParams.DEFAULT_MIN_STEER_SPEED and ret.vEgo < (self.CP.minSteerSpeed + 1.):
       self.low_speed_alert = True
     elif ret.vEgo > (self.CP.minSteerSpeed + 2.):
       self.low_speed_alert = False
@@ -304,7 +192,7 @@ class CarInterface(CarInterfaceBase):
       if c.enabled and ret.vEgo < self.CP.minEnableSpeed:
         events.add(EventName.speedTooLow)
 
-    if self.eps_timer_soft_disable_alert:
+    if self.CC.eps_timer_soft_disable_alert:
       events.add(EventName.steerTimeLimit)
 
     ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
@@ -318,6 +206,3 @@ class CarInterface(CarInterfaceBase):
 
     return ret
 
-  def apply(self, c, now_nanos):
-    new_actuators, can_sends, self.eps_timer_soft_disable_alert = self.CC.update(c, self.CS, self.ext_bus, now_nanos)
-    return new_actuators, can_sends

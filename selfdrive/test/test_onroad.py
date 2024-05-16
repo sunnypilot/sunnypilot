@@ -27,37 +27,42 @@ from openpilot.selfdrive.test.helpers import set_params_enabled, release_only
 from openpilot.system.hardware.hw import Paths
 from openpilot.tools.lib.logreader import LogReader
 
-# Baseline CPU usage by process
+"""
+CPU usage budget
+* each process is entitled to at least 8%
+* total CPU usage of openpilot (sum(PROCS.values())
+  should not exceed MAX_TOTAL_CPU
+"""
+MAX_TOTAL_CPU = 250.  # total for all 8 cores
 PROCS = {
-  "selfdrive.controls.controlsd": 39.0,
+  # Baseline CPU usage by process
+  "selfdrive.controls.controlsd": 46.0,
   "./loggerd": 14.0,
   "./encoderd": 17.0,
   "./camerad": 14.5,
   "./locationd": 11.0,
-  "./mapsd": 1.5,
-  "selfdrive.controls.plannerd": 16.5,
-  "./_ui": 18.0,
+  "selfdrive.controls.plannerd": 11.0,
+  "./ui": 18.0,
   "selfdrive.locationd.paramsd": 9.0,
   "./sensord": 7.0,
-  "selfdrive.controls.radard": 4.5,
+  "selfdrive.controls.radard": 7.0,
   "selfdrive.modeld.modeld": 13.0,
   "selfdrive.modeld.dmonitoringmodeld": 8.0,
-  "selfdrive.modeld.navmodeld": 1.0,
   "selfdrive.thermald.thermald": 3.87,
   "selfdrive.locationd.calibrationd": 2.0,
   "selfdrive.locationd.torqued": 5.0,
-  "./_soundd": (1.0, 65.0),
+  "selfdrive.ui.soundd": 3.5,
   "selfdrive.monitoring.dmonitoringd": 4.0,
   "./proclogd": 1.54,
   "system.logmessaged": 0.2,
   "selfdrive.tombstoned": 0,
   "./logcatd": 0,
-  "system.micd": 10.0,
-  "system.timezoned": 0,
+  "system.micd": 6.0,
+  "system.timed": 0,
   "selfdrive.boardd.pandad": 0,
   "selfdrive.statsd": 0.4,
   "selfdrive.navd.navd": 0.4,
-  "system.loggerd.uploader": 3.0,
+  "system.loggerd.uploader": (0.5, 15.0),
   "system.loggerd.deleter": 0.1,
 }
 
@@ -65,11 +70,11 @@ PROCS.update({
   "tici": {
     "./boardd": 4.0,
     "./ubloxd": 0.02,
-    "system.sensord.pigeond": 6.0,
+    "system.ubloxd.pigeond": 6.0,
   },
   "tizi": {
      "./boardd": 19.0,
-    "system.sensord.rawgps.rawgpsd": 1.0,
+    "system.qcomgpsd.qcomgpsd": 1.0,
   }
 }.get(HARDWARE.get_device_type(), {}))
 
@@ -82,14 +87,11 @@ TIMINGS = {
   "carState": [2.5, 0.35],
   "carControl": [2.5, 0.35],
   "controlsState": [2.5, 0.35],
-  "lateralPlan": [2.5, 0.5],
   "longitudinalPlan": [2.5, 0.5],
   "roadCameraState": [2.5, 0.35],
   "driverCameraState": [2.5, 0.35],
   "modelV2": [2.5, 0.35],
   "driverStateV2": [2.5, 0.40],
-  "navModel": [2.5, 0.35],
-  "mapRenderState": [2.5, 0.35],
   "liveLocationKalman": [2.5, 0.35],
   "wideRoadCameraState": [1.5, 0.35],
 }
@@ -113,17 +115,12 @@ class TestOnroad(unittest.TestCase):
 
     # setup env
     params = Params()
-    if "CI" in os.environ:
-      params.clear_all()
     params.remove("CurrentRoute")
     set_params_enabled()
+    os.environ['REPLAY'] = '1'
     os.environ['TESTING_CLOSET'] = '1'
     if os.path.exists(Paths.log_root()):
       shutil.rmtree(Paths.log_root())
-    os.system("rm /dev/shm/*")
-
-    # Make sure athena isn't running
-    os.system("pkill -9 -f athena")
 
     # start manager and run openpilot for a minute
     proc = None
@@ -133,7 +130,7 @@ class TestOnroad(unittest.TestCase):
 
       sm = messaging.SubMaster(['carState'])
       with Timeout(150, "controls didn't start"):
-        while sm.rcv_frame['carState'] < 0:
+        while sm.recv_frame['carState'] < 0:
           sm.update(1000)
 
       # make sure we get at least two full segments
@@ -168,6 +165,15 @@ class TestOnroad(unittest.TestCase):
     cls.lr = list(LogReader(os.path.join(str(cls.segments[1]), "rlog")))
     cls.log_path = cls.segments[1]
 
+    cls.log_sizes = {}
+    for f in cls.log_path.iterdir():
+      assert f.is_file()
+      cls.log_sizes[f]  = f.stat().st_size / 1e6
+      if f.name in ("qlog", "rlog"):
+        with open(f, 'rb') as ff:
+          cls.log_sizes[f] = len(bz2.compress(ff.read())) / 1e6
+
+
   @cached_property
   def service_msgs(self):
     msgs = defaultdict(list)
@@ -198,14 +204,7 @@ class TestOnroad(unittest.TestCase):
     self.assertEqual(len(big_logs), 0, f"Log spam: {big_logs}")
 
   def test_log_sizes(self):
-    for f in self.log_path.iterdir():
-      assert f.is_file()
-
-      sz = f.stat().st_size / 1e6
-      if f.name in ("qlog", "rlog"):
-        with open(f, 'rb') as ff:
-          sz = len(bz2.compress(ff.read())) / 1e6
-
+    for f, sz in self.log_sizes.items():
       if f.name == "qcamera.ts":
         assert 2.15 < sz < 2.35
       elif f.name == "qlog":
@@ -282,6 +281,7 @@ class TestOnroad(unittest.TestCase):
       result += f"{proc_name.ljust(35)}  {cpu_usage:5.2f}% ({exp}%) {err}\n"
       if len(err) > 0:
         cpu_ok = False
+    result += "------------------------------------------------\n"
 
     # Ensure there's no missing procs
     all_procs = {p.name for p in self.service_msgs['managerState'][0].managerState.processes if p.shouldBeRunning}
@@ -289,7 +289,14 @@ class TestOnroad(unittest.TestCase):
       with self.subTest(proc=p):
         assert any(p in pp for pp in PROCS.keys()), f"Expected CPU usage missing for {p}"
 
-    result += "------------------------------------------------\n"
+    # total CPU check
+    procs_tot = sum([(max(x) if isinstance(x, tuple) else x) for x in PROCS.values()])
+    with self.subTest(name="total CPU"):
+      assert procs_tot < MAX_TOTAL_CPU, "Total CPU budget exceeded"
+    result +=  "------------------------------------------------\n"
+    result += f"Total allocated CPU usage is {procs_tot}%, budget is {MAX_TOTAL_CPU}%, {MAX_TOTAL_CPU-procs_tot:.1f}% left\n"
+    result +=  "------------------------------------------------\n"
+
     print(result)
 
     self.assertTrue(cpu_ok)
@@ -303,12 +310,12 @@ class TestOnroad(unittest.TestCase):
     self.assertLessEqual(max(mems) - min(mems), 3.0)
 
   def test_gpu_usage(self):
-    self.assertEqual(self.gpu_procs, {"weston", "_ui", "camerad", "selfdrive.modeld.modeld"})
+    self.assertEqual(self.gpu_procs, {"weston", "ui", "camerad", "selfdrive.modeld.modeld"})
 
   def test_camera_processing_time(self):
     result = "\n"
     result += "------------------------------------------------\n"
-    result += "-------------- Debayer Timing ------------------\n"
+    result += "-------------- ImgProc Timing ------------------\n"
     result += "------------------------------------------------\n"
 
     ts = [getattr(m, m.which()).processingTime for m in self.lr if 'CameraState' in m.which()]
@@ -342,7 +349,7 @@ class TestOnroad(unittest.TestCase):
     result += "-----------------  MPC Timing ------------------\n"
     result += "------------------------------------------------\n"
 
-    cfgs = [("lateralPlan", 0.05, 0.05), ("longitudinalPlan", 0.05, 0.05)]
+    cfgs = [("longitudinalPlan", 0.05, 0.05),]
     for (s, instant_max, avg_max) in cfgs:
       ts = [getattr(m, s).solverExecutionTime for m in self.service_msgs[s]]
       self.assertLess(max(ts), instant_max, f"high '{s}' execution time: {max(ts)}")
@@ -408,7 +415,7 @@ class TestOnroad(unittest.TestCase):
   def test_startup(self):
     startup_alert = None
     for msg in self.lrs[0]:
-      # can't use carEvents because the first msg can be dropped while loggerd is starting up
+      # can't use onroadEvents because the first msg can be dropped while loggerd is starting up
       if msg.which() == "controlsState":
         startup_alert = msg.controlsState.alertText1
         break
@@ -417,8 +424,8 @@ class TestOnroad(unittest.TestCase):
 
   def test_engagable(self):
     no_entries = Counter()
-    for m in self.service_msgs['carEvents']:
-      for evt in m.carEvents:
+    for m in self.service_msgs['onroadEvents']:
+      for evt in m.onroadEvents:
         if evt.noEntry:
           no_entries[evt.name] += 1
 

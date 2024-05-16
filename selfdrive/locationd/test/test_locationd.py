@@ -38,6 +38,7 @@ class TestLocationdProc(unittest.TestCase):
 
     if name == "gpsLocationExternal":
       msg.gpsLocationExternal.flags = 1
+      msg.gpsLocationExternal.hasFix = True
       msg.gpsLocationExternal.verticalAccuracy = 1.0
       msg.gpsLocationExternal.speedAccuracy = 1.0
       msg.gpsLocationExternal.bearingAccuracyDeg = 1.0
@@ -60,6 +61,7 @@ class TestLocationdProc(unittest.TestCase):
       msg.cameraOdometry.trans = [0.0, 0.0, 0.0]
       msg.cameraOdometry.transStd = [0.0, 0.0, 0.0]
     msg.logMonoTime = t
+    msg.valid = True
     return msg
 
   def test_params_gps(self):

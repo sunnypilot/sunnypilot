@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Farmville (November 7, 2023)"
+#define CURRENT_MODEL "Certified Herbalist v2 (February 13, 2024)"

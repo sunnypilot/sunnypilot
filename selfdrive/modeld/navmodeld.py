@@ -5,24 +5,24 @@ import time
 import ctypes
 import numpy as np
 from pathlib import Path
-from typing import Tuple, Dict
 
 from cereal import messaging
 from cereal.messaging import PubMaster, SubMaster
 from cereal.visionipc import VisionIpcClient, VisionStreamType
-from openpilot.system.swaglog import cloudlog
+from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_realtime_priority
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
+from openpilot.selfdrive.sunnypilot import get_model_generation
 
 NAV_INPUT_SIZE = 256*256
 NAV_FEATURE_LEN = 256
 NAV_DESIRE_LEN = 32
 NAV_OUTPUT_SIZE = 2*2*ModelConstants.IDX_N + NAV_DESIRE_LEN + NAV_FEATURE_LEN
-MODEL_PATHS = {
-  ModelRunner.SNPE: Path(__file__).parent / 'models/navmodel_q.dlc',
-  ModelRunner.ONNX: Path(__file__).parent / 'models/navmodel.onnx'}
+MODEL_PATHS = {}
+
+CUSTOM_MODEL_PATH = "/data/media/0/models"
 
 class NavModelOutputXY(ctypes.Structure):
   _fields_ = [
@@ -41,18 +41,26 @@ class NavModelResult(ctypes.Structure):
     ("features", ctypes.c_float*NAV_FEATURE_LEN)]
 
 class ModelState:
-  inputs: Dict[str, np.ndarray]
+  inputs: dict[str, np.ndarray]
   output: np.ndarray
   model: ModelRunner
 
   def __init__(self):
     assert ctypes.sizeof(NavModelResult) == NAV_OUTPUT_SIZE * ctypes.sizeof(ctypes.c_float)
     self.output = np.zeros(NAV_OUTPUT_SIZE, dtype=np.float32)
+    self.param_s = Params()
+    self.custom_model, self.model_gen = get_model_generation(self.param_s)
+    if self.custom_model and self.model_gen not in (0, 4):
+      _model_name = self.param_s.get("NavModelText", encoding="utf8")
+      _model_paths = {
+        ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.dlc"}
+    else:
+      _model_paths = MODEL_PATHS
     self.inputs = {'input_img': np.zeros(NAV_INPUT_SIZE, dtype=np.uint8)}
-    self.model = ModelRunner(MODEL_PATHS, self.output, Runtime.DSP, True, None)
+    self.model = ModelRunner(_model_paths, self.output, Runtime.DSP, True, None)
     self.model.addInput("input_img", None)
 
-  def run(self, buf:np.ndarray) -> Tuple[np.ndarray, float]:
+  def run(self, buf:np.ndarray) -> tuple[np.ndarray, float]:
     self.inputs['input_img'][:] = buf
 
     t1 = time.perf_counter()
@@ -63,18 +71,19 @@ class ModelState:
 
 def get_navmodel_packet(model_output: np.ndarray, valid: bool, frame_id: int, location_ts: int, execution_time: float, dsp_execution_time: float):
   model_result = ctypes.cast(model_output.ctypes.data, ctypes.POINTER(NavModelResult)).contents
-  msg = messaging.new_message('navModel')
+  msg = messaging.new_message('navModelDEPRECATED')
   msg.valid = valid
-  msg.navModel.frameId = frame_id
-  msg.navModel.locationMonoTime = location_ts
-  msg.navModel.modelExecutionTime = execution_time
-  msg.navModel.dspExecutionTime = dsp_execution_time
-  msg.navModel.features = model_result.features[:]
-  msg.navModel.desirePrediction = model_result.desire_pred[:]
-  msg.navModel.position.x = [p.x for p in model_result.plan.mean]
-  msg.navModel.position.y = [p.y for p in model_result.plan.mean]
-  msg.navModel.position.xStd = [math.exp(p.x) for p in model_result.plan.std]
-  msg.navModel.position.yStd = [math.exp(p.y) for p in model_result.plan.std]
+  navModel = msg.navModelDEPRECATED
+  navModel.frameId = frame_id
+  navModel.locationMonoTime = location_ts
+  navModel.modelExecutionTime = execution_time
+  navModel.dspExecutionTime = dsp_execution_time
+  navModel.features = model_result.features[:]
+  navModel.desirePrediction = model_result.desire_pred[:]
+  navModel.position.x = [p.x for p in model_result.plan.mean]
+  navModel.position.y = [p.y for p in model_result.plan.mean]
+  navModel.position.xStd = [math.exp(p.x) for p in model_result.plan.std]
+  navModel.position.yStd = [math.exp(p.y) for p in model_result.plan.std]
   return msg
 
 
@@ -98,7 +107,7 @@ def main():
   cloudlog.warning(f"connected with buffer size: {vipc_client.buffer_len}")
 
   sm = SubMaster(["navInstruction"])
-  pm = PubMaster(["navModel"])
+  pm = PubMaster(["navModelDEPRECATED"])
 
   while True:
     buf = vipc_client.recv()
@@ -111,7 +120,7 @@ def main():
     t2 = time.perf_counter()
 
     valid = vipc_client.valid and sm.valid["navInstruction"]
-    pm.send("navModel", get_navmodel_packet(model_output, valid, vipc_client.frame_id, vipc_client.timestamp_sof, t2 - t1, dsp_execution_time))
+    pm.send("navModelDEPRECATED", get_navmodel_packet(model_output, valid, vipc_client.frame_id, vipc_client.timestamp_sof, t2 - t1, dsp_execution_time))
 
 
 if __name__ == "__main__":

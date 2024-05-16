@@ -12,7 +12,8 @@
 
 #include "cereal/messaging/messaging.h"
 #include "tools/cabana/dbc/dbcmanager.h"
-#include "tools/cabana/util.h"
+#include "tools/cabana/utils/util.h"
+#include "tools/replay/util.h"
 
 struct CanData {
   void compute(const MessageId &msg_id, const uint8_t *dat, const int size, double current_sec,
@@ -69,7 +70,7 @@ public:
   virtual QString carFingerprint() const { return ""; }
   virtual QDateTime beginDateTime() const { return {}; }
   virtual double routeStartTime() const { return 0; }
-  virtual double currentSec() const = 0;
+  inline double currentSec() const { return current_sec_; }
   virtual double totalSeconds() const { return lastEventMonoTime() / 1e9 - routeStartTime(); }
   virtual void setSpeed(float speed) {}
   virtual double getSpeed() { return 1; }
@@ -89,6 +90,7 @@ public:
 signals:
   void paused();
   void resume();
+  void seekingTo(double sec);
   void seekedTo(double sec);
   void streamStarted();
   void eventsMerged(const MessageEventsMap &events_map);
@@ -106,6 +108,7 @@ protected:
   uint64_t lastEventMonoTime() const { return lastest_event_ts; }
 
   std::vector<const CanEvent *> all_events_;
+  double current_sec_ = 0;
   uint64_t lastest_event_ts = 0;
 
 private:
@@ -140,7 +143,6 @@ public:
   DummyStream(QObject *parent) : AbstractStream(parent) {}
   QString routeName() const override { return tr("No Stream"); }
   void start() override { emit streamStarted(); }
-  double currentSec() const override { return 0; }
 };
 
 class StreamNotifier : public QObject {

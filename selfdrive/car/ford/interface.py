@@ -1,9 +1,9 @@
 from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car import get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
 from openpilot.selfdrive.car.ford.fordcan import CanBus
-from openpilot.selfdrive.car.ford.values import CANFD_CAR, CAR, Ecu, BUTTON_STATES
+from openpilot.selfdrive.car.ford.values import Ecu, FordFlags, BUTTON_STATES
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -20,12 +20,16 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "ford"
-    ret.dashcamOnly = candidate in {CAR.F_150_MK14}
+    ret.dashcamOnly = bool(ret.flags & FordFlags.CANFD)
 
     ret.radarUnavailable = True
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
+
+    ret.longitudinalTuning.kpBP = [0.]
+    ret.longitudinalTuning.kpV = [0.5]
+    ret.longitudinalTuning.kiV = [0.]
 
     CAN = CanBus(fingerprint=fingerprint)
     cfgs = [get_safety_config(car.CarParams.SafetyModel.ford)]
@@ -38,42 +42,8 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_FORD_LONG_CONTROL
       ret.openpilotLongitudinalControl = True
 
-    if candidate in CANFD_CAR:
+    if ret.flags & FordFlags.CANFD:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_FORD_CANFD
-
-    if candidate == CAR.BRONCO_SPORT_MK1:
-      ret.wheelbase = 2.67
-      ret.steerRatio = 17.7
-      ret.mass = 1625
-
-    elif candidate == CAR.ESCAPE_MK4:
-      ret.wheelbase = 2.71
-      ret.steerRatio = 16.7
-      ret.mass = 1750
-
-    elif candidate == CAR.EXPLORER_MK6:
-      ret.wheelbase = 3.025
-      ret.steerRatio = 16.8
-      ret.mass = 2050
-
-    elif candidate == CAR.F_150_MK14:
-      # required trim only on SuperCrew
-      ret.wheelbase = 3.69
-      ret.steerRatio = 17.0
-      ret.mass = 2000
-
-    elif candidate == CAR.FOCUS_MK4:
-      ret.wheelbase = 2.7
-      ret.steerRatio = 15.0
-      ret.mass = 1350
-
-    elif candidate == CAR.MAVERICK_MK1:
-      ret.wheelbase = 3.076
-      ret.steerRatio = 17.0
-      ret.mass = 1650
-
-    else:
-      raise ValueError(f"Unsupported car: {candidate}")
 
     # Auto Transmission: 0x732 ECU or Gear_Shift_by_Wire_FD1
     found_ecus = [fw.ecu for fw in car_fw]
@@ -96,9 +66,9 @@ class CarInterface(CarInterfaceBase):
 
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
-    self.CS = self.sp_update_params(self.CS)
+    self.sp_update_params()
 
-    buttonEvents = []
+    buttonEvents = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
 
     for button in self.CS.buttonStates:
       if self.CS.buttonStates[button] != self.buttonStatesPrev[button]:
@@ -109,8 +79,8 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
-    self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                                          buttonEvents, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            buttonEvents, c.vCruise)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -119,7 +89,6 @@ class CarInterface(CarInterfaceBase):
         if not self.CS.prev_lkas_enabled and self.CS.lkas_enabled:
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      ret, self.CS = self.toggle_gac(ret, self.CS, self.CS.buttonStates["gapAdjustCruise"], 1, 3, 4, "-")
     else:
       self.CS.madsEnabled = False
 
@@ -154,8 +123,6 @@ class CarInterface(CarInterfaceBase):
 
     if not self.CS.vehicle_sensors_valid:
       events.add(car.CarEvent.EventName.vehicleSensorsInvalid)
-    if self.CS.hybrid_platform:
-      events.add(car.CarEvent.EventName.startupNoControl)
 
     ret.events = events.to_msg()
 
@@ -163,6 +130,3 @@ class CarInterface(CarInterfaceBase):
     self.buttonStatesPrev = self.CS.buttonStates.copy()
 
     return ret
-
-  def apply(self, c, now_nanos):
-    return self.CC.update(c, self.CS, now_nanos)

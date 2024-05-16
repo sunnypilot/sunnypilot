@@ -1,12 +1,11 @@
 from cereal import car
-from typing import Tuple
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fault_avoidance
+from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.subaru import subarucan
-from openpilot.selfdrive.car.subaru.values import DBC, GLOBAL_ES_ADDR, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, STEER_RATE_LIMITED, \
-                                                  CanBus, CarControllerParams, SubaruFlags, SubaruFlagsSP
+from openpilot.selfdrive.car.subaru.values import DBC, GLOBAL_ES_ADDR, CanBus, CarControllerParams, SubaruFlags, SubaruFlagsSP
 
 # FIXME: These limits aren't exact. The real limit is more than likely over a larger time period and
 # involves the total steering angle change rather than rate, but these limits work well for now
@@ -17,7 +16,7 @@ _SNG_ACC_MIN_DIST = 3
 _SNG_ACC_MAX_DIST = 4.5
 
 
-class CarController:
+class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
     self.apply_steer_last = 0
@@ -65,12 +64,12 @@ class CarController:
       if not CC.latActive:
         apply_steer = 0
 
-      if self.CP.carFingerprint in PREGLOBAL_CARS:
+      if self.CP.flags & SubaruFlags.PREGLOBAL:
         can_sends.append(subarucan.create_preglobal_steering_control(self.packer, self.frame // self.p.STEER_STEP, apply_steer, CC.latActive))
       else:
         apply_steer_req = CC.latActive
 
-        if self.CP.carFingerprint in STEER_RATE_LIMITED:
+        if self.CP.flags & SubaruFlags.STEER_RATE_LIMITED:
           # Steering rate fault prevention
           self.steer_rate_counter, apply_steer_req = \
             common_fault_avoidance(abs(CS.out.steeringRateDeg) > MAX_STEER_RATE, apply_steer_req,
@@ -100,7 +99,7 @@ class CarController:
       cruise_brake = CarControllerParams.BRAKE_MIN
 
     # *** alerts and pcm cancel ***
-    if self.CP.carFingerprint in PREGLOBAL_CARS:
+    if self.CP.flags & SubaruFlags.PREGLOBAL:
       if self.frame % 5 == 0:
         # 1 = main, 2 = set shallow, 3 = set deep, 4 = resume shallow, 5 = resume deep
         # disengage ACC when OP is disengaged
@@ -124,8 +123,8 @@ class CarController:
 
     else:
       if self.frame % 10 == 0:
-        can_sends.append(subarucan.create_es_dashstatus(self.packer, self.frame // 10, CS.es_dashstatus_msg, CC.enabled, self.CP.openpilotLongitudinalControl,
-                                                        CC.longActive, hud_control.leadVisible))
+        can_sends.append(subarucan.create_es_dashstatus(self.packer, self.frame // 10, CS.es_dashstatus_msg, CC.enabled,
+                                                        self.CP.openpilotLongitudinalControl, CC.longActive, hud_control.leadVisible))
 
         can_sends.append(subarucan.create_es_lkas_state(self.packer, self.frame // 10, CS.es_lkas_state_msg, CC.latActive, CS.madsEnabled, hud_control.visualAlert,
                                                         hud_control.leftLaneVisible, hud_control.rightLaneVisible,
@@ -145,14 +144,15 @@ class CarController:
           can_sends.append(subarucan.create_es_status(self.packer, self.frame // 5, CS.es_status_msg,
                                                       self.CP.openpilotLongitudinalControl, CC.longActive, cruise_rpm))
 
-          can_sends.append(subarucan.create_es_brake(self.packer, self.frame // 5, CS.es_brake_msg, CC.enabled, cruise_brake))
+          can_sends.append(subarucan.create_es_brake(self.packer, self.frame // 5, CS.es_brake_msg,
+                                                     self.CP.openpilotLongitudinalControl, CC.longActive, cruise_brake))
 
           can_sends.append(subarucan.create_es_distance(self.packer, self.frame // 5, CS.es_distance_msg, 0, pcm_cancel_cmd,
                                                         self.CP.openpilotLongitudinalControl, cruise_brake > 0, cruise_throttle))
       else:
         if pcm_cancel_cmd:
-          if self.CP.carFingerprint not in HYBRID_CARS:
-            bus = CanBus.alt if self.CP.carFingerprint in GLOBAL_GEN2 else CanBus.main
+          if not (self.CP.flags & SubaruFlags.HYBRID):
+            bus = CanBus.alt if self.CP.flags & SubaruFlags.GLOBAL_GEN2 else CanBus.main
             can_sends.append(subarucan.create_es_distance(self.packer, CS.es_distance_msg["COUNTER"] + 1, CS.es_distance_msg, bus, pcm_cancel_cmd))
 
       if self.CP.flags & SubaruFlags.DISABLE_EYESIGHT:
@@ -178,10 +178,10 @@ class CarController:
     return new_actuators, can_sends
 
   # Stop and Go auto-resume thanks to martinl from subaru-community
-  def stop_and_go(self, CC: car.CarControl, CS: car.CarState, throttle_cmd: bool = False, speed_cmd: bool = False) -> Tuple[bool, bool]:
+  def stop_and_go(self, CC: car.CarControl, CS: car.CarState, throttle_cmd: bool = False, speed_cmd: bool = False) -> tuple[bool, bool]:
     if not self.subaru_sng:
       return throttle_cmd, speed_cmd
-    if self.CP.carFingerprint in PREGLOBAL_CARS:
+    if self.CP.flags & SubaruFlags.PREGLOBAL:
       # Initiate the ACC resume sequence if conditions are met
       if (CC.enabled                                          # ACC active
         and CS.car_follow == 1                                # lead car
@@ -190,7 +190,7 @@ class CarController:
         and CS.close_distance < _SNG_ACC_MAX_DIST             # acc resume trigger high threshold
         and CS.close_distance > self.prev_close_distance):    # distance with lead car is increasing
         self.sng_acc_resume = True
-    elif self.CP.carFingerprint not in (GLOBAL_GEN2 | HYBRID_CARS):
+    elif not (self.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID)):
       if self.manual_parking_brake:
         # Send brake message with non-zero speed in standstill to avoid non-EPB ACC disengage
         if (CC.enabled                                        # ACC active
