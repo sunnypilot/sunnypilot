@@ -3,7 +3,6 @@ import math
 import time
 from cereal import custom
 from openpilot.common.params import Params
-from openpilot.system.version import is_release_sp_branch
 
 R = 6373000.0  # approximate radius of earth in meters
 TO_RADIANS = math.pi / 180
@@ -48,7 +47,7 @@ class TurnSpeedController:
   def __init__(self):
     self.params = Params()
     self.mem_params = Params("/dev/shm/params")
-    self.enabled = self.params.get_bool("TurnSpeedControl") and not is_release_sp_branch()
+    self.enabled = self.params.get_bool("TurnSpeedControl")
     self.last_params_update = 0
     self._op_enabled = False
     self._gas_pressed = False
@@ -78,7 +77,7 @@ class TurnSpeedController:
   def update_params(self):
     t = time.monotonic()
     if t > self.last_params_update + PARAMS_UPDATE_PERIOD:
-      self.enabled = self.params.get_bool("TurnSpeedControl") and not is_release_sp_branch()
+      self.enabled = self.params.get_bool("TurnSpeedControl")
       self.last_params_update = t
 
   def target_speed(self, v_ego, a_ego) -> float:

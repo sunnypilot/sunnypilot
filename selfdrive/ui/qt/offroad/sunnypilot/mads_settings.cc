@@ -33,7 +33,9 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
   // Disengage Lateral on Brake (DLOB)
   std::vector<QString> dlob_settings_texts{tr("Remain Active"), tr("Pause Steering")};
   dlob_settings = new ButtonParamControl(
-    "DisengageLateralOnBrake", "Steering Mode After Braking", "Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\nRemain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed.",
+    "DisengageLateralOnBrake",
+    tr("Steering Mode After Braking"),
+    tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\nRemain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed."),
     "../assets/offroad/icon_blank.png",
     dlob_settings_texts,
     500

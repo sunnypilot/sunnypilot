@@ -54,12 +54,12 @@ private:
 
 // Add this line outside the class definition
 inline const std::vector<QString> SpeedLimitPolicySettings::speed_limit_policy_texts{
-  tr("Nav\nOnly"),
-  tr("Map\nOnly"),
-  tr("Car\nOnly"),
-  tr("Nav\nFirst"),
-  tr("Map\nFirst"),
-  tr("Car\nFirst"),
+  tr("Nav") + "\n" + tr("Only"),
+  tr("Map") + "\n" + tr("Only"),
+  tr("Car") + "\n" + tr("Only"),
+  tr("Nav") + "\n" + tr("First"),
+  tr("Map") + "\n" + tr("First"),
+  tr("Car") + "\n" + tr("First"),
 };
 
 inline const std::vector<QString> SpeedLimitPolicySettings::speed_limit_policy_descriptions{

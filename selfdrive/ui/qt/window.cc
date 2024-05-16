@@ -76,7 +76,7 @@ void MainWindow::closeSettings() {
   if (uiState()->scene.started) {
     homeWindow->showSidebar(false);
     // Map is always shown when using navigate on openpilot
-    if (uiState()->scene.navigate_on_openpilot) {
+    if (uiState()->scene.navigate_on_openpilot_deprecated) {
       homeWindow->showMapPanel(true);
     }
   }

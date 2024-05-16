@@ -71,6 +71,7 @@ void SpeedLimitWarningSettings::updateToggles() {
   }
 
   auto speed_limit_warning_type_param = QString::fromStdString(params.get("SpeedLimitWarningType"));
+  auto speed_limit_warning_offset_type_param = QString::fromStdString(params.get("SpeedLimitWarningOffsetType"));
 
   speed_limit_warning_settings->setDescription(speedLimitWarningDescriptionBuilder("SpeedLimitWarningType", speed_limit_warning_descriptions));
   speed_limit_warning_flash->setEnabled(speed_limit_warning_type_param != "0");
@@ -81,7 +82,7 @@ void SpeedLimitWarningSettings::updateToggles() {
   slwvo->setEnabled(QString::fromStdString(params.get("SpeedLimitWarningOffsetType")) != "0");
 
   speed_limit_warning_offset_settings->setEnabled(speed_limit_warning_type_param != "0");
-  slwvo->setEnabled(speed_limit_warning_type_param != "0");
+  slwvo->setEnabled(speed_limit_warning_offset_type_param != "0");
 }
 
 // Speed Limit Control Custom Offset
@@ -107,9 +108,9 @@ void SpeedLimitWarningValueOffset::refresh() {
 
   if (offset_type == "0") {
     option = "";
-    unit = "N/A";
+    unit = tr("N/A");
   } else if (offset_type == "1") {
-    unit = is_metric ? " km/h" : " mph";
+    unit = " " + (is_metric ? tr("km/h") : tr("mph"));
   } else if (offset_type == "2") {
     unit = " %";
   }

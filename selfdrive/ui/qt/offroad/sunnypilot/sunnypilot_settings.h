@@ -69,10 +69,10 @@ private:
 
   ScrollView *scrollView = nullptr;
 
-  const QString nnff_description = QString("%1<br>"
+  const QString nnff_description = QString("%1<br><br>"
                                            "%2")
                                    .arg(tr("Formerly known as <b>\"NNFF\"</b>, this replaces the lateral <b>\"torque\"</b> controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy."))
-                                   .arg(tr("Reach out to the sunnypilot team in the <font color='white'><b>#tuning-nnlc channel at the sunnypilot Discord server</b></font> with feedback, or to provide log data for your car if your car is currently unsupported."));
+                                   .arg(tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported: ") + "<font color='white'><b>#tuning-nnlc</b></font>");
 
   QString nnffDescriptionBuilder(const QString &custom_description) {
     QString description = "<b>" + custom_description + "</b><br><br>" + nnff_description;

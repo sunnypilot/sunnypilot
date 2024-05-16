@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <QObject>
@@ -15,6 +15,9 @@
 #include "common/mat.h"
 #include "common/params.h"
 #include "common/timing.h"
+#include "qt/network/sunnylink/models/role_model.h"
+#include "qt/network/sunnylink/models/sponsor_role_model.h"
+#include "qt/network/sunnylink/models/user_model.h"
 #include "system/hardware/hw.h"
 
 const int UI_BORDER_SIZE = 30;
@@ -39,7 +42,6 @@ const float DRIVING_PATH_NARROW = 0.25;
 
 const int UI_FREQ = 20; // Hz
 const int BACKLIGHT_OFFROAD = 50;
-typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
 const float MIN_DRAW_DISTANCE = 10.0;
 const float MAX_DRAW_DISTANCE = 100.0;
@@ -64,59 +66,6 @@ constexpr vec3 default_face_kpts_3d[] = {
   {18.02, -49.14, 8.00}, {6.36, -51.20, 8.00}, {-5.98, -51.20, 8.00},
 };
 
-struct Alert {
-  QString text1;
-  QString text2;
-  QString type;
-  cereal::ControlsState::AlertSize size;
-  cereal::ControlsState::AlertStatus status;
-  AudibleAlert sound;
-
-  bool equal(const Alert &a2) {
-    return text1 == a2.text1 && text2 == a2.text2 && type == a2.type && sound == a2.sound;
-  }
-
-  static Alert get(const SubMaster &sm, uint64_t started_frame) {
-    const cereal::ControlsState::Reader &cs = sm["controlsState"].getControlsState();
-    const uint64_t controls_frame = sm.rcv_frame("controlsState");
-
-    Alert alert = {};
-    if (controls_frame >= started_frame) {  // Don't get old alert.
-      alert = {cs.getAlertText1().cStr(), cs.getAlertText2().cStr(),
-               cs.getAlertType().cStr(), cs.getAlertSize(),
-               cs.getAlertStatus(),
-               cs.getAlertSound()};
-    }
-
-    if (!sm.updated("controlsState") && (sm.frame - started_frame) > 5 * UI_FREQ) {
-      const int CONTROLS_TIMEOUT = 5;
-      const int controls_missing = (nanos_since_boot() - sm.rcv_time("controlsState")) / 1e9;
-
-      // Handle controls timeout
-      if (controls_frame < started_frame) {
-        // car is started, but controlsState hasn't been seen at all
-        alert = {"openpilot Unavailable", "Waiting for controls to start",
-                 "controlsWaiting", cereal::ControlsState::AlertSize::MID,
-                 cereal::ControlsState::AlertStatus::NORMAL,
-                 AudibleAlert::NONE};
-      } else if (controls_missing > CONTROLS_TIMEOUT && !Hardware::PC()) {
-        // car is started, but controls is lagging or died
-        if (cs.getEnabled() && (controls_missing - CONTROLS_TIMEOUT) < 10) {
-          alert = {"TAKE CONTROL IMMEDIATELY", "Controls Unresponsive",
-                   "controlsUnresponsive", cereal::ControlsState::AlertSize::FULL,
-                   cereal::ControlsState::AlertStatus::CRITICAL,
-                   AudibleAlert::WARNING_IMMEDIATE};
-        } else {
-          alert = {"Controls Unresponsive", "Reboot Device",
-                   "controlsUnresponsivePermanent", cereal::ControlsState::AlertSize::MID,
-                   cereal::ControlsState::AlertStatus::NORMAL,
-                   AudibleAlert::NONE};
-        }
-      }
-    }
-    return alert;
-  }
-};
 
 typedef enum UIStatus {
   STATUS_DISENGAGED,
@@ -126,7 +75,8 @@ typedef enum UIStatus {
 } UIStatus;
 
 enum PrimeType {
-  UNKNOWN = -1,
+  UNKNOWN = -2,
+  UNPAIRED = -1,
   NONE = 0,
   MAGENTA = 1,
   LITE = 2,
@@ -142,11 +92,6 @@ const QColor bg_colors [] = {
   [STATUS_MADS] = QColor(0x00, 0xc8, 0xc8, 0xf1),
 };
 
-static std::map<cereal::ControlsState::AlertStatus, QColor> alert_colors = {
-  {cereal::ControlsState::AlertStatus::NORMAL, QColor(0x15, 0x15, 0x15, 0xf1)},
-  {cereal::ControlsState::AlertStatus::USER_PROMPT, QColor(0xDA, 0x6F, 0x25, 0xf1)},
-  {cereal::ControlsState::AlertStatus::CRITICAL, QColor(0xC9, 0x22, 0x31, 0xf1)},
-};
 
 const QColor tcs_colors [] = {
   [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED)] =  QColor(0x0, 0x0, 0x0, 0xff),
@@ -191,7 +136,8 @@ typedef struct UIScene {
   float driver_pose_coss[3];
   vec3 face_kpts_draw[std::size(default_face_kpts_3d)];
 
-  bool navigate_on_openpilot = false;
+  bool navigate_on_openpilot_deprecated = false;
+  cereal::LongitudinalPersonality personality;
 
   float light_sensor;
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
@@ -219,7 +165,6 @@ typedef struct UIScene {
 
   bool map_visible;
   int dev_ui_info;
-  int rn_offset;
   bool live_torque_toggle;
 
   bool touch_to_wake = false;
@@ -246,8 +191,6 @@ typedef struct UIScene {
 
   bool dynamic_experimental_control;
 
-  QRect sl_sign_rect;
-
   int speed_limit_control_engage_type;
 
   bool mapbox_fullscreen;
@@ -256,7 +199,11 @@ typedef struct UIScene {
   int speed_limit_warning_type;
   int speed_limit_warning_value_offset;
 
+  bool custom_driving_model;
   int driving_model_gen;
+
+  bool feature_status_toggle;
+  bool onroad_settings_toggle;
 } UIScene;
 
 class UIState : public QObject {
@@ -271,7 +218,43 @@ public:
 
   void setPrimeType(PrimeType type);
   inline PrimeType primeType() const { return prime_type; }
-  inline bool hasPrime() const { return prime_type != PrimeType::UNKNOWN && prime_type != PrimeType::NONE; }
+  inline bool hasPrime() const { return prime_type > PrimeType::NONE; }
+
+  void setSunnylinkRoles(const std::vector<RoleModel> &roles);
+  void setSunnylinkDeviceUsers(const std::vector<UserModel> &users);
+
+  inline std::vector<RoleModel> sunnylinkDeviceRoles() const { return sunnylinkRoles; }
+  inline bool isSunnylinkAdmin() const {
+    return std::any_of(sunnylinkRoles.begin(), sunnylinkRoles.end(), [](const RoleModel &role) {
+      return role.roleType == RoleType::Admin;
+    });
+  }
+  inline bool isSunnylinkSponsor() const {
+    return std::any_of(sunnylinkRoles.begin(), sunnylinkRoles.end(), [](const RoleModel &role) {
+      return role.roleType == RoleType::Sponsor && role.as<SponsorRoleModel>().roleTier != SponsorTier::Free;
+    });
+  }
+  inline SponsorRoleModel sunnylinkSponsorRole() const {
+    std::optional<SponsorRoleModel> sponsorRoleWithHighestTier = std::nullopt;
+    for (const auto &role : sunnylinkRoles) {
+      if(role.roleType != RoleType::Sponsor)
+        continue;
+      
+      if (auto sponsorRole = role.as<SponsorRoleModel>(); !sponsorRoleWithHighestTier.has_value() || sponsorRoleWithHighestTier->roleTier < sponsorRole.roleTier) {
+        sponsorRoleWithHighestTier = sponsorRole;
+      }
+    }
+    return sponsorRoleWithHighestTier.value_or(SponsorRoleModel(RoleType::Sponsor, SponsorTier::Free));
+  }
+  inline SponsorTier sunnylinkSponsorTier() const {
+    return sunnylinkSponsorRole().roleTier;
+  }
+  inline std::vector<UserModel> sunnylinkDeviceUsers() const { return sunnylinkUsers; }
+  inline bool isSunnylinkPaired() const {
+    return std::any_of(sunnylinkUsers.begin(), sunnylinkUsers.end(), [](const UserModel &user) {
+      return user.user_id.toLower() != "unregisteredsponsor" && user.user_id.toLower() != "temporarysponsor";
+    });
+  }
 
   int fb_w = 0, fb_h = 0;
 
@@ -290,6 +273,10 @@ signals:
   void primeChanged(bool prime);
   void primeTypeChanged(PrimeType prime_type);
 
+  void sunnylinkRoleChanged(bool subscriber);
+  void sunnylinkRolesChanged(std::vector<RoleModel> roles);
+  void sunnylinkDeviceUsersChanged(std::vector<UserModel> users);
+
 private slots:
   void update();
 
@@ -297,6 +284,8 @@ private:
   QTimer *timer;
   bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
+  std::vector<RoleModel> sunnylinkRoles = {};
+  std::vector<UserModel> sunnylinkUsers = {};
 
   bool last_mads_enabled = false;
   bool mads_path_state = false;
