@@ -760,12 +760,9 @@ class Controls:
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
-      if self.v_cruise_helper.update_personality:
+      if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
         self.personality = (self.personality - 1) % 3
         self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
-      if self.v_cruise_helper.update_experimental_mode:
-        self.experimental_mode = not self.experimental_mode
-        self.params.put_bool_nonblocking('ExperimentalMode', self.experimental_mode)
 
     return CC, lac_log
 
