@@ -46,6 +46,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UPDATED: Upstream native support for Gap Adjust Cruise
 * UPDATED: Neural Network Lateral Control (NNLC)
+  * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
   * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
   * This will be updated when the new mapping of platforms are restructured (thanks @twilsconso 😉)
 * UI Updates
