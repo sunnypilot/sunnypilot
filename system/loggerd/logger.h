@@ -53,5 +53,4 @@ protected:
 
 kj::Array<capnp::word> logger_build_init_data();
 kj::Array<capnp::word> logger_build_params_data_car_start();
-std::string logger_get_route_name();
 std::string logger_get_identifier(std::string key);

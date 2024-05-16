@@ -15,6 +15,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.numpy_fast import interp
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import config_realtime_process
+from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.selfdrive import sentry
 from openpilot.selfdrive.car.car_helpers import get_demo_car_params
@@ -67,6 +68,7 @@ class ModelState:
       'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
       'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
     }
+    _inputs_2 = {}
     if self.custom_model and self.model_gen != 0:
       if self.model_gen == 1:
         _inputs = {
@@ -77,13 +79,17 @@ class ModelState:
           'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
           'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),
         }
+      if self.model_gen != 4:
+        _inputs_2 = {
+          'nav_features': np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32),
+          'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
+        }
 
     self.inputs = {
       'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
       'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
       **_inputs,
-      'nav_features': np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32),
-      'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
+      **_inputs_2,
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
@@ -127,8 +133,9 @@ class ModelState:
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
     if not (self.custom_model and self.model_gen == 1):
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
-    self.inputs['nav_features'][:] = inputs['nav_features']
-    self.inputs['nav_instructions'][:] = inputs['nav_instructions']
+    if not (self.custom_model and self.model_gen == 4):
+      self.inputs['nav_features'][:] = inputs['nav_features']
+      self.inputs['nav_instructions'][:] = inputs['nav_instructions']
 
     # if getCLBuffer is not None, frame will be None
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
@@ -193,13 +200,17 @@ def main(demo=False):
   if use_extra_client:
     cloudlog.warning(f"connected extra cam with buffer size: {vipc_client_extra.buffer_len} ({vipc_client_extra.width} x {vipc_client_extra.height})")
 
-  # messaging
-  pm = PubMaster(["modelV2", "modelV2SP", "cameraOdometry"])
-  sm = SubMaster(["carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "navModel", "navInstruction", "carControl", "lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"])
-
-  publish_state = PublishState()
   params = Params()
   custom_model, model_gen = get_model_generation(params)
+
+  # messaging
+  extended_svs = ["lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"]
+  if custom_model and model_gen != 4:
+    extended_svs += ["navModelDEPRECATED", "navInstruction"]
+  pm = PubMaster(["modelV2", "modelV2SP", "cameraOdometry"])
+  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"] + extended_svs)
+
+  publish_state = PublishState()
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / ModelConstants.MODEL_FREQ)
@@ -212,8 +223,9 @@ def main(demo=False):
   live_calib_seen = False
   if custom_model and model_gen == 1:
     driving_style = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-  nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
-  nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
+  if custom_model and model_gen != 4:
+    nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
+    nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
   buf_main, buf_extra = None, None
   meta_main = FrameMeta()
   meta_extra = FrameMeta()
@@ -240,7 +252,7 @@ def main(demo=False):
         break
 
     if buf_main is None:
-      cloudlog.error("vipc_client_main no frame")
+      cloudlog.debug("vipc_client_main no frame")
       continue
 
     if use_extra_client:
@@ -252,7 +264,7 @@ def main(demo=False):
           break
 
       if buf_extra is None:
-        cloudlog.error("vipc_client_extra no frame")
+        cloudlog.debug("vipc_client_extra no frame")
         continue
 
       if abs(meta_main.timestamp_sof - meta_extra.timestamp_sof) > 10000000:
@@ -271,10 +283,11 @@ def main(demo=False):
     frame_id = sm["roadCameraState"].frameId
     if not (custom_model and model_gen == 1):
       lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
-    if sm.updated["liveCalibration"]:
+    if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
-      model_transform_main = get_warp_matrix(device_from_calib_euler, main_wide_camera, False).astype(np.float32)
-      model_transform_extra = get_warp_matrix(device_from_calib_euler, True, True).astype(np.float32)
+      dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
+      model_transform_main = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics, False).astype(np.float32)
+      model_transform_extra = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics, True).astype(np.float32)
       live_calib_seen = True
 
     traffic_convention = np.zeros(2)
@@ -284,29 +297,32 @@ def main(demo=False):
     if desire >= 0 and desire < ModelConstants.DESIRE_LEN:
       vec_desire[desire] = 1
 
-    # Enable/disable nav features
-    timestamp_llk = sm["navModel"].locationMonoTime
-    nav_valid = sm.valid["navModel"] # and (nanos_since_boot() - timestamp_llk < 1e9)
-    nav_enabled = nav_valid
+    timestamp_llk = 0
+    nav_enabled = False
+    if custom_model and model_gen != 4:
+      # Enable/disable nav features
+      timestamp_llk = sm["navModelDEPRECATED"].locationMonoTime
+      nav_valid = sm.valid["navModelDEPRECATED"] # and (nanos_since_boot() - timestamp_llk < 1e9)
+      nav_enabled = nav_valid
 
-    if not nav_enabled:
-      nav_features[:] = 0
-      nav_instructions[:] = 0
+      if not nav_enabled:
+        nav_features[:] = 0
+        nav_instructions[:] = 0
 
-    if nav_enabled and sm.updated["navModel"]:
-      nav_features = np.array(sm["navModel"].features)
+      if nav_enabled and sm.updated["navModelDEPRECATED"]:
+        nav_features = np.array(sm["navModelDEPRECATED"].features)
 
-    if nav_enabled and sm.updated["navInstruction"]:
-      nav_instructions[:] = 0
-      for maneuver in sm["navInstruction"].allManeuvers:
-        distance_idx = 25 + int(maneuver.distance / 20)
-        direction_idx = 0
-        if maneuver.modifier in ("left", "slight left", "sharp left"):
-          direction_idx = 1
-        if maneuver.modifier in ("right", "slight right", "sharp right"):
-          direction_idx = 2
-        if 0 <= distance_idx < 50:
-          nav_instructions[distance_idx*3 + direction_idx] = 1
+      if nav_enabled and sm.updated["navInstruction"]:
+        nav_instructions[:] = 0
+        for maneuver in sm["navInstruction"].allManeuvers:
+          distance_idx = 25 + int(maneuver.distance / 20)
+          direction_idx = 0
+          if maneuver.modifier in ("left", "slight left", "sharp left"):
+            direction_idx = 1
+          if maneuver.modifier in ("right", "slight right", "sharp right"):
+            direction_idx = 2
+          if 0 <= distance_idx < 50:
+            nav_instructions[distance_idx*3 + direction_idx] = 1
 
     # tracked dropped frames
     vipc_dropped_frames = max(0, meta_main.frame_id - last_vipc_frame_id - 1)
@@ -329,13 +345,20 @@ def main(demo=False):
       _inputs = {
         'lateral_control_params': lateral_control_params
       }
+    if custom_model and model_gen != 4:
+      _inputs_2 = {
+        'nav_features': nav_features,
+        'nav_instructions': nav_instructions
+      }
+    else:
+      _inputs_2 = {}
 
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
       **_inputs,
-      'nav_features': nav_features,
-      'nav_instructions': nav_instructions}
+      **_inputs_2,
+      }
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
@@ -348,7 +371,8 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
-                      meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen, custom_model and model_gen == 1)
+                      meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
+                      custom_model and model_gen == 1, custom_model and model_gen != 4)
 
       if not (custom_model and model_gen == 1):
         desire_state = modelv2_send.modelV2.meta.desireState

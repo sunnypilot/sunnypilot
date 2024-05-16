@@ -9,7 +9,7 @@
 #include "libyuv.h"
 #include "common/clutil.h"
 
-#include "selfdrive/ui/qt/onroad.h"
+#include "selfdrive/ui/qt/onroad/annotated_camera.h"
 #include "selfdrive/ui/qt/screenrecorder/screenrecorder.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/ui.h"
