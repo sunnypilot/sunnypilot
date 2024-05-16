@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,10 @@ class ElidedLabel : public QLabel {
 public:
   explicit ElidedLabel(QWidget *parent = 0);
   explicit ElidedLabel(const QString &text, QWidget *parent = 0);
+
+  void setColor(const QString &color) {
+    setStyleSheet("QLabel { color : " + color + "; }");
+  }
 
 signals:
   void clicked();
@@ -50,8 +55,11 @@ public:
     title_label->setText(title);
   }
 
-  void setValue(const QString &val) {
+  void setValue(const QString &val, std::optional<QString> color = std::nullopt) {
     value->setText(val);
+    if (color.has_value()) {
+      value->setColor(color.value());
+    }
   }
 
   const QString getDescription() {
@@ -277,11 +285,9 @@ public:
 
     hlayout->setAlignment(Qt::AlignLeft);
 
-    QObject::connect(button_group, QOverload<int, bool>::of(&QButtonGroup::buttonToggled), [=](int id, bool checked) {
-      if (checked) {
-        params.put(key, std::to_string(id));
-        emit buttonToggled(id);
-      }
+    QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), [=](int id) {
+      params.put(key, std::to_string(id));
+      emit buttonToggled(id);
     });
   }
 
@@ -292,6 +298,19 @@ public:
     button_group_enabled = enable;
 
     update();
+  }
+
+  void setCheckedButton(int id) {
+    button_group->button(id)->setChecked(true);
+  }
+
+  void refresh() {
+    int value = atoi(params.get(key).c_str());
+    button_group->button(value)->setChecked(true);
+  }
+
+  void showEvent(QShowEvent *event) override {
+    refresh();
   }
 
   void setButton(QString param) {
