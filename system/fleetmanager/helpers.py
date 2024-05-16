@@ -31,8 +31,9 @@ def login_required(f):
   return decorated_route
 
 
-def list_files(path):
-  return sorted(listdir_by_creation(path), reverse=True)
+def list_files(path, single=False):
+  files = os.listdir(path) if single else listdir_by_creation(path)
+  return sorted(files, reverse=True)
 
 
 def is_valid_segment(segment):

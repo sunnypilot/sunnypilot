@@ -33,7 +33,11 @@ widgets_src += ["qt/offroad/sunnypilot/display_settings.cc", "qt/offroad/sunnypi
                 "qt/offroad/sunnypilot/monitoring_settings.cc", "qt/offroad/sunnypilot/osm_settings.cc",
                 "qt/offroad/sunnypilot/custom_offsets_settings.cc", "qt/widgets/sunnypilot/drive_stats.cc",
                 "qt/offroad/sunnypilot/software_settings_sp.cc", "qt/offroad/sunnypilot/models_fetcher.cc",
-                "qt/offroad/sunnypilot/speed_limit_warning_settings.cc", "qt/offroad/sunnypilot/speed_limit_policy_settings.cc"]
+                "qt/offroad/sunnypilot/speed_limit_warning_settings.cc", "qt/offroad/sunnypilot/speed_limit_policy_settings.cc",
+                "qt/offroad/sunnypilot/sunnylink_settings.cc"]
+
+widgets_src += ["qt/network/sunnylink/sunnylink_client.cc", "qt/network/sunnylink/services/base_device_service.cc",
+                "qt/network/sunnylink/services/role_service.cc", "qt/network/sunnylink/services/user_service.cc"]
 
 qt_env['CPPDEFINES'] = []
 if maps:
@@ -46,10 +50,12 @@ widgets = qt_env.Library("qt_widgets", widgets_src, LIBS=base_libs)
 Export('widgets')
 qt_libs = [widgets, qt_util] + base_libs
 
-qt_src = ["main.cc", "qt/sidebar.cc", "qt/onroad.cc", "qt/body.cc",
+qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc",
           "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
+          "qt/onroad/onroad_home.cc", "qt/onroad/annotated_camera.cc",
+          "qt/onroad/buttons.cc", "qt/onroad/alerts.cc",
           "qt/onroad_settings.cc", "qt/onroad_settings_panel.cc"]
 
 # build translation files
@@ -83,8 +89,8 @@ asset_obj = qt_env.Object("assets", assets)
 qt_env.SharedLibrary("qt/python_helpers", ["qt/qt_window.cc"], LIBS=qt_libs)
 
 # spinner and text window
-qt_env.Program("qt/text", ["qt/text.cc"], LIBS=qt_libs)
-qt_env.Program("qt/spinner", ["qt/spinner.cc"], LIBS=qt_libs)
+qt_env.Program("_text", ["qt/text.cc"], LIBS=qt_libs)
+qt_env.Program("_spinner", ["qt/spinner.cc"], LIBS=qt_libs)
 
 # build main UI
 # include dashcam / screenrecorder
@@ -101,7 +107,7 @@ if GetOption('extras'):
   qt_env.Program('tests/ui_snapshot', [asset_obj, "tests/ui_snapshot.cc"] + qt_src, LIBS=qt_libs)
 
 
-if GetOption('extras') and arch != "Darwin":
+if GetOption('extras') and arch in ['larch64']:
   # setup and factory resetter
   qt_env.Program("qt/setup/reset", ["qt/setup/reset.cc"], LIBS=qt_libs)
   qt_env.Program("qt/setup/setup", ["qt/setup/setup.cc", asset_obj],
@@ -109,6 +115,9 @@ if GetOption('extras') and arch != "Darwin":
 
   # build updater UI
   qt_env.Program("qt/setup/updater", ["qt/setup/updater.cc", asset_obj], LIBS=qt_libs)
+
+  # build mui
+  qt_env.Program("mui", ["mui.cc"], LIBS=qt_libs)
 
   # build installers
   senv = qt_env.Clone()

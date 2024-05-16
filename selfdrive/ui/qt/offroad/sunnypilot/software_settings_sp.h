@@ -53,7 +53,7 @@ private:
   static inline bool showConfirmationDialog(QWidget *parent, const QString &message = QString(), const QString &confirmButtonText = QString(), const bool show_metered_warning = false) {
     const QString warning_message = show_metered_warning ? tr("Warning: You are on a metered connection!") : QString();
     const QString final_message = QString("%1%2").arg(!message.isEmpty() ? message+"\n" : QString(), warning_message);
-    const QString final_buttonText = !confirmButtonText.isEmpty() ? confirmButtonText : QString("Continue%1").arg(show_metered_warning ? " on Metered" : "");
+    const QString final_buttonText = !confirmButtonText.isEmpty() ? confirmButtonText : QString(tr("Continue") + " %1").arg(show_metered_warning ? tr("on Metered") : "");
 
     return ConfirmationDialog::confirm(final_message, final_buttonText, parent);
   }

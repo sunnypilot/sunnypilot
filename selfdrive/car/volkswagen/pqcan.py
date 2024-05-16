@@ -9,7 +9,7 @@ def create_steering_control(packer, bus, apply_steer, lkas_enabled):
   return packer.make_can_msg("HCA_1", bus, values)
 
 
-def create_lka_hud_control(packer, bus, ldw_stock_values, enabled, lat_active, steering_pressed, hud_alert, hud_control):
+def create_lka_hud_control(packer, bus, ldw_stock_values, lat_active, steering_pressed, hud_alert, hud_control):
   values = {}
   if len(ldw_stock_values):
     values = {s: ldw_stock_values[s] for s in [
@@ -99,10 +99,10 @@ def create_acc_accel_control(packer, bus, acc_type, acc_enabled, accel, acc_cont
   return commands
 
 
-def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance, gac_tr_cluster):
+def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance, distance):
   values = {
     "ACA_StaACC": acc_hud_status,
-    "ACA_Zeitluecke": 2,
+    "ACA_Zeitluecke": distance + 2,
     "ACA_V_Wunsch": set_speed,
     "ACA_gemZeitl": lead_distance,
     "ACA_PrioDisp": 3,
