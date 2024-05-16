@@ -89,6 +89,7 @@ private:
 
 std::unordered_map<std::string, uint32_t> keys = {
     {"AccessToken", CLEAR_ON_MANAGER_START | DONT_LOG},
+    {"AlwaysOnDM", PERSISTENT},
     {"ApiCache_Device", PERSISTENT},
     {"ApiCache_NavDestinations", PERSISTENT},
     {"AssistNowToken", PERSISTENT},
@@ -127,8 +128,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"GitCommit", PERSISTENT},
     {"GitCommitDate", PERSISTENT},
     {"GitDiff", PERSISTENT},
-    {"GithubSshKeys", PERSISTENT},
-    {"GithubUsername", PERSISTENT},
+    {"GithubSshKeys", PERSISTENT | BACKUP},
+    {"GithubUsername", PERSISTENT | BACKUP},
     {"GitRemote", PERSISTENT},
     {"GsmApn", PERSISTENT | BACKUP},
     {"GsmMetered", PERSISTENT | BACKUP},
@@ -172,7 +173,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Offroad_CarUnrecognized", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"Offroad_ConnectivityNeeded", CLEAR_ON_MANAGER_START},
     {"Offroad_ConnectivityNeededPrompt", CLEAR_ON_MANAGER_START},
-    {"Offroad_InvalidTime", CLEAR_ON_MANAGER_START},
     {"Offroad_IsTakingSnapshot", CLEAR_ON_MANAGER_START},
     {"Offroad_NeosUpdate", CLEAR_ON_MANAGER_START},
     {"Offroad_NoFirmware", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
@@ -190,8 +190,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"RecordFront", PERSISTENT | BACKUP},
     {"RecordFrontLock", PERSISTENT},  // for the internal fleet
     {"ReplayControlsState", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"RouteCount", PERSISTENT},
     {"SnoozeUpdate", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
-    {"SshEnabled", PERSISTENT},
+    {"SshEnabled", PERSISTENT | BACKUP},
     {"TermsVersion", PERSISTENT},
     {"Timezone", PERSISTENT},
     {"TrainingVersion", PERSISTENT},
@@ -208,7 +209,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
-    {"VisionRadarToggle", PERSISTENT},
 
     {"AccMadsCombo", PERSISTENT | BACKUP},
     {"AmapKey1", PERSISTENT | BACKUP},
@@ -263,6 +263,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"HotspotOnBootConfirmed", PERSISTENT},
     {"LastCarModel", PERSISTENT | BACKUP},
     {"LastSpeedLimitSignTap", PERSISTENT},
+    {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
     {"LiveTorque", PERSISTENT | BACKUP},
     {"LiveTorqueRelaxed", PERSISTENT | BACKUP},
     {"LkasToggle", PERSISTENT | BACKUP},
@@ -307,6 +308,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"StockLongToyota", PERSISTENT | BACKUP},
     {"SubaruManualParkingBrakeSng", PERSISTENT | BACKUP},
     {"SunnylinkDongleId", PERSISTENT},
+    {"SunnylinkEnabled", PERSISTENT},
+    {"SunnylinkdPid", PERSISTENT},
     {"TorqueDeadzoneDeg", PERSISTENT | BACKUP},
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueLateralJerk", PERSISTENT | BACKUP},
@@ -322,6 +325,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"VwAccType", PERSISTENT | BACKUP},
     {"VwCCOnly", PERSISTENT | BACKUP},
     {"Offroad_SupersededUpdate", PERSISTENT},
+
+    {"SunnylinkCache_Users", PERSISTENT},
+    {"SunnylinkCache_Roles", PERSISTENT},
 
     // PFEIFER - MAPD {{
     {"MapdVersion", PERSISTENT},
@@ -403,7 +409,9 @@ int Params::put(const char* key, const char* value, size_t value_size) {
   } while (false);
 
   close(tmp_fd);
-  ::unlink(tmp_path.c_str());
+  if (result != 0) {
+    ::unlink(tmp_path.c_str());
+  }
   return result;
 }
 

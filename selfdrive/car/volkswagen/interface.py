@@ -3,7 +3,7 @@ from panda import Panda
 from openpilot.common.params import Params
 from openpilot.selfdrive.car import get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.volkswagen.values import PQ_CARS, CANBUS, NetworkLocation, TransmissionType, GearShifter, VolkswagenFlags, \
+from openpilot.selfdrive.car.volkswagen.values import CAR, CANBUS, CarControllerParams, NetworkLocation, TransmissionType, GearShifter, VolkswagenFlags, \
                                                       BUTTON_STATES, VolkswagenFlagsSP
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -21,16 +21,14 @@ class CarInterface(CarInterfaceBase):
       self.ext_bus = CANBUS.cam
       self.cp_ext = self.cp_cam
 
-    self.eps_timer_soft_disable_alert = False
-
     self.buttonStatesPrev = BUTTON_STATES.copy()
 
   @staticmethod
-  def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
+  def _get_params(ret, candidate: CAR, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "volkswagen"
     ret.radarUnavailable = True
 
-    if candidate in PQ_CARS:
+    if ret.flags & VolkswagenFlags.PQ:
       # Set global PQ35/PQ46/NMS parameters
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.volkswagenPq)]
       ret.enableBsm = 0x3BA in fingerprint[0]  # SWA_1
@@ -76,7 +74,7 @@ class CarInterface(CarInterfaceBase):
     # Global lateral tuning defaults, can be overridden per-vehicle
 
     ret.steerLimitTimer = 0.4
-    if candidate in PQ_CARS:
+    if ret.flags & VolkswagenFlags.PQ:
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
     else:
@@ -112,17 +110,14 @@ class CarInterface(CarInterfaceBase):
     ret.vEgoStopping = 0.5
     ret.longitudinalTuning.kpV = [0.1]
     ret.longitudinalTuning.kiV = [0.0]
-
-    # Per-chassis tuning values, override tuning defaults here if desired
-
     ret.autoResumeSng = ret.minEnableSpeed == -1
-    ret.centerToFront = ret.wheelbase * 0.45
+
     return ret
 
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_ext, self.CP.transmissionType)
-    self.CS = self.sp_update_params(self.CS)
+    self.sp_update_params()
 
     buttonEvents = []
 
@@ -137,16 +132,15 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
-    self.CS.accEnabled, buttonEvents = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                                          buttonEvents, c.vCruise,
-                                                                          enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            buttonEvents, c.vCruise,
+                                                            enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     if ret.cruiseState.available:
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-      ret, self.CS = self.toggle_gac(ret, self.CS, bool(self.CS.gap_dist_button), 1, 3, 3, "-")
     else:
       self.CS.madsEnabled = False
     self.CS.madsEnabled = self.get_sp_started_mads(ret, self.CS)
@@ -163,7 +157,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.gap_dist_button == 3))
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
@@ -185,7 +179,7 @@ class CarInterface(CarInterfaceBase):
                                         enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     # Low speed steer alert hysteresis logic
-    if self.CP.minSteerSpeed > 0. and ret.vEgo < (self.CP.minSteerSpeed + 1.):
+    if (self.CP.minSteerSpeed - 1e-3) > CarControllerParams.DEFAULT_MIN_STEER_SPEED and ret.vEgo < (self.CP.minSteerSpeed + 1.):
       self.low_speed_alert = True
     elif ret.vEgo > (self.CP.minSteerSpeed + 2.):
       self.low_speed_alert = False
@@ -198,7 +192,7 @@ class CarInterface(CarInterfaceBase):
       if c.enabled and ret.vEgo < self.CP.minEnableSpeed:
         events.add(EventName.speedTooLow)
 
-    if self.eps_timer_soft_disable_alert:
+    if self.CC.eps_timer_soft_disable_alert:
       events.add(EventName.steerTimeLimit)
 
     ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
@@ -212,6 +206,3 @@ class CarInterface(CarInterfaceBase):
 
     return ret
 
-  def apply(self, c, now_nanos):
-    new_actuators, can_sends, self.eps_timer_soft_disable_alert = self.CC.update(c, self.CS, self.ext_bus, now_nanos)
-    return new_actuators, can_sends

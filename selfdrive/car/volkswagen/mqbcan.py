@@ -28,7 +28,7 @@ def create_eps_update(packer, bus, eps_stock_values, ea_simulated_torque):
   return packer.make_can_msg("LH_EPS_03", bus, values)
 
 
-def create_lka_hud_control(packer, bus, ldw_stock_values, enabled, lat_active, steering_pressed, hud_alert, hud_control):
+def create_lka_hud_control(packer, bus, ldw_stock_values, lat_active, steering_pressed, hud_alert, hud_control):
   values = {}
   if len(ldw_stock_values):
     values = {s: ldw_stock_values[s] for s in [
@@ -133,11 +133,11 @@ def create_acc_accel_control(packer, bus, acc_type, acc_enabled, accel, acc_cont
   return commands
 
 
-def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance, gac_tr_cluster):
+def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance, distance):
   values = {
     "ACC_Status_Anzeige": acc_hud_status,
     "ACC_Wunschgeschw_02": set_speed if set_speed < 250 else 327.36,
-    "ACC_Gesetzte_Zeitluecke": gac_tr_cluster,
+    "ACC_Gesetzte_Zeitluecke": distance + 2,
     "ACC_Display_Prio": 3,
     "ACC_Abstandsindex": lead_distance,
   }
