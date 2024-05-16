@@ -57,7 +57,7 @@ void Sidebar::mouseReleaseEvent(QMouseEvent *event) {
     flag_pressed = settings_pressed = false;
     update();
   }
-  if (home_btn.contains(event->pos())) {
+  if (onroad && home_btn.contains(event->pos())) {
     MessageBuilder msg;
     msg.initEvent().initUserFlag();
     pm->send("userFlag", msg);
@@ -97,12 +97,9 @@ void Sidebar::updateState(const UIState &s) {
       case 0:
         break;
       case 1:
-        sidebar_temp = QString::number((int)deviceState.getAmbientTempC());
-        break;
-      case 2:
         sidebar_temp = QString::number((int)deviceState.getMemoryTempC());
         break;
-      case 3: {
+      case 2: {
         const auto& cpu_temp_list = deviceState.getCpuTempC();
         float max_cpu_temp = std::numeric_limits<float>::lowest();
 
@@ -115,7 +112,7 @@ void Sidebar::updateState(const UIState &s) {
         }
         break;
       }
-      case 4: {
+      case 3: {
         const auto& gpu_temp_list = deviceState.getGpuTempC();
         float max_gpu_temp = std::numeric_limits<float>::lowest();
 
@@ -128,7 +125,7 @@ void Sidebar::updateState(const UIState &s) {
         }
         break;
       }
-      case 5:
+      case 4:
         sidebar_temp = QString::number((int)deviceState.getMaxTempC());
         break;
       default:

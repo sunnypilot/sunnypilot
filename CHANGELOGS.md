@@ -1,9 +1,77 @@
-sunnypilot - 0.9.6.0 (2024-xx-xx)
+sunnypilot - 0.9.7.0 (2024-05-xx)
 ========================
-* UPDATED: Synced with commaai's master commit 9acc558 (February 14, 2024)
+* New driving model
+* Adjust driving personality with the follow distance button
+* Support for hybrid variants of supported Ford models
+* Added toggle to enable driver monitoring even when openpilot is not engaged
+* Fingerprinting without the OBD-II port on all cars
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 2e6b2ef (May 9, 2024)
+* NEW❗: sunnylink (Alpha early access)
+  * NEW❗: Config Backup
+    * Remotely back up and restore sunnypilot settings easily
+    * Device registration with sunnylink ensures a secure, integrated experience across services
+    * AES encryption derived from the device's RSA private key is used for utmost security
+    * Settings are encrypted on-device, transmitted securely via HTTPS, and stored encrypted on sunnylink
+    * Prevents loss of settings after device resets, offering peace of mind through end-to-end encryption
+    * Early alpha access to all current and previous GitHub Sponsors and Patreon supporters
+  * GitHub account pairing from device settings scanning QR code
+    * Pairing your account will allow you to access features via our API (still WIP but accessible if you dig a little on our code 😉)
+    * Allow inheritance of your sponsorship status, allowing you to get extra features and early access whenever applicable
+* NEW❗: iOS Siri Shortcuts Navigation support thanks to twilsonco and mike86437!
+  * iOS and macOS Shortcuts to quickly set navigation destinations from your iOS device
+  * comma Prime support
+  * Personal Mapbox/Amap/Google Maps token support
+  * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+* RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
+  * openpilot Longitudianl Control available cars
+  * Custom Stock Longitudinal Control available cars
+* UPDATED: Driving Model Selector v4
+  * NEW❗: Driving Model additions
+    * North Dakota (April 29, 2024) - NDv2
+    * WD40 (April 09, 2024) - WD40
+    * Duck Amigo (March 18, 2024) - DA
+    * Recertified Herbalist (March 01, 2024) - CHLR
+  * Legacy Driving Models with Navigate on openpilot (NoO) support
+    * Includes Duck Amigo and all preceding models
+* UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
+  * Reset self-service access tokens for Mapbox, Amap, and Google Maps
+* UPDATED: Upstream native support for Gap Adjust Cruise
+* UPDATED: Neural Network Lateral Control (NNLC)
+  * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
+  * This will be updated when the new mapping of platforms are restructured (thanks @twilsconso 😉)
+* UI Updates
+  * Display Metrics Below Chevron
+    * NEW❗: Metrics is now being displayed below the chevron instead of above
+    * NEW❗: Display both Distance and Speed simultaneously
+
+sunnypilot - 0.9.6.1 (2024-02-27)
+========================
+* New driving model
+  * Vision model trained on more data
+  * Improved driving performance
+  * Directly outputs curvature for lateral control
+* New driver monitoring model
+  * Trained on larger dataset
+* AGNOS 9
+* comma body streaming and controls over WebRTC
+* Improved fuzzy fingerprinting for many makes and models
+* Alpha longitudinal support for new Toyota models
+* Chevrolet Equinox 2019-22 support thanks to JasonJShuler and nworb-cire!
+* Dodge Durango 2020-21 support
+* Hyundai Staria 2023 support thanks to sunnyhaibin!
+* Kia Niro Plug-in Hybrid 2022 support thanks to sunnyhaibin!
+* Lexus LC 2024 support thanks to nelsonjchen!
+* Toyota RAV4 2023-24 support
+* Toyota RAV4 Hybrid 2023-24 support
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit db57a21 (February 22, 2024)
+  * v0.9.6 release (February 27, 2024)
 * UPDATED: Dynamic Experimental Control (DEC)
   * Synced with dragonpilot-community/dragonpilot:beta3 commit f4ee52f
-* NEW❗: Default Driving Model: Los Angeles v2 (January 24, 2024)
+* NEW❗: Default Driving Model: Certified Herbalist v2 (February 13, 2024)
 * UPDATED: Driving Model Selector v3
   * NEW❗: Driving Model additions
     * Certified Herbalist v2 (February 13, 2024) - CHv2
@@ -20,14 +88,14 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
     * Farmville (November 7, 2023) - FV
     * Night Strike (October 3, 2023) - NS
   * Certain features are deprecated with newer Driving Models
-    * Dynamic Lane Profile
+    * Dynamic Lane Profile (DLP)
     * Custom Offsets
 * UPDATED: Dynamic Lane Profile (DLP)
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
-  * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+  * Deprecated support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
 * UPDATED: Custom Offsets
   * Continued support for Legacy Driving Models (e.g., ND, BDv2, BDv1, FV, NS)
-  * Deprecate support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
+  * Deprecated support for newer Driving Models (e.g., CHv2, CH, LAv2, LAv1)
 * UPDATED: Hyundai/Kia/Genesis - ESCC Radar Interceptor
   * Message parsing improvements with the latest firmware update: https://github.com/sunnypilot/panda/tree/test-escc-smdps
 * UI Updates
@@ -35,6 +103,7 @@ sunnypilot - 0.9.6.0 (2024-xx-xx)
     * Display the statuses of certain features on the driving screen
   * NEW❗: Visuals: Enable Onroad Settings toggle
     * Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu
+  * REMOVED: "Device ambient" temperature option on the sidebar
 * FIXED: New comma 3X support
 * FIXED: New comma eSIM support
 * Bug fixes and performance improvements

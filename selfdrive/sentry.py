@@ -1,8 +1,10 @@
+import os
+import traceback
+from datetime import datetime
 """Install exception handler for process crash."""
 import sentry_sdk
 import subprocess
 from enum import Enum
-from typing import Tuple
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from openpilot.common.basedir import BASEDIR
@@ -10,12 +12,7 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.athena.registration import UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.system.hardware import HARDWARE, PC
 from openpilot.common.swaglog import cloudlog
-from openpilot.system.version import get_branch, get_commit, get_origin, get_version, \
-                              is_comma_remote, is_dirty, is_tested_branch, get_branch_type
-
-import os
-import traceback
-from datetime import datetime
+from openpilot.system.version import get_build_metadata, get_version
 
 
 class SentryProject(Enum):
@@ -93,7 +90,7 @@ def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
 
 
-def get_properties() -> Tuple[str, str]:
+def get_properties() -> tuple[str, str]:
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf-8')
   if dongle_id in (None, UNREGISTERED_DONGLE_ID):
@@ -119,13 +116,14 @@ def get_init() -> None:
 
 
 def init(project: SentryProject) -> bool:
+  build_metadata = get_build_metadata()
   # forks like to mess with this, so double check
-  #comma_remote = is_comma_remote() and "commaai" in get_origin()
+  #comma_remote = build_metadata.openpilot.comma_remote and "commaai" in build_metadata.openpilot.git_origin
   #if not comma_remote or not is_registered_device() or PC:
   #  return False
 
-  #env = "release" if is_tested_branch() else "master"
-  env = get_branch_type()
+  #env = "release" if build_metadata.tested_channel else "master"
+  env = build_metadata.channel_type
   dongle_id, gitname = get_properties()
 
   integrations = []
@@ -141,13 +139,15 @@ def init(project: SentryProject) -> bool:
                   environment=env,
                   send_default_pii=True)
 
+  build_metadata = get_build_metadata()
+
   sentry_sdk.set_user({"id": dongle_id})
   sentry_sdk.set_user({"ip_address": IP_ADDRESS})
   sentry_sdk.set_user({"name": gitname})
-  sentry_sdk.set_tag("dirty", is_dirty())
-  sentry_sdk.set_tag("origin", get_origin())
-  sentry_sdk.set_tag("branch", get_branch())
-  sentry_sdk.set_tag("commit", get_commit())
+  sentry_sdk.set_tag("dirty", build_metadata.openpilot.is_dirty)
+  sentry_sdk.set_tag("origin", build_metadata.openpilot.git_origin)
+  sentry_sdk.set_tag("branch", build_metadata.channel)
+  sentry_sdk.set_tag("commit", build_metadata.openpilot.git_commit)
   sentry_sdk.set_tag("device", HARDWARE.get_device_type())
 
   if project == SentryProject.SELFDRIVE:

@@ -3,6 +3,7 @@
 from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libcpp.map cimport map
 
 cdef extern from "common/params.h":
   cpdef enum ParamKeyType:
@@ -26,10 +27,11 @@ cdef extern from "common/params.h":
     string getParamPath(string) nogil
     void clearAll(ParamKeyType)
     vector[string] allKeys()
+    map[string, string] readAll()
 
 
 def ensure_bytes(v):
-  return v.encode() if isinstance(v, str) else v;
+  return v.encode() if isinstance(v, str) else v
 
 class UnknownKeyName(Exception):
   pass
@@ -116,3 +118,6 @@ cdef class Params:
 
   def all_keys(self):
     return self.p.allKeys()
+
+  def read_all(self):
+    return self.p.readAll()

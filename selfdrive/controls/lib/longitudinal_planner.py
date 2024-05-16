@@ -3,7 +3,7 @@ import math
 import numpy as np
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
-from cereal import car, log, custom
+from cereal import car
 
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
@@ -31,8 +31,6 @@ A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
-
-PERSONALITY_MAPPING = {0: 0, 1: 1, 2: 2, 3: 2}
 
 
 EventName = car.CarEvent.EventName
@@ -75,7 +73,6 @@ class LongitudinalPlanner:
     self.params = Params()
     self.param_read_counter = 0
     self.read_param()
-    self.personality = custom.LongitudinalPersonalitySP.standard
 
     self.cruise_source = 'cruise'
     self.vision_turn_controller = VisionTurnController(CP)
@@ -89,10 +86,6 @@ class LongitudinalPlanner:
       self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
-    try:
-      self.personality = int(self.params.get('LongitudinalPersonality'))
-    except (ValueError, TypeError):
-      self.personality = custom.LongitudinalPersonalitySP.standard
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -161,11 +154,11 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint, personality=self.personality)
+    self.mpc.set_weights(prev_accel_constraint, personality=sm['controlsState'].personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=self.personality)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsState'].personality)
 
     self.v_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.a_solution)
@@ -203,7 +196,6 @@ class LongitudinalPlanner:
     longitudinalPlan.fcw = self.fcw
 
     longitudinalPlan.solverExecutionTime = self.mpc.solve_time
-    longitudinalPlan.personality = PERSONALITY_MAPPING.get(self.personality, log.LongitudinalPersonality.standard)
 
     pm.send('longitudinalPlan', plan_send)
 
@@ -231,8 +223,6 @@ class LongitudinalPlanner:
 
     longitudinalPlanSP.turnSpeedControlState = self.turn_speed_controller.state
     longitudinalPlanSP.turnSpeed = float(self.turn_speed_controller.v_target)
-
-    longitudinalPlanSP.personality = self.personality
 
     longitudinalPlanSP.e2eBlended = self.mpc.mode
 

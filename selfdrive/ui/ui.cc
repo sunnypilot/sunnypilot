@@ -11,6 +11,7 @@
 #include "common/swaglog.h"
 #include "common/util.h"
 #include "common/watchdog.h"
+#include "qt/network/sunnylink/models/role_model.h"
 #include "system/hardware/hw.h"
 
 #define BACKLIGHT_DT 0.05
@@ -262,6 +263,7 @@ void ui_update_params(UIState *s) {
   s->scene.speed_limit_warning_flash = params.getBool("SpeedLimitWarningFlash");
   s->scene.speed_limit_warning_type = std::atoi(params.get("SpeedLimitWarningType").c_str());
   s->scene.speed_limit_warning_value_offset = std::atoi(params.get("SpeedLimitWarningValueOffset").c_str());
+  s->scene.custom_driving_model = params.getBool("CustomDrivingModel");
   s->scene.driving_model_gen = std::atoi(params.get("DrivingModelGeneration").c_str());
   s->scene.speed_limit_control_enabled = params.getBool("EnableSlc");
   s->scene.feature_status_toggle = params.getBool("FeatureStatus");
@@ -429,6 +431,16 @@ void UIState::setPrimeType(PrimeType type) {
       emit primeChanged(prime);
     }
   }
+}
+
+void UIState::setSunnylinkRoles(const std::vector<RoleModel>& roles) {
+  sunnylinkRoles = roles;
+  emit sunnylinkRolesChanged(roles);
+}
+
+void UIState::setSunnylinkDeviceUsers(const std::vector<UserModel>& users) {
+  sunnylinkUsers = users;
+  emit sunnylinkDeviceUsersChanged(users);
 }
 
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
