@@ -428,6 +428,7 @@ void SunnypilotPanel::updateToggles() {
     return;
   }
 
+  // TODO: SP: use upstream's setCheckedButton
   dlp_settings->setButton("DynamicLaneProfile");
 
   // toggle VisionCurveLaneless when DynamicLaneProfile == 2/Auto
