@@ -593,7 +593,7 @@ class CarInterfaceBase(ABC):
     else:
       return CS.madsEnabled
 
-  def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
+  def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True):
     cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
                                  cs_out.cruiseState.enabled
 
@@ -602,9 +602,6 @@ class CarInterfaceBase(ABC):
         CS.madsEnabled = True
       elif not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
         CS.madsEnabled = False
-
-    if self.CP.openpilotLongitudinalControl:
-      self.toggle_exp_mode(gap_button)
 
     cs_out.belowLaneChangeSpeed = cs_out.vEgo < LANE_CHANGE_SPEED_MIN and self.below_speed_pause
 
@@ -630,19 +627,6 @@ class CarInterfaceBase(ABC):
     cs_out.brakeLightsDEPRECATED |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
 
     return cs_out, CS
-
-  # TODO: SP: use upstream's buttonEvents counter checks from controlsd
-  def toggle_exp_mode(self, gap_pressed):
-    if gap_pressed:
-      if not self.experimental_mode_hold:
-        self.gap_button_counter += 1
-        if self.gap_button_counter > 50:
-          self.gap_button_counter = 0
-          self.experimental_mode_hold = True
-          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.experimental_mode)
-    else:
-      self.gap_button_counter = 0
-      self.experimental_mode_hold = False
 
   def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
                        enable_from_brake=False, enable_pressed_long=False,
