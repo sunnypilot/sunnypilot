@@ -1,4 +1,5 @@
 #include "selfdrive/ui/qt/offroad/sunnypilot/models_fetcher.h"
+#include <QThread>
 
 ModelsFetcher::ModelsFetcher(QObject* parent) : QObject(parent) {
   manager = new QNetworkAccessManager(this);
@@ -83,9 +84,30 @@ void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationP
   QString finalPath = QDir(destinationPath).filePath(finalFilename);
 
   // Save the downloaded file
+  
+  
   QFile file(finalPath);
-  if (!file.open(QIODevice::WriteOnly)) {
-    return; // Consider emitting a signal or logging an error here as well
+  //ensure if the path exists and if not create it 
+  if(!QDir().mkpath(destinationPath))
+  {
+    LOGE("Unable to create directory: %s", destinationPath.toStdString().c_str());
+    emit downloadFailed(filename);
+    return; // Stop further processing
+  }
+  
+  //Retry the file open and write 3 times with a little delay between each retry
+  for (int i = 0; i < 3; i++) {
+    if (file.isOpen()) break;
+    
+    file.open(QIODevice::WriteOnly);
+    if (!file.isOpen()) QThread::msleep(100);
+  }
+  
+  // If the file is still not open, log an error and emit a failure signal
+  if (!file.isOpen()) {
+    LOGE("Unable to open file for writing: %s", finalPath.toStdString().c_str());
+    emit downloadFailed(filename);
+    return; // Stop further processing
   }
 
   file.write(data);
@@ -128,5 +150,5 @@ std::vector<Model> ModelsFetcher::getModelsFromURL(const QString&url) {
 }
 
 std::vector<Model> ModelsFetcher::getModelsFromURL() {
-  return getModelsFromURL("https://docs.sunnypilot.ai/models_v3.json");
+  return getModelsFromURL("https://docs.sunnypilot.ai/models_v4.json");
 }

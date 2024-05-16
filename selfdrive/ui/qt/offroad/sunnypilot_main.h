@@ -8,3 +8,4 @@
 #include "selfdrive/ui/qt/offroad/sunnypilot/monitoring_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/osm_settings.h"
 #include "selfdrive/ui/qt/offroad/sunnypilot/software_settings_sp.h"
+#include "selfdrive/ui/qt/offroad/sunnypilot/sunnylink_settings.h"

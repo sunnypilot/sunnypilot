@@ -89,7 +89,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
     auto *subtitle_heading = new QVBoxLayout;
     subtitle_heading->setContentsMargins(0, 0, 0, 0);
     {
-      auto *subtitle = new QLabel(tr("SUNNYPILOT FEATURES"), this);
+      auto *subtitle = new QLabel(tr("<b>ONROAD SETTINGS | SUNNYPILOT</b>"), this);
       subtitle->setStyleSheet("color: #A0A0A0; font-size: 34px; font-weight: 300;");
       subtitle_heading->addWidget(subtitle, 0, Qt::AlignCenter);
     }

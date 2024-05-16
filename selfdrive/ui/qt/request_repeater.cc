@@ -1,15 +1,14 @@
 #include "selfdrive/ui/qt/request_repeater.h"
 
+#include "common/swaglog.h"
+
 RequestRepeater::RequestRepeater(QObject *parent, const QString &requestURL, const QString &cacheKey,
-                                 int period, bool while_onroad) : HttpRequest(parent) {
+                                 int period, bool whileOnroad, bool sunnylink) : HttpRequest(parent, true, 20000, sunnylink) {
+  request_url = requestURL;
+  while_onroad = whileOnroad;
   timer = new QTimer(this);
   timer->setTimerType(Qt::VeryCoarseTimer);
-  QObject::connect(timer, &QTimer::timeout, [=]() {
-    if ((!uiState()->scene.started || while_onroad) && device()->isAwake() && !active()) {
-      sendRequest(requestURL);
-    }
-  });
-
+  connect(timer, &QTimer::timeout, [=]() { this->timerTick(); });
   timer->start(period * 1000);
 
   if (!cacheKey.isEmpty()) {
@@ -17,11 +16,21 @@ RequestRepeater::RequestRepeater(QObject *parent, const QString &requestURL, con
     if (!prevResp.isEmpty()) {
       QTimer::singleShot(500, [=]() { emit requestDone(prevResp, true, QNetworkReply::NoError); });
     }
-    QObject::connect(this, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
+    connect(this, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
       if (success && resp != prevResp) {
         params.put(cacheKey.toStdString(), resp.toStdString());
         prevResp = resp;
       }
     });
+  }
+
+  // Don't wait for the timer to fire to send the first request
+  ForceUpdate();
+}
+
+void RequestRepeater::timerTick() {
+  if ((!uiState()->scene.started || while_onroad) && device()->isAwake() && !active()) {
+    LOGD("Sending request for %s", qPrintable(request_url));
+    sendRequest(request_url);
   }
 }
