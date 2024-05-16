@@ -54,6 +54,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above
     * NEW❗: Display both Distance and Speed simultaneously
+    * NEW❗: View sunnylink connectivity status on the left sidebar!
 * Ford F-150 2022-23 support
 * Ford F-150 Lightning 2021-23 support
 * Ford Mustang Mach-E 2021-23 support
