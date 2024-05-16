@@ -97,6 +97,9 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kpV = [0.1]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
+      if (candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR)) and not hda2:
+        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
+        ret.radarUnavailable = False
     else:
       ret.longitudinalTuning.kpV = [0.5]
       ret.longitudinalTuning.kiV = [0.0]
