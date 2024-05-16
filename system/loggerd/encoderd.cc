@@ -147,15 +147,19 @@ int main(int argc, char* argv[]) {
     ret = util::set_core_affinity({3});
     assert(ret == 0);
   }
+
+  bool no_dcam = Params().getBool("DriverCameraHardwareMissing");
   if (argc > 1) {
     std::string arg1(argv[1]);
     if (arg1 == "--stream") {
-      encoderd_thread(stream_cameras_logged);
+      encoderd_thread(no_dcam ? stream_cameras_logged_no_dcam :
+                                stream_cameras_logged);
     } else {
       LOGE("Argument '%s' is not supported", arg1.c_str());
     }
   } else {
-    encoderd_thread(cameras_logged);
+    encoderd_thread(no_dcam ? cameras_logged_no_dcam :
+                              cameras_logged);
   }
   return 0;
 }
