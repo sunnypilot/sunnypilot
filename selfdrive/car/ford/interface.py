@@ -32,6 +32,9 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.kpV = [0.5]
     ret.longitudinalTuning.kiV = [0.]
 
+    if Params().get("DongleId", encoding='utf8') in ("4fde83db16dc0802", "112e4d6e0cad05e1", "e36b272d5679115f", "24574459dd7fb3e0", "83a4e056c7072678"):
+      ret.spFlags |= FordFlagsSP.SP_ENHANCED_LAT_CONTROL.value
+
     CAN = CanBus(fingerprint=fingerprint)
     cfgs = [get_safety_config(car.CarParams.SafetyModel.ford)]
     if CAN.main >= 4:
@@ -48,9 +51,6 @@ class CarInterface(CarInterfaceBase):
 
     if ret.spFlags & FordFlagsSP.SP_ENHANCED_LAT_CONTROL:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_FORD_ENHANCED_LAT_CONTROL
-
-    if Params().get("DongleId", encoding='utf8') in ("4fde83db16dc0802", "112e4d6e0cad05e1", "e36b272d5679115f", "24574459dd7fb3e0", "83a4e056c7072678"):
-      ret.spFlags |= FordFlagsSP.SP_ENHANCED_LAT_CONTROL.value
 
     # Auto Transmission: 0x732 ECU or Gear_Shift_by_Wire_FD1
     found_ecus = [fw.ecu for fw in car_fw]
