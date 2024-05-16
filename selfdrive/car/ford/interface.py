@@ -20,7 +20,6 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "ford"
-    ret.dashcamOnly = bool(ret.flags & FordFlags.CANFD)
 
     ret.radarUnavailable = True
     ret.steerControlType = car.CarParams.SteerControlType.angle
@@ -44,6 +43,12 @@ class CarInterface(CarInterfaceBase):
 
     if ret.flags & FordFlags.CANFD:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_FORD_CANFD
+
+    ret.longitudinalTuning.kpBP = [0.]
+    ret.longitudinalTuning.kpV = [0.5]
+    ret.longitudinalTuning.kiV = [0.]
+    ret.longitudinalTuning.deadzoneBP = [0., 9.]
+    ret.longitudinalTuning.deadzoneV = [.0, .20]
 
     # Auto Transmission: 0x732 ECU or Gear_Shift_by_Wire_FD1
     found_ecus = [fw.ecu for fw in car_fw]
