@@ -24,6 +24,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * comma Prime support
   * Personal Mapbox/Amap/Google Maps token support
   * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+* UPDATED: Hyundai CAN-FD Radar-based SCC
+  * Longitudinal support for CAN-FD Radar-based SCC cars
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
