@@ -3,6 +3,7 @@ from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
 from openpilot.selfdrive.car import apply_meas_steer_torque_limits, apply_std_steer_angle_limits, common_fault_avoidance, \
                           create_gas_interceptor_command, make_can_msg
+from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.toyota import toyotacan
 from openpilot.selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
                                         MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, ToyotaFlags, \
@@ -26,7 +27,7 @@ MAX_LTA_ANGLE = 94.9461  # deg
 MAX_LTA_DRIVER_TORQUE_ALLOWANCE = 150  # slightly above steering pressed allows some resistance when changing lanes
 
 
-class CarController:
+class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
     self.params = CarControllerParams(self.CP)
@@ -37,6 +38,7 @@ class CarController:
     self.last_standstill = False
     self.standstill_req = False
     self.steer_rate_counter = 0
+    self.distance_button = 0
 
     self.packer = CANPacker(dbc_name)
     self.gas = 0
@@ -104,7 +106,7 @@ class CarController:
                                                           lta_active, self.frame // 2, torque_wind_down))
 
     # *** gas and brake ***
-    if self.CP.enableGasInterceptor and CC.longActive:
+    if self.CP.enableGasInterceptorDEPRECATED and CC.longActive:
       MAX_INTERCEPTOR_GAS = 0.5
       # RAV4 has very sensitive gas pedal
       if self.CP.carFingerprint in (CAR.RAV4, CAR.RAV4H, CAR.HIGHLANDER):
@@ -130,7 +132,7 @@ class CarController:
       pcm_cancel_cmd = 1
 
     # on entering standstill, send standstill request
-    if CS.out.standstill and not self.last_standstill and (self.CP.carFingerprint not in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptor) and \
+    if CS.out.standstill and not self.last_standstill and (self.CP.carFingerprint not in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptorDEPRECATED) and \
       not self._sng_hack:
       self.standstill_req = True
     if CS.pcm_acc_status != 8:
@@ -148,23 +150,32 @@ class CarController:
       lead = hud_control.leadVisible or CS.out.vEgo < 12.  # at low speed we always assume the lead is present so ACC can be engaged
       reverse_acc = 2 if self._reverse_acc_change else 1
 
+      # Press distance button until we are at the correct bar length. Only change while enabled to avoid skipping startup popup
+      if self.frame % 6 == 0 and self.CP.openpilotLongitudinalControl:
+        desired_distance = 4 - hud_control.leadDistanceBars
+        if CS.out.cruiseState.enabled and CS.pcm_follow_distance != desired_distance:
+          self.distance_button = not self.distance_button
+        else:
+          self.distance_button = 0
+
       # Lexus IS uses a different cancellation message
       if pcm_cancel_cmd and self.CP.carFingerprint in UNSUPPORTED_DSU_CAR:
         can_sends.append(toyotacan.create_acc_cancel_command(self.packer))
       elif self.CP.openpilotLongitudinalControl:
-        can_sends.append(toyotacan.create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type, fcw_alert, reverse_acc, CS.gac_send))
+        can_sends.append(toyotacan.create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type, fcw_alert,
+                                                        self.distance_button, reverse_acc))
         self.accel = pcm_accel_cmd
       else:
-        can_sends.append(toyotacan.create_accel_command(self.packer, 0, pcm_cancel_cmd, False, lead, CS.acc_type, False, reverse_acc, CS.gac_send))
+        can_sends.append(toyotacan.create_accel_command(self.packer, 0, pcm_cancel_cmd, False, lead, CS.acc_type, False, self.distance_button, reverse_acc))
 
-    if self.frame % 2 == 0 and self.CP.enableGasInterceptor and self.CP.openpilotLongitudinalControl:
+    if self.frame % 2 == 0 and self.CP.enableGasInterceptorDEPRECATED and self.CP.openpilotLongitudinalControl:
       # send exactly zero if gas cmd is zero. Interceptor will send the max between read value and gas cmd.
       # This prevents unexpected pedal range rescaling
       can_sends.append(create_gas_interceptor_command(self.packer, interceptor_gas_cmd, self.frame // 2))
       self.gas = interceptor_gas_cmd
 
     # *** hud ui ***
-    if self.CP.carFingerprint != CAR.PRIUS_V:
+    if self.CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
       # ui mesg is at 1Hz but we send asap if:
       # - there is something to display
       # - there is something to stop displaying

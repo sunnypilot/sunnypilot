@@ -8,6 +8,7 @@ from common.basedir import BASEDIR
 from selfdrive.car import gen_empty_fingerprint
 from selfdrive.car.car_helpers import interfaces
 from selfdrive.car.docs import get_all_footnotes
+from openpilot.selfdrive.car.values import PLATFORMS
 
 UNSUPPORTED_BRANDS = ["body", "tesla"]
 
@@ -18,26 +19,22 @@ def get_all_car_names() -> Dict[str, str]:
 
   car_names["=== Not Selected ==="] = ""
 
-  for model, car_info in get_interface_attr("CAR_INFO", combine_brands=True, exclude_brands=UNSUPPORTED_BRANDS).items():
-    CP = interfaces[model][0].get_params(
-      model,
-      fingerprint=gen_empty_fingerprint(),
-      car_fw=[car.CarParams.CarFw(ecu="unknown")],
-      experimental_long=False,
-      docs=True
-    )
+  for model, platform in PLATFORMS.items():
+    car_docs = platform.config.car_docs
+    CP = interfaces[model][0].get_params(platform, fingerprint=gen_empty_fingerprint(),
+                                         car_fw=[car.CarParams.CarFw(ecu="unknown")], experimental_long=True, docs=True)
 
-    if CP.dashcamOnly or car_info is None:
+    if CP.dashcamOnly or not len(car_docs):
       continue
 
-    if not isinstance(car_info, list):
-      car_info = (car_info,)
+    if not isinstance(car_docs, list):
+      car_docs = (car_docs,)
 
-    for _car_info in car_info:
-      if not hasattr(_car_info, "row"):
-        _car_info.init_make(CP)
-        _car_info.init(CP, footnotes)
-      car_names[_car_info.name] = model
+    for _car_docs in car_docs:
+      if not hasattr(_car_docs, "row"):
+        _car_docs.init_make(CP)
+        _car_docs.init(CP, footnotes)
+      car_names[_car_docs.name] = model
 
   sorted_car_names = natsorted(car_names.keys(), key=lambda car: car.lower())
   return {car_name: car_names[car_name] for car_name in sorted_car_names}

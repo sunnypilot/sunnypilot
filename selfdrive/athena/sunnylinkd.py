@@ -35,6 +35,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
     threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
     threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
+    threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
     # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
     # threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
     # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
@@ -60,23 +61,16 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
 
 def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
   last_ping = int(time.monotonic() * 1e9)
-  resume_requested = False
   while not end_event.is_set():
-    try:
-      if(not resume_requested):
-        sunnylink_api.resume_queued()
-        resume_requested = True
-    except Exception:
-      cloudlog.exception("sunnylinkd.resume_queued.exception")
-      resume_requested = False
-
     try:
       opcode, data = ws.recv_data(control_frame=True)
       if opcode in (ABNF.OPCODE_TEXT, ABNF.OPCODE_BINARY):
         if opcode == ABNF.OPCODE_TEXT:
           data = data.decode("utf-8")
         recv_queue.put_nowait(data)
+        cloudlog.debug(f"sunnylinkd.ws_recv.recv {data}")
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
+        cloudlog.debug(f"sunnylinkd.ws_recv.pong {opcode}")
         last_ping = int(time.monotonic() * 1e9)
         Params().put("LastSunnylinkPingTime", str(last_ping))
     except WebSocketTimeoutException:
@@ -94,10 +88,29 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
   while not end_event.is_set():
     try:
       ws.ping()
+      cloudlog.debug(f"sunnylinkd.ws_recv.ws_ping: Pinging")
     except Exception:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
     time.sleep(RECONNECT_TIMEOUT_S * 0.8)  # Sleep about 80% before a timeout
+
+def ws_queue(end_event: threading.Event) -> None:
+  resume_requested = False
+  tries = 0
+
+  while not end_event.is_set() and not resume_requested:
+    try:
+      if not resume_requested:
+        cloudlog.debug(f"sunnylinkd.ws_queue.resume_queued")
+        sunnylink_api.resume_queued(timeout=29)
+        resume_requested = True
+        tries = 0
+    except Exception:
+      cloudlog.exception("sunnylinkd.ws_queue.resume_queued.exception")
+      resume_requested = False
+      tries += 1
+      time.sleep(backoff(tries))  # Wait for the backoff time before the next attempt
+  cloudlog.debug("Resume requested or end_event is set, exiting ws_queue thread")
 
 
 @dispatcher.add_method

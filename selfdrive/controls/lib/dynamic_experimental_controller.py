@@ -131,7 +131,7 @@ class DynamicExperimentalController:
     self._has_mpc_fcw = self._mpc_fcw_gmac.get_moving_average() >= MPC_FCW_PROB
 
     # nav enable detection
-    self._has_nav_instruction = md.navEnabled and maneuver_distance / max(car_state.vEgo, 1) < 13
+    self._has_nav_instruction = md.navEnabledDEPRECATED and maneuver_distance / max(car_state.vEgo, 1) < 13
 
     # lead detection
     self._lead_gmac.add_data(lead_one.status)

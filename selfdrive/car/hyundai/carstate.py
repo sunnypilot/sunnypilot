@@ -8,7 +8,7 @@ from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, CAR, DBC, CAN_GEARS, CAMERA_SCC_CAR, \
-                                                   CANFD_CAR, NON_SCC_CAR, NON_SCC_NO_FCA_CAR, NON_SCC_RADAR_FCA_CAR, \
+                                                   CANFD_CAR, NON_SCC_CAR, NON_SCC_FCA_CAR, NON_SCC_RADAR_FCA_CAR, \
                                                    Buttons, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarStateBase
 
@@ -67,7 +67,7 @@ class CarState(CarStateBase):
       return self.update_canfd(cp, cp_cam)
 
     ret = car.CarState.new_message()
-    cp_cruise = cp_cam if self.CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_CAR - NON_SCC_NO_FCA_CAR - NON_SCC_RADAR_FCA_CAR)) else cp
+    cp_cruise = cp_cam if self.CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_FCA_CAR - NON_SCC_RADAR_FCA_CAR)) else cp
     self.is_metric = cp.vl["CLU11"]["CF_Clu_SPEED_UNIT"] == 0
     speed_conv = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
 
@@ -134,6 +134,7 @@ class CarState(CarStateBase):
     ret.brakePressed = cp.vl["TCS13"]["DriverOverride"] == 2  # 2 includes regen braking by user on HEV/EV
     ret.brakeHoldActive = cp.vl["TCS15"]["AVH_LAMP"] == 2  # 0 OFF, 1 ERROR, 2 ACTIVE, 3 READY
     ret.parkingBrake = cp.vl["TCS13"]["PBRAKE_ACT"] == 1
+    ret.espDisabled = cp.vl["TCS11"]["TCS_PAS"] == 1
     ret.brakeLightsDEPRECATED = bool(cp.vl["TCS13"]["BrakeLight"])
     ret.accFaulted = cp.vl["TCS13"]["ACCEnable"] != 0  # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
 
@@ -160,7 +161,7 @@ class CarState(CarStateBase):
 
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(gear))
 
-    if not self.CP.openpilotLongitudinalControl and self.CP.carFingerprint not in NON_SCC_NO_FCA_CAR:
+    if not self.CP.openpilotLongitudinalControl and self.CP.carFingerprint in NON_SCC_FCA_CAR:
       aeb_src = "FCA11" if self.CP.flags & HyundaiFlags.USE_FCA.value else "SCC12"
       aeb_sig = "FCA_CmdAct" if self.CP.flags & HyundaiFlags.USE_FCA.value else "AEB_CmdAct"
       aeb_warning = cp_cruise.vl[aeb_src]["CF_VSM_Warn"] != 0
@@ -259,7 +260,7 @@ class CarState(CarStateBase):
 
     # TODO: alt signal usage may be described by cp.vl['BLINKERS']['USE_ALT_LAMP']
     left_blinker_sig, right_blinker_sig = "LEFT_LAMP", "RIGHT_LAMP"
-    if self.CP.carFingerprint == CAR.KONA_EV_2ND_GEN:
+    if self.CP.carFingerprint == CAR.HYUNDAI_KONA_EV_2ND_GEN:
       left_blinker_sig, right_blinker_sig = "LEFT_LAMP_ALT", "RIGHT_LAMP_ALT"
     ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_lamp(
       50, cp.vl["BLINKERS"][left_blinker_sig], cp.vl["BLINKERS"][right_blinker_sig])
@@ -327,6 +328,7 @@ class CarState(CarStateBase):
     messages = [
       # address, frequency
       ("MDPS12", 50),
+      ("TCS11", 100),
       ("TCS13", 50),
       ("TCS15", 10),
       ("CLU11", 50),
@@ -392,7 +394,7 @@ class CarState(CarStateBase):
       ("LKAS11", 100),
     ]
 
-    if not CP.openpilotLongitudinalControl and CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_CAR - NON_SCC_NO_FCA_CAR - NON_SCC_RADAR_FCA_CAR)):
+    if not CP.openpilotLongitudinalControl and CP.carFingerprint in (CAMERA_SCC_CAR | (NON_SCC_FCA_CAR - NON_SCC_RADAR_FCA_CAR)):
       if CP.carFingerprint in CAMERA_SCC_CAR:
         messages += [
           ("SCC11", 50),
