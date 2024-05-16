@@ -11,6 +11,7 @@
 #include "common/swaglog.h"
 #include "common/util.h"
 #include "common/watchdog.h"
+#include "qt/network/sunnylink/models/role_model.h"
 #include "system/hardware/hw.h"
 
 #define BACKLIGHT_DT 0.05
@@ -243,7 +244,6 @@ void ui_update_params(UIState *s) {
   s->scene.onroadScreenOff = std::atoi(params.get("OnroadScreenOff").c_str());
   s->scene.onroadScreenOffBrightness = std::atoi(params.get("OnroadScreenOffBrightness").c_str());
   s->scene.onroadScreenOffEvent = params.getBool("OnroadScreenOffEvent");
-  s->scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
   s->scene.stand_still_timer = params.getBool("StandStillTimer");
   s->scene.show_debug_ui = params.getBool("ShowDebugUI");
   s->scene.hide_vego_ui = params.getBool("HideVEgoUi");
@@ -263,7 +263,11 @@ void ui_update_params(UIState *s) {
   s->scene.speed_limit_warning_flash = params.getBool("SpeedLimitWarningFlash");
   s->scene.speed_limit_warning_type = std::atoi(params.get("SpeedLimitWarningType").c_str());
   s->scene.speed_limit_warning_value_offset = std::atoi(params.get("SpeedLimitWarningValueOffset").c_str());
+  s->scene.custom_driving_model = params.getBool("CustomDrivingModel");
   s->scene.driving_model_gen = std::atoi(params.get("DrivingModelGeneration").c_str());
+  s->scene.speed_limit_control_enabled = params.getBool("EnableSlc");
+  s->scene.feature_status_toggle = params.getBool("FeatureStatus");
+  s->scene.onroad_settings_toggle = params.getBool("OnroadSettings");
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -378,11 +382,13 @@ void UIState::updateStatus() {
   if (sm->frame % UI_FREQ == 0) { // Update every 1 Hz
     scene.sidebar_temp_options = std::atoi(params.get("SidebarTemperatureOptions").c_str());
   }
+
+  scene.brightness = std::atoi(params.get("BrightnessControl").c_str());
 }
 
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
-  "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
+    "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "longitudinalPlanSP", "liveMapDataSP",
     "carControl", "lateralPlanSPDEPRECATED", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters", "controlsStateSP"
@@ -425,6 +431,16 @@ void UIState::setPrimeType(PrimeType type) {
       emit primeChanged(prime);
     }
   }
+}
+
+void UIState::setSunnylinkRoles(const std::vector<RoleModel>& roles) {
+  sunnylinkRoles = roles;
+  emit sunnylinkRolesChanged(roles);
+}
+
+void UIState::setSunnylinkDeviceUsers(const std::vector<UserModel>& users) {
+  sunnylinkUsers = users;
+  emit sunnylinkDeviceUsersChanged(users);
 }
 
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
