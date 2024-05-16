@@ -234,8 +234,9 @@ void loggerd_thread() {
   logger_rotate(&s);
   Params().put("CurrentRoute", s.logger.routeName());
 
+  bool no_dcam = Params().getBool("DriverCameraHardwareMissing");
   std::map<std::string, EncoderInfo> encoder_infos_dict;
-  for (const auto &cam : cameras_logged) {
+  for (const auto &cam : (no_dcam ? cameras_logged_no_dcam : cameras_logged)) {
     for (const auto &encoder_info : cam.encoder_infos) {
       encoder_infos_dict[encoder_info.publish_name] = encoder_info;
       s.max_waiting++;
