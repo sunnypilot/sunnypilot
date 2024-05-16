@@ -229,7 +229,7 @@ void can_recv_thread(std::vector<Panda *> pandas) {
   }
 }
 
-std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> &pandas, bool spoofing_started) {
+std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> &pandas, bool spoofing_started, Params &params) {
   bool ignition_local = false;
   const uint32_t pandas_cnt = pandas.size();
 
@@ -277,7 +277,7 @@ std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> 
       health.ignition_line_pkt = 0;
     }
 
-    ignition_local |= ((health.ignition_line_pkt != 0) || (health.ignition_can_pkt != 0));
+    ignition_local |= ((health.ignition_line_pkt != 0) || (health.ignition_can_pkt != 0)) && !params.getBool("ForceOffroad");
 
     pandaStates.push_back(health);
   }
@@ -432,7 +432,7 @@ void panda_state_thread(std::vector<Panda *> pandas, bool spoofing_started) {
       send_peripheral_state(&pm, peripheral_panda);
     }
 
-    auto ignition_opt = send_panda_states(&pm, pandas, spoofing_started);
+    auto ignition_opt = send_panda_states(&pm, pandas, spoofing_started, params);
 
     if (!ignition_opt) {
       LOGE("Failed to get ignition_opt");
