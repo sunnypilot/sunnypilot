@@ -108,9 +108,9 @@ void SpeedLimitWarningValueOffset::refresh() {
 
   if (offset_type == "0") {
     option = "";
-    unit = "N/A";
+    unit = tr("N/A");
   } else if (offset_type == "1") {
-    unit = is_metric ? " km/h" : " mph";
+    unit = " " + (is_metric ? tr("km/h") : tr("mph"));
   } else if (offset_type == "2") {
     unit = " %";
   }

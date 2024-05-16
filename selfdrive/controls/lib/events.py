@@ -7,9 +7,9 @@ from collections.abc import Callable
 from cereal import log, car
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.git import get_short_branch
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.locationd.calibrationd import MIN_SPEED_FILTER
-from openpilot.system.version import get_short_branch
 
 AlertSize = log.ControlsState.AlertSize
 AlertStatus = log.ControlsState.AlertStatus
@@ -251,14 +251,6 @@ def calibration_incomplete_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2)
 
 
-def no_gps_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
-  return Alert(
-    "Poor GPS reception",
-    "Hardware malfunctioning if sky is visible",
-    AlertStatus.normal, AlertSize.mid,
-    Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=300.)
-
-
 def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
   model_name = CP.lateralTuning.torque.nnModelName
   if model_name in ("", "mock"):
@@ -464,7 +456,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.preDriverDistracted: {
-    ET.WARNING: Alert(
+    ET.PERMANENT: Alert(
       "Pay Attention",
       "",
       AlertStatus.normal, AlertSize.small,
@@ -472,7 +464,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.promptDriverDistracted: {
-    ET.WARNING: Alert(
+    ET.PERMANENT: Alert(
       "Pay Attention",
       "Driver Distracted",
       AlertStatus.userPrompt, AlertSize.mid,
@@ -480,7 +472,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.driverDistracted: {
-    ET.WARNING: Alert(
+    ET.PERMANENT: Alert(
       "DISENGAGE IMMEDIATELY",
       "Driver Distracted",
       AlertStatus.critical, AlertSize.full,
@@ -488,7 +480,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.preDriverUnresponsive: {
-    ET.WARNING: Alert(
+    ET.PERMANENT: Alert(
       "Touch Steering Wheel: No Face Detected",
       "",
       AlertStatus.normal, AlertSize.small,
@@ -496,7 +488,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.promptDriverUnresponsive: {
-    ET.WARNING: Alert(
+    ET.PERMANENT: Alert(
       "Touch Steering Wheel",
       "Driver Unresponsive",
       AlertStatus.userPrompt, AlertSize.mid,
@@ -504,7 +496,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.driverUnresponsive: {
-    ET.WARNING: Alert(
+    ET.PERMANENT: Alert(
       "DISENGAGE IMMEDIATELY",
       "Driver Unresponsive",
       AlertStatus.critical, AlertSize.full,
@@ -642,9 +634,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   # Unused
-  EventName.gpsMalfunction: {
-    ET.PERMANENT: NormalPermanentAlert("GPS Malfunction", "Likely Hardware Issue"),
-  },
 
   EventName.locationdTemporaryError: {
     ET.NO_ENTRY: NoEntryAlert("locationd Temporary Error"),
@@ -842,7 +831,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.noGps: {
-    ET.PERMANENT: no_gps_alert,
+    ET.PERMANENT: Alert(
+      "Poor GPS reception",
+      "Ensure device has a clear view of the sky",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=600.)
   },
 
   EventName.soundsUnavailable: {

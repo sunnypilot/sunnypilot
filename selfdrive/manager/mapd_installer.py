@@ -139,5 +139,4 @@ if __name__ == "__main__":
     install_manager.update_installed_version(VERSION)
   else:
     spinner.update(f"Checking if mapd is installed and valid. Prebuilt [{is_prebuilt()}]")
-    time.sleep(1)
     install_manager.non_prebuilt_install()

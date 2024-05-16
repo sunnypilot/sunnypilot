@@ -243,7 +243,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
   dlp_settings = new ButtonParamControl(
-    "DynamicLaneProfile", "Dynamic Lane Profile", "",
+    "DynamicLaneProfile", tr("Dynamic Lane Profile"), "",
     "../assets/offroad/icon_blank.png",
     dlp_settings_texts,
     340
@@ -367,8 +367,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     friction->setEnabled(params.getBool("IsOffroad") || state);
     lat_accel_factor->setEnabled(params.getBool("IsOffroad") || state);
 
-    friction->setTitle(state ? "FRICTION - Live && Offline" : "FRICTION - Offline Only");
-    lat_accel_factor->setTitle(state ? "LAT_ACCEL_FACTOR - Live && Offline" : "LAT_ACCEL_FACTOR - Offline Only");
+    friction->setTitle("FRICTION - " + (state ? tr("Real-time and Offline") : tr("Offline Only")));
+    lat_accel_factor->setTitle("LAT_ACCEL_FACTOR - " + (state ? ("Real-time and Offline") : tr("Offline Only")));
 
     friction->refresh();
     lat_accel_factor->refresh();
@@ -428,6 +428,7 @@ void SunnypilotPanel::updateToggles() {
     return;
   }
 
+  // TODO: SP: use upstream's setCheckedButton
   dlp_settings->setButton("DynamicLaneProfile");
 
   // toggle VisionCurveLaneless when DynamicLaneProfile == 2/Auto
@@ -442,10 +443,10 @@ void SunnypilotPanel::updateToggles() {
   QString driving_model_text = QString("<font color='yellow'>" + driving_model_name + "</font>");
   dlp_settings->setEnabled(model_use_lateral_planner);
   toggles["VisionCurveLaneless"]->setVisible(model_use_lateral_planner);
-  auto dlp_incompatible_desc = tr("<font color='yellow'>Dynamic Lane Profile is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
+  QString dlp_incompatible_desc = "<font color='yellow'>" + tr("Dynamic Lane Profile is not available with the current Driving Model") + " [</font>" + driving_model_text + "<font color='yellow'>]</font>";
 
   toggles["CustomOffsets"]->setEnabled(model_use_lateral_planner);
-  auto custom_offsets_incompatible_desc = tr("<font color='yellow'>Custom Offsets is not available with the current Driving Model [</font>") + driving_model_text + tr("<font color='yellow'>].</font>");
+  QString custom_offsets_incompatible_desc = "<font color='yellow'>" + tr("Custom Offsets is not available with the current Driving Model") + " [</font>" + driving_model_text + "<font color='yellow'>]</font>";
 
   auto enforce_torque_lateral = toggles["EnforceTorqueLateral"];
   auto custom_torque_lateral = toggles["CustomTorqueLateral"];
@@ -464,10 +465,10 @@ void SunnypilotPanel::updateToggles() {
 
   // NNLC/NNFF
   QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
-  QString nnff_fuzzy_desc = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the <font color='white'>#tuning-nnlc channel at the sunnypilot Discord server</font> if there are any issues.");
-  QString nnff_status_init = tr("<font color='yellow'>⚠️ Start the car to check car compatibility</font>");
-  QString nnff_not_loaded = tr("<font color='yellow'>⚠️ NNLC Not Loaded</font>");
-  QString nnff_loaded = tr("<font color=#00ff00>✅ NNLC Loaded</font>");
+  QString nnff_fuzzy_desc = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: ") + "<font color='white'><b>#tuning-nnlc</b></font>";
+  QString nnff_status_init = "<font color='yellow'>⚠️ " + tr("Start the car to check car compatibility") + "</font>";
+  QString nnff_not_loaded = "<font color='yellow'>⚠️ " + tr("NNLC Not Loaded") + "</font>";
+  QString nnff_loaded = "<font color=#00ff00>✅ " + tr("NNLC Loaded") + "</font>";
   auto _car_model = QString::fromStdString(params.get("NNFFCarModel"));
 
   auto cp_bytes = params.get("CarParamsPersistent");
@@ -488,11 +489,11 @@ void SunnypilotPanel::updateToggles() {
       } else if (nnff_toggle->isToggled()) {
         if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
           QString nn_model_name = QString::fromStdString(CP.getLateralTuning().getTorque().getNnModelName());
-          QString nn_fuzzy = QString::fromUtf8(CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? "Fuzzy" : "Exact");
+          QString nn_fuzzy = CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? tr("Fuzzy") : tr("Exact");
 
           nnff_toggle->setDescription(nnffDescriptionBuilder((nn_model_name == "")     ? nnff_status_init :
-                                                             (nn_model_name == "mock") ? (nnff_not_loaded + "<br>Reach out to the sunnypilot team in the <font color='white'>#tuning-nnlc channel at the sunnypilot Discord server</font> and donate logs to get NNLC loaded for your car.") :
-                                                                                         (nnff_loaded + " | Match = " + nn_fuzzy + " | " + _car_model + "<br><br>" + nnff_fuzzy_desc)));
+                                                             (nn_model_name == "mock") ? (nnff_not_loaded + "<br>" + tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ") + "<font color='white'><b>#tuning-nnlc</b></font>") :
+                                                                                         (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + _car_model + "<br><br>" + nnff_fuzzy_desc)));
           enforce_torque_lateral->setEnabled(false);
         } else {
           nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_status_init));
@@ -587,7 +588,7 @@ TorqueFriction::TorqueFriction() : SPOptionControl (
 
 void TorqueFriction::refresh() {
   float torqueFrictionVal = QString::fromStdString(params.get("TorqueFriction")).toInt() * 0.01;
-  setTitle(params.getBool("TorquedOverride") ? "FRICTION - Live && Offline" : "FRICTION - Offline Only");
+  setTitle("FRICTION - " + (params.getBool("TorquedOverride") ? tr("Real-time and Offline") : tr("Offline Only")));
   setLabel(QString::number(torqueFrictionVal));
 }
 
@@ -604,6 +605,6 @@ TorqueMaxLatAccel::TorqueMaxLatAccel() : SPOptionControl (
 void TorqueMaxLatAccel::refresh() {
   float torqueMaxLatAccelVal = QString::fromStdString(params.get("TorqueMaxLatAccel")).toInt() * 0.01;
   QString unit = "m/s²";
-  setTitle(params.getBool("TorquedOverride") ? "LAT_ACCEL_FACTOR - Live && Offline" : "LAT_ACCEL_FACTOR - Offline Only");
+  setTitle("LAT_ACCEL_FACTOR - " + (params.getBool("TorquedOverride") ? tr("Real-time and Offline") : tr("Offline Only")));
   setLabel(QString::number(torqueMaxLatAccelVal) + " " + unit);
 }

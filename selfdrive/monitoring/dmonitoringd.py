@@ -18,7 +18,7 @@ def dmonitoringd_thread():
   pm = messaging.PubMaster(['driverMonitoringState', 'driverMonitoringStateSP'])
   sm = messaging.SubMaster(['driverStateV2', 'liveCalibration', 'carState', 'controlsState', 'modelV2'], poll='driverStateV2')
 
-  driver_status = DriverStatus(rhd_saved=params.get_bool("IsRhdDetected"))
+  driver_status = DriverStatus(rhd_saved=params.get_bool("IsRhdDetected"), always_on=params.get_bool("AlwaysOnDM"))
   hands_on_wheel_status = HandsOnWheelStatus()
 
   v_cruise_last = 0
@@ -26,7 +26,7 @@ def dmonitoringd_thread():
   steering_wheel_engaged = False
   hands_on_wheel_monitoring_enabled = params.get_bool("HandsOnWheelMonitoring")
 
-  # 10Hz <- dmonitoringmodeld
+  # 20Hz <- dmonitoringmodeld
   while True:
     sm.update()
     if not sm.updated['driverStateV2']:
@@ -53,13 +53,15 @@ def dmonitoringd_thread():
     if sm.all_checks() and len(sm['liveCalibration'].rpyCalib):
       driver_status.update_states(sm['driverStateV2'], sm['liveCalibration'].rpyCalib, sm['carState'].vEgo, sm['controlsState'].enabled)
 
-    # Block engaging after max number of distrations
+    # Block engaging after max number of distrations or when alert active
     if driver_status.terminal_alert_cnt >= driver_status.settings._MAX_TERMINAL_ALERTS or \
-       driver_status.terminal_time >= driver_status.settings._MAX_TERMINAL_DURATION:
+       driver_status.terminal_time >= driver_status.settings._MAX_TERMINAL_DURATION or \
+       driver_status.always_on and driver_status.awareness <= driver_status.threshold_prompt:
       events.add(car.CarEvent.EventName.tooDistracted)
 
     # Update events from driver state
-    driver_status.update_events(events, driver_engaged, sm['controlsState'].enabled, sm['carState'].standstill)
+    driver_status.update_events(events, driver_engaged, sm['controlsState'].enabled,
+      sm['carState'].standstill, sm['carState'].gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park], sm['carState'].vEgo)
     # Update events and state from hands on wheel monitoring status
     if hands_on_wheel_monitoring_enabled:
       hands_on_wheel_status.update(events, steering_wheel_engaged, sm['controlsState'].enabled, sm['carState'].vEgo)
@@ -85,6 +87,9 @@ def dmonitoringd_thread():
       "isRHD": driver_status.wheel_on_right,
     }
     pm.send('driverMonitoringState', dat)
+
+    if sm['driverStateV2'].frameId % 40 == 1:
+      driver_status.always_on = params.get_bool("AlwaysOnDM")
 
     sp_dat = messaging.new_message('driverMonitoringStateSP')
     sp_dat.driverMonitoringStateSP = {

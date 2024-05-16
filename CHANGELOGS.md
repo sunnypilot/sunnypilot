@@ -1,13 +1,53 @@
-sunnypilot - 0.9.7.0 (2024-xx-xx)
+sunnypilot - 0.9.7.0 (2024-05-xx)
 ========================
 * New driving model
-* Support for many hybrid Ford models
+* Adjust driving personality with the follow distance button
+* Support for hybrid variants of supported Ford models
+* Added toggle to enable driver monitoring even when openpilot is not engaged
+* Fingerprinting without the OBD-II port on all cars
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit 56e343b (February 27, 2024)
+  * master commit 2e6b2ef (May 9, 2024)
+* NEW❗: sunnylink (Alpha early access)
+  * NEW❗: Config Backup
+    * Remotely back up and restore sunnypilot settings easily
+    * Device registration with sunnylink ensures a secure, integrated experience across services
+    * AES encryption derived from the device's RSA private key is used for utmost security
+    * Settings are encrypted on-device, transmitted securely via HTTPS, and stored encrypted on sunnylink
+    * Prevents loss of settings after device resets, offering peace of mind through end-to-end encryption
+    * Early alpha access to all current and previous GitHub Sponsors and Patreon supporters
+  * GitHub account pairing from device settings scanning QR code
+    * Pairing your account will allow you to access features via our API (still WIP but accessible if you dig a little on our code 😉)
+    * Allow inheritance of your sponsorship status, allowing you to get extra features and early access whenever applicable
+* NEW❗: iOS Siri Shortcuts Navigation support thanks to twilsonco and mike86437!
+  * iOS and macOS Shortcuts to quickly set navigation destinations from your iOS device
+  * comma Prime support
+  * Personal Mapbox/Amap/Google Maps token support
+  * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
+* UPDATED: Driving Model Selector v4
+  * NEW❗: Driving Model additions
+    * North Dakota (April 29, 2024) - NDv2
+    * WD40 (April 09, 2024) - WD40
+    * Duck Amigo (March 18, 2024) - DA
+    * Recertified Herbalist (March 01, 2024) - CHLR
+  * Legacy Driving Models with Navigate on openpilot (NoO) support
+    * Includes Duck Amigo and all preceding models
+* UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
+  * Reset self-service access tokens for Mapbox, Amap, and Google Maps
+* UPDATED: Upstream native support for Gap Adjust Cruise
+* UPDATED: Neural Network Lateral Control (NNLC)
+  * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
+  * This will be updated when the new mapping of platforms are restructured (thanks @twilsconso 😉)
+* UI Updates
+  * Display Metrics Below Chevron
+    * NEW❗: Metrics is now being displayed below the chevron instead of above
+    * NEW❗: Display both Distance and Speed simultaneously
+* Ford F-150 2022-23 support
+* Ford F-150 Lightning 2021-23 support
+* Ford Mustang Mach-E 2021-23 support
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================

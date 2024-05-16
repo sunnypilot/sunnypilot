@@ -44,6 +44,7 @@ void SpeedLimitPolicySettings::updateToggles() {
     return;
   }
 
+  // TODO: SP: use upstream's setCheckedButton
   speed_limit_policy->setButton("SpeedLimitControlPolicy");
 
   speed_limit_policy->setDescription(speedLimitPolicyDescriptionBuilder("SpeedLimitControlPolicy", speed_limit_policy_descriptions));

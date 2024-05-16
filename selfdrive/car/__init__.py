@@ -1,13 +1,15 @@
 # functions common among cars
 from collections import namedtuple
-from dataclasses import dataclass, field, replace
-from enum import ReprEnum
+from dataclasses import dataclass
+from enum import IntFlag, ReprEnum, EnumType
+from dataclasses import replace
 
 import capnp
 
 from cereal import car
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.selfdrive.car.docs_definitions import CarInfo
+from openpilot.common.utils import Freezable
+from openpilot.selfdrive.car.docs_definitions import CarDocs
 
 
 # kg of standard extra cargo to count for drive, gas, etc...
@@ -249,26 +251,32 @@ class CanSignalRateCalculator:
     return self.rate
 
 
-CarInfos = CarInfo | list[CarInfo]
-
-
 @dataclass(frozen=True, kw_only=True)
 class CarSpecs:
-  mass: float
-  wheelbase: float
+  mass: float  # kg, curb weight
+  wheelbase: float  # meters
   steerRatio: float
-  centerToFrontRatio: float = field(default=0.5)
-  minSteerSpeed: float = field(default=0.)
-  minEnableSpeed: float = field(default=-1.)
+  centerToFrontRatio: float = 0.5
+  minSteerSpeed: float = 0.0  # m/s
+  minEnableSpeed: float = -1.0  # m/s
+  tireStiffnessFactor: float = 1.0
+
+  def override(self, **kwargs):
+    return replace(self, **kwargs)
 
 
-@dataclass(frozen=True, order=True)
-class PlatformConfig:
-  platform_str: str
-  car_info: CarInfos
+@dataclass(order=True)
+class PlatformConfig(Freezable):
+  car_docs: list[CarDocs]
+  specs: CarSpecs
+
   dbc_dict: DbcDict
 
-  specs: CarSpecs | None = None
+  flags: int = 0
+
+  spFlags: int = 0
+
+  platform_str: str | None = None
 
   def __hash__(self) -> int:
     return hash(self.platform_str)
@@ -276,8 +284,23 @@ class PlatformConfig:
   def override(self, **kwargs):
     return replace(self, **kwargs)
 
+  def init(self):
+    pass
 
-class Platforms(str, ReprEnum):
+  def __post_init__(self):
+    self.init()
+
+
+class PlatformsType(EnumType):
+  def __new__(metacls, cls, bases, classdict, *, boundary=None, _simple=False, **kwds):
+    for key in classdict._member_names.keys():
+      cfg: PlatformConfig = classdict[key]
+      cfg.platform_str = key
+      cfg.freeze()
+    return super().__new__(metacls, cls, bases, classdict, boundary=boundary, _simple=_simple, **kwds)
+
+
+class Platforms(str, ReprEnum, metaclass=PlatformsType):
   config: PlatformConfig
 
   def __new__(cls, platform_config: PlatformConfig):
@@ -286,10 +309,37 @@ class Platforms(str, ReprEnum):
     member._value_ = platform_config.platform_str
     return member
 
+  def __repr__(self):
+    return f"<{self.__class__.__name__}.{self.name}>"
+
   @classmethod
   def create_dbc_map(cls) -> dict[str, DbcDict]:
     return {p: p.config.dbc_dict for p in cls}
 
   @classmethod
-  def create_carinfo_map(cls) -> dict[str, CarInfos]:
-    return {p: p.config.car_info for p in cls}
+  def with_flags(cls, flags: IntFlag) -> set['Platforms']:
+    return {p for p in cls if p.config.flags & flags}
+
+  @classmethod
+  def without_flags(cls, flags: IntFlag) -> set['Platforms']:
+    return {p for p in cls if not (p.config.flags & flags)}
+
+  @classmethod
+  def with_sp_flags(cls, spFlags: IntFlag) -> set['Platforms']:
+    return {p for p in cls if p.config.spFlags & spFlags}
+
+  @classmethod
+  def without_sp_flags(cls, spFlags: IntFlag) -> set['Platforms']:
+    return {p for p in cls if not (p.config.spFlags & spFlags)}
+
+  @classmethod
+  def print_debug(cls, flags):
+    platforms_with_flag = defaultdict(list)
+    for flag in flags:
+      for platform in cls:
+        if platform.config.flags & flag:
+          assert flag.name is not None
+          platforms_with_flag[flag.name].append(platform)
+
+    for flag, platforms in platforms_with_flag.items():
+      print(f"{flag:32s}: {', '.join(p.name for p in platforms)}")
