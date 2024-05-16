@@ -46,6 +46,10 @@ class FordFlags(IntFlag):
   CANFD = 1
 
 
+class FordFlagsSP(IntFlag):
+  SP_ENHANCED_LAT_CONTROL = 1
+
+
 BUTTON_STATES = {
   "accelCruise": False,
   "decelCruise": False,
