@@ -44,6 +44,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "CustomStockLongPlanner",
+      tr("Use Planner Speed"),
+      "",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "ExperimentalMode",
       tr("Experimental Mode"),
       "",
@@ -185,6 +191,7 @@ void TogglesPanel::updateToggles() {
   auto op_long_toggle = toggles["ExperimentalLongitudinalEnabled"];
   auto custom_stock_long_toggle = toggles["CustomStockLong"];
   auto dec_toggle = toggles["DynamicExperimentalControl"];
+  auto custom_stock_long_planner = toggles["CustomStockLongPlanner"];
   const QString e2e_description = QString("%1<br>"
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
@@ -222,12 +229,15 @@ void TogglesPanel::updateToggles() {
       long_personality_setting->setEnabled(true);
       op_long_toggle->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
+      custom_stock_long_planner->setEnabled(false);
       params.remove("CustomStockLong");
       dec_toggle->setEnabled(true);
     } else if (custom_stock_long_toggle->isToggled()) {
       op_long_toggle->setEnabled(false);
-      experimental_mode_toggle->setEnabled(false);
+      experimental_mode_toggle->setEnabled(true);
+      experimental_mode_toggle->setDescription(e2e_description);
       long_personality_setting->setEnabled(false);
+      custom_stock_long_planner->setEnabled(true);
       params.remove("ExperimentalLongitudinalEnabled");
       params.remove("ExperimentalMode");
     } else {
@@ -252,6 +262,7 @@ void TogglesPanel::updateToggles() {
       op_long_toggle->setEnabled(CP.getExperimentalLongitudinalAvailable() && !is_release);
       custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
       dec_toggle->setEnabled(false);
+      custom_stock_long_planner->setEnabled(false);
       params.remove("DynamicExperimentalControl");
     }
 
@@ -264,6 +275,7 @@ void TogglesPanel::updateToggles() {
     op_long_toggle->setVisible(false);
     custom_stock_long_toggle->setVisible(false);
     dec_toggle->setVisible(false);
+    custom_stock_long_planner->setVisible(false);
   }
 }
 

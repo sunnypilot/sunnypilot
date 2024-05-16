@@ -232,6 +232,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CustomMapboxTokenSk", PERSISTENT | BACKUP},
     {"CustomOffsets", PERSISTENT | BACKUP},
     {"CustomStockLong", PERSISTENT | BACKUP},
+    {"CustomStockLongPlanner", PERSISTENT | BACKUP},
     {"CustomTorqueLateral", PERSISTENT | BACKUP},
     {"DevUIInfo", PERSISTENT | BACKUP},
     {"DisableOnroadUploads", PERSISTENT | BACKUP},
