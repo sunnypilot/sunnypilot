@@ -26,6 +26,7 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = None
     self.buttonStates = BUTTON_STATES.copy()
     self.buttonStatesPrev = BUTTON_STATES.copy()
+    self.v_limit = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -73,6 +74,10 @@ class CarState(CarStateBase):
     ret.cruiseState.nonAdaptive = cp.vl["Cluster_Info1_FD1"]["AccEnbl_B_RqDrv"] == 0
     ret.cruiseState.standstill = cp.vl["EngBrakeData"]["AccStopMde_D_Rq"] == 3
     ret.accFaulted = cp.vl["EngBrakeData"]["CcStat_D_Actl"] in (1, 2)
+
+    if self.CP.carFingerprint in CANFD_CAR:
+      ret.cruiseState.speedLimit = self.update_traffic_signals(cp_cam)
+
     if not self.CP.openpilotLongitudinalControl:
       ret.accFaulted = ret.accFaulted or cp_cam.vl["ACCDATA"]["CmbbDeny_B_Actl"] == 1
 
@@ -126,6 +131,16 @@ class CarState(CarStateBase):
     self.lkas_status_stock_values = cp_cam.vl["IPMA_Data"]
 
     return ret
+
+  def update_traffic_signals(self, cp_cam):
+    # TODO: Check if CAN platforms have the same signals
+    if self.CP.carFingerprint in CANFD_CAR:
+      self.v_limit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
+      v_limit_unit = cp_cam.vl["Traffic_RecognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
+
+      speed_factor = CV.MPH_TO_MS if v_limit_unit == 2 else CV.KPH_TO_MS if v_limit_unit == 1 else 0
+
+      return self.v_limit * speed_factor if self.v_limit not in (0, 255) else 0
 
   @staticmethod
   def get_can_parser(CP):
@@ -182,6 +197,11 @@ class CarState(CarStateBase):
       ("ACCDATA_3", 5),
       ("IPMA_Data", 1),
     ]
+
+    if CP.flags & FordFlags.CANFD:
+      messages += [
+        ("Traffic_RecognitnData", 1),
+      ]
 
     if CP.enableBsm and CP.flags & FordFlags.CANFD:
       messages += [
