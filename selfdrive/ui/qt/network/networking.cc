@@ -94,11 +94,11 @@ void Networking::connectToNetwork(const Network n) {
   if (wifi->isKnownConnection(n.ssid)) {
     wifi->activateWifiConnection(n.ssid);
   } else if (n.security_type == SecurityType::OPEN) {
-    wifi->connect(n);
+    wifi->connect(n, false);
   } else if (n.security_type == SecurityType::WPA) {
     QString pass = InputDialog::getText(tr("Enter password"), this, tr("for \"%1\"").arg(QString::fromUtf8(n.ssid)), true, 8);
     if (!pass.isEmpty()) {
-      wifi->connect(n, pass);
+      wifi->connect(n, false, pass);
     }
   }
 }
@@ -108,7 +108,7 @@ void Networking::wrongPassword(const QString &ssid) {
     const Network &n = wifi->seenNetworks.value(ssid);
     QString pass = InputDialog::getText(tr("Wrong password"), this, tr("for \"%1\"").arg(QString::fromUtf8(n.ssid)), true, 8);
     if (!pass.isEmpty()) {
-      wifi->connect(n, pass);
+      wifi->connect(n, false, pass);
     }
   }
 }
@@ -217,14 +217,27 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
       hidden_network.ssid = ssid.toUtf8();
       if (!pass.isEmpty()) {
         hidden_network.security_type = SecurityType::WPA;
-        wifi->connect(hidden_network, pass);
+        wifi->connect(hidden_network, true, pass);
       } else {
-        wifi->connect(hidden_network);
+        wifi->connect(hidden_network, true);
       }
       emit requestWifiScreen();
     }
   });
   list->addItem(hiddenNetworkButton);
+
+  // Ngrok
+  QProcess process;
+  process.start("sudo service ngrok status | grep running");
+  process.waitForFinished();
+  QString output = QString(process.readAllStandardOutput());
+  bool ngrokRunning = !output.isEmpty();
+  ToggleControl *ngrokToggle = new ToggleControl(tr("Ngrok Service"), "", "", ngrokRunning);
+  connect(ngrokToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    if (state) std::system("sudo ngrok service start");
+    else std::system("sudo ngrok service stop");
+  });
+  list->addItem(ngrokToggle);
 
   // Set initial config
   wifi->updateGsmSettings(roamingEnabled, QString::fromStdString(params.get("GsmApn")), metered);

@@ -23,6 +23,7 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
     if (!isDownloadingModel() && modelDownloadProgress.has_value()) {
       params.put("DrivingModelText", selectedModelToDownload->fullName.toStdString());
       params.put("DrivingModelName", selectedModelToDownload->displayName.toStdString());
+      params.put("DrivingModelGeneration", selectedModelToDownload->generation.toStdString());
       selectedModelToDownload.reset();
       modelDownloadProgress.reset();
       params.putBool("CustomDrivingModel", !model_download_failed);
@@ -34,7 +35,6 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   connect(&nav_models_fetcher, &ModelsFetcher::downloadComplete, this, [this](const QByteArray&data, bool fromCache = false) {
     navModelFromCache = fromCache;
     if (!isDownloadingNavModel() && navModelDownloadProgress.has_value()) {
-      params.put("DrivingModelGeneration", selectedNavModelToDownload->generation.toStdString());
       params.put("NavModelText", selectedNavModelToDownload->fullNameNav.toStdString());
       selectedNavModelToDownload.reset();
       navModelDownloadProgress.reset();
@@ -136,22 +136,22 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
   }
 
   // Navigation model status
-  if (isDownloadingNavModel()) {
+  if (isDownloadingNavModel() && !navModelName.isEmpty()) {
     if (!description.isEmpty()) description += "\n"; // Add newline if driving model status is already appended
     description += QString(tr("Downloading Navigation model") + " [%1]... (%2%)")
                    .arg(navModelName, QString::number(navModelDownloadProgress.value_or(0.0), 'f', 2));
-  } else {
+  } else if (!navModelName.isEmpty()) {
     if (navModelFromCache) navModelName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n"; // Ensure newline separation
     description += QString(tr("Navigation model") + " [%1] " + tr("downloaded")).arg(navModelName);
   }
 
   // Metadata status
-  if (isDownloadingMetadata()) {
+  if (isDownloadingMetadata() && !metadataName.isEmpty()) {
     if (!description.isEmpty()) description += "\n";
     description += QString(tr("Downloading Metadata model") + " [%1]... (%2%)")
                    .arg(metadataName, QString::number(metadataDownloadProgress.value_or(0.0), 'f', 2));
-  } else {
+  } else if (!metadataName.isEmpty()) {
     if (metadataFromCache) metadataName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n";
     description += QString(tr("Metadata model") + " [%1] " + tr("downloaded")).arg(metadataName);
@@ -236,8 +236,8 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     modelDownloadProgress = 0.01;
     metadataDownloadProgress = 0.01;
 
-    //Start the download, we download the other models on emit of downloadComplete
-    if(params.get("DrivingModelGeneration") != selectedModelToDownload->generation.toStdString())
+    // Start the download, we download the other models on emit of downloadComplete
+    if (params.get("DrivingModelGeneration") != selectedModelToDownload->generation.toStdString())
       showResetParamsDialog();
     models_fetcher.download(selectedModelToDownload->downloadUri, selectedModelToDownload->fileName);
 
@@ -260,7 +260,7 @@ void SoftwarePanelSP::updateLabels() {
     return;
   }
 
-  if(!model_download_failed)
+  if (!model_download_failed)
     failed_downloads_description = "";
 
   checkNetwork();

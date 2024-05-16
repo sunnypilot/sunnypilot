@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import platform
 import base64
 import bz2
 import hashlib
@@ -37,7 +38,7 @@ from openpilot.common.realtime import set_core_affinity
 from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
 from openpilot.common.swaglog import cloudlog
-from openpilot.system.version import get_commit, get_normalized_origin, get_short_branch, get_version
+from openpilot.system.version import get_build_metadata
 from openpilot.system.hardware.hw import Paths
 
 
@@ -319,11 +320,12 @@ def getMessage(service: str, timeout: int = 1000) -> dict:
 
 @dispatcher.add_method
 def getVersion() -> dict[str, str]:
+  build_metadata = get_build_metadata()
   return {
-    "version": get_version(),
-    "remote": get_normalized_origin(),
-    "branch": get_short_branch(),
-    "commit": get_commit(),
+    "version": build_metadata.openpilot.version,
+    "remote": build_metadata.openpilot.git_normalized_origin,
+    "branch": build_metadata.channel,
+    "commit": build_metadata.openpilot.git_commit,
   }
 
 
@@ -465,6 +467,10 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
     ws = create_connection(remote_ws_uri,
                            cookie="jwt=" + identity_token,
                            enable_multithread=True)
+
+    # Set TOS to keep connection responsive while under load.
+    # DSCP of 36/HDD_LINUX_AC_VI with the minimum delay flag
+    ws.sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x90)
 
     ssock, csock = socket.socketpair()
     local_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -656,10 +662,12 @@ def stat_handler(end_event: threading.Event) -> None:
 def ws_proxy_recv(ws: WebSocket, local_sock: socket.socket, ssock: socket.socket, end_event: threading.Event, global_end_event: threading.Event) -> None:
   while not (end_event.is_set() or global_end_event.is_set()):
     try:
-      data = ws.recv()
-      if isinstance(data, str):
-        data = data.encode("utf-8")
-      local_sock.sendall(data)
+      r = select.select((ws.sock,), (), (), 30)
+      if r[0]:
+        data = ws.recv()
+        if isinstance(data, str):
+          data = data.encode("utf-8")
+        local_sock.sendall(data)
     except WebSocketTimeoutException:
       pass
     except Exception:
@@ -669,6 +677,7 @@ def ws_proxy_recv(ws: WebSocket, local_sock: socket.socket, ssock: socket.socket
   cloudlog.debug("athena.ws_proxy_recv closing sockets")
   ssock.close()
   local_sock.close()
+  ws.close()
   cloudlog.debug("athena.ws_proxy_recv done closing sockets")
 
   end_event.set()
@@ -751,11 +760,15 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
       onroad_prev = onroad
 
       if sock is not None:
-        # While not sending data, onroad, we can expect to time out in 7 + (7 * 2) = 21s
-        #                         offroad, we can expect to time out in 30 + (10 * 3) = 60s
-        # FIXME: TCP_USER_TIMEOUT is effectively 2x for some reason (32s), so it's mostly unused
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT, 16000 if onroad else 0)
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 7 if onroad else 30)
+        if platform.system() == 'Darwin':  # macOS
+          sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+          sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPALIVE, 7 if onroad else 30)
+        else:
+          # While not sending data, onroad, we can expect to time out in 7 + (7 * 2) = 21s
+          #                         offroad, we can expect to time out in 30 + (10 * 3) = 60s
+          # FIXME: TCP_USER_TIMEOUT is effectively 2x for some reason (32s), so it's mostly unused
+          sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT, 16000 if onroad else 0)
+          sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 7 if onroad else 30)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 7 if onroad else 10)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 2 if onroad else 3)
 

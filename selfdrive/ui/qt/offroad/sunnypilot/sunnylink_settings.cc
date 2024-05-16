@@ -1,20 +1,76 @@
 #include "selfdrive/ui/qt/offroad/sunnypilot/sunnylink_settings.h"
 
+#include <common/watchdog.h>
+#include <QtConcurrent/QtConcurrent>
+
 SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
+  sunnylink_client = new SunnylinkClient(this);
+  param_watcher = new ParamWatcher(this);
+  param_watcher->addParam("SunnylinkEnabled");
+  connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    paramsRefresh(param_name, param_value);
+  });
 
-  ListWidget *list = new ListWidget(this, false);
-  list->addItem(new LabelControl(tr("sunnylink Dongle ID"), getSunnylinkDongleId().value_or(tr("N/A"))));
+  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  connect(uiState(), &UIState::sunnylinkRolesChanged, this, &SunnylinkPanel::updateLabels);
+  connect(uiState(), &UIState::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updateLabels);
+
+  auto list = new ListWidget(this, false);
+  sunnylinkEnabledBtn = new ParamControl(
+    "SunnylinkEnabled",
+    tr("Enable sunnylink"),
+    sunnylinkBtnDescription,
+    "../assets/offroad/icon_blank.png"
+  );
+  sunnylinkEnabledBtn->setValue(tr("Device ID ")+ getSunnylinkDongleId().value_or(tr("N/A")));
+
+  list->addItem(sunnylinkEnabledBtn);
   list->addItem(horizontal_line());
 
-  popup = new SunnylinkSponsorPopup(this);
+  sunnylinkBtnDescription = tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
+  connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
+    //resets the description to the default one for the easter egg
+    sunnylinkEnabledBtn->setDescription(sunnylinkBtnDescription);
+  });
+
+  connect(sunnylinkEnabledBtn, &ParamControl::toggleFlipped, [=](bool enabled) {
+    if (enabled) {
+      auto proud_description = "<font color='SeaGreen'>"+ tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀")+ "</font>";
+      sunnylinkEnabledBtn->showDescription();
+      sunnylinkEnabledBtn->setDescription(proud_description);
+    } else {
+      auto shame_description = "<font color='orange'>"+ tr("👋Not going to lie, it's sad to see you disabled sunnylink 😢, but we'll be here when you're ready to come back 🎉.")+ "</font>";
+      sunnylinkEnabledBtn->showDescription();
+      sunnylinkEnabledBtn->setDescription(shame_description);
+    }
+
+    auto dialog_text = tr("A reboot is required to") + " " + (enabled ? tr("start") : tr("stop")) +" "+ tr("all connections and processes from sunnylink.") + "<br/><small>"+ tr("If that's not a problem for you, you can ignore this.")+ "</small>";
+    if (ConfirmationDialog::confirm(dialog_text, tr("Reboot Now!"), this)) {
+      Hardware::reboot();
+    }
+    updateLabels();
+  });
+
+  status_popup = new SunnylinkSponsorPopup(false, this);
   sponsorBtn = new ButtonControl(
     tr("Sponsor Status"), tr("SPONSOR"),
-    tr("Become a sponsor of sunnypilot to get early access to sunnylink features.")
+    tr("Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.")
   );
   list->addItem(sponsorBtn);
   connect(sponsorBtn, &ButtonControl::clicked, [=]() {
-    popup->exec();
+    status_popup->exec();
+  });
+  list->addItem(horizontal_line());
+
+  pair_popup = new SunnylinkSponsorPopup(true, this);
+  pairSponsorBtn = new ButtonControl(
+    tr("Pair GitHub Account"), tr("PAIR"),
+    tr("Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.") + "🌟"
+  );
+  list->addItem(pairSponsorBtn);
+  connect(pairSponsorBtn, &ButtonControl::clicked, [=]() {
+    pair_popup->exec();
   });
   list->addItem(horizontal_line());
 
@@ -26,22 +82,15 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   backupSettings = new SubPanelButton(tr("Backup Settings"), 720, this);
   backupSettings->setObjectName("backup_btn");
   // Set margin on the outside of the button
-  QVBoxLayout* backupSettingsLayout = new QVBoxLayout;
+  auto backupSettingsLayout = new QVBoxLayout;
   backupSettingsLayout->setContentsMargins(0, 0, 0, 30);
   backupSettingsLayout->addWidget(backupSettings);
   connect(backupSettings, &QPushButton::clicked, [=]() {
     is_backup = true;
     backup_settings->started();
-    if (uiState()->isSubscriber()) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to backup sunnypilot settings?"), tr("Back Up"), this)) {
-        backup_settings->sendParams(backup_settings->backupParams());
-      } else {
-        backup_settings->finished();
-      }
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to backup sunnypilot settings?"), tr("Back Up"), this)) {
+      backup_settings->sendParams(backup_settings->backupParams());
     } else {
-      if (ConfirmationDialog::confirm(tr("Early alpha access only. Become a sponsor to get early access to sunnylink features."), tr("Become a Sponsor"), this)) {
-        popup->exec();
-      }
       backup_settings->finished();
     }
     is_backup = false;
@@ -52,13 +101,13 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   restoreSettings = new SubPanelButton(tr("Restore Settings"), 720, this);
   restoreSettings->setObjectName("restore_btn");
   // Set margin on the outside of the button
-  QVBoxLayout* restoreSettingsLayout = new QVBoxLayout;
+  auto restoreSettingsLayout = new QVBoxLayout;
   restoreSettingsLayout->setContentsMargins(0, 0, 0, 30);
   restoreSettingsLayout->addWidget(restoreSettings);
   connect(restoreSettings, &QPushButton::clicked, [=]() {
     is_restore = true;
     backup_settings->started();
-    if (uiState()->isSubscriber()) {
+    if (uiState()->isSunnylinkSponsor()) {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
         backup_settings->getParams();
       } else {
@@ -66,7 +115,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
       }
     } else {
       if (ConfirmationDialog::confirm(tr("Early alpha access only. Become a sponsor to get early access to sunnylink features."), tr("Become a Sponsor"), this)) {
-        popup->exec();
+        status_popup->exec();
       }
       backup_settings->finished();
     }
@@ -75,7 +124,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   connect(backup_settings, &BackupSettings::updateLabels, this, &SunnylinkPanel::updateLabels);
 
   // Settings Restore and Settings Backup in the same horizontal space
-  QHBoxLayout *settings_layout = new QHBoxLayout;
+  auto settings_layout = new QHBoxLayout;
   settings_layout->setContentsMargins(0, 0, 0, 30);
   settings_layout->addWidget(backupSettings);
   settings_layout->addSpacing(10);
@@ -89,24 +138,52 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   });
 
   sunnylinkScreen = new QWidget(this);
-  QVBoxLayout* vlayout = new QVBoxLayout(sunnylinkScreen);
+  auto vlayout = new QVBoxLayout(sunnylinkScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
   vlayout->addWidget(new ScrollView(list, this), 1);
   main_layout->addWidget(sunnylinkScreen);
-
-  getSubscriber();
-
+  if (is_sunnylink_enabled) {
+    startSunnylink();
+  }
   updateLabels();
 }
 
 void SunnylinkPanel::showEvent(QShowEvent* event) {
-  getSubscriber(true);
+  if (is_sunnylink_enabled)  {
+    startSunnylink();
+  }
   updateLabels();  // For snappier feeling
 }
 
-void SunnylinkPanel::hideEvent(QHideEvent* event) {
-  sub_repeater->deleteLater();
+void SunnylinkPanel::paramsRefresh(const QString &param_name, const QString &param_value) {
+  // We do it on paramsRefresh because the toggleEvent happens before the value is updated
+  if (param_name == "SunnylinkEnabled" && param_value == "1") {
+    startSunnylink();
+  } else if (param_name == "SunnylinkEnabled" && param_value == "0") {
+    stopSunnylink();
+  }
+
+  updateLabels();
+}
+
+void SunnylinkPanel::startSunnylink() const {
+  if (!sunnylink_client->role_service->isCurrentyPolling()) {
+    sunnylink_client->role_service->startPolling();
+  } else {
+    sunnylink_client->role_service->load();
+  }
+
+  if (!sunnylink_client->user_service->isCurrentyPolling()) {
+    sunnylink_client->user_service->startPolling();
+  } else {
+    sunnylink_client->user_service->load();
+  }
+}
+
+void SunnylinkPanel::stopSunnylink() const {
+  sunnylink_client->role_service->stopPolling();
+  sunnylink_client->user_service->stopPolling();
 }
 
 void SunnylinkPanel::updateLabels() {
@@ -114,65 +191,43 @@ void SunnylinkPanel::updateLabels() {
     return;
   }
 
-  bool is_sub = uiState()->isSubscriber();
+  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  const auto sunnylinkDongleId = getSunnylinkDongleId().value_or(tr("N/A"));
+  bool is_sub = uiState()->isSunnylinkSponsor() && is_sunnylink_enabled;
+  auto max_current_sponsor_rule = uiState()->sunnylinkSponsorRole();
+  auto role_name = max_current_sponsor_rule.getSponsorTierString();
+  std::optional role_color = max_current_sponsor_rule.getSponsorTierColor();
+  bool is_paired = uiState()->isSunnylinkPaired();
+  auto paired_users = uiState()->sunnylinkDeviceUsers();
 
-  sponsorBtn->setEnabled(!is_onroad);
+  //little easter egg for Panda :D 
+  if(sunnylinkDongleId == "d689627422cefcbc") {
+    role_name = "Panda 🐼";
+  }
+
+  sunnylinkEnabledBtn->setEnabled(!is_onroad);
+  sunnylinkEnabledBtn->setValue(tr("Device ID ")+ sunnylinkDongleId);
+
+  sponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   sponsorBtn->setText(is_sub ? tr("THANKS") + " ❤️" : tr("SPONSOR"));
-  sponsorBtn->setValue(is_sub ? tr("Sponsor") : tr("Not Sponsor"));
+  sponsorBtn->setValue(is_sub ? tr(role_name.toStdString().c_str()) : tr("Not Sponsor"), role_color);
 
-  backupSettings->setEnabled(!backup_settings->in_progress && !is_onroad);
-  restoreSettings->setEnabled(!backup_settings->in_progress && !is_onroad);
+  pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
+  pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
+
+  backupSettings->setEnabled(!backup_settings->in_progress && !is_onroad && is_sunnylink_enabled);
+  restoreSettings->setEnabled(!backup_settings->in_progress && !is_onroad && is_sunnylink_enabled);
 
   backupSettings->setText(backup_settings->in_progress && is_backup ? tr("Backing up...") : tr("Backup Settings"));
   restoreSettings->setText(backup_settings->in_progress && is_restore ? tr("Restoring...") : tr("Restore Settings"));
 
+  if (!is_sunnylink_enabled) {
+    sunnylinkEnabledBtn->setValue("");
+    sponsorBtn->setValue("");
+    pairSponsorBtn->setValue("");
+  }
+
   update();
-}
-
-void SunnylinkPanel::getSubscriber(bool poll) {
-  if (auto sl_dongle_id = getSunnylinkDongleId()) {
-    QString url = "https://stg.api.sunnypilot.ai/device/" + *sl_dongle_id + "/roles";
-
-    init_sub_request = new HttpRequest(this, true, 10000, true);
-    QObject::connect(init_sub_request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
-      replyFinished(resp, success);
-      updateLabels();
-      init_sub_request->deleteLater();
-    });
-    init_sub_request->sendRequest(url);
-
-    if (poll) {
-      sub_repeater = new RequestRepeater(this, url, "", 60, false, true);
-      QObject::connect(sub_repeater, &RequestRepeater::requestDone, [=](const QString &resp, bool success) {
-        replyFinished(resp, success);
-        updateLabels();
-      });
-    }
-  }
-}
-
-void SunnylinkPanel::replyFinished(const QString &response, bool success) {
-  if (!success) return;
-
-  SunnylinkRoleType role_type;
-
-  if (response == "[]") {
-    role_type = static_cast<SunnylinkRoleType>(int(SunnylinkRoleType::SL_UNKNOWN));
-    uiState()->setSunnylinkRoleType(role_type);
-    qDebug() << "JSON Parse failed on getting sponsor status";
-    return;
-  }
-
-  // TODO: Refactor to check additional role types with new mapping on the server side when implemented
-  QJsonDocument doc = QJsonDocument::fromJson(response.toUtf8());
-  QJsonArray jsonArray = doc.array();
-
-  for (const QJsonValue &value : jsonArray) {
-    QJsonObject json = value.toObject();
-    role_type = static_cast<SunnylinkRoleType>(int(sunnylinkRoleTypeValue(QString(json["role_type"].toString()))));
-
-    uiState()->setSunnylinkRoleType(role_type);
-  }
 }
 
 BackupSettings::BackupSettings(QWidget* parent) : QFrame(parent) {
@@ -207,17 +262,17 @@ QByteArray BackupSettings::backupParams(const bool encrypt) {
   QByteArray processed_data = encrypt ? CommaApi::rsa_encrypt(compressedData) : compressedData;
 
   // Encode the compressed QByteArray in Base64.
-  QString converted_params_processed_base64_data = QString(processed_data.toBase64());
+  auto converted_params_processed_base64_data = QString(processed_data.toBase64());
 
   payload["is_encrypted"] = encrypt;
   payload["config"] = converted_params_processed_base64_data;
   // Create a sub-object for sunnypilot_version
   QJsonObject version;
   QStringList versioning = getVersion().split('.');
-  version["major"] = versioning.value(0, 0).toInt();
-  version["minor"] = versioning.value(1, 0).toInt();
-  version["patch"] = versioning.value(2, 0).toInt();
-  version["build"] = versioning.value(3, 0).toInt();
+  version["major"] = versioning.value(0, nullptr).toInt();
+  version["minor"] = versioning.value(1, nullptr).toInt();
+  version["patch"] = versioning.value(2, nullptr).toInt();
+  version["build"] = versioning.value(3, nullptr).toInt();
   version["branch"] = QString::fromStdString(params.get("GitBranch"));
   payload["sunnypilot_version"] = version;
 
@@ -229,9 +284,9 @@ QByteArray BackupSettings::backupParams(const bool encrypt) {
 
 void BackupSettings::sendParams(const QByteArray &payload) {
   if (auto sl_dongle_id = getSunnylinkDongleId()) {
-    QString url = "https://stg.api.sunnypilot.ai/backup/" + *sl_dongle_id;
-    HttpRequest *request = new HttpRequest(this, true, 10000, true);
-    QObject::connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
+    QString url = SUNNYLINK_BASE_URL + "/backup/" + *sl_dongle_id;
+    auto request = new HttpRequest(this, true, 10000, true);
+    connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
       if (success && resp != "[]") {
         ConfirmationDialog::alert(tr("Settings backed up for sunnylink Device ID:") + " " + *sl_dongle_id, this);
       } else if (resp == "[]") {
@@ -240,7 +295,7 @@ void BackupSettings::sendParams(const QByteArray &payload) {
         ConfirmationDialog::alert(tr("OOPS! We made a booboo.") + "\n" + tr("Please try again later."), this);
       }
 
-      QObject::connect(request, &QObject::destroyed, this, &BackupSettings::finished);
+      connect(request, &QObject::destroyed, this, &BackupSettings::finished);
 
       request->deleteLater();
     });
@@ -297,9 +352,9 @@ void BackupSettings::restoreParams(const QString &resp) {
 
 void BackupSettings::getParams() {
   if (auto sl_dongle_id = getSunnylinkDongleId()) {
-    QString url = "https://stg.api.sunnypilot.ai/backup/" + *sl_dongle_id;
-    HttpRequest *request = new HttpRequest(this, true, 10000, true);
-    QObject::connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
+    QString url = SUNNYLINK_BASE_URL + "/backup/" + *sl_dongle_id;
+    auto request = new HttpRequest(this, true, 10000, true);
+    connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
       bool restart_ui = false;
       if (success && resp != "[]") {
         restoreParams(resp);
@@ -311,7 +366,7 @@ void BackupSettings::getParams() {
         ConfirmationDialog::alert(tr("OOPS! We made a booboo.") + "\n" + tr("Please try again later."), this);
       }
 
-      QObject::connect(request, &QObject::destroyed, [=]() {
+      connect(request, &QObject::destroyed, [=]() {
         finished();
 
         if (restart_ui) {
@@ -340,7 +395,7 @@ void BackupSettings::finished() {
 // Sponsor Upsell
 using qrcodegen::QrCode;
 
-SunnylinkSponsorQRWidget::SunnylinkSponsorQRWidget(QWidget* parent) : QWidget(parent) {
+SunnylinkSponsorQRWidget::SunnylinkSponsorQRWidget(bool sponsor_pair, QWidget* parent) : QWidget(parent), sponsor_pair(sponsor_pair) {
   timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, &SunnylinkSponsorQRWidget::refresh);
 }
@@ -357,7 +412,17 @@ void SunnylinkSponsorQRWidget::hideEvent(QHideEvent *event) {
 }
 
 void SunnylinkSponsorQRWidget::refresh() {
-  QString qrString = "https://github.com/sponsors/sunnyhaibin";
+  QString qrString;
+
+  if (sponsor_pair) {
+    QString token = CommaApi::create_jwt({}, 3600, true);
+    auto sl_dongle_id = getSunnylinkDongleId();
+    QByteArray payload = QString("1|" + *sl_dongle_id + "|" + token).toUtf8().toBase64();
+    qrString = SUNNYLINK_BASE_URL + "/sso?state=" + payload;
+  } else {
+    qrString = "https://github.com/sponsors/sunnyhaibin";
+  }
+
   this->updateQrCode(qrString);
   update();
 }
@@ -388,50 +453,70 @@ void SunnylinkSponsorQRWidget::paintEvent(QPaintEvent *e) {
   p.drawPixmap(s.width(), s.height(), img);
 }
 
-SunnylinkSponsorPopup::SunnylinkSponsorPopup(QWidget *parent) : DialogBase(parent) {
-  QHBoxLayout *hlayout = new QHBoxLayout(this);
+QStringList SunnylinkSponsorPopup::getInstructions(bool sponsor_pair) {
+  QStringList instructions;
+  if (sponsor_pair) {
+    instructions << tr("Scan the QR code to login to your GitHub account")
+                 << tr("Follow the prompts to complete the pairing process")
+                 << tr("Re-enter the \"sunnylink\" panel to verify sponsorship status")
+                 << tr("If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot");
+  } else {
+    instructions << tr("Scan the QR code to visit sunnyhaibin's GitHub Sponsors page")
+                 << tr("Choose your sponsorship tier and confirm your support")
+                 << tr("Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status");
+  }
+  return instructions;
+}
+
+SunnylinkSponsorPopup::SunnylinkSponsorPopup(bool sponsor_pair, QWidget *parent) : DialogBase(parent), sponsor_pair(sponsor_pair) {
+  auto *hlayout = new QHBoxLayout(this);
+  auto sunnylink_client = new SunnylinkClient(this);
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
   setStyleSheet("SunnylinkSponsorPopup { background-color: #E0E0E0; }");
 
   // text
-  QVBoxLayout *vlayout = new QVBoxLayout();
+  auto vlayout = new QVBoxLayout();
   vlayout->setContentsMargins(85, 70, 50, 70);
   vlayout->setSpacing(50);
   hlayout->addLayout(vlayout, 1);
   {
-    QPushButton *close = new QPushButton(QIcon(":/icons/close.svg"), "", this);
+    auto close = new QPushButton(QIcon(":/icons/close.svg"), "", this);
     close->setIconSize(QSize(80, 80));
     close->setStyleSheet("border: none;");
     vlayout->addWidget(close, 0, Qt::AlignLeft);
-    QObject::connect(close, &QPushButton::clicked, this, &QDialog::reject);
+    connect(close, &QPushButton::clicked, this, [=] {
+      sunnylink_client->role_service->load();
+      sunnylink_client->user_service->load();
+      QDialog::reject();
+    });
 
     //vlayout->addSpacing(30);
 
-    QLabel *title = new QLabel(tr("Early Access: Become a sunnypilot Sponsor"), this);
+    const QString titleText = sponsor_pair ? tr("Pair your GitHub account") : tr("Early Access: Become a sunnypilot Sponsor");
+    const auto title = new QLabel(titleText, this);
     title->setStyleSheet("font-size: 75px; color: black;");
     title->setWordWrap(true);
     vlayout->addWidget(title);
 
-    QLabel *instructions = new QLabel(QString(R"(
-      <ol type='1' style='margin-left: 15px;'>
-        <li style='margin-bottom: 50px;'>%1</li>
-        <li style='margin-bottom: 50px;'>%2</li>
-        <li style='margin-bottom: 50px;'>%3</li>
-      </ol>
-    )").arg(tr("Scan the QR code to visit sunnyhaibin's GitHub Sponsors page"))
-    .arg(tr("Choose your sponsorship tier and confirm your support"))
-    .arg(tr("Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status")), this);
+    QStringList instructions = getInstructions(sponsor_pair);
+    QString instructionsHtml = "<ol type='1' style='margin-left: 15px;'>";
+    for (const auto & instruction : instructions) {
+      instructionsHtml += QString("<li style='margin-bottom: 50px;'>%1</li>").arg(instruction);
+    }
+    instructionsHtml += "</ol>";
+    const auto instructionsLabel = new QLabel(instructionsHtml, this);
 
-    instructions->setStyleSheet("font-size: 47px; font-weight: bold; color: black;");
-    instructions->setWordWrap(true);
-    vlayout->addWidget(instructions);
+
+    instructionsLabel->setStyleSheet("font-size: 47px; font-weight: bold; color: black;");
+    instructionsLabel->setWordWrap(true);
+    vlayout->addWidget(instructionsLabel);
 
     vlayout->addStretch();
   }
 
   // QR code
-  SunnylinkSponsorQRWidget *qr = new SunnylinkSponsorQRWidget(this);
+  auto *qr = new SunnylinkSponsorQRWidget(sponsor_pair ? true : false, this);
   hlayout->addWidget(qr, 1);
 }
