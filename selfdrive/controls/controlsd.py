@@ -209,34 +209,6 @@ class Controls:
       if any(ps.controlsAllowed for ps in self.sm['pandaStates']):
         self.state = State.enabled
 
-  def get_road_edge(self, carstate, model_v2):
-    # Lane detection by FrogAi
-    one_blinker = carstate.leftBlinker != carstate.rightBlinker
-    if not self.edge_toggle:
-      self.road_edge = False
-    elif one_blinker:
-      # Set the minimum lane threshold to 3.0 meters
-      min_lane_threshold = 3.0
-      # Set the blinker index based on which signal is on
-      blinker_index = 0 if carstate.leftBlinker else 1
-      desired_edge = model_v2.roadEdges[blinker_index]
-      current_lane = model_v2.laneLines[blinker_index + 1]
-      # Check if both the desired lane and the current lane have valid x and y values
-      if all([desired_edge.x, desired_edge.y, current_lane.x, current_lane.y]) and len(desired_edge.x) == len(current_lane.x):
-        # Interpolate the x and y values to the same length
-        x = np.linspace(desired_edge.x[0], desired_edge.x[-1], num=len(desired_edge.x))
-        lane_y = np.interp(x, current_lane.x, current_lane.y)
-        desired_y = np.interp(x, desired_edge.x, desired_edge.y)
-        # Calculate the width of the lane we're wanting to change into
-        lane_width = np.abs(desired_y - lane_y)
-        # Set road_edge to False if the lane width is not larger than the threshold
-        self.road_edge = not (np.amax(lane_width) > min_lane_threshold)
-      else:
-        self.road_edge = True
-    else:
-      # Default to setting "road_edge" to False
-      self.road_edge = False
-
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
 
@@ -795,7 +767,7 @@ class Controls:
     hudControl.speedVisible = self.enabled_long
     hudControl.lanesVisible = self.enabled
     hudControl.leadVisible = self.sm['longitudinalPlan'].hasLead
-    hudControl.leadDistanceBars = self.personality + 1
+    hudControl.leadDistanceBars = PERSONALITY_MAPPING.get(self.personality, log.LongitudinalPersonality.standard) + 1
 
     hudControl.rightLaneVisible = True
     hudControl.leftLaneVisible = True
