@@ -28,7 +28,7 @@ def get_can_messages(CP, gearbox_msg):
     ("STEER_MOTOR_TORQUE", 0),  # TODO: not on every car
   ]
 
-  if CP.carFingerprint in (SERIAL_STEERING | (CAR.HONDA_ODYSSEY_CHN, )):
+  if CP.carFingerprint in (SERIAL_STEERING | {CAR.HONDA_ODYSSEY_CHN, }):
     messages += [
       ("SCM_FEEDBACK", 25),
       ("SCM_BUTTONS", 50),
@@ -58,7 +58,7 @@ def get_can_messages(CP, gearbox_msg):
         ("ACC_CONTROL", 50),
       ]
   else:  # Nidec signals
-    if CP.carFingerprint in (SERIAL_STEERING | (CAR.HONDA_ODYSSEY_CHN, )):
+    if CP.carFingerprint in (SERIAL_STEERING | {CAR.HONDA_ODYSSEY_CHN, }):
       messages.append(("CRUISE_PARAMS", 10))
     else:
       messages.append(("CRUISE_PARAMS", 50))
