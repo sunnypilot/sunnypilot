@@ -209,6 +209,7 @@ class LatControlTorque(LatControl):
 
       if self.use_nn and model_good:
         # update past data
+        pitch = 0
         roll = params.roll
         if len(llk.calibratedOrientationNED.value) > 1:
           pitch = self.pitch.update(llk.calibratedOrientationNED.value[1])
