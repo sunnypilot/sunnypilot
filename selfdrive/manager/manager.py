@@ -101,6 +101,7 @@ def manager_init() -> None:
     ("OsmDbUpdatesCheck", "0"),
     ("OsmDownloadedDate", "0"),
     ("OSMDownloadProgress", "{}"),
+    ("SidebarTemperatureOptions", "0"),
     ("SunnylinkEnabled", "1"),
   ]
   if not PC:
