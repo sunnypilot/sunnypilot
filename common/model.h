@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "Certified Herbalist v2 (February 13, 2024)"
+#define CURRENT_MODEL "North Dakota (April 29, 2024)"
