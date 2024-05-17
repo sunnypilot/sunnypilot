@@ -210,10 +210,10 @@ class Controls:
       if any(ps.controlsAllowed for ps in self.sm['pandaStates']):
         self.state = State.enabled
 
-  def get_road_edge(self, carstate, model_v2):
+  def get_road_edge(self, carstate, model_v2, edge_toggle):
     # Lane detection by FrogAi
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
-    if not self.edge_toggle:
+    if not edge_toggle:
       self.road_edge = False
     elif one_blinker:
       # Set the minimum lane threshold to 3.0 meters
@@ -796,7 +796,7 @@ class Controls:
     hudControl.speedVisible = self.enabled_long
     hudControl.lanesVisible = self.enabled
     hudControl.leadVisible = self.sm['longitudinalPlan'].hasLead
-    hudControl.leadDistanceBars = self.personality + 1
+    hudControl.leadDistanceBars = PERSONALITY_MAPPING.get(self.personality, log.LongitudinalPersonality.standard) + 1
 
     hudControl.rightLaneVisible = True
     hudControl.leftLaneVisible = True
