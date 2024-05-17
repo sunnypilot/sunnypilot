@@ -45,7 +45,7 @@ def only_offroad(started, params, CP: car.CarParams) -> bool:
 
 def model_use_nav(started, params, CP: car.CarParams) -> bool:
   custom_model, model_gen = get_model_generation(params)
-  return started and custom_model and model_gen != 4
+  return started and custom_model and model_gen not in (0, 4)
 
 procs = [
   DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),

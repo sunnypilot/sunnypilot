@@ -24,6 +24,12 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * comma Prime support
   * Personal Mapbox/Amap/Google Maps token support
   * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+* NEW❗: Forced Offroad mode
+  * Force sunnypilot in the offroad state even when the car is on
+  * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+* UPDATED: Hyundai CAN-FD Camera-based SCC
+  * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
+    * Improve lead tracking when using openpilot longitudinal
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
@@ -41,7 +47,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * UPDATED: Neural Network Lateral Control (NNLC)
   * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
   * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
-  * This will be updated when the new mapping of platforms are restructured (thanks @twilsconso 😉)
+  * This will be updated when the new mapping of platforms are restructured (thanks @twilsonco 😉)
 * UI Updates
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above

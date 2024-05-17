@@ -97,6 +97,9 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kpV = [0.1]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR)
+      if ret.flags & HyundaiFlags.CANFD_CAMERA_SCC and not hda2:
+        ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
+        ret.radarUnavailable = False
     else:
       ret.longitudinalTuning.kpV = [0.5]
       ret.longitudinalTuning.kiV = [0.0]
@@ -239,7 +242,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       ret.cruiseState.enabled = False if self.CP.pcmCruise else self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.cruise_buttons[-1] == 3))
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
