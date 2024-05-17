@@ -46,7 +46,7 @@ FW_VERSIONS = {
       b'LV4T-14F397-GG\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
-  CAR.ESCAPE_MK4_23REFRESH: {
+  CAR.FORD_ESCAPE_MK4_23REFRESH: {
     (Ecu.eps, 0x730, None): [
       b'PZ11-14D003-EA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
