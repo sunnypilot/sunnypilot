@@ -108,6 +108,13 @@ class CAR(Platforms):
     ],
     CarSpecs(mass=1750, wheelbase=2.71, steerRatio=16.7),
   )
+  FORD_ESCAPE_MK4_23REFRESH = FordCANFDPlatformConfig(
+    [
+      FordCarInfo("Ford Escape 2023-24", "Co-Pilot360 Assist 2.0", hybrid=True, plug_in_hybrid=True),	
+      FordCarInfo("Ford Kuga 2023-24", "Co-Pilot360 Assist 2.0", hybrid=True, plug_in_hybrid=True),	
+    ],
+    specs=CarSpecs(mass=1750, wheelbase=2.71, steerRatio=16.7),
+  )
   FORD_EXPLORER_MK6 = FordPlatformConfig(
     [
       FordCarDocs("Ford Explorer 2020-23", hybrid=True),  # Hybrid: Limited and Platinum only
