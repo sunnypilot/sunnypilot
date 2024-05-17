@@ -107,18 +107,11 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   connect(restoreSettings, &QPushButton::clicked, [=]() {
     is_restore = true;
     backup_settings->started();
-    if (uiState()->isSunnylinkSponsor()) {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
         backup_settings->getParams();
       } else {
         backup_settings->finished();
       }
-    } else {
-      if (ConfirmationDialog::confirm(tr("Early alpha access only. Become a sponsor to get early access to sunnylink features."), tr("Become a Sponsor"), this)) {
-        status_popup->exec();
-      }
-      backup_settings->finished();
-    }
     is_restore = false;
   });
   connect(backup_settings, &BackupSettings::updateLabels, this, &SunnylinkPanel::updateLabels);
