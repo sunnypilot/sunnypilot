@@ -27,6 +27,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Forced Offroad mode
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+* UPDATED: Hyundai CAN Longitudinal
+  * Auto-enable radar tracks on platforms with Mando radar
 * UPDATED: Hyundai CAN-FD Camera-based SCC
   * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
     * Improve lead tracking when using openpilot longitudinal
