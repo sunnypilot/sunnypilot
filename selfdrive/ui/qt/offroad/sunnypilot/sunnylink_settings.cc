@@ -107,11 +107,11 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   connect(restoreSettings, &QPushButton::clicked, [=]() {
     is_restore = true;
     backup_settings->started();
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
-        backup_settings->getParams();
-      } else {
-        backup_settings->finished();
-      }
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
+      backup_settings->getParams();
+    } else {
+      backup_settings->finished();
+    }
     is_restore = false;
   });
   connect(backup_settings, &BackupSettings::updateLabels, this, &SunnylinkPanel::updateLabels);
