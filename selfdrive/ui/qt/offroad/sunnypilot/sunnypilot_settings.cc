@@ -423,6 +423,7 @@ void SunnypilotPanel::hideEvent(QHideEvent *event) {
 void SunnypilotPanel::updateToggles() {
   param_watcher->addParam("DynamicLaneProfile");
   param_watcher->addParam("IsOffroad");
+  param_watcher->addParam("EnableSlc");
 
   if (!isVisible()) {
     return;
@@ -456,6 +457,7 @@ void SunnypilotPanel::updateToggles() {
   auto nnff_toggle = toggles["NNFF"];
 
   auto custom_stock_long_param = params.getBool("CustomStockLong");
+  auto enable_slc_param = params.getBool("EnableSlc");
   auto v_tsc = toggles["TurnVisionControl"];
   auto m_tsc = toggles["TurnSpeedControl"];
   auto reverse_acc = toggles["ReverseAccChange"];
@@ -508,6 +510,9 @@ void SunnypilotPanel::updateToggles() {
       m_tsc->setEnabled(true);
       reverse_acc->setEnabled(true);
       slc_toggle->setEnabled(true);
+      if (!slcSettings->isVisible() && enable_slc_param) {
+        slcSettings->setVisible(true);
+      }
     } else {
       v_tsc->setEnabled(false);
       m_tsc->setEnabled(false);
