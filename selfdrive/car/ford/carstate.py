@@ -75,7 +75,7 @@ class CarState(CarStateBase):
     ret.cruiseState.standstill = cp.vl["EngBrakeData"]["AccStopMde_D_Rq"] == 3
     ret.accFaulted = cp.vl["EngBrakeData"]["CcStat_D_Actl"] in (1, 2)
 
-    if self.CP.carFingerprint in CANFD_CAR:
+    if self.CP.flags & FordFlags.CANFD:
       ret.cruiseState.speedLimit = self.update_traffic_signals(cp_cam)
 
     if not self.CP.openpilotLongitudinalControl:
@@ -134,7 +134,7 @@ class CarState(CarStateBase):
 
   def update_traffic_signals(self, cp_cam):
     # TODO: Check if CAN platforms have the same signals
-    if self.CP.carFingerprint in CANFD_CAR:
+    if self.CP.flags & FordFlags.CANFD:
       self.v_limit = cp_cam.vl["Traffic_RecognitnData"]["TsrVLim1MsgTxt_D_Rq"]
       v_limit_unit = cp_cam.vl["Traffic_RecognitnData"]["TsrVlUnitMsgTxt_D_Rq"]
 
