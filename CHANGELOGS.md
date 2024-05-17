@@ -24,6 +24,9 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * comma Prime support
   * Personal Mapbox/Amap/Google Maps token support
   * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+* NEW❗: Forced Offroad mode
+  * Force sunnypilot in the offroad state even when the car is on
+  * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
 * UPDATED: Hyundai CAN-FD Camera-based SCC
   * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
     * Improve lead tracking when using openpilot longitudinal
