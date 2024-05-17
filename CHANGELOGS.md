@@ -52,7 +52,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * UPDATED: Neural Network Lateral Control (NNLC)
   * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
   * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
-  * This will be updated when the new mapping of platforms are restructured (thanks @twilsconso 😉)
+  * This will be updated when the new mapping of platforms are restructured (thanks @twilsonco 😉)
 * UI Updates
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above
