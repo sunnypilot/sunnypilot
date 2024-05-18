@@ -133,7 +133,7 @@ class ModelState:
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
     if not (self.custom_model and self.model_gen == 1):
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
-    if not (self.custom_model and self.model_gen == 4):
+    if self.custom_model and self.model_gen != 4:
       self.inputs['nav_features'][:] = inputs['nav_features']
       self.inputs['nav_instructions'][:] = inputs['nav_instructions']
 
