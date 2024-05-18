@@ -31,6 +31,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
+from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
 from openpilot.selfdrive.sunnypilot import get_model_generation
 
 from openpilot.system.hardware import HARDWARE
@@ -179,7 +180,8 @@ class Controls:
     self.process_not_running = False
 
     self.custom_model, self.model_gen = get_model_generation(self.params)
-    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
+    model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
+    self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
 
     self.can_log_mono_time = 0
 
