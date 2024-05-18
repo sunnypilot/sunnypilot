@@ -71,7 +71,7 @@ class ModelState:
       'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
     }
     _inputs_2 = {}
-    if self.custom_model:
+    if self.custom_model and self.model_capabilities != ModelCapabilities.Default:
       if self.model_capabilities & ModelCapabilities.LateralPlannerSolution:
         _inputs = {
           'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),
@@ -95,7 +95,7 @@ class ModelState:
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
-    if self.custom_model:
+    if self.custom_model and self.model_capabilities != ModelCapabilities.Default:
       _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
       _model_paths = {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/supercombo-{_model_name}.thneed"}
       _metadata_name = self.param_s.get("DrivingModelMetadataText", encoding="utf8")
@@ -152,7 +152,7 @@ class ModelState:
 
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
-    if self.custom_model:
+    if self.custom_model and self.model_capabilities != ModelCapabilities.Default:
       if self.model_capabilities & ModelCapabilities.LateralPlannerSolution:
         self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
         self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
