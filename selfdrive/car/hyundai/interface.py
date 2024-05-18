@@ -87,11 +87,6 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
-    if candidate in (CAR.HYUNDAI_SANTA_FE_2022, CAR.HYUNDAI_SANTA_FE_HEV_2022, CAR.HYUNDAI_SANTA_FE_PHEV_2022):
-      if any(fw.ecu == "fwdRadar" and fw.fwVersion is not None for fw in car_fw):
-        ret.radarUnavailable = False
-        ret.spFlags |= HyundaiFlagsSP.SP_RADAR_TRACKS.value
-
     # *** longitudinal control ***
     if candidate in CANFD_CAR:
       ret.longitudinalTuning.kpV = [0.1]
@@ -128,6 +123,10 @@ class CarInterface(CarInterfaceBase):
 
       if 0x544 in fingerprint[0]:
         ret.spFlags |= HyundaiFlagsSP.SP_NAV_MSG.value
+
+      if ret.flags & HyundaiFlags.MANDO_RADAR and ret.radarUnavailable:
+        ret.spFlags |= HyundaiFlagsSP.SP_RADAR_TRACKS.value
+        ret.radarUnavailable = False
 
     # *** panda safety config ***
     if candidate in CANFD_CAR:
