@@ -33,6 +33,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
+* UPDATED: Continued support for comma Pedal
+  * In response to the official deprecation of support for comma Pedal in the upstream, sunnypilot will continue maintaining software support for comma Pedal
 * UPDATED: Driving Model Selector v4
   * NEW❗: Driving Model additions
     * North Dakota (April 29, 2024) - NDv2
