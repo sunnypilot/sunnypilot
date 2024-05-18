@@ -30,7 +30,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Ford CAN-FD longitudinal
   * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * UPDATED: Hyundai CAN Longitudinal
-  * Auto-enable radar tracks on platforms with Mando radar
+  * Auto-enable radar tracks on platforms with applicable Mando radar
 * UPDATED: Hyundai CAN-FD Radar-based SCC
   * Longitudinal support for CAN-FD Radar-based SCC cars
 * UPDATED: Hyundai CAN-FD Camera-based SCC

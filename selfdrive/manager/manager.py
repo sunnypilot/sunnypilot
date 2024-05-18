@@ -70,6 +70,7 @@ def manager_init() -> None:
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
+    ("MapboxFullScreen", "0"),
     ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "9"),
     ("NNFF", "0"),
