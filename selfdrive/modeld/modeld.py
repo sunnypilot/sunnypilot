@@ -66,6 +66,7 @@ class ModelState:
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    # Default model, and as of time of writing, this model uses DesiredCurvatureV2
     _inputs = {
       'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
       'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
@@ -76,7 +77,7 @@ class ModelState:
         _inputs = {
           'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),
         }
-      if self.model_capabilities & ModelCapabilities.DesiredCurvature:
+      if self.model_capabilities & ModelCapabilities.DesiredCurvatureV1:
         _inputs = {
           'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
           'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),
@@ -156,10 +157,10 @@ class ModelState:
       if self.model_capabilities & ModelCapabilities.LateralPlannerSolution:
         self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
         self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
-      elif self.model_capabilities & ModelCapabilities.DesiredCurvature:
+      elif self.model_capabilities & ModelCapabilities.DesiredCurvatureV1:
         self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
         self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
-    else:
+    else:  # Default model, and as of time of writing, this model uses DesiredCurvatureV2
       self.inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
       self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][0, :]
     return outputs
