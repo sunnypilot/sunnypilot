@@ -58,10 +58,16 @@ void Sound::setAlert(const Alert &alert) {
     }
 
     // play sound
-    if (alert.sound != AudibleAlert::NONE) {
+    if (shouldPlaySound(alert)) {
       auto &[s, loops] = sounds[alert.sound];
       s->setLoopCount(loops);
       s->play();
     }
   }
 }
+
+bool shouldPlaySound(Alert a) {
+    bool isQuietDrive = true;
+    return (a.sound == AudibleAlert::CHIME_WARNING2_REPEAT || a.sound == AudibleAlert::CHIME_WARNING_REPEAT) ||
+      (!isQuietDrive && a.sound != AudibleAlert::NONE);
+  }
