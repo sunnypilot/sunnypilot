@@ -1,7 +1,7 @@
-from enum import IntEnum, auto
+from enum import IntFlag, auto
 
 
-class ModelCapabilities(IntEnum):
+class ModelCapabilities(IntFlag):
   """Model capabilities for different generations of models."""
 
   Default = auto()
