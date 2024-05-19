@@ -79,7 +79,7 @@ class ModelState:
           'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
           'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),
         }
-      if self.model_gen != 4:
+      if self.model_gen not in (0, 4):
         _inputs_2 = {
           'nav_features': np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32),
           'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
@@ -133,7 +133,7 @@ class ModelState:
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
     if not (self.custom_model and self.model_gen == 1):
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
-    if self.custom_model and self.model_gen != 4:
+    if self.custom_model and self.model_gen not in (0, 4):
       self.inputs['nav_features'][:] = inputs['nav_features']
       self.inputs['nav_instructions'][:] = inputs['nav_instructions']
 
@@ -205,7 +205,7 @@ def main(demo=False):
 
   # messaging
   extended_svs = ["lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"]
-  if custom_model and model_gen != 4:
+  if custom_model and model_gen not in (0, 4):
     extended_svs += ["navModelDEPRECATED", "navInstruction"]
   pm = PubMaster(["modelV2", "modelV2SP", "cameraOdometry"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"] + extended_svs)
@@ -223,7 +223,7 @@ def main(demo=False):
   live_calib_seen = False
   if custom_model and model_gen == 1:
     driving_style = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-  if custom_model and model_gen != 4:
+  if custom_model and model_gen not in (0, 4):
     nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
     nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
   buf_main, buf_extra = None, None
@@ -299,7 +299,7 @@ def main(demo=False):
 
     timestamp_llk = 0
     nav_enabled = False
-    if custom_model and model_gen != 4:
+    if custom_model and model_gen not in (0, 4):
       # Enable/disable nav features
       timestamp_llk = sm["navModelDEPRECATED"].locationMonoTime
       nav_valid = sm.valid["navModelDEPRECATED"] # and (nanos_since_boot() - timestamp_llk < 1e9)
@@ -345,7 +345,7 @@ def main(demo=False):
       _inputs = {
         'lateral_control_params': lateral_control_params
       }
-    if custom_model and model_gen != 4:
+    if custom_model and model_gen not in (0, 4):
       _inputs_2 = {
         'nav_features': nav_features,
         'nav_instructions': nav_instructions
@@ -372,7 +372,7 @@ def main(demo=False):
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
                       meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
-                      custom_model and model_gen == 1, custom_model and model_gen != 4)
+                      custom_model and model_gen == 1, custom_model and model_gen not in (0, 4))
 
       if not (custom_model and model_gen == 1):
         desire_state = modelv2_send.modelV2.meta.desireState
