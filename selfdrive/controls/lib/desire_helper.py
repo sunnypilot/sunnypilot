@@ -9,7 +9,7 @@ LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
-LANE_CHANGE_TIME_MAX = 30.
+LANE_CHANGE_TIME_MAX = 31.
 
 DESIRES = {
   LaneChangeDirection.none: {
