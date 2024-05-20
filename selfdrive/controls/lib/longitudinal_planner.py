@@ -28,6 +28,10 @@ A_CRUISE_MIN = -1.2
 A_CRUISE_MAX_VALS = [1.3, 1.2, 0.8, 0.6]
 A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
 
+# cgw smooth long tune, dragonpilot
+A_CRUISE_MIN_VALS = [-0.65,  -0.60,  -0.70, -0.70,  -0.65, -0.65]
+A_CRUISE_MIN_BP =   [0.,     0.07,   10.,   20.,    30.,   55.]
+
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
