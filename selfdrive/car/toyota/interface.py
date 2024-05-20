@@ -171,7 +171,7 @@ class CarInterface(CarInterfaceBase):
       if candidate in TSS2_CAR:
         ret.vEgoStopping = 0.15 if sp_tss2_long_tune else 0.25
         ret.vEgoStarting = 0.15 if sp_tss2_long_tune else 0.25
-        ret.stopAccel = -0.4 if sp_tss2_long_tune else 0
+        ret.stopAccel = -1.1 if sp_tss2_long_tune else 0
         ret.stoppingDecelRate = 0.05 if sp_tss2_long_tune else 0.3  # reach stopping target smoothly
     else:
       tune.kpBP = [0., 5., 35.]
