@@ -1253,4 +1253,37 @@ FW_VERSIONS = {
       b'\xf1\x870\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf1\x82CNDWD0ANF3XCSG8A',
     ],
   },
+  CAR.HYUNDAI_ELANTRA_N_2022: {
+    (Ecu.abs, 0x7d1, None): [
+      b'\xf1\x00CN ESC \t 100!\x05\x01 58910-IB000',
+      b'\xf1\x8758910-IB000\xf1\x00CN ESC \t 100!\x05\x01 58910-IB000',
+    ],
+    (Ecu.combinationMeter, 0x7C6, None): [
+      b'\xf1\x00131',
+      b'\xf1\x8b !\x11\x19',
+    ],
+    (Ecu.cornerRadar, 0x7B7, None): [
+      b'\xf1\x003D',
+      b'\xf1\x8b !\x10)',
+    ],
+    (Ecu.engine, 0x7e0, None): [
+      b'\xf1\x81606T2051\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.eps, 0x7d4, None): [
+      b'\xf1\x00CN7 MDPS R 1.00 1.04 57700-IB000 4CNNP104',
+      b'\xf1\x8757700-IB000\xf1\x00CN7 MDPS R 1.00 1.04 57700-IB000 4CNNP104',
+      b'\xf1\x8b !\x12\x03',
+    ],
+    (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00CN7 MFC  AT USA LHD 1.00 1.00 99210-IB000 210531',
+      b'\xf1\x8b !\t\x13',
+    ],
+    (Ecu.hvac, 0x7B3, None): [
+      b'\xf1\x00CN7   97255-AA041CONTROL UNIT        1.05CN7DATC(-)0.8       \x00',
+    ],
+    (Ecu.transmission, 0x7e1, None): [
+      b'\xf1\x00T02601BL  T02900A1  WCN7T20XXX900NS4\xf7\xccz\xf6',
+      b'\xf1\x87954A02N510\x00\x00\x00\x00\x00\xf1\x81T02900A1  \xf1\x00T02601BL  T02900A1  WCN7T20XXX900NS4\xf7\xccz\xf6',
+    ],
+  },
 }
