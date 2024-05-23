@@ -128,8 +128,9 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
 
   // Driving model status
   if (isDownloadingModel()) {
-    description += QString(tr("Downloading Driving model") + " [%1]... (%2%)")
-                   .arg(drivingModelName, QString::number(modelDownloadProgress.value_or(0.0), 'f', 2));
+    auto modelProgress = modelDownloadProgress.value_or(0.0);
+    auto progressText = modelProgress <= 0.01 ? tr("PENDING")+"..." : QString::number(modelProgress, 'f', 2) + "%";
+    description += QString(tr("Downloading Driving model") + " [%1]... (%2)").arg(drivingModelName, progressText);
   } else {
     if (modelFromCache) drivingModelName += QString(" " + tr("(CACHED)"));
     description += QString(tr("Driving model") + " [%1] " + tr("downloaded")).arg(drivingModelName);
@@ -137,9 +138,10 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
 
   // Navigation model status
   if (isDownloadingNavModel() && !navModelName.isEmpty()) {
+    auto navModelProgress = navModelDownloadProgress.value_or(0.0);
+    auto progressText = navModelProgress <= 0.01 ? tr("PENDING")+"..." : QString::number(navModelProgress, 'f', 2) + "%";
     if (!description.isEmpty()) description += "\n"; // Add newline if driving model status is already appended
-    description += QString(tr("Downloading Navigation model") + " [%1]... (%2%)")
-                   .arg(navModelName, QString::number(navModelDownloadProgress.value_or(0.0), 'f', 2));
+    description += QString(tr("Downloading Navigation model") + " [%1]... (%2)").arg(navModelName, progressText);
   } else if (!navModelName.isEmpty()) {
     if (navModelFromCache) navModelName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n"; // Ensure newline separation
@@ -148,9 +150,10 @@ void SoftwarePanelSP::HandleModelDownloadProgressReport() {
 
   // Metadata status
   if (isDownloadingMetadata() && !metadataName.isEmpty()) {
+    auto metadataProgress = metadataDownloadProgress.value_or(0.0);
+    auto progressText = metadataProgress <= 0.01 ? tr("PENDING")+"..." : QString::number(metadataProgress, 'f', 2) + "%";
     if (!description.isEmpty()) description += "\n";
-    description += QString(tr("Downloading Metadata model") + " [%1]... (%2%)")
-                   .arg(metadataName, QString::number(metadataDownloadProgress.value_or(0.0), 'f', 2));
+    description += QString(tr("Downloading Metadata model") + " [%1]... (%2)").arg(metadataName, progressText);
   } else if (!metadataName.isEmpty()) {
     if (metadataFromCache) metadataName += QString(" " + tr("(CACHED)"));
     if (!description.isEmpty()) description += "\n";
@@ -235,6 +238,9 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     navModelDownloadProgress = 0.01;
     modelDownloadProgress = 0.01;
     metadataDownloadProgress = 0.01;
+
+    // Sunny wants it responsive... Responsive it is...
+    HandleModelDownloadProgressReport();
 
     // Start the download, we download the other models on emit of downloadComplete
     if (params.get("DrivingModelGeneration") != selectedModelToDownload->generation.toStdString())
