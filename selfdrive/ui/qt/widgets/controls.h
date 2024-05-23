@@ -243,7 +243,7 @@ class ButtonParamControl : public SPAbstractControl {
   Q_OBJECT
 public:
   ButtonParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : SPAbstractControl(title, desc, icon) {
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : SPAbstractControl(title, desc, icon), button_texts(button_texts) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -306,6 +306,14 @@ public:
 
   void refresh() {
     int value = atoi(params.get(key).c_str());
+
+    if (value >= button_texts.size()) {
+      value = button_texts.size() - 1;
+    }
+    if (value < button_texts.size()) {
+      value = 0;
+    }
+
     button_group->button(value)->setChecked(true);
   }
 
@@ -357,6 +365,7 @@ private:
   std::string key;
   Params params;
   QButtonGroup *button_group;
+  std::vector<QString> button_texts;
 
   bool button_group_enabled = true;
 };
