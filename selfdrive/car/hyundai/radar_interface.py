@@ -48,6 +48,8 @@ class RadarInterface(RadarInterfaceBase):
     self.radar_off_can = CP.radarUnavailable
     self.rcp = get_radar_can_parser(CP)
 
+    self.sp_radar_tracks = CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS
+
   def update(self, can_strings):
     if self.radar_off_can or (self.rcp is None):
       return super().update(None)
@@ -60,6 +62,12 @@ class RadarInterface(RadarInterfaceBase):
 
     rr = self._update(self.updated_messages)
     self.updated_messages.clear()
+
+    radar_error = []
+    if rr is not None:
+      radar_error = rr.errors
+    if list(radar_error) and self.sp_radar_tracks:
+      return super().update(None)
 
     return rr
 
