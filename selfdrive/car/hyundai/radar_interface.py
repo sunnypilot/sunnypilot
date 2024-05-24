@@ -63,6 +63,12 @@ class RadarInterface(RadarInterfaceBase):
     rr = self._update(self.updated_messages)
     self.updated_messages.clear()
 
+    radar_error = []
+    if rr is not None:
+      radar_error = rr.errors
+    if list(radar_error) and self.sp_radar_tracks:
+      return super().update(None)
+
     return rr
 
   def _update(self, updated_messages):
@@ -73,10 +79,7 @@ class RadarInterface(RadarInterfaceBase):
     errors = []
 
     if not self.rcp.can_valid:
-      if self.sp_radar_tracks:
-        return ret
-      else:
-        errors.append("canError")
+      errors.append("canError")
     ret.errors = errors
 
     if self.enhanced_scc or self.camera_scc:
