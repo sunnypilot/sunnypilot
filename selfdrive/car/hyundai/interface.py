@@ -78,7 +78,6 @@ class CarInterface(CarInterfaceBase):
 
       if 0x2AB in fingerprint[0]:
         ret.spFlags |= HyundaiFlagsSP.SP_ENHANCED_SCC.value
-        ret.radarUnavailable = False
 
       if 0x53E in fingerprint[2]:
         ret.spFlags |= HyundaiFlagsSP.SP_LKAS12.value
@@ -94,14 +93,12 @@ class CarInterface(CarInterfaceBase):
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
       if ret.flags & HyundaiFlags.CANFD_CAMERA_SCC and not hda2:
         ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
-        ret.radarUnavailable = False
     else:
       ret.longitudinalTuning.kpV = [0.5]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
       if candidate in CAMERA_SCC_CAR:
         ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
-        ret.radarUnavailable = False
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
@@ -111,6 +108,10 @@ class CarInterface(CarInterfaceBase):
     ret.startAccel = 1.0
     ret.longitudinalActuatorDelayLowerBound = 0.5
     ret.longitudinalActuatorDelayUpperBound = 0.5
+
+    if DBC[ret.carFingerprint]["radar"] is None:
+      if ret.spFlags & (HyundaiFlagsSP.SP_ENHANCED_SCC | HyundaiFlagsSP.SP_CAMERA_SCC_LEAD):
+        ret.radarUnavailable = False
 
     # *** feature detection ***
     if candidate in CANFD_CAR:
