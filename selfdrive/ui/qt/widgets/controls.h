@@ -310,7 +310,7 @@ public:
     if (value >= button_texts.size()) {
       value = button_texts.size() - 1;
     }
-    if (value < button_texts.size()) {
+    if (value < 0) {
       value = 0;
     }
 
