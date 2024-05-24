@@ -72,8 +72,11 @@ class RadarInterface(RadarInterfaceBase):
 
     errors = []
 
-    if not self.rcp.can_valid and not self.sp_radar_tracks:
-      errors.append("canError")
+    if not self.rcp.can_valid:
+      if self.sp_radar_tracks:
+        return ret
+      else:
+        errors.append("canError")
     ret.errors = errors
 
     if self.enhanced_scc or self.camera_scc:
