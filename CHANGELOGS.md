@@ -56,6 +56,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above
     * NEW❗: Display both Distance and Speed simultaneously
+    * NEW❗: View sunnylink connectivity status on the left sidebar!
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
