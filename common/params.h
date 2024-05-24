@@ -17,6 +17,7 @@ enum ParamKeyType {
   DONT_LOG = 0x20,
   DEVELOPMENT_ONLY = 0x40,
   BACKUP = 0x80,
+  CLEAR_ON_BRANCH_SWITCH = 0x100,
   ALL = 0xFFFFFFFF
 };
 
