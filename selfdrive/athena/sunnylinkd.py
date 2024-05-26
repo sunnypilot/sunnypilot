@@ -11,7 +11,7 @@ import threading
 import time
 
 from openpilot.selfdrive.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
+  recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler, LOG_ATTR_NAME
 from jsonrpc import dispatcher
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
@@ -24,6 +24,7 @@ from openpilot.common.swaglog import cloudlog
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
+SUNNYLINK_LOG_ATTR_NAME = "sunnylink.user.upload"
 
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
@@ -37,7 +38,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
     threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
     # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-    threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
+    threading.Thread(target=log_handler, args=(end_event,SUNNYLINK_LOG_ATTR_NAME,), name='log_handler'),
     # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
   ] + [
     threading.Thread(target=jsonrpc_handler, args=(end_event,), name=f'worker_{x}')

@@ -550,7 +550,7 @@ def takeSnapshot() -> str | dict[str, str] | None:
     raise Exception("not available while camerad is started")
 
 
-def get_logs_to_send_sorted() -> list[str]:
+def get_logs_to_send_sorted(log_attr_name=LOG_ATTR_NAME) -> list[str]:
   # TODO: scan once then use inotify to detect file creation/deletion
   curr_time = int(time.time())
   logs = []
@@ -558,7 +558,7 @@ def get_logs_to_send_sorted() -> list[str]:
     log_path = os.path.join(Paths.swaglog_root(), log_entry)
     time_sent = 0
     try:
-      value = getxattr(log_path, LOG_ATTR_NAME)
+      value = getxattr(log_path, log_attr_name)
       if value is not None:
         time_sent = int.from_bytes(value, sys.byteorder)
     except (ValueError, TypeError):
@@ -570,7 +570,7 @@ def get_logs_to_send_sorted() -> list[str]:
   return sorted(logs)[:-1]
 
 
-def log_handler(end_event: threading.Event) -> None:
+def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None:
   if PC:
     return
 
@@ -580,7 +580,7 @@ def log_handler(end_event: threading.Event) -> None:
     try:
       curr_scan = time.monotonic()
       if curr_scan - last_scan > 10:
-        log_files = get_logs_to_send_sorted()
+        log_files = get_logs_to_send_sorted(log_attr_name)
         last_scan = curr_scan
 
       # send one log
@@ -591,7 +591,7 @@ def log_handler(end_event: threading.Event) -> None:
         try:
           curr_time = int(time.time())
           log_path = os.path.join(Paths.swaglog_root(), log_entry)
-          setxattr(log_path, LOG_ATTR_NAME, int.to_bytes(curr_time, 4, sys.byteorder))
+          setxattr(log_path, log_attr_name, int.to_bytes(curr_time, 4, sys.byteorder))
           with open(log_path) as f:
             jsonrpc = {
               "method": "forwardLogs",
@@ -619,7 +619,7 @@ def log_handler(end_event: threading.Event) -> None:
           if log_entry and log_success:
             log_path = os.path.join(Paths.swaglog_root(), log_entry)
             try:
-              setxattr(log_path, LOG_ATTR_NAME, LOG_ATTR_VALUE_MAX_UNIX_TIME)
+              setxattr(log_path, log_attr_name, LOG_ATTR_VALUE_MAX_UNIX_TIME)
             except OSError:
               pass  # file could be deleted by log rotation
           if curr_log == log_entry:
