@@ -11,7 +11,7 @@ import threading
 import time
 
 from openpilot.selfdrive.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage
+  recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
@@ -37,7 +37,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
     threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
     # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-    # threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
+    threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
     # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
   ] + [
     threading.Thread(target=jsonrpc_handler, args=(end_event,), name=f'worker_{x}')
