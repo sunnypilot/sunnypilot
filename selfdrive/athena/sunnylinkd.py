@@ -24,7 +24,7 @@ from openpilot.common.swaglog import cloudlog
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
-SUNNYLINK_LOG_ATTR_NAME = "sunnylink.user.upload"
+SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
