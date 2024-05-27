@@ -572,7 +572,7 @@ def get_logs_to_send_sorted(log_attr_name=LOG_ATTR_NAME) -> list[str]:
 
 def add_log_to_queue(log_path, id):
   # Define the maximum size of a chunk in bytes
-  MAX_CHUNK_SIZE = 128 * 1024  # 128KB
+  MAX_CHUNK_SIZE = 32 * 1024  # 32KB
 
   # Open the log file
   with open(log_path, 'r') as f:
