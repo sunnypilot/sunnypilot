@@ -1272,14 +1272,6 @@ This may take up to a minute.</source>
         <translation>SP-link云端</translation>
     </message>
     <message>
-        <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>OSM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Monitoring</source>
         <translation>监控</translation>
     </message>
@@ -1298,6 +1290,14 @@ This may take up to a minute.</source>
     <message>
         <source>Vehicle</source>
         <translation>车辆</translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>OSM</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1771,10 +1771,6 @@ This may take up to a minute.</source>
         <translation>屏幕</translation>
     </message>
     <message>
-        <source>Chime</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Speed Limit Warning</source>
         <translation>限速提醒</translation>
     </message>
@@ -1817,6 +1813,10 @@ This may take up to a minute.</source>
     <message>
         <source>Chime: The speed on the speed limit sign turns red and chimes to alert the driver when the cruising speed is faster than the speed limit plus the offset.</source>
         <translation>声音提醒：当巡航速度超过限速加上偏移量时，限速标志上的速度变红并发出声音提醒驾驶员。</translation>
+    </message>
+    <message>
+        <source>Chime</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2073,18 +2073,6 @@ This may take up to a minute.</source>
         <translation>启用自定义调整</translation>
     </message>
     <message>
-        <source>Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within &quot;selfdrive/torque_data&quot;. The values will also be used live when &quot;Override Self-Tune&quot; toggle is enabled.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Manual Real-Time Tuning</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Quiet Drive 🤫</source>
         <translation>驾驶时静音</translation>
     </message>
@@ -2185,10 +2173,6 @@ This may take up to a minute.</source>
         <translation>当前驾驶模型不支持自定义偏移</translation>
     </message>
     <message>
-        <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Start the car to check car compatibility</source>
         <translation>启动汽车以检查汽车兼容性</translation>
     </message>
@@ -2219,6 +2203,22 @@ This may take up to a minute.</source>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported: </source>
         <translation>通过sunnypilot Discord服务器上的以下渠道联系sunnypiot团队，提供反馈，或者如果您的汽车目前不受支持，则提供汽车的日志数据：</translation>
+    </message>
+    <message>
+        <source>Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within &quot;selfdrive/torque_data&quot;. The values will also be used live when &quot;Override Self-Tune&quot; toggle is enabled.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Manual Real-Time Tuning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
@@ -2432,6 +2432,14 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
 <context>
     <name>TorqueFriction</name>
     <message>
+        <source>Real-time and Offline</source>
+        <translation>实时或离线</translation>
+    </message>
+    <message>
+        <source>Offline Only</source>
+        <translation>仅离线</translation>
+    </message>
+    <message>
         <source>FRICTION</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2439,6 +2447,9 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <source>Adjust Friction for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>TorqueMaxLatAccel</name>
     <message>
         <source>Real-time and Offline</source>
         <translation>实时或离线</translation>
@@ -2447,9 +2458,6 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <source>Offline Only</source>
         <translation>仅离线</translation>
     </message>
-</context>
-<context>
-    <name>TorqueMaxLatAccel</name>
     <message>
         <source>LAT_ACCEL_FACTOR</source>
         <translation type="unfinished"></translation>
@@ -2457,14 +2465,6 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     <message>
         <source>Adjust Max Lateral Acceleration for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
         <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Real-time and Offline</source>
-        <translation>实时或离线</translation>
-    </message>
-    <message>
-        <source>Offline Only</source>
-        <translation>仅离线</translation>
     </message>
 </context>
 <context>
@@ -2596,10 +2596,6 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation>地图：3D建筑显示</translation>
     </message>
     <message>
-        <source>Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Off</source>
         <translation>关</translation>
     </message>
@@ -2620,21 +2616,8 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation>速度</translation>
     </message>
     <message>
-        <source>Distance
-Speed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>RAM</source>
         <translation>内存</translation>
-    </message>
-    <message>
-        <source>CPU</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>GPU</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Max</source>
@@ -2649,6 +2632,19 @@ Speed</source>
         <translation>显示实时参数和指标</translation>
     </message>
     <message>
+        <source>Display Temperature on Sidebar</source>
+        <translation>侧边栏显示温度</translation>
+    </message>
+    <message>
+        <source>Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Distance
+Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Display Metrics Below Chevron</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2657,8 +2653,12 @@ Speed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Display Temperature on Sidebar</source>
-        <translation>侧边栏显示温度</translation>
+        <source>CPU</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPU</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
