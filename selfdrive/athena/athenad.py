@@ -177,7 +177,7 @@ def jsonrpc_handler(end_event: threading.Event) -> None:
         send_queue.put_nowait(response.json)
       elif "id" in data and ("result" in data or "error" in data):
         log_recv_queue.put_nowait(data)
-      else:
+      elif data:
         raise Exception("not a valid request or response")
     except queue.Empty:
       pass
@@ -570,6 +570,28 @@ def get_logs_to_send_sorted(log_attr_name=LOG_ATTR_NAME) -> list[str]:
   return sorted(logs)[:-1]
 
 
+def add_log_to_queue(log_path, id):
+  # Define the maximum size of a chunk in bytes
+  MAX_CHUNK_SIZE = 128 * 1024  # 128KB
+
+  # Open the log file
+  with open(log_path, 'r') as f:
+    while True:
+      chunk = f.read(MAX_CHUNK_SIZE)
+      if not chunk:
+        break
+
+      jsonrpc = {
+        "method": "forwardLogs",
+        "params": {
+          "logs": chunk
+        },
+        "jsonrpc": "2.0",
+        "id": id
+      }
+      low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
+
+
 def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None:
   if PC:
     return
@@ -592,17 +614,10 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
           curr_time = int(time.time())
           log_path = os.path.join(Paths.swaglog_root(), log_entry)
           setxattr(log_path, log_attr_name, int.to_bytes(curr_time, 4, sys.byteorder))
-          with open(log_path) as f:
-            jsonrpc = {
-              "method": "forwardLogs",
-              "params": {
-                "logs": f.read()
-              },
-              "jsonrpc": "2.0",
-              "id": log_entry
-            }
-            low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
-            curr_log = log_entry
+          # now we need to check the log size because we cant go larger than 128kb per request so we need to split by regex for example regex.compile(r'\{(?:[^{}]|(?R))*\}')
+
+          add_log_to_queue(log_path, log_entry)
+          curr_log = log_entry
         except OSError:
           pass  # file could be deleted by log rotation
 
