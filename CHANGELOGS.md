@@ -57,6 +57,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
     * NEW❗: Metrics is now being displayed below the chevron instead of above
     * NEW❗: Display both Distance and Speed simultaneously
     * NEW❗: View sunnylink connectivity status on the left sidebar!
+* REMOVED: Screen Recorder
+  * A better/equivalent version of Screen Recorder will be supported in the near future. Stay tuned!
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
