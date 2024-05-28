@@ -583,13 +583,13 @@ def add_log_to_queue(log_path, log_id, is_sunnylink = False):
       cloudlog.warning(f"Log file {log_path} is empty.")
       return
 
-    # Log the current size of the file
-    current_size = os.path.getsize(log_path)
-    cloudlog.info(f"Current size of log file {log_path}: {current_size} bytes")
-
     # Initialize variables for encoding
     payload = data
     is_compressed = False
+
+    # Log the current size of the file
+    current_size = len(json.dumps(payload).encode("utf-8")) + len(log_id.encode("utf-8")) + 100  # Add 100 bytes to account for encoding overhead
+    cloudlog.info(f"Current size of log file {log_path}: {current_size} bytes")
 
     if is_sunnylink and current_size > MAX_SIZE_BYTES:
       # Compress and encode the data if it exceeds the maximum size
