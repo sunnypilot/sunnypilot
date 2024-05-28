@@ -178,7 +178,7 @@ def jsonrpc_handler(end_event: threading.Event) -> None:
         send_queue.put_nowait(response.json)
       elif "id" in data and ("result" in data or "error" in data):
         log_recv_queue.put_nowait(data)
-      elif data:
+      else:
         raise Exception("not a valid request or response")
     except queue.Empty:
       pass
@@ -652,7 +652,6 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
           curr_time = int(time.time())
           log_path = os.path.join(Paths.swaglog_root(), log_entry)
           setxattr(log_path, log_attr_name, int.to_bytes(curr_time, 4, sys.byteorder))
-          # now we need to check the log size because we cant go larger than 128kb per request so we need to split by regex for example regex.compile(r'\{(?:[^{}]|(?R))*\}')
 
           add_log_to_queue(log_path, log_entry, is_sunnylink)
           curr_log = log_entry
