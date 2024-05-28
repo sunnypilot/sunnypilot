@@ -32,9 +32,6 @@ def manager_init() -> None:
   if build_metadata.release_channel:
     params.clear_all(ParamKeyType.DEVELOPMENT_ONLY)
 
-  if params.get("LastGitBranch") != build_metadata.channel or params.get("LastGitRemote") != build_metadata.openpilot.git_origin:
-    params.clear_all(ParamKeyType.CLEAR_ON_BRANCH_SWITCH)
-
   default_params: list[tuple[str, str | bytes]] = [
     ("CompletedTrainingVersion", "0"),
     ("DisengageOnAccelerator", "0"),
@@ -59,7 +56,6 @@ def manager_init() -> None:
     ("ChevronInfo", "1"),
     ("MadsCruiseMain", "1"),
     ("CustomBootScreen", "0"),
-    ("CustomDrivingModel", "0"),
     ("CustomOffsets", "0"),
     ("DevUIInfo", "0"),
     ("DisableOnroadUploads", "0"),
@@ -141,8 +137,6 @@ def manager_init() -> None:
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
   params.put("GitBranch", build_metadata.channel)
   params.put("GitRemote", build_metadata.openpilot.git_origin)
-  params.put("LastGitBranch", build_metadata.channel)
-  params.put("LastGitRemote", build_metadata.openpilot.git_origin)
   params.put_bool("IsTestedBranch", build_metadata.tested_channel)
   params.put_bool("IsReleaseBranch", build_metadata.release_channel)
   params.put_bool("IsReleaseSPBranch", build_metadata.release_sp_channel)
