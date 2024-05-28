@@ -589,7 +589,7 @@ def add_log_to_queue(log_path, log_id, is_sunnylink = False):
 
     # Log the current size of the file
     current_size = len(json.dumps(payload).encode("utf-8")) + len(log_id.encode("utf-8")) + 100  # Add 100 bytes to account for encoding overhead
-    cloudlog.info(f"Current size of log file {log_path}: {current_size} bytes")
+    cloudlog.debug(f"Current size of log file {log_path}: {current_size} bytes")
 
     if is_sunnylink and current_size > MAX_SIZE_BYTES:
       # Compress and encode the data if it exceeds the maximum size
@@ -600,7 +600,7 @@ def add_log_to_queue(log_path, log_id, is_sunnylink = False):
       # Log the size after compression and encoding
       compressed_size = len(compressed_data)
       encoded_size = len(payload)
-      cloudlog.info(f"Size of log file {log_path} "
+      cloudlog.debug(f"Size of log file {log_path} "
                     f"after compression: {compressed_size} bytes, "
                     f"after encoding: {encoded_size} bytes")
 
@@ -620,12 +620,12 @@ def add_log_to_queue(log_path, log_id, is_sunnylink = False):
     size_in_bytes = len(jsonrpc_str.encode('utf-8'))
 
     if is_sunnylink and size_in_bytes <= MAX_SIZE_BYTES:
-      cloudlog.info(f"Target is sunnylink and log file {log_path} is small enough to send in one request ({size_in_bytes} bytes).")
+      cloudlog.debug(f"Target is sunnylink and log file {log_path} is small enough to send in one request ({size_in_bytes} bytes).")
       low_priority_send_queue.put_nowait(jsonrpc_str)
     elif is_sunnylink:
       cloudlog.warning(f"Target is sunnylink and log file {log_path} is too large to send in one request.")
     else:
-      cloudlog.info(f"Target is not sunnylink, proceeding to send log file {log_path} in one request ({size_in_bytes} bytes).")
+      cloudlog.debug(f"Target is not sunnylink, proceeding to send log file {log_path} in one request ({size_in_bytes} bytes).")
       low_priority_send_queue.put_nowait(jsonrpc_str)
 
 

@@ -61,10 +61,10 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       metered = sm['deviceState'].networkMetered
 
       if int(prime_type) > 2 and metered:
-        cloudlog.info(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
+        cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
         comma_prime_cellular_end_event.set()
       elif comma_prime_cellular_end_event.is_set():
-        cloudlog.info(f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
+        cloudlog.debug(f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
         comma_prime_cellular_end_event.clear()
 
   except (KeyboardInterrupt, SystemExit):
