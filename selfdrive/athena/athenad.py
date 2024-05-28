@@ -16,6 +16,7 @@ import sys
 import tempfile
 import threading
 import time
+import gzip
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from functools import partial
@@ -570,29 +571,66 @@ def get_logs_to_send_sorted(log_attr_name=LOG_ATTR_NAME) -> list[str]:
   return sorted(logs)[:-1]
 
 
-def add_log_to_queue(log_path, id):
-  # Define the maximum size of a chunk in bytes
-  MAX_CHUNK_SIZE = 28 * 1024  # 32KB
+def add_log_to_queue(log_path, log_id, is_sunnylink = False):
+  MAX_SIZE_KB = 32
+  MAX_SIZE_BYTES = MAX_SIZE_KB * 1024
 
-  # Open the log file
   with open(log_path, 'r') as f:
-    while True:
-      chunk = f.read(MAX_CHUNK_SIZE)
-      if not chunk:
-        break
+    data = f.read()
 
-      jsonrpc = {
-        "method": "forwardLogs",
-        "params": {
-          "logs": chunk
-        },
-        "jsonrpc": "2.0",
-        "id": id
-      }
-      low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
+    # Check if the file is empty
+    if not data:
+      cloudlog.warning(f"Log file {log_path} is empty.")
+      return
+
+    # Log the current size of the file
+    current_size = os.path.getsize(log_path)
+    cloudlog.info(f"Current size of log file {log_path}: {current_size} bytes")
+
+    # Initialize variables for encoding
+    payload = data
+    is_compressed = False
+
+    if is_sunnylink and current_size > MAX_SIZE_BYTES:
+      # Compress and encode the data if it exceeds the maximum size
+      compressed_data = gzip.compress(data.encode())
+      payload = base64.b64encode(compressed_data).decode()
+      is_compressed = True
+
+      # Log the size after compression and encoding
+      compressed_size = len(compressed_data)
+      encoded_size = len(payload)
+      cloudlog.info(f"Size of log file {log_path} "
+                    f"after compression: {compressed_size} bytes, "
+                    f"after encoding: {encoded_size} bytes")
+
+    jsonrpc = {
+      "method": "forwardLogs",
+      "params": {
+        "logs": payload
+      },
+      "jsonrpc": "2.0",
+      "id": log_id
+    }
+
+    if is_sunnylink and is_compressed:
+      jsonrpc["params"]["compressed"] = is_compressed
+
+    jsonrpc_str = json.dumps(jsonrpc)
+    size_in_bytes = len(jsonrpc_str.encode('utf-8'))
+
+    if is_sunnylink and size_in_bytes <= MAX_SIZE_BYTES:
+      cloudlog.info(f"Target is sunnylink and log file {log_path} is small enough to send in one request ({size_in_bytes} bytes).")
+      low_priority_send_queue.put_nowait(jsonrpc_str)
+    elif is_sunnylink:
+      cloudlog.warning(f"Target is sunnylink and log file {log_path} is too large to send in one request.")
+    else:
+      cloudlog.info(f"Target is not sunnylink, proceeding to send log file {log_path} in one request ({size_in_bytes} bytes).")
+      low_priority_send_queue.put_nowait(jsonrpc_str)
 
 
 def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None:
+  is_sunnylink = log_attr_name != LOG_ATTR_NAME
   if PC:
     return
 
@@ -616,7 +654,7 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
           setxattr(log_path, log_attr_name, int.to_bytes(curr_time, 4, sys.byteorder))
           # now we need to check the log size because we cant go larger than 128kb per request so we need to split by regex for example regex.compile(r'\{(?:[^{}]|(?R))*\}')
 
-          add_log_to_queue(log_path, log_entry)
+          add_log_to_queue(log_path, log_entry, is_sunnylink)
           curr_log = log_entry
         except OSError:
           pass  # file could be deleted by log rotation
