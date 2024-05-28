@@ -1253,19 +1253,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Device</source>
-        <translation>设备</translation>
+        <translation>设备管理</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation>网络</translation>
+        <translation>网络设置</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation>设定</translation>
+        <translation>功能设定</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation>软件</translation>
+        <translation>软件更新</translation>
     </message>
     <message>
         <source>sunnylink</source>
@@ -1273,23 +1273,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Monitoring</source>
-        <translation>监控</translation>
+        <translation>驾驶监控</translation>
     </message>
     <message>
         <source>Visuals</source>
-        <translation>视觉</translation>
+        <translation>视觉设置</translation>
     </message>
     <message>
         <source>Display</source>
-        <translation>屏幕</translation>
+        <translation>屏幕设置</translation>
     </message>
     <message>
         <source>Trips</source>
-        <translation>行程</translation>
+        <translation>行程统计</translation>
     </message>
     <message>
         <source>Vehicle</source>
-        <translation>车辆</translation>
+        <translation>车辆设定</translation>
     </message>
     <message>
         <source>sunnypilot</source>
@@ -1816,7 +1816,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Chime</source>
-        <translation type="unfinished"></translation>
+        <translation>声音提醒</translation>
     </message>
 </context>
 <context>
@@ -2206,23 +2206,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within &quot;selfdrive/torque_data&quot;. The values will also be used live when &quot;Override Self-Tune&quot; toggle is enabled.</source>
-        <translation type="unfinished"></translation>
+        <translation>启用横向扭矩控制器自定义调节</translation>
     </message>
     <message>
         <source>Manual Real-Time Tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>手动实时调节</translation>
     </message>
     <message>
         <source>Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values.</source>
-        <translation type="unfinished"></translation>
+        <translation>强制横向扭矩控制器使用固定值，而不是自调整的学习值</translation>
     </message>
     <message>
         <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: </source>
-        <translation type="unfinished"></translation>
+        <translation>匹配：精确的,是理想的，但是模糊的也很好。如果有任何问题，请通过sunnypilot Discord服务器的以下渠道联系sunnypiot团队：</translation>
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
-        <translation type="unfinished"></translation>
+        <translation>以前称为NNFF，代替了横向转矩控制器，使用在每辆车上训练的神经网络驱动数据，以提高控制精度。</translation>
     </message>
 </context>
 <context>
@@ -2441,11 +2441,11 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>FRICTION</source>
-        <translation type="unfinished"></translation>
+        <translation>摩擦力</translation>
     </message>
     <message>
         <source>Adjust Friction for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
-        <translation type="unfinished"></translation>
+        <translation>调整横向扭矩控制器的摩擦力，覆盖自调整值，在汽车重新启动时覆盖自调整值。</translation>
     </message>
 </context>
 <context>
@@ -2460,11 +2460,11 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>LAT_ACCEL_FACTOR</source>
-        <translation type="unfinished"></translation>
+        <translation>横向控制加速度</translation>
     </message>
     <message>
         <source>Adjust Max Lateral Acceleration for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
-        <translation type="unfinished"></translation>
+        <translation>调整横向扭矩控制器的最大横向加速度</translation>
     </message>
 </context>
 <context>
@@ -2506,11 +2506,11 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     <name>VehiclePanel</name>
     <message>
         <source>Updating this setting takes effect when the car is powered off.</source>
-        <translation type="unfinished"></translation>
+        <translation>当汽车关闭电源时，此设置的修改才会生效。</translation>
     </message>
     <message>
         <source>Select your car</source>
-        <translation type="unfinished"></translation>
+        <translation>选择你的车型</translation>
     </message>
 </context>
 <context>
@@ -2637,28 +2637,28 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation.</source>
-        <translation type="unfinished"></translation>
+        <translation>在地图上显示三维建筑</translation>
     </message>
     <message>
         <source>Distance
 Speed</source>
-        <translation type="unfinished"></translation>
+        <translation>距离和速度</translation>
     </message>
     <message>
         <source>Display Metrics Below Chevron</source>
-        <translation type="unfinished"></translation>
+        <translation>在追踪车辆下方显示数据</translation>
     </message>
     <message>
         <source>Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).</source>
-        <translation type="unfinished"></translation>
+        <translation>在追踪车辆下方显示一些数据（仅适用于带有openpilot纵向控制的汽车）</translation>
     </message>
     <message>
         <source>CPU</source>
-        <translation type="unfinished"></translation>
+        <translation>CPU</translation>
     </message>
     <message>
         <source>GPU</source>
-        <translation type="unfinished"></translation>
+        <translation>GPU</translation>
     </message>
 </context>
 <context>
