@@ -147,7 +147,8 @@ class Uploader:
 
     url_resp_json = json.loads(url_resp.text)
     url = url_resp_json['url']
-    cloudlog.debug("sunnylink upload_url %s", url)
+    headers = url_resp_json['headers']
+    cloudlog.debug("sunnylink upload_url %s | Headers: %s", url, headers)
 
     if fake_upload:
       return FakeResponse()
@@ -160,7 +161,7 @@ class Uploader:
       else:
         data = f
 
-      return requests.put(url, data=data, timeout=10)
+      return requests.put(url, data=data, headers=headers, timeout=10)
 
   def upload(self, name: str, key: str, fn: str, network_type: int, metered: bool) -> bool:
     try:
