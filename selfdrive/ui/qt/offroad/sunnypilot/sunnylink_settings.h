@@ -10,7 +10,7 @@
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
-const QString SUNNYLINK_BASE_URL = util::getenv("SUNNYLINK_API_HOST", "https://tst-mr-46.dev.api.sunnypilot.ai").c_str();
+const QString SUNNYLINK_BASE_URL = util::getenv("SUNNYLINK_API_HOST", "https://stg.api.sunnypilot.ai").c_str();
 // sponsor QR code
 class SunnylinkSponsorQRWidget : public QWidget {
   Q_OBJECT
