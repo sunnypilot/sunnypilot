@@ -609,7 +609,7 @@ class CarInterfaceBase(ABC):
       self.toggle_exp_mode(gap_button)
 
     below_lateral_speed = LANE_CHANGE_SPEED_MIN if not self.pause_lateral_speed else \
-                          self.pause_lateral_speed * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+                          float(self.pause_lateral_speed) * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
 
     cs_out.belowLaneChangeSpeed = cs_out.vEgo < below_lateral_speed and self.below_speed_pause
 
