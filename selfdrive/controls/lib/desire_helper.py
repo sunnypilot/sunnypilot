@@ -84,7 +84,7 @@ class DesireHelper:
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lateral_speed = LANE_CHANGE_SPEED_MIN if not self.pause_lateral_speed else \
-                          self.pause_lateral_speed * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+                          float(self.pause_lateral_speed) * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
     below_lane_change_speed = v_ego < below_lateral_speed
 
     if self.model_use_lateral_planner:
