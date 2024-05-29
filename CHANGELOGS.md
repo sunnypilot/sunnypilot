@@ -11,6 +11,12 @@ sunnypilot - 0.9.7.0 (2024-xx-xx)
   * Personal Mapbox/Amap/Google Maps token support
   * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
 
+sunnypilot - 0.9.6.2 (2024-05-29)
+========================
+* REMOVED: Screen Recorder
+  * Screen Recorder is removed due to unnecessary resource usage
+  * An improved version will be available in the near future. Stay tuned!
+
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
 * New driving model
