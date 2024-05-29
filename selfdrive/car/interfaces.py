@@ -220,7 +220,9 @@ class CarInterfaceBase(ABC):
     self.gear_warning = 0
     self.cruise_cancelled_btn = True
     self.acc_mads_combo = self.param_s.get_bool("AccMadsCombo")
+    self.is_metric = self.param_s.get_bool("IsMetric")
     self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
+    self.pause_lateral_speed = self.param_s.get("PauseLateralSpeed", encoding="utf8")
     self.prev_acc_mads_combo = False
     self.mads_event_lock = True
     self.gap_button_counter = 0
@@ -606,7 +608,10 @@ class CarInterfaceBase(ABC):
     if self.CP.openpilotLongitudinalControl:
       self.toggle_exp_mode(gap_button)
 
-    cs_out.belowLaneChangeSpeed = cs_out.vEgo < LANE_CHANGE_SPEED_MIN and self.below_speed_pause
+    below_lateral_speed = LANE_CHANGE_SPEED_MIN if not self.pause_lateral_speed else \
+                          self.pause_lateral_speed * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+
+    cs_out.belowLaneChangeSpeed = cs_out.vEgo < below_lateral_speed and self.below_speed_pause
 
     if cs_out.gearShifter in [GearShifter.park, GearShifter.reverse] or cs_out.doorOpen or \
       (cs_out.seatbeltUnlatched and cs_out.gearShifter != GearShifter.park):
@@ -708,6 +713,10 @@ class CarInterfaceBase(ABC):
   def sp_update_params(self):
     self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
     self._frame += 1
+    if self._frame % 100 == 0:
+      self.is_metric = self.param_s.get_bool("IsMetric")
+      self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
+      self.pause_lateral_speed = self.param_s.get("PauseLateralSpeed", encoding="utf8")
     if self._frame % 300 == 0:
       self._frame = 0
       self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
