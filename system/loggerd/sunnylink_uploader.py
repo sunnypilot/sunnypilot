@@ -22,7 +22,7 @@ from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
 from openpilot.common.swaglog import cloudlog
 
 NetworkType = log.DeviceState.NetworkType
-UPLOAD_ATTR_NAME = 'user.sunny.upload'
+UPLOAD_ATTR_NAME = 'user.sunnydv.upload'
 
 UPLOAD_ATTR_VALUE = b'1'
 
