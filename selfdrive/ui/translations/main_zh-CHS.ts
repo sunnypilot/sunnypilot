@@ -146,27 +146,27 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>BackupSettings</name>
     <message>
         <source>Settings updated successfully, but no additional data was returned by the server.</source>
-        <translation>设置已成功更新，但服务器未返回其他数据</translation>
+        <translation>设置已成功更新，但服务器未返回其他数据。</translation>
     </message>
     <message>
         <source>OOPS! We made a booboo.</source>
-        <translation>出错了</translation>
+        <translation>出错了！请稍候重试。</translation>
     </message>
     <message>
         <source>Please try again later.</source>
-        <translation>请稍后重试</translation>
+        <translation>请稍后重试。</translation>
     </message>
     <message>
         <source>Settings restored. Confirm to restart the interface.</source>
-        <translation>设置已恢复</translation>
+        <translation>设置已恢复。</translation>
     </message>
     <message>
         <source>No settings found to restore.</source>
-        <translation>没有可用的设置备份</translation>
+        <translation>没有可用的设置备份。</translation>
     </message>
     <message>
         <source>Settings backed up for sunnylink Device ID:</source>
-        <translation>设置已备份</translation>
+        <translation>设置已备份至此sunnylink设备ID：</translation>
     </message>
 </context>
 <context>
@@ -443,7 +443,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Fleet Manager PIN:</source>
-        <translation>Fleet管理器PIN</translation>
+        <translation>Fleet管理器PIN：</translation>
     </message>
 </context>
 <context>
@@ -454,7 +454,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>When &lt;b&gt;Driving Screen Off Timer&lt;/b&gt; is not set to &lt;b&gt;&quot;Always On&quot;&lt;/b&gt;:</source>
-        <translation>当息屏计时器没有设置为常亮</translation>
+        <translation>当&lt;b&gt;息屏计时器&lt;/b&gt;没有设置为&lt;b&gt;常亮&lt;/b&gt;：</translation>
     </message>
     <message>
         <source>Enabled: Wake the brightness of the screen to display all events.</source>
@@ -577,19 +577,19 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Engage both M.A.D.S. and ACC with a single press of RES+ or SET- button.</source>
-        <translation>通过短按RES+或 SET-案件同时启动ACC和MADS</translation>
+        <translation>通过短按RES+或 SET-案件同时启动ACC和M.A.D.S.。</translation>
     </message>
     <message>
         <source>Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.</source>
-        <translation>注意：一旦M.A.D.S.通过该模式接合，它将保持接合，直到通过M.A.D.S按钮手动禁用或关闭汽车</translation>
+        <translation>注意：一旦M.A.D.S.通过该模式接合，它将保持接合，直到通过M.A.D.S按钮手动禁用或关闭汽车。</translation>
     </message>
     <message>
         <source>Toggle M.A.D.S. with Cruise Main</source>
-        <translation>通过Main按键开关M.A.D.S.</translation>
+        <translation>通过巡航Main按键开关M.A.D.S.</translation>
     </message>
     <message>
         <source>Allows M.A.D.S. engagement/disengagement with &quot;Cruise Main&quot; cruise control button from the steering wheel.</source>
-        <translation>允许通过方向盘按键main启用或关闭M.A.D.S. </translation>
+        <translation>允许通过方向盘按键main启用或关闭M.A.D.S.。</translation>
     </message>
     <message>
         <source>Remain Active</source>
@@ -663,7 +663,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road).</source>
-        <translation>设置车辆熄火后设备自动关机的时间</translation>
+        <translation>设置车辆熄火后设备自动关机的时间。</translation>
     </message>
     <message>
         <source>s</source>
@@ -694,7 +694,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Monitor and alert when driver is not keeping the hands on the steering wheel.</source>
-        <translation>当驾驶员没有把手放在方向盘上时，进行监测并发出警报</translation>
+        <translation>当驾驶员没有把手放在方向盘上时，进行监测并发出警报。</translation>
     </message>
 </context>
 <context>
@@ -781,13 +781,15 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Device temperature too high. System cooling down before starting. Current internal component temperature: %1</source>
-        <translation>设备温度过高。系统正在冷却中，等冷却完毕后才会启动。目前内部组件温度：%1</translation>
+        <translation>设备温度过高。系统正在冷却中，等冷却完毕后才会启动。目前内部组件温度： %1</translation>
     </message>
     <message>
         <source>OpenStreetMap database is out of date. New maps must be downloaded if you wish to continue using OpenStreetMap data for Enhanced Speed Control and road name display.
 
 %1</source>
-        <translation>OpenStreetMap数据库已过期。如果您希望继续使用OpenStreetMap数据进行速度控制和道路名称显示，则必须下载新地图</translation>
+        <translation>OpenStreetMap数据库已过期。如果您希望继续使用OpenStreetMap数据进行速度控制和道路名称显示，则必须下载新地图。
+
+%1</translation>
     </message>
 </context>
 <context>
@@ -813,7 +815,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Turn off the device screen or reduce brightness to protect the screen after driving starts. It automatically brightens or turns on when a touch or event occurs.</source>
-        <translation>车辆行驶中，关闭屏幕或降低亮度以保护屏幕。触摸屏幕，它会自动变亮或打开</translation>
+        <translation>车辆行驶中，关闭屏幕或降低亮度以保护屏幕。触摸屏幕，它会自动变亮或打开。</translation>
     </message>
     <message>
         <source>s</source>
@@ -836,7 +838,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio.</source>
-        <translation>使用驾驶屏幕关闭功能时，亮度会根据自动亮度比降低</translation>
+        <translation>使用驾驶屏幕关闭功能时，亮度会根据自动亮度比降低。</translation>
     </message>
     <message>
         <source>Dark</source>
@@ -884,7 +886,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Yes, delete all the maps.</source>
-        <translation>确定，删除所有地图</translation>
+        <translation>确定，删除所有地图。</translation>
     </message>
     <message>
         <source>Database Update</source>
@@ -904,7 +906,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Fetching Country list...</source>
-        <translation>正在查找国家列表</translation>
+        <translation>正在查找国家列表...</translation>
     </message>
     <message>
         <source>State</source>
@@ -912,7 +914,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Fetching State list...</source>
-        <translation>正在查找省份列表</translation>
+        <translation>正在查找省份列表...</translation>
     </message>
     <message>
         <source>All</source>
@@ -932,21 +934,23 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Error: Invalid download. Retry.</source>
-        <translation>下载失败</translation>
+        <translation>错误：下载失败。重试。</translation>
     </message>
     <message>
         <source>Download complete!</source>
-        <translation>下载完成</translation>
+        <translation>下载完成！</translation>
     </message>
     <message>
         <source>
 
 Warning: You are on a metered connection!</source>
-        <translation>警告：您使用的是按流量计费的连接！</translation>
+        <translation>
+
+警告：您使用的是按流量计费的连接！</translation>
     </message>
     <message>
         <source>This will start the download process and it might take a while to complete.</source>
-        <translation>即将开始下载，可能需要一段时间才能完成</translation>
+        <translation>即将开始下载，可能需要一段时间才能完成。</translation>
     </message>
     <message>
         <source>Continue on Metered</source>
@@ -958,7 +962,7 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>m </source>
-        <translation>分</translation>
+        <translation>分 </translation>
     </message>
     <message>
         <source>s</source>
@@ -966,7 +970,7 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>Calculating...</source>
-        <translation>正在计算</translation>
+        <translation>正在计算...</translation>
     </message>
     <message>
         <source>Downloaded</source>
@@ -982,7 +986,7 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>Time remaining: </source>
-        <translation>剩余时间</translation>
+        <translation>剩余时间： </translation>
     </message>
 </context>
 <context>
@@ -1027,7 +1031,7 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source> cm</source>
-        <translation>厘米</translation>
+        <translation> 厘米</translation>
     </message>
 </context>
 <context>
@@ -1122,7 +1126,7 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -1194,11 +1198,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Allows M.A.D.S. engagement/disengagement with &quot;LKAS&quot; button from the steering wheel.</source>
-        <translation>允许LKAS按钮开关M.A.D.S.（测试版）</translation>
+        <translation>允许LKAS按钮开关M.A.D.S.（测试版）。</translation>
     </message>
     <message>
         <source>Note: Enabling this toggle may have unexpected behavior with steering control. It is the driver&apos;s responsibility to observe their environment and make decisions accordingly.</source>
-        <translation>注意：启用此切换可能会对转向控制产生意外行为。请观察环境并做出相应决定</translation>
+        <translation>注意：启用此切换可能会对转向控制产生意外行为。请观察环境并做出相应决定。</translation>
     </message>
     <message>
         <source>Volkswagen</source>
@@ -1210,7 +1214,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot supports Volkswagen MQB CC only platforms with this toggle enabled. Only enable this toggle if your car does not have ACC from the factory.</source>
-        <translation>sunnypilot仅限大众MQB配备定速巡航（无ACC）的车型启用此功能</translation>
+        <translation>sunnypilot仅限大众MQB配备定速巡航（无ACC）的车型启用此功能。</translation>
     </message>
     <message>
         <source>HKG CAN: Smoother Stopping Performance (Beta)</source>
@@ -1226,7 +1230,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot will &lt;b&gt;not&lt;/b&gt; take over control of gas and brakes. Stock Toyota longitudinal control will be used.</source>
-        <translation>保留使用丰田原车的纵向控制</translation>
+        <translation>sunnypilot并&lt;b&gt;不会&lt;/b&gt;控制车辆的横向和纵向。保留使用丰田原车的纵向控制。</translation>
     </message>
     <message>
         <source>Toyota TSS2 Longitudinal: Custom Tuning</source>
@@ -1293,11 +1297,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
     <message>
         <source>OSM</source>
-        <translation type="unfinished"></translation>
+        <translation>OSM</translation>
     </message>
 </context>
 <context>
@@ -1513,7 +1517,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Set speed limit slightly higher than actual speed limit for a more natural drive.</source>
-        <translation>将速度限制设置为略高于实际速度限制，以实现更自然的驾驶体验</translation>
+        <translation>将速度限制设置为略高于实际速度限制，以实现更自然的驾驶体验。</translation>
     </message>
     <message>
         <source>Select the desired mode to set the cruising speed to the speed limit:</source>
@@ -1525,11 +1529,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>User Confirm: Inform the driver to change set speed of Adaptive Cruise Control to help the driver stay within the speed limit.</source>
-        <translation>用户模式：通知驾驶员更改自适应巡航控制的设定速度，以帮助驾驶员保持在限速范围内。</translation>
+        <translation>用户确认模式：通知驾驶员更改自适应巡航控制的设定速度，以帮助驾驶员保持在限速范围内。</translation>
     </message>
     <message>
         <source>This platform defaults to &lt;b&gt;Auto&lt;/b&gt; mode. &lt;b&gt;User Confirm&lt;/b&gt; mode is not supported on this platform.</source>
-        <translation>此平台默认使用自动模式，不支持用户模式</translation>
+        <translation>此平台默认使用&lt;b&gt;自动&lt;/b&gt;模式，不支持&lt;b&gt;用户确认&lt;/b&gt;模式。</translation>
     </message>
 </context>
 <context>
@@ -1691,7 +1695,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Download has started in the background.</source>
-        <translation>下载已在后台开始</translation>
+        <translation>下载已在后台开始。</translation>
     </message>
 </context>
 <context>
@@ -1710,7 +1714,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Map Only: Data from OpenStreetMap only.</source>
-        <translation>仅地图：仅使用来自OpenStreetMap的数据</translation>
+        <translation>仅地图：仅使用来自OpenStreetMap的数据。</translation>
     </message>
     <message>
         <source>Car Only: Data from the car&apos;s built-in sources (if available).</source>
@@ -1780,7 +1784,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>When Speed Limit Warning is enabled, the speed limit sign will alert the driver when the cruising speed is faster than then speed limit plus the offset.</source>
-        <translation>当限速警告启用时，当巡航速度快于限速加上偏移量时，限速标志将闪烁来提醒驾驶员</translation>
+        <translation>当限速警告启用时，当巡航速度快于限速加上偏移量时，限速标志将闪烁来提醒驾驶员。</translation>
     </message>
     <message>
         <source>Default</source>
@@ -1884,7 +1888,7 @@ This may take up to a minute.</source>
     <name>SunnylinkPanel</name>
     <message>
         <source>sunnylink Dongle ID</source>
-        <translation>SP-link注册ID</translation>
+        <translation>sunnylink设备ID</translation>
     </message>
     <message>
         <source>N/A</source>
@@ -1892,7 +1896,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Sponsor Status</source>
-        <translation>Sponsor状态</translation>
+        <translation>赞助状态</translation>
     </message>
     <message>
         <source>SPONSOR</source>
@@ -1900,7 +1904,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features.</source>
-        <translation>赞助者可以抢先体验sunnylink的功能</translation>
+        <translation>赞助者可以抢先体验sunnylink的功能。</translation>
     </message>
     <message>
         <source>Manage Settings</source>
@@ -1916,7 +1920,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Early alpha access only. Become a sponsor to get early access to sunnylink features.</source>
-        <translation>仅早期alpha访问。成为赞助者，提前使用sunnylink功能。</translation>
+        <translation>仅早期alpha（内测）访问。成为赞助者，提前使用sunnylink功能。</translation>
     </message>
     <message>
         <source>Become a Sponsor</source>
@@ -1936,7 +1940,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>THANKS</source>
-        <translation>谢谢</translation>
+        <translation>感谢</translation>
     </message>
     <message>
         <source>Sponsor</source>
@@ -1948,11 +1952,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Backing up...</source>
-        <translation>正在进行备份</translation>
+        <translation>正在进行备份...</translation>
     </message>
     <message>
         <source>Restoring...</source>
-        <translation>正在恢复</translation>
+        <translation>正在恢复...</translation>
     </message>
     <message>
         <source>Back Up</source>
@@ -1986,7 +1990,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable the beloved M.A.D.S. feature. Disable toggle to revert back to stock openpilot engagement/disengagement.</source>
-        <translation>启用全时车道保持</translation>
+        <translation>启用全时车道保持。</translation>
     </message>
     <message>
         <source>Laneless for Curves in &quot;Auto&quot; Mode</source>
@@ -1994,7 +1998,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>While in Auto Lane, switch to Laneless for current/future curves.</source>
-        <translation>启用自动车道模式时，在弯道自动切换成无车道线模式</translation>
+        <translation>启用自动车道模式时，在弯道自动切换成无车道线模式。</translation>
     </message>
     <message>
         <source>Speed Limit Control (SLC)</source>
@@ -2010,7 +2014,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Use vision path predictions to estimate the appropriate speed to drive through turns ahead.</source>
-        <translation>使用视觉路径预测来估计通过前方转弯的适当速度</translation>
+        <translation>使用视觉路径预测来估计通过前方转弯的适当速度。</translation>
     </message>
     <message>
         <source>Enable Map Data Turn Speed Control (M-TSC) (Beta)</source>
@@ -2026,7 +2030,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Change the ACC +/- buttons behavior with cruise speed change in sunnypilot.</source>
-        <translation>自定义ACC+/-按键的功能</translation>
+        <translation>自定义ACC+/-按键的功能。</translation>
     </message>
     <message>
         <source>Disabled (Stock): Short=1, Long = 5 (imperial) / 10 (metric)</source>
@@ -2078,7 +2082,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on.</source>
-        <translation>sunnypilot将显示警报，但只播放最重要的警告声音。此功能可以在汽车行驶时切换</translation>
+        <translation>sunnypilot将显示警报，但只播放最重要的警告声音。此功能可以在汽车行驶时切换。</translation>
     </message>
     <message>
         <source>Green Traffic Light Chime (Beta)</source>
@@ -2090,7 +2094,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Note: This chime is only designed as a notification. It is the driver&apos;s responsibility to observe their environment and make decisions accordingly.</source>
-        <translation>注意：此蜂鸣音仅用于通知。驾驶员应观察环境并做出相应决定</translation>
+        <translation>注意：此蜂鸣音仅用于通知。驾驶员应观察环境并做出相应决定。</translation>
     </message>
     <message>
         <source>Lead Vehicle Departure Alert</source>
@@ -2098,7 +2102,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable this will notify when the leading vehicle drives away.</source>
-        <translation>前车启动之后发出提醒</translation>
+        <translation>前车启动之后发出提醒。</translation>
     </message>
     <message>
         <source>Customize M.A.D.S.</source>
@@ -2194,7 +2198,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: </source>
-        <translation>通过sunnypilot Discord服务器联系sunnypiot团队，并捐赠日志，为您的汽车加载NNLC</translation>
+        <translation>通过sunnypilot Discord服务器联系sunnypiot团队，并捐赠日志，为您的汽车加载NNLC： </translation>
     </message>
     <message>
         <source>Match</source>
@@ -2202,11 +2206,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported: </source>
-        <translation>通过sunnypilot Discord服务器上的以下渠道联系sunnypiot团队，提供反馈，或者如果您的汽车目前不受支持，则提供汽车的日志数据：</translation>
+        <translation>通过sunnypilot Discord服务器上的以下渠道联系sunnypiot团队，提供反馈，或者如果您的汽车目前不受支持，则提供汽车的日志数据： </translation>
     </message>
     <message>
         <source>Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within &quot;selfdrive/torque_data&quot;. The values will also be used live when &quot;Override Self-Tune&quot; toggle is enabled.</source>
-        <translation>启用横向扭矩控制器自定义调节</translation>
+        <translation>启用横向扭矩控制器自定义调节。</translation>
     </message>
     <message>
         <source>Manual Real-Time Tuning</source>
@@ -2214,11 +2218,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enforces the torque lateral controller to use the fixed values instead of the learned values from Self-Tune. Enabling this toggle overrides Self-Tune values.</source>
-        <translation>强制横向扭矩控制器使用固定值，而不是自调整的学习值</translation>
+        <translation>强制横向扭矩控制器使用固定值，而不是自调整的学习值。</translation>
     </message>
     <message>
         <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: </source>
-        <translation>匹配：精确的,是理想的，但是模糊的也很好。如果有任何问题，请通过sunnypilot Discord服务器的以下渠道联系sunnypiot团队：</translation>
+        <translation>匹配：精确的,是理想的，但是模糊的也很好。如果有任何问题，请通过sunnypilot Discord服务器的以下渠道联系sunnypiot团队： </translation>
     </message>
     <message>
         <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
@@ -2414,7 +2418,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC).</source>
-        <translation>在路上完全禁止上传。连接到Wi-Fi热点时避免大量数据使用率是必要的。如果您希望使用基于地图的功能，如限速控制（SLC）和基于地图的转弯速度控制（MTSC），请启用此功能</translation>
+        <translation>在路上完全禁止上传。连接到Wi-Fi热点时避免大量数据使用率是必要的。如果您希望使用基于地图的功能，如限速控制（SLC）和基于地图的转弯速度控制（MTSC），请启用此功能。</translation>
     </message>
     <message>
         <source>Maniac</source>
@@ -2464,7 +2468,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Adjust Max Lateral Acceleration for the Torque Lateral Controller. &lt;b&gt;Live&lt;/b&gt;: Override self-tune values; &lt;b&gt;Offline&lt;/b&gt;: Override self-tune offline values at car restart.</source>
-        <translation>调整横向扭矩控制器的最大横向加速度</translation>
+        <translation>调整横向扭矩控制器的最大横向加速度。</translation>
     </message>
 </context>
 <context>
@@ -2537,7 +2541,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Show Driver Monitoring camera while the car is in reverse gear.</source>
-        <translation>倒车时屏幕切换显示驾驶员监控实时画面</translation>
+        <translation>倒车时屏幕切换显示驾驶员监控实时画面。</translation>
     </message>
     <message>
         <source>OSM: Show debug UI elements</source>
@@ -2545,7 +2549,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>OSM: Show UI elements that aid debugging.</source>
-        <translation>显示调试UI元素</translation>
+        <translation>显示开发调试UI元素。</translation>
     </message>
     <message>
         <source>Display Feature Status</source>
@@ -2553,7 +2557,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Display the statuses of certain features on the driving screen.</source>
-        <translation>在驾驶屏幕上显示某些功能的状态</translation>
+        <translation>在驾驶屏幕上显示某些功能的状态。</translation>
     </message>
     <message>
         <source>Enable Onroad Settings</source>
@@ -2561,7 +2565,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Display the Onroad Settings button on the driving screen to adjust feature options on the driving screen, without navigating into the settings menu.</source>
-        <translation>在驾驶屏幕上显示行车设置快捷按钮，以调整驾驶功能选项，而无需到设置菜单</translation>
+        <translation>在驾驶屏幕上显示行车设置快捷按钮，以调整驾驶功能选项，而无需到设置菜单。</translation>
     </message>
     <message>
         <source>Speedometer: Display True Speed</source>
@@ -2589,7 +2593,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Enable this will display the built-in navigation in full screen.&lt;br&gt;To switch back to driving view, &lt;font color=&apos;yellow&apos;&gt;tap on the border edge&lt;/font&gt;.</source>
-        <translation>启用此开关将全屏显示导航界面</translation>
+        <translation>启用此开关将全屏显示导航界面。&lt;br&gt;要切换回驾驶界面，&lt;font color=&apos;yellow&apos;&gt;请点击屏幕边缘&lt;/font&gt;。</translation>
     </message>
     <message>
         <source>Map: Display 3D Buildings</source>
@@ -2629,7 +2633,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Display real-time parameters and metrics from various sources.</source>
-        <translation>显示实时参数和指标</translation>
+        <translation>显示实时参数和指标。</translation>
     </message>
     <message>
         <source>Display Temperature on Sidebar</source>
@@ -2637,7 +2641,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Parse and display 3D buildings on map. Thanks to jakethesnake420 for this implementation.</source>
-        <translation>在地图上显示三维建筑</translation>
+        <translation>在地图上显示三维建筑。感谢jakethesnake420的功能实现。</translation>
     </message>
     <message>
         <source>Distance
@@ -2650,7 +2654,7 @@ Speed</source>
     </message>
     <message>
         <source>Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).</source>
-        <translation>在追踪车辆下方显示一些数据（仅适用于带有openpilot纵向控制的汽车）</translation>
+        <translation>在追踪车辆下方显示数据（仅适用于带有openpilot纵向控制的汽车）。</translation>
     </message>
     <message>
         <source>CPU</source>
