@@ -15,7 +15,7 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {
       "BelowSpeedPause",
-      tr("Pause Lateral Below Speed w/ Blinker"),
+      tr("Pause Lateral Below Speed with Blinker"),
       tr("Enable this toggle to pause lateral actuation with blinker when traveling below the desired speed selected below."),
       "../assets/offroad/icon_blank.png",
     },
