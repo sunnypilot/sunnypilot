@@ -102,7 +102,7 @@ void LaneChangeSettings::updateToggles() {
 // Auto Lane Change Timer (ALCT)
 AutoLaneChangeTimer::AutoLaneChangeTimer() : SPOptionControl (
   "AutoLaneChangeTimer",
-  tr("Auto Lane Change"),
+  tr("Auto Lane Change by Blinker"),
   tr("Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.\nPlease use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
   "../assets/offroad/icon_blank.png",
   {-1, 5}) {
