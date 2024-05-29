@@ -187,7 +187,7 @@ class Uploader:
       except Exception as e:
         last_exc = (e, traceback.format_exc())
 
-      if stat is not None and stat.status_code in (200, 201, 401, 403, 412):
+      if stat is not None and stat.status_code in (200, 201, 412):
         self.last_filename = fn
         dt = time.monotonic() - start_time
         if stat.status_code == 412:
@@ -198,7 +198,7 @@ class Uploader:
           cloudlog.event("upload_success", key=key, fn=fn, sz=sz, content_length=content_length,
                          network_type=network_type, metered=metered, speed=speed)
         success = True
-      else:
+      else:  # 401, 403... Not sure why they were up to begin with
         success = False
         cloudlog.event("upload_failed", stat=stat, exc=last_exc, key=key, fn=fn, sz=sz, network_type=network_type, metered=metered)
 
