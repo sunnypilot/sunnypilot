@@ -80,7 +80,7 @@ void LaneChangeSettings::updateToggles() {
   }
 
   auto auto_lane_change_bsm_delay_toggle = toggles["AutoLaneChangeBsmDelay"];
-  auto auto_lane_change_timer_param = QString::fromStdString(params.get("AutoLaneChangeTimer"));
+  auto auto_lane_change_timer_param = std::atoi(params.get("AutoLaneChangeTimer").c_str());
 
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
@@ -91,7 +91,7 @@ void LaneChangeSettings::updateToggles() {
     if (!CP.getEnableBsm()) {
       params.remove("AutoLaneChangeBsmDelay");
     }
-    auto_lane_change_bsm_delay_toggle->setEnabled(CP.getEnableBsm() && auto_lane_change_timer_param != "0");
+    auto_lane_change_bsm_delay_toggle->setEnabled(CP.getEnableBsm() && (auto_lane_change_timer_param > 0));
 
     auto_lane_change_bsm_delay_toggle->refresh();
   } else {
@@ -102,10 +102,10 @@ void LaneChangeSettings::updateToggles() {
 // Auto Lane Change Timer (ALCT)
 AutoLaneChangeTimer::AutoLaneChangeTimer() : SPOptionControl (
   "AutoLaneChangeTimer",
-  tr("Auto Lane Change Timer"),
-  tr("Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set.\nPlease use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
+  tr("Auto Lane Change"),
+  tr("Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.\nPlease use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
   "../assets/offroad/icon_blank.png",
-  {0, 5}) {
+  {-1, 5}) {
 
   refresh();
 }
@@ -113,7 +113,9 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : SPOptionControl (
 void AutoLaneChangeTimer::refresh() {
   QString option = QString::fromStdString(params.get("AutoLaneChangeTimer"));
   QString second = tr("s");
-  if (option == "0") {
+  if (option == "-1") {
+    setLabel(tr("Off"));
+  } else if (option == "0") {
     setLabel(tr("Nudge"));
   } else if (option == "1") {
     setLabel(tr("Nudgeless"));
