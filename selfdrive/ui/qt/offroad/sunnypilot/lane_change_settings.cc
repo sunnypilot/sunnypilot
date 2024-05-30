@@ -55,9 +55,6 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
     if (param == "BelowSpeedPause") {
       list->addItem(pause_lateral_speed);
     }
-
-    // trigger offroadTransition when going onroad/offroad
-    connect(uiState(), &UIState::offroadTransition, toggle, &ParamControl::setEnabled);
   }
 
   connect(toggles["BelowSpeedPause"], &ToggleControl::toggleFlipped, [=](bool state) {
