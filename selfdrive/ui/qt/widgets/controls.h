@@ -483,14 +483,17 @@ public:
       }
       button_group->addButton(button, i);
 
-      int change_value = (i == 0) ? -per_value_change : per_value_change;
-
       QObject::connect(button, &QPushButton::clicked, [=]() {
+        int change_value = (i == 0) ? -per_value_change : per_value_change;
         key = param.toStdString();
         value = atoi(params.get(key).c_str());
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
         params.put(key, QString::number(value).toStdString());
+
+        button_group->button(0)->setEnabled(!(value <= range.min_value));
+        button_group->button(1)->setEnabled(!(value >= range.max_value));
+
         updateLabels();
 
         if (request_update) {

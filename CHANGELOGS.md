@@ -27,6 +27,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Forced Offroad mode
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+* UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
+  * NEW❗: New "Off" option to disable lane change by blinker
 * UPDATED: Pause Lateral Below Speed w/ Blinker
   * NEW❗: Customizable Pause Lateral Speed
     * Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.
@@ -61,7 +63,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
     * NEW❗: Display both Distance and Speed simultaneously
     * NEW❗: View sunnylink connectivity status on the left sidebar!
 
-sunnypilot - 0.9.6.2 (2024-05-xx)
+sunnypilot - 0.9.6.2 (2024-05-29)
 ========================
 * REMOVED: Screen Recorder
   * Screen Recorder is removed due to unnecessary resource usage

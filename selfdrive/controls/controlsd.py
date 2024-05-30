@@ -167,7 +167,6 @@ class Controls:
     self.nn_alert_shown = False
     self.enable_nnff = self.params.get_bool("NNFF")
 
-    self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = False
     self.dynamic_experimental_control = False
 
@@ -935,7 +934,6 @@ class Controls:
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 
-      self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
       self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
       self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
 
