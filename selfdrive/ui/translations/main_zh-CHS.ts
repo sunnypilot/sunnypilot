@@ -96,7 +96,7 @@
     </message>
     <message>
         <source>Ngrok Service</source>
-        <translation type="unfinished"></translation>
+        <translation>Ngrok服务</translation>
     </message>
 </context>
 <context>
@@ -147,16 +147,17 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Auto Lane Change by Blinker</source>
-        <translation type="unfinished"></translation>
+        <translation>打转向灯自动变道</translation>
     </message>
     <message>
         <source>Off</source>
-        <translation type="unfinished">关</translation>
+        <translation>关</translation>
     </message>
     <message>
         <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
 Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
+        <translation>设置定时器以在使用转向灯时延迟自动变道操作。如果设置了定时器，则无需轻推方向盘即可自动变道。默认值为“微移”。
+使用此功能时请小心。只有在交通和道路条件允许的情况下才能使用转向灯。</translation>
     </message>
 </context>
 <context>
@@ -464,59 +465,59 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Pair Device</source>
-        <translation type="unfinished"></translation>
+        <translation>绑定设备</translation>
     </message>
     <message>
         <source>PAIR</source>
-        <translation type="unfinished"></translation>
+        <translation>绑定</translation>
     </message>
     <message>
         <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation type="unfinished">将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
+        <translation>将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
     </message>
     <message>
         <source>Reset Access Tokens for Map Services</source>
-        <translation type="unfinished"></translation>
+        <translation>重置地图服务令牌</translation>
     </message>
     <message>
         <source>Reset self-service access tokens for Mapbox, Amap, and Google Maps.</source>
-        <translation type="unfinished"></translation>
+        <translation>重置Mapbox、Amap和Google Maps的自助访问令牌。</translation>
     </message>
     <message>
         <source>Are you sure you want to reset access tokens for all map services?</source>
-        <translation type="unfinished"></translation>
+        <translation>确定要重置所有地图服务的访问令牌？</translation>
     </message>
     <message>
         <source>Toggle Onroad/Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>上线/下线开关</translation>
     </message>
     <message>
         <source>Are you sure you want to unforce offroad?</source>
-        <translation type="unfinished"></translation>
+        <translation>确定上线？</translation>
     </message>
     <message>
         <source>Unforce</source>
-        <translation type="unfinished"></translation>
+        <translation>上线</translation>
     </message>
     <message>
         <source>Are you sure you want to force offroad?</source>
-        <translation type="unfinished"></translation>
+        <translation>确定强制下线？</translation>
     </message>
     <message>
         <source>Force</source>
-        <translation type="unfinished"></translation>
+        <translation>强制下线</translation>
     </message>
     <message>
         <source>Disengage to Force Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot激活状态无法强制下线</translation>
     </message>
     <message>
         <source>Unforce Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>强制上线</translation>
     </message>
     <message>
         <source>Force Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>强制下线</translation>
     </message>
 </context>
 <context>
@@ -801,11 +802,11 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Scan</source>
-        <translation type="unfinished"></translation>
+        <translation>搜索网络</translation>
     </message>
     <message>
         <source>Scanning...</source>
-        <translation type="unfinished"></translation>
+        <translation>搜索网络中……</translation>
     </message>
 </context>
 <context>
@@ -874,7 +875,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>sunnypilot is now in Forced Offroad mode. sunnypilot won&apos;t start until Forced Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; -&gt; &quot;Unforce Offroad&quot; to exit Force Offroad mode.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot现在处于非行驶模式。sunnypilot获胜；在强制越野模式被禁用之前，不要启动。转到&quot；设置”-&gt&quot；设备“-&gt&quot；不可抗力越野&quot；退出强制越野模式。</translation>
     </message>
 </context>
 <context>
@@ -896,23 +897,23 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <name>OnroadAlerts</name>
     <message>
         <source>openpilot Unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot无法使用</translation>
     </message>
     <message>
         <source>Waiting for controls to start</source>
-        <translation type="unfinished"></translation>
+        <translation>正在等待控件启动</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
-        <translation type="unfinished"></translation>
+        <translation>请立即接管</translation>
     </message>
     <message>
         <source>Controls Unresponsive</source>
-        <translation type="unfinished"></translation>
+        <translation>控制无响应</translation>
     </message>
     <message>
         <source>Reboot Device</source>
-        <translation type="unfinished"></translation>
+        <translation>请重启设备</translation>
     </message>
 </context>
 <context>
@@ -1238,7 +1239,7 @@ Warning: You are on a metered connection!</source>
     </message>
     <message>
         <source>now</source>
-        <translation type="unfinished"></translation>
+        <translation>现在</translation>
     </message>
 </context>
 <context>
@@ -1500,15 +1501,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Choose Software to Install</source>
-        <translation type="unfinished"></translation>
+        <translation>选择软件安装</translation>
     </message>
     <message>
         <source>openpilot</source>
-        <translation type="unfinished">openpilot</translation>
+        <translation>openpilot官方版</translation>
     </message>
     <message>
         <source>Custom Software</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot定制版</translation>
     </message>
 </context>
 <context>
@@ -1614,7 +1615,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>DISABLED</source>
-        <translation type="unfinished"></translation>
+        <translation>不可用</translation>
     </message>
 </context>
 <context>
@@ -1831,7 +1832,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>PENDING</source>
-        <translation type="unfinished"></translation>
+        <translation>正在准备……</translation>
     </message>
 </context>
 <context>
@@ -2100,19 +2101,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable sunnylink</source>
-        <translation type="unfinished"></translation>
+        <translation>启用Sunnylink</translation>
     </message>
     <message>
         <source>Device ID </source>
-        <translation type="unfinished"></translation>
+        <translation>设备ID</translation>
     </message>
     <message>
         <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
-        <translation type="unfinished"></translation>
+        <translation>这是主开关，它将允许你切断任何sunnylink请求。</translation>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation type="unfinished"></translation>
+        <translation>🎉欢迎回来! </translation>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
@@ -2120,51 +2121,51 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>A reboot is required to</source>
-        <translation type="unfinished"></translation>
+        <translation>需要重启一次</translation>
     </message>
     <message>
         <source>start</source>
-        <translation type="unfinished"></translation>
+        <translation>开始</translation>
     </message>
     <message>
         <source>stop</source>
-        <translation type="unfinished"></translation>
+        <translation>停止</translation>
     </message>
     <message>
         <source>all connections and processes from sunnylink.</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnylink的所有连接和进程。</translation>
     </message>
     <message>
         <source>If that&apos;s not a problem for you, you can ignore this.</source>
-        <translation type="unfinished"></translation>
+        <translation>如果你觉得不是问题，请忽略它</translation>
     </message>
     <message>
         <source>Reboot Now!</source>
-        <translation type="unfinished"></translation>
+        <translation>请现在重启！</translation>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.</source>
-        <translation type="unfinished"></translation>
+        <translation>成为sunnypilot的赞助商，以便优先体验sunnylink功能。</translation>
     </message>
     <message>
         <source>Pair GitHub Account</source>
-        <translation type="unfinished"></translation>
+        <translation>绑定GitHub账户</translation>
     </message>
     <message>
         <source>PAIR</source>
-        <translation type="unfinished"></translation>
+        <translation>绑定</translation>
     </message>
     <message>
         <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
-        <translation type="unfinished"></translation>
+        <translation>配对您的GitHub帐户，以授予您的设备赞助商优惠，包括sunnylink上的API访问权限。</translation>
     </message>
     <message>
         <source>Paired</source>
-        <translation type="unfinished"></translation>
+        <translation>已绑定</translation>
     </message>
     <message>
         <source>Not Paired</source>
-        <translation type="unfinished"></translation>
+        <translation>未绑定</translation>
     </message>
 </context>
 <context>
@@ -2187,23 +2188,23 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Scan the QR code to login to your GitHub account</source>
-        <translation type="unfinished"></translation>
+        <translation>扫描二维码绑定GitHub账号</translation>
     </message>
     <message>
         <source>Follow the prompts to complete the pairing process</source>
-        <translation type="unfinished"></translation>
+        <translation>按照提示完成绑定</translation>
     </message>
     <message>
         <source>Re-enter the &quot;sunnylink&quot; panel to verify sponsorship status</source>
-        <translation type="unfinished"></translation>
+        <translation>重新进入sunnylink面板确认赞助状态</translation>
     </message>
     <message>
         <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>如果赞助状态没有更新，请联系Discord的主持人，网址为https://discord.gg/sunnypilot</translation>
     </message>
     <message>
         <source>Pair your GitHub account</source>
-        <translation type="unfinished"></translation>
+        <translation>绑定您的GitHub帐户</translation>
     </message>
 </context>
 <context>
@@ -2658,19 +2659,19 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Always-On Driver Monitoring</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶员监控常开</translation>
     </message>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation type="unfinished"></translation>
+        <translation>始终进行驾驶员监控</translation>
     </message>
     <message>
         <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation type="unfinished"></translation>
+        <translation>建议库存。在疯狂模式下，openpilot将跟随引导车更近，并在加油和刹车时更具攻击性。在放松模式下，openpilot将远离引导车。在被支持的汽车上，您可以通过方向盘距离按钮循环修改这些设定。</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
-        <translation type="unfinished"></translation>
+        <translation>驾驶可视化将在低速时过渡到面向道路的广角摄像头，以更好地显示某些转弯。实验模式标志也将显示在右上角。</translation>
     </message>
 </context>
 <context>
