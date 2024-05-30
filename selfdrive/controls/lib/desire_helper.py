@@ -80,6 +80,7 @@ class DesireHelper:
     lane_change_auto_timer = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer, 2.0)
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
+    # TODO: SP: !659: User-defined minimum lane change speed
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
     if self.model_use_lateral_planner:
