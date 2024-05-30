@@ -27,6 +27,8 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Forced Offroad mode
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+* UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
+  * NEW❗: New "Off" option to disable lane change by blinker
 * UPDATED: Hyundai CAN Longitudinal
   * Auto-enable radar tracks on platforms with applicable Mando radar
 * UPDATED: Hyundai CAN-FD Camera-based SCC

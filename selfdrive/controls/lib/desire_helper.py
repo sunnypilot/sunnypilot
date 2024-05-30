@@ -34,6 +34,7 @@ DESIRES = {
 }
 
 AUTO_LANE_CHANGE_TIMER = {
+  -1: 0.0,
   0: 0.0,
   1: 0.1,
   2: 0.5,
@@ -84,7 +85,7 @@ class DesireHelper:
     if self.model_use_lateral_planner:
       self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
 
-    if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
+    if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.lane_change_set_timer == -1:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
       self.prev_lane_change = False
