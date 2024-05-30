@@ -491,8 +491,8 @@ public:
         value = std::clamp(value, range.min_value, range.max_value);
         params.put(key, QString::number(value).toStdString());
 
-        button_group->button(0)->setEnabled(!(value == range.min_value));
-        button_group->button(1)->setEnabled(!(value == range.max_value));
+        button_group->button(0)->setEnabled(!(value <= range.min_value));
+        button_group->button(1)->setEnabled(!(value >= range.max_value));
 
         updateLabels();
 
