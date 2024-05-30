@@ -60,22 +60,18 @@ class DesireHelper:
     self.road_edge = False
     self.param_read_counter = 0
     self.read_param()
-    self.is_metric = self.param_s.get_bool("IsMetric")
     self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
-    self.pause_lateral_speed = self.param_s.get("PauseLateralSpeed", encoding="utf8")
 
     self.custom_model, self.model_gen = get_model_generation(self.param_s)
     model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
     self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
 
   def read_param(self):
-    self.is_metric = self.param_s.get_bool("IsMetric")
     self.edge_toggle = self.param_s.get_bool("RoadEdge")
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
-    self.pause_lateral_speed = self.param_s.get("PauseLateralSpeed", encoding="utf8")
 
   def update(self, carstate, lateral_active, lane_change_prob, model_data=None, lat_plan_sp=None):
     if self.param_read_counter % 50 == 0:
@@ -84,14 +80,12 @@ class DesireHelper:
     lane_change_auto_timer = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer, 2.0)
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
-    below_lateral_speed = LANE_CHANGE_SPEED_MIN if not self.pause_lateral_speed else \
-                          float(self.pause_lateral_speed) * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
-    below_lane_change_speed = v_ego < below_lateral_speed
+    below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
     if self.model_use_lateral_planner:
       self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
 
-    if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.lane_change_set_timer == -1:
+    if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.lane_change_set_timer == -1:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
       self.prev_lane_change = False
