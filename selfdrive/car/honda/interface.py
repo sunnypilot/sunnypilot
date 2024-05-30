@@ -123,6 +123,11 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 3840], [0, 3840]]  # TODO: determine if there is a dead zone at the top end
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
 
+    elif candidate == CAR.ACURA_TLX:
+      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 239], [0, 239]] # Using Accord tuning for now
+      ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.,20], [0.,20]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4,0.3], [0,0]]
+
     elif candidate in (CAR.HONDA_CRV, CAR.HONDA_CRV_EU):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 1000], [0, 1000]]  # TODO: determine if there is a dead zone at the top end
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
@@ -173,7 +178,6 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 239], [0, 239]]
       ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.,20], [0.,20]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4,0.3], [0,0]]
-      tire_stiffness_factor = 0.8467
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
       ret.longitudinalTuning.kpV = [2.4, 1.6, 0.8]
       ret.longitudinalTuning.kiBP = [0., 35.]
@@ -220,7 +224,6 @@ class CarInterface(CarInterfaceBase):
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560], [0, 2560]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
-      tire_stiffness_factor = 1.
 
     else:
       raise ValueError(f"unsupported car {candidate}")
