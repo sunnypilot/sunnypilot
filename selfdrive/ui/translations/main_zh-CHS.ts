@@ -2117,7 +2117,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation>👋 说实话，看你禁用了sunnypilot有点难过😢，但我们会在这里等你回来🎉。</translation>
+        <translation>👋 说实话，看你禁用了sunnylink有点难过😢，但我们会在这里等你回来🎉。</translation>
     </message>
     <message>
         <source>A reboot is required to</source>
