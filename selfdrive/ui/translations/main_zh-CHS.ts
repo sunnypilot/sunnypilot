@@ -875,7 +875,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>sunnypilot is now in Forced Offroad mode. sunnypilot won&apos;t start until Forced Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; -&gt; &quot;Unforce Offroad&quot; to exit Force Offroad mode.</source>
-        <translation>sunnypilot现在处于非行驶模式。sunnypilot获胜；在强制越野模式被禁用之前，不要启动。转到&quot；设置”-&gt&quot；设备“-&gt&quot；不可抗力越野&quot；退出强制越野模式。</translation>
+        <translation>sunnypilot现在处于非行驶模式。sunnypilot将不会在强制下线模式中启动。如需要退出强制下线模式，到设置，设备，然后取消强制下线模式。</translation>
     </message>
 </context>
 <context>
@@ -1386,7 +1386,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnylink</source>
-        <translation>SP-link云端</translation>
+        <translation>sunnylink</translation>
     </message>
     <message>
         <source>Monitoring</source>
@@ -1611,7 +1611,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>SUNNYLINK</source>
-        <translation type="unfinished"></translation>
+        <translation>SUNNYLINK</translation>
     </message>
     <message>
         <source>DISABLED</source>
@@ -1832,7 +1832,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>PENDING</source>
-        <translation>正在准备……</translation>
+        <translation>正在准备</translation>
     </message>
 </context>
 <context>
@@ -2105,7 +2105,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Device ID </source>
-        <translation>设备ID</translation>
+        <translation>设备ID </translation>
     </message>
     <message>
         <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
@@ -2113,11 +2113,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation>🎉欢迎回来! </translation>
+        <translation>🎉欢迎回来!🚀</translation>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation type="unfinished"></translation>
+        <translation>👋 说实话，看你禁用了sunnypilot有点难过😢，但我们会在这里等你回来🎉。</translation>
     </message>
     <message>
         <source>A reboot is required to</source>
@@ -2137,7 +2137,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>If that&apos;s not a problem for you, you can ignore this.</source>
-        <translation>如果你觉得不是问题，请忽略它</translation>
+        <translation>如果你觉得不是问题，请忽略它。</translation>
     </message>
     <message>
         <source>Reboot Now!</source>
@@ -2200,7 +2200,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
-        <translation>如果赞助状态没有更新，请联系Discord的主持人，网址为https://discord.gg/sunnypilot</translation>
+        <translation>如果赞助状态没有更新，请联系Discord的管理员，网址为https://discord.gg/sunnypilot</translation>
     </message>
     <message>
         <source>Pair your GitHub account</source>
@@ -2663,7 +2663,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation>始终进行驾驶员监控</translation>
+        <translation>始终进行驾驶员监控。</translation>
     </message>
     <message>
         <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
