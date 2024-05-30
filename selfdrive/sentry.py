@@ -7,6 +7,7 @@ import subprocess
 from enum import Enum
 from sentry_sdk.integrations.threading import ThreadingIntegration
 
+from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.selfdrive.athena.registration import UNREGISTERED_DONGLE_ID, is_registered_device
@@ -70,7 +71,7 @@ def save_exception(exc_text: str) -> None:
 
 
 def bind_user() -> None:
-  dongle_id, gitname = get_properties()
+  dongle_id, gitname, _ = get_properties()
   sentry_sdk.set_user({"id": dongle_id, "ip_address": IP_ADDRESS, "name": gitname})
 
 
@@ -90,23 +91,19 @@ def set_tag(key: str, value: str) -> None:
   sentry_sdk.set_tag(key, value)
 
 
-def get_properties() -> tuple[str, str]:
+def get_properties() -> tuple[str, str, str]:
   params = Params()
-  dongle_id = params.get("DongleId", encoding='utf-8')
-  if dongle_id in (None, UNREGISTERED_DONGLE_ID):
-    hardware_serial = params.get("HardwareSerial", encoding='utf-8')
-    hardware_serial = "" if hardware_serial is None else hardware_serial
-    dongle_id = UNREGISTERED_DONGLE_ID + hardware_serial
-  gitname = params.get("GithubUsername", encoding='utf-8')
-  if gitname is None:
-    gitname = ""
+  hardware_serial: str = params.get("HardwareSerial", encoding='utf-8') or ""
+  gitname: str = params.get("GithubUsername", encoding='utf-8') or ""
+  dongle_id: str = params.get("DongleId", encoding='utf-8') or f"{UNREGISTERED_DONGLE_ID}-{hardware_serial}"
+  sunnylink_dongle_id: str = params.get("SunnylinkDongleId", encoding='utf-8') or UNREGISTERED_SUNNYLINK_DONGLE_ID
 
-  return dongle_id, gitname
+  return dongle_id, gitname, sunnylink_dongle_id
 
 
 def get_init() -> None:
   params = Params()
-  dongle_id, _ = get_properties()
+  dongle_id, _, _ = get_properties()
   route_name = params.get("CurrentRoute", encoding='utf-8')
   subprocess.call(["./bootlog", "--started"], cwd=os.path.join(BASEDIR, "system/loggerd"))
   with sentry_sdk.configure_scope() as scope:
@@ -124,7 +121,7 @@ def init(project: SentryProject) -> bool:
 
   #env = "release" if build_metadata.tested_channel else "master"
   env = build_metadata.channel_type
-  dongle_id, gitname = get_properties()
+  dongle_id, gitname, sunnylink_dongle_id = get_properties()
 
   integrations = []
   if project == SentryProject.SELFDRIVE:
@@ -149,6 +146,7 @@ def init(project: SentryProject) -> bool:
   sentry_sdk.set_tag("branch", build_metadata.channel)
   sentry_sdk.set_tag("commit", build_metadata.openpilot.git_commit)
   sentry_sdk.set_tag("device", HARDWARE.get_device_type())
+  sentry_sdk.set_tag("sunnylink_dongle_id", sunnylink_dongle_id)
 
   if project == SentryProject.SELFDRIVE:
     sentry_sdk.Hub.current.start_session()

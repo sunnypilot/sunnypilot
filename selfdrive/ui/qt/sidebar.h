@@ -13,6 +13,7 @@ Q_DECLARE_METATYPE(ItemStatus);
 class Sidebar : public QFrame {
   Q_OBJECT
   Q_PROPERTY(ItemStatus connectStatus MEMBER connect_status NOTIFY valueChanged);
+  Q_PROPERTY(ItemStatus sunnylinkStatus MEMBER sunnylink_status NOTIFY valueChanged);
   Q_PROPERTY(ItemStatus pandaStatus MEMBER panda_status NOTIFY valueChanged);
   Q_PROPERTY(ItemStatus tempStatus MEMBER temp_status NOTIFY valueChanged);
   Q_PROPERTY(QString netType MEMBER net_type NOTIFY valueChanged);
@@ -53,12 +54,14 @@ protected:
   const QColor good_color = QColor(255, 255, 255);
   const QColor warning_color = QColor(218, 202, 37);
   const QColor danger_color = QColor(201, 34, 49);
+  const QColor disabled_color = QColor(128, 128, 128);
 
-  ItemStatus connect_status, panda_status, temp_status;
+  ItemStatus connect_status, panda_status, temp_status, sunnylink_status;
   QString net_type;
   int net_strength = 0;
 
 private:
+  Params params;
   std::unique_ptr<PubMaster> pm;
 
   QString sidebar_temp = "0";

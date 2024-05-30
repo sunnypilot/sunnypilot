@@ -243,7 +243,7 @@ class ButtonParamControl : public SPAbstractControl {
   Q_OBJECT
 public:
   ButtonParamControl(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : SPAbstractControl(title, desc, icon) {
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : SPAbstractControl(title, desc, icon), button_texts(button_texts) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -306,6 +306,14 @@ public:
 
   void refresh() {
     int value = atoi(params.get(key).c_str());
+
+    if (value >= button_texts.size()) {
+      value = button_texts.size() - 1;
+    }
+    if (value < 0) {
+      value = 0;
+    }
+
     button_group->button(value)->setChecked(true);
   }
 
@@ -357,6 +365,7 @@ private:
   std::string key;
   Params params;
   QButtonGroup *button_group;
+  std::vector<QString> button_texts;
 
   bool button_group_enabled = true;
 };
@@ -474,14 +483,17 @@ public:
       }
       button_group->addButton(button, i);
 
-      int change_value = (i == 0) ? -per_value_change : per_value_change;
-
       QObject::connect(button, &QPushButton::clicked, [=]() {
+        int change_value = (i == 0) ? -per_value_change : per_value_change;
         key = param.toStdString();
         value = atoi(params.get(key).c_str());
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
         params.put(key, QString::number(value).toStdString());
+
+        button_group->button(0)->setEnabled(!(value <= range.min_value));
+        button_group->button(1)->setEnabled(!(value >= range.max_value));
+
         updateLabels();
 
         if (request_update) {

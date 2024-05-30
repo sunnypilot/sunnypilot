@@ -13,12 +13,14 @@ DisplayPanel::DisplayPanel(QWidget *parent) : ListWidget(parent, false) {
       .arg(tr("Enabled: Wake the brightness of the screen to display all events."))
       .arg(tr("Disabled: Wake the brightness of the screen to display critical events.")),
       "../assets/offroad/icon_blank.png",
+#ifdef ENABLE_DASHCAM
     },
     {
       "ScreenRecorder",
       tr("Enable Screen Recorder"),
       tr("Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements."),
       "../assets/offroad/icon_blank.png"
+#endif
     }
   };
 

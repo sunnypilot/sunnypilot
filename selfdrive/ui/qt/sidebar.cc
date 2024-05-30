@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 
 #include "selfdrive/ui/qt/util.h"
+#include "common/params.h"
 
 void Sidebar::drawMetric(QPainter &p, const QPair<QString, QString> &label, QColor c, int y) {
   const QRect rect = {30, y, 240, 126};
@@ -152,6 +153,21 @@ void Sidebar::updateState(const UIState &s) {
     pandaStatus = {{tr("GPS"), tr("SEARCH")}, warning_color};
   }
   setProperty("pandaStatus", QVariant::fromValue(pandaStatus));
+  
+  ItemStatus sunnylinkStatus;
+  auto last_sunnylink_ping = std::strtol(params.get("LastSunnylinkPingTime").c_str(), nullptr, 10);
+  auto sunnylink_enabled = params.getBool("SunnylinkEnabled");
+  if (!sunnylink_enabled) {
+    sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("DISABLED")}, disabled_color};
+  } else if (last_ping == 0) {
+    sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("OFFLINE")}, warning_color};
+  } else {
+    if (nanos_since_boot() - last_sunnylink_ping < 80e9)
+      sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ONLINE")}, good_color};
+    else
+      sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ERROR")}, danger_color};
+  }
+  setProperty("sunnylinkStatus", QVariant::fromValue(sunnylinkStatus));
 }
 
 void Sidebar::paintEvent(QPaintEvent *event) {
@@ -183,7 +199,8 @@ void Sidebar::paintEvent(QPaintEvent *event) {
   p.drawText(r, Qt::AlignCenter, net_type);
 
   // metrics
-  drawMetric(p, temp_status.first, temp_status.second, 338);
-  drawMetric(p, panda_status.first, panda_status.second, 496);
-  drawMetric(p, connect_status.first, connect_status.second, 654);
+  drawMetric(p, temp_status.first, temp_status.second, 310);
+  drawMetric(p, panda_status.first, panda_status.second, 440);
+  drawMetric(p, connect_status.first, connect_status.second, 570);
+  drawMetric(p, sunnylink_status.first, sunnylink_status.second, 700);
 }

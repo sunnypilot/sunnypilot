@@ -365,6 +365,7 @@ selfdrive/modeld/navmodeld.py
 selfdrive/modeld/dmonitoringmodeld.py
 selfdrive/modeld/constants.py
 selfdrive/modeld/modeld
+selfdrive/modeld/model_capabilities.py
 
 selfdrive/modeld/models/__init__.py
 selfdrive/modeld/models/*.pxd

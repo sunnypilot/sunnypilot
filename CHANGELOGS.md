@@ -27,12 +27,18 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Forced Offroad mode
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+* UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
+  * NEW❗: New "Off" option to disable lane change by blinker
+* UPDATED: Hyundai CAN Longitudinal
+  * Auto-enable radar tracks on platforms with applicable Mando radar
 * UPDATED: Hyundai CAN-FD Camera-based SCC
   * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
     * Improve lead tracking when using openpilot longitudinal
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
   * openpilot Longitudianl Control available cars
   * Custom Stock Longitudinal Control available cars
+* UPDATED: Continued support for comma Pedal
+  * In response to the official deprecation of support for comma Pedal in the upstream, sunnypilot will continue maintaining software support for comma Pedal
 * UPDATED: Driving Model Selector v4
   * NEW❗: Driving Model additions
     * North Dakota (April 29, 2024) - NDv2
@@ -41,6 +47,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
     * Recertified Herbalist (March 01, 2024) - CHLR
   * Legacy Driving Models with Navigate on openpilot (NoO) support
     * Includes Duck Amigo and all preceding models
+* UPDATED: Bumping mapd by [@pfeiferj](https://github.com/pfeiferj) to version [v1.9.0](https://github.com/pfeiferj/mapd/releases/tag/v1.9.0).
 * UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
   * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UPDATED: Upstream native support for Gap Adjust Cruise
@@ -52,6 +59,13 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above
     * NEW❗: Display both Distance and Speed simultaneously
+    * NEW❗: View sunnylink connectivity status on the left sidebar!
+
+sunnypilot - 0.9.6.2 (2024-05-29)
+========================
+* REMOVED: Screen Recorder
+  * Screen Recorder is removed due to unnecessary resource usage
+  * An improved version will be available in the near future. Stay tuned!
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================

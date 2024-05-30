@@ -3,6 +3,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.drive_helpers import get_road_edge
+from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
 from openpilot.selfdrive.sunnypilot import get_model_generation
 
 LaneChangeState = log.LaneChangeState
@@ -33,6 +34,7 @@ DESIRES = {
 }
 
 AUTO_LANE_CHANGE_TIMER = {
+  -1: 0.0,
   0: 0.0,
   1: 0.1,
   2: 0.5,
@@ -63,7 +65,8 @@ class DesireHelper:
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
     self.custom_model, self.model_gen = get_model_generation(self.param_s)
-    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
+    model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
+    self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
 
   def read_param(self):
     self.edge_toggle = self.param_s.get_bool("RoadEdge")
@@ -82,7 +85,7 @@ class DesireHelper:
     if self.model_use_lateral_planner:
       self.road_edge = get_road_edge(carstate, model_data, self.edge_toggle)
 
-    if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX:
+    if not carstate.madsEnabled or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.lane_change_set_timer == -1:
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
       self.prev_lane_change = False

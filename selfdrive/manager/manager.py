@@ -105,6 +105,8 @@ def manager_init() -> None:
     ("OSMDownloadProgress", "{}"),
     ("SidebarTemperatureOptions", "0"),
     ("SunnylinkEnabled", "1"),
+    ("CustomDrivingModel", "0"),
+    ("DrivingModelGeneration", "4"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

@@ -14,7 +14,7 @@ from common.params import Params
 from openpilot.selfdrive.mapd_manager import COMMON_DIR, MAPD_PATH, MAPD_BIN_DIR
 from openpilot.system.version import is_prebuilt
 
-VERSION = 'v1.8.0'
+VERSION = 'v1.9.0'
 URL = f"https://github.com/pfeiferj/openpilot-mapd/releases/download/{VERSION}/mapd"
 
 

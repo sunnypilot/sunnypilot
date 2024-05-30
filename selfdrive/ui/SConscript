@@ -10,7 +10,7 @@ if arch == 'larch64':
   base_libs.append('EGL')
 
 maps = arch in ['larch64', 'aarch64', 'x86_64']
-screenrecorder = arch in ['larch64']
+screenrecorder = False # arch in ['larch64']
 
 if arch == "Darwin":
   del base_libs[base_libs.index('OpenCL')]

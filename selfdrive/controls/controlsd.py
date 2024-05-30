@@ -31,6 +31,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
+from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
 from openpilot.selfdrive.sunnypilot import get_model_generation
 
 from openpilot.system.hardware import HARDWARE
@@ -166,7 +167,6 @@ class Controls:
     self.nn_alert_shown = False
     self.enable_nnff = self.params.get_bool("NNFF")
 
-    self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     self.reverse_acc_change = False
     self.dynamic_experimental_control = False
 
@@ -179,7 +179,8 @@ class Controls:
     self.process_not_running = False
 
     self.custom_model, self.model_gen = get_model_generation(self.params)
-    self.model_use_lateral_planner = self.custom_model and self.model_gen == 1
+    model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
+    self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
 
     self.can_log_mono_time = 0
 
@@ -933,7 +934,6 @@ class Controls:
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 
-      self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
       self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
       self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
 

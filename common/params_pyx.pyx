@@ -12,6 +12,7 @@ cdef extern from "common/params.h":
     CLEAR_ON_ONROAD_TRANSITION
     CLEAR_ON_OFFROAD_TRANSITION
     DEVELOPMENT_ONLY
+    BACKUP
     ALL
 
   cdef cppclass c_Params "Params":
