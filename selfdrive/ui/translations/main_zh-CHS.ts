@@ -577,7 +577,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Engage both M.A.D.S. and ACC with a single press of RES+ or SET- button.</source>
-        <translation>通过短按RES+或 SET-案件同时启动ACC和M.A.D.S.。</translation>
+        <translation>通过短按RES+或 SET-按键同时启动ACC和M.A.D.S.。</translation>
     </message>
     <message>
         <source>Note: Once M.A.D.S. is engaged via this mode, it will remain engaged until it is manually disabled via the M.A.D.S. button or car shut off.</source>
