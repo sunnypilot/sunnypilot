@@ -94,6 +94,10 @@
         <source>Enabling this toggle will retain the hotspot/tethering toggle state across reboots.</source>
         <translation>启动此开关将在设备重启后持续热点状态。</translation>
     </message>
+    <message>
+        <source>Ngrok Service</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>AnnotatedCameraWidget</name>
@@ -122,12 +126,12 @@
     <name>AutoLaneChangeTimer</name>
     <message>
         <source>Auto Lane Change Timer</source>
-        <translation>自动变道定时器</translation>
+        <translation type="vanished">自动变道定时器</translation>
     </message>
     <message>
         <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set.
 Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation>设置定时以在打开转向灯后延迟自动变道操作。如果设置了定时器，则无需轻推方向盘即可自动变道。使用此功能时请注意安全，请在交通和道路条件允许的情况下才能使用自动变道功能。</translation>
+        <translation type="vanished">设置定时以在打开转向灯后延迟自动变道操作。如果设置了定时器，则无需轻推方向盘即可自动变道。使用此功能时请注意安全，请在交通和道路条件允许的情况下才能使用自动变道功能。</translation>
     </message>
     <message>
         <source>s</source>
@@ -140,6 +144,19 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <message>
         <source>Nudgeless</source>
         <translation>全自动</translation>
+    </message>
+    <message>
+        <source>Auto Lane Change by Blinker</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished">关</translation>
+    </message>
+    <message>
+        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
+Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -415,11 +432,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Reset Mapbox Access Token</source>
-        <translation>重置Mapbox密钥</translation>
+        <translation type="vanished">重置Mapbox密钥</translation>
     </message>
     <message>
         <source>Are you sure you want to reset the Mapbox access token?</source>
-        <translation>确认重置Mapbox密钥？</translation>
+        <translation type="vanished">确认重置Mapbox密钥？</translation>
     </message>
     <message>
         <source>Reset sunnypilot Settings</source>
@@ -444,6 +461,62 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <message>
         <source>Fleet Manager PIN:</source>
         <translation>Fleet管理器PIN：</translation>
+    </message>
+    <message>
+        <source>Pair Device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PAIR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
+        <translation type="unfinished">将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
+    </message>
+    <message>
+        <source>Reset Access Tokens for Map Services</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset self-service access tokens for Mapbox, Amap, and Google Maps.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset access tokens for all map services?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Onroad/Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to unforce offroad?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unforce</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to force offroad?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Force</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disengage to Force Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unforce Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Force Offroad</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -726,6 +799,14 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <source>Wrong password</source>
         <translation>密码错误</translation>
     </message>
+    <message>
+        <source>Scan</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Scanning...</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>OffroadAlert</name>
@@ -745,7 +826,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Invalid date and time settings, system won&apos;t start. Connect to internet to set time.</source>
-        <translation>日期和时间设置无效，系统无法启动。请连接至互联网以设置时间。</translation>
+        <translation type="vanished">日期和时间设置无效，系统无法启动。请连接至互联网以设置时间。</translation>
     </message>
     <message>
         <source>Taking camera snapshots. System won&apos;t start until finished.</source>
@@ -791,6 +872,10 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 
 %1</translation>
     </message>
+    <message>
+        <source>sunnypilot is now in Forced Offroad mode. sunnypilot won&apos;t start until Forced Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; -&gt; &quot;Unforce Offroad&quot; to exit Force Offroad mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>OffroadHome</name>
@@ -805,6 +890,29 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <message>
         <source> ALERT</source>
         <translation> 警报</translation>
+    </message>
+</context>
+<context>
+    <name>OnroadAlerts</name>
+    <message>
+        <source>openpilot Unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Waiting for controls to start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>TAKE CONTROL IMMEDIATELY</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Controls Unresponsive</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reboot Device</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1128,6 +1236,10 @@ Warning: You are on a metered connection!</source>
         <source>sunnypilot</source>
         <translation>sunnypilot</translation>
     </message>
+    <message>
+        <source>now</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Reset</name>
@@ -1386,6 +1498,18 @@ This may take up to a minute.</source>
         <source>Select a language</source>
         <translation>选择语言</translation>
     </message>
+    <message>
+        <source>Choose Software to Install</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>openpilot</source>
+        <translation type="unfinished">openpilot</translation>
+    </message>
+    <message>
+        <source>Custom Software</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SetupWidget</name>
@@ -1483,6 +1607,14 @@ This may take up to a minute.</source>
     <message>
         <source>5G</source>
         <translation>5G</translation>
+    </message>
+    <message>
+        <source>SUNNYLINK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DISABLED</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1697,6 +1829,10 @@ This may take up to a minute.</source>
         <source>Download has started in the background.</source>
         <translation>下载已在后台开始。</translation>
     </message>
+    <message>
+        <source>PENDING</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SpeedLimitPolicySettings</name>
@@ -1888,7 +2024,7 @@ This may take up to a minute.</source>
     <name>SunnylinkPanel</name>
     <message>
         <source>sunnylink Dongle ID</source>
-        <translation>sunnylink设备ID</translation>
+        <translation type="vanished">sunnylink设备ID</translation>
     </message>
     <message>
         <source>N/A</source>
@@ -1904,7 +2040,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Become a sponsor of sunnypilot to get early access to sunnylink features.</source>
-        <translation>赞助者可以抢先体验sunnylink的功能。</translation>
+        <translation type="vanished">赞助者可以抢先体验sunnylink的功能。</translation>
     </message>
     <message>
         <source>Manage Settings</source>
@@ -1920,11 +2056,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Early alpha access only. Become a sponsor to get early access to sunnylink features.</source>
-        <translation>仅早期alpha（内测）访问。成为赞助者，提前使用sunnylink功能。</translation>
+        <translation type="vanished">仅早期alpha（内测）访问。成为赞助者，提前使用sunnylink功能。</translation>
     </message>
     <message>
         <source>Become a Sponsor</source>
-        <translation>成为赞助者</translation>
+        <translation type="vanished">成为赞助者</translation>
     </message>
     <message>
         <source>Restore Settings</source>
@@ -1944,7 +2080,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Sponsor</source>
-        <translation>赞助者</translation>
+        <translation type="vanished">赞助者</translation>
     </message>
     <message>
         <source>Not Sponsor</source>
@@ -1961,6 +2097,74 @@ This may take up to a minute.</source>
     <message>
         <source>Back Up</source>
         <translation>后退</translation>
+    </message>
+    <message>
+        <source>Enable sunnylink</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Device ID </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A reboot is required to</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>stop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>all connections and processes from sunnylink.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If that&apos;s not a problem for you, you can ignore this.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reboot Now!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pair GitHub Account</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PAIR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Paired</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1980,6 +2184,26 @@ This may take up to a minute.</source>
     <message>
         <source>Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status</source>
         <translation>在Discord上加入我们的社区https://discord.gg/sunnypilot并联系主持人确认您的赞助者身份</translation>
+    </message>
+    <message>
+        <source>Scan the QR code to login to your GitHub account</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Follow the prompts to complete the pairing process</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Re-enter the &quot;sunnylink&quot; panel to verify sponsorship status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pair your GitHub account</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2368,7 +2592,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Navigate on openpilot</source>
-        <translation>Navigate on openpilot</translation>
+        <translation type="vanished">Navigate on openpilot</translation>
     </message>
     <message>
         <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
@@ -2380,11 +2604,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>When navigation has a destination, openpilot will input the map information into the model. This provides useful context for the model and allows openpilot to keep left or right appropriately at forks/exits. Lane change behavior is unchanged and still activated by the driver. This is an alpha quality feature; mistakes should be expected, particularly around exits and forks. These mistakes can include unintended laneline crossings, late exit taking, driving towards dividing barriers in the gore areas, etc.</source>
-        <translation>当导航有目的地时，openpilot 将输入地图信息到模型中。这为模型提供了有用的背景信息，使 openpilot 能够在叉路/出口时适当地保持左侧或右侧行驶。车道变换行为保持不变，仍由驾驶员激活。这是一个 Alpha 版的功能；可能会出现错误，特别是在出口和分叉处。这些错误可能包括意外的车道越界、晚出口、朝着分隔栏驶向安全地带等。</translation>
+        <translation type="vanished">当导航有目的地时，openpilot 将输入地图信息到模型中。这为模型提供了有用的背景信息，使 openpilot 能够在叉路/出口时适当地保持左侧或右侧行驶。车道变换行为保持不变，仍由驾驶员激活。这是一个 Alpha 版的功能；可能会出现错误，特别是在出口和分叉处。这些错误可能包括意外的车道越界、晚出口、朝着分隔栏驶向安全地带等。</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner. When a navigation destination is set and the driving model is using it as input, the driving path on the map will turn green.</source>
-        <translation>行驶画面将在低速时切换到道路朝向的广角摄像头，以更好地显示一些转弯。实验模式标志也将显示在右上角。当设置了导航目的地并且驾驶模型正在使用它作为输入时，地图上的驾驶路径将变为绿色。</translation>
+        <translation type="vanished">行驶画面将在低速时切换到道路朝向的广角摄像头，以更好地显示一些转弯。实验模式标志也将显示在右上角。当设置了导航目的地并且驾驶模型正在使用它作为输入时，地图上的驾驶路径将变为绿色。</translation>
     </message>
     <message>
         <source>Enable sunnypilot</source>
@@ -2430,7 +2654,23 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars.</source>
-        <translation>建议普通模式。在疯狂模式下，跟车距离很近，并在加油和刹车时更猛。在舒适模式下，跟车距离会较远。</translation>
+        <translation type="vanished">建议普通模式。在疯狂模式下，跟车距离很近，并在加油和刹车时更猛。在舒适模式下，跟车距离会较远。</translation>
+    </message>
+    <message>
+        <source>Always-On Driver Monitoring</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
