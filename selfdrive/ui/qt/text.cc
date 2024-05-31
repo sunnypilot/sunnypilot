@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
       update_btn->setEnabled(true);
+      update_btn->setText("Ready to Reboot")
     });
     watcher.setFuture(future);
   });
