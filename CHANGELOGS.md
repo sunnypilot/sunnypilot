@@ -29,7 +29,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
 * UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
   * NEW❗: New "Off" option to disable lane change by blinker
-* UPDATED: Pause Lateral Below Speed w/ Blinker
+* UPDATED: Pause Lateral Below Speed with Blinker
   * NEW❗: Customizable Pause Lateral Speed
     * Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.
 * UPDATED: Hyundai CAN Longitudinal
