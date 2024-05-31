@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     const std::string cmd4 = "git reset --hard origin-update/" + git_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
-      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3 + " && " cmd4).c_str());
+      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3 + " && " + cmd4).c_str());
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [btn]() {
       btn->setEnabled(true);
