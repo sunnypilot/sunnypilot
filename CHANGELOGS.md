@@ -31,7 +31,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
   * NEW❗: New "Off" option to disable lane change by blinker
-* UPDATED: Pause Lateral Below Speed w/ Blinker
+* UPDATED: Pause Lateral Below Speed with Blinker
   * NEW❗: Customizable Pause Lateral Speed
     * Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.
 * UPDATED: Hyundai CAN Longitudinal
