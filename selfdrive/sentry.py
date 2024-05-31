@@ -12,6 +12,7 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.selfdrive.athena.registration import UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.system.hardware import HARDWARE, PC
+from openpilot.system.hardware.hw import Paths
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_build_metadata, get_version
 
@@ -108,8 +109,9 @@ def get_init() -> None:
   subprocess.call(["./bootlog", "--started"], cwd=os.path.join(BASEDIR, "system/loggerd"))
   with sentry_sdk.configure_scope() as scope:
     if route_name is not None:
-      sentry_sdk.set_tag("route_name", dongle_id + "|" + route_name)
-      scope.add_attachment(path=os.path.join("/data/media/0/realdata/params", route_name))
+      route_id = dongle_id + "/" + route_name
+      sentry_sdk.set_tag("route_name", route_id)
+      scope.add_attachment(path=os.path.join(Paths.log_root(), "params", route_name), filename=route_id)
 
 
 def init(project: SentryProject) -> bool:
