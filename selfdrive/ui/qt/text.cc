@@ -39,9 +39,6 @@ int main(int argc, char *argv[]) {
 #ifdef __aarch64__
   btn->setText(QObject::tr("Reboot"));
   QFutureWatcher<void> watcher;
-  QObject::connect(&watcher, &QFutureWatcher<void>::finished, [btn]() {
-    btn->setEnabled(true);
-  });
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
@@ -54,6 +51,9 @@ int main(int argc, char *argv[]) {
 
     QFuture<void> future = QtConcurrent::run([=]() {
       std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3).c_str());
+    });
+    QObject::connect(&watcher, &QFutureWatcher<void>::finished, [btn]() {
+      btn->setEnabled(true);
     });
     watcher.setFuture(future);
   });
