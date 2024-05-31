@@ -262,67 +262,65 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   speedLimitControlToggle = s.scene.speed_limit_control_enabled;
 
-  if (sm.frame % (UI_FREQ / 2) == 0) {
-    const auto vtcState = lp_sp.getVisionTurnControllerState();
-    const float vtc_speed = lp_sp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const auto lpSoruce = lp_sp.getLongitudinalPlanSource();
-    QColor vtc_color = tcs_colors[int(vtcState)];
-    vtc_color.setAlpha(lpSoruce == cereal::LongitudinalPlanSP::LongitudinalPlanSource::TURN ? 255 : 100);
+  const auto vtcState = lp_sp.getVisionTurnControllerState();
+  const float vtc_speed = lp_sp.getVisionTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+  const auto lpSoruce = lp_sp.getLongitudinalPlanSource();
+  QColor vtc_color = tcs_colors[int(vtcState)];
+  vtc_color.setAlpha(lpSoruce == cereal::LongitudinalPlanSP::LongitudinalPlanSource::TURN ? 255 : 100);
 
-    showVTC = vtcState > cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED;
-    vtcSpeed = QString::number(std::nearbyint(vtc_speed));
-    vtcColor = vtc_color;
-    showDebugUI = s.scene.show_debug_ui;
+  showVTC = vtcState > cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED;
+  vtcSpeed = QString::number(std::nearbyint(vtc_speed));
+  vtcColor = vtc_color;
+  showDebugUI = s.scene.show_debug_ui;
 
-    const auto lmd_sp = sm["liveMapDataSP"].getLiveMapDataSP();
+  const auto lmd_sp = sm["liveMapDataSP"].getLiveMapDataSP();
 
-    const auto data_type = int(lmd_sp.getDataType());
-    const QString data_type_draw(data_type == 2 ? "🌐  " : "");
-    roadName = QString::fromStdString(lmd_sp.getCurrentRoadName());
-    roadName = !roadName.isEmpty() ? data_type_draw + roadName : "";
+  const auto data_type = int(lmd_sp.getDataType());
+  const QString data_type_draw(data_type == 2 ? "🌐  " : "");
+  roadName = QString::fromStdString(lmd_sp.getCurrentRoadName());
+  roadName = !roadName.isEmpty() ? data_type_draw + roadName : "";
 
-    float speed_limit_slc = lp_sp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const float speed_limit_offset = lp_sp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const bool sl_force_active = speedLimitControlToggle &&
-                                 seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
-    const bool sl_inactive = !sl_force_active && (!speedLimitControlToggle ||
-                             slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE);
-    const bool sl_temp_inactive = !sl_force_active && (speedLimitControlToggle &&
-                                  slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
-    const bool sl_pre_active = !sl_force_active && (speedLimitControlToggle &&
-                               slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE);
-    const int sl_distance = int(lp_sp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
-    const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
-    const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
-                                "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
-                                "+" + QString::number(std::nearbyint(speed_limit_offset)) : "");
-    const QString sl_inactive_str(sl_temp_inactive && s.scene.speed_limit_control_engage_type == 0 ? "TEMP" : "");
-    const QString sl_substring(sl_inactive || sl_temp_inactive || sl_pre_active ? sl_inactive_str :
-                               sl_distance > 0 ? sl_distance_str : sl_offset_str);
+  float speed_limit_slc = lp_sp.getSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+  const float speed_limit_offset = lp_sp.getSpeedLimitOffset() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+  const bool sl_force_active = speedLimitControlToggle &&
+                               seconds_since_boot() < s.scene.last_speed_limit_sign_tap + 2.0;
+  const bool sl_inactive = !sl_force_active && (!speedLimitControlToggle ||
+                           slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE);
+  const bool sl_temp_inactive = !sl_force_active && (speedLimitControlToggle &&
+                                slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
+  const bool sl_pre_active = !sl_force_active && (speedLimitControlToggle &&
+                             slcState == cereal::LongitudinalPlanSP::SpeedLimitControlState::PRE_ACTIVE);
+  const int sl_distance = int(lp_sp.getDistToSpeedLimit() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
+  const QString sl_distance_str(QString::number(sl_distance) + (s.scene.is_metric ? "m" : "f"));
+  const QString sl_offset_str(speed_limit_offset > 0.0 ? speed_limit_offset < 0.0 ?
+                              "-" + QString::number(std::nearbyint(std::abs(speed_limit_offset))) :
+                              "+" + QString::number(std::nearbyint(speed_limit_offset)) : "");
+  const QString sl_inactive_str(sl_temp_inactive && s.scene.speed_limit_control_engage_type == 0 ? "TEMP" : "");
+  const QString sl_substring(sl_inactive || sl_temp_inactive || sl_pre_active ? sl_inactive_str :
+                             sl_distance > 0 ? sl_distance_str : sl_offset_str);
 
-    showSpeedLimit = speed_limit_slc > 0.0;
-    speedLimitSLC = speed_limit_slc;
-    speedLimitSLCOffset = speed_limit_offset;
-    slcSubText = sl_substring;
-    slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
-    mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
-    slcActive = !sl_inactive && !sl_temp_inactive;
-    overSpeedLimit = showSpeedLimit && s.scene.speed_limit_warning_type != 0 &&
-                     (std::nearbyint(speed_limit_slc + s.scene.speed_limit_warning_value_offset) < std::nearbyint(speed));
-    plus_arrow_up_img = loadPixmap("../assets/img_plus_arrow_up", {105, 105});
-    minus_arrow_down_img = loadPixmap("../assets/img_minus_arrow_down", {105, 105});
+  showSpeedLimit = speed_limit_slc > 0.0;
+  speedLimitSLC = speed_limit_slc;
+  speedLimitSLCOffset = speed_limit_offset;
+  slcSubText = sl_substring;
+  slcSubTextSize = sl_inactive || sl_temp_inactive || sl_distance > 0 ? 25.0 : 27.0;
+  mapSourcedSpeedLimit = lp_sp.getIsMapSpeedLimit();
+  slcActive = !sl_inactive && !sl_temp_inactive;
+  overSpeedLimit = showSpeedLimit && s.scene.speed_limit_warning_type != 0 &&
+                   (std::nearbyint(speed_limit_slc + s.scene.speed_limit_warning_value_offset) < std::nearbyint(speed));
+  plus_arrow_up_img = loadPixmap("../assets/img_plus_arrow_up", {105, 105});
+  minus_arrow_down_img = loadPixmap("../assets/img_minus_arrow_down", {105, 105});
 
-    const float tsc_speed = lp_sp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
-    const auto tscState = lp_sp.getTurnSpeedControlState();
-    const int t_distance = int(lp_sp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
-    const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
+  const float tsc_speed = lp_sp.getTurnSpeed() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH);
+  const auto tscState = lp_sp.getTurnSpeedControlState();
+  const int t_distance = int(lp_sp.getDistToTurn() * (s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH) / 10.0) * 10;
+  const QString t_distance_str(QString::number(t_distance) + (s.scene.is_metric ? "m" : "f"));
 
-    showTurnSpeedLimit = tsc_speed > 0.0 && std::round(tsc_speed) < 224 && (tsc_speed < speed || s.scene.show_debug_ui);
-    turnSpeedLimit = QString::number(std::nearbyint(tsc_speed));
-    tscSubText = t_distance > 0 ? t_distance_str : QString("");
-    tscActive = tscState > cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE;
-    curveSign = lp_sp.getTurnSign();
-  }
+  showTurnSpeedLimit = tsc_speed > 0.0 && std::round(tsc_speed) < 224 && (tsc_speed < speed || s.scene.show_debug_ui);
+  turnSpeedLimit = QString::number(std::nearbyint(tsc_speed));
+  tscSubText = t_distance > 0 ? t_distance_str : QString("");
+  tscActive = tscState > cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE;
+  curveSign = lp_sp.getTurnSign();
 
   // TODO: Add toggle variables to cereal, and parse from cereal
   longitudinalPersonality = s.scene.longitudinal_personality;
