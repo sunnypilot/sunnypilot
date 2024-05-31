@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
-  QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher, &btn]() {
-    btn->setEnabled(false);
+  QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher]() {
+    update_btn->setEnabled(false);
     const std::string git_branch = Params().get("GitBranch");
     const std::string cmd1 = "git remote remove origin-update";
     const std::string cmd2 = "git remote add origin-update " + Params().get("GitRemote");
@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
     QFuture<void> future = QtConcurrent::run([=]() {
       std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3 + " && " + cmd4).c_str());
     });
-    QObject::connect(&watcher, &QFutureWatcher<void>::finished, [btn]() {
-      btn->setEnabled(true);
+    QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
+      update_btn->setEnabled(true);
     });
     watcher.setFuture(future);
   });
