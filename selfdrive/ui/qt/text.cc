@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QtConcurrent>
+#include <QProcess>
 
 #include "common/params.h"
 #include "system/hardware/hw.h"
@@ -38,25 +39,26 @@ int main(int argc, char *argv[]) {
   update_btn->setText(QObject::tr("Update"));
 #ifdef __aarch64__
   btn->setText(QObject::tr("Reboot"));
-  QFutureWatcher<void> watcher;
-  QObject::connect(&watcher, &QFutureWatcher<void>::finished, [btn]() {
-    btn->setEnabled(true);
-  });
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
-  QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher, &btn]() {
-    btn->setEnabled(false);
+
+  QProcess *process = new QProcess(&window);
+  QObject::connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), [btn]() {
+    btn->setEnabled(true);
+  });
+  QObject::connect(update_btn, &QPushButton::clicked, [=, &process, &btn]() {
     const std::string git_branch = Params().get("GitBranch");
     const std::string cmd1 = "git remote add origin-update " + Params().get("GitRemote");
     const std::string cmd2 = "git fetch origin-update " + git_branch;
     const std::string cmd3 = "git reset --hard origin-update/" + git_branch;
 
-    QFuture<void> future = QtConcurrent::run([=]() {
-      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3).c_str());
-    });
-    watcher.setFuture(future);
-  });
+    btn->setEnabled(false);
+
+    QString command = QString::fromStdString("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3);
+
+    process->start("/bin/sh", QStringList() << "-c" << command);
+});
 #else
   update_btn->setEnabled(false);
   btn->setText(QObject::tr("Exit"));
