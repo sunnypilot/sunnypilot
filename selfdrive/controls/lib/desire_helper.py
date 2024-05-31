@@ -43,6 +43,11 @@ AUTO_LANE_CHANGE_TIMER = {
 }
 
 
+def get_min_lateral_speed(value: int, is_metric: bool, default: float = LANE_CHANGE_SPEED_MIN):
+  speed: float = default if value == 0 else value * CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS
+  return speed
+
+
 class DesireHelper:
   def __init__(self):
     self.lane_change_state = LaneChangeState.off
