@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   QObject::connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), [btn]() {
     btn->setEnabled(true);
   });
-  QObject::connect(update_btn, &QPushButton::clicked, [&, process, btn]() {
+  QObject::connect(update_btn, &QPushButton::clicked, [=, &process, &btn]() {
     const std::string git_branch = Params().get("GitBranch");
     const std::string cmd1 = "git remote add origin-update " + Params().get("GitRemote");
     const std::string cmd2 = "git fetch origin-update " + git_branch;
@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
 
     QString command = QString::fromStdString("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3);
 
-    process->start("/bin/bash", QStringList() << "-c" << command);
-  });
+    process->start("/bin/sh", QStringList() << "-c" << command);
+});
 #else
   update_btn->setEnabled(false);
   btn->setText(QObject::tr("Exit"));
