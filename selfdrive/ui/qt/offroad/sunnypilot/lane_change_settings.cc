@@ -15,8 +15,8 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {
       "BelowSpeedPause",
-      tr("Pause Lateral Below Speed w/ Blinker"),
-      tr("Enable this toggle to pause lateral actuation with blinker when traveling below 20 MPH or 32 km/h."),
+      tr("Pause Lateral Below Speed with Blinker"),
+      tr("Enable this toggle to pause lateral actuation with blinker when traveling below the desired speed selected below."),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -41,15 +41,28 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   connect(auto_lane_change_timer, &AutoLaneChangeTimer::updateOtherToggles, this, &LaneChangeSettings::updateToggles);
   list->addItem(auto_lane_change_timer);
 
+  // Pause Lateral Below Speed w/ Blinker
+  pause_lateral_speed = new PauseLateralSpeed();
+  pause_lateral_speed->showDescription();
+  connect(pause_lateral_speed, &SPOptionControl::updateLabels, pause_lateral_speed, &PauseLateralSpeed::refresh);
+
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
 
     list->addItem(toggle);
     toggles[param.toStdString()] = toggle;
 
-    // trigger offroadTransition when going onroad/offroad
-    connect(uiState(), &UIState::offroadTransition, toggle, &ParamControl::setEnabled);
+    if (param == "BelowSpeedPause") {
+      list->addItem(pause_lateral_speed);
+    }
   }
+
+  connect(toggles["BelowSpeedPause"], &ToggleControl::toggleFlipped, [=](bool state) {
+    pause_lateral_speed->setEnabled(state);
+    pause_lateral_speed->setVisible(state);
+  });
+  pause_lateral_speed->setEnabled(toggles["BelowSpeedPause"]->isToggled());
+  pause_lateral_speed->setVisible(toggles["BelowSpeedPause"]->isToggled());
 
   main_layout->addWidget(new ScrollView(list, this));
 }
@@ -111,5 +124,27 @@ void AutoLaneChangeTimer::refresh() {
     setLabel("1.5 " + second);
   } else {
     setLabel("2 " + second);
+  }
+}
+
+PauseLateralSpeed::PauseLateralSpeed() : SPOptionControl (
+  "PauseLateralSpeed",
+  "",
+  tr("Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h."),
+  "../assets/offroad/icon_blank.png",
+  {0, 255},
+  5) {
+
+  refresh();
+}
+
+void PauseLateralSpeed::refresh() {
+  QString option = QString:: fromStdString(params.get("PauseLateralSpeed"));
+  bool is_metric = params.getBool("IsMetric");
+
+  if (option == "0") {
+    setLabel(tr("Default"));
+  } else {
+    setLabel(option + " " + (is_metric ? tr("km/h") : tr("mph")));
   }
 }
