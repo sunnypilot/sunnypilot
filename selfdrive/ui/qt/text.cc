@@ -45,12 +45,13 @@ int main(int argc, char *argv[]) {
   QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher, &btn]() {
     btn->setEnabled(false);
     const std::string git_branch = Params().get("GitBranch");
-    const std::string cmd1 = "git remote add origin-update " + Params().get("GitRemote");
-    const std::string cmd2 = "git fetch origin-update " + git_branch;
-    const std::string cmd3 = "git reset --hard origin-update/" + git_branch;
+    const std::string cmd1 = "git remote remove origin-update";
+    const std::string cmd2 = "git remote add origin-update " + Params().get("GitRemote");
+    const std::string cmd3 = "git fetch origin-update " + git_branch;
+    const std::string cmd4 = "git reset --hard origin-update/" + git_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
-      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3).c_str());
+      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3 + " && " cmd4).c_str());
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [btn]() {
       btn->setEnabled(true);
