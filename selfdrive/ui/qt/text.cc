@@ -51,11 +51,11 @@ int main(int argc, char *argv[]) {
     const std::string to_home_dir = "cd /data/openpilot";
     const std::string check_remote = "git remote | grep origin-update";
     const std::string reset_remote = "git remote remove origin-update && git remote add origin-update " + git_remote;
-    const std::string update_remote = "git remote set-url origin-update " + git_remote;
+    const std::string add_remote = "git remote add origin-update " + git_remote;
     const std::string fetch_remote = "git fetch origin-update " + git_branch;
     const std::string reset_branch = "git reset --hard origin-update/" + git_branch;
 
-    std::string remote_cmd = update_remote;
+    std::string remote_cmd = add_remote;
     if (!std::system((to_home_dir + " && " + check_remote).c_str())) {
       remote_cmd = reset_remote;
     }
