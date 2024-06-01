@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     if (!std::system((to_home_dir + " && " + check_remote).c_str())) {
       remote_cmd = reset_remote;
     }
-    const std::string cmd = " && " + to_home_dir + " && " + remote_cmd + " && " + fetch_remote + " && " + reset_branch;
+    const std::string cmd = to_home_dir + " && " + remote_cmd + " && " + fetch_remote + " && " + reset_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
       std::system(cmd.c_str());
