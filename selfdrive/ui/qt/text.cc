@@ -5,12 +5,29 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QtConcurrent>
+#include <cstdio>
+#include <sstream>
 
 #include "common/params.h"
+#include "common/swaglog.h"
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+
+std::string executeCommand(const char* cmd) {
+  std::array<char, 128> buffer{};
+  std::ostringstream result;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+  if (!pipe) {
+    LOGW("Failed to open pipe");
+    throw std::runtime_error("popen() failed!");
+  }
+  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    result << buffer.data();
+  }
+  return result.str();
+}
 
 int main(int argc, char *argv[]) {
   initApp(argc, argv);
@@ -43,17 +60,32 @@ int main(int argc, char *argv[]) {
     Hardware::reboot();
   });
   QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher]() {
+    btn->setEnabled(false);
     update_btn->setEnabled(false);
+    update_btn->setText(QObject::tr("Updating..."));
     const std::string git_branch = Params().get("GitBranch");
-    const std::string cmd1 = "git remote remove origin-update";
-    const std::string cmd2 = "git remote add origin-update " + Params().get("GitRemote");
-    const std::string cmd3 = "git fetch origin-update " + git_branch;
-    const std::string cmd4 = "git reset --hard origin-update/" + git_branch;
+    const std::string git_remote = Params().get("GitRemote");
+    const std::string to_home_dir = "cd /data/openpilot";
+    const std::string check_remote = "git remote | grep origin-update";
+    const std::string reset_remote = "git remote remove origin-update && git remote add origin-update " + git_remote + " 2>&1";
+    const std::string add_remote = "git remote add origin-update " + git_remote + " 2>&1";
+    const std::string fetch_remote = "git fetch origin-update " + git_branch + " 2>&1";
+    const std::string reset_branch = "git reset --hard origin-update/" + git_branch + " 2>&1";
+
+    std::string remote_cmd = add_remote;
+    if (!std::system((to_home_dir + " && " + check_remote).c_str())) {
+      remote_cmd = reset_remote;
+    }
+    const std::string cmd = to_home_dir + "; " + remote_cmd + "; " + fetch_remote + "; " + reset_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
-      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3 + " && " + cmd4).c_str());
+      std::string output = executeCommand(cmd.c_str());
+      LOGW("CHECK OUTPUT PLS\n%s", output.c_str());
+      QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
+                                Q_ARG(QString, QString::fromStdString(output)));
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
+      btn->setEnabled(true);
       update_btn->setEnabled(true);
       update_btn->setText("Ready to Reboot");
     });
