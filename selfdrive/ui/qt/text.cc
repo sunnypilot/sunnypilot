@@ -5,12 +5,25 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QtConcurrent>
+#include <cstdio>
 
 #include "common/params.h"
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+
+std::string executeCommand(const char* cmd) {
+  std::array<char, 128> buffer;
+  std::string result;
+  FILE* pipe = popen(cmd, "r");
+  if (!pipe) throw std::runtime_error("popen() failed!");
+  while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+    result += buffer.data();
+  }
+  pclose(pipe);
+  return result;
+}
 
 int main(int argc, char *argv[]) {
   initApp(argc, argv);
@@ -63,6 +76,10 @@ int main(int argc, char *argv[]) {
 
     QFuture<void> future = QtConcurrent::run([=]() {
       std::system(cmd.c_str());
+      std::string output = executeCommand(cmd.c_str());
+      QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
+                                Q_ARG(QString, QString::fromStdString(output)));
+      QMetaObject::invokeMethod(scroll, "update", Qt::QueuedConnection);
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
       btn->setEnabled(true);
