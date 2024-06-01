@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   QPushButton *btn = new QPushButton();
   QPushButton *update_btn = new QPushButton();
   update_btn->setText(QObject::tr("Update"));
-//#ifdef __aarch64__
+#ifdef __aarch64__
   btn->setText(QObject::tr("Reboot"));
   QFutureWatcher<void> watcher;
   QObject::connect(btn, &QPushButton::clicked, [=]() {
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
     const std::string cmd3 = "git fetch origin-update " + git_branch;
     const std::string cmd4 = "git reset --hard origin-update/" + git_branch;
 
-    QFuture<void> future = QtConcurrent::run([&cmd, remote_check, cmd1, cmd2, cmd3, cmd4]() {
+    QFuture<void> future = QtConcurrent::run([&]() {
       if (!std::system(remote_check.c_str())) {
         cmd += " && " + cmd1;
       }
@@ -68,11 +68,11 @@ int main(int argc, char *argv[]) {
     });
     watcher.setFuture(future);
   });
-//#else
+#else
   update_btn->setEnabled(false);
   btn->setText(QObject::tr("Exit"));
   QObject::connect(btn, &QPushButton::clicked, &a, &QApplication::quit);
-//#endif
+#endif
   main_layout->addWidget(btn, 0, 0, Qt::AlignRight | Qt::AlignBottom);
   main_layout->addWidget(update_btn, 0, 0, Qt::AlignLeft | Qt::AlignBottom);
 
