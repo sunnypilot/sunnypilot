@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
-  QObject::connect(update_btn, &QPushButton::clicked, [=]() {
+  QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher]() {
     btn->setEnabled(false);
     update_btn->setEnabled(false);
     update_btn->setText(QObject::tr("Updating..."));
