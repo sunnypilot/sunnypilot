@@ -8,6 +8,7 @@
 #include <cstdio>
 
 #include "common/params.h"
+#include "common/swaglog.h"
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     QFuture<void> future = QtConcurrent::run([=]() {
       std::string output = executeCommand(cmd.c_str());
-      std::cout << "Debug Output: " << output << std::endl;
+      LOGW("Forcing update for %s", output);
       QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
                                 Q_ARG(QString, QString::fromStdString(output)));
       QMetaObject::invokeMethod(scroll, "update", Qt::QueuedConnection);
