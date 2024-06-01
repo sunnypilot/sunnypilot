@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QtConcurrent>
 #include <cstdio>
+#include <sstream>
 
 #include "common/params.h"
 #include "common/swaglog.h"
@@ -15,15 +16,17 @@
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 std::string executeCommand(const char* cmd) {
-  std::array<char, 128> buffer;
-  std::string result;
-  FILE* pipe = popen(cmd, "r");
-  if (!pipe) throw std::runtime_error("popen() failed!");
-  while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
-    result += buffer.data();
+  std::array<char, 128> buffer{};
+  std::ostringstream result;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+  if (!pipe) {
+    LOGW("Failed to open pipe");
+    throw std::runtime_error("popen() failed!");
   }
-  pclose(pipe);
-  return result;
+  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    result << buffer.data();
+  }
+  return result.str();
 }
 
 int main(int argc, char *argv[]) {
