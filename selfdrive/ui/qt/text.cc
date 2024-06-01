@@ -83,7 +83,6 @@ int main(int argc, char *argv[]) {
       LOGW("CHECK OUTPUT PLS\n%s", output.c_str());
       QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
                                 Q_ARG(QString, QString::fromStdString(output)));
-      //QMetaObject::invokeMethod(scroll, "update", Qt::QueuedConnection);
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
       btn->setEnabled(true);
