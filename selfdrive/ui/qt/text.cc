@@ -75,8 +75,8 @@ int main(int argc, char *argv[]) {
     const std::string cmd = to_home_dir + " && " + remote_cmd + " && " + fetch_remote + " && " + reset_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
-      std::system(cmd.c_str());
       std::string output = executeCommand(cmd.c_str());
+      std::cout << "Debug Output: " << output << std::endl;
       QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
                                 Q_ARG(QString, QString::fromStdString(output)));
       QMetaObject::invokeMethod(scroll, "update", Qt::QueuedConnection);
