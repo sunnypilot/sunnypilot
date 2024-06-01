@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 #ifdef __aarch64__
   btn->setText(QObject::tr("Reboot"));
 
-  QProcess *command = new QProcess();
+  QProcess *command;
   QObject::connect(command, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                    [=](int exitCode, QProcess::ExitStatus exitStatus){
     btn->setEnabled(true);
@@ -98,6 +98,7 @@ int main(int argc, char *argv[]) {
     }
     const std::string cmd = to_home_dir + "; " + remote_cmd + "; " + fetch_remote + "; " + reset_branch;
 
+    command = new QProcess()
     QString c = QString::fromStdString(cmd);
     command->start(c);
   });
