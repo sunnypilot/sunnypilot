@@ -5,7 +5,6 @@ from cereal import car, log, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_MDL, DT_CTRL
-from openpilot.selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 # WARNING: this value was determined based on the model's training distribution,
