@@ -5,7 +5,6 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QtConcurrent>
-#include <QProcess>
 #include <cstdio>
 #include <sstream>
 
@@ -56,26 +55,7 @@ int main(int argc, char *argv[]) {
   update_btn->setText(QObject::tr("Update"));
 #ifdef __aarch64__
   btn->setText(QObject::tr("Reboot"));
-
-  QProcess *command = new QProcess();
-  QObject::connect(command, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                   [=](int exitCode, QProcess::ExitStatus exitStatus){
-    btn->setEnabled(true);
-    update_btn->setEnabled(true);
-    update_btn->setText("Ready to Reboot");
-    command->deleteLater();  // Delete QProcess after it finishes
-  });
-  QObject::connect(command, &QProcess::readyReadStandardOutput, [=]() {
-    QByteArray result = command->readAllStandardOutput();
-    label->setText(label->text() + "\n" + result);  // appends the text to the QLabel
-    scroll->update();
-  });
-  QObject::connect(command, &QProcess::readyReadStandardError, [=]() {
-    QByteArray result = command->readAllStandardError();
-    label->setText(label->text() + "\n" + result); // appends the text to the QLabel
-    scroll->update();
-  });
-
+  QFutureWatcher<void> watcher;
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
@@ -98,8 +78,18 @@ int main(int argc, char *argv[]) {
     }
     const std::string cmd = to_home_dir + "; " + remote_cmd + "; " + fetch_remote + "; " + reset_branch;
 
-    QString c = QString::fromStdString(cmd);
-    command->start(c);
+    QFuture<void> future = QtConcurrent::run([=]() {
+      std::string output = executeCommand(cmd.c_str());
+      LOGW("CHECK OUTPUT PLS\n%s", output.c_str());
+      QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
+                                Q_ARG(QString, QString::fromStdString(output)));
+    });
+    QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
+      btn->setEnabled(true);
+      update_btn->setEnabled(true);
+      update_btn->setText("Ready to Reboot");
+    });
+    watcher.setFuture(future);
   });
 #else
   update_btn->setEnabled(false);
