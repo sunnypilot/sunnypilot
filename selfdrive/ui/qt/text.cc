@@ -47,13 +47,22 @@ int main(int argc, char *argv[]) {
     update_btn->setEnabled(false);
     update_btn->setText(QObject::tr("Updating..."));
     const std::string git_branch = Params().get("GitBranch");
-    const std::string cmd1 = "git remote remove origin-update";
-    const std::string cmd2 = "git remote add origin-update " + Params().get("GitRemote");
-    const std::string cmd3 = "git fetch origin-update " + git_branch;
-    const std::string cmd4 = "git reset --hard origin-update/" + git_branch;
+    const std::string git_remote = Params().get("GitRemote");
+    const std::string to_home_dir = "cd /data/openpilot";
+    const std::string check_remote = "git remote | grep origin-update";
+    const std::string reset_remote = "git remote remove origin-update && git remote add origin-update " + git_remote;
+    const std::string update_remote = "git remote set-url origin-update " + git_remote;
+    const std::string fetch_remote = "git fetch origin-update " + git_branch;
+    const std::string reset_branch = "git reset --hard origin-update/" + git_branch;
+
+    std::string remote_cmd = update_remote;
+    if (!std::system((to_home_dir + " && " + check_remote).c_str())) {
+      remote_cmd = reset_remote;
+    }
+    const std::string cmd = " && " + to_home_dir + " && " + remote_cmd + " && " + fetch_remote + " && " + reset_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
-      std::system(("cd /data/openpilot && " + cmd1 + " && " + cmd2 + " && " + cmd3 + " && " + cmd4).c_str());
+      std::system(cmd.c_str());
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
       btn->setEnabled(true);
