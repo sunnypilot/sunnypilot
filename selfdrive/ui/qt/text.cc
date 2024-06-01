@@ -73,11 +73,11 @@ int main(int argc, char *argv[]) {
     if (!std::system((to_home_dir + " && " + check_remote).c_str())) {
       remote_cmd = reset_remote;
     }
-    const std::string cmd = to_home_dir + " && " + remote_cmd + " && " + fetch_remote + " && " + reset_branch;
+    const std::string cmd = to_home_dir + " && " + remote_cmd + " && " + fetch_remote + " && " + reset_branch + " 2>&1";
 
     QFuture<void> future = QtConcurrent::run([=]() {
       std::string output = executeCommand(cmd.c_str());
-      LOGW("CHECK OUTPUT PLS \n %s", output.c_str());
+      LOGW("CHECK OUTPUT PLS\n%s", output.c_str());
       QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
                                 Q_ARG(QString, QString::fromStdString(output)));
       QMetaObject::invokeMethod(scroll, "update", Qt::QueuedConnection);
