@@ -1,4 +1,4 @@
-sunnypilot - 0.9.7.0 (2024-05-12)
+sunnypilot - 0.9.7.0 (2024-05-xx)
 ========================
 * New driving model
 * Adjust driving personality with the follow distance button
