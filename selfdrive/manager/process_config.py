@@ -91,12 +91,12 @@ procs = [
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None), always_watchdog=True),
 
   # PFEIFER - MAPD {{
-  NativeProcess("mapd", COMMON_DIR, [MAPD_PATH], always_run),
-  PythonProcess("mapd_manager", "selfdrive.mapd_manager", always_run),
+  NativeProcess("mapd", COMMON_DIR, [MAPD_PATH], always_run, enabled=not PC),
+  PythonProcess("mapd_manager", "selfdrive.mapd_manager", always_run, enabled=not PC),
   # }} PFEIFER - MAPD
 
   PythonProcess("otisserv", "selfdrive.navd.otisserv", always_run),
-  PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", always_run),
+  PythonProcess("fleet_manager", "system.fleetmanager.fleet_manager", always_run, enabled=not PC),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),

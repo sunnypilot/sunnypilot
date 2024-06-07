@@ -24,7 +24,7 @@ class SentryProject(Enum):
   SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
 
 
-CRASHES_DIR = '/data/community/crashes/'
+CRASHES_DIR = Paths.community_crash_root()
 IP_ADDRESS = "{{auto}}"
 
 

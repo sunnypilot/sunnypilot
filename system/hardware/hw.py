@@ -56,3 +56,24 @@ class Paths:
       return Paths.comma_home()
     else:
       return "/tmp/.comma"
+
+  @staticmethod
+  def community_crash_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "community" / "crashes")
+    else:
+      return "/data/community/crashes"
+
+  @staticmethod
+  def model_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "media" / "0" / "models")
+    else:
+      return "/data/media/0/models"
+
+  @staticmethod
+  def mapd_root() -> str:
+    if PC:
+      return str(Path(Paths.comma_home()) / "media" / "0" / "osm")
+    else:
+      return "/data/media/0/osm"
