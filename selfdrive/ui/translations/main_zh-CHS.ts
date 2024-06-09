@@ -72,11 +72,11 @@
     </message>
     <message>
         <source>CONNECT</source>
-        <translation>连接</translation>
+        <translation>连线</translation>
     </message>
     <message>
         <source>Enter SSID</source>
-        <translation>输入SSID</translation>
+        <translation>输入 SSID</translation>
     </message>
     <message>
         <source>Enter password</source>
@@ -449,11 +449,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Review the rules, features, and limitations of sunnypilot</source>
-        <translation>回顾sunnypilot的功能、使用说明和注意事项</translation>
+        <translation>查看 sunnypilot 的使用规则，以及其功能和限制</translation>
     </message>
     <message>
         <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
-        <translation>sunnypilot要求设备安装偏航角4°范围内，俯仰角上5°或下9°范围内。sunnypilot是连续校准，很少需要重置。</translation>
+        <translation>sunnypilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。一般来说，openpilot会持续更新校准，很少需要重置。</translation>
     </message>
     <message>
         <source>OFF</source>
@@ -465,11 +465,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Pair Device</source>
-        <translation>绑定设备</translation>
+        <translation>配对设备</translation>
     </message>
     <message>
         <source>PAIR</source>
-        <translation>绑定</translation>
+        <translation>配对</translation>
     </message>
     <message>
         <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
@@ -897,23 +897,23 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <name>OnroadAlerts</name>
     <message>
         <source>openpilot Unavailable</source>
-        <translation>openpilot无法使用</translation>
+        <translation>无法使用 openpilot</translation>
     </message>
     <message>
         <source>Waiting for controls to start</source>
-        <translation>正在等待控件启动</translation>
+        <translation>等待控制服务啟動</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
-        <translation>请立即接管</translation>
+        <translation>立即接管</translation>
     </message>
     <message>
         <source>Controls Unresponsive</source>
-        <translation>控制无响应</translation>
+        <translation>控制服务无响应</translation>
     </message>
     <message>
         <source>Reboot Device</source>
-        <translation>请重启设备</translation>
+        <translation>重启设备</translation>
     </message>
 </context>
 <context>
@@ -1280,7 +1280,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>System reset triggered. Press confirm to erase all content and settings. Press cancel to resume boot.</source>
-        <translation>系统重置已触发。按confirm可擦除所有内容和设置。按“取消”继续引导系统启动。</translation>
+        <translation>系统重置已触发。按下“确认”以清除所有内容和设置，按下“取消”以继续启动。</translation>
     </message>
 </context>
 <context>
@@ -1370,19 +1370,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Device</source>
-        <translation>设备管理</translation>
+        <translation>设备</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation>网络设置</translation>
+        <translation>网络</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation>功能设定</translation>
+        <translation>设定</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation>软件更新</translation>
+        <translation>软件</translation>
     </message>
     <message>
         <source>sunnylink</source>
@@ -1501,15 +1501,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Choose Software to Install</source>
-        <translation>选择软件安装</translation>
+        <translation>选择要安装的软件</translation>
     </message>
     <message>
         <source>openpilot</source>
-        <translation>openpilot官方版</translation>
+        <translation>openpilot</translation>
     </message>
     <message>
         <source>Custom Software</source>
-        <translation>openpilot定制版</translation>
+        <translation>定制软件</translation>
     </message>
 </context>
 <context>
@@ -2617,7 +2617,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>使用sunnypilot系统进行自适应巡航控制和车道保持辅助。要使用此功能，您必须时刻注意道路安全。重启启动设备才能生效。</translation>
+        <translation>使用sunnypilot进行自适应巡航和车道保持辅助。使用此功能时您必须时刻保持注意力。该设置的更改在熄火时生效。</translation>
     </message>
     <message>
         <source>Custom Stock Longitudinal Control</source>
@@ -2663,7 +2663,7 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
     </message>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation>始终进行驾驶员监控。</translation>
+        <translation>即使在openpilot未激活时也启用驾驶员监控。</translation>
     </message>
     <message>
         <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
