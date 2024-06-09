@@ -243,6 +243,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DrivingModelUrl", PERSISTENT},
     {"DynamicExperimentalControl", PERSISTENT | BACKUP},
     {"DynamicLaneProfile", PERSISTENT | BACKUP},
+    {"DynamicPersonality", PERSISTENT | BACKUP},
     {"EnableAmap", PERSISTENT | BACKUP},
     {"EnableGmap", PERSISTENT | BACKUP},
     {"EnableMads", PERSISTENT | BACKUP},

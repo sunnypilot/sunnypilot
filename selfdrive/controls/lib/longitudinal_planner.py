@@ -101,11 +101,14 @@ class LongitudinalPlanner:
     self.turn_speed_controller = TurnSpeedController()
     self.dynamic_experimental_controller = DynamicExperimentalController()
 
+    self.dynamic_personality = False
+
   def read_param(self):
     try:
       self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
+    self.dynamic_personality = self.params.get_bool("DynamicPersonality")
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -178,7 +181,7 @@ class LongitudinalPlanner:
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsState'].personality)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsState'].personality, dynamic_personality=self.dynamic_personality)
 
     self.v_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.a_solution)

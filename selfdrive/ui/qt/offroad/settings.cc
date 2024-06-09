@@ -56,6 +56,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "DynamicPersonality",
+      tr("Enable Dynamic Personality"),
+      tr("Enable toggle to allow sunnypilot will dynamically adjust following distance based on your \"Driving Personality\" setting."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
@@ -108,7 +114,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   };
 
 
-  std::vector<QString> longi_button_texts{tr("Maniac"), tr("Aggressive"), tr("Stock"), tr("Relaxed")};
+  std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Moderate"), tr("Standard"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
                                           tr("Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
                                              "In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
