@@ -4,12 +4,14 @@ import platform
 
 import numpy as np
 
+from openpilot.common.basedir import BASEDIR
 from openpilot.common.params_pyx import Params
 from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
 from openpilot.selfdrive.navd.helpers import Coordinate
 from openpilot.selfdrive.sunnypilot.live_map_data import QUERY_RADIUS
 from openpilot.common.realtime import Ratekeeper, set_core_affinity
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.hardware.hw import Paths
 import os
 import glob
 import shutil
@@ -22,8 +24,8 @@ params = Params()
 mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else params
 # }} PFEIFER - MAPD
 
-COMMON_DIR = '/data/media/0/osm'
-MAPD_BIN_DIR = '/data/openpilot/third_party/pfeiferj-mapd'
+COMMON_DIR = Paths.mapd_root()
+MAPD_BIN_DIR = os.path.join(BASEDIR, 'third_party/pfeiferj-mapd')
 MAPD_PATH = os.path.join(MAPD_BIN_DIR, 'mapd')
 
 

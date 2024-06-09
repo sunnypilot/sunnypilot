@@ -27,6 +27,7 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 from openpilot.selfdrive.sunnypilot import get_model_generation
+from openpilot.system.hardware.hw import Paths
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -37,7 +38,7 @@ MODEL_PATHS = {
 
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
-CUSTOM_MODEL_PATH = "/data/media/0/models"
+CUSTOM_MODEL_PATH = Paths.model_root()
 
 LaneChangeState = log.LaneChangeState
 

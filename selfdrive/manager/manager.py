@@ -17,6 +17,7 @@ from openpilot.selfdrive.manager.process import ensure_running
 from openpilot.selfdrive.manager.process_config import managed_processes
 from openpilot.selfdrive.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.common.swaglog import cloudlog, add_file_handler
+from openpilot.system.hardware.hw import Paths
 from openpilot.system.version import get_build_metadata, terms_version, training_version
 
 
@@ -179,7 +180,7 @@ def manager_init() -> None:
   if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
     os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
 
-  models_dir = "/data/media/0/models"
+  models_dir = Paths.model_root()
   if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 

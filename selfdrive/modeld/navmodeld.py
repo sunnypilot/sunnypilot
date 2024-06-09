@@ -15,6 +15,7 @@ from openpilot.common.realtime import set_realtime_priority
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
 from openpilot.selfdrive.sunnypilot import get_model_generation
+from openpilot.system.hardware.hw import Paths
 
 NAV_INPUT_SIZE = 256*256
 NAV_FEATURE_LEN = 256
@@ -22,7 +23,7 @@ NAV_DESIRE_LEN = 32
 NAV_OUTPUT_SIZE = 2*2*ModelConstants.IDX_N + NAV_DESIRE_LEN + NAV_FEATURE_LEN
 MODEL_PATHS = {}
 
-CUSTOM_MODEL_PATH = "/data/media/0/models"
+CUSTOM_MODEL_PATH = Paths.model_root()
 
 class NavModelOutputXY(ctypes.Structure):
   _fields_ = [
