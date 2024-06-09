@@ -169,7 +169,7 @@ void Sidebar::updateState(const UIState &s) {
       sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ONLINE")}, good_color};
     }
     else {
-      LOGE("Sunnylink is offline, last ping: [%ld]. Current time: [%ld], diff: [%ld]", last_sunnylink_ping, current_nanos, elapsed_sunnylink_ping);
+      //LOGE("Sunnylink is offline, last ping: [%ld]. Current time: [%ld], diff: [%ld]", last_sunnylink_ping, current_nanos, elapsed_sunnylink_ping);
       sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ERROR")}, danger_color};
     }
   }
