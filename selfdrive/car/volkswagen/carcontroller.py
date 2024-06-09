@@ -202,7 +202,7 @@ class CarController(CarControllerBase):
           self.send_count = 0
         self.last_cruise_button = self.cruise_button
 
-    new_actuators = actuators.copy()
+    new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / self.CCP.STEER_MAX
     new_actuators.steerOutputCan = self.apply_steer_last
 
