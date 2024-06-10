@@ -71,7 +71,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
         recv_queue.put_nowait(data)
         cloudlog.debug(f"sunnylinkd.ws_recv.recv {data}")
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
-        cloudlog.info(f"sunnylinkd.ws_recv.pong {opcode}")
+        cloudlog.debug(f"sunnylinkd.ws_recv.pong {opcode}")
         last_ping = int(time.monotonic() * 1e9)
         Params().put("LastSunnylinkPingTime", str(last_ping))
     except WebSocketTimeoutException:
@@ -89,7 +89,7 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
   while not end_event.is_set():
     try:
       ws.ping()
-      cloudlog.info(f"sunnylinkd.ws_recv.ws_ping: Pinging")
+      cloudlog.debug(f"sunnylinkd.ws_recv.ws_ping: Pinging")
     except Exception:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
