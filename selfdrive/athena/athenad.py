@@ -178,6 +178,7 @@ def jsonrpc_handler(end_event: threading.Event) -> None:
       elif "id" in data and ("result" in data or "error" in data):
         log_recv_queue.put_nowait(data)
       else:
+        cloudlog.error("athena.jsonrpc_handler.invalid_request", data=data)
         raise Exception("not a valid request or response")
     except queue.Empty:
       pass
