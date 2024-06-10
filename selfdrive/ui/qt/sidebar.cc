@@ -3,7 +3,6 @@
 #include <cmath>
 
 #include <QMouseEvent>
-#include <common/swaglog.h>
 
 #include "selfdrive/ui/qt/util.h"
 #include "common/params.h"
@@ -156,7 +155,8 @@ void Sidebar::updateState(const UIState &s) {
   setProperty("pandaStatus", QVariant::fromValue(pandaStatus));
   
   ItemStatus sunnylinkStatus;
-  auto last_sunnylink_ping = std::stoull(params.get("LastSunnylinkPingTime"));
+  auto last_sunnylink_ping_str = params.get("LastSunnylinkPingTime");
+  auto last_sunnylink_ping = std::stoull(last_sunnylink_ping_str.empty() ? "0" : last_sunnylink_ping_str);
   auto current_nanos = nanos_since_boot();
   auto elapsed_sunnylink_ping = current_nanos - last_sunnylink_ping;
   auto sunnylink_enabled = params.getBool("SunnylinkEnabled");
@@ -169,7 +169,6 @@ void Sidebar::updateState(const UIState &s) {
       sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ONLINE")}, good_color};
     }
     else {
-      //LOGE("Sunnylink is offline, last ping: [%ld]. Current time: [%ld], diff: [%ld]", last_sunnylink_ping, current_nanos, elapsed_sunnylink_ping);
       sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ERROR")}, danger_color};
     }
   }
