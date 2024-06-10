@@ -633,6 +633,7 @@ def add_log_to_queue(log_path, log_id, is_sunnylink = False):
 def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None:
   is_sunnylink = log_attr_name != LOG_ATTR_NAME
   if PC:
+    cloudlog.debug("athena.log_handler: Not supported on PC")
     return
 
   log_files = []
