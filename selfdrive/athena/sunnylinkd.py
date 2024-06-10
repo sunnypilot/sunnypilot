@@ -30,6 +30,7 @@ SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
+  cloudlog.info("sunnylinkd.handle_long_poll started")
   sm = messaging.SubMaster(['deviceState'])
   end_event = threading.Event()
   comma_prime_cellular_end_event = threading.Event()
