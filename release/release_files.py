@@ -35,11 +35,11 @@ blacklist = [
 
 # Sunnypilot blacklist
 sunnypilot_blacklist = [
+  "system/loggerd/sunnylink_uploader.py",  # Temporarily, until we are ready to roll it out widely
   ".idea/",
   ".run/",
   ".run/",
   "release/ci/scons_cache/",
-  "system/loggerd/sunnylink_uploader.py",  # Temporarily, until we are ready to roll it out widely
   ".gitlab-ci.yml",
   ".clang-tidy",
   ".dockerignore",
@@ -48,6 +48,10 @@ sunnypilot_blacklist = [
   ".pre-commit-config.yaml",
   ".python-version",
   ".dockerignore",
+  "rednose/",
+  "teleoprtc/",
+  "tinygrad/",
+  # Below needs to be revisited
   ".editorconfig",
   ".gitlab-ci.yml",
   ".gitmodules",
