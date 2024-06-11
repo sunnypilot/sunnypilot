@@ -102,6 +102,7 @@ whitelist = [
 
 # Sunnypilot whitelist
 sunnypilot_whitelist = [
+  "^README.md",
   ".*selfdrive/test/fuzzy_generation.py",
   ".*selfdrive/test/helpers.py",
   ".*selfdrive/test/__init__.py",
