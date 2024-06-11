@@ -28,6 +28,7 @@ LOCAL_PORT_WHITELIST = {8022}
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
+  cloudlog.info("sunnylinkd.handle_long_poll started")
   end_event = threading.Event()
 
   threads = [
@@ -55,7 +56,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     raise
   finally:
     for thread in threads:
-      cloudlog.debug(f"athena.joining {thread.name}")
+      cloudlog.info(f"sunnylinkd athena.joining {thread.name}")
       thread.join()
 
 
@@ -92,7 +93,7 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
     except Exception:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
-    time.sleep(RECONNECT_TIMEOUT_S * 0.8)  # Sleep about 80% before a timeout
+    time.sleep(RECONNECT_TIMEOUT_S * 0.7)  # Sleep about 70% before a timeout
 
 def ws_queue(end_event: threading.Event) -> None:
   resume_requested = False
@@ -169,8 +170,7 @@ def main(exit_event: threading.Event = None):
       cloudlog.event("sunnylinkd.main.connecting_ws", ws_uri=ws_uri, retries=conn_retries)
       ws = create_connection(ws_uri,
                              cookie="jwt=" + sunnylink_api.get_token(),
-                             enable_multithread=True,
-                             timeout=30.0)
+                             enable_multithread=True)
       cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
                      duration=time.monotonic() - conn_start)
       conn_start = None
