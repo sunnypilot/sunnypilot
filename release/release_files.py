@@ -40,6 +40,19 @@ sunnypilot_blacklist = [
   ".run/",
   "release/ci/scons_cache/",
   "system/loggerd/sunnylink_uploader.py",  # Temporarily, until we are ready to roll it out widely
+  ".gitlab-ci.yml",
+  ".clang-tidy",
+  ".dockerignore",
+  ".editorconfig",
+  ".gitmodules",
+  ".pre-commit-config.yaml",
+  ".python-version",
+  "Dockerfile.openpilot",
+  "Dockerfile.openpilot_base",
+  "SECURITY.md",
+  "codecov.yml",
+  "conftest.py",
+  "poetry.lock",
 ]
 
 # Merge the blacklists
