@@ -48,8 +48,6 @@ sunnypilot_blacklist = [
   ".pre-commit-config.yaml",
   ".python-version",
   ".dockerignore",
-  "rednose/",
-  "teleoprtc/",
   "tinygrad/",
   "__pycache__/",
   ".pytest_cache/",
@@ -58,9 +56,6 @@ sunnypilot_blacklist = [
   ".env",
   ".*/.gitignore",
   "Jenkinsfile",
-  "rednose/",
-  "teleoprtc/",
-  "tinygrad/",
 ]
 
 # Merge the blacklists
