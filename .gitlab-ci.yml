@@ -86,7 +86,9 @@ build:
     - mkdir -p ${BUILD_DIR}
     - ls -la ${BUILD_DIR}
     - "echo Building Rest..."
-    - ./release/release_files.py | sort | uniq | rsync -vrRl --files-from=- . $BUILD_DIR/
+    # The output below MUST be validated otherwise we expose files that we don't want to expose
+    # - ./release/release_files.py | sort | uniq | rsync -vrRl --files-from=- . $BUILD_DIR/
+    - cp -pR --parents $(cat release/files_common release/files_tici | sort | uniq) $BUILD_DIR/ 2> >(grep -v 'warning:' >&2)
     - cd $BUILD_DIR
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
     - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache
