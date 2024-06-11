@@ -400,6 +400,7 @@ selfdrive/modeld/runners/*.h
 selfdrive/modeld/runners/*.py
 
 selfdrive/monitoring/dmonitoringd.py
+selfdrive/monitoring/helpers.py
 selfdrive/monitoring/hands_on_wheel_monitor.py
 
 selfdrive/navd/.gitignore
