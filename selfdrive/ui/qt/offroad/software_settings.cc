@@ -18,7 +18,7 @@
 
 
 void SoftwarePanel::checkForUpdates() {
-  std::system("pkill -SIGUSR1 -f selfdrive.updated.updated");
+  std::system("pkill -SIGUSR1 -f system.updated.updated");
 }
 
 SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
@@ -40,7 +40,7 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
     if (downloadBtn->text() == tr("CHECK")) {
       checkForUpdates();
     } else {
-      std::system("pkill -SIGHUP -f selfdrive.updated.updated");
+      std::system("pkill -SIGHUP -f system.updated.updated");
     }
   });
   addItem(downloadBtn);

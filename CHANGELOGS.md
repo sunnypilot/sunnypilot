@@ -1,15 +1,15 @@
-sunnypilot - 0.9.7.0 (2024-05-xx)
+sunnypilot - 0.9.7.0 (2024-06-11)
 ========================
 * New driving model
 * Adjust driving personality with the follow distance button
-* Support for hybrid variants of supported Ford models
 * Added toggle to enable driver monitoring even when openpilot is not engaged
+* Support for hybrid variants of supported Ford models
 * Fingerprinting without the OBD-II port on all cars
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit 2e6b2ef (May 9, 2024)
+  * master commit ce2a686 (June 1, 2024)
 * NEW❗: sunnylink (Alpha early access)
-  * NEW❗: Config Backup
+  * NEW❗: Config/Settings Backup
     * Remotely back up and restore sunnypilot settings easily
     * Device registration with sunnylink ensures a secure, integrated experience across services
     * AES encryption derived from the device's RSA private key is used for utmost security
@@ -27,6 +27,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Forced Offroad mode
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+  * To engage/disengage Force Offroad, go to Settings -> Device panel
 * NEW❗: Ford CAN-FD longitudinal
   * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
@@ -42,7 +43,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
     * Improve lead tracking when using openpilot longitudinal
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
-  * openpilot Longitudianl Control available cars
+  * openpilot Longitudinal Control available cars
   * Custom Stock Longitudinal Control available cars
 * UPDATED: Continued support for comma Pedal
   * In response to the official deprecation of support for comma Pedal in the upstream, sunnypilot will continue maintaining software support for comma Pedal

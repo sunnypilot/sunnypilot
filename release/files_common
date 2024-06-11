@@ -60,11 +60,12 @@ tools/replay/*.cc
 tools/replay/*.h
 
 selfdrive/__init__.py
-selfdrive/sentry.py
-selfdrive/tombstoned.py
-selfdrive/statsd.py
+system/__init__.py
+system/sentry.py
+system/tombstoned.py
+system/statsd.py
 
-selfdrive/updated/**
+system/updated/**
 
 system/logmessaged.py
 system/micd.py
@@ -72,12 +73,12 @@ system/version.py
 
 selfdrive/SConscript
 
-selfdrive/athena/__init__.py
-selfdrive/athena/athenad.py
-selfdrive/athena/manage_athenad.py
-selfdrive/athena/manage_sunnylinkd.py
-selfdrive/athena/registration.py
-selfdrive/athena/sunnylinkd.py
+system/athena/__init__.py
+system/athena/athenad.py
+system/athena/manage_athenad.py
+system/athena/manage_sunnylinkd.py
+system/athena/registration.py
+system/athena/sunnylinkd.py
 
 selfdrive/boardd/.gitignore
 selfdrive/boardd/SConscript
@@ -279,9 +280,9 @@ system/webrtc/schema.py
 system/webrtc/device/audio.py
 system/webrtc/device/video.py
 
-selfdrive/thermald/thermald.py
-selfdrive/thermald/power_monitoring.py
-selfdrive/thermald/fan_controller.py
+system/thermald/thermald.py
+system/thermald/power_monitoring.py
+system/thermald/fan_controller.py
 
 selfdrive/test/__init__.py
 selfdrive/test/fuzzy_generation.py
@@ -343,16 +344,16 @@ system/camerad/sensors/*.cc
 
 system/fleetmanager/*
 
-selfdrive/manager/__init__.py
-selfdrive/manager/build.py
-selfdrive/manager/helpers.py
-selfdrive/manager/mapd_installer.py
-selfdrive/manager/sunnylink.py
-selfdrive/manager/manager.py
-selfdrive/manager/process_config.py
-selfdrive/manager/process.py
-selfdrive/manager/test/__init__.py
-selfdrive/manager/test/test_manager.py
+system/manager/__init__.py
+system/manager/build.py
+system/manager/helpers.py
+system/manager/mapd_installer.py
+system/manager/sunnylink.py
+system/manager/manager.py
+system/manager/process_config.py
+system/manager/process.py
+system/manager/test/__init__.py
+system/manager/test/test_manager.py
 
 selfdrive/modeld/.gitignore
 selfdrive/modeld/__init__.py
@@ -399,7 +400,6 @@ selfdrive/modeld/runners/*.h
 selfdrive/modeld/runners/*.py
 
 selfdrive/monitoring/dmonitoringd.py
-selfdrive/monitoring/driver_monitor.py
 selfdrive/monitoring/hands_on_wheel_monitor.py
 
 selfdrive/navd/.gitignore
