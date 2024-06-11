@@ -94,7 +94,7 @@ build:
     - sudo rm -rf ${OUTPUT_DIR} 
     - mkdir -p ${OUTPUT_DIR}
     # We first include the paths we want to keep, even if we later will be excluding the other things on those paths
-    - rsync -av
+    - rsync -avm
       --include='**/panda/board/'
       --include='**/panda/board/obj'
       --include='**/panda/board/obj/panda.bin.signed'
