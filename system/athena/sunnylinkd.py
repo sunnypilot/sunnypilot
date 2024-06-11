@@ -10,7 +10,7 @@ import os
 import threading
 import time
 
-from openpilot.selfdrive.athena.athenad import ws_send, jsonrpc_handler, \
+from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
