@@ -37,6 +37,8 @@ blacklist = [
 sunnypilot_blacklist = [
   ".idea/",
   ".run/",
+  ".run/",
+  "release/ci/scons_cache/",
   "system/loggerd/sunnylink_uploader.py",  # Temporarily, until we are ready to roll it out widely
 ]
 
