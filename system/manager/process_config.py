@@ -109,7 +109,7 @@ if Params().get_bool("SunnylinkEnabled"):
     procs += [
       DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
     ]
-  if os.path.exists("../../system/loggerd/sunnylink_uploader.py"):
+  if os.path.exists("../loggerd/sunnylink_uploader.py"):
     procs += [
       PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", always_run),
     ]

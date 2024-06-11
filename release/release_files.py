@@ -37,6 +37,7 @@ blacklist = [
 sunnypilot_blacklist = [
   ".idea/",
   ".run/",
+  "system/loggerd/sunnylink_uploader.py",  # Temporarily, until we are ready to roll it out widely
 ]
 
 # Merge the blacklists
