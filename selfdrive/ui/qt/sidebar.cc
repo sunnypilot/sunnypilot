@@ -155,17 +155,22 @@ void Sidebar::updateState(const UIState &s) {
   setProperty("pandaStatus", QVariant::fromValue(pandaStatus));
   
   ItemStatus sunnylinkStatus;
-  auto last_sunnylink_ping = std::strtol(params.get("LastSunnylinkPingTime").c_str(), nullptr, 10);
+  auto last_sunnylink_ping_str = params.get("LastSunnylinkPingTime");
+  auto last_sunnylink_ping = std::stoull(last_sunnylink_ping_str.empty() ? "0" : last_sunnylink_ping_str);
+  auto current_nanos = nanos_since_boot();
+  auto elapsed_sunnylink_ping = current_nanos - last_sunnylink_ping;
   auto sunnylink_enabled = params.getBool("SunnylinkEnabled");
   if (!sunnylink_enabled) {
     sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("DISABLED")}, disabled_color};
-  } else if (last_ping == 0) {
+  } else if (last_sunnylink_ping == 0) {
     sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("OFFLINE")}, warning_color};
   } else {
-    if (nanos_since_boot() - last_sunnylink_ping < 80e9)
+    if (elapsed_sunnylink_ping < 80000000000ULL) {
       sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ONLINE")}, good_color};
-    else
+    }
+    else {
       sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ERROR")}, danger_color};
+    }
   }
   setProperty("sunnylinkStatus", QVariant::fromValue(sunnylinkStatus));
 }

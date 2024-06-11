@@ -107,6 +107,7 @@ def manager_init() -> None:
     ("SunnylinkEnabled", "1"),
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
+    ("LastSunnylinkPingTime", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))

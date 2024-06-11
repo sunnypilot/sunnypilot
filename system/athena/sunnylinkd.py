@@ -11,7 +11,7 @@ import threading
 import time
 
 from openpilot.selfdrive.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage
+  recv_queue, RECONNECT_TIMEOUT_S, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
@@ -20,15 +20,20 @@ from openpilot.common.api import SunnylinkApi
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
+import cereal.messaging as messaging
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
+SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
+  cloudlog.info("sunnylinkd.handle_long_poll started")
+  sm = messaging.SubMaster(['deviceState'])
   end_event = threading.Event()
+  comma_prime_cellular_end_event = threading.Event()
 
   threads = [
     threading.Thread(target=ws_manage, args=(ws, end_event), name='ws_manage'),
@@ -37,7 +42,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
     threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
     # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-    # threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
+    threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
     # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
   ] + [
     threading.Thread(target=jsonrpc_handler, args=(end_event,), name=f'worker_{x}')
@@ -48,14 +53,28 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     thread.start()
   try:
     while not end_event.wait(0.1):
+      sm.update(0)
       if exit_event is not None and exit_event.is_set():
         end_event.set()
+        comma_prime_cellular_end_event.set()
+
+      prime_type = params.get("PrimeType", encoding='utf-8')
+      metered = sm['deviceState'].networkMetered
+
+      if int(prime_type) > 2 and metered:
+        cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
+        comma_prime_cellular_end_event.set()
+      elif comma_prime_cellular_end_event.is_set():
+        cloudlog.debug(f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
+        comma_prime_cellular_end_event.clear()
+
   except (KeyboardInterrupt, SystemExit):
     end_event.set()
+    comma_prime_cellular_end_event.set()
     raise
   finally:
     for thread in threads:
-      cloudlog.debug(f"athena.joining {thread.name}")
+      cloudlog.debug(f"sunnylinkd athena.joining {thread.name}")
       thread.join()
 
 
@@ -92,7 +111,7 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
     except Exception:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
-    time.sleep(RECONNECT_TIMEOUT_S * 0.8)  # Sleep about 80% before a timeout
+    time.sleep(RECONNECT_TIMEOUT_S * 0.7)  # Sleep about 70% before a timeout
 
 def ws_queue(end_event: threading.Event) -> None:
   resume_requested = False
@@ -111,6 +130,13 @@ def ws_queue(end_event: threading.Event) -> None:
       tries += 1
       time.sleep(backoff(tries))  # Wait for the backoff time before the next attempt
   cloudlog.debug("Resume requested or end_event is set, exiting ws_queue thread")
+
+
+def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event: threading.Event) -> None:
+  while not end_event.wait(0.1):
+    if not comma_prime_cellular_end_event.is_set():
+      log_handler(comma_prime_cellular_end_event, SUNNYLINK_LOG_ATTR_NAME)
+  comma_prime_cellular_end_event.set()
 
 
 @dispatcher.add_method
@@ -169,8 +195,7 @@ def main(exit_event: threading.Event = None):
       cloudlog.event("sunnylinkd.main.connecting_ws", ws_uri=ws_uri, retries=conn_retries)
       ws = create_connection(ws_uri,
                              cookie="jwt=" + sunnylink_api.get_token(),
-                             enable_multithread=True,
-                             timeout=30.0)
+                             enable_multithread=True)
       cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
                      duration=time.monotonic() - conn_start)
       conn_start = None
