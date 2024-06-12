@@ -312,7 +312,7 @@ class Controls:
         else:
           self.events.add(EventName.preLaneChangeRight)
     elif lane_change_svs.laneChangeState in (LaneChangeState.laneChangeStarting,
-                                                    LaneChangeState.laneChangeFinishing):
+                                             LaneChangeState.laneChangeFinishing):
       self.events.add(EventName.laneChange)
 
     for i, pandaState in enumerate(self.sm['pandaStates']):
