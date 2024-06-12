@@ -8,7 +8,7 @@ _PRE_ALERT_THRESHOLD = 150  # 15s
 _PROMPT_ALERT_THRESHOLD = 300  # 30s
 _TERMINAL_ALERT_THRESHOLD = 600  # 60s
 
-_MIN_MONITORING_SPEED = 10 * CV.KPH_TO_MS  # No monitoring underd 10kph
+_MIN_MONITORING_SPEED = 10 * CV.KPH_TO_MS  # No monitoring under 10kph
 
 
 class HandsOnWheelStatus():
@@ -16,8 +16,11 @@ class HandsOnWheelStatus():
     self.hands_on_wheel_state = HandsOnWheelState.none
     self.hands_off_wheel_cnt = 0
 
-  def update(self, events, steering_wheel_engaged, ctrl_active, v_ego):
-    if v_ego < _MIN_MONITORING_SPEED or not ctrl_active:
+  def update(self, events, steering_wheel_engaged, ctrl_active, v_ego, always_on, hands_on_wheel_monitoring):
+    if v_ego < _MIN_MONITORING_SPEED or \
+       (not always_on and not ctrl_active) or \
+       (always_on and not ctrl_active and self.hands_on_wheel_state == HandsOnWheelState.terminal) or \
+       not hands_on_wheel_monitoring:
       self.hands_on_wheel_state = HandsOnWheelState.none
       self.hands_off_wheel_cnt = 0
       return

@@ -8,6 +8,7 @@ from difflib import SequenceMatcher
 from enum import StrEnum
 from typing import Any, NamedTuple
 from collections.abc import Callable
+from functools import cache
 
 from cereal import car
 from openpilot.common.basedir import BASEDIR
@@ -58,6 +59,7 @@ class LatControlInputs(NamedTuple):
 TorqueFromLateralAccelCallbackType = Callable[[LatControlInputs, car.CarParams.LateralTorqueTuning, float, float, bool, bool], float]
 
 
+@cache
 def get_torque_params(candidate):
   with open(TORQUE_SUBSTITUTE_PATH, 'rb') as f:
     sub = tomllib.load(f)
@@ -430,11 +432,10 @@ class CarInterfaceBase(ABC):
       ret.cruiseState.speedCluster = ret.cruiseState.speed
 
     # copy back for next iteration
-    reader = ret.as_reader()
     if self.CS is not None:
-      self.CS.out = reader
+      self.CS.out = ret.as_reader()
 
-    return reader
+    return ret
 
 
   def create_common_events(self, cs_out, c, extra_gears=None, pcm_enable=True, allow_enable=True,
@@ -481,6 +482,10 @@ class CarInterfaceBase(ABC):
       events.add(EventName.accFaulted)
     if cs_out.steeringPressed:
       events.add(EventName.steerOverride)
+    if cs_out.brakePressed and cs_out.standstill and cs_out.cruiseState.enabled:
+      events.add(EventName.preEnableStandstill)
+    if cs_out.gasPressed and cs_out.cruiseState.enabled:
+      events.add(EventName.gasPressedOverride)
 
     self.gear_warning = self.gear_warning + 1 if cs_out.gearShifter == GearShifter.unknown else 0
 
