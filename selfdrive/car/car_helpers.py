@@ -17,7 +17,7 @@ from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
 from openpilot.selfdrive.car import gen_empty_fingerprint
 from openpilot.system.version import get_build_metadata
-import openpilot.selfdrive.sentry as sentry
+import openpilot.system.sentry as sentry
 
 FRAME_FINGERPRINT = 100  # 1s
 

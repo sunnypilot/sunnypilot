@@ -56,12 +56,8 @@ selfdrive/modeld/_navmodeld
 selfdrive/modeld/_dmonitoringmodeld
 /src/
 
-one
 notebooks
-xx
-yy
 hyperthneed
-panda_jungle
 provisioning
 
 .coverage*
