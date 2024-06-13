@@ -185,6 +185,8 @@ void OnboardingWindow::updateActiveScreen() {
     setCurrentIndex(0);
   } else if (!training_done) {
     setCurrentIndex(1);
+  } else if (!accepted_terms_sp) {
+    setCurrentIndex(3);
   } else {
     emit onboardingDone();
   }
@@ -207,15 +209,6 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   });
   connect(terms, &TermsPage::declinedTerms, [=]() { setCurrentIndex(2); });
 
-  TermsPage* terms_sp = new TermsPage(this);
-  addWidget(terms_sp);
-  connect(terms_sp, &TermsPage::acceptedTerms, [=]() {
-    params.put("HasAcceptedTermsSP", current_terms_version_sp);
-    accepted_terms = true;
-    updateActiveScreen();
-  });
-  connect(terms_sp, &TermsPage::declinedTerms, [=]() { setCurrentIndex(2); });
-
   TrainingGuide* tr = new TrainingGuide(this);
   addWidget(tr);
   connect(tr, &TrainingGuide::completedTraining, [=]() {
@@ -227,6 +220,15 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   DeclinePage* declinePage = new DeclinePage(this);
   addWidget(declinePage);
   connect(declinePage, &DeclinePage::getBack, [=]() { updateActiveScreen(); });
+
+  TermsPage* terms_sp = new TermsPage(this);
+  addWidget(terms_sp);  // index = 3
+  connect(terms_sp, &TermsPage::acceptedTerms, [=]() {
+    params.put("HasAcceptedTermsSP", current_terms_version_sp);
+    accepted_terms_sp = true;
+    updateActiveScreen();
+  });
+  connect(terms_sp, &TermsPage::declinedTerms, [=]() { setCurrentIndex(2); });
 
   setStyleSheet(R"(
     * {
