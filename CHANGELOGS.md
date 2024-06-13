@@ -60,7 +60,7 @@ sunnypilot - 0.9.7.1 (2024-06-13)
     * Recertified Herbalist (March 01, 2024) - CHLR
   * Legacy Driving Models with Navigate on openpilot (NoO) support
     * Includes Duck Amigo and all preceding models
-* UPDATED: Bumping mapd by [@pfeiferj](https://github.com/pfeiferj) to version [v1.9.0](https://github.com/pfeiferj/mapd/releases/tag/v1.9.0).
+* UPDATED: Bumping mapd by [@pfeiferj](https://github.com/pfeiferj) to version [v1.9.0](https://github.com/pfeiferj/mapd/releases/tag/v1.9.0) thanks to pfeiferj!
 * UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
   * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UPDATED: Upstream native support for Gap Adjust Cruise
