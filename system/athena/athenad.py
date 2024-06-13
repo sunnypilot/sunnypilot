@@ -634,6 +634,7 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
   is_sunnylink = log_attr_name != LOG_ATTR_NAME
   if PC:
     cloudlog.debug("athena.log_handler: Not supported on PC")
+    time.sleep(1)
     return
 
   log_files = []
@@ -808,7 +809,7 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
   onroad_prev = None
   sock = ws.sock
 
-  while True:
+  while not end_event.wait(5):
     onroad = params.get_bool("IsOnroad")
     if onroad != onroad_prev:
       onroad_prev = onroad
@@ -825,9 +826,6 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
           sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 7 if onroad else 30)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 7 if onroad else 10)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 2 if onroad else 3)
-
-    if end_event.wait(5):
-      break
 
 
 def backoff(retries: int) -> int:
