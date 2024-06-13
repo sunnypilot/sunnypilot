@@ -197,7 +197,7 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   std::string current_terms_version = params.get("TermsVersion");
   std::string current_terms_version_sp = params.get("TermsVersionSunnypilot");
   std::string current_training_version = params.get("TrainingVersion");
-  accepted_terms = params.get("HasAcceptedTerms") == current_terms_version_sp;
+  accepted_terms = params.get("HasAcceptedTerms") == current_terms_version;
   accepted_terms_sp = params.get("HasAcceptedTermsSP") == current_terms_version_sp;
   training_done = params.get("CompletedTrainingVersion") == current_training_version;
 
