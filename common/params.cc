@@ -258,6 +258,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ForceOffroad", CLEAR_ON_MANAGER_START},
     {"GmapKey", PERSISTENT | BACKUP},
     {"HandsOnWheelMonitoring", PERSISTENT | BACKUP},
+    {"HasAcceptedTermsSP", PERSISTENT},
     {"HideVEgoUi", PERSISTENT | BACKUP},
     {"HkgSmoothStop", PERSISTENT | BACKUP},
     {"HotspotOnBoot", PERSISTENT},
