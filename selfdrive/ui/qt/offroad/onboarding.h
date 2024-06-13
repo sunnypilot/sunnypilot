@@ -63,7 +63,7 @@ class TermsPage : public QFrame {
   Q_OBJECT
 
 public:
-  explicit TermsPage(QWidget *parent = 0) : QFrame(parent) {}
+  explicit TermsPage(bool sunnypilot = false, QWidget *parent = 0) : QFrame(parent), sunnypilot_tc(sunnypilot) {}
 
 public slots:
   void enableAccept();
@@ -72,6 +72,7 @@ private:
   void showEvent(QShowEvent *event) override;
 
   QPushButton *accept_btn;
+  bool sunnypilot_tc = false;
 
 signals:
   void acceptedTerms();
