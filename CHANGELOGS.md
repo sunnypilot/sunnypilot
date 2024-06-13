@@ -1,13 +1,18 @@
-sunnypilot - 0.9.7.0 (2024-06-11)
+sunnypilot - 0.9.7.1 (2024-06-13)
 ========================
 * New driving model
+  * Inputs the past curvature for smoother and more accurate lateral control
+  * Simplified neural network architecture in the model's last layers
+  * Minor fixes to desire augmentation and weight decay
+* New driver monitoring model
+  * Improved end-to-end bit for phone detection
 * Adjust driving personality with the follow distance button
-* Added toggle to enable driver monitoring even when openpilot is not engaged
 * Support for hybrid variants of supported Ford models
 * Fingerprinting without the OBD-II port on all cars
+* Improved fuzzy fingerprinting for Ford and Volkswagen
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit ce2a686 (June 1, 2024)
+  * master commit f8cb04e (June 10, 2024)
 * NEW❗: sunnylink (Alpha early access)
   * NEW❗: Config/Settings Backup
     * Remotely back up and restore sunnypilot settings easily
