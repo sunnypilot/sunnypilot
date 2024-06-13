@@ -18,7 +18,7 @@ from openpilot.system.manager.process_config import managed_processes
 from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.hardware.hw import Paths
-from openpilot.system.version import get_build_metadata, terms_version, training_version
+from openpilot.system.version import get_build_metadata, terms_version, terms_version_sp, training_version
 
 
 def manager_init() -> None:
@@ -67,6 +67,7 @@ def manager_init() -> None:
     ("EnhancedScc", "0"),
     ("FeatureStatus", "1"),
     ("HandsOnWheelMonitoring", "0"),
+    ("HasAcceptedTermsSP", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),
@@ -135,6 +136,7 @@ def manager_init() -> None:
   # set version params
   params.put("Version", build_metadata.openpilot.version)
   params.put("TermsVersion", terms_version)
+  params.put("TermsVersionSunnypilot", terms_version_sp)
   params.put("TrainingVersion", training_version)
   params.put("GitCommit", build_metadata.openpilot.git_commit)
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)

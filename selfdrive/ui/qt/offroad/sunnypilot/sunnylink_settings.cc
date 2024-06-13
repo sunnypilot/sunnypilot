@@ -70,7 +70,11 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   );
   list->addItem(pairSponsorBtn);
   connect(pairSponsorBtn, &ButtonControl::clicked, [=]() {
-    pair_popup->exec();
+    if (getSunnylinkDongleId().value_or(tr("N/A")) == "N/A") {
+      ConfirmationDialog::alert(tr("sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again."), this);
+    } else {
+      pair_popup->exec();
+    }
   });
   list->addItem(horizontal_line());
 
@@ -410,7 +414,7 @@ void SunnylinkSponsorQRWidget::refresh() {
   if (sponsor_pair) {
     QString token = CommaApi::create_jwt({}, 3600, true);
     auto sl_dongle_id = getSunnylinkDongleId();
-    QByteArray payload = QString("1|" + *sl_dongle_id + "|" + token).toUtf8().toBase64();
+    QByteArray payload = QString("1|" + sl_dongle_id.value_or("") + "|" + token).toUtf8().toBase64();
     qrString = SUNNYLINK_BASE_URL + "/sso?state=" + payload;
   } else {
     qrString = "https://github.com/sponsors/sunnyhaibin";
