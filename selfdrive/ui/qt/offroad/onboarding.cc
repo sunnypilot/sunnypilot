@@ -106,7 +106,7 @@ void TermsPage::showEvent(QShowEvent *event) {
   text->setAttribute(Qt::WA_AlwaysStackOnTop);
   text->setClearColor(QColor("#1B1B1B"));
 
-  QString text_view = util::read_file("../assets/offroad/tc.html").c_str();
+  QString text_view = util::read_file("../assets/offroad/sp_tc.html").c_str();
   text->rootContext()->setContextProperty("text_view", text_view);
 
   text->setSource(QUrl::fromLocalFile("qt/offroad/text_view.qml"));
@@ -158,7 +158,7 @@ void DeclinePage::showEvent(QShowEvent *event) {
   main_layout->setSpacing(40);
 
   QLabel *text = new QLabel(this);
-  text->setText(tr("You must accept the Terms and Conditions in order to use openpilot."));
+  text->setText(tr("You must accept the Terms and Conditions in order to use sunnypilot."));
   text->setStyleSheet(R"(font-size: 80px; font-weight: 300; margin: 200px;)");
   text->setWordWrap(true);
   main_layout->addWidget(text, 0, Qt::AlignCenter);
@@ -192,14 +192,15 @@ void OnboardingWindow::updateActiveScreen() {
 
 OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   std::string current_terms_version = params.get("TermsVersion");
+  std::string current_terms_version_sp = params.get("TermsVersionSunnypilot");
   std::string current_training_version = params.get("TrainingVersion");
-  accepted_terms = params.get("HasAcceptedTerms") == current_terms_version;
+  accepted_terms = params.get("HasAcceptedTerms") == current_terms_version_sp;
   training_done = params.get("CompletedTrainingVersion") == current_training_version;
 
   TermsPage* terms = new TermsPage(this);
   addWidget(terms);
   connect(terms, &TermsPage::acceptedTerms, [=]() {
-    params.put("HasAcceptedTerms", current_terms_version);
+    params.put("HasAcceptedTerms", current_terms_version_sp);
     accepted_terms = true;
     updateActiveScreen();
   });

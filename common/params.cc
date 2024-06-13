@@ -313,6 +313,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SunnylinkDongleId", PERSISTENT},
     {"SunnylinkEnabled", PERSISTENT},
     {"SunnylinkdPid", PERSISTENT},
+    {"TermsVersionSunnypilot", PERSISTENT},
     {"TorqueDeadzoneDeg", PERSISTENT | BACKUP},
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueLateralJerk", PERSISTENT | BACKUP},

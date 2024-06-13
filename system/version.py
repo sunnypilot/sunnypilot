@@ -18,6 +18,7 @@ BUILD_METADATA_FILENAME = "build.json"
 
 training_version: bytes = b"0.2.0"
 terms_version: bytes = b"2"
+terms_version_sp: bytes = b"1.0"
 
 
 def get_version(path: str = BASEDIR) -> str:
@@ -179,6 +180,7 @@ if __name__ == "__main__":
 
   params = Params()
   params.put("TermsVersion", terms_version)
+  params.put("TermsVersionSunnypilot", terms_version_sp)
   params.put("TrainingVersion", training_version)
 
   print(get_build_metadata())
