@@ -195,16 +195,26 @@ OnboardingWindow::OnboardingWindow(QWidget *parent) : QStackedWidget(parent) {
   std::string current_terms_version_sp = params.get("TermsVersionSunnypilot");
   std::string current_training_version = params.get("TrainingVersion");
   accepted_terms = params.get("HasAcceptedTerms") == current_terms_version_sp;
+  accepted_terms_sp = params.get("HasAcceptedTermsSP") == current_terms_version_sp;
   training_done = params.get("CompletedTrainingVersion") == current_training_version;
 
   TermsPage* terms = new TermsPage(this);
   addWidget(terms);
   connect(terms, &TermsPage::acceptedTerms, [=]() {
-    params.put("HasAcceptedTerms", current_terms_version_sp);
+    params.put("HasAcceptedTerms", current_terms_version);
     accepted_terms = true;
     updateActiveScreen();
   });
   connect(terms, &TermsPage::declinedTerms, [=]() { setCurrentIndex(2); });
+
+  TermsPage* terms_sp = new TermsPage(this);
+  addWidget(terms_sp);
+  connect(terms_sp, &TermsPage::acceptedTerms, [=]() {
+    params.put("HasAcceptedTermsSP", current_terms_version_sp);
+    accepted_terms = true;
+    updateActiveScreen();
+  });
+  connect(terms_sp, &TermsPage::declinedTerms, [=]() { setCurrentIndex(2); });
 
   TrainingGuide* tr = new TrainingGuide(this);
   addWidget(tr);
