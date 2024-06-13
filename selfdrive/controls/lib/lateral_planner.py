@@ -14,7 +14,7 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 import cereal.messaging as messaging
 from cereal import log
 
-LaneChangeState = log.LateralPlan.LaneChangeState
+LaneChangeState = log.LaneChangeState
 
 
 PATH_COST = 1.0

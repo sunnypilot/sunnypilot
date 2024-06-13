@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import asyncio
 import json
 # for aiortc and its dependencies
@@ -9,7 +8,6 @@ from aiortc import RTCDataChannel
 from aiortc.mediastreams import VIDEO_CLOCK_RATE, VIDEO_TIME_BASE
 import capnp
 import pyaudio
-
 from cereal import messaging, log
 
 from openpilot.system.webrtc.webrtcd import CerealOutgoingMessageProxy, CerealIncomingMessageProxy
@@ -73,7 +71,7 @@ class TestStreamSession:
     fake_msg = messaging.new_message("livestreamDriverEncodeData")
 
     config = {"receive.return_value": fake_msg.to_bytes()}
-    mocker.patch("cereal.messaging.SubSocket", spec=True, **config)
+    mocker.patch("msgq.SubSocket", spec=True, **config)
     track = LiveStreamVideoStreamTrack("driver")
 
     assert track.id.startswith("driver")
