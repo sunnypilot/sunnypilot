@@ -121,8 +121,7 @@ class SunnylinkApi(BaseApi):
           time.sleep(3)
           break
 
-    if sunnylink_dongle_id:
-      self.params.put("SunnylinkDongleId", sunnylink_dongle_id)
+    self.params.put("SunnylinkDongleId", sunnylink_dongle_id or UNREGISTERED_SUNNYLINK_DONGLE_ID)
 
     self.spinner = None
     return sunnylink_dongle_id
