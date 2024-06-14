@@ -198,6 +198,7 @@ sunnypilot_whitelist = [
   ".*LIMITATIONS.md",
   ".*CONTRIBUTING.md",
   ".*sunnyhaibin0850_qrcode_paypal.me.png",
+  "opendbc/.*.dbc",
 ]
 
 # Merge the whitelists
