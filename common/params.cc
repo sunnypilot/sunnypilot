@@ -317,6 +317,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
     {"TorquedOverride", PERSISTENT | BACKUP},
+    {"ToyotaCruiseOverride", PERSISTENT | BACKUP},
+    {"ToyotaCruiseOverrideSpeed", PERSISTENT | BACKUP},
     {"ToyotaSnG", PERSISTENT | BACKUP},
     {"ToyotaTSS2Long", PERSISTENT | BACKUP},
     {"TrueVEgoUi", PERSISTENT | BACKUP},
