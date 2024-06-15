@@ -60,6 +60,8 @@ def get_can_messages(CP, gearbox_msg):
   else:  # Nidec signals
     if CP.carFingerprint in (SERIAL_STEERING | {CAR.HONDA_ODYSSEY_CHN, }):
       messages.append(("CRUISE_PARAMS", 10))
+    elif CP.carFingerprint == CAR.HONDA_FIT_HYBRID:
+      pass #CRUISE_PARAMS not avail
     else:
       messages.append(("CRUISE_PARAMS", 50))
 
@@ -263,7 +265,7 @@ class CarState(CarStateBase):
       if self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
         ret.stockAeb = (not self.CP.openpilotLongitudinalControl) and bool(cp.vl["ACC_CONTROL"]["AEB_STATUS"] and cp.vl["ACC_CONTROL"]["ACCEL_COMMAND"] < -1e-5)
     else:
-      aeb_sig = "COMPUTER_BRAKE_ALT" if self.CP.carFingerprint == CAR.HONDA_CLARITY else "COMPUTER_BRAKE"
+      aeb_sig = "COMPUTER_BRAKE_ALT" if self.CP.carFingerprint in (CAR.HONDA_CLARITY, CAR.HONDA_FIT_HYBRID) else "COMPUTER_BRAKE"
       ret.stockAeb = bool(cp_cam.vl["BRAKE_COMMAND"]["AEB_REQ_1"] and cp_cam.vl["BRAKE_COMMAND"][aeb_sig] > 1e-5)
 
     self.acc_hud = False

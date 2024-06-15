@@ -145,7 +145,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
       ret.wheelSpeedFactor = 1.025
 
-    elif candidate == CAR.HONDA_FIT:
+    elif candidate in (CAR.HONDA_FIT, CAR.HONDA_FIT_HYBRID):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.05]]
 
@@ -224,6 +224,9 @@ class CarInterface(CarInterfaceBase):
 
     else:
       raise ValueError(f"unsupported car {candidate}")
+
+    if candidate == CAR.HONDA_FIT_HYBRID:
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_HONDA_CLARITY
 
     # These cars use alternate user brake msg (0x1BE)
     # TODO: Only detect feature for Accord/Accord Hybrid, not all Bosch DBCs have BRAKE_MODULE

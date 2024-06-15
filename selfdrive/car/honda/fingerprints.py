@@ -512,6 +512,23 @@ FW_VERSIONS = {
       b'77959-T5R-A230\x00\x00',
     ],
   },
+  CAR.HONDA_FIT_HYBRID: {
+    (Ecu.eps, 0x18da30f1, None): [
+      b'39990-T5B-N120\x00\x00',
+    ],
+    (Ecu.gateway, 0x18daeff1, None): [
+      b'38897-T5C-J010\x00\x00',
+    ],
+    (Ecu.fwdRadar, 0x18dab0f1, None): [
+      b'36161-T5C-J250\x00\x00',
+    ],
+    (Ecu.srs, 0x18da53f1, None): [
+      b'77959-T5C-J910\x00\x00',
+    ],
+    (Ecu.shiftByWire, 0x18da0bf1, None): [
+      b'54008-T9P-J010\x00\x00',
+    ],
+  },
   CAR.HONDA_FREED: {
     (Ecu.gateway, 0x18daeff1, None): [
       b'38897-TDK-J010\x00\x00',

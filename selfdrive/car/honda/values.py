@@ -217,6 +217,12 @@ class CAR(Platforms):
     dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
     flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
   )
+  HONDA_FIT_HYBRID = HondaNidecPlatformConfig(
+    [HondaCarDocs("Honda Fit Hybrid 2018-20", min_steer_speed=12. * CV.MPH_TO_MS)],
+    CarSpecs(mass=2644 * CV.LB_TO_KG, wheelbase=2.53, steerRatio=13.06, centerToFrontRatio=0.39, tireStiffnessFactor=0.75),
+    dbc_dict('honda_fit_hybrid_2018_can_generated', 'acura_ilx_2016_nidec'),
+    flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
+  )
   HONDA_FREED = HondaNidecPlatformConfig(
     [HondaCarDocs("Honda Freed 2020", min_steer_speed=12. * CV.MPH_TO_MS)],
     CarSpecs(mass=3086. * CV.LB_TO_KG, wheelbase=2.74, steerRatio=13.06, centerToFrontRatio=0.39, tireStiffnessFactor=0.75),  # mostly copied from FIT
