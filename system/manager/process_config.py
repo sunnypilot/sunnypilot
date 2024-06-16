@@ -1,6 +1,7 @@
 import os
 
 from cereal import car
+from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.selfdrive.sunnypilot import get_model_generation
@@ -104,7 +105,7 @@ procs = [
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 ]
 
-if Params().get_bool("SunnylinkEnabled"):
+if Params().get_bool("SunnylinkEnabled") and Params().get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
   if os.path.exists("../athena/manage_sunnylinkd.py"):
     procs += [
       DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),

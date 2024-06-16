@@ -23,7 +23,8 @@ class SunnylinkApi(BaseApi):
     self.params = Params()
 
   def api_get(self, endpoint, method='GET', timeout=10, access_token=None, **kwargs):
-    if not self.params.get_bool("SunnylinkEnabled"):
+    sunnylink_dongle_id, comma_dongle_id = self._resolve_dongle_ids()
+    if not self.params.get_bool("SunnylinkEnabled") or sunnylink_dongle_id in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
       return None
 
     return super().api_get(endpoint, method, timeout, access_token, **kwargs)
