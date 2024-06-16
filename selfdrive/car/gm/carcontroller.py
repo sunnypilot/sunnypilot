@@ -42,7 +42,7 @@ class CarController(CarControllerBase):
     self.packer_obj = CANPacker(DBC[self.CP.carFingerprint]['radar'])
     self.packer_ch = CANPacker(DBC[self.CP.carFingerprint]['chassis'])
 
-    self.sm = messaging.SubMaster(['longitudinalPlan'])
+    self.sm = messaging.SubMaster(['longitudinalPlanSP'])
     self.param_s = Params()
     self.is_metric = self.param_s.get_bool("IsMetric")
     self.speed_limit_control_enabled = False

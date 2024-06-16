@@ -108,7 +108,7 @@ def manager_init() -> None:
     ("OsmDownloadedDate", "0"),
     ("OSMDownloadProgress", "{}"),
     ("SidebarTemperatureOptions", "0"),
-    ("SunnylinkEnabled", "1"),
+    ("SunnylinkEnabled", "0"),
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
