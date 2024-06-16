@@ -67,7 +67,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   buttons_layout = new QHBoxLayout();
   buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
-  updateButtonsLayout();
+  updateButtonsLayout(false);
 }
 
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
@@ -102,7 +102,7 @@ void AnnotatedCameraWidget::offroadTransition(bool offroad) {
 }
 #endif
 
-void AnnotatedCameraWidget::updateButtonsLayout() {
+void AnnotatedCameraWidget::updateButtonsLayout(bool is_rhd) {
   QLayoutItem *item;
   while ((item = buttons_layout->takeAt(0)) != nullptr) {
     delete item;
@@ -111,16 +111,16 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
   buttons_layout->setContentsMargins(0, 0, 10, rn_offset != 0 ? rn_offset + 10 : 20);
 
   buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
-  buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
+  buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | (is_rhd ? Qt::AlignRight : Qt::AlignLeft));
 
   buttons_layout->addStretch(1);
 
 #ifdef ENABLE_DASHCAM
-  buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | Qt::AlignRight);
+  buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | (is_rhd ? Qt::AlignLeft : Qt::AlignRight));
 #endif
 
   buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
-  buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+  buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | (is_rhd ? Qt::AlignLeft : Qt::AlignRight));
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
@@ -227,15 +227,15 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   recorder->updateState(s);
 #endif
 
-  // update buttons layout
-  updateButtonsLayout();
-
   // update DM icon
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
   dmActive = dm_state.getIsActiveMode();
   rightHandDM = dm_state.getIsRHD();
   // DM icon transition
   dm_fade_state = std::clamp(dm_fade_state+0.2*(0.5-dmActive), 0.0, 1.0);
+
+  // update buttons layout
+  updateButtonsLayout(rightHandDM);
 
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
