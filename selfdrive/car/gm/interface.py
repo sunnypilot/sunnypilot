@@ -88,7 +88,6 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.gm)]
     ret.autoResumeSng = False
     ret.enableBsm = 0x142 in fingerprint[CanBus.POWERTRAIN]
-    ret.customStockLongAvailable = True
 
     if candidate in EV_CAR:
       ret.transmissionType = TransmissionType.direct
@@ -121,6 +120,7 @@ class CarInterface(CarInterfaceBase):
         ret.pcmCruise = False
         ret.openpilotLongitudinalControl = True
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_CAM_LONG
+      ret.customStockLongAvailable = True
 
     else:  # ASCM, OBD-II harness
       ret.openpilotLongitudinalControl = True
