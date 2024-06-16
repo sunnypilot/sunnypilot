@@ -8,6 +8,7 @@ import os
 import threading
 import time
 
+from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
@@ -52,6 +53,10 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     thread.start()
   try:
     while not end_event.wait(0.1):
+      if not params.get_bool("SunnylinkEnabled"):
+        cloudlog.warning("Exiting sunnylinkd.handle_long_poll as SunnylinkEnabled is False")
+        break
+
       sm.update(0)
       if exit_event is not None and exit_event.is_set():
         end_event.set()
@@ -185,12 +190,16 @@ def main(exit_event: threading.Event = None):
   except Exception:
     cloudlog.exception("failed to set core affinity")
 
+  while params.get_bool("SunnylinkEnabled") and not params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
+    cloudlog.info("Waiting for sunnylink registration to complete")
+    time.sleep(10)
+
   UploadQueueCache.initialize(upload_queue)
 
   ws_uri = SUNNYLINK_ATHENA_HOST
   conn_start = None
   conn_retries = 0
-  while exit_event is None or not exit_event.is_set():
+  while (exit_event is None or not exit_event.is_set()) and params.get_bool("SunnylinkEnabled"):
     try:
       if conn_start is None:
         conn_start = time.monotonic()
@@ -220,6 +229,10 @@ def main(exit_event: threading.Event = None):
       params.remove("LastSunnylinkPingTime")
 
     time.sleep(backoff(conn_retries))
+
+  if not params.get_bool("SunnylinkEnabled"):
+    cloudlog.debug("Reached end of sunnylinkd.main while SunnylinkEnabled is False so will wait for 60 seconds before exiting")
+    time.sleep(60)
 
 
 if __name__ == "__main__":
