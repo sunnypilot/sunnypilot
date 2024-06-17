@@ -1,3 +1,7 @@
+sunnypilot - 0.9.8.0 (2024-xx-xx)
+========================
+* Always on driver monitoring toggle
+
 sunnypilot - 0.9.7.1 (2024-06-13)
 ========================
 * New driving model
