@@ -77,12 +77,15 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
+    if candidate == CAR.KIA_OPTIMA_G4_FL:
+      ret.steerActuatorDelay = 0.2
+
     if candidate == CAR.HYUNDAI_PALISADE_2023:
       for fw in car_fw:
         if fw.ecu == "eps":
           platform_str = "HYUNDAI_PALISADE_2023_EPS_4LXPC100" if fw.fwVersion.endswith(b'4LXPC100') else \
-                         "HYUNDAI_PALISADE_2023_EPS_2427" if fw.fwVersion.endswith(b'2427') else \
-                         candidate
+            "HYUNDAI_PALISADE_2023_EPS_2427" if fw.fwVersion.endswith(b'2427') else \
+              candidate
 
           CarInterfaceBase.configure_torque_tune(platform_str, ret.lateralTuning)
 
@@ -92,12 +95,8 @@ class CarInterface(CarInterfaceBase):
 
     # *** longitudinal control ***
     if candidate in (CANFD_CAR - CAN_CANFD_HYBRID_CAR):
-      ret.longitudinalTuning.kpV = [0.1]
-      ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR)
     else:
-      ret.longitudinalTuning.kpV = [0.5]
-      ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (UNSUPPORTED_LONGITUDINAL_CAR | CAMERA_SCC_CAR)
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
     ret.pcmCruise = not ret.openpilotLongitudinalControl
@@ -106,8 +105,7 @@ class CarInterface(CarInterfaceBase):
     ret.startingState = True
     ret.vEgoStarting = 0.1
     ret.startAccel = 1.0
-    ret.longitudinalActuatorDelayLowerBound = 0.5
-    ret.longitudinalActuatorDelayUpperBound = 0.5
+    ret.longitudinalActuatorDelay = 0.5
 
     if ret.flags & HyundaiFlags.CAN_CANFD_HYBRID:
       ret.stoppingDecelRate = 0.4
