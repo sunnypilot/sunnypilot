@@ -107,7 +107,7 @@ def manager_init() -> None:
     ("OSMDownloadProgress", "{}"),
     ("SidebarTemperatureOptions", "0"),
     ("SunnylinkEnabled", "1"),
-    {"SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"},
+    ("SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"),
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
