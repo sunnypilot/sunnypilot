@@ -1,6 +1,6 @@
 import os
 import json
-Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations')
+Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL')
 
 base_libs = [common, messaging, visionipc, transformations,
              'm', 'OpenCL', 'ssl', 'crypto', 'pthread'] + qt_env["LIBS"]
@@ -8,7 +8,7 @@ base_libs = [common, messaging, visionipc, transformations,
 if arch == 'larch64':
   base_libs.append('EGL')
 
-maps = arch in ['larch64', 'aarch64', 'x86_64']
+maps = arch in ['larch64', 'aarch64', 'x86_64'] and not UBUNTU_FOCAL
 
 if arch == "Darwin":
   del base_libs[base_libs.index('OpenCL')]
@@ -129,10 +129,6 @@ if GetOption('extras') and arch in ['larch64']:
     if "internal" in name:
       d['INTERNAL'] = "1"
 
-      import requests
-      r = requests.get("https://github.com/commaci2.keys")
-      r.raise_for_status()
-      d['SSH_KEYS'] = f'\\"{r.text.strip()}\\"'
     obj = senv.Object(f"installer/installers/installer_{name}.o", ["installer/installer.cc"], CPPDEFINES=d)
     f = senv.Program(f"installer/installers/installer_{name}", [obj, cont], LIBS=qt_libs)
     # keep installers small

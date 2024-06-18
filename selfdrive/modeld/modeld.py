@@ -212,7 +212,7 @@ def main(demo=False):
   extended_svs = ["lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"]
   if custom_model and model_capabilities & ModelCapabilities.NoO:
     extended_svs += ["navModelDEPRECATED", "navInstruction"]
-  pm = PubMaster(["modelV2", "modelV2SP", "cameraOdometry"])
+  pm = PubMaster(["modelV2", "modelV2SP", "drivingModelData", "cameraOdometry"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"] + extended_svs)
 
   publish_state = PublishState()
@@ -373,10 +373,11 @@ def main(demo=False):
 
     if model_output is not None:
       modelv2_send = messaging.new_message('modelV2')
+      drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
-      fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
-                      meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
-                      custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution, custom_model and model_capabilities & ModelCapabilities.NoO)
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
+                     frame_drop_ratio, meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
+                     custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution, custom_model and model_capabilities & ModelCapabilities.NoO)
 
       if not (custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution):
         desire_state = modelv2_send.modelV2.meta.desireState
@@ -387,8 +388,12 @@ def main(demo=False):
         modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
         modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
 
+      drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
+      drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
+
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
       pm.send('modelV2', modelv2_send)
+      pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
 
       modelv2_sp_send = messaging.new_message('modelV2SP')
