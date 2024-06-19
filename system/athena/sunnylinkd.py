@@ -190,8 +190,7 @@ def main(exit_event: threading.Event = None):
   except Exception:
     cloudlog.exception("failed to set core affinity")
 
-  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
-  while params.get_bool("SunnylinkEnabled") and not is_registered:
+  while params.get_bool("SunnylinkEnabled") and not params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
     cloudlog.info("Waiting for sunnylink registration to complete")
     time.sleep(10)
 
