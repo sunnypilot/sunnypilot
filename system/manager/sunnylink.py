@@ -2,12 +2,11 @@
 
 from openpilot.common.api.sunnylink import SunnylinkApi
 from openpilot.common.params import Params
-from openpilot.common.spinner import Spinner
 from openpilot.system.version import is_prebuilt
+import time
 
 
 def main():
-  # spinner = Spinner()
   extra_args = {}
 
   if not Params().get_bool("SunnylinkEnabled"):
@@ -23,7 +22,10 @@ def main():
 
   sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
   print(f"SunnyLinkId: {sunnylink_id}")
-  # spinner.close()
+
+  # Set the last ping time to the current time since we just registered
+  last_ping = int(time.monotonic() * 1e9)
+  Params().put("LastSunnylinkPingTime", str(last_ping))
 
 
 if __name__ == "__main__":

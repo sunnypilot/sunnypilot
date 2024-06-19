@@ -45,10 +45,10 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
       sunnylinkEnabledBtn->setDescription(shame_description);
     }
 
-    auto dialog_text = tr("A reboot is required to") + " " + (enabled ? tr("start") : tr("stop")) +" "+ tr("all connections and processes from sunnylink.") + "<br/><small>"+ tr("If that's not a problem for you, you can ignore this.")+ "</small>";
-    if (ConfirmationDialog::confirm(dialog_text, tr("Reboot Now!"), this)) {
-      Hardware::reboot();
-    }
+    //auto dialog_text = tr("A reboot is required to") + " " + (enabled ? tr("start") : tr("stop")) +" "+ tr("all connections and processes from sunnylink.") + "<br/><small>"+ tr("If that's not a problem for you, you can ignore this.")+ "</small>";
+    //if (ConfirmationDialog::confirm(dialog_text, tr("Reboot Now!"), this)) {
+    //  Hardware::reboot();
+    //}
     updateLabels();
   });
 
