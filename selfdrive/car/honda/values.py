@@ -105,7 +105,7 @@ class Footnote(Enum):
     "openpilot operates above 25mph for 9th Generation Accord 4CYL, 6CYL and Hybrid which don't have Low-Speed Follow.",
     Column.FSR_LONGITUDINAL)
   SERIAL_STEERING = CarFootnote(
-    "9th Generation model-years have ALC data over serial lines and require third party hardware to " +
+    "Certain model-years have ALC data over serial lines and require third party hardware to " +
     "interface with openpilot. For more information, " +
     "see <a href=\"https://github.com/mlocoteta/serialSteeringHardware\" target=\"_blank\">mlocoteta's GitHub</a>.",
     Column.HARDWARE)
@@ -200,13 +200,13 @@ class CAR(Platforms):
     flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
   )
   ACURA_MDX_HYBRID = HondaNidecPlatformConfig(
-    [HondaCarDocs("Acura MDX 2017-218", "AcuraWatch Plus", min_steer_speed=0. * CV.MPH_TO_MS)],
+    [HondaCarDocs("Acura MDX 2017-218", "AcuraWatch Plus", footnotes=[Footnote.SERIAL_STEERING], min_steer_speed=0. * CV.MPH_TO_MS)],
     CarSpecs(mass=4204 * CV.LB_TO_KG, wheelbase=2.82, steerRatio=15.66, centerToFrontRatio=0.428, tireStiffnessFactor=0.444),  # 15.0 as spec
     dbc_dict('acura_mdx_2018_hybrid_generated', 'acura_ilx_2016_nidec'),
     flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
   )
   ACURA_TLX = HondaNidecPlatformConfig(
-    [HondaCarDocs("Acura TLX 2018", "AcuraWatch Plus", min_steer_speed=0. * CV.MPH_TO_MS)],
+    [HondaCarDocs("Acura TLX 2018", "AcuraWatch Plus", footnotes=[Footnote.SERIAL_STEERING], min_steer_speed=0. * CV.MPH_TO_MS)],
     CarSpecs(mass=3635 * CV.LB_TO_KG, wheelbase=2.77, steerRatio=15, centerToFrontRatio=0.37, tireStiffnessFactor=0.72),  # 15.0 as spec
     dbc_dict('acura_tlx_2018_generated', 'acura_ilx_2016_nidec'),
     flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
@@ -280,13 +280,13 @@ class CAR(Platforms):
     dbc_dict('honda_civic_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
   )
   HONDA_ACCORD_4CYL_9TH_GEN = HondaNidecPlatformConfig(
-    [HondaCarDocs("Honda Accord 4-Cylinder 2016-17")],
+    [HondaCarDocs("Honda Accord 4-Cylinder 2016-17", footnotes=[Footnote.ACCORD_NIDEC, Footnote.SERIAL_STEERING])],
     CarSpecs(mass=1487, wheelbase=2.75, centerToFrontRatio=0.39, steerRatio=13.66),  # 13.37 is end-to-end spec
     dbc_dict('honda_accord_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
     flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
   )
   HONDA_CLARITY = HondaNidecPlatformConfig(
-    [HondaCarDocs("Honda Clarity 2018-22", footnotes=[Footnote.ACCORD_NIDEC, Footnote.SERIAL_STEERING])],
+    [HondaCarDocs("Honda Clarity 2018-22")],
     CarSpecs(mass=1838, wheelbase=2.75, centerToFrontRatio=0.4, steerRatio=16.50),  # 12.72 is end-to-end spec
     dbc_dict('honda_clarity_hybrid_2018_can_generated', 'acura_ilx_2016_nidec'),
   )
