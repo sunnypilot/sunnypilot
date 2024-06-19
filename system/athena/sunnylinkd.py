@@ -193,7 +193,7 @@ def main(exit_event: threading.Event = None):
   is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
   while params.get_bool("SunnylinkEnabled") and not is_registered:
     cloudlog.info("Waiting for sunnylink registration to complete")
-    time.sleep(60)
+    time.sleep(10)
 
   UploadQueueCache.initialize(upload_queue)
 
