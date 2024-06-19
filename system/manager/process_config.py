@@ -54,6 +54,11 @@ def use_sunnylink(started, params, CP: car.CarParams) -> bool:
   is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
   return is_sunnylink_enabled and is_registered
 
+def sunnylink_need_register(started, params, CP: car.CarParams) -> bool:
+  is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
+  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
+  return is_sunnylink_enabled and not is_registered
+
 procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
 
@@ -109,12 +114,12 @@ procs = [
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], notcar),
   PythonProcess("webrtcd", "system.webrtc.webrtcd", notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
+
+  # Sunnylink <3
+  DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
+  PythonProcess("sunnylink_registration", "system.manager.sunnylink", sunnylink_need_register),
 ]
 
-if os.path.exists("../athena/manage_sunnylinkd.py"):
-  procs += [
-    DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
-  ]
 if os.path.exists("../loggerd/sunnylink_uploader.py"):
   procs += [
     PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", use_sunnylink),
