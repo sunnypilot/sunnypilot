@@ -55,7 +55,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     while not end_event.wait(0.1):
       if not params.get_bool("SunnylinkEnabled"):
         cloudlog.warning("Exiting sunnylinkd.handle_long_poll as SunnylinkEnabled is False")
-        continue
+        break
 
       sm.update(0)
       if exit_event is not None and exit_event.is_set():
