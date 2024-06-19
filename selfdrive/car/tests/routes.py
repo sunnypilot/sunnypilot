@@ -72,6 +72,7 @@ routes = [
   CarTestRoute("5085c761395d1fe6|2023-04-07--18-20-06", GM.CHEVROLET_TRAILBLAZER),
 
   CarTestRoute("0e7a2ba168465df5|2020-10-18--14-14-22", HONDA.ACURA_RDX_3G),
+  CarTestRoute("c6c6b318abec90b8/00000017--88ede6eae6", HONDA.ACURA_MDX_HYBRID),
   CarTestRoute("a74b011b32b51b56|2020-07-26--17-09-36", HONDA.HONDA_CIVIC),
   CarTestRoute("a859a044a447c2b0|2020-03-03--18-42-45", HONDA.HONDA_CRV_EU),
   CarTestRoute("68aac44ad69f838e|2021-05-18--20-40-52", HONDA.HONDA_CRV),
@@ -297,7 +298,7 @@ routes = [
 
   # Segments that test specific issues
   # Controls mismatch due to interceptor threshold
-  CarTestRoute("cfb32f0fb91b173b|2022-04-06--14-54-45", HONDA.CIVIC, segment=21),
+  CarTestRoute("cfb32f0fb91b173b|2022-04-06--14-54-45", HONDA.HONDA_CIVIC, segment=21),
   # Controls mismatch due to standstill threshold
   CarTestRoute("bec2dcfde6a64235|2022-04-08--14-21-32", HONDA.HONDA_CRV_HYBRID, segment=22),
 ]

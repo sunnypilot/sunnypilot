@@ -79,3 +79,4 @@ legend = ["LAT_ACCEL_FACTOR", "MAX_LAT_ACCEL_MEASURED", "FRICTION"]
 # Not sure about these
 "HONDA_ACCORD_4CYL_9TH_GEN" = [1.7, 0.35, 0.21]
 "ACURA_TLX" = [2.0, 0.8 , 0.08]
+"ACURA_MDX_HYBRID" = [2.3, 0.8 , 0.05]
