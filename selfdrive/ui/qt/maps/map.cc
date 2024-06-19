@@ -170,7 +170,7 @@ void MapWindow::updateState(const UIState &s) {
   }
   prev_time_valid = sm.valid("clocks");
 
-  if (sm.updated("modelV2") && uiState()->scene.custom_driving_model && uiState()->scene.driving_model_gen != 4 && uiState()->scene.driving_model_gen != 0) {
+  if (sm.updated("modelV2")) {
     // set path color on change, and show map on rising edge of navigate on openpilot
     auto car_control = sm["carControl"].getCarControl();
     bool nav_enabled = sm["modelV2"].getModelV2().getNavEnabledDEPRECATED() &&
