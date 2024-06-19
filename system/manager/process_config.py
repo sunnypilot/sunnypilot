@@ -48,6 +48,12 @@ def model_use_nav(started, params, CP: car.CarParams) -> bool:
   custom_model, model_gen = get_model_generation(params)
   return started and custom_model and model_gen not in (0, 4)
 
+
+def use_sunnylink(started, params, CP: car.CarParams) -> bool:
+  is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
+  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
+  return is_sunnylink_enabled and is_registered
+
 procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
 
@@ -105,15 +111,14 @@ procs = [
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 ]
 
-if Params().get_bool("SunnylinkEnabled") and Params().get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
-  if os.path.exists("../athena/manage_sunnylinkd.py"):
-    procs += [
-      DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
-    ]
-  if os.path.exists("../loggerd/sunnylink_uploader.py"):
-    procs += [
-      PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", always_run),
-    ]
+if os.path.exists("../athena/manage_sunnylinkd.py"):
+  procs += [
+    DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
+  ]
+if os.path.exists("../loggerd/sunnylink_uploader.py"):
+  procs += [
+    PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", use_sunnylink),
+  ]
 
 if os.path.exists("./gitlab_runner.sh") and not PC:
   # Only devs!

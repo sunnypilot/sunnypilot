@@ -8,6 +8,7 @@ import os
 import threading
 import time
 
+from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
@@ -52,6 +53,11 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     thread.start()
   try:
     while not end_event.wait(0.1):
+      if not params.get_bool("SunnylinkEnabled"):
+        cloudlog.warning("Exiting sunnylinkd.handle_long_poll as SunnylinkEnabled is False")
+        exit_event = exit_event or threading.Event()
+        exit_event.set()
+
       sm.update(0)
       if exit_event is not None and exit_event.is_set():
         end_event.set()
@@ -223,4 +229,14 @@ def main(exit_event: threading.Event = None):
 
 
 if __name__ == "__main__":
-  main()
+  is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
+  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
+  while is_sunnylink_enabled and not is_registered:
+    cloudlog.info("Waiting for sunnylink registration to complete")
+    time.sleep(60)
+
+  if is_sunnylink_enabled:
+    main()
+  else:
+    cloudlog.info("Exiting sunnylinkd as SunnylinkEnabled is False")
+    exit(0)
