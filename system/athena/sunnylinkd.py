@@ -190,10 +190,8 @@ def main(exit_event: threading.Event = None):
   except Exception:
     cloudlog.exception("failed to set core affinity")
 
-  is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
   is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
-
-  while is_sunnylink_enabled and not is_registered:
+  while params.get_bool("SunnylinkEnabled") and not is_registered:
     cloudlog.info("Waiting for sunnylink registration to complete")
     time.sleep(60)
 
@@ -202,7 +200,7 @@ def main(exit_event: threading.Event = None):
   ws_uri = SUNNYLINK_ATHENA_HOST
   conn_start = None
   conn_retries = 0
-  while exit_event is None or not exit_event.is_set() and is_sunnylink_enabled:
+  while (exit_event is None or not exit_event.is_set()) and params.get_bool("SunnylinkEnabled"):
     try:
       if conn_start is None:
         conn_start = time.monotonic()
@@ -233,7 +231,7 @@ def main(exit_event: threading.Event = None):
 
     time.sleep(backoff(conn_retries))
 
-  if not is_sunnylink_enabled:
+  if not params.get_bool("SunnylinkEnabled"):
     cloudlog.debug("Reached end of sunnylinkd.main while SunnylinkEnabled is False so will wait for 60 seconds before exiting")
     time.sleep(60)
 
