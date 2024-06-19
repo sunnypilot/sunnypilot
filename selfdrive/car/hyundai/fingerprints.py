@@ -1190,6 +1190,14 @@ FW_VERSIONS = {
       b'\xf1\x006T6J0_C2\x00\x006T6K1051\x00\x00TOS4N20NS2\x00\x00\x00\x00',
     ],
   },
+  CAR.KIA_CEED_PHEV_2022_NON_SCC: {
+    (Ecu.eps, 0x7D4, None): [
+      b'\xf1\x00CD  MDPS C 1.00 1.01 56310-XX000 4CPHC101',
+    ],
+    (Ecu.fwdCamera, 0x7C4, None): [
+      b'\xf1\x00CDH LKAS AT EUR LHD 1.00 1.01 99211-CR700 931',
+    ],
+  },
   CAR.KIA_FORTE_2019_NON_SCC: {
     (Ecu.eps, 0x7D4, None): [
       b'\xf1\x00BD  MDPS C 1.00 1.04 56310/M6000 4BDDC104',
