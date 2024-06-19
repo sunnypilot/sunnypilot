@@ -120,8 +120,8 @@ class CarState(CarStateBase):
       cruise_available_msg = "E_CRUISE_CONTROL" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "EMS16"
       cruise_enabled_msg = "E_CRUISE_CONTROL" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "LVR12"
       cruise_speed_msg = "ELECT_GEAR" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "LVR12"
-      ret.cruiseState.available = cp.vl[cruise_available_msg]['CRUISE_LAMP_M'] != 0
-      ret.cruiseState.enabled = cp.vl[cruise_enabled_msg]['CF_Lvr_CruiseSet'] != 0
+      ret.cruiseState.available = cp.vl[cruise_available_msg]["CRUISE_LAMP_M"] != 0
+      ret.cruiseState.enabled = cp.vl[cruise_enabled_msg]["CF_Lvr_CruiseSet"] != 0
       ret.cruiseState.speed = cp.vl[cruise_speed_msg]["CF_Lvr_CruiseSet"] * speed_conv
       ret.cruiseState.standstill = False
       ret.cruiseState.nonAdaptive = False
@@ -367,7 +367,7 @@ class CarState(CarStateBase):
 
     if CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
       messages.append(("ELECT_GEAR", 20))
-      if CP.spFlags & HyundaiFlagsSP.SP_NON_SCC:
+      if CP.carFingerprint in NON_SCC_CAR:
         messages.append(("E_CRUISE_CONTROL", 10))
     elif CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
       pass
