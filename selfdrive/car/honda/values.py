@@ -201,7 +201,7 @@ class CAR(Platforms):
   )
   ACURA_TLX = HondaNidecPlatformConfig(
     [HondaCarDocs("Acura TLX 2018", "AcuraWatch Plus", min_steer_speed=0. * CV.MPH_TO_MS)],
-    CarSpecs(mass=3095 * CV.LB_TO_KG, wheelbase=2.77, steerRatio=15, centerToFrontRatio=0.37, tireStiffnessFactor=0.72),  # 15.0 as spec
+    CarSpecs(mass=3635 * CV.LB_TO_KG, wheelbase=2.77, steerRatio=15, centerToFrontRatio=0.37, tireStiffnessFactor=0.72),  # 15.0 as spec
     dbc_dict('acura_tlx_2018_generated', 'acura_ilx_2016_nidec'),
     flags=HondaFlags.NIDEC_ALT_SCM_MESSAGES,
   )
