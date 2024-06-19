@@ -205,7 +205,8 @@ def main(exit_event: threading.Event = None):
   while exit_event is None or not exit_event.is_set():
     try:
       if not is_sunnylink_enabled:
-        cloudlog.warning("Exiting sunnylinkd.main as SunnylinkEnabled is False")
+        cloudlog.debug("Exiting sunnylinkd.main as SunnylinkEnabled is False but will retry in 60 seconds")
+        time.sleep(60)
         break
 
       if conn_start is None:
