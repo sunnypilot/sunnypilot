@@ -6,7 +6,7 @@ from openpilot.common.spinner import Spinner
 from openpilot.system.version import is_prebuilt
 
 
-if __name__ == "__main__":
+def main():
   # spinner = Spinner()
   extra_args = {}
 
@@ -24,3 +24,7 @@ if __name__ == "__main__":
   sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
   print(f"SunnyLinkId: {sunnylink_id}")
   # spinner.close()
+
+
+if __name__ == "__main__":
+  main()
