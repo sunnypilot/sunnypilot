@@ -202,13 +202,8 @@ def main(exit_event: threading.Event = None):
   ws_uri = SUNNYLINK_ATHENA_HOST
   conn_start = None
   conn_retries = 0
-  while exit_event is None or not exit_event.is_set():
+  while exit_event is None or not exit_event.is_set() and is_sunnylink_enabled:
     try:
-      if not is_sunnylink_enabled:
-        cloudlog.debug("Exiting sunnylinkd.main as SunnylinkEnabled is False but will retry in 60 seconds")
-        time.sleep(60)
-        break
-
       if conn_start is None:
         conn_start = time.monotonic()
 
@@ -237,6 +232,10 @@ def main(exit_event: threading.Event = None):
       params.remove("LastSunnylinkPingTime")
 
     time.sleep(backoff(conn_retries))
+
+  if not is_sunnylink_enabled:
+    cloudlog.debug("Reached end of sunnylinkd.main while SunnylinkEnabled is False so will wait for 60 seconds before exiting")
+    time.sleep(60)
 
 
 if __name__ == "__main__":
