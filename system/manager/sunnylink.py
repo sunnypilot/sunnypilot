@@ -11,7 +11,6 @@ def main():
 
   if not Params().get_bool("SunnylinkEnabled"):
     print("Sunnylink is not enabled. Exiting.")
-    # spinner.close()
     exit(0)
 
   if not is_prebuilt():
