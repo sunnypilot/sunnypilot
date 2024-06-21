@@ -72,7 +72,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       elif metered and int(prime_type) > 2:
         cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
         comma_prime_cellular_end_event.set()
-      elif comma_prime_cellular_end_event.is_set():
+      elif comma_prime_cellular_end_event.is_set() and not DISALLOW_LOG_UPLOAD.is_set():
         cloudlog.debug(f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
         comma_prime_cellular_end_event.clear()
   finally:
