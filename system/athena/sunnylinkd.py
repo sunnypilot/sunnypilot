@@ -26,6 +26,7 @@ HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
 SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require a change on sidebar.cc
+DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
@@ -65,7 +66,10 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       prime_type = params.get("PrimeType", encoding='utf-8') or 0
       metered = sm['deviceState'].networkMetered
 
-      if metered and int(prime_type) > 2:
+      if DISALLOW_LOG_UPLOAD.is_set() and not comma_prime_cellular_end_event.is_set():
+        cloudlog.debug(f"sunnylinkd.handle_long_poll: DISALLOW_LOG_UPLOAD, setting comma_prime_cellular_end_event")
+        comma_prime_cellular_end_event.set()
+      elif metered and int(prime_type) > 2:
         cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
         comma_prime_cellular_end_event.set()
       elif comma_prime_cellular_end_event.is_set():
@@ -146,6 +150,10 @@ def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event
       log_handler(comma_prime_cellular_end_event, SUNNYLINK_LOG_ATTR_NAME)
   comma_prime_cellular_end_event.set()
 
+
+@dispatcher.add_method
+def toggleLogUpload(enabled: bool):
+  DISALLOW_LOG_UPLOAD.clear() if enabled and DISALLOW_LOG_UPLOAD.is_set() else DISALLOW_LOG_UPLOAD.set()
 
 @dispatcher.add_method
 def getParamsAllKeys() -> list[str]:
