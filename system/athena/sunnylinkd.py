@@ -8,7 +8,6 @@ import os
 import threading
 import time
 
-from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
   recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
@@ -19,6 +18,7 @@ from openpilot.common.api import SunnylinkApi
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.manager.sunnylink import sunnylink_need_register, sunnylink_ready
 import cereal.messaging as messaging
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
@@ -26,6 +26,7 @@ HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
 LOCAL_PORT_WHITELIST = {8022}
 SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require a change on sidebar.cc
+DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
@@ -53,7 +54,7 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     thread.start()
   try:
     while not end_event.wait(0.1):
-      if not params.get_bool("SunnylinkEnabled"):
+      if not sunnylink_ready(params):
         cloudlog.warning("Exiting sunnylinkd.handle_long_poll as SunnylinkEnabled is False")
         break
 
@@ -65,10 +66,13 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       prime_type = params.get("PrimeType", encoding='utf-8') or 0
       metered = sm['deviceState'].networkMetered
 
-      if metered and int(prime_type) > 2:
+      if DISALLOW_LOG_UPLOAD.is_set() and not comma_prime_cellular_end_event.is_set():
+        cloudlog.debug(f"sunnylinkd.handle_long_poll: DISALLOW_LOG_UPLOAD, setting comma_prime_cellular_end_event")
+        comma_prime_cellular_end_event.set()
+      elif metered and int(prime_type) > 2:
         cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
         comma_prime_cellular_end_event.set()
-      elif comma_prime_cellular_end_event.is_set():
+      elif comma_prime_cellular_end_event.is_set() and not DISALLOW_LOG_UPLOAD.is_set():
         cloudlog.debug(f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
         comma_prime_cellular_end_event.clear()
   finally:
@@ -148,6 +152,10 @@ def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event
 
 
 @dispatcher.add_method
+def toggleLogUpload(enabled: bool):
+  DISALLOW_LOG_UPLOAD.clear() if enabled and DISALLOW_LOG_UPLOAD.is_set() else DISALLOW_LOG_UPLOAD.set()
+
+@dispatcher.add_method
 def getParamsAllKeys() -> list[str]:
   keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
   return keys
@@ -190,7 +198,7 @@ def main(exit_event: threading.Event = None):
   except Exception:
     cloudlog.exception("failed to set core affinity")
 
-  while params.get_bool("SunnylinkEnabled") and not params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
+  while sunnylink_need_register(params):
     cloudlog.info("Waiting for sunnylink registration to complete")
     time.sleep(10)
 
@@ -199,7 +207,7 @@ def main(exit_event: threading.Event = None):
   ws_uri = SUNNYLINK_ATHENA_HOST
   conn_start = None
   conn_retries = 0
-  while (exit_event is None or not exit_event.is_set()) and params.get_bool("SunnylinkEnabled"):
+  while (exit_event is None or not exit_event.is_set()) and sunnylink_ready(params):
     try:
       if conn_start is None:
         conn_start = time.monotonic()
@@ -230,8 +238,8 @@ def main(exit_event: threading.Event = None):
 
     time.sleep(backoff(conn_retries))
 
-  if not params.get_bool("SunnylinkEnabled"):
-    cloudlog.debug("Reached end of sunnylinkd.main while SunnylinkEnabled is False so will wait for 60 seconds before exiting")
+  if not sunnylink_ready(params):
+    cloudlog.debug("Reached end of sunnylinkd.main while sunnylink is not ready. Waiting 60s before retrying")
     time.sleep(60)
 
 

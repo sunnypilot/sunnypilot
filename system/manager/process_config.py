@@ -1,12 +1,12 @@
 import os
 
 from cereal import car
-from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.selfdrive.sunnypilot import get_model_generation
 from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
 from openpilot.system.mapd_manager import MAPD_PATH, COMMON_DIR
+from openpilot.system.manager.sunnylink import sunnylink_need_register, sunnylink_ready
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
 
@@ -48,16 +48,13 @@ def model_use_nav(started, params, CP: car.CarParams) -> bool:
   custom_model, model_gen = get_model_generation(params)
   return started and custom_model and model_gen not in (0, 4)
 
+def sunnylink_ready_shim(started, params, CP: car.CarParams) -> bool:
+  """Shim for sunnylink_ready to match the process manager signature."""
+  return sunnylink_ready(params)
 
-def use_sunnylink(started, params, CP: car.CarParams) -> bool:
-  is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
-  return is_sunnylink_enabled and is_registered
-
-def sunnylink_need_register(started, params, CP: car.CarParams) -> bool:
-  is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
-  is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
-  return is_sunnylink_enabled and not is_registered
+def sunnylink_need_register_shim(started, params, CP: car.CarParams) -> bool:
+  """Shim for sunnylink_need_register to match the process manager signature."""
+  return sunnylink_need_register(params)
 
 procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
@@ -117,12 +114,12 @@ procs = [
 
   # Sunnylink <3
   DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
-  PythonProcess("sunnylink_registration", "system.manager.sunnylink", sunnylink_need_register),
+  PythonProcess("sunnylink_registration", "system.manager.sunnylink", sunnylink_need_register_shim),
 ]
 
 if os.path.exists("../loggerd/sunnylink_uploader.py"):
   procs += [
-    PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", use_sunnylink),
+    PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", sunnylink_ready_shim),
   ]
 
 if os.path.exists("./gitlab_runner.sh") and not PC:
