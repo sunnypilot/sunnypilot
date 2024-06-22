@@ -50,10 +50,6 @@ def register_sunnylink():
   sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
   print(f"SunnyLinkId: {sunnylink_id}")
 
-  # Set the last ping time to the current time since we just registered
-  last_ping = int(time.monotonic() * 1e9)
-  Params().put("LastSunnylinkPingTime", str(last_ping))
-
 
 def main():
   """The main method is expected to be called by the manager when the device boots up."""
