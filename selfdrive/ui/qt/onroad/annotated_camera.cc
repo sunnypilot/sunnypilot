@@ -1370,7 +1370,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   }
 
   // paint path
-  QLinearGradient bg(0, height(), 0, height() / 4);
+  QLinearGradient bg(0, height(), 0, 0);
   if (madsEnabled || car_state.getCruiseState().getEnabled()) {
     if (steerOverride && latActive) {
       bg.setColorAt(0.0, QColor::fromHslF(20 / 360., 0.94, 0.51, 0.17));
@@ -1381,8 +1381,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
       bg.setColorAt(1, whiteColor(0));
     } else if (sm["controlsState"].getControlsState().getExperimentalMode()) {
       // The first half of track_vertices are the points for the right side of the path
-      // and the indices match the positions of accel from uiPlan
-      const auto &acceleration = sm["uiPlan"].getUiPlan().getAccel();
+      const auto &acceleration = sm["modelV2"].getModelV2().getAcceleration().getX();
       const int max_len = std::min<int>(scene.track_vertices.length() / 2, acceleration.size());
 
       for (int i = 0; i < max_len; ++i) {
@@ -1650,7 +1649,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   painter.setPen(Qt::NoPen);
 
   if (s->scene.world_objects_visible) {
-    update_model(s, model, sm["uiPlan"].getUiPlan());
+    update_model(s, model);
     drawLaneLines(painter, s);
 
     if (s->scene.longitudinal_control && sm.rcv_frame("radarState") > s->scene.started_frame) {

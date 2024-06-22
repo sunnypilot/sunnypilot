@@ -21,15 +21,12 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "ford"
+    ret.dashcamOnly = bool(ret.flags & FordFlags.CANFD)
 
     ret.radarUnavailable = True
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
-
-    ret.longitudinalTuning.kpBP = [0.]
-    ret.longitudinalTuning.kpV = [0.5]
-    ret.longitudinalTuning.kiV = [0.]
 
     if Params().get("DongleId", encoding='utf8') in ("4fde83db16dc0802", "112e4d6e0cad05e1", "e36b272d5679115f", "24574459dd7fb3e0", "83a4e056c7072678"):
       ret.spFlags |= FordFlagsSP.SP_ENHANCED_LAT_CONTROL.value

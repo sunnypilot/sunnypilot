@@ -7,7 +7,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.numpy_fast import interp
 from openpilot.selfdrive.car.interfaces import LatControlInputs
 from openpilot.common.params import Params
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, apply_deadzone
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.pid import PIDController
 from openpilot.selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
