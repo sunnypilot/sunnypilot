@@ -82,15 +82,17 @@ class SunnylinkApi(BaseApi):
     privkey_path = Path(Paths.persist_root()+"/comma/id_rsa")
     pubkey_path = Path(Paths.persist_root()+"/comma/id_rsa.pub")
 
+    start_time = time.monotonic()
+    successful_registration = False
     if not pubkey_path.is_file():
       sunnylink_dongle_id = UNREGISTERED_SUNNYLINK_DONGLE_ID
       self._status_update("Public key not found, setting dongle ID to unregistered.")
     else:
+      Params().put("LastSunnylinkPingTime", "0")  # Reset the last ping time to 0 if we are trying to register
       with pubkey_path.open() as f1, privkey_path.open() as f2:
         public_key = f1.read()
         private_key = f2.read()
 
-      start_time = time.monotonic()
       backoff = 1
       while True:
         register_token = jwt.encode({'register': True, 'exp': datetime.utcnow() + timedelta(hours=1)}, private_key, algorithm='RS256')
@@ -102,17 +104,29 @@ class SunnylinkApi(BaseApi):
 
           resp = self.api_get("v2/pilotauth/", method='POST', timeout=15, imei=imei1, imei2=imei2, serial=serial, comma_dongle_id=comma_dongle_id, public_key=public_key, register_token=register_token)
 
+          if resp.status_code in (409, 412):
+            timeout = time.monotonic() - start_time  # Don't retry if the public key is already in use
+            key_in_use = "Public key is already in use, is your key unique? Contact your vendor for a new key."
+            unsafe_key = "Public key is known to not be unique and it's unsafe. Contact your vendor for a new key."
+            error_message = key_in_use if resp.status_code == 409 else unsafe_key
+            raise Exception(error_message)
+
           if resp.status_code != 200:
-            raise Exception(f"Failed to register with sunnylink. Status code: {resp.status_code}")
-          else:
-            dongleauth = json.loads(resp.text)
-            sunnylink_dongle_id = dongleauth["device_id"]
-            if sunnylink_dongle_id:
-              self._status_update("Device registered successfully.")
-              break
+            raise Exception(f"Failed to register with sunnylink. Status code: {resp.status_code}\nData\n:{resp.text}")
+
+          dongleauth = json.loads(resp.text)
+          sunnylink_dongle_id = dongleauth["device_id"]
+          if sunnylink_dongle_id:
+            self._status_update("Device registered successfully.")
+            successful_registration = True
+            break
         except Exception as e:
           if verbose:
             self._status_update(f"Waiting {backoff}s before retry, Exception occurred during registration: [{str(e)}]")
+
+          with open('/data/community/crashes/error.txt', 'a') as f:
+            f.write(f"[{datetime.now()}] sunnylink: {str(e)}\n")
+
           backoff = min(backoff * 2, 60)
           time.sleep(backoff)
 
@@ -122,6 +136,14 @@ class SunnylinkApi(BaseApi):
           break
 
     self.params.put("SunnylinkDongleId", sunnylink_dongle_id or UNREGISTERED_SUNNYLINK_DONGLE_ID)
+
+    # Set the last ping time to the current time since we were just talking to the API
+    last_ping = int(time.monotonic() * 1e9) if successful_registration else start_time
+    Params().put("LastSunnylinkPingTime", str(last_ping))
+
+    # Disable sunnylink if registration was not successful
+    if not successful_registration:
+      Params().put_bool("SunnylinkEnabled", False)
 
     self.spinner = None
     return sunnylink_dongle_id
