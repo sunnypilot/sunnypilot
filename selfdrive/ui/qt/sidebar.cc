@@ -158,23 +158,22 @@ void Sidebar::updateState(const UIState &s) {
   auto sl_dongle_id = getSunnylinkDongleId();
   auto last_sunnylink_ping_str = params.get("LastSunnylinkPingTime");
   auto last_sunnylink_ping = std::stoull(last_sunnylink_ping_str.empty() ? "0" : last_sunnylink_ping_str);
-  auto current_nanos = nanos_since_boot();
-  auto elapsed_sunnylink_ping = current_nanos - last_sunnylink_ping;
+  auto elapsed_sunnylink_ping = nanos_since_boot() - last_sunnylink_ping;
   auto sunnylink_enabled = params.getBool("SunnylinkEnabled");
-  if (!sunnylink_enabled) {
-    sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("DISABLED")}, disabled_color};
-  } else if(!sl_dongle_id.has_value()) {
-    sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("REGIST...")}, progress_color};
-  } else if (last_sunnylink_ping == 0) {
-    sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("OFFLINE")}, warning_color};
-  } else {
-    if (elapsed_sunnylink_ping < 80000000000ULL) {
-      sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ONLINE")}, good_color};
-    }
-    else {
-      sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), tr("ERROR")}, danger_color};
-    }
+
+  QString status = tr("DISABLED");
+  QColor color = disabled_color;
+
+  if (sunnylink_enabled && last_sunnylink_ping == 0) {
+    // If sunnylink is enabled, but we don't have a dongle id, and we haven't received a ping yet, we are registering
+    status = sl_dongle_id.has_value() ? tr("OFFLINE") : tr("REGIST...");
+    color = sl_dongle_id.has_value() ? warning_color : progress_color;
+  } else if (sunnylink_enabled) {
+    // If sunnylink is enabled, we are considered online if we have received a ping in the last 80 seconds, else error.
+    status = elapsed_sunnylink_ping < 80000000000ULL ? tr("ONLINE") : tr("ERROR");
+    color = elapsed_sunnylink_ping < 80000000000ULL ? good_color : danger_color;
   }
+  sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), status}, color };
   setProperty("sunnylinkStatus", QVariant::fromValue(sunnylinkStatus));
 }
 
