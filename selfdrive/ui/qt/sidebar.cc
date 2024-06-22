@@ -166,7 +166,7 @@ void Sidebar::updateState(const UIState &s) {
 
   if (sunnylink_enabled && last_sunnylink_ping == 0) {
     // If sunnylink is enabled, but we don't have a dongle id, and we haven't received a ping yet, we are registering
-    status = sl_dongle_id.has_value() ? tr("OFFLINE") : tr("REGISTERING");
+    status = sl_dongle_id.has_value() ? tr("OFFLINE") : tr("REGIST...");
     color = sl_dongle_id.has_value() ? warning_color : progress_color;
   } else if (sunnylink_enabled) {
     // If sunnylink is enabled, we are considered online if we have received a ping in the last 80 seconds, else error.

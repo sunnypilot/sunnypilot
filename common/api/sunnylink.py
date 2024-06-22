@@ -124,7 +124,7 @@ class SunnylinkApi(BaseApi):
             self._status_update(f"Waiting {backoff}s before retry, Exception occurred during registration: [{str(e)}]")
 
           with open('/data/community/crashes/error.txt', 'a') as f:
-            f.write(f"{datetime.now()}: {str(e)}\n")
+            f.write(f"[{datetime.now()}] sunnylink: {str(e)}\n")
 
           backoff = min(backoff * 2, 60)
           time.sleep(backoff)
