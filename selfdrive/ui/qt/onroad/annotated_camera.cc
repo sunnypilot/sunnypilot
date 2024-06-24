@@ -48,22 +48,6 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   left_img = loadPixmap("../assets/img_turn_left_icon.png", {subsign_img_size, subsign_img_size});
   right_img = loadPixmap("../assets/img_turn_right_icon.png", {subsign_img_size, subsign_img_size});
 
-  // screen recoder - neokii
-
-#ifdef ENABLE_DASHCAM
-  record_timer = std::make_shared<QTimer>();
-  QObject::connect(record_timer.get(), &QTimer::timeout, [=]() {
-    if (recorder) {
-      recorder->update_screen();
-    }
-  });
-  record_timer->start(1000/UI_FREQ);
-
-  recorder = new ScreenRecoder(this);
-
-  QObject::connect(uiState(), &UIState::offroadTransition, this, &AnnotatedCameraWidget::offroadTransition);
-#endif
-
   buttons_layout = new QHBoxLayout();
   buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
@@ -92,16 +76,6 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
   }
 }
 
-#ifdef ENABLE_DASHCAM
-void AnnotatedCameraWidget::offroadTransition(bool offroad) {
-  if (offroad) {
-    if (recorder) recorder->stop();
-
-    roadName = "";
-  }
-}
-#endif
-
 void AnnotatedCameraWidget::updateButtonsLayout(bool is_rhd) {
   QLayoutItem *item;
   while ((item = buttons_layout->takeAt(0)) != nullptr) {
@@ -114,10 +88,6 @@ void AnnotatedCameraWidget::updateButtonsLayout(bool is_rhd) {
   buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | (is_rhd ? Qt::AlignRight : Qt::AlignLeft));
 
   buttons_layout->addStretch(1);
-
-#ifdef ENABLE_DASHCAM
-  buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | (is_rhd ? Qt::AlignLeft : Qt::AlignRight));
-#endif
 
   buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
   buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | (is_rhd ? Qt::AlignLeft : Qt::AlignRight));
@@ -222,11 +192,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update onroad settings button state
   onroad_settings_btn->updateState(s);
 
-#ifdef ENABLE_DASHCAM
-  // update screen recorder button
-  recorder->updateState(s);
-#endif
-
   // update DM icon
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
   dmActive = dm_state.getIsActiveMode();
@@ -248,14 +213,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
     main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
-
-#ifdef ENABLE_DASHCAM
-  // hide screen recorder button for alerts and flip for right hand DM
-  if (recorder->isEnabled()) {
-    recorder->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(recorder, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
-  }
-#endif
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   slcState = lp_sp.getSpeedLimitControlState();
