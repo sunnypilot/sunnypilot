@@ -91,14 +91,10 @@ class CarInterface(CarInterfaceBase):
 
     # *** longitudinal control ***
     if candidate in CANFD_CAR:
-      ret.longitudinalTuning.kpV = [0.1]
-      ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR)
       if ret.flags & HyundaiFlags.CANFD_CAMERA_SCC and not hda2:
         ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
     else:
-      ret.longitudinalTuning.kpV = [0.5]
-      ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
       if candidate in CAMERA_SCC_CAR:
         ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
@@ -109,8 +105,7 @@ class CarInterface(CarInterfaceBase):
     ret.startingState = True
     ret.vEgoStarting = 0.1
     ret.startAccel = 1.0
-    ret.longitudinalActuatorDelayLowerBound = 0.5
-    ret.longitudinalActuatorDelayUpperBound = 0.5
+    ret.longitudinalActuatorDelay = 0.5
 
     if DBC[ret.carFingerprint]["radar"] is None:
       if ret.spFlags & (HyundaiFlagsSP.SP_ENHANCED_SCC | HyundaiFlagsSP.SP_CAMERA_SCC_LEAD):

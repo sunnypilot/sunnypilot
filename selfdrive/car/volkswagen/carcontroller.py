@@ -195,7 +195,7 @@ class CarController(CarControllerBase):
           elif self.acc_type == 1:
             self.cruise_button = 3 if self.cruise_button == 1 else 4  # resume, set
           if self.frame % self.CCP.BTN_STEP == 0:
-            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, self.ext_bus, CS.gra_stock_values, frame=(self.frame // self.CCP.BTN_STEP),
+            can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, CS.gra_stock_values, frame=(self.frame // self.CCP.BTN_STEP),
                                                                  buttons=self.cruise_button, custom_stock_long=True))
             self.send_count += 1
         else:
