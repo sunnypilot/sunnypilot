@@ -1,3 +1,11 @@
+sunnypilot - 0.9.8.0 (2024-xx-xx)
+========================
+* Always on driver monitoring toggle
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit b45caf4 (June 14, 2024)
+* Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
+
 sunnypilot - 0.9.7.1 (2024-06-13)
 ========================
 * New driving model

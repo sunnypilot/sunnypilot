@@ -75,7 +75,6 @@ class TestCarInterfaces:
     # Longitudinal sanity checks
     assert len(car_params.longitudinalTuning.kpV) == len(car_params.longitudinalTuning.kpBP)
     assert len(car_params.longitudinalTuning.kiV) == len(car_params.longitudinalTuning.kiBP)
-    assert len(car_params.longitudinalTuning.deadzoneV) == len(car_params.longitudinalTuning.deadzoneBP)
 
     # If we're using the interceptor for gasPressed, we should be commanding gas with it
     if car_params.enableGasInterceptorDEPRECATED:

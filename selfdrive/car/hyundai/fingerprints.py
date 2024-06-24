@@ -2,6 +2,9 @@
 from cereal import car
 from openpilot.selfdrive.car.hyundai.values import CAR
 
+# The existence of SCC or RDR in the fwdRadar FW usually determines the radar's function,
+# i.e. if it sends the SCC messages or if another ECU like the camera or ADAS Driving ECU does
+
 Ecu = car.CarParams.Ecu
 
 FINGERPRINTS = {
@@ -995,6 +998,8 @@ FW_VERSIONS = {
       b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.03 99211-GI010 220401',
       b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.05 99211-GI010 220614',
       b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.06 99211-GI010 230110',
+      b'\xf1\x00NE1 MFC  AT USA LHD 1.00 1.00 99211-GI100 230915',
+      b'\xf1\x00NE1 MFC  AT EUR LHD 1.00 1.00 99211-GI100 230915',
     ],
   },
   CAR.HYUNDAI_IONIQ_6: {
@@ -1188,6 +1193,14 @@ FW_VERSIONS = {
     ],
     (Ecu.transmission, 0x7e1, None): [
       b'\xf1\x006T6J0_C2\x00\x006T6K1051\x00\x00TOS4N20NS2\x00\x00\x00\x00',
+    ],
+  },
+  CAR.KIA_CEED_PHEV_2022_NON_SCC: {
+    (Ecu.eps, 0x7D4, None): [
+      b'\xf1\x00CD  MDPS C 1.00 1.01 56310-XX000 4CPHC101',
+    ],
+    (Ecu.fwdCamera, 0x7C4, None): [
+      b'\xf1\x00CDH LKAS AT EUR LHD 1.00 1.01 99211-CR700 931',
     ],
   },
   CAR.KIA_FORTE_2019_NON_SCC: {

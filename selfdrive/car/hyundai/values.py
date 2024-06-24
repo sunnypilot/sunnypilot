@@ -320,9 +320,9 @@ class CAR(Platforms):
   )
   HYUNDAI_IONIQ_5 = HyundaiCanFDPlatformConfig(
     [
-      HyundaiCarDocs("Hyundai Ioniq 5 (Southeast Asia only) 2022-23", "All", car_parts=CarParts.common([CarHarness.hyundai_q])),
-      HyundaiCarDocs("Hyundai Ioniq 5 (without HDA II) 2022-23", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_k])),
-      HyundaiCarDocs("Hyundai Ioniq 5 (with HDA II) 2022-23", "Highway Driving Assist II", car_parts=CarParts.common([CarHarness.hyundai_q])),
+      HyundaiCarDocs("Hyundai Ioniq 5 (Non-US only) 2022-24", "All", car_parts=CarParts.common([CarHarness.hyundai_q])),
+      HyundaiCarDocs("Hyundai Ioniq 5 (without HDA II) 2022-24", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_k])),
+      HyundaiCarDocs("Hyundai Ioniq 5 (with HDA II) 2022-24", "Highway Driving Assist II", car_parts=CarParts.common([CarHarness.hyundai_q])),
     ],
     CarSpecs(mass=1948, wheelbase=2.97, steerRatio=14.26, tireStiffnessFactor=0.65),
     flags=HyundaiFlags.EV,
@@ -492,7 +492,7 @@ class CAR(Platforms):
   )
   KIA_EV6 = HyundaiCanFDPlatformConfig(
     [
-      HyundaiCarDocs("Kia EV6 (Southeast Asia only) 2022-24", "All", car_parts=CarParts.common([CarHarness.hyundai_p])),
+      HyundaiCarDocs("Kia EV6 (Non-US only) 2022-24", "All", car_parts=CarParts.common([CarHarness.hyundai_p])),
       HyundaiCarDocs("Kia EV6 (without HDA II) 2022-24", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_l])),
       HyundaiCarDocs("Kia EV6 (with HDA II) 2022-24", "Highway Driving Assist II", car_parts=CarParts.common([CarHarness.hyundai_p]))
     ],
@@ -571,6 +571,12 @@ class CAR(Platforms):
   HYUNDAI_KONA_NON_SCC = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Kona Non-SCC 2019", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_b]))],
     HYUNDAI_KONA.specs,
+    spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
+  )
+  KIA_CEED_PHEV_2022_NON_SCC = HyundaiPlatformConfig(
+    [HyundaiCarDocs("Kia Ceed PHEV Non-SCC 2022", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_i]))],
+    CarSpecs(mass=1650, wheelbase=2.65, steerRatio=13.75, tireStiffnessFactor=0.5),
+    flags=HyundaiFlags.HYBRID,
     spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
   )
   KIA_FORTE_2019_NON_SCC = HyundaiPlatformConfig(
