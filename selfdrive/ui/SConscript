@@ -9,7 +9,6 @@ if arch == 'larch64':
   base_libs.append('EGL')
 
 maps = arch in ['larch64', 'aarch64', 'x86_64']
-screenrecorder = False # arch in ['larch64']
 
 if arch == "Darwin":
   del base_libs[base_libs.index('OpenCL')]
@@ -92,13 +91,6 @@ qt_env.Program("_text", ["qt/text.cc"], LIBS=qt_libs)
 qt_env.Program("_spinner", ["qt/spinner.cc"], LIBS=qt_libs)
 
 # build main UI
-# include dashcam / screenrecorder
-if screenrecorder:
-  qt_src += ["qt/screenrecorder/screenrecorder.cc", "qt/screenrecorder/omx_encoder.cc"]
-  qt_env['CPPPATH'] += ["qt/screenrecorder/openmax/include/"]
-  qt_libs += ['OmxCore', 'gsl', 'CB', 'avformat', 'avcodec', 'swscale', 'avutil', 'yuv', 'pthread']
-  qt_env['CPPDEFINES'] += ["ENABLE_DASHCAM"]
-
 qt_env.Program("ui", qt_src + [asset_obj], LIBS=qt_libs)
 if GetOption('extras'):
   qt_src.remove("main.cc")  # replaced by test_runner
