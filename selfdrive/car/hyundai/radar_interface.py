@@ -3,7 +3,8 @@ import math
 from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
-from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP
+from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
+from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP, CANFD_CAR
 
 RADAR_START_ADDR = 0x500
 RADAR_MSG_COUNT = 32
@@ -12,12 +13,18 @@ RADAR_MSG_COUNT = 32
 
 def get_radar_can_parser(CP):
   if DBC[CP.carFingerprint]['radar'] is None:
-    if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
-      lead_src, bus = "ESCC", 0
-    elif CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD:
-      lead_src, bus = "SCC11", 2
+    if CP.carFingerprint in CANFD_CAR:
+      if CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD:
+        lead_src, bus = "SCC_CONTROL", CanBus(CP).CAM
+      else:
+        return None
     else:
-      return None
+      if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
+        lead_src, bus = "ESCC", 0
+      elif CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD:
+        lead_src, bus = "SCC11", 2
+      else:
+        return None
     messages = [(lead_src, 50)]
     return CANParser(DBC[CP.carFingerprint]['pt'], messages, bus)
 
@@ -28,10 +35,12 @@ def get_radar_can_parser(CP):
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
+    self.CP = CP
     self.enhanced_scc = (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None
     self.camera_scc = CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD
     self.updated_messages = set()
     self.trigger_msg = 0x2AB if self.enhanced_scc else \
+                       0x1A0 if self.camera_scc and CP.carFingerprint in CANFD_CAR else \
                        0x420 if self.camera_scc else \
                        (RADAR_START_ADDR + RADAR_MSG_COUNT - 1)
     self.track_id = 0
@@ -48,11 +57,17 @@ class RadarInterface(RadarInterfaceBase):
     vls = self.rcp.update_strings(can_strings)
     self.updated_messages.update(vls)
 
-    if self.trigger_msg not in self.updated_messages and not self.sp_radar_tracks:
+    if self.trigger_msg not in self.updated_messages:
       return None
 
     rr = self._update(self.updated_messages)
     self.updated_messages.clear()
+
+    radar_error = []
+    if rr is not None:
+      radar_error = rr.errors
+    if list(radar_error) and self.sp_radar_tracks:
+      return super().update(None)
 
     return rr
 
@@ -68,9 +83,12 @@ class RadarInterface(RadarInterfaceBase):
     ret.errors = errors
 
     if self.enhanced_scc or self.camera_scc:
-      msg_src = "ESCC" if self.enhanced_scc else "SCC11"
+      msg_src = "ESCC" if self.enhanced_scc else \
+                "SCC_CONTROL" if self.CP.carFingerprint in CANFD_CAR else \
+                "SCC11"
       msg = self.rcp.vl[msg_src]
-      valid = msg['ACC_ObjStatus']
+      valid = msg['ACC_ObjDist'] < 204.6 if self.CP.carFingerprint in CANFD_CAR else \
+              msg['ACC_ObjStatus']
       for ii in range(1):
         if valid:
           if ii not in self.pts:

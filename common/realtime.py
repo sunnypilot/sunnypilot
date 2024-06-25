@@ -6,7 +6,7 @@ import threading
 import psutil
 from collections import deque
 
-from setproctitle import getproctitle
+from openpilot.common.threadname import getthreadname
 
 from openpilot.system.hardware import PC
 
@@ -14,7 +14,7 @@ from openpilot.system.hardware import PC
 # time step for each process
 DT_CTRL = 0.01  # controlsd
 DT_MDL = 0.05  # model
-DT_TRML = 0.5  # thermald and manager
+DT_HW = 0.5  # hardwared and manager
 DT_DMON = 0.05  # driver monitoring
 
 
@@ -25,7 +25,7 @@ class Priority:
   CTRL_LOW = 51 # plannerd & radard
 
   # CORE 3
-  # - boardd = 55
+  # - pandad = 55
   CTRL_HIGH = 53
 
 
@@ -62,7 +62,7 @@ class Ratekeeper:
     self._print_delay_threshold = print_delay_threshold
     self._frame = 0
     self._remaining = 0.0
-    self._process_name = getproctitle()
+    self._thread_name = getthreadname()
     self._dts = deque([self._interval], maxlen=100)
     self._last_monitor_time = time.monotonic()
 
@@ -97,7 +97,7 @@ class Ratekeeper:
     remaining = self._next_frame_time - time.monotonic()
     self._next_frame_time += self._interval
     if self._print_delay_threshold is not None and remaining < -self._print_delay_threshold:
-      print(f"{self._process_name} lagging by {-remaining * 1000:.2f} ms")
+      print(f"{self._thread_name} lagging by {-remaining * 1000:.2f} ms")
       lagged = True
     self._frame += 1
     self._remaining = remaining

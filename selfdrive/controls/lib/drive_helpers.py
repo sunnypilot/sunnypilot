@@ -75,7 +75,7 @@ class VCruiseHelper:
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
-    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.gapAdjustCruise: 0}
+    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
 
     self.is_metric_prev = None
@@ -83,9 +83,6 @@ class VCruiseHelper:
     self.slc_state = SpeedLimitControlState.inactive
     self.slc_state_prev = SpeedLimitControlState.inactive
     self.slc_speed_limit_offsetted = 0
-
-    self.update_personality = False
-    self.update_experimental_mode = False
 
   @property
   def v_cruise_initialized(self):
@@ -123,8 +120,6 @@ class VCruiseHelper:
 
     long_press = False
     button_type = None
-    update_personality = False
-    update_experimental_mode = False
 
     v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
     v_cruise_delta_mltplr = 10 if is_metric else 5
@@ -145,15 +140,6 @@ class VCruiseHelper:
     if button_type is None:
       return
 
-    if button_type == ButtonType.gapAdjustCruise and self.button_timers[ButtonType.gapAdjustCruise]:
-      if self.button_timers[ButtonType.gapAdjustCruise] < 50:
-        update_personality = True
-      elif self.button_timers[ButtonType.gapAdjustCruise] == 50:
-        update_experimental_mode = True
-
-    self.update_personality = update_personality
-    self.update_experimental_mode = update_experimental_mode
-
     resume_button = ButtonType.accelCruise
     if not self.CP.pcmCruiseSpeed:
       if self.CP.carName == "chrysler":
@@ -166,9 +152,6 @@ class VCruiseHelper:
 
     # Don't adjust speed if we've enabled since the button was depressed (some ports enable on rising edge)
     if not self.button_change_states[button_type]["enabled"]:
-      return
-
-    if button_type == ButtonType.gapAdjustCruise:
       return
 
     pressed_value = (1 if long_press else v_cruise_delta_mltplr) if reverse_acc else (v_cruise_delta_mltplr if long_press else 1)
@@ -252,16 +235,6 @@ class VCruiseHelper:
       elif self.CP.carName == "volkswagen":
         self.v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric
-
-
-def apply_deadzone(error, deadzone):
-  if error > deadzone:
-    error -= deadzone
-  elif error < - deadzone:
-    error += deadzone
-  else:
-    error = 0.
-  return error
 
 
 def apply_center_deadzone(error, deadzone):

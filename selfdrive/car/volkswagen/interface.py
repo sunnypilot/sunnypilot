@@ -108,8 +108,6 @@ class CarInterface(CarInterfaceBase):
     ret.stopAccel = -0.55
     ret.vEgoStarting = 0.1
     ret.vEgoStopping = 0.5
-    ret.longitudinalTuning.kpV = [0.1]
-    ret.longitudinalTuning.kiV = [0.0]
     ret.autoResumeSng = ret.minEnableSpeed == -1
 
     return ret
@@ -157,7 +155,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS)
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(self.CS.buttonStates["gapAdjustCruise"]))
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:

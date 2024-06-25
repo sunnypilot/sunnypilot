@@ -130,7 +130,7 @@ class CarState(CarStateBase):
     ret.cruiseState.available = pt_cp.vl["TSK_06"]["TSK_Status"] in (2, 3, 4, 5)
     ret.cruiseState.enabled = pt_cp.vl["TSK_06"]["TSK_Status"] in (3, 4, 5)
 
-    if self.CP.pcmCruise:
+    if self.CP.pcmCruise and not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
       # Cruise Control mode; check for distance UI setting from the radar.
       # ECM does not manage this, so do not need to check for openpilot longitudinal
       ret.cruiseState.nonAdaptive = ext_cp.vl["ACC_02"]["ACC_Gesetzte_Zeitluecke"] == 0
@@ -290,7 +290,7 @@ class CarState(CarStateBase):
     # DISABLED means the EPS hasn't been configured to support Lane Assist
     self.eps_init_complete = self.eps_init_complete or (hca_status in ("DISABLED", "READY", "ACTIVE") or self.frame > 600)
     perm_fault = hca_status == "DISABLED" or (self.eps_init_complete and hca_status in ("INITIALIZING", "FAULT"))
-    temp_fault = hca_status == "REJECTED" or not self.eps_init_complete
+    temp_fault = hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
 
   @staticmethod

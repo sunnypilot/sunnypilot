@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 
 #include "selfdrive/ui/qt/util.h"
+#include "common/params.h"
 
 void Sidebar::drawMetric(QPainter &p, const QPair<QString, QString> &label, QColor c, int y) {
   const QRect rect = {30, y, 240, 126};
@@ -152,6 +153,28 @@ void Sidebar::updateState(const UIState &s) {
     pandaStatus = {{tr("GPS"), tr("SEARCH")}, warning_color};
   }
   setProperty("pandaStatus", QVariant::fromValue(pandaStatus));
+  
+  ItemStatus sunnylinkStatus;
+  auto sl_dongle_id = getSunnylinkDongleId();
+  auto last_sunnylink_ping_str = params.get("LastSunnylinkPingTime");
+  auto last_sunnylink_ping = std::stoull(last_sunnylink_ping_str.empty() ? "0" : last_sunnylink_ping_str);
+  auto elapsed_sunnylink_ping = nanos_since_boot() - last_sunnylink_ping;
+  auto sunnylink_enabled = params.getBool("SunnylinkEnabled");
+
+  QString status = tr("DISABLED");
+  QColor color = disabled_color;
+
+  if (sunnylink_enabled && last_sunnylink_ping == 0) {
+    // If sunnylink is enabled, but we don't have a dongle id, and we haven't received a ping yet, we are registering
+    status = sl_dongle_id.has_value() ? tr("OFFLINE") : tr("REGIST...");
+    color = sl_dongle_id.has_value() ? warning_color : progress_color;
+  } else if (sunnylink_enabled) {
+    // If sunnylink is enabled, we are considered online if we have received a ping in the last 80 seconds, else error.
+    status = elapsed_sunnylink_ping < 80000000000ULL ? tr("ONLINE") : tr("ERROR");
+    color = elapsed_sunnylink_ping < 80000000000ULL ? good_color : danger_color;
+  }
+  sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), status}, color };
+  setProperty("sunnylinkStatus", QVariant::fromValue(sunnylinkStatus));
 }
 
 void Sidebar::paintEvent(QPaintEvent *event) {
@@ -183,7 +206,8 @@ void Sidebar::paintEvent(QPaintEvent *event) {
   p.drawText(r, Qt::AlignCenter, net_type);
 
   // metrics
-  drawMetric(p, temp_status.first, temp_status.second, 338);
-  drawMetric(p, panda_status.first, panda_status.second, 496);
-  drawMetric(p, connect_status.first, connect_status.second, 654);
+  drawMetric(p, temp_status.first, temp_status.second, 310);
+  drawMetric(p, panda_status.first, panda_status.second, 440);
+  drawMetric(p, connect_status.first, connect_status.second, 570);
+  drawMetric(p, sunnylink_status.first, sunnylink_status.second, 700);
 }

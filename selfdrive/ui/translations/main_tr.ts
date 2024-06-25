@@ -125,15 +125,6 @@
 <context>
     <name>AutoLaneChangeTimer</name>
     <message>
-        <source>Auto Lane Change Timer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set.
-Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>s</source>
         <translation type="unfinished"></translation>
     </message>
@@ -143,6 +134,19 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Nudgeless</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Auto Lane Change by Blinker</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
+Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -463,6 +467,38 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Fleet Manager PIN:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Onroad/Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to unforce offroad?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unforce</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to force offroad?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Force</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disengage to Force Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unforce Offroad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Force Offroad</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -807,6 +843,10 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <source>OpenStreetMap database is out of date. New maps must be downloaded if you wish to continue using OpenStreetMap data for Enhanced Speed Control and road name display.
 
 %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot is now in Forced Offroad mode. sunnypilot won&apos;t start until Forced Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; -&gt; &quot;Unforce Offroad&quot; to exit Force Offroad mode.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1538,6 +1578,14 @@ This may take up to a minute.</source>
         <source>5G</source>
         <translation>5G</translation>
     </message>
+    <message>
+        <source>SUNNYLINK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DISABLED</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SlcSettings</name>
@@ -1749,6 +1797,10 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>on Metered</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PENDING</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2038,14 +2090,6 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Restore</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Early alpha access only. Become a sponsor to get early access to sunnylink features.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Become a Sponsor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

@@ -104,7 +104,7 @@ class CarState(CarStateBase):
 
     ret.standstill = abs(ret.vEgoRaw) < 1e-3
 
-    if self.CP.carFingerprint != CAR.PRIUS_V:
+    if self.CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
       self.lta_status = cp_cam.vl["LKAS_HUD"]["SET_ME_X02"]
       if ((self.prev_lta_status == 16 and self.lta_status == 0) or
           (self.prev_lta_status == 0 and self.lta_status == 16)) and not self.lta_status_active:
@@ -113,7 +113,7 @@ class CarState(CarStateBase):
         self.prev_lta_status = self.lta_status
     if self.lta_status_active:
       self.lkas_enabled = self.lta_status
-    elif self.CP.carFingerprint != CAR.PRIUS_V:
+    elif self.CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
       self.lkas_enabled = cp_cam.vl["LKAS_HUD"]["LKAS_STATUS"]
     if self.prev_lkas_enabled is None:
       self.prev_lkas_enabled = self.lkas_enabled

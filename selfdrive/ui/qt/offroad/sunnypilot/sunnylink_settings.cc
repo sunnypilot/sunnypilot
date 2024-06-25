@@ -45,10 +45,6 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
       sunnylinkEnabledBtn->setDescription(shame_description);
     }
 
-    auto dialog_text = tr("A reboot is required to") + " " + (enabled ? tr("start") : tr("stop")) +" "+ tr("all connections and processes from sunnylink.") + "<br/><small>"+ tr("If that's not a problem for you, you can ignore this.")+ "</small>";
-    if (ConfirmationDialog::confirm(dialog_text, tr("Reboot Now!"), this)) {
-      Hardware::reboot();
-    }
     updateLabels();
   });
 
@@ -70,7 +66,11 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   );
   list->addItem(pairSponsorBtn);
   connect(pairSponsorBtn, &ButtonControl::clicked, [=]() {
-    pair_popup->exec();
+    if (getSunnylinkDongleId().value_or(tr("N/A")) == "N/A") {
+      ConfirmationDialog::alert(tr("sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again."), this);
+    } else {
+      pair_popup->exec();
+    }
   });
   list->addItem(horizontal_line());
 
@@ -107,16 +107,9 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   connect(restoreSettings, &QPushButton::clicked, [=]() {
     is_restore = true;
     backup_settings->started();
-    if (uiState()->isSunnylinkSponsor()) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
-        backup_settings->getParams();
-      } else {
-        backup_settings->finished();
-      }
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
+      backup_settings->getParams();
     } else {
-      if (ConfirmationDialog::confirm(tr("Early alpha access only. Become a sponsor to get early access to sunnylink features."), tr("Become a Sponsor"), this)) {
-        status_popup->exec();
-      }
       backup_settings->finished();
     }
     is_restore = false;
@@ -417,7 +410,7 @@ void SunnylinkSponsorQRWidget::refresh() {
   if (sponsor_pair) {
     QString token = CommaApi::create_jwt({}, 3600, true);
     auto sl_dongle_id = getSunnylinkDongleId();
-    QByteArray payload = QString("1|" + *sl_dongle_id + "|" + token).toUtf8().toBase64();
+    QByteArray payload = QString("1|" + sl_dongle_id.value_or("") + "|" + token).toUtf8().toBase64();
     qrString = SUNNYLINK_BASE_URL + "/sso?state=" + payload;
   } else {
     qrString = "https://github.com/sponsors/sunnyhaibin";

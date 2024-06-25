@@ -60,7 +60,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
     {
       "MapboxFullScreen",
       tr("Navigation: Display in Full Screen"),
-      QString(tr("Enable this will display the built-in navigation in full screen.<br>To switch back to driving view, <font color='yellow'>tap on the border edge</font>.")),
+      tr("Enable this will display the built-in navigation in full screen.<br>To switch back to driving view, <font color='yellow'>tap on the border edge</font>."),
       "../assets/offroad/icon_blank.png",
     },
     {

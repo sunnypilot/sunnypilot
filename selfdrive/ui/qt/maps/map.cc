@@ -5,6 +5,7 @@
 
 #include <QDebug>
 
+#include "common/swaglog.h"
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/ui.h"
@@ -161,7 +162,15 @@ void MapWindow::updateState(const UIState &s) {
   const SubMaster &sm = *(s.sm);
   update();
 
-  if (sm.updated("modelV2") && uiState()->scene.custom_driving_model && uiState()->scene.driving_model_gen != 4) {
+  // on rising edge of a valid system time, reinitialize the map to set a new token
+  if (sm.valid("clocks") && !prev_time_valid) {
+    LOGW("Time is now valid, reinitializing map");
+    m_settings.setApiKey(get_mapbox_token());
+    initializeGL();
+  }
+  prev_time_valid = sm.valid("clocks");
+
+  if (sm.updated("modelV2") && uiState()->scene.custom_driving_model && uiState()->scene.driving_model_gen != 4 && uiState()->scene.driving_model_gen != 0) {
     // set path color on change, and show map on rising edge of navigate on openpilot
     auto car_control = sm["carControl"].getCarControl();
     bool nav_enabled = sm["modelV2"].getModelV2().getNavEnabledDEPRECATED() &&
@@ -320,6 +329,10 @@ void MapWindow::initializeGL() {
     if (change == QMapLibre::Map::MapChange::MapChangeDidFinishLoadingMap) {
       loaded_once = true;
     }
+  });
+
+  QObject::connect(m_map.data(), &QMapLibre::Map::mapLoadingFailed, [=](QMapLibre::Map::MapLoadingFailure err_code, const QString &reason) {
+    LOGE("Map loading failed with %d: '%s'\n", err_code, reason.toStdString().c_str());
   });
 }
 

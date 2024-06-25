@@ -82,12 +82,12 @@ function launch {
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
   # start manager
-  cd selfdrive/manager
+  cd system/manager
   if [ ! -f $DIR/prebuilt ]; then
     ./build.py
   fi
 
-  ./sunnylink.py; ./mapd_installer.py; ./manager.py
+  ./mapd_installer.py; ./manager.py
 
   # if broken, keep on screen error
   while true; do sleep 1; done

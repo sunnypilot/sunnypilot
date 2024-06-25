@@ -17,7 +17,7 @@ from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
 from openpilot.selfdrive.car import gen_empty_fingerprint
 from openpilot.system.version import get_build_metadata
-import openpilot.selfdrive.sentry as sentry
+import openpilot.system.sentry as sentry
 
 FRAME_FINGERPRINT = 100  # 1s
 
@@ -219,7 +219,7 @@ def crash_log(candidate):
   while True:
     if is_connected_to_internet():
       sentry.get_init()
-      sentry.capture_warning("fingerprinted %s" % candidate)
+      sentry.capture_info("fingerprinted %s" % candidate)
       break
     else:
       no_internet += 1
@@ -233,8 +233,7 @@ def crash_log2(fingerprints, fw):
   while True:
     if is_connected_to_internet():
       sentry.get_init()
-      sentry.capture_warning("car doesn't match any fingerprints: %s" % fingerprints)
-      sentry.capture_warning("car doesn't match any fw: %s" % fw)
+      sentry.capture_warning("car doesn't match any fingerprints: %s" % repr(fingerprints))
       break
     else:
       no_internet += 1

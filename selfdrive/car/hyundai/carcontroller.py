@@ -269,11 +269,11 @@ class CarController(CarControllerBase):
               # send resume at a max freq of 10Hz
               if (self.frame - self.last_button_frame) * DT_CTRL > 0.1 * send_freq:
                 # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
-                can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
+                can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, self.cruise_button, self.CP)] * 25)
                 if (self.frame - self.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
                   self.last_button_frame = self.frame
             elif self.frame % 2 == 0:
-              can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP.carFingerprint)] * 25)
+              can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
 
       # Parse lead distance from radarState and display the corresponding distance in the car's cluster
       if self.CP.openpilotLongitudinalControl and self.sm.updated['radarState'] and self.frame % 5 == 0:
@@ -302,7 +302,7 @@ class CarController(CarControllerBase):
       if self.frame % 50 == 0 and self.CP.openpilotLongitudinalControl and not escc:
         can_sends.append(hyundaican.create_frt_radar_opt(self.packer))
 
-    new_actuators = actuators.copy()
+    new_actuators = actuators.as_builder()
     new_actuators.steer = apply_steer / self.params.STEER_MAX
     new_actuators.steerOutputCan = apply_steer
     new_actuators.accel = accel

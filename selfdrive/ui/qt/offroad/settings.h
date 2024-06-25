@@ -63,6 +63,9 @@ private slots:
   void updateCalibDescription();
   void onPinFileChanged(const QString &file_path);
   void refreshPin();
+  void forceoffroad();
+
+  void updateLabels();
 
 private:
   Params params;
@@ -72,6 +75,8 @@ private:
   QString pin_title = tr("Fleet Manager PIN:") + " ";
   QString pin = "OFF";
   QFileSystemWatcher *fs_watch;
+
+  QPushButton *offroad_btn;
 };
 
 class TogglesPanel : public ListWidget {

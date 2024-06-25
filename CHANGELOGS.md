@@ -1,15 +1,31 @@
-sunnypilot - 0.9.7.0 (2024-05-xx)
+sunnypilot - 0.9.8.0 (2024-xx-xx)
 ========================
-* New driving model
-* Adjust driving personality with the follow distance button
-* Support for hybrid variants of supported Ford models
-* Added toggle to enable driver monitoring even when openpilot is not engaged
-* Fingerprinting without the OBD-II port on all cars
+* Always on driver monitoring toggle
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit 2e6b2ef (May 9, 2024)
+  * master commit b45caf4 (June 14, 2024)
+* Ford F-150 2022-23 support
+* Ford F-150 Lightning 2021-23 support
+* Ford Mustang Mach-E 2021-23 support
+* Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
+
+sunnypilot - 0.9.7.1 (2024-06-13)
+========================
+* New driving model
+  * Inputs the past curvature for smoother and more accurate lateral control
+  * Simplified neural network architecture in the model's last layers
+  * Minor fixes to desire augmentation and weight decay
+* New driver monitoring model
+  * Improved end-to-end bit for phone detection
+* Adjust driving personality with the follow distance button
+* Support for hybrid variants of supported Ford models
+* Fingerprinting without the OBD-II port on all cars
+* Improved fuzzy fingerprinting for Ford and Volkswagen
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit f8cb04e (June 10, 2024)
 * NEW❗: sunnylink (Alpha early access)
-  * NEW❗: Config Backup
+  * NEW❗: Config/Settings Backup
     * Remotely back up and restore sunnypilot settings easily
     * Device registration with sunnylink ensures a secure, integrated experience across services
     * AES encryption derived from the device's RSA private key is used for utmost security
@@ -24,9 +40,25 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
   * comma Prime support
   * Personal Mapbox/Amap/Google Maps token support
   * Instructions on how to set up your iOS Siri Shortcuts: https://routinehub.co/shortcut/17677/
+* NEW❗: Forced Offroad mode
+  * Force sunnypilot in the offroad state even when the car is on
+  * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+  * To engage/disengage Force Offroad, go to Settings -> Device panel
+* UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
+  * NEW❗: New "Off" option to disable lane change by blinker
+* UPDATED: Pause Lateral Below Speed with Blinker
+  * NEW❗: Customizable Pause Lateral Speed
+    * Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.
+* UPDATED: Hyundai CAN Longitudinal
+  * Auto-enable radar tracks on platforms with applicable Mando radar
+* UPDATED: Hyundai CAN-FD Camera-based SCC
+  * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
+    * Improve lead tracking when using openpilot longitudinal
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
-  * openpilot Longitudianl Control available cars
+  * openpilot Longitudinal Control available cars
   * Custom Stock Longitudinal Control available cars
+* UPDATED: Continued support for comma Pedal
+  * In response to the official deprecation of support for comma Pedal in the upstream, sunnypilot will continue maintaining software support for comma Pedal
 * UPDATED: Driving Model Selector v4
   * NEW❗: Driving Model additions
     * North Dakota (April 29, 2024) - NDv2
@@ -35,19 +67,17 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
     * Recertified Herbalist (March 01, 2024) - CHLR
   * Legacy Driving Models with Navigate on openpilot (NoO) support
     * Includes Duck Amigo and all preceding models
+* UPDATED: Bumping mapd by [@pfeiferj](https://github.com/pfeiferj) to version [v1.9.0](https://github.com/pfeiferj/mapd/releases/tag/v1.9.0) thanks to pfeiferj!
 * UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
   * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UPDATED: Upstream native support for Gap Adjust Cruise
 * UPDATED: Neural Network Lateral Control (NNLC)
   * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
-  * This will be updated when the new mapping of platforms are restructured (thanks @twilsconso 😉)
+  * This will be updated when the new mapping of platforms are restructured (thanks @twilsonco 😉)
 * UI Updates
   * Display Metrics Below Chevron
     * NEW❗: Metrics is now being displayed below the chevron instead of above
     * NEW❗: Display both Distance and Speed simultaneously
-* Ford F-150 2022-23 support
-* Ford F-150 Lightning 2021-23 support
-* Ford Mustang Mach-E 2021-23 support
 
 sunnypilot - 0.9.6.1 (2024-02-27)
 ========================
