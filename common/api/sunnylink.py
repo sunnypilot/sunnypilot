@@ -13,7 +13,7 @@ from openpilot.common.api.base import BaseApi
 API_HOST = os.getenv('SUNNYLINK_API_HOST', 'https://stg.api.sunnypilot.ai')
 UNREGISTERED_SUNNYLINK_DONGLE_ID = "UnregisteredDevice"
 MAX_RETRIES = 6
-
+CRASH_LOG_DIR = '/data/community/crashes'
 
 class SunnylinkApi(BaseApi):
   def __init__(self, dongle_id):
@@ -104,6 +104,9 @@ class SunnylinkApi(BaseApi):
 
           resp = self.api_get("v2/pilotauth/", method='POST', timeout=15, imei=imei1, imei2=imei2, serial=serial, comma_dongle_id=comma_dongle_id, public_key=public_key, register_token=register_token)
 
+          if resp is None:
+            raise Exception("Unable to register device, request was None")
+
           if resp.status_code in (409, 412):
             timeout = time.monotonic() - start_time  # Don't retry if the public key is already in use
             key_in_use = "Public key is already in use, is your key unique? Contact your vendor for a new key."
@@ -124,7 +127,10 @@ class SunnylinkApi(BaseApi):
           if verbose:
             self._status_update(f"Waiting {backoff}s before retry, Exception occurred during registration: [{str(e)}]")
 
-          with open('/data/community/crashes/error.txt', 'a') as f:
+          if not os.path.exists(CRASH_LOG_DIR):
+            os.makedirs(CRASH_LOG_DIR)
+
+          with open(f'{CRASH_LOG_DIR}/error.txt', 'a') as f:
             f.write(f"[{datetime.now()}] sunnylink: {str(e)}\n")
 
           backoff = min(backoff * 2, 60)
