@@ -91,7 +91,7 @@ class CarInterface(CarInterfaceBase):
 
     # *** longitudinal control ***
     if candidate in CANFD_CAR:
-      ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR | NON_SCC_CAR)
+      ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | NON_SCC_CAR)
       if ret.flags & HyundaiFlags.CANFD_CAMERA_SCC and not hda2:
         ret.spFlags |= HyundaiFlagsSP.SP_CAMERA_SCC_LEAD.value
     else:
