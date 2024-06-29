@@ -72,7 +72,7 @@ private:
   void drawLeftTurnSignal(QPainter &painter, int x, int y, int circle_size, int state);
   void drawRightTurnSignal(QPainter &painter, int x, int y, int circle_size, int state);
   int blinkerPulse(int frame);
-  void updateButtonsLayout();
+  void updateButtonsLayout(bool is_rhd);
 
   void drawFeatureStatusText(QPainter &p, int x, int y);
   void speedLimitSignPulse(int frame);

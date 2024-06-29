@@ -51,7 +51,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   buttons_layout = new QHBoxLayout();
   buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
-  updateButtonsLayout();
+  updateButtonsLayout(false);
 }
 
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
@@ -76,7 +76,7 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
   }
 }
 
-void AnnotatedCameraWidget::updateButtonsLayout() {
+void AnnotatedCameraWidget::updateButtonsLayout(bool is_rhd) {
   QLayoutItem *item;
   while ((item = buttons_layout->takeAt(0)) != nullptr) {
     delete item;
@@ -84,13 +84,23 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
 
   buttons_layout->setContentsMargins(0, 0, 10, rn_offset != 0 ? rn_offset + 10 : 20);
 
-  buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
-  buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
+  if (is_rhd) {
+    buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
+    buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
 
-  buttons_layout->addStretch(1);
+    buttons_layout->addStretch(1);
 
-  buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
-  buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+    buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+    buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
+  } else {
+    buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
+    buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
+
+    buttons_layout->addStretch(1);
+
+    buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+    buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);  // Add spacing to the right
+  }
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
@@ -192,9 +202,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update onroad settings button state
   onroad_settings_btn->updateState(s);
 
-  // update buttons layout
-  updateButtonsLayout();
-
   // update DM icon
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
   dmActive = dm_state.getIsActiveMode();
@@ -202,16 +209,19 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // DM icon transition
   dm_fade_state = std::clamp(dm_fade_state+0.2*(0.5-dmActive), 0.0, 1.0);
 
+  // update buttons layout
+  updateButtonsLayout(rightHandDM);
+
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
     map_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+    buttons_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
   }
 
   // hide onroad settings button for alerts and flip for right hand DM
   if (onroad_settings_btn->isEnabled()) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
+    buttons_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
@@ -543,7 +553,9 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   if (!hideBottomIcons && featureStatusToggle) {
-    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - rn_offset);
+    int x = UI_BORDER_SIZE * 2 + (rightHandDM ? 600 : 370);
+    int feature_status_text_x = rightHandDM ? rect().right() - x : x;
+    drawFeatureStatusText(p, feature_status_text_x, rect().bottom() - 160 - rn_offset);
   }
 
   p.restore();
