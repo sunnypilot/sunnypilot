@@ -19,7 +19,8 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDX
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N, get_speed_error
 from openpilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
 from openpilot.selfdrive.controls.lib.turn_speed_controller import TurnSpeedController
-from openpilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
+from openpilot.selfdrive.controls.lib.sunnypilot.dynamic_experimental_controller import DynamicExperimentalController
+from openpilot.selfdrive.controls.lib.sunnypilot.accel_controller import AccelController
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.common.swaglog import cloudlog
 
@@ -100,6 +101,7 @@ class LongitudinalPlanner:
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
     self.dynamic_experimental_controller = DynamicExperimentalController()
+    self.accel_controller = AccelController()
 
   def read_param(self):
     try:
@@ -127,6 +129,7 @@ class LongitudinalPlanner:
     if self.param_read_counter % 50 == 0:
       self.read_param()
     self.param_read_counter += 1
+    self.accel_controller.set_profile(self.params.get("AccelProfile", encoding='utf-8'))
     if self.dynamic_experimental_controller.is_enabled() and sm['controlsState'].experimentalMode:
       self.mpc.mode = self.dynamic_experimental_controller.get_mpc_mode(self.CP.radarUnavailable, sm['carState'], sm['radarState'].leadOne, sm['modelV2'], sm['controlsState'], sm['navInstruction'].maneuverDistance)
     else:
@@ -151,6 +154,22 @@ class LongitudinalPlanner:
     else:
       accel_limits = [ACCEL_MIN, ACCEL_MAX]
       accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
+
+    # override accel using Accel controller
+    if self.accel_controller.is_enabled():
+      # get min, max from accel controller
+      min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
+      if self.mpc.mode == 'acc':
+        # voacc car, just give it max min (-1.2) so I can brake harder
+        if self.CP.radarUnavailable:
+          accel_limits = [A_CRUISE_MIN, max_limit]
+        else:
+          accel_limits = [min_limit, max_limit]
+        # recalculate limit turn according to the new min, max
+        accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
+      else:
+        # blended, just give it max min (-3.5) and max from accel controller
+        accel_limits = accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
     if reset_state:
       self.v_desired_filter.x = v_ego

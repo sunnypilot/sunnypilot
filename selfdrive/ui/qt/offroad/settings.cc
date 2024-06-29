@@ -118,6 +118,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                           380);
   long_personality_setting->showDescription();
 
+  // accel controller
+  std::vector<QString> accel_profile_texts{tr("OP"), tr("ECO"), tr("NOR"), tr("SPT")};
+  ButtonParamControl* accel_profile_setting = new ButtonParamControl("AccelProfile", tr("Acceleration Profile"),
+                                          tr("OP - Stock tune.\nECO - Eco tune.\nNOR - Normal tune.\nSPT - Sport tune."),
+                                          "",
+                                          accel_profile_texts);
+
   // set up uiState update for personality setting
   QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
 
@@ -133,6 +140,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     // insert longitudinal personality after NDOG toggle
     if (param == "DisengageOnAccelerator") {
       addItem(long_personality_setting);
+      addItem(accel_profile_setting);
     }
   }
 
