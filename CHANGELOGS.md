@@ -4,6 +4,7 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit b45caf4 (June 14, 2024)
+* Hyundai Kona Electric Non-SCC 2019 support thanks to NikitaNekrasov!
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)
