@@ -19,6 +19,14 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
 * UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
   * Re-tuned and tested by the community (July 1, 2024)
+* NEW❗: Toyota - Automatic Brake Hold (AHB) thanks to AlexandreSato!
+  * When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold
+  * NOTE: Only for Toyota/Lexus vehicles with TSS2/LSS2
+* NEW❗: Toyota - Automatic Door Locking and Unlocking thanks to AlexandreSato, cydia2020, and dragonpilot-community!
+  * Auto Lock by Speed: All doors are automatically locked when vehicle speed is approximately 6 mph (10 km/h) or higher
+  * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
+* FIXED: Driving Personality:
+  * Maniac mode now correctly enforced when selected
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)

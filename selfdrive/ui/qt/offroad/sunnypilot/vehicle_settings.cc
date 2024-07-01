@@ -124,6 +124,18 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
+  auto toyotaAbh = new ParamControl(
+    "ToyotaAutoHold",
+    tr("Enable Automatic Brake Hold (AHB)"),
+    QString("<b>%1</b><br><br>%2<br><br><b>%3</b>")
+    .arg(tr("WARNING: Only for Toyota/Lexus vehicles with TSS2/LSS2. USE AT YOUR OWN RISK."))
+    .arg(tr("When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold."))
+    .arg(tr("Changing this setting takes effect when the car is powered off.")),
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaAbh->setConfirmation(true, false);
+  addItem(toyotaAbh);
+
   toyotaEnhancedBsm = new ParamControl(
     "ToyotaEnhancedBsm",
     tr("Enable Enhanced Blind Spot Monitor"),
@@ -142,6 +154,24 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaSngHack->setConfirmation(true, false);
   addItem(toyotaSngHack);
 
+  auto toyotaAutoLock = new ParamControl(
+    "ToyotaAutoLock",
+    tr("Enable Toyota Door Auto Locking"),
+    tr("sunnypilot will attempt to lock the doors when drive above 10 km/h (6.2 mph).\nReboot Required."),
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaAutoLock->setConfirmation(true, false);
+  addItem(toyotaAutoLock);
+
+  auto toyotaAutoUnlock = new ParamControl(
+    "ToyotaAutoUnlockByShifter",
+    tr("Enable Toyota Door Auto Unlocking"),
+    tr("sunnypilot will attempt to unlock the doors when shift to gear P.\nReboot Required."),
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaAutoUnlock->setConfirmation(true, false);
+  addItem(toyotaAutoUnlock);
+
   // Volkswagen
   addItem(new LabelControl(tr("Volkswagen")));
   auto volkswagenCCOnly = new ParamControl(
@@ -158,6 +188,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     is_onroad = !offroad;
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
+    toyotaAbh->setEnabled(offroad);
     toyotaEnhancedBsm->setEnabled(offroad);
     toyotaSngHack->setEnabled(offroad);
     volkswagenCCOnly->setEnabled(offroad);
