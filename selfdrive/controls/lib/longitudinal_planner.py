@@ -156,16 +156,13 @@ class LongitudinalPlanner:
       accel_limits = [ACCEL_MIN, ACCEL_MAX]
       accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
-    # override accel using Accel controller
+    # override accel using Accel Controller
     if self.accel_controller.is_enabled():
       # get min, max from accel controller
       min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
       if self.mpc.mode == 'acc':
-        # voacc car, just give it max min (-1.2) so I can brake harder
-        if self.CP.radarUnavailable:
-          accel_limits = [A_CRUISE_MIN, max_limit]
-        else:
-          accel_limits = [min_limit, max_limit]
+        # VOACC car, just give it max min (-1.2) so I can brake harder
+        accel_limits = [A_CRUISE_MIN, max_limit] if self.CP.radarUnavailable else [min_limit, max_limit]
         # recalculate limit turn according to the new min, max
         accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
       else:
