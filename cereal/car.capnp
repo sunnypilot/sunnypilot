@@ -136,6 +136,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     speedLimitPreActive @138;
     speedLimitConfirmed @139;
     torqueNNLoad @140;
+    spAutoBrakeHold @141;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
