@@ -82,6 +82,7 @@ def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
+
 def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
     x_vel =  [0,    11,   14.5, 15,   20,   20.01,  25,    25.01,  36,  36.01]
@@ -96,7 +97,8 @@ def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.
     x_vel =  [0,     5,     5.01,  11,    14.5,   15,    20,    20.01,  25, 25.01, 36,   36.01]
     y_dist = [1.25,  1.25,  1.12,  1.12,  1.12,  1.105, 1.105, 1.15, 1.15, 1.18, 1.20,  1.23]
   else:
-    raise NotImplementedError("Dynamic Follow personality not supported")
+    raise NotImplementedError("Dynamic personality not supported")
+
   return np.interp(v_ego, x_vel, y_dist)
 
 
@@ -358,7 +360,7 @@ class LongitudinalMpc:
 
   def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard, dynamic_personality=False):
     v_ego = self.x0[1]
-    t_follow = get_T_FOLLOW(personality) if not dynamic_personality else get_dynamic_personality(v_ego, personality)
+    t_follow = get_dynamic_personality(v_ego, personality) if dynamic_personality else get_T_FOLLOW(personality)
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
