@@ -52,13 +52,13 @@ class AccelController:
   def __init__(self):
     self._profile = DPAccel.STOCK
 
-  def set_profile(self, profile):
+  def set_profile(self, profile: int):
     try:
       self._profile = profile if profile in DPAccel.accel_val() else DPAccel.STOCK
     except (ValueError, TypeError):
       self._profile = DPAccel.STOCK
 
-  def _dp_calc_cruise_accel_limits(self, v_ego):
+  def _dp_calc_cruise_accel_limits(self, v_ego: float):
     if self._profile == DPAccel.ECO:
       min_v = _DP_CRUISE_MIN_V_ECO
       max_v = _DP_CRUISE_MAX_V_ECO
@@ -71,9 +71,10 @@ class AccelController:
 
     a_cruise_min = interp(v_ego, _DP_CRUISE_MIN_BP, min_v)
     a_cruise_max = interp(v_ego, _DP_CRUISE_MAX_BP, max_v)
+
     return a_cruise_min, a_cruise_max
 
-  def get_accel_limits(self, v_ego, accel_limits):
+  def get_accel_limits(self, v_ego: float, accel_limits: list[float]):
     return accel_limits if self._profile == DPAccel.STOCK else self._dp_calc_cruise_accel_limits(v_ego)
 
   def is_enabled(self):
