@@ -124,6 +124,15 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
+  toyotaEnhancedBsm = new ParamControl(
+    "ToyotaEnhancedBsm",
+    tr("Enable Enhanced Blind Spot Monitor"),
+    "",
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaEnhancedBsm->setConfirmation(true, false);
+  addItem(toyotaEnhancedBsm);
+
   auto toyotaSngHack = new ParamControl(
     "ToyotaSnG",
     tr("Enable Toyota Stop and Go Hack"),
@@ -146,9 +155,69 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+    is_onroad = !offroad;
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
+    toyotaEnhancedBsm->setEnabled(offroad);
     toyotaSngHack->setEnabled(offroad);
     volkswagenCCOnly->setEnabled(offroad);
+    updateToggles();
   });
+}
+
+void SPVehiclesTogglesPanel::showEvent(QShowEvent *event) {
+  updateToggles();
+}
+
+void SPVehiclesTogglesPanel::updateToggles() {
+  if (!isVisible()) {
+    return;
+  }
+
+  // Toyota: Enhanced Blind Spot Monitor
+  QString ebsm_init = "<font color='yellow'>⚠️ " + tr("Start the car to check car compatibility") + "</font>";
+  QString ebsm_not_required = "<font color=#00ff00>✅ " + tr("This platform is already supported, therefore no need to enable this toggle") + "</font>";
+  QString ebsm_not_supported = "<font color='yellow'>⚠️ " + tr("This platform is not supported") + "</font>";
+  QString ebsm_supported = "<font color=#00ff00>✅ " + tr("This platform can be supported") + "</font>";
+
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    // Toyota: Enhanced Blind Spot Monitor
+    {
+      if (CP.getCarName() == "toyota") {
+        if (CP.getEnableBsm() && !(CP.getSpFlags() & 4)) {  // 4 = ToyotaFlagsSP.SP_NEED_DEBUG_BSM
+          toyotaEnhancedBsm->setDescription(toyotaEnhancedBsmDesciptionBuilder(ebsm_not_required));
+          toyotaEnhancedBsm->showDescription();
+          toyotaEnhancedBsm->setEnabled(false);
+          params.remove("ToyotaEnhancedBsm");
+        } else {
+          toyotaEnhancedBsm->setDescription(toyotaEnhancedBsmDesciptionBuilder(ebsm_supported));
+          toyotaEnhancedBsm->showDescription();
+          toyotaEnhancedBsm->setEnabled(true);
+        }
+      } else {
+        toyotaEnhancedBsm->setDescription(toyotaEnhancedBsmDesciptionBuilder(ebsm_not_supported));
+        toyotaEnhancedBsm->showDescription();
+        toyotaEnhancedBsm->setEnabled(false);
+        params.remove("ToyotaEnhancedBsm");
+      }
+    }
+
+    toyotaEnhancedBsm->refresh();
+  } else {
+    toyotaEnhancedBsm->setEnabled(false);
+    params.remove("ToyotaEnhancedBsm");
+
+    toyotaEnhancedBsm->setDescription(toyotaEnhancedBsmDesciptionBuilder(ebsm_init));
+    toyotaEnhancedBsm->showDescription();
+  }
+
+  // override toggle state when onroad/offroad
+  if (is_onroad) {
+    toyotaEnhancedBsm->setEnabled(false);
+  }
 }

@@ -62,6 +62,8 @@ class ToyotaFlags(IntFlag):
 
 class ToyotaFlagsSP(IntFlag):
   SP_ZSS = 1
+  SP_ENHANCED_BSM = 2
+  SP_NEED_DEBUG_BSM = 4
 
 
 class Footnote(Enum):
