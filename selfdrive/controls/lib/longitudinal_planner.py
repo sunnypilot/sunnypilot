@@ -106,8 +106,10 @@ class LongitudinalPlanner:
   def read_param(self):
     try:
       self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
+      self.accel_controller.set_profile(int(self.params.get("AccelProfile")))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
+      self.accel_controller = AccelController()
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -129,7 +131,6 @@ class LongitudinalPlanner:
     if self.param_read_counter % 50 == 0:
       self.read_param()
     self.param_read_counter += 1
-    self.accel_controller.set_profile(self.params.get("AccelProfile", encoding='utf-8'))
     if self.dynamic_experimental_controller.is_enabled() and sm['controlsState'].experimentalMode:
       self.mpc.mode = self.dynamic_experimental_controller.get_mpc_mode(self.CP.radarUnavailable, sm['carState'], sm['radarState'].leadOne, sm['modelV2'], sm['controlsState'], sm['navInstruction'].maneuverDistance)
     else:
@@ -169,7 +170,8 @@ class LongitudinalPlanner:
         accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
       else:
         # blended, just give it max min (-3.5) and max from accel controller
-        accel_limits = accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
+        accel_limits = [ACCEL_MIN, ACCEL_MAX]
+        accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
     if reset_state:
       self.v_desired_filter.x = v_ego

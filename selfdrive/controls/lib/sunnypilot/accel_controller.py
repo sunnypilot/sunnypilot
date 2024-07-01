@@ -25,11 +25,6 @@
 
 from openpilot.common.numpy_fast import interp
 
-DP_ACCEL_STOCK = 0
-DP_ACCEL_ECO = 1
-DP_ACCEL_NORMAL = 2
-DP_ACCEL_SPORT = 3
-
 # accel profile by @arne182 modified by cgw
 _DP_CRUISE_MIN_V =       [-1.00,  -1.00,  -0.99,  -0.90,  -0.90,  -0.88,  -0.88,  -0.82]
 _DP_CRUISE_MIN_V_ECO =   [-1.00,  -1.00,  -0.98,  -0.88,  -0.88,  -0.86,  -0.86,  -0.80]
@@ -42,22 +37,32 @@ _DP_CRUISE_MAX_V_SPORT = [3.5, 3.5, 2.8, 2.4,  1.4,  1.0,  .89,  .75,  .50,  .2]
 _DP_CRUISE_MAX_BP =      [0.,  1.,  6.,  8.,   11.,  15.,  20.,  25.,  30.,  55.]
 
 
+class DPAccel:
+  STOCK = 0
+  ECO = 1
+  NORMAL = 2
+  SPORT = 3
+
+  @classmethod
+  def accel_val(cls):
+    return cls.STOCK, cls.ECO, cls.NORMAL, cls.SPORT
+
+
 class AccelController:
   def __init__(self):
-    # self._params = Params()
-    self._profile = DP_ACCEL_STOCK
+    self._profile = DPAccel.STOCK
 
   def set_profile(self, profile):
     try:
-      self._profile = int(profile) if int(profile) in [DP_ACCEL_STOCK, DP_ACCEL_ECO, DP_ACCEL_NORMAL, DP_ACCEL_SPORT] else DP_ACCEL_STOCK
-    except:
-      self._profile = DP_ACCEL_STOCK
+      self._profile = profile if profile in DPAccel.accel_val() else DPAccel.STOCK
+    except (ValueError, TypeError):
+      self._profile = DPAccel.STOCK
 
   def _dp_calc_cruise_accel_limits(self, v_ego):
-    if self._profile == DP_ACCEL_ECO:
+    if self._profile == DPAccel.ECO:
       min_v = _DP_CRUISE_MIN_V_ECO
       max_v = _DP_CRUISE_MAX_V_ECO
-    elif self._profile == DP_ACCEL_SPORT:
+    elif self._profile == DPAccel.SPORT:
       min_v = _DP_CRUISE_MIN_V_SPORT
       max_v = _DP_CRUISE_MAX_V_SPORT
     else:
@@ -69,7 +74,7 @@ class AccelController:
     return a_cruise_min, a_cruise_max
 
   def get_accel_limits(self, v_ego, accel_limits):
-    return accel_limits if self._profile == DP_ACCEL_STOCK else self._dp_calc_cruise_accel_limits(v_ego)
+    return accel_limits if self._profile == DPAccel.STOCK else self._dp_calc_cruise_accel_limits(v_ego)
 
   def is_enabled(self):
-    return self._profile != DP_ACCEL_STOCK
+    return self._profile != DPAccel.STOCK
