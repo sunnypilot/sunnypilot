@@ -28,7 +28,8 @@ enum AccelerationProfile {
 struct ControlsStateSP @0x81c2f05a394cf4af {
   lateralState @0 :Text;
   personality @8 :LongitudinalPersonalitySP;
-  accelProfile @9 :AccelerationProfile;
+  dynamicPersonality @9 :Bool;
+  accelProfile @10 :AccelerationProfile;
 
   lateralControlState :union {
     indiState @1 :LateralINDIState;
