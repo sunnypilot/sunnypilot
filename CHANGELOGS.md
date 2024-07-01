@@ -13,6 +13,8 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
     * Toyota TSS1/1.5, equipped with factory Blind Spot Monitoring (BSM)
     * Prius TSS2, equipped with factory Blind Spot Monitoring (BSM)
   * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
+* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
+  * Re-tuned and tested by the community (July 1, 2024)
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)
