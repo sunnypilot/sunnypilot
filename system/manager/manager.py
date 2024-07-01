@@ -98,6 +98,7 @@ def manager_init() -> None:
     ("TorqueDeadzoneDeg", "0"),
     ("TorqueFriction", "1"),
     ("TorqueMaxLatAccel", "250"),
+    ("ToyotaAutoHold", "0"),
     ("ToyotaEnhancedBsm", "0"),
     ("TrueVEgoUi", "0"),
     ("TurnSpeedControl", "0"),

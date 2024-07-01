@@ -318,6 +318,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
     {"TorquedOverride", PERSISTENT | BACKUP},
+    {"ToyotaAutoHold", PERSISTENT | BACKUP},
     {"ToyotaEnhancedBsm", PERSISTENT | BACKUP},
     {"ToyotaSnG", PERSISTENT | BACKUP},
     {"ToyotaTSS2Long", PERSISTENT | BACKUP},
