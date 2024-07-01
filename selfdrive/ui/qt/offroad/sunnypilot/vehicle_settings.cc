@@ -154,6 +154,24 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaSngHack->setConfirmation(true, false);
   addItem(toyotaSngHack);
 
+  auto toyotaAutoLock = new ParamControl(
+    "ToyotaAutoLock",
+    tr("Enable Toyota Door Auto Locking"),
+    tr("sunnypilot will attempt to lock the doors when drive above 10 km/h (6.2 mph).\nReboot Required."),
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaAutoLock->setConfirmation(true, false);
+  addItem(toyotaAutoLock);
+
+  auto toyotaAutoUnlock = new ParamControl(
+    "ToyotaAutoUnlockByShifter",
+    tr("Enable Toyota Door Auto Unlocking"),
+    tr("sunnypilot will attempt to unlock the doors when shift to gear P.\nReboot Required."),
+    "../assets/offroad/icon_blank.png"
+  );
+  toyotaAutoUnlock->setConfirmation(true, false);
+  addItem(toyotaAutoUnlock);
+
   // Volkswagen
   addItem(new LabelControl(tr("Volkswagen")));
   auto volkswagenCCOnly = new ParamControl(
