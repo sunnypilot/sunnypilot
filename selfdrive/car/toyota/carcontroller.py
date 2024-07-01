@@ -6,7 +6,7 @@ from openpilot.selfdrive.car import apply_meas_steer_torque_limits, apply_std_st
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.toyota import toyotacan
 from openpilot.selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
-                                        MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, ToyotaFlags, \
+                                        MIN_ACC_SPEED, PEDAL_TRANSITION, CarControllerParams, ToyotaFlags, ToyotaFlagsSP, \
                                         UNSUPPORTED_DSU_CAR
 from opendbc.can.packer import CANPacker
 
@@ -25,6 +25,9 @@ MAX_USER_TORQUE = 500
 # EPS ignores commands above this angle and causes PCS to fault
 MAX_LTA_ANGLE = 94.9461  # deg
 MAX_LTA_DRIVER_TORQUE_ALLOWANCE = 150  # slightly above steering pressed allows some resistance when changing lanes
+
+LEFT_BLINDSPOT = b"\x41"
+RIGHT_BLINDSPOT = b"\x42"
 
 
 class CarController(CarControllerBase):
@@ -47,6 +50,10 @@ class CarController(CarControllerBase):
     self.param_s = Params()
     self._reverse_acc_change = self.param_s.get_bool("ReverseAccChange")
     self._sng_hack = self.param_s.get_bool("ToyotaSnG")
+
+    self.left_blindspot_debug_enabled = False
+    self.right_blindspot_debug_enabled = False
+    self.last_blindspot_frame = 0
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -205,6 +212,9 @@ class CarController(CarControllerBase):
     if self.frame % 20 == 0 and self.CP.flags & ToyotaFlags.DISABLE_RADAR.value:
       can_sends.append([0x750, 0, b"\x0F\x02\x3E\x00\x00\x00\x00\x00", 0])
 
+    if self.CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM and self.frame > 200:
+      can_sends.extend(self.create_enhanced_bsm_messages(CS, 20, True))
+
     new_actuators = actuators.as_builder()
     new_actuators.steer = apply_steer / self.params.STEER_MAX
     new_actuators.steerOutputCan = apply_steer
@@ -214,3 +224,45 @@ class CarController(CarControllerBase):
 
     self.frame += 1
     return new_actuators, can_sends
+
+  # Enhanced BSM (@arne182, @rav4kumar)
+  def create_enhanced_bsm_messages(self, CS: car.CarState, e_bsm_rate: int = 20, always_on: bool = True):
+    # let's keep all the commented out code for easy debug purpose for future.
+    can_sends = []
+
+    # left bsm
+    if not self.left_blindspot_debug_enabled:
+      if always_on or CS.out.vEgo > 6:  # eagle eye camera will stop working if left bsm is switched on under 6m/s
+        can_sends.append(toyotacan.create_set_bsm_debug_mode(LEFT_BLINDSPOT, True))
+        self.left_blindspot_debug_enabled = True
+        # print("bsm debug left, on")
+    else:
+      if not always_on and self.frame - self.last_blindspot_frame > 50:
+        can_sends.append(toyotacan.create_set_bsm_debug_mode(LEFT_BLINDSPOT, False))
+        self.left_blindspot_debug_enabled = False
+        # print("bsm debug left, off")
+      if self.frame % e_bsm_rate == 0:
+        can_sends.append(toyotacan.create_bsm_polling_status(LEFT_BLINDSPOT))
+        # if CS.out.leftBlinker:
+        self.last_blindspot_frame = self.frame
+        # print(self.last_blindspot_frame)
+        # print("bsm poll left")
+    # right bsm
+    if not self.right_blindspot_debug_enabled:
+      if always_on or CS.out.vEgo > 6:  # eagle eye camera will stop working if right bsm is switched on under 6m/s
+        can_sends.append(toyotacan.create_set_bsm_debug_mode(RIGHT_BLINDSPOT, True))
+        self.right_blindspot_debug_enabled = True
+        # print("bsm debug right, on")
+    else:
+      if not always_on and self.frame - self.last_blindspot_frame > 50:
+        can_sends.append(toyotacan.create_set_bsm_debug_mode(RIGHT_BLINDSPOT, False))
+        self.right_blindspot_debug_enabled = False
+        # print("bsm debug right, off")
+      if self.frame % e_bsm_rate == e_bsm_rate / 2:
+        can_sends.append(toyotacan.create_bsm_polling_status(RIGHT_BLINDSPOT))
+        # if CS.out.rightBlinker:
+        self.last_blindspot_frame = self.frame
+        # print(self.last_blindspot_frame)
+        # print("bsm poll right")
+
+    return can_sends

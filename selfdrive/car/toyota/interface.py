@@ -160,23 +160,40 @@ class CarInterface(CarInterfaceBase):
 
     sp_tss2_long_tune = Params().get_bool("ToyotaTSS2Long")
 
+    # hand tuned (July 1, 2024)
+    def custom_tss2_longitudinal_tuning():
+      ret.vEgoStopping = 0.01
+      ret.vEgoStarting = 0.01
+      ret.stoppingDecelRate = 0.35
+
+    def default_tss2_longitudinal_tuning():
+      ret.vEgoStopping = 0.25
+      ret.vEgoStarting = 0.25
+      ret.stoppingDecelRate = 0.3  # reach stopping target smoothly
+
+    def default_longitudinal_tuning():
+      tune.kiBP = [0., 5., 35.]
+      tune.kiV = [3.6, 2.4, 1.5]
+
     tune = ret.longitudinalTuning
     if candidate in TSS2_CAR or ret.enableGasInterceptorDEPRECATED:
       if sp_tss2_long_tune:
-        tune.kpBP = [0., 5., 20., 30.]
-        tune.kpV = [1.3, 1.0, 0.7, 0.1]
-        tune.kiBP = [0.,   1.,    2.,    3.,   4.,   5.,    12.,  20.,  27., 40.]
-        tune.kiV = [.348, .3361, .3168, .2831, .2571, .226, .198, .17,  .10, .01]
+        tune.kiBP = [0., 5., 12., 20., 27., 36., 50]
+        tune.kiV = [0.35, 0.23, 0.20, 0.17, 0.10, 0.07, 0.01]
+        custom_tss2_longitudinal_tuning()
       else:
         tune.kpV = [0.0]
         tune.kiV = [0.5]
       if candidate in TSS2_CAR:
-        ret.vEgoStopping = 0.25
-        ret.vEgoStarting = 0.25
-        ret.stoppingDecelRate = 0.3  # reach stopping target smoothly
+        default_tss2_longitudinal_tuning()
     else:
-      tune.kiBP = [0., 5., 35.]
-      tune.kiV = [3.6, 2.4, 1.5]
+      default_longitudinal_tuning()
+
+    if Params().get_bool("ToyotaEnhancedBsm"):
+      ret.spFlags |= ToyotaFlagsSP.SP_ENHANCED_BSM.value
+
+    if candidate == CAR.TOYOTA_PRIUS_TSS2:
+      ret.spFlags |= ToyotaFlagsSP.SP_NEED_DEBUG_BSM.value
 
     return ret
 

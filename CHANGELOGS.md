@@ -4,6 +4,17 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit b45caf4 (June 14, 2024)
+* NEW❗: Toyota - Enhanced Blind Spot Monitor (BSM) thanks to arne182, rav4kumar, and eFiniLan!
+  * Enables Blind Spot Monitor (BSM) signals parsing in sunnypilot using the factory Blind Spot Monitor (BSM)
+  * sunnypilot will use debugging CAN messages to receive unfiltered BSM signals, allowing detection of more objects
+  * Supported platforms
+    * RAV4 TSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Lexus LSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Toyota TSS1/1.5, equipped with factory Blind Spot Monitoring (BSM)
+    * Prius TSS2, equipped with factory Blind Spot Monitoring (BSM)
+  * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
+* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
+  * Re-tuned and tested by the community (July 1, 2024)
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)
