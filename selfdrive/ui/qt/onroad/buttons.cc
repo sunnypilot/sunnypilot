@@ -100,7 +100,7 @@ void OnroadSettingsButton::paintEvent(QPaintEvent *event) {
 
 void OnroadSettingsButton::updateState(const UIState &s) {
   const auto cp = (*s.sm)["carParams"].getCarParams();
-  auto dlp_enabled = true;
+  auto dlp_enabled = s.scene.driving_model_gen == 1;
   bool allow_btn = s.scene.onroad_settings_toggle && (dlp_enabled || hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed());
 
   setVisible(allow_btn);

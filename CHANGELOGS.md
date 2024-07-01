@@ -4,6 +4,25 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit b45caf4 (June 14, 2024)
+* NEW❗: Toyota - Enhanced Blind Spot Monitor (BSM) thanks to arne182, rav4kumar, and eFiniLan!
+  * Enables Blind Spot Monitor (BSM) signals parsing in sunnypilot using the factory Blind Spot Monitor (BSM)
+  * sunnypilot will use debugging CAN messages to receive unfiltered BSM signals, allowing detection of more objects
+  * Supported platforms
+    * RAV4 TSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Lexus LSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Toyota TSS1/1.5, equipped with factory Blind Spot Monitoring (BSM)
+    * Prius TSS2, equipped with factory Blind Spot Monitoring (BSM)
+  * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
+* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
+  * Re-tuned and tested by the community (July 1, 2024)
+* NEW❗: Toyota - Automatic Brake Hold (AHB) thanks to AlexandreSato!
+  * When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold
+  * NOTE: Only for Toyota/Lexus vehicles with TSS2/LSS2
+* NEW❗: Toyota - Automatic Door Locking and Unlocking thanks to AlexandreSato, cydia2020, and dragonpilot-community!
+  * Auto Lock by Speed: All doors are automatically locked when vehicle speed is approximately 6 mph (10 km/h) or higher
+  * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
+* FIXED: Driving Personality:
+  * Maniac mode now correctly enforced when selected
 * Ford F-150 2022-23 support
 * Ford F-150 Lightning 2021-23 support
 * Ford Mustang Mach-E 2021-23 support
