@@ -23,7 +23,10 @@
 
 # Last updated: June 5, 2024
 
+from cereal import custom
 from openpilot.common.numpy_fast import interp
+
+AccelProfile = custom.AccelerationProfile
 
 # accel profile by @arne182 modified by cgw
 _DP_CRUISE_MIN_V =       [-1.00,  -1.00,  -0.99,  -0.90,  -0.90,  -0.88,  -0.88,  -0.82]
@@ -37,32 +40,15 @@ _DP_CRUISE_MAX_V_SPORT = [3.5, 3.5, 2.8, 2.4,  1.4,  1.0,  .89,  .75,  .50,  .2]
 _DP_CRUISE_MAX_BP =      [0.,  1.,  6.,  8.,   11.,  15.,  20.,  25.,  30.,  55.]
 
 
-class DPAccel:
-  STOCK = 0
-  ECO = 1
-  NORMAL = 2
-  SPORT = 3
-
-  @classmethod
-  def accel_val(cls):
-    return cls.STOCK, cls.ECO, cls.NORMAL, cls.SPORT
-
-
 class AccelController:
   def __init__(self):
-    self._profile = DPAccel.STOCK
-
-  def set_profile(self, profile: int):
-    try:
-      self._profile = profile if profile in DPAccel.accel_val() else DPAccel.STOCK
-    except (ValueError, TypeError):
-      self._profile = DPAccel.STOCK
+    self._profile = AccelProfile.stock
 
   def _dp_calc_cruise_accel_limits(self, v_ego: float):
-    if self._profile == DPAccel.ECO:
+    if self._profile == AccelProfile.eco:
       min_v = _DP_CRUISE_MIN_V_ECO
       max_v = _DP_CRUISE_MAX_V_ECO
-    elif self._profile == DPAccel.SPORT:
+    elif self._profile == AccelProfile.sport:
       min_v = _DP_CRUISE_MIN_V_SPORT
       max_v = _DP_CRUISE_MAX_V_SPORT
     else:
@@ -75,7 +61,8 @@ class AccelController:
     return a_cruise_min, a_cruise_max
 
   def get_accel_limits(self, v_ego: float, accel_limits: list[float]):
-    return accel_limits if self._profile == DPAccel.STOCK else self._dp_calc_cruise_accel_limits(v_ego)
+    return accel_limits if self._profile == AccelProfile.stock else self._dp_calc_cruise_accel_limits(v_ego)
 
-  def is_enabled(self):
-    return self._profile != DPAccel.STOCK
+  def is_enabled(self, accel_profile: int = AccelProfile.stock):
+    self._profile = accel_profile
+    return self._profile != AccelProfile.stock

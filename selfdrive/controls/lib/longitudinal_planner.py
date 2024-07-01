@@ -106,7 +106,6 @@ class LongitudinalPlanner:
   def read_param(self):
     try:
       self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
-      self.accel_controller.set_profile(int(self.params.get("AccelProfile")))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
       self.accel_controller = AccelController()
@@ -157,7 +156,7 @@ class LongitudinalPlanner:
       accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
     # override accel using Accel Controller
-    if self.accel_controller.is_enabled():
+    if self.accel_controller.is_enabled(accel_profile=sm['controlsStateSP'].accelProfile):
       # get min, max from accel controller
       min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
       if self.mpc.mode == 'acc':
