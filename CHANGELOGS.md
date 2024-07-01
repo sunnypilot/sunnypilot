@@ -7,6 +7,7 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 * Ford F-150 2022-23 support
 * Ford F-150 Lightning 2021-23 support
 * Ford Mustang Mach-E 2021-23 support
+* Hyundai Kona Electric Non-SCC 2019 support thanks to NikitaNekrasov!
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)

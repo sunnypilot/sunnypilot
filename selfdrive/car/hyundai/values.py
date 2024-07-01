@@ -575,6 +575,12 @@ class CAR(Platforms):
     HYUNDAI_KONA.specs,
     spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
   )
+  HYUNDAI_KONA_EV_NON_SCC = HyundaiPlatformConfig(
+    [HyundaiCarDocs("Hyundai Kona Electric Non-SCC 2019", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_g]))],
+    HYUNDAI_KONA.specs,
+    flags=HyundaiFlags.EV,
+    spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
+  )
   KIA_CEED_PHEV_2022_NON_SCC = HyundaiPlatformConfig(
     [HyundaiCarDocs("Kia Ceed PHEV Non-SCC 2022", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_i]))],
     CarSpecs(mass=1650, wheelbase=2.65, steerRatio=13.75, tireStiffnessFactor=0.5),
