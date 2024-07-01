@@ -188,6 +188,8 @@ class Controls:
     model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
     self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
 
+    self.accel_profile = self.read_accel_profile_param()
+
     self.can_log_mono_time = 0
 
     self.startup_event = get_startup_event(car_recognized, not self.CP.passive, len(self.CP.carFw) > 0)
@@ -859,6 +861,7 @@ class Controls:
 
     controlsStateSP.lateralState = lat_tuning
     controlsStateSP.personality = self.personality
+    controlsStateSP.accelProfile = self.accel_profile
 
     if self.enable_nnff and lat_tuning == 'torque':
       controlsStateSP.lateralControlState.torqueState = self.LaC.pid_long_sp
@@ -907,12 +910,19 @@ class Controls:
     except (ValueError, TypeError):
       return custom.LongitudinalPersonalitySP.standard
 
+  def read_accel_profile_param(self):
+    try:
+      return int(self.params.get("AccelProfile"))
+    except (ValueError, TypeError):
+      return custom.AccelerationProfile.stock
+
   def params_thread(self, evt):
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and (self.CP.openpilotLongitudinalControl or
                                                                              (not self.CP.pcmCruiseSpeed and self.custom_stock_planner_speed))
       self.personality = self.read_personality_param()
+      self.accel_profile = self.read_accel_profile_param()
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 

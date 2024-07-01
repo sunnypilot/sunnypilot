@@ -1,6 +1,10 @@
 sunnypilot - 0.9.8.0 (2024-xx-xx)
 ========================
 * Always on driver monitoring toggle
+* NEW❗: Acceleration Profile thanks to kegman, rav4kumar, and arne1282
+  * 3 new modes acceleration profiles for you pick Eco, Stock and Support
+  * Acceleration button some vehicle including most TSS1/2/2.5 and HKG vehicle
+  * These coded right into the model acceleration martix can be actived in real time!
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit b45caf4 (June 14, 2024)
