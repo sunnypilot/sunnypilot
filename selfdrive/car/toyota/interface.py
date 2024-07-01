@@ -164,7 +164,7 @@ class CarInterface(CarInterfaceBase):
     def custom_tss2_longitudinal_tuning():
       ret.vEgoStopping = 0.01
       ret.vEgoStarting = 0.01
-      ret.stoppingDecelRate = 0.35
+      ret.stoppingDecelRate = 0.40
 
     def default_tss2_longitudinal_tuning():
       ret.vEgoStopping = 0.25
@@ -178,8 +178,8 @@ class CarInterface(CarInterfaceBase):
     tune = ret.longitudinalTuning
     if candidate in TSS2_CAR or ret.enableGasInterceptorDEPRECATED:
       if sp_tss2_long_tune:
-        tune.kiBP = [0., 5., 12., 20., 27., 36., 50]
-        tune.kiV = [0.35, 0.23, 0.20, 0.17, 0.10, 0.07, 0.01]
+        tune.kiBP = [0.,  12.,  16,   20.,  27.,  36.,  50]
+        tune.kiV = [0.33, 0.22, 0.19, 0.17, 0.10, 0.07, 0.01]
         custom_tss2_longitudinal_tuning()
       else:
         tune.kpV = [0.0]
