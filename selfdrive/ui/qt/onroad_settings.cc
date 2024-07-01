@@ -111,7 +111,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
 
 void OnroadSettings::changeDynamicLaneProfile() {
   UIScene &scene = uiState()->scene;
-  bool can_change = true;
+  bool can_change = scene.driving_model_gen == 1;
   if (can_change) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
