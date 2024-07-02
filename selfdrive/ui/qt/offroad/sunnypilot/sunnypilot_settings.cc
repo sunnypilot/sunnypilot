@@ -586,7 +586,7 @@ TorqueFriction::TorqueFriction() : SPOptionControl (
   tr("FRICTION"),
   tr("Adjust Friction for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
   "../assets/offroad/icon_blank.png",
-  {0, 50},
+  {0, 500},
   5) {
 
   refresh();
