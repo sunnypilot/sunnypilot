@@ -56,6 +56,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "DynamicPersonality",
+      tr("Enable Dynamic Personality"),
+      tr("Enable this to allow sunnypilot to dynamically adjust following distance and reaction based on your \"Driving Personality\" setting. "
+        "Instead of predefined settings for each personality, every personality now adapts dynamically according to your speed and the distance to the lead car."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
@@ -108,15 +115,25 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   };
 
 
-  std::vector<QString> longi_button_texts{tr("Maniac"), tr("Aggressive"), tr("Stock"), tr("Relaxed")};
+  std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Moderate"), tr("Standard"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
-                                          tr("Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
+                                          tr("Standard is recommended. In moderate/aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
                                              "In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
                                              "your steering wheel distance button."),
                                           "../assets/offroad/icon_blank.png",
                                           longi_button_texts,
                                           380);
   long_personality_setting->showDescription();
+
+  // accel controller
+  std::vector<QString> accel_personality_texts{tr("Sport"), tr("Normal"), tr("Eco"), tr("Stock")};
+  accel_personality_setting = new ButtonParamControl("AccelPersonality", tr("Acceleration Personality"),
+                                          tr("Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. "
+                                             "In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these "
+                                             "acceleration personality within Onroad Settings on the driving screen."),
+                                          "../assets/offroad/icon_blank.png",
+                                          accel_personality_texts);
+  accel_personality_setting->showDescription();
 
   // set up uiState update for personality setting
   QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
@@ -133,6 +150,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     // insert longitudinal personality after NDOG toggle
     if (param == "DisengageOnAccelerator") {
       addItem(long_personality_setting);
+      addItem(accel_personality_setting);
     }
   }
 
@@ -166,6 +184,14 @@ void TogglesPanel::updateState(const UIState &s) {
     }
     uiState()->scene.personality = personality;
   }
+
+  if (sm.updated("controlsStateSP")) {
+    auto accel_personality = sm["controlsStateSP"].getControlsStateSP().getAccelPersonality();
+    if (accel_personality != s.scene.accel_personality && s.scene.started && isVisible()) {
+      accel_personality_setting->setCheckedButton(static_cast<int>(accel_personality));
+    }
+    uiState()->scene.accel_personality = accel_personality;
+  }
 }
 
 void TogglesPanel::expandToggleDescription(const QString &param) {
@@ -185,6 +211,7 @@ void TogglesPanel::updateToggles() {
   auto op_long_toggle = toggles["ExperimentalLongitudinalEnabled"];
   auto custom_stock_long_toggle = toggles["CustomStockLong"];
   auto dec_toggle = toggles["DynamicExperimentalControl"];
+  auto dynamic_personality_toggle = toggles["DynamicPersonality"];
   const QString e2e_description = QString("%1<br>"
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
@@ -220,20 +247,24 @@ void TogglesPanel::updateToggles() {
       experimental_mode_toggle->setEnabled(true);
       experimental_mode_toggle->setDescription(e2e_description);
       long_personality_setting->setEnabled(true);
+      accel_personality_setting->setEnabled(true);
       op_long_toggle->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
       params.remove("CustomStockLong");
       dec_toggle->setEnabled(true);
+      dynamic_personality_toggle->setEnabled(true);
     } else if (custom_stock_long_toggle->isToggled()) {
       op_long_toggle->setEnabled(false);
       experimental_mode_toggle->setEnabled(false);
       long_personality_setting->setEnabled(false);
+      accel_personality_setting->setEnabled(false);
       params.remove("ExperimentalLongitudinalEnabled");
       params.remove("ExperimentalMode");
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
       long_personality_setting->setEnabled(false);
+      accel_personality_setting->setEnabled(false);
       params.remove("ExperimentalMode");
 
       const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");
@@ -252,18 +283,22 @@ void TogglesPanel::updateToggles() {
       op_long_toggle->setEnabled(CP.getExperimentalLongitudinalAvailable() && !is_release);
       custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
       dec_toggle->setEnabled(false);
+      dynamic_personality_toggle->setEnabled(false);
       params.remove("DynamicExperimentalControl");
+      params.remove("DynamicPersonality");
     }
 
     experimental_mode_toggle->refresh();
     op_long_toggle->refresh();
     custom_stock_long_toggle->refresh();
     dec_toggle->refresh();
+    dynamic_personality_toggle->refresh();
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
     op_long_toggle->setVisible(false);
     custom_stock_long_toggle->setVisible(false);
     dec_toggle->setVisible(false);
+    dynamic_personality_toggle->setVisible(false);
   }
 }
 

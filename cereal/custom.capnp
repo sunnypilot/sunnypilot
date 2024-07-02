@@ -18,9 +18,18 @@ enum LongitudinalPersonalitySP {
   relaxed @3;
 }
 
+enum AccelerationPersonality {
+  sport @0;
+  normal @1;
+  eco @2;
+  stock @3;
+}
+
 struct ControlsStateSP @0x81c2f05a394cf4af {
   lateralState @0 :Text;
   personality @8 :LongitudinalPersonalitySP;
+  dynamicPersonality @9 :Bool;
+  accelPersonality @10 :AccelerationPersonality;
 
   lateralControlState :union {
     indiState @1 :LateralINDIState;

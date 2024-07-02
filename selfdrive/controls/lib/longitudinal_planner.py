@@ -19,7 +19,8 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDX
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N, get_speed_error
 from openpilot.selfdrive.controls.lib.vision_turn_controller import VisionTurnController
 from openpilot.selfdrive.controls.lib.turn_speed_controller import TurnSpeedController
-from openpilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
+from openpilot.selfdrive.controls.lib.sunnypilot.accel_controller import AccelController
+from openpilot.selfdrive.controls.lib.sunnypilot.dynamic_experimental_controller import DynamicExperimentalController
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.common.swaglog import cloudlog
 
@@ -100,12 +101,14 @@ class LongitudinalPlanner:
     self.events = Events()
     self.turn_speed_controller = TurnSpeedController()
     self.dynamic_experimental_controller = DynamicExperimentalController()
+    self.accel_controller = AccelController()
 
   def read_param(self):
     try:
       self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
+      self.accel_controller = AccelController()
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -152,6 +155,20 @@ class LongitudinalPlanner:
       accel_limits = [ACCEL_MIN, ACCEL_MAX]
       accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
+    # override accel using Accel Controller
+    if self.accel_controller.is_enabled(accel_personality=sm['controlsStateSP'].accelPersonality):
+      # get min, max from accel controller
+      min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
+      if self.mpc.mode == 'acc':
+        # VOACC car, just give it max min (-1.2) so I can brake harder
+        accel_limits = [A_CRUISE_MIN, max_limit] if self.CP.radarUnavailable else [min_limit, max_limit]
+        # recalculate limit turn according to the new min, max
+        accel_limits_turns = limit_accel_in_turns(v_ego, sm['carState'].steeringAngleDeg, accel_limits, self.CP)
+      else:
+        # blended, just give it max min (-3.5) and max from accel controller
+        accel_limits = [ACCEL_MIN, ACCEL_MAX]
+        accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
+
     if reset_state:
       self.v_desired_filter.x = v_ego
       # Clip aEgo to cruise limits to prevent large accelerations when becoming active
@@ -174,11 +191,11 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint, personality=sm['controlsState'].personality)
+    self.mpc.set_weights(prev_accel_constraint, personality=sm['controlsStateSP'].personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsState'].personality)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsStateSP'].personality, dynamic_personality=sm['controlsStateSP'].dynamicPersonality)
 
     self.v_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.a_solution)

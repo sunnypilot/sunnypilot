@@ -65,6 +65,14 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
   options_layout->addWidget(gac_widget = new OptionWidget(this));
   QObject::connect(gac_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeGapAdjustCruise);
 
+  // Acceleration Personality
+  options_layout->addWidget(ap_widget = new OptionWidget(this));
+  QObject::connect(ap_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeAccelerationPersonality);
+
+  // Dynamic Personality
+  options_layout->addWidget(dynamic_personality_widget = new OptionWidget(this));
+  QObject::connect(dynamic_personality_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeDynamicPersonality);
+
   // Dynamic Lane Profile
   options_layout->addWidget(dlp_widget = new OptionWidget(this));
   QObject::connect(dlp_widget, &OptionWidget::updateParam, this, &OnroadSettings::changeDynamicLaneProfile);
@@ -111,7 +119,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
 
 void OnroadSettings::changeDynamicLaneProfile() {
   UIScene &scene = uiState()->scene;
-  bool can_change = true;
+  bool can_change = scene.driving_model_gen == 1;
   if (can_change) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
@@ -128,6 +136,29 @@ void OnroadSettings::changeGapAdjustCruise() {
     scene.longitudinal_personality--;
     scene.longitudinal_personality = scene.longitudinal_personality < 0 ? 3 : scene.longitudinal_personality;
     params.put("LongitudinalPersonality", std::to_string(scene.longitudinal_personality));
+  }
+  refresh();
+}
+
+void OnroadSettings::changeAccelerationPersonality() {
+  UIScene &scene = uiState()->scene;
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  bool can_change = hasLongitudinalControl(cp);
+  if (can_change) {
+    scene.longitudinal_accel_personality--;
+    scene.longitudinal_accel_personality = scene.longitudinal_accel_personality < 0 ? 3 : scene.longitudinal_accel_personality;
+    params.put("AccelPersonality", std::to_string(scene.longitudinal_accel_personality));
+  }
+  refresh();
+}
+
+void OnroadSettings::changeDynamicPersonality() {
+  UIScene &scene = uiState()->scene;
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  bool can_change = hasLongitudinalControl(cp);
+  if (can_change) {
+    scene.dynamic_personality = !scene.dynamic_personality;
+    params.putBool("DynamicPersonality", scene.dynamic_personality);
   }
   refresh();
 }
@@ -175,6 +206,8 @@ void OnroadSettings::showEvent(QShowEvent *event) {
 void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicLaneProfile");
   param_watcher->addParam("LongitudinalPersonality");
+  param_watcher->addParam("AccelPersonality");
+  param_watcher->addParam("DynamicPersonality");
   param_watcher->addParam("DynamicExperimentalControl");
   param_watcher->addParam("EnableSlc");
 
@@ -182,6 +215,8 @@ void OnroadSettings::refresh() {
   // Update live params on Feature Status on camera view
   scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
   scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
+  scene.longitudinal_accel_personality = std::atoi(params.get("AccelPersonality").c_str());
+  scene.dynamic_personality = params.getBool("DynamicPersonality");
   scene.dynamic_experimental_control = params.getBool("DynamicExperimentalControl");
   scene.speed_limit_control_enabled = params.getBool("EnableSlc");
   scene.speed_limit_control_policy = std::atoi(params.get("SpeedLimitControlPolicy").c_str());
@@ -199,6 +234,14 @@ void OnroadSettings::refresh() {
   // Gap Adjust Cruise
   gac_widget->updateGapAdjustCruise("LongitudinalPersonality");
   gac_widget->setVisible(hasLongitudinalControl(cp));
+
+  // Acceleration Personality
+  ap_widget->updateAccelerationPersonality("AccelPersonality");
+  ap_widget->setVisible(hasLongitudinalControl(cp));
+
+  // Dynamic Personality
+  dynamic_personality_widget->updateDynamicPersonality("DynamicPersonality");
+  dynamic_personality_widget->setVisible(hasLongitudinalControl(cp));
 
   // Dynamic Experimental Control
   dec_widget->updateDynamicExperimentalControl("DynamicExperimentalControl");
@@ -287,17 +330,69 @@ void OptionWidget::updateGapAdjustCruise(QString param) {
   auto lp = atoi(params.get(param.toStdString()).c_str());
 
   if (lp == 0) {
-    title_text = "Maniac Gap";
+    title_text = "Aggressive";
     icon_color = "#ff4b4b";
   } else if (lp == 1) {
-    title_text = "Aggressive Gap";
+    title_text = "Moderate";
     icon_color = "#fcff4b";
   } else if (lp == 2) {
-    title_text = "Stock Gap";
+    title_text = "Standard";
     icon_color = "#4bff66";
   } else if (lp == 3) {
-    title_text = "Relax Gap";
+    title_text = "Relaxed";
     icon_color = "#6a0ac9";
+  }
+
+  icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color));
+
+  title->setText(title_text);
+  subtitle->setText(subtitle_text);
+  subtitle->setVisible(true);
+
+  setStyleSheet(styleSheet());
+}
+
+void OptionWidget::updateAccelerationPersonality(QString param) {
+  auto icon_color = "#3B4356";
+  auto title_text = "";
+  auto subtitle_text = "Acceleration Personality";
+  auto ap = atoi(params.get(param.toStdString()).c_str());
+
+  if (ap == 0) {
+    title_text = "Sport";
+    icon_color = "#ff4b4b";
+  } else if (ap == 1) {
+    title_text = "Normal";
+    icon_color = "#fcff4b";
+  } else if (ap == 2) {
+    title_text = "Eco";
+    icon_color = "#4bff66";
+  } else if (ap == 3) {
+    title_text = "Stock";
+    icon_color = "#6a0ac9";
+  }
+
+  icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color));
+
+  title->setText(title_text);
+  subtitle->setText(subtitle_text);
+  subtitle->setVisible(true);
+
+  setStyleSheet(styleSheet());
+}
+
+void OptionWidget::updateDynamicPersonality(QString param) {
+  auto icon_color = "#3B4356";
+  auto title_text = "";
+  auto subtitle_text = "Dynamic Personality";
+  auto dynamic_personality = atoi(params.get(param.toStdString()).c_str());
+
+  if (dynamic_personality == 0) {
+    title_text = "Disabled";
+    icon_color = "#3B4356";
+  } else if (dynamic_personality == 1) {
+    title_text = "Enabled";
+    icon_color = "#0df87a";
   }
 
   icon->setStyleSheet(QString("QLabel#icon { background-color: %1; border-radius: 34px; }").arg(icon_color));

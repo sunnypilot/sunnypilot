@@ -26,9 +26,9 @@ const int UI_HEADER_HEIGHT = 420;
 const int UI_ROAD_NAME_MARGIN_X = 14;
 
 struct FeatureStatusText {
-  const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
-  const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
-  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active", "Pre Active" };
+  const QStringList dlp_list_text = { "Laneful",    "Laneless", "Auto"};
+  const QStringList gac_list_text = { "Aggressive", "Moderate", "Standard", "Relaxed"};
+  const QStringList slc_list_text = { "Inactive",   "Temp Off", "Adapting", "Active", "Pre Active"};
 };
 
 struct FeatureStatusColor {
@@ -138,6 +138,7 @@ typedef struct UIScene {
 
   bool navigate_on_openpilot_deprecated = false;
   cereal::LongitudinalPersonality personality;
+  cereal::AccelerationPersonality accel_personality;
 
   float light_sensor = -1;
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
@@ -162,6 +163,7 @@ typedef struct UIScene {
 
   bool gac;
   int longitudinal_personality;
+  int longitudinal_accel_personality;
 
   bool map_visible;
   int dev_ui_info;
@@ -204,6 +206,8 @@ typedef struct UIScene {
 
   bool feature_status_toggle;
   bool onroad_settings_toggle;
+
+  bool dynamic_personality;
 } UIScene;
 
 class UIState : public QObject {
