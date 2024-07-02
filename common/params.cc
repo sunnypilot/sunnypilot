@@ -210,7 +210,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
 
-    {"AccelProfile", PERSISTENT | BACKUP},
+    {"AccelPersonality", PERSISTENT | BACKUP},
     {"AccMadsCombo", PERSISTENT | BACKUP},
     {"AmapKey1", PERSISTENT | BACKUP},
     {"AmapKey2", PERSISTENT | BACKUP},

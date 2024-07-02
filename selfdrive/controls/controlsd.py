@@ -190,7 +190,7 @@ class Controls:
 
     self.dynamic_personality = self.params.get_bool("DynamicPersonality")
 
-    self.accel_profile = self.read_accel_profile_param()
+    self.accel_personality = self.read_accel_personality_param()
 
     self.can_log_mono_time = 0
 
@@ -864,7 +864,7 @@ class Controls:
     controlsStateSP.lateralState = lat_tuning
     controlsStateSP.personality = self.personality
     controlsStateSP.dynamicPersonality = self.dynamic_personality
-    controlsStateSP.accelProfile = self.accel_profile
+    controlsStateSP.accelPersonality = self.accel_personality
 
     if self.enable_nnff and lat_tuning == 'torque':
       controlsStateSP.lateralControlState.torqueState = self.LaC.pid_long_sp
@@ -913,11 +913,11 @@ class Controls:
     except (ValueError, TypeError):
       return custom.LongitudinalPersonalitySP.standard
 
-  def read_accel_profile_param(self):
+  def read_accel_personality_param(self):
     try:
-      return int(self.params.get("AccelProfile"))
+      return int(self.params.get("AccelPersonality"))
     except (ValueError, TypeError):
-      return custom.AccelerationProfile.stock
+      return custom.AccelerationPersonality.stock
 
   def params_thread(self, evt):
     while not evt.is_set():
@@ -926,7 +926,7 @@ class Controls:
                                                                              (not self.CP.pcmCruiseSpeed and self.custom_stock_planner_speed))
       self.personality = self.read_personality_param()
       self.dynamic_personality = self.params.get_bool("DynamicPersonality")
-      self.accel_profile = self.read_accel_profile_param()
+      self.accel_personality = self.read_accel_personality_param()
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 

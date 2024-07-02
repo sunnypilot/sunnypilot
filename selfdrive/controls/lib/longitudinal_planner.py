@@ -156,7 +156,7 @@ class LongitudinalPlanner:
       accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
     # override accel using Accel Controller
-    if self.accel_controller.is_enabled(accel_profile=sm['controlsStateSP'].accelProfile):
+    if self.accel_controller.is_enabled(accel_personality=sm['controlsStateSP'].accelPersonality):
       # get min, max from accel controller
       min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
       if self.mpc.mode == 'acc':

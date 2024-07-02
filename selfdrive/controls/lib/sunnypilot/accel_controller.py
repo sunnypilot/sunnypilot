@@ -21,14 +21,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Last updated: June 5, 2024
+# Last updated: July 1, 2024
 
 from cereal import custom
 from openpilot.common.numpy_fast import interp
 
-AccelProfile = custom.AccelerationProfile
+AccelPersonality = custom.AccelerationPersonality
 
-# accel profile by @arne182 modified by cgw
+# accel personality by @arne182 modified by cgw
 _DP_CRUISE_MIN_V =       [-1.03,  -0.79,  -0.77,  -0.77,  -0.75,  -0.75,  -0.88,  -0.82]
 _DP_CRUISE_MIN_V_ECO =   [-1.02,  -0.78,  -0.75,  -0.75,  -0.73,  -0.73,  -0.80,  -0.80]
 _DP_CRUISE_MIN_V_SPORT = [-1.04,  -0.81,  -0.79,  -0.79,  -0.77,  -0.77,  -0.90,  -0.84]
@@ -42,13 +42,13 @@ _DP_CRUISE_MAX_BP =      [0.,  1.,  6.,  8.,   11.,  15.,  20.,  25.,  30.,  55.
 
 class AccelController:
   def __init__(self):
-    self._profile = AccelProfile.stock
+    self._personality = AccelPersonality.stock
 
-  def _dp_calc_cruise_accel_limits(self, v_ego: float):
-    if self._profile == AccelProfile.eco:
+  def _dp_calc_cruise_accel_limits(self, v_ego: float) -> tuple[float, float]:
+    if self._personality == AccelPersonality.eco:
       min_v = _DP_CRUISE_MIN_V_ECO
       max_v = _DP_CRUISE_MAX_V_ECO
-    elif self._profile == AccelProfile.sport:
+    elif self._personality == AccelPersonality.sport:
       min_v = _DP_CRUISE_MIN_V_SPORT
       max_v = _DP_CRUISE_MAX_V_SPORT
     else:
@@ -60,9 +60,9 @@ class AccelController:
 
     return a_cruise_min, a_cruise_max
 
-  def get_accel_limits(self, v_ego: float, accel_limits: list[float]):
-    return accel_limits if self._profile == AccelProfile.stock else self._dp_calc_cruise_accel_limits(v_ego)
+  def get_accel_limits(self, v_ego: float, accel_limits: list[float]) -> tuple[float, float]:
+    return accel_limits if self._personality == AccelPersonality.stock else self._dp_calc_cruise_accel_limits(v_ego)
 
-  def is_enabled(self, accel_profile: int = AccelProfile.stock):
-    self._profile = accel_profile
-    return self._profile != AccelProfile.stock
+  def is_enabled(self, accel_personality: int = AccelPersonality.stock) -> bool:
+    self._personality = accel_personality
+    return self._personality != AccelPersonality.stock
