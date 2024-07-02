@@ -79,7 +79,7 @@ class TorqueEstimator(ParameterEstimator):
     params = Params()
     if params.get_bool("EnforceTorqueLateral"):
       if params.get_bool("CustomTorqueLateral"):
-        self.offline_friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.01
+        self.offline_friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.001
         self.offline_latAccelFactor = float(params.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
       if params.get_bool("LiveTorqueRelaxed"):
         self.min_bucket_points = np.array([0, 200, 300, 500, 500, 300, 200, 0]) / (10 if decimated else 1)

@@ -97,7 +97,7 @@ def manager_init() -> None:
     ("StandStillTimer", "0"),
     ("StockLongToyota", "0"),
     ("TorqueDeadzoneDeg", "0"),
-    ("TorqueFriction", "1"),
+    ("TorqueFriction", "10"),
     ("TorqueMaxLatAccel", "250"),
     ("ToyotaAutoHold", "0"),
     ("ToyotaAutoLockBySpeed", "0"),
@@ -117,6 +117,8 @@ def manager_init() -> None:
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
+    ("ToyotaCruiseOverride", "0"),
+    ("ToyotaCruiseOverrideSpeed", "30"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))
