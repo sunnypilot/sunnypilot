@@ -4,6 +4,9 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit b45caf4 (June 14, 2024)
+* NEW❗: Longitudinal: Acceleration Personality thanks to kegman, rav4kumar, and arne1282!
+  * Select from three distinct acceleration personalities: Eco, Normal, and Sport
+  * Acceleration personalities are integrated directly into the model's acceleration matrix and can be activated in real-time!
 * NEW❗: Longitudinal: Dynamic Personality thanks to rav4kumar!
   * Dynamically adjusts following distance and reaction based on your "Driving Personality" setting
   * Personalities adapt in real-time to your speed and the distance to the lead car

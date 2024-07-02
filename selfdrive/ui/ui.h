@@ -138,6 +138,7 @@ typedef struct UIScene {
 
   bool navigate_on_openpilot_deprecated = false;
   cereal::LongitudinalPersonality personality;
+  cereal::AccelerationPersonality accel_personality;
 
   float light_sensor = -1;
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
@@ -162,6 +163,7 @@ typedef struct UIScene {
 
   bool gac;
   int longitudinal_personality;
+  int longitudinal_accel_personality;
 
   bool map_visible;
   int dev_ui_info;

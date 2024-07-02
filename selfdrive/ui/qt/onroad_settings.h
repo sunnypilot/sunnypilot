@@ -19,6 +19,7 @@ public:
   explicit OnroadSettings(bool closeable = false, QWidget *parent = nullptr);
   void changeDynamicLaneProfile();
   void changeGapAdjustCruise();
+  void changeAccelerationPersonality();
   void changeDynamicPersonality();
   void changeDynamicExperimentalControl();
   void changeSpeedLimitControl();
@@ -32,6 +33,7 @@ private:
   QVBoxLayout *options_layout;
   OptionWidget *dlp_widget;
   OptionWidget *gac_widget;
+  OptionWidget *ap_widget;
   OptionWidget *dynamic_personality_widget;
   OptionWidget *dec_widget;
   OptionWidget *slc_widget;
@@ -48,6 +50,7 @@ public:
   explicit OptionWidget(QWidget *parent = nullptr);
   void updateDynamicLaneProfile(QString param);
   void updateGapAdjustCruise(QString param);
+  void updateAccelerationPersonality(QString param);
   void updateDynamicPersonality(QString param);
   void updateDynamicExperimentalControl(QString param);
   void updateSpeedLimitControl(QString param);
