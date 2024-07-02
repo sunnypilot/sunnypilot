@@ -84,7 +84,7 @@ class VCruiseHelper:
     self.slc_state_prev = SpeedLimitControlState.inactive
     self.slc_speed_limit_offsetted = 0
 
-    #sp: toyota low speed override
+    # sp: toyota low speed override
     self.sp_override_v_cruise_kph = V_CRUISE_UNSET
     self.sp_override_cruise_speed_last = V_CRUISE_UNSET
     self.sp_override_enabled_last = False

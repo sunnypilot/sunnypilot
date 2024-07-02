@@ -494,7 +494,7 @@ class Controls:
   def state_transition(self, CS):
     """Compute conditional state transitions and execute actions on state transitions"""
 
-    #sp - toyota low speed override
+    # sp - toyota low speed override
     sp_override_speed = self.toyota_cruise_override_speed if self.toyota_cruise_override else False
     self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change, sp_override_speed, self.sm['longitudinalPlanSP'])
 

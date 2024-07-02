@@ -102,6 +102,8 @@ def manager_init() -> None:
     ("ToyotaAutoHold", "0"),
     ("ToyotaAutoLockBySpeed", "0"),
     ("ToyotaAutoUnlockByShifter", "0"),
+    ("ToyotaCruiseOverride", "0"),
+    ("ToyotaCruiseOverrideSpeed", "30"),
     ("ToyotaEnhancedBsm", "0"),
     ("TrueVEgoUi", "0"),
     ("TurnSpeedControl", "0"),
@@ -117,8 +119,6 @@ def manager_init() -> None:
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
-    ("ToyotaCruiseOverride", "0"),
-    ("ToyotaCruiseOverrideSpeed", "30"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))
