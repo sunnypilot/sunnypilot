@@ -84,6 +84,8 @@ def manager_init() -> None:
     ("OnroadSettings", "1"),
     ("PathOffset", "0"),
     ("PauseLateralSpeed", "0"),
+    ("PCMVCruiseOverride", "0"),
+    ("PCMVCruiseOverrideSpeed", "30"),
     ("ReverseAccChange", "0"),
     ("ScreenRecorder", "1"),
     ("ShowDebugUI", "1"),

@@ -182,6 +182,8 @@ class Controls:
     self.enable_mads = self.params.get_bool("EnableMads")
     self.mads_disengage_lateral_on_brake = self.params.get_bool("DisengageLateralOnBrake")
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
+    self.pcm_v_cruise_override = self.params.get_bool("PCMVCruiseOverride")
+    self.pcm_v_cruise_override_speed = int(self.params.get("PCMVCruiseOverrideSpeed", encoding="utf-8"))
     self.process_not_running = False
 
     self.custom_model, self.model_gen = get_model_generation(self.params)
@@ -493,7 +495,9 @@ class Controls:
   def state_transition(self, CS):
     """Compute conditional state transitions and execute actions on state transitions"""
 
-    self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change, self.sm['longitudinalPlanSP'])
+    # sp - PCM speed override
+    sp_override_speed = self.pcm_v_cruise_override_speed if self.pcm_v_cruise_override else False
+    self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change, sp_override_speed, self.sm['longitudinalPlanSP'])
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
