@@ -4,6 +4,10 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 ************************
 * UPDATED: Synced with commaai's openpilot
   * master commit b45caf4 (June 14, 2024)
+* NEW❗: Longitudinal: Dynamic Personality thanks to rav4kumar!
+  * Dynamically adjusts following distance and reaction based on your "Driving Personality" setting
+  * Personalities adapt in real-time to your speed and the distance to the lead car
+  * Provides a more responsive and tailored driving experience compared to predefined settings
 * UPDATED: Driving Personality: Updated mode names
   * Aggressive, Moderate, Standard, Relaxed
 * NEW❗: Toyota - Enhanced Blind Spot Monitor (BSM) thanks to arne182, rav4kumar, and eFiniLan!

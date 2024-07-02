@@ -204,6 +204,8 @@ typedef struct UIScene {
 
   bool feature_status_toggle;
   bool onroad_settings_toggle;
+
+  bool dynamic_personality;
 } UIScene;
 
 class UIState : public QObject {

@@ -21,6 +21,7 @@ enum LongitudinalPersonalitySP {
 struct ControlsStateSP @0x81c2f05a394cf4af {
   lateralState @0 :Text;
   personality @8 :LongitudinalPersonalitySP;
+  dynamicPersonality @9 :Bool;
 
   lateralControlState :union {
     indiState @1 :LateralINDIState;
