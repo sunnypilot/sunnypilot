@@ -586,13 +586,14 @@ TorqueFriction::TorqueFriction() : SPOptionControl (
   tr("FRICTION"),
   tr("Adjust Friction for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
   "../assets/offroad/icon_blank.png",
-  {0, 50}) {
+  {0, 50},
+  5) {
 
   refresh();
 }
 
 void TorqueFriction::refresh() {
-  float torqueFrictionVal = QString::fromStdString(params.get("TorqueFriction")).toInt() * 0.01;
+  float torqueFrictionVal = QString::fromStdString(params.get("TorqueFriction")).toInt() * 0.001;
   setTitle("FRICTION - " + (params.getBool("TorquedOverride") ? tr("Real-time and Offline") : tr("Offline Only")));
   setLabel(QString::number(torqueFrictionVal));
 }
