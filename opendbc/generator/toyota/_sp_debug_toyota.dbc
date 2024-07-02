@@ -1,0 +1,27 @@
+BO_ 1880 DEBUG: 8 XXX
+ SG_ BLINDSPOTSIDE : 7|8@0+ (1,0) [0|255] "" XXX
+ SG_ BLINDSPOT : 38|1@0+ (1,0) [0|15] "" XXX
+ SG_ BLINDSPOTD1 : 47|8@0+ (1,0) [0|255] "" XXX
+ SG_ BLINDSPOTD2 : 55|8@0+ (1,0) [0|255] "" XXX
+
+BO_ 836 PRE_COLLISION_2: 8 DSU
+ SG_ DSS1GDRV : 7|10@0- (0.1,0) [0|0] "m/s^2" Vector__XXX
+ SG_ DS1STAT2 : 13|3@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ DS1STBK2 : 10|3@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PCSWAR : 18|1@0+ (1,0) [0|0] "" FCM
+ SG_ PCSALM : 17|1@0+ (1,0) [0|0] "" FCM
+ SG_ PCSOPR : 16|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PCSABK : 31|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PBATRGR : 30|2@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PPTRGR : 28|1@0+ (1,0) [0|0] "" FCM
+ SG_ IBTRGR : 27|1@0+ (1,0) [0|0] "" FCM
+ SG_ CLEXTRGR : 26|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ IRLT_REQ : 25|2@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ BRKHLD : 37|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ AVSTRGR : 36|1@0+ (1,0) [0|0] "" SCS
+ SG_ VGRSTRGR : 35|2@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PREFILL : 33|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PBRTRGR : 32|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PCSDIS : 43|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ PBPREPMP : 40|1@0+ (1,0) [0|0] "" Vector__XXX
+ SG_ CHECKSUM : 63|8@0+ (1,0) [0|0] "" XXX
