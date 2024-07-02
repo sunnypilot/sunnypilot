@@ -119,8 +119,6 @@ def manager_init() -> None:
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
-    ("ToyotaCruiseOverride", "0"),
-    ("ToyotaCruiseOverrideSpeed", "30"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))
