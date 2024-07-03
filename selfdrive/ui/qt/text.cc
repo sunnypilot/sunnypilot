@@ -29,6 +29,16 @@ std::string executeCommand(const char* cmd) {
   return result.str();
 }
 
+// The format is intentional!
+QString text = QString("%1\n%2\n%3\n%4\n%5\n%6\n%7")
+              .arg(" ________________________________________")
+              .arg("|                                                               |")
+              .arg("| " + QObject::tr("Update downloaded. Ready to reboot.") + "  |")
+              .arg("|                                                               |")
+              .arg("| " + QObject::tr("Update: Check and Download Update") + "   |")
+              .arg("| " + QObject::tr("Reboot: Reboot Device") + "                          |")
+              .arg("|________________________________________|");
+
 int main(int argc, char *argv[]) {
   initApp(argc, argv);
   QApplication a(argc, argv);
@@ -41,6 +51,7 @@ int main(int argc, char *argv[]) {
   QLabel *label = new QLabel(argv[1]);
   label->setWordWrap(true);
   label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+  label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
   ScrollView *scroll = new ScrollView(label);
   scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   main_layout->addWidget(scroll, 0, 0, Qt::AlignTop);
@@ -67,9 +78,9 @@ int main(int argc, char *argv[]) {
     const std::string git_remote = Params().get("GitRemote");
     const std::string to_home_dir = "cd /data/openpilot";
     const std::string check_remote = "git remote | grep origin-update";
-    const std::string reset_remote = "git remote remove origin-update && git remote add origin-update " + git_remote + " 2>&1";
-    const std::string add_remote = "git remote add origin-update " + git_remote + " 2>&1";
-    const std::string fetch_remote = "git fetch origin-update " + git_branch + " 2>&1";
+    const std::string reset_remote = "git remote remove origin-update && git remote add origin-update " + git_remote;
+    const std::string add_remote = "git remote add origin-update " + git_remote;
+    const std::string fetch_remote = "git fetch origin-update " + git_branch;
     const std::string reset_branch = "git reset --hard origin-update/" + git_branch + " 2>&1";
 
     std::string remote_cmd = add_remote;
@@ -79,15 +90,16 @@ int main(int argc, char *argv[]) {
     const std::string cmd = to_home_dir + "; " + remote_cmd + "; " + fetch_remote + "; " + reset_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
+      label->clear();
       std::string output = executeCommand(cmd.c_str());
       //LOGW("CHECK OUTPUT PLS\n%s", output.c_str());
       QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
-                                Q_ARG(QString, QString::fromStdString(output)));
+                                Q_ARG(QString, QString::fromStdString(output) + text));
     });
     QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
       btn->setEnabled(true);
       update_btn->setEnabled(true);
-      update_btn->setText("Ready to Reboot");
+      update_btn->setText(QObject::tr("Update"));
     });
     watcher.setFuture(future);
   });
