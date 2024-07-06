@@ -113,14 +113,6 @@
         <source>MAX</source>
         <translation>MAX</translation>
     </message>
-    <message>
-        <source>SPEED</source>
-        <translation>SPEED</translation>
-    </message>
-    <message>
-        <source>LIMIT</source>
-        <translation>LIMIT</translation>
-    </message>
 </context>
 <context>
     <name>AutoLaneChangeTimer</name>
@@ -238,33 +230,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <message>
         <source>Decline, uninstall %1</source>
         <translation>رفض، إلغاء التثبيت %1</translation>
-    </message>
-</context>
-<context>
-    <name>DestinationWidget</name>
-    <message>
-        <source>Home</source>
-        <translation>المنزل</translation>
-    </message>
-    <message>
-        <source>Work</source>
-        <translation>العمل</translation>
-    </message>
-    <message>
-        <source>No destination set</source>
-        <translation>لم يتم ضبط الوجهة</translation>
-    </message>
-    <message>
-        <source>home</source>
-        <translation>المنزل</translation>
-    </message>
-    <message>
-        <source>work</source>
-        <translation>العمل</translation>
-    </message>
-    <message>
-        <source>No %1 location set</source>
-        <translation>لم يتم ضبط %1 موقع</translation>
     </message>
 </context>
 <context>
@@ -1146,8 +1111,8 @@ Warning: You are on a metered connection!</source>
         <translation>سنة واحدة من تخزين القرص</translation>
     </message>
     <message>
-        <source>Turn-by-turn navigation</source>
-        <translation>التنقل خطوة بخطوة</translation>
+        <source>Remote snapshots</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1207,22 +1172,6 @@ Warning: You are on a metered connection!</source>
             <numerusform>منذ %n أيام</numerusform>
             <numerusform>منذ %n يوم</numerusform>
         </translation>
-    </message>
-    <message>
-        <source>km</source>
-        <translation>كم</translation>
-    </message>
-    <message>
-        <source>m</source>
-        <translation>م</translation>
-    </message>
-    <message>
-        <source>mi</source>
-        <translation>ميل</translation>
-    </message>
-    <message>
-        <source>ft</source>
-        <translation>قدم</translation>
     </message>
     <message>
         <source>now</source>
@@ -2485,22 +2434,6 @@ This may take up to a minute.</source>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
         <translation>عند تمكين هذه الميزة، فإن الضغط على دواسة الوقود سيؤدي إلى فك ارتباط openpilot.</translation>
-    </message>
-    <message>
-        <source>Show ETA in 24h Format</source>
-        <translation>إظهار الوقت المقدر للوصول بصيغة 24 ساعة</translation>
-    </message>
-    <message>
-        <source>Use 24h format instead of am/pm</source>
-        <translation>استخدام صيغة 24 ساعة بدلاً من صباحاً/مساء</translation>
-    </message>
-    <message>
-        <source>Show Map on Left Side of UI</source>
-        <translation>عرض الخريطة على الجانب الأيسر من واجهة المستخدم</translation>
-    </message>
-    <message>
-        <source>Show map on left side when in split screen view.</source>
-        <translation>عرض الخريطة عل الجانب الأيسر عندما تكون وضعية العرض بطريقة الشاشة المنقسمة.</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
