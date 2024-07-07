@@ -3,6 +3,7 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
+from openpilot.selfdrive.modeld.custom_model_metadata import ModelCapabilities
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -54,7 +55,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
                    timestamp_eof: int, timestamp_llk: int, model_execution_time: float,
                    nav_enabled: bool, valid: bool,
-                   model_use_lateral_planner: bool, model_use_nav: bool) -> None:
+                   custom_model_valid: bool, custom_model_capabilities: ModelCapabilities) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
   extended_msg.valid = valid
@@ -75,6 +76,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.frameAge = frame_age
   modelV2.frameDropPerc = frame_drop_perc
   modelV2.timestampEof = timestamp_eof
+  model_use_nav = custom_model_valid and custom_model_capabilities & ModelCapabilities.NoO
   if model_use_nav:
     modelV2.locationMonoTimeDEPRECATED = timestamp_llk
   modelV2.modelExecutionTime = model_execution_time
@@ -98,7 +100,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyz_poly(poly_path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
   # lateral planning
-  if model_use_lateral_planner:
+  if custom_model_valid and custom_model_capabilities & ModelCapabilities.LateralPlannerSolution:
     solution = modelV2.lateralPlannerSolutionDEPRECATED
     solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
     solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]

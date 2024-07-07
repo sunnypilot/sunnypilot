@@ -28,8 +28,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
-from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
-from openpilot.selfdrive.sunnypilot import get_model_generation
+from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
 
 from openpilot.system.athena.registration import is_registered_device
 from openpilot.system.hardware import HARDWARE
@@ -182,9 +181,9 @@ class Controls:
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
     self.process_not_running = False
 
-    self.custom_model, self.model_gen = get_model_generation(self.params)
-    model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
-    self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
+    self.custom_model_metadata = CustomModelMetadata(params=self.params, init_only=True)
+    self.model_use_lateral_planner = self.custom_model_metadata.valid and \
+                                     self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution
 
     self.dynamic_personality = self.params.get_bool("DynamicPersonality")
 
