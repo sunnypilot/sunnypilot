@@ -28,6 +28,7 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   slayout->addWidget(home);
 
   onroad = new OnroadWindow(this);
+  QObject::connect(onroad, &OnroadWindow::mapPanelRequested, this, [=] { sidebar->hide(); });
   slayout->addWidget(onroad);
 
   body = new BodyWindow(this);
@@ -46,6 +47,10 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
 
 void HomeWindow::showSidebar(bool show) {
   sidebar->setVisible(show);
+}
+
+void HomeWindow::showMapPanel(bool show) {
+  onroad->showMapPanel(show);
 }
 
 void HomeWindow::updateState(const UIState &s) {
@@ -81,7 +86,7 @@ void HomeWindow::showDriverView(bool show) {
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
   // Handle sidebar collapsing
   if ((onroad->isVisible() || body->isVisible()) && (!sidebar->isVisible() || e->x() > sidebar->width())) {
-    sidebar->setVisible(!sidebar->isVisible());
+    sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
   }
 }
 

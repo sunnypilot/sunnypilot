@@ -113,6 +113,14 @@
         <source>MAX</source>
         <translation>MAX</translation>
     </message>
+    <message>
+        <source>SPEED</source>
+        <translation>SPEED</translation>
+    </message>
+    <message>
+        <source>LIMIT</source>
+        <translation>LIMIT</translation>
+    </message>
 </context>
 <context>
     <name>AutoLaneChangeTimer</name>

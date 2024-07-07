@@ -216,6 +216,14 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source> cm</source>
         <translation> 厘米</translation>
     </message>
+    <message>
+        <source>SPEED</source>
+        <translation>SPEED</translation>
+    </message>
+    <message>
+        <source>LIMIT</source>
+        <translation>LIMIT</translation>
+    </message>
 </context>
 <context>
     <name>ConfirmationDialog</name>
