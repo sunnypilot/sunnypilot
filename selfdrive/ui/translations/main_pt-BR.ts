@@ -137,6 +137,33 @@
     </message>
 </context>
 <context>
+    <name>DestinationWidget</name>
+    <message>
+        <source>Home</source>
+        <translation>Casa</translation>
+    </message>
+    <message>
+        <source>Work</source>
+        <translation>Trabalho</translation>
+    </message>
+    <message>
+        <source>No destination set</source>
+        <translation>Nenhum destino definido</translation>
+    </message>
+    <message>
+        <source>No %1 location set</source>
+        <translation>Endereço de %1 não definido</translation>
+    </message>
+    <message>
+        <source>home</source>
+        <translation>casa</translation>
+    </message>
+    <message>
+        <source>work</source>
+        <translation>trabalho</translation>
+    </message>
+</context>
+<context>
     <name>DevicePanel</name>
     <message>
         <source>Dongle ID</source>
@@ -319,6 +346,47 @@
     </message>
 </context>
 <context>
+    <name>MapETA</name>
+    <message>
+        <source>eta</source>
+        <translation>eta</translation>
+    </message>
+    <message>
+        <source>min</source>
+        <translation>min</translation>
+    </message>
+    <message>
+        <source>hr</source>
+        <translation>hr</translation>
+    </message>
+</context>
+<context>
+    <name>MapSettings</name>
+    <message>
+        <source>NAVIGATION</source>
+        <translation>NAVEGAÇÃO</translation>
+    </message>
+    <message>
+        <source>Manage at connect.comma.ai</source>
+        <translation>Gerencie em connect.comma.ai</translation>
+    </message>
+</context>
+<context>
+    <name>MapWindow</name>
+    <message>
+        <source>Map Loading</source>
+        <translation>Carregando Mapa</translation>
+    </message>
+    <message>
+        <source>Waiting for GPS</source>
+        <translation>Aguardando GPS</translation>
+    </message>
+    <message>
+        <source>Waiting for route</source>
+        <translation>Aguardando rota</translation>
+    </message>
+</context>
+<context>
     <name>MultiOptionDialog</name>
     <message>
         <source>Select</source>
@@ -492,12 +560,12 @@
         <translation>Conectividade LTE (só nos EUA)</translation>
     </message>
     <message>
-        <source>1 year of drive storage</source>
-        <translation>1 ano de dados em nuvem</translation>
+        <source>Turn-by-turn navigation</source>
+        <translation>Navegação passo a passo</translation>
     </message>
     <message>
-        <source>Remote snapshots</source>
-        <translation>Captura remota</translation>
+        <source>1 year of drive storage</source>
+        <translation>1 ano de dados em nuvem</translation>
     </message>
 </context>
 <context>
@@ -545,6 +613,22 @@
             <numerusform>há %n dia</numerusform>
             <numerusform>há %n dias</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>km</source>
+        <translation>km</translation>
+    </message>
+    <message>
+        <source>m</source>
+        <translation>m</translation>
+    </message>
+    <message>
+        <source>mi</source>
+        <translation>milha</translation>
+    </message>
+    <message>
+        <source>ft</source>
+        <translation>pés</translation>
     </message>
     <message>
         <source>now</source>
@@ -989,6 +1073,22 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
         <translation>Quando ativado, pressionar o pedal do acelerador desacionará o openpilot.</translation>
+    </message>
+    <message>
+        <source>Show ETA in 24h Format</source>
+        <translation>Mostrar ETA em Formato 24h</translation>
+    </message>
+    <message>
+        <source>Use 24h format instead of am/pm</source>
+        <translation>Use o formato 24h em vez de am/pm</translation>
+    </message>
+    <message>
+        <source>Show Map on Left Side of UI</source>
+        <translation>Exibir Mapa no Lado Esquerdo</translation>
+    </message>
+    <message>
+        <source>Show map on left side when in split screen view.</source>
+        <translation>Exibir mapa do lado esquerdo quando a tela for dividida.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>

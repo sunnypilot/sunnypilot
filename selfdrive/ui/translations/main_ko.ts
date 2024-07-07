@@ -137,6 +137,33 @@
     </message>
 </context>
 <context>
+    <name>DestinationWidget</name>
+    <message>
+        <source>Home</source>
+        <translation>집</translation>
+    </message>
+    <message>
+        <source>Work</source>
+        <translation>회사</translation>
+    </message>
+    <message>
+        <source>No destination set</source>
+        <translation>목적지가 설정되지 않았습니다</translation>
+    </message>
+    <message>
+        <source>No %1 location set</source>
+        <translation>%1 위치가 설정되지 않았습니다</translation>
+    </message>
+    <message>
+        <source>home</source>
+        <translation>집</translation>
+    </message>
+    <message>
+        <source>work</source>
+        <translation>회사</translation>
+    </message>
+</context>
+<context>
     <name>DevicePanel</name>
     <message>
         <source>Dongle ID</source>
@@ -318,6 +345,47 @@
     </message>
 </context>
 <context>
+    <name>MapETA</name>
+    <message>
+        <source>eta</source>
+        <translation>도착</translation>
+    </message>
+    <message>
+        <source>min</source>
+        <translation>분</translation>
+    </message>
+    <message>
+        <source>hr</source>
+        <translation>시간</translation>
+    </message>
+</context>
+<context>
+    <name>MapSettings</name>
+    <message>
+        <source>NAVIGATION</source>
+        <translation>내비게이션</translation>
+    </message>
+    <message>
+        <source>Manage at connect.comma.ai</source>
+        <translation>connect.comma.ai에서 관리하세요</translation>
+    </message>
+</context>
+<context>
+    <name>MapWindow</name>
+    <message>
+        <source>Map Loading</source>
+        <translation>지도 로딩 중</translation>
+    </message>
+    <message>
+        <source>Waiting for GPS</source>
+        <translation>GPS 수신 중</translation>
+    </message>
+    <message>
+        <source>Waiting for route</source>
+        <translation>경로를 기다리는 중</translation>
+    </message>
+</context>
+<context>
     <name>MultiOptionDialog</name>
     <message>
         <source>Select</source>
@@ -491,12 +559,12 @@
         <translation>항상 LTE 연결</translation>
     </message>
     <message>
-        <source>1 year of drive storage</source>
-        <translation>1년간 드라이브 로그 저장</translation>
+        <source>Turn-by-turn navigation</source>
+        <translation>내비게이션 경로안내</translation>
     </message>
     <message>
-        <source>Remote snapshots</source>
-        <translation type="unfinished"></translation>
+        <source>1 year of drive storage</source>
+        <translation>1년간 드라이브 로그 저장</translation>
     </message>
 </context>
 <context>
@@ -541,6 +609,22 @@
         <translation>
             <numerusform>%n 일 전</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>km</source>
+        <translation>km</translation>
+    </message>
+    <message>
+        <source>m</source>
+        <translation>m</translation>
+    </message>
+    <message>
+        <source>mi</source>
+        <translation>mi</translation>
+    </message>
+    <message>
+        <source>ft</source>
+        <translation>ft</translation>
     </message>
     <message>
         <source>now</source>
@@ -985,6 +1069,22 @@ This may take up to a minute.</source>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
         <translation>활성화된 경우 가속 페달을 밟으면 openpilot이 해제됩니다.</translation>
+    </message>
+    <message>
+        <source>Show ETA in 24h Format</source>
+        <translation>24시간 형식으로 도착 예정 시간 표시</translation>
+    </message>
+    <message>
+        <source>Use 24h format instead of am/pm</source>
+        <translation>오전/오후 대신 24시간 형식 사용</translation>
+    </message>
+    <message>
+        <source>Show Map on Left Side of UI</source>
+        <translation>UI 왼쪽에 지도 표시</translation>
+    </message>
+    <message>
+        <source>Show map on left side when in split screen view.</source>
+        <translation>분할 화면 보기에서 지도를 왼쪽에 표시합니다.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>

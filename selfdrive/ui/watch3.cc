@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
   {
     QHBoxLayout *hlayout = new QHBoxLayout();
     layout->addLayout(hlayout);
+    hlayout->addWidget(new CameraWidget("navd", VISION_STREAM_MAP, false));
     hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_ROAD, false));
   }
 
