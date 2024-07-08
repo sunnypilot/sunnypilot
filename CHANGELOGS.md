@@ -44,6 +44,11 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
 * FIXED: Driving Personality:
   * Maniac mode now correctly enforced when selected
+* UI Updates
+  * Display Metrics Below Chevron
+    * NEW❗: Time to Lead Car
+      * Displays the time to reach the position previously occupied by the lead car
+    * NEW❗: Display Distance, Speed, and Time to Lead Car simultaneously
 * Ford F-150 2022-23 support
 * Ford F-150 Lightning 2021-23 support
 * Ford Mustang Mach-E 2021-23 support
