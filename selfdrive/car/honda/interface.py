@@ -298,7 +298,7 @@ class CarInterface(CarInterfaceBase):
     if self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed:
       if ret.gasPressed and not ret.cruiseState.enabled:
         self.CS.accEnabled = False
-      self.CS.accEnabled = self.CS.pcm_cruise_enabled
+      self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS,
                                             min_enable_speed_pcm=(self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed),
