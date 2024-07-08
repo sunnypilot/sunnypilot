@@ -69,6 +69,21 @@ class CarState(CarStateBase):
       self.zss_angle_offset = 0.
       self.zss_threshold_count = 0
 
+    self._left_blindspot = False
+    self._left_blindspot_d1 = 0
+    self._left_blindspot_d2 = 0
+    self._left_blindspot_counter = 0
+
+    self._right_blindspot = False
+    self._right_blindspot_d1 = 0
+    self._right_blindspot_d2 = 0
+    self._right_blindspot_counter = 0
+
+    if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+      self.pre_collision_2 = {}
+
+    self.frame = 0
+
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
 
@@ -245,8 +260,15 @@ class CarState(CarStateBase):
       else:
         self.distance_button = cp.vl["SDSU"]["FD_BUTTON"]
 
+    if self.CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM and self.frame > 199:
+      ret.leftBlindspot, ret.rightBlindspot = self.sp_get_enhanced_bsm(cp)
+
+    if self.CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+      self.pre_collision_2 = copy.copy(cp_cam.vl["PRE_COLLISION_2"])
+
     self._update_traffic_signals(cp_cam)
     ret.cruiseState.speedLimit = self._calculate_speed_limit()
+    self.frame += 1
 
     return ret
 
@@ -328,6 +350,43 @@ class CarState(CarStateBase):
       return self._spdval1 * CV.MPH_TO_MS
     return 0
 
+  # Enhanced BSM (@arne182, @rav4kumar)
+  def sp_get_enhanced_bsm(self, cp):
+    # Let's keep all the commented out code for easy debug purposes in the future.
+    distance_1 = cp.vl["DEBUG"].get('BLINDSPOTD1')
+    distance_2 = cp.vl["DEBUG"].get('BLINDSPOTD2')
+    side = cp.vl["DEBUG"].get('BLINDSPOTSIDE')
+
+    if all(val is not None for val in [distance_1, distance_2, side]):
+      if side == 65:  # left blind spot
+        if distance_1 != self._left_blindspot_d1 or distance_2 != self._left_blindspot_d2:
+          self._left_blindspot_d1 = distance_1
+          self._left_blindspot_d2 = distance_2
+          self._left_blindspot_counter = 100
+        self._left_blindspot = distance_1 > 10 or distance_2 > 10
+
+      elif side == 66:  # right blind spot
+        if distance_1 != self._right_blindspot_d1 or distance_2 != self._right_blindspot_d2:
+          self._right_blindspot_d1 = distance_1
+          self._right_blindspot_d2 = distance_2
+          self._right_blindspot_counter = 100
+        self._right_blindspot = distance_1 > 10 or distance_2 > 10
+
+      # update counters
+      self._left_blindspot_counter = max(0, self._left_blindspot_counter - 1)
+      self._right_blindspot_counter = max(0, self._right_blindspot_counter - 1)
+
+      # reset blind spot status if counter reaches 0
+      if self._left_blindspot_counter == 0:
+        self._left_blindspot = False
+        self._left_blindspot_d1 = self._left_blindspot_d2 = 0
+
+      if self._right_blindspot_counter == 0:
+        self._right_blindspot = False
+        self._right_blindspot_d1 = self._right_blindspot_d2 = 0
+
+    return self._left_blindspot, self._right_blindspot
+
   @staticmethod
   def get_can_parser(CP):
     messages = [
@@ -384,6 +443,9 @@ class CarState(CarStateBase):
     if CP.spFlags & ToyotaFlagsSP.SP_ZSS:
       messages.append(("SECONDARY_STEER_ANGLE", 0))
 
+    if CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM:
+      messages.append(("DEBUG", 65))
+
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
 
   @staticmethod
@@ -406,5 +468,8 @@ class CarState(CarStateBase):
         ("ACC_CONTROL", 33),
         ("PCS_HUD", 1),
       ]
+
+      if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+        messages.append(("PRE_COLLISION_2", 33))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)

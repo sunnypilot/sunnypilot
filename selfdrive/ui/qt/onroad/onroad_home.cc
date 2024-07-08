@@ -125,7 +125,7 @@ void OnroadWindow::createOnroadSettingsWidget() {
   QObject::connect(nvg->onroad_settings_btn, &OnroadSettingsButton::clicked, os, &OnroadSettingsPanel::toggleOnroadSettings);
   nvg->onroad_settings_btn->setEnabled(true);
 
-  os->setFixedWidth(topWidget(this)->width() / 2.67 - UI_BORDER_SIZE);
+  os->setFixedWidth(topWidget(this)->width() / 2.6 - UI_BORDER_SIZE);
   split->insertWidget(0, os);
 
   // hidden by default

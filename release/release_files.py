@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+import os
+import re
+from pathlib import Path
+
+HERE = os.path.abspath(os.path.dirname(__file__))
+ROOT = HERE + "/.."
+
+# blacklisting is for two purposes:
+# - minimizing release download size
+# - keeping the diff readable
+blacklist = [
+  "body/STL/",
+
+  "panda/drivers/",
+  "panda/examples/",
+  "panda/tests/safety/",
+
+  "opendbc/.*.dbc$",
+  "opendbc/generator/",
+
+  "cereal/.*test.*",
+  "^common/tests/",
+
+  # particularly large text files
+  "uv.lock",
+  "third_party/catch2",
+  "selfdrive/car/tests/test_models.*",
+
+  "^tools/",
+  "^scripts/",
+  "^tinygrad_repo/",
+
+  "matlab.*.md",
+
+  ".git/",
+  ".github/",
+  ".devcontainer/",
+  "Darwin/",
+  ".vscode/",
+
+  # common things
+  "LICENSE",
+  "Dockerfile",
+  ".pre-commit",
+
+  # no LFS or submodules in release
+  ".lfsconfig",
+  ".gitattributes",
+  ".git$",
+  ".gitmodules",
+]
+
+# Sunnypilot blacklist
+sunnypilot_blacklist = [
+  "system/loggerd/sunnylink_uploader.py",  # Temporarily, until we are ready to roll it out widely
+  "system/manager/gitlab_runner.sh",
+  ".idea/",
+  ".run/",
+  ".run/",
+  ".*__pycache__/.*",
+  ".*\.pyc",
+  "tinygrad/*",
+  "teleoprtc/*",
+  "third_party/snpe/x86_64/*",
+  "body/board/canloader.py",
+  "body/board/flash_base.sh",
+  "body/board/flash_knee.sh",
+  "body/board/recover.sh",
+  ".*/test/",
+  ".*/tests/",
+  ".*tinygrad_repo/tinygrad/renderer/",
+  "README.md",
+  ".*internal/",
+  "docs/.*",
+  ".sconsign.dblite",
+  "release/ci/scons_cache/",
+  ".gitlab-ci.yml",
+  ".clang-tidy",
+  ".dockerignore",
+  ".editorconfig",
+  ".gitmodules",
+  ".pre-commit-config.yaml",
+  ".python-version",
+  "Dockerfile",
+  "dockerfile",
+  "SECURITY.md",
+  "codecov.yml",
+  "conftest.py",
+  "poetry.lock",
+]
+
+# Merge the blacklists
+blacklist += sunnypilot_blacklist
+
+# gets you through the blacklist
+whitelist = [
+  "^tools/lib/(?!.*__pycache__).*$",
+  "tools/bodyteleop/(?!.*__pycache__).*$",
+
+  "tinygrad_repo/openpilot/compile2.py",
+  "tinygrad_repo/extra/onnx.py",
+  "tinygrad_repo/extra/onnx_ops.py",
+  "tinygrad_repo/extra/thneed.py",
+  "tinygrad_repo/extra/utils.py",
+  "tinygrad_repo/tinygrad/codegen/kernel.py",
+  "tinygrad_repo/tinygrad/codegen/linearizer.py",
+  "tinygrad_repo/tinygrad/features/image.py",
+  "tinygrad_repo/tinygrad/features/search.py",
+  "tinygrad_repo/tinygrad/nn/*",
+  "tinygrad_repo/tinygrad/renderer/cstyle.py",
+  "tinygrad_repo/tinygrad/renderer/opencl.py",
+  "tinygrad_repo/tinygrad/runtime/lib.py",
+  "tinygrad_repo/tinygrad/runtime/ops_cpu.py",
+  "tinygrad_repo/tinygrad/runtime/ops_disk.py",
+  "tinygrad_repo/tinygrad/runtime/ops_gpu.py",
+  "tinygrad_repo/tinygrad/shape/*",
+  "tinygrad_repo/tinygrad/.*.py",
+
+  # TODO: do this automatically
+  "opendbc/comma_body.dbc",
+  "opendbc/chrysler_ram_hd_generated.dbc",
+  "opendbc/chrysler_ram_dt_generated.dbc",
+  "opendbc/chrysler_pacifica_2017_hybrid_generated.dbc",
+  "opendbc/chrysler_pacifica_2017_hybrid_private_fusion.dbc",
+  "opendbc/gm_global_a_powertrain_generated.dbc",
+  "opendbc/gm_global_a_object.dbc",
+  "opendbc/gm_global_a_chassis.dbc",
+  "opendbc/FORD_CADS.dbc",
+  "opendbc/ford_fusion_2018_adas.dbc",
+  "opendbc/ford_lincoln_base_pt.dbc",
+  "opendbc/honda_accord_2018_can_generated.dbc",
+  "opendbc/acura_ilx_2016_can_generated.dbc",
+  "opendbc/acura_rdx_2018_can_generated.dbc",
+  "opendbc/acura_rdx_2020_can_generated.dbc",
+  "opendbc/honda_civic_touring_2016_can_generated.dbc",
+  "opendbc/honda_civic_hatchback_ex_2017_can_generated.dbc",
+  "opendbc/honda_crv_touring_2016_can_generated.dbc",
+  "opendbc/honda_crv_ex_2017_can_generated.dbc",
+  "opendbc/honda_crv_ex_2017_body_generated.dbc",
+  "opendbc/honda_crv_executive_2016_can_generated.dbc",
+  "opendbc/honda_fit_ex_2018_can_generated.dbc",
+  "opendbc/honda_odyssey_exl_2018_generated.dbc",
+  "opendbc/honda_odyssey_extreme_edition_2018_china_can_generated.dbc",
+  "opendbc/honda_insight_ex_2019_can_generated.dbc",
+  "opendbc/acura_ilx_2016_nidec.dbc",
+  "opendbc/honda_civic_ex_2022_can_generated.dbc",
+  "opendbc/hyundai_canfd.dbc",
+  "opendbc/hyundai_kia_generic.dbc",
+  "opendbc/hyundai_kia_mando_front_radar_generated.dbc",
+  "opendbc/mazda_2017.dbc",
+  "opendbc/nissan_x_trail_2017_generated.dbc",
+  "opendbc/nissan_leaf_2018_generated.dbc",
+  "opendbc/subaru_global_2017_generated.dbc",
+  "opendbc/subaru_global_2020_hybrid_generated.dbc",
+  "opendbc/subaru_outback_2015_generated.dbc",
+  "opendbc/subaru_outback_2019_generated.dbc",
+  "opendbc/subaru_forester_2017_generated.dbc",
+  "opendbc/toyota_tnga_k_pt_generated.dbc",
+  "opendbc/toyota_new_mc_pt_generated.dbc",
+  "opendbc/toyota_nodsu_pt_generated.dbc",
+  "opendbc/toyota_adas.dbc",
+  "opendbc/toyota_tss2_adas.dbc",
+  "opendbc/vw_golf_mk4.dbc",
+  "opendbc/vw_mqb_2010.dbc",
+  "opendbc/tesla_can.dbc",
+  "opendbc/tesla_radar_bosch_generated.dbc",
+  "opendbc/tesla_radar_continental_generated.dbc",
+  "opendbc/tesla_powertrain.dbc",
+]
+
+# Sunnypilot whitelist
+sunnypilot_whitelist = [
+  "^README.md",
+  ".*selfdrive/test/fuzzy_generation.py",
+  ".*selfdrive/test/helpers.py",
+  ".*selfdrive/test/__init__.py",
+  ".*selfdrive/test/setup_device_ci.sh",
+  ".*selfdrive/test/test_time_to_onroad.py",
+  ".*selfdrive/test/test_onroad.py",
+  ".*system/manager/test/test_manager.py",
+  ".*system/manager/test/__init__.py",
+  ".*system/qcomgpsd/tests/test_qcomgpsd.py",
+  ".*system/updated/casync/tests/test_casync.py",
+  ".*system/updated/tests/test_git.py",
+  ".*system/updated/tests/test_base.py",
+  ".*tools/lib/tests/test_route_library.py",
+  ".*tools/lib/tests/test_caching.py",
+  ".*tools/lib/tests/test_logreader.py",
+  ".*tools/lib/tests/test_readers.py",
+  ".*tools/lib/tests/__init__.py",
+  ".*tools/lib/tests/test_comma_car_segments.py",
+  ".*selfdrive/ui/tests/test_translations.py",
+  ".*selfdrive/car/tests/__init__.py",
+  ".*selfdrive/car/tests/test_car_interfaces.py",
+  ".*selfdrive/navd/tests/test_navd.py",
+  ".*selfdrive/navd/tests/test_map_renderer.py",
+  ".*selfdrive/boardd/tests/test_boardd_loopback.py",
+  ".*tinygrad_repo/tinygrad/renderer/opencl.py",
+  ".*tinygrad_repo/tinygrad/renderer/cstyle.py",
+  ".*INTEGRATION.md",
+  ".*HOW-TOS.md",
+  ".*CARS.md",
+  ".*LIMITATIONS.md",
+  ".*CONTRIBUTING.md",
+  ".*sunnyhaibin0850_qrcode_paypal.me.png",
+  "opendbc/.*.dbc",
+]
+
+# Merge the whitelists
+whitelist += sunnypilot_whitelist
+
+
+if __name__ == "__main__":
+  for f in Path(ROOT).rglob("**/*"):
+    if not (f.is_file() or f.is_symlink()):
+      continue
+
+    rf = str(f.relative_to(ROOT))
+    blacklisted = any(re.search(p, rf) for p in blacklist)
+    whitelisted = any(re.search(p, rf) for p in whitelist)
+    if blacklisted and not whitelisted:
+      continue
+
+    print(rf)

@@ -62,6 +62,9 @@ class ToyotaFlags(IntFlag):
 
 class ToyotaFlagsSP(IntFlag):
   SP_ZSS = 1
+  SP_ENHANCED_BSM = 2
+  SP_NEED_DEBUG_BSM = 4
+  SP_AUTO_BRAKE_HOLD = 8
 
 
 class Footnote(Enum):
@@ -165,7 +168,7 @@ class CAR(Platforms):
       ToyotaCarDocs("Toyota Corolla Hatchback 2019-22", video_link="https://www.youtube.com/watch?v=_66pXk0CBYA"),
       # Hybrid platforms
       ToyotaCarDocs("Toyota Corolla Hybrid 2020-22"),
-      ToyotaCarDocs("Toyota Corolla Hybrid (Non-US only) 2020-23", min_enable_speed=7.5),
+      ToyotaCarDocs("Toyota Corolla Hybrid (South America only) 2020-23", min_enable_speed=7.5),
       ToyotaCarDocs("Toyota Corolla Cross Hybrid (Non-US only) 2020-22", min_enable_speed=7.5),
       ToyotaCarDocs("Lexus UX Hybrid 2019-23"),
     ],

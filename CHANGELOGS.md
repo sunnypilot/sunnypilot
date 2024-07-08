@@ -1,15 +1,64 @@
-sunnypilot - 0.9.7.0 (2024-05-xx)
+sunnypilot - 0.9.8.0 (2024-xx-xx)
 ========================
-* New driving model
-* Adjust driving personality with the follow distance button
-* Support for hybrid variants of supported Ford models
-* Added toggle to enable driver monitoring even when openpilot is not engaged
-* Fingerprinting without the OBD-II port on all cars
+* Always on driver monitoring toggle
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit 2e6b2ef (May 9, 2024)
+  * master commit 4ef757c (July 06, 2024)
+* NEW❗: Default Driving Model: Notre Dame (July 01, 2024)
+* NEW❗: Longitudinal: Acceleration Personality thanks to kegman, rav4kumar, and arne1282!
+  * Select from three distinct acceleration personalities: Eco, Normal, and Sport
+  * Acceleration personalities are integrated directly into the model's acceleration matrix and can be activated in real-time!
+* NEW❗: Longitudinal: Dynamic Personality thanks to rav4kumar!
+  * Dynamically adjusts following distance and reaction based on your "Driving Personality" setting
+  * Personalities adapt in real-time to your speed and the distance to the lead car
+  * Provides a more responsive and tailored driving experience compared to predefined settings
+* UPDATED: Driving Personality: Updated mode names
+  * Aggressive, Moderate, Standard, Relaxed
+* NEW❗: Toyota - Enhanced Blind Spot Monitor (BSM) thanks to arne182, rav4kumar, and eFiniLan!
+  * Enables Blind Spot Monitor (BSM) signals parsing in sunnypilot using the factory Blind Spot Monitor (BSM)
+  * sunnypilot will use debugging CAN messages to receive unfiltered BSM signals, allowing detection of more objects
+  * Supported platforms
+    * RAV4 TSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Lexus LSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Toyota TSS1/1.5, equipped with factory Blind Spot Monitoring (BSM)
+    * Prius TSS2, equipped with factory Blind Spot Monitoring (BSM)
+  * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
+* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
+  * Re-tuned and tested by the community (July 1, 2024)
+* UPDATED: Driving Model Selector v5
+  * NEW❗: Driving Model additions
+    * Notre Dame (July 01, 2024) - NDv3
+* UPDATED: Toyota: Continued support for Smart DSU (SDSU) and Radar CAN Filter
+  * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter
+* UPDATED: Continued support for Mapbox navigation
+  * In response to the official temporary deprecation of support for Mapbox navigation in the upstream ([commaai/openpilot#32773](https://github.com/commaai/openpilot/pull/32773)), sunnypilot will continue maintaining software support for Mapbox navigation
+* NEW❗: Toyota - Automatic Brake Hold (AHB) thanks to AlexandreSato!
+  * When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold
+  * NOTE: Only for Toyota/Lexus vehicles with TSS2/LSS2
+* NEW❗: Toyota - Automatic Door Locking and Unlocking thanks to AlexandreSato, cydia2020, and dragonpilot-community!
+  * Auto Lock by Speed: All doors are automatically locked when vehicle speed is approximately 6 mph (10 km/h) or higher
+  * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
+* FIXED: Driving Personality:
+  * Maniac mode now correctly enforced when selected
+* Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
+
+sunnypilot - 0.9.7.1 (2024-06-13)
+========================
+* New driving model
+  * Inputs the past curvature for smoother and more accurate lateral control
+  * Simplified neural network architecture in the model's last layers
+  * Minor fixes to desire augmentation and weight decay
+* New driver monitoring model
+  * Improved end-to-end bit for phone detection
+* Adjust driving personality with the follow distance button
+* Support for hybrid variants of supported Ford models
+* Fingerprinting without the OBD-II port on all cars
+* Improved fuzzy fingerprinting for Ford and Volkswagen
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit f8cb04e (June 10, 2024)
 * NEW❗: sunnylink (Alpha early access)
-  * NEW❗: Config Backup
+  * NEW❗: Config/Settings Backup
     * Remotely back up and restore sunnypilot settings easily
     * Device registration with sunnylink ensures a secure, integrated experience across services
     * AES encryption derived from the device's RSA private key is used for utmost security
@@ -27,15 +76,19 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
 * NEW❗: Forced Offroad mode
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
+  * To engage/disengage Force Offroad, go to Settings -> Device panel
 * UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
   * NEW❗: New "Off" option to disable lane change by blinker
+* UPDATED: Pause Lateral Below Speed with Blinker
+  * NEW❗: Customizable Pause Lateral Speed
+    * Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.
 * UPDATED: Hyundai CAN Longitudinal
   * Auto-enable radar tracks on platforms with applicable Mando radar
 * UPDATED: Hyundai CAN-FD Camera-based SCC
   * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
     * Improve lead tracking when using openpilot longitudinal
 * RE-ENABLED: Map-based Turn Speed Control (M-TSC) for supported platforms
-  * openpilot Longitudianl Control available cars
+  * openpilot Longitudinal Control available cars
   * Custom Stock Longitudinal Control available cars
 * UPDATED: Continued support for comma Pedal
   * In response to the official deprecation of support for comma Pedal in the upstream, sunnypilot will continue maintaining software support for comma Pedal
@@ -47,7 +100,7 @@ sunnypilot - 0.9.7.0 (2024-05-xx)
     * Recertified Herbalist (March 01, 2024) - CHLR
   * Legacy Driving Models with Navigate on openpilot (NoO) support
     * Includes Duck Amigo and all preceding models
-* UPDATED: Bumping mapd by [@pfeiferj](https://github.com/pfeiferj) to version [v1.9.0](https://github.com/pfeiferj/mapd/releases/tag/v1.9.0).
+* UPDATED: Bumping mapd by [@pfeiferj](https://github.com/pfeiferj) to version [v1.9.0](https://github.com/pfeiferj/mapd/releases/tag/v1.9.0) thanks to pfeiferj!
 * UPDATED: Reset Mapbox Access Token -> Reset Access Tokens for Map Services
   * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UPDATED: Upstream native support for Gap Adjust Cruise

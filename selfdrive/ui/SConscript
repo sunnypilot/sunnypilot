@@ -1,16 +1,14 @@
 import os
 import json
-Import('qt_env', 'arch', 'common', 'messaging', 'visionipc',
-       'cereal', 'transformations')
+Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL')
 
-base_libs = [common, messaging, cereal, visionipc, transformations, 'zmq',
-             'capnp', 'kj', 'm', 'OpenCL', 'ssl', 'crypto', 'pthread'] + qt_env["LIBS"]
+base_libs = [common, messaging, visionipc, transformations,
+             'm', 'OpenCL', 'ssl', 'crypto', 'pthread'] + qt_env["LIBS"]
 
 if arch == 'larch64':
   base_libs.append('EGL')
 
 maps = arch in ['larch64', 'aarch64', 'x86_64']
-screenrecorder = False # arch in ['larch64']
 
 if arch == "Darwin":
   del base_libs[base_libs.index('OpenCL')]
@@ -93,13 +91,6 @@ qt_env.Program("_text", ["qt/text.cc"], LIBS=qt_libs)
 qt_env.Program("_spinner", ["qt/spinner.cc"], LIBS=qt_libs)
 
 # build main UI
-# include dashcam / screenrecorder
-if screenrecorder:
-  qt_src += ["qt/screenrecorder/screenrecorder.cc", "qt/screenrecorder/omx_encoder.cc"]
-  qt_env['CPPPATH'] += ["qt/screenrecorder/openmax/include/"]
-  qt_libs += ['OmxCore', 'gsl', 'CB', 'avformat', 'avcodec', 'swscale', 'avutil', 'yuv', 'pthread']
-  qt_env['CPPDEFINES'] += ["ENABLE_DASHCAM"]
-
 qt_env.Program("ui", qt_src + [asset_obj], LIBS=qt_libs)
 if GetOption('extras'):
   qt_src.remove("main.cc")  # replaced by test_runner
@@ -138,10 +129,6 @@ if GetOption('extras') and arch in ['larch64']:
     if "internal" in name:
       d['INTERNAL'] = "1"
 
-      import requests
-      r = requests.get("https://github.com/commaci2.keys")
-      r.raise_for_status()
-      d['SSH_KEYS'] = f'\\"{r.text.strip()}\\"'
     obj = senv.Object(f"installer/installers/installer_{name}.o", ["installer/installer.cc"], CPPDEFINES=d)
     f = senv.Program(f"installer/installers/installer_{name}", [obj, cont], LIBS=qt_libs)
     # keep installers small
@@ -149,4 +136,4 @@ if GetOption('extras') and arch in ['larch64']:
 
 # build watch3
 if arch in ['x86_64', 'aarch64', 'Darwin'] or GetOption('extras'):
-  qt_env.Program("watch3", ["watch3.cc"], LIBS=qt_libs + ['common', 'json11', 'zmq', 'visionipc', 'messaging'])
+  qt_env.Program("watch3", ["watch3.cc"], LIBS=qt_libs + ['common', 'json11', 'msgq', 'visionipc'])
