@@ -255,6 +255,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EndToEndLongToggle", PERSISTENT | BACKUP},
     {"EnforceTorqueLateral", PERSISTENT | BACKUP},
     {"EnhancedScc", PERSISTENT | BACKUP},
+    {"FastTakeOff", PERSISTENT | BACKUP},
     {"FeatureStatus", PERSISTENT | BACKUP},
     {"FleetManagerPin", PERSISTENT},
     {"ForceOffroad", CLEAR_ON_MANAGER_START},

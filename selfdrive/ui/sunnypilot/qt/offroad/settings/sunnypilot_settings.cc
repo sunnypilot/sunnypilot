@@ -44,6 +44,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "FastTakeOff",
+      tr("Very fast prius"),
+      tr("When prius goes faster then sunnys car :) vroom"),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "VisionCurveLaneless",
       tr("Laneless for Curves in \"Auto\" Mode"),
       tr("While in Auto Lane, switch to Laneless for current/future curves."),

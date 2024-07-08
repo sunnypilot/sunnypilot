@@ -103,6 +103,7 @@ class LongitudinalPlanner:
     self.turn_speed_controller = TurnSpeedController()
     self.dynamic_experimental_controller = DynamicExperimentalController()
     self.accel_controller = AccelController()
+    self.fast_take_off = False
 
   def read_param(self):
     try:
@@ -110,6 +111,7 @@ class LongitudinalPlanner:
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
       self.accel_controller = AccelController()
+      self.fast_take_off = self.params.get_bool("FastTakeOff")
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -202,7 +204,7 @@ class LongitudinalPlanner:
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
     self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsStateSP'].personality,
-                    dynamic_personality=sm['controlsStateSP'].dynamicPersonality, overtaking_acceleration_assist=overtaking_accel_engaged)
+                    dynamic_personality=sm['controlsStateSP'].dynamicPersonality, overtaking_acceleration_assist=overtaking_accel_engaged, fast_take_off=self.fast_take_off)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)
