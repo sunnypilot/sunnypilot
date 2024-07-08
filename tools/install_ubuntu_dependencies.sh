@@ -55,7 +55,8 @@ function install_ubuntu_common_requirements() {
     portaudio19-dev \
     qml-module-qtquick2 \
     qtmultimedia5-dev \
-    qtdeclarative5-dev \
+    qtlocation5-dev \
+    qtpositioning5-dev \
     qttools5-dev-tools \
     libqt5svg5-dev \
     libqt5serialbus5-dev  \

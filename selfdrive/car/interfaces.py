@@ -778,7 +778,6 @@ class CarStateBase(ABC):
     self.mads_enabled = False
     self.prev_mads_enabled = False
     self.control_initialized = False
-    self.pcm_cruise_enabled = False
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
