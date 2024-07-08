@@ -1524,12 +1524,18 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   painter.drawPolygon(chevron, std::size(chevron));
 
   if (num == 0) {  // Display metrics to the 0th lead car
-    QStringList chevron_text[2];
-    if (chevron_data == 1 || chevron_data == 3) {
-      chevron_text[0].append(QString::number(radar_d_rel,'f', 0) + " " + "m");
+    QStringList chevron_text[3];
+    int position = 0;
+    if (chevron_data == 1 || chevron_data == 4) {
+      chevron_text[position].append(QString::number(radar_d_rel,'f', 0) + " " + "m");
     }
-    if (chevron_data == 2 || chevron_data == 3) {
-      chevron_text[chevron_data - 2].append(QString::number((radar_v_rel + v_ego) * (isMetric ? MS_TO_KPH : MS_TO_MPH),'f', 0) + " " + (isMetric ? "km/h" : "mph"));
+    if (chevron_data == 2 || chevron_data == 4) {
+      position = (chevron_data == 2) ? 0 : 1;
+      chevron_text[position].append(QString::number((radar_v_rel + v_ego) * (isMetric ? MS_TO_KPH : MS_TO_MPH),'f', 0) + " " + (isMetric ? "km/h" : "mph"));
+    }
+    if (chevron_data == 3 || chevron_data == 4) {
+      position = (chevron_data == 3) ? 0 : 2;
+      chevron_text[position].append(QString::number(d_rel / v_ego, 'f', 1) + " " + "s");
     }
 
     int str_w = 200; // Width of the text box, might need adjustment
@@ -1539,7 +1545,7 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
     float text_y = y + sz + 12; // Position the text at the bottom of the chevron
     QRect textRect(x - str_w / 2, text_y, str_w, str_h); // Adjust the rectangle to center the text horizontally at the chevron's bottom
     QPoint shadow_offset(2, 2);
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
       if (!chevron_text[i].isEmpty()) {
         painter.setPen(QColor(0x0, 0x0, 0x0, 200));  // Draw shadow
         painter.drawText(textRect.translated(shadow_offset.x(), shadow_offset.y() + i * str_h), Qt::AlignBottom | Qt::AlignHCenter, chevron_text[i].at(0));

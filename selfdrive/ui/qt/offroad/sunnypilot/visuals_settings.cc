@@ -82,12 +82,12 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
   dev_ui_settings->showDescription();
 
   // Visuals: Display Metrics above Chevron
-  std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Distance\nSpeed")};
+  std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
   chevron_info_settings = new ButtonParamControl(
     "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
     "../assets/offroad/icon_blank.png",
     chevron_info_settings_texts,
-    340
+    300
   );
   chevron_info_settings->showDescription();
 
