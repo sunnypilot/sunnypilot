@@ -1,7 +1,9 @@
+#include <QApplication>
 #include <QLabel>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QVBoxLayout>
+#include <QWidget>
 #include <QtConcurrent>
 #include <cstdio>
 #include <sstream>
@@ -27,51 +29,50 @@ std::string executeCommand(const char* cmd) {
   return result.str();
 }
 
-QLabel *label;
-
-// The format is intentional, even if on PC doesn't look aligned. Font differences are likely the cause. On device it looks fine.
+// The format is intentional!
 QString text = QString("%1\n%2\n%3\n%4\n%5\n%6\n%7")
-              .arg(" ________________________________________________________")
-              .arg("|\t\t\t\t\t\t|")
-              .arg("|\t" + QObject::tr("Update downloaded. Ready to reboot.") + "\t|")
-              .arg("|\t\t\t\t\t\t|")
-              .arg("|\t" + QObject::tr("Update: Check and Download Update") + "\t\t|")
-              .arg("|\t" + QObject::tr("Reboot: Reboot Device") + "\t\t\t|")
-              .arg("| _______________________________________________________\t|");
+              .arg(" ________________________________________")
+              .arg("|                                                               |")
+              .arg("| " + QObject::tr("Update downloaded. Ready to reboot.") + "  |")
+              .arg("|                                                               |")
+              .arg("| " + QObject::tr("Update: Check and Download Update") + "   |")
+              .arg("| " + QObject::tr("Reboot: Reboot Device") + "                          |")
+              .arg("|________________________________________|");
 
-void setupErrorMessageLabel(QVBoxLayout *main_layout) {
+int main(int argc, char *argv[]) {
+  initApp(argc, argv);
+  QApplication a(argc, argv);
+  QWidget window;
+  setMainWindow(&window);
+
+  QGridLayout *main_layout = new QGridLayout(&window);
+  main_layout->setMargin(50);
+
+  QLabel *label = new QLabel(argv[1]);
   label->setWordWrap(true);
   label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
   label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-  auto *scroll = new ScrollView(label);
+  ScrollView *scroll = new ScrollView(label);
   scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  main_layout->addWidget(scroll);
+  main_layout->addWidget(scroll, 0, 0, Qt::AlignTop);
 
   // Scroll to the bottom
   QObject::connect(scroll->verticalScrollBar(), &QAbstractSlider::rangeChanged, [=]() {
     scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());
   });
-}
 
-void setupActionButton(QGridLayout *button_grid) {
-  auto *left_buttons = new QHBoxLayout();
-  auto *right_buttons = new QHBoxLayout();
-  
-  auto *btn = new QPushButton();
-  auto *update_btn = new QPushButton();
+  QPushButton *btn = new QPushButton();
+  QPushButton *update_btn = new QPushButton();
   update_btn->setText(QObject::tr("Update"));
-  auto *reinstall_btn = new QPushButton();
-  reinstall_btn->setText(QObject::tr("Launch Setup"));
 #ifdef __aarch64__
   btn->setText(QObject::tr("Reboot"));
-  auto *watcher = new QFutureWatcher<void>();
+  QFutureWatcher<void> watcher;
   QObject::connect(btn, &QPushButton::clicked, [=]() {
     Hardware::reboot();
   });
-  QObject::connect(update_btn, &QPushButton::clicked, [=]() {
+  QObject::connect(update_btn, &QPushButton::clicked, [=, &watcher]() {
     btn->setEnabled(false);
     update_btn->setEnabled(false);
-    reinstall_btn->setEnabled(false);
     update_btn->setText(QObject::tr("Updating..."));
     const std::string git_branch = Params().get("GitBranch");
     const std::string git_remote = Params().get("GitRemote");
@@ -89,70 +90,26 @@ void setupActionButton(QGridLayout *button_grid) {
     const std::string cmd = to_home_dir + "; " + remote_cmd + "; " + fetch_remote + "; " + reset_branch;
 
     QFuture<void> future = QtConcurrent::run([=]() {
+      label->clear();
       std::string output = executeCommand(cmd.c_str());
-      auto formatted = QString::fromStdString(output) + text;
-      QMetaObject::invokeMethod(label, "clear", Qt::QueuedConnection);
-      QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection, Q_ARG(QString, formatted));
+      //LOGW("CHECK OUTPUT PLS\n%s", output.c_str());
+      QMetaObject::invokeMethod(label, "setText", Qt::QueuedConnection,
+                                Q_ARG(QString, QString::fromStdString(output) + text));
     });
-    watcher->setFuture(future);
-  });
-  QObject::connect(watcher, &QFutureWatcher<void>::finished, [=]() {
-    btn->setEnabled(true);
-    update_btn->setEnabled(true);
-    reinstall_btn->setEnabled(true);
-    update_btn->setText(QObject::tr("Update"));
-  });
-
-  QObject::connect(reinstall_btn, &QPushButton::clicked, [=]() {
-    btn->setEnabled(false);
-    update_btn->setEnabled(false);
-    reinstall_btn->setEnabled(false);
-    reinstall_btn->setText(QObject::tr("Starting setup..."));
-    
-    const std::string delete_continue = "sudo rm /data/continue.sh";
-    const std::string restart_op = "sudo systemctl restart comma";
-    
-    const std::string cmd = delete_continue + "; " + restart_op + "; ";
-
-    // Start setup command asynchronously
-    QtConcurrent::run([=]() {
-        executeCommand(cmd.c_str());
+    QObject::connect(&watcher, &QFutureWatcher<void>::finished, [=]() {
+      btn->setEnabled(true);
+      update_btn->setEnabled(true);
+      update_btn->setText(QObject::tr("Update"));
     });
-    QApplication::quit();
+    watcher.setFuture(future);
   });
-
 #else
   update_btn->setEnabled(false);
   btn->setText(QObject::tr("Exit"));
-  QObject::connect(btn, &QPushButton::clicked, &app, &QApplication::quit);
+  QObject::connect(btn, &QPushButton::clicked, &a, &QApplication::quit);
 #endif
-  left_buttons->addWidget(update_btn);
-  left_buttons->addWidget(reinstall_btn);
-  right_buttons->addWidget(btn);
-  
-  button_grid->addLayout(left_buttons, 0, 0, Qt::AlignLeft | Qt::AlignBottom);
-  button_grid->addLayout(right_buttons, 0, 1, Qt::AlignRight | Qt::AlignBottom);
-}
-
-int main(int argc, char *argv[]) {
-  initApp(argc, argv);
-  QApplication app(argc, argv);
-  QWidget window;
-  setMainWindow(&window);
-
-  auto *main_layout = new QVBoxLayout(&window);
-  main_layout->setMargin(50);
-
-  // Setup the text area layout
-  auto *text_layout = new QVBoxLayout();
-  label = new QLabel(argv[1]);
-  setupErrorMessageLabel(text_layout);
-  main_layout->addLayout(text_layout);
-
-  // Setup the button area layout
-  auto *button_layout = new QGridLayout();
-  setupActionButton(button_layout);
-  main_layout->addLayout(button_layout);
+  main_layout->addWidget(btn, 0, 0, Qt::AlignRight | Qt::AlignBottom);
+  main_layout->addWidget(update_btn, 0, 0, Qt::AlignLeft | Qt::AlignBottom);
 
   window.setStyleSheet(R"(
     * {
@@ -169,14 +126,11 @@ int main(int argc, char *argv[]) {
       border-radius: 20px;
       margin-right: 40px;
     }
-    QPushButton:pressed {
-      background-color: #4a4a4a;
-    }
     QPushButton:disabled {
       color: #33FFFFFF;
       border: 2px solid #33FFFFFF;
     }
   )");
 
-  return QApplication::exec();
+  return a.exec();
 }
