@@ -3,7 +3,8 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 * Always on driver monitoring toggle
 ************************
 * UPDATED: Synced with commaai's openpilot
-  * master commit b45caf4 (June 14, 2024)
+  * master commit 4ef757c (July 06, 2024)
+* NEW❗: Default Driving Model: Notre Dame (July 01, 2024)
 * NEW❗: Longitudinal: Acceleration Personality thanks to kegman, rav4kumar, and arne1282!
   * Select from three distinct acceleration personalities: Eco, Normal, and Sport
   * Acceleration personalities are integrated directly into the model's acceleration matrix and can be activated in real-time!
@@ -24,6 +25,13 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
 * UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
   * Re-tuned and tested by the community (July 1, 2024)
+* UPDATED: Driving Model Selector v5
+  * NEW❗: Driving Model additions
+    * Notre Dame (July 01, 2024) - NDv3
+* UPDATED: Toyota: Continued support for Smart DSU (SDSU) and Radar CAN Filter
+  * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter
+* UPDATED: Continued support for Mapbox navigation
+  * In response to the official temporary deprecation of support for Mapbox navigation in the upstream ([commaai/openpilot#32773](https://github.com/commaai/openpilot/pull/32773)), sunnypilot will continue maintaining software support for Mapbox navigation
 * NEW❗: Toyota - Automatic Brake Hold (AHB) thanks to AlexandreSato!
   * When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold
   * NOTE: Only for Toyota/Lexus vehicles with TSS2/LSS2

@@ -203,7 +203,7 @@ private:
 
   bool featureStatusToggle;
 
-  int drivingModelGen;
+  cereal::ModelGeneration drivingModelGen;
 
 protected:
   void paintGL() override;

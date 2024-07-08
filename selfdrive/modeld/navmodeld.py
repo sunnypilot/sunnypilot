@@ -13,8 +13,8 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_realtime_priority
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
 from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
-from openpilot.selfdrive.sunnypilot import get_model_generation
 from openpilot.system.hardware.hw import Paths
 
 NAV_INPUT_SIZE = 256*256
@@ -50,8 +50,8 @@ class ModelState:
     assert ctypes.sizeof(NavModelResult) == NAV_OUTPUT_SIZE * ctypes.sizeof(ctypes.c_float)
     self.output = np.zeros(NAV_OUTPUT_SIZE, dtype=np.float32)
     self.param_s = Params()
-    self.custom_model, self.model_gen = get_model_generation(self.param_s)
-    if self.custom_model and self.model_gen not in (0, 4):
+    self.custom_model_metadata = CustomModelMetadata(params=self.param_s, init_only=True)
+    if self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.NoO:
       _model_name = self.param_s.get("NavModelText", encoding="utf8")
       _model_paths = {
         ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.dlc"}

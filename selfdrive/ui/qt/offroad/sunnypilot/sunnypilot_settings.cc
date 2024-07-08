@@ -437,10 +437,10 @@ void SunnypilotPanel::updateToggles() {
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
   toggles["VisionCurveLaneless"]->refresh();
 
-  bool custom_driving_model = params.getBool("CustomDrivingModel");
-  auto driving_model_gen = QString::fromStdString(params.get("DrivingModelGeneration"));
-  bool model_use_lateral_planner = custom_driving_model && driving_model_gen == "1";
-  auto driving_model_name = custom_driving_model && driving_model_gen != "0" ? QString::fromStdString(params.get("DrivingModelName")) : CURRENT_MODEL;
+  bool custom_driving_model_valid = params.getBool("CustomDrivingModel");
+  auto driving_model_generation = QString::fromStdString(params.get("DrivingModelGeneration"));
+  bool model_use_lateral_planner = custom_driving_model_valid && driving_model_generation == "1";
+  auto driving_model_name = custom_driving_model_valid && driving_model_generation != "0" ? QString::fromStdString(params.get("DrivingModelName")) : CURRENT_MODEL;
   QString driving_model_text = QString("<font color='yellow'>" + driving_model_name + "</font>");
   dlp_settings->setEnabled(model_use_lateral_planner);
   toggles["VisionCurveLaneless"]->setVisible(model_use_lateral_planner);

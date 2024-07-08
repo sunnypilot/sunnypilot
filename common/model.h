@@ -1,1 +1,1 @@
-#define CURRENT_MODEL "North Dakota (April 29, 2024)"
+#define CURRENT_MODEL "Notre Dame (July 1, 2024)"
