@@ -28,6 +28,8 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 * UPDATED: Driving Model Selector v5
   * NEW❗: Driving Model additions
     * Notre Dame (July 01, 2024) - NDv3
+* UPDATED: Neural Network Lateral Control (NNLC)
+  * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
 * UPDATED: Toyota: Continued support for Smart DSU (SDSU) and Radar CAN Filter
   * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter
 * UPDATED: Continued support for Mapbox navigation
@@ -105,7 +107,6 @@ sunnypilot - 0.9.7.1 (2024-06-13)
   * Reset self-service access tokens for Mapbox, Amap, and Google Maps
 * UPDATED: Upstream native support for Gap Adjust Cruise
 * UPDATED: Neural Network Lateral Control (NNLC)
-  * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
   * Due to upstream changes with platform simplifications, most platforms will match and fallback to combined platform model
   * This will be updated when the new mapping of platforms are restructured (thanks @twilsonco 😉)
 * UI Updates
