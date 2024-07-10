@@ -6,7 +6,7 @@ libs = ['qt_widgets', 'qt_util', 'QMapLibre', common, messaging, visionipc, tran
 if arch == 'larch64':
   libs.append(':libEGL_mesa.so.0')
 
-if arch in ['larch64', 'aarch64', 'x86_64'] and not UBUNTU_FOCAL:
+if arch in ['larch64', 'aarch64', 'x86_64']:
   if arch == 'x86_64':
     rpath = Dir(f"#third_party/maplibre-native-qt/{arch}/lib").srcnode().abspath
     map_env["RPATH"] += [rpath, ]
