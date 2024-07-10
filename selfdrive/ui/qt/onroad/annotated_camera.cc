@@ -1535,7 +1535,8 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
     }
     if (chevron_data == 3 || chevron_data == 4) {
       position = (chevron_data == 3) ? 0 : 2;
-      chevron_text[position].append(QString::number(d_rel / v_ego, 'f', 1) + " " + "s");
+      float val = (v_ego != 0.0f) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+      chevron_text[position].append(QString::number(val, 'f', 1) + " " + "s");
     }
 
     int str_w = 200; // Width of the text box, might need adjustment
