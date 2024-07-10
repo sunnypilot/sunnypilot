@@ -1541,11 +1541,11 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
       chevron_text[position].append(QString::number(val,'f', 0) + " " + (is_metric ? "km/h" : "mph"));
     }
     if (chevron_data == 3 || chevron_data == chevron_all) {
-      const float STOP_DISTANCE = 6.0;
       position = (chevron_data == 3) ? 0 : 2;
-      val = (v_ego > 0) ? std::min(std::max(0.0f, (d_rel + STOP_DISTANCE) / v_ego), 200.0f) : 0.0f;
-      const bool invalid_val = val == 200.0f || val == 0.0f;
-      chevron_text[position].append(invalid_val ? "---" : QString::number(val, 'f', 1) + " " + "s");
+      val = (d_rel > 0 && v_ego > 0) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+
+      QString ttc_str = (val > 0 && val < 200) ? QString::number(val, 'f', 1) + "s" : "---";
+      chevron_text[position].append(ttc_str);
     }
 
     float str_w = 200; // Width of the text box, might need adjustment
