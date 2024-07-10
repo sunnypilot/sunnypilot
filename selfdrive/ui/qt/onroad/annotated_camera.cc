@@ -1490,13 +1490,14 @@ void AnnotatedCameraWidget::rocketFuel(QPainter &p) {
 }
 
 void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd,
-                                     int num, float radar_d_rel, float v_ego, float radar_v_rel, int chevron_data, bool isMetric) {
+                                     int num, const cereal::CarState::Reader &car_data, int chevron_data) {
   painter.save();
 
   const float speedBuff = 10.;
   const float leadBuff = 40.;
   const float d_rel = lead_data.getDRel();
   const float v_rel = lead_data.getVRel();
+  const float v_ego = car_data.getVEgo();
 
   float fillAlpha = 0;
   if (d_rel < leadBuff) {
@@ -1524,29 +1525,34 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   painter.drawPolygon(chevron, std::size(chevron));
 
   if (num == 0) {  // Display metrics to the 0th lead car
-    QStringList chevron_text[3];
-    int position = 0;
+    int chevron_types = 3;
+    QStringList chevron_text[chevron_types];
+    int position;
+    float val;
     if (chevron_data == 1 || chevron_data == 4) {
-      chevron_text[position].append(QString::number(radar_d_rel,'f', 0) + " " + "m");
+      position = 0;
+      val = std::max(0.0f, d_rel);
+      chevron_text[position].append(QString::number(val,'f', 0) + " " + "m");
     }
     if (chevron_data == 2 || chevron_data == 4) {
       position = (chevron_data == 2) ? 0 : 1;
-      chevron_text[position].append(QString::number((radar_v_rel + v_ego) * (isMetric ? MS_TO_KPH : MS_TO_MPH),'f', 0) + " " + (isMetric ? "km/h" : "mph"));
+      val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
+      chevron_text[position].append(QString::number(val,'f', 0) + " " + (is_metric ? "km/h" : "mph"));
     }
     if (chevron_data == 3 || chevron_data == 4) {
       position = (chevron_data == 3) ? 0 : 2;
-      float val = (v_ego != 0.0f) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+      val = (v_ego != 0.0f) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
       chevron_text[position].append(QString::number(val, 'f', 1) + " " + "s");
     }
 
-    int str_w = 200; // Width of the text box, might need adjustment
-    int str_h = 50; // Height of the text box, adjust as necessary
+    float str_w = 200; // Width of the text box, might need adjustment
+    float str_h = 50; // Height of the text box, adjust as necessary
     painter.setFont(InterFont(45, QFont::Bold));
     // Calculate the center of the chevron and adjust the text box position
     float text_y = y + sz + 12; // Position the text at the bottom of the chevron
     QRect textRect(x - str_w / 2, text_y, str_w, str_h); // Adjust the rectangle to center the text horizontally at the chevron's bottom
     QPoint shadow_offset(2, 2);
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < chevron_types; ++i) {
       if (!chevron_text[i].isEmpty()) {
         painter.setPen(QColor(0x0, 0x0, 0x0, 200));  // Draw shadow
         painter.drawText(textRect.translated(shadow_offset.x(), shadow_offset.y() + i * str_h), Qt::AlignBottom | Qt::AlignHCenter, chevron_text[i].at(0));
@@ -1630,17 +1636,15 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
     if (s->scene.longitudinal_control && sm.rcv_frame("radarState") > s->scene.started_frame) {
       auto radar_state = sm["radarState"].getRadarState();
+      auto car_state = sm["carState"].getCarState();
       update_leads(s, radar_state, model.getPosition());
       auto lead_one = radar_state.getLeadOne();
       auto lead_two = radar_state.getLeadTwo();
-      float v_ego = sm["carState"].getCarState().getVEgo();
-      float radar_d_rel = radar_state.getLeadOne().getDRel();
-      float radar_v_rel = radar_state.getLeadOne().getVRel();
       if (lead_one.getStatus()) {
-        drawLead(painter, lead_one, s->scene.lead_vertices[0], 0, radar_d_rel, v_ego, radar_v_rel, s->scene.chevron_data, s->scene.is_metric);
+        drawLead(painter, lead_one, s->scene.lead_vertices[0], 0, car_state, s->scene.chevron_data);
       }
       if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
-        drawLead(painter, lead_two, s->scene.lead_vertices[1], 1, radar_d_rel, v_ego, radar_v_rel, s->scene.chevron_data, s->scene.is_metric);
+        drawLead(painter, lead_two, s->scene.lead_vertices[1], 1, car_state, s->scene.chevron_data);
       }
 
       rocketFuel(painter);
