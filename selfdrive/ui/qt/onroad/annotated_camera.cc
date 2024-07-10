@@ -1525,25 +1525,26 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   painter.drawPolygon(chevron, std::size(chevron));
 
   if (num == 0) {  // Display metrics to the 0th lead car
-    int chevron_types = 3;
+    const int chevron_types = 3;
+    const int chevron_all = chevron_types + 1;  // All metrics
     QStringList chevron_text[chevron_types];
     int position;
     float val;
-    if (chevron_data == 1 || chevron_data == 4) {
+    if (chevron_data == 1 || chevron_data == chevron_all) {
       position = 0;
       val = std::max(0.0f, d_rel);
       chevron_text[position].append(QString::number(val,'f', 0) + " " + "m");
     }
-    if (chevron_data == 2 || chevron_data == 4) {
+    if (chevron_data == 2 || chevron_data == chevron_all) {
       position = (chevron_data == 2) ? 0 : 1;
       val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
       chevron_text[position].append(QString::number(val,'f', 0) + " " + (is_metric ? "km/h" : "mph"));
     }
-    if (chevron_data == 3 || chevron_data == 4) {
-      float STOP_DISTANCE = 6.0;
+    if (chevron_data == 3 || chevron_data == chevron_all) {
+      const float STOP_DISTANCE = 6.0;
       position = (chevron_data == 3) ? 0 : 2;
       val = (v_ego > 0) ? std::min(std::max(0.0f, (d_rel + STOP_DISTANCE) / v_ego), 200.0f) : 0.0f;
-      bool invalid_val = val == 200.0f || val == 0.0f;
+      const bool invalid_val = val == 200.0f || val == 0.0f;
       chevron_text[position].append(invalid_val ? "---" : QString::number(val, 'f', 1) + " " + "s");
     }
 
