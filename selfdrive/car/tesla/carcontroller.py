@@ -31,6 +31,7 @@ class CarController(CarControllerBase):
     self.packer = CANPacker(dbc_name)
     self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
     self.tesla_can = TeslaCAN(self.packer, self.pt_packer)
+    self.virtual_blending = False  # TODO: pull from toggle
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -59,8 +60,11 @@ class CarController(CarControllerBase):
       lkas_enabled = CC.latActive and not CS.steering_override
 
       if lkas_enabled:
-        # Update steering angle request with user input torque
-        apply_angle = torque_blended_angle(actuators.steeringAngleDeg, CS.out.steeringTorque)
+        if self.virtual_blending:
+          # Update steering angle request with user input torque
+          apply_angle = torque_blended_angle(actuators.steeringAngleDeg, CS.out.steeringTorque)
+        else:
+          apply_angle = actuators.steeringAngleDeg
 
         # Angular rate limit based on speed
         apply_angle = apply_std_steer_angle_limits(apply_angle, self.apply_angle_last, CS.out.vEgo, CarControllerParams)
@@ -83,6 +87,11 @@ class CarController(CarControllerBase):
 
       counter = CS.das_control["DAS_controlCounter"]
       can_sends.append(self.tesla_can.create_longitudinal_commands(acc_state, target_speed, min_accel, max_accel, counter))
+
+    if not self.virtual_blending:
+      # Cancel on user steering override when blending is disabled
+      if CS.steering_override:
+        pcm_cancel_cmd = True
 
     # Sent cancel request only if ACC is enabled
     if self.frame % 10 == 0 and pcm_cancel_cmd and CS.acc_enabled:
