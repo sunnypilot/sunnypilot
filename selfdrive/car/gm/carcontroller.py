@@ -221,7 +221,7 @@ class CarController(CarControllerBase):
           if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
             send_freq = 3
           if self.frame % 12 < 6:  # thanks to mochi86420 for the magic numbers
-            can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.CAMERA, (CS.button_counter + 2) % 4, self.cruise_button))
+            can_sends.extend([gmcan.create_buttons(self.packer_pt, CanBus.CAMERA, (CS.button_counter + 2) % 4, self.cruise_button)] * 3)
 
     if self.CP.networkLocation == NetworkLocation.fwdCamera:
       # Silence "Take Steering" alert sent by camera, forward PSCMStatus with HandsOffSWlDetectionStatus=1
@@ -301,7 +301,7 @@ class CarController(CarControllerBase):
     return cruise_button
 
   def type_3(self):
-    cruise_button = None
+    cruise_button = CruiseButtons.UNPRESS
     self.button_count += 1
     if self.button_count > self.t_interval:
       self.button_type = 0
