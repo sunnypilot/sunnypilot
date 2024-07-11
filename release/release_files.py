@@ -23,7 +23,7 @@ blacklist = [
   "^common/tests/",
 
   # particularly large text files
-  "poetry.lock",
+  "uv.lock",
   "third_party/catch2",
   "selfdrive/car/tests/test_models.*",
 
@@ -33,16 +33,22 @@ blacklist = [
 
   "matlab.*.md",
 
-  ".git$",  # for submodules
   ".git/",
   ".github/",
   ".devcontainer/",
   "Darwin/",
   ".vscode/",
 
-  # no LFS
+  # common things
+  "LICENSE",
+  "Dockerfile",
+  ".pre-commit",
+
+  # no LFS or submodules in release
   ".lfsconfig",
   ".gitattributes",
+  ".git$",
+  ".gitmodules",
 ]
 
 # Sunnypilot blacklist

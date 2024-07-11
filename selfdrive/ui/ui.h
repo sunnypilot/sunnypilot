@@ -26,9 +26,9 @@ const int UI_HEADER_HEIGHT = 420;
 const int UI_ROAD_NAME_MARGIN_X = 14;
 
 struct FeatureStatusText {
-  const QStringList dlp_list_text = {  "Laneful",     "Laneless",     "Auto"            };
-  const QStringList gac_list_text = {   "Maniac",   "Aggressive", "Standard", "Relaxed" };
-  const QStringList slc_list_text = { "Inactive",     "Temp Off", "Adapting",  "Active", "Pre Active" };
+  const QStringList dlp_list_text = { "Laneful",    "Laneless", "Auto"};
+  const QStringList gac_list_text = { "Aggressive", "Moderate", "Standard", "Relaxed"};
+  const QStringList slc_list_text = { "Inactive",   "Temp Off", "Adapting", "Active", "Pre Active"};
 };
 
 struct FeatureStatusColor {
@@ -138,6 +138,7 @@ typedef struct UIScene {
 
   bool navigate_on_openpilot_deprecated = false;
   cereal::LongitudinalPersonality personality;
+  cereal::AccelerationPersonality accel_personality;
 
   float light_sensor = -1;
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
@@ -162,6 +163,7 @@ typedef struct UIScene {
 
   bool gac;
   int longitudinal_personality;
+  int longitudinal_accel_personality;
 
   bool map_visible;
   int dev_ui_info;
@@ -199,11 +201,14 @@ typedef struct UIScene {
   int speed_limit_warning_type;
   int speed_limit_warning_value_offset;
 
-  bool custom_driving_model;
-  int driving_model_gen;
+  bool custom_driving_model_valid;
+  cereal::ModelGeneration driving_model_generation;
+  uint32_t driving_model_capabilities;
 
   bool feature_status_toggle;
   bool onroad_settings_toggle;
+
+  bool dynamic_personality;
 } UIScene;
 
 class UIState : public QObject {
@@ -334,8 +339,7 @@ Device *device();
 void ui_update_params(UIState *s);
 int get_path_length_idx(const cereal::XYZTData::Reader &line, const float path_height);
 void update_model(UIState *s,
-                  const cereal::ModelDataV2::Reader &model,
-                  const cereal::UiPlan::Reader &plan);
+                  const cereal::ModelDataV2::Reader &model);
 void update_dmonitoring(UIState *s, const cereal::DriverStateV2::Reader &driverstate, float dm_fade_state, bool is_rhd);
 void update_leads(UIState *s, const cereal::RadarState::Reader &radar_state, const cereal::XYZTData::Reader &line);
 void update_line_data(const UIState *s, const cereal::XYZTData::Reader &line,

@@ -48,26 +48,10 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   left_img = loadPixmap("../assets/img_turn_left_icon.png", {subsign_img_size, subsign_img_size});
   right_img = loadPixmap("../assets/img_turn_right_icon.png", {subsign_img_size, subsign_img_size});
 
-  // screen recoder - neokii
-
-#ifdef ENABLE_DASHCAM
-  record_timer = std::make_shared<QTimer>();
-  QObject::connect(record_timer.get(), &QTimer::timeout, [=]() {
-    if (recorder) {
-      recorder->update_screen();
-    }
-  });
-  record_timer->start(1000/UI_FREQ);
-
-  recorder = new ScreenRecoder(this);
-
-  QObject::connect(uiState(), &UIState::offroadTransition, this, &AnnotatedCameraWidget::offroadTransition);
-#endif
-
   buttons_layout = new QHBoxLayout();
   buttons_layout->setContentsMargins(0, 0, 10, 20);
   main_layout->addLayout(buttons_layout);
-  updateButtonsLayout();
+  updateButtonsLayout(false);
 }
 
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
@@ -92,17 +76,7 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent* e) {
   }
 }
 
-#ifdef ENABLE_DASHCAM
-void AnnotatedCameraWidget::offroadTransition(bool offroad) {
-  if (offroad) {
-    if (recorder) recorder->stop();
-
-    roadName = "";
-  }
-}
-#endif
-
-void AnnotatedCameraWidget::updateButtonsLayout() {
+void AnnotatedCameraWidget::updateButtonsLayout(bool is_rhd) {
   QLayoutItem *item;
   while ((item = buttons_layout->takeAt(0)) != nullptr) {
     delete item;
@@ -110,17 +84,23 @@ void AnnotatedCameraWidget::updateButtonsLayout() {
 
   buttons_layout->setContentsMargins(0, 0, 10, rn_offset != 0 ? rn_offset + 10 : 20);
 
-  buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
-  buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
+  if (is_rhd) {
+    buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
+    buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
 
-  buttons_layout->addStretch(1);
+    buttons_layout->addStretch(1);
 
-#ifdef ENABLE_DASHCAM
-  buttons_layout->addWidget(recorder, 0, Qt::AlignBottom | Qt::AlignRight);
-#endif
+    buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+    buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
+  } else {
+    buttons_layout->addSpacing(onroad_settings_btn->isVisible() ? 216 : 0);
+    buttons_layout->addWidget(onroad_settings_btn, 0, Qt::AlignBottom | Qt::AlignLeft);
 
-  buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);
-  buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+    buttons_layout->addStretch(1);
+
+    buttons_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
+    buttons_layout->addSpacing(map_settings_btn->isVisible() ? 30 : 0);  // Add spacing to the right
+  }
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
@@ -222,14 +202,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update onroad settings button state
   onroad_settings_btn->updateState(s);
 
-#ifdef ENABLE_DASHCAM
-  // update screen recorder button
-  recorder->updateState(s);
-#endif
-
-  // update buttons layout
-  updateButtonsLayout();
-
   // update DM icon
   auto dm_state = sm["driverMonitoringState"].getDriverMonitoringState();
   dmActive = dm_state.getIsActiveMode();
@@ -237,25 +209,20 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   // DM icon transition
   dm_fade_state = std::clamp(dm_fade_state+0.2*(0.5-dmActive), 0.0, 1.0);
 
+  // update buttons layout
+  updateButtonsLayout(rightHandDM);
+
   // hide map settings button for alerts and flip for right hand DM
   if (map_settings_btn->isEnabled()) {
     map_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
+    buttons_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
   }
 
   // hide onroad settings button for alerts and flip for right hand DM
   if (onroad_settings_btn->isEnabled()) {
     onroad_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
+    buttons_layout->setAlignment(onroad_settings_btn, (rightHandDM ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignBottom);
   }
-
-#ifdef ENABLE_DASHCAM
-  // hide screen recorder button for alerts and flip for right hand DM
-  if (recorder->isEnabled()) {
-    recorder->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(recorder, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
-  }
-#endif
 
   const auto lp_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
   slcState = lp_sp.getSpeedLimitControlState();
@@ -408,7 +375,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   featureStatusToggle = s.scene.feature_status_toggle;
 
   experimental_btn->setVisible(!(showDebugUI && showVTC));
-  drivingModelGen = s.scene.driving_model_gen;
+  drivingModelGen = s.scene.driving_model_generation;
 }
 
 void AnnotatedCameraWidget::drawHud(QPainter &p) {
@@ -586,7 +553,9 @@ void AnnotatedCameraWidget::drawHud(QPainter &p) {
   }
 
   if (!hideBottomIcons && featureStatusToggle) {
-    drawFeatureStatusText(p, UI_BORDER_SIZE * 2 + 370, rect().bottom() - 160 - rn_offset);
+    int x = UI_BORDER_SIZE * 2 + (rightHandDM ? 600 : 370);
+    int feature_status_text_x = rightHandDM ? rect().right() - x : x;
+    drawFeatureStatusText(p, feature_status_text_x, rect().bottom() - 160 - rn_offset);
   }
 
   p.restore();
@@ -1240,7 +1209,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Dynamic Lane Profile
-  if (drivingModelGen == 1) {
+  if (drivingModelGen == cereal::ModelGeneration::ONE) {
     drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
   }
 
@@ -1370,7 +1339,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   }
 
   // paint path
-  QLinearGradient bg(0, height(), 0, height() / 4);
+  QLinearGradient bg(0, height(), 0, 0);
   if (madsEnabled || car_state.getCruiseState().getEnabled()) {
     if (steerOverride && latActive) {
       bg.setColorAt(0.0, QColor::fromHslF(20 / 360., 0.94, 0.51, 0.17));
@@ -1381,8 +1350,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
       bg.setColorAt(1, whiteColor(0));
     } else if (sm["controlsState"].getControlsState().getExperimentalMode()) {
       // The first half of track_vertices are the points for the right side of the path
-      // and the indices match the positions of accel from uiPlan
-      const auto &acceleration = sm["uiPlan"].getUiPlan().getAccel();
+      const auto &acceleration = sm["modelV2"].getModelV2().getAcceleration().getX();
       const int max_len = std::min<int>(scene.track_vertices.length() / 2, acceleration.size());
 
       for (int i = 0; i < max_len; ++i) {
@@ -1522,13 +1490,14 @@ void AnnotatedCameraWidget::rocketFuel(QPainter &p) {
 }
 
 void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd,
-                                     int num, float radar_d_rel, float v_ego, float radar_v_rel, int chevron_data, bool isMetric) {
+                                     int num, const cereal::CarState::Reader &car_data, int chevron_data) {
   painter.save();
 
   const float speedBuff = 10.;
   const float leadBuff = 40.;
   const float d_rel = lead_data.getDRel();
   const float v_rel = lead_data.getVRel();
+  const float v_ego = car_data.getVEgo();
 
   float fillAlpha = 0;
   if (d_rel < leadBuff) {
@@ -1556,22 +1525,29 @@ void AnnotatedCameraWidget::drawLead(QPainter &painter, const cereal::RadarState
   painter.drawPolygon(chevron, std::size(chevron));
 
   if (num == 0) {  // Display metrics to the 0th lead car
-    QStringList chevron_text[2];
+    int chevron_types = 2;
+    QStringList chevron_text[chevron_types];
+    int position;
+    float val;
     if (chevron_data == 1 || chevron_data == 3) {
-      chevron_text[0].append(QString::number(radar_d_rel,'f', 0) + " " + "m");
+      position = 0;
+      val = std::max(0.0f, d_rel);
+      chevron_text[position].append(QString::number(val,'f', 0) + " " + "m");
     }
     if (chevron_data == 2 || chevron_data == 3) {
-      chevron_text[chevron_data - 2].append(QString::number((radar_v_rel + v_ego) * (isMetric ? MS_TO_KPH : MS_TO_MPH),'f', 0) + " " + (isMetric ? "km/h" : "mph"));
+      position = (chevron_data == 2) ? 0 : 1;
+      val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
+      chevron_text[position].append(QString::number(val,'f', 0) + " " + (is_metric ? "km/h" : "mph"));
     }
 
-    int str_w = 200; // Width of the text box, might need adjustment
-    int str_h = 50; // Height of the text box, adjust as necessary
+    float str_w = 200; // Width of the text box, might need adjustment
+    float str_h = 50; // Height of the text box, adjust as necessary
     painter.setFont(InterFont(45, QFont::Bold));
     // Calculate the center of the chevron and adjust the text box position
     float text_y = y + sz + 12; // Position the text at the bottom of the chevron
     QRect textRect(x - str_w / 2, text_y, str_w, str_h); // Adjust the rectangle to center the text horizontally at the chevron's bottom
     QPoint shadow_offset(2, 2);
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < chevron_types; ++i) {
       if (!chevron_text[i].isEmpty()) {
         painter.setPen(QColor(0x0, 0x0, 0x0, 200));  // Draw shadow
         painter.drawText(textRect.translated(shadow_offset.x(), shadow_offset.y() + i * str_h), Qt::AlignBottom | Qt::AlignHCenter, chevron_text[i].at(0));
@@ -1650,22 +1626,20 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   painter.setPen(Qt::NoPen);
 
   if (s->scene.world_objects_visible) {
-    update_model(s, model, sm["uiPlan"].getUiPlan());
+    update_model(s, model);
     drawLaneLines(painter, s);
 
     if (s->scene.longitudinal_control && sm.rcv_frame("radarState") > s->scene.started_frame) {
       auto radar_state = sm["radarState"].getRadarState();
+      auto car_state = sm["carState"].getCarState();
       update_leads(s, radar_state, model.getPosition());
       auto lead_one = radar_state.getLeadOne();
       auto lead_two = radar_state.getLeadTwo();
-      float v_ego = sm["carState"].getCarState().getVEgo();
-      float radar_d_rel = radar_state.getLeadOne().getDRel();
-      float radar_v_rel = radar_state.getLeadOne().getVRel();
       if (lead_one.getStatus()) {
-        drawLead(painter, lead_one, s->scene.lead_vertices[0], 0, radar_d_rel, v_ego, radar_v_rel, s->scene.chevron_data, s->scene.is_metric);
+        drawLead(painter, lead_one, s->scene.lead_vertices[0], 0, car_state, s->scene.chevron_data);
       }
       if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
-        drawLead(painter, lead_two, s->scene.lead_vertices[1], 1, radar_d_rel, v_ego, radar_v_rel, s->scene.chevron_data, s->scene.is_metric);
+        drawLead(painter, lead_two, s->scene.lead_vertices[1], 1, car_state, s->scene.chevron_data);
       }
 
       rocketFuel(painter);

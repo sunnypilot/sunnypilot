@@ -8,6 +8,7 @@ import traceback
 from cereal import custom
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
+from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
 from openpilot.system.hardware import HARDWARE, PC
@@ -42,6 +43,7 @@ def manager_init() -> None:
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(custom.LongitudinalPersonalitySP.standard)),
 
+    ("AccelPersonality", str(custom.AccelerationPersonality.stock)),
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "1"),
@@ -63,6 +65,7 @@ def manager_init() -> None:
     ("DisengageLateralOnBrake", "0"),
     ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
+    ("DynamicPersonality", "0"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
     ("FeatureStatus", "1"),
@@ -96,6 +99,10 @@ def manager_init() -> None:
     ("TorqueDeadzoneDeg", "0"),
     ("TorqueFriction", "1"),
     ("TorqueMaxLatAccel", "250"),
+    ("ToyotaAutoHold", "0"),
+    ("ToyotaAutoLockBySpeed", "0"),
+    ("ToyotaAutoUnlockByShifter", "0"),
+    ("ToyotaEnhancedBsm", "0"),
     ("TrueVEgoUi", "0"),
     ("TurnSpeedControl", "0"),
     ("TurnVisionControl", "0"),
@@ -105,13 +112,14 @@ def manager_init() -> None:
     ("OsmDownloadedDate", "0"),
     ("OSMDownloadProgress", "{}"),
     ("SidebarTemperatureOptions", "0"),
-    ("SunnylinkEnabled", "0"),
+    ("SunnylinkEnabled", "0" if (build_metadata.release_channel or build_metadata.release_sp_channel) else "1"),
+    ("SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"),
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
   ]
   if not PC:
-    default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
+    default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)

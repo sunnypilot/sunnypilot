@@ -1,4 +1,4 @@
-Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations')
+Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL')
 
 map_env = qt_env.Clone()
 libs = ['qt_widgets', 'qt_util', 'QMapLibre', common, messaging, visionipc, transformations,

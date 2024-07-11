@@ -744,6 +744,14 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
   },
 
+  EventName.spAutoBrakeHold: {
+    ET.PERMANENT: Alert(
+      "sunnypilot Brake Hold Active",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOWEST, VisualAlert.none, AudibleAlert.prompt, 0.),
+  },
+
   EventName.parkBrake: {
     ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
     ET.NO_ENTRY: NoEntryAlert("Parking Brake Engaged"),
@@ -987,6 +995,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Cruise Fault: Restart the Car"),
     ET.PERMANENT: NormalPermanentAlert("Cruise Fault: Restart the car to engage"),
     ET.NO_ENTRY: NoEntryAlert("Cruise Fault: Restart the Car"),
+  },
+
+  EventName.espActive: {
+    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Electronic Stability Control Active"),
+    ET.NO_ENTRY: NoEntryAlert("Electronic Stability Control Active"),
   },
 
   EventName.controlsMismatch: {

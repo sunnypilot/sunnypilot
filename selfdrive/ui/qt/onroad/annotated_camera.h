@@ -7,10 +7,6 @@
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/widgets/cameraview.h"
 
-#ifdef ENABLE_DASHCAM
-#include "selfdrive/ui/qt/screenrecorder/screenrecorder.h"
-#endif
-
 const int subsign_img_size = 35;
 const int blinker_size = 120;
 
@@ -76,7 +72,7 @@ private:
   void drawLeftTurnSignal(QPainter &painter, int x, int y, int circle_size, int state);
   void drawRightTurnSignal(QPainter &painter, int x, int y, int circle_size, int state);
   int blinkerPulse(int frame);
-  void updateButtonsLayout();
+  void updateButtonsLayout(bool is_rhd);
 
   void drawFeatureStatusText(QPainter &p, int x, int y);
   void speedLimitSignPulse(int frame);
@@ -207,7 +203,7 @@ private:
 
   bool featureStatusToggle;
 
-  int drivingModelGen;
+  cereal::ModelGeneration drivingModelGen;
 
 protected:
   void paintGL() override;
@@ -215,7 +211,8 @@ protected:
   void showEvent(QShowEvent *event) override;
   void updateFrameMat() override;
   void drawLaneLines(QPainter &painter, const UIState *s);
-  void drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd, int num, float radar_d_rel, float v_ego, float radar_v_rel, int chevron_data, bool isMetric);
+  void drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd,
+                int num, const cereal::CarState::Reader &car_data, int chevron_data);
   void drawHud(QPainter &p);
   void drawDriverState(QPainter &painter, const UIState *s);
   inline QColor redColor(int alpha = 255) { return QColor(201, 34, 49, alpha); }
@@ -227,14 +224,4 @@ protected:
 
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;
-
-// neokii
-#ifdef ENABLE_DASHCAM
-private:
-  ScreenRecoder* recorder;
-  std::shared_ptr<QTimer> record_timer;
-
-  private slots:
-    void offroadTransition(bool offroad);
-#endif
 };

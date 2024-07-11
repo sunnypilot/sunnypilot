@@ -6,7 +6,7 @@ import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
 from pathlib import Path
-from setproctitle import setproctitle
+from openpilot.common.threadname import setthreadname
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from openpilot.common.swaglog import cloudlog
@@ -20,16 +20,15 @@ from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
 from openpilot.selfdrive.car.car_helpers import get_demo_car_params
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
-from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
+from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
 from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
-from openpilot.selfdrive.sunnypilot import get_model_generation
 from openpilot.system.hardware.hw import Paths
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+THREAD_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 MODEL_PATHS = {
@@ -62,8 +61,7 @@ class ModelState:
 
   def __init__(self, context: CLContext):
     self.param_s = Params()
-    self.custom_model, self.model_gen = get_model_generation(self.param_s)
-    self.model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
+    self.custom_model_metadata = CustomModelMetadata(params=self.param_s, init_only=True)
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
@@ -73,17 +71,17 @@ class ModelState:
       'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
     }
     _inputs_2 = {}
-    if self.custom_model and self.model_capabilities != ModelCapabilities.Default:
-      if self.model_capabilities & ModelCapabilities.LateralPlannerSolution:
+    if self.custom_model_metadata.valid:
+      if self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution:
         _inputs = {
           'lat_planner_state': np.zeros(ModelConstants.LAT_PLANNER_STATE_LEN, dtype=np.float32),
         }
-      if self.model_capabilities & ModelCapabilities.DesiredCurvatureV1:
+      if self.custom_model_metadata.capabilities & ModelCapabilities.DesiredCurvatureV1:
         _inputs = {
           'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
           'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),
         }
-      if self.model_capabilities & ModelCapabilities.NoO:
+      if self.custom_model_metadata.capabilities & ModelCapabilities.NoO:
         _inputs_2 = {
           'nav_features': np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32),
           'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
@@ -97,7 +95,7 @@ class ModelState:
       'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
-    if self.custom_model and self.model_capabilities != ModelCapabilities.Default:
+    if self.custom_model_metadata.valid:
       _model_name = self.param_s.get("DrivingModelText", encoding="utf8")
       _model_paths = {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/supercombo-{_model_name}.thneed"}
       _metadata_name = self.param_s.get("DrivingModelMetadataText", encoding="utf8")
@@ -135,9 +133,9 @@ class ModelState:
     self.prev_desire[:] = inputs['desire']
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    if not (self.custom_model and self.model_capabilities & ModelCapabilities.LateralPlannerSolution):
+    if not (self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
-    if self.custom_model and self.model_capabilities & ModelCapabilities.NoO:
+    if self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.NoO:
       self.inputs['nav_features'][:] = inputs['nav_features']
       self.inputs['nav_instructions'][:] = inputs['nav_instructions']
 
@@ -154,11 +152,11 @@ class ModelState:
 
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
-    if self.custom_model and self.model_capabilities != ModelCapabilities.Default:
-      if self.model_capabilities & ModelCapabilities.LateralPlannerSolution:
+    if self.custom_model_metadata.valid:
+      if self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution:
         self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
         self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
-      elif self.model_capabilities & ModelCapabilities.DesiredCurvatureV1:
+      elif self.custom_model_metadata.capabilities & ModelCapabilities.DesiredCurvatureV1:
         self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
         self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
     else:  # Default model, and as of time of writing, this model uses DesiredCurvatureV2
@@ -170,9 +168,9 @@ class ModelState:
 def main(demo=False):
   cloudlog.warning("modeld init")
 
-  sentry.set_tag("daemon", PROCESS_NAME)
-  cloudlog.bind(daemon=PROCESS_NAME)
-  setproctitle(PROCESS_NAME)
+  sentry.set_tag("daemon", THREAD_NAME)
+  cloudlog.bind(daemon=THREAD_NAME)
+  setthreadname("modeld")
   config_realtime_process(7, 54)
 
   cloudlog.warning("setting up CL context")
@@ -205,14 +203,13 @@ def main(demo=False):
     cloudlog.warning(f"connected extra cam with buffer size: {vipc_client_extra.buffer_len} ({vipc_client_extra.width} x {vipc_client_extra.height})")
 
   params = Params()
-  custom_model, model_gen = get_model_generation(params)
-  model_capabilities = ModelCapabilities.get_by_gen(model_gen)
+  custom_model_metadata = CustomModelMetadata(params=params, init_only=True)
 
   # messaging
   extended_svs = ["lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"]
-  if custom_model and model_capabilities & ModelCapabilities.NoO:
+  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
     extended_svs += ["navModelDEPRECATED", "navInstruction"]
-  pm = PubMaster(["modelV2", "modelV2SP", "cameraOdometry"])
+  pm = PubMaster(["modelV2", "modelV2SP", "drivingModelData", "cameraOdometry"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"] + extended_svs)
 
   publish_state = PublishState()
@@ -226,9 +223,9 @@ def main(demo=False):
   model_transform_main = np.zeros((3, 3), dtype=np.float32)
   model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
-  if custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution:
+  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution:
     driving_style = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-  if custom_model and model_capabilities & ModelCapabilities.NoO:
+  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
     nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
     nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
   buf_main, buf_extra = None, None
@@ -282,10 +279,13 @@ def main(demo=False):
       meta_extra = meta_main
 
     sm.update(0)
-    desire = sm["lateralPlanDEPRECATED"].desire.raw if custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution else DH.desire
+    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution:
+      desire = sm["lateralPlanDEPRECATED"].desire.raw
+    else:
+      desire = DH.desire
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
-    if not (custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution):
+    if not (custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
       lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
@@ -303,7 +303,7 @@ def main(demo=False):
 
     timestamp_llk = 0
     nav_enabled = False
-    if custom_model and model_capabilities & ModelCapabilities.NoO:
+    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
       # Enable/disable nav features
       timestamp_llk = sm["navModelDEPRECATED"].locationMonoTime
       nav_valid = sm.valid["navModelDEPRECATED"] # and (nanos_since_boot() - timestamp_llk < 1e9)
@@ -341,7 +341,7 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    if custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution:
+    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution:
       _inputs = {
         'driving_style': driving_style
       }
@@ -349,7 +349,7 @@ def main(demo=False):
       _inputs = {
         'lateral_control_params': lateral_control_params
       }
-    if custom_model and model_capabilities & ModelCapabilities.NoO:
+    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
       _inputs_2 = {
         'nav_features': nav_features,
         'nav_instructions': nav_instructions
@@ -373,12 +373,13 @@ def main(demo=False):
 
     if model_output is not None:
       modelv2_send = messaging.new_message('modelV2')
+      drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
-      fill_model_msg(modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id, frame_drop_ratio,
-                      meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
-                      custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution, custom_model and model_capabilities & ModelCapabilities.NoO)
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
+                     frame_drop_ratio, meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
+                     custom_model_metadata.valid, custom_model_metadata.capabilities)
 
-      if not (custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution):
+      if not (custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
         desire_state = modelv2_send.modelV2.meta.desireState
         l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
         r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
@@ -387,15 +388,23 @@ def main(demo=False):
         modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
         modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
 
+      drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
+      drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
+
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
       pm.send('modelV2', modelv2_send)
+      pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
 
       modelv2_sp_send = messaging.new_message('modelV2SP')
       modelv2_sp_send.valid = True
-      if not (custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution):
-        modelv2_sp_send.modelV2SP.laneChangePrev = DH.prev_lane_change
-        modelv2_sp_send.modelV2SP.laneChangeEdgeBlock = lat_plan_sp.laneChangeEdgeBlockDEPRECATED
+      modelV2SP = modelv2_sp_send.modelV2SP
+      if not (custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
+        modelV2SP.laneChangePrev = DH.prev_lane_change
+        modelV2SP.laneChangeEdgeBlock = lat_plan_sp.laneChangeEdgeBlockDEPRECATED
+      modelV2SP.customModel = custom_model_metadata.valid
+      modelV2SP.modelGeneration = custom_model_metadata.generation
+      modelV2SP.modelCapabilities = int(custom_model_metadata.capabilities)
       pm.send('modelV2SP', modelv2_sp_send)
 
     last_vipc_frame_id = meta_main.frame_id
@@ -409,7 +418,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(demo=args.demo)
   except KeyboardInterrupt:
-    cloudlog.warning(f"child {PROCESS_NAME} got SIGINT")
+    cloudlog.warning(f"child {THREAD_NAME} got SIGINT")
   except Exception:
     sentry.capture_exception()
     raise

@@ -28,8 +28,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
-from openpilot.selfdrive.modeld.model_capabilities import ModelCapabilities
-from openpilot.selfdrive.sunnypilot import get_model_generation
+from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
 
 from openpilot.system.athena.registration import is_registered_device
 from openpilot.system.hardware import HARDWARE
@@ -71,8 +70,7 @@ class Controls:
     if CI is None:
       cloudlog.info("controlsd is waiting for CarParams")
       with car.CarParams.from_bytes(self.params.get("CarParams", block=True)) as msg:
-        # TODO: this shouldn't need to be a builder
-        self.CP = msg.as_builder()
+        self.CP = msg
       cloudlog.info("controlsd got CarParams")
 
       # Uses car interface helper functions, altering state won't be considered by card for actuation
@@ -183,9 +181,13 @@ class Controls:
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
     self.process_not_running = False
 
-    self.custom_model, self.model_gen = get_model_generation(self.params)
-    model_capabilities = ModelCapabilities.get_by_gen(self.model_gen)
-    self.model_use_lateral_planner = self.custom_model and model_capabilities & ModelCapabilities.LateralPlannerSolution
+    self.custom_model_metadata = CustomModelMetadata(params=self.params, init_only=True)
+    self.model_use_lateral_planner = self.custom_model_metadata.valid and \
+                                     self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution
+
+    self.dynamic_personality = self.params.get_bool("DynamicPersonality")
+
+    self.accel_personality = self.read_accel_personality_param()
 
     self.can_log_mono_time = 0
 
@@ -634,13 +636,12 @@ class Controls:
     if not CC.latActive:
       self.LaC.reset()
     if not CC.longActive:
-      self.LoC.reset(v_pid=CS.vEgo)
+      self.LoC.reset()
 
     if not self.joystick_mode:
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
-      t_since_plan = (self.sm.frame - self.sm.recv_frame['longitudinalPlan']) * DT_CTRL
-      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan)
+      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits)
 
       # Steering PID loop and lateral MPC
       if self.model_use_lateral_planner:
@@ -831,7 +832,6 @@ class Controls:
     controlsState.state = self.state
     controlsState.engageable = not self.events.contains(ET.NO_ENTRY)
     controlsState.longControlState = self.LoC.long_control_state
-    controlsState.vPid = float(self.LoC.v_pid)
     controlsState.vCruise = float(self.v_cruise_helper.v_cruise_kph)
     controlsState.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
     controlsState.upAccelCmd = float(self.LoC.pid.p)
@@ -860,6 +860,8 @@ class Controls:
 
     controlsStateSP.lateralState = lat_tuning
     controlsStateSP.personality = self.personality
+    controlsStateSP.dynamicPersonality = self.dynamic_personality
+    controlsStateSP.accelPersonality = self.accel_personality
 
     if self.enable_nnff and lat_tuning == 'torque':
       controlsStateSP.lateralControlState.torqueState = self.LaC.pid_long_sp
@@ -908,11 +910,19 @@ class Controls:
     except (ValueError, TypeError):
       return custom.LongitudinalPersonalitySP.standard
 
+  def read_accel_personality_param(self):
+    try:
+      return int(self.params.get("AccelPersonality"))
+    except (ValueError, TypeError):
+      return custom.AccelerationPersonality.stock
+
   def params_thread(self, evt):
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.read_personality_param()
+      self.dynamic_personality = self.params.get_bool("DynamicPersonality")
+      self.accel_personality = self.read_accel_personality_param()
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 
@@ -931,7 +941,7 @@ class Controls:
       while True:
         self.step()
         self.rk.monitor_time()
-    except SystemExit:
+    finally:
       e.set()
       t.join()
 

@@ -1,6 +1,46 @@
 sunnypilot - 0.9.8.0 (2024-xx-xx)
 ========================
 * Always on driver monitoring toggle
+************************
+* UPDATED: Synced with commaai's openpilot
+  * master commit 4ef757c (July 06, 2024)
+* NEW❗: Default Driving Model: Notre Dame (July 01, 2024)
+* NEW❗: Longitudinal: Acceleration Personality thanks to kegman, rav4kumar, and arne1282!
+  * Select from three distinct acceleration personalities: Eco, Normal, and Sport
+  * Acceleration personalities are integrated directly into the model's acceleration matrix and can be activated in real-time!
+* NEW❗: Longitudinal: Dynamic Personality thanks to rav4kumar!
+  * Dynamically adjusts following distance and reaction based on your "Driving Personality" setting
+  * Personalities adapt in real-time to your speed and the distance to the lead car
+  * Provides a more responsive and tailored driving experience compared to predefined settings
+* UPDATED: Driving Personality: Updated mode names
+  * Aggressive, Moderate, Standard, Relaxed
+* NEW❗: Toyota - Enhanced Blind Spot Monitor (BSM) thanks to arne182, rav4kumar, and eFiniLan!
+  * Enables Blind Spot Monitor (BSM) signals parsing in sunnypilot using the factory Blind Spot Monitor (BSM)
+  * sunnypilot will use debugging CAN messages to receive unfiltered BSM signals, allowing detection of more objects
+  * Supported platforms
+    * RAV4 TSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Lexus LSS1, equipped with factory Blind Spot Monitoring (BSM)
+    * Toyota TSS1/1.5, equipped with factory Blind Spot Monitoring (BSM)
+    * Prius TSS2, equipped with factory Blind Spot Monitoring (BSM)
+  * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
+* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
+  * Re-tuned and tested by the community (July 1, 2024)
+* UPDATED: Driving Model Selector v5
+  * NEW❗: Driving Model additions
+    * Notre Dame (July 01, 2024) - NDv3
+* UPDATED: Toyota: Continued support for Smart DSU (SDSU) and Radar CAN Filter
+  * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter
+* UPDATED: Continued support for Mapbox navigation
+  * In response to the official temporary deprecation of support for Mapbox navigation in the upstream ([commaai/openpilot#32773](https://github.com/commaai/openpilot/pull/32773)), sunnypilot will continue maintaining software support for Mapbox navigation
+* NEW❗: Toyota - Automatic Brake Hold (AHB) thanks to AlexandreSato!
+  * When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold
+  * NOTE: Only for Toyota/Lexus vehicles with TSS2/LSS2
+* NEW❗: Toyota - Automatic Door Locking and Unlocking thanks to AlexandreSato, cydia2020, and dragonpilot-community!
+  * Auto Lock by Speed: All doors are automatically locked when vehicle speed is approximately 6 mph (10 km/h) or higher
+  * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
+* FIXED: Driving Personality:
+  * Maniac mode now correctly enforced when selected
+* Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)
 ========================

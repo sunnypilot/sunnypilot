@@ -117,9 +117,13 @@ class CarState(CarStateBase):
       ret.cruiseState.standstill = False
       ret.cruiseState.nonAdaptive = False
     elif self.CP.carFingerprint in NON_SCC_CAR:
-      ret.cruiseState.available = cp.vl['EMS16']['CRUISE_LAMP_M'] != 0
-      ret.cruiseState.enabled = cp.vl["LVR12"]['CF_Lvr_CruiseSet'] != 0
-      ret.cruiseState.speed = cp.vl["LVR12"]["CF_Lvr_CruiseSet"] * speed_conv
+      cruise_available_msg = "E_CRUISE_CONTROL" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "EMS16"
+      cruise_enabled_msg = "E_CRUISE_CONTROL" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "LVR12"
+      cruise_speed_msg = "ELECT_GEAR" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "LVR12"
+      cruise_speed_sig = "VSetDis" if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else "CF_Lvr_CruiseSet"
+      ret.cruiseState.available = cp.vl[cruise_available_msg]["CRUISE_LAMP_M"] != 0
+      ret.cruiseState.enabled = cp.vl[cruise_enabled_msg]["CF_Lvr_CruiseSet"] != 0
+      ret.cruiseState.speed = cp.vl[cruise_speed_msg][cruise_speed_sig] * speed_conv
       ret.cruiseState.standstill = False
       ret.cruiseState.nonAdaptive = False
     else:
@@ -135,6 +139,7 @@ class CarState(CarStateBase):
     ret.brakeHoldActive = cp.vl["TCS15"]["AVH_LAMP"] == 2  # 0 OFF, 1 ERROR, 2 ACTIVE, 3 READY
     ret.parkingBrake = cp.vl["TCS13"]["PBRAKE_ACT"] == 1
     ret.espDisabled = cp.vl["TCS11"]["TCS_PAS"] == 1
+    ret.espActive = cp.vl["TCS11"]["ABS_ACT"] == 1
     ret.brakeLightsDEPRECATED = bool(cp.vl["TCS13"]["BrakeLight"])
     ret.accFaulted = cp.vl["TCS13"]["ACCEnable"] != 0  # 0 ACC CONTROL ENABLED, 1-3 ACC CONTROL DISABLED
 
@@ -364,6 +369,8 @@ class CarState(CarStateBase):
 
     if CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
       messages.append(("ELECT_GEAR", 20))
+      if CP.carFingerprint in NON_SCC_CAR:
+        messages.append(("E_CRUISE_CONTROL", 10))
     elif CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
       pass
     elif CP.carFingerprint in CAN_GEARS["use_tcu_gears"]:
