@@ -33,6 +33,7 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = False
 
   def update(self, pt_cp, cam_cp, loopback_cp):
+    self.button_events = []
     ret = car.CarState.new_message()
 
     self.prev_cruise_buttons = self.cruise_buttons
