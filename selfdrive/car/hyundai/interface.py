@@ -210,10 +210,10 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     self.sp_update_params()
 
-    buttonEvents = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
+    self.CS.button_events = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
 
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            buttonEvents, c.vCruise)
+                                                            self.CS.button_events, c.vCruise)
 
     self.CS.mads_enabled = False if not self.mads_main_toggle else self.CS.mads_enabled
 
@@ -236,7 +236,7 @@ class CarInterface(CarInterfaceBase):
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       if not self.CP.pcmCruise:
-        if any(b.type == ButtonType.cancel for b in buttonEvents):
+        if any(b.type == ButtonType.cancel for b in self.CS.button_events):
           self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       if not self.CP.pcmCruiseSpeed:
         if not ret.cruiseState.enabled:
@@ -250,14 +250,14 @@ class CarInterface(CarInterfaceBase):
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
       if self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = False
     else:
       if not self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = True
 
-    ret.buttonEvents = buttonEvents
+    ret.buttonEvents = self.CS.button_events
 
     # On some newer model years, the CANCEL button acts as a pause/resume button based on the PCM state
     # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons

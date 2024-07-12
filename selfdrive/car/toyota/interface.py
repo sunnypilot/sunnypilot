@@ -212,11 +212,10 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     self.sp_update_params()
 
-    buttonEvents = []
     distance_button = 0
 
     if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR) or (self.CP.flags & ToyotaFlags.SMART_DSU and not self.CP.flags & ToyotaFlags.RADAR_CAN_FILTER):
-      buttonEvents = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
+      self.CS.button_events = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
       distance_button = self.CS.distance_button
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
@@ -250,19 +249,19 @@ class CarInterface(CarInterfaceBase):
       be = car.CarState.ButtonEvent.new_message()
       be.pressed = True
       be.type = ButtonType.cancel
-      buttonEvents.append(be)
+      self.CS.button_events.append(be)
 
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
       if self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = False
     else:
       if not self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = True
 
-    ret.buttonEvents = buttonEvents
+    ret.buttonEvents = self.CS.button_events
 
     # events
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.brake],

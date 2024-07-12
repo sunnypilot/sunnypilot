@@ -1,3 +1,5 @@
+from cereal import car
+
 import cereal.messaging as messaging
 from common.conversions import Conversions as CV
 from opendbc.can.packer import CANPacker
@@ -9,7 +11,7 @@ from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControl
 from openpilot.selfdrive.car.interfaces import CarControllerBase, FORWARD_GEARS
 from openpilot.selfdrive.controls.lib.drive_helpers import FCA_V_CRUISE_MIN
 
-BUTTONS_STATES = ["accelCruise", "decelCruise", "cancel", "resumeCruise"]
+ButtonType = car.CarState.ButtonEvent.Type
 
 
 class CarController(CarControllerBase):
@@ -104,7 +106,7 @@ class CarController(CarControllerBase):
       self.last_button_frame = CS.button_counter
 
       if ram_cars:
-        if CS.buttonStates["cancel"]:
+        if any(b.type == ButtonType.cancel for b in CS.out.buttonEvents):
           can_sends.append(chryslercan.create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP, cancel=True))
         else:
           can_sends.append(chryslercan.create_cruise_buttons(self.packer, CS.button_counter, das_bus, self.CP,
@@ -189,8 +191,10 @@ class CarController(CarControllerBase):
 
   # multikyd methods, sunnyhaibin logic
   def get_cruise_buttons_status(self, CS):
-    if not CS.out.cruiseState.enabled or any(CS.buttonStates[button_state] for button_state in BUTTONS_STATES):
-      self.timer = 40
+    if not CS.out.cruiseState.enabled:
+      for be in CS.out.buttonEvents:
+        if be.type in (ButtonType.accelCruise, ButtonType.decelCruise, ButtonType.resumeCruise) and be.pressed:
+          self.timer = 40
     elif self.timer:
       self.timer -= 1
     else:

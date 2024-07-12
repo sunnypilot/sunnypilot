@@ -85,6 +85,7 @@ class CarState(CarStateBase):
     self.frame = 0
 
   def update(self, cp, cp_cam):
+    self.button_events = []
     ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled
