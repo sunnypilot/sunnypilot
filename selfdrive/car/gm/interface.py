@@ -206,12 +206,11 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_loopback)
     self.sp_update_params()
 
-    buttonEvents = []
     distance_button = 0
 
     # Don't add event if transitioning from INIT, unless it's to an actual button
     if self.CS.cruise_buttons != CruiseButtons.UNPRESS or self.CS.prev_cruise_buttons != CruiseButtons.INIT:
-      buttonEvents = [
+      self.CS.button_events = [
         *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT,
                               unpressed_btn=CruiseButtons.UNPRESS),
         *create_button_events(self.CS.distance_button, self.CS.prev_distance_button,
@@ -222,11 +221,11 @@ class CarInterface(CarInterfaceBase):
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
     if not self.CP.pcmCruise:
-      if any(b.type == ButtonType.accelCruise and b.pressed for b in buttonEvents):
+      if any(b.type == ButtonType.accelCruise and b.pressed for b in self.CS.button_events):
         self.CS.accEnabled = True
 
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            buttonEvents, c.vCruise)
+                                                            self.CS.button_events, c.vCruise)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -239,7 +238,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0):
-      if any(b.type == ButtonType.cancel for b in buttonEvents):
+      if any(b.type == ButtonType.cancel for b in self.CS.button_events):
         self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
     if self.get_sp_pedal_disengage(ret):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
@@ -255,14 +254,14 @@ class CarInterface(CarInterfaceBase):
     # MADS BUTTON
     if self.CS.out.madsEnabled != self.CS.madsEnabled:
       if self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = False
     else:
       if not self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
         self.mads_event_lock = True
 
-    ret.buttonEvents = buttonEvents
+    ret.buttonEvents = self.CS.button_events
 
     # The ECM allows enabling on falling edge of set, but only rising edge of resume
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low,
