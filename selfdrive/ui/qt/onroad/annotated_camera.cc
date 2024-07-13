@@ -375,6 +375,7 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   featureStatusToggle = s.scene.feature_status_toggle;
 
   experimental_btn->setVisible(!(showDebugUI && showVTC));
+  customModelValid = s.scene.custom_driving_model_valid;
   drivingModelGen = s.scene.driving_model_generation;
 }
 
@@ -1209,7 +1210,7 @@ void AnnotatedCameraWidget::drawFeatureStatusText(QPainter &p, int x, int y) {
   }
 
   // Dynamic Lane Profile
-  if (drivingModelGen == cereal::ModelGeneration::ONE) {
+  if (customModelValid && drivingModelGen == 1) {  // ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO
     drawFeatureStatusElement(dynamicLaneProfile, feature_text.dlp_list_text, feature_color.dlp_list_color, true, "OFF", "DLP");
   }
 

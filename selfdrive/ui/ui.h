@@ -202,8 +202,7 @@ typedef struct UIScene {
   int speed_limit_warning_value_offset;
 
   bool custom_driving_model_valid;
-  cereal::ModelGeneration driving_model_generation;
-  uint32_t driving_model_capabilities;
+  int driving_model_generation;
 
   bool feature_status_toggle;
   bool onroad_settings_toggle;

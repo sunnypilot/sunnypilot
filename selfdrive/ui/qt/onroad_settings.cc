@@ -119,7 +119,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
 
 void OnroadSettings::changeDynamicLaneProfile() {
   UIScene &scene = uiState()->scene;
-  bool can_change = scene.driving_model_generation == cereal::ModelGeneration::ONE;
+  bool can_change = scene.custom_driving_model_valid && scene.driving_model_generation == 1;  // ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO
   if (can_change) {
     scene.dynamic_lane_profile++;
     scene.dynamic_lane_profile = scene.dynamic_lane_profile > 2 ? 0 : scene.dynamic_lane_profile;
@@ -229,7 +229,7 @@ void OnroadSettings::refresh() {
 
   // Dynamic Lane Profile
   dlp_widget->updateDynamicLaneProfile("DynamicLaneProfile");
-  dlp_widget->setVisible(scene.driving_model_generation == cereal::ModelGeneration::ONE);
+  dlp_widget->setVisible(scene.custom_driving_model_valid && scene.driving_model_generation == 1);  // ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO
 
   // Gap Adjust Cruise
   gac_widget->updateGapAdjustCruise("LongitudinalPersonality");

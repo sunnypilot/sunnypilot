@@ -230,12 +230,6 @@ static void update_state(UIState *s) {
       scene.e2eX[i] = sm["longitudinalPlanSP"].getLongitudinalPlanSP().getE2eX()[i];
     }
   }
-  if (sm.updated("modelV2SP")) {
-    auto model_v2_sp = sm["modelV2SP"].getModelV2SP();
-    scene.custom_driving_model_valid = model_v2_sp.getCustomModel();
-    scene.driving_model_generation = model_v2_sp.getModelGeneration();
-    scene.driving_model_capabilities = model_v2_sp.getModelCapabilities();
-  }
 }
 
 void ui_update_params(UIState *s) {
@@ -269,6 +263,8 @@ void ui_update_params(UIState *s) {
   s->scene.speed_limit_control_enabled = params.getBool("EnableSlc");
   s->scene.feature_status_toggle = params.getBool("FeatureStatus");
   s->scene.onroad_settings_toggle = params.getBool("OnroadSettings");
+  s->scene.custom_driving_model_valid = params.getBool("CustomDrivingModel");
+  s->scene.driving_model_generation = std::atoi(params.get("DrivingModelGeneration").c_str());
 
   // Handle Onroad Screen Off params
   if (s->scene.onroadScreenOff > 0) {
@@ -393,7 +389,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "clocks", "longitudinalPlanSP", "liveMapDataSP",
     "carControl", "lateralPlanSPDEPRECATED", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters",
-    "controlsStateSP", "modelV2SP"
+    "controlsStateSP"
   });
 
   Params params;

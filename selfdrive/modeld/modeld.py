@@ -402,9 +402,6 @@ def main(demo=False):
       if not (custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
         modelV2SP.laneChangePrev = DH.prev_lane_change
         modelV2SP.laneChangeEdgeBlock = lat_plan_sp.laneChangeEdgeBlockDEPRECATED
-      modelV2SP.customModel = custom_model_metadata.valid
-      modelV2SP.modelGeneration = custom_model_metadata.generation
-      modelV2SP.modelCapabilities = int(custom_model_metadata.capabilities)
       pm.send('modelV2SP', modelv2_sp_send)
 
     last_vipc_frame_id = meta_main.frame_id
