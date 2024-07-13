@@ -9,10 +9,6 @@
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 
-#ifdef ENABLE_MAPS
-#include "selfdrive/ui/qt/maps/map_settings.h"
-#endif
-
 // HomeWindowSP: the container for the offroad and onroad UIs
 HomeWindowSP::HomeWindowSP(QWidget* parent) : HomeWindow(parent){    
   QObject::connect(onroad, &OnroadWindow::mapPanelRequested, this, [=] { sidebar->hide(); });

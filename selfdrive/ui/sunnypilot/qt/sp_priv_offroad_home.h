@@ -1,6 +1,10 @@
 #pragma once
 #include "selfdrive/ui/qt/offroad_home.h"
 
+#ifdef ENABLE_MAPS
+#include "selfdrive/ui/qt/maps/map_settings.h"
+#endif
+
 
 class OffroadHomeSP : public OffroadHome {
   Q_OBJECT
