@@ -7,7 +7,9 @@
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 #include "selfdrive/ui/qt/maps/map_panel.h"
 #endif
+#ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings_panel.h"
+#endif
 
 #include "selfdrive/ui/qt/util.h"
 
@@ -18,7 +20,11 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   stacked_layout->setStackingMode(QStackedLayout::StackAll);
   main_layout->addLayout(stacked_layout);
 
+#ifdef SUNNYPILOT
   nvg = new AnnotatedCameraWidget(VISION_STREAM_ROAD, this);
+#else
+  nvg = new AnnotatedCameraSPWidget(VISION_STREAM_ROAD, this);
+#endif
 
   QWidget * split_wrapper = new QWidget;
   split = new QHBoxLayout(split_wrapper);
@@ -88,6 +94,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     }
   }
 #endif
+#ifdef SUNNYPILOT
   if (onroad_settings != nullptr && !isMapVisible()) {
     if (wakeScreenTimeout()) {
       onroad_settings->setVisible(false);
@@ -95,6 +102,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   }
   // propagation event to parent(HomeWindow)
   QWidget::mousePressEvent(e);
+#endif
 }
 
 void OnroadWindow::createMapWidget() {
@@ -117,6 +125,7 @@ void OnroadWindow::createMapWidget() {
 }
 
 void OnroadWindow::createOnroadSettingsWidget() {
+#ifdef SUNNYPILOT
   auto os = new OnroadSettingsPanel(this);
   onroad_settings = os;
 
@@ -130,6 +139,7 @@ void OnroadWindow::createOnroadSettingsWidget() {
 
   // hidden by default
   os->setVisible(false);
+#endif
 }
 
 void OnroadWindow::offroadTransition(bool offroad) {
@@ -139,9 +149,11 @@ void OnroadWindow::offroadTransition(bool offroad) {
       createMapWidget();
     }
 #endif
+#ifdef SUNNYPILOT
     if (onroad_settings == nullptr) {
       createOnroadSettingsWidget();
     }
+#endif
   }
 
   alerts->clear();
