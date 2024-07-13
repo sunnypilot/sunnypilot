@@ -7,6 +7,8 @@ import numpy as np
 
 import SCons.Errors
 
+from openpilot.common.basedir import BASEDIR
+
 SCons.Warnings.warningAsException(True)
 
 # pending upstream fix - https://github.com/SCons/scons/issues/4461
@@ -16,6 +18,34 @@ TICI = os.path.isfile('/TICI')
 AGNOS = TICI
 UBUNTU_FOCAL = int(subprocess.check_output('[ -f /etc/os-release ] && . /etc/os-release && [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "20.04" ] && echo 1 || echo 0', shell=True, encoding='utf-8').rstrip())
 Export('UBUNTU_FOCAL')
+
+gpg_id_path = os.path.join(BASEDIR, "../gpg_id.txt")
+
+# Read the required GPG key ID from gpg_id.txt
+try:
+  with open(gpg_id_path, 'r') as file:
+    REQUIRED_GPG_KEY_ID = file.read().strip()
+  print(f"Required GPG key ID: {REQUIRED_GPG_KEY_ID}")
+except IOError as e:
+  print(f"Failed to read GPG key ID from {gpg_id_path}. Error: {e}")
+  REQUIRED_GPG_KEY_ID = None
+
+# Check for the specific GPG key
+if REQUIRED_GPG_KEY_ID:
+  try:
+    result = subprocess.check_output(['gpg', '--list-keys', REQUIRED_GPG_KEY_ID], stderr=subprocess.STDOUT)
+    SUNNYPILOT = REQUIRED_GPG_KEY_ID in result.decode()
+    if SUNNYPILOT:
+      print(f"GPG key {REQUIRED_GPG_KEY_ID} is available.")
+    else:
+      print(f"GPG key {REQUIRED_GPG_KEY_ID} is not available.")
+  except subprocess.CalledProcessError as e:
+    SUNNYPILOT = False
+    print(f"Failed to list GPG key {REQUIRED_GPG_KEY_ID}. Error:", e.output.decode().strip())
+else:
+  SUNNYPILOT = False
+print("SUNNYPILOT: ", SUNNYPILOT)
+Export('SUNNYPILOT')
 
 Decider('MD5-timestamp')
 
@@ -174,6 +204,10 @@ if arch != "Darwin":
 # Enable swaglog include in submodules
 cflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 cxxflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
+
+if SUNNYPILOT:
+  cflags += ['-DSUNNYPILOT']
+  cxxflags += ['-DSUNNYPILOT']
 
 ccflags_option = GetOption('ccflags')
 if ccflags_option:

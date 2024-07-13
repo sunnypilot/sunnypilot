@@ -1,9 +1,6 @@
 import os
 import json
-Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL')
-
-SConscript(['sunnypilot/SConscript'])
-Import('sp_widgets_src', 'sp_qt_src')
+Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL', 'SUNNYPILOT')
 
 base_libs = [common, messaging, visionipc, transformations,
              'm', 'OpenCL', 'ssl', 'crypto', 'pthread'] + qt_env["LIBS"]
@@ -19,6 +16,12 @@ if arch == "Darwin":
 
 # FIXME: remove this once we're on 5.15 (24.04)
 qt_env['CXXFLAGS'] += ["-Wno-deprecated-declarations"]
+
+sp_widgets_src = []
+sp_qt_src = []
+if SUNNYPILOT:
+  SConscript(['sunnypilot/SConscript'])
+  Import('sp_widgets_src', 'sp_qt_src')
 
 qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"], LIBS=base_libs)
 widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
