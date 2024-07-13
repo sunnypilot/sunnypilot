@@ -1,6 +1,6 @@
 import os
 import json
-Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL', 'SUNNYPILOT')
+Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL')
 
 base_libs = [common, messaging, visionipc, transformations,
              'm', 'OpenCL', 'ssl', 'crypto', 'pthread'] + qt_env["LIBS"]
@@ -19,7 +19,7 @@ qt_env['CXXFLAGS'] += ["-Wno-deprecated-declarations"]
 
 sp_widgets_src = []
 sp_qt_src = []
-if SUNNYPILOT:
+if GetOption('sunnypilot'):
   SConscript(['sunnypilot/SConscript'])
   Import('sp_widgets_src', 'sp_qt_src')
 
@@ -30,7 +30,7 @@ widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
                "qt/widgets/scrollview.cc", "qt/widgets/cameraview.cc", "#third_party/qrcode/QrCode.cc",
                "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"] + sp_widgets_src
 
-qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if SUNNYPILOT else []
+qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if GetOption('sunnypilot') else []
 if maps:
   base_libs += ['QMapLibre']
   widgets_src += ["qt/maps/map_helpers.cc", "qt/maps/map_settings.cc", "qt/maps/map.cc", "qt/maps/map_panel.cc",

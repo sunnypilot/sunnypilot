@@ -19,35 +19,38 @@ AGNOS = TICI
 UBUNTU_FOCAL = int(subprocess.check_output('[ -f /etc/os-release ] && . /etc/os-release && [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "20.04" ] && echo 1 || echo 0', shell=True, encoding='utf-8').rstrip())
 Export('UBUNTU_FOCAL')
 
-keys_dir = os.path.join(BASEDIR, ".git-crypt/keys/default/0")
+def is_sunnypilot_developer():
+  """Check if the current user is a SunnyPilot developer."""
+  
+  def collect_required_gpg_key_ids(keys_dir):
+    try:
+      key_ids = [filename.split('.')[0] for filename in os.listdir(keys_dir) if filename.endswith(".gpg")]
+      print(f"Required GPG key IDs: {key_ids}")
+      return key_ids
+    except OSError as e:
+      print(f"Failed to read GPG key IDs from {keys_dir}. Error: {e}")
+      return []
+  
+  def is_sunnypilot_key_available(required_gpg_key_ids):
+    for key_id in required_gpg_key_ids:
+      try:
+        result = subprocess.check_output(['gpg', '--list-keys', key_id], stderr=subprocess.STDOUT)
+        if key_id in result.decode():
+          print(f"GPG key {key_id} is available.")
+          return True
+      except subprocess.CalledProcessError as e:
+        print(f"Failed to list GPG key {key_id}. Error:", e.output.decode().strip())
+    return False
 
-# Collect the required GPG key IDs from the filenames in the keys directory
-required_gpg_key_ids = []
-try:
-  for filename in os.listdir(keys_dir):
-    if filename.endswith(".gpg"):
-      required_gpg_key_ids.append(filename.split('.')[0])
-  print(f"Required GPG key IDs: {required_gpg_key_ids}")
-except OSError as e:
-  print(f"Failed to read GPG key IDs from {keys_dir}. Error: {e}")
-  required_gpg_key_ids = []
+  keys_dir = os.path.join(BASEDIR, ".git-crypt/keys/default/0")
+  required_gpg_key_ids = collect_required_gpg_key_ids(keys_dir)
 
-# Check for the specific GPG keys in the local keyring
-SUNNYPILOT = False
-for key_id in required_gpg_key_ids:
-  try:
-    result = subprocess.check_output(['gpg', '--list-keys', key_id], stderr=subprocess.STDOUT)
-    if key_id in result.decode():
-      SUNNYPILOT = True
-      print(f"GPG key {key_id} is available.")
-      break
-  except subprocess.CalledProcessError as e:
-    print(f"Failed to list GPG key {key_id}. Error:", e.output.decode().strip())
+  sunnypilot = is_sunnypilot_key_available(required_gpg_key_ids)
 
-if not SUNNYPILOT:
-  print("None of the required GPG keys are available.")
-print("SUNNYPILOT: ", SUNNYPILOT)
-Export('SUNNYPILOT')
+  if not sunnypilot:
+    print("None of the required GPG keys are available.")
+
+  return sunnypilot
 
 Decider('MD5-timestamp')
 
@@ -103,6 +106,12 @@ AddOption('--minimal',
           dest='extras',
           default=os.path.exists(File('#.lfsconfig').abspath), # minimal by default on release branch (where there's no LFS)
           help='the minimum build to run openpilot. no tests, tools, etc.')
+          
+AddOption('--sunnypilot',
+          action='store_true',
+          dest='sunnypilot',
+          default=is_sunnypilot_developer(), # check if the current user is a SunnyPilot developer
+          help='Will make sure it builds SP ui and other SP specific things that are not public (encrypted sources)')
 
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64
@@ -206,10 +215,6 @@ if arch != "Darwin":
 # Enable swaglog include in submodules
 cflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 cxxflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
-
-if SUNNYPILOT:
-  cflags += ['-DSUNNYPILOT']
-  cxxflags += ['-DSUNNYPILOT']
 
 ccflags_option = GetOption('ccflags')
 if ccflags_option:
