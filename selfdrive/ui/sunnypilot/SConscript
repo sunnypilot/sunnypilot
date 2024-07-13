@@ -1,17 +1,37 @@
-widgets_src = ["sunnypilot/qt/offroad/display_settings.cc", "sunnypilot/qt/offroad/sunnypilot_settings.cc",
-               "sunnypilot/qt/offroad/vehicle_settings.cc", "sunnypilot/qt/offroad/visuals_settings.cc",
-               "sunnypilot/qt/offroad/trips_settings.cc", "sunnypilot/qt/offroad/mads_settings.cc",
-               "sunnypilot/qt/offroad/lane_change_settings.cc", "sunnypilot/qt/offroad/speed_limit_control_settings.cc",
-               "sunnypilot/qt/offroad/monitoring_settings.cc", "sunnypilot/qt/offroad/osm_settings.cc",
-               "sunnypilot/qt/offroad/custom_offsets_settings.cc", "sunnypilot/qt/widgets/drive_stats.cc",
-               "sunnypilot/qt/offroad/software_settings_sp.cc", "sunnypilot/qt/offroad/models_fetcher.cc",
-               "sunnypilot/qt/offroad/speed_limit_warning_settings.cc", "sunnypilot/qt/offroad/speed_limit_policy_settings.cc",
-               "sunnypilot/qt/offroad/sunnylink_settings.cc"]
+widgets_src = [
+  "sunnypilot/qt/offroad/display_settings.cc",
+  "sunnypilot/qt/offroad/sunnypilot_settings.cc",
+  "sunnypilot/qt/offroad/vehicle_settings.cc",
+  "sunnypilot/qt/offroad/visuals_settings.cc",
+  "sunnypilot/qt/offroad/trips_settings.cc",
+  "sunnypilot/qt/offroad/mads_settings.cc",
+  "sunnypilot/qt/offroad/lane_change_settings.cc",
+  "sunnypilot/qt/offroad/speed_limit_control_settings.cc",
+  "sunnypilot/qt/offroad/monitoring_settings.cc",
+  "sunnypilot/qt/offroad/osm_settings.cc",
+  "sunnypilot/qt/offroad/custom_offsets_settings.cc",
+  "sunnypilot/qt/widgets/drive_stats.cc",
+  "sunnypilot/qt/offroad/software_settings_sp.cc",
+  "sunnypilot/qt/offroad/models_fetcher.cc",
+  "sunnypilot/qt/offroad/speed_limit_warning_settings.cc",
+  "sunnypilot/qt/offroad/speed_limit_policy_settings.cc",
+  "sunnypilot/qt/offroad/sunnylink_settings.cc"
+]
 
-network_src = ["sunnypilot/qt/network/sunnylink/sunnylink_client.cc", "sunnypilot/qt/network/sunnylink/services/base_device_service.cc",
-               "sunnypilot/qt/network/sunnylink/services/role_service.cc", "sunnypilot/qt/network/sunnylink/services/user_service.cc"]
+network_src = [
+  "sunnypilot/qt/network/sunnylink/sunnylink_client.cc",
+  "sunnypilot/qt/network/sunnylink/services/base_device_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/role_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/user_service.cc"]
 
-qt_src = ["sunnypilot/qt/onroad/onroad_settings.cc", "sunnypilot/qt/onroad/onroad_settings_panel.cc"]
+qt_src = [
+  "sunnypilot/qt/sp_priv_home.cc",
+  "sunnypilot/qt/sp_priv_offroad_home.cc",
+  "sunnypilot/qt/onroad/onroad_settings.cc",
+  "sunnypilot/qt/onroad/onroad_settings_panel.cc",
+  "sunnypilot/qt/onroad/sp_priv_onroad_home.cc",
+  "sunnypilot/qt/onroad/sp_priv_annotated_camera.cc",
+]
 
 sp_widgets_src = widgets_src + network_src
 sp_qt_src = qt_src

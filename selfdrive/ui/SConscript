@@ -41,7 +41,7 @@ widgets = qt_env.Library("qt_widgets", widgets_src, LIBS=base_libs)
 Export('widgets')
 qt_libs = [widgets, qt_util] + base_libs
 
-qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc",
+qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc", "qt/offroad_home.cc",
           "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",

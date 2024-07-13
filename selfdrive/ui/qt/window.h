@@ -3,9 +3,15 @@
 #include <QStackedLayout>
 #include <QWidget>
 
-#include "selfdrive/ui/qt/home.h"
 #include "selfdrive/ui/qt/offroad/onboarding.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
+
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_home.h"
+#define HomeWindow HomeWindowSP
+#else
+#include "selfdrive/ui/qt/home.h"
+#endif
 
 class MainWindow : public QWidget {
   Q_OBJECT

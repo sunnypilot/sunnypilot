@@ -75,10 +75,13 @@ void MainWindow::closeSettings() {
 
   if (uiState()->scene.started) {
     homeWindow->showSidebar(false);
+//TODO: TBD if it's worth it to create our own sp_priv_window.cc to have it split from the OG code and not have preprocessor defs in the OG code, at least not the cc
+#ifdef SUNNYPILOT
     // Map is always shown when using navigate on openpilot
     if (uiState()->scene.navigate_on_openpilot_deprecated) {
       homeWindow->showMapPanel(true);
     }
+#endif 
   }
 }
 

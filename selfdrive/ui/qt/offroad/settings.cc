@@ -17,7 +17,9 @@
 #include "selfdrive/ui/qt/widgets/prime.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
+#ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
+#endif 
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   // param, title, desc, icon
@@ -652,9 +654,16 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   QList<PanelInfo> panels = {
     PanelInfo("   " + tr("Device"), device, "../assets/navigation/icon_home.svg"),
     PanelInfo("   " + tr("Network"), new Networking(this), "../assets/offroad/icon_network.png"),
+#ifdef SUNNYPILOT
     PanelInfo("   " + tr("sunnylink"), new SunnylinkPanel(this), "../assets/offroad/icon_wifi_strength_full.svg"),
+#endif
     PanelInfo("   " + tr("Toggles"), toggles, "../assets/offroad/icon_toggle.png"),
+#ifdef SUNNYPILOT
     PanelInfo("   " + tr("Software"), new SoftwarePanelSP(this), "../assets/offroad/icon_software.png"),
+#else
+    PanelInfo("   " + tr("Software"), new SoftwarePanel(this), "../assets/offroad/icon_software.png"),
+#endif
+#ifdef SUNNYPILOT
     PanelInfo("   " + tr("sunnypilot"), new SunnypilotPanel(this), "../assets/offroad/icon_openpilot.png"),
     PanelInfo("   " + tr("OSM"), new OsmPanel(this), "../assets/offroad/icon_map.png"),
     PanelInfo("   " + tr("Monitoring"), new MonitoringPanel(this), "../assets/offroad/icon_monitoring.png"),
@@ -662,6 +671,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     PanelInfo("   " + tr("Display"), new DisplayPanel(this), "../assets/offroad/icon_display.png"),
     PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../assets/offroad/icon_trips.png"),
     PanelInfo("   " + tr("Vehicle"), new VehiclePanel(this), "../assets/offroad/icon_vehicle.png"),
+#endif
   };
 
   nav_btns = new QButtonGroup(this);

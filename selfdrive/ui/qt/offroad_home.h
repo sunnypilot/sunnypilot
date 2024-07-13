@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QStackedLayout>
+#include <QStackedWidget>
 #include <QTimer>
 #include <QWidget>
 
@@ -17,42 +18,40 @@
 #include "selfdrive/ui/ui.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/sp_priv_offroad_home.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/sp_priv_onroad_home.h"
 #define OnroadWindow OnroadWindowSP
-#define OffroadHome OffroadHomeSP
+#define OffroadHomeImp OffroadHomeSP
 #else
 #include "selfdrive/ui/qt/onroad/onroad_home.h"
-#include "selfdrive/ui/qt/offroad_home.h"
 #endif
 
-class HomeWindow : public QWidget {
+class OffroadHome : public QFrame {
   Q_OBJECT
 
 public:
-  explicit HomeWindow(QWidget* parent = 0);
+  void do_work(QWidget*& home_widget);
+  explicit OffroadHome(QWidget* parent = 0);
 
 signals:
   void openSettings(int index = 0, const QString &param = "");
-  void closeSettings();
-
-public slots:
-  void offroadTransition(bool offroad);
-  void showDriverView(bool show);
-  void showSidebar(bool show);
 
 protected:
-  void mousePressEvent(QMouseEvent* e) override;
-  void mouseDoubleClickEvent(QMouseEvent* e) override;
+  QStackedLayout* center_layout;
+  QWidget* home_widget;
+  QHBoxLayout *home_layout;
+  QStackedWidget *left_widget;
 
-protected:
-  Sidebar *sidebar;
-  OffroadHome* home;
-  OnroadWindow *onroad;
-  BodyWindow *body;
-  DriverViewWindow *driver_view;
-  QStackedLayout *slayout;
+private:
+  void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent *event) override;
+  void refresh();
 
-protected slots:
-  virtual void updateState(const UIState &s);
+  Params params;
+
+  QTimer* timer;
+  ElidedLabel* version;
+  UpdateAlert *update_widget;
+  OffroadAlert* alerts_widget;
+  QPushButton* alert_notif;
+  QPushButton* update_notif;
 };
