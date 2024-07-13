@@ -15,9 +15,9 @@
 #include "common/mat.h"
 #include "common/params.h"
 #include "common/timing.h"
-#include "qt/network/sunnylink/models/role_model.h"
-#include "qt/network/sunnylink/models/sponsor_role_model.h"
-#include "qt/network/sunnylink/models/user_model.h"
+#include "sunnypilot/qt/network/sunnylink/models/role_model.h"
+#include "sunnypilot/qt/network/sunnylink/models/sponsor_role_model.h"
+#include "sunnypilot/qt/network/sunnylink/models/user_model.h"
 #include "system/hardware/hw.h"
 
 const int UI_BORDER_SIZE = 30;
