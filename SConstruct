@@ -19,31 +19,33 @@ AGNOS = TICI
 UBUNTU_FOCAL = int(subprocess.check_output('[ -f /etc/os-release ] && . /etc/os-release && [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "20.04" ] && echo 1 || echo 0', shell=True, encoding='utf-8').rstrip())
 Export('UBUNTU_FOCAL')
 
-gpg_id_path = os.path.join(BASEDIR, "../gpg_id.txt")
+keys_dir = os.path.join(BASEDIR, ".git-crypt/keys/default/0")
 
-# Read the required GPG key ID from gpg_id.txt
+# Collect the required GPG key IDs from the filenames in the keys directory
+required_gpg_key_ids = []
 try:
-  with open(gpg_id_path, 'r') as file:
-    REQUIRED_GPG_KEY_ID = file.read().strip()
-  print(f"Required GPG key ID: {REQUIRED_GPG_KEY_ID}")
-except IOError as e:
-  print(f"Failed to read GPG key ID from {gpg_id_path}. Error: {e}")
-  REQUIRED_GPG_KEY_ID = None
+  for filename in os.listdir(keys_dir):
+    if filename.endswith(".gpg"):
+      required_gpg_key_ids.append(filename.split('.')[0])
+  print(f"Required GPG key IDs: {required_gpg_key_ids}")
+except OSError as e:
+  print(f"Failed to read GPG key IDs from {keys_dir}. Error: {e}")
+  required_gpg_key_ids = []
 
-# Check for the specific GPG key
-if REQUIRED_GPG_KEY_ID:
+# Check for the specific GPG keys in the local keyring
+SUNNYPILOT = False
+for key_id in required_gpg_key_ids:
   try:
-    result = subprocess.check_output(['gpg', '--list-keys', REQUIRED_GPG_KEY_ID], stderr=subprocess.STDOUT)
-    SUNNYPILOT = REQUIRED_GPG_KEY_ID in result.decode()
-    if SUNNYPILOT:
-      print(f"GPG key {REQUIRED_GPG_KEY_ID} is available.")
-    else:
-      print(f"GPG key {REQUIRED_GPG_KEY_ID} is not available.")
+    result = subprocess.check_output(['gpg', '--list-keys', key_id], stderr=subprocess.STDOUT)
+    if key_id in result.decode():
+      SUNNYPILOT = True
+      print(f"GPG key {key_id} is available.")
+      break
   except subprocess.CalledProcessError as e:
-    SUNNYPILOT = False
-    print(f"Failed to list GPG key {REQUIRED_GPG_KEY_ID}. Error:", e.output.decode().strip())
-else:
-  SUNNYPILOT = False
+    print(f"Failed to list GPG key {key_id}. Error:", e.output.decode().strip())
+
+if not SUNNYPILOT:
+  print("None of the required GPG keys are available.")
 print("SUNNYPILOT: ", SUNNYPILOT)
 Export('SUNNYPILOT')
 
