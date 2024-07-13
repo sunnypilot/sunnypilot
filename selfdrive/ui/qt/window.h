@@ -4,7 +4,11 @@
 #include <QWidget>
 
 #include "selfdrive/ui/qt/offroad/onboarding.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings.h"
+#else
 #include "selfdrive/ui/qt/offroad/settings.h"
+#endif
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/sp_priv_home.h"
@@ -26,6 +30,10 @@ private:
 
   QStackedLayout *main_layout;
   HomeWindow *homeWindow;
+#ifdef SUNNYPILOT
+  SettingsWindowSP *settingsWindow;
+#else
   SettingsWindow *settingsWindow;
+#endif
   OnboardingWindow *onboardingWindow;
 };

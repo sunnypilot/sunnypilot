@@ -32,19 +32,11 @@ signals:
   void showDriverView();
   void expandToggleDescription(const QString &param);
 
-private:
+protected:
   QPushButton *sidebar_alert_widget;
   QWidget *sidebar_widget;
   QButtonGroup *nav_btns;
   QStackedWidget *panel_widget;
-
-  struct PanelInfo {
-    QString name;
-    QWidget *widget;
-    QString icon;
-
-    PanelInfo(const QString &name, QWidget *widget, const QString &icon) : name(name), widget(widget), icon(icon) {}
-  };
 };
 
 class DevicePanel : public ListWidget {
