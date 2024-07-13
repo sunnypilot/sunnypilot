@@ -1,18 +1,12 @@
-from enum import IntFlag, IntEnum
+from enum import IntFlag
 import os
 
+from cereal import custom
 from openpilot.common.params import Params
 
 SIMULATION = "SIMULATION" in os.environ
 
-
-class ModelGeneration(IntEnum):
-  DEFAULT = 0
-  ONE = 1
-  TWO = 2
-  THREE = 3
-  FOUR = 4
-  FIVE = 5
+ModelGeneration = custom.ModelGeneration
 
 
 class ModelCapabilities(IntFlag):
@@ -53,19 +47,19 @@ class CustomModelMetadata:
                        self.capabilities != ModelCapabilities.Default
 
   def read_model_generation_param(self) -> ModelGeneration:
-    return int(self.params.get('DrivingModelGeneration') or ModelGeneration.DEFAULT)
+    return int(self.params.get('DrivingModelGeneration') or ModelGeneration.default)
 
   def get_model_capabilities(self) -> int:
     """Returns the model capabilities for a given generation."""
-    if self.generation == ModelGeneration.FIVE:
+    if self.generation == ModelGeneration.five:
       return ModelCapabilities.DesiredCurvatureV2
-    elif self.generation == ModelGeneration.FOUR:
+    elif self.generation == ModelGeneration.four:
       return ModelCapabilities.DesiredCurvatureV2
-    elif self.generation == ModelGeneration.THREE:
+    elif self.generation == ModelGeneration.three:
       return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NoO
-    elif self.generation == ModelGeneration.TWO:
+    elif self.generation == ModelGeneration.two:
       return ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NoO
-    elif self.generation == ModelGeneration.ONE:
+    elif self.generation == ModelGeneration.one:
       return ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO
     else:
       # Default model is meant to represent the capabilities of the prebuilt model
