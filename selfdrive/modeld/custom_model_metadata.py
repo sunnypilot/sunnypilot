@@ -48,14 +48,14 @@ class CustomModelMetadata:
 
     self.params: Params = params
     self.generation: ModelGeneration = self.read_model_generation_param()
-    self.capabilities: int = self.get_model_capabilities()
+    self.capabilities: ModelCapabilities = self.get_model_capabilities()
     self.valid: bool = self.params.get_bool("CustomDrivingModel") and not SIMULATION and \
                        self.capabilities != ModelCapabilities.Default
 
   def read_model_generation_param(self) -> ModelGeneration:
-    return int(self.params.get('DrivingModelGeneration') or ModelGeneration.DEFAULT)
+    return ModelGeneration(int(self.params.get("DrivingModelGeneration", encoding='utf8')) or ModelGeneration.DEFAULT)
 
-  def get_model_capabilities(self) -> int:
+  def get_model_capabilities(self) -> ModelCapabilities:
     """Returns the model capabilities for a given generation."""
     if self.generation == ModelGeneration.FIVE:
       return ModelCapabilities.DesiredCurvatureV2
