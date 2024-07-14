@@ -12,13 +12,7 @@
 
 #include "common/params.h"
 #include "selfdrive/ui/qt/widgets/input.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_toggle.h"
-#define Toggle ToggleSP
-#else
 #include "selfdrive/ui/qt/widgets/toggle.h"
-#endif
 
 class ElidedLabel : public QLabel {
   Q_OBJECT
@@ -26,10 +20,6 @@ class ElidedLabel : public QLabel {
 public:
   explicit ElidedLabel(QWidget *parent = 0);
   explicit ElidedLabel(const QString &text, QWidget *parent = 0);
-
-#ifdef SUNNYPILOT
-  ELIDED_LABEL_SET_STUFF
-#endif
 
 signals:
   void clicked();
@@ -58,13 +48,9 @@ public:
     title_label->setText(title);
   }
 
-#ifdef SUNNYPILOT
-  ABSTRACT_CONTROL_FUNCTION_1
-#else
   void setValue(const QString &val) {
     value->setText(val);
   }
-#endif
 
   const QString getDescription() {
     return description->text();
@@ -77,10 +63,6 @@ public slots:
   void showDescription() {
     description->setVisible(true);
   }
-
-#ifdef SUNNYPILOT
-  ABSTRACT_CONTROL_FUNCTION_2
-#endif
 
 signals:
   void showDescriptionEvent();
@@ -121,9 +103,6 @@ public:
   ButtonControl(const QString &title, const QString &text, const QString &desc = "", QWidget *parent = nullptr);
   inline void setText(const QString &text) { btn.setText(text); }
   inline QString text() const { return btn.text(); }
-#ifdef SUNNYPILOT
-  BUTTON_CONTROL_FUNCTION_1
-#endif
 
 signals:
   void clicked();
@@ -197,14 +176,8 @@ private:
     }
   }
 
-#ifdef SUNNYPILOT
-protected:
-#endif
   std::string key;
   Params params;
-#ifdef SUNNYPILOT
-private:
-#endif
   QPixmap active_icon_pixmap;
   bool confirm = false;
   bool store_confirm = false;
@@ -291,11 +264,9 @@ class ListWidget : public QWidget {
     inner_layout.setSpacing(25); // default spacing is 25
     outer_layout.addStretch();
   }
-  
-
-  void addItem(QWidget *w) { inner_layout.addWidget(w); }
-  void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
-  void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
+  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
+  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
+  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
 
 private:
   void paintEvent(QPaintEvent *) override {
@@ -311,8 +282,6 @@ private:
     }
   }
   QVBoxLayout outer_layout;
-
-protected:
   QVBoxLayout inner_layout;
 };
 

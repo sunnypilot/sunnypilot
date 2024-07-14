@@ -3,7 +3,11 @@
 #include <QPushButton>
 
 #include "system/hardware/hw.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#else
 #include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 
 // SSH enable toggle
 class SshToggle : public ToggleControl {

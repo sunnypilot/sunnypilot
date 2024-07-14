@@ -6,6 +6,12 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#define ListWidget ListWidgetSP
+#else
+#include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 
 class WifiItem : public QWidget {
   Q_OBJECT

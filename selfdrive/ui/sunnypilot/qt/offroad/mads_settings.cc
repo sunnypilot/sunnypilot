@@ -50,7 +50,7 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
     toggles[param.toStdString()] = toggle;
 
     // trigger offroadTransition when going onroad/offroad
-    connect(uiState(), &UIState::offroadTransition, toggle, &ParamControl::setEnabled);
+    connect(uiState(), &UIState::offroadTransition, toggle, &ParamControlSP::setEnabled);
   }
 
   // trigger offroadTransition when going onroad/offroad

@@ -6,7 +6,11 @@
 #include <QTextEdit>
 #include <set>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#else
 #include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 #include "tools/cabana/binaryview.h"
 #include "tools/cabana/chart/chartswidget.h"
 #include "tools/cabana/historylog.h"

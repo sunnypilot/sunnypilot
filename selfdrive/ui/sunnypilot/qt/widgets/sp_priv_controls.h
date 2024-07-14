@@ -1,17 +1,107 @@
 #pragma once
 
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include <optional>
+#include <string>
+#include <vector>
+
+#include <QButtonGroup>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPainter>
+#include <QPushButton>
+
+#include "common/params.h"
+#include "selfdrive/ui/qt/widgets/input.h"
+//#include "selfdrive/ui/qt/widgets/toggle.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_toggle.h"
+
+// This is for compatibility purposes, until we properly do inheritance splitting
+// This is because some controls were needing LabelControlSP, but the original code was using LabelControl
+// which was modified in-place in the past but since we now have a new file, we will be moving it to LabelControlSP
+#define LabelControl LabelControlSP
+#define ElidedLabel ElidedLabelSP
+#define ButtonControl ButtonControlSP
+#define Toggle ToggleSP
+#define ToggleControl ToggleControlSP
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
-class ParamControlSP : public ParamControl {
+class ElidedLabelSP : public QLabel {
   Q_OBJECT
 
 public:
-  ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+  explicit ElidedLabelSP(QWidget *parent = 0);
+  explicit ElidedLabelSP(const QString &text, QWidget *parent = 0);
 
-  bool isToggled() { return params.getBool(key); }
+  void setColor(const QString &color) {
+    setStyleSheet("QLabel { color : " + color + "; }");
+  }
+
+signals:
+  void clicked();
+
+protected:
+  void paintEvent(QPaintEvent *event) override;
+  void resizeEvent(QResizeEvent* event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override {
+    if (rect().contains(event->pos())) {
+      emit clicked();
+    }
+  }
+  QString lastText_, elidedText_;
 };
+
+class AbstractControl : public QFrame {
+  Q_OBJECT
+
+public:
+  void setDescription(const QString &desc) {
+    if (description) description->setText(desc);
+  }
+
+  void setTitle(const QString &title) {
+    title_label->setText(title);
+  }
+
+  void setValue(const QString &val, std::optional<QString> color = std::nullopt) {
+    value->setText(val);
+    if (color.has_value()) {
+      value->setColor(color.value());
+    }
+  }
+
+  const QString getDescription() {
+    return description->text();
+  }
+
+  QLabel *icon_label;
+  QPixmap icon_pixmap;
+
+  public slots:
+    void showDescription() {
+    description->setVisible(true);
+  }
+
+  void hideDescription() {
+    description->setVisible(false);
+  }
+
+  signals:
+    void showDescriptionEvent();
+
+protected:
+  AbstractControl(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  void hideEvent(QHideEvent *e) override;
+
+  QHBoxLayout *hlayout;
+  QPushButton *title_label;
+
+private:
+  ElidedLabel *value;
+  QLabel *description = nullptr;
+};
+
 
 class AbstractControlSP : public QFrame {
   Q_OBJECT
@@ -50,6 +140,114 @@ protected:
 
 private:
   QLabel *description = nullptr;
+};
+
+
+// widget to display a value
+class LabelControlSP : public AbstractControl {
+  Q_OBJECT
+
+public:
+  LabelControlSP(const QString &title, const QString &text = "", const QString &desc = "", QWidget *parent = nullptr) : AbstractControl(title, desc, "", parent) {
+    label.setText(text);
+    label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    hlayout->addWidget(&label);
+  }
+  void setText(const QString &text) { label.setText(text); }
+
+private:
+  ElidedLabelSP label;
+};
+
+// widget for a button with a label
+class ButtonControlSP : public AbstractControl {
+  Q_OBJECT
+
+public:
+  ButtonControlSP(const QString &title, const QString &text, const QString &desc = "", QWidget *parent = nullptr);
+  inline void setText(const QString &text) { btn.setText(text); }
+  inline QString text() const { return btn.text(); }
+  inline void click() { btn.click(); }
+
+signals:
+  void clicked();
+
+public slots:
+  void setEnabled(bool enabled) { btn.setEnabled(enabled); }
+
+private:
+  QPushButton btn;
+};
+
+class ToggleControlSP : public AbstractControl {
+  Q_OBJECT
+
+public:
+  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControl(title, desc, icon, parent) {
+    toggle.setFixedSize(150, 100);
+    if (state) {
+      toggle.togglePosition();
+    }
+    hlayout->addWidget(&toggle);
+    QObject::connect(&toggle, &Toggle::stateChanged, this, &ToggleControlSP::toggleFlipped);
+  }
+
+  void setEnabled(bool enabled) {
+    toggle.setEnabled(enabled);
+    toggle.update();
+  }
+
+signals:
+  void toggleFlipped(bool state);
+
+protected:
+  Toggle toggle;
+};
+
+// widget to toggle params
+class ParamControlSP : public ToggleControlSP {
+  Q_OBJECT
+
+public:
+  ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+  void setConfirmation(bool _confirm, bool _store_confirm) {
+    confirm = _confirm;
+    store_confirm = _store_confirm;
+  }
+
+  void setActiveIcon(const QString &icon) {
+    active_icon_pixmap = QPixmap(icon).scaledToWidth(80, Qt::SmoothTransformation);
+  }
+
+  void refresh() {
+    bool state = params.getBool(key);
+    if (state != toggle.on) {
+      toggle.togglePosition();
+      setIcon(state);
+    }
+  }
+
+  void showEvent(QShowEvent *event) override {
+    refresh();
+  }
+
+  bool isToggled() { return params.getBool(key); }
+
+private:
+  void toggleClicked(bool state);
+  void setIcon(bool state) {
+    if (state && !active_icon_pixmap.isNull()) {
+      icon_label->setPixmap(active_icon_pixmap);
+    } else if (!icon_pixmap.isNull()) {
+      icon_label->setPixmap(icon_pixmap);
+    }
+  }
+
+  std::string key;
+  Params params;
+  QPixmap active_icon_pixmap;
+  bool confirm = false;
+  bool store_confirm = false;
 };
 
 class ButtonParamControlSP : public AbstractControlSP {
@@ -183,30 +381,38 @@ private:
   bool button_group_enabled = true;
 };
 
-class ListWidgetSP : public ListWidget {
+class ListWidgetSP : public QWidget {
   Q_OBJECT
+ public:
+  explicit ListWidgetSP(QWidget *parent = 0, const bool split_line = true) : QWidget(parent), _split_line(split_line), outer_layout(this) {
+    outer_layout.setMargin(0);
+    outer_layout.setSpacing(0);
+    outer_layout.addLayout(&inner_layout);
+    inner_layout.setMargin(0);
+    inner_layout.setSpacing(25); // default spacing is 25
+    outer_layout.addStretch();
+  }
+  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
+  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
+  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
 
-public:
-  explicit ListWidgetSP(QWidget *parent = 0, const bool split_line = true) : ListWidget(parent), _split_line(split_line) {
+  inline void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
+  inline void RemoveWidgetAt(const int index) {
+    if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) {
+      if(item->widget()) delete item->widget();
+      delete item;
+    }
   }
 
-  void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
-  void RemoveWidgetAt(const int index) {                              
-    if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) { 
-      if(item->widget()) delete item->widget();                              
-      delete item;                                                           
-    }                                                                        
-  }
-  using ListWidget::addItem;
-  void ReplaceOrAddWidget(QWidget *old_widget, QWidget *new_widget) {
+  inline void ReplaceOrAddWidget(QWidget *old_widget, QWidget *new_widget) {
     if (const int index = inner_layout.indexOf(old_widget); index != -1) {
       RemoveWidgetAt(index);
       AddWidgetAt(index, new_widget);
     } else {
-      AddWidgetAt(0, new_widget);
+      addItem(new_widget);
     }
   }
-  
+
 private:
   void paintEvent(QPaintEvent *) override {
     QPainter p(this);
@@ -220,8 +426,20 @@ private:
       }
     }
   }
+  QVBoxLayout outer_layout;
+  QVBoxLayout inner_layout;
 
-  bool _split_line = false;
+  bool _split_line;
+};
+
+// convenience class for wrapping layouts
+class LayoutWidget : public QWidget {
+  Q_OBJECT
+
+public:
+  LayoutWidget(QLayout *l, QWidget *parent = nullptr) : QWidget(parent) {
+    setLayout(l);
+  }
 };
 
 class OptionControlSP : public AbstractControlSP {
@@ -362,7 +580,7 @@ class SubPanelButton : public QPushButton {
   Q_OBJECT
 
 public:
-  explicit SubPanelButton(const QString &text, const int minimum_button_width = 800, QWidget *parent = nullptr) : QPushButton(text, parent) {
+  SubPanelButton(const QString &text, const int minimum_button_width = 800, QWidget *parent = nullptr) : QPushButton(text, parent) {
     const QString buttonStyle = R"(
       QPushButton {
         border-radius: 20px;
@@ -393,7 +611,7 @@ class PanelBackButton : public QPushButton {
   Q_OBJECT
 
 public:
-  explicit PanelBackButton(const QString &label = "Back", QWidget *parent = nullptr) : QPushButton(label, parent) {
+  PanelBackButton(const QString &label = "Back", QWidget *parent = nullptr) : QPushButton(label, parent) {
     setObjectName("back_btn");
     setFixedSize(400, 100);
   }

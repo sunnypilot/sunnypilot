@@ -13,14 +13,14 @@
 
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
-#else
-#include "selfdrive/ui/qt/widgets/controls.h"
-#endif
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#define ListWidget ListWidgetSP
+#define ParamControl ParamControlSP
+#define ButtonParamControl ButtonParamControlSP
+#else
+#include "selfdrive/ui/qt/widgets/controls.h"
 #endif
 
 // ********** settings window + top-level panels **********
@@ -99,10 +99,6 @@ protected:
   virtual void updateToggles();
 };
 
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
-#define ListWidget ListWidgetSP
-#endif
 
 class SoftwarePanel : public ListWidget {
   Q_OBJECT
@@ -125,4 +121,3 @@ protected:
   Params params;
   ParamWatcher *fs_watch;
 };
-#undef ListWidget //To prevent this from unintentionally extending to other headers that included this one 
