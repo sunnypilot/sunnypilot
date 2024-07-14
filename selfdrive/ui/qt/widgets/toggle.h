@@ -29,10 +29,7 @@ protected:
   void paintEvent(QPaintEvent*) override;
   void mouseReleaseEvent(QMouseEvent*) override;
   void enterEvent(QEvent*) override;
-
-#ifndef SUNNYPILOT
-private:
-#endif
+  
   QColor circleColor;
   QColor green;
   bool enabled = true;
