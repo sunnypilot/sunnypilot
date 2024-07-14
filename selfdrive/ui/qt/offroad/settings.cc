@@ -199,45 +199,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setSpacing(50);
   addItem(new LabelControl(tr("Dongle ID"), getDongleId().value_or(tr("N/A"))));
   addItem(new LabelControl(tr("Serial"), params.get("HardwareSerial").c_str()));
-
-  fleetManagerPin = new ButtonControl(
-    pin_title + pin, tr("TOGGLE"),
-    tr("Enable or disable PIN requirement for Fleet Manager access."));
-  connect(fleetManagerPin, &ButtonControl::clicked, [=]() {
-    if (params.getBool("FleetManagerPin")) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to turn off PIN requirement?"), tr("Turn Off"), this)) {
-        params.remove("FleetManagerPin");
-        refreshPin();
-      }
-    } else {
-      params.putBool("FleetManagerPin", true);
-      refreshPin();
-    }
-  });
-  addItem(fleetManagerPin);
-
-  fs_watch = new QFileSystemWatcher(this);
-  connect(fs_watch, &QFileSystemWatcher::fileChanged, this, &DevicePanel::onPinFileChanged);
-
-  QString pin_path = "/data/otp/otp.conf";
-  QString pin_require = "/data/params/d/FleetManagerPin";
-  fs_watch->addPath(pin_path);
-  fs_watch->addPath(pin_require);
-  refreshPin();
-
-  // Error Troubleshoot
-  auto errorBtn = new ButtonControl(
-    tr("Error Troubleshoot"), tr("VIEW"),
-    tr("Display error from the tmux session when an error has occurred from a system process."));
-  QFileInfo file("/data/community/crashes/error.txt");
-  QDateTime modifiedTime = file.lastModified();
-  QString modified_time = modifiedTime.toString("yyyy-MM-dd hh:mm:ss ");
-  connect(errorBtn, &ButtonControl::clicked, [=]() {
-    const std::string txt = util::read_file("/data/community/crashes/error.txt");
-    ConfirmationDialog::rich(modified_time + QString::fromStdString(txt), this);
-  });
-  addItem(errorBtn);
-
   pair_device = new ButtonControl(tr("Pair Device"), tr("PAIR"),
                                   tr("Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."));
   connect(pair_device, &ButtonControl::clicked, [=]() {
@@ -263,33 +224,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(resetCalibBtn);
 
-  auto resetMapboxTokenBtn = new ButtonControl(tr("Reset Access Tokens for Map Services"), tr("RESET"), tr("Reset self-service access tokens for Mapbox, Amap, and Google Maps."));
-  connect(resetMapboxTokenBtn, &ButtonControl::clicked, [=]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset access tokens for all map services?"), tr("Reset"), this)) {
-      std::vector<std::string> tokens = {
-        "CustomMapboxTokenPk",
-        "CustomMapboxTokenSk",
-        "AmapKey1",
-        "AmapKey2",
-        "GmapKey"
-      };
-      for (const auto& token : tokens) {
-        params.remove(token);
-      }
-    }
-  });
-  addItem(resetMapboxTokenBtn);
-
-  auto resetParamsBtn = new ButtonControl(tr("Reset sunnypilot Settings"), tr("RESET"), "");
-  connect(resetParamsBtn, &ButtonControl::clicked, [=]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings?"), tr("Reset"), this)) {
-      std::system("sudo rm -rf /data/params/d/*");
-      Hardware::reboot();
-    }
-  });
-  addItem(resetParamsBtn);
-
-  auto retrainingBtn = new ButtonControl(tr("Review Training Guide"), tr("REVIEW"), tr("Review the rules, features, and limitations of sunnypilot"));
+  auto retrainingBtn = new ButtonControl(tr("Review Training Guide"), tr("REVIEW"), tr("Review the rules, features, and limitations of openpilot"));
   connect(retrainingBtn, &ButtonControl::clicked, [=]() {
     if (ConfirmationDialog::confirm(tr("Are you sure you want to review the training guide?"), tr("Review"), this)) {
       emit reviewTrainingGuide();
@@ -322,16 +257,19 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   QObject::connect(uiState(), &UIState::primeTypeChanged, [this] (PrimeType type) {
     pair_device->setVisible(type == PrimeType::UNPAIRED);
   });
+
+#ifndef SUNNYPILOT
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
-      if ((btn != pair_device) && (btn != errorBtn)) {
+      if (btn != pair_device) {
         btn->setEnabled(offroad);
       }
     }
   });
+#endif
 
   // power buttons
-  QHBoxLayout *power_layout = new QHBoxLayout();
+  power_layout = new QHBoxLayout();
   power_layout->setSpacing(30);
 
   QPushButton *reboot_btn = new QPushButton(tr("Reboot"));
@@ -348,52 +286,20 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     connect(uiState(), &UIState::offroadTransition, poweroff_btn, &QPushButton::setVisible);
   }
 
-  offroad_btn = new QPushButton(tr("Toggle Onroad/Offroad"));
-  offroad_btn->setObjectName("offroad_btn");
-  QObject::connect(offroad_btn, &QPushButton::clicked, this, &DevicePanel::forceoffroad);
-
-  QVBoxLayout *buttons_layout = new QVBoxLayout();
-  buttons_layout->setSpacing(24);
-  buttons_layout->addLayout(power_layout);
-  buttons_layout->addWidget(offroad_btn);
-
   setStyleSheet(R"(
     #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #reboot_btn:pressed { background-color: #4a4a4a; }
     #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
-  addItem(buttons_layout);
-
-  updateLabels();
-}
-
-void DevicePanel::onPinFileChanged(const QString &file_path) {
-  if (file_path == "/data/params/d/FleetManagerPin") {
-    refreshPin();
-  } else if (file_path == "/data/otp/otp.conf") {
-    refreshPin();
-  }
-}
-
-void DevicePanel::refreshPin() {
-  QFile f("/data/otp/otp.conf");
-  QFile require("/data/params/d/FleetManagerPin");
-  if (!require.exists()) {
-    setSpacing(50);
-    fleetManagerPin->setTitle(pin_title + tr("OFF"));
-  } else if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-    pin = f.readAll();
-    f.close();
-    setSpacing(50);
-    fleetManagerPin->setTitle(pin_title + pin);
-  }
+  RETURN_IF_SUNNYPILOT
+  addItem(power_layout);
 }
 
 void DevicePanel::updateCalibDescription() {
   QString desc =
       tr("sunnypilot requires the device to be mounted within 4° left or right and "
-         "within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.");
+         "within 5° up or 9° down. openpilot is continuously calibrating, resetting is rarely required.");
   std::string calib_bytes = params.get("CalibrationParams");
   if (!calib_bytes.empty()) {
     try {
@@ -440,51 +346,9 @@ void DevicePanel::poweroff() {
   }
 }
 
-void DevicePanel::forceoffroad() {
-  if (!uiState()->engaged()) {
-    if (params.getBool("ForceOffroad")) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to unforce offroad?"), tr("Unforce"), this)) {
-        // Check engaged again in case it changed while the dialog was open
-        if (!uiState()->engaged()) {
-          params.remove("ForceOffroad");
-        }
-      }
-    } else {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to force offroad?"), tr("Force"), this)) {
-        // Check engaged again in case it changed while the dialog was open
-        if (!uiState()->engaged()) {
-          params.putBool("ForceOffroad", true);
-        }
-      }
-    }
-  } else {
-    ConfirmationDialog::alert(tr("Disengage to Force Offroad"), this);
-  }
-
-  updateLabels();
-}
-
 void DevicePanel::showEvent(QShowEvent *event) {
   pair_device->setVisible(uiState()->primeType() == PrimeType::UNPAIRED);
   ListWidget::showEvent(event);
-  updateLabels();
-}
-
-void DevicePanel::updateLabels() {
-  if (!isVisible()) {
-    return;
-  }
-
-  bool force_offroad_param = params.getBool("ForceOffroad");
-  QString offroad_btn_style = force_offroad_param ? "#393939" : "#E22C2C";
-  QString offroad_btn_pressed_style = force_offroad_param ? "#4a4a4a" : "#FF2424";
-  QString btn_common_style = QString("QPushButton { height: 120px; border-radius: 15px; background-color: %1; }"
-                                     "QPushButton:pressed { background-color: %2; }")
-                             .arg(offroad_btn_style,
-                                  offroad_btn_pressed_style);
-
-  offroad_btn->setText(force_offroad_param ? tr("Unforce Offroad") : tr("Force Offroad"));
-  offroad_btn->setStyleSheet(btn_common_style + offroad_btn_style + offroad_btn_pressed_style);
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {

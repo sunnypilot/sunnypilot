@@ -57,26 +57,15 @@ signals:
   void reviewTrainingGuide();
   void showDriverView();
 
-private slots:
+protected slots:
   void poweroff();
   void reboot();
   void updateCalibDescription();
-  void onPinFileChanged(const QString &file_path);
-  void refreshPin();
-  void forceoffroad();
 
-  void updateLabels();
-
-private:
+protected:
   Params params;
   ButtonControl *pair_device;
-
-  ButtonControl *fleetManagerPin;
-  QString pin_title = tr("Fleet Manager PIN:") + " ";
-  QString pin = "OFF";
-  QFileSystemWatcher *fs_watch;
-
-  QPushButton *offroad_btn;
+  QHBoxLayout *power_layout;
 };
 
 class TogglesPanel : public ListWidget {

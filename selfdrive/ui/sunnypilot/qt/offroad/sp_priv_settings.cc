@@ -1,5 +1,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings.h"
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings_device_panel.h"
 #include "selfdrive/ui/qt/network/networking.h"
 #include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
 
@@ -318,9 +319,9 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
   buttons_layout->addSpacing(10);
 
   // setup panels
-  DevicePanel *device = new DevicePanel(this);
-  QObject::connect(device, &DevicePanel::reviewTrainingGuide, this, &SettingsWindow::reviewTrainingGuide);
-  QObject::connect(device, &DevicePanel::showDriverView, this, &SettingsWindow::showDriverView);
+  DevicePanelSP *device = new DevicePanelSP(this);
+  QObject::connect(device, &DevicePanelSP::reviewTrainingGuide, this, &SettingsWindow::reviewTrainingGuide);
+  QObject::connect(device, &DevicePanelSP::showDriverView, this, &SettingsWindow::showDriverView);
 
   TogglesPanelSP *toggles = new TogglesPanelSP(this);
   QObject::connect(this, &SettingsWindow::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
