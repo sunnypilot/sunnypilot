@@ -12,10 +12,13 @@
 
 #include "common/params.h"
 #include "selfdrive/ui/qt/widgets/input.h"
-#include "selfdrive/ui/qt/widgets/toggle.h"
-
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_toggle.h"
+#define TOGGLE ToggleSP
+#else
+#include "selfdrive/ui/qt/widgets/toggle.h"
+#define TOGGLE Toggle
 #endif
 
 class ElidedLabel : public QLabel {
@@ -143,7 +146,7 @@ public:
       toggle.togglePosition();
     }
     hlayout->addWidget(&toggle);
-    QObject::connect(&toggle, &Toggle::stateChanged, this, &ToggleControl::toggleFlipped);
+    QObject::connect(&toggle, &TOGGLE::stateChanged, this, &ToggleControl::toggleFlipped);
   }
 
   void setEnabled(bool enabled) {
@@ -155,7 +158,7 @@ signals:
   void toggleFlipped(bool state);
 
 protected:
-  Toggle toggle;
+  TOGGLE toggle;
 };
 
 // widget to toggle params
