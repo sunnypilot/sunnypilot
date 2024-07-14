@@ -2,6 +2,8 @@
 
 #include "selfdrive/ui/qt/widgets/controls.h"
 
+QFrame *horizontal_line(QWidget *parent = nullptr);
+
 class ParamControlSP : public ParamControl {
   Q_OBJECT
 

@@ -1,5 +1,17 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 
+QFrame *horizontal_line(QWidget *parent) {
+  QFrame *line = new QFrame(parent);
+  line->setFrameShape(QFrame::StyledPanel);
+  line->setStyleSheet(R"(
+    border-width: 2px;
+    border-bottom-style: solid;
+    border-color: gray;
+  )");
+  line->setFixedHeight(10);
+  return line;
+}
+
 ParamControlSP::ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ParamControl(param, title, desc, icon, parent) {
 
