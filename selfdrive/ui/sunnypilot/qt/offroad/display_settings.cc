@@ -1,6 +1,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/display_settings.h"
 
-DisplayPanel::DisplayPanel(QWidget *parent) : ListWidget(parent, false) {
+DisplayPanel::DisplayPanel(QWidget *parent) : ListWidgetSP(parent, false) {
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {

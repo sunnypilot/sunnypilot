@@ -183,6 +183,30 @@ private:
   bool button_group_enabled = true;
 };
 
+class ListWidgetSP : public ListWidget {
+  Q_OBJECT
+
+public:
+  explicit ListWidgetSP(QWidget *parent = 0, const bool split_line = true) : ListWidget(parent), _split_line(split_line) {
+  }
+
+private:
+  void paintEvent(QPaintEvent *) override {
+    QPainter p(this);
+    p.setPen(Qt::gray);
+    for (int i = 0; i < inner_layout.count() - 1; ++i) {
+      QWidget *widget = inner_layout.itemAt(i)->widget();
+      if ((widget == nullptr || widget->isVisible()) && _split_line) {
+        QRect r = inner_layout.itemAt(i)->geometry();
+        int bottom = r.bottom() + inner_layout.spacing() / 2;
+        p.drawLine(r.left() + 40, bottom, r.right() - 40, bottom);
+      }
+    }
+  }
+
+  bool _split_line = false;
+};
+
 class OptionControlSP : public AbstractControlSP {
   Q_OBJECT
 

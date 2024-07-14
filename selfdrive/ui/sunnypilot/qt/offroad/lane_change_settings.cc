@@ -10,7 +10,7 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
-  ListWidget *list = new ListWidget(this, false);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {

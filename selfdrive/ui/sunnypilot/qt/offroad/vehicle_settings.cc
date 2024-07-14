@@ -67,7 +67,7 @@ void VehiclePanel::updateToggles() {
   setCarBtn->setText(((set == "=== Not Selected ===") || (set.length() == 0)) ? prompt_select : set);
 }
 
-SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidget(parent, false) {
+SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidgetSP(parent, false) {
   setSpacing(50);
 
   // Hyundai/Kia/Genesis

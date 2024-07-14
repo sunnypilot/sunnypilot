@@ -31,7 +31,7 @@ private:
   QString prompt_select = tr("Select your car");
 };
 
-class SPVehiclesTogglesPanel : public ListWidget {
+class SPVehiclesTogglesPanel : public ListWidgetSP {
   Q_OBJECT
 public:
   explicit SPVehiclesTogglesPanel(VehiclePanel *parent);

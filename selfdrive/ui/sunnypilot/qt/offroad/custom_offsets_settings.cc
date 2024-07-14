@@ -10,7 +10,7 @@ CustomOffsetsSettings::CustomOffsetsSettings(QWidget* parent) : QWidget(parent) 
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
-  ListWidget *list = new ListWidget(this, false);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
 
   // Controls: Camera Offset (cm)
   camera_offset = new CameraOffset();

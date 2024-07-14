@@ -281,7 +281,7 @@ private:
 class ListWidget : public QWidget {
   Q_OBJECT
  public:
-  explicit ListWidget(QWidget *parent = 0, const bool split_line = true) : QWidget(parent), _split_line(split_line), outer_layout(this) {
+  explicit ListWidget(QWidget *parent = 0) : QWidget(parent), outer_layout(this) {
     outer_layout.setMargin(0);
     outer_layout.setSpacing(0);
     outer_layout.addLayout(&inner_layout);
@@ -293,22 +293,11 @@ class ListWidget : public QWidget {
   inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
   inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
 
-  inline void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
-  inline void RemoveWidgetAt(const int index) {
-    if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) {
-      if(item->widget()) delete item->widget();
-      delete item;
-    }
-  }
-
-  inline void ReplaceOrAddWidget(QWidget *old_widget, QWidget *new_widget) {
-    if (const int index = inner_layout.indexOf(old_widget); index != -1) {
-      RemoveWidgetAt(index);
-      AddWidgetAt(index, new_widget);
-    } else {
-      addItem(new_widget);
-    }
-  }
+#ifdef SUNNYPILOT
+  LIST_WIDGET_FUNCTION_1
+  LIST_WIDGET_FUNCTION_2
+  LIST_WIDGET_FUCNTION_3
+#endif
 
 private:
   void paintEvent(QPaintEvent *) override {
@@ -316,7 +305,7 @@ private:
     p.setPen(Qt::gray);
     for (int i = 0; i < inner_layout.count() - 1; ++i) {
       QWidget *widget = inner_layout.itemAt(i)->widget();
-      if ((widget == nullptr || widget->isVisible()) && _split_line) {
+      if (widget == nullptr || widget->isVisible()) {
         QRect r = inner_layout.itemAt(i)->geometry();
         int bottom = r.bottom() + inner_layout.spacing() / 2;
         p.drawLine(r.left() + 40, bottom, r.right() - 40, bottom);
@@ -324,9 +313,11 @@ private:
     }
   }
   QVBoxLayout outer_layout;
-  QVBoxLayout inner_layout;
 
-  bool _split_line;
+#ifdef SUNNYPILOT
+protected:
+#endif
+  QVBoxLayout inner_layout;
 };
 
 // convenience class for wrapping layouts

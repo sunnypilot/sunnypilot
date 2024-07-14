@@ -10,7 +10,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
-  ListWidget *list = new ListWidget(this, false);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
 
   std::vector<QString> speed_limit_engage_texts{tr("Auto"), tr("User Confirm")};
   speed_limit_engage_settings = new ButtonParamControlSP(

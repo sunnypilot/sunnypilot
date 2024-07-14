@@ -16,7 +16,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   connect(uiState(), &UIState::sunnylinkRolesChanged, this, &SunnylinkPanel::updateLabels);
   connect(uiState(), &UIState::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updateLabels);
 
-  auto list = new ListWidget(this, false);
+  auto list = new ListWidgetSP(this, false);
   sunnylinkEnabledBtn = new ParamControlSP(
     "SunnylinkEnabled",
     tr("Enable sunnylink"),

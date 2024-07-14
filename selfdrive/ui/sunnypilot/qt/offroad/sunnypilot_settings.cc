@@ -3,7 +3,7 @@
 SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
 
-  ListWidget *list = new ListWidget(this, false);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {

@@ -10,7 +10,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
-  ListWidget *list = new ListWidget(this, false);
+  ListWidgetSP *list = new ListWidgetSP(this, false);
 
   std::vector<QString> speed_limit_warning_texts{tr("Off"), tr("Display"), tr("Chime")};
   speed_limit_warning_settings = new ButtonParamControlSP(

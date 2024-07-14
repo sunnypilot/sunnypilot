@@ -50,7 +50,7 @@ private:
   Params params;
 };
 
-class DisplayPanel : public ListWidget {
+class DisplayPanel : public ListWidgetSP {
   Q_OBJECT
 
 public:

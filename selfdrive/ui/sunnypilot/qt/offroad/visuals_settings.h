@@ -3,7 +3,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 
-class VisualsPanel : public ListWidget {
+class VisualsPanel : public ListWidgetSP {
   Q_OBJECT
 
 public:
