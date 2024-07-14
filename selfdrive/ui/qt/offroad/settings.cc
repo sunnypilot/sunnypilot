@@ -22,7 +22,8 @@
 #endif 
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
-#ifndef SUNNYPILOT
+  RETURN_IF_SUNNYPILOT
+
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
     {
@@ -113,7 +114,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
   });
-#endif
 }
 
 void TogglesPanel::updateState(const UIState &s) {
@@ -500,7 +500,7 @@ void SettingsWindow::setCurrentPanel(int index, const QString &param) {
 }
 
 SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
-#ifndef SUNNYPILOT
+  RETURN_IF_SUNNYPILOT
 
   // setup two main layouts
   sidebar_widget = new QWidget;
@@ -598,5 +598,4 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
       border-radius: 30px;
     }
   )");
-#endif
 }
