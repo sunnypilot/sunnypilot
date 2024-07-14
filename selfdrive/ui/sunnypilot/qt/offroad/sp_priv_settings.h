@@ -13,6 +13,7 @@ private slots:
   void updateState(const UIState &s) override;
 
 private:
+  std::map<std::string, ParamControlSP*> toggles;
   ButtonParamControl *accel_personality_setting;
 
   ParamWatcher *param_watcher;

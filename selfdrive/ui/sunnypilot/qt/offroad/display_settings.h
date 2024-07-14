@@ -1,6 +1,6 @@
 #pragma once
 
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 
 class OnroadScreenOff : public SPOptionControl {
   Q_OBJECT
@@ -62,7 +62,7 @@ public slots:
 
 private:
   Params params;
-  std::map<std::string, ParamControl*> toggles;
+  std::map<std::string, ParamControlSP*> toggles;
 
   OnroadScreenOff *onroad_screen_off;
   OnroadScreenOffBrightness *onroad_screen_off_brightness;

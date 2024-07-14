@@ -72,7 +72,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // Hyundai/Kia/Genesis
   addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
-  auto hkgSmoothStop = new ParamControl(
+  auto hkgSmoothStop = new ParamControlSP(
     "HkgSmoothStop",
     tr("HKG CAN: Smoother Stopping Performance (Beta)"),
     tr("Smoother stopping behind a stopped car or desired stopping event. This is only applicable to HKG CAN platforms using openpilot longitudinal control."),
@@ -83,7 +83,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // Subaru
   addItem(new LabelControl(tr("Subaru")));
-  auto subaruManualParkingBrakeSng = new ParamControl(
+  auto subaruManualParkingBrakeSng = new ParamControlSP(
     "SubaruManualParkingBrakeSng",
     tr("Manual Parking Brake: Stop and Go (Beta)"),
     tr("Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!"),
@@ -94,7 +94,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // Toyota/Lexus
   addItem(new LabelControl(tr("Toyota/Lexus")));
-  stockLongToyota = new ParamControl(
+  stockLongToyota = new ParamControlSP(
     "StockLongToyota",
     tr("Enable Stock Toyota Longitudinal Control"),
     tr("sunnypilot will <b>not</b> take over control of gas and brakes. Stock Toyota longitudinal control will be used."),
@@ -103,7 +103,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   stockLongToyota->setConfirmation(true, false);
   addItem(stockLongToyota);
 
-  auto lkasToggle = new ParamControl(
+  auto lkasToggle = new ParamControlSP(
     "LkasToggle",
     tr("Allow M.A.D.S. toggling w/ LKAS Button (Beta)"),
     QString("%1<br>"
@@ -115,7 +115,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   lkasToggle->setConfirmation(true, false);
   addItem(lkasToggle);
 
-  auto toyotaTss2LongTune = new ParamControl(
+  auto toyotaTss2LongTune = new ParamControlSP(
     "ToyotaTSS2Long",
     tr("Toyota TSS2 Longitudinal: Custom Tuning"),
     tr("Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars. Big thanks to dragonpilot-community for this implementation."),
@@ -124,7 +124,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
-  auto toyotaAbh = new ParamControl(
+  auto toyotaAbh = new ParamControlSP(
     "ToyotaAutoHold",
     tr("Enable Automatic Brake Hold (AHB)"),
     QString("<b>%1</b><br><br>%2<br><br><b>%3</b>")
@@ -136,7 +136,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaAbh->setConfirmation(true, false);
   addItem(toyotaAbh);
 
-  toyotaEnhancedBsm = new ParamControl(
+  toyotaEnhancedBsm = new ParamControlSP(
     "ToyotaEnhancedBsm",
     tr("Enable Enhanced Blind Spot Monitor"),
     "",
@@ -145,7 +145,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaEnhancedBsm->setConfirmation(true, false);
   addItem(toyotaEnhancedBsm);
 
-  auto toyotaSngHack = new ParamControl(
+  auto toyotaSngHack = new ParamControlSP(
     "ToyotaSnG",
     tr("Enable Toyota Stop and Go Hack"),
     tr("sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models. Use at your own risk."),
@@ -154,7 +154,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaSngHack->setConfirmation(true, false);
   addItem(toyotaSngHack);
 
-  auto toyotaAutoLock = new ParamControl(
+  auto toyotaAutoLock = new ParamControlSP(
     "ToyotaAutoLock",
     tr("Enable Toyota Door Auto Locking"),
     tr("sunnypilot will attempt to lock the doors when drive above 10 km/h (6.2 mph).\nReboot Required."),
@@ -163,7 +163,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaAutoLock->setConfirmation(true, false);
   addItem(toyotaAutoLock);
 
-  auto toyotaAutoUnlock = new ParamControl(
+  auto toyotaAutoUnlock = new ParamControlSP(
     "ToyotaAutoUnlockByShifter",
     tr("Enable Toyota Door Auto Unlocking"),
     tr("sunnypilot will attempt to unlock the doors when shift to gear P.\nReboot Required."),
@@ -174,7 +174,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // Volkswagen
   addItem(new LabelControl(tr("Volkswagen")));
-  auto volkswagenCCOnly = new ParamControl(
+  auto volkswagenCCOnly = new ParamControlSP(
     "VwCCOnly",
     tr("Enable CC Only support"),
     tr("sunnypilot supports Volkswagen MQB CC only platforms with this toggle enabled. Only enable this toggle if your car does not have ACC from the factory."),

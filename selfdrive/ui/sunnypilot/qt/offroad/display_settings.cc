@@ -38,7 +38,7 @@ DisplayPanel::DisplayPanel(QWidget *parent) : ListWidget(parent, false) {
   connect(brightness_control, &SPOptionControl::updateLabels, brightness_control, &BrightnessControl::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+    auto toggle = new ParamControlSP(param, title, desc, icon, this);
 
     addItem(toggle);
     toggles[param.toStdString()] = toggle;

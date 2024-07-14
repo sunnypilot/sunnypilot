@@ -123,7 +123,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
   QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanelSP::updateState);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+    auto toggle = new ParamControlSP(param, title, desc, icon, this);
 
     bool locked = params.getBool((param + "Lock").toStdString());
     toggle->setEnabled(!locked);

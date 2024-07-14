@@ -1,6 +1,6 @@
 #pragma once
 
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 class CameraOffset : public SPOptionControl {
@@ -38,7 +38,7 @@ signals:
 
 private:
   Params params;
-  std::map<std::string, ParamControl*> toggles;
+  std::map<std::string, ParamControlSP*> toggles;
 
   CameraOffset *camera_offset;
   PathOffset *path_offset;

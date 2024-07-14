@@ -1,7 +1,7 @@
 #pragma once
 
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 
 class VisualsPanel : public ListWidget {
   Q_OBJECT
@@ -11,7 +11,7 @@ public:
 
 private:
   Params params;
-  std::map<std::string, ParamControl*> toggles;
+  std::map<std::string, ParamControlSP*> toggles;
 
   ButtonParamControl *dev_ui_settings;
   ButtonParamControl *chevron_info_settings;

@@ -181,8 +181,6 @@ public:
     refresh();
   }
 
-  bool isToggled() { return params.getBool(key); }
-
 private:
   void toggleClicked(bool state);
   void setIcon(bool state) {
@@ -193,8 +191,14 @@ private:
     }
   }
 
+#ifdef SUNNYPILOT
+protected:
+#endif
   std::string key;
   Params params;
+#ifdef SUNNYPILOT
+private:
+#endif
   QPixmap active_icon_pixmap;
   bool confirm = false;
   bool store_confirm = false;

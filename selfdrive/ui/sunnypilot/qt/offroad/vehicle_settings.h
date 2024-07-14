@@ -5,7 +5,7 @@
 #include "common/watchdog.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 class VehiclePanel : public QWidget {
@@ -44,8 +44,8 @@ private:
   Params params;
   bool is_onroad = false;
 
-  ParamControl *stockLongToyota;
-  ParamControl *toyotaEnhancedBsm;
+  ParamControlSP *stockLongToyota;
+  ParamControlSP *toyotaEnhancedBsm;
 
   const QString toyotaEnhancedBsmDescription = QString("%1<br><br>"
                                                        "%2")

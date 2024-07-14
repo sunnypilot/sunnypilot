@@ -9,7 +9,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_warning_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_policy_settings.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 class TorqueFriction : public SPOptionControl {
@@ -60,7 +60,7 @@ private:
   LaneChangeSettings* lane_change_settings = nullptr;
   CustomOffsetsSettings* custom_offsets_settings = nullptr;
   Params params;
-  std::map<std::string, ParamControl*> toggles;
+  std::map<std::string, ParamControlSP*> toggles;
   ParamWatcher *param_watcher;
 
   TorqueFriction *friction;

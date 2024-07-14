@@ -23,7 +23,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   speed_limit_warning_settings->showDescription();
   list->addItem(speed_limit_warning_settings);
 
-  speed_limit_warning_flash = new ParamControl(
+  speed_limit_warning_flash = new ParamControlSP(
     "SpeedLimitWarningFlash",
     tr("Warning with speed limit flash"),
     tr("When Speed Limit Warning is enabled, the speed limit sign will alert the driver when the cruising speed is faster than then speed limit plus the offset."),

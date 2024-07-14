@@ -17,7 +17,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   connect(uiState(), &UIState::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updateLabels);
 
   auto list = new ListWidget(this, false);
-  sunnylinkEnabledBtn = new ParamControl(
+  sunnylinkEnabledBtn = new ParamControlSP(
     "SunnylinkEnabled",
     tr("Enable sunnylink"),
     sunnylinkBtnDescription,
@@ -29,12 +29,12 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   list->addItem(horizontal_line());
 
   sunnylinkBtnDescription = tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
-  connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
+  connect(sunnylinkEnabledBtn, &ParamControlSP::showDescriptionEvent, [=]() {
     //resets the description to the default one for the easter egg
     sunnylinkEnabledBtn->setDescription(sunnylinkBtnDescription);
   });
 
-  connect(sunnylinkEnabledBtn, &ParamControl::toggleFlipped, [=](bool enabled) {
+  connect(sunnylinkEnabledBtn, &ParamControlSP::toggleFlipped, [=](bool enabled) {
     if (enabled) {
       auto proud_description = "<font color='SeaGreen'>"+ tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀")+ "</font>";
       sunnylinkEnabledBtn->showDescription();

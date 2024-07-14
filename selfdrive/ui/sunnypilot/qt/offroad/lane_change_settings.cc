@@ -47,7 +47,7 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   connect(pause_lateral_speed, &SPOptionControl::updateLabels, pause_lateral_speed, &PauseLateralSpeed::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+    auto toggle = new ParamControlSP(param, title, desc, icon, this);
 
     list->addItem(toggle);
     toggles[param.toStdString()] = toggle;

@@ -15,6 +15,10 @@
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#endif
+
 // ********** settings window + top-level panels **********
 class SettingsWindow : public QFrame {
   Q_OBJECT

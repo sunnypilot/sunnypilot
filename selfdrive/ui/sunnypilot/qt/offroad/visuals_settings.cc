@@ -92,7 +92,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
   chevron_info_settings->showDescription();
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+    auto toggle = new ParamControlSP(param, title, desc, icon, this);
 
     addItem(toggle);
     toggles[param.toStdString()] = toggle;

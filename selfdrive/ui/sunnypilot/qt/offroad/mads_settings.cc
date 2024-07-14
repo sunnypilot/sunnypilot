@@ -44,7 +44,7 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
   list->addItem(dlob_settings);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
-    auto toggle = new ParamControl(param, title, desc, icon, this);
+    auto toggle = new ParamControlSP(param, title, desc, icon, this);
 
     list->addItem(toggle);
     toggles[param.toStdString()] = toggle;

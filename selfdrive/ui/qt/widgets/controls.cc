@@ -178,15 +178,6 @@ ParamControl::ParamControl(const QString &param, const QString &title, const QSt
     : ToggleControl(title, desc, icon, false, parent) {
   key = param.toStdString();
   QObject::connect(this, &ParamControl::toggleFlipped, this, &ParamControl::toggleClicked);
-
-  hlayout->removeWidget(&toggle);
-  hlayout->insertWidget(0, &toggle);
-
-  hlayout->removeWidget(this->icon_label);
-  this->icon_pixmap = QPixmap(icon).scaledToWidth(20, Qt::SmoothTransformation);
-  this->icon_label->setPixmap(this->icon_pixmap);
-  this->icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
-  hlayout->insertWidget(1, this->icon_label);
 }
 
 void ParamControl::toggleClicked(bool state) {

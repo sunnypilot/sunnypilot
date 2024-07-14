@@ -1,6 +1,6 @@
 #pragma once
 
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 class MonitoringPanel : public QFrame {
@@ -13,5 +13,5 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* monitoringScreen = nullptr;
   Params params;
-  std::map<std::string, ParamControl*> toggles;
+  std::map<std::string, ParamControlSP*> toggles;
 };

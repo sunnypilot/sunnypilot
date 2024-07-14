@@ -1,7 +1,7 @@
 #pragma once
 
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/util.h"
 
@@ -33,11 +33,11 @@ public slots:
 
 private:
   Params params;
-  std::map<std::string, ParamControl*> toggles;
+  std::map<std::string, ParamControlSP*> toggles;
 
   SpeedLimitWarningValueOffset *slwvo;
   ButtonParamControl *speed_limit_warning_offset_settings;
-  ParamControl *speed_limit_warning_flash;
+  ParamControlSP *speed_limit_warning_flash;
   ButtonParamControl *speed_limit_warning_settings;
   ParamWatcher *param_watcher;
 

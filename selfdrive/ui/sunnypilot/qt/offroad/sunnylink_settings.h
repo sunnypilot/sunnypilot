@@ -7,7 +7,7 @@
 
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 const QString SUNNYLINK_BASE_URL = util::getenv("SUNNYLINK_API_HOST", "https://stg.api.sunnypilot.ai").c_str();
@@ -78,7 +78,7 @@ public slots:
 
 private:
 
-  ParamControl* sunnylinkEnabledBtn;
+  ParamControlSP* sunnylinkEnabledBtn;
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnylinkScreen = nullptr;
   ScrollView *scrollView = nullptr;
