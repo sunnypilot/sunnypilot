@@ -3,6 +3,285 @@
 #include "selfdrive/ui/qt/network/networking.h"
 #include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
 
+TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
+  // param, title, desc, icon
+  std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
+    {
+      "OpenpilotEnabledToggle",
+      tr("Enable sunnypilot"),
+      tr("Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "ExperimentalLongitudinalEnabled",
+      tr("openpilot Longitudinal Control (Alpha)"),
+      QString("<b>%1</b><br><br>%2")
+      .arg(tr("WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB)."))
+      .arg(tr("On this car, openpilot defaults to the car's built-in ACC instead of openpilot's longitudinal control. "
+              "Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.")),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "CustomStockLong",
+      tr("Custom Stock Longitudinal Control"),
+      tr("When enabled, sunnypilot will attempt to control stock longitudinal control with ACC button presses.\nThis feature must be used along with SLC, and/or V-TSC, and/or M-TSC."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "ExperimentalMode",
+      tr("Experimental Mode"),
+      "",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "DynamicExperimentalControl",
+      tr("Enable Dynamic Experimental Control"),
+      tr("Enable toggle to allow the model to determine when to use openpilot ACC or openpilot End to End Longitudinal."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "DynamicPersonality",
+      tr("Enable Dynamic Personality"),
+      tr("Enable this to allow sunnypilot to dynamically adjust following distance and reaction based on your \"Driving Personality\" setting. "
+        "Instead of predefined settings for each personality, every personality now adapts dynamically according to your speed and the distance to the lead car."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "DisengageOnAccelerator",
+      tr("Disengage on Accelerator Pedal"),
+      tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "IsLdwEnabled",
+      tr("Enable Lane Departure Warnings"),
+      tr("Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h)."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "AlwaysOnDM",
+      tr("Always-On Driver Monitoring"),
+      tr("Enable driver monitoring even when openpilot is not engaged."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "RecordFront",
+      tr("Record and Upload Driver Camera"),
+      tr("Upload data from the driver facing camera and help improve the driver monitoring algorithm."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "DisableOnroadUploads",
+      tr("Disable Onroad Uploads"),
+      tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "IsMetric",
+      tr("Use Metric System"),
+      tr("Display speed in km/h instead of mph."),
+      "../assets/offroad/icon_blank.png",
+    },
+#ifdef ENABLE_MAPS
+    {
+      "NavSettingTime24h",
+      tr("Show ETA in 24h Format"),
+      tr("Use 24h format instead of am/pm"),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "NavSettingLeftSide",
+      tr("Show Map on Left Side of UI"),
+      tr("Show map on left side when in split screen view."),
+      "../assets/offroad/icon_blank.png",
+    },
+#endif
+  };
+
+
+  std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Moderate"), tr("Standard"), tr("Relaxed")};
+  long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
+                                          tr("Standard is recommended. In moderate/aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
+                                             "In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
+                                             "your steering wheel distance button."),
+                                          "../assets/offroad/icon_blank.png",
+                                          longi_button_texts,
+                                          380);
+  long_personality_setting->showDescription();
+
+  // accel controller
+  std::vector<QString> accel_personality_texts{tr("Sport"), tr("Normal"), tr("Eco"), tr("Stock")};
+  accel_personality_setting = new ButtonParamControl("AccelPersonality", tr("Acceleration Personality"),
+                                          tr("Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. "
+                                             "In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these "
+                                             "acceleration personality within Onroad Settings on the driving screen."),
+                                          "../assets/offroad/icon_blank.png",
+                                          accel_personality_texts);
+  accel_personality_setting->showDescription();
+
+  // set up uiState update for personality setting
+  QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanelSP::updateState);
+
+  for (auto &[param, title, desc, icon] : toggle_defs) {
+    auto toggle = new ParamControl(param, title, desc, icon, this);
+
+    bool locked = params.getBool((param + "Lock").toStdString());
+    toggle->setEnabled(!locked);
+
+    addItem(toggle);
+    toggles[param.toStdString()] = toggle;
+
+    // insert longitudinal personality after NDOG toggle
+    if (param == "DisengageOnAccelerator") {
+      addItem(long_personality_setting);
+      addItem(accel_personality_setting);
+    }
+  }
+
+  // Toggles with confirmation dialogs
+  //toggles["ExperimentalMode"]->setActiveIcon("../assets/img_experimental.svg");
+  toggles["ExperimentalMode"]->setConfirmation(true, true);
+  toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
+  toggles["CustomStockLong"]->setConfirmation(true, false);
+
+  connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
+    updateToggles();
+  });
+  connect(toggles["CustomStockLong"], &ToggleControl::toggleFlipped, [=]() {
+    updateToggles();
+  });
+
+  param_watcher = new ParamWatcher(this);
+
+  QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    updateToggles();
+  });
+}
+
+void TogglesPanelSP::updateState(const UIState &s) {
+  const SubMaster &sm = *(s.sm);
+
+  if (sm.updated("controlsState")) {
+    auto personality = sm["controlsState"].getControlsState().getPersonality();
+    if (personality != s.scene.personality && s.scene.started && isVisible()) {
+      long_personality_setting->setCheckedButton(static_cast<int>(personality));
+    }
+    uiState()->scene.personality = personality;
+  }
+
+  if (sm.updated("controlsStateSP")) {
+    auto accel_personality = sm["controlsStateSP"].getControlsStateSP().getAccelPersonality();
+    if (accel_personality != s.scene.accel_personality && s.scene.started && isVisible()) {
+      accel_personality_setting->setCheckedButton(static_cast<int>(accel_personality));
+    }
+    uiState()->scene.accel_personality = accel_personality;
+  }
+}
+
+void TogglesPanelSP::showEvent(QShowEvent *event) {
+  updateToggles();
+}
+
+void TogglesPanelSP::updateToggles() {
+  param_watcher->addParam("LongitudinalPersonality");
+
+  if (!isVisible()) return;
+
+  auto experimental_mode_toggle = toggles["ExperimentalMode"];
+  auto op_long_toggle = toggles["ExperimentalLongitudinalEnabled"];
+  auto custom_stock_long_toggle = toggles["CustomStockLong"];
+  auto dec_toggle = toggles["DynamicExperimentalControl"];
+  auto dynamic_personality_toggle = toggles["DynamicPersonality"];
+  const QString e2e_description = QString("%1<br>"
+                                          "<h4>%2</h4><br>"
+                                          "%3<br>"
+                                          "<h4>%4</h4><br>"
+                                          "%5<br>")
+                                  .arg(tr("openpilot defaults to driving in <b>chill mode</b>. Experimental mode enables <b>alpha-level features</b> that aren't ready for chill mode. Experimental features are listed below:"))
+                                  .arg(tr("End-to-End Longitudinal Control"))
+                                  .arg(tr("Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. "
+                                          "Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; "
+                                          "mistakes should be expected."))
+                                  .arg(tr("New Driving Visualization"))
+                                  .arg(tr("The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner."));
+
+  const bool is_release = params.getBool("IsReleaseBranch");
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    if (!CP.getExperimentalLongitudinalAvailable() || is_release) {
+      params.remove("ExperimentalLongitudinalEnabled");
+    }
+    op_long_toggle->setVisible(CP.getExperimentalLongitudinalAvailable() && !is_release);
+
+    if (!CP.getCustomStockLongAvailable()) {
+      params.remove("CustomStockLong");
+    }
+    custom_stock_long_toggle->setVisible(CP.getCustomStockLongAvailable());
+
+    if (hasLongitudinalControl(CP)) {
+      // normal description and toggle
+      experimental_mode_toggle->setEnabled(true);
+      experimental_mode_toggle->setDescription(e2e_description);
+      long_personality_setting->setEnabled(true);
+      accel_personality_setting->setEnabled(true);
+      op_long_toggle->setEnabled(true);
+      custom_stock_long_toggle->setEnabled(false);
+      params.remove("CustomStockLong");
+      dec_toggle->setEnabled(true);
+      dynamic_personality_toggle->setEnabled(true);
+    } else if (custom_stock_long_toggle->isToggled()) {
+      op_long_toggle->setEnabled(false);
+      experimental_mode_toggle->setEnabled(false);
+      long_personality_setting->setEnabled(false);
+      accel_personality_setting->setEnabled(false);
+      params.remove("ExperimentalLongitudinalEnabled");
+      params.remove("ExperimentalMode");
+    } else {
+      // no long for now
+      experimental_mode_toggle->setEnabled(false);
+      long_personality_setting->setEnabled(false);
+      accel_personality_setting->setEnabled(false);
+      params.remove("ExperimentalMode");
+
+      const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");
+
+      QString long_desc = unavailable + " " + \
+                          tr("openpilot longitudinal control may come in a future update.");
+      if (CP.getExperimentalLongitudinalAvailable()) {
+        if (is_release) {
+          long_desc = unavailable + " " + tr("An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.");
+        } else {
+          long_desc = tr("Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.");
+        }
+      }
+      experimental_mode_toggle->setDescription("<b>" + long_desc + "</b><br><br>" + e2e_description);
+
+      op_long_toggle->setEnabled(CP.getExperimentalLongitudinalAvailable() && !is_release);
+      custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
+      dec_toggle->setEnabled(false);
+      dynamic_personality_toggle->setEnabled(false);
+      params.remove("DynamicExperimentalControl");
+      params.remove("DynamicPersonality");
+    }
+
+    experimental_mode_toggle->refresh();
+    op_long_toggle->refresh();
+    custom_stock_long_toggle->refresh();
+    dec_toggle->refresh();
+    dynamic_personality_toggle->refresh();
+  } else {
+    experimental_mode_toggle->setDescription(e2e_description);
+    op_long_toggle->setVisible(false);
+    custom_stock_long_toggle->setVisible(false);
+    dec_toggle->setVisible(false);
+    dynamic_personality_toggle->setVisible(false);
+  }
+}
+
 SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
 
   // setup two main layouts
@@ -43,7 +322,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
   QObject::connect(device, &DevicePanel::reviewTrainingGuide, this, &SettingsWindow::reviewTrainingGuide);
   QObject::connect(device, &DevicePanel::showDriverView, this, &SettingsWindow::showDriverView);
 
-  TogglesPanel *toggles = new TogglesPanel(this);
+  TogglesPanelSP *toggles = new TogglesPanelSP(this);
   QObject::connect(this, &SettingsWindow::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
 
   QList<PanelInfo> panels = {

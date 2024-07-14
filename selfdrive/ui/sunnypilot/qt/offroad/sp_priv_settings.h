@@ -2,6 +2,23 @@
 
 #include "selfdrive/ui/qt/offroad/settings.h"
 
+class TogglesPanelSP : public TogglesPanel {
+  Q_OBJECT
+
+public:
+  explicit TogglesPanelSP(SettingsWindow *parent);
+  void showEvent(QShowEvent *event) override;
+
+private slots:
+  void updateState(const UIState &s) override;
+
+private:
+  ButtonParamControl *accel_personality_setting;
+
+  ParamWatcher *param_watcher;
+  void updateToggles() override;
+};
+
 class SettingsWindowSP : public SettingsWindow {
   Q_OBJECT
 

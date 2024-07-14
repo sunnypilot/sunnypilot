@@ -79,18 +79,16 @@ public:
 
 public slots:
   void expandToggleDescription(const QString &param);
-  void updateToggles();
 
-private slots:
-  void updateState(const UIState &s);
+protected slots:
+  virtual void updateState(const UIState &s);
 
-private:
+protected:
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
-  ButtonParamControl *accel_personality_setting;
 
-  ParamWatcher *param_watcher;
+  virtual void updateToggles();
 };
 
 class SoftwarePanel : public ListWidget {
