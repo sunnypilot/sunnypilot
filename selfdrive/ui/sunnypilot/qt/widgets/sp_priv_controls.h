@@ -316,3 +316,44 @@ private:
 
   bool button_enabled = true;
 };
+
+class SubPanelButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit SubPanelButton(const QString &text, const int minimum_button_width = 800, QWidget *parent = nullptr) : QPushButton(text, parent) {
+    const QString buttonStyle = R"(
+      QPushButton {
+        border-radius: 20px;
+        font-size: 50px;
+        font-weight: 450;
+        height: 150px;
+        padding: 0 25px 0 25px;
+        color: #FFFFFF;
+      }
+      QPushButton:enabled {
+        background-color: #393939;
+      }
+      QPushButton:pressed {
+        background-color: #4A4A4A;
+      }
+      QPushButton:disabled {
+        background-color: #121212;
+        color: #5C5C5C;
+      }
+    )";
+
+    setStyleSheet(buttonStyle);
+    setFixedWidth(minimum_button_width);
+  }
+};
+
+class PanelBackButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit PanelBackButton(const QString &label = "Back", QWidget *parent = nullptr) : QPushButton(label, parent) {
+    setObjectName("back_btn");
+    setFixedSize(400, 100);
+  }
+};
