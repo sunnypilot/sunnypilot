@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -15,6 +14,10 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
+#endif
+
 class ElidedLabel : public QLabel {
   Q_OBJECT
 
@@ -22,9 +25,9 @@ public:
   explicit ElidedLabel(QWidget *parent = 0);
   explicit ElidedLabel(const QString &text, QWidget *parent = 0);
 
-  void setColor(const QString &color) {
-    setStyleSheet("QLabel { color : " + color + "; }");
-  }
+#ifdef SUNNYPILOT
+  ELIDED_LABEL_SET_STUFF
+#endif
 
 signals:
   void clicked();
@@ -53,12 +56,13 @@ public:
     title_label->setText(title);
   }
 
-  void setValue(const QString &val, std::optional<QString> color = std::nullopt) {
+#ifdef SUNNYPILOT
+  ABSTRACT_CONTROL_FUNCTION_1
+#else
+  void setValue(const QString &val) {
     value->setText(val);
-    if (color.has_value()) {
-      value->setColor(color.value());
-    }
   }
+#endif
 
   const QString getDescription() {
     return description->text();
@@ -72,9 +76,9 @@ public slots:
     description->setVisible(true);
   }
 
-  void hideDescription() {
-    description->setVisible(false);
-  }
+#ifdef SUNNYPILOT
+  ABSTRACT_CONTROL_FUNCTION_2
+#endif
 
 signals:
   void showDescriptionEvent();
@@ -115,7 +119,9 @@ public:
   ButtonControl(const QString &title, const QString &text, const QString &desc = "", QWidget *parent = nullptr);
   inline void setText(const QString &text) { btn.setText(text); }
   inline QString text() const { return btn.text(); }
-  inline void click() { btn.click(); }
+#ifdef SUNNYPILOT
+  BUTTON_CONTROL_FUNCTION_1
+#endif
 
 signals:
   void clicked();
