@@ -16,7 +16,8 @@ widgets_src = [
   "sunnypilot/qt/offroad/speed_limit_warning_settings.cc",
   "sunnypilot/qt/offroad/speed_limit_policy_settings.cc",
   "sunnypilot/qt/offroad/sunnylink_settings.cc",
-  "sunnypilot/qt/widgets/sp_priv_controls.cc"
+  "sunnypilot/qt/widgets/sp_priv_controls.cc",
+  "sunnypilot/qt/widgets/sp_priv_scrollview.cc"
 ]
 
 network_src = [

@@ -64,7 +64,7 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   pause_lateral_speed->setEnabled(toggles["BelowSpeedPause"]->isToggled());
   pause_lateral_speed->setVisible(toggles["BelowSpeedPause"]->isToggled());
 
-  main_layout->addWidget(new ScrollView(list, this));
+  main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
 void LaneChangeSettings::showEvent(QShowEvent *event) {

@@ -24,7 +24,7 @@ CustomOffsetsSettings::CustomOffsetsSettings(QWidget* parent) : QWidget(parent) 
   path_offset->showDescription();
   list->addItem(path_offset);
 
-  main_layout->addWidget(new ScrollView(list, this));
+  main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
 // Camera Offset Value

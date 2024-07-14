@@ -30,7 +30,7 @@ SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(pa
     updateToggles();
   });
 
-  main_layout->addWidget(new ScrollView(list, this));
+  main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
 void SpeedLimitPolicySettings::showEvent(QShowEvent *event) {

@@ -10,7 +10,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_policy_settings.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
-#include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 
 class TorqueFriction : public OptionControlSP {
   Q_OBJECT
@@ -67,7 +67,7 @@ private:
   TorqueMaxLatAccel *lat_accel_factor;
   ButtonParamControlSP *dlp_settings;
 
-  ScrollView *scrollView = nullptr;
+  ScrollViewSP *scrollView = nullptr;
 
   const QString nnff_description = QString("%1<br><br>"
                                            "%2")

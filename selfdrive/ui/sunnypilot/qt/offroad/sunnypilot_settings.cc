@@ -384,7 +384,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   QVBoxLayout* vlayout = new QVBoxLayout(sunnypilotScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
-  scrollView = new ScrollView(list, this);
+  scrollView = new ScrollViewSP(list, this);
   vlayout->addWidget(scrollView, 1);
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(mads_settings);

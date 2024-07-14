@@ -6,7 +6,7 @@
 #include <QDebug>
 
 #include "common/util.h"
-#include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_policy_settings.h"
 
 OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent) {
@@ -87,7 +87,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
 
   options_layout->addStretch();
 
-  ScrollView *options_scroller = new ScrollView(options_container, this);
+  ScrollViewSP *options_scroller = new ScrollViewSP(options_container, this);
   options_scroller->setFrameShape(QFrame::NoFrame);
   frame->addWidget(options_scroller);
 

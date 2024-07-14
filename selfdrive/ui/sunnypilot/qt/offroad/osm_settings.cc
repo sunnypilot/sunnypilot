@@ -24,7 +24,7 @@ OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
   osmScreen = new QWidget(this);
   auto *vlayout = new QVBoxLayout(osmScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
-  vlayout->addWidget(new ScrollView(list, this), 1);
+  vlayout->addWidget(new ScrollViewSP(list, this), 1);
   main_layout->addWidget(osmScreen);
 }
 

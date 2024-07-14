@@ -29,7 +29,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* toggle_layout = new QVBoxLayout(home_widget);
   home_widget->setObjectName("homeWidget");
 
-  ScrollView *scroller = new ScrollView(home_widget, this);
+  ScrollViewSP *scroller = new ScrollViewSP(home_widget, this);
   scroller->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   fcr_layout->addWidget(scroller, 1);
 

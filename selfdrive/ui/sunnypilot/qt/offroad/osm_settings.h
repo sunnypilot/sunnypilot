@@ -11,7 +11,7 @@
 #include "selfdrive/ui/qt/network/wifi_manager.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/locations_fetcher.h"
-#include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/ui.h"
 #include "system/hardware/hw.h"

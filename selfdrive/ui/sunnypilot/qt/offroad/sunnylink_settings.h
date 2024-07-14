@@ -8,7 +8,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
-#include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 
 const QString SUNNYLINK_BASE_URL = util::getenv("SUNNYLINK_API_HOST", "https://stg.api.sunnypilot.ai").c_str();
 // sponsor QR code
@@ -81,7 +81,7 @@ private:
   ParamControlSP* sunnylinkEnabledBtn;
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnylinkScreen = nullptr;
-  ScrollView *scrollView = nullptr;
+  ScrollViewSP *scrollView = nullptr;
 
   BackupSettings *backup_settings;
   SubPanelButton *restoreSettings;

@@ -56,7 +56,7 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, dlob_settings, &ButtonParamControlSP::setEnabled);
 
-  main_layout->addWidget(new ScrollView(list, this));
+  main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
 void MadsSettings::showEvent(QShowEvent *event) {

@@ -56,7 +56,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
     updateToggles();
   });
 
-  main_layout->addWidget(new ScrollView(list, this));
+  main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
 void SpeedLimitWarningSettings::showEvent(QShowEvent *event) {

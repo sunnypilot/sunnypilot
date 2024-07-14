@@ -45,7 +45,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
     updateToggles();
   });
 
-  main_layout->addWidget(new ScrollView(list, this));
+  main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
 void SlcSettings::showEvent(QShowEvent *event) {

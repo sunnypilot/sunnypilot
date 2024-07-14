@@ -375,7 +375,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
     const int lr_margin = (name != ("   " + tr("Network")) || (name != ("   " + tr("sunnypilot")))) ? 50 : 0;  // Network and sunnypilot panel handles its own margins
     panel->setContentsMargins(lr_margin, 25, lr_margin, 25);
 
-    ScrollView *panel_frame = new ScrollView(panel, this);
+    ScrollViewSP *panel_frame = new ScrollViewSP(panel, this);
     panel_widget->addWidget(panel_frame);
 
     QObject::connect(btn, &QPushButton::clicked, [=, w = panel_frame]() {
@@ -392,7 +392,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
   sidebar_layout->addLayout(close_btn_layout);
 
   // add layout for buttons scrolling
-  ScrollView *buttons_scrollview  = new ScrollView(buttons_widget, this);
+  ScrollViewSP *buttons_scrollview  = new ScrollViewSP(buttons_widget, this);
   sidebar_layout->addWidget(buttons_scrollview);
 
   sidebar_widget->setFixedWidth(500);
@@ -407,7 +407,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
     SettingsWindow {
       background-color: black;
     }
-    QStackedWidget, ScrollView {
+    QStackedWidget, ScrollViewSP {
       background-color: black;
       border-radius: 30px;
     }
