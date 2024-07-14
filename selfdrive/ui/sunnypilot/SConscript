@@ -30,6 +30,7 @@ network_src = [
 qt_src = [
   "sunnypilot/qt/sp_priv_home.cc",
   "sunnypilot/qt/sp_priv_offroad_home.cc",
+  "sunnypilot/qt/sp_priv_sidebar.cc",
   "sunnypilot/qt/offroad/sp_priv_settings_device_panel.cc",
   "sunnypilot/qt/offroad/sp_priv_settings.cc",
   "sunnypilot/qt/onroad/onroad_settings.cc",
