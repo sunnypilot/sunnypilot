@@ -9,3 +9,10 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/osm_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/software_settings_sp.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/sunnylink_settings.h"
+
+
+inline void ReplaceWidget(QWidget* old_widget, QWidget* new_widget)
+{
+    old_widget->parentWidget()->layout()->replaceWidget(old_widget, new_widget);
+    delete old_widget;
+}

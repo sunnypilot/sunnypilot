@@ -14,7 +14,7 @@ public:
   explicit OffroadHomeSP(QWidget* parent = 0);
 
 private:
-  static void replaceWidget(QWidget* old_widget, QWidget* new_widget);
+  // static void replaceWidget(QWidget* old_widget, QWidget* new_widget);
   Params params;
   bool custom_mapbox;
 };
