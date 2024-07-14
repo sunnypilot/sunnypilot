@@ -63,7 +63,7 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   // Connect click event from currentModelLblBtn to local slot
   connect(currentModelLblBtn, &ButtonControl::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
 
-  ReplaceOrAddWidget(currentModelLbl, currentModelLblBtn);
+  addItem(currentModelLblBtn, 0);
 }
 
 void SoftwarePanelSP::handleDownloadFailed(const QString &modelType) {

@@ -112,7 +112,6 @@ protected:
   bool is_onroad = false;
 
   QLabel *onroadLbl;
-  LabelControl *currentModelLbl;
   LabelControl *versionLbl;
   ButtonControl *installBtn;
   ButtonControl *downloadBtn;

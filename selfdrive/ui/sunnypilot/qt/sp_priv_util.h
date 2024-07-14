@@ -35,12 +35,16 @@
     }                                                                        \
   }                                                                          \
 
-#define LIST_WIDGET_FUCNTION_3                                               \
+#define LIST_WIDGET_FUNCTION_3                                               \
+  inline void addItem(QWidget *w, int index) { inner_layout.insertWidget(index, w); }                                                                          \
+  
+#define LIST_WIDGET_FUNCTION_4                                               \
   inline void ReplaceOrAddWidget(QWidget *old_widget, QWidget *new_widget) { \
     if (const int index = inner_layout.indexOf(old_widget); index != -1) {   \
       RemoveWidgetAt(index);                                                 \
       AddWidgetAt(index, new_widget);                                        \
     } else {                                                                 \
-      addItem(new_widget);                                                   \
+      addItem(new_widget, 0);                                                \
     }                                                                        \
   }                                                                          \
+
