@@ -1,5 +1,7 @@
 #include "selfdrive/ui/sunnypilot/qt/sp_priv_sidebar.h"
 
+#include <cmath>
+
 #include <QMouseEvent>
 
 #include "selfdrive/ui/qt/util.h"
