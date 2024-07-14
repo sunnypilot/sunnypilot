@@ -15,6 +15,10 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "system/hardware/hw.h"
 
+#ifdef SUNNYPILOT
+#define ListWidget ListWidgetSP
+#endif
+
 
 void SoftwarePanel::checkForUpdates() {
   std::system("pkill -SIGUSR1 -f system.updated.updated");

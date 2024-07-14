@@ -99,6 +99,11 @@ protected:
   virtual void updateToggles();
 };
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#define ListWidget ListWidgetSP
+#endif
+
 class SoftwarePanel : public ListWidget {
   Q_OBJECT
 public:
@@ -120,3 +125,4 @@ protected:
   Params params;
   ParamWatcher *fs_watch;
 };
+#undef ListWidget //To prevent this from unintentionally extending to other headers that included this one 

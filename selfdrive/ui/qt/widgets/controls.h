@@ -291,17 +291,11 @@ class ListWidget : public QWidget {
     inner_layout.setSpacing(25); // default spacing is 25
     outer_layout.addStretch();
   }
-  inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
-  inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
-  inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
+  
 
-// TODO: move this out of the macros before going public. Looks phishy, and it's harder to debug it... 
-#ifdef SUNNYPILOT
-  LIST_WIDGET_FUNCTION_1
-  LIST_WIDGET_FUNCTION_2
-  LIST_WIDGET_FUNCTION_3
-  LIST_WIDGET_FUNCTION_4
-#endif
+  void addItem(QWidget *w) { inner_layout.addWidget(w); }
+  void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
+  void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
 
 private:
   void paintEvent(QPaintEvent *) override {

@@ -190,6 +190,23 @@ public:
   explicit ListWidgetSP(QWidget *parent = 0, const bool split_line = true) : ListWidget(parent), _split_line(split_line) {
   }
 
+  void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
+  void RemoveWidgetAt(const int index) {                              
+    if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) { 
+      if(item->widget()) delete item->widget();                              
+      delete item;                                                           
+    }                                                                        
+  }
+  using ListWidget::addItem;
+  void ReplaceOrAddWidget(QWidget *old_widget, QWidget *new_widget) {
+    if (const int index = inner_layout.indexOf(old_widget); index != -1) {
+      RemoveWidgetAt(index);
+      AddWidgetAt(index, new_widget);
+    } else {
+      AddWidgetAt(0, new_widget);
+    }
+  }
+  
 private:
   void paintEvent(QPaintEvent *) override {
     QPainter p(this);
