@@ -3,6 +3,12 @@
 #include <QPainter>
 #include <QStyleOption>
 
+#ifdef SUNNYPILOT
+#define TITLE_FONT_WEIGHT 450
+#else
+#define TITLE_FONT_WEIGHT 400
+#endif
+
 AbstractControl::AbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setMargin(0);
@@ -24,7 +30,9 @@ AbstractControl::AbstractControl(const QString &title, const QString &desc, cons
   // title
   title_label = new QPushButton(title);
   title_label->setFixedHeight(120);
-  title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none;");
+  QString styleSheet = QString("font-size: 50px; font-weight: %1; text-align: left; border: none;")
+                       .arg(TITLE_FONT_WEIGHT);
+  title_label->setStyleSheet(styleSheet);
   hlayout->addWidget(title_label, 1);
 
   // value next to control button
