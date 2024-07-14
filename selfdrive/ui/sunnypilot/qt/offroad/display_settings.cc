@@ -18,24 +18,24 @@ DisplayPanel::DisplayPanel(QWidget *parent) : ListWidget(parent, false) {
 
   // General: Max Time Offroad (Shutdown timer)
   auto max_time_offroad = new MaxTimeOffroad();
-  connect(max_time_offroad, &SPOptionControl::updateLabels, max_time_offroad, &MaxTimeOffroad::refresh);
+  connect(max_time_offroad, &OptionControlSP::updateLabels, max_time_offroad, &MaxTimeOffroad::refresh);
   addItem(max_time_offroad);
 
   // General: Onroad Screen Off (Auto Onroad Screen Timer)
   onroad_screen_off = new OnroadScreenOff();
   onroad_screen_off->setUpdateOtherToggles(true);
-  connect(onroad_screen_off, &SPOptionControl::updateLabels, onroad_screen_off, &OnroadScreenOff::refresh);
-  connect(onroad_screen_off, &SPOptionControl::updateOtherToggles, this, &DisplayPanel::updateToggles);
+  connect(onroad_screen_off, &OptionControlSP::updateLabels, onroad_screen_off, &OnroadScreenOff::refresh);
+  connect(onroad_screen_off, &OptionControlSP::updateOtherToggles, this, &DisplayPanel::updateToggles);
   addItem(onroad_screen_off);
 
   // General: Onroad Screen Off Brightness
   onroad_screen_off_brightness = new OnroadScreenOffBrightness();
-  connect(onroad_screen_off_brightness, &SPOptionControl::updateLabels, onroad_screen_off_brightness, &OnroadScreenOffBrightness::refresh);
+  connect(onroad_screen_off_brightness, &OptionControlSP::updateLabels, onroad_screen_off_brightness, &OnroadScreenOffBrightness::refresh);
   addItem(onroad_screen_off_brightness);
 
   // General: Brightness Control (Global)
   auto brightness_control = new BrightnessControl();
-  connect(brightness_control, &SPOptionControl::updateLabels, brightness_control, &BrightnessControl::refresh);
+  connect(brightness_control, &OptionControlSP::updateLabels, brightness_control, &BrightnessControl::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControlSP(param, title, desc, icon, this);
@@ -65,7 +65,7 @@ void DisplayPanel::updateToggles() {
 }
 
 // Max Time Offroad (Shutdown timer)
-MaxTimeOffroad::MaxTimeOffroad() : SPOptionControl (
+MaxTimeOffroad::MaxTimeOffroad() : OptionControlSP (
   "MaxTimeOffroad",
   tr("Max Time Offroad"),
   tr("Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)."),
@@ -110,7 +110,7 @@ void MaxTimeOffroad::refresh() {
 }
 
 // Onroad Screen Off (Auto Onroad Screen Timer)
-OnroadScreenOff::OnroadScreenOff() : SPOptionControl (
+OnroadScreenOff::OnroadScreenOff() : OptionControlSP (
   "OnroadScreenOff",
   tr("Driving Screen Off Timer"),
   tr("Turn off the device screen or reduce brightness to protect the screen after driving starts. It automatically brightens or turns on when a touch or event occurs."),
@@ -136,7 +136,7 @@ void OnroadScreenOff::refresh() {
 }
 
 // Onroad Screen Off Brightness
-OnroadScreenOffBrightness::OnroadScreenOffBrightness() : SPOptionControl (
+OnroadScreenOffBrightness::OnroadScreenOffBrightness() : OptionControlSP (
   "OnroadScreenOffBrightness",
   tr("Driving Screen Off Brightness (%)"),
   tr("When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio."),
@@ -157,7 +157,7 @@ void OnroadScreenOffBrightness::refresh() {
 }
 
 // Brightness Control (Global)
-BrightnessControl::BrightnessControl() : SPOptionControl (
+BrightnessControl::BrightnessControl() : OptionControlSP (
   "BrightnessControl",
   tr("Brightness"),
   tr("Manually adjusts the global brightness of the screen."),

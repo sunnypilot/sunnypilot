@@ -73,7 +73,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
 
   // Visuals: Developer UI Info (Dev UI)
   std::vector<QString> dev_ui_settings_texts{tr("Off"), tr("5 Metrics"), tr("10 Metrics")};
-  dev_ui_settings = new ButtonParamControl(
+  dev_ui_settings = new ButtonParamControlSP(
     "DevUIInfo", tr("Developer UI"), tr("Display real-time parameters and metrics from various sources."),
     "../assets/offroad/icon_blank.png",
     dev_ui_settings_texts,
@@ -83,7 +83,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
 
   // Visuals: Display Metrics above Chevron
   std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Distance\nSpeed")};
-  chevron_info_settings = new ButtonParamControl(
+  chevron_info_settings = new ButtonParamControlSP(
     "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
     "../assets/offroad/icon_blank.png",
     chevron_info_settings_texts,
@@ -107,7 +107,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidget(parent) {
   }
 
   std::vector<QString> sidebar_temp_texts{tr("Off"), tr("RAM"), tr("CPU"), tr("GPU"), tr("Max")};
-  sidebar_temp_setting = new ButtonParamControl(
+  sidebar_temp_setting = new ButtonParamControlSP(
     "SidebarTemperatureOptions", tr("Display Temperature on Sidebar"), "",
     "../assets/offroad/icon_blank.png",
     sidebar_temp_texts,

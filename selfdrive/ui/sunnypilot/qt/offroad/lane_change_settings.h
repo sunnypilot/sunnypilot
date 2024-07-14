@@ -4,7 +4,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
-class AutoLaneChangeTimer : public SPOptionControl {
+class AutoLaneChangeTimer : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -19,7 +19,7 @@ private:
   Params params;
 };
 
-class PauseLateralSpeed : public SPOptionControl {
+class PauseLateralSpeed : public OptionControlSP {
   Q_OBJECT
 
 public:

@@ -2,7 +2,7 @@
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 
-class OnroadScreenOff : public SPOptionControl {
+class OnroadScreenOff : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -14,7 +14,7 @@ private:
   Params params;
 };
 
-class OnroadScreenOffBrightness : public SPOptionControl {
+class OnroadScreenOffBrightness : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -26,7 +26,7 @@ private:
   Params params;
 };
 
-class MaxTimeOffroad : public SPOptionControl {
+class MaxTimeOffroad : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -38,7 +38,7 @@ private:
   Params params;
 };
 
-class BrightnessControl : public SPOptionControl {
+class BrightnessControl : public OptionControlSP {
   Q_OBJECT
 
 public:

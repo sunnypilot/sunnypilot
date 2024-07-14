@@ -37,14 +37,14 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   auto_lane_change_timer = new AutoLaneChangeTimer();
   auto_lane_change_timer->setUpdateOtherToggles(true);
   auto_lane_change_timer->showDescription();
-  connect(auto_lane_change_timer, &SPOptionControl::updateLabels, auto_lane_change_timer, &AutoLaneChangeTimer::refresh);
+  connect(auto_lane_change_timer, &OptionControlSP::updateLabels, auto_lane_change_timer, &AutoLaneChangeTimer::refresh);
   connect(auto_lane_change_timer, &AutoLaneChangeTimer::updateOtherToggles, this, &LaneChangeSettings::updateToggles);
   list->addItem(auto_lane_change_timer);
 
   // Pause Lateral Below Speed w/ Blinker
   pause_lateral_speed = new PauseLateralSpeed();
   pause_lateral_speed->showDescription();
-  connect(pause_lateral_speed, &SPOptionControl::updateLabels, pause_lateral_speed, &PauseLateralSpeed::refresh);
+  connect(pause_lateral_speed, &OptionControlSP::updateLabels, pause_lateral_speed, &PauseLateralSpeed::refresh);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControlSP(param, title, desc, icon, this);
@@ -97,7 +97,7 @@ void LaneChangeSettings::updateToggles() {
 }
 
 // Auto Lane Change Timer (ALCT)
-AutoLaneChangeTimer::AutoLaneChangeTimer() : SPOptionControl (
+AutoLaneChangeTimer::AutoLaneChangeTimer() : OptionControlSP (
   "AutoLaneChangeTimer",
   tr("Auto Lane Change by Blinker"),
   tr("Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.\nPlease use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
@@ -127,7 +127,7 @@ void AutoLaneChangeTimer::refresh() {
   }
 }
 
-PauseLateralSpeed::PauseLateralSpeed() : SPOptionControl (
+PauseLateralSpeed::PauseLateralSpeed() : OptionControlSP (
   "PauseLateralSpeed",
   "",
   tr("Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h."),

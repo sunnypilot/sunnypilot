@@ -13,7 +13,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   ListWidget *list = new ListWidget(this, false);
 
   std::vector<QString> speed_limit_engage_texts{tr("Auto"), tr("User Confirm")};
-  speed_limit_engage_settings = new ButtonParamControl(
+  speed_limit_engage_settings = new ButtonParamControlSP(
     "SpeedLimitEngageType", tr("Engage Mode"),
     "",
     "../assets/offroad/icon_blank.png",
@@ -24,7 +24,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   list->addItem(speed_limit_engage_settings);
 
   std::vector<QString> speed_limit_offset_settings_texts{tr("Default"), tr("Fixed"), tr("Percentage")};
-  speed_limit_offset_settings = new ButtonParamControl(
+  speed_limit_offset_settings = new ButtonParamControlSP(
     "SpeedLimitOffsetType", tr("Limit Offset"), tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
     "../assets/offroad/icon_blank.png",
     speed_limit_offset_settings_texts,
@@ -33,11 +33,11 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   list->addItem(speed_limit_offset_settings);
 
   slvo = new SpeedLimitValueOffset();
-  connect(slvo, &SPOptionControl::updateLabels, slvo, &SpeedLimitValueOffset::refresh);
+  connect(slvo, &OptionControlSP::updateLabels, slvo, &SpeedLimitValueOffset::refresh);
   list->addItem(slvo);
 
-  connect(speed_limit_offset_settings, &ButtonParamControl::buttonToggled, this, &SlcSettings::updateToggles);
-  connect(speed_limit_offset_settings, &ButtonParamControl::buttonToggled, slvo, &SpeedLimitValueOffset::refresh);
+  connect(speed_limit_offset_settings, &ButtonParamControlSP::buttonToggled, this, &SlcSettings::updateToggles);
+  connect(speed_limit_offset_settings, &ButtonParamControlSP::buttonToggled, slvo, &SpeedLimitValueOffset::refresh);
 
   param_watcher = new ParamWatcher(this);
 
@@ -101,7 +101,7 @@ void SlcSettings::updateToggles() {
 }
 
 // Speed Limit Control Custom Offset
-SpeedLimitValueOffset::SpeedLimitValueOffset() : SPOptionControl (
+SpeedLimitValueOffset::SpeedLimitValueOffset() : OptionControlSP (
   "SpeedLimitValueOffset",
   "",
   "",

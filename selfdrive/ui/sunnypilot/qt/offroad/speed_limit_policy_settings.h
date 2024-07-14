@@ -1,7 +1,7 @@
 #pragma once
 
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/util.h"
 
@@ -23,7 +23,7 @@ public slots:
 private:
   Params params;
 
-  ButtonParamControl *speed_limit_policy;
+  ButtonParamControlSP *speed_limit_policy;
   ParamWatcher *param_watcher;
 
   QString speedLimitPolicyDescriptionBuilder(QString param, std::vector<QString> descriptions) {

@@ -12,7 +12,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
-class TorqueFriction : public SPOptionControl {
+class TorqueFriction : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -24,7 +24,7 @@ private:
   Params params;
 };
 
-class TorqueMaxLatAccel : public SPOptionControl {
+class TorqueMaxLatAccel : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -65,7 +65,7 @@ private:
 
   TorqueFriction *friction;
   TorqueMaxLatAccel *lat_accel_factor;
-  ButtonParamControl *dlp_settings;
+  ButtonParamControlSP *dlp_settings;
 
   ScrollView *scrollView = nullptr;
 

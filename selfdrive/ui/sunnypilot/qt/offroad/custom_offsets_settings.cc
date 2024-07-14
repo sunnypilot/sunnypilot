@@ -14,13 +14,13 @@ CustomOffsetsSettings::CustomOffsetsSettings(QWidget* parent) : QWidget(parent) 
 
   // Controls: Camera Offset (cm)
   camera_offset = new CameraOffset();
-  connect(camera_offset, &SPOptionControl::updateLabels, camera_offset, &CameraOffset::refresh);
+  connect(camera_offset, &OptionControlSP::updateLabels, camera_offset, &CameraOffset::refresh);
   camera_offset->showDescription();
   list->addItem(camera_offset);
 
   // Controls: Path Offset (cm)
   path_offset = new PathOffset();
-  connect(path_offset, &SPOptionControl::updateLabels, path_offset, &PathOffset::refresh);
+  connect(path_offset, &OptionControlSP::updateLabels, path_offset, &PathOffset::refresh);
   path_offset->showDescription();
   list->addItem(path_offset);
 
@@ -28,7 +28,7 @@ CustomOffsetsSettings::CustomOffsetsSettings(QWidget* parent) : QWidget(parent) 
 }
 
 // Camera Offset Value
-CameraOffset::CameraOffset() : SPOptionControl (
+CameraOffset::CameraOffset() : OptionControlSP (
   "CameraOffset",
   tr("Camera Offset - Laneful Only"),
   tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm"),
@@ -48,7 +48,7 @@ void CameraOffset::refresh() {
 }
 
 // Path Offset Value
-PathOffset::PathOffset() : SPOptionControl (
+PathOffset::PathOffset() : OptionControlSP (
   "PathOffset",
   tr("Path Offset"),
   tr("Hack to trick the model path to be left or right biased of the lane. Decreasing the value will shift the model more left, increasing will shift the model more right. Changes take effect immediately."),

@@ -13,7 +13,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   ListWidget *list = new ListWidget(this, false);
 
   std::vector<QString> speed_limit_warning_texts{tr("Off"), tr("Display"), tr("Chime")};
-  speed_limit_warning_settings = new ButtonParamControl(
+  speed_limit_warning_settings = new ButtonParamControlSP(
     "SpeedLimitWarningType", tr("Speed Limit Warning"),
     "",
     "../assets/offroad/icon_blank.png",
@@ -32,7 +32,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   list->addItem(speed_limit_warning_flash);
 
   std::vector<QString> speed_limit_warning_offset_settings_texts{tr("Default"), tr("Fixed"), tr("Percentage")};
-  speed_limit_warning_offset_settings = new ButtonParamControl(
+  speed_limit_warning_offset_settings = new ButtonParamControlSP(
     "SpeedLimitWarningOffsetType", tr("Warning Offset"),
     tr("Select the desired offset to warn the driver when the vehicle is driving faster than the speed limit."),
     "../assets/offroad/icon_blank.png",
@@ -42,13 +42,13 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   list->addItem(speed_limit_warning_offset_settings);
 
   slwvo = new SpeedLimitWarningValueOffset();
-  connect(slwvo, &SPOptionControl::updateLabels, slwvo, &SpeedLimitWarningValueOffset::refresh);
+  connect(slwvo, &OptionControlSP::updateLabels, slwvo, &SpeedLimitWarningValueOffset::refresh);
   list->addItem(slwvo);
 
-  connect(speed_limit_warning_settings, &ButtonParamControl::buttonToggled, this, &SpeedLimitWarningSettings::updateToggles);
+  connect(speed_limit_warning_settings, &ButtonParamControlSP::buttonToggled, this, &SpeedLimitWarningSettings::updateToggles);
 
-  connect(speed_limit_warning_offset_settings, &ButtonParamControl::buttonToggled, this, &SpeedLimitWarningSettings::updateToggles);
-  connect(speed_limit_warning_offset_settings, &ButtonParamControl::buttonToggled, slwvo, &SpeedLimitWarningValueOffset::refresh);
+  connect(speed_limit_warning_offset_settings, &ButtonParamControlSP::buttonToggled, this, &SpeedLimitWarningSettings::updateToggles);
+  connect(speed_limit_warning_offset_settings, &ButtonParamControlSP::buttonToggled, slwvo, &SpeedLimitWarningValueOffset::refresh);
 
   param_watcher = new ParamWatcher(this);
 
@@ -86,7 +86,7 @@ void SpeedLimitWarningSettings::updateToggles() {
 }
 
 // Speed Limit Control Custom Offset
-SpeedLimitWarningValueOffset::SpeedLimitWarningValueOffset() : SPOptionControl (
+SpeedLimitWarningValueOffset::SpeedLimitWarningValueOffset() : OptionControlSP (
   "SpeedLimitWarningValueOffset",
   "",
   "",

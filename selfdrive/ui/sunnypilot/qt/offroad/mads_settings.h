@@ -21,5 +21,5 @@ private:
   Params params;
   std::map<std::string, ParamControlSP*> toggles;
 
-  ButtonParamControl *dlob_settings;
+  ButtonParamControlSP *dlob_settings;
 };

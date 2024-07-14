@@ -32,7 +32,7 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
 
   // Disengage Lateral on Brake (DLOB)
   std::vector<QString> dlob_settings_texts{tr("Remain Active"), tr("Pause Steering")};
-  dlob_settings = new ButtonParamControl(
+  dlob_settings = new ButtonParamControlSP(
     "DisengageLateralOnBrake",
     tr("Steering Mode After Braking"),
     tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\nRemain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed."),
@@ -54,7 +54,7 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
   }
 
   // trigger offroadTransition when going onroad/offroad
-  connect(uiState(), &UIState::offroadTransition, dlob_settings, &ButtonParamControl::setEnabled);
+  connect(uiState(), &UIState::offroadTransition, dlob_settings, &ButtonParamControlSP::setEnabled);
 
   main_layout->addWidget(new ScrollView(list, this));
 }

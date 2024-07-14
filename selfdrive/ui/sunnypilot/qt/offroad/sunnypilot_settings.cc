@@ -235,14 +235,14 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
 
   // Controls: Torque - FRICTION
   friction = new TorqueFriction();
-  connect(friction, &SPOptionControl::updateLabels, friction, &TorqueFriction::refresh);
+  connect(friction, &OptionControlSP::updateLabels, friction, &TorqueFriction::refresh);
 
   // Controls: Torque - LAT_ACCEL_FACTOR
   lat_accel_factor = new TorqueMaxLatAccel();
-  connect(lat_accel_factor, &SPOptionControl::updateLabels, lat_accel_factor, &TorqueMaxLatAccel::refresh);
+  connect(lat_accel_factor, &OptionControlSP::updateLabels, lat_accel_factor, &TorqueMaxLatAccel::refresh);
 
   std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
-  dlp_settings = new ButtonParamControl(
+  dlp_settings = new ButtonParamControlSP(
     "DynamicLaneProfile", tr("Dynamic Lane Profile"), "",
     "../assets/offroad/icon_blank.png",
     dlp_settings_texts,
@@ -567,7 +567,7 @@ void SunnypilotPanel::updateToggles() {
   }
 
   // toggle names to update when CustomTorqueLateral is flipped
-  std::vector<SPAbstractControl*> customTorqueGroup{friction, lat_accel_factor};
+  std::vector<AbstractControlSP*> customTorqueGroup{friction, lat_accel_factor};
   for (const auto& customTorqueControl : customTorqueGroup) {
     customTorqueControl->setVisible(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
     customTorqueControl->setEnabled(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
@@ -581,7 +581,7 @@ void SunnypilotPanel::updateToggles() {
   dlp_settings->setDescription((model_use_lateral_planner ? "" : dlp_incompatible_desc + "<br><br>") + dlp_description);
 }
 
-TorqueFriction::TorqueFriction() : SPOptionControl (
+TorqueFriction::TorqueFriction() : OptionControlSP (
   "TorqueFriction",
   tr("FRICTION"),
   tr("Adjust Friction for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
@@ -597,7 +597,7 @@ void TorqueFriction::refresh() {
   setLabel(QString::number(torqueFrictionVal));
 }
 
-TorqueMaxLatAccel::TorqueMaxLatAccel() : SPOptionControl (
+TorqueMaxLatAccel::TorqueMaxLatAccel() : OptionControlSP (
   "TorqueMaxLatAccel",
   tr("LAT_ACCEL_FACTOR"),
   tr("Adjust Max Lateral Acceleration for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),

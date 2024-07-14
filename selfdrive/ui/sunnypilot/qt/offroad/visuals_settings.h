@@ -13,7 +13,7 @@ private:
   Params params;
   std::map<std::string, ParamControlSP*> toggles;
 
-  ButtonParamControl *dev_ui_settings;
-  ButtonParamControl *chevron_info_settings;
-  ButtonParamControl *sidebar_temp_setting;
+  ButtonParamControlSP *dev_ui_settings;
+  ButtonParamControlSP *chevron_info_settings;
+  ButtonParamControlSP *sidebar_temp_setting;
 };

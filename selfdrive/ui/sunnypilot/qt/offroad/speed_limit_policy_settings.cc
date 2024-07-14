@@ -12,7 +12,7 @@ SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(pa
 
   ListWidget *list = new ListWidget(this, false);
 
-  speed_limit_policy = new ButtonParamControl(
+  speed_limit_policy = new ButtonParamControlSP(
     "SpeedLimitControlPolicy",
     tr("Speed Limit Source Policy"),
     "",
@@ -21,7 +21,7 @@ SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(pa
     250
   );
   speed_limit_policy->showDescription();
-  connect(speed_limit_policy, &ButtonParamControl::buttonToggled, this, &SpeedLimitPolicySettings::updateToggles);
+  connect(speed_limit_policy, &ButtonParamControlSP::buttonToggled, this, &SpeedLimitPolicySettings::updateToggles);
   list->addItem(speed_limit_policy);
 
   param_watcher = new ParamWatcher(this);

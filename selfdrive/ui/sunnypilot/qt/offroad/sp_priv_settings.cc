@@ -100,7 +100,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
 
 
   std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Moderate"), tr("Standard"), tr("Relaxed")};
-  long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
+  long_personality_setting = new ButtonParamControlSP("LongitudinalPersonality", tr("Driving Personality"),
                                           tr("Standard is recommended. In moderate/aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
                                              "In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
                                              "your steering wheel distance button."),
@@ -111,7 +111,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
 
   // accel controller
   std::vector<QString> accel_personality_texts{tr("Sport"), tr("Normal"), tr("Eco"), tr("Stock")};
-  accel_personality_setting = new ButtonParamControl("AccelPersonality", tr("Acceleration Personality"),
+  accel_personality_setting = new ButtonParamControlSP("AccelPersonality", tr("Acceleration Personality"),
                                           tr("Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. "
                                              "In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these "
                                              "acceleration personality within Onroad Settings on the driving screen."),

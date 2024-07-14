@@ -3,7 +3,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
-class CameraOffset : public SPOptionControl {
+class CameraOffset : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -15,7 +15,7 @@ private:
   Params params;
 };
 
-class PathOffset : public SPOptionControl {
+class PathOffset : public OptionControlSP {
   Q_OBJECT
 
 public:

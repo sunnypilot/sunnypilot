@@ -5,7 +5,7 @@
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/util.h"
 
-class SpeedLimitWarningValueOffset : public SPOptionControl {
+class SpeedLimitWarningValueOffset : public OptionControlSP {
   Q_OBJECT
 
 public:
@@ -36,9 +36,9 @@ private:
   std::map<std::string, ParamControlSP*> toggles;
 
   SpeedLimitWarningValueOffset *slwvo;
-  ButtonParamControl *speed_limit_warning_offset_settings;
+  ButtonParamControlSP *speed_limit_warning_offset_settings;
   ParamControlSP *speed_limit_warning_flash;
-  ButtonParamControl *speed_limit_warning_settings;
+  ButtonParamControlSP *speed_limit_warning_settings;
   ParamWatcher *param_watcher;
 
   QString speedLimitWarningDescriptionBuilder(QString param, std::vector<QString> descriptions) {
