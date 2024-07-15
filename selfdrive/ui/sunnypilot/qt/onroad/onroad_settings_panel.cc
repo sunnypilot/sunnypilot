@@ -1,11 +1,15 @@
-#include "../../../sunnypilot/qt/onroad/onroad_settings_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings_panel.h"
 
 #include <QHBoxLayout>
 #include <QWidget>
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings.h"
-#include "../../../qt/util.h"
-#include "../../../ui.h"
+#include "selfdrive/ui/qt/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#else
+#include "selfdrive/ui/ui.h"
+#endif
 
 OnroadSettingsPanel::OnroadSettingsPanel(QWidget *parent) : QFrame(parent) {
   content_stack = new QStackedLayout(this);

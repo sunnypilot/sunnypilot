@@ -5,7 +5,11 @@
 #include <QFrame>
 #include <QMap>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 typedef QPair<QPair<QString, QString>, QColor> ItemStatus;
 Q_DECLARE_METATYPE(ItemStatus);

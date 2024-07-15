@@ -4,7 +4,11 @@
 #include <QStackedLayout>
 #include <QWidget>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 class WiFiPromptWidget : public QFrame {
   Q_OBJECT

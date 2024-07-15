@@ -1,7 +1,11 @@
 #pragma once
 
 #include "common/model.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 #include "selfdrive/ui/qt/offroad/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/models_fetcher.h"
 

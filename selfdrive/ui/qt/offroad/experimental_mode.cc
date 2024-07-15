@@ -6,7 +6,11 @@
 #include <QPainterPath>
 #include <QStyle>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 ExperimentalModeButton::ExperimentalModeButton(QWidget *parent) : QPushButton(parent) {
   chill_pixmap = QPixmap("../assets/img_couch.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
