@@ -19,6 +19,8 @@
 // This is for compatibility purposes, until we properly do inheritance splitting
 // This is because some controls were needing LabelControlSP, but the original code was using LabelControl
 // which was modified in-place in the past but since we now have a new file, we will be moving it to LabelControlSP
+#define AbstractControl AbstractControlCustomSP
+#define LayoutWidget LayoutWidgetSP
 #define LabelControl LabelControlSP
 #define ElidedLabel ElidedLabelSP
 #define ButtonControl ButtonControlSP
