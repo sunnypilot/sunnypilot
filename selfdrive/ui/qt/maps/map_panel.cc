@@ -6,11 +6,7 @@
 #include "selfdrive/ui/qt/maps/map.h"
 #include "selfdrive/ui/qt/maps/map_settings.h"
 #include "selfdrive/ui/qt/util.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 
 MapPanel::MapPanel(const QMapLibre::Settings &mapboxSettings, QWidget *parent) : QFrame(parent) {
   content_stack = new QStackedLayout(this);

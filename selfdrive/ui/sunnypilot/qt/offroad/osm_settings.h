@@ -13,11 +13,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/locations_fetcher.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 #include "selfdrive/ui/qt/util.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 #include "system/hardware/hw.h"
 
 constexpr int FAST_REFRESH_INTERVAL = 1000;  // ms

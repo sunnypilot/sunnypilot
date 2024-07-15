@@ -5,11 +5,7 @@
 #include <QrCode.hpp>
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h"
 
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"

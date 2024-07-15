@@ -6,11 +6,7 @@
 #include <QMap>
 #include "selfdrive/ui/qt/sidebar.h"
 
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 
 class SidebarSP : public Sidebar {
   Q_OBJECT

@@ -6,11 +6,7 @@
 #include <QScrollBar>
 #include <QStyle>
 
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"

@@ -3,11 +3,7 @@
 #include <QTimer>
 
 #include "cereal/messaging/messaging.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 #include "selfdrive/ui/qt/qt_window.h"
 
 int main(int argc, char *argv[]) {

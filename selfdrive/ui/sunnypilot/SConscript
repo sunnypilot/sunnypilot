@@ -18,8 +18,7 @@ widgets_src = [
   "sunnypilot/qt/offroad/sunnylink_settings.cc",
   "sunnypilot/qt/widgets/sp_priv_controls.cc",
   "sunnypilot/qt/widgets/sp_priv_scrollview.cc",
-  "sunnypilot/qt/widgets/sp_priv_toggle.cc",
-  "sunnypilot/sp_priv_ui.cc"
+  "sunnypilot/qt/widgets/sp_priv_toggle.cc"
 ]
 
 network_src = [

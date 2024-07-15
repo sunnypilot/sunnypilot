@@ -9,11 +9,7 @@
 #include "selfdrive/ui/qt/home.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/window.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 
 void saveWidgetAsImage(QWidget *widget, const QString &fileName) {
   QImage image(widget->size(), QImage::Format_ARGB32);

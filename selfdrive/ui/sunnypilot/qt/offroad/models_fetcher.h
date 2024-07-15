@@ -9,13 +9,12 @@
 
 #include "common/swaglog.h"
 #include "common/util.h"
+#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/json_fetcher.h"
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #else
-#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif
 #include "system/hardware/hw.h"

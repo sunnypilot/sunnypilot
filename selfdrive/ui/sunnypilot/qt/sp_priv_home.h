@@ -11,16 +11,14 @@
 #include "selfdrive/ui/qt/offroad/driverview.h"
 #include "selfdrive/ui/qt/body.h"
 #include "selfdrive/ui/qt/widgets/offroad_alerts.h"
-
+#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/home.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/sunnypilot/qt/sp_priv_sidebar.h"
 #include "selfdrive/ui/sunnypilot/qt/onroad/sp_priv_onroad_home.h"
 #define OnroadWindow OnroadWindowSP
 #else
-#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/sidebar.h"
 #include "selfdrive/ui/qt/onroad/onroad_home.h"
 #endif

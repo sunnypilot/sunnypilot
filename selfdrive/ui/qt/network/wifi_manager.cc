@@ -2,11 +2,7 @@
 
 #include <utility>
 
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 #include "selfdrive/ui/qt/widgets/prime.h"
 
 #include "common/params.h"

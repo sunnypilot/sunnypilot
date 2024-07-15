@@ -8,11 +8,7 @@
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 #include "selfdrive/ui/qt/util.h"
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#else
 #include "selfdrive/ui/ui.h"
-#endif
 
 
 const int INTERACTION_TIMEOUT = 100;
@@ -114,7 +110,6 @@ void MapWindow::initLayers() {
     // TODO: remove, symbol-sort-key does not seem to matter outside of each layer
     m_map->setLayoutProperty("carPosLayer", "symbol-sort-key", 0);
   }
-#ifdef SUNNYPILOT
   if ((!m_map->layerExists("buildingsLayer")) && uiState()->scene.map_3d_buildings) {  // Could put this behind the cellular metered toggle in case it increases data usage
     qDebug() << "Initializing buildingsLayer";
     QVariantMap buildings;
@@ -158,7 +153,6 @@ void MapWindow::initLayers() {
     m_map->setPaintProperty("buildingsLayer", "fill-extrusion-base", fillExtrusionBase);
     m_map->setLayoutProperty("buildingsLayer", "visibility", "visible");
   }
-#endif
 }
 
 void MapWindow::updateState(const UIState &s) {
