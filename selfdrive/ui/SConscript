@@ -31,7 +31,8 @@ widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
                "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"] + sp_widgets_src
 
 if GetOption('sunnypilot'):
-  widgets_src.remove("ui.cc")
+  remove_src = ["ui.cc", "qt/widgets/controls.cc"]
+  widgets_src = [item for item in widgets_src if item not in remove_src]
 
 qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if GetOption('sunnypilot') else []
 if maps:
