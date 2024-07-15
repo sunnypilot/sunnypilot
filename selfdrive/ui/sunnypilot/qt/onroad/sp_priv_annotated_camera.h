@@ -6,6 +6,7 @@
 
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/widgets/cameraview.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/developer_ui/sp_priv_developer_ui.h"
 
 const int subsign_img_size = 35;
 const int blinker_size = 120;
@@ -40,30 +41,6 @@ private:
   int drawNewDevUiElement(QPainter &p, int x, int y, const QString &value, const QString &label, const QString &units, QColor &color);
   void drawNewDevUi2(QPainter &p, int x, int y);
   void drawCenteredLeftText(QPainter &p, int x, int y, const QString &text1, QColor color1, const QString &text2, const QString &text3, QColor color2);
-  struct UiElement {
-    QString value;
-    QString label;
-    QString units;
-    QColor color;
-
-    UiElement(const QString &value, const QString &label, const QString &units, const QColor &color = QColor(255, 255, 255, 255))
-      : value(value), label(label), units(units), color(color) {}
-  };
-
-  UiElement getDRel();
-  UiElement getVRel();
-  UiElement getSteeringAngleDeg();
-  UiElement getActualLateralAccel();
-  UiElement getSteeringAngleDesiredDeg();
-  UiElement getMemoryUsagePercent();
-
-  UiElement getAEgo();
-  UiElement getVEgoLead();
-  UiElement getFrictionCoefficientFiltered();
-  UiElement getLatAccelFactorFiltered();
-  UiElement getSteeringTorqueEps();
-  UiElement getBearingDeg();
-  UiElement getAltitude();
 
   // ############################## DEV UI END ##############################
 

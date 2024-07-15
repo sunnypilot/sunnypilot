@@ -759,209 +759,44 @@ int AnnotatedCameraWidgetSP::drawDevUiElementRight(QPainter &p, int x, int y, co
   return 110;
 }
 
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getDRel() {
-  QString value = lead_status ? QString::number(lead_d_rel, 'f', 0) : "-";
-  QColor color = QColor(255, 255, 255, 255);
-
-  if (lead_status) {
-    // Orange if close, Red if very close
-    if (lead_d_rel < 5) {
-      color = QColor(255, 0, 0, 255);
-    } else if (lead_d_rel < 15) {
-      color = QColor(255, 188, 0, 255);
-    }
-  }
-
-  return UiElement(value, "REL DIST", "m", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getVRel() {
-  QString value = lead_status ? QString::number(lead_v_rel * (is_metric ? MS_TO_KPH : MS_TO_MPH), 'f', 0) : "-";
-  QColor color = QColor(255, 255, 255, 255);
-
-  if (lead_status) {
-    // Red if approaching faster than 10mph
-    // Orange if approaching (negative)
-    if (lead_v_rel < -4.4704) {
-      color = QColor(255, 0, 0, 255);
-    } else if (lead_v_rel < 0) {
-      color = QColor(255, 188, 0, 255);
-    }
-  }
-
-  return UiElement(value, "REL SPEED", speedUnit, color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getSteeringAngleDeg() {
-  QString value = QString("%1%2%3").arg(QString::number(angleSteers, 'f', 1)).arg("°").arg("");
-  QColor color = (madsEnabled && latActive) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
-
-  // Red if large steering angle
-  // Orange if moderate steering angle
-  if (std::fabs(angleSteers) > 180) {
-    color = QColor(255, 0, 0, 255);
-  } else if (std::fabs(angleSteers) > 90) {
-    color = QColor(255, 188, 0, 255);
-  }
-
-  return UiElement(value, "REAL STEER", "", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getActualLateralAccel() {
-  float actualLateralAccel = (curvature * pow(vEgo, 2)) - (roll * 9.81);
-
-  QString value = QString::number(actualLateralAccel, 'f', 2);
-  QColor color = (madsEnabled && latActive) ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
-
-  return UiElement(value, "ACTUAL LAT", "m/s²", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getSteeringAngleDesiredDeg() {
-  QString value = (madsEnabled && latActive) ? QString("%1%2%3").arg(QString::number(steerAngleDesired, 'f', 1)).arg("°").arg("") : "-";
-  QColor color = QColor(255, 255, 255, 255);
-
-  if (madsEnabled && latActive) {
-    // Red if large steering angle
-    // Orange if moderate steering angle
-    if (std::fabs(angleSteers) > 180) {
-      color = QColor(255, 0, 0, 255);
-    } else if (std::fabs(angleSteers) > 90) {
-      color = QColor(255, 188, 0, 255);
-    } else {
-      color = QColor(0, 255, 0, 255);
-    }
-  }
-
-  return UiElement(value, "DESIRED STEER", "", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getMemoryUsagePercent() {
-  QString value = QString("%1%2").arg(QString::number(memoryUsagePercent, 'd', 0)).arg("%");
-  QColor color = (memoryUsagePercent > 85) ? QColor(255, 188, 0, 255) : QColor(255, 255, 255, 255);
-
-  return UiElement(value, "RAM", "", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getAEgo() {
-  QString value = QString::number(aEgo, 'f', 1);
-  QColor color = QColor(255, 255, 255, 255);
-
-  return UiElement(value, "ACC.", "m/s²", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getVEgoLead() {
-  QString value = lead_status ? QString::number((lead_v_rel + vEgo) * (is_metric ? MS_TO_KPH : MS_TO_MPH), 'f', 0) : "-";
-  QColor color = QColor(255, 255, 255, 255);
-
-  if (lead_status) {
-    // Red if approaching faster than 10mph
-    // Orange if approaching (negative)
-    if (lead_v_rel < -4.4704) {
-      color = QColor(255, 0, 0, 255);
-    } else if (lead_v_rel < 0) {
-      color = QColor(255, 188, 0, 255);
-    }
-  }
-
-  return UiElement(value, "L.S.", speedUnit, color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getFrictionCoefficientFiltered() {
-  QString value = QString::number(frictionCoefficientFiltered, 'f', 3);
-  QColor color = liveValid ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
-
-  return UiElement(value, "FRIC.", "", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getLatAccelFactorFiltered() {
-  QString value = QString::number(latAccelFactorFiltered, 'f', 3);
-  QColor color = liveValid ? QColor(0, 255, 0, 255) : QColor(255, 255, 255, 255);
-
-  return UiElement(value, "L.A.", "m/s²", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getSteeringTorqueEps() {
-  QString value = QString::number(std::fabs(steeringTorqueEps), 'f', 1);
-  QColor color = QColor(255, 255, 255, 255);
-
-  return UiElement(value, "E.T.", "N·dm", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getBearingDeg() {
-  QString value = (bearingAccuracyDeg != 180.00) ? QString("%1%2%3").arg(QString::number(bearingDeg, 'd', 0)).arg("°").arg("") : "-";
-  QColor color = QColor(255, 255, 255, 255);
-  QString dir_value;
-
-  if (bearingAccuracyDeg != 180.00) {
-    if (((bearingDeg >= 337.5) && (bearingDeg <= 360)) || ((bearingDeg >= 0) && (bearingDeg <= 22.5))) {
-      dir_value = "N";
-    } else if ((bearingDeg > 22.5) && (bearingDeg < 67.5)) {
-      dir_value = "NE";
-    } else if ((bearingDeg >= 67.5) && (bearingDeg <= 112.5)) {
-      dir_value = "E";
-    } else if ((bearingDeg > 112.5) && (bearingDeg < 157.5)) {
-      dir_value = "SE";
-    } else if ((bearingDeg >= 157.5) && (bearingDeg <= 202.5)) {
-      dir_value = "S";
-    } else if ((bearingDeg > 202.5) && (bearingDeg < 247.5)) {
-      dir_value = "SW";
-    } else if ((bearingDeg >= 247.5) && (bearingDeg <= 292.5)) {
-      dir_value = "W";
-    } else if ((bearingDeg > 292.5) && (bearingDeg < 337.5)) {
-      dir_value = "NW";
-    }
-  } else {
-    dir_value = "OFF";
-  }
-
-  return UiElement(QString("%1 | %2").arg(dir_value).arg(value), "B.D.", "", color);
-}
-
-AnnotatedCameraWidgetSP::UiElement AnnotatedCameraWidgetSP::getAltitude() {
-  QString value = (gpsAccuracy != 0.00) ? QString::number(altitude, 'f', 1) : "-";
-  QColor color = QColor(255, 255, 255, 255);
-
-  return UiElement(value, "ALT.", "m", color);
-}
-
 void AnnotatedCameraWidgetSP::drawRightDevUi(QPainter &p, int x, int y) {
   int rh = 5;
   int ry = y;
 
   // Add Relative Distance to Primary Lead Car
   // Unit: Meters
-  UiElement dRelElement = getDRel();
+  UiElement dRelElement = DeveloperUi::getDRel(lead_status, lead_d_rel);
   rh += drawDevUiElementRight(p, x, ry, dRelElement.value, dRelElement.label, dRelElement.units, dRelElement.color);
   ry = y + rh;
 
   // Add Relative Velocity vs Primary Lead Car
   // Unit: kph if metric, else mph
-  UiElement vRelElement = getVRel();
+  UiElement vRelElement = DeveloperUi::getVRel(lead_status, lead_v_rel, is_metric, speedUnit);
   rh += drawDevUiElementRight(p, x, ry, vRelElement.value, vRelElement.label, vRelElement.units, vRelElement.color);
   ry = y + rh;
 
   // Add Real Steering Angle
   // Unit: Degrees
-  UiElement steeringAngleDegElement = getSteeringAngleDeg();
+  UiElement steeringAngleDegElement = DeveloperUi::getSteeringAngleDeg(angleSteers, madsEnabled, latActive);
   rh += drawDevUiElementRight(p, x, ry, steeringAngleDegElement.value, steeringAngleDegElement.label, steeringAngleDegElement.units, steeringAngleDegElement.color);
   ry = y + rh;
 
   if (lateralState == "torque") {
     // Add Actual Lateral Acceleration (roll compensated) when using Torque
     // Unit: m/s²
-    UiElement actualLateralAccelElement = getActualLateralAccel();
+    UiElement actualLateralAccelElement = DeveloperUi::getActualLateralAccel(curvature, vEgo, roll, madsEnabled, latActive);
     rh += drawDevUiElementRight(p, x, ry, actualLateralAccelElement.value, actualLateralAccelElement.label, actualLateralAccelElement.units, actualLateralAccelElement.color);
   } else {
     // Add Desired Steering Angle when using PID
     // Unit: Degrees
-    UiElement steeringAngleDesiredDegElement = getSteeringAngleDesiredDeg();
+    UiElement steeringAngleDesiredDegElement = DeveloperUi::getSteeringAngleDesiredDeg(madsEnabled, latActive, steerAngleDesired, angleSteers);
     rh += drawDevUiElementRight(p, x, ry, steeringAngleDesiredDegElement.value, steeringAngleDesiredDegElement.label, steeringAngleDesiredDegElement.units, steeringAngleDesiredDegElement.color);
   }
   ry = y + rh;
 
   // Add Device Memory (RAM) Usage
   // Unit: Percent
-  UiElement memoryUsagePercentElement = getMemoryUsagePercent();
+  UiElement memoryUsagePercentElement = DeveloperUi::getMemoryUsagePercent(memoryUsagePercent);
   rh += drawDevUiElementRight(p, x, ry, memoryUsagePercentElement.value, memoryUsagePercentElement.label, memoryUsagePercentElement.units, memoryUsagePercentElement.color);
   ry = y + rh;
 
@@ -982,39 +817,39 @@ void AnnotatedCameraWidgetSP::drawNewDevUi2(QPainter &p, int x, int y) {
 
   // Add Acceleration from Car
   // Unit: Meters per Second Squared
-  UiElement aEgoElement = getAEgo();
+  UiElement aEgoElement = DeveloperUi::getAEgo(aEgo);
   rw += drawNewDevUiElement(p, rw, y, aEgoElement.value, aEgoElement.label, aEgoElement.units, aEgoElement.color);
 
   // Add Velocity of Primary Lead Car
   // Unit: kph if metric, else mph
-  UiElement vEgoLeadElement = getVEgoLead();
+  UiElement vEgoLeadElement = DeveloperUi::getVEgoLead(lead_status, lead_v_rel, vEgo, is_metric, speedUnit);
   rw += drawNewDevUiElement(p, rw, y, vEgoLeadElement.value, vEgoLeadElement.label, vEgoLeadElement.units, vEgoLeadElement.color);
 
   if (torquedUseParams) {
     // Add Friction Coefficient Raw from torqued
     // Unit: None
-    UiElement frictionCoefficientFilteredElement = getFrictionCoefficientFiltered();
+    UiElement frictionCoefficientFilteredElement = DeveloperUi::getFrictionCoefficientFiltered(frictionCoefficientFiltered, liveValid);
     rw += drawNewDevUiElement(p, rw, y, frictionCoefficientFilteredElement.value, frictionCoefficientFilteredElement.label, frictionCoefficientFilteredElement.units, frictionCoefficientFilteredElement.color);
 
     // Add Lateral Acceleration Factor Raw from torqued
     // Unit: m/s²
-    UiElement latAccelFactorFilteredElement = getLatAccelFactorFiltered();
+    UiElement latAccelFactorFilteredElement = DeveloperUi::getLatAccelFactorFiltered(latAccelFactorFiltered, liveValid);
     rw += drawNewDevUiElement(p, rw, y, latAccelFactorFilteredElement.value, latAccelFactorFilteredElement.label, latAccelFactorFilteredElement.units, latAccelFactorFilteredElement.color);
   } else {
     // Add Steering Torque from Car EPS
     // Unit: Newton Meters
-    UiElement steeringTorqueEpsElement = getSteeringTorqueEps();
+    UiElement steeringTorqueEpsElement = DeveloperUi::getSteeringTorqueEps(steeringTorqueEps);
     rw += drawNewDevUiElement(p, rw, y, steeringTorqueEpsElement.value, steeringTorqueEpsElement.label, steeringTorqueEpsElement.units, steeringTorqueEpsElement.color);
 
     // Add Bearing Degree and Direction from Car (Compass)
     // Unit: Meters
-    UiElement bearingDegElement = getBearingDeg();
+    UiElement bearingDegElement = DeveloperUi::getBearingDeg(bearingAccuracyDeg, bearingDeg);
     rw += drawNewDevUiElement(p, rw, y, bearingDegElement.value, bearingDegElement.label, bearingDegElement.units, bearingDegElement.color);
   }
 
   // Add Altitude of Current Location
   // Unit: Meters
-  UiElement altitudeElement = getAltitude();
+  UiElement altitudeElement = DeveloperUi::getAltitude(gpsAccuracy, altitude);
   rw += drawNewDevUiElement(p, rw, y, altitudeElement.value, altitudeElement.label, altitudeElement.units, altitudeElement.color);
 }
 
