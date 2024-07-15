@@ -19,20 +19,13 @@
 // This is for compatibility purposes, until we properly do inheritance splitting
 // This is because some controls were needing LabelControlSP, but the original code was using LabelControl
 // which was modified in-place in the past but since we now have a new file, we will be moving it to LabelControlSP
+#define AbstractControl AbstractControlCustomSP
+#define LayoutWidget LayoutWidgetSP
 #define LabelControl LabelControlSP
 #define ElidedLabel ElidedLabelSP
 #define ButtonControl ButtonControlSP
 #define Toggle ToggleSP
 #define ToggleControl ToggleControlSP
-
-// To avoid multiple definition errors for AbstractControl and LayoutWidget when ENABLE_MAPS is defined,
-// we redefine these classes with custom names (AbstractControlCustomSP and LayoutWidgetSP).
-// This ensures that the linker does not encounter duplicate symbols for these classes from different sources.
-// This redefinition is only necessary when building with map support; it is not needed if map functionality is not required.
-#ifdef ENABLE_MAPS
-#define AbstractControl AbstractControlCustomSP
-#define LayoutWidget LayoutWidgetSP
-#endif
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
