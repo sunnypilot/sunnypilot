@@ -18,6 +18,45 @@ TICI = os.path.isfile('/TICI')
 AGNOS = TICI
 UBUNTU_FOCAL = int(subprocess.check_output('[ -f /etc/os-release ] && . /etc/os-release && [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "20.04" ] && echo 1 || echo 0', shell=True, encoding='utf-8').rstrip())
 Export('UBUNTU_FOCAL')
+_DEBUG = False
+
+def is_internal_developer(debug=False):
+  def collect_required_gpg_key_ids(keys_dir):
+    try:
+      key_ids = [f.split('.')[0] for f in os.listdir(keys_dir) if f.endswith(".gpg")]
+      if debug:
+        print(f"SP: Required GPG key IDs: {key_ids}")
+      return key_ids
+    except OSError as e:
+      if debug:
+        print(f"SP: Failed to read GPG key IDs from {keys_dir}. Error: {e}")
+      return []
+
+  def is_key_available(required_gpg_key_ids):
+    for key_id in required_gpg_key_ids:
+      try:
+        result = subprocess.check_output(['gpg', '--list-keys', key_id], stderr=subprocess.STDOUT)
+        if key_id in result.decode():
+          if debug:
+            print(f"SP: GPG key {key_id} is available.")
+          return True
+      except subprocess.CalledProcessError as e:
+        if debug:
+          print(f"SP: Failed to list GPG key {key_id}. Error:", e.output.decode().strip())
+    return False
+
+  keys_dir = os.path.join(BASEDIR, ".git-crypt/keys/default/0")
+  required_gpg_key_ids = collect_required_gpg_key_ids(keys_dir)
+
+  sunnypilot = is_key_available(required_gpg_key_ids)
+
+  if sunnypilot:
+    print("SP: Confirmed sunnypilot internal developer.")
+    print("SP: Loading sunnypilot elements ...")
+  elif debug:
+    print("SP: None of the required GPG keys are available.")
+
+  return sunnypilot
 
 def is_sunnypilot_developer():
   """Check if the current user is a SunnyPilot developer."""
@@ -112,6 +151,12 @@ AddOption('--sunnypilot',
           dest='sunnypilot',
           default=is_sunnypilot_developer(), # check if the current user is a SunnyPilot developer
           help='Will make sure it builds SP ui and other SP specific things that are not public (encrypted sources)')
+
+AddOption('--sunnypilot',
+          action='store_true',
+          dest='sunnypilot',
+          default=is_internal_developer(_DEBUG), # check if the current user is a sunnypilot developer
+          help='build sunnypilot elements and other sunnypilot-specific items that are meant for internal development')
 
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64
