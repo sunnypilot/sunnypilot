@@ -43,7 +43,7 @@ widgets_src += ["qt/offroad/sunnypilot/display_settings.cc", "qt/offroad/sunnypi
 widgets_src += ["qt/network/sunnylink/sunnylink_client.cc", "qt/network/sunnylink/services/base_device_service.cc",
                 "qt/network/sunnylink/services/role_service.cc", "qt/network/sunnylink/services/user_service.cc"]
 
-qt_env['CPPDEFINES'] = []
+qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if GetOption('sunnypilot') else []
 if maps:
   base_libs += ['QMapLibre']
   widgets_src += ["qt/maps/map_helpers.cc", "qt/maps/map_settings.cc", "qt/maps/map.cc", "qt/maps/map_panel.cc",
