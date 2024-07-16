@@ -11,7 +11,7 @@
 #include "common/swaglog.h"
 #include "common/util.h"
 #include "common/watchdog.h"
-#include "sunnypilot/qt/network/sunnylink/models/role_model.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_role_model.h"
 #include "system/hardware/hw.h"
 
 #define BACKLIGHT_DT 0.05

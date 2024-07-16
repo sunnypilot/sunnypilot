@@ -22,10 +22,10 @@ widgets_src = [
 ]
 
 network_src = [
-  "sunnypilot/qt/network/sunnylink/sunnylink_client.cc",
-  "sunnypilot/qt/network/sunnylink/services/base_device_service.cc",
-  "sunnypilot/qt/network/sunnylink/services/role_service.cc",
-  "sunnypilot/qt/network/sunnylink/services/user_service.cc"]
+  "sunnypilot/qt/network/sunnylink/sp_priv_sunnylink_client.cc",
+  "sunnypilot/qt/network/sunnylink/services/sp_priv_base_device_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/sp_priv_role_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/sp_priv_user_service.cc"]
 
 qt_src = [
   "sunnypilot/qt/sp_priv_home.cc",

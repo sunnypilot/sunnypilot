@@ -1,8 +1,9 @@
-#ifndef USERSERVICE_H
-#define USERSERVICE_H
+#pragma once
 
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/services/base_device_service.h"
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/user_model.h"
+#include <vector>
+
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/services/sp_priv_base_device_service.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_user_model.h"
 
 class UserService : public BaseDeviceService {
   Q_OBJECT
@@ -22,5 +23,3 @@ protected:
 private:
   QString url = "/users";
 };
-
-#endif

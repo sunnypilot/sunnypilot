@@ -1,5 +1,4 @@
-#ifndef SPONSORROLE_MODEL_H
-#define SPONSORROLE_MODEL_H
+#pragma once
 
 #include <QJsonObject>
 
@@ -24,7 +23,7 @@ public:
     QJsonObject json = RoleModel::toJson();
     json["role_tier"] = sponsorTierToString(roleTier);
     return json;
-  };
+  }
 
   static SponsorTier stringToSponsorTier(const QString &sponsorTierString) {
     const auto sponsorTierStringLower = sponsorTierString.toLower();
@@ -80,5 +79,3 @@ public:
   }
   [[nodiscard]] auto getSponsorTierColor() const { return sponsorTierToColor(roleTier); }
 };
-
-#endif

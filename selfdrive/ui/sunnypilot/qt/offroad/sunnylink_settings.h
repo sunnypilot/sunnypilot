@@ -3,7 +3,7 @@
 #include <QtCore/qjsonobject.h>
 
 #include <QrCode.hpp>
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/sp_priv_sunnylink_client.h"
 
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"

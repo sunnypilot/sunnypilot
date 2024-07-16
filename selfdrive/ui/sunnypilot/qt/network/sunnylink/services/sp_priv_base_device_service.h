@@ -1,6 +1,4 @@
-#ifndef BASESERVICE_H
-#define BASESERVICE_H
-
+#pragma once
 
 #include "selfdrive/ui/qt/api.h"
 #include "selfdrive/ui/qt/request_repeater.h"
@@ -14,7 +12,7 @@ protected:
   void loadDeviceData(const QString &url, bool poll = false);
   virtual void handleResponse(const QString &response, bool success) = 0;
 
-  static bool is_sunnylink_enabled() { return Params().getBool("SunnylinkEnabled");};
+  static bool is_sunnylink_enabled() { return Params().getBool("SunnylinkEnabled");}
   ParamWatcher* param_watcher;
   HttpRequest* initial_request = nullptr;
   RequestRepeater* repeater = nullptr;
@@ -25,5 +23,3 @@ public:
   bool isCurrentyPolling() {return repeater != nullptr;}
   void stopPolling();
 };
-
-#endif

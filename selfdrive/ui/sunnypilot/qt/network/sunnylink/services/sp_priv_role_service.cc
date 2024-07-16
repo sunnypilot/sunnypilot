@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/services/role_service.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/services/sp_priv_role_service.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>

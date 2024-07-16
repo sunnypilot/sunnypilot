@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/services/user_service.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/services/sp_priv_user_service.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>

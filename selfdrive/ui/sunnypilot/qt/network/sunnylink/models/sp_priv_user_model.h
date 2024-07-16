@@ -1,5 +1,4 @@
-#ifndef USER_MODEL_H
-#define USER_MODEL_H
+#pragma once
 
 #include <QJsonObject>
 
@@ -29,5 +28,3 @@ public:
     return json;
   }
 };
-
-#endif

@@ -1,4 +1,4 @@
-#include "base_device_service.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink//services/sp_priv_base_device_service.h"
 
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/util.h"
@@ -31,7 +31,7 @@ void BaseDeviceService::loadDeviceData(const QString &url, bool poll) {
     LOGD("Cache key: SunnylinkCache_%s", qPrintable(QString(getCacheKey())));
     repeater = new RequestRepeater(this, fullUrl, "SunnylinkCache_" + getCacheKey(), 60, false, true);
     connect(repeater, &RequestRepeater::requestDone, this, &BaseDeviceService::handleResponse);
-  } else if(isCurrentyPolling()){
+  } else if (isCurrentyPolling()) {
     repeater->ForceUpdate();
   } else {
     LOGD("Sending one-time %s", qPrintable(fullUrl));

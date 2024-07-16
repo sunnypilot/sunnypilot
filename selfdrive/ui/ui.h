@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <QObject>
 #include <QTimer>
@@ -15,9 +16,9 @@
 #include "common/mat.h"
 #include "common/params.h"
 #include "common/timing.h"
-#include "sunnypilot/qt/network/sunnylink/models/role_model.h"
-#include "sunnypilot/qt/network/sunnylink/models/sponsor_role_model.h"
-#include "sunnypilot/qt/network/sunnylink/models/user_model.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_role_model.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_sponsor_role_model.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_user_model.h"
 #include "system/hardware/hw.h"
 
 const int UI_BORDER_SIZE = 30;
@@ -242,7 +243,7 @@ public:
   inline SponsorRoleModel sunnylinkSponsorRole() const {
     std::optional<SponsorRoleModel> sponsorRoleWithHighestTier = std::nullopt;
     for (const auto &role : sunnylinkRoles) {
-      if(role.roleType != RoleType::Sponsor)
+      if (role.roleType != RoleType::Sponsor)
         continue;
       
       if (auto sponsorRole = role.as<SponsorRoleModel>(); !sponsorRoleWithHighestTier.has_value() || sponsorRoleWithHighestTier->roleTier < sponsorRole.roleTier) {

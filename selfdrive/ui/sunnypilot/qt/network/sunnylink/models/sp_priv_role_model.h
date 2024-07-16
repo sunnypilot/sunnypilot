@@ -1,5 +1,4 @@
-#ifndef ROLE_MODEL_H
-#define ROLE_MODEL_H
+#pragma once
 
 #include <QJsonObject>
 
@@ -56,5 +55,3 @@ public:
     return T(m_raw_json_object);
   }
 };
-
-#endif
