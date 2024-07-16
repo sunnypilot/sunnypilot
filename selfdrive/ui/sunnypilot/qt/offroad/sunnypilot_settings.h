@@ -7,7 +7,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_custom_offsets_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_lane_change_settings.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/mads_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_mads_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_control_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_warning_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_policy_settings.h"

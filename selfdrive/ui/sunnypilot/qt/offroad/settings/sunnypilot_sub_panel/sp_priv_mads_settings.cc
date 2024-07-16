@@ -1,4 +1,7 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/mads_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_mads_settings.h"
+
+#include <tuple>
+#include <vector>
 
 MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -35,11 +38,11 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
   dlob_settings = new ButtonParamControlSP(
     "DisengageLateralOnBrake",
     tr("Steering Mode After Braking"),
-    tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\nRemain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed."),
+    tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\n"
+       "Remain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed."),
     "../assets/offroad/icon_blank.png",
     dlob_settings_texts,
-    500
-  );
+    500);
   dlob_settings->showDescription();
   list->addItem(dlob_settings);
 
