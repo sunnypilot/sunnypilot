@@ -58,39 +58,6 @@ def is_internal_developer(debug=False):
 
   return sunnypilot
 
-def is_sunnypilot_developer():
-  """Check if the current user is a SunnyPilot developer."""
-  
-  def collect_required_gpg_key_ids(keys_dir):
-    try:
-      key_ids = [filename.split('.')[0] for filename in os.listdir(keys_dir) if filename.endswith(".gpg")]
-      print(f"Required GPG key IDs: {key_ids}")
-      return key_ids
-    except OSError as e:
-      print(f"Failed to read GPG key IDs from {keys_dir}. Error: {e}")
-      return []
-  
-  def is_sunnypilot_key_available(required_gpg_key_ids):
-    for key_id in required_gpg_key_ids:
-      try:
-        result = subprocess.check_output(['gpg', '--list-keys', key_id], stderr=subprocess.STDOUT)
-        if key_id in result.decode():
-          print(f"GPG key {key_id} is available.")
-          return True
-      except subprocess.CalledProcessError as e:
-        print(f"Failed to list GPG key {key_id}. Error:", e.output.decode().strip())
-    return False
-
-  keys_dir = os.path.join(BASEDIR, ".git-crypt/keys/default/0")
-  required_gpg_key_ids = collect_required_gpg_key_ids(keys_dir)
-
-  sunnypilot = is_sunnypilot_key_available(required_gpg_key_ids)
-
-  if not sunnypilot:
-    print("None of the required GPG keys are available.")
-
-  return sunnypilot
-
 Decider('MD5-timestamp')
 
 SetOption('num_jobs', int(os.cpu_count()/2))
@@ -145,12 +112,6 @@ AddOption('--minimal',
           dest='extras',
           default=os.path.exists(File('#.lfsconfig').abspath), # minimal by default on release branch (where there's no LFS)
           help='the minimum build to run openpilot. no tests, tools, etc.')
-          
-AddOption('--sunnypilot',
-          action='store_true',
-          dest='sunnypilot',
-          default=is_sunnypilot_developer(), # check if the current user is a SunnyPilot developer
-          help='Will make sure it builds SP ui and other SP specific things that are not public (encrypted sources)')
 
 AddOption('--sunnypilot',
           action='store_true',
