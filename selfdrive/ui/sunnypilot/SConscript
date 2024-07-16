@@ -1,0 +1,10 @@
+widgets_src = []
+
+network_src = []
+
+qt_src = []
+
+sp_widgets_src = widgets_src + network_src
+sp_qt_src = qt_src
+
+Export('sp_widgets_src', 'sp_qt_src')
