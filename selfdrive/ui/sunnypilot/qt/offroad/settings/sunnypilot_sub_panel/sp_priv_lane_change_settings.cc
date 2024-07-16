@@ -1,4 +1,9 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/lane_change_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_lane_change_settings.h"
+
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
 
 LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -97,10 +102,12 @@ void LaneChangeSettings::updateToggles() {
 }
 
 // Auto Lane Change Timer (ALCT)
-AutoLaneChangeTimer::AutoLaneChangeTimer() : OptionControlSP (
+AutoLaneChangeTimer::AutoLaneChangeTimer() : OptionControlSP(
   "AutoLaneChangeTimer",
   tr("Auto Lane Change by Blinker"),
-  tr("Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.\nPlease use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
+  tr("Set a timer to delay the auto lane change operation when the blinker is used. "
+     "No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.\n"
+     "Please use caution when using this feature. Only use the blinker when traffic and road conditions permit."),
   "../assets/offroad/icon_blank.png",
   {-1, 5}) {
 
@@ -127,7 +134,7 @@ void AutoLaneChangeTimer::refresh() {
   }
 }
 
-PauseLateralSpeed::PauseLateralSpeed() : OptionControlSP (
+PauseLateralSpeed::PauseLateralSpeed() : OptionControlSP(
   "PauseLateralSpeed",
   "",
   tr("Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h."),
