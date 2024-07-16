@@ -1,6 +1,6 @@
 import os
 import json
-Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations', 'UBUNTU_FOCAL')
+Import('qt_env', 'arch', 'common', 'messaging', 'visionipc', 'transformations')
 
 base_libs = [common, messaging, visionipc, transformations,
              'm', 'OpenCL', 'ssl', 'crypto', 'pthread'] + qt_env["LIBS"]
@@ -28,20 +28,7 @@ widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
                "qt/widgets/ssh_keys.cc", "qt/widgets/toggle.cc", "qt/widgets/controls.cc",
                "qt/widgets/offroad_alerts.cc", "qt/widgets/prime.cc", "qt/widgets/keyboard.cc",
                "qt/widgets/scrollview.cc", "qt/widgets/cameraview.cc", "#third_party/qrcode/QrCode.cc",
-               "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"]
-
-widgets_src += ["qt/offroad/sunnypilot/display_settings.cc", "qt/offroad/sunnypilot/sunnypilot_settings.cc",
-                "qt/offroad/sunnypilot/vehicle_settings.cc", "qt/offroad/sunnypilot/visuals_settings.cc",
-                "qt/offroad/sunnypilot/trips_settings.cc", "qt/offroad/sunnypilot/mads_settings.cc",
-                "qt/offroad/sunnypilot/lane_change_settings.cc", "qt/offroad/sunnypilot/speed_limit_control_settings.cc",
-                "qt/offroad/sunnypilot/monitoring_settings.cc", "qt/offroad/sunnypilot/osm_settings.cc",
-                "qt/offroad/sunnypilot/custom_offsets_settings.cc", "qt/widgets/sunnypilot/drive_stats.cc",
-                "qt/offroad/sunnypilot/software_settings_sp.cc", "qt/offroad/sunnypilot/models_fetcher.cc",
-                "qt/offroad/sunnypilot/speed_limit_warning_settings.cc", "qt/offroad/sunnypilot/speed_limit_policy_settings.cc",
-                "qt/offroad/sunnypilot/sunnylink_settings.cc"]
-
-widgets_src += ["qt/network/sunnylink/sunnylink_client.cc", "qt/network/sunnylink/services/base_device_service.cc",
-                "qt/network/sunnylink/services/role_service.cc", "qt/network/sunnylink/services/user_service.cc"]
+               "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"] + sp_widgets_src
 
 qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if GetOption('sunnypilot') else []
 if maps:
@@ -59,8 +46,7 @@ qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
           "qt/onroad/onroad_home.cc", "qt/onroad/annotated_camera.cc",
-          "qt/onroad/buttons.cc", "qt/onroad/alerts.cc",
-          "qt/onroad_settings.cc", "qt/onroad_settings_panel.cc"]
+          "qt/onroad/buttons.cc", "qt/onroad/alerts.cc"] + sp_qt_src
 
 # build translation files
 with open(File("translations/languages.json").abspath) as f:
