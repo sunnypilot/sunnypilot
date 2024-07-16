@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/custom_offsets_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_custom_offsets_settings.h"
 
 CustomOffsetsSettings::CustomOffsetsSettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -28,7 +28,7 @@ CustomOffsetsSettings::CustomOffsetsSettings(QWidget* parent) : QWidget(parent) 
 }
 
 // Camera Offset Value
-CameraOffset::CameraOffset() : OptionControlSP (
+CameraOffset::CameraOffset() : OptionControlSP(
   "CameraOffset",
   tr("Camera Offset - Laneful Only"),
   tr("Hack to trick vehicle to be left or right biased in its lane. Decreasing the value will make the car keep more left, increasing will make it keep more right. Changes take effect immediately. Default: +4 cm"),
@@ -48,7 +48,7 @@ void CameraOffset::refresh() {
 }
 
 // Path Offset Value
-PathOffset::PathOffset() : OptionControlSP (
+PathOffset::PathOffset() : OptionControlSP(
   "PathOffset",
   tr("Path Offset"),
   tr("Hack to trick the model path to be left or right biased of the lane. Decreasing the value will shift the model more left, increasing will shift the model more right. Changes take effect immediately."),

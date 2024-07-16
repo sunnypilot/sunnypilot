@@ -1,8 +1,11 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 #include "common/model.h"
 #include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/custom_offsets_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_custom_offsets_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/lane_change_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/mads_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_control_settings.h"
@@ -71,8 +74,10 @@ private:
 
   const QString nnff_description = QString("%1<br><br>"
                                            "%2")
-                                   .arg(tr("Formerly known as <b>\"NNFF\"</b>, this replaces the lateral <b>\"torque\"</b> controller with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy."))
-                                   .arg(tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, or to provide log data for your car if your car is currently unsupported: ") + "<font color='white'><b>#tuning-nnlc</b></font>");
+    .arg(tr("Formerly known as <b>\"NNFF\"</b>, this replaces the lateral <b>\"torque\"</b> controller, "
+            "with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy."))
+    .arg(tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, "
+            "or to provide log data for your car if your car is currently unsupported: ") + "<font color='white'><b>#tuning-nnlc</b></font>");
 
   QString nnffDescriptionBuilder(const QString &custom_description) {
     QString description = "<b>" + custom_description + "</b><br><br>" + nnff_description;
@@ -80,5 +85,6 @@ private:
   }
 
   const QString custom_offsets_description = QString(tr("Add custom offsets to Camera and Path in sunnypilot."));
-  const QString dlp_description = QString(tr("Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions."));
+  const QString dlp_description = QString(
+    tr("Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions."));
 };
