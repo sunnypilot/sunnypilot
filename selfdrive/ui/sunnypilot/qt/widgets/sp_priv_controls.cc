@@ -15,7 +15,7 @@ QFrame *horizontal_line(QWidget *parent) {
   return line;
 }
 
-AbstractControl::AbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
+AbstractControlSP_TITLED::AbstractControlSP_TITLED(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setMargin(0);
 
@@ -68,7 +68,7 @@ AbstractControl::AbstractControl(const QString &title, const QString &desc, cons
   main_layout->addStretch();
 }
 
-void AbstractControl::hideEvent(QHideEvent *e) {
+void AbstractControlSP_TITLED::hideEvent(QHideEvent *e) {
   if (description != nullptr) {
     description->hide();
   }
@@ -121,7 +121,7 @@ void AbstractControlSP::hideEvent(QHideEvent *e) {
 
 // controls
 
-ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControl(title, desc, "", parent) {
+ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControlSP_TITLED(title, desc, "", parent) {
   btn.setText(text);
   btn.setStyleSheet(R"(
     QPushButton {

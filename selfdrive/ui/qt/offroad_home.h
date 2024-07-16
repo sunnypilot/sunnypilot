@@ -21,6 +21,7 @@
 #include "selfdrive/ui/sunnypilot/qt/sp_priv_sidebar.h"
 #define OnroadWindow OnroadWindowSP
 #define OffroadHomeImp OffroadHomeSP
+#define LayoutWidget LayoutWidgetSP
 #define Sidebar SidebarSP
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"

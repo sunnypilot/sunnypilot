@@ -25,15 +25,6 @@
 #define Toggle ToggleSP
 #define ToggleControl ToggleControlSP
 
-// To avoid multiple definition errors for AbstractControl and LayoutWidget when ENABLE_MAPS is defined,
-// we redefine these classes with custom names (AbstractControlCustomSP and LayoutWidgetSP).
-// This ensures that the linker does not encounter duplicate symbols for these classes from different sources.
-// This redefinition is only necessary when building with map support; it is not needed if map functionality is not required.
-#ifdef ENABLE_MAPS
-#define AbstractControl AbstractControlCustomSP
-#define LayoutWidget LayoutWidgetSP
-#endif
-
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
 class ElidedLabelSP : public QLabel {
@@ -61,7 +52,7 @@ protected:
   QString lastText_, elidedText_;
 };
 
-class AbstractControl : public QFrame {
+class AbstractControlSP_TITLED : public QFrame {
   Q_OBJECT
 
 public:
@@ -100,7 +91,7 @@ public:
     void showDescriptionEvent();
 
 protected:
-  AbstractControl(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  AbstractControlSP_TITLED(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
   void hideEvent(QHideEvent *e) override;
 
   QHBoxLayout *hlayout;
@@ -153,11 +144,11 @@ private:
 
 
 // widget to display a value
-class LabelControlSP : public AbstractControl {
+class LabelControlSP : public AbstractControlSP_TITLED {
   Q_OBJECT
 
 public:
-  LabelControlSP(const QString &title, const QString &text = "", const QString &desc = "", QWidget *parent = nullptr) : AbstractControl(title, desc, "", parent) {
+  LabelControlSP(const QString &title, const QString &text = "", const QString &desc = "", QWidget *parent = nullptr) : AbstractControlSP_TITLED(title, desc, "", parent) {
     label.setText(text);
     label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     hlayout->addWidget(&label);
@@ -169,7 +160,7 @@ private:
 };
 
 // widget for a button with a label
-class ButtonControlSP : public AbstractControl {
+class ButtonControlSP : public AbstractControlSP_TITLED {
   Q_OBJECT
 
 public:
@@ -188,11 +179,11 @@ private:
   QPushButton btn;
 };
 
-class ToggleControlSP : public AbstractControl {
+class ToggleControlSP : public AbstractControlSP_TITLED {
   Q_OBJECT
 
 public:
-  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControl(title, desc, icon, parent) {
+  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControlSP_TITLED(title, desc, icon, parent) {
     toggle.setFixedSize(150, 100);
     if (state) {
       toggle.togglePosition();
@@ -442,11 +433,11 @@ private:
 };
 
 // convenience class for wrapping layouts
-class LayoutWidget : public QWidget {
+class LayoutWidgetSP : public QWidget {
   Q_OBJECT
 
 public:
-  LayoutWidget(QLayout *l, QWidget *parent = nullptr) : QWidget(parent) {
+  LayoutWidgetSP(QLayout *l, QWidget *parent = nullptr) : QWidget(parent) {
     setLayout(l);
   }
 };
