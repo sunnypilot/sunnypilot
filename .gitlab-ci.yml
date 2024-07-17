@@ -129,6 +129,8 @@ build:
       --exclude='**/selfdrive/ui/**/*.h'
       --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/'
       --exclude='**/.git/'
+      --exclude='**/SConstruct'
+      --exclude='**/SConscript'
       --delete-excluded
       --chown=comma:comma
       ${BUILD_DIR}/ ${OUTPUT_DIR}/
