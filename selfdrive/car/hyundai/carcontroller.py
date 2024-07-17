@@ -1,7 +1,7 @@
 from cereal import car
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.numpy_fast import clip
+from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
@@ -104,6 +104,14 @@ class CarController(CarControllerBase):
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
     self.custom_stock_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
     self.lead_distance = 0
+
+    self.jerk = 0.0
+    self.jerk_l = 0.0
+    self.jerk_u = 0.0
+    self.jerkStartLimit = 2.0
+    self.cb_upper = 0.0
+    self.cb_lower = 0.0
+    self.jerk_count = 0.0
 
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
@@ -289,6 +297,8 @@ class CarController(CarControllerBase):
                   self.last_button_frame = self.frame
             elif self.frame % 2 == 0:
               can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
+      else:
+        self.make_jerk(CS, accel, actuators)
 
       # Parse lead distance from radarState and display the corresponding distance in the car's cluster
       if self.CP.openpilotLongitudinalControl and self.sm.updated['radarState'] and self.frame % 5 == 0:
@@ -301,9 +311,9 @@ class CarController(CarControllerBase):
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
-        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, jerk, int(self.frame / 2),
+        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
-                                                        CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance))
+                                                        CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
 
       # 20 Hz LFA MFA message
       if self.frame % 5 == 0 and self.CP.flags & HyundaiFlags.SEND_LFA.value:
@@ -479,3 +489,59 @@ class CarController(CarControllerBase):
 
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
     return cruise_button
+
+  def cal_jerk(self, accel, actuators):
+    if actuators.longControlState == LongCtrlState.off:
+      accel_diff = 0.0
+    elif actuators.longControlState == LongCtrlState.stopping:# or hud_control.softHold > 0:
+      accel_diff = 0.0
+    else:
+      accel_diff = accel - self.accel_last
+
+    accel_diff /= DT_CTRL
+    self.jerk = self.jerk * 0.9 + accel_diff * 0.1
+    return self.jerk
+
+  def make_jerk(self, CS, accel, actuators):
+    jerk = self.cal_jerk(accel, actuators)
+    a_error = accel - CS.out.aEgo
+    jerk = jerk + (a_error * 2.0)
+
+    if self.CP.carFingerprint in CANFD_CAR:
+      startingJerk = 0.5 #self.jerkStartLimit
+      jerkLimit = 5.0
+      self.jerk_count += DT_CTRL
+      jerk_max = interp(self.jerk_count, [0, 1.5, 2.5], [startingJerk, startingJerk, jerkLimit])
+      if actuators.longControlState == LongCtrlState.off:
+        self.jerk_u = jerkLimit
+        self.jerk_l = jerkLimit
+        self.jerk_count = 0
+      elif actuators.longControlState == LongCtrlState.stopping:
+        self.jerk_u += 0.1 if self.jerk_u < 1.5 else -0.1
+        self.jerk_l += 0.1 if self.jerk_l < 1.0 else -0.1
+        self.jerk_count = 0
+      else:
+        #self.jerk_u = min(max(2.5, jerk * 2.0), jerk_max)
+        #self.jerk_l = min(max(2.0, -jerk * 3.0), jerkLimit)
+        self.jerk_u = min(max(0.5, jerk * 2.0), jerk_max)
+        self.jerk_l = min(max(1.0, -jerk * 3.0), jerkLimit)
+    else:
+      startingJerk = self.jerkStartLimit
+      jerkLimit = 5.0
+      self.jerk_count += DT_CTRL
+      jerk_max = interp(self.jerk_count, [0, 1.5, 2.5], [startingJerk, startingJerk, jerkLimit])
+      self.cb_upper = self.cb_lower = 0
+      if actuators.longControlState == LongCtrlState.off:
+        self.jerk_u = jerkLimit
+        self.jerk_l = jerkLimit
+        self.jerk_count = 0
+      elif actuators.longControlState == LongCtrlState.stopping:
+        self.jerk_u += 0.1 if self.jerk_u < 0.5 else -0.1
+        self.jerk_l += 0.1 if self.jerk_l < 1.0 else -0.1
+        self.jerk_count = 0
+      else:
+        self.jerk_u = self.jerk_u * 0.8 + min(max(0.5, jerk * 2.0), jerk_max) * 0.2
+        self.jerk_l = self.jerk_l * 0.8 + min(max(0.5, -jerk * 2.0), jerkLimit) * 0.2
+        #self.jerk_l = min(max(1.2, -jerk * 2.0), jerkLimit) ## 1.0으로 하니 덜감속, 1.5로하니 너무감속, 1.2로 한번해보자(231228)
+        self.cb_upper = clip(0.9 + accel * 0.2, 0, 1.2)
+        self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
