@@ -16,7 +16,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   speed_limit_warning_settings = new ButtonParamControlSP(
     "SpeedLimitWarningType", tr("Speed Limit Warning"),
     "",
-    "../assets/offroad/icon_blank.png",
+    "",
     speed_limit_warning_texts,
     380);
   speed_limit_warning_settings->showDescription();
@@ -33,7 +33,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
   speed_limit_warning_offset_settings = new ButtonParamControlSP(
     "SpeedLimitWarningOffsetType", tr("Warning Offset"),
     tr("Select the desired offset to warn the driver when the vehicle is driving faster than the speed limit."),
-    "../assets/offroad/icon_blank.png",
+    "",
     speed_limit_warning_offset_settings_texts,
     380);
   list->addItem(speed_limit_warning_offset_settings);

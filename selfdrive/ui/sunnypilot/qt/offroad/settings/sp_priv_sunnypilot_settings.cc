@@ -250,7 +250,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   std::vector<QString> dlp_settings_texts{tr("Laneful"), tr("Laneless"), tr("Auto")};
   dlp_settings = new ButtonParamControlSP(
     "DynamicLaneProfile", tr("Dynamic Lane Profile"), "",
-    "../assets/offroad/icon_blank.png",
+    "",
     dlp_settings_texts,
     340);
   dlp_settings->showDescription();

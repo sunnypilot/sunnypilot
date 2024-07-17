@@ -16,7 +16,7 @@ SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(pa
     "SpeedLimitControlPolicy",
     tr("Speed Limit Source Policy"),
     "",
-    "../assets/offroad/icon_blank.png",
+    "",
     speed_limit_policy_texts,
     250);
   speed_limit_policy->showDescription();

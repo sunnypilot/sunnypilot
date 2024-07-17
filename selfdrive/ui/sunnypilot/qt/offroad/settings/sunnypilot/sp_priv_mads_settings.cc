@@ -40,7 +40,7 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
     tr("Steering Mode After Braking"),
     tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\n"
        "Remain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed."),
-    "../assets/offroad/icon_blank.png",
+    "",
     dlob_settings_texts,
     500);
   dlob_settings->showDescription();

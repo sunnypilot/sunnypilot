@@ -18,7 +18,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   speed_limit_engage_settings = new ButtonParamControlSP(
     "SpeedLimitEngageType", tr("Engage Mode"),
     "",
-    "../assets/offroad/icon_blank.png",
+    "",
     speed_limit_engage_texts,
     440);
   speed_limit_engage_settings->showDescription();
@@ -27,7 +27,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   std::vector<QString> speed_limit_offset_settings_texts{tr("Default"), tr("Fixed"), tr("Percentage")};
   speed_limit_offset_settings = new ButtonParamControlSP(
     "SpeedLimitOffsetType", tr("Limit Offset"), tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
-    "../assets/offroad/icon_blank.png",
+    "",
     speed_limit_offset_settings_texts,
     380);
   list->addItem(speed_limit_offset_settings);

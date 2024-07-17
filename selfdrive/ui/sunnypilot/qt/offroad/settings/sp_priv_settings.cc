@@ -109,7 +109,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
                                           tr("Standard is recommended. In moderate/aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. "
                                              "In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
                                              "your steering wheel distance button."),
-                                          "../assets/offroad/icon_blank.png",
+                                          "",
                                           longi_button_texts,
                                           380);
   long_personality_setting->showDescription();
@@ -120,7 +120,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
                                           tr("Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. "
                                              "In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these "
                                              "acceleration personality within Onroad Settings on the driving screen."),
-                                          "../assets/offroad/icon_blank.png",
+                                          "",
                                           accel_personality_texts);
   accel_personality_setting->showDescription();
 
