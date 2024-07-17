@@ -79,6 +79,12 @@ build:
     - "echo VERSION: ${VERSION}"
     - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
+    - |
+      echo "Decoding and importing GPG key..."
+      gpg -v --import <(echo "$GPG_PRIVATE_KEY_BASE64" | base64 -d)
+    - |
+      echo "Unlocking git-crypt..."
+      git-crypt unlock
   script:
     - export PYTHONPATH="$BUILD_DIR"
     - "echo Building Panda..."
@@ -146,7 +152,7 @@ build:
       when: manual
     - if: $NEW_BRANCH
       when: always
-      
+
 check no source code sent:
   image: alpine
   stage: sanity
@@ -225,13 +231,13 @@ publish to public github prebuilt:
   needs: ["build"]
   variables:
     DISCORD_HOOK: "${DISCORD_MANUAL_BUILD_WEBHOOK_URL}" # Default hook if not overriden by children
-  before_script:
+  before_script: &notify_discord_before_script
     - 'apk add curl jq envsubst'
   script:
     - echo using [${TEMPLATE}]
     - cat release/ci/${TEMPLATE} | envsubst | tee payload.json
     - 'curl -X POST -H "Content-Type: application/json" -d "$(cat payload.json)" ${DISCORD_HOOK} | jq .'
-  rules:
+  rules: &notify_discord_rules
     - if: $NEW_BRANCH
       when: on_success
     - when: never
@@ -242,7 +248,7 @@ notify pending action:
   variables:
     TEMPLATE: "discord_template_notify_dev_private.json"
   before_script:
-    - !reference [".notify_discord", "before_script"]
+    - *notify_discord_before_script
     - export AVATAR_URL=$(curl -s -X GET "https://gitlab.com/api/v4/avatar?email=${GITLAB_USER_EMAIL}" | jq -r '.avatar_url')
 
 notify new dev build:
@@ -255,4 +261,4 @@ notify new dev build:
     - if: $NEW_BRANCH == "dev-c3"
       variables:
         DISCORD_HOOK: "${DISCORD_NEW_BUILD_WEBHOOK_URL}" # Overriding hook because we know we are dev-c3
-    - !reference [".notify_discord", "rules"]
+    - *notify_discord_rules
