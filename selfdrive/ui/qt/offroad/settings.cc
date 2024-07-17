@@ -18,7 +18,7 @@
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_sunnypilot_main.h"
 #endif 
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {

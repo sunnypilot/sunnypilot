@@ -1,8 +1,11 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings.h"
 
+#include <tuple>
+#include <vector>
+
 #include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings_device_panel.h"
 #include "selfdrive/ui/qt/network/networking.h"
-#include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_sunnypilot_main.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
   // param, title, desc, icon
@@ -74,7 +77,8 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
     {
       "DisableOnroadUploads",
       tr("Disable Onroad Uploads"),
-      tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
+      tr("Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot. "
+         "Turn on this feature if you are looking to utilize map-based features, such as Speed Limit Control (SLC) and Map-based Turn Speed Control (MTSC)."),
       "../assets/offroad/icon_blank.png",
     },
     {

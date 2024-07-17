@@ -2,7 +2,7 @@
 #include "selfdrive/ui/qt/offroad/experimental_mode.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 #include <QStackedWidget>
-#include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_sunnypilot_main.h"
 
 #ifdef ENABLE_MAPS
 #define LEFT_WIDGET MapSettings
