@@ -3,7 +3,7 @@
 #include <QHBoxLayout>
 #include <QWidget>
 
-#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/sp_priv_onroad_settings.h"
 #include "../../../qt/util.h"
 #include "../../../ui.h"
 
