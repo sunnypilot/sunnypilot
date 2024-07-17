@@ -8,7 +8,7 @@
 #include "selfdrive/ui/qt/maps/map_panel.h"
 #endif
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/sp_priv_onroad_settings_panel.h"
 #endif
 
 #include "selfdrive/ui/qt/util.h"
