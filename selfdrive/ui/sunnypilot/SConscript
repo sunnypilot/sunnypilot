@@ -10,7 +10,7 @@ widgets_src = [
   "sunnypilot/qt/offroad/settings/sp_priv_monitoring_settings.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_osm_settings.cc",
   "sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_custom_offsets_settings.cc",
-  "sunnypilot/qt/widgets/drive_stats.cc",
+  "sunnypilot/qt/widgets/sp_priv_drive_stats.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_software_settings.cc",
   "sunnypilot/qt/offroad/settings/osm/sp_priv_models_fetcher.cc",
   "sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_speed_limit_warning_settings.cc",

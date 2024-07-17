@@ -5,7 +5,7 @@
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif
-#include "selfdrive/ui/sunnypilot/qt/widgets/drive_stats.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_drive_stats.h"
 
 class TripsPanel : public QFrame {
   Q_OBJECT

@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/widgets/drive_stats.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_drive_stats.h"
 
 #include <QDebug>
 #include <QGridLayout>
