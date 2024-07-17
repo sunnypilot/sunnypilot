@@ -1,4 +1,7 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/sunnypilot_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_sunnypilot_settings.h"
+
+#include <tuple>
+#include <vector>
 
 SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
@@ -21,7 +24,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     {
       "EnableSlc",
       tr("Speed Limit Control (SLC)"),
-      tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. The maximum cruising speed will always be the MAX set speed."),
+      tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
+         "The maximum cruising speed will always be the MAX set speed."),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -80,7 +84,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     {
       "CustomTorqueLateral",
       tr("Enable Custom Tuning"),
-      tr("Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within \"selfdrive/torque_data\". The values will also be used live when \"Override Self-Tune\" toggle is enabled."),
+      tr("Enables custom tuning for Torque lateral control. Modifying FRICTION and LAT_ACCEL_FACTOR below will override the offline values indicated in the YAML files within \"selfdrive/torque_data\". "
+         "The values will also be used live when \"Override Self-Tune\" toggle is enabled."),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -100,7 +105,8 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       tr("Green Traffic Light Chime (Beta)"),
       QString("%1<br>"
               "<h4>%2</h4><br>")
-              .arg(tr("A chime will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. If you are waiting behind another vehicle, the chime will play once the vehicle advances unless ACC is engaged."))
+              .arg(tr("A chime will play when the traffic light you are waiting for turns green and you have no vehicle in front of you. "
+                      "If you are waiting behind another vehicle, the chime will play once the vehicle advances unless ACC is engaged."))
               .arg(tr("Note: This chime is only designed as a notification. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
       "../assets/offroad/icon_blank.png",
     },
@@ -246,8 +252,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     "DynamicLaneProfile", tr("Dynamic Lane Profile"), "",
     "../assets/offroad/icon_blank.png",
     dlp_settings_texts,
-    340
-  );
+    340);
   dlp_settings->showDescription();
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
@@ -467,7 +472,8 @@ void SunnypilotPanel::updateToggles() {
 
   // NNLC/NNFF
   QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
-  QString nnff_fuzzy_desc = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: ") + "<font color='white'><b>#tuning-nnlc</b></font>";
+  QString nnff_fuzzy_desc = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: ")
+                               + "<font color='white'><b>#tuning-nnlc</b></font>";
   QString nnff_status_init = "<font color='yellow'>⚠️ " + tr("Start the car to check car compatibility") + "</font>";
   QString nnff_not_loaded = "<font color='yellow'>⚠️ " + tr("NNLC Not Loaded") + "</font>";
   QString nnff_loaded = "<font color=#00ff00>✅ " + tr("NNLC Loaded") + "</font>";
@@ -493,9 +499,11 @@ void SunnypilotPanel::updateToggles() {
           QString nn_model_name = QString::fromStdString(CP.getLateralTuning().getTorque().getNnModelName());
           QString nn_fuzzy = CP.getLateralTuning().getTorque().getNnModelFuzzyMatch() ? tr("Fuzzy") : tr("Exact");
 
-          nnff_toggle->setDescription(nnffDescriptionBuilder((nn_model_name == "")     ? nnff_status_init :
-                                                             (nn_model_name == "mock") ? (nnff_not_loaded + "<br>" + tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ") + "<font color='white'><b>#tuning-nnlc</b></font>") :
-                                                                                         (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + _car_model + "<br><br>" + nnff_fuzzy_desc)));
+          nnff_toggle->setDescription(nnffDescriptionBuilder(
+            (nn_model_name == "")     ? nnff_status_init :
+            (nn_model_name == "mock") ? (nnff_not_loaded + "<br>" + tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ")
+                                         + "<font color='white'><b>#tuning-nnlc</b></font>") :
+                                        (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + _car_model + "<br><br>" + nnff_fuzzy_desc)));
           enforce_torque_lateral->setEnabled(false);
         } else {
           nnff_toggle->setDescription(nnffDescriptionBuilder(nnff_status_init));
@@ -581,7 +589,7 @@ void SunnypilotPanel::updateToggles() {
   dlp_settings->setDescription((model_use_lateral_planner ? "" : dlp_incompatible_desc + "<br><br>") + dlp_description);
 }
 
-TorqueFriction::TorqueFriction() : OptionControlSP (
+TorqueFriction::TorqueFriction() : OptionControlSP(
   "TorqueFriction",
   tr("FRICTION"),
   tr("Adjust Friction for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
@@ -597,7 +605,7 @@ void TorqueFriction::refresh() {
   setLabel(QString::number(torqueFrictionVal));
 }
 
-TorqueMaxLatAccel::TorqueMaxLatAccel() : OptionControlSP (
+TorqueMaxLatAccel::TorqueMaxLatAccel() : OptionControlSP(
   "TorqueMaxLatAccel",
   tr("LAT_ACCEL_FACTOR"),
   tr("Adjust Max Lateral Acceleration for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),

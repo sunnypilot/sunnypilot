@@ -1,4 +1,7 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/visuals_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_visuals_settings.h"
+
+#include <tuple>
+#include <vector>
 
 VisualsPanel::VisualsPanel(QWidget *parent) : ListWidgetSP(parent) {
   // param, title, desc, icon
@@ -77,8 +80,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidgetSP(parent) {
     "DevUIInfo", tr("Developer UI"), tr("Display real-time parameters and metrics from various sources."),
     "../assets/offroad/icon_blank.png",
     dev_ui_settings_texts,
-    380
-  );
+    380);
   dev_ui_settings->showDescription();
 
   // Visuals: Display Metrics above Chevron
@@ -87,8 +89,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidgetSP(parent) {
     "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
     "../assets/offroad/icon_blank.png",
     chevron_info_settings_texts,
-    340
-  );
+    340);
   chevron_info_settings->showDescription();
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
@@ -111,8 +112,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidgetSP(parent) {
     "SidebarTemperatureOptions", tr("Display Temperature on Sidebar"), "",
     "../assets/offroad/icon_blank.png",
     sidebar_temp_texts,
-    255
-  );
+    255);
   sidebar_temp_setting->showDescription();
   addItem(sidebar_temp_setting);
 

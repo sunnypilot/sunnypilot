@@ -1,6 +1,6 @@
 #pragma once
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_settings.h"
 
 class DevicePanelSP : public DevicePanel {
   Q_OBJECT

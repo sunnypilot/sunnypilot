@@ -1,5 +1,10 @@
 #pragma once
 
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 

@@ -1,4 +1,6 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/software_settings_sp.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_software_settings.h"
+
+#include <algorithm>
 
 SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   // Get current model name and create new ButtonControl
@@ -185,7 +187,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   QMap<QString, QString> index_to_model;
 
   // Collecting indices with display names
-  for (const auto &model: models) {
+  for (const auto &model : models) {
     if ((is_release_sp && model.environment == "release") || !is_release_sp) {
       index_to_model.insert(model.index, model.displayName);
     }
@@ -197,7 +199,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     return index1.toInt() > index2.toInt();
   });
 
-  for (const QString &index: indices) {
+  for (const QString &index : indices) {
     modelNames.push_back(index_to_model[index]);
   }
 
@@ -213,7 +215,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   }
 
   // Finding and setting the selected model
-  for (auto &model: models) {
+  for (auto &model : models) {
     if (model.displayName == selectedModelName) {
       selectedModelToDownload = model;
       selectedNavModelToDownload = model;

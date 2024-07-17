@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/trips_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_trips_settings.h"
 
 TripsPanel::TripsPanel(QWidget* parent) : QFrame(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);

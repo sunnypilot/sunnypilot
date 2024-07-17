@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 #include "selfdrive/ui/qt/offroad/settings.h"
 
 class TogglesPanelSP : public TogglesPanel {

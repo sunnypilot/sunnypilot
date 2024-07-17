@@ -2,7 +2,11 @@
 
 #include <deque>
 #include <chrono>
+#include <map>
 #include <optional>
+#include <string>
+#include <tuple>
+#include <vector>
 #include <QDir>
 #include <QFileInfo>
 #include <QtConcurrent/QtConcurrent>

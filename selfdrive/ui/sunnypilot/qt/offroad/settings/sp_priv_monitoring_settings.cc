@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/monitoring_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_monitoring_settings.h"
 
 MonitoringPanel::MonitoringPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);

@@ -2,7 +2,7 @@
 
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/sunnylink_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_sunnylink_settings.h"
 
 BaseDeviceService::BaseDeviceService(QObject* parent) : QObject(parent), initial_request(nullptr), repeater(nullptr) {
   param_watcher = new ParamWatcher(this);

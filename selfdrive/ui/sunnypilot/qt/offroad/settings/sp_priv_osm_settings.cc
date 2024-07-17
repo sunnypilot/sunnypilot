@@ -1,4 +1,8 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/osm_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_osm_settings.h"
+
+#include <tuple>
+#include <vector>
+#include <string>
 
 OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
@@ -73,7 +77,7 @@ ButtonControl *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
     const QString currentTitle = ((initTitle == "== None ==") || (initTitle.length() == 0)) ? "== None ==" : initTitle;
 
     QStringList locationTitles;
-    for (auto &loc: locations) {
+    for (auto &loc : locations) {
       locationTitles.push_back(std::get<0>(loc));
     }
 
@@ -81,7 +85,7 @@ ButtonControl *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
     if (!selection.isEmpty()) {
       params.put("OsmLocal", "1");
       params.put("OsmLocationTitle", selection.toStdString());
-      for (auto &loc: locations) {
+      for (auto &loc : locations) {
         if (std::get<0>(loc) == selection) {
           params.put("OsmLocationName", std::get<1>(loc).toStdString());
           break;
@@ -116,14 +120,14 @@ ButtonControl *OsmPanel::setupUsStatesButton(QWidget *parent) {
     const QString currentTitle = ((initTitle == std::get<0>(allStatesOption)) || (initTitle.length() == 0)) ? tr("All") : initTitle;
 
     QStringList locationTitles;
-    for (auto &loc: locations) {
+    for (auto &loc : locations) {
       locationTitles.push_back(std::get<0>(loc));
     }
 
     const QString selection = MultiOptionDialog::getSelection(tr("State"), locationTitles, currentTitle, this);
     if (!selection.isEmpty()) {
       params.put("OsmStateTitle", selection.toStdString());
-      for (auto &loc: locations) {
+      for (auto &loc : locations) {
         if (std::get<0>(loc) == selection) {
           params.put("OsmStateName", std::get<1>(loc).toStdString());
           break;

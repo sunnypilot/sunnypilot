@@ -1,4 +1,7 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/display_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_display_settings.h"
+
+#include <tuple>
+#include <vector>
 
 DisplayPanel::DisplayPanel(QWidget *parent) : ListWidgetSP(parent, false) {
   // param, title, desc, icon
@@ -65,7 +68,7 @@ void DisplayPanel::updateToggles() {
 }
 
 // Max Time Offroad (Shutdown timer)
-MaxTimeOffroad::MaxTimeOffroad() : OptionControlSP (
+MaxTimeOffroad::MaxTimeOffroad() : OptionControlSP(
   "MaxTimeOffroad",
   tr("Max Time Offroad"),
   tr("Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)."),
@@ -110,7 +113,7 @@ void MaxTimeOffroad::refresh() {
 }
 
 // Onroad Screen Off (Auto Onroad Screen Timer)
-OnroadScreenOff::OnroadScreenOff() : OptionControlSP (
+OnroadScreenOff::OnroadScreenOff() : OptionControlSP(
   "OnroadScreenOff",
   tr("Driving Screen Off Timer"),
   tr("Turn off the device screen or reduce brightness to protect the screen after driving starts. It automatically brightens or turns on when a touch or event occurs."),
@@ -136,7 +139,7 @@ void OnroadScreenOff::refresh() {
 }
 
 // Onroad Screen Off Brightness
-OnroadScreenOffBrightness::OnroadScreenOffBrightness() : OptionControlSP (
+OnroadScreenOffBrightness::OnroadScreenOffBrightness() : OptionControlSP(
   "OnroadScreenOffBrightness",
   tr("Driving Screen Off Brightness (%)"),
   tr("When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio."),
@@ -157,7 +160,7 @@ void OnroadScreenOffBrightness::refresh() {
 }
 
 // Brightness Control (Global)
-BrightnessControl::BrightnessControl() : OptionControlSP (
+BrightnessControl::BrightnessControl() : OptionControlSP(
   "BrightnessControl",
   tr("Brightness"),
   tr("Manually adjusts the global brightness of the screen."),

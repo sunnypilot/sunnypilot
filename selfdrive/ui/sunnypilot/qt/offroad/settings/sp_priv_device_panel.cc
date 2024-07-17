@@ -1,5 +1,9 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings_device_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_device_panel.h"
+
+#include <string>
+#include <vector>
 #include <QFileInfo>
+
 #include "common/watchdog.h"
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/prime.h"

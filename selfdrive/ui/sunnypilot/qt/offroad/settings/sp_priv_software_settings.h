@@ -19,17 +19,17 @@ private:
 
   void checkNetwork();
   bool isDownloadingModel() const {
-    LOGD("isDownloadingModel: selectedModelToDownload.has_value() [%s] && modelDownloadProgress [%f]",selectedModelToDownload.has_value() ?"true": "false", modelDownloadProgress.value_or(0.0));
+    LOGD("isDownloadingModel: selectedModelToDownload.has_value() [%s] && modelDownloadProgress [%f]", selectedModelToDownload.has_value() ? "true": "false", modelDownloadProgress.value_or(0.0));
     return selectedModelToDownload.has_value() && modelDownloadProgress.value_or(0.0) > 0.0 && modelDownloadProgress.value_or(0.0) < 100.0;
   }
 
   bool isDownloadingNavModel() const {
-    LOGD("isDownloadingNavModel: selectedNavModelToDownload.has_value() [%s] && navModelDownloadProgress [%f]",selectedNavModelToDownload.has_value() ?"true": "false", navModelDownloadProgress.value_or(0.0));
+    LOGD("isDownloadingNavModel: selectedNavModelToDownload.has_value() [%s] && navModelDownloadProgress [%f]", selectedNavModelToDownload.has_value() ? "true": "false", navModelDownloadProgress.value_or(0.0));
     return selectedNavModelToDownload.has_value() && navModelDownloadProgress.value_or(0.0) > 0.0 && navModelDownloadProgress.value_or(0.0) < 100.0;
   }
 
   bool isDownloadingMetadata() const {
-    LOGD("isDownloadingMetadata: selectedMetadataToDownload.has_value() [%s] && metadataDownloadProgress [%f]",selectedMetadataToDownload.has_value() ?"true": "false", metadataDownloadProgress.value_or(0.0));
+    LOGD("isDownloadingMetadata: selectedMetadataToDownload.has_value() [%s] && metadataDownloadProgress [%f]", selectedMetadataToDownload.has_value() ? "true": "false", metadataDownloadProgress.value_or(0.0));
     return selectedMetadataToDownload.has_value() && metadataDownloadProgress.value_or(0.0) > 0.0 && metadataDownloadProgress.value_or(0.0) < 100.0;
   }
 

@@ -6,7 +6,7 @@
 #include "selfdrive/ui/qt/offroad/onboarding.h"
 
 #ifdef SUNNYPILOT
-  #include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings.h"
+  #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_settings.h"
   #include "selfdrive/ui/sunnypilot/qt/sp_priv_home.h"
   #define HomeWindow HomeWindowSP
   #define SettingsWindow SettingsWindowSP

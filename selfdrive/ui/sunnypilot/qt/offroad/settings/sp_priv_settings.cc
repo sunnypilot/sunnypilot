@@ -1,9 +1,9 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_settings.h"
 
 #include <tuple>
 #include <vector>
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/sp_priv_settings_device_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_device_panel.h"
 #include "selfdrive/ui/qt/network/networking.h"
 #include "selfdrive/ui/sunnypilot/sp_priv_sunnypilot_main.h"
 

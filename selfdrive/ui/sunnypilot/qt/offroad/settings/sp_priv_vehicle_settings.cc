@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/vehicle_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_vehicle_settings.h"
 
 VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
   main_layout = new QStackedLayout(this);
@@ -76,8 +76,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "HkgSmoothStop",
     tr("HKG CAN: Smoother Stopping Performance (Beta)"),
     tr("Smoother stopping behind a stopped car or desired stopping event. This is only applicable to HKG CAN platforms using openpilot longitudinal control."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   hkgSmoothStop->setConfirmation(true, false);
   addItem(hkgSmoothStop);
 
@@ -87,8 +86,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "SubaruManualParkingBrakeSng",
     tr("Manual Parking Brake: Stop and Go (Beta)"),
     tr("Experimental feature to enable stop and go for Subaru Global models with manual handbrake. Models with electric parking brake should keep this disabled. Thanks to martinl for this implementation!"),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   subaruManualParkingBrakeSng->setConfirmation(true, false);
   addItem(subaruManualParkingBrakeSng);
 
@@ -98,8 +96,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "StockLongToyota",
     tr("Enable Stock Toyota Longitudinal Control"),
     tr("sunnypilot will <b>not</b> take over control of gas and brakes. Stock Toyota longitudinal control will be used."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   stockLongToyota->setConfirmation(true, false);
   addItem(stockLongToyota);
 
@@ -110,8 +107,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
             "<h4>%2</h4><br>")
             .arg(tr("Allows M.A.D.S. engagement/disengagement with \"LKAS\" button from the steering wheel."))
             .arg(tr("Note: Enabling this toggle may have unexpected behavior with steering control. It is the driver's responsibility to observe their environment and make decisions accordingly.")),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   lkasToggle->setConfirmation(true, false);
   addItem(lkasToggle);
 
@@ -119,8 +115,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "ToyotaTSS2Long",
     tr("Toyota TSS2 Longitudinal: Custom Tuning"),
     tr("Smoother longitudinal performance for Toyota/Lexus TSS2/LSS2 cars. Big thanks to dragonpilot-community for this implementation."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
@@ -131,8 +126,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     .arg(tr("WARNING: Only for Toyota/Lexus vehicles with TSS2/LSS2. USE AT YOUR OWN RISK."))
     .arg(tr("When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold."))
     .arg(tr("Changing this setting takes effect when the car is powered off.")),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   toyotaAbh->setConfirmation(true, false);
   addItem(toyotaAbh);
 
@@ -140,8 +134,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "ToyotaEnhancedBsm",
     tr("Enable Enhanced Blind Spot Monitor"),
     "",
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   toyotaEnhancedBsm->setConfirmation(true, false);
   addItem(toyotaEnhancedBsm);
 
@@ -149,8 +142,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "ToyotaSnG",
     tr("Enable Toyota Stop and Go Hack"),
     tr("sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models. Use at your own risk."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   toyotaSngHack->setConfirmation(true, false);
   addItem(toyotaSngHack);
 
@@ -158,8 +150,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "ToyotaAutoLock",
     tr("Enable Toyota Door Auto Locking"),
     tr("sunnypilot will attempt to lock the doors when drive above 10 km/h (6.2 mph).\nReboot Required."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   toyotaAutoLock->setConfirmation(true, false);
   addItem(toyotaAutoLock);
 
@@ -167,8 +158,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "ToyotaAutoUnlockByShifter",
     tr("Enable Toyota Door Auto Unlocking"),
     tr("sunnypilot will attempt to unlock the doors when shift to gear P.\nReboot Required."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   toyotaAutoUnlock->setConfirmation(true, false);
   addItem(toyotaAutoUnlock);
 
@@ -178,8 +168,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     "VwCCOnly",
     tr("Enable CC Only support"),
     tr("sunnypilot supports Volkswagen MQB CC only platforms with this toggle enabled. Only enable this toggle if your car does not have ACC from the factory."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   volkswagenCCOnly->setConfirmation(true, false);
   addItem(volkswagenCCOnly);
 

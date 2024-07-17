@@ -1,7 +1,11 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/sunnylink_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_sunnylink_settings.h"
+
+#include <map>
+#include <string>
+
+#include <QtConcurrent>
 
 #include <common/watchdog.h>
-#include <QtConcurrent/QtConcurrent>
 
 SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
@@ -21,8 +25,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
     "SunnylinkEnabled",
     tr("Enable sunnylink"),
     sunnylinkBtnDescription,
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   sunnylinkEnabledBtn->setValue(tr("Device ID ")+ getSunnylinkDongleId().value_or(tr("N/A")));
 
   list->addItem(sunnylinkEnabledBtn);
@@ -51,8 +54,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   status_popup = new SunnylinkSponsorPopup(false, this);
   sponsorBtn = new ButtonControl(
     tr("Sponsor Status"), tr("SPONSOR"),
-    tr("Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.")
-  );
+    tr("Become a sponsor of sunnypilot to get early access to sunnylink features when they become available."));
   list->addItem(sponsorBtn);
   connect(sponsorBtn, &ButtonControl::clicked, [=]() {
     status_popup->exec();
@@ -62,8 +64,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   pair_popup = new SunnylinkSponsorPopup(true, this);
   pairSponsorBtn = new ButtonControl(
     tr("Pair GitHub Account"), tr("PAIR"),
-    tr("Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.") + "🌟"
-  );
+    tr("Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.") + "🌟");
   list->addItem(pairSponsorBtn);
   connect(pairSponsorBtn, &ButtonControl::clicked, [=]() {
     if (getSunnylinkDongleId().value_or(tr("N/A")) == "N/A") {
@@ -194,7 +195,7 @@ void SunnylinkPanel::updateLabels() {
   auto paired_users = uiState()->sunnylinkDeviceUsers();
 
   //little easter egg for Panda :D 
-  if(sunnylinkDongleId == "d689627422cefcbc") {
+  if (sunnylinkDongleId == "d689627422cefcbc") {
     role_name = "Panda 🐼";
   }
 
