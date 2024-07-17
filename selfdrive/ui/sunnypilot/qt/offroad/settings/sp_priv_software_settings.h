@@ -3,7 +3,7 @@
 #include "common/model.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/models_fetcher.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm/sp_priv_models_fetcher.h"
 
 class SoftwarePanelSP final : public SoftwarePanel {
   Q_OBJECT

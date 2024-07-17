@@ -1,4 +1,5 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/models_fetcher.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm/sp_priv_models_fetcher.h"
+
 #include <QThread>
 
 ModelsFetcher::ModelsFetcher(QObject* parent) : QObject(parent) {
@@ -88,7 +89,7 @@ void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationP
   
   QFile file(finalPath);
   //ensure if the path exists and if not create it 
-  if(!QDir().mkpath(destinationPath))
+  if (!QDir().mkpath(destinationPath))
   {
     LOGE("Unable to create directory: %s", destinationPath.toStdString().c_str());
     emit downloadFailed(filename);

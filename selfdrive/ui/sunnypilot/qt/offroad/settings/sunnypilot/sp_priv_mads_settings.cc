@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_mads_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_mads_settings.h"
 
 #include <tuple>
 #include <vector>

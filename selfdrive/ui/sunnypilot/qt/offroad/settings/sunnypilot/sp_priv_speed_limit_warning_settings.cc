@@ -1,4 +1,4 @@
-#include "../../settings/sunnypilot_sub_panel/sp_priv_speed_limit_warning_settings.h"
+#include "../../settings/sunnypilot/sp_priv_speed_limit_warning_settings.h"
 
 SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);

@@ -1,11 +1,14 @@
 #pragma once
 
-#include <QJsonObject>
 #include <algorithm>  // for std::sort
 #include <deque>
-#include <QDir>
+#include <vector>
+#include <tuple>
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/json_fetcher.h"
+#include <QDir>
+#include <QJsonObject>
+
+#include "selfdrive/ui/sunnypilot/qt/common/sp_priv_json_fetcher.h"
 
 static const std::tuple<QString, QString> defaultLocation = std::make_tuple("== None ==", "");
 // New class LocationsFetcher that handles web requests and JSON parsing

@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_speed_limit_policy_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_speed_limit_policy_settings.h"
 
 SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);

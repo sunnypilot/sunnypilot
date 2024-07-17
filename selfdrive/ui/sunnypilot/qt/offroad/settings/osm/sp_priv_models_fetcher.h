@@ -3,6 +3,8 @@
 #include <algorithm>  // for std::sort
 #include <cassert>
 #include <deque>
+#include <vector>
+
 #include <QDir>
 #include <QJsonObject>
 #include <QTimer>
@@ -11,7 +13,7 @@
 #include "common/util.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/json_fetcher.h"
+#include "selfdrive/ui/sunnypilot/qt/common/sp_priv_json_fetcher.h"
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #else

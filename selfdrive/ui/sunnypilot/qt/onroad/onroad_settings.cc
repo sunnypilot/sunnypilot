@@ -9,7 +9,7 @@
 
 #include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_speed_limit_policy_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_speed_limit_policy_settings.h"
 
 OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent) {
   setContentsMargins(0, 0, 0, 0);
