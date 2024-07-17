@@ -1,5 +1,7 @@
 #include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings.h"
 
+#include <map>
+#include <string>
 #include <utility>
 
 #include <QApplication>
@@ -7,7 +9,7 @@
 
 #include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_policy_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_speed_limit_policy_settings.h"
 
 OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent) {
   setContentsMargins(0, 0, 0, 0);
@@ -185,7 +187,7 @@ void OnroadSettings::changeSpeedLimitControl() {
       // If EnableSlc is OFF, set it to ON and reset SpeedLimitControlPolicy
       scene.speed_limit_control_enabled = true;
       scene.speed_limit_control_policy = 0;
-    } else if(scene.speed_limit_control_policy < max_policy) {
+    } else if (scene.speed_limit_control_policy < max_policy) {
       // If EnableSlc is already ON then increase SpeedLimitControlPolicy till it reaches 6
       scene.speed_limit_control_policy++;
     } else {
@@ -304,12 +306,10 @@ void OptionWidget::updateDynamicLaneProfile(QString param) {
   if (dlp == 0) {
     title_text = "Laneful";
     icon_color = "#2020f8";
-  }
-  else if (dlp == 1) {
+  } else if (dlp == 1) {
     title_text = "Laneless";
     icon_color = "#0df87a";
-  }
-  else if (dlp == 2) {
+  } else if (dlp == 2) {
     title_text = "Auto";
     icon_color = "#0df8f8";
   }
@@ -451,8 +451,7 @@ void OptionWidget::updateSpeedLimitControl(QString param) {
   if (enable_slc_status == 0) {
     title_text = "Disabled";
     icon_color = "#3B4356"; // Color for "Disabled status"
-  }
-  else if (enable_slc_status == 1) {
+  } else if (enable_slc_status == 1) {
     title_text = title_text;
     icon_color = color_map[speed_limit_control_policy_status]; // Color for "Enabled status"
   }

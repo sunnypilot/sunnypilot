@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_policy_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_speed_limit_policy_settings.h"
 
 SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -18,8 +18,7 @@ SpeedLimitPolicySettings::SpeedLimitPolicySettings(QWidget* parent) : QWidget(pa
     "",
     "../assets/offroad/icon_blank.png",
     speed_limit_policy_texts,
-    250
-  );
+    250);
   speed_limit_policy->showDescription();
   connect(speed_limit_policy, &ButtonParamControlSP::buttonToggled, this, &SpeedLimitPolicySettings::updateToggles);
   list->addItem(speed_limit_policy);

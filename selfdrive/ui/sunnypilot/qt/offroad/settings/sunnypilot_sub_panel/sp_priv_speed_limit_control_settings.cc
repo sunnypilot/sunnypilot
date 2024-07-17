@@ -1,4 +1,6 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_control_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_sub_panel/sp_priv_speed_limit_control_settings.h"
+
+#include <vector>
 
 SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -18,8 +20,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
     "",
     "../assets/offroad/icon_blank.png",
     speed_limit_engage_texts,
-    440
-  );
+    440);
   speed_limit_engage_settings->showDescription();
   list->addItem(speed_limit_engage_settings);
 
@@ -28,8 +29,7 @@ SlcSettings::SlcSettings(QWidget* parent) : QWidget(parent) {
     "SpeedLimitOffsetType", tr("Limit Offset"), tr("Set speed limit slightly higher than actual speed limit for a more natural drive."),
     "../assets/offroad/icon_blank.png",
     speed_limit_offset_settings_texts,
-    380
-  );
+    380);
   list->addItem(speed_limit_offset_settings);
 
   slvo = new SpeedLimitValueOffset();
@@ -101,7 +101,7 @@ void SlcSettings::updateToggles() {
 }
 
 // Speed Limit Control Custom Offset
-SpeedLimitValueOffset::SpeedLimitValueOffset() : OptionControlSP (
+SpeedLimitValueOffset::SpeedLimitValueOffset() : OptionControlSP(
   "SpeedLimitValueOffset",
   "",
   "",

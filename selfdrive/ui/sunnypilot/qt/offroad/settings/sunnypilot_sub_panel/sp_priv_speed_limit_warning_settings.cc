@@ -1,4 +1,4 @@
-#include "selfdrive/ui/sunnypilot/qt/offroad/speed_limit_warning_settings.h"
+#include "../../settings/sunnypilot_sub_panel/sp_priv_speed_limit_warning_settings.h"
 
 SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -18,8 +18,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
     "",
     "../assets/offroad/icon_blank.png",
     speed_limit_warning_texts,
-    380
-  );
+    380);
   speed_limit_warning_settings->showDescription();
   list->addItem(speed_limit_warning_settings);
 
@@ -27,8 +26,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
     "SpeedLimitWarningFlash",
     tr("Warning with speed limit flash"),
     tr("When Speed Limit Warning is enabled, the speed limit sign will alert the driver when the cruising speed is faster than then speed limit plus the offset."),
-    "../assets/offroad/icon_blank.png"
-  );
+    "../assets/offroad/icon_blank.png");
   list->addItem(speed_limit_warning_flash);
 
   std::vector<QString> speed_limit_warning_offset_settings_texts{tr("Default"), tr("Fixed"), tr("Percentage")};
@@ -37,8 +35,7 @@ SpeedLimitWarningSettings::SpeedLimitWarningSettings(QWidget* parent) : QWidget(
     tr("Select the desired offset to warn the driver when the vehicle is driving faster than the speed limit."),
     "../assets/offroad/icon_blank.png",
     speed_limit_warning_offset_settings_texts,
-    380
-  );
+    380);
   list->addItem(speed_limit_warning_offset_settings);
 
   slwvo = new SpeedLimitWarningValueOffset();
@@ -86,7 +83,7 @@ void SpeedLimitWarningSettings::updateToggles() {
 }
 
 // Speed Limit Control Custom Offset
-SpeedLimitWarningValueOffset::SpeedLimitWarningValueOffset() : OptionControlSP (
+SpeedLimitWarningValueOffset::SpeedLimitWarningValueOffset() : OptionControlSP(
   "SpeedLimitWarningValueOffset",
   "",
   "",
