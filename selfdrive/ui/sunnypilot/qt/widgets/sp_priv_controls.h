@@ -57,7 +57,7 @@ class AbstractControlSP : public AbstractControl {
   Q_OBJECT
 
 public:
-  void setDescription(const QString &desc) override {
+  void setDescription(const QString &desc) {
     if (description) description->setText(desc);
   }
 
@@ -68,7 +68,7 @@ public:
     }
   }
 
-  const QString getDescription() override {
+  const QString getDescription() {
     return description->text();
   }
 
@@ -77,7 +77,7 @@ public:
   }
 
 public slots:
-  void showDescription() override {
+  void showDescription() {
     description->setVisible(true);
   }
 

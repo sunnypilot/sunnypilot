@@ -40,7 +40,7 @@ class AbstractControl : public QFrame {
   Q_OBJECT
 
 public:
-  virtual void setDescription(const QString &desc) {
+  void setDescription(const QString &desc) {
     if (description) description->setText(desc);
   }
 
@@ -48,11 +48,11 @@ public:
     title_label->setText(title);
   }
 
-  virtual void setValue(const QString &val) {
+  void setValue(const QString &val) {
     value->setText(val);
   }
 
-  virtual const QString getDescription() {
+  const QString getDescription() {
     return description->text();
   }
 
@@ -60,7 +60,7 @@ public:
   QPixmap icon_pixmap;
 
 public slots:
-  virtual void showDescription() {
+  void showDescription() {
     description->setVisible(true);
   }
 
