@@ -11,8 +11,10 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_sunnylink_settings.h"
 
 
-inline void ReplaceWidget(QWidget* old_widget, QWidget* new_widget)
-{
+inline void ReplaceWidget(QWidget* old_widget, QWidget* new_widget) {
+  if (old_widget && old_widget->parentWidget() && old_widget->parentWidget()->layout()) {
     old_widget->parentWidget()->layout()->replaceWidget(old_widget, new_widget);
-    delete old_widget;
+    old_widget->hide();
+    old_widget->deleteLater();
+  }
 }
