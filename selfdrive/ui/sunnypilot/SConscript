@@ -1,4 +1,5 @@
 widgets_src = [
+  "sunnypilot/sp_priv_ui.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_display_settings.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_sunnypilot_settings.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_vehicle_settings.cc",
