@@ -11,7 +11,7 @@
 #include "selfdrive/ui/qt/offroad/driverview.h"
 #include "selfdrive/ui/qt/body.h"
 #include "selfdrive/ui/qt/widgets/offroad_alerts.h"
-#include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/qt/home.h"
 
 #ifdef SUNNYPILOT

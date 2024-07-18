@@ -4,7 +4,7 @@
 #include <string>
 
 #include "common/model.h"
-#include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_custom_offsets_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_lane_change_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/sp_priv_mads_settings.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/model.h"
-#include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm/sp_priv_models_fetcher.h"
 

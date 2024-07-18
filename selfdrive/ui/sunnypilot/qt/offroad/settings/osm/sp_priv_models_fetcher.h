@@ -11,7 +11,7 @@
 
 #include "common/swaglog.h"
 #include "common/util.h"
-#include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/common/sp_priv_json_fetcher.h"
 #ifdef SUNNYPILOT

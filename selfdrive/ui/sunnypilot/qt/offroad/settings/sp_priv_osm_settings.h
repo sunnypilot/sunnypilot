@@ -17,7 +17,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm/sp_priv_locations_fetcher.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 #include "selfdrive/ui/qt/util.h"
-#include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "system/hardware/hw.h"
 
 constexpr int FAST_REFRESH_INTERVAL = 1000;  // ms
