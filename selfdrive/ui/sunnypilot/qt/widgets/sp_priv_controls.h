@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -12,8 +13,8 @@
 #include <QPushButton>
 
 #include "common/params.h"
+#include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/input.h"
-//#include "selfdrive/ui/qt/widgets/toggle.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_toggle.h"
 
 // This is for compatibility purposes, until we properly do inheritance splitting
@@ -52,16 +53,12 @@ protected:
   QString lastText_, elidedText_;
 };
 
-class AbstractControlSP_TITLED : public QFrame {
+class AbstractControlSP : public AbstractControl {
   Q_OBJECT
 
 public:
-  void setDescription(const QString &desc) {
+  void setDescription(const QString &desc) override {
     if (description) description->setText(desc);
-  }
-
-  void setTitle(const QString &title) {
-    title_label->setText(title);
   }
 
   void setValue(const QString &val, std::optional<QString> color = std::nullopt) {
@@ -71,84 +68,41 @@ public:
     }
   }
 
-  const QString getDescription() {
+  const QString getDescription() override {
     return description->text();
-  }
-
-  QLabel *icon_label;
-  QPixmap icon_pixmap;
-
-  public slots:
-    void showDescription() {
-    description->setVisible(true);
   }
 
   void hideDescription() {
     description->setVisible(false);
   }
 
-  signals:
-    void showDescriptionEvent();
-
-protected:
-  AbstractControlSP_TITLED(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
-  void hideEvent(QHideEvent *e) override;
-
-  QHBoxLayout *hlayout;
-  QPushButton *title_label;
-
-private:
-  ElidedLabel *value;
-  QLabel *description = nullptr;
-};
-
-
-class AbstractControlSP : public QFrame {
-  Q_OBJECT
-
-public:
-  void setDescription(const QString &desc) {
-    if (description) description->setText(desc);
-  }
-
-  void setTitle(const QString &title) {
-    title_label->setText(title);
-  }
-
-  const QString getDescription() {
-    return description->text();
-  }
-
-  public slots:
-    void showDescription() {
+public slots:
+  void showDescription() override {
     description->setVisible(true);
   }
-
-  void hideDescription() {
-    description->setVisible(false);
-  }
-
-  signals:
-    void showDescriptionEvent();
 
 protected:
   AbstractControlSP(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
   void hideEvent(QHideEvent *e) override;
 
-  QHBoxLayout *hlayout;
-  QPushButton *title_label;
-
-private:
+  QVBoxLayout *main_layout;
+  ElidedLabel *value;
   QLabel *description = nullptr;
 };
 
+class AbstractControlSP_SELECTOR : public AbstractControlSP {
+  Q_OBJECT
+
+protected:
+  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+};
 
 // widget to display a value
-class LabelControlSP : public AbstractControlSP_TITLED {
+class LabelControlSP : public AbstractControlSP {
   Q_OBJECT
 
 public:
-  LabelControlSP(const QString &title, const QString &text = "", const QString &desc = "", QWidget *parent = nullptr) : AbstractControlSP_TITLED(title, desc, "", parent) {
+  LabelControlSP(const QString &title, const QString &text = "", const QString &desc = "", QWidget *parent = nullptr) : AbstractControlSP(title, desc, "", parent) {
     label.setText(text);
     label.setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     hlayout->addWidget(&label);
@@ -160,7 +114,7 @@ private:
 };
 
 // widget for a button with a label
-class ButtonControlSP : public AbstractControlSP_TITLED {
+class ButtonControlSP : public AbstractControlSP {
   Q_OBJECT
 
 public:
@@ -179,11 +133,11 @@ private:
   QPushButton btn;
 };
 
-class ToggleControlSP : public AbstractControlSP_TITLED {
+class ToggleControlSP : public AbstractControlSP {
   Q_OBJECT
 
 public:
-  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControlSP_TITLED(title, desc, icon, parent) {
+  ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControlSP(title, desc, icon, parent) {
     toggle.setFixedSize(150, 100);
     if (state) {
       toggle.togglePosition();
@@ -250,11 +204,11 @@ private:
   bool store_confirm = false;
 };
 
-class ButtonParamControlSP : public AbstractControlSP {
+class ButtonParamControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : AbstractControlSP(title, desc, icon), button_texts(button_texts) {
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -399,7 +353,7 @@ class ListWidgetSP : public QWidget {
   inline void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
   inline void RemoveWidgetAt(const int index) {
     if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) {
-      if(item->widget()) delete item->widget();
+      if (item->widget()) delete item->widget();
       delete item;
     }
   }
@@ -442,7 +396,7 @@ public:
   }
 };
 
-class OptionControlSP : public AbstractControlSP {
+class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 private:
@@ -453,7 +407,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1) : _title(title), AbstractControlSP(title, desc, icon) {
+                  const MinMaxValue &range, const int per_value_change = 1) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;

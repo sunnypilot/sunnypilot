@@ -575,7 +575,7 @@ void SunnypilotPanel::updateToggles() {
   }
 
   // toggle names to update when CustomTorqueLateral is flipped
-  std::vector<AbstractControlSP*> customTorqueGroup{friction, lat_accel_factor};
+  std::vector<AbstractControlSP_SELECTOR*> customTorqueGroup{friction, lat_accel_factor};
   for (const auto& customTorqueControl : customTorqueGroup) {
     customTorqueControl->setVisible(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));
     customTorqueControl->setEnabled(!(nnff_toggle->isToggled() || !custom_torque_lateral->isToggled()));

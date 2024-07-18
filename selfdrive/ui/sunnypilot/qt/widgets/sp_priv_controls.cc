@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QStyleOption>
+#include <selfdrive/ui/sunnypilot/sp_priv_sunnypilot_main.h>
 
 QFrame *horizontal_line(QWidget *parent) {
   QFrame *line = new QFrame(parent);
@@ -15,8 +16,10 @@ QFrame *horizontal_line(QWidget *parent) {
   return line;
 }
 
-AbstractControlSP_TITLED::AbstractControlSP_TITLED(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
-  QVBoxLayout *main_layout = new QVBoxLayout(this);
+AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
+  : AbstractControl(title, desc, icon, parent) {
+
+  main_layout = new QVBoxLayout(this);
   main_layout->setMargin(0);
 
   hlayout = new QHBoxLayout;
@@ -68,14 +71,28 @@ AbstractControlSP_TITLED::AbstractControlSP_TITLED(const QString &title, const Q
   main_layout->addStretch();
 }
 
-void AbstractControlSP_TITLED::hideEvent(QHideEvent *e) {
+void AbstractControlSP::hideEvent(QHideEvent *e) {
   if (description != nullptr) {
     description->hide();
   }
 }
 
-AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
-  QVBoxLayout *main_layout = new QVBoxLayout(this);
+AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
+  : AbstractControlSP(title, desc, icon, parent) {
+
+  if (value != nullptr) {
+    ReplaceWidget(value, new QWidget());
+    value = nullptr;
+  }
+
+  QLayoutItem* item;
+  while ((item = main_layout->takeAt(0)) != nullptr) {
+    if (item->widget()) {
+      delete item->widget();
+    }
+    delete item;
+  }
+
   main_layout->setMargin(0);
 
   hlayout = new QHBoxLayout;
@@ -116,12 +133,9 @@ AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, 
   main_layout->addStretch();
 }
 
-void AbstractControlSP::hideEvent(QHideEvent *e) {
-}
-
 // controls
 
-ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControlSP_TITLED(title, desc, "", parent) {
+ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControlSP(title, desc, "", parent) {
   btn.setText(text);
   btn.setStyleSheet(R"(
     QPushButton {
