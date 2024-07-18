@@ -32,15 +32,17 @@ public:
   ~MapWindow();
 
 private:
-  void initializeGL() final;
   void paintGL() final;
   void resizeGL(int w, int h) override;
 
+protected:
+  void initializeGL() final;
   QMapLibre::Settings m_settings;
   QScopedPointer<QMapLibre::Map> m_map;
 
   void initLayers();
 
+private:
   void mousePressEvent(QMouseEvent *ev) final;
   void mouseDoubleClickEvent(QMouseEvent *ev) final;
   void mouseMoveEvent(QMouseEvent *ev) final;
@@ -50,9 +52,11 @@ private:
   void pinchTriggered(QPinchGesture *gesture);
   void setError(const QString &err_str);
 
+protected:
   bool loaded_once = false;
   bool prev_time_valid = true;
 
+private:
   // Panning
   QPointF m_lastPos;
   int interaction_counter = 0;
@@ -70,16 +74,11 @@ private:
   MapInstructions* map_instructions;
   MapETA* map_eta;
 
-  // Blue with normal nav, green when nav is input into the model
-  QColor getNavPathColor(bool nav_enabled) {
-    return nav_enabled ? QColor("#31ee73") : QColor("#31a1ee");
-  }
-
   void clearRoute();
   void updateDestinationMarker();
   uint64_t route_rcv_frame = 0;
 
-private slots:
+protected slots:
   void updateState(const UIState &s);
 
 public slots:
