@@ -9,8 +9,11 @@ variables:
   GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
+  GIT_CRYPT_INSTALL_PATH: ".git-crypt/keys/install_new_key_sp"
+  GIT_CRYPT_KEY_PATH: ".git-crypt/keys/default/0"
 
 stages:
+  - git-crypt-auto-provision
   - build
   - sanity
   - publish
@@ -22,18 +25,43 @@ default:
     - sunnypilot
     - x86
 
+.configure_ci_deploy_key: &configure_ci_deploy_key
+  - 'eval $(ssh-agent -s)'
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+  - 'mkdir -p ~/.ssh/'
+  - 'chmod 700 ~/.ssh'
+  - export HOST=$(echo ${GIT_ORIGIN} | cut -d'@' -f2 | cut -d':' -f1)
+  - 'if [ -z "$HOST" ]; then export HOST="gitlab.com"; fi' # Fallback to gitlab.com if HOST is not defined
+  - echo fetching ssh pub keys for ${HOST}
+  - 'ssh-keyscan -H ${HOST} >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+  - 'chmod 644 ~/.ssh/known_hosts'
+
+.configure_git: &configure_git
+  - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
+  - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
+  # Replace the URL with the SSH version
+  - export NEW_URL=$(echo ${CI_REPOSITORY_URL} | sed -E "s#^(https?://)?[^@]+@([^/]+)/(.*)#git@\2:\3#")
+  - git remote set-url --push origin ${NEW_URL}
+  - git remote -v
+
 .default_before_script: &default_before_script
   - 'export VERSION=$(eval $VERSION)${EXTRA_VERSION_IDENTIFIER}'
   - 'mkdir -p "${BUILD_DIR}/"'
-  - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
-  - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
-
+  - *configure_git
 
 workflow: # If running on any branch other than main, use the `aws-datacontracts-dev` account; otherwise use `aws-datacontracts`
   rules:
     # We are an MR, but it's a draft, we won't proceed with anything.
     - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
       when: never
+      
+    # We have changes in the git-crypt path, we need to provision the key first before proceeding
+    - changes:
+        compare_to: $CI_DEFAULT_BRANCH
+        paths:
+          - "${GIT_CRYPT_INSTALL_PATH}/**"
+      when: always
+      
     # We are a merge request
     - if: $CI_MERGE_REQUEST_IID #|| $CI_COMMIT_REF_NAME == "gitlab-pipelines" # TBD once merged
       variables:
@@ -63,6 +91,53 @@ workflow: # If running on any branch other than main, use the `aws-datacontracts
         EXTRA_VERSION_IDENTIFIER: "-release"
     - when: always
 
+.git-crypt privision & unlock: &git-crypt-provision-and-unlock
+  - echo "Decoding and importing GPG key..."
+  - gpg -v --import <(echo "$GPG_PRIVATE_KEY_BASE64" | base64 -d)
+  - echo "Unlocking git-crypt..."
+  - git-crypt unlock
+
+GPG key change detected:
+  stage: git-crypt-auto-provision
+  image: alpine
+  before_script: 
+    - apk --update add gpg gpg-agent git-crypt git grep git-lfs openssh
+    - *configure_ci_deploy_key
+    - *configure_git
+    - *git-crypt-provision-and-unlock
+  script:
+    - echo "Checking for changes in $GIT_CRYPT_INSTALL_PATH"
+    - git fetch origin $CI_DEFAULT_BRANCH
+    - export LAST_TARGET_COMMIT_SHA=$(git rev-parse FETCH_HEAD)
+    - |
+      echo CI_COMMIT_SHA: $CI_COMMIT_SHA
+      echo GIT_CRYPT_INSTALL_PATH: $GIT_CRYPT_INSTALL_PATH
+      echo LAST_TARGET_COMMIT_SHA: $LAST_TARGET_COMMIT_SHA
+    - CHANGES=$(git diff-tree --name-only -r $LAST_TARGET_COMMIT_SHA $CI_COMMIT_SHA | grep -i "${GIT_CRYPT_INSTALL_PATH}")
+    - echo "$CHANGES"
+    - ls -la $GIT_CRYPT_KEY_PATH
+    - git-crypt unlock
+    - |
+      for key_path in $CHANGES; do
+        export key_id=$(echo $(gpg --import $key_path 2>&1) | grep -oE 'key [A-F0-9]{8,}' | awk '{print $2}')
+        git-crypt add-gpg-user --trusted $key_id
+        rm $key_path
+      done
+    - ls -la $GIT_CRYPT_KEY_PATH
+    - git-crypt lock
+    - git branch -r
+    - git fetch origin $CI_COMMIT_REF_NAME
+    - git branch -D $CI_COMMIT_REF_NAME; git checkout -b $CI_COMMIT_REF_NAME
+    - git push -u origin $CI_COMMIT_REF_NAME
+  allow_failure: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: $CI_DEFAULT_BRANCH
+        paths:
+          - "${GIT_CRYPT_INSTALL_PATH}/**"
+      when: manual
+    - when: never # This ensures the job does not run if none of the above conditions are met
 
 build:
   stage: build
@@ -79,12 +154,7 @@ build:
     - "echo VERSION: ${VERSION}"
     - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
-    - |
-      echo "Decoding and importing GPG key..."
-      gpg -v --import <(echo "$GPG_PRIVATE_KEY_BASE64" | base64 -d)
-    - |
-      echo "Unlocking git-crypt..."
-      git-crypt unlock
+    - *git-crypt-provision-and-unlock
   script:
     - export PYTHONPATH="$BUILD_DIR"
     - "echo Building Panda..."
@@ -98,7 +168,7 @@ build:
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
     - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache --minimal
     - touch ${BUILD_DIR}/prebuilt
-    - sudo rm -rf ${OUTPUT_DIR} 
+    - sudo rm -rf ${OUTPUT_DIR}
     - mkdir -p ${OUTPUT_DIR}
     # We first include the paths we want to keep, even if we later will be excluding the other things on those paths
     - rsync -avm
@@ -148,10 +218,11 @@ build:
       - ${OUTPUT_DIR}/
   tags: [ 'sunnypilot', 'tici' ]
   rules:
-    - if: $CI_MERGE_REQUEST_IID
+    - if: $NEW_BRANCH && $CI_MERGE_REQUEST_IID
       when: manual
     - if: $NEW_BRANCH
       when: always
+    - when: never
 
 check no source code sent:
   image: alpine
@@ -189,14 +260,7 @@ check no source code sent:
   before_script:
     - 'apk update && apk upgrade'
     - 'apk add git bash openssh'
-    - 'eval $(ssh-agent -s)'
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - 'mkdir -p ~/.ssh/'
-    - 'chmod 700 ~/.ssh'
-    - export HOST=$(echo ${GIT_ORIGIN} | cut -d'@' -f2 | cut -d':' -f1)
-    - echo fetching ssh pub keys for ${HOST}
-    - 'ssh-keyscan -H ${HOST} >> ~/.ssh/known_hosts' # Adding gitlab to trusted
-    - 'chmod 644 ~/.ssh/known_hosts'
+    - *configure_ci_deploy_key
     - *default_before_script
   script:
     - echo "${GIT_ORIGIN}"
@@ -231,13 +295,13 @@ publish to public github prebuilt:
   needs: ["build"]
   variables:
     DISCORD_HOOK: "${DISCORD_MANUAL_BUILD_WEBHOOK_URL}" # Default hook if not overriden by children
-  before_script: &notify_discord_before_script
+  before_script:
     - 'apk add curl jq envsubst'
   script:
     - echo using [${TEMPLATE}]
     - cat release/ci/${TEMPLATE} | envsubst | tee payload.json
     - 'curl -X POST -H "Content-Type: application/json" -d "$(cat payload.json)" ${DISCORD_HOOK} | jq .'
-  rules: &notify_discord_rules
+  rules:
     - if: $NEW_BRANCH
       when: on_success
     - when: never
@@ -248,7 +312,7 @@ notify pending action:
   variables:
     TEMPLATE: "discord_template_notify_dev_private.json"
   before_script:
-    - *notify_discord_before_script
+    - !reference [".notify_discord", "before_script"]
     - export AVATAR_URL=$(curl -s -X GET "https://gitlab.com/api/v4/avatar?email=${GITLAB_USER_EMAIL}" | jq -r '.avatar_url')
 
 notify new dev build:
@@ -261,4 +325,4 @@ notify new dev build:
     - if: $NEW_BRANCH == "dev-c3"
       variables:
         DISCORD_HOOK: "${DISCORD_NEW_BUILD_WEBHOOK_URL}" # Overriding hook because we know we are dev-c3
-    - *notify_discord_rules
+    - !reference [".notify_discord", "rules"]
