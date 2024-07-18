@@ -11,15 +11,16 @@
 #include <QTimer>
 #include <QWidget>
 
-#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 
 #ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #define ListWidget ListWidgetSP
 #define ParamControl ParamControlSP
 #define ButtonParamControl ButtonParamControlSP
 #else
+#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif
 
