@@ -17,7 +17,7 @@ public:
   explicit SidebarSP(QWidget* parent = 0);
 
 public slots:
-  void updateState(const UIState &s) override;
+  void updateState(const UIStateSP &s);
 
 protected:
   const QColor progress_color = QColor(3, 132, 252);

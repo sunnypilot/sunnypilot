@@ -19,10 +19,10 @@ OnroadWindowSP::OnroadWindowSP(QWidget *parent) : OnroadWindow(parent) {
     CameraWidget *map_render = new CameraWidget("navd", VISION_STREAM_MAP, false, this);
     split->insertWidget(0, map_render); //TODO: We MIGHT  to override the split variable because it is added on onroad_home.cc and we need to access it before. I am not sure so we will need to test it before 
   }
-  QObject::connect(uiState(), &UIState::primeChanged, this, &OnroadWindowSP::primeChanged);
+  QObject::connect(uiStateSP(), &UIStateSP::primeChanged, this, &OnroadWindowSP::primeChanged);
 }
 
-void OnroadWindowSP::updateState(const UIState &s) {
+void OnroadWindowSP::updateState(const UIStateSP &s) {
   if (!s.scene.started) {
     return;
   }
@@ -39,13 +39,13 @@ void OnroadWindowSP::updateState(const UIState &s) {
 
 void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
 #ifdef ENABLE_MAPS
-  UIState *s = uiState();
+  UIState *s = uiStateSP();
   UIScene &scene = s->scene;
   if (map != nullptr && !isOnroadSettingsVisible()) {
     if (wakeScreenTimeout()) {
       // Switch between map and sidebar when using navigate on openpilot
       bool sidebarVisible = geometry().x() > 0;
-      bool show_map = uiState()->scene.navigate_on_openpilot_deprecated ? sidebarVisible : !sidebarVisible;
+      bool show_map = uiStateSP()->scene.navigate_on_openpilot_deprecated ? sidebarVisible : !sidebarVisible;
       updateMapSize(scene);
       map->setVisible(show_map && !map->isVisible());
     }
@@ -72,7 +72,7 @@ void OnroadWindowSP::createMapWidget() {
   QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
   nvg->map_settings_btn->setEnabled(true);
 
-  m->setFixedWidth(uiState()->scene.mapbox_fullscreen ? topWidget(this)->width() :
+  m->setFixedWidth(uiStateSP()->scene.mapbox_fullscreen ? topWidget(this)->width() :
                                                         topWidget(this)->width() / 2 - UI_BORDER_SIZE);
   split->insertWidget(0, m);
 
@@ -102,7 +102,7 @@ void OnroadWindowSP::createOnroadSettingsWidget() {
 void OnroadWindowSP::offroadTransition(bool offroad) {
   if (!offroad) {
 #ifdef ENABLE_MAPS
-    if (map == nullptr && (uiState()->hasPrime() || !MAPBOX_TOKEN.isEmpty())) {
+    if (map == nullptr && (uiStateSP()->hasPrime() || !MAPBOX_TOKEN.isEmpty())) {
       createMapWidget();
     }
 #endif
@@ -114,7 +114,7 @@ void OnroadWindowSP::offroadTransition(bool offroad) {
   OnroadWindow::offroadTransition(offroad); // Carry on with the parent class offroadTransition method
 }
 
-void OnroadWindowSP::updateMapSize(const UIScene &scene) {
+void OnroadWindowSP::updateMapSize(const UISceneSP &scene) {
   map->setFixedWidth(scene.mapbox_fullscreen ? topWidget(this)->width() :
                                                topWidget(this)->width() / 2 - UI_BORDER_SIZE);
   split->insertWidget(0, map);

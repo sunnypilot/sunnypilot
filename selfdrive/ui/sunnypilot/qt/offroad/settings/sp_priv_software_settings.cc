@@ -256,7 +256,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
 }
 
 void SoftwarePanelSP::checkNetwork() {
-  const SubMaster &sm = *(uiState()->sm);
+  const SubMaster &sm = *(uiStateSP()->sm);
   const auto device_state = sm["deviceState"].getDeviceState();
   const auto network_type = device_state.getNetworkType();
   is_wifi = network_type == cereal::DeviceState::NetworkType::WIFI;

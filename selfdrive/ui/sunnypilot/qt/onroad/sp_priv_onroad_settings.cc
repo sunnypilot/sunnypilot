@@ -120,7 +120,7 @@ OnroadSettings::OnroadSettings(bool closeable, QWidget *parent) : QFrame(parent)
 }
 
 void OnroadSettings::changeDynamicLaneProfile() {
-  UIScene &scene = uiState()->scene;
+  UISceneSP &scene = uiStateSP()->scene;
   bool can_change = scene.driving_model_generation == cereal::ModelGeneration::ONE;
   if (can_change) {
     scene.dynamic_lane_profile++;
@@ -131,8 +131,8 @@ void OnroadSettings::changeDynamicLaneProfile() {
 }
 
 void OnroadSettings::changeGapAdjustCruise() {
-  UIScene &scene = uiState()->scene;
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  UISceneSP &scene = uiStateSP()->scene;
+  const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
   bool can_change = hasLongitudinalControl(cp);
   if (can_change) {
     scene.longitudinal_personality--;
@@ -143,8 +143,8 @@ void OnroadSettings::changeGapAdjustCruise() {
 }
 
 void OnroadSettings::changeAccelerationPersonality() {
-  UIScene &scene = uiState()->scene;
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  UISceneSP &scene = uiStateSP()->scene;
+  const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
   bool can_change = hasLongitudinalControl(cp);
   if (can_change) {
     scene.longitudinal_accel_personality--;
@@ -155,8 +155,8 @@ void OnroadSettings::changeAccelerationPersonality() {
 }
 
 void OnroadSettings::changeDynamicPersonality() {
-  UIScene &scene = uiState()->scene;
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  UISceneSP &scene = uiStateSP()->scene;
+  const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
   bool can_change = hasLongitudinalControl(cp);
   if (can_change) {
     scene.dynamic_personality = !scene.dynamic_personality;
@@ -166,8 +166,8 @@ void OnroadSettings::changeDynamicPersonality() {
 }
 
 void OnroadSettings::changeDynamicExperimentalControl() {
-  UIScene &scene = uiState()->scene;
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  UISceneSP &scene = uiStateSP()->scene;
+  const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
   bool can_change = hasLongitudinalControl(cp);
   if (can_change) {
     scene.dynamic_experimental_control = !scene.dynamic_experimental_control;
@@ -177,8 +177,8 @@ void OnroadSettings::changeDynamicExperimentalControl() {
 }
 
 void OnroadSettings::changeSpeedLimitControl() {
-  UIScene &scene = uiState()->scene;
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  UISceneSP &scene = uiStateSP()->scene;
+  const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
   bool can_change = hasLongitudinalControl(cp) || !cp.getPcmCruiseSpeed();
   int max_policy = SpeedLimitPolicySettings::speed_limit_policy_texts.size() - 1;
 
@@ -213,7 +213,7 @@ void OnroadSettings::refresh() {
   param_watcher->addParam("DynamicExperimentalControl");
   param_watcher->addParam("EnableSlc");
 
-  UIScene &scene = uiState()->scene;
+  UISceneSP &scene = uiStateSP()->scene;
   // Update live params on Feature Status on camera view
   scene.dynamic_lane_profile = std::atoi(params.get("DynamicLaneProfile").c_str());
   scene.longitudinal_personality = std::atoi(params.get("LongitudinalPersonality").c_str());
@@ -227,7 +227,7 @@ void OnroadSettings::refresh() {
 
   setUpdatesEnabled(false);
 
-  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
 
   // Dynamic Lane Profile
   dlp_widget->updateDynamicLaneProfile("DynamicLaneProfile");

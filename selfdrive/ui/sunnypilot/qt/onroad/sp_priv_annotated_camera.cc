@@ -57,8 +57,8 @@ AnnotatedCameraWidgetSP::AnnotatedCameraWidgetSP(VisionStreamType type, QWidget*
 void AnnotatedCameraWidgetSP::mousePressEvent(QMouseEvent* e) {
   bool propagate_event = true;
 
-  UIState *s = uiState();
-  UIScene &scene = s->scene;
+  UIStateSP *s = uiStateSP();
+  UISceneSP &scene = s->scene;
   const SubMaster &sm = *(s->sm);
   const auto longitudinal_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
 
@@ -103,7 +103,7 @@ void AnnotatedCameraWidgetSP::updateButtonsLayout(bool is_rhd) {
   }
 }
 
-void AnnotatedCameraWidgetSP::updateState(const UIState &s) {
+void AnnotatedCameraWidgetSP::updateState(const UIStateSP &s) {
   const int SET_SPEED_NA = 255;
   const SubMaster &sm = *(s.sm);
 
@@ -1096,7 +1096,7 @@ void AnnotatedCameraWidgetSP::initializeGL() {
 
 void AnnotatedCameraWidgetSP::updateFrameMat() {
   CameraWidget::updateFrameMat();
-  UIState *s = uiState();
+  UIStateSP *s = uiStateSP();
   int w = width(), h = height();
 
   s->fb_w = w;
@@ -1112,10 +1112,10 @@ void AnnotatedCameraWidgetSP::updateFrameMat() {
       .translate(-intrinsic_matrix.v[2], -intrinsic_matrix.v[5]);
 }
 
-void AnnotatedCameraWidgetSP::drawLaneLines(QPainter &painter, const UIState *s) {
+void AnnotatedCameraWidgetSP::drawLaneLines(QPainter &painter, const UIStateSP *s) {
   painter.save();
 
-  const UIScene &scene = s->scene;
+  const UISceneSP &scene = s->scene;
   SubMaster &sm = *(s->sm);
 
   const auto car_state = sm["carState"].getCarState();
@@ -1216,7 +1216,7 @@ void AnnotatedCameraWidgetSP::drawLaneLines(QPainter &painter, const UIState *s)
   painter.restore();
 }
 
-void AnnotatedCameraWidgetSP::drawDriverState(QPainter &painter, const UIState *s) {
+void AnnotatedCameraWidgetSP::drawDriverState(QPainter &painter, const UIStateSP *s) {
   const UIScene &scene = s->scene;
 
   painter.save();
@@ -1271,7 +1271,7 @@ void AnnotatedCameraWidgetSP::rocketFuel(QPainter &p) {
   t[dim_n] = 1.0;
   t[(int)(ct/ct_n)] = 1.0;
 
-  UIState *s = uiState();
+  UIStateSP *s = uiStateSP();
   float vc_accel0 = (*s->sm)["carState"].getCarState().getAEgo();
   static float vc_accel;
   vc_accel = vc_accel + (vc_accel0 - vc_accel) / 5;
@@ -1374,7 +1374,7 @@ void AnnotatedCameraWidgetSP::paintGL() {
 }
 
 void AnnotatedCameraWidgetSP::paintEvent(QPaintEvent *event) {
-  UIState *s = uiState();
+  UIStateSP *s = uiStateSP();
   SubMaster &sm = *(s->sm);
   const double start_draw_t = millis_since_boot();
   const cereal::ModelDataV2::Reader &model = sm["modelV2"].getModelV2();
@@ -1501,6 +1501,6 @@ void AnnotatedCameraWidgetSP::paintEvent(QPaintEvent *event) {
 void AnnotatedCameraWidgetSP::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
 
-  ui_update_params(uiState());
+  ui_update_params(uiStateSP());
   prev_draw_t = millis_since_boot();
 }

@@ -76,8 +76,9 @@ void MainWindow::closeSettings() {
   if (uiState()->scene.started) {
     homeWindow->showSidebar(false);
 #ifdef SUNNYPILOT
+    // TODO: validate this and move it away if valid to move 
     // Map is always shown when using navigate on openpilot
-    if (uiState()->scene.navigate_on_openpilot_deprecated) {
+    if (uiStateSP()->scene.navigate_on_openpilot_deprecated) {
       homeWindow->showMapPanel(true);
     }
 #endif 

@@ -1,15 +1,18 @@
 #pragma once
 
+#include <memory>
+#include <optional>
+#include <string>
+
 #include "selfdrive/ui/ui.h"
 
-#include <optional>
-#include <vector>
-
-#include <QColor>
-
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_role_model.h"
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_sponsor_role_model.h"
-#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sp_priv_user_model.h"
+#include "cereal/messaging/messaging.h"
+#include "common/timing.h"
+#include "qt/network/sunnylink/models/sp_priv_role_model.h"
+#include "qt/network/sunnylink/models/sp_priv_sponsor_role_model.h"
+#include "qt/network/sunnylink/models/sp_priv_user_model.h"
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_ui_scene.h"
+#include "system/hardware/hw.h"
 
 const int UI_ROAD_NAME_MARGIN_X = 14;
 
@@ -25,22 +28,14 @@ struct FeatureStatusColor {
   const QStringList slc_list_color = { "#ffffff",      "#ffffff",  "#fcff4b", "#4bff66", "#fcff4b" };
 };
 
-const float DRIVING_PATH_WIDE = 0.9;
-const float DRIVING_PATH_NARROW = 0.25;
 
-typedef enum UIStatusSP {
-  STATUS_DISENGAGED_SP = STATUS_DISENGAGED,
-  STATUS_OVERRIDE_SP = STATUS_OVERRIDE,
-  STATUS_ENGAGED_SP = STATUS_ENGAGED,
-  STATUS_MADS_SP,
-} UIStatusSP;
-
-const QColor bg_colors_sp [] = {
-  [STATUS_DISENGAGED_SP] = QColor(0x17, 0x33, 0x49, 0xc8),
-  [STATUS_OVERRIDE_SP] = QColor(0x91, 0x9b, 0x95, 0xf1),
-  [STATUS_ENGAGED_SP] = QColor(0x00, 0xc8, 0x00, 0xf1),
-  [STATUS_MADS_SP] = QColor(0x00, 0xc8, 0xc8, 0xf1),
+const QColor sp_bg_colors [] = {
+  [STATUS_DISENGAGED] = bg_colors[STATUS_DISENGAGED],
+  [STATUS_OVERRIDE] = bg_colors[STATUS_OVERRIDE],
+  [STATUS_ENGAGED] = QColor(0x00, 0xc8, 0x00, 0xf1),
+  [STATUS_MADS] = QColor(0x00, 0xc8, 0xc8, 0xf1),
 };
+
 
 const QColor tcs_colors [] = {
   [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED)] =  QColor(0x0, 0x0, 0x0, 0xff),
@@ -49,100 +44,17 @@ const QColor tcs_colors [] = {
   [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::LEAVING)] = QColor(0x17, 0x86, 0x44, 0xf1),
 };
 
-typedef struct UISceneSP : UIScene {
-  cereal::ControlsState::Reader controlsState;
-
-  // Debug UI
-  bool show_debug_ui;
-
-  // Speed limit control
-  bool speed_limit_control_enabled;
-  int speed_limit_control_policy;
-  double last_speed_limit_sign_tap;
-
-  // modelV2
-  QPolygonF track_edge_vertices;
-  QPolygonF lane_barrier_vertices[2];
-
-  bool navigate_on_openpilot_deprecated = false;
-  cereal::AccelerationPersonality accel_personality;
-
-  bool map_on_left;
-
-  int dynamic_lane_profile;
-  bool dynamic_lane_profile_status = true;
-
-  bool visual_brake_lights;
-
-  int onroadScreenOff, osoTimer, brightness, onroadScreenOffBrightness, awake;
-  bool onroadScreenOffEvent;
-  int sleep_time = -1;
-  bool touched2 = false;
-
-  bool stand_still_timer;
-
-  bool hide_vego_ui, true_vego_ui;
-
-  int chevron_data;
-
-  bool gac;
-  int longitudinal_personality;
-  int longitudinal_accel_personality;
-
-  bool map_visible;
-  int dev_ui_info;
-  bool live_torque_toggle;
-
-  bool touch_to_wake = false;
-  int sleep_btn = -1;
-  bool sleep_btn_fading_in = false;
-  int sleep_btn_opacity = 20;
-  bool button_auto_hide;
-
-  bool reverse_dm_cam;
-
-  bool e2e_long_alert_light, e2e_long_alert_lead, e2e_long_alert_ui;
-  float e2eX[13] = {0};
-
-  int sidebar_temp_options;
-
-  float mads_path_scale = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;
-  float mads_path_range = DRIVING_PATH_WIDE - DRIVING_PATH_NARROW;  // 0.9 - 0.25 = 0.65
-
-  bool onroad_settings_visible;
-
-  bool map_3d_buildings;
-
-  bool torqued_override;
-
-  bool dynamic_experimental_control;
-
-  int speed_limit_control_engage_type;
-
-  bool mapbox_fullscreen;
-
-  bool speed_limit_warning_flash;
-  int speed_limit_warning_type;
-  int speed_limit_warning_value_offset;
-
-  bool custom_driving_model_valid;
-  cereal::ModelGeneration driving_model_generation;
-  uint32_t driving_model_capabilities;
-
-  bool feature_status_toggle;
-  bool onroad_settings_toggle;
-
-  bool dynamic_personality;
-} UISceneSP;
-
 class UIStateSP : public UIState {
   Q_OBJECT
 
 public:
-  UIStateSP(QObject* parent = nullptr);
-  void updateStatus();
+  UIStateSP(QObject* parent = 0);
+  void updateStatus() override;
+
   void setSunnylinkRoles(const std::vector<RoleModel> &roles);
   void setSunnylinkDeviceUsers(const std::vector<UserModel> &users);
+
+  UISceneSP scene = {};
 
   inline std::vector<RoleModel> sunnylinkDeviceRoles() const { return sunnylinkRoles; }
   inline bool isSunnylinkAdmin() const {
@@ -158,9 +70,9 @@ public:
   inline SponsorRoleModel sunnylinkSponsorRole() const {
     std::optional<SponsorRoleModel> sponsorRoleWithHighestTier = std::nullopt;
     for (const auto &role : sunnylinkRoles) {
-      if (role.roleType != RoleType::Sponsor)
+      if(role.roleType != RoleType::Sponsor)
         continue;
-
+      
       if (auto sponsorRole = role.as<SponsorRoleModel>(); !sponsorRoleWithHighestTier.has_value() || sponsorRoleWithHighestTier->roleTier < sponsorRole.roleTier) {
         sponsorRoleWithHighestTier = sponsorRole;
       }
@@ -177,17 +89,15 @@ public:
     });
   }
 
-  UIStatusSP status_sp;
-  UISceneSP scene_sp = {};
-
 signals:
-  void uiUpdate(const UIStateSP &s);
   void sunnylinkRoleChanged(bool subscriber);
   void sunnylinkRolesChanged(std::vector<RoleModel> roles);
   void sunnylinkDeviceUsersChanged(std::vector<UserModel> users);
+  void uiUpdate(const UIStateSP &s);
 
 private slots:
-  void update();
+  void update() override;
+  
 
 private:
   std::vector<RoleModel> sunnylinkRoles = {};
@@ -197,30 +107,21 @@ private:
   bool mads_path_state = false;
   float mads_path_timestep = 4;  // UI runs at 20 Hz, therefore 0.2 second is [0.2 second / (1 / 20 Hz) = 4]
   float mads_path_count = 4;     // UI runs at 20 Hz, therefore 0.2 second is [0.2 second / (1 / 20 Hz) = 4]
-
-public slots:
-  void update(const UIStateSP &s);
 };
 
+//TODO: maybe need to redeclare but the sp?
 UIStateSP *uiStateSP();
 
+// device management class
 class DeviceSP : public Device {
   Q_OBJECT
 
 public:
-  DeviceSP(QObject *parent = nullptr);
-  void updateBrightness(const UIStateSP &s);
-
+  DeviceSP(QObject *parent = 0);
 protected:
-  void updateBrightness(const UIState &s);
-
-public slots:
-  void update(const UIStateSP &s);
+  void updateBrightness(const UIStateSP &s);
 };
 
-DeviceSP *deviceSP();
-
-void update_model(UIState *s,
-                  const cereal::ModelDataV2::Reader &model);
-void update_line_data(const UIState *s, const cereal::XYZTData::Reader &line,
+void sp_update_model(UIStateSP *s, const cereal::ModelDataV2::Reader &model);
+void update_line_data(const UIStateSP *s, const cereal::XYZTData::Reader &line,
                       float y_off, float z_off_left, float z_off_right, QPolygonF *pvd, int max_idx, bool allow_invert);

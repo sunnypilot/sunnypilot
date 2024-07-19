@@ -27,7 +27,7 @@ signals:
 
 public slots:
   void offroadTransition(bool offroad);
-  virtual void updateState(const UIState &s);
+  void updateState(const UIState &s);
 
 protected:
   void paintEvent(QPaintEvent *event) override;

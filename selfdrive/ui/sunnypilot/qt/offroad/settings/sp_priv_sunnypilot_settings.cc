@@ -329,7 +329,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   // trigger offroadTransition when going onroad/offroad
   for (const auto& offroadName : toggleOffroad) {
     if (toggles.find(offroadName) != toggles.end()) {
-      connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+      connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
         toggles[offroadName]->setEnabled(offroad);
       });
     }
@@ -359,7 +359,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   customOffsetsSettings->setEnabled(toggles["CustomOffsets"]->isToggled());
 
   // update "FRICTION" and "LAT_ACCEL_FACTOR" titles when going onroad/offroad
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
     friction->setEnabled(offroad || toggles["TorquedOverride"]->isToggled());
     lat_accel_factor->setEnabled(offroad || toggles["TorquedOverride"]->isToggled());
 

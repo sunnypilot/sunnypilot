@@ -37,7 +37,7 @@ private:
   Params mem_params{ Hardware::PC() ? "": "/dev/shm/params"};
   std::map<std::string, ParamControlSP*> toggles;
   std::optional<QFuture<quint64>> mapSizeFuture;
-  const SubMaster &sm = *uiState()->sm;
+  const SubMaster &sm = *uiStateSP()->sm;
 
 
   bool is_onroad = false;

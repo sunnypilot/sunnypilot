@@ -5,9 +5,9 @@
 
 void MapWindowSP::initLayers() {
   if (!m_map->layerExists("navLayer")) {
-    m_map->setPaintProperty("navLayer", "line-color", getNavPathColor(uiState()->scene.navigate_on_openpilot_deprecated));
+    m_map->setPaintProperty("navLayer", "line-color", getNavPathColor(uiStateSP()->scene.navigate_on_openpilot_deprecated));
   }
-  if ((!m_map->layerExists("buildingsLayer")) && uiState()->scene.map_3d_buildings) {  // Could put this behind the cellular metered toggle in case it increases data usage
+  if ((!m_map->layerExists("buildingsLayer")) && uiStateSP()->scene.map_3d_buildings) {  // Could put this behind the cellular metered toggle in case it increases data usage
     qDebug() << "Initializing buildingsLayer";
     QVariantMap buildings;
     buildings["id"] = "buildingsLayer";
@@ -53,7 +53,7 @@ void MapWindowSP::initLayers() {
 }
 
 void MapWindowSP::updateState(const UIState &s) {
-  if (!uiState()->scene.started) {
+  if (!uiStateSP()->scene.started) {
     return;
   }
   const SubMaster &sm = *(s.sm);
@@ -72,7 +72,7 @@ void MapWindowSP::updateState(const UIState &s) {
     auto car_control = sm["carControl"].getCarControl();
     bool nav_enabled = sm["modelV2"].getModelV2().getNavEnabledDEPRECATED() &&
                        (sm["controlsState"].getControlsState().getEnabled() || car_control.getLatActive() || car_control.getLongActive());
-    if (nav_enabled != uiState()->scene.navigate_on_openpilot_deprecated) {
+    if (nav_enabled != uiStateSP()->scene.navigate_on_openpilot_deprecated) {
       if (loaded_once) {
         m_map->setPaintProperty("navLayer", "line-color", getNavPathColor(nav_enabled));
       }
@@ -80,7 +80,7 @@ void MapWindowSP::updateState(const UIState &s) {
         emit requestVisible(true);
       }
     }
-    uiState()->scene.navigate_on_openpilot_deprecated = nav_enabled;
+    uiStateSP()->scene.navigate_on_openpilot_deprecated = nav_enabled;
   }
 
   MapWindow::initLayers();
@@ -88,7 +88,7 @@ void MapWindowSP::updateState(const UIState &s) {
 
 void MapWindowSP::offroadTransition(bool offroad) {
   if (offroad) {
-    uiState()->scene.navigate_on_openpilot_deprecated = false;
+    uiStateSP()->scene.navigate_on_openpilot_deprecated = false;
   }
 
   MapWindow::offroadTransition(offroad);

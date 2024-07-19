@@ -27,5 +27,5 @@ void UserService::handleResponse(const QString &response, bool success) {
   }
 
   emit usersReady(users);
-  uiState()->setSunnylinkDeviceUsers(users);
+  uiStateSP()->setSunnylinkDeviceUsers(users);
 }

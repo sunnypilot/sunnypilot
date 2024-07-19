@@ -125,7 +125,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
   accel_personality_setting->showDescription();
 
   // set up uiState update for personality setting
-  QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanelSP::updateState);
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &TogglesPanelSP::updateState);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControlSP(param, title, desc, icon, this);
@@ -163,7 +163,7 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
   });
 }
 
-void TogglesPanelSP::updateState(const UIState &s) {
+void TogglesPanelSP::updateState(const UIStateSP &s) {
   const SubMaster &sm = *(s.sm);
 
   if (sm.updated("controlsState")) {
@@ -171,7 +171,7 @@ void TogglesPanelSP::updateState(const UIState &s) {
     if (personality != s.scene.personality && s.scene.started && isVisible()) {
       long_personality_setting->setCheckedButton(static_cast<int>(personality));
     }
-    uiState()->scene.personality = personality;
+    uiStateSP()->scene.personality = personality;
   }
 
   if (sm.updated("controlsStateSP")) {
@@ -179,7 +179,7 @@ void TogglesPanelSP::updateState(const UIState &s) {
     if (accel_personality != s.scene.accel_personality && s.scene.started && isVisible()) {
       accel_personality_setting->setCheckedButton(static_cast<int>(accel_personality));
     }
-    uiState()->scene.accel_personality = accel_personality;
+    uiStateSP()->scene.accel_personality = accel_personality;
   }
 }
 

@@ -173,7 +173,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   addItem(volkswagenCCOnly);
 
   // trigger offroadTransition when going onroad/offroad
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
     is_onroad = !offroad;
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);

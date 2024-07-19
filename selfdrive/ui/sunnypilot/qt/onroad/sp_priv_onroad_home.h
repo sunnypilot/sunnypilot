@@ -21,8 +21,8 @@ public:
   void onroadSettingsPanelNotRequested() { if (onroad_settings) onroad_settings->setVisible(false); }
 
   bool wakeScreenTimeout() {
-    if ((uiState()->scene.sleep_btn != 0 && uiState()->scene.sleep_btn_opacity != 0) ||
-        (uiState()->scene.sleep_time != 0 && uiState()->scene.onroadScreenOff != -2)) {
+    if ((uiStateSP()->scene.sleep_btn != 0 && uiStateSP()->scene.sleep_btn_opacity != 0) ||
+        (uiStateSP()->scene.sleep_time != 0 && uiStateSP()->scene.onroadScreenOff != -2)) {
       return true;
         }
     return false;
@@ -36,7 +36,7 @@ private:
   void createMapWidget();
   void createOnroadSettingsWidget();
   void mousePressEvent(QMouseEvent* e) override;
-  // AnnotatedCameraWidget *nvg; //TODO: override? this is defined on onroad_home.h
+  AnnotatedCameraWidgetSP *nvg;
   QWidget *map = nullptr;
   QWidget *onroad_settings = nullptr;
 
@@ -44,7 +44,7 @@ private:
 
 protected slots:
   void offroadTransition(bool offroad) override;
-  void updateState(const UIState &s) override;
+  void updateState(const UIStateSP &s);
   void primeChanged(bool prime);
-  void updateMapSize(const UIScene &scene);
+  void updateMapSize(const UISceneSP &scene);
 };

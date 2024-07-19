@@ -16,7 +16,7 @@ OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
   list->addItem(setupOsmDownloadButton(parent));
   list->addItem(setupUsStatesButton(parent));
 
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
     updateLabels();
   });
 

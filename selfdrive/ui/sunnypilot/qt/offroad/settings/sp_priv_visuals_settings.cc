@@ -117,7 +117,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidgetSP(parent) {
   addItem(sidebar_temp_setting);
 
   // trigger offroadTransition when going onroad/offroad
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
   });
 
   QObject::connect(toggles["MapboxFullScreen"], &ToggleControl::toggleFlipped, [=](bool state) {

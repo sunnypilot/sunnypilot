@@ -22,22 +22,22 @@ void HomeWindowSP::showMapPanel(bool show) {
 void HomeWindowSP::updateState(const UIState &s) { //OVERRIDE
   HomeWindow::updateState(s);
 
-  uiState()->scene.map_visible = onroad->isMapVisible();
-  uiState()->scene.onroad_settings_visible = onroad->isOnroadSettingsVisible();
+  uiStateSP()->scene.map_visible = onroad->isMapVisible();
+  uiStateSP()->scene.onroad_settings_visible = onroad->isOnroadSettingsVisible();
 }
 
 void HomeWindowSP::mousePressEvent(QMouseEvent* e) {
   HomeWindow::mousePressEvent(e); // We call it first so that we could potentially override whatever was done by parent
   
-  if (uiState()->scene.started) {
-    if (uiState()->scene.onroadScreenOff != -2) {
-      uiState()->scene.touched2 = true;
-      QTimer::singleShot(500, []() { uiState()->scene.touched2 = false; });
+  if (uiStateSP()->scene.started) {
+    if (uiStateSP()->scene.onroadScreenOff != -2) {
+      uiStateSP()->scene.touched2 = true;
+      QTimer::singleShot(500, []() { uiStateSP()->scene.touched2 = false; });
     }
-    if (uiState()->scene.button_auto_hide) {
-      uiState()->scene.touch_to_wake = true;
-      uiState()->scene.sleep_btn_fading_in = true;
-      QTimer::singleShot(500, []() { uiState()->scene.touch_to_wake = false; });
+    if (uiStateSP()->scene.button_auto_hide) {
+      uiStateSP()->scene.touch_to_wake = true;
+      uiStateSP()->scene.sleep_btn_fading_in = true;
+      QTimer::singleShot(500, []() { uiStateSP()->scene.touch_to_wake = false; });
     }
   }
 

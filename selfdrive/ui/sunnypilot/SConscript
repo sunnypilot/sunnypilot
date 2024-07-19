@@ -39,11 +39,12 @@ qt_src = [
   "sunnypilot/qt/sp_priv_sidebar.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_device_panel.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_settings.cc",
-  "sunnypilot/qt/onroad/sp_priv_onroad_settings.cc",
-  "sunnypilot/qt/onroad/sp_priv_onroad_settings_panel.cc",
+  "sunnypilot/qt/onroad/sp_priv_buttons.cc",
   "sunnypilot/qt/onroad/sp_priv_onroad_home.cc",
+  "sunnypilot/qt/onroad/sp_priv_onroad_settings.cc",
   "sunnypilot/qt/onroad/sp_priv_annotated_camera.cc",
-  "sunnypilot/qt/onroad/developer_ui/sp_priv_developer_ui.cc"
+  "sunnypilot/qt/onroad/sp_priv_onroad_settings_panel.cc",
+  "sunnypilot/qt/onroad/developer_ui/sp_priv_developer_ui.cc",
 ]
 
 sp_widgets_src = widgets_src + network_src

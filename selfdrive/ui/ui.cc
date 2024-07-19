@@ -11,7 +11,6 @@
 #include "common/swaglog.h"
 #include "common/util.h"
 #include "common/watchdog.h"
-#include "qt/util.h"
 #include "system/hardware/hw.h"
 
 #define BACKLIGHT_DT 0.05
@@ -19,8 +18,7 @@
 
 // Projects a point in car to space to the corresponding point in full frame
 // image space.
-static bool calib_frame_to_full_frame(const UIState *s, float in_x, float in_y, float in_z, QPointF *out) {
-  const float margin = 500.0f;
+bool calib_frame_to_full_frame(const UIState *s, float in_x, float in_y, float in_z, QPointF *out, const float margin) {
   const QRectF clip_region{-margin, -margin, s->fb_w + 2 * margin, s->fb_h + 2 * margin};
 
   const vec3 pt = (vec3){{in_x, in_y, in_z}};
@@ -146,11 +144,11 @@ void update_dmonitoring(UIState *s, const cereal::DriverStateV2::Reader &drivers
   }
 }
 
-static void update_sockets(UIState *s) {
+void update_sockets(UIState *s) {
   s->sm->update(0);
 }
 
-static void update_state(UIState *s) {
+void update_state(UIState *s) {
   SubMaster &sm = *(s->sm);
   UIScene &scene = s->scene;
 
@@ -244,9 +242,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
-    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "clocks", "longitudinalPlanSP", "liveMapDataSP",
-    "carControl", "lateralPlanSPDEPRECATED", "gpsLocation", "gpsLocationExternal", "liveParameters", "liveTorqueParameters",
-    "controlsStateSP", "modelV2SP"
+    "wideRoadCameraState", "managerState", "clocks",
   });
 
   Params params;
@@ -266,6 +262,10 @@ void UIState::update() {
   update_sockets(this);
   update_state(this);
   updateStatus();
+
+  if (std::getenv("PRIME_TYPE")) {
+      setPrimeType((PrimeType)atoi(std::getenv("PRIME_TYPE")));
+  }
 
   if (sm->frame % UI_FREQ == 0) {
     watchdog_kick(nanos_since_boot());
@@ -292,7 +292,6 @@ Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT
   setAwake(true);
   resetInteractiveTimeout();
 
-  RETURN_IF_SUNNYPILOT
   QObject::connect(uiState(), &UIState::uiUpdate, this, &Device::update);
 }
 
@@ -318,7 +317,7 @@ void Device::resetInteractiveTimeout(int timeout) {
 }
 
 void Device::updateBrightness(const UIState &s) {
-  float clipped_brightness = offroad_brightness;
+  clipped_brightness = offroad_brightness;
   if (s.scene.started && s.scene.light_sensor > 0) {
     clipped_brightness = s.scene.light_sensor;
 

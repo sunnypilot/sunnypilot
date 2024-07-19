@@ -17,8 +17,8 @@ void OffroadHomeSP::replaceLeftWidget(){
         new_left_widget->addWidget(new PrimeAdWidget);
     
     new_left_widget->setStyleSheet("border-radius: 10px;");
-    new_left_widget->setCurrentIndex((uiState()->hasPrime() || custom_mapbox) ? 0 : 1);
-    connect(uiState(), &UIState::primeChanged, [=](bool prime)    {
+    new_left_widget->setCurrentIndex((uiStateSP()->hasPrime() || custom_mapbox) ? 0 : 1);
+    connect(uiStateSP(), &UIStateSP::primeChanged, [=](bool prime)    {
         new_left_widget->setCurrentIndex((prime || custom_mapbox) ? 0 : 1);
     });
     ReplaceWidget(left_widget, new_left_widget);

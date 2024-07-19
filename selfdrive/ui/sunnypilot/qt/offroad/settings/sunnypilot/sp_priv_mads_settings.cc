@@ -53,11 +53,11 @@ MadsSettings::MadsSettings(QWidget* parent) : QWidget(parent) {
     toggles[param.toStdString()] = toggle;
 
     // trigger offroadTransition when going onroad/offroad
-    connect(uiState(), &UIState::offroadTransition, toggle, &ParamControlSP::setEnabled);
+    connect(uiStateSP(), &UIStateSP::offroadTransition, toggle, &ParamControlSP::setEnabled);
   }
 
   // trigger offroadTransition when going onroad/offroad
-  connect(uiState(), &UIState::offroadTransition, dlob_settings, &ButtonParamControlSP::setEnabled);
+  connect(uiStateSP(), &UIStateSP::offroadTransition, dlob_settings, &ButtonParamControlSP::setEnabled);
 
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
@@ -71,7 +71,7 @@ void MadsSettings::updateToggles() {
     return;
   }
 
-  const bool is_offroad = !uiState()->scene.started;
+  const bool is_offroad = !uiStateSP()->scene.started;
   const bool enable_mads = params.getBool("EnableMads");
   const bool enabled = is_offroad && enable_mads;
 

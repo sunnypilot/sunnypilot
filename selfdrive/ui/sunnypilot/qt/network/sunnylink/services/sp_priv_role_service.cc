@@ -25,5 +25,5 @@ void RoleService::handleResponse(const QString &response, bool success) {
   }
 
   emit rolesReady(roles);
-  uiState()->setSunnylinkRoles(roles);
+  uiStateSP()->setSunnylinkRoles(roles);
 }

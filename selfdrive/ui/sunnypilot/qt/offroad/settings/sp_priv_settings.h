@@ -13,7 +13,7 @@ public:
   void showEvent(QShowEvent *event) override;
 
 private slots:
-  void updateState(const UIState &s) override;
+  void updateState(const UIStateSP &s);
 
 private:
   std::map<std::string, ParamControlSP*> toggles;

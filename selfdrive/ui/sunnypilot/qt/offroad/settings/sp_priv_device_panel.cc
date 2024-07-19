@@ -74,7 +74,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindow *parent) : DevicePanel(parent) {
   });
   AddWidgetAt(6, resetParamsBtn);
   
-  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  QObject::connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
       if (btn != pair_device && btn != errorBtn) { 
         btn->setEnabled(offroad);
@@ -118,18 +118,18 @@ void DevicePanelSP::refreshPin() {
 }
 
 void DevicePanelSP::forceoffroad() {
-  if (!uiState()->engaged()) {
+  if (!uiStateSP()->engaged()) {
     if (params.getBool("ForceOffroad")) {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to unforce offroad?"), tr("Unforce"), this)) {
         // Check engaged again in case it changed while the dialog was open
-        if (!uiState()->engaged()) {
+        if (!uiStateSP()->engaged()) {
           params.remove("ForceOffroad");
         }
       }
     } else {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to force offroad?"), tr("Force"), this)) {
         // Check engaged again in case it changed while the dialog was open
-        if (!uiState()->engaged()) {
+        if (!uiStateSP()->engaged()) {
           params.putBool("ForceOffroad", true);
         }
       }

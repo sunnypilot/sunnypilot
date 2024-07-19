@@ -17,8 +17,8 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   });
 
   is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
-  connect(uiState(), &UIState::sunnylinkRolesChanged, this, &SunnylinkPanel::updateLabels);
-  connect(uiState(), &UIState::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updateLabels);
+  connect(uiStateSP(), &UIStateSP::sunnylinkRolesChanged, this, &SunnylinkPanel::updateLabels);
+  connect(uiStateSP(), &UIStateSP::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updateLabels);
 
   auto list = new ListWidgetSP(this, false);
   sunnylinkEnabledBtn = new ParamControlSP(
@@ -126,7 +126,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   settings_layout->setAlignment(Qt::AlignLeft);
   list->addItem(settings_layout);
 
-  connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
     is_onroad = !offroad;
     updateLabels();
   });
@@ -187,12 +187,12 @@ void SunnylinkPanel::updateLabels() {
 
   is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
   const auto sunnylinkDongleId = getSunnylinkDongleId().value_or(tr("N/A"));
-  bool is_sub = uiState()->isSunnylinkSponsor() && is_sunnylink_enabled;
-  auto max_current_sponsor_rule = uiState()->sunnylinkSponsorRole();
+  bool is_sub = uiStateSP()->isSunnylinkSponsor() && is_sunnylink_enabled;
+  auto max_current_sponsor_rule = uiStateSP()->sunnylinkSponsorRole();
   auto role_name = max_current_sponsor_rule.getSponsorTierString();
   std::optional role_color = max_current_sponsor_rule.getSponsorTierColor();
-  bool is_paired = uiState()->isSunnylinkPaired();
-  auto paired_users = uiState()->sunnylinkDeviceUsers();
+  bool is_paired = uiStateSP()->isSunnylinkPaired();
+  auto paired_users = uiStateSP()->sunnylinkDeviceUsers();
 
   //little easter egg for Panda :D 
   if (sunnylinkDongleId == "d689627422cefcbc") {
