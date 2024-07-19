@@ -9,7 +9,8 @@ class MapWindowSP : public MapWindow {
   Q_OBJECT
 
 public:
-  explicit MapWindowSP(const QMapLibre::Settings &settings) : MapWindow(settings) {}
+  explicit MapWindowSP(const QMapLibre::Settings &);
+  ~MapWindowSP();
 
 private:
   void initLayers();

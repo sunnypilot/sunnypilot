@@ -113,7 +113,6 @@ void MapWindow::initLayers() {
 }
 
 void MapWindow::updateState(const UIState &s) {
-#ifdef SUNNYPILOT
   if (!uiState()->scene.started) {
     return;
   }
@@ -127,7 +126,6 @@ void MapWindow::updateState(const UIState &s) {
     initializeGL();
   }
   prev_time_valid = sm.valid("clocks");
-#endif
 
   if (sm.updated("liveLocationKalman")) {
     auto locationd_location = sm["liveLocationKalman"].getLiveLocationKalman();

@@ -3,6 +3,11 @@
 #include "common/swaglog.h"
 #include "selfdrive/ui/sunnypilot/qt/maps/sp_priv_map_helpers.h"
 
+MapWindowSP::MapWindowSP(const QMapLibre::Settings &settings) : MapWindow(settings) {
+  QObject::disconnect(uiState(), &UIState::uiUpdate, this, &MapWindow::updateState);
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &MapWindowSP::updateState);
+}
+
 void MapWindowSP::initLayers() {
   if (!m_map->layerExists("navLayer")) {
     m_map->setPaintProperty("navLayer", "line-color", getNavPathColor(uiStateSP()->scene.navigate_on_openpilot_deprecated));
@@ -52,7 +57,7 @@ void MapWindowSP::initLayers() {
   }
 }
 
-void MapWindowSP::updateState(const UIState &s) {
+void MapWindowSP::updateState(const UIStateSP &s) {
   if (!uiStateSP()->scene.started) {
     return;
   }
@@ -83,7 +88,7 @@ void MapWindowSP::updateState(const UIState &s) {
     uiStateSP()->scene.navigate_on_openpilot_deprecated = nav_enabled;
   }
 
-  MapWindow::initLayers();
+  MapWindow::updateState(s);
 }
 
 void MapWindowSP::offroadTransition(bool offroad) {
