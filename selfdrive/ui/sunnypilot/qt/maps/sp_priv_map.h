@@ -1,6 +1,7 @@
 #pragma once
 
 #include "selfdrive/ui/qt/maps/map.h"
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
 
 #include <QColor>
 
@@ -18,7 +19,7 @@ private:
   }
 
 protected slots:
-  void updateState(const UIState &s);
+  void updateState(const UIStateSP &s);
 
 public slots:
   void offroadTransition(bool offroad);
