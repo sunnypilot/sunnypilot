@@ -4,7 +4,6 @@ import math
 import time
 import ctypes
 import numpy as np
-from pathlib import Path
 
 from cereal import messaging
 from cereal.messaging import PubMaster, SubMaster
@@ -21,7 +20,7 @@ NAV_INPUT_SIZE = 256*256
 NAV_FEATURE_LEN = 256
 NAV_DESIRE_LEN = 32
 NAV_OUTPUT_SIZE = 2*2*ModelConstants.IDX_N + NAV_DESIRE_LEN + NAV_FEATURE_LEN
-MODEL_PATHS = {}
+MODEL_PATHS = {}  # type: ignore
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 
@@ -51,7 +50,7 @@ class ModelState:
     self.output = np.zeros(NAV_OUTPUT_SIZE, dtype=np.float32)
     self.param_s = Params()
     self.custom_model_metadata = CustomModelMetadata(params=self.param_s, init_only=True)
-    if self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.NoO:
+    if self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
       _model_name = self.param_s.get("NavModelText", encoding="utf8")
       _model_paths = {
         ModelRunner.SNPE: f"{CUSTOM_MODEL_PATH}/navmodel_q_{_model_name}.dlc"}

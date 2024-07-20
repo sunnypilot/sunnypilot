@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from cgi import parse_header, parse_multipart
+from cgi import parse_header
 from urllib.parse import parse_qs, unquote
 import json
 import requests
@@ -184,7 +184,7 @@ class OtisServ(BaseHTTPRequestHandler):
         name = postvars.get("name")[0] if postvars.get("name") is not None else ""
         if use_amap:
           lng, lat = self.gcj02towgs84(lng, lat)
-        params.put('NavDestination', "{\"latitude\": %f, \"longitude\": %f, \"place_name\": \"%s\"}" % (lat, lng, name))
+        params.put('NavDestination', f'{{"latitude": {lat:.6f}, "longitude": {lng:.6f}, "place_name": "{name}"}}')
         self.to_json(lat, lng, save_type, name)
     if postvars is not None:
       latitude_value = postvars.get("latitude")
@@ -194,7 +194,7 @@ class OtisServ(BaseHTTPRequestHandler):
         lng = float(longitude_value)
         save_type = "recent"
         name = postvars.get("place_name", [""])
-        params.put('NavDestination', "{\"latitude\": %f, \"longitude\": %f, \"place_name\": \"%s\"}" % (lat, lng, name))
+        params.put('NavDestination', f'{{"latitude": {lat:.6f}, "longitude": {lng:.6f}, "place_name": "{name}"}}')
         self.to_json(lat, lng, save_type, name)
       # favorites
       if not use_gmap and "fav_val" in postvars:
@@ -244,7 +244,7 @@ class OtisServ(BaseHTTPRequestHandler):
     self.send_response(200)
     self.send_header('Content-type','image/png')
     self.end_headers()
-    f = open("%s/selfdrive/assets/img_spinner_comma.png" % BASEDIR, "rb")
+    f = open(f"{BASEDIR}/selfdrive/assets/img_spinner_comma.png", "rb")
     self.wfile.write(f.read())
     f.close()
 
@@ -323,17 +323,19 @@ class OtisServ(BaseHTTPRequestHandler):
     self.wfile.write(bytes(self.get_parsed_template("body", {"{{content}}": self.get_parsed_template("addr_input", {"{{msg}}": msg})}), "utf-8"))
 
   def display_page_nav_confirmation(self, addr, lon, lat):
-    content = self.get_parsed_template("addr_input", {"{{msg}}": ""}) + self.get_parsed_template("nav_confirmation", {"{{token}}": self.get_public_token(), "{{lon}}": lon, "{{lat}}": lat, "{{addr}}": addr})
+    content = self.get_parsed_template("addr_input", {"{{msg}}": ""}) + self.get_parsed_template("nav_confirmation", {"{{token}}": self.get_public_token(), "{{lon}}": lon, "{{lat}}": lat, "{{addr}}": addr})  # noqa: E501
     self.wfile.write(bytes(self.get_parsed_template("body", {"{{content}}": content }), "utf-8"))
 
   def display_page_gmap(self):
     self.wfile.write(bytes(self.get_parsed_template("gmap/index.html", {"{{gmap_key}}": self.get_gmap_key()}), "utf-8"))
 
   def display_page_amap(self):
-    self.wfile.write(bytes(self.get_parsed_template("amap/index.html", {"{{amap_key}}": self.get_amap_key(), "{{amap_key_2}}": self.get_amap_key_2()}), "utf-8"))
+    self.wfile.write(bytes(self.get_parsed_template("amap/index.html", {"{{amap_key}}": self.get_amap_key(), "{{amap_key_2}}": self.get_amap_key_2()}), "utf-8"))  # noqa: E501
 
-  def get_parsed_template(self, name, replace = {}):
-    f = open('%s/selfdrive/navd/tpl/%s.tpl' % (BASEDIR, name), mode='r', encoding='utf-8')
+  def get_parsed_template(self, name, replace=None):
+    if replace is None:
+      replace = {}
+    f = open(f'{BASEDIR}/selfdrive/navd/tpl/{name}.tpl', encoding='utf-8')
     content = f.read()
     for key in replace:
       content = content.replace(key, str(replace[key]))
@@ -348,7 +350,7 @@ class OtisServ(BaseHTTPRequestHandler):
     last_pos = Params().get("LastGPSPosition")
     if last_pos is not None and last_pos != "":
       l = json.loads(last_pos)
-      query += "&proximity=%s,%s" % (l["longitude"], l["latitude"])
+      query += f"&proximity={l['longitude']},{l['latitude']}"
 
     r = requests.get(query)
     if r.status_code != 200:
@@ -407,16 +409,16 @@ class OtisServ(BaseHTTPRequestHandler):
     ret += (150.0 * math.sin(lng / 12.0 * pi) + 300.0 * math.sin(lng / 30.0 * pi)) * 2.0 / 3.0
     return ret
 
-  def to_json(self, lat, lng, type = "recent", name = ""):
+  def to_json(self, lat, lng, _type="recent", name=""):
     if name == "":
       name =  str(lat) + "," + str(lng)
     new_dest = {"latitude": float(lat), "longitude": float(lng), "place_name": name}
 
-    if type == "recent":
+    if _type == "recent":
       new_dest["save_type"] = "recent"
     else:
       new_dest["save_type"] = "favorite"
-      new_dest["label"] = type
+      new_dest["label"] = _type
 
     val = params.get("ApiCache_NavDestinations", encoding='utf8')
     if val is not None:
@@ -433,17 +435,17 @@ class OtisServ(BaseHTTPRequestHandler):
         type_label_ids["recent"].append(idx)
       idx += 1
 
-    if type == "recent":
-      id = None
+    if _type == "recent":
+      _id = None
       if len(type_label_ids["recent"]) > 10:
         dests.pop(type_label_ids["recent"][-1])
     else:
-      id = type_label_ids[type]
+      _id = type_label_ids[_type]
 
-    if id is None:
+    if _id is None:
       dests.insert(0, new_dest)
     else:
-      dests[id] = new_dest
+      dests[_id] = new_dest
 
     params.put("ApiCache_NavDestinations", json.dumps(dests).rstrip("\n\r"))
 
