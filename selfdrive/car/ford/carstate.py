@@ -92,16 +92,14 @@ class CarState(CarStateBase):
         ret.gearShifter = GearShifter.drive
 
     # Buttons
-    button_events = []
     for button in BUTTONS:
       state = (cp.vl[button.can_addr][button.can_msg] in button.values)
       if self.button_states[button.event_type] != state:
         event = car.CarState.ButtonEvent.new_message()
         event.type = button.event_type
         event.pressed = state
-        button_events.append(event)
+        self.button_events.append(event)
       self.button_states[button.event_type] = state
-    self.button_events = button_events
 
     # safety
     ret.stockFcw = bool(cp_cam.vl["ACCDATA_3"]["FcwVisblWarn_B_Rq"])

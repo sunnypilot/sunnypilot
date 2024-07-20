@@ -6,7 +6,7 @@ from panda import Panda
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.gm.radar_interface import RADAR_HEADER_MSG
 from openpilot.selfdrive.car.gm.values import CAR, CruiseButtons, CarControllerParams, EV_CAR, CAMERA_ACC_CAR, CanBus
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase, TorqueFromLateralAccelCallbackType, FRICTION_THRESHOLD, LatControlInputs, NanoFFModel
@@ -211,7 +211,7 @@ class CarInterface(CarInterfaceBase):
 
     # Don't add event if transitioning from INIT, unless it's to an actual button
     if self.CS.cruise_buttons != CruiseButtons.UNPRESS or self.CS.prev_cruise_buttons != CruiseButtons.INIT:
-      self.CS.button_events = [
+      ret.buttonEvents = [
         *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT,
                               unpressed_btn=CruiseButtons.UNPRESS),
         *create_button_events(self.CS.distance_button, self.CS.prev_distance_button,
@@ -222,11 +222,10 @@ class CarInterface(CarInterfaceBase):
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
     if not self.CP.pcmCruise:
-      if any(b.type == ButtonType.accelCruise and b.pressed for b in self.CS.button_events):
+      if any(b.type == ButtonType.accelCruise and b.pressed for b in ret.buttonEvents):
         self.CS.accEnabled = True
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            self.CS.button_events, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled, c.vCruise)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -239,7 +238,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
-      if any(b.type == ButtonType.cancel for b in self.CS.button_events):
+      if any(b.type == ButtonType.cancel for b in ret.buttonEvents):
         self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
     if self.get_sp_pedal_disengage(ret):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
@@ -252,17 +251,10 @@ class CarInterface(CarInterfaceBase):
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(distance_button))
 
-    # MADS BUTTON
-    if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      if self.mads_event_lock:
-        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = False
-    else:
-      if not self.mads_event_lock:
-        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = True
-
-    ret.buttonEvents = self.CS.button_events
+    ret.buttonEvents = [
+      *ret.buttonEvents,
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+    ]
 
     # The ECM allows enabling on falling edge of set, but only rising edge of resume
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low,

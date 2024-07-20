@@ -43,10 +43,28 @@ def create_button_events(cur_btn: int, prev_btn: int, buttons_dict: dict[int, ca
   return events
 
 
-def create_mads_event(mads_event_lock: bool) -> capnp.lib.capnp._DynamicStructBuilder:
-  be = car.CarState.ButtonEvent(pressed=mads_event_lock)
-  be.type = ButtonType.altButton1
-  return be
+class ButtonEvents:
+  def __init__(self) -> None:
+    self.mads_event_lock: bool = True
+
+  @staticmethod
+  def create_cancel_event(long_enabled: bool, prev_long_enabled: bool) -> list[capnp.lib.capnp._DynamicStructBuilder]:
+    events: list[capnp.lib.capnp._DynamicStructBuilder] = []
+
+    if not long_enabled and prev_long_enabled:
+      events.append(car.CarState.ButtonEvent(pressed=True,
+                                             type=ButtonType.cancel))
+    return events
+
+  def create_mads_event(self, mads_enabled: bool, prev_mads_enabled: bool) -> list[capnp.lib.capnp._DynamicStructBuilder]:
+    events: list[capnp.lib.capnp._DynamicStructBuilder] = []
+
+    mads_changed = prev_mads_enabled != mads_enabled
+    if (mads_changed and self.mads_event_lock) or (not mads_changed and not self.mads_event_lock):
+      events.append(car.CarState.ButtonEvent(pressed=self.mads_event_lock, type=ButtonType.altButton1))
+      self.mads_event_lock = not self.mads_event_lock
+
+    return events
 
 
 def gen_empty_fingerprint():

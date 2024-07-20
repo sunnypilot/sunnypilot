@@ -75,16 +75,14 @@ class CarState(CarStateBase):
     )
 
     # Buttons
-    button_events = []
     for button in BUTTONS:
       state = (cp.vl[button.can_addr][button.can_msg] in button.values)
       if self.button_states[button.event_type] != state:
         event = car.CarState.ButtonEvent.new_message()
         event.type = button.event_type
         event.pressed = state
-        button_events.append(event)
+        self.button_events.append(event)
       self.button_states[button.event_type] = state
-    self.button_events = button_events
 
     # button presses
     ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_stalk(200, cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 1,

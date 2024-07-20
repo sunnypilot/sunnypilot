@@ -55,16 +55,14 @@ class CarState(CarStateBase):
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
 
     # Buttons
-    button_events = []
     for button in BUTTONS:
       state = (cp.vl[button.can_addr][button.can_msg] in button.values)
       if self.button_states[button.event_type] != state:
         event = car.CarState.ButtonEvent.new_message()
         event.type = button.event_type
         event.pressed = state
-        button_events.append(event)
+        self.button_events.append(event)
       self.button_states[button.event_type] = state
-    self.button_events = button_events
 
     ret.genericToggle = bool(cp.vl["BLINK_INFO"]["HIGH_BEAMS"])
     ret.leftBlindspot = cp.vl["BSM"]["LEFT_BS_STATUS"] != 0

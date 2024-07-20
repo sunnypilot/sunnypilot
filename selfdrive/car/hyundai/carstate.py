@@ -63,7 +63,6 @@ class CarState(CarStateBase):
     self._speed_limit_clu = 0
 
   def update(self, cp, cp_cam):
-    self.button_events = []
     if self.CP.carFingerprint in CANFD_CAR:
       return self.update_canfd(cp, cp_cam)
 
