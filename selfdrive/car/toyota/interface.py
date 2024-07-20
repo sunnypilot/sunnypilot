@@ -251,17 +251,10 @@ class CarInterface(CarInterfaceBase):
       be.type = ButtonType.cancel
       self.CS.button_events.append(be)
 
-    # MADS BUTTON
-    if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      if self.mads_event_lock:
-        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = False
-    else:
-      if not self.mads_event_lock:
-        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = True
-
-    ret.buttonEvents = self.CS.button_events
+    ret.buttonEvents = [
+      *ret.buttonEvents,
+      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+    ]
 
     # events
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.brake],
