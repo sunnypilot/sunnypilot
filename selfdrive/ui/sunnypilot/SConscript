@@ -1,0 +1,36 @@
+widgets_src = [
+  "qt/offroad/sunnypilot/custom_offsets_settings.cc",
+  "qt/offroad/sunnypilot/display_settings.cc",
+  "qt/offroad/sunnypilot/lane_change_settings.cc",
+  "qt/offroad/sunnypilot/mads_settings.cc",
+  "qt/offroad/sunnypilot/models_fetcher.cc",
+  "qt/offroad/sunnypilot/monitoring_settings.cc",
+  "qt/offroad/sunnypilot/osm_settings.cc",
+  "qt/offroad/sunnypilot/software_settings_sp.cc",
+  "qt/offroad/sunnypilot/speed_limit_control_settings.cc",
+  "qt/offroad/sunnypilot/speed_limit_policy_settings.cc",
+  "qt/offroad/sunnypilot/speed_limit_warning_settings.cc",
+  "qt/offroad/sunnypilot/sunnypilot_settings.cc",
+  "qt/offroad/sunnypilot/sunnylink_settings.cc",
+  "qt/offroad/sunnypilot/trips_settings.cc",
+  "qt/offroad/sunnypilot/vehicle_settings.cc",
+  "qt/offroad/sunnypilot/visuals_settings.cc",
+  "qt/widgets/sunnypilot/drive_stats.cc"
+]
+
+network_src = [
+  "qt/network/sunnylink/services/base_device_service.cc",
+  "qt/network/sunnylink/services/role_service.cc",
+  "qt/network/sunnylink/services/user_service.cc",
+  "qt/network/sunnylink/sunnylink_client.cc"
+]
+
+qt_src = [
+  "qt/onroad_settings.cc",
+  "qt/onroad_settings_panel.cc"
+]
+
+sp_widgets_src = widgets_src + network_src
+sp_qt_src = qt_src
+
+Export('sp_widgets_src', 'sp_qt_src')

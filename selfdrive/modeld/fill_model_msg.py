@@ -68,7 +68,9 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.frameDropPerc = frame_drop_perc
 
   action = driving_model_data.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  model_use_lateral_planner = custom_model_valid and custom_model_capabilities & ModelCapabilities.LateralPlannerSolution
+  if not model_use_lateral_planner:
+    action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -100,7 +102,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyz_poly(poly_path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
   # lateral planning
-  if custom_model_valid and custom_model_capabilities & ModelCapabilities.LateralPlannerSolution:
+  if model_use_lateral_planner:
     solution = modelV2.lateralPlannerSolutionDEPRECATED
     solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
     solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]
