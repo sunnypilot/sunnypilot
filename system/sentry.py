@@ -10,8 +10,8 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
-from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID, is_registered_device
-from openpilot.system.hardware import HARDWARE, PC
+from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID
+from openpilot.system.hardware import HARDWARE
 from openpilot.system.hardware.hw import Paths
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_build_metadata, get_version
@@ -21,7 +21,7 @@ class SentryProject(Enum):
   # python project
   SELFDRIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
   # native project
-  SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"  # noqa: PIE796
 
 
 CRASHES_DIR = Paths.community_crash_root()
@@ -68,7 +68,7 @@ def save_exception(exc_text: str) -> None:
       else:
         f.write(exc_text)
 
-  print('Logged current crash to {}'.format(files))
+  print(f'Logged current crash to {files}')
 
 
 def bind_user() -> None:

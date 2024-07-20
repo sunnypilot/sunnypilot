@@ -81,7 +81,7 @@ class ModelState:
           'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
           'prev_desired_curvs': np.zeros(ModelConstants.PREV_DESIRED_CURVS_LEN, dtype=np.float32),
         }
-      if self.custom_model_metadata.capabilities & ModelCapabilities.NoO:
+      if self.custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
         _inputs_2 = {
           'nav_features': np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32),
           'nav_instructions': np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32),
@@ -101,10 +101,10 @@ class ModelState:
       _metadata_name = self.param_s.get("DrivingModelMetadataText", encoding="utf8")
       _metadata_path = f"{CUSTOM_MODEL_PATH}/supercombo_metadata_{_metadata_name}.pkl" if _model_name else METADATA_PATH
     else:
-      _model_paths = MODEL_PATHS
+      _model_paths = MODEL_PATHS  # type: ignore
       _metadata_path = METADATA_PATH
 
-    with open(_metadata_path, 'rb') as f:
+    with open(_metadata_path, 'rb') as f:  # type: ignore
       model_metadata = pickle.load(f)
 
     self.output_slices = model_metadata['output_slices']
@@ -135,7 +135,7 @@ class ModelState:
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
     if not (self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
       self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
-    if self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.NoO:
+    if self.custom_model_metadata.valid and self.custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
       self.inputs['nav_features'][:] = inputs['nav_features']
       self.inputs['nav_instructions'][:] = inputs['nav_instructions']
 
@@ -207,7 +207,7 @@ def main(demo=False):
 
   # messaging
   extended_svs = ["lateralPlanDEPRECATED", "lateralPlanSPDEPRECATED"]
-  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
+  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
     extended_svs += ["navModelDEPRECATED", "navInstruction"]
   pm = PubMaster(["modelV2", "modelV2SP", "drivingModelData", "cameraOdometry"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"] + extended_svs)
@@ -225,7 +225,7 @@ def main(demo=False):
   live_calib_seen = False
   if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution:
     driving_style = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
+  if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
     nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
     nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
   buf_main, buf_extra = None, None
@@ -303,7 +303,7 @@ def main(demo=False):
 
     timestamp_llk = 0
     nav_enabled = False
-    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
+    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
       # Enable/disable nav features
       timestamp_llk = sm["navModelDEPRECATED"].locationMonoTime
       nav_valid = sm.valid["navModelDEPRECATED"] # and (nanos_since_boot() - timestamp_llk < 1e9)
@@ -349,7 +349,7 @@ def main(demo=False):
       _inputs = {
         'lateral_control_params': lateral_control_params
       }
-    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NoO:
+    if custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.NavigateOnOpenpilot:
       _inputs_2 = {
         'nav_features': nav_features,
         'nav_instructions': nav_instructions
