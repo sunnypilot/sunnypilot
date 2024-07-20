@@ -212,10 +212,10 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.button_events = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
 
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
                                                             self.CS.button_events, c.vCruise)
-
-    self.CS.mads_enabled = False if not self.mads_main_toggle else self.CS.mads_enabled
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
@@ -225,14 +225,15 @@ class CarInterface(CarInterfaceBase):
           elif self.CS.prev_cruise_buttons == 4:
             if self.CS.cruise_buttons[-1] != 4:
               self.accEnabled = True
-      if self.enable_mads:
-        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
-          self.CS.madsEnabled = True
-        if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
-          self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
+
+    if self.enable_mads:
+      if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+        self.CS.madsEnabled = True
+      if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
+        self.CS.madsEnabled = not self.CS.madsEnabled
+      self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       if not self.CP.pcmCruise:
