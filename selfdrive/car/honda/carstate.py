@@ -111,7 +111,6 @@ class CarState(CarStateBase):
     self.dash_speed_seen = False
 
   def update(self, cp, cp_cam, cp_body):
-    self.button_events = []
     ret = car.CarState.new_message()
 
     # car params

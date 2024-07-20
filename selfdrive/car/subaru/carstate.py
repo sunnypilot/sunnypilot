@@ -20,7 +20,6 @@ class CarState(CarStateBase):
     self.prev_lkas_enabled = None
 
   def update(self, cp, cp_cam, cp_body):
-    self.button_events = []
     ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled

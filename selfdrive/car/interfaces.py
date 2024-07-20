@@ -426,6 +426,8 @@ class CarInterfaceBase(ABC):
       if cp is not None:
         cp.update_strings(can_strings)
 
+    self.CS.button_events = []
+
     # get CarState
     ret = self._update(c)
 
