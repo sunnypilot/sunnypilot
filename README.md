@@ -223,7 +223,7 @@ The goal of Modified Assistive Driving Safety (MADS) is to enhance the user driv
 * `SET-` button enables ACC/SCC
 * `CANCEL` button only disables ACC/SCC
 * `CRUISE (MAIN)` must be `ON` to use ACC/SCC
-* `CRUISE (MAIN)` button disables sunnypilot completely when `OFF` **(strictly enforced in panda safety code)**
+* `CRUISE (MAIN)` button disables ACC/SCC completely when `OFF` **(strictly enforced in panda safety code)**
 
 ### Disengage Lateral ALC on Brake Press Mode toggle
 Dedicated toggle to handle Lateral state on brake pedal press and release:
