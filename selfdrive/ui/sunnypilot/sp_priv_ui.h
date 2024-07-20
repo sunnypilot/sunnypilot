@@ -54,8 +54,6 @@ public:
   void setSunnylinkRoles(const std::vector<RoleModel> &roles);
   void setSunnylinkDeviceUsers(const std::vector<UserModel> &users);
 
-  UISceneSP scene = {};
-
   inline std::vector<RoleModel> sunnylinkDeviceRoles() const { return sunnylinkRoles; }
   inline bool isSunnylinkAdmin() const {
     return std::any_of(sunnylinkRoles.begin(), sunnylinkRoles.end(), [](const RoleModel &role) {
@@ -109,8 +107,8 @@ private:
   float mads_path_count = 4;     // UI runs at 20 Hz, therefore 0.2 second is [0.2 second / (1 / 20 Hz) = 4]
 };
 
-//TODO: maybe need to redeclare but the sp?
 UIStateSP *uiStateSP();
+UIStateSP *uiState();
 
 // device management class
 class DeviceSP : public Device {
@@ -122,6 +120,10 @@ protected:
   void updateBrightness(const UIStateSP &s);
 };
 
+DeviceSP *deviceSP();
+inline DeviceSP *device() { return deviceSP(); }
+
 void sp_update_model(UIStateSP *s, const cereal::ModelDataV2::Reader &model);
+void sp_ui_update_params(UIStateSP *s);
 void update_line_data(const UIStateSP *s, const cereal::XYZTData::Reader &line,
                       float y_off, float z_off_left, float z_off_right, QPolygonF *pvd, int max_idx, bool allow_invert);

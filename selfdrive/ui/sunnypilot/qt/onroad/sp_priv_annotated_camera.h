@@ -59,7 +59,7 @@ private:
   void drawRoadNameText(QPainter &p, int x, int y, const QString &text, QColor color);
 
   QVBoxLayout *main_layout;
-  ExperimentalButton *experimental_btn;
+  ExperimentalButtonSP *experimental_btn;
   QPixmap dm_img;
   float speed;
   QString speedUnit;

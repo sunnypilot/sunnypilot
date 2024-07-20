@@ -112,6 +112,10 @@ typedef struct UIScene {
   uint64_t started_frame;
 } UIScene;
 
+#ifdef SUNNYPILOT
+#include "sunnypilot/qt/sp_priv_ui_scene.h"
+#define UIScene UISceneSP
+#endif
 class UIState : public QObject {
   Q_OBJECT
 
@@ -153,8 +157,11 @@ protected:
 private:  
   bool started_prev = false;
 };
+#undef UIScene
 
+#ifndef SUNNYPILOT
 UIState *uiState();
+#endif
 
 // device management class
 class Device : public QObject {
@@ -191,7 +198,9 @@ public slots:
   void update(const UIState &s);
 };
 
+#ifndef SUNNYPILOT
 Device *device();
+#endif
 
 void ui_update_params(UIState *s);
 int get_path_length_idx(const cereal::XYZTData::Reader &line, const float path_height);

@@ -238,6 +238,10 @@ void UIState::updateStatus() {
   }
 }
 
+// #ifdef SUNNYPILOT
+// #include "selfdrive/ui/sunnypilot/qt/sp_priv_ui_scene.h"
+// #define UIScene UISceneSP
+// #endif
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
@@ -291,8 +295,9 @@ void UIState::setPrimeType(PrimeType type) {
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
   setAwake(true);
   resetInteractiveTimeout();
-
+#ifndef SUNNYPILOT
   QObject::connect(uiState(), &UIState::uiUpdate, this, &Device::update);
+#endif
 }
 
 void Device::update(const UIState &s) {
@@ -358,6 +363,7 @@ void Device::updateWakefulness(const UIState &s) {
   setAwake(s.scene.ignition || interactive_timeout > 0);
 }
 
+#ifndef SUNNYPILOT
 UIState *uiState() {
   static UIState ui_state;
   return &ui_state;
@@ -367,3 +373,4 @@ Device *device() {
   static Device _device;
   return &_device;
 }
+#endif

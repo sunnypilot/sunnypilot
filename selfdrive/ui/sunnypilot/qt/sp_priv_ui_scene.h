@@ -4,7 +4,7 @@
 const float DRIVING_PATH_WIDE = 0.9;
 const float DRIVING_PATH_NARROW = 0.25;
 
-typedef struct UISceneSP : public UIScene {
+typedef struct UISceneSP : UIScene {
     cereal::ControlsState::Reader controlsState;
 
     // Debug UI

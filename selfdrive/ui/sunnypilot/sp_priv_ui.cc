@@ -294,6 +294,7 @@ void UIStateSP::setSunnylinkDeviceUsers(const std::vector<UserModel>& users) {
 }
 
 DeviceSP::DeviceSP(QObject *parent) : Device(parent){
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &DeviceSP::update);
 }
 
 //todo: revisit this
@@ -320,6 +321,7 @@ UIStateSP *uiStateSP() {
   static UIStateSP ui_state;
   return &ui_state;
 }
+UIStateSP *uiState() { return uiStateSP(); }
 
 DeviceSP *deviceSP() {
   static DeviceSP _device;

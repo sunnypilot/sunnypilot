@@ -34,8 +34,7 @@ void ExperimentalButton::changeMode() {
 
 void ExperimentalButton::updateState(const UIState &s) {
   const auto cs = (*s.sm)["controlsState"].getControlsState();
-  const auto lp_sp = (*s.sm)["longitudinalPlanSP"].getLongitudinalPlanSP();
-  bool eng = (cs.getEngageable() || cs.getEnabled()) && !(lp_sp.getVisionTurnControllerState() > cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED);
+  bool eng = cs.getEngageable() || cs.getEnabled();
   if ((cs.getExperimentalMode() != experimental_mode) || (eng != engageable)) {
     engageable = eng;
     experimental_mode = cs.getExperimentalMode();

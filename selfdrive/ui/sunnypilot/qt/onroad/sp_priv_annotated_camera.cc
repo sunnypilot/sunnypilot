@@ -36,7 +36,7 @@ AnnotatedCameraWidgetSP::AnnotatedCameraWidgetSP(VisionStreamType type, QWidget*
   main_layout->setMargin(UI_BORDER_SIZE);
   main_layout->setSpacing(0);
 
-  experimental_btn = new ExperimentalButton(this);
+  experimental_btn = new ExperimentalButtonSP(this);
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
 
   onroad_settings_btn = new OnroadSettingsButton(this);
@@ -1501,6 +1501,6 @@ void AnnotatedCameraWidgetSP::paintEvent(QPaintEvent *event) {
 void AnnotatedCameraWidgetSP::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);
 
-  ui_update_params(uiStateSP());
+  sp_ui_update_params(uiStateSP());
   prev_draw_t = millis_since_boot();
 }

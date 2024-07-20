@@ -36,7 +36,7 @@ private:
   void createMapWidget();
   void createOnroadSettingsWidget();
   void mousePressEvent(QMouseEvent* e) override;
-  AnnotatedCameraWidgetSP *nvg;
+  // AnnotatedCameraWidgetSP *nvg;
   QWidget *map = nullptr;
   QWidget *onroad_settings = nullptr;
 
@@ -44,7 +44,7 @@ private:
 
 protected slots:
   void offroadTransition(bool offroad) override;
-  void updateState(const UIStateSP &s);
+  void updateState(const UIStateSP &s) override;
   void primeChanged(bool prime);
   void updateMapSize(const UISceneSP &scene);
 };

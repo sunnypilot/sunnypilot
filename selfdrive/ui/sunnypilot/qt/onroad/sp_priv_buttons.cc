@@ -14,6 +14,17 @@ static void drawCustomButtonIcon(QPainter &p, const int btn_size_x, const int bt
     p.setOpacity(1.0);
 }
 
+// ExperimentalButtonSP
+void ExperimentalButtonSP::updateState(const UIStateSP &s) {
+    const auto cs = (*s.sm)["controlsState"].getControlsState();
+    bool eng = cs.getEngageable() || cs.getEnabled();
+    if ((cs.getExperimentalMode() != experimental_mode) || (eng != engageable)) {
+        engageable = eng;
+        experimental_mode = cs.getExperimentalMode();
+        update();
+    }
+}
+
 
 // OnroadSettingsButton
 OnroadSettingsButton::OnroadSettingsButton(QWidget *parent) : QPushButton(parent) {

@@ -12,14 +12,16 @@
 #endif
 
 #include "selfdrive/ui/qt/util.h"
-
 OnroadWindowSP::OnroadWindowSP(QWidget *parent) : OnroadWindow(parent) {
-  
+  // QObject::disconnect(uiState(), &UIState::uiUpdate, this, &OnroadWindow::updateState);
+  // QObject::disconnect(uiState(), &UIState::offroadTransition, this, &OnroadWindow::offroadTransition);
+
   if (getenv("MAP_RENDER_VIEW")) {
     CameraWidget *map_render = new CameraWidget("navd", VISION_STREAM_MAP, false, this);
     split->insertWidget(0, map_render); //TODO: We MIGHT  to override the split variable because it is added on onroad_home.cc and we need to access it before. I am not sure so we will need to test it before 
   }
-  QObject::connect(uiStateSP(), &UIStateSP::primeChanged, this, &OnroadWindowSP::primeChanged);
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &OnroadWindowSP::updateState);
+  QObject::connect(uiStateSP(), &UIStateSP::offroadTransition, this, &OnroadWindowSP::offroadTransition);
 }
 
 void OnroadWindowSP::updateState(const UIStateSP &s) {
@@ -100,6 +102,7 @@ void OnroadWindowSP::createOnroadSettingsWidget() {
 }
 
 void OnroadWindowSP::offroadTransition(bool offroad) {
+
   if (!offroad) {
 #ifdef ENABLE_MAPS
     if (map == nullptr && (uiStateSP()->hasPrime() || !MAPBOX_TOKEN.isEmpty())) {
