@@ -5,7 +5,7 @@ from panda import Panda
 from panda.python import uds
 from openpilot.selfdrive.car.toyota.values import Ecu, CAR, DBC, ToyotaFlags, ToyotaFlagsSP, CarControllerParams, TSS2_CAR, RADAR_ACC_CAR, NO_DSU_CAR, \
                                         MIN_ACC_SPEED, EPS_SCALE, UNSUPPORTED_DSU_CAR, NO_STOP_TIMER_CAR, ANGLE_CONTROL_CAR
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event, create_cancel_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
@@ -246,8 +246,8 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = [
       *ret.buttonEvents,
-      *create_cancel_event(ret.cruiseState.enabled, self.CS.out.cruiseState.enabled)
-      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+      *self.button_events.create_cancel_event(ret.cruiseState.enabled, self.CS.out.cruiseState.enabled),
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
     ]
 
     # events

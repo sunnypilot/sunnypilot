@@ -1,7 +1,7 @@
 from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.ford.fordcan import CanBus
 from openpilot.selfdrive.car.ford.values import Ecu, FordFlags
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
@@ -109,7 +109,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = [
       *ret.buttonEvents,
-      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
     ]
 
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.manumatic], pcm_enable=False)

@@ -6,7 +6,7 @@ from openpilot.common.numpy_fast import interp
 from openpilot.selfdrive.car.honda.hondacan import CanBus
 from openpilot.selfdrive.car.honda.values import CarControllerParams, CruiseButtons, CruiseSettings, HondaFlags, CAR, HONDA_BOSCH, \
                                                  HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_RADARLESS
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 
@@ -305,7 +305,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = [
       *ret.buttonEvents,
-      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
     ]
 
     # events

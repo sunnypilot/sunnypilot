@@ -6,7 +6,7 @@ from panda import Panda
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.gm.radar_interface import RADAR_HEADER_MSG
 from openpilot.selfdrive.car.gm.values import CAR, CruiseButtons, CarControllerParams, EV_CAR, CAMERA_ACC_CAR, CanBus
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase, TorqueFromLateralAccelCallbackType, FRICTION_THRESHOLD, LatControlInputs, NanoFFModel
@@ -252,7 +252,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = [
       *ret.buttonEvents,
-      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
     ]
 
     # The ECM allows enabling on falling edge of set, but only rising edge of resume
