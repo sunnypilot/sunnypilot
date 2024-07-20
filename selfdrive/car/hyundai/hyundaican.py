@@ -131,7 +131,7 @@ def create_lfahda_mfc(packer, enabled, lat_active, lateral_paused, blinking_icon
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
 def create_acc_commands(packer, enabled, accel, lower_jerk, upper_jerk, idx, hud_control, set_speed, stopping, long_override, use_fca,
-                        CS, escc, CP, lead_distance, cb_lower, cb_upper):
+                        CS, escc, CP, lead_distance):
   commands = []
 
   scc11_values = {
@@ -172,8 +172,8 @@ def create_acc_commands(packer, enabled, accel, lower_jerk, upper_jerk, idx, hud
   commands.append(packer.make_can_msg("SCC12", 0, scc12_values))
 
   scc14_values = {
-    "ComfortBandUpper": cb_upper, # stock usually is 0 but sometimes uses higher values
-    "ComfortBandLower": cb_lower, # stock usually is 0 but sometimes uses higher values
+    "ComfortBandUpper": 0.0, # stock usually is 0 but sometimes uses higher values
+    "ComfortBandLower": 0.0, # stock usually is 0 but sometimes uses higher values
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
     "JerkLowerLimit": lower_jerk, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
