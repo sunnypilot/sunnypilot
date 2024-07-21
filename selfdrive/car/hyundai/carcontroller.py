@@ -110,6 +110,9 @@ class CarController(CarControllerBase):
     self.cb_lower = 0.0
     self.jerk_count = 0.0
 
+    self.accel_val = 0
+    self.accel_raw = 0
+
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
     lead_two = self.sm["radarState"].leadTwo
@@ -284,6 +287,7 @@ class CarController(CarControllerBase):
               can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
       else:
         self.make_jerk(CS, accel, actuators)
+        self.make_accel(CS, accel, stopping)
 
       # Parse lead distance from radarState and display the corresponding distance in the car's cluster
       if self.CP.openpilotLongitudinalControl and self.sm.updated['radarState'] and self.frame % 5 == 0:
@@ -296,10 +300,10 @@ class CarController(CarControllerBase):
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
-        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, self.jerk_l, self.jerk_u, int(self.frame / 2),
+        stopping = stopping and CS.out.vEgo < self.CP.vEgoStopping
+        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
-        self.accel_last = accel
 
       # 20 Hz LFA MFA message
       if self.frame % 5 == 0 and self.CP.flags & HyundaiFlags.SEND_LFA.value:
@@ -529,3 +533,10 @@ class CarController(CarControllerBase):
         #self.jerk_l = min(max(1.2, -jerk * 2.0), jerkLimit) ## 1.0으로 하니 덜감속, 1.5로하니 너무감속, 1.2로 한번해보자(231228)
         self.cb_upper = clip(0.9 + accel * 0.2, 0, 1.2)
         self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
+
+  def make_accel(self, CS, accel, stopping):
+    self.accel_raw = accel
+    if stopping and CS.out.vEgo < self.CP.vEgoStopping:
+      self.accel_raw = 0
+    self.accel_val = clip(self.accel_raw, self.accel_last - self.jerk_l, self.accel_last + self.jerk_l)
+    self.accel_last = self.accel_val
