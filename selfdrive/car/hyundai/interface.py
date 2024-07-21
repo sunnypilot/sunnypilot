@@ -227,7 +227,7 @@ class CarInterface(CarInterfaceBase):
               self.accEnabled = True
 
     if self.enable_mads:
-      if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and self.CS.main_buttons[-1] != 1:
         self.CS.madsEnabled = True
       if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
         self.CS.madsEnabled = not self.CS.madsEnabled
