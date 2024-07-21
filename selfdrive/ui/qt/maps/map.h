@@ -20,7 +20,11 @@
 #include "cereal/messaging/messaging.h"
 #include "common/params.h"
 #include "common/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 #include "selfdrive/ui/qt/maps/map_eta.h"
 #include "selfdrive/ui/qt/maps/map_instructions.h"
 
