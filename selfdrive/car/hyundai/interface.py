@@ -7,7 +7,7 @@ from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP,
                                          CANFD_UNSUPPORTED_LONGITUDINAL_CAR, NON_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, \
                                          UNSUPPORTED_LONGITUDINAL_CAR, Buttons
 from openpilot.selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
-from openpilot.selfdrive.car import create_button_events, get_safety_config
+from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 
@@ -250,7 +250,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = [
       *ret.buttonEvents,
-      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
     ]
 
     # On some newer model years, the CANCEL button acts as a pause/resume button based on the PCM state

@@ -1,6 +1,6 @@
 from cereal import car
 from panda import Panda
-from openpilot.selfdrive.car import get_safety_config
+from openpilot.selfdrive.car import get_safety_config, create_mads_event, create_cancel_event
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.subaru.values import CAR, GLOBAL_ES_ADDR, SubaruFlags, SubaruFlagsSP
@@ -145,8 +145,8 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = [
       *self.CS.button_events,
-      *self.button_events.create_cancel_event(ret.cruiseState.enabled, self.CS.out.cruiseState.enabled),
-      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
+      *create_cancel_event(ret.cruiseState.enabled, self.CS.out.cruiseState.enabled),
+      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
     ]
 
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low], pcm_enable=False)
