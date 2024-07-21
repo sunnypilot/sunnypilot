@@ -160,12 +160,12 @@ void sp_ui_update_params(UIStateSP *s) {
 void UIStateSP::updateStatus() {
   UIState::updateStatus();
   auto params = Params();
-  auto car_control = (*sm)["carControl"].getCarControl();
-  auto car_state = (*sm)["carState"].getCarState();
-  auto mads_enabled = car_state.getMadsEnabled();
   if (scene.started && sm->updated("controlsState")) {
+    auto car_control = (*sm)["carControl"].getCarControl();
+    auto car_state = (*sm)["carState"].getCarState();
+    auto mads_enabled = car_state.getMadsEnabled();
     if (status != STATUS_OVERRIDE) {
-      status = car_state.getMadsEnabled() ? car_control.getLongActive() ? STATUS_ENGAGED : STATUS_MADS : STATUS_DISENGAGED;
+      status = mads_enabled && car_control.getLongActive() ? STATUS_ENGAGED : mads_enabled ? STATUS_MADS : STATUS_DISENGAGED;
     }
     
     if (mads_enabled != last_mads_enabled) {
@@ -258,19 +258,13 @@ UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
     "controlsStateSP", "modelV2SP"
   });
 
-  Params params;
-  language = QString::fromStdString(params.get("LanguageSetting"));
-  auto prime_value = params.get("PrimeType");
-  if (!prime_value.empty()) {
-    prime_type = static_cast<PrimeType>(std::atoi(prime_value.c_str()));
-  }
-
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIStateSP::update);
   timer->start(1000 / UI_FREQ);
 }
 
+// Note: This method overrides completely the update method from the parent class intentionally.
 void UIStateSP::update() {
   update_sockets(this);
   sp_update_state(this);

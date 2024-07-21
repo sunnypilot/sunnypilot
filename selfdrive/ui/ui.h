@@ -47,7 +47,7 @@ constexpr vec3 default_face_kpts_3d[] = {
 
 //Example of a macro
 #ifdef SUNNYPILOT
-#define EXTRA_UI_STATES STATUS_MADS, STATUS_LA
+#define EXTRA_UI_STATES STATUS_MADS
 #else
 #define EXTRA_UI_STATES
 #endif

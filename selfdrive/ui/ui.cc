@@ -11,6 +11,7 @@
 #include "common/swaglog.h"
 #include "common/util.h"
 #include "common/watchdog.h"
+#include "qt/util.h"
 #include "system/hardware/hw.h"
 
 #define BACKLIGHT_DT 0.05
@@ -256,6 +257,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     prime_type = static_cast<PrimeType>(std::atoi(prime_value.c_str()));
   }
 
+  RETURN_IF_SUNNYPILOT
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIState::update);
@@ -263,6 +265,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
 }
 
 void UIState::update() {
+  RETURN_IF_SUNNYPILOT
   update_sockets(this);
   update_state(this);
   updateStatus();

@@ -35,7 +35,7 @@ const QColor sp_bg_colors [] = {
   [STATUS_ENGAGED] = QColor(0x00, 0xc8, 0x00, 0xf1),
   [STATUS_MADS] = QColor(0x00, 0xc8, 0xc8, 0xf1),
 };
-
+#define bg_colors sp_bg_colors // Override the bg_colors array with the sp_bg_colors array
 
 const QColor tcs_colors [] = {
   [int(cereal::LongitudinalPlanSP::VisionTurnControllerState::DISABLED)] =  QColor(0x0, 0x0, 0x0, 0xff),
