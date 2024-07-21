@@ -21,6 +21,7 @@
 
 #ifdef SUNNYPILOT
 #define ListWidget ListWidgetSP
+#define ButtonControl ButtonControlSP
 #endif
 
 

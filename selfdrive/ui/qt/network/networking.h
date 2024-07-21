@@ -11,6 +11,7 @@
 #define ListWidget ListWidgetSP
 #define ToggleControl ToggleControlSP
 #define LabelControl LabelControlSP
+#define ElidedLabel ElidedLabelSP
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif

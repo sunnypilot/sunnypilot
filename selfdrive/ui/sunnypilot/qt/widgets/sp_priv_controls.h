@@ -17,15 +17,6 @@
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_toggle.h"
 
-// This is for compatibility purposes, until we properly do inheritance splitting
-// This is because some controls were needing LabelControlSP, but the original code was using LabelControl
-// which was modified in-place in the past but since we now have a new file, we will be moving it to LabelControlSP
-#define LabelControl LabelControlSP //Not used on SP private code
-#define ElidedLabel ElidedLabelSP //Not used on SP private code
-#define ButtonControl ButtonControlSP //Not used on SP private code
-#define Toggle ToggleSP //Not used on SP private code
-#define ToggleControl ToggleControlSP //Not used on SP private code
-
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
 class ElidedLabelSP : public QLabel {

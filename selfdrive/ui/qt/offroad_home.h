@@ -23,6 +23,7 @@
 #define OffroadHomeImp OffroadHomeSP
 #define LayoutWidget LayoutWidgetSP
 #define Sidebar SidebarSP
+#define ElidedLabel ElidedLabelSP
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/onroad/onroad_home.h"

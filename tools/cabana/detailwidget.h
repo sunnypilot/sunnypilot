@@ -8,6 +8,7 @@
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#define ElidedLabel ElidedLabelSP
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif
