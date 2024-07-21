@@ -79,6 +79,12 @@ build:
     - "echo VERSION: ${VERSION}"
     - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
+    - |
+      echo "Decoding and importing GPG key..."
+      gpg -v --import <(echo "$GPG_PRIVATE_KEY_BASE64" | base64 -d)
+    - |
+      echo "Unlocking git-crypt..."
+      git-crypt unlock
   script:
     - export PYTHONPATH="$BUILD_DIR"
     - "echo Building Panda..."
@@ -146,7 +152,7 @@ build:
       when: manual
     - if: $NEW_BRANCH
       when: always
-      
+
 check no source code sent:
   image: alpine
   stage: sanity
