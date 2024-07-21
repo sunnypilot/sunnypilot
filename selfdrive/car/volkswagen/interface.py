@@ -145,17 +145,10 @@ class CarInterface(CarInterfaceBase):
     ret, self.CS = self.get_sp_common_state(ret, self.CS,
                                             gap_button=any(b.type == ButtonType.gapAdjustCruise and b.pressed for b in self.CS.button_events))
 
-    # MADS BUTTON
-    if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      if self.mads_event_lock:
-        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = False
-    else:
-      if not self.mads_event_lock:
-        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = True
-
-    ret.buttonEvents = self.CS.button_events
+    ret.buttonEvents = [
+      *self.CS.button_events,
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
+    ]
 
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
                                        pcm_enable=False,
