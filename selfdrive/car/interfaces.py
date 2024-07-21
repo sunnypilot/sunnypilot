@@ -561,12 +561,12 @@ class CarInterfaceBase(ABC):
 
     return mads_enabled
 
-  def get_sp_v_cruise_non_pcm_state(self, cs_out, acc_enabled, vCruise,
+  def get_sp_v_cruise_non_pcm_state(self, cs_out, acc_enabled, button_events, vCruise,
                                     enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
                                     resume_button=(ButtonType.accelCruise, ButtonType.resumeCruise)):
 
     if cs_out.cruiseState.available:
-      for b in cs_out.buttonEvents:
+      for b in button_events:
         if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
           if b.type in enable_buttons and not b.pressed:
             acc_enabled = True

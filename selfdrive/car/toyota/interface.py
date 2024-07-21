@@ -245,7 +245,7 @@ class CarInterface(CarInterfaceBase):
     ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(distance_button))
 
     ret.buttonEvents = [
-      *ret.buttonEvents,
+      *self.CS.button_events,
       *self.button_events.create_cancel_event(ret.cruiseState.enabled, self.CS.out.cruiseState.enabled),
       *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
     ]

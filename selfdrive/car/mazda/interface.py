@@ -40,14 +40,15 @@ class CarInterface(CarInterfaceBase):
     self.sp_update_params()
 
     # TODO: add button types for inc and dec
-    ret.buttonEvents = [
+    self.CS.button_events = [
       *self.CS.button_events,
       *create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
     ]
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            self.CS.button_events, c.vCruise)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -60,7 +61,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
-      if any(b.type == ButtonType.cancel for b in ret.buttonEvents):
+      if any(b.type == ButtonType.cancel for b in self.CS.button_events):
         self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
     if self.get_sp_pedal_disengage(ret):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
@@ -74,7 +75,7 @@ class CarInterface(CarInterfaceBase):
     ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(self.CS.distance_button))
 
     ret.buttonEvents = [
-      *ret.buttonEvents,
+      *self.CS.button_events,
       *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
     ]
 
