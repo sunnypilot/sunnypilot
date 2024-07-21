@@ -16,7 +16,6 @@ private slots:
   void updateState(const UIStateSP &s);
 
 private:
-  std::map<std::string, ParamControlSP*> toggles;
   ButtonParamControlSP *long_personality_setting;
   ButtonParamControlSP *accel_personality_setting;
 
