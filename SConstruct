@@ -116,7 +116,7 @@ AddOption('--minimal',
 AddOption('--sunnypilot',
           action='store_true',
           dest='sunnypilot',
-          default=is_internal_developer(_DEBUG), # check if the current user is a sunnypilot developer
+          default=is_internal_developer(_DEBUG) or True, # check if the current user is a sunnypilot developer. TODO: Remove the 'or True' part once the GPG keys are available.
           help='build sunnypilot elements and other sunnypilot-specific items that are meant for internal development')
 
 ## Architecture name breakdown (arch)
