@@ -45,7 +45,7 @@ def create_button_events(cur_btn: int, prev_btn: int, buttons_dict: dict[int, ca
 
 class ButtonEvents:
   def __init__(self) -> None:
-    self.mads_event_lock: bool = True
+    self.is_mads: bool = False
 
   @staticmethod
   def create_cancel_event(long_enabled: bool, prev_long_enabled: bool) -> list[capnp.lib.capnp._DynamicStructBuilder]:
@@ -60,9 +60,9 @@ class ButtonEvents:
     events: list[capnp.lib.capnp._DynamicStructBuilder] = []
 
     mads_changed = prev_mads_enabled != mads_enabled
-    if (mads_changed and self.mads_event_lock) or (not mads_changed and not self.mads_event_lock):
-      events.append(car.CarState.ButtonEvent(pressed=self.mads_event_lock, type=ButtonType.altButton1))
-      self.mads_event_lock = not self.mads_event_lock
+    if (mads_changed and not self.is_mads) or (not mads_changed and self.is_mads):
+      events.append(car.CarState.ButtonEvent(pressed=mads_changed, type=ButtonType.altButton1))
+      self.is_mads = not self.is_mads
 
     return events
 
