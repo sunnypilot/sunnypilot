@@ -8,6 +8,7 @@
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#define ToggleControl ToggleControlSP
 #else
 #include "selfdrive/ui/ui.h"
 #endif

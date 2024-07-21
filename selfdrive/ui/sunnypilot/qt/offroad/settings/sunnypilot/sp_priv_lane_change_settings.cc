@@ -62,7 +62,7 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
     }
   }
 
-  connect(toggles["BelowSpeedPause"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["BelowSpeedPause"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     pause_lateral_speed->setEnabled(state);
     pause_lateral_speed->setVisible(state);
   });

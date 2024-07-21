@@ -71,7 +71,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   setSpacing(50);
 
   // Hyundai/Kia/Genesis
-  addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
+  addItem(new LabelControlSP(tr("Hyundai/Kia/Genesis")));
   auto hkgSmoothStop = new ParamControlSP(
     "HkgSmoothStop",
     tr("HKG CAN: Smoother Stopping Performance (Beta)"),
@@ -81,7 +81,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   addItem(hkgSmoothStop);
 
   // Subaru
-  addItem(new LabelControl(tr("Subaru")));
+  addItem(new LabelControlSP(tr("Subaru")));
   auto subaruManualParkingBrakeSng = new ParamControlSP(
     "SubaruManualParkingBrakeSng",
     tr("Manual Parking Brake: Stop and Go (Beta)"),
@@ -91,7 +91,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   addItem(subaruManualParkingBrakeSng);
 
   // Toyota/Lexus
-  addItem(new LabelControl(tr("Toyota/Lexus")));
+  addItem(new LabelControlSP(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControlSP(
     "StockLongToyota",
     tr("Enable Stock Toyota Longitudinal Control"),
@@ -163,7 +163,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   addItem(toyotaAutoUnlock);
 
   // Volkswagen
-  addItem(new LabelControl(tr("Volkswagen")));
+  addItem(new LabelControlSP(tr("Volkswagen")));
   auto volkswagenCCOnly = new ParamControlSP(
     "VwCCOnly",
     tr("Enable CC Only support"),

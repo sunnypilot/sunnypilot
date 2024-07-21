@@ -49,17 +49,17 @@ private:
   quint64 mapsDirSize = 0;
 
   QLabel *osmUpdateLbl;
-  ButtonControl *osmDownloadBtn;
-  ButtonControl *osmUpdateBtn;
-  ButtonControl *usStatesBtn;
-  ButtonControl *osmDeleteMapsBtn;
-  ButtonControl *setupOsmDeleteMapsButton(QWidget *parent);;
-  ButtonControl* setupOsmUpdateButton(QWidget *parent);
-  ButtonControl* setupOsmDownloadButton(QWidget *parent);
-  ButtonControl* setupUsStatesButton(QWidget *parent);
+  ButtonControlSP *osmDownloadBtn;
+  ButtonControlSP *osmUpdateBtn;
+  ButtonControlSP *usStatesBtn;
+  ButtonControlSP *osmDeleteMapsBtn;
+  ButtonControlSP *setupOsmDeleteMapsButton(QWidget *parent);;
+  ButtonControlSP* setupOsmUpdateButton(QWidget *parent);
+  ButtonControlSP* setupOsmDownloadButton(QWidget *parent);
+  ButtonControlSP* setupUsStatesButton(QWidget *parent);
   QTimer *timer;
   std::string osm_download_locations;
-//  void updateButtonControl(ButtonControl *btnControl, QWidget *parent, const QString &initTitle, const QString &allStatesOption);
+//  void updateButtonControlSP(ButtonControlSP *btnControl, QWidget *parent, const QString &initTitle, const QString &allStatesOption);
 
   void showEvent(QShowEvent *event) override;
   void hideEvent(QHideEvent* event) override;
@@ -69,10 +69,10 @@ private:
   QString processUpdateStatus(bool pending_update_check, int total_files, int downloaded_files, const QJsonObject& json, bool failed_state);
 
   ConfirmationDialog* confirmationDialog;
-  LabelControl *mapdVersion;
-  LabelControl *offlineMapsStatus;
-  LabelControl *offlineMapsETA;
-  LabelControl *offlineMapsElapsed;
+  LabelControlSP *mapdVersion;
+  LabelControlSP *offlineMapsStatus;
+  LabelControlSP *offlineMapsETA;
+  LabelControlSP *offlineMapsElapsed;
   std::optional<std::chrono::system_clock::time_point> lastDownloadedTimePoint;
   LocationsFetcher locationsFetcher;
   void updateMapSize();

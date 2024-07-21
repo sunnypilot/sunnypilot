@@ -149,10 +149,10 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
   toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
   toggles["CustomStockLong"]->setConfirmation(true, false);
 
-  connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
+  connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControlSP::toggleFlipped, [=]() {
     updateToggles();
   });
-  connect(toggles["CustomStockLong"], &ToggleControl::toggleFlipped, [=]() {
+  connect(toggles["CustomStockLong"], &ToggleControlSP::toggleFlipped, [=]() {
     updateToggles();
   });
 

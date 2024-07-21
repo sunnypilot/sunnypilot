@@ -88,8 +88,8 @@ private:
   SubPanelButton *backupSettings;
   SunnylinkSponsorPopup *status_popup;
   SunnylinkSponsorPopup *pair_popup;
-  ButtonControl* sponsorBtn;
-  ButtonControl* pairSponsorBtn;
+  ButtonControlSP* sponsorBtn;
+  ButtonControlSP* pairSponsorBtn;
   SunnylinkClient* sunnylink_client;
 
   bool is_onroad = false;

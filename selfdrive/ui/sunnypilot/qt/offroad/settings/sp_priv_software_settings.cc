@@ -3,9 +3,9 @@
 #include <algorithm>
 
 SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
-  // Get current model name and create new ButtonControl
+  // Get current model name and create new ButtonControlSP
   const auto current_model = GetModelName();
-  currentModelLblBtn = new ButtonControl(tr("Driving Model"), tr("SELECT"), current_model);
+  currentModelLblBtn = new ButtonControlSP(tr("Driving Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
   connect(&models_fetcher, &ModelsFetcher::downloadProgress, this, [this](const double progress) {
@@ -63,7 +63,7 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
 
 
   // Connect click event from currentModelLblBtn to local slot
-  connect(currentModelLblBtn, &ButtonControl::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
+  connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
 
   AddWidgetAt(0, currentModelLblBtn);
 }

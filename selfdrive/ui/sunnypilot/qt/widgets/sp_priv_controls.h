@@ -20,11 +20,11 @@
 // This is for compatibility purposes, until we properly do inheritance splitting
 // This is because some controls were needing LabelControlSP, but the original code was using LabelControl
 // which was modified in-place in the past but since we now have a new file, we will be moving it to LabelControlSP
-#define LabelControl LabelControlSP
-#define ElidedLabel ElidedLabelSP
-#define ButtonControl ButtonControlSP
-#define Toggle ToggleSP
-#define ToggleControl ToggleControlSP
+#define LabelControl LabelControlSP //Not used on SP private code
+#define ElidedLabel ElidedLabelSP //Not used on SP private code
+#define ButtonControl ButtonControlSP //Not used on SP private code
+#define Toggle ToggleSP //Not used on SP private code
+#define ToggleControl ToggleControlSP //Not used on SP private code
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
@@ -86,7 +86,7 @@ protected:
   void hideEvent(QHideEvent *e) override;
 
   QVBoxLayout *main_layout;
-  ElidedLabel *value;
+  ElidedLabelSP *value;
   QLabel *description = nullptr;
 };
 
@@ -143,7 +143,7 @@ public:
       toggle.togglePosition();
     }
     hlayout->addWidget(&toggle);
-    QObject::connect(&toggle, &Toggle::stateChanged, this, &ToggleControlSP::toggleFlipped);
+    QObject::connect(&toggle, &ToggleSP::stateChanged, this, &ToggleControlSP::toggleFlipped);
   }
 
   void setEnabled(bool enabled) {
@@ -155,7 +155,7 @@ signals:
   void toggleFlipped(bool state);
 
 protected:
-  Toggle toggle;
+  ToggleSP toggle;
 };
 
 // widget to toggle params

@@ -9,6 +9,8 @@
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #define ListWidget ListWidgetSP
+#define ToggleControl ToggleControlSP
+#define LabelControl LabelControlSP
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif

@@ -120,7 +120,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : ListWidgetSP(parent) {
   connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
   });
 
-  QObject::connect(toggles["MapboxFullScreen"], &ToggleControl::toggleFlipped, [=](bool state) {
+  QObject::connect(toggles["MapboxFullScreen"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     toggles["MapboxFullScreen"]->showDescription();
   });
 }

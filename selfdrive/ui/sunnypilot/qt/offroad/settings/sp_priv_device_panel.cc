@@ -9,10 +9,10 @@
 #include "selfdrive/ui/qt/widgets/prime.h"
 
 DevicePanelSP::DevicePanelSP(SettingsWindow *parent) : DevicePanel(parent) {
-  fleetManagerPin = new ButtonControl(
+  fleetManagerPin = new ButtonControlSP(
     pin_title + pin, tr("TOGGLE"),
     tr("Enable or disable PIN requirement for Fleet Manager access."));
-  connect(fleetManagerPin, &ButtonControl::clicked, [=]() {
+  connect(fleetManagerPin, &ButtonControlSP::clicked, [=]() {
     if (params.getBool("FleetManagerPin")) {
       if (ConfirmationDialog::confirm(tr("Are you sure you want to turn off PIN requirement?"), tr("Turn Off"), this)) {
         params.remove("FleetManagerPin");
@@ -35,21 +35,21 @@ DevicePanelSP::DevicePanelSP(SettingsWindow *parent) : DevicePanel(parent) {
   refreshPin();
 
   // Error Troubleshoot
-  auto errorBtn = new ButtonControl(
+  auto errorBtn = new ButtonControlSP(
     tr("Error Troubleshoot"), tr("VIEW"),
     tr("Display error from the tmux session when an error has occurred from a system process."));
   QFileInfo file("/data/community/crashes/error.txt");
   QDateTime modifiedTime = file.lastModified();
   QString modified_time = modifiedTime.toString("yyyy-MM-dd hh:mm:ss ");
-  connect(errorBtn, &ButtonControl::clicked, [=]() {
+  connect(errorBtn, &ButtonControlSP::clicked, [=]() {
     const std::string txt = util::read_file("/data/community/crashes/error.txt");
     ConfirmationDialog::rich(modified_time + QString::fromStdString(txt), this);
   });
   AddWidgetAt(3, errorBtn);
 
 
-  auto resetMapboxTokenBtn = new ButtonControl(tr("Reset Access Tokens for Map Services"), tr("RESET"), tr("Reset self-service access tokens for Mapbox, Amap, and Google Maps."));
-  connect(resetMapboxTokenBtn, &ButtonControl::clicked, [=]() {
+  auto resetMapboxTokenBtn = new ButtonControlSP(tr("Reset Access Tokens for Map Services"), tr("RESET"), tr("Reset self-service access tokens for Mapbox, Amap, and Google Maps."));
+  connect(resetMapboxTokenBtn, &ButtonControlSP::clicked, [=]() {
     if (ConfirmationDialog::confirm(tr("Are you sure you want to reset access tokens for all map services?"), tr("Reset"), this)) {
       std::vector<std::string> tokens = {
         "CustomMapboxTokenPk",
@@ -65,8 +65,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindow *parent) : DevicePanel(parent) {
   });
   AddWidgetAt(6, resetMapboxTokenBtn);
 
-  auto resetParamsBtn = new ButtonControl(tr("Reset sunnypilot Settings"), tr("RESET"), "");
-  connect(resetParamsBtn, &ButtonControl::clicked, [=]() {
+  auto resetParamsBtn = new ButtonControlSP(tr("Reset sunnypilot Settings"), tr("RESET"), "");
+  connect(resetParamsBtn, &ButtonControlSP::clicked, [=]() {
     if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings?"), tr("Reset"), this)) {
       std::system("sudo rm -rf /data/params/d/*");
       Hardware::reboot();
@@ -75,7 +75,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindow *parent) : DevicePanel(parent) {
   AddWidgetAt(6, resetParamsBtn);
   
   QObject::connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
-    for (auto btn : findChildren<ButtonControl *>()) {
+    for (auto btn : findChildren<ButtonControlSP *>()) {
       if (btn != pair_device && btn != errorBtn) { 
         btn->setEnabled(offroad);
       }

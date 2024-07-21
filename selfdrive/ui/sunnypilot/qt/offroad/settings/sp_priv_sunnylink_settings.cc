@@ -52,21 +52,21 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   });
 
   status_popup = new SunnylinkSponsorPopup(false, this);
-  sponsorBtn = new ButtonControl(
+  sponsorBtn = new ButtonControlSP(
     tr("Sponsor Status"), tr("SPONSOR"),
     tr("Become a sponsor of sunnypilot to get early access to sunnylink features when they become available."));
   list->addItem(sponsorBtn);
-  connect(sponsorBtn, &ButtonControl::clicked, [=]() {
+  connect(sponsorBtn, &ButtonControlSP::clicked, [=]() {
     status_popup->exec();
   });
   list->addItem(horizontal_line());
 
   pair_popup = new SunnylinkSponsorPopup(true, this);
-  pairSponsorBtn = new ButtonControl(
+  pairSponsorBtn = new ButtonControlSP(
     tr("Pair GitHub Account"), tr("PAIR"),
     tr("Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.") + "🌟");
   list->addItem(pairSponsorBtn);
-  connect(pairSponsorBtn, &ButtonControl::clicked, [=]() {
+  connect(pairSponsorBtn, &ButtonControlSP::clicked, [=]() {
     if (getSunnylinkDongleId().value_or(tr("N/A")) == "N/A") {
       ConfirmationDialog::alert(tr("sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again."), this);
     } else {
@@ -75,7 +75,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget* parent) : QFrame(parent) {
   });
   list->addItem(horizontal_line());
 
-  list->addItem(new LabelControl(tr("Manage Settings")));
+  list->addItem(new LabelControlSP(tr("Manage Settings")));
 
   backup_settings = new BackupSettings;
 

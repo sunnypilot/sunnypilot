@@ -8,10 +8,10 @@ OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
 
   const auto list = new ListWidgetSP(this, false);
-  list->addItem(mapdVersion = new LabelControl(tr("Mapd Version"), "Loading..."));
+  list->addItem(mapdVersion = new LabelControlSP(tr("Mapd Version"), "Loading..."));
   list->addItem(setupOsmDeleteMapsButton(parent));
-  list->addItem(offlineMapsETA = new LabelControl(tr("Offline Maps ETA"), ""));
-  list->addItem(offlineMapsElapsed = new LabelControl(tr("Time Elapsed"), ""));
+  list->addItem(offlineMapsETA = new LabelControlSP(tr("Offline Maps ETA"), ""));
+  list->addItem(offlineMapsElapsed = new LabelControlSP(tr("Time Elapsed"), ""));
   list->addItem(setupOsmUpdateButton(parent));
   list->addItem(setupOsmDownloadButton(parent));
   list->addItem(setupUsStatesButton(parent));
@@ -32,9 +32,9 @@ OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
   main_layout->addWidget(osmScreen);
 }
 
-ButtonControl *OsmPanel::setupOsmDeleteMapsButton(QWidget *parent) {
-  osmDeleteMapsBtn = new ButtonControl(tr("Downloaded Maps"), tr("DELETE"));  // Updated on updateLabels()
-  connect(osmDeleteMapsBtn, &ButtonControl::clicked, [=]() {
+ButtonControlSP *OsmPanel::setupOsmDeleteMapsButton(QWidget *parent) {
+  osmDeleteMapsBtn = new ButtonControlSP(tr("Downloaded Maps"), tr("DELETE"));  // Updated on updateLabels()
+  connect(osmDeleteMapsBtn, &ButtonControlSP::clicked, [=]() {
     if (showConfirmationDialog(parent, tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all the maps?"), tr("Yes, delete all the maps."))) {
       QtConcurrent::run([=]() {
         QDir dir(MAP_PATH);
@@ -51,9 +51,9 @@ ButtonControl *OsmPanel::setupOsmDeleteMapsButton(QWidget *parent) {
   return osmDeleteMapsBtn;
 }
 
-ButtonControl *OsmPanel::setupOsmUpdateButton(QWidget *parent) {
-  osmUpdateBtn = new ButtonControl(tr("Database Update"), tr("CHECK"));  // Updated on updateLabels()
-  connect(osmUpdateBtn, &ButtonControl::clicked, [=]() {
+ButtonControlSP *OsmPanel::setupOsmUpdateButton(QWidget *parent) {
+  osmUpdateBtn = new ButtonControlSP(tr("Database Update"), tr("CHECK"));  // Updated on updateLabels()
+  connect(osmUpdateBtn, &ButtonControlSP::clicked, [=]() {
     if (osm_download_in_progress && !download_failed_state) {
       updateLabels();
     } else if (showConfirmationDialog(parent)) {
@@ -65,9 +65,9 @@ ButtonControl *OsmPanel::setupOsmUpdateButton(QWidget *parent) {
   return osmUpdateBtn;
 }
 
-ButtonControl *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
-  osmDownloadBtn = new ButtonControl(tr("Country"), tr("SELECT"));
-  connect(osmDownloadBtn, &ButtonControl::clicked, [=]() {
+ButtonControlSP *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
+  osmDownloadBtn = new ButtonControlSP(tr("Country"), tr("SELECT"));
+  connect(osmDownloadBtn, &ButtonControlSP::clicked, [=]() {
     osmDownloadBtn->setEnabled(false);
     osmDownloadBtn->setValue(tr("Fetching Country list..."));
     const std::vector<std::tuple<QString, QString, QString, QString>> locations = getOsmLocations();
@@ -107,9 +107,9 @@ ButtonControl *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
   return osmDownloadBtn;
 }
 
-ButtonControl *OsmPanel::setupUsStatesButton(QWidget *parent) {
-  usStatesBtn = new ButtonControl(tr("State"), tr("SELECT"));
-  connect(usStatesBtn, &ButtonControl::clicked, [=]() {
+ButtonControlSP *OsmPanel::setupUsStatesButton(QWidget *parent) {
+  usStatesBtn = new ButtonControlSP(tr("State"), tr("SELECT"));
+  connect(usStatesBtn, &ButtonControlSP::clicked, [=]() {
     const std::tuple<QString, QString> allStatesOption = std::make_tuple("All States (~4.8 GB)", "All");
     usStatesBtn->setEnabled(false);
     usStatesBtn->setValue(tr("Fetching State list..."));

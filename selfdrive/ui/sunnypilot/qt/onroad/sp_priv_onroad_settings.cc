@@ -273,11 +273,11 @@ OptionWidget::OptionWidget(QWidget *parent) : QPushButton(parent) {
   inner_frame->setContentsMargins(0, 0, 0, 0);
   inner_frame->setSpacing(0);
   {
-    title = new ElidedLabel(this);
+    title = new ElidedLabelSP(this);
     title->setAttribute(Qt::WA_TransparentForMouseEvents);
     inner_frame->addWidget(title);
 
-    subtitle = new ElidedLabel(this);
+    subtitle = new ElidedLabelSP(this);
     subtitle->setAttribute(Qt::WA_TransparentForMouseEvents);
     subtitle->setObjectName("subtitle");
     inner_frame->addWidget(subtitle);

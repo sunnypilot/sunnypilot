@@ -16,7 +16,7 @@ private slots:
   void updateLabels();
 
 private:
-  ButtonControl *fleetManagerPin;
+  ButtonControlSP *fleetManagerPin;
   QString pin_title = tr("Fleet Manager PIN:") + " ";
   QString pin = "OFF";
   QFileSystemWatcher *fs_watch;

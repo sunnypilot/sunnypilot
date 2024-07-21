@@ -274,7 +274,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(laneChangeSettingsLayout);
       list->addItem(horizontal_line());
 
-      list->addItem(new LabelControl(tr("Speed Limit Assist")));
+      list->addItem(new LabelControlSP(tr("Speed Limit Assist")));
     }
 
     if (param == "EnableSlc") {
@@ -304,7 +304,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     }
   }
 
-  connect(toggles["NNFF"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["NNFF"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     if (state) {
       toggles["EnforceTorqueLateral"]->setEnabled(false);
       params.putBool("EnforceTorqueLateral", false);
@@ -320,7 +320,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   // trigger updateToggles() when toggleFlipped
   for (const auto& updateToggleName : updateTogglesNames) {
     if (toggles.find(updateToggleName) != toggles.end()) {
-      connect(toggles[updateToggleName], &ToggleControl::toggleFlipped, [=](bool state) {
+      connect(toggles[updateToggleName], &ToggleControlSP::toggleFlipped, [=](bool state) {
         updateToggles();
       });
     }
@@ -339,21 +339,21 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
   toggles["CustomOffsets"]->showDescription();
 
-  connect(toggles["EnableMads"], &ToggleControl::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
-  connect(toggles["EnableMads"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
+  connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     madsSettings->setEnabled(state);
   });
   madsSettings->setEnabled(toggles["EnableMads"]->isToggled());
 
-  connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, slc_settings, &SlcSettings::updateToggles);
-  connect(toggles["EnableSlc"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["EnableSlc"], &ToggleControlSP::toggleFlipped, slc_settings, &SlcSettings::updateToggles);
+  connect(toggles["EnableSlc"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     slcSettings->setEnabled(state);
     slcSettings->setVisible(state);
   });
   slcSettings->setEnabled(toggles["EnableSlc"]->isToggled());
   slcSettings->setVisible(toggles["EnableSlc"]->isToggled());
 
-  connect(toggles["CustomOffsets"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["CustomOffsets"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     customOffsetsSettings->setEnabled(state);
   });
   customOffsetsSettings->setEnabled(toggles["CustomOffsets"]->isToggled());
@@ -368,7 +368,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   });
 
   // update "FRICTION" and "LAT_ACCEL_FACTOR" titles when TorquedOverride is flipped
-  connect(toggles["TorquedOverride"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["TorquedOverride"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     friction->setEnabled(params.getBool("IsOffroad") || state);
     lat_accel_factor->setEnabled(params.getBool("IsOffroad") || state);
 

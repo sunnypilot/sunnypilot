@@ -69,7 +69,7 @@ private:
   std::optional<Model> selectedModelToDownload;
   std::optional<Model> selectedNavModelToDownload;
   std::optional<Model> selectedMetadataToDownload;
-  ButtonControl *currentModelLblBtn;
+  ButtonControlSP *currentModelLblBtn;
   ModelsFetcher models_fetcher;
   ModelsFetcher nav_models_fetcher;
   ModelsFetcher metadata_fetcher;
