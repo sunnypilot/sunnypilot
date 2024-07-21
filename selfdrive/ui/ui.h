@@ -3,7 +3,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <vector>
 
 #include <QObject>
 #include <QTimer>
@@ -243,7 +242,7 @@ public:
   inline SponsorRoleModel sunnylinkSponsorRole() const {
     std::optional<SponsorRoleModel> sponsorRoleWithHighestTier = std::nullopt;
     for (const auto &role : sunnylinkRoles) {
-      if (role.roleType != RoleType::Sponsor)
+      if(role.roleType != RoleType::Sponsor)
         continue;
       
       if (auto sponsorRole = role.as<SponsorRoleModel>(); !sponsorRoleWithHighestTier.has_value() || sponsorRoleWithHighestTier->roleTier < sponsorRole.roleTier) {

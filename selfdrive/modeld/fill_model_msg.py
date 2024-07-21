@@ -78,7 +78,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.frameAge = frame_age
   modelV2.frameDropPerc = frame_drop_perc
   modelV2.timestampEof = timestamp_eof
-  model_use_nav = custom_model_valid and custom_model_capabilities & ModelCapabilities.NavigateOnOpenpilot
+  model_use_nav = custom_model_valid and custom_model_capabilities & ModelCapabilities.NoO
   if model_use_nav:
     modelV2.locationMonoTimeDEPRECATED = timestamp_llk
   modelV2.modelExecutionTime = model_execution_time
@@ -104,8 +104,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   # lateral planning
   if model_use_lateral_planner:
     solution = modelV2.lateralPlannerSolutionDEPRECATED
-    solution.x, solution.y, solution.yaw, solution.yawRate = (net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4))
-    solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = (net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4))
+    solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
+    solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]
   else:
     action = modelV2.action
     action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])

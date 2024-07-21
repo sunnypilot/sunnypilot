@@ -80,7 +80,7 @@ def _request_refresh_osm_bounds_data(self):
   mem_params.put("OSMDownloadBounds", json.dumps(current_bounding_box))
 
 
-def request_refresh_osm_location_data(nations: list[str], states: list[str]=None):
+def request_refresh_osm_location_data(nations: [str], states: [str] = None):
   params.put("OsmDownloadedDate", str(time.time()))
   params.put_bool("OsmDbUpdatesCheck", False)
 
@@ -93,7 +93,7 @@ def request_refresh_osm_location_data(nations: list[str], states: list[str]=None
   mem_params.put("OSMDownloadLocations", osm_download_locations)
 
 
-def filter_nations_and_states(nations: list[str], states: list[str]=None):
+def filter_nations_and_states(nations: [str], states: [str] = None):
   """Filters and prepares nation and state data for OSM map download.
 
   If the nation is 'US' and a specific state is provided, the nation 'US' is removed from the list.

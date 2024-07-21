@@ -41,7 +41,7 @@ CAMERA_OFFSET = 0.04
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
 TESTING_CLOSET = "TESTING_CLOSET" in os.environ
-IGNORE_PROCESSES = {"loggerd", "encoderd", "statsd", "gpxd", "gpxd_uploader", "mapd", "otisserv", "fleet_manager"}
+IGNORE_PROCESSES = {"loggerd", "encoderd", "statsd", "mapd", "gpxd", "gpxd_uploader", "mapd", "otisserv", "fleet_manager"}
 
 ThermalStatus = log.DeviceState.ThermalStatus
 State = log.ControlsState.OpenpilotState
@@ -300,8 +300,7 @@ class Controls:
         self.events.add(EventName.calibrationInvalid)
 
     # Handle lane change
-    lane_change_edge_block = self.sm['lateralPlanSPDEPRECATED'].laneChangeEdgeBlockDEPRECATED if self.model_use_lateral_planner else \
-                                                                                                 self.sm['modelV2SP'].laneChangeEdgeBlock
+    lane_change_edge_block = self.sm['lateralPlanSPDEPRECATED'].laneChangeEdgeBlockDEPRECATED if self.model_use_lateral_planner else self.sm['modelV2SP'].laneChangeEdgeBlock
     lane_change_svs = self.sm['lateralPlanDEPRECATED'] if self.model_use_lateral_planner else self.sm['modelV2'].meta
     if lane_change_svs.laneChangeState == LaneChangeState.preLaneChange and lane_change_edge_block:
       self.events.add(EventName.laneChangeRoadEdge)
@@ -621,10 +620,9 @@ class Controls:
     CC.latActive = (self.active or self.mads_ndlob) and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.joystick_mode) and CS.madsEnabled and (not CS.brakePressed or self.mads_ndlob) and \
                    (not CS.belowLaneChangeSpeed or (not (((self.sm.frame - self.last_blinker_frame) * DT_CTRL) < 1.0) and
-                   not (CS.leftBlinker or CS.rightBlinker))) and CS.latActive and \
-                   self.sm['liveCalibration'].calStatus == log.LiveCalibrationData.Status.calibrated and not self.process_not_running
-    CC.longActive = self.enabled_long and not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and \
-                    not self.events.contains(ET.OVERRIDE_LONGITUDINAL)
+                   not (CS.leftBlinker or CS.rightBlinker))) and CS.latActive and self.sm['liveCalibration'].calStatus == log.LiveCalibrationData.Status.calibrated and \
+                   not self.process_not_running
+    CC.longActive = self.enabled_long and not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and not self.events.contains(ET.OVERRIDE_LONGITUDINAL)
 
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
@@ -831,8 +829,7 @@ class Controls:
 
     controlsState.longitudinalPlanMonoTime = self.sm.logMonoTime['longitudinalPlan']
     controlsState.lateralPlanMonoTime = self.sm.logMonoTime[lp_mono_time_svs]
-    controlsState.enabled = not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and \
-                            (self.enabled or CS.cruiseState.enabled) and CS.gearShifter not in [GearShifter.park, GearShifter.reverse]
+    controlsState.enabled = not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and (self.enabled or CS.cruiseState.enabled) and CS.gearShifter not in [GearShifter.park, GearShifter.reverse]
     controlsState.active = not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and (self.active or CS.cruiseState.enabled)
     controlsState.curvature = curvature
     controlsState.desiredCurvature = self.desired_curvature

@@ -1,13 +1,12 @@
 from enum import IntFlag
 import os
-from typing import TypeAlias
 
 from cereal import custom
 from openpilot.common.params import Params
 
 SIMULATION = "SIMULATION" in os.environ
 
-ModelGeneration: TypeAlias = custom.ModelGeneration
+ModelGeneration = custom.ModelGeneration
 
 
 class ModelCapabilities(IntFlag):
@@ -16,7 +15,7 @@ class ModelCapabilities(IntFlag):
   Default = 1
   """Default capability, used for the prebuilt model."""
 
-  NavigateOnOpenpilot = 2
+  NoO = 2
   """Navigation on Openpilot capability, used for models support navigation."""
 
   LateralPlannerSolution = 2 ** 2
@@ -57,11 +56,11 @@ class CustomModelMetadata:
     elif self.generation == ModelGeneration.four:
       return ModelCapabilities.DesiredCurvatureV2
     elif self.generation == ModelGeneration.three:
-      return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NavigateOnOpenpilot
+      return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NoO
     elif self.generation == ModelGeneration.two:
-      return ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NavigateOnOpenpilot
+      return ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NoO
     elif self.generation == ModelGeneration.one:
-      return ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NavigateOnOpenpilot
+      return ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO
     else:
       # Default model is meant to represent the capabilities of the prebuilt model
       return ModelCapabilities.Default

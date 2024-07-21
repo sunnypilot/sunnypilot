@@ -219,7 +219,7 @@ def crash_log(candidate):
   while True:
     if is_connected_to_internet():
       sentry.get_init()
-      sentry.capture_info(f"fingerprinted {candidate}")
+      sentry.capture_info("fingerprinted %s" % candidate)
       break
     else:
       no_internet += 1
@@ -233,7 +233,7 @@ def crash_log2(fingerprints, fw):
   while True:
     if is_connected_to_internet():
       sentry.get_init()
-      sentry.capture_warning(f"car doesn't match any fingerprints: {repr(fingerprints)}")
+      sentry.capture_warning("car doesn't match any fingerprints: %s" % repr(fingerprints))
       break
     else:
       no_internet += 1
