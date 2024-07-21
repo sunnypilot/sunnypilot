@@ -210,11 +210,12 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     self.sp_update_params()
 
-    ret.buttonEvents = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
+    self.CS.button_events = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            self.CS.button_events, c.vCruise)
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
@@ -237,7 +238,7 @@ class CarInterface(CarInterfaceBase):
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       if not self.CP.pcmCruise:
-        if any(b.type == ButtonType.cancel for b in ret.buttonEvents):
+        if any(b.type == ButtonType.cancel for b in self.CS.button_events):
           self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       if not self.CP.pcmCruiseSpeed:
         if not ret.cruiseState.enabled:
@@ -248,10 +249,17 @@ class CarInterface(CarInterfaceBase):
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.cruise_buttons[-1] == 3))
 
-    ret.buttonEvents = [
-      *ret.buttonEvents,
-      *create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled, self.mads_event_lock)  # MADS BUTTON
-    ]
+    # MADS BUTTON
+    if self.CS.out.madsEnabled != self.CS.madsEnabled:
+      if self.mads_event_lock:
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
+        self.mads_event_lock = False
+    else:
+      if not self.mads_event_lock:
+        self.CS.button_events.append(create_mads_event(self.mads_event_lock))
+        self.mads_event_lock = True
+
+    ret.buttonEvents = self.CS.button_events
 
     # On some newer model years, the CANCEL button acts as a pause/resume button based on the PCM state
     # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons
