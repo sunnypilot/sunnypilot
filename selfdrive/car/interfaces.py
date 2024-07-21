@@ -239,16 +239,10 @@ class CarInterfaceBase(ABC):
     self.gear_warning = 0
     self.cruise_cancelled_btn = True
     self.acc_mads_combo = self.param_s.get_bool("AccMadsCombo")
-    self.is_metric = self.param_s.get_bool("IsMetric")
-    self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
-    self.pause_lateral_speed = int(self.param_s.get("PauseLateralSpeed", encoding="utf8"))
     self.prev_acc_mads_combo = False
     self.mads_event_lock = True
     self.gap_button_counter = 0
     self.experimental_mode_hold = False
-    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
-    self._frame = 0
-    self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
     self.lkas_toggle = self.param_s.get_bool("LkasToggle")
     self.last_mads_init = 0.
@@ -429,6 +423,8 @@ class CarInterfaceBase(ABC):
 
     self.CS.button_events = []
 
+    self.CS.sp_update_params()
+
     # get CarState
     ret = self._update(c)
 
@@ -472,7 +468,7 @@ class CarInterfaceBase(ABC):
       else:
         events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
-      if not self.reverse_dm_cam and cs_out.vEgo < 5:
+      if not self.CS.reverse_dm_cam and cs_out.vEgo < 5:
         events.add(EventName.spReverseGear)
       elif cs_out.vEgo >= 5:
         events.add(EventName.reverseGear)
@@ -634,9 +630,9 @@ class CarInterfaceBase(ABC):
     if self.CP.openpilotLongitudinalControl:
       self.toggle_exp_mode(gap_button)
 
-    lane_change_speed_min = get_min_lateral_speed(self.pause_lateral_speed, self.is_metric)
+    lane_change_speed_min = get_min_lateral_speed(self.CS.pause_lateral_speed, self.CS.sp_is_metric)
 
-    cs_out.belowLaneChangeSpeed = cs_out.vEgo < lane_change_speed_min and self.below_speed_pause
+    cs_out.belowLaneChangeSpeed = cs_out.vEgo < lane_change_speed_min and self.CS.below_speed_pause
 
     if cs_out.gearShifter in [GearShifter.park, GearShifter.reverse] or cs_out.doorOpen or \
       (cs_out.seatbeltUnlatched and cs_out.gearShifter != GearShifter.park):
@@ -669,7 +665,7 @@ class CarInterfaceBase(ABC):
         if self.gap_button_counter > 50:
           self.gap_button_counter = 0
           self.experimental_mode_hold = True
-          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.experimental_mode)
+          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.CS.experimental_mode)
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
@@ -735,17 +731,6 @@ class CarInterfaceBase(ABC):
 
     return events, cs_out
 
-  def sp_update_params(self):
-    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
-    self._frame += 1
-    if self._frame % 100 == 0:
-      self.is_metric = self.param_s.get_bool("IsMetric")
-      self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
-      self.pause_lateral_speed = int(self.param_s.get("PauseLateralSpeed", encoding="utf8"))
-    if self._frame % 300 == 0:
-      self._frame = 0
-      self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
-
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
     self.rcp = None
@@ -785,6 +770,13 @@ class CarStateBase(ABC):
     self.control_initialized = False
 
     self.button_events: list[capnp.lib.capnp._DynamicStructBuilder] = []
+
+    self._frame = 0
+    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
+    self.sp_is_metric = self.param_s.get_bool("IsMetric")
+    self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
+    self.pause_lateral_speed = int(self.param_s.get("PauseLateralSpeed", encoding="utf8"))
+    self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
@@ -847,6 +839,17 @@ class CarStateBase(ABC):
     self.right_blinker_prev = right_blinker_stalk
 
     return bool(left_blinker_stalk or self.left_blinker_cnt > 0), bool(right_blinker_stalk or self.right_blinker_cnt > 0)
+
+  def sp_update_params(self):
+    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
+    self._frame += 1
+    if self._frame % 100 == 0:
+      self.sp_is_metric = self.param_s.get_bool("IsMetric")
+      self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
+      self.pause_lateral_speed = int(self.param_s.get("PauseLateralSpeed", encoding="utf8"))
+    if self._frame % 300 == 0:
+      self._frame = 0
+      self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
 
   def update_custom_stock_long(self, cruise_button, final_speed_kph, target_speed, v_set_dis, speed_diff, button_type):
     customStockLong = car.CarState.CustomStockLong.new_message()
