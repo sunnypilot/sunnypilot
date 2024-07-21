@@ -220,8 +220,6 @@ class CarInterface(CarInterfaceBase):
           elif self.CS.prev_cruise_buttons == 4:
             if self.CS.cruise_buttons[-1] != 4:
               self.accEnabled = True
-    else:
-      self.CS.madsEnabled = False
 
     if self.enable_mads:
       if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
@@ -229,6 +227,9 @@ class CarInterface(CarInterfaceBase):
       if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
         self.CS.madsEnabled = not self.CS.madsEnabled
       self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+
+    if not ret.cruiseState.available and self.CS.out.cruiseState.available:
+      self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       if not self.CP.pcmCruise:
