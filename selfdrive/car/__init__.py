@@ -43,15 +43,6 @@ def create_button_events(cur_btn: int, prev_btn: int, buttons_dict: dict[int, ca
   return events
 
 
-def create_cancel_event(long_enabled: bool, prev_long_enabled: bool) -> list[capnp.lib.capnp._DynamicStructBuilder]:
-  events: list[capnp.lib.capnp._DynamicStructBuilder] = []
-
-  if not long_enabled and prev_long_enabled:
-    events.append(car.CarState.ButtonEvent(pressed=True,
-                                           type=ButtonType.cancel))
-  return events
-
-
 def create_mads_event(mads_enabled: bool, prev_mads_enabled: bool,
                       mads_event_lock: bool) -> tuple[list[capnp.lib.capnp._DynamicStructBuilder], bool]:
   events: list[capnp.lib.capnp._DynamicStructBuilder] = []
