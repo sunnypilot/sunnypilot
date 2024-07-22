@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 
 #include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
 #include "common/params.h"
 
 

@@ -8,6 +8,7 @@
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
 
 static std::pair<QString, QColor> getFeatureStatus(int value, QStringList text_list, QStringList color_list,
                                                    bool condition, QString off_text) {

@@ -19,6 +19,9 @@
 #include "common/util.h"
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
+#endif
 
 namespace CommaApi {
 

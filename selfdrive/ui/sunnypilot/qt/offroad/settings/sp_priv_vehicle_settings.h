@@ -4,7 +4,6 @@
 
 #include "common/watchdog.h"
 #include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_scrollview.h"
 

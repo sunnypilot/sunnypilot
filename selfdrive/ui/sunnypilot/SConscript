@@ -27,6 +27,11 @@ sp_maps_widgets_src = [
   "sunnypilot/qt/maps/sp_priv_map.cc"
 ]
 
+sp_qt_util = [
+  # "#selfdrive/ui/sunnypilot/qt/sp_priv_api.cc", 
+  "#selfdrive/ui/sunnypilot/qt/sp_priv_util.cc",
+]
+
 network_src = [
   "sunnypilot/qt/network/sunnylink/sp_priv_sunnylink_client.cc",
   "sunnypilot/qt/network/sunnylink/services/sp_priv_base_device_service.cc",
@@ -51,4 +56,4 @@ qt_src = [
 sp_widgets_src = widgets_src + network_src
 sp_qt_src = qt_src
 
-Export('sp_widgets_src', 'sp_maps_widgets_src', 'sp_qt_src')
+Export('sp_widgets_src', 'sp_maps_widgets_src', 'sp_qt_src', "sp_qt_util")

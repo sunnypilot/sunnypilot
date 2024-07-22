@@ -1,4 +1,5 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_vehicle_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_util.h"
 
 VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
   main_layout = new QStackedLayout(this);
