@@ -535,7 +535,8 @@ class CarController(CarControllerBase):
 
   def make_accel(self, accel, actuators):
     if actuators.longControlState == LongCtrlState.pid:
-      rate_up, rate_down = 0.1, 0.1
+      rate_up, rate_down = 0.0, 0.0
+      self.accel_last = accel
     else:
       rate_up = 0.02 * self.jerk_u
       rate_down = 0.02 * self.jerk_l
