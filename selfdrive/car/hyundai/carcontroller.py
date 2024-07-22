@@ -112,6 +112,7 @@ class CarController(CarControllerBase):
 
     self.accel_val = 0
     self.accel_raw = 0
+    self.accel_frame = 0
 
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
@@ -538,8 +539,14 @@ class CarController(CarControllerBase):
     self.accel_raw = accel
     if actuators.longControlState == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
+    elif actuators.longControlState == LongCtrlState.starting and self.accel_frame <= 1:
+      self.accel_frame += 1
+      self.accel_raw, self.accel_val = accel, accel
     else:
       if actuators.longControlState == LongCtrlState.stopping:
         self.accel_raw = 0
       self.accel_val = clip(self.accel_raw, self.accel_last - 0.1, self.accel_last + 0.1)
     self.accel_last = self.accel_val
+
+    if not actuators.longControlState == LongCtrlState.starting or self.accel_frame >= 2:
+      self.accel_frame = 0
