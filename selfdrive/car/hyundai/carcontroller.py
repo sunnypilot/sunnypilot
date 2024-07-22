@@ -534,8 +534,10 @@ class CarController(CarControllerBase):
         self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
 
   def make_accel(self, accel, actuators):
+    rate_up = 0.02 * self.jerk_u
+    rate_down = 0.02 * self.jerk_l
     if actuators.longControlState == LongCtrlState.off:
       self.accel_val = 0
     else:
-      self.accel_val = clip(accel, self.accel_last - 0.1, self.accel_last + 0.1)
+      self.accel_val = clip(accel, self.accel_last - rate_down, self.accel_last + rate_up)
     self.accel_last = self.accel_val
