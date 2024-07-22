@@ -111,8 +111,6 @@ class CarController(CarControllerBase):
     self.jerk_count = 0.0
 
     self.accel_val = 0
-    self.accel_raw = 0
-    self.accel_frame = 0
 
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
@@ -302,7 +300,7 @@ class CarController(CarControllerBase):
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
         self.make_jerk(CS, accel, actuators)
         self.make_accel(accel, actuators)
-        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
+        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, accel, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
 
@@ -536,17 +534,8 @@ class CarController(CarControllerBase):
         self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
 
   def make_accel(self, accel, actuators):
-    self.accel_raw = accel
     if actuators.longControlState == LongCtrlState.off:
-      self.accel_raw, self.accel_val = 0, 0
-    elif actuators.longControlState == LongCtrlState.starting and self.accel_frame <= 1:
-      self.accel_frame += 1
-      self.accel_raw, self.accel_val = accel, accel
+      self.accel_val = 0
     else:
-      if actuators.longControlState == LongCtrlState.stopping:
-        self.accel_raw = 0
-      self.accel_val = clip(self.accel_raw, self.accel_last - 0.1, self.accel_last + 0.1)
+      self.accel_val = clip(accel, self.accel_last - 0.1, self.accel_last + 0.1)
     self.accel_last = self.accel_val
-
-    if not actuators.longControlState == LongCtrlState.starting or self.accel_frame >= 2:
-      self.accel_frame = 0
