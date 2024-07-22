@@ -300,7 +300,6 @@ class CarController(CarControllerBase):
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
-        stopping = stopping and CS.out.vEgo < self.CP.vEgoStopping
         can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
@@ -478,10 +477,10 @@ class CarController(CarControllerBase):
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
     return cruise_button
 
-  def cal_jerk(self, CS, accel, actuators):
+  def cal_jerk(self, accel, actuators):
     if actuators.longControlState == LongCtrlState.off:
       accel_diff = 0.0
-    elif actuators.longControlState == LongCtrlState.stopping and CS.out.vEgo < self.CP.vEgoStopping:# or hud_control.softHold > 0:
+    elif actuators.longControlState == LongCtrlState.stopping:# or hud_control.softHold > 0:
       accel_diff = 0.0
     else:
       accel_diff = accel - self.accel_last
@@ -491,7 +490,7 @@ class CarController(CarControllerBase):
     return self.jerk
 
   def make_jerk(self, CS, accel, actuators):
-    jerk = self.cal_jerk(CS, accel, actuators)
+    jerk = self.cal_jerk(accel, actuators)
     a_error = accel - CS.out.aEgo
     jerk = jerk + (a_error * 2.0)
 
@@ -504,7 +503,7 @@ class CarController(CarControllerBase):
         self.jerk_u = jerkLimit
         self.jerk_l = jerkLimit
         self.jerk_count = 0
-      elif actuators.longControlState == LongCtrlState.stopping and CS.out.vEgo < self.CP.vEgoStopping:
+      elif actuators.longControlState == LongCtrlState.stopping:
         self.jerk_u += 0.1 if self.jerk_u < 1.5 else -0.1
         self.jerk_l += 0.1 if self.jerk_l < 1.0 else -0.1
         self.jerk_count = 0
@@ -523,7 +522,7 @@ class CarController(CarControllerBase):
         self.jerk_u = jerkLimit
         self.jerk_l = jerkLimit
         self.jerk_count = 0
-      elif actuators.longControlState == LongCtrlState.stopping and CS.out.vEgo < self.CP.vEgoStopping:
+      elif actuators.longControlState == LongCtrlState.stopping:
         self.jerk_u += 0.1 if self.jerk_u < 0.5 else -0.1
         self.jerk_l += 0.1 if self.jerk_l < 1.0 else -0.1
         self.jerk_count = 0
@@ -534,12 +533,12 @@ class CarController(CarControllerBase):
         self.cb_upper = clip(0.9 + accel * 0.2, 0, 1.2)
         self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
 
-  def make_accel(self, CS, accel, actuators):
+  def make_accel(self, accel, actuators):
     self.accel_raw = accel
     if actuators.longControlState == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
-      if actuators.longControlState == LongCtrlState.stopping and CS.out.vEgo < self.CP.vEgoStopping:
+      if actuators.longControlState == LongCtrlState.stopping:
         self.accel_raw = 0
-      self.accel_val = clip(self.accel_raw, self.accel_last - self.jerk_l, self.accel_last + self.jerk_l)
+      self.accel_val = clip(self.accel_raw, self.accel_last - 0.1, self.accel_last + 0.1)
     self.accel_last = self.accel_val
