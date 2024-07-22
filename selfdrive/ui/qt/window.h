@@ -17,6 +17,7 @@ protected:
   explicit MainWindow(QWidget* parent, HomeWindow* hw = nullptr, SettingsWindow* sw = nullptr, OnboardingWindow* ow = nullptr);
   HomeWindow *homeWindow;
   SettingsWindow *settingsWindow;
+  OnboardingWindow *onboardingWindow;
   virtual void closeSettings();
 
 private:
@@ -24,5 +25,4 @@ private:
   void openSettings(int index = 0, const QString &param = "");
 
   QStackedLayout *main_layout;
-  OnboardingWindow *onboardingWindow;
 };

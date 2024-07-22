@@ -3,6 +3,7 @@
 #include "selfdrive/ui/qt/window.h"
 #include "selfdrive/ui/sunnypilot/qt/sp_priv_home.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_settings.h"
+#include "offroad/settings/sp_priv_onboarding.h"
 
 class MainWindowSP : public MainWindow {
     Q_OBJECT
@@ -13,5 +14,6 @@ explicit MainWindowSP(QWidget *parent = 0);
 private:
     HomeWindowSP *homeWindow;
     SettingsWindowSP *settingsWindow;
+    OnboardingWindowSP *onboardingWindow;
     void closeSettings() override;
 };

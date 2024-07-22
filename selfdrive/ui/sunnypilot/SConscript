@@ -45,6 +45,7 @@ qt_src = [
   "sunnypilot/qt/sp_priv_home.cc",
   "sunnypilot/qt/sp_priv_offroad_home.cc",
   "sunnypilot/qt/sp_priv_sidebar.cc",
+  "sunnypilot/qt/offroad/settings/sp_priv_onboarding.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_device_panel.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_settings.cc",
   "sunnypilot/qt/onroad/sp_priv_buttons.cc",
