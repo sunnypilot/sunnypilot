@@ -287,7 +287,7 @@ class CarController(CarControllerBase):
               can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
       else:
         self.make_jerk(CS, accel, actuators)
-        self.make_accel(CS, accel, actuators)
+        self.make_accel(accel, actuators)
 
       # Parse lead distance from radarState and display the corresponding distance in the car's cluster
       if self.CP.openpilotLongitudinalControl and self.sm.updated['radarState'] and self.frame % 5 == 0:
