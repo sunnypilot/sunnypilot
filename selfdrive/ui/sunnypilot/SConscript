@@ -1,6 +1,7 @@
 widgets_src = [
   "sunnypilot/sp_priv_ui.cc",
   "sunnypilot/qt/sp_priv_window.cc",
+  "sunnypilot/qt/sp_priv_request_repeater.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_display_settings.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_sunnypilot_settings.cc",
   "sunnypilot/qt/offroad/settings/sp_priv_vehicle_settings.cc",
@@ -40,6 +41,7 @@ network_src = [
 ]
 
 qt_src = [
+  "sunnypilot/qt/sp_priv_api.cc",
   "sunnypilot/qt/sp_priv_home.cc",
   "sunnypilot/qt/sp_priv_offroad_home.cc",
   "sunnypilot/qt/sp_priv_sidebar.cc",

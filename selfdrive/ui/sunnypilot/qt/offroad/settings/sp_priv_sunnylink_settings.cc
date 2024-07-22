@@ -1,4 +1,5 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_sunnylink_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_api.h"
 
 #include <map>
 #include <string>
@@ -253,7 +254,7 @@ QByteArray BackupSettings::backupParams(const bool encrypt) {
   // Compress the QByteArray.
   QByteArray compressedData = qCompress(jsonData);
 
-  QByteArray processed_data = encrypt ? CommaApi::rsa_encrypt(compressedData) : compressedData;
+  QByteArray processed_data = encrypt ? SunnylinkApi::rsa_encrypt(compressedData) : compressedData;
 
   // Encode the compressed QByteArray in Base64.
   auto converted_params_processed_base64_data = QString(processed_data.toBase64());
@@ -279,8 +280,8 @@ QByteArray BackupSettings::backupParams(const bool encrypt) {
 void BackupSettings::sendParams(const QByteArray &payload) {
   if (auto sl_dongle_id = getSunnylinkDongleId()) {
     QString url = SUNNYLINK_BASE_URL + "/backup/" + *sl_dongle_id;
-    auto request = new HttpRequest(this, true, 10000, true);
-    connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
+    auto request = new HttpRequestSP(this, true, 10000, true);
+    connect(request, &HttpRequestSP::requestDone, [=](const QString &resp, bool success) {
       if (success && resp != "[]") {
         ConfirmationDialog::alert(tr("Settings backed up for sunnylink Device ID:") + " " + *sl_dongle_id, this);
       } else if (resp == "[]") {
@@ -319,7 +320,7 @@ void BackupSettings::restoreParams(const QString &resp) {
     if (configValue.isString()) {
       // Decode the Base64-encoded "config" value
       const QByteArray configJsonDataDecoded = QByteArray::fromBase64(configValue.toString().toUtf8());
-      const QByteArray configJsonDataCompressed = isEncrypted ? CommaApi::rsa_decrypt(configJsonDataDecoded) : configJsonDataDecoded;
+      const QByteArray configJsonDataCompressed = isEncrypted ? SunnylinkApi::rsa_decrypt(configJsonDataDecoded) : configJsonDataDecoded;
       const QByteArray configJsonData = qUncompress(configJsonDataCompressed);
 
       // Convert the decompressed JSON data to a QJsonDocument
@@ -347,8 +348,8 @@ void BackupSettings::restoreParams(const QString &resp) {
 void BackupSettings::getParams() {
   if (auto sl_dongle_id = getSunnylinkDongleId()) {
     QString url = SUNNYLINK_BASE_URL + "/backup/" + *sl_dongle_id;
-    auto request = new HttpRequest(this, true, 10000, true);
-    connect(request, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
+    auto request = new HttpRequestSP(this, true, 10000, true);
+    connect(request, &HttpRequestSP::requestDone, [=](const QString &resp, bool success) {
       bool restart_ui = false;
       if (success && resp != "[]") {
         restoreParams(resp);
@@ -409,7 +410,7 @@ void SunnylinkSponsorQRWidget::refresh() {
   QString qrString;
 
   if (sponsor_pair) {
-    QString token = CommaApi::create_jwt({}, 3600, true);
+    QString token = SunnylinkApi::create_jwt({}, 3600, true);
     auto sl_dongle_id = getSunnylinkDongleId();
     QByteArray payload = QString("1|" + sl_dongle_id.value_or("") + "|" + token).toUtf8().toBase64();
     qrString = SUNNYLINK_BASE_URL + "/sso?state=" + payload;

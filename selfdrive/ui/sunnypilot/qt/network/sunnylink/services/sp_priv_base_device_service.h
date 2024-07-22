@@ -1,7 +1,6 @@
 #pragma once
 
-#include "selfdrive/ui/qt/api.h"
-#include "selfdrive/ui/qt/request_repeater.h"
+#include "selfdrive/ui/sunnypilot/qt/sp_priv_request_repeater.h"
 #include "selfdrive/ui/qt/util.h"
 
 class BaseDeviceService : public QObject {
@@ -14,8 +13,8 @@ protected:
 
   static bool is_sunnylink_enabled() { return Params().getBool("SunnylinkEnabled");}
   ParamWatcher* param_watcher;
-  HttpRequest* initial_request = nullptr;
-  RequestRepeater* repeater = nullptr;
+  HttpRequestSP* initial_request = nullptr;
+  RequestRepeaterSP* repeater = nullptr;
 
 public:
   explicit BaseDeviceService(QObject* parent = nullptr);

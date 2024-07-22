@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <QDir>
+#include <QMap>
 #include <QLayoutItem>
 #include <QPainterPath>
 

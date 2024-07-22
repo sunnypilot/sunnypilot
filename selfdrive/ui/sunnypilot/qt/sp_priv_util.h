@@ -3,15 +3,8 @@
 #include <optional>
 #include <vector>
 
-#include <QDateTime>
-#include <QFileSystemWatcher>
 #include <QPainter>
-#include <QPixmap>
-#include <QSurfaceFormat>
 #include <QWidget>
-
-#include "cereal/gen/cpp/car.capnp.h"
-#include "common/params.h"
 
 QString getUserAgent(bool sunnylink = false);
 std::optional<QString> getSunnylinkDongleId();
