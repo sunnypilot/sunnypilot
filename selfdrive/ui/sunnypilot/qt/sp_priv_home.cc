@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <common/swaglog.h>
 
 #include "selfdrive/ui/qt/offroad/experimental_mode.h"
 #include "selfdrive/ui/qt/util.h"
@@ -27,7 +28,9 @@ void HomeWindowSP::updateState(const UIState &s) { //OVERRIDE
 }
 
 void HomeWindowSP::mousePressEvent(QMouseEvent* e) {
-  HomeWindow::mousePressEvent(e); // We call it first so that we could potentially override whatever was done by parent
+  // We are not calling the parent for the time being because it only handles sidebar, and the sidebar code conflicts
+  //  with ours as we turn off the sidebar after it was turned on by the parent when the tap happens beyond the 300px of the left. 
+  // HomeWindow::mousePressEvent(e);  
   
   if (uiStateSP()->scene.started) {
     if (uiStateSP()->scene.onroadScreenOff != -2) {
@@ -45,7 +48,9 @@ void HomeWindowSP::mousePressEvent(QMouseEvent* e) {
   //  Will have to revisit later if this is not behaving as expected. 
   // Handle sidebar collapsing
   if ((onroad->isVisible() || body->isVisible()) && (!sidebar->isVisible() || e->x() > sidebar->width())) {
+    LOGD("HomeWindowSP sidebar->isVisible() [%d] | e->x() [%d] | sidebar->width() [%d]", sidebar->isVisible(), e->x(), sidebar->width());
     if (onroad->wakeScreenTimeout()) {
+      LOGD("HomeWindowSP wakeScreenTimeout() [%d]", onroad->wakeScreenTimeout());
       sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
     }
   }
