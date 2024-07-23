@@ -113,6 +113,9 @@ class CarController(CarControllerBase):
     self.accel_raw = 0
     self.accel_val = 0
 
+    self.acc_enabled = False
+    self.prev_stop_req = False
+
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
     lead_two = self.sm["radarState"].leadTwo
@@ -300,7 +303,8 @@ class CarController(CarControllerBase):
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
         self.make_accel(accel, actuators)
-        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
+        self.fast_resume(actuators, CC.enabled and CS.out.cruiseState.enabled, stopping)
+        can_sends.extend(hyundaican.create_acc_commands(self.packer, self.acc_enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
 
@@ -545,3 +549,11 @@ class CarController(CarControllerBase):
     else:
       self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
     self.accel_last = self.accel_val
+
+  def fast_resume(self, actuators, enabled, stopping):
+    if actuators.longControlState == LongCtrlState.starting and self.acc_enabled and self.prev_stop_req:
+      self.acc_enabled = False
+    else:
+      self.acc_enabled = enabled
+
+    self.prev_stop_req = stopping
