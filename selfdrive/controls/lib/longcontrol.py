@@ -51,8 +51,6 @@ class LongControl:
                              k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL)
     self.last_output_accel = 0.0
 
-    self.frame = 0
-
   def reset(self):
     self.pid.reset()
 
@@ -76,22 +74,13 @@ class LongControl:
       self.reset()
 
     elif self.long_control_state == LongCtrlState.starting:
-      if self.frame < 10 and self.CP.carName == "hyundai":
-        self.frame += 1
-        output_accel = self.CP.startAccel
-        self.reset()
-      else:  # LongCtrlState.pid
-        error = a_target - CS.aEgo
-        output_accel = self.pid.update(error, speed=CS.vEgo,
-                                       feedforward=a_target)
+      output_accel = self.CP.startAccel
+      self.reset()
 
     else:  # LongCtrlState.pid
       error = a_target - CS.aEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
                                      feedforward=a_target)
-
-    if not self.long_control_state == LongCtrlState.starting:
-      self.frame = 0
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
     return self.last_output_accel
