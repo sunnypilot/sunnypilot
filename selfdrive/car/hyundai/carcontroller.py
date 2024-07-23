@@ -551,6 +551,7 @@ class CarController(CarControllerBase):
 
   def fast_resume(self, actuators, enabled, stopping):
     self.acc_enabled = enabled
+    return
 
     if actuators.longControlState == LongCtrlState.starting and self.acc_enabled and self.prev_stop_req:
       self.acc_enabled = False
