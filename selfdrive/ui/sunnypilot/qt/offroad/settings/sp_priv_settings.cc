@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sp_priv_device_panel.h"
-#include "selfdrive/ui/qt/network/networking.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sp_priv_networking.h"
 #include "selfdrive/ui/sunnypilot/sp_priv_sunnypilot_main.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
@@ -332,7 +332,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
 
   QList<PanelInfo> panels = {
     PanelInfo("   " + tr("Device"), device, "../assets/navigation/icon_home.svg"),
-    PanelInfo("   " + tr("Network"), new Networking(this), "../assets/offroad/icon_network.png"),
+    PanelInfo("   " + tr("Network"), new NetworkingSP(this), "../assets/offroad/icon_network.png"),
     PanelInfo("   " + tr("sunnylink"), new SunnylinkPanel(this), "../assets/offroad/icon_wifi_strength_full.svg"),
     PanelInfo("   " + tr("Toggles"), toggles, "../assets/offroad/icon_toggle.png"),
     PanelInfo("   " + tr("Software"), new SoftwarePanelSP(this), "../assets/offroad/icon_software.png"),

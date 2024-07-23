@@ -1,23 +1,15 @@
 #pragma once
 
+#include <QWidget>
 #include <vector>
 
 #include "selfdrive/ui/qt/network/wifi_manager.h"
-#include "selfdrive/ui/qt/widgets/input.h"
-#include "selfdrive/ui/qt/widgets/ssh_keys.h"
-#include "selfdrive/ui/qt/widgets/toggle.h"
-#ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
-#define LabelControl LabelControlSP
-#define ElidedLabel ElidedLabelSP
-#else
-#include "selfdrive/ui/qt/widgets/controls.h"
-#endif
 
-class WifiItem : public QWidget {
+class WifiItemSP : public QWidget {
   Q_OBJECT
 public:
-  explicit WifiItem(const QString &connecting_text, const QString &forget_text, QWidget* parent = nullptr);
+  explicit WifiItemSP(const QString &connecting_text, const QString &forget_text, QWidget* parent = nullptr);
   void setItem(const Network& n, const QPixmap &icon, bool show_forget_btn, const QPixmap &strength);
 
 signals:
@@ -26,7 +18,7 @@ signals:
   void forgotNetwork(const Network n);
 
 protected:
-  ElidedLabel* ssidLabel;
+  ElidedLabelSP* ssidLabel;
   QPushButton* connecting;
   QPushButton* forgetBtn;
   QLabel* iconLabel;
@@ -34,14 +26,14 @@ protected:
   Network network;
 };
 
-class WifiUI : public QWidget {
+class WifiUISP : public QWidget {
   Q_OBJECT
 
 public:
-  explicit WifiUI(QWidget *parent = 0, WifiManager* wifi = 0);
+  explicit WifiUISP(QWidget *parent = 0, WifiManager* wifi = 0);
 
 private:
-  WifiItem *getItem(int n);
+  WifiItemSP *getItem(int n);
 
   WifiManager *wifi = nullptr;
   QLabel *scanningLabel = nullptr;
@@ -49,8 +41,8 @@ private:
   QPixmap checkmark;
   QPixmap circled_slash;
   QVector<QPixmap> strengths;
-  ListWidget *wifi_list_widget = nullptr;
-  std::vector<WifiItem*> wifi_items;
+  ListWidgetSP *wifi_list_widget = nullptr;
+  std::vector<WifiItemSP*> wifi_items;
 
 signals:
   void connectToNetwork(const Network n);
@@ -59,20 +51,22 @@ public slots:
   void refresh();
 };
 
-class AdvancedNetworking : public QWidget {
+class AdvancedNetworkingSP : public QWidget {
   Q_OBJECT
 public:
-  explicit AdvancedNetworking(QWidget* parent = 0, WifiManager* wifi = 0);
+  explicit AdvancedNetworkingSP(QWidget* parent = 0, WifiManager* wifi = 0);
 
 private:
-  LabelControl* ipLabel;
-  ToggleControl* tetheringToggle;
-  ToggleControl* roamingToggle;
-  ButtonControl* editApnButton;
-  ButtonControl* hiddenNetworkButton;
-  ToggleControl* meteredToggle;
+  LabelControlSP* ipLabel;
+  ToggleControlSP* tetheringToggle;
+  ToggleControlSP* roamingToggle;
+  ButtonControlSP* editApnButton;
+  ButtonControlSP* hiddenNetworkButton;
+  ToggleControlSP* meteredToggle;
   WifiManager* wifi = nullptr;
   Params params;
+
+  ToggleControlSP* hotspotOnBootToggle;
 
 signals:
   void backPress();
@@ -83,18 +77,18 @@ public slots:
   void refresh();
 };
 
-class Networking : public QFrame {
+class NetworkingSP : public QFrame {
   Q_OBJECT
 
 public:
-  explicit Networking(QWidget* parent = 0, bool show_advanced = true);
+  explicit NetworkingSP(QWidget* parent = 0, bool show_advanced = true);
   WifiManager* wifi = nullptr;
 
 private:
   QStackedLayout* main_layout = nullptr;
   QWidget* wifiScreen = nullptr;
-  AdvancedNetworking* an = nullptr;
-  WifiUI* wifiWidget;
+  AdvancedNetworkingSP* an = nullptr;
+  WifiUISP* wifiWidget;
 
   void showEvent(QShowEvent* event) override;
   void hideEvent(QHideEvent* event) override;
