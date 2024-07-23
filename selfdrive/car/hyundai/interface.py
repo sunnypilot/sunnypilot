@@ -103,6 +103,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.stoppingControl = True
     ret.startingState = True
+    ret.vEgoStopping = 1.0
     ret.vEgoStarting = 0.1
     ret.startAccel = 2.0
     ret.stopAccel = 0.0
