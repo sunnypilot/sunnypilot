@@ -544,8 +544,6 @@ class CarController(CarControllerBase):
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
-      if long_control == LongCtrlState.stopping:
-        self.accel_raw = 0
       self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
     self.accel_last = self.accel_val
 
