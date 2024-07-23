@@ -3,13 +3,14 @@
 #include <QHBoxLayout>
 #include <QWidget>
 
-#include "selfdrive/ui/qt/maps/map.h"
 #include "selfdrive/ui/qt/maps/map_settings.h"
 #include "selfdrive/ui/qt/util.h"
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#include "selfdrive/ui/sunnypilot/qt/maps/sp_priv_map.h"
 #else
 #include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/qt/maps/map.h"
 #endif
 
 MapPanel::MapPanel(const QMapLibre::Settings &mapboxSettings, QWidget *parent) : QFrame(parent) {

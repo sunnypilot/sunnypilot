@@ -1,4 +1,8 @@
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/maps/sp_priv_map_helpers.h"
+#else
 #include "selfdrive/ui/qt/maps/map_helpers.h"
+#endif
 
 #include <algorithm>
 #include <string>

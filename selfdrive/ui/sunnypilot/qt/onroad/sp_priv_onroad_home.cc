@@ -4,12 +4,14 @@
 #include <QStackedLayout>
 
 #ifdef ENABLE_MAPS
-#include "selfdrive/ui/qt/maps/map_helpers.h"
+#include "selfdrive/ui/sunnypilot/qt/maps/sp_priv_map_helpers.h"
 #include "selfdrive/ui/qt/maps/map_panel.h"
 #endif
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/onroad/sp_priv_onroad_settings_panel.h"
 #endif
+
+#include <common/swaglog.h>
 
 #include "selfdrive/ui/qt/util.h"
 OnroadWindowSP::OnroadWindowSP(QWidget *parent) : OnroadWindow(parent) {
@@ -64,6 +66,7 @@ void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
 
 void OnroadWindowSP::createMapWidget() {
 #ifdef ENABLE_MAPS
+  LOGD("Creating map widget");
   auto m = new MapPanel(get_mapbox_settings());
   map = m;
 
@@ -101,9 +104,12 @@ void OnroadWindowSP::offroadTransition(bool offroad) {
 
   if (!offroad) {
 #ifdef ENABLE_MAPS
+    LOGD("We'd like to create the map widget, the condition is map is [%s] and hasPrime is [%s] and MAPBOX_TOKEN is [%s]", map == nullptr ? "null" : "not null", uiStateSP()->hasPrime() ? "true" : "false", MAPBOX_TOKEN.isEmpty()  ? "empty" : "not empty");
     if (map == nullptr && (uiStateSP()->hasPrime() || !MAPBOX_TOKEN.isEmpty())) {
       createMapWidget();
     }
+#else
+    LOGD("Maps are disabled");
 #endif
     if (onroad_settings == nullptr) {
       createOnroadSettingsWidget();
