@@ -53,7 +53,6 @@ void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
     }
   }
 #endif
-#ifdef SUNNYPILOT
   if (onroad_settings != nullptr && !isMapVisible()) {
     if (wakeScreenTimeout()) {
       onroad_settings->setVisible(false);
@@ -61,7 +60,6 @@ void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
   }
   // propagation event to parent(HomeWindow)
   QWidget::mousePressEvent(e);
-#endif
 }
 
 void OnroadWindowSP::createMapWidget() {
@@ -84,7 +82,6 @@ void OnroadWindowSP::createMapWidget() {
 }
 
 void OnroadWindowSP::createOnroadSettingsWidget() {
-#ifdef SUNNYPILOT
   auto os = new OnroadSettingsPanel(this);
   onroad_settings = os;
 
@@ -98,7 +95,6 @@ void OnroadWindowSP::createOnroadSettingsWidget() {
 
   // hidden by default
   os->setVisible(false);
-#endif
 }
 
 void OnroadWindowSP::offroadTransition(bool offroad) {
