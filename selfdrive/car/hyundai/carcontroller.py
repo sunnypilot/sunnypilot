@@ -540,11 +540,11 @@ class CarController(CarControllerBase):
   def make_accel(self, accel, actuators):
     long_control = actuators.longControlState
     self.accel_raw = accel
-    if long_control == LongCtrlState.pid:
-      rate_up, rate_down = 0.1, 0.1
-    else:
+    if long_control == LongCtrlState.stopping:
       rate_up = 0.02 * self.jerk_u
       rate_down = 0.02 * self.jerk_l
+    else:
+      rate_up, rate_down = 0.1, 0.1
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
