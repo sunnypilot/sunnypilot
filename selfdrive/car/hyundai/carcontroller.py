@@ -545,8 +545,10 @@ class CarController(CarControllerBase):
     rate_up, rate_down = 0.1, 0.1
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
-    else:
+    elif long_control == LongCtrlState.pid:
       self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
+    else:
+      self.accel_val = accel
     self.accel_last = self.accel_val
 
   def fast_resume(self, actuators, enabled, stopping):
