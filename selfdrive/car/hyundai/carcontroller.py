@@ -513,7 +513,7 @@ class CarController(CarControllerBase):
         self.jerk_l = min(max(1.0, -jerk * 3.0), jerkLimit)
     else:
       startingJerk = self.jerkStartLimit
-      jerkLimit = 3.0
+      jerkLimit = 5.0
       self.jerk_count += DT_CTRL
       jerk_max = interp(self.jerk_count, [0, 1.5, 2.5], [startingJerk, startingJerk, jerkLimit])
       self.cb_upper = self.cb_lower = 0
