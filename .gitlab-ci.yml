@@ -10,7 +10,6 @@ variables:
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
 
-# test from github
 
 stages:
   - build
