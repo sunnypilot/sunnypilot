@@ -10,6 +10,7 @@ variables:
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
 
+#test
 stages:
   - build
   - sanity
@@ -98,7 +99,7 @@ build:
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
     - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache --minimal
     - touch ${BUILD_DIR}/prebuilt
-    - sudo rm -rf ${OUTPUT_DIR} 
+    - sudo rm -rf ${OUTPUT_DIR}
     - mkdir -p ${OUTPUT_DIR}
     # We first include the paths we want to keep, even if we later will be excluding the other things on those paths
     - rsync -avm
@@ -141,7 +142,7 @@ build:
       --chown=comma:comma
       ${BUILD_DIR}/ ${OUTPUT_DIR}/
   after_script:
-    # cleanup build dir after doing work 
+    # cleanup build dir after doing work
     - find $BUILD_DIR/ -mindepth 1 -delete
   artifacts:
     paths:
