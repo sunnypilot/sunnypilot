@@ -102,9 +102,9 @@ class CarInterface(CarInterfaceBase):
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
     ret.stoppingControl = True
-    ret.startingState = True
+    ret.startingState = False
     ret.vEgoStarting = 0.1
-    ret.startAccel = 1.8
+    ret.startAccel = 1.0
     ret.stoppingDecelRate = 2.0  # reach standstill quickly after entering stopping state
     ret.longitudinalActuatorDelay = 0.5
 
