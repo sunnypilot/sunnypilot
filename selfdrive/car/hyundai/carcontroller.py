@@ -113,11 +113,6 @@ class CarController(CarControllerBase):
     self.accel_raw = 0
     self.accel_val = 0
 
-    self.acc_enabled = False
-    self.accel_start = False
-    self.accel_frame = 0
-    self.prev_stop_req = False
-
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
     lead_two = self.sm["radarState"].leadTwo
@@ -292,7 +287,6 @@ class CarController(CarControllerBase):
               can_sends.extend([hyundaican.create_clu11(self.packer, (self.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
       else:
         self.make_jerk(CS, accel, actuators)
-        self.fast_resume(actuators, CC.enabled and CS.out.cruiseState.enabled, stopping)
 
       # Parse lead distance from radarState and display the corresponding distance in the car's cluster
       if self.CP.openpilotLongitudinalControl and self.sm.updated['radarState'] and self.frame % 5 == 0:
@@ -306,7 +300,7 @@ class CarController(CarControllerBase):
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
         self.make_accel(accel, actuators)
-        can_sends.extend(hyundaican.create_acc_commands(self.packer, self.acc_enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
+        can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
 
@@ -545,27 +539,6 @@ class CarController(CarControllerBase):
     rate_up, rate_down = 0.1, 0.1
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
-    elif long_control == LongCtrlState.pid:
+    else:
       self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
-    else:
-      self.accel_val = accel
     self.accel_last = self.accel_val
-
-  def fast_resume(self, actuators, enabled, stopping):
-    self.acc_enabled = enabled
-
-    if actuators.longControlState == LongCtrlState.off:
-      return
-
-    if actuators.longControlState == LongCtrlState.starting and self.prev_stop_req:
-      self.accel_frame = 0
-      self.accel_start = True
-
-    if self.accel_start and self.accel_frame < 25:
-      self.accel_frame += 1
-      self.acc_enabled = False
-    else:
-      self.accel_frame = 0
-      self.accel_start = False
-
-    self.prev_stop_req = stopping
