@@ -3,7 +3,7 @@
 #include <QPushButton>
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 #else
 #include "selfdrive/ui/ui.h"
 #endif

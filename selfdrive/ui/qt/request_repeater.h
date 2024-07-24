@@ -3,8 +3,8 @@
 #include "common/util.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
-#include "selfdrive/ui/sunnypilot/qt/sp_priv_api.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/api.h"
 #else
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/api.h"

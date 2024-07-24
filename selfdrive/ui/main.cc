@@ -8,7 +8,7 @@
 #include "selfdrive/ui/qt/util.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/sp_priv_window.h"
+#include "selfdrive/ui/sunnypilot/qt/window.h"
 #define MainWindow MainWindowSP
 #else
 #include "selfdrive/ui/qt/window.h"

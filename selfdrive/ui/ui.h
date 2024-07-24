@@ -113,7 +113,7 @@ typedef struct UIScene {
 } UIScene;
 
 #ifdef SUNNYPILOT
-#include "sunnypilot/qt/sp_priv_ui_scene.h"
+#include "sunnypilot/qt/ui_scene.h"
 #define UIScene UISceneSP
 #endif
 class UIState : public QObject {

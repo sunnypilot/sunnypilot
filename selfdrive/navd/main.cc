@@ -7,7 +7,7 @@
 #include "common/util.h"
 #include "selfdrive/ui/qt/util.h"
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/maps/sp_priv_map_helpers.h"
+#include "selfdrive/ui/sunnypilot/qt/maps/map_helpers.h"
 #else
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 #endif

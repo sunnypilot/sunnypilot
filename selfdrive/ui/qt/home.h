@@ -16,9 +16,9 @@
 #include "selfdrive/ui/ui.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
-#include "selfdrive/ui/sunnypilot/qt/sp_priv_offroad_home.h"
-#include "selfdrive/ui/sunnypilot/qt/onroad/sp_priv_onroad_home.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad_home.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_home.h"
 #define OnroadWindow OnroadWindowSP
 #define OffroadHome OffroadHomeSP
 #else

@@ -240,7 +240,7 @@ void UIState::updateStatus() {
 }
 
 // #ifdef SUNNYPILOT
-// #include "selfdrive/ui/sunnypilot/qt/sp_priv_ui_scene.h"
+// #include "selfdrive/ui/sunnypilot/qt/ui_scene.h"
 // #define UIScene UISceneSP
 // #endif
 UIState::UIState(QObject *parent) : QObject(parent) {

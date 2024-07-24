@@ -14,7 +14,7 @@
 #include "common/params.h"
 #include "selfdrive/ui/qt/util.h"
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif

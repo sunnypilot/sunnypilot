@@ -25,7 +25,7 @@
 #include "msgq/visionipc/visionipc_client.h"
 #include "system/camerad/cameras/camera_common.h"
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/sp_priv_ui.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 #else
 #include "selfdrive/ui/ui.h"
 #endif

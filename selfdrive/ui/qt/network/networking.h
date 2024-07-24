@@ -7,7 +7,7 @@
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/sp_priv_controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #define LabelControl LabelControlSP
 #define ElidedLabel ElidedLabelSP
 #else
