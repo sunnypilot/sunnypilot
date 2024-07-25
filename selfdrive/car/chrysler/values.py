@@ -1,3 +1,4 @@
+from collections import namedtuple
 from enum import IntFlag
 from dataclasses import dataclass, field
 
@@ -8,6 +9,7 @@ from openpilot.selfdrive.car.docs_definitions import CarHarness, CarDocs, CarPar
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, p16
 
 Ecu = car.CarParams.Ecu
+Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 
 class ChryslerFlags(IntFlag):
@@ -113,12 +115,12 @@ class CarControllerParams:
       self.STEER_MAX = 261  # higher than this faults the EPS
 
 
-BUTTON_STATES = {
-  "accelCruise": False,
-  "decelCruise": False,
-  "cancel": False,
-  "resumeCruise": False,
-}
+BUTTONS = [
+  Button(car.CarState.ButtonEvent.Type.accelCruise, "CRUISE_BUTTONS", "ACC_Accel", [1]),
+  Button(car.CarState.ButtonEvent.Type.decelCruise, "CRUISE_BUTTONS", "ACC_Decel", [1]),
+  Button(car.CarState.ButtonEvent.Type.cancel, "CRUISE_BUTTONS", "ACC_Cancel", [1]),
+  Button(car.CarState.ButtonEvent.Type.resumeCruise, "CRUISE_BUTTONS", "ACC_Resume", [1]),
+]
 
 
 STEER_THRESHOLD = 120

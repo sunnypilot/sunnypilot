@@ -11,8 +11,7 @@ from openpilot.selfdrive.car.mazda.values import CarControllerParams, Buttons
 from openpilot.selfdrive.controls.lib.drive_helpers import MAZDA_V_CRUISE_MIN
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
-
-BUTTONS_STATES = ["accelCruise", "decelCruise", "cancel", "resumeCruise"]
+ButtonType = car.CarState.ButtonEvent.Type
 
 
 class CarController(CarControllerBase):
@@ -141,8 +140,10 @@ class CarController(CarControllerBase):
   # multikyd methods, sunnyhaibin logic
   def get_cruise_buttons_status(self, CS):
     if not CS.out.cruiseState.enabled:
-      if any(CS.buttonStates[button_state] for button_state in BUTTONS_STATES):
-        self.timer = 40
+      for be in CS.out.buttonEvents:
+        if be.type in (ButtonType.accelCruise, ButtonType.resumeCruise,
+                       ButtonType.decelCruise, ButtonType.setCruise) and be.pressed:
+          self.timer = 40
     elif self.timer:
       self.timer -= 1
     else:
