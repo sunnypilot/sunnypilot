@@ -299,7 +299,7 @@ class CarController(CarControllerBase):
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
-        self.make_accel(CS, accel, actuators)
+        self.make_accel(actuators)
         can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled and CS.out.cruiseState.enabled, self.accel_raw, self.accel_val, self.jerk_l, self.jerk_u, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
                                                         CC.cruiseControl.override, use_fca, CS, escc, self.CP, self.lead_distance, self.cb_lower, self.cb_upper))
@@ -478,12 +478,13 @@ class CarController(CarControllerBase):
     return cruise_button
 
   def cal_jerk(self, accel, actuators):
+    self.accel_raw = accel
     if actuators.longControlState == LongCtrlState.off:
       accel_diff = 0.0
     elif actuators.longControlState == LongCtrlState.stopping:# or hud_control.softHold > 0:
       accel_diff = 0.0
     else:
-      accel_diff = accel - self.accel_last
+      accel_diff = self.accel_raw - self.accel_last
 
     accel_diff /= DT_CTRL
     self.jerk = self.jerk * 0.9 + accel_diff * 0.1
@@ -533,14 +534,11 @@ class CarController(CarControllerBase):
         self.cb_upper = clip(0.9 + accel * 0.2, 0, 1.2)
         self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
 
-  def make_accel(self, CS, accel, actuators):
+  def make_accel(self, actuators):
     long_control = actuators.longControlState
-    self.accel_raw = accel
     rate_up, rate_down = 0.1, 0.1
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
-      if long_control == LongCtrlState.stopping:
-        self.accel_raw = 0
       self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
     self.accel_last = self.accel_val
