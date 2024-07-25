@@ -1,9 +1,9 @@
 from cereal import car
 from panda import Panda
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.ford.fordcan import CanBus
-from openpilot.selfdrive.car.ford.values import Ecu, FordFlags, BUTTON_STATES
+from openpilot.selfdrive.car.ford.values import Ecu, FordFlags
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
 ButtonType = car.CarState.ButtonEvent.Type
@@ -14,8 +14,6 @@ GearShifter = car.CarState.GearShifter
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
-
-    self.buttonStatesPrev = BUTTON_STATES.copy()
 
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
@@ -76,19 +74,12 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     self.sp_update_params()
 
-    buttonEvents = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
-
-    for button in self.CS.buttonStates:
-      if self.CS.buttonStates[button] != self.buttonStatesPrev[button]:
-        be = car.CarState.ButtonEvent.new_message()
-        be.type = button
-        be.pressed = self.CS.buttonStates[button]
-        buttonEvents.append(be)
+    self.CS.button_events.extend(create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise}))
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            buttonEvents, c.vCruise)
+                                                            self.CS.button_events, c.vCruise)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -101,7 +92,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0):
-      if any(b.type == ButtonType.cancel for b in buttonEvents):
+      if any(b.type == ButtonType.cancel for b in self.CS.button_events):
         self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
     if self.get_sp_pedal_disengage(ret):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
@@ -114,16 +105,10 @@ class CarInterface(CarInterfaceBase):
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(self.CS.distance_button))
 
-    if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      if self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = False
-    else:
-      if not self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = True
-
-    ret.buttonEvents = buttonEvents
+    ret.buttonEvents = [
+      *self.CS.button_events,
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
+    ]
 
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.manumatic], pcm_enable=False)
 
@@ -133,8 +118,5 @@ class CarInterface(CarInterfaceBase):
       events.add(car.CarEvent.EventName.vehicleSensorsInvalid)
 
     ret.events = events.to_msg()
-
-    # update previous car states
-    self.buttonStatesPrev = self.CS.buttonStates.copy()
 
     return ret

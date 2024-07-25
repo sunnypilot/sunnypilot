@@ -1,3 +1,4 @@
+import capnp
 import json
 import os
 import numpy as np
@@ -17,7 +18,7 @@ from openpilot.common.simple_kalman import KF1D, get_kalman_gain
 from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG
+from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG, ButtonEvents
 from openpilot.selfdrive.car.values import PLATFORMS
 from openpilot.selfdrive.controls.lib.desire_helper import get_min_lateral_speed
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET, get_friction
@@ -253,6 +254,7 @@ class CarInterfaceBase(ABC):
     self.last_mads_init = 0.
     self.madsEnabledInit = False
     self.madsEnabledInitPrev = False
+    self.button_events = ButtonEvents()
 
     self.lat_torque_nn_model = None
     eps_firmware = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
@@ -424,6 +426,8 @@ class CarInterfaceBase(ABC):
     for cp in self.can_parsers:
       if cp is not None:
         cp.update_strings(can_strings)
+
+    self.CS.button_events = []
 
     # get CarState
     ret = self._update(c)
@@ -779,6 +783,8 @@ class CarStateBase(ABC):
     self.mads_enabled = False
     self.prev_mads_enabled = False
     self.control_initialized = False
+
+    self.button_events: list[capnp.lib.capnp._DynamicStructBuilder] = []
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
