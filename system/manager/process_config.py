@@ -45,8 +45,7 @@ def only_offroad(started, params, CP: car.CarParams) -> bool:
   return not started
 
 def use_gitlab_runner(started, params, CP: car.CarParams) -> bool:
-  return (not PC and params.get_bool("EnableGitlabRunner") and only_offroad(started, params, CP)
-          and os.path.exists("./gitlab_runner.sh"))
+  return not PC and params.get_bool("EnableGitlabRunner") and only_offroad(started, params, CP)
 
 def model_use_nav(started, params, CP: car.CarParams) -> bool:
   custom_model_metadata = CustomModelMetadata(params=params, init_only=True)
@@ -62,7 +61,7 @@ def sunnylink_need_register_shim(started, params, CP: car.CarParams) -> bool:
 
 def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
   """Shim for use_sunnylink_uploader to match the process manager signature."""
-  return use_sunnylink_uploader(params) and os.path.exists("../loggerd/sunnylink_uploader.py")
+  return use_sunnylink_uploader(params)
 
 procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
@@ -120,12 +119,15 @@ procs = [
   PythonProcess("webrtcd", "system.webrtc.webrtcd", notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 
-  # Sunnypilot devs
-  NativeProcess("gitlab_runner_start", "system/manager", ["./gitlab_runner.sh", "start"], use_gitlab_runner, sigkill=False),
   # Sunnylink <3
   DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
   PythonProcess("sunnylink_registration", "system.manager.sunnylink", sunnylink_need_register_shim),
-  PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", use_sunnylink_uploader_shim),
 ]
+
+if os.path.exists("./gitlab_runner.sh"):
+  procs += [NativeProcess("gitlab_runner_start", "system/manager", ["./gitlab_runner.sh", "start"], use_gitlab_runner, sigkill=False)]
+
+if os.path.exists("../loggerd/sunnylink_uploader.py"):
+  procs += [PythonProcess("sunnylink_uploader", "system.loggerd.sunnylink_uploader", use_sunnylink_uploader_shim)]
 
 managed_processes = {p.name: p for p in procs}
