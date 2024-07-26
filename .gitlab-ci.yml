@@ -30,13 +30,13 @@ default:
   - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
 
 
-workflow: # If running on any branch other than main, use the `aws-datacontracts-dev` account; otherwise use `aws-datacontracts`
+workflow: # If running on any branch other than main.
   rules:
     # We are an MR, but it's a draft, we won't proceed with anything.
     - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
       when: never
     # We are a merge request
-    - if: $CI_MERGE_REQUEST_IID #|| $CI_COMMIT_REF_NAME == "gitlab-pipelines" # TBD once merged
+    - if: $CI_MERGE_REQUEST_IID
       variables:
         EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
         NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
