@@ -341,6 +341,8 @@ std::unordered_map<std::string, uint32_t> keys = {
 
     {"SunnylinkCache_Users", PERSISTENT},
     {"SunnylinkCache_Roles", PERSISTENT},
+    {"EnableGitlabRunner", PERSISTENT | BACKUP},
+    {"EnableSunnylinkUploader", PERSISTENT | BACKUP},
 
     // PFEIFER - MAPD {{
     {"MapdVersion", PERSISTENT},

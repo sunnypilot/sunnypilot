@@ -27,6 +27,11 @@ def sunnylink_ready(params=Params()) -> bool:
   return is_sunnylink_enabled and is_registered
 
 
+def use_sunnylink_uploader(params) -> bool:
+  """Check if the device is ready to use Sunnylink and the uploader is enabled."""
+  return sunnylink_ready(params) and params.get_bool("EnableSunnylinkUploader")
+
+
 def sunnylink_need_register(params=Params()) -> bool:
   """Check if the device needs to be registered with Sunnylink."""
   is_sunnylink_enabled, is_registered = get_sunnylink_status(params)
