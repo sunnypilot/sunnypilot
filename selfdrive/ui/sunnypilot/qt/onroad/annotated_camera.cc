@@ -1335,19 +1335,27 @@ void AnnotatedCameraWidgetSP::drawLead(QPainter &painter, const cereal::RadarSta
   painter.drawPolygon(chevron, std::size(chevron));
 
   if (num == 0) {  // Display metrics to the 0th lead car
-    int chevron_types = 2;
+    const int chevron_types = 3;
+    const int chevron_all = chevron_types + 1;  // All metrics
     QStringList chevron_text[chevron_types];
     int position;
     float val;
-    if (chevron_data == 1 || chevron_data == 3) {
+    if (chevron_data == 1 || chevron_data == chevron_all) {
       position = 0;
       val = std::max(0.0f, d_rel);
       chevron_text[position].append(QString::number(val,'f', 0) + " " + "m");
     }
-    if (chevron_data == 2 || chevron_data == 3) {
+    if (chevron_data == 2 || chevron_data == chevron_all) {
       position = (chevron_data == 2) ? 0 : 1;
       val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
       chevron_text[position].append(QString::number(val,'f', 0) + " " + (is_metric ? "km/h" : "mph"));
+    }
+    if (chevron_data == 3 || chevron_data == chevron_all) {
+      position = (chevron_data == 3) ? 0 : 2;
+      val = (d_rel > 0 && v_ego > 0) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+
+      QString ttc_str = (val > 0 && val < 200) ? QString::number(val, 'f', 1) + "s" : "---";
+      chevron_text[position].append(ttc_str);
     }
 
     float str_w = 200; // Width of the text box, might need adjustment
