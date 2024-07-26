@@ -21,7 +21,7 @@ sp_widgets_src = []
 sp_maps_widgets_src = []
 sp_qt_src = []
 sp_qt_util = []
-if GetOption('sunnypilot'):
+if not GetOption('stock_ui'):
   SConscript(['sunnypilot/SConscript'])
   Import('sp_widgets_src', 'sp_maps_widgets_src', 'sp_qt_src', "sp_qt_util")
 
@@ -32,7 +32,7 @@ widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
                "qt/widgets/scrollview.cc", "qt/widgets/cameraview.cc", "#third_party/qrcode/QrCode.cc",
                "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"] + sp_widgets_src
 
-qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if GetOption('sunnypilot') else []
+qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if not GetOption('stock_ui') else []
 if maps:
   base_libs += ['QMapLibre']
   widgets_src += ["qt/maps/map_helpers.cc", "qt/maps/map_settings.cc", "qt/maps/map.cc", "qt/maps/map_panel.cc",
@@ -81,7 +81,7 @@ asset_obj = qt_env.Object("assets", assets)
 qt_env.SharedLibrary("qt/python_helpers", ["qt/qt_window.cc"], LIBS=qt_libs)
 
 # spinner and text window
-text_cc_path = "qt/text.cc" if not GetOption('sunnypilot') else "sunnypilot/qt/text.cc"
+text_cc_path = "qt/text.cc" if GetOption('stock_ui') else "sunnypilot/qt/text.cc"
 qt_env.Program("_text", [text_cc_path], LIBS=qt_libs)
 qt_env.Program("_spinner", ["qt/spinner.cc"], LIBS=qt_libs)
 
