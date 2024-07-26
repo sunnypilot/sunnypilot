@@ -32,6 +32,12 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "CustomStockLongPlanner",
+      tr("Use Planner Speed"),
+      "",
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "ExperimentalMode",
       tr("Experimental Mode"),
       "",
@@ -197,6 +203,7 @@ void TogglesPanelSP::updateToggles() {
   auto custom_stock_long_toggle = toggles["CustomStockLong"];
   auto dec_toggle = toggles["DynamicExperimentalControl"];
   auto dynamic_personality_toggle = toggles["DynamicPersonality"];
+  auto custom_stock_long_planner = toggles["CustomStockLongPlanner"];
   const QString e2e_description = QString("%1<br>"
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
@@ -235,16 +242,22 @@ void TogglesPanelSP::updateToggles() {
       accel_personality_setting->setEnabled(true);
       op_long_toggle->setEnabled(true);
       custom_stock_long_toggle->setEnabled(false);
+      custom_stock_long_planner->setEnabled(false);
       params.remove("CustomStockLong");
       dec_toggle->setEnabled(true);
       dynamic_personality_toggle->setEnabled(true);
     } else if (custom_stock_long_toggle->isToggled()) {
       op_long_toggle->setEnabled(false);
-      experimental_mode_toggle->setEnabled(false);
-      long_personality_setting->setEnabled(false);
-      accel_personality_setting->setEnabled(false);
+      experimental_mode_toggle->setEnabled(custom_stock_long_planner->isToggled());
+      experimental_mode_toggle->setDescription(e2e_description);
+      custom_stock_long_planner->setEnabled(true);
+      long_personality_setting->setEnabled(custom_stock_long_planner->isToggled());
+      accel_personality_setting->setEnabled(custom_stock_long_planner->isToggled());
+      dec_toggle->setEnabled(experimental_mode_toggle->isToggled());
+      if(!custom_stock_long_planner->isToggled()) {
+        params.remove("ExperimentalMode");
+      }
       params.remove("ExperimentalLongitudinalEnabled");
-      params.remove("ExperimentalMode");
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
@@ -269,6 +282,7 @@ void TogglesPanelSP::updateToggles() {
       custom_stock_long_toggle->setEnabled(CP.getCustomStockLongAvailable());
       dec_toggle->setEnabled(false);
       dynamic_personality_toggle->setEnabled(false);
+      custom_stock_long_planner->setEnabled(false);
       params.remove("DynamicExperimentalControl");
       params.remove("DynamicPersonality");
     }
@@ -276,6 +290,7 @@ void TogglesPanelSP::updateToggles() {
     experimental_mode_toggle->refresh();
     op_long_toggle->refresh();
     custom_stock_long_toggle->refresh();
+    custom_stock_long_planner->refresh();
     dec_toggle->refresh();
     dynamic_personality_toggle->refresh();
   } else {
@@ -284,6 +299,7 @@ void TogglesPanelSP::updateToggles() {
     custom_stock_long_toggle->setVisible(false);
     dec_toggle->setVisible(false);
     dynamic_personality_toggle->setVisible(false);
+    custom_stock_long_planner->setVisible(false);
   }
 }
 
