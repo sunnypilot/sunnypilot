@@ -536,8 +536,9 @@ class CarController(CarControllerBase):
 
   def make_accel(self, actuators):
     long_control = actuators.longControlState
-    rate_up = 0.1 * self.jerk_u
-    rate_down = 0.1 * self.jerk_l
+    is_ice = not self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV)
+    rate_up = 0.1 * 1 if is_ice else self.jerk_u
+    rate_down = 0.1 * 1 if is_ice else self.jerk_l
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
