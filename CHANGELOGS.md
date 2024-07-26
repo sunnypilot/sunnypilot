@@ -30,7 +30,6 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
     * Notre Dame (July 01, 2024) - NDv3
 * UPDATED: Neural Network Lateral Control (NNLC)
   * NEW❗: Remove Lateral Jerk Response (Alpha)
-    * 
   * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
 * UPDATED: Toyota: Continued support for Smart DSU (SDSU) and Radar CAN Filter
   * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter

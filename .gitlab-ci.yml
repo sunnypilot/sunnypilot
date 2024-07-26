@@ -12,6 +12,7 @@ variables:
   GIT_CRYPT_INSTALL_PATH: ".git-crypt/keys/install_new_key_sp"
   GIT_CRYPT_KEY_PATH: ".git-crypt/keys/default/0"
 
+
 stages:
   - git-crypt-auto-provision
   - build
@@ -211,7 +212,7 @@ build:
       --chown=comma:comma
       ${BUILD_DIR}/ ${OUTPUT_DIR}/
   after_script:
-    # cleanup build dir after doing work 
+    # cleanup build dir after doing work
     - find $BUILD_DIR/ -mindepth 1 -delete
   artifacts:
     paths:
