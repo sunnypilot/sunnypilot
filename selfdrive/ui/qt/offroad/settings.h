@@ -11,9 +11,21 @@
 #include <QTimer>
 #include <QWidget>
 
-#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
+
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#define ListWidget ListWidgetSP
+#define ParamControl ParamControlSP
+#define ButtonControl ButtonControlSP
+#define ButtonParamControl ButtonParamControlSP
+#define ToggleControl ToggleControlSP
+#define LabelControl LabelControlSP
+#else
+#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 
 // ********** settings window + top-level panels **********
 class SettingsWindow : public QFrame {
@@ -32,19 +44,11 @@ signals:
   void showDriverView();
   void expandToggleDescription(const QString &param);
 
-private:
+protected:
   QPushButton *sidebar_alert_widget;
   QWidget *sidebar_widget;
   QButtonGroup *nav_btns;
   QStackedWidget *panel_widget;
-
-  struct PanelInfo {
-    QString name;
-    QWidget *widget;
-    QString icon;
-
-    PanelInfo(const QString &name, QWidget *widget, const QString &icon) : name(name), widget(widget), icon(icon) {}
-  };
 };
 
 class DevicePanel : public ListWidget {
@@ -57,26 +61,15 @@ signals:
   void reviewTrainingGuide();
   void showDriverView();
 
-private slots:
+protected slots:
   void poweroff();
   void reboot();
   void updateCalibDescription();
-  void onPinFileChanged(const QString &file_path);
-  void refreshPin();
-  void forceoffroad();
 
-  void updateLabels();
-
-private:
+protected:
   Params params;
   ButtonControl *pair_device;
-
-  ButtonControl *fleetManagerPin;
-  QString pin_title = tr("Fleet Manager PIN:") + " ";
-  QString pin = "OFF";
-  QFileSystemWatcher *fs_watch;
-
-  QPushButton *offroad_btn;
+  QHBoxLayout *power_layout;
 };
 
 class TogglesPanel : public ListWidget {
@@ -87,19 +80,18 @@ public:
 
 public slots:
   void expandToggleDescription(const QString &param);
-  void updateToggles();
 
-private slots:
-  void updateState(const UIState &s);
+protected slots:
+  virtual void updateState(const UIState &s);
 
-private:
+protected:
   Params params;
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
-  ButtonParamControl *accel_personality_setting;
 
-  ParamWatcher *param_watcher;
+  virtual void updateToggles();
 };
+
 
 class SoftwarePanel : public ListWidget {
   Q_OBJECT
@@ -114,7 +106,6 @@ protected:
   bool is_onroad = false;
 
   QLabel *onroadLbl;
-  LabelControl *currentModelLbl;
   LabelControl *versionLbl;
   ButtonControl *installBtn;
   ButtonControl *downloadBtn;
