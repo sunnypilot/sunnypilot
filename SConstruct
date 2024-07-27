@@ -181,6 +181,10 @@ if arch != "Darwin":
 cflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 cxxflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 
+if not GetOption('stock_ui'):
+  cflags += ["-DSUNNYPILOT"]
+  cxxflags += ["-DSUNNYPILOT"]
+
 ccflags_option = GetOption('ccflags')
 if ccflags_option:
   ccflags += ccflags_option.split(' ')
