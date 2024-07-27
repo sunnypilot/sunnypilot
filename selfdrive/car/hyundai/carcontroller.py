@@ -477,6 +477,7 @@ class CarController(CarControllerBase):
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
     return cruise_button
 
+  # jerk calculations thanks to apilot!
   def cal_jerk(self, accel, actuators):
     self.accel_raw = accel
     if actuators.longControlState == LongCtrlState.off:
