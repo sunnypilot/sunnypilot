@@ -172,10 +172,10 @@ def create_acc_commands(packer, enabled, accel_raw, accel_val, lower_jerk, upper
   commands.append(packer.make_can_msg("SCC12", 0, scc12_values))
 
   scc14_values = {
-    "ComfortBandUpper": 0.0, # stock usually is 0 but sometimes uses higher values
-    "ComfortBandLower": 0.0, # stock usually is 0 but sometimes uses higher values
+    "ComfortBandUpper": cb_upper, # stock usually is 0 but sometimes uses higher values
+    "ComfortBandLower": cb_lower, # stock usually is 0 but sometimes uses higher values
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
-    "JerkLowerLimit": 5.0, # stock usually is 0.5 but sometimes uses higher values
+    "JerkLowerLimit": lower_jerk, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
     "ObjGap": get_object_gap(lead_distance), # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
   }
