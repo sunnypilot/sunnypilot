@@ -207,7 +207,7 @@ def create_acc_opt(packer, escc, CS, CP):
   commands = []
 
   scc13_values = {
-    "SCCDrvModeRValue": 2,
+    "SCCDrvModeRValue": 3,
     "SCC_Equip": 1,
     "Lead_Veh_Dep_Alert_USM": 2,
   }
