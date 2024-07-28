@@ -59,6 +59,7 @@ MapWindow::~MapWindow() {
 }
 
 void MapWindow::initLayers() {
+  RETURN_IF_SUNNYPILOT
   // This doesn't work from initializeGL
   if (!m_map->layerExists("modelPathLayer")) {
     qDebug() << "Initializing modelPathLayer";
@@ -118,6 +119,7 @@ void MapWindow::initLayers() {
 }
 
 void MapWindow::updateState(const UIState &s) {
+  RETURN_IF_SUNNYPILOT
   if (!uiState()->scene.started) {
     return;
   }
