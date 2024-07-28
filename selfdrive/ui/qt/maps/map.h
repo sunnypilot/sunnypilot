@@ -46,7 +46,7 @@ protected:
 
   void initLayers();
 
-private:
+protected:
   void mousePressEvent(QMouseEvent *ev) final;
   void mouseDoubleClickEvent(QMouseEvent *ev) final;
   void mouseMoveEvent(QMouseEvent *ev) final;
@@ -60,7 +60,7 @@ protected:
   bool loaded_once = false;
   bool prev_time_valid = true;
 
-private:
+protected:
   // Panning
   QPointF m_lastPos;
   int interaction_counter = 0;
