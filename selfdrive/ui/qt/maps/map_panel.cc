@@ -8,6 +8,7 @@
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/maps/map.h"
+#define MapWindow MapWindowSP
 #else
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/maps/map.h"

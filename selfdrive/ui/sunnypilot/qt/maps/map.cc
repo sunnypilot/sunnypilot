@@ -8,6 +8,10 @@ MapWindowSP::MapWindowSP(const QMapLibre::Settings &settings) : MapWindow(settin
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &MapWindowSP::updateState);
 }
 
+MapWindowSP::~MapWindowSP() {
+  makeCurrent();
+}
+
 void MapWindowSP::initLayers() {
   if (!m_map->layerExists("navLayer")) {
     m_map->setPaintProperty("navLayer", "line-color", getNavPathColor(uiStateSP()->scene.navigate_on_openpilot_deprecated));
