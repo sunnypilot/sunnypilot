@@ -513,7 +513,7 @@ class CarController(CarControllerBase):
     a_error = accel - CS.out.aEgo
     jerk = jerk + (a_error * 2.0)
 
-    if self.CP.carFingerprint in CANFD_CAR:
+    if self.CP.carFingerprint in CANFD_CAR or self.CP.carFingerprint == CAR.HYUNDAI_KONA_EV_2022:
       startingJerk = 0.5 #self.jerkStartLimit
       jerkLimit = 5.0
       self.jerk_count += DT_CTRL
