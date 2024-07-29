@@ -32,14 +32,16 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter
 * UPDATED: Continued support for Mapbox navigation
   * In response to the official temporary deprecation of support for Mapbox navigation in the upstream ([commaai/openpilot#32773](https://github.com/commaai/openpilot/pull/32773)), sunnypilot will continue maintaining software support for Mapbox navigation
-* NEW❗: Toyota - Automatic Brake Hold (AHB) thanks to AlexandreSato!
-  * When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold
-  * NOTE: Only for Toyota/Lexus vehicles with TSS2/LSS2
 * NEW❗: Toyota - Automatic Door Locking and Unlocking thanks to AlexandreSato, cydia2020, and dragonpilot-community!
   * Auto Lock by Speed: All doors are automatically locked when vehicle speed is approximately 6 mph (10 km/h) or higher
   * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
 * FIXED: Driving Personality:
   * Maniac mode now correctly enforced when selected
+* UI Updates
+  * Display Metrics Below Chevron
+    * NEW❗: Time to Lead Car
+      * Displays the time to reach the position previously occupied by the lead car
+    * NEW❗: Display Distance, Speed, and Time to Lead Car simultaneously
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)

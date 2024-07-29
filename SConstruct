@@ -113,11 +113,11 @@ AddOption('--minimal',
           default=os.path.exists(File('#.lfsconfig').abspath), # minimal by default on release branch (where there's no LFS)
           help='the minimum build to run openpilot. no tests, tools, etc.')
 
-AddOption('--sunnypilot',
+AddOption('--stock-ui',
           action='store_true',
-          dest='sunnypilot',
-          default=is_internal_developer(_DEBUG) or True, # check if the current user is a sunnypilot developer. TODO: Remove the 'or True' part once the GPG keys are available.
-          help='build sunnypilot elements and other sunnypilot-specific items that are meant for internal development')
+          dest='stock_ui',
+          default=False,
+          help='Build stock UI instead of sunnypilot UI')
 
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64
@@ -221,6 +221,10 @@ if arch != "Darwin":
 # Enable swaglog include in submodules
 cflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 cxxflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
+
+if not GetOption('stock_ui'):
+  cflags += ["-DSUNNYPILOT"]
+  cxxflags += ["-DSUNNYPILOT"]
 
 ccflags_option = GetOption('ccflags')
 if ccflags_option:

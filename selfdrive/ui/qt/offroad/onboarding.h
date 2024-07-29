@@ -63,16 +63,17 @@ class TermsPage : public QFrame {
   Q_OBJECT
 
 public:
-  explicit TermsPage(bool sunnypilot = false, QWidget *parent = 0) : QFrame(parent), sunnypilot_tc(sunnypilot) {}
+  explicit TermsPage(QWidget *parent = 0) : QFrame(parent) {}
 
 public slots:
   void enableAccept();
 
+protected:
+  QPushButton *accept_btn;
+
 private:
   void showEvent(QShowEvent *event) override;
 
-  QPushButton *accept_btn;
-  bool sunnypilot_tc = false;
 
 signals:
   void acceptedTerms();
@@ -98,13 +99,13 @@ class OnboardingWindow : public QStackedWidget {
 public:
   explicit OnboardingWindow(QWidget *parent = 0);
   inline void showTrainingGuide() { setCurrentIndex(1); }
-  inline bool completed() const { return accepted_terms && accepted_terms_sp && training_done; }
+  virtual inline bool completed() const { return accepted_terms && training_done; }
 
-private:
-  void updateActiveScreen();
+protected:
+  virtual void updateActiveScreen();
 
   Params params;
-  bool accepted_terms = false, accepted_terms_sp = false, training_done = false;
+  bool accepted_terms = false, training_done = false;
 
 signals:
   void onboardingDone();

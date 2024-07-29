@@ -13,7 +13,11 @@
 
 #include "common/params.h"
 #include "selfdrive/ui/qt/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#else
 #include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 
 const QString NAV_TYPE_FAVORITE = "favorite";
 const QString NAV_TYPE_RECENT = "recent";

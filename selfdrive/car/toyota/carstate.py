@@ -79,9 +79,6 @@ class CarState(CarStateBase):
     self._right_blindspot_d2 = 0
     self._right_blindspot_counter = 0
 
-    if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-      self.pre_collision_2 = {}
-
     self.frame = 0
 
   def update(self, cp, cp_cam):
@@ -262,9 +259,6 @@ class CarState(CarStateBase):
 
     if self.CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM and self.frame > 199:
       ret.leftBlindspot, ret.rightBlindspot = self.sp_get_enhanced_bsm(cp)
-
-    if self.CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-      self.pre_collision_2 = copy.copy(cp_cam.vl["PRE_COLLISION_2"])
 
     self._update_traffic_signals(cp_cam)
     ret.cruiseState.speedLimit = self._calculate_speed_limit()
@@ -468,8 +462,5 @@ class CarState(CarStateBase):
         ("ACC_CONTROL", 33),
         ("PCS_HUD", 1),
       ]
-
-      if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-        messages.append(("PRE_COLLISION_2", 33))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
