@@ -30,7 +30,7 @@ sp_maps_widgets_src = [
 ]
 
 sp_qt_util = [
-  # "#selfdrive/ui/sunnypilot/qt/api.cc", 
+  # "#selfdrive/ui/sunnypilot/qt/api.cc",
   "#selfdrive/ui/sunnypilot/qt/util.cc",
 ]
 
