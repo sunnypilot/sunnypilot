@@ -3,6 +3,9 @@
 ## Introduction
 Welcome to the ESCC (Enhanced Smart Cruise Control) IONIQ PHEV Guide. This document provides detailed instructions for connecting and configuring the ESCC Interceptor board with your Hyundai IONIQ Plug-in Hybrid Electric Vehicle (PHEV). Our goal is to simplify the wiring process, enhance vehicle functionality, and ensure a seamless integration with aftermarket components like the Panda device.
 
+## Updated info
+On july 28th this guide was updated to rework it's setup and now it uses the relay harness box instead of the custom ESCC board previously mentioned. This simplifies the setup significantly, adds a layer of security with the relay, and makes it even more accessible to use.
+
 ## Terminology and Abbreviations
 - **ESCC**: Enhanced Smart Cruise Control
 - **PANDA**: A universal car interface
@@ -22,40 +25,7 @@ Located on the radar, this is where the car's harness plugs in. The image shows 
 
 ![](attachment/caab30983673f68f7ae8f702c856ac44.png)
 
-### ESCC Interceptor Board
-Our custom-designed ESCC board simplifies the required wiring for the project.
-
-![](attachment/d129bd73bafecc8d21472d0e981c163b.png)
-
-## Connection Instructions
-
-1. **Connect the Radar's Male Connector**: Solder the radar's male connector to the `HKG-MANDO-HHANRESS` spot on the ESCC board. Ensure all other connectors are also correctly soldered in place. We use double connectors for redundancy or future modifications.
-
-    ![](attachment/a21845b6f9830c1e4b28091d653d2e77.png)
-
-## Understanding the Board Sections
-![](attachment/319716f93d3ddc35b46563f11587c030.png)
-
-### I/O from / to PANDA (Left Side)
-- Start with the `JST XH-2` connector at the bottom, which receives the C-CAN from the car's radar.
-- Follow the traces to the `CSTHRCN` connector for C-CAN input/output.
-- The `COUT` connector at the top includes an extra pin for a relay switch, which can be ignored for this guide.
-
-### I/O from / to CAR Harness (Middle Up)
-- The `FINAL C-CAN` connector taps directly into the car's C-CAN network, connecting to whatever output the Panda device generates.
-
-### L-CAN I/O Unused, Passthrough
-- The L-CAN connection is not intercepted and is passed through from the radar's connector to the car's harness.
-
-### Power Outputs
-- Two types of power outputs are available: 5V (unused) and 12V. Only the 12V output is used in this setup.
-
-**WARNING:** The `BAT` connector is always live. Exercise caution during handling.
-
 ## Wire Configuration from the Radar Connector and Connections
-
-- White wires are used for both L-CAN HIGH and C-CAN HIGH, blue for C-CAN LOW, and green for L-CAN LOW.
-- Yellow indicates the BAT line, red for IGN, and black for GND.
 
 ### Viewing the Car's Harness from Different Angles
 
@@ -65,13 +35,86 @@ Our custom-designed ESCC board simplifies the required wiring for the project.
 #### Upside Down
 ![](attachment/c058dd352308ab61cdb1e86ff47c6fe9.png)
 
-#### Tracing Cables and Pins Through the Board
-![](attachment/f62476c3c75255cd39558ea40ffa4428.png)
+#### Tracing Cables and Pins
+![](attachment/SCR-20240729-kdhf.jpeg)
 
-### Wires Going to the Panda
-Ensure a 120-ohm resistor is in place for both C-CAN Up to Panda and Down from Panda connections.
+### Detailed Connection List
 
-![](attachment/e4b242ec00c3fa73314b0ad191afc199.png)
+```
+IONIQ 2203663               Molex 5018762640         IONIQ 2203663
+Car Harness (Female)                                 Car Radar (Male)
++-----+-----+               +-----+-----+            +-----+-----+
+| 18  |  9  |               |  2  |  1  |            | 10  |  1  |
+| 17  |  8  |               |  4  |  3  |            | 11  |  2  |
+| 16  |  7  |               |  6  |  5  |            | 12  |  3  |
+| 15  |  6  |               |  8  |  7  |            | 13  |  4  |
+| 14  |  5  | NOTCH         | 10  |  9  |            | 14  |  5  | NOTCH
+| 13  |  4  |               | 12  | 11  |            | 15  |  6  |
+| 12  |  3  |               | 14  | 13  | NOTCH      | 16  |  7  |
+| 11  |  2  |               | 16  | 15  |            | 17  |  8  |
+| 10  |  1  |               | 18  | 17  |            | 18  |  9  |
++-----+-----+               | 20  | 19  |            +-----+-----+
+                            | 22  | 21  |
+                            | 24  | 23  |
+                            | 26  | 25  |
+                            +-----+-----+
+
+Connections:
+Molex Pin 3 (120 Ohm)    <--> Molex Pin 5  (120 Ohm)
+Harness Pin 1  (12V)     <--> Molex Pin 12 (12V)
+Harness Pin 4  (GND)     <--> Molex Pin 1  (GND)
+Harness Pin 10 (IGN)     <--> Molex Pin 2  (IGN)
+Harness Pin 8  (C-CAN H) <--> Molex Pin 4  (C-CAN H)
+Harness Pin 7  (C-CAN L) <--> Molex Pin 6  (C-CAN L)
+Harness Pin 18 (L-CAN H) <--> Molex Pin 8  (L-CAN H)
+Harness Pin 9  (L-CAN L) <--> Molex Pin 10 (L-CAN L)
+                              Molex Pin 20 (L-CAN L) <-->  Radar Pin 9  (L-CAN L)
+                              Molex Pin 18 (L-CAN H) <-->  Radar Pin 18 (L-CAN H)
+                              Molex Pin 24 (C-CAN L) <-->  Radar Pin 7  (C-CAN L)
+                              Molex Pin 22 (C-CAN H) <-->  Radar Pin 8  (C-CAN H)
+                              Molex Pin 16 (IGN)     <-->  Radar Pin 10 (IGN)
+                              Molex Pin 14 (12V)     <-->  Radar Pin 1  (12V)
+                              Molex Pin 26 (GND)     <-->  Radar Pin 4  (GND)
+```
+
+#### Molex 5018762640 Pinout:
+
+- Pin 1: GND
+- Pin 2: IGN
+- Pin 3: internal 120 Ohm Resistor, simply bridge to Pin 5
+- Pin 4: C-CAN HIGH
+- Pin 5: internal 120 Ohm Resistor, simply bridge to Pin 3
+- Pin 6: C-CAN LOW
+- Pin 8: L-CAN HIGH (***OPTIONAL, IF EQUIPPED***)
+- Pin 10: L-CAN LOW (***OPTIONAL, IF EQUIPPED***)
+- Pin 12: 12v
+- Pin 14: 12v
+- Pin 16: IGN
+- Pin 18: L-CAN HIGH (***OPTIONAL, IF EQUIPPED***)
+- Pin 20: L-CAN LOW (***OPTIONAL, IF EQUIPPED***)
+- Pin 22: C-CAN HIGH
+- Pin 24: C-CAN LOW
+- Pin 26: GND
+
+#### IONIQ 2203663 (Car Harness, Female):
+
+- Pin 1: 12v -> Molex Pin 12
+- Pin 4: GND -> Molex Pin 1
+- Pin 7: C-CAN LOW -> Molex Pin 6
+- Pin 8: C-CAN HIGH -> Molex Pin 4
+- Pin 9: L-CAN LOW -> Molex Pin 10
+- Pin 10: IGPM (IGN) -> Molex Pin 2
+- Pin 18: L-CAN HIGH -> Molex Pin 8
+
+#### IONIQ 2203663 (Car Radar, Male):
+
+- Molex Pin: 14 -> Pin 1: 12v
+- Molex Pin: 26 -> Pin 4: GND
+- Molex Pin: 24 -> Pin 7: C-CAN LOW
+- Molex Pin: 22 -> Pin 8: C-CAN HIGH
+- Molex Pin: 20 -> Pin 9: L-CAN LOW
+- Molex Pin: 16 -> Pin 10: IGN
+- Molex Pin: 18 -> Pin 18: L-CAN HIGH
 
 ## Disclaimer
 
