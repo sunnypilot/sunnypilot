@@ -28,7 +28,7 @@ void RequestRepeater::setupCacheProcess(const QString &cacheKey) {
     }
     QObject::connect(this, &HttpRequest::requestDone, [=](const QString &resp, bool success) {
       if (success && resp != prevResp) {
-        params.put(cache_key.toStdString(), resp.toStdString());
+        params.put(cacheKey.toStdString(), resp.toStdString());
         prevResp = resp;
       }
     });

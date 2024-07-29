@@ -223,7 +223,6 @@ protected:
   inline QColor whiteColor(int alpha = 255) { return QColor(255, 255, 255, alpha); }
   inline QColor blackColor(int alpha = 255) { return QColor(0, 0, 0, alpha); }
 
-  void paintEvent(QPaintEvent *event) override;
   void rocketFuel(QPainter &p);
 
   double prev_draw_t = 0;

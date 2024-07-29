@@ -28,9 +28,6 @@ Last updated: July 29, 2024
 
 #include <QScrollBar>
 
-ScrollViewSP::ScrollViewSP(QWidget *w, QWidget *parent) : ScrollView(w, parent) {
-}
-
 void ScrollViewSP::setLastScrollPosition() {
   lastScrollPosition = verticalScrollBar()->value();
 }

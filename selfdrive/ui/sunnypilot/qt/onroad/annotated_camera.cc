@@ -1406,15 +1406,10 @@ void AnnotatedCameraWidgetSP::drawLead(QPainter &painter, const cereal::RadarSta
 }
 
 void AnnotatedCameraWidgetSP::paintGL() {
-}
-
-void AnnotatedCameraWidgetSP::paintEvent(QPaintEvent *event) {
   UIStateSP *s = uiStateSP();
   SubMaster &sm = *(s->sm);
   const double start_draw_t = millis_since_boot();
   const cereal::ModelDataV2::Reader &model = sm["modelV2"].getModelV2();
-
-  QPainter painter(this);
 
   // draw camera frame
   {
@@ -1460,10 +1455,8 @@ void AnnotatedCameraWidgetSP::paintEvent(QPaintEvent *event) {
     } else {
       CameraWidget::updateCalibration(DEFAULT_CALIBRATION);
     }
-    painter.beginNativePainting();
     CameraWidget::setFrameId(model.getFrameId());
     CameraWidget::paintGL();
-    painter.endNativePainting();
   }
 
   QPainter painter(this);
