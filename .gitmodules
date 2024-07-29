@@ -1,6 +1,6 @@
 [submodule "panda"]
   path = panda
-  url = https://github.com/sunnyhaibin/panda.git
+  url = ../../sunnyhaibin/panda-special.git
 [submodule "opendbc"]
   path = opendbc
   url = https://github.com/sunnyhaibin/opendbc.git
