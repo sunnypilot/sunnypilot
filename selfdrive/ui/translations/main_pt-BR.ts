@@ -811,6 +811,21 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
 </context>
 <context>
+    <name>MapWindowSP</name>
+    <message>
+        <source>Map Loading</source>
+        <translation type="unfinished">Carregando Mapa</translation>
+    </message>
+    <message>
+        <source>Waiting for GPS</source>
+        <translation type="unfinished">Aguardando GPS</translation>
+    </message>
+    <message>
+        <source>Waiting for route</source>
+        <translation type="unfinished">Aguardando rota</translation>
+    </message>
+</context>
+<context>
     <name>MaxTimeOffroad</name>
     <message>
         <source>Max Time Offroad</source>
@@ -3255,11 +3270,6 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Distance
-Speed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Display Metrics Below Chevron</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3285,6 +3295,14 @@ Speed</source>
     </message>
     <message>
         <source>Display Temperature on Sidebar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>All</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

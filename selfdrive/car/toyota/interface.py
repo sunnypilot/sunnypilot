@@ -195,9 +195,6 @@ class CarInterface(CarInterfaceBase):
     if candidate == CAR.TOYOTA_PRIUS_TSS2:
       ret.spFlags |= ToyotaFlagsSP.SP_NEED_DEBUG_BSM.value
 
-    if Params().get_bool("ToyotaAutoHold") and candidate in (TSS2_CAR - RADAR_ACC_CAR):
-      ret.spFlags |= ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD.value
-
     return ret
 
   @staticmethod
@@ -274,11 +271,6 @@ class CarInterface(CarInterfaceBase):
         if ret.vEgo < 0.001:
           # while in standstill, send a user alert
           events.add(EventName.manualRestart)
-
-    # auto brake hold
-    if self.CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-      if self.CC.brake_hold_active and not ret.brakeHoldActive:
-        events.add(EventName.spAutoBrakeHold)
 
     ret.events = events.to_msg()
 

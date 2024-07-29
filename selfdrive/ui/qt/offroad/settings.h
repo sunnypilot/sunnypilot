@@ -8,7 +8,6 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QStackedWidget>
-#include <QTimer>
 #include <QWidget>
 
 #include "selfdrive/ui/qt/util.h"

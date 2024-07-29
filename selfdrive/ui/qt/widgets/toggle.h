@@ -29,7 +29,7 @@ protected:
   void paintEvent(QPaintEvent*) override;
   void mouseReleaseEvent(QMouseEvent*) override;
   void enterEvent(QEvent*) override;
-  
+
   QColor circleColor;
   QColor green;
   bool enabled = true;

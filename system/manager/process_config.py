@@ -119,7 +119,7 @@ procs = [
   PythonProcess("webrtcd", "system.webrtc.webrtcd", notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
 
-  # Sunnylink <3
+  # sunnylink <3
   DaemonProcess("manage_sunnylinkd", "system.athena.manage_sunnylinkd", "SunnylinkdPid"),
   PythonProcess("sunnylink_registration", "system.manager.sunnylink", sunnylink_need_register_shim),
 ]

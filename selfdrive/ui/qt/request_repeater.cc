@@ -1,28 +1,28 @@
 #include "selfdrive/ui/qt/request_repeater.h"
 
-RequestRepeater::RequestRepeater(QObject *parent, const QString &url, const QString &cache_key,
-                                 int period, bool trigger_while_onroad) : HttpRequest(parent) {
+RequestRepeater::RequestRepeater(QObject *parent, const QString &requestURL, const QString &cacheKey,
+                                 int period, bool while_onroad) : HttpRequest(parent) {
   timer = new QTimer(this);
   timer->setTimerType(Qt::VeryCoarseTimer);
 
-  connectTimer(url, trigger_while_onroad);
+  connectTimer(requestURL, while_onroad);
 
   timer->start(period * 1000);
 
-  setupCacheProcess(cache_key);
+  setupCacheProcess(cacheKey);
 }
 
-void RequestRepeater::connectTimer(const QString &url, bool trigger_while_onroad) {
+void RequestRepeater::connectTimer(const QString &requestURL, bool while_onroad) {
   QObject::connect(timer, &QTimer::timeout, [=]() {
-    if ((!uiState()->scene.started || trigger_while_onroad) && device()->isAwake() && !active()) {
-      sendRequest(url);
+    if ((!uiState()->scene.started || while_onroad) && device()->isAwake() && !active()) {
+      sendRequest(requestURL);
     }
   });
 }
 
-void RequestRepeater::setupCacheProcess(const QString &cache_key) {
-  if (!cache_key.isEmpty()) {
-    prevResp = QString::fromStdString(params.get(cache_key.toStdString()));
+void RequestRepeater::setupCacheProcess(const QString &cacheKey) {
+  if (!cacheKey.isEmpty()) {
+    prevResp = QString::fromStdString(params.get(cacheKey.toStdString()));
     if (!prevResp.isEmpty()) {
       QTimer::singleShot(500, [=]() { emit requestDone(prevResp, true, QNetworkReply::NoError); });
     }

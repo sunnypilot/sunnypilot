@@ -28,9 +28,9 @@ public:
 
   explicit HttpRequest(QObject* parent, bool create_jwt = true, int timeout = 20000);
   virtual void sendRequest(const QString &requestURL, Method method);
-  void sendRequest(const QString &requestURL) { sendRequest(requestURL, Method::GET); }
-  [[nodiscard]] bool active() const;
-  [[nodiscard]] bool timeout() const;
+  void sendRequest(const QString &requestURL) { sendRequest(requestURL, Method::GET);}
+  bool active() const;
+  bool timeout() const;
 
 signals:
   void requestDone(const QString &response, bool success, QNetworkReply::NetworkError error);
@@ -41,8 +41,8 @@ protected:
   QTimer *networkTimer = nullptr;
   bool create_jwt;
   virtual QNetworkRequest prepareRequest(const QString& requestURL);
-  [[nodiscard]] virtual QString GetJwtToken() const { return CommaApi::create_jwt(); }
-  [[nodiscard]] virtual QString GetUserAgent() const { return getUserAgent(); }
+  virtual QString GetJwtToken() const { return CommaApi::create_jwt(); }
+  virtual QString GetUserAgent() const { return getUserAgent(); }
 
 protected slots:
   void requestTimeout();

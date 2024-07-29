@@ -12,8 +12,8 @@
 
 class RequestRepeater : public HttpRequest {
 public:
-  void connectTimer(const QString& url, bool trigger_while_onroad);
-  void setupCacheProcess(const QString& chars);
+  void connectTimer(const QString& requestURL, bool while_onroad);
+  void setupCacheProcess(const QString& cacheKey);
   RequestRepeater(QObject *parent, const QString &requestURL, const QString &cacheKey = "", int period = 0, bool while_onroad=false);
 
 private:

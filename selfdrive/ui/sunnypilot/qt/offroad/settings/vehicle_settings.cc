@@ -1,5 +1,33 @@
+/**
+The MIT License
+
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+Last updated: July 29, 2024
+***/
+
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_settings.h"
+
 #include "selfdrive/ui/sunnypilot/qt/util.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
   main_layout = new QStackedLayout(this);
@@ -120,17 +148,6 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
-  auto toyotaAbh = new ParamControlSP(
-    "ToyotaAutoHold",
-    tr("Enable Automatic Brake Hold (AHB)"),
-    QString("<b>%1</b><br><br>%2<br><br><b>%3</b>")
-    .arg(tr("WARNING: Only for Toyota/Lexus vehicles with TSS2/LSS2. USE AT YOUR OWN RISK."))
-    .arg(tr("When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold."))
-    .arg(tr("Changing this setting takes effect when the car is powered off.")),
-    "../assets/offroad/icon_blank.png");
-  toyotaAbh->setConfirmation(true, false);
-  addItem(toyotaAbh);
-
   toyotaEnhancedBsm = new ParamControlSP(
     "ToyotaEnhancedBsm",
     tr("Enable Enhanced Blind Spot Monitor"),
@@ -178,7 +195,6 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
     is_onroad = !offroad;
     hkgSmoothStop->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
-    toyotaAbh->setEnabled(offroad);
     toyotaEnhancedBsm->setEnabled(offroad);
     toyotaSngHack->setEnabled(offroad);
     volkswagenCCOnly->setEnabled(offroad);

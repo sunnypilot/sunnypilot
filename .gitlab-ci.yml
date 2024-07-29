@@ -50,19 +50,20 @@ default:
   - 'mkdir -p "${BUILD_DIR}/"'
   - *configure_git
 
+
 workflow: # If running on any branch other than main.
   rules:
     # We are an MR, but it's a draft, we won't proceed with anything.
     - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
       when: never
-      
+
     # We have changes in the git-crypt path, we need to provision the key first before proceeding
     - changes:
         compare_to: $CI_DEFAULT_BRANCH
         paths:
           - "${GIT_CRYPT_INSTALL_PATH}/**"
       when: always
-      
+
     # We are a merge request
     - if: $CI_MERGE_REQUEST_IID
       variables:
@@ -101,7 +102,7 @@ workflow: # If running on any branch other than main.
 GPG key change detected:
   stage: git-crypt-auto-provision
   image: alpine
-  before_script: 
+  before_script:
     - apk --update add gpg gpg-agent git-crypt git grep git-lfs openssh
     - *configure_ci_deploy_key
     - *configure_git

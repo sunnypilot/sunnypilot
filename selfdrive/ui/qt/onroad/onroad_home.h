@@ -1,6 +1,5 @@
 #pragma once
 
-#include "selfdrive/ui/qt/onroad/annotated_camera.h"
 #include "selfdrive/ui/qt/onroad/alerts.h"
 
 #if SUNNYPILOT

@@ -76,7 +76,7 @@ AddOption('--stock-ui',
           action='store_true',
           dest='stock_ui',
           default=False,
-          help='Build the stock UI instead of sunnypilot UI')
+          help='Build stock UI instead of sunnypilot UI')
 
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64

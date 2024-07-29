@@ -154,7 +154,7 @@ protected:
   QTimer *timer;
   PrimeType prime_type = PrimeType::UNKNOWN;
 
-private:  
+private:
   bool started_prev = false;
 };
 #undef UIScene
