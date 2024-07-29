@@ -24,7 +24,11 @@
 
 #include "msgq/visionipc/visionipc_client.h"
 #include "system/camerad/cameras/camera_common.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 const int FRAME_BUFFER_SIZE = 5;
 static_assert(FRAME_BUFFER_SIZE <= YUV_BUFFER_COUNT);

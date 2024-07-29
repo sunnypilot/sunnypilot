@@ -18,30 +18,32 @@ if arch == "Darwin":
 qt_env['CXXFLAGS'] += ["-Wno-deprecated-declarations"]
 
 sp_widgets_src = []
+sp_maps_widgets_src = []
 sp_qt_src = []
-if GetOption('sunnypilot'):
+sp_qt_util = []
+if not GetOption('stock_ui'):
   SConscript(['sunnypilot/SConscript'])
-  Import('sp_widgets_src', 'sp_qt_src')
+  Import('sp_widgets_src', 'sp_maps_widgets_src', 'sp_qt_src', "sp_qt_util")
 
-qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"], LIBS=base_libs)
+qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"] + sp_qt_util, LIBS=base_libs)
 widgets_src = ["ui.cc", "qt/widgets/input.cc", "qt/widgets/wifi.cc",
                "qt/widgets/ssh_keys.cc", "qt/widgets/toggle.cc", "qt/widgets/controls.cc",
                "qt/widgets/offroad_alerts.cc", "qt/widgets/prime.cc", "qt/widgets/keyboard.cc",
                "qt/widgets/scrollview.cc", "qt/widgets/cameraview.cc", "#third_party/qrcode/QrCode.cc",
                "qt/request_repeater.cc", "qt/qt_window.cc", "qt/network/networking.cc", "qt/network/wifi_manager.cc"] + sp_widgets_src
 
-qt_env['CPPDEFINES'] = ["SUNNYPILOT"] if GetOption('sunnypilot') else []
+qt_env['CPPDEFINES'] = []
 if maps:
   base_libs += ['QMapLibre']
   widgets_src += ["qt/maps/map_helpers.cc", "qt/maps/map_settings.cc", "qt/maps/map.cc", "qt/maps/map_panel.cc",
-                  "qt/maps/map_eta.cc", "qt/maps/map_instructions.cc"]
+                  "qt/maps/map_eta.cc", "qt/maps/map_instructions.cc"] + sp_maps_widgets_src
   qt_env['CPPDEFINES'] += ["ENABLE_MAPS"]
 
 widgets = qt_env.Library("qt_widgets", widgets_src, LIBS=base_libs)
 Export('widgets')
 qt_libs = [widgets, qt_util] + base_libs
 
-qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc",
+qt_src = ["main.cc", "qt/sidebar.cc", "qt/body.cc", "qt/offroad_home.cc",
           "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
@@ -79,14 +81,15 @@ asset_obj = qt_env.Object("assets", assets)
 qt_env.SharedLibrary("qt/python_helpers", ["qt/qt_window.cc"], LIBS=qt_libs)
 
 # spinner and text window
-qt_env.Program("_text", ["qt/text.cc"], LIBS=qt_libs)
+text_cc_path = "qt/text.cc" if GetOption('stock_ui') else "sunnypilot/qt/text.cc"
+qt_env.Program("_text", [text_cc_path], LIBS=qt_libs)
 qt_env.Program("_spinner", ["qt/spinner.cc"], LIBS=qt_libs)
 
 # build main UI
 qt_env.Program("ui", qt_src + [asset_obj], LIBS=qt_libs)
 if GetOption('extras'):
   qt_src.remove("main.cc")  # replaced by test_runner
-  #qt_env.Program('tests/test_translations', [asset_obj, 'tests/test_runner.cc', 'tests/test_translations.cc'] + qt_src, LIBS=qt_libs)
+  qt_env.Program('tests/test_translations', [asset_obj, 'tests/test_runner.cc', 'tests/test_translations.cc'] + qt_src, LIBS=qt_libs)
   qt_env.Program('tests/ui_snapshot', [asset_obj, "tests/ui_snapshot.cc"] + qt_src, LIBS=qt_libs)
 
 

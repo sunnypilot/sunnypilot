@@ -6,7 +6,13 @@
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/util.h"
+
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/window.h"
+#define MainWindow MainWindowSP
+#else
 #include "selfdrive/ui/qt/window.h"
+#endif
 
 int main(int argc, char *argv[]) {
   setpriority(PRIO_PROCESS, 0, -20);
@@ -22,7 +28,6 @@ int main(int argc, char *argv[]) {
 
   QApplication a(argc, argv);
   a.installTranslator(&translator);
-
   MainWindow w;
   setMainWindow(&w);
   a.installEventFilter(&w);
