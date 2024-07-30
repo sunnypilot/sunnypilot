@@ -205,7 +205,9 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     self.sp_update_params()
 
-    self.CS.button_events = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
+    self.CS.button_events.extend(create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT))
+    self.CS.button_events.extend(create_button_events(self.CS.lfa_enabled, self.CS.prev_lfa_enabled, {1: ButtonType.altButton1}))
+    self.CS.button_events.extend(create_button_events(self.CS.main_buttons[-1], self.CS.prev_main_buttons, {1: ButtonType.altButton3}))
 
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
                                                             self.CS.button_events, c.vCruise)
@@ -214,16 +216,12 @@ class CarInterface(CarInterfaceBase):
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
-        if self.CS.prev_main_buttons == 1:
-          if self.CS.main_buttons[-1] != 1:
-            self.CS.accEnabled = True
-          elif self.CS.prev_cruise_buttons == 4:
-            if self.CS.cruise_buttons[-1] != 4:
-              self.accEnabled = True
+        if any(b.type in (ButtonType.altButton3, ButtonType.cancel) and not b.pressed for b in self.CS.button_events):
+          self.CS.accEnabled = True
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
+        if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
