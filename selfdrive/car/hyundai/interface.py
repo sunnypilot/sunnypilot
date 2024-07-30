@@ -218,8 +218,6 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
-
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
                                                             self.CS.button_events, c.vCruise)
 
