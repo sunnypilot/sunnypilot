@@ -1506,22 +1506,6 @@ Esto puede tardar hasta un minuto.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable Automatic Brake Hold (AHB)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>WARNING: Only for Toyota/Lexus vehicles with TSS2/LSS2. USE AT YOUR OWN RISK.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>When you stop the vehicle completely by depressing the brake pedal, sunnypilot will activate Auto Brake Hold.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Changing this setting takes effect when the car is powered off.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Enable Enhanced Blind Spot Monitor</source>
         <translation type="unfinished"></translation>
     </message>
