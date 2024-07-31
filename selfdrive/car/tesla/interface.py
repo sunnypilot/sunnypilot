@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from cereal import car
 from panda import Panda
-from openpilot.selfdrive.car.tesla.values import CAR, BUTTON_STATES
-from openpilot.selfdrive.car import get_safety_config, create_mads_event
+from openpilot.selfdrive.car.tesla.values import CAR
+from openpilot.selfdrive.car import get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
 ButtonType = car.CarState.ButtonEvent.Type
