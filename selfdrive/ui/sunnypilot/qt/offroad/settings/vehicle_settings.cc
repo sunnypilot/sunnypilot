@@ -124,7 +124,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   auto teslaVirtualTorqueBlending = new ParamControlSP(
     "TeslaVirtualTorqueBlending",
     tr("Virtual Torque Blending (Beta)"),
-    tr("Experimental feature to blend steering torque from user input to lat control."),
+    tr("Experimental feature to allow influencing of the steering angle while ALC is active. Note: ALC/ACC will no longer disengage by applying force to the wheel."),
     "../assets/offroad/icon_blank.png");
   teslaVirtualTorqueBlending->setConfirmation(true, false);
   addItem(teslaVirtualTorqueBlending);
