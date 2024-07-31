@@ -111,7 +111,7 @@ def manager_init() -> None:
     ("OsmDownloadedDate", "0"),
     ("OSMDownloadProgress", "{}"),
     ("SidebarTemperatureOptions", "0"),
-    ("SunnylinkEnabled", "0" if (build_metadata.release_channel or build_metadata.release_sp_channel) else "1"),
+    ("SunnylinkEnabled", "1"),
     ("SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"),
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
