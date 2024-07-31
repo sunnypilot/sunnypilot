@@ -515,7 +515,7 @@ class CarController(CarControllerBase):
     jerk = jerk + (a_error * 2.0)
 
     if self.CP.carFingerprint in CANFD_CAR or self.CP.carFingerprint == CAR.HYUNDAI_KONA_EV_2022:
-      startingJerk = 0.5 #self.jerkStartLimit
+      startingJerk = 0.5
       jerkLimit = 5.0
       self.jerk_count += DT_CTRL
       jerk_max = interp(self.jerk_count, [0, 1.5, 2.5], [startingJerk, startingJerk, jerkLimit])
@@ -523,13 +523,7 @@ class CarController(CarControllerBase):
         self.jerk_u = jerkLimit
         self.jerk_l = jerkLimit
         self.jerk_count = 0
-      elif actuators.longControlState == LongCtrlState.stopping:
-        self.jerk_u += 0.1 if self.jerk_u < 1.5 else -0.1
-        self.jerk_l += 0.1 if self.jerk_l < 1.0 else -0.1
-        self.jerk_count = 0
       else:
-        #self.jerk_u = min(max(2.5, jerk * 2.0), jerk_max)
-        #self.jerk_l = min(max(2.0, -jerk * 3.0), jerkLimit)
         self.jerk_u = min(max(0.5, jerk * 2.0), jerk_max)
         self.jerk_l = min(max(1.0, -jerk * 3.0), jerkLimit)
     else:
@@ -542,14 +536,9 @@ class CarController(CarControllerBase):
         self.jerk_u = jerkLimit
         self.jerk_l = jerkLimit
         self.jerk_count = 0
-      elif actuators.longControlState == LongCtrlState.stopping:
-        self.jerk_u += 0.1 if self.jerk_u < 0.5 else -0.1
-        self.jerk_l += 0.1 if self.jerk_l < 1.0 else -0.1
-        self.jerk_count = 0
       else:
-        self.jerk_u = self.jerk_u * 0.8 + min(max(0.5, jerk * 2.0), jerk_max) * 0.2
-        self.jerk_l = self.jerk_l * 0.8 + min(max(0.5, -jerk * 2.0), jerkLimit) * 0.2
-        #self.jerk_l = min(max(1.2, -jerk * 2.0), jerkLimit) ## 1.0으로 하니 덜감속, 1.5로하니 너무감속, 1.2로 한번해보자(231228)
+        self.jerk_u = min(max(0.5, jerk * 2.0), jerk_max)
+        self.jerk_l = min(max(0.5, -jerk * 2.0), jerkLimit)
         self.cb_upper = clip(0.9 + accel * 0.2, 0, 1.2)
         self.cb_lower = clip(0.8 + accel * 0.2, 0, 1.2)
 
@@ -561,5 +550,6 @@ class CarController(CarControllerBase):
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
-      self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
+      #self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
+      self.accel_val = self.accel_raw
     self.accel_last = self.accel_val
