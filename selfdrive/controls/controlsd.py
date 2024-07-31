@@ -743,7 +743,9 @@ class Controls:
       CC.angularVelocity = angular_rate_value
 
     CC.cruiseControl.override = self.enabled_long and not CC.longActive and self.CP.openpilotLongitudinalControl
-    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.enabled_long or (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)))
+    CC.cruiseControl.cancel = CS.cruiseState.enabled and \
+      (not self.enabled_long or (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or
+       (self.CP.openpilotLongitudinalControl and self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed and not self.CS_prev.accEnabled))
     if self.joystick_mode and self.sm.recv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[0]:
       CC.cruiseControl.cancel = True
 
