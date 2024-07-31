@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
+import threading
 import time
+from types import SimpleNamespace
 
 import cereal.messaging as messaging
 
@@ -90,6 +92,8 @@ class Car:
 
     self.events = Events()
 
+    self.params_list: SimpleNamespace | None = None
+
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
@@ -98,7 +102,7 @@ class Car:
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
-    CS = self.CI.update(self.CC_prev, can_strs)
+    CS = self.CI.update(self.CC_prev, can_strs, self.params_list)
 
     self.sm.update(0)
 
@@ -186,10 +190,29 @@ class Car:
     self.initialized_prev = initialized
     self.CS_prev = CS.as_reader()
 
+  def sp_params_thread(self, event):
+    while not event.is_set():
+      params_list = {
+        "experimental_mode": self.params.get_bool("ExperimentalMode"),
+        "is_metric": self.params.get_bool("IsMetric"),
+        "below_speed_pause": self.params.get_bool("BelowSpeedPause"),
+        "pause_lateral_speed": int(self.params.get("PauseLateralSpeed", encoding="utf8")),
+        "reverse_dm_cam": self.params.get_bool("ReverseDmCam"),
+      }
+      self.params_list = SimpleNamespace(**params_list)
+      time.sleep(0.1)
+
   def card_thread(self):
-    while True:
-      self.step()
-      self.rk.monitor_time()
+    event = threading.Event()
+    thread = threading.Thread(target=self.sp_params_thread, args=(event, ))
+    try:
+      thread.start()
+      while True:
+        self.step()
+        self.rk.monitor_time()
+    finally:
+      event.set()
+      thread.join()
 
 
 def main():
