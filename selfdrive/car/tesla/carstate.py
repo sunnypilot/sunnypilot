@@ -19,14 +19,10 @@ class CarState(CarStateBase):
     self.sccm_right_stalk_counter = None
     self.das_control = None
 
-    self.buttonStates = BUTTON_STATES.copy()
-    self.buttonStatesPrev = BUTTON_STATES.copy()
-
   def update(self, cp, cp_cam, cp_adas):
     ret = car.CarState.new_message()
 
     self.prev_mads_enabled = self.mads_enabled
-    self.buttonStatesPrev = self.buttonStates.copy()
 
     # Vehicle speed
     ret.vEgoRaw = cp.vl["ESP_B"]["ESP_vehicleSpeed"] * CV.KPH_TO_MS
@@ -70,12 +66,6 @@ class CarState(CarStateBase):
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_systemStatus"]["DI_gear"].get(int(cp.vl["DI_systemStatus"]["DI_gear"]), "DI_GEAR_INVALID")]
 
-    # Buttons
-    self.buttonStates["accelCruise"] = cp_adas.vl["VCLEFT_switchStatus"]["VCLEFT_swcRightScrollTicks"] in list(range(1, 10))
-    self.buttonStates["decelCruise"] = cp_adas.vl["VCLEFT_switchStatus"]["VCLEFT_swcRightScrollTicks"] in list(range(-9, 0))
-    self.buttonStates["cancel"] = cp_adas.vl["SCCM_rightStalk"]["SCCM_rightStalkStatus"] in [1, 2]
-    self.buttonStates["resumeCruise"] = cp_adas.vl["SCCM_rightStalk"]["SCCM_rightStalkStatus"] in [3, 4]
-
     button_events = []
     for button in BUTTONS:
       state = (cp_adas.vl[button.can_addr][button.can_msg] in button.values)
@@ -85,7 +75,7 @@ class CarState(CarStateBase):
         event.pressed = state
         button_events.append(event)
       self.button_states[button.event_type] = state
-    ret.buttonEvents = button_events
+    self.button_events = button_events
 
     # Doors
     ret.doorOpen = (cp.vl["UI_warning"]["anyDoorOpen"] == 1)
