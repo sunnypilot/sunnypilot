@@ -202,7 +202,7 @@ check no source code sent:
 publish to private gitlab prebuilt:
   extends: ".publish_base"
   variables:
-    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
+    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot-prebuilts.git
   rules:
     - if: $NEW_BRANCH
       when: on_success
