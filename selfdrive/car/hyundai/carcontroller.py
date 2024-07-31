@@ -115,6 +115,7 @@ class CarController(CarControllerBase):
 
     self.accel_raw = 0
     self.accel_val = 0
+    self.accel_last_jerk = 0
 
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
@@ -502,7 +503,7 @@ class CarController(CarControllerBase):
     elif actuators.longControlState == LongCtrlState.stopping:# or hud_control.softHold > 0:
       accel_diff = 0.0
     else:
-      accel_diff = self.accel_raw - self.accel_last
+      accel_diff = self.accel_raw - self.accel_last_jerk
 
     accel_diff /= DT_CTRL
     self.jerk = self.jerk * 0.9 + accel_diff * 0.1
@@ -555,8 +556,8 @@ class CarController(CarControllerBase):
   def make_accel(self, actuators):
     long_control = actuators.longControlState
     is_ice = not self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV)
-    rate_up = 0.1 * 1 if is_ice else self.jerk_u
-    rate_down = 0.1 * 1 if is_ice else self.jerk_l
+    rate_up = 0.1
+    rate_down = 0.1
     if long_control == LongCtrlState.off:
       self.accel_raw, self.accel_val = 0, 0
     else:
