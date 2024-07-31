@@ -6,14 +6,32 @@ from openpilot.selfdrive.car.tesla.teslacan import TeslaCAN
 from openpilot.selfdrive.car.tesla.values import DBC, CarControllerParams
 
 
+def torque_blended_angle(apply_angle, torsion_bar_torque):
+  deadzone = CarControllerParams.TORQUE_TO_ANGLE_DEADZONE
+  if abs(torsion_bar_torque) < deadzone:
+    return apply_angle
+
+  limit = CarControllerParams.TORQUE_TO_ANGLE_CLIP
+  if apply_angle * torsion_bar_torque >= 0:
+    # Manually steering in the same direction as OP
+    strength = CarControllerParams.TORQUE_TO_ANGLE_MULTIPLIER_OUTER
+  else:
+    # User is opposing OP direction
+    strength = CarControllerParams.TORQUE_TO_ANGLE_MULTIPLIER_INNER
+
+  torque = torsion_bar_torque - deadzone if torsion_bar_torque > 0 else torsion_bar_torque + deadzone
+  return apply_angle + clip(torque, -limit, limit) * strength
+
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
     self.frame = 0
     self.apply_angle_last = 0
+    self.last_hands_nanos = 0
     self.packer = CANPacker(dbc_name)
     self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
     self.tesla_can = TeslaCAN(self.packer, self.pt_packer)
+    self.virtual_blending = False  # TODO: pull from toggle
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -21,14 +39,35 @@ class CarController(CarControllerBase):
 
     can_sends = []
 
-    # Temp disable steering on a hands_on_fault, and allow for user override
-    hands_on_fault = CS.steer_warning == "EAC_ERROR_HANDS_ON" and CS.hands_on_level >= 3
-    lkas_enabled = CC.latActive and not hands_on_fault
-
     if self.frame % 2 == 0:
+      # Detect a user override of the steering wheel when...
+      CS.steering_override = (CS.hands_on_level >= 3 or  # user is applying lots of force or...
+        (CS.steering_override and  # already overriding and...
+         abs(CS.out.steeringAngleDeg - actuators.steeringAngleDeg) > CarControllerParams.CONTINUED_OVERRIDE_ANGLE) and
+         not CS.out.standstill)  # continued angular disagreement while moving.
+
+      # If fully hands off for 1 second then reset override (in case of continued disagreement above)
+      if CS.hands_on_level > 0:
+        self.last_hands_nanos = now_nanos
+      elif now_nanos - self.last_hands_nanos > 1e9:
+        CS.steering_override = False
+
+      # Reset override when disengaged to ensure a fresh activation always engages steering.
+      if not CC.latActive:
+        CS.steering_override = False
+
+      # Temporarily disable LKAS if user is overriding or if OP lat isn't active
+      lkas_enabled = CC.latActive and not CS.steering_override
+
       if lkas_enabled:
+        if self.virtual_blending:
+          # Update steering angle request with user input torque
+          apply_angle = torque_blended_angle(actuators.steeringAngleDeg, CS.out.steeringTorque)
+        else:
+          apply_angle = actuators.steeringAngleDeg
+
         # Angular rate limit based on speed
-        apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgo, CarControllerParams)
+        apply_angle = apply_std_steer_angle_limits(apply_angle, self.apply_angle_last, CS.out.vEgo, CarControllerParams)
 
         # To not fault the EPS
         apply_angle = clip(apply_angle, CS.out.steeringAngleDeg - 20, CS.out.steeringAngleDeg + 20)
@@ -49,9 +88,10 @@ class CarController(CarControllerBase):
       counter = CS.das_control["DAS_controlCounter"]
       can_sends.append(self.tesla_can.create_longitudinal_commands(acc_state, target_speed, min_accel, max_accel, counter))
 
-    # Cancel on user steering override, since there is no steering torque blending
-    if hands_on_fault:
-      pcm_cancel_cmd = True
+    if not self.virtual_blending:
+      # Cancel on user steering override when blending is disabled
+      if CS.steering_override:
+        pcm_cancel_cmd = True
 
     # Sent cancel request only if ACC is enabled
     if self.frame % 10 == 0 and pcm_cancel_cmd and CS.acc_enabled:

@@ -16,9 +16,9 @@ class CarInterface(CarInterfaceBase):
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
     ret.carName = "tesla"
 
-    # There is no safe way to do steer blending with user torque,
-    # so the steering behaves like autopilot. This is not
-    # how openpilot should be, hence dashcamOnly
+    # Steer blending with user torque is done virtually, and is limited to 2Nm of torque
+    # before it temporarily disables OP Lat control for higher user torque. This is not
+    # how openpilot typically works, hence dashcamOnly
     # ret.dashcamOnly = True
 
     ret.steerControlType = car.CarParams.SteerControlType.angle
