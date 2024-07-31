@@ -119,6 +119,16 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   subaruManualParkingBrakeSng->setConfirmation(true, false);
   addItem(subaruManualParkingBrakeSng);
 
+  // Tesla
+  addItem(new LabelControlSP(tr("Tesla")));
+  auto teslaVirtualTorqueBlending = new ParamControlSP(
+    "TeslaVirtualTorqueBlending",
+    tr("Virtual Torque Blending (Beta)"),
+    tr("Experimental feature to blend steering torque from user input to lat control."),
+    "../assets/offroad/icon_blank.png");
+  teslaVirtualTorqueBlending->setConfirmation(true, false);
+  addItem(teslaVirtualTorqueBlending);
+
   // Toyota/Lexus
   addItem(new LabelControlSP(tr("Toyota/Lexus")));
   stockLongToyota = new ParamControlSP(

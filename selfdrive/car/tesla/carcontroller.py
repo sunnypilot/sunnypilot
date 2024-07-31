@@ -1,4 +1,5 @@
 from openpilot.common.numpy_fast import clip
+from openpilot.common.params import Params
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_std_steer_angle_limits
 from openpilot.selfdrive.car.interfaces import CarControllerBase
@@ -31,7 +32,7 @@ class CarController(CarControllerBase):
     self.packer = CANPacker(dbc_name)
     self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
     self.tesla_can = TeslaCAN(self.packer, self.pt_packer)
-    self.virtual_blending = False  # TODO: pull from toggle
+    self.virtual_blending = Params().get_bool("TeslaVirtualTorqueBlending")
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
