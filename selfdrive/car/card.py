@@ -56,7 +56,6 @@ class Car:
     self.mads_disengage_lateral_on_brake = self.params.get_bool("DisengageLateralOnBrake")
     self.mads_dlob = self.enable_mads and self.mads_disengage_lateral_on_brake
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
-    self.sp_toyota_auto_brake_hold = self.params.get_bool("ToyotaAutoHold")
     self.CP.alternativeExperience = 0
     if not self.disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
@@ -64,8 +63,6 @@ class Car:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
     elif self.mads_ndlob:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE
-    if self.sp_toyota_auto_brake_hold:
-      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALLOW_AEB
 
     if self.CP.customStockLongAvailable and self.CP.pcmCruise and self.params.get_bool("CustomStockLong"):
       self.CP.pcmCruiseSpeed = False

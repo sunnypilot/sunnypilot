@@ -318,7 +318,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
     {"TorquedOverride", PERSISTENT | BACKUP},
-    {"ToyotaAutoHold", PERSISTENT | BACKUP},
     {"ToyotaAutoLockBySpeed", PERSISTENT | BACKUP},
     {"ToyotaAutoUnlockByShifter", PERSISTENT | BACKUP},
     {"ToyotaEnhancedBsm", PERSISTENT | BACKUP},
@@ -336,6 +335,8 @@ std::unordered_map<std::string, uint32_t> keys = {
 
     {"SunnylinkCache_Users", PERSISTENT},
     {"SunnylinkCache_Roles", PERSISTENT},
+    {"EnableGitlabRunner", PERSISTENT | BACKUP},
+    {"EnableSunnylinkUploader", PERSISTENT | BACKUP},
 
     // PFEIFER - MAPD {{
     {"MapdVersion", PERSISTENT},

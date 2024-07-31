@@ -99,7 +99,6 @@ def manager_init() -> None:
     ("TorqueDeadzoneDeg", "0"),
     ("TorqueFriction", "1"),
     ("TorqueMaxLatAccel", "250"),
-    ("ToyotaAutoHold", "0"),
     ("ToyotaAutoLockBySpeed", "0"),
     ("ToyotaAutoUnlockByShifter", "0"),
     ("ToyotaEnhancedBsm", "0"),
@@ -117,6 +116,8 @@ def manager_init() -> None:
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
+    ("EnableGitlabRunner", "0"),
+    ("EnableSunnylinkUploader", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))

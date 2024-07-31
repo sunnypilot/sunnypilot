@@ -7,7 +7,7 @@ from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP,
                                          CANFD_UNSUPPORTED_LONGITUDINAL_CAR, NON_SCC_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, \
                                          UNSUPPORTED_LONGITUDINAL_CAR, Buttons
 from openpilot.selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
-from openpilot.selfdrive.car import create_button_events, get_safety_config, create_mads_event
+from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 
@@ -205,25 +205,23 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
     self.sp_update_params()
 
-    buttonEvents = create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT)
+    self.CS.button_events.extend(create_button_events(self.CS.cruise_buttons[-1], self.CS.prev_cruise_buttons, BUTTONS_DICT))
+    self.CS.button_events.extend(create_button_events(self.CS.lfa_enabled, self.CS.prev_lfa_enabled, {1: ButtonType.altButton1}))
+    self.CS.button_events.extend(create_button_events(self.CS.main_buttons[-1], self.CS.prev_main_buttons, {1: ButtonType.altButton3}))
 
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            buttonEvents, c.vCruise)
+                                                            self.CS.button_events, c.vCruise)
 
     self.CS.mads_enabled = False if not self.mads_main_toggle else self.CS.mads_enabled
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
-        if self.CS.prev_main_buttons == 1:
-          if self.CS.main_buttons[-1] != 1:
-            self.CS.accEnabled = True
-          elif self.CS.prev_cruise_buttons == 4:
-            if self.CS.cruise_buttons[-1] != 4:
-              self.accEnabled = True
+        if any(b.type in (ButtonType.altButton3, ButtonType.cancel) and not b.pressed for b in self.CS.button_events):
+          self.CS.accEnabled = True
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        if self.CS.prev_lfa_enabled != 1 and self.CS.lfa_enabled == 1:
+        if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
@@ -231,7 +229,7 @@ class CarInterface(CarInterfaceBase):
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       if not self.CP.pcmCruise:
-        if any(b.type == ButtonType.cancel for b in buttonEvents):
+        if any(b.type == ButtonType.cancel for b in self.CS.button_events):
           self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       if not self.CP.pcmCruiseSpeed:
         if not ret.cruiseState.enabled:
@@ -242,17 +240,10 @@ class CarInterface(CarInterfaceBase):
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.cruise_buttons[-1] == 3))
 
-    # MADS BUTTON
-    if self.CS.out.madsEnabled != self.CS.madsEnabled:
-      if self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = False
-    else:
-      if not self.mads_event_lock:
-        buttonEvents.append(create_mads_event(self.mads_event_lock))
-        self.mads_event_lock = True
-
-    ret.buttonEvents = buttonEvents
+    ret.buttonEvents = [
+      *self.CS.button_events,
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
+    ]
 
     # On some newer model years, the CANCEL button acts as a pause/resume button based on the PCM state
     # To avoid re-engaging when openpilot cancels, check user engagement intention via buttons

@@ -6,14 +6,13 @@
 #include <QTimer>
 
 #include "common/util.h"
+#include "selfdrive/ui/qt/util.h"
 
 namespace CommaApi {
 
 const QString BASE_URL = util::getenv("API_HOST", "https://api.commadotai.com").c_str();
 QByteArray rsa_sign(const QByteArray &data);
-QByteArray rsa_encrypt(const QByteArray &data);
-QByteArray rsa_decrypt(const QByteArray &data);
-QString create_jwt(const QJsonObject &payloads = {}, int expiry = 3600, bool sunnylink = false);
+QString create_jwt(const QJsonObject &payloads = {}, int expiry = 3600);
 
 }  // namespace CommaApi
 
@@ -27,8 +26,9 @@ class HttpRequest : public QObject {
 public:
   enum class Method {GET, DELETE, POST, PUT};
 
-  explicit HttpRequest(QObject* parent, bool create_jwt = true, int timeout = 20000, const bool sunnylink = false);
-  void sendRequest(const QString &requestURL, const Method method = Method::GET, const QByteArray &payload = {});
+  explicit HttpRequest(QObject* parent, bool create_jwt = true, int timeout = 20000);
+  virtual void sendRequest(const QString &requestURL, Method method);
+  void sendRequest(const QString &requestURL) { sendRequest(requestURL, Method::GET);}
   bool active() const;
   bool timeout() const;
 
@@ -37,14 +37,14 @@ signals:
 
 protected:
   QNetworkReply *reply = nullptr;
-
-private:
   static QNetworkAccessManager *nam();
   QTimer *networkTimer = nullptr;
   bool create_jwt;
-  bool sunnylink;
+  virtual QNetworkRequest prepareRequest(const QString& requestURL);
+  virtual QString GetJwtToken() const { return CommaApi::create_jwt(); }
+  virtual QString GetUserAgent() const { return getUserAgent(); }
 
-private slots:
+protected slots:
   void requestTimeout();
   void requestFinished();
 };

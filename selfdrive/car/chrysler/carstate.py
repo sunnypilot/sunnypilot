@@ -3,7 +3,7 @@ from openpilot.common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS, BUTTON_STATES
+from openpilot.selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS, BUTTONS
 
 
 class CarState(CarStateBase):
@@ -29,8 +29,7 @@ class CarState(CarStateBase):
     self.lkas_heartbit = None
     self.lkas_disabled = False
 
-    self.buttonStates = BUTTON_STATES.copy()
-    self.buttonStatesPrev = BUTTON_STATES.copy()
+    self.button_states = {button.event_type: False for button in BUTTONS}
 
   def update(self, cp, cp_cam):
 
@@ -41,7 +40,6 @@ class CarState(CarStateBase):
 
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lkas_enabled = self.lkas_enabled
-    self.buttonStatesPrev = self.buttonStates.copy()
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -75,6 +73,16 @@ class CarState(CarStateBase):
       cp.vl["ESP_6"]["WHEEL_SPEED_RR"],
       unit=1,
     )
+
+    # Buttons
+    for button in BUTTONS:
+      state = (cp.vl[button.can_addr][button.can_msg] in button.values)
+      if self.button_states[button.event_type] != state:
+        event = car.CarState.ButtonEvent.new_message()
+        event.type = button.event_type
+        event.pressed = state
+        self.button_events.append(event)
+      self.button_states[button.event_type] = state
 
     # button presses
     ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_stalk(200, cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 1,
@@ -115,11 +123,6 @@ class CarState(CarStateBase):
     if self.CP.enableBsm:
       ret.leftBlindspot = cp.vl["BSM_1"]["LEFT_STATUS"] == 1
       ret.rightBlindspot = cp.vl["BSM_1"]["RIGHT_STATUS"] == 1
-
-    self.buttonStates["accelCruise"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Accel"])
-    self.buttonStates["decelCruise"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Decel"])
-    self.buttonStates["cancel"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Cancel"])
-    self.buttonStates["resumeCruise"] = bool(cp.vl["CRUISE_BUTTONS"]["ACC_Resume"])
 
     self.lkas_car_model = cp_cam.vl["DAS_6"]["CAR_MODEL"]
     self.button_counter = cp.vl["CRUISE_BUTTONS"]["COUNTER"]
