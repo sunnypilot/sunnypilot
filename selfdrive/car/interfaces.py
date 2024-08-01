@@ -240,13 +240,10 @@ class CarInterfaceBase(ABC):
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
     self.gear_warning = 0
     self.cruise_cancelled_btn = True
-    self.acc_mads_combo = self.param_s.get_bool("AccMadsCombo")
     self.prev_acc_mads_combo = False
     self.mads_event_lock = True
     self.gap_button_counter = 0
     self.experimental_mode_hold = False
-    self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
-    self.lkas_toggle = self.param_s.get_bool("LkasToggle")
     self.last_mads_init = 0.
     self.madsEnabledInit = False
     self.madsEnabledInitPrev = False
@@ -551,7 +548,7 @@ class CarInterfaceBase(ABC):
     return v_cruise != V_CRUISE_UNSET
 
   def get_acc_mads(self, cruiseState_enabled, acc_enabled, mads_enabled):
-    if self.acc_mads_combo:
+    if self.CS.params_list.acc_mads_combo:
       if not self.prev_acc_mads_combo and (cruiseState_enabled or acc_enabled):
         mads_enabled = True
       self.prev_acc_mads_combo = (cruiseState_enabled or acc_enabled)
@@ -591,7 +588,7 @@ class CarInterfaceBase(ABC):
   def get_sp_cruise_main_state(self, cs_out, CS):
     if not CS.control_initialized:
       mads_enabled = False
-    elif not self.mads_main_toggle:
+    elif not self.CS.params_list.mads_main_toggle:
       mads_enabled = False
     else:
       mads_enabled = cs_out.cruiseState.available
@@ -603,7 +600,7 @@ class CarInterfaceBase(ABC):
       self.madsEnabledInit = False
       self.madsEnabledInitPrev = False
       return False
-    if not self.mads_main_toggle or self.prev_acc_mads_combo:
+    if not self.CS.params_list.mads_main_toggle or self.prev_acc_mads_combo:
       return CS.madsEnabled
     if not self.madsEnabledInit and CS.madsEnabled:
       self.madsEnabledInit = True
@@ -762,7 +759,6 @@ class CarStateBase(ABC):
     self.cluster_speed_hyst_gap = 0.0
     self.cluster_min_speed = 0.0  # min speed before dropping to 0
 
-    self.param_s = Params()
     self.accEnabled = False
     self.madsEnabled = False
     self.disengageByBrake = False

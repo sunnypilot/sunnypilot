@@ -101,7 +101,7 @@ void MadsSettings::updateToggles() {
   const bool enable_mads = params.getBool("EnableMads");
   const bool enabled = is_offroad && enable_mads;
 
-  toggles["AccMadsCombo"]->setEnabled(enabled);
-  toggles["MadsCruiseMain"]->setEnabled(enabled);
+  toggles["AccMadsCombo"]->setEnabled(enable_mads);
+  toggles["MadsCruiseMain"]->setEnabled(enable_mads);
   dlob_settings->setEnabled(enabled);
 }
