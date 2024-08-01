@@ -20,6 +20,7 @@ from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG, ButtonEvents
+from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.car.values import PLATFORMS
 from openpilot.selfdrive.controls.lib.desire_helper import get_min_lateral_speed
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET, get_friction
@@ -769,13 +770,7 @@ class CarStateBase(ABC):
     self.control_initialized = False
 
     self.button_events: list[capnp.lib.capnp._DynamicStructBuilder] = []
-    self.params_list: SimpleNamespace = SimpleNamespace(
-      experimental_mode=False,
-      is_metric=False,
-      below_speed_pause=False,
-      pause_lateral_speed=0,
-      reverse_dm_cam=False
-    )
+    self.params_list: SimpleNamespace = ParamManager().get_params()
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3

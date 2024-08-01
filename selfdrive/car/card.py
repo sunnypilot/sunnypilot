@@ -16,6 +16,7 @@ from openpilot.common.realtime import config_realtime_process, Priority, Ratekee
 from openpilot.selfdrive.pandad import can_list_to_can_capnp
 from openpilot.selfdrive.car.car_helpers import get_car, get_one_can
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.controls.lib.events import Events
 
 REPLAY = "REPLAY" in os.environ
@@ -92,7 +93,9 @@ class Car:
 
     self.events = Events()
 
-    self.params_list: SimpleNamespace | None = None
+    self.param_manager: ParamManager = ParamManager()
+    self.param_manager.update(self.params)
+    self.params_list: SimpleNamespace = self.param_manager.get_params()
 
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
@@ -190,16 +193,10 @@ class Car:
     self.initialized_prev = initialized
     self.CS_prev = CS.as_reader()
 
-  def sp_params_thread(self, event):
+  def sp_params_thread(self, event: threading.Event) -> None:
     while not event.is_set():
-      params_list = {
-        "experimental_mode": self.params.get_bool("ExperimentalMode"),
-        "is_metric": self.params.get_bool("IsMetric"),
-        "below_speed_pause": self.params.get_bool("BelowSpeedPause"),
-        "pause_lateral_speed": int(self.params.get("PauseLateralSpeed", encoding="utf8")),
-        "reverse_dm_cam": self.params.get_bool("ReverseDmCam"),
-      }
-      self.params_list = SimpleNamespace(**params_list)
+      self.param_manager.update(self.params)
+      self.params_list = self.param_manager.get_params()
       time.sleep(0.1)
 
   def card_thread(self):
