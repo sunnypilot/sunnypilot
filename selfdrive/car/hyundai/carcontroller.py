@@ -540,3 +540,4 @@ class CarController(CarControllerBase):
       #self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
       self.accel_val = self.accel_raw
     self.accel_last = self.accel_val
+    self.accel_last_jerk = self.accel_val
