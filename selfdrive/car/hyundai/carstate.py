@@ -297,10 +297,10 @@ class CarState(CarStateBase):
 
     self.prev_cruise_buttons = self.cruise_buttons[-1]
     self.prev_main_buttons = self.main_buttons[-1]
-    if self.CP.openpilotLongitudinalControl:
-      ret.cruiseState.available = self.get_main_enabled(ret)
     self.cruise_buttons.extend(cp.vl_all[self.cruise_btns_msg_canfd]["CRUISE_BUTTONS"])
     self.main_buttons.extend(cp.vl_all[self.cruise_btns_msg_canfd]["ADAPTIVE_CRUISE_MAIN_BTN"])
+    if self.CP.openpilotLongitudinalControl:
+      ret.cruiseState.available = self.get_main_enabled(ret)
     self.prev_mads_enabled = self.mads_enabled
     self.prev_lfa_enabled = self.lfa_enabled
     self.lfa_enabled = cp.vl[self.cruise_btns_msg_canfd]["LFA_BTN"]
