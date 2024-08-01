@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
+import threading
 import time
+from types import SimpleNamespace
 
 import cereal.messaging as messaging
 
@@ -14,6 +16,7 @@ from openpilot.common.realtime import config_realtime_process, Priority, Ratekee
 from openpilot.selfdrive.pandad import can_list_to_can_capnp
 from openpilot.selfdrive.car.car_helpers import get_car, get_one_can
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.controls.lib.events import Events
 
 REPLAY = "REPLAY" in os.environ
@@ -90,6 +93,10 @@ class Car:
 
     self.events = Events()
 
+    self.param_manager: ParamManager = ParamManager()
+    self.param_manager.update(self.params)
+    self._params_list: SimpleNamespace = self.param_manager.get_params()
+
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
@@ -98,7 +105,7 @@ class Car:
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
-    CS = self.CI.update(self.CC_prev, can_strs)
+    CS = self.CI.update(self.CC_prev, can_strs, self._params_list)
 
     self.sm.update(0)
 
@@ -186,10 +193,23 @@ class Car:
     self.initialized_prev = initialized
     self.CS_prev = CS.as_reader()
 
+  def sp_params_thread(self, event: threading.Event) -> None:
+    while not event.is_set():
+      self.param_manager.update(self.params)
+      self._params_list = self.param_manager.get_params()
+      time.sleep(0.1)
+
   def card_thread(self):
-    while True:
-      self.step()
-      self.rk.monitor_time()
+    event = threading.Event()
+    thread = threading.Thread(target=self.sp_params_thread, args=(event, ))
+    try:
+      thread.start()
+      while True:
+        self.step()
+        self.rk.monitor_time()
+    finally:
+      event.set()
+      thread.join()
 
 
 def main():
