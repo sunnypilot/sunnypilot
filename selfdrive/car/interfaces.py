@@ -769,7 +769,13 @@ class CarStateBase(ABC):
     self.control_initialized = False
 
     self.button_events: list[capnp.lib.capnp._DynamicStructBuilder] = []
-    self.params_list: SimpleNamespace | None = None
+    self.params_list: SimpleNamespace = SimpleNamespace(
+      experimental_mode=False,
+      is_metric=False,
+      below_speed_pause=False,
+      pause_lateral_speed=0,
+      reverse_dm_cam=False
+    )
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
