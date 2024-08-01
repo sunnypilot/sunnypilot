@@ -74,7 +74,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
   auto hkgCustomLongTuning = new ParamControl(
     "HkgCustomLongTuning",
-    tr("HKG CAN: Custom Tuning for New Longitudinal API"),
+    tr("HKG: Custom Tuning for New Longitudinal API"),
     tr(""),
     "../assets/offroad/icon_blank.png"
   );
