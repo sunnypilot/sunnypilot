@@ -308,6 +308,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SpeedLimitWarningValueOffset", PERSISTENT | BACKUP},
     {"SpeedLimitWarningOffsetType", PERSISTENT | BACKUP},
     {"StandStillTimer", PERSISTENT | BACKUP},
+    {"StockLongTesla", PERSISTENT | BACKUP},
     {"StockLongToyota", PERSISTENT | BACKUP},
     {"SubaruManualParkingBrakeSng", PERSISTENT | BACKUP},
     {"SunnylinkDongleId", PERSISTENT},
