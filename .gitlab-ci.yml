@@ -47,6 +47,7 @@ workflow: # If running on any branch other than main.
       variables:
         EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
         NEW_BRANCH: "dev-c3"
+        AUTO_PUBLISH: true
       when: always
     #commit made to main (master)
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
@@ -54,6 +55,7 @@ workflow: # If running on any branch other than main.
         NEW_BRANCH: "staging-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
         EXTRA_VERSION_IDENTIFIER: "-staging"
+        AUTO_PUBLISH: true
       when: always
     # if tag
     - if: $CI_COMMIT_TAG
@@ -61,6 +63,7 @@ workflow: # If running on any branch other than main.
         NEW_BRANCH: "release-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
         EXTRA_VERSION_IDENTIFIER: "-release"
+        AUTO_PUBLISH: true
     - when: always
 
 
@@ -92,7 +95,7 @@ build:
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
     - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache --minimal
     - touch ${BUILD_DIR}/prebuilt
-    - sudo rm -rf ${OUTPUT_DIR} 
+    - sudo rm -rf ${OUTPUT_DIR}
     - mkdir -p ${OUTPUT_DIR}
     # We first include the paths we want to keep, even if we later will be excluding the other things on those paths
     - rsync -avm
@@ -135,7 +138,7 @@ build:
       --chown=comma:comma
       ${BUILD_DIR}/ ${OUTPUT_DIR}/
   after_script:
-    # cleanup build dir after doing work 
+    # cleanup build dir after doing work
     - find $BUILD_DIR/ -mindepth 1 -delete
   artifacts:
     paths:
@@ -146,7 +149,7 @@ build:
       when: manual
     - if: $NEW_BRANCH
       when: always
-      
+
 check no source code sent:
   image: alpine
   stage: sanity
@@ -215,6 +218,8 @@ publish to public github prebuilt:
     GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
     GIT_CONFIG_USER_NAME: "Jason Wen"
   rules:
+    - if: $AUTO_PUBLISH
+      when: on_success
     - if: $NEW_BRANCH
       when: manual
     - when: never
