@@ -92,7 +92,13 @@ class Car:
 
     self.events = Events()
 
-    self.params_list: SimpleNamespace | None = None
+    self.params_list: SimpleNamespace = SimpleNamespace(
+      experimental_mode=self.params.get_bool("ExperimentalMode"),
+      is_metric=self.params.get_bool("IsMetric"),
+      below_speed_pause=self.params.get_bool("BelowSpeedPause"),
+      pause_lateral_speed=int(self.params.get("PauseLateralSpeed", encoding="utf8")),
+      reverse_dm_cam=self.params.get_bool("ReverseDmCam"),
+    )
 
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
