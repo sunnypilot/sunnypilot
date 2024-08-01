@@ -121,7 +121,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // Tesla
   addItem(new LabelControlSP(tr("Tesla")));
-  stockLongTesla = new ParamControlSP(
+  auto stockLongTesla = new ParamControlSP(
     "StockLongTesla",
     tr("Enable Stock Longitudinal Control (TACC)"),
     tr("sunnypilot will <b>not</b> take over control of gas and brakes. Stock Tesla longitudinal control (TACC) will be used."),
