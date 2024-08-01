@@ -47,7 +47,6 @@ workflow: # If running on any branch other than main.
       variables:
         EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
         NEW_BRANCH: "dev-c3"
-        AUTO_PUBLISH: true
       when: always
     #commit made to main (master)
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
@@ -63,7 +62,6 @@ workflow: # If running on any branch other than main.
         NEW_BRANCH: "release-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
         EXTRA_VERSION_IDENTIFIER: "-release"
-        AUTO_PUBLISH: true
     - when: always
 
 
