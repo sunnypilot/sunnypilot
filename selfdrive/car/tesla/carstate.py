@@ -63,6 +63,9 @@ class CarState(CarStateBase):
     ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
     ret.cruiseState.standstill = False  # This needs to be false, since we can resume from stop without sending anything special
 
+    speed_limit = cp.vl["DAS_status"]["DAS_visionOnlySpeedLimit"]  # TODO: give user toggle between vision and fused
+    ret.cruiseState.speedLimit = self._calculate_speed_limit(speed_limit, speed_units)
+
     # Gear
     ret.gearShifter = GEAR_MAP[self.can_define.dv["DI_systemStatus"]["DI_gear"].get(int(cp.vl["DI_systemStatus"]["DI_gear"]), "DI_GEAR_INVALID")]
 
@@ -99,6 +102,15 @@ class CarState(CarStateBase):
     self.das_control = copy.copy(cp_cam.vl["DAS_control"])
 
     return ret
+
+  def _calculate_speed_limit(self, speed_limit, speed_unit):
+    if speed_limit in [0, 155]:
+      return 0
+    if speed_unit == "KPH":
+      return speed_limit * CV.KPH_TO_MS
+    elif speed_unit == "MPH":
+      return speed_limit * CV.MPH_TO_MS
+    return 0
 
   @staticmethod
   def get_can_parser(CP):
