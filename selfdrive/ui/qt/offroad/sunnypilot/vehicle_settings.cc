@@ -72,14 +72,14 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   // Hyundai/Kia/Genesis
   addItem(new LabelControl(tr("Hyundai/Kia/Genesis")));
-  auto hkgSmoothStop = new ParamControl(
-    "HkgSmoothStop",
-    tr("HKG CAN: Smoother Stopping Performance (Beta)"),
-    tr("Smoother stopping behind a stopped car or desired stopping event. This is only applicable to HKG CAN platforms using openpilot longitudinal control."),
+  auto hkgCustomLongTuning = new ParamControl(
+    "HkgCustomLongTuning",
+    tr("HKG CAN: Custom Tuning for New Longitudinal API"),
+    tr(""),
     "../assets/offroad/icon_blank.png"
   );
-  hkgSmoothStop->setConfirmation(true, false);
-  addItem(hkgSmoothStop);
+  hkgCustomLongTuning->setConfirmation(true, false);
+  addItem(hkgCustomLongTuning);
 
   // Subaru
   addItem(new LabelControl(tr("Subaru")));
@@ -186,7 +186,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   // trigger offroadTransition when going onroad/offroad
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     is_onroad = !offroad;
-    hkgSmoothStop->setEnabled(offroad);
+    hkgCustomLongTuning->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
     toyotaAbh->setEnabled(offroad);
     toyotaEnhancedBsm->setEnabled(offroad);

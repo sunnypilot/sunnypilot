@@ -113,6 +113,7 @@ class CarController(CarControllerBase):
     self.accel_raw = 0
     self.accel_val = 0
     self.accel_last_jerk = 0
+    self.hkg_custom_long_tuning = self.param_s.get_bool("HkgCustomLongTuning")
 
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
@@ -497,6 +498,9 @@ class CarController(CarControllerBase):
     a_error = accel - CS.out.aEgo
     jerk = jerk + (a_error * 2.0)
 
+    if self.hkg_custom_long_tuning:
+      self.jerk_u = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
+      self.jerk_l = 5.0
     if self.CP.carFingerprint in CANFD_CAR or self.CP.carFingerprint == CAR.HYUNDAI_KONA_EV_2022:
       startingJerk = 0.5
       jerkLimit = 5.0
