@@ -282,7 +282,7 @@ class CarInterface(CarInterfaceBase):
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        if self.CS.prev_cruise_setting != 1 and self.CS.cruise_setting == 1:
+        if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
