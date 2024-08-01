@@ -63,7 +63,7 @@ class CarState(CarStateBase):
     ret.cruiseState.available = ((cruise_state == "STANDBY") or ret.cruiseState.enabled)
     ret.cruiseState.standstill = False  # This needs to be false, since we can resume from stop without sending anything special
 
-    speed_limit = cp.vl["DAS_status"]["DAS_visionOnlySpeedLimit"]  # TODO: give user toggle between vision and fused
+    speed_limit = cp_cam.vl["DAS_status"]["DAS_visionOnlySpeedLimit"]  # TODO: give user toggle between vision and fused
     ret.cruiseState.speedLimit = self._calculate_speed_limit(speed_limit, speed_units)
 
     # Gear
