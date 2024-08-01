@@ -1,6 +1,5 @@
 from cereal import car
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.params import Params
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fault_avoidance
 from openpilot.selfdrive.car.interfaces import CarControllerBase
@@ -25,12 +24,9 @@ class CarController(CarControllerBase):
     self.cruise_button_prev = 0
     self.steer_rate_counter = 0
 
-    self.param_s = Params()
-
     self.subaru_sng = False
     if CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
       self.subaru_sng = True
-      self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
       self.prev_close_distance = 0
       self.prev_standstill = False
       self.standstill_start = 0
@@ -46,9 +42,6 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     hud_control = CC.hudControl
     pcm_cancel_cmd = CC.cruiseControl.cancel
-
-    if self.frame % 250 == 0 and self.subaru_sng:
-      self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
 
     can_sends = []
 
@@ -191,7 +184,7 @@ class CarController(CarControllerBase):
         and CS.close_distance > self.prev_close_distance):    # distance with lead car is increasing
         self.sng_acc_resume = True
     elif not (self.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID)):
-      if self.manual_parking_brake:
+      if CS.params_list.subaru_manual_parking_brake and self.subaru_sng:
         # Send brake message with non-zero speed in standstill to avoid non-EPB ACC disengage
         if (CC.enabled                                        # ACC active
           and CS.car_follow == 1                              # lead car
