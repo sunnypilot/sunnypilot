@@ -5,7 +5,7 @@ from openpilot.common.params import Params
 
 class ParamManager:
   def __init__(self):
-    self.params_list: SimpleNamespace = self.convert_to_namespace({
+    self._params_list: SimpleNamespace = self._create_namespace({
       "below_speed_pause": False,
       "experimental_mode": False,
       "is_metric": False,
@@ -14,14 +14,14 @@ class ParamManager:
     })
 
   @staticmethod
-  def convert_to_namespace(data: dict) -> SimpleNamespace:
+  def _create_namespace(data: dict) -> SimpleNamespace:
     return SimpleNamespace(**data)
 
   def get_params(self) -> SimpleNamespace:
-    return self.params_list
+    return self._params_list
 
   def update(self, params: Params) -> None:
-    self.params_list = self.convert_to_namespace({
+    self._params_list = self._create_namespace({
       "below_speed_pause": params.get_bool("BelowSpeedPause"),
       "experimental_mode": params.get_bool("ExperimentalMode"),
       "is_metric": params.get_bool("IsMetric"),
