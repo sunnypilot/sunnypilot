@@ -95,7 +95,7 @@ class Car:
 
     self.param_manager: ParamManager = ParamManager()
     self.param_manager.update(self.params)
-    self.params_list: SimpleNamespace = self.param_manager.get_params()
+    self._params_list: SimpleNamespace = self.param_manager.get_params()
 
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
@@ -105,7 +105,7 @@ class Car:
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
-    CS = self.CI.update(self.CC_prev, can_strs, self.params_list)
+    CS = self.CI.update(self.CC_prev, can_strs, self._params_list)
 
     self.sm.update(0)
 
@@ -196,7 +196,7 @@ class Car:
   def sp_params_thread(self, event: threading.Event) -> None:
     while not event.is_set():
       self.param_manager.update(self.params)
-      self.params_list = self.param_manager.get_params()
+      self._params_list = self.param_manager.get_params()
       time.sleep(0.1)
 
   def card_thread(self):
