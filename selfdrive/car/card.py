@@ -190,7 +190,7 @@ class Car:
     self.initialized_prev = initialized
     self.CS_prev = CS.as_reader()
 
-  def sp_params_thread(self, event):
+  def sp_params_thread(self, event: threading.Event) -> None:
     while not event.is_set():
       params_list = {
         "experimental_mode": self.params.get_bool("ExperimentalMode"),
