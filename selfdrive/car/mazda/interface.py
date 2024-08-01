@@ -39,8 +39,11 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam)
 
     # TODO: add button types for inc and dec
-    self.CS.button_events.extend(create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise}))
-    self.CS.button_events.extend(create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}))
+    self.CS.button_events = [
+      *self.CS.button_events,
+      *create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise}),
+      *create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}),
+    ]
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
 
