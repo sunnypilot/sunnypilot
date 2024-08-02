@@ -207,7 +207,6 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
-    self.sp_update_params()
 
     distance_button = 0
 
@@ -221,7 +220,7 @@ class CarInterface(CarInterfaceBase):
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        if self.lkas_toggle:
+        if self.CS.params_list.lkas_toggle:
           if self.CS.lta_status_active:
             if (self.CS.prev_lkas_enabled == 16 and self.CS.lkas_enabled == 0) or \
               (self.CS.prev_lkas_enabled == 0 and self.CS.lkas_enabled == 16):
