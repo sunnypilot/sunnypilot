@@ -39,14 +39,13 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_adas)
 
-    # TODO: Implement detection of half vs full press of stalk for MADS control
-    # Until then, we're disabling main state control to prevent it from trying to self-engage without user input
-    self.CS.mads_enabled = False  # Tesla has no "cruise main state", as cruise is automatically available
-
     if ret.cruiseState.available:
       if self.enable_mads:
-        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
-          self.CS.madsEnabled = True
+        for b in self.CS.button_events:
+          if b.type == ButtonType.altButton1 and b.pressed:
+            self.CS.madsEnabled = True
+          elif b.type == ButtonType.altButton2 and b.pressed:
+            self.CS.madsEnabled = False
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
