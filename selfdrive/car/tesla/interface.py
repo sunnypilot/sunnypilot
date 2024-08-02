@@ -47,7 +47,7 @@ class CarInterface(CarInterfaceBase):
           elif b.type == ButtonType.altButton2 and b.pressed:
             self.CS.madsEnabled = False
         self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-        self.CS.madsEnabled = False if self.CS.steer_warning == "EAC_ERROR_HANDS_ON" and self.CS.hands_on_level >= 3 else True
+        self.CS.madsEnabled = False if self.CS.steer_warning == "EAC_ERROR_HANDS_ON" and self.CS.hands_on_level >= 3 else self.CS.madsEnabled
     else:
       self.CS.madsEnabled = False
 
