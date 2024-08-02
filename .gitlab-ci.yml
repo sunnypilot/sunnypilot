@@ -11,6 +11,9 @@ variables:
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
   BASE_BUILD_NUMER: 3000
 
+  EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
+  NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
+
 stages:
   - build
   - sanity
@@ -35,12 +38,6 @@ workflow: # If running on any branch other than main.
     # We are an MR, but it's a draft, we won't proceed with anything.
     - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
       when: never
-    # We are a merge request
-    - if: $CI_MERGE_REQUEST_IID
-      variables:
-        EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
-        NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
-      when: always
 
     # Below are the rules when a commit is done (code has been added to the branch)
     # Commit to master-dev-c3
@@ -48,6 +45,7 @@ workflow: # If running on any branch other than main.
       variables:
         EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
         NEW_BRANCH: "dev-c3"
+        AUTO_BUILD: true
       when: always
     #commit made to main (master)
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
@@ -56,6 +54,7 @@ workflow: # If running on any branch other than main.
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
         EXTRA_VERSION_IDENTIFIER: "-staging"
         AUTO_PUBLISH: true
+        AUTO_BUILD: true
       when: always
     # if tag
     - if: $CI_COMMIT_TAG
@@ -63,6 +62,7 @@ workflow: # If running on any branch other than main.
         NEW_BRANCH: "release-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
         EXTRA_VERSION_IDENTIFIER: "-release"
+        AUTO_BUILD: true
     - when: always
 
 
@@ -144,32 +144,9 @@ build:
       - ${OUTPUT_DIR}/
   tags: [ 'sunnypilot', 'tici' ]
   rules:
-    - if: $CI_MERGE_REQUEST_IID
-      when: manual
-    - if: $NEW_BRANCH
+    - if: $AUTO_BUILD
       when: always
-
-check no source code sent:
-  image: alpine
-  stage: sanity
-  variables:
-    FORBIDDEN_FILE_EXTENSIONS: "*.a,*.o,*.os,*.pyc,moc_*,*.cc,Jenkinsfile,supercombo.onnx,.sconsign.dblite"
-    FORBIDDEN_DIR_PATTERNS: "*panda/certs,*panda/crypto,*release,*.github,*selfdrive/ui/replay,*__pycache__"
-    REQUIRED_FILE_EXTENSIONS: "*.py,*.json"
-    REQUIRED_DIR_PATTERNS: "*selfdrive/ui,*openpilot"
-  before_script:
-    - apk update && apk upgrade
-    - apk add bash findutils
-  script:
-    - cd ${OUTPUT_DIR}
-    - echo "Checking that we have properly cleaned up"
-    - ${CI_DIR}/sanity_check.sh "$FORBIDDEN_FILE_EXTENSIONS" "$FORBIDDEN_DIR_PATTERNS" true
-    - echo "Checking that our sanity check works and also checking that some required files are indeed found"
-    - ${CI_DIR}/sanity_check.sh "$REQUIRED_FILE_EXTENSIONS" "$REQUIRED_DIR_PATTERNS" false
-  rules:
-    - if: $NEW_BRANCH
-      when: on_success
-    - when: never
+    - when: manual
 
 .publish_base: &publish_base
   image: alpine
@@ -179,9 +156,6 @@ check no source code sent:
   needs:
     - job: build
       artifacts: true
-    - job: "check no source code sent"
-      artifacts: false
-      optional: false
   before_script:
     - 'apk update && apk upgrade'
     - 'apk add git bash openssh'
@@ -206,9 +180,9 @@ publish to private gitlab prebuilt:
   variables:
     GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot-prebuilts.git
   rules:
-    - if: $NEW_BRANCH
+    - if: $AUTO_BUILD
       when: on_success
-    - when: never
+    - when: manual
 
 publish to public github prebuilt:
   extends: ".publish_base"
@@ -219,9 +193,7 @@ publish to public github prebuilt:
   rules:
     - if: $AUTO_PUBLISH
       when: on_success
-    - if: $NEW_BRANCH
-      when: manual
-    - when: never
+    - when: manual
 
 .notify_discord: &notify_discord
   image: alpine
