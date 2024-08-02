@@ -5,10 +5,11 @@ variables:
   VERSION: 'echo $(date "+%Y.%m.%d")'
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
-  DEV_C3_SOURCE_BRANCH: "master-dev-c3"
+  DEV_C3_SOURCE_BRANCH: "prebuilt-pub-branches-and-fix-build-number" # Temp to force run
   GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
+  BASE_BUILD_NUMER: 3000
 
 stages:
   - build
@@ -37,7 +38,7 @@ workflow: # If running on any branch other than main.
     # We are a merge request
     - if: $CI_MERGE_REQUEST_IID
       variables:
-        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
+        EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
         NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
       when: always
 
@@ -45,7 +46,7 @@ workflow: # If running on any branch other than main.
     # Commit to master-dev-c3
     - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
       variables:
-        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
+        EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
         NEW_BRANCH: "dev-c3"
       when: always
     #commit made to main (master)
