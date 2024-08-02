@@ -11,7 +11,7 @@ variables:
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
   BASE_BUILD_NUMER: 3000
 
-  EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
+  EXTRA_VERSION_IDENTIFIER: "${CI_PIPELINE_IID}"
   NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
 
 stages:
@@ -27,7 +27,8 @@ default:
     - x86
 
 .default_before_script: &default_before_script
-  - 'export VERSION=$(eval $VERSION)${EXTRA_VERSION_IDENTIFIER}'
+  - 'if [ "$EXTRA_VERSION_IDENTIFIER" = "$CI_PIPELINE_IID" ]; then export EXTRA_VERSION_IDENTIFIER=$((CI_PIPELINE_IID + BASE_BUILD_NUMER)); fi'
+  - 'export VERSION=$(eval $VERSION)-${EXTRA_VERSION_IDENTIFIER}'
   - 'mkdir -p "${BUILD_DIR}/"'
   - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
   - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
@@ -43,7 +44,7 @@ workflow: # If running on any branch other than main.
     # Commit to master-dev-c3
     - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
       variables:
-        EXTRA_VERSION_IDENTIFIER: "-$((CI_PIPELINE_IID + BASE_BUILD_NUMER))"
+        EXTRA_VERSION_IDENTIFIER: "${CI_PIPELINE_IID}"
         NEW_BRANCH: "dev-c3"
         AUTO_BUILD: true
       when: always
@@ -52,7 +53,7 @@ workflow: # If running on any branch other than main.
       variables:
         NEW_BRANCH: "staging-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
-        EXTRA_VERSION_IDENTIFIER: "-staging"
+        EXTRA_VERSION_IDENTIFIER: "staging"
         AUTO_PUBLISH: true
         AUTO_BUILD: true
       when: always
@@ -61,7 +62,7 @@ workflow: # If running on any branch other than main.
       variables:
         NEW_BRANCH: "release-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
-        EXTRA_VERSION_IDENTIFIER: "-release"
+        EXTRA_VERSION_IDENTIFIER: "release"
         AUTO_BUILD: true
     - when: always
 
