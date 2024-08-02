@@ -470,7 +470,7 @@ class CarInterfaceBase(ABC):
         events.add(EventName.spReverseGear)
       elif cs_out.vEgo >= 5:
         events.add(EventName.reverseGear)
-    if not cs_out.cruiseState.available:
+    if not cs_out.cruiseState.available and cs_out.cruiseState.enabled:
       events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
       events.add(EventName.espDisabled)

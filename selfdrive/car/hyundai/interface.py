@@ -210,22 +210,25 @@ class CarInterface(CarInterfaceBase):
       *create_button_events(self.CS.main_buttons[-1], self.CS.prev_main_buttons, {1: ButtonType.altButton3}),
     ]
 
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+
     self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
                                                             self.CS.button_events, c.vCruise)
-
-    self.CS.mads_enabled = False if not self.mads_main_toggle else self.CS.mads_enabled
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
         if any(b.type in (ButtonType.altButton3, ButtonType.cancel) and not b.pressed for b in self.CS.button_events):
           self.CS.accEnabled = True
-      if self.enable_mads:
-        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
-          self.CS.madsEnabled = True
-        if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
-          self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-    else:
+
+    if self.enable_mads:
+      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and \
+        any(b.type == ButtonType.altButton3 for b in self.CS.button_events):
+        self.CS.madsEnabled = True
+      if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
+        self.CS.madsEnabled = not self.CS.madsEnabled
+      self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+
+    if not ret.cruiseState.available and self.CS.out.cruiseState.available:
       self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
