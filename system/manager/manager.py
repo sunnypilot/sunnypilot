@@ -96,6 +96,7 @@ def manager_init() -> None:
     ("SpeedLimitWarningOffsetType", "0"),
     ("StandStillTimer", "0"),
     ("StockLongToyota", "0"),
+    ("TeslaVirtualTorqueBlending", "0"),
     ("TorqueDeadzoneDeg", "0"),
     ("TorqueFriction", "1"),
     ("TorqueMaxLatAccel", "250"),
