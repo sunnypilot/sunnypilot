@@ -183,6 +183,8 @@ publish to private gitlab prebuilt:
   rules:
     - if: $AUTO_BUILD
       when: on_success
+    - if: $CI_MERGE_REQUEST_IID
+      when: on_success
     - when: manual
 
 publish to public github prebuilt:
