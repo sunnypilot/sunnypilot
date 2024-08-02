@@ -2,9 +2,13 @@
 import os
 import random
 import secrets
+import threading
+import time
 from flask import Flask, render_template, Response, request, send_from_directory, session, redirect, url_for
+from openpilot.common.realtime import set_core_affinity
 import openpilot.system.fleetmanager.helpers as fleet
 from openpilot.system.hardware.hw import Paths
+from openpilot.common.swaglog import cloudlog
 
 app = Flask(__name__)
 
@@ -89,7 +93,7 @@ def footage():
 @app.route("/screenrecords")
 @fleet.login_required
 def screenrecords():
-  rows = fleet.list_files(fleet.SCREENRECORD_PATH)
+  rows = fleet.list_files(fleet.SCREENRECORD_PATH, True)
   if not rows:
     return render_template("error.html", error="no screenrecords found at:<br><br>" + fleet.SCREENRECORD_PATH)
   return render_template("screenrecords.html", rows=rows, clip=rows[0])
@@ -131,14 +135,32 @@ def open_error_log(file_name):
   return render_template("error_log.html", file_name=file_name, file_content=error)
 
 
-def main():
+def generate_pin():
   if not os.path.exists(fleet.PIN_PATH):
     os.makedirs(fleet.PIN_PATH)
   pin = str(random.randint(100000, 999999))
   with open(fleet.PIN_PATH + "otp.conf", "w") as file:
     file.write(pin)
 
+
+def schedule_pin_generate():
+  pin_thread = threading.Thread(target=update_pin)
+  pin_thread.start()
+
+
+def update_pin():
+  while True:
+    generate_pin()
+    time.sleep(30)
+
+
+def main():
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("fleet_manager: failed to set core affinity")
   app.secret_key = secrets.token_hex(32)
+  schedule_pin_generate()
   app.run(host="0.0.0.0", port=5050)
 
 

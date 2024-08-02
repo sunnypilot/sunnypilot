@@ -14,6 +14,8 @@ SCons.Warnings.warningAsException(True)
 
 TICI = os.path.isfile('/TICI')
 AGNOS = TICI
+UBUNTU_FOCAL = int(subprocess.check_output('[ -f /etc/os-release ] && . /etc/os-release && [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "20.04" ] && echo 1 || echo 0', shell=True, encoding='utf-8').rstrip())
+Export('UBUNTU_FOCAL')
 
 Decider('MD5-timestamp')
 
@@ -69,6 +71,12 @@ AddOption('--minimal',
           dest='extras',
           default=os.path.exists(File('#.lfsconfig').abspath), # minimal by default on release branch (where there's no LFS)
           help='the minimum build to run openpilot. no tests, tools, etc.')
+
+AddOption('--stock-ui',
+          action='store_true',
+          dest='stock_ui',
+          default=False,
+          help='Build stock UI instead of sunnypilot UI')
 
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64
@@ -173,6 +181,10 @@ if arch != "Darwin":
 cflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 cxxflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 
+if not GetOption('stock_ui'):
+  cflags += ["-DSUNNYPILOT"]
+  cxxflags += ["-DSUNNYPILOT"]
+
 ccflags_option = GetOption('ccflags')
 if ccflags_option:
   ccflags += ccflags_option.split(' ')
@@ -211,6 +223,8 @@ env = Environment(
     "#cereal",
     "#msgq",
     "#opendbc/can",
+    "#third_party/maplibre-native-qt/include",
+    f"#third_party/maplibre-native-qt/{arch}/include"
   ],
 
   CC='clang',
@@ -244,7 +258,8 @@ if GetOption('compile_db'):
   env.CompilationDatabase('compile_commands.json')
 
 # Setup cache dir
-cache_dir = '/data/scons_cache' if AGNOS else '/tmp/scons_cache'
+default_cache_dir = '/data/scons_cache' if AGNOS else '/tmp/scons_cache'
+cache_dir = ARGUMENTS.get('cache_dir', default_cache_dir)
 CacheDir(cache_dir)
 Clean(["."], cache_dir)
 
@@ -275,7 +290,7 @@ Export('envCython')
 
 # Qt build environment
 qt_env = env.Clone()
-qt_modules = ["Widgets", "Gui", "Core", "Network", "Concurrent", "Multimedia", "Quick", "Qml", "QuickWidgets", "DBus", "Xml"]
+qt_modules = ["Widgets", "Gui", "Core", "Network", "Concurrent", "Multimedia", "Quick", "Qml", "QuickWidgets", "Location", "Positioning", "DBus", "Xml"]
 
 qt_libs = []
 if arch == "Darwin":
@@ -328,7 +343,8 @@ qt_flags = [
   "-DQT_MESSAGELOGCONTEXT",
 ]
 qt_env['CXXFLAGS'] += qt_flags
-qt_env['LIBPATH'] += ['#selfdrive/ui', ]
+qt_env['LIBPATH'] += ['#selfdrive/ui', f"#third_party/maplibre-native-qt/{arch}/lib"]
+qt_env['RPATH'] += [Dir(f"#third_party/maplibre-native-qt/{arch}/lib").srcnode().abspath]
 qt_env['LIBS'] = qt_libs
 
 if GetOption("clazy"):

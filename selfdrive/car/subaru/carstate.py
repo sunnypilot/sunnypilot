@@ -4,7 +4,7 @@ from opendbc.can.can_define import CANDefine
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
-from openpilot.selfdrive.car.subaru.values import DBC, CanBus, SubaruFlags
+from openpilot.selfdrive.car.subaru.values import DBC, CanBus, SubaruFlags, SubaruFlagsSP
 from openpilot.selfdrive.car import CanSignalRateCalculator
 
 
@@ -16,12 +16,17 @@ class CarState(CarStateBase):
 
     self.angle_rate_calulator = CanSignalRateCalculator(50)
 
+    self.lkas_enabled = None
+    self.prev_lkas_enabled = None
+
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
 
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
+
     throttle_msg = cp.vl["Throttle"] if not (self.CP.flags & SubaruFlags.HYBRID) else cp_body.vl["Throttle_Hybrid"]
     ret.gas = throttle_msg["Throttle_Pedal"] / 255.
-
     ret.gasPressed = ret.gas > 1e-5
     if self.CP.flags & SubaruFlags.PREGLOBAL:
       ret.brakePressed = cp.vl["Brake_Pedal"]["Brake_Pedal"] > 0
@@ -54,9 +59,14 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.vEgoRaw == 0
 
+    if not self.CP.flags & SubaruFlags.PREGLOBAL:
+      self.lkas_enabled = cp_cam.vl["ES_LKAS_State"]["LKAS_Dash_State"]
+    if self.prev_lkas_enabled is None:
+      self.prev_lkas_enabled = self.lkas_enabled
+
     # continuous blinker signals for assisted lane change
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(50, cp.vl["Dashlights"]["LEFT_BLINKER"],
-                                                                          cp.vl["Dashlights"]["RIGHT_BLINKER"])
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_lamp(50, cp.vl["Dashlights"]["LEFT_BLINKER"],
+                                                                                                                    cp.vl["Dashlights"]["RIGHT_BLINKER"])
 
     if self.CP.enableBsm:
       ret.leftBlindspot = (cp.vl["BSD_RCTA"]["L_ADJACENT"] == 1) or (cp.vl["BSD_RCTA"]["L_APPROACHING"] == 1)
@@ -122,8 +132,16 @@ class CarState(CarStateBase):
         self.es_status_msg = copy.copy(cp_es_status.vl["ES_Status"])
         self.cruise_control_msg = copy.copy(cp_cruise.vl["CruiseControl"])
 
+      if self.CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
+        self.cruise_state = cp_cam.vl["ES_DashStatus"]["Cruise_State"]
+        self.brake_pedal_msg = copy.copy(cp.vl["Brake_Pedal"])
+
     if not (self.CP.flags & SubaruFlags.HYBRID):
       self.es_distance_msg = copy.copy(cp_es_distance.vl["ES_Distance"])
+      if self.CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
+        self.throttle_msg = copy.copy(cp.vl["Throttle"])
+        self.car_follow = cp_es_distance.vl["ES_Distance"]["Car_Follow"]
+        self.close_distance = cp_es_distance.vl["ES_Distance"]["Close_Distance"]
 
     self.es_dashstatus_msg = copy.copy(cp_cam.vl["ES_DashStatus"])
     if self.CP.flags & SubaruFlags.SEND_INFOTAINMENT:

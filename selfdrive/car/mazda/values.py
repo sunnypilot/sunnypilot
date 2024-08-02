@@ -1,3 +1,4 @@
+from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import IntFlag
 
@@ -8,6 +9,7 @@ from openpilot.selfdrive.car.docs_definitions import CarHarness, CarDocs, CarPar
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
 
 Ecu = car.CarParams.Ecu
+Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 
 # Steer torque limits
@@ -88,6 +90,14 @@ class Buttons:
   SET_MINUS = 2
   RESUME = 3
   CANCEL = 4
+
+
+BUTTONS = [
+  Button(car.CarState.ButtonEvent.Type.accelCruise, "CRZ_BTNS", "SET_P", [1]),
+  Button(car.CarState.ButtonEvent.Type.decelCruise, "CRZ_BTNS", "SET_M", [1]),
+  Button(car.CarState.ButtonEvent.Type.cancel, "CRZ_BTNS", "CAN_OFF", [1]),
+  Button(car.CarState.ButtonEvent.Type.resumeCruise, "CRZ_BTNS", "RES", [1]),
+]
 
 
 FW_QUERY_CONFIG = FwQueryConfig(

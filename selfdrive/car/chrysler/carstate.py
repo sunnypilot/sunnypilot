@@ -3,7 +3,7 @@ from openpilot.common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS
+from openpilot.selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS, BUTTONS
 
 
 class CarState(CarStateBase):
@@ -24,12 +24,22 @@ class CarState(CarStateBase):
     self.prev_distance_button = 0
     self.distance_button = 0
 
+    self.lkas_enabled = False
+    self.prev_lkas_enabled = False
+    self.lkas_heartbit = None
+    self.lkas_disabled = False
+
+    self.button_states = {button.event_type: False for button in BUTTONS}
+
   def update(self, cp, cp_cam):
 
     ret = car.CarState.new_message()
 
     self.prev_distance_button = self.distance_button
     self.distance_button = cp.vl["CRUISE_BUTTONS"]["ACC_Distance_Dec"]
+
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
 
     # lock info
     ret.doorOpen = any([cp.vl["BCM_1"]["DOOR_OPEN_FL"],
@@ -64,9 +74,19 @@ class CarState(CarStateBase):
       unit=1,
     )
 
+    # Buttons
+    for button in BUTTONS:
+      state = (cp.vl[button.can_addr][button.can_msg] in button.values)
+      if self.button_states[button.event_type] != state:
+        event = car.CarState.ButtonEvent.new_message()
+        event.type = button.event_type
+        event.pressed = state
+        self.button_events.append(event)
+      self.button_states[button.event_type] = state
+
     # button presses
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(200, cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 1,
-                                                                       cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 2)
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_stalk(200, cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 1,
+                                                                                                                    cp.vl["STEERING_LEVERS"]["TURN_SIGNALS"] == 2)
     ret.genericToggle = cp.vl["STEERING_LEVERS"]["HIGH_BEAM_PRESSED"] == 1
 
     # steering wheel
@@ -89,8 +109,13 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in RAM_CARS:
       # Auto High Beam isn't Located in this message on chrysler or jeep currently located in 729 message
       self.auto_high_beam = cp_cam.vl["DAS_6"]['AUTO_HIGH_BEAM_ON']
+      self.lkas_enabled = cp.vl["Center_Stack_2"]["LKAS_Button"] == 1 or cp.vl["Center_Stack_1"]["LKAS_Button"] == 1
       ret.steerFaultTemporary = cp.vl["EPS_3"]["DASM_FAULT"] == 1
     else:
+      self.lkas_enabled = cp.vl["TRACTION_BUTTON"]["TOGGLE_LKAS"] == 1
+      self.lkas_heartbit = cp_cam.vl["LKAS_HEARTBIT"]
+      if not self.control_initialized:
+        self.lkas_disabled = bool(cp_cam.vl["LKAS_HEARTBIT"]["LKAS_DISABLED"])
       ret.steerFaultTemporary = cp.vl["EPS_2"]["LKAS_TEMPORARY_FAULT"] == 1
       ret.steerFaultPermanent = cp.vl["EPS_2"]["LKAS_STATE"] == 4
 
@@ -101,6 +126,7 @@ class CarState(CarStateBase):
 
     self.lkas_car_model = cp_cam.vl["DAS_6"]["CAR_MODEL"]
     self.button_counter = cp.vl["CRUISE_BUTTONS"]["COUNTER"]
+    self.cruise_buttons = cp.vl["CRUISE_BUTTONS"]
 
     return ret
 
@@ -135,11 +161,14 @@ class CarState(CarStateBase):
         ("ESP_8", 50),
         ("EPS_3", 50),
         ("Transmission_Status", 50),
+        ("Center_Stack_1", 1),
+        ("Center_Stack_2", 1),
       ]
     else:
       messages += [
         ("GEAR", 50),
         ("SPEED_1", 100),
+        ("TRACTION_BUTTON", 1),
       ]
       messages += CarState.get_cruise_messages()
 
@@ -153,5 +182,7 @@ class CarState(CarStateBase):
 
     if CP.carFingerprint in RAM_CARS:
       messages += CarState.get_cruise_messages()
+    else:
+      messages.append(("LKAS_HEARTBIT", 10))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)

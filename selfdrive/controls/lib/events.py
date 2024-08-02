@@ -252,6 +252,26 @@ def calibration_incomplete_alert(CP: car.CarParams, CS: car.CarState, sm: messag
     Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2)
 
 
+def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
+  model_name = CP.lateralTuning.torque.nnModelName
+  if model_name in ("", "mock"):
+    return Alert(
+      "NN Lateral Controller Not Loaded",
+      '⚙️ -> "sunnypilot" for more details',
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
+  else:
+    fuzzy = CP.lateralTuning.torque.nnModelFuzzyMatch
+    alert_text_2 = '⚙️ -> "sunnypilot" for more details [Match = Fuzzy]' if fuzzy else ""
+    alert_status = AlertStatus.userPrompt if fuzzy else AlertStatus.normal
+    alert_size = AlertSize.mid if fuzzy else AlertSize.small
+    audible_alert = AudibleAlert.prompt if fuzzy else AudibleAlert.none
+    return Alert(
+      "NN Lateral Controller Loaded",
+      alert_text_2,
+      alert_status, alert_size,
+      Priority.LOW, VisualAlert.none, audible_alert, 6.0)
+
 # *** debug alerts ***
 
 def out_of_space_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
@@ -398,7 +418,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # See https://github.com/commaai/openpilot/wiki/Fingerprinting for more information
   EventName.carUnrecognized: {
     ET.PERMANENT: NormalPermanentAlert("Dashcam Mode",
-                                       "Car Unrecognized",
+                                       '⚙️ -> "Vehicle" to select your car',
                                        priority=Priority.LOWEST),
   },
 
@@ -549,12 +569,44 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, .1),
   },
 
+  EventName.laneChangeRoadEdge: {
+    ET.WARNING: Alert(
+      "Lane Change Unavailable: Road Edge",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, .1),
+  },
+
   EventName.laneChange: {
     ET.WARNING: Alert(
       "Changing Lanes",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
+  },
+
+  EventName.manualSteeringRequired: {
+    ET.WARNING: Alert(
+      "Automatic Lane Centering is OFF",
+      "Manual Steering Required",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.disengage, 1.),
+  },
+
+  EventName.manualLongitudinalRequired: {
+    ET.WARNING: Alert(
+      "Smart/Adaptive Cruise Control is OFF",
+      "Manual Gas/Brakes Required",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
+  },
+
+  EventName.cruiseEngageBlocked: {
+    ET.WARNING: Alert(
+      "openpilot Unavailable",
+      "Pedal Pressed During Cruise Engage",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.brakePressed, AudibleAlert.refuse, 3.),
   },
 
   EventName.steerSaturated: {
@@ -617,14 +669,38 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.speedLimitActive: {
     ET.WARNING: Alert(
-      "Cruise set to speed limit",
+      "Set speed changed to match posted speed limit",
       "",
       AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
   },
 
   EventName.speedLimitValueChange: {
     ET.WARNING: speed_limit_adjust_alert,
+  },
+
+  EventName.e2eLongStart: {
+    ET.PERMANENT: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptStarting, 1.5),
+  },
+
+  EventName.speedLimitPreActive: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleLow, .45),
+  },
+
+  EventName.speedLimitConfirmed: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleHigh, .45),
   },
 
   # ********** events that affect controls state transitions **********
@@ -635,6 +711,14 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.buttonEnable: {
     ET.ENABLE: EngagementAlert(AudibleAlert.engage),
+  },
+
+  EventName.silentButtonEnable: {
+    ET.ENABLE: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0., 0.),
   },
 
   EventName.pcmDisable: {
@@ -651,6 +735,15 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
   },
 
+  EventName.silentBrakeHold: {
+    ET.USER_DISABLE: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0., 0.),
+    ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
+  },
+
   EventName.parkBrake: {
     ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
     ET.NO_ENTRY: NoEntryAlert("Parking Brake Engaged"),
@@ -659,6 +752,16 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   EventName.pedalPressed: {
     ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
     ET.NO_ENTRY: NoEntryAlert("Pedal Pressed",
+                              visual_alert=VisualAlert.brakePressed),
+  },
+
+  EventName.silentPedalPressed: {
+    ET.USER_DISABLE: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2),
+    ET.NO_ENTRY: NoEntryAlert("Pedal Pressed During Attempt",
                               visual_alert=VisualAlert.brakePressed),
   },
 
@@ -755,6 +858,19 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   EventName.wrongGear: {
     ET.SOFT_DISABLE: user_soft_disable_alert("Gear not D"),
     ET.NO_ENTRY: NoEntryAlert("Gear not D"),
+  },
+
+  EventName.silentWrongGear: {
+    ET.SOFT_DISABLE: Alert(
+      "Gear not D",
+      "openpilot Unavailable",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 2., 3.),
+    ET.NO_ENTRY: Alert(
+      "Gear not D",
+      "openpilot Unavailable",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 2., 3.),
   },
 
   # This alert is thrown when the calibration angles are outside of the acceptable range.
@@ -883,6 +999,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Controls Mismatch"),
   },
 
+  EventName.controlsMismatchLong: {
+    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Controls Mismatch\nLongitudinal"),
+    ET.NO_ENTRY: NoEntryAlert("Controls Mismatch\nLongitudinal"),
+  },
+
   EventName.roadCameraError: {
     ET.PERMANENT: NormalPermanentAlert("Camera CRC Error - Road",
                                        duration=1.,
@@ -949,10 +1070,27 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
   },
 
+  EventName.spReverseGear: {
+    ET.PERMANENT: Alert(
+      "Reverse\nGear",
+      "",
+      AlertStatus.normal, AlertSize.full,
+      Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.5),
+    ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
+  },
+
   # On cars that use stock ACC the car can decide to cancel ACC for various reasons.
   # When this happens we can no long control the car so the user needs to be warned immediately.
   EventName.cruiseDisabled: {
     ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Cruise Is Off"),
+  },
+
+  # For planning the trajectory Model Predictive Control (MPC) is used. This is
+  # an optimization algorithm that is not guaranteed to find a feasible solution.
+  # If no solution is found or the solution has a very high cost this alert is thrown.
+  EventName.plannerErrorDEPRECATED: {
+    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Planner Solution Error"),
+    ET.NO_ENTRY: NoEntryAlert("Planner Solution Error"),
   },
 
   # When the relay in the harness box opens the CAN bus between the LKAS camera
@@ -997,6 +1135,10 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Vehicle Sensors Invalid"),
     ET.PERMANENT: NormalPermanentAlert("Vehicle Sensors Calibrating", "Drive to Calibrate"),
     ET.NO_ENTRY: NoEntryAlert("Vehicle Sensors Calibrating"),
+  },
+
+  EventName.torqueNNLoad: {
+    ET.PERMANENT: torque_nn_load_alert,
   },
 
 }

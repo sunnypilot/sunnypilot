@@ -33,18 +33,21 @@ QString getUserAgent() {
   return "openpilot-" + getVersion();
 }
 
-std::optional<QString> getDongleId() {
-  std::string id = Params().get("DongleId");
+std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value) {
+  std::string value = Params().get(param_name);
 
-  if (!id.empty() && (id != "UnregisteredDevice")) {
-    return QString::fromStdString(id);
-  } else {
-    return {};
-  }
+  if (!value.empty() && value != default_value)
+    return QString::fromStdString(value);
+
+  return {};
 }
 
-QMap<QString, QString> getSupportedLanguages() {
-  QFile f(":/languages.json");
+std::optional<QString> getDongleId() {
+  return getParamIgnoringDefault("DongleId", "UnregisteredDevice");
+}
+
+QMap<QString, QString> getFromJsonFile(const QString &path) {
+  QFile f(path);
   f.open(QIODevice::ReadOnly | QIODevice::Text);
   QString val = f.readAll();
 
@@ -54,6 +57,10 @@ QMap<QString, QString> getSupportedLanguages() {
     map[key] = obj[key].toString();
   }
   return map;
+}
+
+QMap<QString, QString> getSupportedLanguages() {
+  return getFromJsonFile(":/languages.json");
 }
 
 QString timeAgo(const QDateTime &date) {

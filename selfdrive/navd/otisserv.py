@@ -27,8 +27,10 @@ from urllib.parse import parse_qs, unquote
 import json
 import requests
 import math
-from common.basedir import BASEDIR
-from common.params import Params
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.common.realtime import set_core_affinity
+from openpilot.common.swaglog import cloudlog
 params = Params()
 
 hostName = ""
@@ -446,6 +448,10 @@ class OtisServ(BaseHTTPRequestHandler):
     params.put("ApiCache_NavDestinations", json.dumps(dests).rstrip("\n\r"))
 
 def main():
+  try:
+    set_core_affinity([0, 1, 2, 3])
+  except Exception:
+    cloudlog.exception("otisserv: failed to set core affinity")
   webServer = HTTPServer((hostName, serverPort), OtisServ)
 
   try:

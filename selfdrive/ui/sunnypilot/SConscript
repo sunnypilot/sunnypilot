@@ -1,0 +1,63 @@
+widgets_src = [
+  "sunnypilot/ui.cc",
+  "sunnypilot/qt/window.cc",
+  "sunnypilot/qt/request_repeater.cc",
+  "sunnypilot/qt/network/networking.cc",
+  "sunnypilot/qt/offroad/settings/display_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle_settings.cc",
+  "sunnypilot/qt/offroad/settings/visuals_settings.cc",
+  "sunnypilot/qt/offroad/settings/trips_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot/mads_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot/lane_change_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot/speed_limit_control_settings.cc",
+  "sunnypilot/qt/offroad/settings/monitoring_settings.cc",
+  "sunnypilot/qt/offroad/settings/osm_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot/custom_offsets_settings.cc",
+  "sunnypilot/qt/widgets/drive_stats.cc",
+  "sunnypilot/qt/offroad/settings/software_settings.cc",
+  "sunnypilot/qt/offroad/settings/osm/models_fetcher.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot/speed_limit_warning_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnypilot/speed_limit_policy_settings.cc",
+  "sunnypilot/qt/offroad/settings/sunnylink_settings.cc",
+  "sunnypilot/qt/widgets/controls.cc",
+  "sunnypilot/qt/widgets/scrollview.cc",
+  "sunnypilot/qt/widgets/toggle.cc"
+]
+
+sp_maps_widgets_src = [
+  "sunnypilot/qt/maps/map.cc"
+]
+
+sp_qt_util = [
+  # "#selfdrive/ui/sunnypilot/qt/api.cc", 
+  "#selfdrive/ui/sunnypilot/qt/util.cc",
+]
+
+network_src = [
+  "sunnypilot/qt/network/sunnylink/sunnylink_client.cc",
+  "sunnypilot/qt/network/sunnylink/services/base_device_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/role_service.cc",
+  "sunnypilot/qt/network/sunnylink/services/user_service.cc"
+]
+
+qt_src = [
+  "sunnypilot/qt/api.cc",
+  "sunnypilot/qt/home.cc",
+  "sunnypilot/qt/offroad_home.cc",
+  "sunnypilot/qt/sidebar.cc",
+  "sunnypilot/qt/offroad/settings/onboarding.cc",
+  "sunnypilot/qt/offroad/settings/device_panel.cc",
+  "sunnypilot/qt/offroad/settings/settings.cc",
+  "sunnypilot/qt/onroad/buttons.cc",
+  "sunnypilot/qt/onroad/onroad_home.cc",
+  "sunnypilot/qt/onroad/onroad_settings.cc",
+  "sunnypilot/qt/onroad/annotated_camera.cc",
+  "sunnypilot/qt/onroad/onroad_settings_panel.cc",
+  "sunnypilot/qt/onroad/developer_ui/developer_ui.cc",
+]
+
+sp_widgets_src = widgets_src + network_src
+sp_qt_src = qt_src
+
+Export('sp_widgets_src', 'sp_maps_widgets_src', 'sp_qt_src', "sp_qt_util")

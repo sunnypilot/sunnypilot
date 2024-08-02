@@ -3,7 +3,7 @@ from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.ford.fordcan import CanBus
-from openpilot.selfdrive.car.ford.values import DBC, CarControllerParams, FordFlags
+from openpilot.selfdrive.car.ford.values import DBC, CarControllerParams, FordFlags, BUTTONS
 from openpilot.selfdrive.car.interfaces import CarStateBase
 
 GearShifter = car.CarState.GearShifter
@@ -22,8 +22,16 @@ class CarState(CarStateBase):
     self.prev_distance_button = 0
     self.distance_button = 0
 
+    self.lkas_enabled = None
+    self.prev_lkas_enabled = None
+
+    self.button_states = {button.event_type: False for button in BUTTONS}
+
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+    self.prev_lkas_enabled = self.lkas_enabled
 
     # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
     # The vehicle usually recovers out of this state within a minute of normal driving
@@ -78,13 +86,23 @@ class CarState(CarStateBase):
       else:
         ret.gearShifter = GearShifter.drive
 
+    # Buttons
+    for button in BUTTONS:
+      state = (cp.vl[button.can_addr][button.can_msg] in button.values)
+      if self.button_states[button.event_type] != state:
+        event = car.CarState.ButtonEvent.new_message()
+        event.type = button.event_type
+        event.pressed = state
+        self.button_events.append(event)
+      self.button_states[button.event_type] = state
+
     # safety
     ret.stockFcw = bool(cp_cam.vl["ACCDATA_3"]["FcwVisblWarn_B_Rq"])
     ret.stockAeb = bool(cp_cam.vl["ACCDATA_2"]["CmbbBrkDecel_B_Rq"])
 
     # button presses
-    ret.leftBlinker = cp.vl["Steering_Data_FD1"]["TurnLghtSwtch_D_Stat"] == 1
-    ret.rightBlinker = cp.vl["Steering_Data_FD1"]["TurnLghtSwtch_D_Stat"] == 2
+    ret.leftBlinker = ret.leftBlinkerOn = cp.vl["Steering_Data_FD1"]["TurnLghtSwtch_D_Stat"] == 1
+    ret.rightBlinker = ret.rightBlinkerOn = cp.vl["Steering_Data_FD1"]["TurnLghtSwtch_D_Stat"] == 2
     # TODO: block this going to the camera otherwise it will enable stock TJA
     ret.genericToggle = bool(cp.vl["Steering_Data_FD1"]["TjaButtnOnOffPress"])
     self.prev_distance_button = self.distance_button
@@ -100,6 +118,8 @@ class CarState(CarStateBase):
       cp_bsm = cp_cam if self.CP.flags & FordFlags.CANFD else cp
       ret.leftBlindspot = cp_bsm.vl["Side_Detect_L_Stat"]["SodDetctLeft_D_Stat"] != 0
       ret.rightBlindspot = cp_bsm.vl["Side_Detect_R_Stat"]["SodDetctRight_D_Stat"] != 0
+
+    self.lkas_enabled = bool(cp.vl["Steering_Data_FD1"]["TjaButtnOnOffPress"])
 
     # Stock steering buttons so that we can passthru blinkers etc.
     self.buttons_stock_values = cp.vl["Steering_Data_FD1"]

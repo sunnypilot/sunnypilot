@@ -3,8 +3,12 @@ from panda import Panda
 from openpilot.selfdrive.car import get_safety_config
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.car.subaru.values import CAR, GLOBAL_ES_ADDR, SubaruFlags
+from openpilot.selfdrive.car.subaru.values import CAR, GLOBAL_ES_ADDR, SubaruFlags, SubaruFlagsSP
 
+
+ButtonType = car.CarState.ButtonEvent.Type
+EventName = car.CarEvent.EventName
+GearShifter = car.CarState.GearShifter
 
 class CarInterface(CarInterfaceBase):
 
@@ -32,6 +36,11 @@ class CarInterface(CarInterfaceBase):
       if ret.flags & SubaruFlags.GLOBAL_GEN2:
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_GEN2
 
+    if not bool(ret.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID)):
+      ret.autoResumeSng = True
+      ret.spFlags |= SubaruFlagsSP.SP_SUBARU_SNG.value
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_SNG
+
     ret.steerLimitTimer = 0.4
     ret.steerActuatorDelay = 0.1
 
@@ -56,7 +65,7 @@ class CarInterface(CarInterfaceBase):
       # Certain Impreza / Crosstrek EPS use 3071 max value and do not work with stock value/scaling.
       if any(fw.ecu == "eps" and fw.fwVersion in (b'z\xc0\x00\x00', b'z\xc0\x04\x00', b'z\xc0\x08\x00', b'\x8a\xc0\x00\x00',
                                                   b'\x8a\xc0\x10\x00') for fw in car_fw):
-        ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_MAX_STEER_IMPREZA_2018
         ret.steerActuatorDelay = 0.18  # measured
         ret.lateralTuning.pid.kf = 0.00003333
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.133, 0.2], [0.0133, 0.02]]
@@ -80,7 +89,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.1
 
     elif candidate in (CAR.SUBARU_FORESTER_PREGLOBAL, CAR.SUBARU_OUTBACK_PREGLOBAL_2018):
-      ret.safetyConfigs[0].safetyParam = Panda.FLAG_SUBARU_PREGLOBAL_REVERSED_DRIVER_TORQUE  # Outback 2018-2019 and Forester have reversed driver torque signal
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_SUBARU_PREGLOBAL_REVERSED_DRIVER_TORQUE  # Outback 2018-2019 and Forester have reversed driver torque signal
 
     elif candidate == CAR.SUBARU_LEGACY_PREGLOBAL:
       ret.steerActuatorDelay = 0.15
@@ -108,7 +117,42 @@ class CarInterface(CarInterfaceBase):
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
 
-    ret.events = self.create_common_events(ret).to_msg()
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+
+    if ret.cruiseState.available:
+      if self.enable_mads:
+        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+          self.CS.madsEnabled = True
+        if not (self.CP.flags & SubaruFlags.PREGLOBAL):
+          if self.CS.prev_lkas_enabled != self.CS.lkas_enabled and self.CS.lkas_enabled != 2 and not (self.CS.prev_lkas_enabled == 2 and self.CS.lkas_enabled == 1):
+            self.CS.madsEnabled = not self.CS.madsEnabled
+          elif self.CS.prev_lkas_enabled != self.CS.lkas_enabled and self.CS.prev_lkas_enabled == 2 and self.CS.lkas_enabled != 1:
+            self.CS.madsEnabled = not self.CS.madsEnabled
+        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+    else:
+      self.CS.madsEnabled = False
+
+    if self.CS.out.cruiseState.enabled:  # CANCEL
+      if not ret.cruiseState.enabled:
+        if not self.enable_mads:
+          self.CS.madsEnabled = False
+    if self.get_sp_pedal_disengage(ret):
+      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
+
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
+
+    ret.buttonEvents = [
+      *self.CS.button_events,
+      *self.button_events.create_cancel_event(ret.cruiseState.enabled, self.CS.out.cruiseState.enabled),
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
+    ]
+
+    events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low], pcm_enable=False)
+
+    events, ret = self.create_sp_events(self.CS, ret, events)
+
+    ret.events = events.to_msg()
 
     return ret
 

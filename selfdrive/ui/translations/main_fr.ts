@@ -86,6 +86,17 @@
         <source>for &quot;%1&quot;</source>
         <translation>pour &quot;%1&quot;</translation>
     </message>
+</context>
+<context>
+    <name>AdvancedNetworkingSP</name>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished">Retour</translation>
+    </message>
+    <message>
+        <source>Enable Tethering</source>
+        <translation type="unfinished">Activer le partage de connexion</translation>
+    </message>
     <message>
         <source>Retain hotspot/tethering state</source>
         <translation type="unfinished"></translation>
@@ -93,6 +104,66 @@
     <message>
         <source>Enabling this toggle will retain the hotspot/tethering toggle state across reboots.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tethering Password</source>
+        <translation type="unfinished">Mot de passe du partage de connexion</translation>
+    </message>
+    <message>
+        <source>EDIT</source>
+        <translation type="unfinished">MODIFIER</translation>
+    </message>
+    <message>
+        <source>Enter new tethering password</source>
+        <translation type="unfinished">Entrez le nouveau mot de passe du partage de connexion</translation>
+    </message>
+    <message>
+        <source>IP Address</source>
+        <translation type="unfinished">Adresse IP</translation>
+    </message>
+    <message>
+        <source>Enable Roaming</source>
+        <translation type="unfinished">Activer l&apos;itinérance</translation>
+    </message>
+    <message>
+        <source>APN Setting</source>
+        <translation type="unfinished">Paramètre APN</translation>
+    </message>
+    <message>
+        <source>Enter APN</source>
+        <translation type="unfinished">Entrer le nom du point d&apos;accès</translation>
+    </message>
+    <message>
+        <source>leave blank for automatic configuration</source>
+        <translation type="unfinished">laisser vide pour une configuration automatique</translation>
+    </message>
+    <message>
+        <source>Cellular Metered</source>
+        <translation type="unfinished">Connexion cellulaire limitée</translation>
+    </message>
+    <message>
+        <source>Prevent large data uploads when on a metered connection</source>
+        <translation type="unfinished">Éviter les transferts de données importants sur une connexion limitée</translation>
+    </message>
+    <message>
+        <source>Hidden Network</source>
+        <translation type="unfinished">Réseau Caché</translation>
+    </message>
+    <message>
+        <source>CONNECT</source>
+        <translation type="unfinished">CONNECTER</translation>
+    </message>
+    <message>
+        <source>Enter SSID</source>
+        <translation type="unfinished">Entrer le SSID</translation>
+    </message>
+    <message>
+        <source>Enter password</source>
+        <translation type="unfinished">Entrer le mot de passe</translation>
+    </message>
+    <message>
+        <source>for &quot;%1&quot;</source>
+        <translation type="unfinished">pour &quot;%1&quot;</translation>
     </message>
     <message>
         <source>Ngrok Service</source>
@@ -115,17 +186,53 @@
     </message>
     <message>
         <source>SPEED</source>
-        <translation>VITESSE</translation>
+        <translation type="vanished">VITESSE</translation>
     </message>
     <message>
         <source>LIMIT</source>
-        <translation>LIMITE</translation>
+        <translation type="vanished">LIMITE</translation>
+    </message>
+</context>
+<context>
+    <name>AnnotatedCameraWidgetSP</name>
+    <message>
+        <source>km/h</source>
+        <translation type="unfinished">km/h</translation>
+    </message>
+    <message>
+        <source>mph</source>
+        <translation type="unfinished">mi/h</translation>
+    </message>
+    <message>
+        <source>MAX</source>
+        <translation type="unfinished">MAX</translation>
+    </message>
+    <message>
+        <source>SPEED</source>
+        <translation type="unfinished">VITESSE</translation>
+    </message>
+    <message>
+        <source>LIMIT</source>
+        <translation type="unfinished">LIMITE</translation>
     </message>
 </context>
 <context>
     <name>AutoLaneChangeTimer</name>
     <message>
+        <source>Auto Lane Change by Blinker</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
+Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>s</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -134,19 +241,6 @@
     </message>
     <message>
         <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Auto Lane Change by Blinker</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Off</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
-Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -229,7 +323,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>DeclinePage</name>
     <message>
         <source>You must accept the Terms and Conditions in order to use openpilot.</source>
-        <translation>Vous devez accepter les conditions générales pour utiliser openpilot.</translation>
+        <translation type="vanished">Vous devez accepter les conditions générales pour utiliser openpilot.</translation>
     </message>
     <message>
         <source>Back</source>
@@ -238,6 +332,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <message>
         <source>Decline, uninstall %1</source>
         <translation>Refuser, désinstaller %1</translation>
+    </message>
+    <message>
+        <source>You must accept the Terms and Conditions in order to use sunnypilot.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -319,7 +417,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Review the rules, features, and limitations of openpilot</source>
-        <translation type="vanished">Revoir les règles, fonctionnalités et limitations d&apos;openpilot</translation>
+        <translation>Revoir les règles, fonctionnalités et limitations d&apos;openpilot</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
@@ -410,6 +508,13 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>DevicePanelSP</name>
+    <message>
         <source>TOGGLE</source>
         <translation type="unfinished"></translation>
     </message>
@@ -430,12 +535,20 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>VIEW</source>
+        <translation type="unfinished">VOIR</translation>
+    </message>
+    <message>
         <source>Display error from the tmux session when an error has occurred from a system process.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Reset Access Tokens for Map Services</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RESET</source>
+        <translation type="unfinished">RÉINITIALISER</translation>
     </message>
     <message>
         <source>Reset self-service access tokens for Mapbox, Amap, and Google Maps.</source>
@@ -446,6 +559,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Reset</source>
+        <translation type="unfinished">Réinitialiser</translation>
+    </message>
+    <message>
         <source>Reset sunnypilot Settings</source>
         <translation type="unfinished"></translation>
     </message>
@@ -454,23 +571,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Review the rules, features, and limitations of sunnypilot</source>
+        <source>Toggle Onroad/Offroad</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>OFF</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fleet Manager PIN:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggle Onroad/Offroad</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -501,6 +606,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>Force Offroad</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Fleet Manager PIN:</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DisplayPanel</name>
@@ -518,14 +627,6 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Disabled: Wake the brightness of the screen to display critical events.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable Screen Recorder</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable this will display a button on the onroad screen to toggle on or off real-time screen recording with UI elements.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -602,11 +703,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation type="unfinished">Retour</translation>
     </message>
     <message>
-        <source>Pause Lateral Below Speed w/ Blinker</source>
+        <source>Pause Lateral Below Speed with Blinker</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable this toggle to pause lateral actuation with blinker when traveling below 20 MPH or 32 km/h.</source>
+        <source>Enable this toggle to pause lateral actuation with blinker when traveling below the desired speed selected below.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -710,6 +811,21 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
 </context>
 <context>
+    <name>MapWindowSP</name>
+    <message>
+        <source>Map Loading</source>
+        <translation type="unfinished">Chargement de la carte</translation>
+    </message>
+    <message>
+        <source>Waiting for GPS</source>
+        <translation type="unfinished">En attente du GPS</translation>
+    </message>
+    <message>
+        <source>Waiting for route</source>
+        <translation type="unfinished">En attente d&apos;un trajet</translation>
+    </message>
+</context>
+<context>
     <name>MaxTimeOffroad</name>
     <message>
         <source>Max Time Offroad</source>
@@ -780,6 +896,9 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <source>Wrong password</source>
         <translation>Mot de passe incorrect</translation>
     </message>
+</context>
+<context>
+    <name>NetworkingSP</name>
     <message>
         <source>Scan</source>
         <translation type="unfinished"></translation>
@@ -787,6 +906,22 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <message>
         <source>Scanning...</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Advanced</source>
+        <translation type="unfinished">Avancé</translation>
+    </message>
+    <message>
+        <source>Enter password</source>
+        <translation type="unfinished">Entrer le mot de passe</translation>
+    </message>
+    <message>
+        <source>for &quot;%1&quot;</source>
+        <translation type="unfinished">pour &quot;%1&quot;</translation>
+    </message>
+    <message>
+        <source>Wrong password</source>
+        <translation type="unfinished">Mot de passe incorrect</translation>
     </message>
 </context>
 <context>
@@ -1101,6 +1236,17 @@ Warning: You are on a metered connection!</source>
     </message>
 </context>
 <context>
+    <name>ParamControlSP</name>
+    <message>
+        <source>Enable</source>
+        <translation type="unfinished">Activer</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">Annuler</translation>
+    </message>
+</context>
+<context>
     <name>PathOffset</name>
     <message>
         <source>Path Offset</source>
@@ -1113,6 +1259,25 @@ Warning: You are on a metered connection!</source>
     <message>
         <source> cm</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>PauseLateralSpeed</name>
+    <message>
+        <source>Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>km/h</source>
+        <translation type="unfinished">km/h</translation>
+    </message>
+    <message>
+        <source>mph</source>
+        <translation type="unfinished">mi/h</translation>
     </message>
 </context>
 <context>
@@ -1216,6 +1381,26 @@ Warning: You are on a metered connection!</source>
         <source>sunnypilot</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Update downloaded. Ready to reboot.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update: Check and Download Update</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reboot: Reboot Device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updating...</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Reset</name>
@@ -1317,11 +1502,33 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Enable Enhanced Blind Spot Monitor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Enable Toyota Stop and Go Hack</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>sunnypilot will allow some Toyota/Lexus cars to auto resume during stop and go traffic. This feature is only applicable to certain models. Use at your own risk.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Toyota Door Auto Locking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot will attempt to lock the doors when drive above 10 km/h (6.2 mph).
+Reboot Required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Toyota Door Auto Unlocking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot will attempt to unlock the doors when shift to gear P.
+Reboot Required.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1334,6 +1541,30 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>sunnypilot supports Volkswagen MQB CC only platforms with this toggle enabled. Only enable this toggle if your car does not have ACC from the factory.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start the car to check car compatibility</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This platform is already supported, therefore no need to enable this toggle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This platform is not supported</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This platform can be supported</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot will use debugging CAN messages to receive unfiltered BSM signals, allowing detection of more objects.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tested on RAV4 TSS1, Lexus LSS1, Toyota TSS1/1.5, and Prius TSS2.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1359,9 +1590,32 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <source>Software</source>
         <translation>Logiciel</translation>
     </message>
+</context>
+<context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation type="unfinished">×</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation type="unfinished">Appareil</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished">Réseau</translation>
+    </message>
     <message>
         <source>sunnylink</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished">Logiciel</translation>
     </message>
     <message>
         <source>sunnypilot</source>
@@ -1584,12 +1838,47 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <source>5G</source>
         <translation>5G</translation>
     </message>
+</context>
+<context>
+    <name>SidebarSP</name>
     <message>
-        <source>SUNNYLINK</source>
-        <translation type="unfinished"></translation>
+        <source>TEMP</source>
+        <translation type="unfinished">TEMP</translation>
+    </message>
+    <message>
+        <source>HIGH</source>
+        <translation type="unfinished">HAUT</translation>
+    </message>
+    <message>
+        <source>GOOD</source>
+        <translation type="unfinished">BON</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation type="unfinished">OK</translation>
     </message>
     <message>
         <source>DISABLED</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>OFFLINE</source>
+        <translation type="unfinished">HORS LIGNE</translation>
+    </message>
+    <message>
+        <source>REGIST...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ONLINE</source>
+        <translation type="unfinished">EN LIGNE</translation>
+    </message>
+    <message>
+        <source>ERROR</source>
+        <translation type="unfinished">ERREUR</translation>
+    </message>
+    <message>
+        <source>SUNNYLINK</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1718,10 +2007,6 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <source>up to date, last checked %1</source>
         <translation>à jour, dernière vérification %1</translation>
     </message>
-    <message>
-        <source>Driving Model</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>SoftwarePanelSP</name>
@@ -1732,6 +2017,10 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     <message>
         <source>SELECT</source>
         <translation type="unfinished">SÉLECTIONNER</translation>
+    </message>
+    <message>
+        <source>PENDING</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Downloading Driving model</source>
@@ -1803,10 +2092,6 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>on Metered</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PENDING</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2023,30 +2308,6 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>A reboot is required to</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>start</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>stop</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>all connections and processes from sunnylink.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>If that&apos;s not a problem for you, you can ignore this.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reboot Now!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Sponsor Status</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2068,6 +2329,10 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2393,7 +2658,7 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
+        <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller, with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2426,6 +2691,21 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     <message>
         <source>Agree</source>
         <translation>Accepter</translation>
+    </message>
+</context>
+<context>
+    <name>TermsPageSP</name>
+    <message>
+        <source>Terms &amp; Conditions</source>
+        <translation type="unfinished">Termes &amp; Conditions</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation type="unfinished">Refuser</translation>
+    </message>
+    <message>
+        <source>Scroll to accept</source>
+        <translation type="unfinished">Faire défiler pour accepter</translation>
     </message>
 </context>
 <context>
@@ -2488,19 +2768,19 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>Show ETA in 24h Format</source>
-        <translation>Afficher l&apos;heure d&apos;arrivée en format 24h</translation>
+        <translation type="vanished">Afficher l&apos;heure d&apos;arrivée en format 24h</translation>
     </message>
     <message>
         <source>Use 24h format instead of am/pm</source>
-        <translation>Utiliser le format 24h plutôt que am/pm</translation>
+        <translation type="vanished">Utiliser le format 24h plutôt que am/pm</translation>
     </message>
     <message>
         <source>Show Map on Left Side of UI</source>
-        <translation>Afficher la carte à gauche de l&apos;interface</translation>
+        <translation type="vanished">Afficher la carte à gauche de l&apos;interface</translation>
     </message>
     <message>
         <source>Show map on left side when in split screen view.</source>
-        <translation>Afficher la carte à gauche en mode écran scindé.</translation>
+        <translation type="vanished">Afficher la carte à gauche en mode écran scindé.</translation>
     </message>
     <message>
         <source>Aggressive</source>
@@ -2508,7 +2788,7 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>Standard</source>
-        <translation type="vanished">Standard</translation>
+        <translation>Standard</translation>
     </message>
     <message>
         <source>Relaxed</source>
@@ -2551,6 +2831,10 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <translation>Activer le contrôle longitudinal d&apos;openpilot (en alpha) pour autoriser le mode expérimental.</translation>
     </message>
     <message>
+        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
         <translation>La visualisation de la conduite passera sur la caméra grand angle dirigée vers la route à faible vitesse afin de mieux montrer certains virages. Le logo du mode expérimental s&apos;affichera également dans le coin supérieur droit.</translation>
     </message>
@@ -2570,6 +2854,29 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
         <translation type="unfinished"></translation>
     </message>
+</context>
+<context>
+    <name>TogglesPanelSP</name>
+    <message>
+        <source>Enable sunnypilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation type="unfinished">Contrôle longitudinal openpilot (Alpha)</translation>
+    </message>
+    <message>
+        <source>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha.</source>
+        <translation type="unfinished"></translation>
+    </message>
     <message>
         <source>Custom Stock Longitudinal Control</source>
         <translation type="unfinished"></translation>
@@ -2580,12 +2887,56 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Experimental Mode</source>
+        <translation type="unfinished">Mode expérimental</translation>
+    </message>
+    <message>
         <source>Enable Dynamic Experimental Control</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable toggle to allow the model to determine when to use openpilot ACC or openpilot End to End Longitudinal.</source>
+        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Personality</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable this to allow sunnypilot to dynamically adjust following distance and reaction based on your &quot;Driving Personality&quot; setting. Instead of predefined settings for each personality, every personality now adapts dynamically according to your speed and the distance to the lead car.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disengage on Accelerator Pedal</source>
+        <translation type="unfinished">Désengager avec la pédale d&apos;accélérateur</translation>
+    </message>
+    <message>
+        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
+        <translation type="unfinished">Lorsqu&apos;il est activé, appuyer sur la pédale d&apos;accélérateur désengagera openpilot.</translation>
+    </message>
+    <message>
+        <source>Enable Lane Departure Warnings</source>
+        <translation type="unfinished">Activer les avertissements de sortie de voie</translation>
+    </message>
+    <message>
+        <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
+        <translation type="unfinished">Recevez des alertes pour revenir dans la voie lorsque votre véhicule dérive au-delà d&apos;une ligne de voie détectée sans clignotant activé en roulant à plus de 31 mph (50 km/h).</translation>
+    </message>
+    <message>
+        <source>Always-On Driver Monitoring</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Record and Upload Driver Camera</source>
+        <translation type="unfinished">Enregistrer et télécharger la caméra conducteur</translation>
+    </message>
+    <message>
+        <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
+        <translation type="unfinished">Publiez les données de la caméra orientée vers le conducteur et aidez à améliorer l&apos;algorithme de surveillance du conducteur.</translation>
     </message>
     <message>
         <source>Disable Onroad Uploads</source>
@@ -2596,7 +2947,63 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Maniac</source>
+        <source>Use Metric System</source>
+        <translation type="unfinished">Utiliser le système métrique</translation>
+    </message>
+    <message>
+        <source>Display speed in km/h instead of mph.</source>
+        <translation type="unfinished">Afficher la vitesse en km/h au lieu de mph.</translation>
+    </message>
+    <message>
+        <source>Show ETA in 24h Format</source>
+        <translation type="unfinished">Afficher l&apos;heure d&apos;arrivée en format 24h</translation>
+    </message>
+    <message>
+        <source>Use 24h format instead of am/pm</source>
+        <translation type="unfinished">Utiliser le format 24h plutôt que am/pm</translation>
+    </message>
+    <message>
+        <source>Show Map on Left Side of UI</source>
+        <translation type="unfinished">Afficher la carte à gauche de l&apos;interface</translation>
+    </message>
+    <message>
+        <source>Show map on left side when in split screen view.</source>
+        <translation type="unfinished">Afficher la carte à gauche en mode écran scindé.</translation>
+    </message>
+    <message>
+        <source>Aggressive</source>
+        <translation type="unfinished">Aggressif</translation>
+    </message>
+    <message>
+        <source>Moderate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Standard</source>
+        <translation type="unfinished">Standard</translation>
+    </message>
+    <message>
+        <source>Relaxed</source>
+        <translation type="unfinished">Détendu</translation>
+    </message>
+    <message>
+        <source>Driving Personality</source>
+        <translation type="unfinished">Personnalité de conduite</translation>
+    </message>
+    <message>
+        <source>Standard is recommended. In moderate/aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sport</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Eco</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2604,7 +3011,47 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Stock is recommended. In aggressive/maniac mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <source>Acceleration Personality</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these acceleration personality within Onroad Settings on the driving screen.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
+        <translation type="unfinished">Par défaut, openpilot conduit en &lt;b&gt;mode détente&lt;/b&gt;. Le mode expérimental permet d&apos;activer des &lt;b&gt;fonctionnalités alpha&lt;/b&gt; qui ne sont pas prêtes pour le mode détente. Les fonctionnalités expérimentales sont listées ci-dessous :</translation>
+    </message>
+    <message>
+        <source>End-to-End Longitudinal Control</source>
+        <translation type="unfinished">Contrôle longitudinal de bout en bout</translation>
+    </message>
+    <message>
+        <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>New Driving Visualization</source>
+        <translation type="unfinished">Nouvelle visualisation de la conduite</translation>
+    </message>
+    <message>
+        <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
+        <translation type="unfinished">La visualisation de la conduite passera sur la caméra grand angle dirigée vers la route à faible vitesse afin de mieux montrer certains virages. Le logo du mode expérimental s&apos;affichera également dans le coin supérieur droit.</translation>
+    </message>
+    <message>
+        <source>Experimental mode is currently unavailable on this car since the car&apos;s stock ACC is used for longitudinal control.</source>
+        <translation type="unfinished">Le mode expérimental est actuellement indisponible pour cette voiture car le régulateur de vitesse adaptatif d&apos;origine est utilisé pour le contrôle longitudinal.</translation>
+    </message>
+    <message>
+        <source>openpilot longitudinal control may come in a future update.</source>
+        <translation type="unfinished">Le contrôle longitudinal openpilot pourrait être disponible dans une future mise à jour.</translation>
+    </message>
+    <message>
+        <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2807,11 +3254,6 @@ This feature must be used along with SLC, and/or V-TSC, and/or M-TSC.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Distance
-Speed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Display Metrics Below Chevron</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2837,6 +3279,14 @@ Speed</source>
     </message>
     <message>
         <source>Display Temperature on Sidebar</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>All</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2884,6 +3334,29 @@ Speed</source>
     <message>
         <source>Forget</source>
         <translation>Oublier</translation>
+    </message>
+</context>
+<context>
+    <name>WifiUISP</name>
+    <message>
+        <source>Scanning for networks...</source>
+        <translation type="unfinished">Recherche de réseaux...</translation>
+    </message>
+    <message>
+        <source>CONNECTING...</source>
+        <translation type="unfinished">CONNEXION...</translation>
+    </message>
+    <message>
+        <source>FORGET</source>
+        <translation type="unfinished">OUBLIER</translation>
+    </message>
+    <message>
+        <source>Forget Wi-Fi Network &quot;%1&quot;?</source>
+        <translation type="unfinished">Oublier le réseau Wi-Fi &quot;%1&quot; ?</translation>
+    </message>
+    <message>
+        <source>Forget</source>
+        <translation type="unfinished">Oublier</translation>
     </message>
 </context>
 </TS>

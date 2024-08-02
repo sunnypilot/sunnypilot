@@ -1,5 +1,6 @@
 import copy
 import re
+from collections import namedtuple
 from dataclasses import dataclass, field, replace
 from enum import Enum, IntFlag
 
@@ -11,6 +12,7 @@ from openpilot.selfdrive.car.docs_definitions import CarFootnote, CarHarness, Ca
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, LiveFwVersions, OfflineFwVersions, Request, StdQueries, p16
 
 Ecu = car.CarParams.Ecu
+Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 
 class CarControllerParams:
@@ -142,6 +144,15 @@ class CAR(Platforms):
     [FordCarDocs("Ford Ranger 2024", "Adaptive Cruise Control with Lane Centering")],
     CarSpecs(mass=2000, wheelbase=3.27, steerRatio=17.0),
   )
+
+
+BUTTONS = [
+  Button(car.CarState.ButtonEvent.Type.accelCruise, "Steering_Data_FD1", "CcAslButtnSetIncPress", [1]),
+  Button(car.CarState.ButtonEvent.Type.decelCruise, "Steering_Data_FD1", "CcAslButtnSetDecPress", [1]),
+  Button(car.CarState.ButtonEvent.Type.cancel, "Steering_Data_FD1", "CcAslButtnCnclPress", [1]),
+  Button(car.CarState.ButtonEvent.Type.setCruise, "Steering_Data_FD1", "CcAslButtnSetPress", [1]),
+  Button(car.CarState.ButtonEvent.Type.resumeCruise, "Steering_Data_FD1", "CcAsllButtnResPress", [1]),
+]
 
 
 # FW response contains a combined software and part number

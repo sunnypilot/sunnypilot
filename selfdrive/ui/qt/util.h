@@ -13,10 +13,18 @@
 #include "cereal/gen/cpp/car.capnp.h"
 #include "common/params.h"
 
+#ifdef SUNNYPILOT
+#define RETURN_IF_SUNNYPILOT return;
+#else
+#define RETURN_IF_SUNNYPILOT // Do nothing
+#endif
+
 QString getVersion();
 QString getBrand();
 QString getUserAgent();
+std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value);
 std::optional<QString> getDongleId();
+QMap<QString, QString> getFromJsonFile(const QString &path);
 QMap<QString, QString> getSupportedLanguages();
 void setQtSurfaceFormat();
 void sigTermHandler(int s);

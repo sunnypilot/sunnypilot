@@ -1,9 +1,13 @@
+import json
 import os
+import requests
+import threading
 import time
 from collections.abc import Callable
 
 from cereal import car
 from openpilot.common.params import Params
+from openpilot.common.basedir import BASEDIR
 from openpilot.selfdrive.car.interfaces import get_interface_attr
 from openpilot.selfdrive.car.fingerprints import eliminate_incompatible_cars, all_legacy_fingerprint_cars
 from openpilot.selfdrive.car.vin import get_vin, is_valid_vin, VIN_UNKNOWN
@@ -13,6 +17,7 @@ from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
 from openpilot.selfdrive.car import gen_empty_fingerprint
 from openpilot.system.version import get_build_metadata
+import openpilot.system.sentry as sentry
 
 FRAME_FINGERPRINT = 100  # 1s
 
@@ -178,6 +183,17 @@ def fingerprint(logcan, sendcan, num_pandas):
     car_fingerprint = fixed_fingerprint
     source = car.CarParams.FingerprintSource.fixed
 
+  if params.get("CarModel") is not None:
+    car_fingerprint = params.get("CarModel").decode("utf-8")
+    with open(os.path.join(BASEDIR, "selfdrive/car/sunnypilot_carname.json")) as f:
+      car_models = json.load(f)
+    if car_fingerprint not in car_models.values():
+      car_fingerprint = None
+      params.put("CarModel", "")
+      params.put("CarModelText", "")
+    else:
+      source = car.CarParams.FingerprintSource.fixed
+
   cloudlog.event("fingerprinted", car_fingerprint=car_fingerprint, source=source, fuzzy=not exact_match, cached=cached,
                  fw_count=len(car_fw), ecu_responses=list(ecu_rx_addrs), vin_rx_addr=vin_rx_addr, vin_rx_bus=vin_rx_bus,
                  fingerprints=repr(finger), fw_query_time=fw_query_time, error=True)
@@ -190,12 +206,54 @@ def get_car_interface(CP):
   return CarInterface(CP, CarController, CarState)
 
 
+def is_connected_to_internet(timeout=5):
+  try:
+    requests.get("https://sentry.io", timeout=timeout)
+    return True
+  except Exception:
+    return False
+
+
+def crash_log(candidate):
+  no_internet = 0
+  while True:
+    if is_connected_to_internet():
+      sentry.get_init()
+      sentry.capture_info("fingerprinted %s" % candidate)
+      break
+    else:
+      no_internet += 1
+      if no_internet >= 2:
+        break
+      time.sleep(600)
+
+
+def crash_log2(fingerprints, fw):
+  no_internet = 0
+  while True:
+    if is_connected_to_internet():
+      sentry.get_init()
+      sentry.capture_warning("car doesn't match any fingerprints: %s" % repr(fingerprints))
+      break
+    else:
+      no_internet += 1
+      if no_internet >= 2:
+        break
+      time.sleep(600)
+
+
 def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
   candidate, fingerprints, vin, car_fw, source, exact_match = fingerprint(logcan, sendcan, num_pandas)
 
   if candidate is None:
     cloudlog.event("car doesn't match any fingerprints", fingerprints=repr(fingerprints), error=True)
     candidate = "MOCK"
+    y = threading.Thread(target=crash_log2, args=(fingerprints, car_fw,))
+    y.start()
+
+  if candidate != "MOCK":
+    x = threading.Thread(target=crash_log, args=(candidate,))
+    x.start()
 
   CarInterface, _, _ = interfaces[candidate]
   CP = CarInterface.get_params(candidate, fingerprints, car_fw, experimental_long_allowed, docs=False)

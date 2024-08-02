@@ -205,22 +205,71 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_loopback)
 
+    distance_button = 0
+
     # Don't add event if transitioning from INIT, unless it's to an actual button
     if self.CS.cruise_buttons != CruiseButtons.UNPRESS or self.CS.prev_cruise_buttons != CruiseButtons.INIT:
-      ret.buttonEvents = [
+      self.CS.button_events = [
         *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT,
                               unpressed_btn=CruiseButtons.UNPRESS),
         *create_button_events(self.CS.distance_button, self.CS.prev_distance_button,
                               {1: ButtonType.gapAdjustCruise})
       ]
+      distance_button = self.CS.distance_button
+
+    self.CS.button_events = [
+      *self.CS.button_events,
+      *create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}),
+    ]
+
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+
+    if not self.CP.pcmCruise:
+      if any(b.type == ButtonType.accelCruise and b.pressed for b in self.CS.button_events):
+        self.CS.accEnabled = True
+
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            self.CS.button_events, c.vCruise)
+
+    if ret.cruiseState.available:
+      if self.enable_mads:
+        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+          self.CS.madsEnabled = True
+        if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
+          self.CS.madsEnabled = not self.CS.madsEnabled
+        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+    else:
+      self.CS.madsEnabled = False
+
+    if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0):
+      if any(b.type == ButtonType.cancel for b in self.CS.button_events):
+        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+    if self.get_sp_pedal_disengage(ret):
+      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
+
+    if self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed:
+      if ret.gasPressed and not ret.cruiseState.enabled:
+        self.CS.accEnabled = False
+      self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
+
+    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(distance_button))
+
+    ret.buttonEvents = [
+      *self.CS.button_events,
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
+    ]
 
     # The ECM allows enabling on falling edge of set, but only rising edge of resume
-    events = self.create_common_events(ret, extra_gears=[GearShifter.sport, GearShifter.low,
+    events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low,
                                                          GearShifter.eco, GearShifter.manumatic],
-                                       pcm_enable=self.CP.pcmCruise, enable_buttons=(ButtonType.decelCruise,))
-    if not self.CP.pcmCruise:
-      if any(b.type == ButtonType.accelCruise and b.pressed for b in ret.buttonEvents):
-        events.add(EventName.buttonEnable)
+                                       pcm_enable=False, enable_buttons=(ButtonType.decelCruise,))
+    #if not self.CP.pcmCruise:
+    #  if any(b.type == ButtonType.accelCruise and b.pressed for b in ret.buttonEvents):
+    #    events.add(EventName.buttonEnable)
+
+    events, ret = self.create_sp_events(self.CS, ret, events, enable_pressed=self.CS.accEnabled,
+                                        enable_buttons=(ButtonType.decelCruise,))
 
     # Enabling at a standstill with brake is allowed
     # TODO: verify 17 Volt can enable for the first time at a stop and allow for all GMs
@@ -230,7 +279,7 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.belowEngageSpeed)
     if ret.cruiseState.standstill:
       events.add(EventName.resumeRequired)
-    if ret.vEgo < self.CP.minSteerSpeed:
+    if ret.vEgo < self.CP.minSteerSpeed and self.CS.madsEnabled:
       events.add(EventName.belowSteerSpeed)
 
     ret.events = events.to_msg()

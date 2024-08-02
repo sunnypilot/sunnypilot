@@ -106,6 +106,10 @@ else
   brew link qt@5
 fi
 
+ln -s /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnp.1.0.2.dylib /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnp.1.0.1.dylib || true
+ln -s /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnpc.1.0.2.dylib /opt/homebrew/Cellar/capnp/1.0.2/lib/libcapnpc.1.0.1.dylib || true
+ln -s /opt/homebrew/Cellar/capnp/1.0.2/lib/libkj.1.0.2.dylib /opt/homebrew/Cellar/capnp/1.0.2/lib/libkj.1.0.1.dylib || true
+
 echo
 echo "----   OPENPILOT SETUP DONE   ----"
 echo "Open a new shell or configure your active shell env by running:"

@@ -4,14 +4,23 @@ RequestRepeater::RequestRepeater(QObject *parent, const QString &requestURL, con
                                  int period, bool while_onroad) : HttpRequest(parent) {
   timer = new QTimer(this);
   timer->setTimerType(Qt::VeryCoarseTimer);
+
+  connectTimer(requestURL, while_onroad);
+
+  timer->start(period * 1000);
+
+  setupCacheProcess(cacheKey);
+}
+
+void RequestRepeater::connectTimer(const QString &requestURL, bool while_onroad) {
   QObject::connect(timer, &QTimer::timeout, [=]() {
     if ((!uiState()->scene.started || while_onroad) && device()->isAwake() && !active()) {
       sendRequest(requestURL);
     }
   });
+}
 
-  timer->start(period * 1000);
-
+void RequestRepeater::setupCacheProcess(const QString &cacheKey) {
   if (!cacheKey.isEmpty()) {
     prevResp = QString::fromStdString(params.get(cacheKey.toStdString()));
     if (!prevResp.isEmpty()) {

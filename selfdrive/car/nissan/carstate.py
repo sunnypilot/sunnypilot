@@ -29,6 +29,8 @@ class CarState(CarStateBase):
     self.prev_distance_button = self.distance_button
     self.distance_button = cp.vl["CRUISE_THROTTLE"]["FOLLOW_DISTANCE_BUTTON"]
 
+    self.prev_mads_enabled = self.mads_enabled
+
     if self.CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL, CAR.NISSAN_ALTIMA):
       ret.gas = cp.vl["GAS_PEDAL"]["GAS_PEDAL"]
     elif self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
@@ -94,8 +96,8 @@ class CarState(CarStateBase):
 
     ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_ANGLE"]
 
-    ret.leftBlinker = bool(cp.vl["LIGHTS"]["LEFT_BLINKER"])
-    ret.rightBlinker = bool(cp.vl["LIGHTS"]["RIGHT_BLINKER"])
+    ret.leftBlinker = ret.leftBlinkerOn = bool(cp.vl["LIGHTS"]["LEFT_BLINKER"])
+    ret.rightBlinker = ret.rightBlinkerOn = bool(cp.vl["LIGHTS"]["RIGHT_BLINKER"])
 
     ret.doorOpen = any([cp.vl["DOORS_LIGHTS"]["DOOR_OPEN_RR"],
                         cp.vl["DOORS_LIGHTS"]["DOOR_OPEN_RL"],

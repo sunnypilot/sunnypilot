@@ -49,22 +49,38 @@ static kj::Array<capnp::word> build_boot_log() {
 }
 
 int main(int argc, char** argv) {
-  const std::string id = logger_get_identifier("BootCount");
-  const std::string path = Path::log_root() + "/boot/" + id;
-  LOGW("bootlog to %s", path.c_str());
+  if (argc > 1) {
+    std::string arg1(argv[1]);
+    if (arg1 == "--started") {
+      const std::string path = Path::log_root() + "/params/" + Params().get("CurrentRoute").c_str();
+      LOGW("params_log to %s", path.c_str());
 
-  // Open bootlog
-  bool r = util::create_directories(Path::log_root() + "/boot/", 0775);
-  assert(r);
+      // Open params
+      bool r = util::create_directories(Path::log_root() + "/params/", 0775);
+      assert(r);
 
-  RawFile file(path.c_str());
-  // Write initdata
-  file.write(logger_build_init_data().asBytes());
-  // Write bootlog
-  file.write(build_boot_log().asBytes());
+      RawFile file(path.c_str());
+      // Write params
+      file.write(logger_build_params_data_car_start().asBytes());
+    }
+  } else {
+    const std::string id = logger_get_identifier("BootCount");
+    const std::string path = Path::log_root() + "/boot/" + id;
+    LOGW("bootlog to %s", path.c_str());
 
-  // Write out bootlog param to match routes with bootlog
-  Params().put("CurrentBootlog", id.c_str());
+    // Open bootlog
+    bool r = util::create_directories(Path::log_root() + "/boot/", 0775);
+    assert(r);
+
+    RawFile file(path.c_str());
+    // Write initdata
+    file.write(logger_build_init_data().asBytes());
+    // Write bootlog
+    file.write(build_boot_log().asBytes());
+
+    // Write out bootlog param to match routes with bootlog
+    Params().put("CurrentBootlog", id.c_str());
+  }
 
   return 0;
 }

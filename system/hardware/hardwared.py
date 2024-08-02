@@ -23,7 +23,7 @@ from openpilot.system.statsd import statlog
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.power_monitoring import PowerMonitoring
 from openpilot.system.hardware.fan_controller import TiciFanController
-from openpilot.system.version import terms_version, training_version
+from openpilot.system.version import terms_version, terms_version_sp, training_version
 
 ThermalStatus = log.DeviceState.ThermalStatus
 NetworkType = log.DeviceState.NetworkType
@@ -153,6 +153,8 @@ def hw_state_thread(end_event, hw_queue):
           cloudlog.warning("configuring modem")
           HARDWARE.configure_modem()
           modem_configured = True
+          if Params().get_bool("HotspotOnBoot") and Params().get_bool("HotspotOnBootConfirmed"):
+            os.system('nmcli con up Hotspot')
 
         prev_hw_state = hw_state
       except Exception:
@@ -296,6 +298,7 @@ def hardware_thread(end_event, hw_queue) -> None:
     startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or params.get_bool("DisableUpdates") or params.get_bool("SnoozeUpdate")
     startup_conditions["not_uninstalling"] = not params.get_bool("DoUninstall")
     startup_conditions["accepted_terms"] = params.get("HasAcceptedTerms") == terms_version
+    startup_conditions["accepted_terms"] = params.get("HasAcceptedTermsSP") == terms_version_sp
 
     # with 2% left, we killall, otherwise the phone will take a long time to boot
     startup_conditions["free_space"] = msg.deviceState.freeSpacePercent > 2
@@ -308,6 +311,12 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     # ensure device is fully booted
     startup_conditions["device_booted"] = startup_conditions.get("device_booted", False) or HARDWARE.booted()
+
+    # user-forced status
+    force_offroad = params.get_bool("ForceOffroad")
+    startup_conditions["not_force_offroad"] = not force_offroad
+    onroad_conditions["not_force_offroad"] = not force_offroad
+    set_offroad_alert("Offroad_ForceStatus", force_offroad)
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger

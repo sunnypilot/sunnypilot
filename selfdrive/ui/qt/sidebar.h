@@ -4,8 +4,13 @@
 
 #include <QFrame>
 #include <QMap>
+#include "cereal/messaging/messaging.h"
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 typedef QPair<QPair<QString, QString>, QColor> ItemStatus;
 Q_DECLARE_METATYPE(ItemStatus);
@@ -34,6 +39,7 @@ protected:
   void mousePressEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
   void drawMetric(QPainter &p, const QPair<QString, QString> &label, QColor c, int y);
+  virtual void DrawSidebar(QPainter &p);
 
   QPixmap home_img, flag_img, settings_img;
   bool onroad, flag_pressed, settings_pressed;

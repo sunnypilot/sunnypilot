@@ -105,6 +105,10 @@ class HyundaiFlagsSP(IntFlag):
   SP_NON_SCC_FCA = 2 ** 4
   SP_NON_SCC_RADAR_FCA = 2 ** 5
 
+  SP_CAMERA_SCC_LEAD = 2 ** 6
+  SP_LKAS12 = 2 ** 7
+  SP_RADAR_TRACKS = 2 ** 8
+
 
 class Footnote(Enum):
   CANFD = CarFootnote(
@@ -260,17 +264,17 @@ class CAR(Platforms):
     [HyundaiCarDocs("Hyundai Santa Fe 2021-23", "All", video_link="https://youtu.be/VnHzSTygTS4",
                     car_parts=CarParts.common([CarHarness.hyundai_l]))],
     HYUNDAI_SANTA_FE.specs,
-    flags=HyundaiFlags.CHECKSUM_CRC8,
+    flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.CHECKSUM_CRC8,
   )
   HYUNDAI_SANTA_FE_HEV_2022 = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Santa Fe Hybrid 2022-23", "All", car_parts=CarParts.common([CarHarness.hyundai_l]))],
     HYUNDAI_SANTA_FE.specs,
-    flags=HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.HYBRID,
+    flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.HYBRID,
   )
   HYUNDAI_SANTA_FE_PHEV_2022 = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Santa Fe Plug-in Hybrid 2022-23", "All", car_parts=CarParts.common([CarHarness.hyundai_l]))],
     HYUNDAI_SANTA_FE.specs,
-    flags=HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.HYBRID,
+    flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.CHECKSUM_CRC8 | HyundaiFlags.HYBRID,
   )
   HYUNDAI_SONATA = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Sonata 2020-23", "All", video_link="https://www.youtube.com/watch?v=ix63r9kE3Fw",
@@ -553,6 +557,12 @@ class CAR(Platforms):
   )
 
   # Non-SCC Cars
+  HYUNDAI_BAYON_1ST_GEN_NON_SCC = HyundaiPlatformConfig(
+    [HyundaiCarDocs("Hyundai Bayon Non-SCC 2021", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_n]))],
+    CarSpecs(mass=1150, wheelbase=2.58, steerRatio=13.27 * 1.15),
+    flags=HyundaiFlags.CHECKSUM_CRC8,
+    spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
+  )
   HYUNDAI_ELANTRA_2022_NON_SCC = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Elantra Non-SCC 2022", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_k]))],
     HYUNDAI_ELANTRA_2021.specs,
@@ -562,6 +572,12 @@ class CAR(Platforms):
   HYUNDAI_KONA_NON_SCC = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Kona Non-SCC 2019", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_b]))],
     HYUNDAI_KONA.specs,
+    spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
+  )
+  KIA_CEED_PHEV_2022_NON_SCC = HyundaiPlatformConfig(
+    [HyundaiCarDocs("Kia Ceed PHEV Non-SCC 2022", "No Smart Cruise Control (SCC)", car_parts=CarParts.common([CarHarness.hyundai_i]))],
+    CarSpecs(mass=1650, wheelbase=2.65, steerRatio=13.75, tireStiffnessFactor=0.5),
+    flags=HyundaiFlags.HYBRID,
     spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA,
   )
   KIA_FORTE_2019_NON_SCC = HyundaiPlatformConfig(

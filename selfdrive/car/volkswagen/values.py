@@ -48,6 +48,7 @@ class CarControllerParams:
       self.STEER_DRIVER_ALLOWANCE = 80    # Driver intervention threshold 0.8 Nm
       self.STEER_DELTA_UP = 6             # Max HCA reached in 1.00s (STEER_MAX / (50Hz * 1.00))
       self.STEER_DELTA_DOWN = 10          # Min HCA reached in 0.60s (STEER_MAX / (50Hz * 0.60))
+      self.BTN_STEP = 2
 
       if CP.transmissionType == TransmissionType.automatic:
         self.shifter_values = can_define.dv["Getriebe_1"]["Waehlhebelposition__Getriebe_1_"]
@@ -77,6 +78,7 @@ class CarControllerParams:
       self.STEER_DRIVER_ALLOWANCE = 80    # Driver intervention threshold 0.8 Nm
       self.STEER_DELTA_UP = 4             # Max HCA reached in 1.50s (STEER_MAX / (50Hz * 1.50))
       self.STEER_DELTA_DOWN = 10          # Min HCA reached in 0.60s (STEER_MAX / (50Hz * 0.60))
+      self.BTN_STEP = 3
 
       if CP.transmissionType == TransmissionType.automatic:
         self.shifter_values = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
@@ -138,6 +140,11 @@ class VolkswagenFlags(IntFlag):
 
   # Static flags
   PQ = 2
+
+
+class VolkswagenFlagsSP(IntFlag):
+  SP_CC_ONLY = 1
+  SP_CC_ONLY_NO_RADAR = 2
 
 
 @dataclass

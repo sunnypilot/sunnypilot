@@ -13,6 +13,7 @@ from openpilot.selfdrive.car.disable_ecu import disable_ecu
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
+GearShifter = car.CarState.GearShifter
 TransmissionType = car.CarParams.TransmissionType
 BUTTONS_DICT = {CruiseButtons.RES_ACCEL: ButtonType.accelCruise, CruiseButtons.DECEL_SET: ButtonType.decelCruise,
                 CruiseButtons.MAIN: ButtonType.altButton3, CruiseButtons.CANCEL: ButtonType.cancel}
@@ -104,8 +105,12 @@ class CarInterface(CarInterfaceBase):
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.1], [0.33]]
 
     elif candidate in (CAR.HONDA_CIVIC_BOSCH, CAR.HONDA_CIVIC_BOSCH_DIESEL, CAR.HONDA_CIVIC_2022):
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
+      if eps_modified:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564, 8000], [0, 2564, 3840]]
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.09]]  # 2.5x Modded EPS
+      else:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
 
     elif candidate == CAR.HONDA_ACCORD:
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
@@ -257,30 +262,72 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
 
-    ret.buttonEvents = [
+    self.CS.button_events = [
       *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT),
       *create_button_events(self.CS.cruise_setting, self.CS.prev_cruise_setting, SETTINGS_BUTTONS_DICT),
     ]
 
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
+                                                            self.CS.button_events, c.vCruise)
+
+    if ret.cruiseState.available:
+      if self.enable_mads:
+        if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
+          self.CS.madsEnabled = True
+        if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
+          self.CS.madsEnabled = not self.CS.madsEnabled
+        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+    else:
+      self.CS.madsEnabled = False
+
+    if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
+      if any(b.type == ButtonType.cancel for b in self.CS.button_events):
+        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+    if self.get_sp_pedal_disengage(ret):
+      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
+
+    if self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed:
+      if ret.gasPressed and not ret.cruiseState.enabled:
+        self.CS.accEnabled = False
+      self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
+
+    ret, self.CS = self.get_sp_common_state(ret, self.CS,
+                                            min_enable_speed_pcm=(self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed),
+                                            gap_button=(self.CS.cruise_setting == 3))
+
+    ret.buttonEvents = [
+      *self.CS.button_events,
+      *self.button_events.create_mads_event(self.CS.madsEnabled, self.CS.out.madsEnabled)  # MADS BUTTON
+    ]
+
     # events
-    events = self.create_common_events(ret, pcm_enable=False)
-    if self.CP.pcmCruise and ret.vEgo < self.CP.minEnableSpeed:
+    events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low], pcm_enable=False)
+    if self.CP.pcmCruise and ret.vEgo < self.CP.minEnableSpeed and not self.CS.madsEnabled:
       events.add(EventName.belowEngageSpeed)
 
-    if self.CP.pcmCruise:
-      # we engage when pcm is active (rising edge)
-      if ret.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
-        events.add(EventName.pcmEnable)
-      elif not ret.cruiseState.enabled and (c.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
-        # it can happen that car cruise disables while comma system is enabled: need to
-        # keep braking if needed or if the speed is very low
-        if ret.vEgo < self.CP.minEnableSpeed + 2.:
-          # non loud alert if cruise disables below 25mph as expected (+ a little margin)
-          events.add(EventName.speedTooLow)
-        else:
-          events.add(EventName.cruiseDisabled)
+    events, ret = self.create_sp_events(self.CS, ret, events)
+
+    #if self.CP.pcmCruise:
+    #  # we engage when pcm is active (rising edge)
+    #  if ret.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
+    #    events.add(EventName.pcmEnable)
+    #  elif not ret.cruiseState.enabled and (c.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
+    #    # it can happen that car cruise disables while comma system is enabled: need to
+    #    # keep braking if needed or if the speed is very low
+    #    if ret.vEgo < self.CP.minEnableSpeed + 2.:
+    #      # non loud alert if cruise disables below 25mph as expected (+ a little margin)
+    #      events.add(EventName.speedTooLow)
+    #    else:
+    #      events.add(EventName.cruiseDisabled)
     if self.CS.CP.minEnableSpeed > 0 and ret.vEgo < 0.001:
       events.add(EventName.manualRestart)
+
+    ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
+                                                           self.CC.target_speed, self.CC.v_set_dis,
+                                                           self.CC.speed_diff, self.CC.button_type)
 
     ret.events = events.to_msg()
 

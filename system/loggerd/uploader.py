@@ -31,6 +31,8 @@ allow_sleep = bool(os.getenv("UPLOADER_SLEEP", "1"))
 force_wifi = os.getenv("FORCEWIFI") is not None
 fake_upload = os.getenv("FAKEUPLOAD") is not None
 
+OFFROAD_TRANSITION_TIMEOUT = 900.  # wait until offroad for 15 minutes before allowing uploads
+
 
 class FakeRequest:
   def __init__(self):
@@ -238,9 +240,8 @@ def main(exit_event: threading.Event = None) -> None:
   params = Params()
   dongle_id = params.get("DongleId", encoding='utf8')
 
-  transition_to_offroad_last = 0.
-  disable_onroad_upload_offroad_transition_timeout = 900. # wait until offroad for 15 minutes before starting uploads
-  offroad_last = params.get_bool("IsOffroad")
+  offroad_transition_prev = 0.
+  offroad_last = False
 
   if dongle_id is None:
     cloudlog.info("uploader missing dongle_id")
@@ -256,10 +257,9 @@ def main(exit_event: threading.Event = None) -> None:
     offroad = params.get_bool("IsOffroad")
     t = time.monotonic()
     if offroad and not offroad_last and t > 300.:
-      transition_to_offroad_last = time.monotonic()
+      offroad_transition_prev = time.monotonic()
     offroad_last = offroad
 
-    offroad = params.get_bool("IsOffroad")
     network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
     if network_type == NetworkType.none:
       if allow_sleep:
@@ -267,12 +267,12 @@ def main(exit_event: threading.Event = None) -> None:
       continue
 
     if params.get_bool("DisableOnroadUploads"):
-      if not offroad or (transition_to_offroad_last > 0. and t - transition_to_offroad_last < disable_onroad_upload_offroad_transition_timeout):
+      if not offroad or (offroad_transition_prev > 0. and t - offroad_transition_prev < OFFROAD_TRANSITION_TIMEOUT):
         if not offroad:
           cloudlog.info("not uploading: onroad uploads disabled")
         else:
-          wait_minutes = int(disable_onroad_upload_offroad_transition_timeout / 60)
-          time_left = disable_onroad_upload_offroad_transition_timeout - (t - transition_to_offroad_last)
+          wait_minutes = int(OFFROAD_TRANSITION_TIMEOUT / 60)
+          time_left = OFFROAD_TRANSITION_TIMEOUT - (t - offroad_transition_prev)
           if time_left / 60. > 2.:
             time_left_str = f"{int(time_left / 60)} minute(s)"
           else:

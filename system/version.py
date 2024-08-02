@@ -11,12 +11,14 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.common.git import get_commit, get_origin, get_branch, get_short_branch, get_commit_date
 
 RELEASE_BRANCHES = ['release3-staging', 'release3', 'nightly']
-TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging']
+RELEASE_SP_BRANCHES = ['release-c3']
+TESTED_BRANCHES = RELEASE_BRANCHES + RELEASE_SP_BRANCHES + ['devel', 'devel-staging', 'staging-c3']
 
 BUILD_METADATA_FILENAME = "build.json"
 
 training_version: bytes = b"0.2.0"
 terms_version: bytes = b"2"
+terms_version_sp: bytes = b"1.0"
 
 
 def get_version(path: str = BASEDIR) -> str:
@@ -78,7 +80,8 @@ class OpenpilotMetadata:
   def comma_remote(self) -> bool:
     # note to fork maintainers, this is used for release metrics. please do not
     # touch this to get rid of the orange startup alert. there's better ways to do that
-    return self.git_normalized_origin == "github.com/commaai/openpilot"
+    return self.git_normalized_origin in ("github.com/sunnypilot/sunnypilot", "github.com/sunnyhaibin/sunnypilot",
+                                          "github.com/sunnypilot/openpilot", "github.com/sunnyhaibin/openpilot")
 
   @property
   def git_normalized_origin(self) -> str:
@@ -103,12 +106,29 @@ class BuildMetadata:
     return self.channel in RELEASE_BRANCHES
 
   @property
+  def release_sp_channel(self) -> bool:
+    return self.channel in RELEASE_SP_BRANCHES
+
+  @property
   def canonical(self) -> str:
     return f"{self.openpilot.version}-{self.openpilot.git_commit}-{self.openpilot.build_style}"
 
   @property
   def ui_description(self) -> str:
     return f"{self.openpilot.version} / {self.openpilot.git_commit[:6]} / {self.channel}"
+
+  @property
+  def channel_type(self) -> str:
+    if self.channel.startswith("dev-"):
+      return "development"
+    elif self.channel.startswith("staging-"):
+      return "staging"
+    elif self.channel.startswith("release-"):
+      return "release"
+    elif self.tested_channel:
+      return "release"
+    else:
+      return "master"
 
 
 def build_metadata_from_dict(build_metadata: dict) -> BuildMetadata:
@@ -160,6 +180,7 @@ if __name__ == "__main__":
 
   params = Params()
   params.put("TermsVersion", terms_version)
+  params.put("TermsVersionSunnypilot", terms_version_sp)
   params.put("TrainingVersion", training_version)
 
   print(get_build_metadata())

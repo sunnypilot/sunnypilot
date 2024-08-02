@@ -1,7 +1,14 @@
 #pragma once
 
 #include "selfdrive/ui/qt/onroad/alerts.h"
+
+#if SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/onroad/annotated_camera.h"
+#define AnnotatedCameraWidget AnnotatedCameraWidgetSP
+#define UIState UIStateSP
+#else
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
+#endif
 
 class OnroadWindow : public QWidget {
   Q_OBJECT
@@ -9,14 +16,14 @@ class OnroadWindow : public QWidget {
 public:
   OnroadWindow(QWidget* parent = 0);
 
-private:
-  void paintEvent(QPaintEvent *event);
+protected:
+  void paintEvent(QPaintEvent *event) override;
   OnroadAlerts *alerts;
   AnnotatedCameraWidget *nvg;
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QHBoxLayout* split;
 
-private slots:
-  void offroadTransition(bool offroad);
-  void updateState(const UIState &s);
+protected slots:
+  virtual void offroadTransition(bool offroad);
+  virtual void updateState(const UIState &s);
 };

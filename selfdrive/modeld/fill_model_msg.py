@@ -3,10 +3,12 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
+from openpilot.selfdrive.modeld.custom_model_metadata import ModelCapabilities
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
+
 
 class PublishState:
   def __init__(self):
@@ -51,7 +53,9 @@ def fill_xyz_poly(builder, degree, x, y, z):
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
                    net_output_data: dict[str, np.ndarray], publish_state: PublishState,
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
-                   timestamp_eof: int, model_execution_time: float, valid: bool) -> None:
+                   timestamp_eof: int, timestamp_llk: int, model_execution_time: float,
+                   nav_enabled: bool, valid: bool,
+                   custom_model_valid: bool, custom_model_capabilities: ModelCapabilities) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
   extended_msg.valid = valid
@@ -64,7 +68,9 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.frameDropPerc = frame_drop_perc
 
   action = driving_model_data.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  model_use_lateral_planner = custom_model_valid and custom_model_capabilities & ModelCapabilities.LateralPlannerSolution
+  if not model_use_lateral_planner:
+    action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -72,7 +78,12 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.frameAge = frame_age
   modelV2.frameDropPerc = frame_drop_perc
   modelV2.timestampEof = timestamp_eof
+  model_use_nav = custom_model_valid and custom_model_capabilities & ModelCapabilities.NoO
+  if model_use_nav:
+    modelV2.locationMonoTimeDEPRECATED = timestamp_llk
   modelV2.modelExecutionTime = model_execution_time
+  if model_use_nav:
+    modelV2.navEnabledDEPRECATED = nav_enabled
 
   # plan
   position = modelV2.position
@@ -91,8 +102,13 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyz_poly(poly_path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
   # lateral planning
-  action = modelV2.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  if model_use_lateral_planner:
+    solution = modelV2.lateralPlannerSolutionDEPRECATED
+    solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
+    solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]
+  else:
+    action = modelV2.action
+    action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
 
   # times at X_IDXS according to model plan
   PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N

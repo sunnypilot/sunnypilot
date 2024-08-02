@@ -4,7 +4,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.volkswagen.values import DBC, CANBUS, NetworkLocation, TransmissionType, GearShifter, \
-                                            CarControllerParams, VolkswagenFlags
+                                            CarControllerParams, VolkswagenFlags, VolkswagenFlagsSP
 
 
 class CarState(CarStateBase):
@@ -37,6 +37,9 @@ class CarState(CarStateBase):
       return self.update_pq(pt_cp, cam_cp, ext_cp, trans_type)
 
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["ESP_19"]["ESP_VL_Radgeschw_02"],
@@ -110,18 +113,21 @@ class CarState(CarStateBase):
     # braking release bits are set.
     # Refer to VW Self Study Program 890253: Volkswagen Driver Assistance
     # Systems, chapter on Front Assist with Braking: Golf Family for all MQB
-    ret.stockFcw = bool(ext_cp.vl["ACC_10"]["AWV2_Freigabe"])
-    ret.stockAeb = bool(ext_cp.vl["ACC_10"]["ANB_Teilbremsung_Freigabe"]) or bool(ext_cp.vl["ACC_10"]["ANB_Zielbremsung_Freigabe"])
+    if not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
+      ret.stockFcw = bool(ext_cp.vl["ACC_10"]["AWV2_Freigabe"])
+      ret.stockAeb = bool(ext_cp.vl["ACC_10"]["ANB_Teilbremsung_Freigabe"]) or bool(ext_cp.vl["ACC_10"]["ANB_Zielbremsung_Freigabe"])
 
     # Update ACC radar status.
-    self.acc_type = ext_cp.vl["ACC_06"]["ACC_Typ"]
+    if not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR or self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY:
+      _acc_type = 0 if self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY else ext_cp.vl["ACC_06"]["ACC_Typ"]
+      self.acc_type = _acc_type
 
     # ACC okay but disabled (1), ACC ready (2), a radar visibility or other fault/disruption (6 or 7)
     # currently regulating speed (3), driver accel override (4), brake only (5)
     ret.cruiseState.available = pt_cp.vl["TSK_06"]["TSK_Status"] in (2, 3, 4, 5)
     ret.cruiseState.enabled = pt_cp.vl["TSK_06"]["TSK_Status"] in (3, 4, 5)
 
-    if self.CP.pcmCruise:
+    if self.CP.pcmCruise and not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
       # Cruise Control mode; check for distance UI setting from the radar.
       # ECM does not manage this, so do not need to check for openpilot longitudinal
       ret.cruiseState.nonAdaptive = ext_cp.vl["ACC_02"]["ACC_Gesetzte_Zeitluecke"] == 0
@@ -136,17 +142,16 @@ class CarState(CarStateBase):
 
     # Update ACC setpoint. When the setpoint is zero or there's an error, the
     # radar sends a set-speed of ~90.69 m/s / 203mph.
-    if self.CP.pcmCruise:
+    if self.CP.pcmCruise and not self.CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
       ret.cruiseState.speed = ext_cp.vl["ACC_02"]["ACC_Wunschgeschw_02"] * CV.KPH_TO_MS
       if ret.cruiseState.speed > 90:
         ret.cruiseState.speed = 0
 
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
-    ret.leftBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
-    ret.rightBlinker = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
-    ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
+    ret.leftBlinker = ret.leftBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Left"])
+    ret.rightBlinker = ret.rightBlinkerOn = bool(pt_cp.vl["Blinkmodi_02"]["Comfort_Signal_Right"])
+    self.button_events = self.create_button_events(pt_cp, self.CCP.BUTTONS)
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
-    self.gap_dist_button = pt_cp.vl["GRA_ACC_01"]["GRA_Verstellung_Zeitluecke"]
 
     # Additional safety checks performed in CarInterface.
     ret.espDisabled = pt_cp.vl["ESP_21"]["ESP_Tastung_passiv"] != 0
@@ -159,6 +164,9 @@ class CarState(CarStateBase):
 
   def update_pq(self, pt_cp, cam_cp, ext_cp, trans_type):
     ret = car.CarState.new_message()
+
+    self.prev_mads_enabled = self.mads_enabled
+
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
       pt_cp.vl["Bremse_3"]["Radgeschw__VL_4_1"],
@@ -246,11 +254,10 @@ class CarState(CarStateBase):
       ret.cruiseState.speed = 0
 
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(300, pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_li"],
-                                                                            pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_re"])
-    ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
+    ret.leftBlinker, ret.rightBlinker = ret.leftBlinkerOn, ret.rightBlinkerOn = self.update_blinker_from_stalk(300, pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_li"],
+                                                                                                                      pt_cp.vl["Gate_Komf_1"]["GK1_Blinker_re"])
+    self.button_events = self.create_button_events(pt_cp, self.CCP.BUTTONS)
     self.gra_stock_values = pt_cp.vl["GRA_Neu"]
-    self.gap_dist_button = pt_cp.vl["GRA_Neu"]["GRA_Zeitluecke"]
 
     # Additional safety checks performed in CarInterface.
     ret.espDisabled = bool(pt_cp.vl["Bremse_1"]["ESP_Passiv_getastet"])
@@ -297,7 +304,10 @@ class CarState(CarStateBase):
 
     if CP.networkLocation == NetworkLocation.fwdCamera:
       # Radars are here on CANBUS.pt
-      messages += MqbExtraSignals.fwd_radar_messages
+      if not CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
+        messages += MqbExtraSignals.fwd_radar_messages
+        if CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY:
+          messages.remove(("ACC_06", 50))
       if CP.enableBsm:
         messages += MqbExtraSignals.bsm_radar_messages
 
@@ -322,7 +332,10 @@ class CarState(CarStateBase):
       ]
     else:
       # Radars are here on CANBUS.cam
-      messages += MqbExtraSignals.fwd_radar_messages
+      if not CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY_NO_RADAR:
+        messages += MqbExtraSignals.fwd_radar_messages
+        if CP.spFlags & VolkswagenFlagsSP.SP_CC_ONLY:
+          messages.remove(("ACC_06", 50))
       if CP.enableBsm:
         messages += MqbExtraSignals.bsm_radar_messages
 

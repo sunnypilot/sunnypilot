@@ -45,11 +45,18 @@ constexpr vec3 default_face_kpts_3d[] = {
   {18.02, -49.14, 8.00}, {6.36, -51.20, 8.00}, {-5.98, -51.20, 8.00},
 };
 
+//Example of a macro
+#ifdef SUNNYPILOT
+#define EXTRA_UI_STATES STATUS_MADS
+#else
+#define EXTRA_UI_STATES
+#endif
 
 typedef enum UIStatus {
   STATUS_DISENGAGED,
   STATUS_OVERRIDE,
   STATUS_ENGAGED,
+  EXTRA_UI_STATES
 } UIStatus;
 
 enum PrimeType {
@@ -103,12 +110,16 @@ typedef struct UIScene {
   uint64_t started_frame;
 } UIScene;
 
+#ifdef SUNNYPILOT
+#include "sunnypilot/qt/ui_scene.h"
+#define UIScene UISceneSP
+#endif
 class UIState : public QObject {
   Q_OBJECT
 
 public:
   UIState(QObject* parent = 0);
-  void updateStatus();
+  virtual void updateStatus();
   inline bool engaged() const {
     return scene.started && (*sm)["controlsState"].getControlsState().getEnabled();
   }
@@ -134,16 +145,21 @@ signals:
   void primeChanged(bool prime);
   void primeTypeChanged(PrimeType prime_type);
 
-private slots:
-  void update();
+protected slots:
+  virtual void update();
 
-private:
+protected:
   QTimer *timer;
-  bool started_prev = false;
   PrimeType prime_type = PrimeType::UNKNOWN;
-};
 
+private:  
+  bool started_prev = false;
+};
+#undef UIScene
+
+#ifndef SUNNYPILOT
 UIState *uiState();
+#endif
 
 // device management class
 class Device : public QObject {
@@ -156,7 +172,7 @@ public:
     offroad_brightness = std::clamp(brightness, 0, 100);
   }
 
-private:
+protected:
   bool awake = false;
   int interactive_timeout = 0;
   bool ignition_on = false;
@@ -166,9 +182,10 @@ private:
   FirstOrderFilter brightness_filter;
   QFuture<void> brightness_future;
 
-  void updateBrightness(const UIState &s);
+  virtual void updateBrightness(const UIState &s);
   void updateWakefulness(const UIState &s);
   void setAwake(bool on);
+  float clipped_brightness;
 
 signals:
   void displayPowerChanged(bool on);
@@ -179,7 +196,9 @@ public slots:
   void update(const UIState &s);
 };
 
+#ifndef SUNNYPILOT
 Device *device();
+#endif
 
 void ui_update_params(UIState *s);
 int get_path_length_idx(const cereal::XYZTData::Reader &line, const float path_height);
@@ -189,3 +208,7 @@ void update_dmonitoring(UIState *s, const cereal::DriverStateV2::Reader &drivers
 void update_leads(UIState *s, const cereal::RadarState::Reader &radar_state, const cereal::XYZTData::Reader &line);
 void update_line_data(const UIState *s, const cereal::XYZTData::Reader &line,
                       float y_off, float z_off, QPolygonF *pvd, int max_idx, bool allow_invert);
+
+bool calib_frame_to_full_frame(const UIState *s, float in_x, float in_y, float in_z, QPointF *out, float margin=500.0f);
+void update_state(UIState *s);
+void update_sockets(UIState *s);

@@ -18,9 +18,27 @@ enum LongitudinalPersonalitySP {
   relaxed @3;
 }
 
+enum AccelerationPersonality {
+  sport @0;
+  normal @1;
+  eco @2;
+  stock @3;
+}
+
+enum ModelGeneration {
+  default @0;
+  one @1;
+  two @2;
+  three @3;
+  four @4;
+  five @5;
+}
+
 struct ControlsStateSP @0x81c2f05a394cf4af {
   lateralState @0 :Text;
   personality @8 :LongitudinalPersonalitySP;
+  dynamicPersonality @9 :Bool;
+  accelPersonality @10 :AccelerationPersonality;
 
   lateralControlState :union {
     indiState @1 :LateralINDIState;
@@ -180,6 +198,9 @@ struct E2eLongStateSP @0xa5cd762cd951a455 {
 struct ModelDataV2SP @0xf98d843bfd7004a3 {
   laneChangePrev @0 :Bool;
   laneChangeEdgeBlock @1 :Bool;
+  customModel @2 :Bool;
+  modelGeneration @3 :ModelGeneration;
+  modelCapabilities @4 :UInt32;
 }
 
 struct CustomReserved7 @0xb86e6369214c01c8 {

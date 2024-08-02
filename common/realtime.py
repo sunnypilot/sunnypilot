@@ -2,6 +2,8 @@
 import gc
 import os
 import time
+import threading
+import psutil
 from collections import deque
 
 from openpilot.common.threadname import getthreadname
@@ -42,6 +44,14 @@ def config_realtime_process(cores: int | list[int], priority: int) -> None:
   set_realtime_priority(priority)
   c = cores if isinstance(cores, list) else [cores, ]
   set_core_affinity(c)
+
+
+def set_thread_affinity(thread: threading.Thread, cores: list[int]) -> None:
+  try:
+    process = psutil.Process(thread.ident)
+    process.cpu_affinity(cores)
+  except Exception as e:
+    print(f"Error setting thread affinity: {e}")
 
 
 class Ratekeeper:

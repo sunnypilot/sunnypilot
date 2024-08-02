@@ -66,12 +66,13 @@ const char frame_fragment_shader[] =
   "}\n";
 #endif
 
-mat4 get_driver_view_transform(int screen_width, int screen_height, int stream_width, int stream_height) {
+mat4 get_driver_view_transform(int screen_width, int screen_height, int stream_width, int stream_height, bool reverse_dm_cam = false) {
   const float driver_view_ratio = 2.0;
   const float yscale = stream_height * driver_view_ratio / stream_width;
   const float xscale = yscale*screen_height/screen_width*stream_width/stream_height;
+  float xscale_invert = (reverse_dm_cam ? -xscale : xscale);
   mat4 transform = (mat4){{
-    xscale,  0.0, 0.0, 0.0,
+    xscale_invert,  0.0, 0.0, 0.0,
     0.0,  yscale, 0.0, 0.0,
     0.0,  0.0, 1.0, 0.0,
     0.0,  0.0, 0.0, 1.0,
@@ -220,7 +221,7 @@ void CameraWidget::updateFrameMat() {
   if (zoomed_view) {
     if (active_stream_type == VISION_STREAM_DRIVER) {
       if (stream_width > 0 && stream_height > 0) {
-        frame_mat = get_driver_view_transform(w, h, stream_width, stream_height);
+        frame_mat = get_driver_view_transform(w, h, stream_width, stream_height, is_reverse);
       }
     } else {
       // Project point at "infinity" to compute x and y offsets

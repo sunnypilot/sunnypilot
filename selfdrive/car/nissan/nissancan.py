@@ -65,7 +65,7 @@ def create_cancel_msg(packer, cancel_msg, cruise_cancel):
   return packer.make_can_msg("CANCEL_MSG", 2, values)
 
 
-def create_lkas_hud_msg(packer, lkas_hud_msg, enabled, left_line, right_line, left_lane_depart, right_lane_depart):
+def create_lkas_hud_msg(packer, lkas_hud_msg, lat_active, blinking_icon, lateral_paused, left_line, right_line, left_lane_depart, right_lane_depart):
   values = {s: lkas_hud_msg[s] for s in [
     "LARGE_WARNING_FLASHING",
     "SIDE_RADAR_ERROR_FLASHING1",
@@ -98,9 +98,9 @@ def create_lkas_hud_msg(packer, lkas_hud_msg, enabled, left_line, right_line, le
   values["RIGHT_LANE_YELLOW_FLASH"] = 1 if right_lane_depart else 0
   values["LEFT_LANE_YELLOW_FLASH"] = 1 if left_lane_depart else 0
 
-  values["LARGE_STEERING_WHEEL_ICON"] = 2 if enabled else 0
-  values["RIGHT_LANE_GREEN"] = 1 if right_line and enabled else 0
-  values["LEFT_LANE_GREEN"] = 1 if left_line and enabled else 0
+  values["LARGE_STEERING_WHEEL_ICON"] = 2 if lat_active else 3 if blinking_icon else 1 if lateral_paused else 0
+  values["RIGHT_LANE_GREEN"] = 1 if right_line and lat_active else 0
+  values["LEFT_LANE_GREEN"] = 1 if left_line and lat_active else 0
 
   return packer.make_can_msg("PROPILOT_HUD", 0, values)
 

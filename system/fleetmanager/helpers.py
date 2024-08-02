@@ -3,6 +3,7 @@ import subprocess
 from flask import render_template, request, session
 from functools import wraps
 from pathlib import Path
+from openpilot.common.params import Params
 from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.loggerd.uploader import listdir_by_creation
@@ -23,15 +24,16 @@ else:
 def login_required(f):
   @wraps(f)
   def decorated_route(*args, **kwargs):
-    if not session.get("logged_in"):
+    if not session.get("logged_in") and Params().get_bool("FleetManagerPin"):
       session["previous_page"] = request.url
       return render_template("login.html")
     return f(*args, **kwargs)
   return decorated_route
 
 
-def list_files(path):
-  return sorted(listdir_by_creation(path), reverse=True)
+def list_files(path, single=False):
+  files = os.listdir(path) if single else listdir_by_creation(path)
+  return sorted(files, reverse=True)
 
 
 def is_valid_segment(segment):

@@ -6,11 +6,16 @@
 #include <QScrollBar>
 #include <QStyle>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/home.h"
 
 static const int ICON_WIDTH = 49;
 

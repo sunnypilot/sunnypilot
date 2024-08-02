@@ -7,13 +7,18 @@
 #include <QStyle>
 
 #include "selfdrive/ui/ui.h"
+#ifdef SUNNYPILOT
+#define TOGGLES_PANEL_INDEX 3
+#else
+#define TOGGLES_PANEL_INDEX 2
+#endif 
 
 ExperimentalModeButton::ExperimentalModeButton(QWidget *parent) : QPushButton(parent) {
   chill_pixmap = QPixmap("../assets/img_couch.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
   experimental_pixmap = QPixmap("../assets/img_experimental_grey.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
 
   // go to toggles and expand experimental mode description
-  connect(this, &QPushButton::clicked, [=]() { emit openSettings(2, "ExperimentalMode"); });
+  connect(this, &QPushButton::clicked, [=]() { emit openSettings(TOGGLES_PANEL_INDEX, "ExperimentalMode"); });
 
   setFixedHeight(125);
   QHBoxLayout *main_layout = new QHBoxLayout;

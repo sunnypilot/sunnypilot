@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Build dev-c3') {
+            when {
+                branch 'master-dev-c3'
+            }
+            steps {
+                script {
+                    sshagent(['comma-three-ssh']) {
+                        withCredentials([string(credentialsId: 'comma-three-username-ip', variable: 'username_ip')]) {
+                            sh 'ssh -o StrictHostKeyChecking=no $username_ip "bash /data/update_dev.sh"'
+                            sh 'ssh -o StrictHostKeyChecking=no $username_ip "bash /data/build_dev.sh"'
+                            env.BRANCH_NAME = 'dev-c3'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build staging-c3') {
+            when {
+                branch 'master'
+            }
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
+            steps {
+                input "Build staging-c3?"
+                script {
+                    sshagent(['comma-three-ssh']) {
+                        withCredentials([string(credentialsId: 'comma-three-username-ip', variable: 'username_ip')]) {
+                            sh 'ssh -o StrictHostKeyChecking=no $username_ip "bash /data/update_staging.sh"'
+                            sh 'ssh -o StrictHostKeyChecking=no $username_ip "bash /data/build_staging.sh"'
+                            env.BRANCH_NAME = 'staging-c3'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                if (env.BRANCH_NAME == 'dev-c3' || env.BRANCH_NAME == 'staging-c3') {
+                    withCredentials([string(credentialsId: 'discord-webhook', variable: 'discord_webhook')]) {
+                        discordSend(
+                            webhookURL: discord_webhook,
+                            title: 'sunnypilot Jenkins Pipeline Build',
+                            description: 'Branch: ' + env.BRANCH_NAME,
+                            result: currentBuild.currentResult,
+                            footer: 'Build complete'
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

@@ -7,6 +7,7 @@ import wave
 from cereal import car, messaging
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.retry import retry
 from openpilot.common.swaglog import cloudlog
@@ -33,7 +34,10 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   AudibleAlert.refuse: ("refuse.wav", 1, MAX_VOLUME),
 
   AudibleAlert.prompt: ("prompt.wav", 1, MAX_VOLUME),
+  AudibleAlert.promptSingleLow: ("prompt_single_low.wav", None, MAX_VOLUME),
+  AudibleAlert.promptSingleHigh: ("prompt_single_high.wav", 1, MAX_VOLUME),
   AudibleAlert.promptRepeat: ("prompt.wav", None, MAX_VOLUME),
+  AudibleAlert.promptStarting: ("prompt.wav", 1, MAX_VOLUME),
   AudibleAlert.promptDistracted: ("prompt_distracted.wav", None, MAX_VOLUME),
 
   AudibleAlert.warningSoft: ("warning_soft.wav", None, MAX_VOLUME),
@@ -62,6 +66,22 @@ class Soundd:
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
 
+    self.param_s = Params()
+    self.quiet_drive = self.param_s.get_bool("QuietDrive")
+
+    self._frame = 0
+
+  def load_param(self):
+    self._frame += 1
+    if self._frame == 50:
+      self.quiet_drive = self.param_s.get_bool("QuietDrive")
+
+  def should_play_sound(self):
+    return (self.current_alert == AudibleAlert.warningSoft or self.current_alert == AudibleAlert.warningImmediate or
+      self.current_alert == AudibleAlert.promptDistracted or self.current_alert == AudibleAlert.promptRepeat or
+      self.current_alert == AudibleAlert.promptStarting or self.current_alert == AudibleAlert.promptSingleLow or
+      self.current_alert == AudibleAlert.promptSingleHigh) or (not self.quiet_drive and self.current_alert != AudibleAlert.none)
+
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
 
@@ -82,7 +102,7 @@ class Soundd:
 
     ret = np.zeros(frames, dtype=np.float32)
 
-    if self.current_alert != AudibleAlert.none:
+    if self.should_play_sound():
       num_loops = sound_list[self.current_alert][1]
       sound_data = self.loaded_sounds[self.current_alert]
       written_frames = 0
@@ -143,6 +163,7 @@ class Soundd:
 
       cloudlog.info(f"soundd stream started: {stream.samplerate=} {stream.channels=} {stream.dtype=} {stream.device=}, {stream.blocksize=}")
       while True:
+        self.load_param()
         sm.update(0)
 
         if sm.updated['microphone'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert

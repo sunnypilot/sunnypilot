@@ -90,6 +90,7 @@ void Sidebar::updateState(const UIState &s) {
   }
   setProperty("connectStatus", QVariant::fromValue(connectStatus));
 
+#ifndef SUNNYPILOT
   ItemStatus tempStatus = {{tr("TEMP"), tr("HIGH")}, danger_color};
   auto ts = deviceState.getThermalStatus();
   if (ts == cereal::DeviceState::ThermalStatus::GREEN) {
@@ -98,6 +99,7 @@ void Sidebar::updateState(const UIState &s) {
     tempStatus = {{tr("TEMP"), tr("OK")}, warning_color};
   }
   setProperty("tempStatus", QVariant::fromValue(tempStatus));
+#endif
 
   ItemStatus pandaStatus = {{tr("VEHICLE"), tr("ONLINE")}, good_color};
   if (s.scene.pandaType == cereal::PandaState::PandaType::UNKNOWN) {
@@ -110,6 +112,10 @@ void Sidebar::updateState(const UIState &s) {
 
 void Sidebar::paintEvent(QPaintEvent *event) {
   QPainter p(this);
+  DrawSidebar(p); // Because derived classes implement this. Otherwise QPainter gets terminated before time.
+}
+
+void Sidebar::DrawSidebar(QPainter &p){
   p.setPen(Qt::NoPen);
   p.setRenderHint(QPainter::Antialiasing);
 
@@ -135,6 +141,7 @@ void Sidebar::paintEvent(QPaintEvent *event) {
   p.setPen(QColor(0xff, 0xff, 0xff));
   const QRect r = QRect(50, 247, 100, 50);
   p.drawText(r, Qt::AlignCenter, net_type);
+  RETURN_IF_SUNNYPILOT // Because we draw ourselves
 
   // metrics
   drawMetric(p, temp_status.first, temp_status.second, 338);

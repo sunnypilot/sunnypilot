@@ -1,9 +1,13 @@
+import capnp
 import json
 import os
 import numpy as np
+import time
 import tomllib
 from abc import abstractmethod, ABC
+from difflib import SequenceMatcher
 from enum import StrEnum
+from types import SimpleNamespace
 from typing import Any, NamedTuple
 from collections.abc import Callable
 from functools import cache
@@ -13,10 +17,13 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.simple_kalman import KF1D, get_kalman_gain
 from openpilot.common.numpy_fast import clip
+from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG
+from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG, ButtonEvents
+from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.car.values import PLATFORMS
-from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, get_friction
+from openpilot.selfdrive.controls.lib.desire_helper import get_min_lateral_speed
+from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET, get_friction
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 
@@ -32,6 +39,17 @@ FRICTION_THRESHOLD = 0.3
 TORQUE_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/params.toml')
 TORQUE_OVERRIDE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/override.toml')
 TORQUE_SUBSTITUTE_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/substitute.toml')
+TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/lat_models')
+
+# dict used to rename activation functions whose names aren't valid python identifiers
+ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
+
+FORWARD_GEARS = [GearShifter.drive, GearShifter.low, GearShifter.eco,
+                 GearShifter.sport, GearShifter.manumatic, GearShifter.brake]
+
+
+def similarity(s1: str, s2: str) -> float:
+  return SequenceMatcher(None, s1, s2).ratio()
 
 GEAR_SHIFTER_MAP: dict[str, car.CarState.GearShifter] = {
   'P': GearShifter.park, 'PARK': GearShifter.park,
@@ -85,6 +103,111 @@ def get_torque_params():
 
   return torque_params
 
+# lateral neural network feedforward
+class FluxModel:
+  def __init__(self, params_file, zero_bias=False):
+    with open(params_file, "r") as f:
+      params = json.load(f)
+
+    self.input_size = params["input_size"]
+    self.output_size = params["output_size"]
+    self.input_mean = np.array(params["input_mean"], dtype=np.float32).T
+    self.input_std = np.array(params["input_std"], dtype=np.float32).T
+    self.layers = []
+    self.friction_override = False
+
+    for layer_params in params["layers"]:
+      W = np.array(layer_params[next(key for key in layer_params.keys() if key.endswith('_W'))], dtype=np.float32).T
+      b = np.array(layer_params[next(key for key in layer_params.keys() if key.endswith('_b'))], dtype=np.float32).T
+      if zero_bias:
+        b = np.zeros_like(b)
+      activation = layer_params["activation"]
+      for k, v in ACTIVATION_FUNCTION_NAMES.items():
+        activation = activation.replace(k, v)
+      self.layers.append((W, b, activation))
+
+    self.validate_layers()
+    self.check_for_friction_override()
+
+  # Begin activation functions.
+  # These are called by name using the keys in the model json file
+  @staticmethod
+  def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+  @staticmethod
+  def identity(x):
+    return x
+  # End activation functions
+
+  def forward(self, x):
+    for W, b, activation in self.layers:
+      x = getattr(self, activation)(x.dot(W) + b)
+    return x
+
+  def evaluate(self, input_array):
+    in_len = len(input_array)
+    if in_len != self.input_size:
+      # If the input is length 2-4, then it's a simplified evaluation.
+      # In that case, need to add on zeros to fill out the input array to match the correct length.
+      if 2 <= in_len:
+        input_array = input_array + [0] * (self.input_size - in_len)
+      else:
+        raise ValueError(f"Input array length {len(input_array)} must be length 2 or greater")
+
+    input_array = np.array(input_array, dtype=np.float32)
+
+    # Rescale the input array using the input_mean and input_std
+    input_array = (input_array - self.input_mean) / self.input_std
+
+    output_array = self.forward(input_array)
+
+    return float(output_array[0, 0])
+
+  def validate_layers(self):
+    for W, b, activation in self.layers:
+      if not hasattr(self, activation):
+        raise ValueError(f"Unknown activation: {activation}")
+
+  def check_for_friction_override(self):
+    y = self.evaluate([10.0, 0.0, 0.2])
+    self.friction_override = (y < 0.1)
+
+
+def get_nn_model_path(_car, eps_firmware) -> tuple[str | None, float]:
+  def check_nn_path(_check_model):
+    _model_path = None
+    _max_similarity = -1.0
+    for f in os.listdir(TORQUE_NN_MODEL_PATH):
+      if f.endswith(".json"):
+        model = f.replace(".json", "").replace(f"{TORQUE_NN_MODEL_PATH}/", "")
+        similarity_score = similarity(model, _check_model)
+        if similarity_score > _max_similarity:
+          _max_similarity = similarity_score
+          _model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
+    return _model_path, _max_similarity
+
+  if len(eps_firmware) > 3:
+    eps_firmware = eps_firmware.replace("\\", "")
+    check_model = f"{_car} {eps_firmware}"
+  else:
+    check_model = _car
+  model_path, max_similarity = check_nn_path(check_model)
+  if _car not in model_path or 0.0 <= max_similarity < 0.9:
+    check_model = _car
+    model_path, max_similarity = check_nn_path(check_model)
+    if _car not in model_path or 0.0 <= max_similarity < 0.9:
+      model_path = None
+  return model_path, max_similarity
+
+
+def get_nn_model(_car, eps_firmware) -> tuple[FluxModel | None, float]:
+  model, similarity_score = get_nn_model_path(_car, eps_firmware)
+  if model is not None:
+    model = FluxModel(model)
+  return model, similarity_score
+
+
 # generic car and radar interfaces
 
 class CarInterfaceBase(ABC):
@@ -109,6 +232,36 @@ class CarInterfaceBase(ABC):
 
     dbc_name = "" if self.cp is None else self.cp.dbc_name
     self.CC: CarControllerBase = CarController(dbc_name, CP, self.VM)
+
+    self.param_s = Params()
+    self.disengage_on_accelerator = self.param_s.get_bool("DisengageOnAccelerator")
+    self.enable_mads = self.param_s.get_bool("EnableMads")
+    self.mads_disengage_lateral_on_brake = self.param_s.get_bool("DisengageLateralOnBrake")
+    self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
+    self.gear_warning = 0
+    self.cruise_cancelled_btn = True
+    self.acc_mads_combo = self.param_s.get_bool("AccMadsCombo")
+    self.prev_acc_mads_combo = False
+    self.mads_event_lock = True
+    self.gap_button_counter = 0
+    self.experimental_mode_hold = False
+    self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
+    self.lkas_toggle = self.param_s.get_bool("LkasToggle")
+    self.last_mads_init = 0.
+    self.madsEnabledInit = False
+    self.madsEnabledInitPrev = False
+    self.button_events = ButtonEvents()
+
+    self.lat_torque_nn_model = None
+    eps_firmware = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
+    self.has_lateral_torque_nn = self.initialize_lat_torque_nn(CP.carFingerprint, eps_firmware)
+
+  def get_ff_nn(self, x):
+    return self.lat_torque_nn_model.evaluate(x)
+
+  def initialize_lat_torque_nn(self, _car, eps_firmware) -> bool:
+    self.lat_torque_nn_model, _ = get_nn_model(_car, eps_firmware)
+    return self.lat_torque_nn_model is not None and self.param_s.get_bool("NNFF")
 
   def apply(self, c: car.CarControl, now_nanos: int) -> tuple[car.CarControl.Actuators, list[tuple[int, int, bytes, int]]]:
     return self.CC.update(c, self.CS, now_nanos)
@@ -137,8 +290,30 @@ class CarInterfaceBase(ABC):
     ret.minSteerSpeed = platform.config.specs.minSteerSpeed
     ret.tireStiffnessFactor = platform.config.specs.tireStiffnessFactor
     ret.flags |= int(platform.config.flags)
+    ret.spFlags |= int(platform.config.spFlags)
 
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
+
+    params = Params()
+    if ret.steerControlType != car.CarParams.SteerControlType.angle:
+      if params.get_bool("EnforceTorqueLateral") or params.get_bool("NNFF"):
+        ret = CarInterfaceBase.sp_configure_torque_tune(candidate, ret)
+        if params.get_bool("CustomTorqueLateral"):
+          ret = CarInterfaceBase.sp_configure_custom_torque_tune(ret, params)
+
+      if ret.lateralTuning.which() == 'torque':
+        eps_firmware = str(next((fw.fwVersion for fw in car_fw if fw.ecu == "eps"), ""))
+        model, similarity_score = get_nn_model_path(candidate, eps_firmware)
+        if model is not None:
+          ret.lateralTuning.torque.nnModelName = nn_model_name = os.path.splitext(os.path.basename(model))[0]
+          ret.lateralTuning.torque.nnModelFuzzyMatch = (similarity_score < 0.99)
+          if 'b\'' in nn_model_name:
+            nn_model, _ = nn_model_name.split('b\'')
+          else:
+            nn_model = nn_model_name
+          params.put("NNFFCarModel", nn_model)
+        else:
+          ret.lateralTuning.torque.nnModelName = "mock"
 
     # Vehicle mass is published curb weight plus assumed payload such as a human driver; notCars have no assumed payload
     if not ret.notCar:
@@ -227,15 +402,29 @@ class CarInterfaceBase(ABC):
     tune.torque.latAccelOffset = 0.0
     tune.torque.steeringAngleDeadzoneDeg = steering_angle_deadzone_deg
 
+  @staticmethod
+  def sp_configure_torque_tune(candidate, ret):
+    CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+    return ret
+
+  @staticmethod
+  def sp_configure_custom_torque_tune(ret, params):
+    ret.lateralTuning.torque.friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.01
+    ret.lateralTuning.torque.latAccelFactor = float(params.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
+    return ret
+
   @abstractmethod
   def _update(self, c: car.CarControl) -> car.CarState:
     pass
 
-  def update(self, c: car.CarControl, can_strings: list[bytes]) -> car.CarState:
+  def update(self, c: car.CarControl, can_strings: list[bytes], params_list: SimpleNamespace) -> car.CarState:
     # parse can
     for cp in self.can_parsers:
       if cp is not None:
         cp.update_strings(can_strings)
+
+    self.CS.button_events = []
+    self.CS.params_list = params_list
 
     # get CarState
     ret = self._update(c)
@@ -264,19 +453,26 @@ class CarInterfaceBase(ABC):
     return ret
 
 
-  def create_common_events(self, cs_out, extra_gears=None, pcm_enable=True, allow_enable=True,
+  def create_common_events(self, cs_out, c, extra_gears=None, pcm_enable=True, allow_enable=True,
                            enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
     events = Events()
 
-    if cs_out.doorOpen:
+    if cs_out.doorOpen and (c.latActive or c.longActive):
       events.add(EventName.doorOpen)
-    if cs_out.seatbeltUnlatched:
+    if cs_out.seatbeltUnlatched and cs_out.gearShifter != GearShifter.park:
       events.add(EventName.seatbeltNotLatched)
     if cs_out.gearShifter != GearShifter.drive and (extra_gears is None or
-       cs_out.gearShifter not in extra_gears):
-      events.add(EventName.wrongGear)
+       cs_out.gearShifter not in extra_gears) and not (cs_out.gearShifter == GearShifter.unknown and
+       self.gear_warning < int(0.5/DT_CTRL)):
+      if cs_out.vEgo < 5:
+        events.add(EventName.silentWrongGear)
+      else:
+        events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
-      events.add(EventName.reverseGear)
+      if not self.CS.params_list.reverse_dm_cam and cs_out.vEgo < 5:
+        events.add(EventName.spReverseGear)
+      elif cs_out.vEgo >= 5:
+        events.add(EventName.reverseGear)
     if not cs_out.cruiseState.available:
       events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
@@ -292,26 +488,33 @@ class CarInterfaceBase(ABC):
     if cs_out.cruiseState.nonAdaptive:
       events.add(EventName.wrongCruiseMode)
     if cs_out.brakeHoldActive and self.CP.openpilotLongitudinalControl:
-      events.add(EventName.brakeHold)
+      if cs_out.madsEnabled:
+        cs_out.disengageByBrake = True
+      if cs_out.cruiseState.enabled:
+        events.add(EventName.brakeHold)
+      else:
+        events.add(EventName.silentBrakeHold)
     if cs_out.parkingBrake:
       events.add(EventName.parkBrake)
     if cs_out.accFaulted:
       events.add(EventName.accFaulted)
     if cs_out.steeringPressed:
       events.add(EventName.steerOverride)
-    if cs_out.brakePressed and cs_out.standstill:
+    if cs_out.brakePressed and cs_out.standstill and cs_out.cruiseState.enabled:
       events.add(EventName.preEnableStandstill)
-    if cs_out.gasPressed:
+    if cs_out.gasPressed and cs_out.cruiseState.enabled:
       events.add(EventName.gasPressedOverride)
 
+    self.gear_warning = self.gear_warning + 1 if cs_out.gearShifter == GearShifter.unknown else 0
+
     # Handle button presses
-    for b in cs_out.buttonEvents:
-      # Enable OP long on falling edge of enable buttons (defaults to accelCruise and decelCruise, overridable per-port)
-      if not self.CP.pcmCruise and (b.type in enable_buttons and not b.pressed):
-        events.add(EventName.buttonEnable)
-      # Disable on rising and falling edge of cancel for both stock and OP long
-      if b.type == ButtonType.cancel:
-        events.add(EventName.buttonCancel)
+    #for b in cs_out.buttonEvents:
+    #  # Enable OP long on falling edge of enable buttons (defaults to accelCruise and decelCruise, overridable per-port)
+    #  if not self.CP.pcmCruise and (b.type in enable_buttons and not b.pressed):
+    #    events.add(EventName.buttonEnable)
+    #  # Disable on rising and falling edge of cancel for both stock and OP long
+    #  if b.type == ButtonType.cancel:
+    #    events.add(EventName.buttonCancel)
 
     # Handle permanent and temporary steering faults
     self.steering_unpressed = 0 if cs_out.steeringPressed else self.steering_unpressed + 1
@@ -343,6 +546,191 @@ class CarInterfaceBase(ABC):
 
     return events
 
+  @staticmethod
+  def sp_v_cruise_initialized(v_cruise):
+    return v_cruise != V_CRUISE_UNSET
+
+  def get_acc_mads(self, cruiseState_enabled, acc_enabled, mads_enabled):
+    if self.acc_mads_combo:
+      if not self.prev_acc_mads_combo and (cruiseState_enabled or acc_enabled):
+        mads_enabled = True
+      self.prev_acc_mads_combo = (cruiseState_enabled or acc_enabled)
+
+    return mads_enabled
+
+  def get_sp_v_cruise_non_pcm_state(self, cs_out, acc_enabled, button_events, vCruise,
+                                    enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
+                                    resume_button=(ButtonType.accelCruise, ButtonType.resumeCruise)):
+
+    if cs_out.cruiseState.available:
+      for b in button_events:
+        if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
+          if b.type in enable_buttons and not b.pressed:
+            acc_enabled = True
+        if not self.CP.pcmCruise:
+          if b.type in resume_button and not self.sp_v_cruise_initialized(vCruise):
+            acc_enabled = False
+        if not self.CP.pcmCruiseSpeed:
+          if b.type == ButtonType.accelCruise and not cs_out.cruiseState.enabled:
+            acc_enabled = False
+    else:
+      acc_enabled = False
+
+    return acc_enabled
+
+  def get_sp_cancel_cruise_state(self, mads_enabled, acc_enabled=False):
+    mads_enabled = False if not self.enable_mads or self.disengage_on_accelerator else mads_enabled
+    return mads_enabled, acc_enabled
+
+  def get_sp_pedal_disengage(self, cs_out):
+    accel_pedal = cs_out.gasPressed and not self.CS.out.gasPressed and self.disengage_on_accelerator
+    brake = cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)
+    regen = cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)
+    return accel_pedal or brake or regen
+
+  def get_sp_cruise_main_state(self, cs_out, CS):
+    if not CS.control_initialized:
+      mads_enabled = False
+    elif not self.mads_main_toggle:
+      mads_enabled = False
+    else:
+      mads_enabled = cs_out.cruiseState.available
+
+    return mads_enabled
+
+  def get_sp_started_mads(self, cs_out, CS):
+    if not cs_out.cruiseState.available and CS.out.cruiseState.available:
+      self.madsEnabledInit = False
+      self.madsEnabledInitPrev = False
+      return False
+    if not self.mads_main_toggle or self.prev_acc_mads_combo:
+      return CS.madsEnabled
+    if not self.madsEnabledInit and CS.madsEnabled:
+      self.madsEnabledInit = True
+      self.last_mads_init = time.monotonic()
+    if cs_out.gearShifter not in FORWARD_GEARS:
+      self.last_mads_init = time.monotonic()
+    if self.madsEnabledInit and (not self.madsEnabledInitPrev or cs_out.gearShifter not in FORWARD_GEARS):
+      if time.monotonic() < self.last_mads_init + 1.:
+        return False
+      self.madsEnabledInitPrev = True
+      return cs_out.cruiseState.available
+    else:
+      return CS.madsEnabled
+
+  def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
+    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
+                                 cs_out.cruiseState.enabled
+
+    if not self.enable_mads:
+      if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled:
+        CS.madsEnabled = True
+      elif not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
+        CS.madsEnabled = False
+
+    if self.CP.openpilotLongitudinalControl:
+      self.toggle_exp_mode(gap_button)
+
+    lane_change_speed_min = get_min_lateral_speed(self.CS.params_list.pause_lateral_speed, self.CS.params_list.is_metric)
+
+    cs_out.belowLaneChangeSpeed = cs_out.vEgo < lane_change_speed_min and self.CS.params_list.below_speed_pause
+
+    if cs_out.gearShifter in [GearShifter.park, GearShifter.reverse] or cs_out.doorOpen or \
+      (cs_out.seatbeltUnlatched and cs_out.gearShifter != GearShifter.park):
+      gear_allowed = False
+
+    cs_out.latActive = gear_allowed
+
+    if not CS.control_initialized:
+      CS.control_initialized = True
+
+    # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
+    if (cs_out.gasPressed and not self.CS.out.gasPressed and self.disengage_on_accelerator) or \
+      (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)) or \
+      (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
+      if CS.madsEnabled:
+        CS.disengageByBrake = True
+
+    cs_out.madsEnabled = CS.madsEnabled
+    cs_out.accEnabled = CS.accEnabled
+    cs_out.disengageByBrake = CS.disengageByBrake
+    cs_out.brakeLightsDEPRECATED |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
+
+    return cs_out, CS
+
+  # TODO: SP: use upstream's buttonEvents counter checks from controlsd
+  def toggle_exp_mode(self, gap_pressed):
+    if gap_pressed:
+      if not self.experimental_mode_hold:
+        self.gap_button_counter += 1
+        if self.gap_button_counter > 50:
+          self.gap_button_counter = 0
+          self.experimental_mode_hold = True
+          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.CS.params_list.experimental_mode)
+    else:
+      self.gap_button_counter = 0
+      self.experimental_mode_hold = False
+
+  def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
+                       enable_from_brake=False, enable_pressed_long=False,
+                       enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
+
+    if not cs_out.brakePressed and not cs_out.brakeHoldActive and not cs_out.parkingBrake and not cs_out.regenBraking:
+      if cs_out.disengageByBrake and cs_out.madsEnabled:
+        enable_pressed = True
+        enable_from_brake = True
+      CS.disengageByBrake = False
+      cs_out.disengageByBrake = False
+
+    for b in cs_out.buttonEvents:
+      # Enable OP long on falling edge of enable buttons (defaults to accelCruise and decelCruise, overridable per-port)
+      if not self.CP.pcmCruise:
+        if b.type in enable_buttons and not b.pressed:
+          enable_pressed = True
+          enable_pressed_long = True
+      # Disable on rising and falling edge of cancel for both stock and OP long
+      if b.type == ButtonType.cancel:
+        if not cs_out.madsEnabled:
+          events.add(EventName.buttonCancel)
+        elif not self.cruise_cancelled_btn:
+          self.cruise_cancelled_btn = True
+          events.add(EventName.manualLongitudinalRequired)
+      # do disable on MADS button if ACC is disabled
+      if b.type == ButtonType.altButton1 and b.pressed and self.enable_mads:
+        if not cs_out.madsEnabled:  # disabled MADS
+          if not cs_out.cruiseState.enabled:
+            events.add(EventName.buttonCancel)
+          else:
+            events.add(EventName.manualSteeringRequired)
+        else:  # enabled MADS
+          if not cs_out.cruiseState.enabled:
+            enable_pressed = True
+    if self.CP.pcmCruise:
+      # do disable on button down
+      if main_enabled:
+        if any(CS.main_buttons) and not cs_out.cruiseState.enabled:
+          if not cs_out.madsEnabled:
+            events.add(EventName.buttonCancel)
+      # do enable on both accel and decel buttons
+      if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled and allow_enable:
+        enable_pressed = True
+        enable_pressed_long = True
+      elif not cs_out.cruiseState.enabled:
+        if not cs_out.madsEnabled:
+          events.add(EventName.buttonCancel)
+        elif not self.enable_mads:
+          cs_out.madsEnabled = False
+    if enable_pressed:
+      if enable_from_brake:
+        events.add(EventName.silentButtonEnable)
+      else:
+        events.add(EventName.buttonEnable)
+    if cs_out.disengageByBrake and not cs_out.standstill and enable_pressed_long:
+      events.add(EventName.cruiseEngageBlocked)
+
+    self.cruise_cancelled_btn = False if cs_out.cruiseState.enabled else True
+
+    return events, cs_out
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
@@ -374,7 +762,16 @@ class CarStateBase(ABC):
     self.cluster_speed_hyst_gap = 0.0
     self.cluster_min_speed = 0.0  # min speed before dropping to 0
 
-    self.gap_dist_button = 0
+    self.param_s = Params()
+    self.accEnabled = False
+    self.madsEnabled = False
+    self.disengageByBrake = False
+    self.mads_enabled = False
+    self.prev_mads_enabled = False
+    self.control_initialized = False
+
+    self.button_events: list[capnp.lib.capnp._DynamicStructBuilder] = []
+    self.params_list: SimpleNamespace = ParamManager().get_params()
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
@@ -437,6 +834,16 @@ class CarStateBase(ABC):
     self.right_blinker_prev = right_blinker_stalk
 
     return bool(left_blinker_stalk or self.left_blinker_cnt > 0), bool(right_blinker_stalk or self.right_blinker_cnt > 0)
+
+  def update_custom_stock_long(self, cruise_button, final_speed_kph, target_speed, v_set_dis, speed_diff, button_type):
+    customStockLong = car.CarState.CustomStockLong.new_message()
+    customStockLong.cruiseButton = 0 if cruise_button is None else cruise_button
+    customStockLong.finalSpeedKph = final_speed_kph
+    customStockLong.targetSpeed = target_speed
+    customStockLong.vSetDis = v_set_dis
+    customStockLong.speedDiff = speed_diff
+    customStockLong.buttonType = button_type
+    return customStockLong
 
   @staticmethod
   def parse_gear_shifter(gear: str | None) -> car.CarState.GearShifter:

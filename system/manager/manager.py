@@ -5,18 +5,21 @@ import signal
 import sys
 import traceback
 
-from cereal import log
+from cereal import custom
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
+from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
 from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
+from openpilot.system.manager.mapd_installer import VERSION
 from openpilot.system.manager.process import ensure_running
 from openpilot.system.manager.process_config import managed_processes
-from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_ID
+from openpilot.system.athena.registration import register, UNREGISTERED_DONGLE_ID, is_registered_device
 from openpilot.common.swaglog import cloudlog, add_file_handler
-from openpilot.system.version import get_build_metadata, terms_version, training_version
+from openpilot.system.hardware.hw import Paths
+from openpilot.system.version import get_build_metadata, terms_version, terms_version_sp, training_version
 
 
 def manager_init() -> None:
@@ -38,8 +41,9 @@ def manager_init() -> None:
     ("HasAcceptedTerms", "0"),
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
-    ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+    ("LongitudinalPersonality", str(custom.LongitudinalPersonalitySP.standard)),
 
+    ("AccelPersonality", str(custom.AccelerationPersonality.stock)),
     ("AccMadsCombo", "1"),
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "1"),
@@ -49,53 +53,71 @@ def manager_init() -> None:
     ("CustomTorqueLateral", "0"),
     ("CameraControl", "2"),
     ("CameraControlToggle", "0"),
-    ("CameraOffset", "0"),
+    ("CameraOffset", "4"),
     ("CarModel", ""),
     ("CarModelText", ""),
     ("ChevronInfo", "1"),
     ("MadsCruiseMain", "1"),
     ("CustomBootScreen", "0"),
     ("CustomOffsets", "0"),
-    ("DevUI", "1"),
-    ("DevUIInfo", "1"),
+    ("DevUIInfo", "0"),
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
+    ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
-    ("DynamicLaneProfileToggle", "0"),
+    ("DynamicPersonality", "0"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
-    ("GapAdjustCruise", "1"),
-    ("GapAdjustCruiseMax", "0"),
-    ("GapAdjustCruiseMin", "0"),
-    ("GapAdjustCruiseMode", "0"),
-    ("GapAdjustCruiseTr", "3"),
+    ("FeatureStatus", "1"),
     ("HandsOnWheelMonitoring", "0"),
+    ("HasAcceptedTermsSP", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),
     ("MadsIconToggle", "1"),
+    ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "9"),
+    ("NNFF", "0"),
     ("OnroadScreenOff", "-2"),
     ("OnroadScreenOffBrightness", "50"),
     ("OnroadScreenOffEvent", "1"),
+    ("OnroadSettings", "1"),
     ("PathOffset", "0"),
+    ("PauseLateralSpeed", "0"),
     ("ReverseAccChange", "0"),
     ("ScreenRecorder", "1"),
     ("ShowDebugUI", "1"),
-    ("SpeedLimitControl", "1"),
-    ("SpeedLimitPercOffset", "1"),
+    ("SpeedLimitControlPolicy", "3"),
+    ("SpeedLimitEngageType", "0"),
     ("SpeedLimitValueOffset", "0"),
     ("SpeedLimitOffsetType", "0"),
+    ("SpeedLimitWarningType", "0"),
+    ("SpeedLimitWarningValueOffset", "0"),
+    ("SpeedLimitWarningOffsetType", "0"),
     ("StandStillTimer", "0"),
     ("StockLongToyota", "0"),
     ("TorqueDeadzoneDeg", "0"),
     ("TorqueFriction", "1"),
     ("TorqueMaxLatAccel", "250"),
+    ("ToyotaAutoLockBySpeed", "0"),
+    ("ToyotaAutoUnlockByShifter", "0"),
+    ("ToyotaEnhancedBsm", "0"),
     ("TrueVEgoUi", "0"),
     ("TurnSpeedControl", "0"),
     ("TurnVisionControl", "0"),
     ("VisionCurveLaneless", "0"),
     ("VwAccType", "0"),
+    ("OsmDbUpdatesCheck", "0"),
+    ("OsmDownloadedDate", "0"),
+    ("OSMDownloadProgress", "{}"),
+    ("SidebarTemperatureOptions", "0"),
+    ("SunnylinkEnabled", "1"),
+    ("SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"),
+    ("CustomDrivingModel", "0"),
+    ("DrivingModelGeneration", "4"),
+    ("LastSunnylinkPingTime", "0"),
+    ("EnableGitlabRunner", "0"),
+    ("EnableSunnylinkUploader", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))
@@ -123,6 +145,7 @@ def manager_init() -> None:
   # set version params
   params.put("Version", build_metadata.openpilot.version)
   params.put("TermsVersion", terms_version)
+  params.put("TermsVersionSunnypilot", terms_version_sp)
   params.put("TrainingVersion", training_version)
   params.put("GitCommit", build_metadata.openpilot.git_commit)
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
@@ -130,6 +153,7 @@ def manager_init() -> None:
   params.put("GitRemote", build_metadata.openpilot.git_origin)
   params.put_bool("IsTestedBranch", build_metadata.tested_channel)
   params.put_bool("IsReleaseBranch", build_metadata.release_channel)
+  params.put_bool("IsReleaseSPBranch", build_metadata.release_sp_channel)
 
   # set dongle id
   reg_res = register(show_spinner=True)
@@ -138,6 +162,12 @@ def manager_init() -> None:
   else:
     serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
+  if params.get("HardwareSerial") is None:
+    try:
+      serial = HARDWARE.get_serial()
+      params.put("HardwareSerial", serial)
+    except Exception:
+      cloudlog.exception("Error getting serial for device")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
   os.environ['GIT_ORIGIN'] = build_metadata.openpilot.git_normalized_origin # Needed for swaglog
   os.environ['GIT_BRANCH'] = build_metadata.channel # Needed for swaglog
@@ -155,6 +185,13 @@ def manager_init() -> None:
                        commit=build_metadata.openpilot.git_commit,
                        dirty=build_metadata.openpilot.is_dirty,
                        device=HARDWARE.get_device_type())
+
+  if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')):
+    os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
+
+  models_dir = Paths.model_root()
+  if not os.path.exists(models_dir):
+    os.makedirs(models_dir)
 
   # preimport all processes
   for p in managed_processes.values():
@@ -186,6 +223,8 @@ def manager_thread() -> None:
   if os.getenv("NOBOARD") is not None:
     ignore.append("pandad")
   ignore += [x for x in os.getenv("BLOCK", "").split(",") if len(x) > 0]
+  if params.get("DriverCameraHardwareMissing") and not is_registered_device():
+    ignore += ["dmonitoringd", "dmonitoringmodeld"]
 
   sm = messaging.SubMaster(['deviceState', 'carParams'], poll='deviceState')
   pm = messaging.PubMaster(['managerState'])

@@ -11,9 +11,18 @@
 #include "common/util.h"
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#else
 #include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 #include "selfdrive/ui/qt/widgets/input.h"
 #include "system/hardware/hw.h"
+
+#ifdef SUNNYPILOT
+#define ListWidget ListWidgetSP
+#define ButtonControl ButtonControlSP
+#endif
 
 
 void SoftwarePanel::checkForUpdates() {

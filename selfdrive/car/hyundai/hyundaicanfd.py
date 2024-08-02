@@ -35,13 +35,13 @@ class CanBus(CanBusBase):
     return self._cam
 
 
-def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer):
+def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer , lateral_paused, blinking_icon):
 
   ret = []
 
   values = {
     "LKA_MODE": 2,
-    "LKA_ICON": 2 if enabled else 1,
+    "LKA_ICON": 2 if lat_active else 3 if blinking_icon else 1 if lateral_paused else 0,
     "TORQUE_REQUEST": apply_steer,
     "LKA_ASSIST": 0,
     "STEER_REQ": 1 if lat_active else 0,
@@ -113,10 +113,10 @@ def create_acc_cancel(packer, CP, CAN, cruise_info_copy):
   })
   return packer.make_can_msg("SCC_CONTROL", CAN.ECAN, values)
 
-def create_lfahda_cluster(packer, CAN, enabled):
+def create_lfahda_cluster(packer, CAN, enabled, lat_active, lateral_paused, blinking_icon):
   values = {
     "HDA_ICON": 1 if enabled else 0,
-    "LFA_ICON": 2 if enabled else 0,
+    "LFA_ICON": 2 if lat_active else 3 if blinking_icon else 1 if lateral_paused else 0,
   }
   return packer.make_can_msg("LFAHDA_CLUSTER", CAN.ECAN, values)
 

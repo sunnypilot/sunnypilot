@@ -3,7 +3,8 @@ import math
 from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
-from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP
+from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
+from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP, CANFD_CAR
 
 RADAR_START_ADDR = 0x500
 RADAR_MSG_COUNT = 32
@@ -11,12 +12,21 @@ RADAR_MSG_COUNT = 32
 # POC for parsing corner radars: https://github.com/commaai/openpilot/pull/24221/
 
 def get_radar_can_parser(CP):
-  if (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None:
-    messages = ("ESCC", 50)
-    return CANParser(DBC[CP.carFingerprint]['pt'], messages, 0)
-  else:
-    if DBC[CP.carFingerprint]['radar'] is None:
-      return None
+  if DBC[CP.carFingerprint]['radar'] is None:
+    if CP.carFingerprint in CANFD_CAR:
+      if CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD:
+        lead_src, bus = "SCC_CONTROL", CanBus(CP).CAM
+      else:
+        return None
+    else:
+      if CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC:
+        lead_src, bus = "ESCC", 0
+      elif CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD:
+        lead_src, bus = "SCC11", 2
+      else:
+        return None
+    messages = [(lead_src, 50)]
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, bus)
 
   messages = [(f"RADAR_TRACK_{addr:x}", 50) for addr in range(RADAR_START_ADDR, RADAR_START_ADDR + RADAR_MSG_COUNT)]
   return CANParser(DBC[CP.carFingerprint]['radar'], messages, 1)
@@ -25,13 +35,20 @@ def get_radar_can_parser(CP):
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
+    self.CP = CP
     self.enhanced_scc = (CP.spFlags & HyundaiFlagsSP.SP_ENHANCED_SCC) and DBC[CP.carFingerprint]['radar'] is None
+    self.camera_scc = CP.spFlags & HyundaiFlagsSP.SP_CAMERA_SCC_LEAD
     self.updated_messages = set()
-    self.trigger_msg = 0x2AB if self.enhanced_scc else RADAR_START_ADDR + RADAR_MSG_COUNT - 1
+    self.trigger_msg = 0x2AB if self.enhanced_scc else \
+                       0x1A0 if self.camera_scc and CP.carFingerprint in CANFD_CAR else \
+                       0x420 if self.camera_scc else \
+                       (RADAR_START_ADDR + RADAR_MSG_COUNT - 1)
     self.track_id = 0
 
     self.radar_off_can = CP.radarUnavailable
     self.rcp = get_radar_can_parser(CP)
+
+    self.sp_radar_tracks = CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS
 
   def update(self, can_strings):
     if self.radar_off_can or (self.rcp is None):
@@ -46,6 +63,12 @@ class RadarInterface(RadarInterfaceBase):
     rr = self._update(self.updated_messages)
     self.updated_messages.clear()
 
+    radar_error = []
+    if rr is not None:
+      radar_error = rr.errors
+    if list(radar_error) and self.sp_radar_tracks:
+      return super().update(None)
+
     return rr
 
   def _update(self, updated_messages):
@@ -59,9 +82,13 @@ class RadarInterface(RadarInterfaceBase):
       errors.append("canError")
     ret.errors = errors
 
-    if self.enhanced_scc:
-      msg = self.rcp.vl["ESCC"]
-      valid = msg['ACC_ObjStatus']
+    if self.enhanced_scc or self.camera_scc:
+      msg_src = "ESCC" if self.enhanced_scc else \
+                "SCC_CONTROL" if self.CP.carFingerprint in CANFD_CAR else \
+                "SCC11"
+      msg = self.rcp.vl[msg_src]
+      valid = msg['ACC_ObjDist'] < 204.6 if self.CP.carFingerprint in CANFD_CAR else \
+              msg['ACC_ObjStatus']
       for ii in range(1):
         if valid:
           if ii not in self.pts:
@@ -70,7 +97,7 @@ class RadarInterface(RadarInterfaceBase):
             self.track_id += 1
           self.pts[ii].measured = True
           self.pts[ii].dRel = msg['ACC_ObjDist']
-          self.pts[ii].yRel = -msg['ACC_ObjLatPos']
+          self.pts[ii].yRel = -msg['ACC_ObjLatPos'] if self.enhanced_scc else float('nan')
           self.pts[ii].vRel = msg['ACC_ObjRelSpd']
           self.pts[ii].aRel = float('nan')
           self.pts[ii].yvRel = float('nan')
