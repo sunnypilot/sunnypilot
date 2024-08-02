@@ -230,6 +230,9 @@ notify new dev build:
   needs: ["publish to public github prebuilt"] # This notify shall only happen after a publish to github public
   variables:
     TEMPLATE: "discord_template_notify_dev_public.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export EXTRA_VERSION_IDENTIFIER=$((CI_PIPELINE_IID + BASE_BUILD_NUMER))
   rules:
     - if: $NEW_BRANCH == "dev-c3"
       variables:
