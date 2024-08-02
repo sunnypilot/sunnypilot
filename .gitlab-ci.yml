@@ -5,7 +5,7 @@ variables:
   VERSION: 'echo $(date "+%Y.%m.%d")'
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
-  DEV_C3_SOURCE_BRANCH: "prebuilt-pub-branches-and-fix-build-number" # Temp to force run
+  DEV_C3_SOURCE_BRANCH: "master-dev-c3"
   GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
