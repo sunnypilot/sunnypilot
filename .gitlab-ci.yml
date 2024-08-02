@@ -173,7 +173,7 @@ build:
     - echo "${GIT_ORIGIN}"
     - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
     - git config --global --add safe.directory ${OUTPUT_DIR}
-    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "${EXTRA_VERSION_IDENTIFIER}"
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "-${EXTRA_VERSION_IDENTIFIER}"
   allow_failure: false
 
 publish to private gitlab prebuilt:
