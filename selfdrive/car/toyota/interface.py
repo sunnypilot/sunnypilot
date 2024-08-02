@@ -220,7 +220,7 @@ class CarInterface(CarInterfaceBase):
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        if self.CS.params_list.lkas_toggle:
+        if self.CS.params_list.toyota_lkas_toggle:
           if self.CS.lta_status_active:
             if (self.CS.prev_lkas_enabled == 16 and self.CS.lkas_enabled == 0) or \
               (self.CS.prev_lkas_enabled == 0 and self.CS.lkas_enabled == 16):
