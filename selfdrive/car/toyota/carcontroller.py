@@ -1,7 +1,6 @@
 from cereal import car
 from common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.params import Params
 from openpilot.selfdrive.car import apply_meas_steer_torque_limits, apply_std_steer_angle_limits, common_fault_avoidance, \
                           create_gas_interceptor_command, make_can_msg
 from openpilot.selfdrive.car.interfaces import CarControllerBase
@@ -52,27 +51,16 @@ class CarController(CarControllerBase):
     self.gas = 0
     self.accel = 0
 
-    self.param_s = Params()
-    self._is_metric = self.param_s.get_bool("IsMetric")
-    self._reverse_acc_change = self.param_s.get_bool("ReverseAccChange")
-    self._sng_hack = self.param_s.get_bool("ToyotaSnG")
-
     self.left_blindspot_debug_enabled = False
     self.right_blindspot_debug_enabled = False
     self.last_blindspot_frame = 0
 
-    self._auto_lock_by_speed = self.param_s.get_bool("ToyotaAutoLockBySpeed")
-    self._auto_unlock_by_shifter = self.param_s.get_bool("ToyotaAutoUnlockByShifter")
-    self._auto_lock_speed = 10 * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+    self._auto_lock_speed = 0.0
     self._auto_lock_once = False
     self._gear_prev = GearShifter.park
 
   def update(self, CC, CS, now_nanos):
-    if self.frame % 200 == 0:
-      self._is_metric = self.param_s.get_bool("IsMetric")
-      self._auto_lock_by_speed = self.param_s.get_bool("ToyotaAutoLockBySpeed")
-      self._auto_unlock_by_shifter = self.param_s.get_bool("ToyotaAutoUnlockByShifter")
-      self._auto_lock_speed = 10 * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+    self._auto_lock_speed = 10 * (CV.KPH_TO_MS if CS.params_list.is_metric else CV.MPH_TO_MS)
 
     actuators = CC.actuators
     hud_control = CC.hudControl
@@ -88,11 +76,11 @@ class CarController(CarControllerBase):
     gear = CS.out.gearShifter
     if not CS.out.doorOpen:
       if gear == GearShifter.park and self._gear_prev != gear:
-        if self._auto_unlock_by_shifter:
+        if CS.params_list.toyota_auto_unlock_by_shifter:
           can_sends.append(make_can_msg(0x750, UNLOCK_CMD, 0))
         self._auto_lock_once = False
       elif gear == GearShifter.drive and not self._auto_lock_once and CS.out.vEgo >= self._auto_lock_speed:
-        if self._auto_lock_by_speed:
+        if CS.params_list.toyota_auto_lock_by_speed:
           can_sends.append(make_can_msg(0x750, LOCK_CMD, 0))
         self._auto_lock_once = True
     self._gear_prev = gear
@@ -173,7 +161,7 @@ class CarController(CarControllerBase):
 
     # on entering standstill, send standstill request
     if CS.out.standstill and not self.last_standstill and (self.CP.carFingerprint not in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptorDEPRECATED) and \
-      not self._sng_hack:
+      not CS.params_list.toyota_sng_hack:
       self.standstill_req = True
     if CS.pcm_acc_status != 8:
       # pcm entered standstill or it's disabled
@@ -188,7 +176,7 @@ class CarController(CarControllerBase):
     # we can spam can to cancel the system even if we are using lat only control
     if (self.frame % 3 == 0 and self.CP.openpilotLongitudinalControl) or pcm_cancel_cmd:
       lead = hud_control.leadVisible or CS.out.vEgo < 12.  # at low speed we always assume the lead is present so ACC can be engaged
-      reverse_acc = 2 if self._reverse_acc_change else 1
+      reverse_acc = 2 if CS.params_list.reverse_acc_change else 1
 
       # Press distance button until we are at the correct bar length. Only change while enabled to avoid skipping startup popup
       if self.frame % 6 == 0 and self.CP.openpilotLongitudinalControl:
