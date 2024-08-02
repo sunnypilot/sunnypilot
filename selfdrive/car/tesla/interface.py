@@ -38,7 +38,6 @@ class CarInterface(CarInterfaceBase):
 
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_adas)
-    self.sp_update_params()
 
     # TODO: Implement detection of half vs full press of stalk for MADS control
     # Until then, we're disabling main state control to prevent it from trying to self-engage without user input
