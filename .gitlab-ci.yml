@@ -147,7 +147,7 @@ build:
       when: manual
     - if: $NEW_BRANCH
       when: always
-
+      
 check no source code sent:
   image: alpine
   stage: sanity

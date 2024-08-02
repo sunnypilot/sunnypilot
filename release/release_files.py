@@ -88,8 +88,6 @@ sunnypilot_blacklist = [
   "codecov.yml",
   "conftest.py",
   "poetry.lock",
-  ".git-crypt/",
-  ".venv",
 ]
 
 # Merge the blacklists
