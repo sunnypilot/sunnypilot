@@ -45,8 +45,9 @@ class CarState(CarStateBase):
     ret.steeringTorque = -epas_status["EPAS3S_torsionBarTorque"]
 
     ret.steeringPressed = (self.hands_on_level > 0)
-    ret.steerFaultPermanent = self.can_define.dv["EPAS3S_sysStatus"]["EPAS3S_eacStatus"].get(int(epas_status["EPAS3S_eacStatus"]), None) in ["EAC_FAULT"]
-    ret.steerFaultTemporary = (self.steer_warning not in ("EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON"))
+    eac_status = self.can_define.dv["EPAS3S_sysStatus"]["EPAS3S_eacStatus"].get(int(epas_status["EPAS3S_eacStatus"]), None)
+    ret.steerFaultPermanent = eac_status in ["EAC_FAULT"]
+    ret.steerFaultTemporary = self.steer_warning not in ["EAC_ERROR_IDLE", "EAC_ERROR_HANDS_ON"] and eac_status not in ["EAC_ACTIVE", "EAC_AVAILABLE"]
 
     # Cruise state
     cruise_state = self.can_define.dv["DI_state"]["DI_cruiseState"].get(int(cp.vl["DI_state"]["DI_cruiseState"]), None)
@@ -66,6 +67,11 @@ class CarState(CarStateBase):
 
     button_events = []
     for button in BUTTONS:
+      if button.mux is not None:  # HACK: handle muxed signals
+        indexName = button.can_addr + "Index"
+        index = cp_adas.vl[button.can_addr][indexName]
+        if index != button.mux:
+          continue
       state = (cp_adas.vl[button.can_addr][button.can_msg] in button.values)
       if self.button_states[button.event_type] != state:
         event = car.CarState.ButtonEvent.new_message()

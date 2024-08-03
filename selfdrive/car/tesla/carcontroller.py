@@ -13,15 +13,15 @@ class CarController(CarControllerBase):
     self.packer = CANPacker(dbc_name)
     self.pt_packer = CANPacker(DBC[CP.carFingerprint]['pt'])
     self.tesla_can = TeslaCAN(self.packer, self.pt_packer)
+    self.pcm_cancel_cmd = False # Must be latching because of frame rate
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
-    pcm_cancel_cmd = CC.cruiseControl.cancel
 
     can_sends = []
 
     # Temp disable steering on a hands_on_fault, and allow for user override
-    hands_on_fault = CS.steer_warning == "EAC_ERROR_HANDS_ON" and CS.hands_on_level >= 3
+    hands_on_fault = CS.hands_on_level >= 3
     lkas_enabled = CC.latActive and not hands_on_fault
 
     if self.frame % 2 == 0:
@@ -35,10 +35,25 @@ class CarController(CarControllerBase):
         apply_angle = CS.out.steeringAngleDeg
 
       self.apply_angle_last = apply_angle
-      can_sends.append(self.tesla_can.create_steering_control(apply_angle, lkas_enabled, (self.frame // 2) % 16))
+      use_lka_mode = CS.params_list.enable_mads
+      can_sends.append(self.tesla_can.create_steering_control(apply_angle, lkas_enabled, (self.frame // 2) % 16, use_lka_mode))
+
+
+    self.pcm_cancel_cmd = CC.cruiseControl.cancel or not CS.accEnabled or self.pcm_cancel_cmd
+
+    if hands_on_fault and not CS.params_list.enable_mads:
+      self.pcm_cancel_cmd = True
+
+    # Unlatch cancel command only when ACC is actually disabled
+    if not CS.acc_enabled:
+      self.pcm_cancel_cmd = False
 
     # Longitudinal control
-    if self.CP.openpilotLongitudinalControl:
+    if self.pcm_cancel_cmd:
+      # Increment counter so cancel is prioritized even with stock TACC
+      counter = (CS.das_control["DAS_controlCounter"] + 1) % 8
+      can_sends.append(self.tesla_can.cancel_acc(counter))
+    elif self.CP.openpilotLongitudinalControl:
       acc_state = CS.das_control["DAS_accState"]
       target_accel = actuators.accel
       target_speed = max(CS.out.vEgo + (target_accel * CarControllerParams.ACCEL_TO_SPEED_MULTIPLIER), 0)
@@ -47,16 +62,6 @@ class CarController(CarControllerBase):
 
       counter = CS.das_control["DAS_controlCounter"]
       can_sends.append(self.tesla_can.create_longitudinal_commands(acc_state, target_speed, min_accel, max_accel, counter))
-
-    # Cancel on user steering override, since there is no steering torque blending
-    if hands_on_fault:
-      pcm_cancel_cmd = True
-
-    # Sent cancel request only if ACC is enabled
-    if self.frame % 10 == 0 and pcm_cancel_cmd and CS.acc_enabled:
-      counter = int(CS.sccm_right_stalk_counter)
-      can_sends.append(self.tesla_can.right_stalk_press((counter + 1) % 16 , 1))  # half up (cancel acc)
-      can_sends.append(self.tesla_can.right_stalk_press((counter + 2) % 16, 0))  # to prevent neutral gear warning
 
     # TODO: HUD control
 

@@ -8,6 +8,7 @@ class ParamManager:
     self._params_list: SimpleNamespace = self._create_namespace({
       "acc_mads_combo": False,
       "below_speed_pause": False,
+      "enable_mads": False,
       "experimental_mode": False,
       "is_metric": False,
       "last_speed_limit_sign_tap": False,
@@ -34,6 +35,7 @@ class ParamManager:
     self._params_list = self._create_namespace({
       "acc_mads_combo": params.get_bool("AccMadsCombo"),
       "below_speed_pause": params.get_bool("BelowSpeedPause"),
+      "enable_mads": params.get_bool("EnableMads"),
       "experimental_mode": params.get_bool("ExperimentalMode"),
       "is_metric": params.get_bool("IsMetric"),
       "last_speed_limit_sign_tap": params.get_bool("LastSpeedLimitSignTap"),

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 from cereal import car
 from panda import Panda
 from openpilot.selfdrive.car.tesla.values import CAR
@@ -39,17 +40,14 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_adas)
 
-    if ret.cruiseState.available:
-      if self.enable_mads:
-        for b in self.CS.button_events:
-          if b.type == ButtonType.altButton1 and b.pressed:
-            self.CS.madsEnabled = True
-          elif b.type == ButtonType.altButton2 and b.pressed:
-            self.CS.madsEnabled = False
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
-        self.CS.madsEnabled = False if self.CS.steer_warning == "EAC_ERROR_HANDS_ON" and self.CS.hands_on_level >= 3 else self.CS.madsEnabled
-    else:
-      self.CS.madsEnabled = False
+    if self.enable_mads:
+      for b in self.CS.button_events:
+        if b.type == ButtonType.altButton2 and not b.pressed:
+          self.CS.madsEnabled = not self.CS.madsEnabled
+      self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+      self.CS.madsEnabled = False if self.CS.hands_on_level >= 3 else self.CS.madsEnabled
+
+    self.CS.accEnabled = ret.cruiseState.enabled  # ACC state is controlled by the car itself
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in self.CS.button_events):
@@ -57,11 +55,6 @@ class CarInterface(CarInterfaceBase):
     if self.get_sp_pedal_disengage(ret):
       self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
       ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
-
-    if self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed:
-      if ret.gasPressed and not ret.cruiseState.enabled:
-        self.CS.accEnabled = False
-      self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
     ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
