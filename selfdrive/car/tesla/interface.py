@@ -39,7 +39,7 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_adas)
 
-    if ret.cruiseState.available:
+    if not ret.steerFaultTemporary and not ret.steerFaultPermanent:
       if self.enable_mads:
         for b in self.CS.button_events:
           if b.type == ButtonType.altButton1 and b.pressed:
