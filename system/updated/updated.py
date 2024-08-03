@@ -54,8 +54,8 @@ class WaitTimeHelper:
     self.ready_event.set()
 
   def check_now(self, signum: int, frame) -> None:
-    cloudlog.info("caught SIGUSR1, checking for updates")
     params.put("UpdaterState", "Initializing updater to start check...")
+    cloudlog.info("caught SIGUSR1, checking for updates")
     self.user_request = UserRequest.CHECK
     self.ready_event.set()
 
@@ -416,10 +416,11 @@ class Updater:
 
     # TODO: show agnos download progress
     if AGNOS:
+      self.params.put("UpdaterState", "Checking AGNOS update...")
       handle_agnos_update()
 
     # Create the finalized, ready-to-swap update
-    self.params.put("UpdaterState", "finalizing update...")
+    self.params.put("UpdaterState", "Finalizing update...")
     finalize_update()
     cloudlog.info("finalize success!")
 
