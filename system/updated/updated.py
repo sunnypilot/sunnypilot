@@ -187,7 +187,7 @@ def finalize_update() -> None:
   set_consistent_flag(False)
 
   # Copy the merged overlay view and set the update ready flag
-  params.put("UpdaterState", "Copying the update to the finalized location...")
+  params.put("UpdaterState", "Copying the update to the final location...")
   if os.path.exists(FINALIZED):
     shutil.rmtree(FINALIZED)
   shutil.copytree(OVERLAY_MERGED, FINALIZED, symlinks=True)
@@ -201,6 +201,7 @@ def finalize_update() -> None:
   try:
     params.put("UpdaterState", "Doing git cleanup...")
     run(["git", "gc"], FINALIZED)
+    params.put("UpdaterState", "Still doing git cleanup...")
     run(["git", "lfs", "prune"], FINALIZED)
     cloudlog.event("Done git cleanup", duration=time.monotonic() - t)
   except subprocess.CalledProcessError:
@@ -271,11 +272,9 @@ class Updater:
     return False
 
   def get_branch(self, path: str) -> str:
-    params.put("UpdaterState", "Checking current branch...")
     return run(["git", "rev-parse", "--abbrev-ref", "HEAD"], path).rstrip()
 
   def get_commit_hash(self, path: str = OVERLAY_MERGED) -> str:
-    params.put("UpdaterState", "Checking current commit...")
     return run(["git", "rev-parse", "HEAD"], path).rstrip()
 
   def set_params(self, update_success: bool, failed_count: int, exception: str | None) -> None:
@@ -368,7 +367,9 @@ class Updater:
       if x is not None and x.group('branch_name') not in excluded_branches:
         self.branches[x.group('branch_name')] = x.group('commit_sha')
 
+    params.put("UpdaterState", "Checking current branch...")
     cur_branch = self.get_branch(OVERLAY_MERGED)
+    params.put("UpdaterState", "Checking current commit...")
     cur_commit = self.get_commit_hash(OVERLAY_MERGED)
     new_branch = self.target_branch
     new_commit = self.branches[new_branch]
@@ -382,7 +383,7 @@ class Updater:
   def fetch_update(self) -> None:
     cloudlog.info("attempting git fetch inside staging overlay")
 
-    self.params.put("UpdaterState", "downloading... Please, wait.")
+    self.params.put("UpdaterState", "Downloading... Please, wait.")
 
     # TODO: cleanly interrupt this and invalidate old update
     set_consistent_flag(False)
