@@ -93,6 +93,7 @@ build:
     - cp .lfsconfig-prebuilts $BUILD_DIR/.lfsconfig
     - cp .gitattributes $BUILD_DIR/.gitattributes
     - echo "selfdrive/**/* filter=lfs diff=lfs merge=lfs -text" >> $BUILD_DIR/.gitattributes
+    - echo "selfdrive/**/*.py -filter -diff -merge" >> $BUILD_DIR/.gitattributes
     # - cp -pR --parents $(cat release/files_common release/files_tici | sort | uniq) $BUILD_DIR/ 2> >(grep -v 'warning:' >&2)
     - cd $BUILD_DIR
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
