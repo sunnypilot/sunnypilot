@@ -162,7 +162,7 @@ build:
       artifacts: true
   before_script:
     - 'apk update && apk upgrade'
-    - 'apk add git bash openssh'
+    - 'apk add git bash openssh git-lfs'
     - 'eval $(ssh-agent -s)'
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - 'mkdir -p ~/.ssh/'
