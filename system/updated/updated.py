@@ -49,11 +49,13 @@ class WaitTimeHelper:
 
   def update_now(self, signum: int, frame) -> None:
     cloudlog.info("caught SIGHUP, attempting to downloading update")
+    params.put("UpdaterState", "Update request received... Wait...")
     self.user_request = UserRequest.FETCH
     self.ready_event.set()
 
   def check_now(self, signum: int, frame) -> None:
     cloudlog.info("caught SIGUSR1, checking for updates")
+    params.put("UpdaterState", "Initializing updater to start check...")
     self.user_request = UserRequest.CHECK
     self.ready_event.set()
 
@@ -199,7 +201,7 @@ def finalize_update() -> None:
   cloudlog.info("Starting git cleanup in finalized update")
   t = time.monotonic()
   try:
-    params.put("UpdaterState", "Doing git cleanup...")
+    params.put("UpdaterState", "Doing git cleanup... (this may take a while)")
     run(["git", "gc"], FINALIZED)
     params.put("UpdaterState", "Still doing git cleanup...")
     run(["git", "lfs", "prune"], FINALIZED)
