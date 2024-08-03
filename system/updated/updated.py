@@ -44,17 +44,18 @@ class WaitTimeHelper:
   def __init__(self):
     self.ready_event = threading.Event()
     self.user_request = UserRequest.NONE
+    self.params = Params()
     signal.signal(signal.SIGHUP, self.update_now)
     signal.signal(signal.SIGUSR1, self.check_now)
 
   def update_now(self, signum: int, frame) -> None:
     cloudlog.info("caught SIGHUP, attempting to downloading update")
-    params.put("UpdaterState", "Update request received... Wait...")
+    self.params.put("UpdaterState", "Update request received... Wait...")
     self.user_request = UserRequest.FETCH
     self.ready_event.set()
 
   def check_now(self, signum: int, frame) -> None:
-    params.put("UpdaterState", "Initializing updater to start check...")
+    self.params.put("UpdaterState", "Initializing updater to start check...")
     cloudlog.info("caught SIGUSR1, checking for updates")
     self.user_request = UserRequest.CHECK
     self.ready_event.set()
