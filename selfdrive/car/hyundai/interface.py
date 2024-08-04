@@ -104,9 +104,8 @@ class CarInterface(CarInterfaceBase):
     ret.stoppingControl = True
     ret.startingState = True
     ret.vEgoStarting = 0.1
-    ret.startAccel = 1.8
-    ret.stopAccel = 0.0
-    ret.stoppingDecelRate = 10
+    ret.startAccel = 1.6
+    ret.stopAccel = -1.0
     ret.longitudinalActuatorDelay = 0.5
 
     if DBC[ret.carFingerprint]["radar"] is None:
