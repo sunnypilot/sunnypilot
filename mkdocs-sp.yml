@@ -1,4 +1,4 @@
-site_name: sunnypilot docs
+site_name: sunnypilot wiki
 repo_name: sunnypilot/sunnypilot
 repo_url: https://github.com/sunnypilot/sunnypilot/
 site_description: sunnypilot Documentation
@@ -19,37 +19,51 @@ theme:
     view: material/eye
   features:
     - content.action.edit
+    - navigation.expand
+    - navigation.footer
     - navigation.tabs
+  font:
+    text: Roboto
+    code: Roboto Mono
   palette:
-    # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       toggle:
-        icon: material/brightness-auto
+        icon: material/link
         name: Switch to light mode
-    # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: indigo
+      accent: indigo
       toggle:
-        icon: material/brightness-7
+        icon: material/toggle-switch
         name: Switch to dark mode
-    # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: black
+      accent: indigo
       toggle:
-        icon: material/brightness-4
+        icon: material/toggle-switch-off
         name: Switch to system preference
   navigation_depth: 3
 
 markdown_extensions:
   - admonition
+  - def_list
   - pymdownx.details
   - pymdownx.superfences
 
 nav:
   - Getting Started:
     - What is sunnypilot?: getting-started/what-is-sunnypilot.md
+    - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
+    - Develop sunnypilot: getting-started/develop-sunnypilot.md
+  - Safety Information:
+    - 🚨 Read before installing 🚨: safety/read-before-installing.md
+    - Safety: SAFETY.md
+    - Prohibited safety modifications: safety/prohibited-safety-modifications.md
   - Features:
     - Modified Assistive Driving Safety (M.A.D.S.): features/modified-assistive-driving-safety.md
-  - how-to:
+  - How To:
     - Enable Mapbox navigation: how-to/enable-mapbox-navigation.md
     - Enable Radar Tracks: how-to/radar-tracks.md
+    - Turn the speed blue: how-to/turn-the-speed-blue.md
