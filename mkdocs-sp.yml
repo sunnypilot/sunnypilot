@@ -1,0 +1,55 @@
+site_name: sunnypilot docs
+repo_name: sunnypilot/sunnypilot
+repo_url: https://github.com/sunnypilot/sunnypilot/
+site_description: sunnypilot Documentation
+site_url: https://docs.sunnypilot.ai
+edit_uri: blob/new-docs/docs_sp
+
+exclude_docs: README.md
+
+strict: true
+docs_dir: docs_sp
+site_dir: docs_sp_site/
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/lead-pencil
+    view: material/eye
+  features:
+    - content.action.edit
+    - navigation.tabs
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  navigation_depth: 3
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+nav:
+  - Getting Started:
+    - What is sunnypilot?: getting-started/what-is-sunnypilot.md
+  - Features:
+    - Modified Assistive Driving Safety (M.A.D.S.): features/modified-assistive-driving-safety.md
+  - how-to:
+    - Enable Mapbox navigation: how-to/enable-mapbox-navigation.md
+    - Enable Radar Tracks: how-to/radar-tracks.md
