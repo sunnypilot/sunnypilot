@@ -106,6 +106,7 @@ cancelled_uploads: set[str] = set()
 cur_upload_items: dict[int, UploadItem | None] = {}
 
 
+# TODO-SP: adapt zst for sunnylink
 def strip_zst_extension(fn: str) -> str:
   if fn.endswith('.zst'):
     return fn[:-4]
