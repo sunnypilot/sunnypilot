@@ -3,8 +3,13 @@
 #include <QDateTime>
 #include <QPainter>
 
-#include "selfdrive/ui/qt/maps/map_helpers.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/maps/map_helpers.h"
+#else
 #include "selfdrive/ui/ui.h"
+#include "selfdrive/ui/qt/maps/map_helpers.h"
+#endif
 
 const float MANEUVER_TRANSITION_THRESHOLD = 10;
 

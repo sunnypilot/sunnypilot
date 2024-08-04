@@ -9,7 +9,10 @@ variables:
   GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
   GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
+  BASE_BUILD_NUMER: 3000
 
+  EXTRA_VERSION_IDENTIFIER: "${CI_PIPELINE_IID}"
+  NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
 
 stages:
   - build
@@ -24,7 +27,8 @@ default:
     - x86
 
 .default_before_script: &default_before_script
-  - 'export VERSION=$(eval $VERSION)${EXTRA_VERSION_IDENTIFIER}'
+  - 'if [ "$EXTRA_VERSION_IDENTIFIER" = "$CI_PIPELINE_IID" ]; then export EXTRA_VERSION_IDENTIFIER=$((CI_PIPELINE_IID + BASE_BUILD_NUMER)); fi'
+  - 'export VERSION=$(eval $VERSION)-${EXTRA_VERSION_IDENTIFIER}'
   - 'mkdir -p "${BUILD_DIR}/"'
   - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
   - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
@@ -35,33 +39,31 @@ workflow: # If running on any branch other than main.
     # We are an MR, but it's a draft, we won't proceed with anything.
     - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
       when: never
-    # We are a merge request
-    - if: $CI_MERGE_REQUEST_IID
-      variables:
-        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
-        NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
-      when: always
 
     # Below are the rules when a commit is done (code has been added to the branch)
     # Commit to master-dev-c3
     - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
       variables:
-        EXTRA_VERSION_IDENTIFIER: "-${CI_PIPELINE_IID}"
+        EXTRA_VERSION_IDENTIFIER: "${CI_PIPELINE_IID}"
         NEW_BRANCH: "dev-c3"
+        AUTO_BUILD: true
       when: always
     #commit made to main (master)
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
       variables:
         NEW_BRANCH: "staging-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
-        EXTRA_VERSION_IDENTIFIER: "-staging"
+        EXTRA_VERSION_IDENTIFIER: "staging"
+        AUTO_PUBLISH: true
+        AUTO_BUILD: true
       when: always
     # if tag
     - if: $CI_COMMIT_TAG
       variables:
         NEW_BRANCH: "release-c3"
         VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
-        EXTRA_VERSION_IDENTIFIER: "-release"
+        EXTRA_VERSION_IDENTIFIER: "release"
+        AUTO_BUILD: true
     - when: always
 
 
@@ -80,12 +82,6 @@ build:
     - "echo VERSION: ${VERSION}"
     - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
-    - |
-      echo "Decoding and importing GPG key..."
-      gpg -v --import <(echo "$GPG_PRIVATE_KEY_BASE64" | base64 -d)
-    - |
-      echo "Unlocking git-crypt..."
-      git-crypt unlock
   script:
     - export PYTHONPATH="$BUILD_DIR"
     - "echo Building Panda..."
@@ -149,32 +145,9 @@ build:
       - ${OUTPUT_DIR}/
   tags: [ 'sunnypilot', 'tici' ]
   rules:
-    - if: $CI_MERGE_REQUEST_IID
-      when: manual
-    - if: $NEW_BRANCH
+    - if: $AUTO_BUILD
       when: always
-
-check no source code sent:
-  image: alpine
-  stage: sanity
-  variables:
-    FORBIDDEN_FILE_EXTENSIONS: "*.a,*.o,*.os,*.pyc,moc_*,*.cc,Jenkinsfile,supercombo.onnx,.sconsign.dblite"
-    FORBIDDEN_DIR_PATTERNS: "*panda/certs,*panda/crypto,*release,*.github,*selfdrive/ui/replay,*__pycache__"
-    REQUIRED_FILE_EXTENSIONS: "*.py,*.json"
-    REQUIRED_DIR_PATTERNS: "*selfdrive/ui,*openpilot"
-  before_script:
-    - apk update && apk upgrade
-    - apk add bash findutils
-  script:
-    - cd ${OUTPUT_DIR}
-    - echo "Checking that we have properly cleaned up"
-    - ${CI_DIR}/sanity_check.sh "$FORBIDDEN_FILE_EXTENSIONS" "$FORBIDDEN_DIR_PATTERNS" true
-    - echo "Checking that our sanity check works and also checking that some required files are indeed found"
-    - ${CI_DIR}/sanity_check.sh "$REQUIRED_FILE_EXTENSIONS" "$REQUIRED_DIR_PATTERNS" false
-  rules:
-    - if: $NEW_BRANCH
-      when: on_success
-    - when: never
+    - when: manual
 
 .publish_base: &publish_base
   image: alpine
@@ -184,9 +157,6 @@ check no source code sent:
   needs:
     - job: build
       artifacts: true
-    - job: "check no source code sent"
-      artifacts: false
-      optional: false
   before_script:
     - 'apk update && apk upgrade'
     - 'apk add git bash openssh'
@@ -203,17 +173,19 @@ check no source code sent:
     - echo "${GIT_ORIGIN}"
     - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
     - git config --global --add safe.directory ${OUTPUT_DIR}
-    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "${EXTRA_VERSION_IDENTIFIER}"
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "-${EXTRA_VERSION_IDENTIFIER}"
   allow_failure: false
 
 publish to private gitlab prebuilt:
   extends: ".publish_base"
   variables:
-    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot.git
+    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot-prebuilts.git
   rules:
-    - if: $NEW_BRANCH
+    - if: $AUTO_BUILD
       when: on_success
-    - when: never
+    - if: $CI_MERGE_REQUEST_IID
+      when: on_success
+    - when: manual
 
 publish to public github prebuilt:
   extends: ".publish_base"
@@ -222,9 +194,9 @@ publish to public github prebuilt:
     GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
     GIT_CONFIG_USER_NAME: "Jason Wen"
   rules:
-    - if: $NEW_BRANCH
-      when: manual
-    - when: never
+    - if: $AUTO_PUBLISH
+      when: on_success
+    - when: manual
 
 .notify_discord: &notify_discord
   image: alpine
@@ -258,6 +230,9 @@ notify new dev build:
   needs: ["publish to public github prebuilt"] # This notify shall only happen after a publish to github public
   variables:
     TEMPLATE: "discord_template_notify_dev_public.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export EXTRA_VERSION_IDENTIFIER=$((CI_PIPELINE_IID + BASE_BUILD_NUMER))
   rules:
     - if: $NEW_BRANCH == "dev-c3"
       variables:

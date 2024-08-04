@@ -6,7 +6,11 @@
 
 #include "common/util.h"
 #include "selfdrive/ui/qt/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/maps/map_helpers.h"
+#else
 #include "selfdrive/ui/qt/maps/map_helpers.h"
+#endif
 #include "selfdrive/navd/map_renderer.h"
 #include "system/hardware/hw.h"
 

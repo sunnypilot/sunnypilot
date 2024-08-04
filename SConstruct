@@ -7,8 +7,6 @@ import numpy as np
 
 import SCons.Errors
 
-from openpilot.common.basedir import BASEDIR
-
 SCons.Warnings.warningAsException(True)
 
 # pending upstream fix - https://github.com/SCons/scons/issues/4461
@@ -18,45 +16,6 @@ TICI = os.path.isfile('/TICI')
 AGNOS = TICI
 UBUNTU_FOCAL = int(subprocess.check_output('[ -f /etc/os-release ] && . /etc/os-release && [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "20.04" ] && echo 1 || echo 0', shell=True, encoding='utf-8').rstrip())
 Export('UBUNTU_FOCAL')
-_DEBUG = False
-
-def is_internal_developer(debug=False):
-  def collect_required_gpg_key_ids(keys_dir):
-    try:
-      key_ids = [f.split('.')[0] for f in os.listdir(keys_dir) if f.endswith(".gpg")]
-      if debug:
-        print(f"SP: Required GPG key IDs: {key_ids}")
-      return key_ids
-    except OSError as e:
-      if debug:
-        print(f"SP: Failed to read GPG key IDs from {keys_dir}. Error: {e}")
-      return []
-
-  def is_key_available(required_gpg_key_ids):
-    for key_id in required_gpg_key_ids:
-      try:
-        result = subprocess.check_output(['gpg', '--list-keys', key_id], stderr=subprocess.STDOUT)
-        if key_id in result.decode():
-          if debug:
-            print(f"SP: GPG key {key_id} is available.")
-          return True
-      except subprocess.CalledProcessError as e:
-        if debug:
-          print(f"SP: Failed to list GPG key {key_id}. Error:", e.output.decode().strip())
-    return False
-
-  keys_dir = os.path.join(BASEDIR, ".git-crypt/keys/default/0")
-  required_gpg_key_ids = collect_required_gpg_key_ids(keys_dir)
-
-  sunnypilot = is_key_available(required_gpg_key_ids)
-
-  if sunnypilot:
-    print("SP: Confirmed sunnypilot internal developer.")
-    print("SP: Loading sunnypilot elements ...")
-  elif debug:
-    print("SP: None of the required GPG keys are available.")
-
-  return sunnypilot
 
 Decider('MD5-timestamp')
 
@@ -113,11 +72,11 @@ AddOption('--minimal',
           default=os.path.exists(File('#.lfsconfig').abspath), # minimal by default on release branch (where there's no LFS)
           help='the minimum build to run openpilot. no tests, tools, etc.')
 
-AddOption('--sunnypilot',
+AddOption('--stock-ui',
           action='store_true',
-          dest='sunnypilot',
-          default=is_internal_developer(_DEBUG) or True, # check if the current user is a sunnypilot developer. TODO: Remove the 'or True' part once the GPG keys are available.
-          help='build sunnypilot elements and other sunnypilot-specific items that are meant for internal development')
+          dest='stock_ui',
+          default=False,
+          help='Build stock UI instead of sunnypilot UI')
 
 ## Architecture name breakdown (arch)
 ## - larch64: linux tici aarch64
@@ -151,7 +110,6 @@ if arch == "larch64":
 
   libpath = [
     "/usr/local/lib",
-    "/usr/lib",
     "/system/vendor/lib64",
     f"#third_party/acados/{arch}/lib",
   ]
@@ -219,8 +177,11 @@ if arch != "Darwin":
   ldflags += ["-Wl,--as-needed", "-Wl,--no-undefined"]
 
 # Enable swaglog include in submodules
-cflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
 cxxflags += ['-DSWAGLOG="\\"common/swaglog.h\\""']
+
+if not GetOption('stock_ui'):
+  cflags += ["-DSUNNYPILOT"]
+  cxxflags += ["-DSUNNYPILOT"]
 
 ccflags_option = GetOption('ccflags')
 if ccflags_option:
@@ -255,7 +216,6 @@ env = Environment(
     "#third_party/json11",
     "#third_party/linux/include",
     "#third_party/snpe/include",
-    "#third_party/qrcode",
     "#third_party",
     "#cereal",
     "#msgq",
@@ -283,7 +243,7 @@ env = Environment(
   COMPILATIONDB_USE_ABSPATH=True,
   REDNOSE_ROOT="#",
   tools=["default", "cython", "compilation_db", "rednose_filter"],
-  toolpath=["#rednose_repo/site_scons/site_tools"],
+  toolpath=["#site_scons/site_tools", "#rednose_repo/site_scons/site_tools"],
 )
 
 if arch == "Darwin":
@@ -323,7 +283,8 @@ if arch == "Darwin":
 else:
   envCython["LINKFLAGS"] = ["-pthread", "-shared"]
 
-Export('envCython')
+np_version = SCons.Script.Value(np.__version__)
+Export('envCython', 'np_version')
 
 # Qt build environment
 qt_env = env.Clone()
@@ -367,7 +328,7 @@ try:
 except SCons.Errors.UserError:
   qt_env.Tool('qt')
 
-qt_env['CPPPATH'] += qt_dirs# + ["#selfdrive/ui/qt/"]
+qt_env['CPPPATH'] += qt_dirs + ["#third_party/qrcode"]
 qt_flags = [
   "-D_REENTRANT",
   "-DQT_NO_DEBUG",
@@ -416,7 +377,6 @@ Export('messaging')
 
 # Build other submodules
 SConscript([
-  'body/board/SConscript',
   'opendbc/can/SConscript',
   'panda/SConscript',
 ])

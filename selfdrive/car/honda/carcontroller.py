@@ -5,13 +5,12 @@ import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
-from openpilot.selfdrive.car import create_gas_interceptor_command
+from openpilot.selfdrive.car import DT_CTRL, rate_limit, make_tester_present_msg, create_gas_interceptor_command
 from openpilot.selfdrive.car.honda import hondacan
 from openpilot.selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarControllerBase
-from openpilot.selfdrive.controls.lib.drive_helpers import rate_limit, HONDA_V_CRUISE_MIN
+from openpilot.selfdrive.controls.lib.drive_helpers import HONDA_V_CRUISE_MIN
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -110,11 +109,10 @@ def rate_limit_steer(new_steer, last_steer):
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
-    self.CP = CP
+    super().__init__(dbc_name, CP, VM)
     self.packer = CANPacker(dbc_name)
     self.params = CarControllerParams(CP)
     self.CAN = hondacan.CanBus(CP)
-    self.frame = 0
 
     self.braking = False
     self.brake_steady = 0.
@@ -132,9 +130,6 @@ class CarController(CarControllerBase):
 
     self.sm = messaging.SubMaster(['longitudinalPlanSP'])
     self.param_s = Params()
-    self.is_metric = self.param_s.get_bool("IsMetric")
-    self.speed_limit_control_enabled = False
-    self.last_speed_limit_sign_tap = False
     self.last_speed_limit_sign_tap_prev = False
     self.speed_limit = 0.
     self.speed_limit_offset = 0
@@ -173,11 +168,7 @@ class CarController(CarControllerBase):
         self.v_tsc = self.sm['longitudinalPlanSP'].visionTurnSpeed
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
-      if self.frame % 200 == 0:
-        self.speed_limit_control_enabled = self.param_s.get_bool("EnableSlc")
-        self.is_metric = self.param_s.get_bool("IsMetric")
-      self.last_speed_limit_sign_tap = self.param_s.get_bool("LastSpeedLimitSignTap")
-      self.v_cruise_min = HONDA_V_CRUISE_MIN[self.is_metric] * (CV.KPH_TO_MPH if not self.is_metric else 1)
+      self.v_cruise_min = HONDA_V_CRUISE_MIN[CS.params_list.is_metric] * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1)
 
     actuators = CC.actuators
     hud_control = CC.hudControl
@@ -213,14 +204,14 @@ class CarController(CarControllerBase):
                              self.params.STEER_LOOKUP_BP, self.params.STEER_LOOKUP_V))
 
     if not self.CP.pcmCruiseSpeed:
-      if not self.last_speed_limit_sign_tap_prev and self.last_speed_limit_sign_tap:
+      if not self.last_speed_limit_sign_tap_prev and CS.params_list.last_speed_limit_sign_tap:
         self.sl_force_active_timer = self.frame
         self.param_s.put_bool_nonblocking("LastSpeedLimitSignTap", False)
-      self.last_speed_limit_sign_tap_prev = self.last_speed_limit_sign_tap
+      self.last_speed_limit_sign_tap_prev = CS.params_list.last_speed_limit_sign_tap
 
-      sl_force_active = self.speed_limit_control_enabled and (self.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
-      sl_inactive = not sl_force_active and (not self.speed_limit_control_enabled or (True if self.slc_state == 0 else False))
-      sl_temp_inactive = not sl_force_active and (self.speed_limit_control_enabled and (True if self.slc_state == 1 else False))
+      sl_force_active = CS.params_list.speed_limit_control_enabled and (self.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
+      sl_inactive = not sl_force_active and (not CS.params_list.speed_limit_control_enabled or (True if self.slc_state == 0 else False))
+      sl_temp_inactive = not sl_force_active and (CS.params_list.speed_limit_control_enabled and (True if self.slc_state == 1 else False))
       slc_active = not sl_inactive and not sl_temp_inactive
 
       self.slc_active_stock = slc_active
@@ -231,7 +222,7 @@ class CarController(CarControllerBase):
     # tester present - w/ no response (keeps radar disabled)
     if self.CP.carFingerprint in (HONDA_BOSCH - HONDA_BOSCH_RADARLESS) and self.CP.openpilotLongitudinalControl:
       if self.frame % 10 == 0:
-        can_sends.append((0x18DAB0F1, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", 1))
+        can_sends.append(make_tester_present_msg(0x18DAB0F1, 1, suppress_response=True))
 
     # Send steering command.
     can_sends.append(hondacan.create_steering_control(self.packer, self.CAN, apply_steer, CC.latActive, self.CP.carFingerprint,
@@ -432,8 +423,8 @@ class CarController(CarControllerBase):
     return min(target_speed_kph, curve_speed)
 
   def get_button_control(self, CS, final_speed, v_cruise_kph_prev):
-    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not self.is_metric else 1))
-    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not self.is_metric else CV.MS_TO_KPH))
+    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
 

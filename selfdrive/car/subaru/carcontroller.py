@@ -1,8 +1,7 @@
 from cereal import car
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.params import Params
 from opendbc.can.packer import CANPacker
-from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fault_avoidance
+from openpilot.selfdrive.car import apply_driver_steer_torque_limits, common_fault_avoidance, make_tester_present_msg
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.subaru import subarucan
 from openpilot.selfdrive.car.subaru.values import DBC, GLOBAL_ES_ADDR, CanBus, CarControllerParams, SubaruFlags, SubaruFlagsSP
@@ -18,19 +17,15 @@ _SNG_ACC_MAX_DIST = 4.5
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
-    self.CP = CP
+    super().__init__(dbc_name, CP, VM)
     self.apply_steer_last = 0
-    self.frame = 0
 
     self.cruise_button_prev = 0
     self.steer_rate_counter = 0
 
-    self.param_s = Params()
-
     self.subaru_sng = False
     if CP.spFlags & SubaruFlagsSP.SP_SUBARU_SNG:
       self.subaru_sng = True
-      self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
       self.prev_close_distance = 0
       self.prev_standstill = False
       self.standstill_start = 0
@@ -46,9 +41,6 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     hud_control = CC.hudControl
     pcm_cancel_cmd = CC.cruiseControl.cancel
-
-    if self.frame % 250 == 0 and self.subaru_sng:
-      self.manual_parking_brake = self.param_s.get_bool("SubaruManualParkingBrakeSng")
 
     can_sends = []
 
@@ -158,7 +150,7 @@ class CarController(CarControllerBase):
       if self.CP.flags & SubaruFlags.DISABLE_EYESIGHT:
         # Tester present (keeps eyesight disabled)
         if self.frame % 100 == 0:
-          can_sends.append([GLOBAL_ES_ADDR, 0, b"\x02\x3E\x80\x00\x00\x00\x00\x00", CanBus.camera])
+          can_sends.append(make_tester_present_msg(GLOBAL_ES_ADDR, CanBus.camera, suppress_response=True))
 
         # Create all of the other eyesight messages to keep the rest of the car happy when eyesight is disabled
         if self.frame % 5 == 0:
@@ -191,7 +183,7 @@ class CarController(CarControllerBase):
         and CS.close_distance > self.prev_close_distance):    # distance with lead car is increasing
         self.sng_acc_resume = True
     elif not (self.CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID)):
-      if self.manual_parking_brake:
+      if CS.params_list.subaru_manual_parking_brake and self.subaru_sng:
         # Send brake message with non-zero speed in standstill to avoid non-EPB ACC disengage
         if (CC.enabled                                        # ACC active
           and CS.car_follow == 1                              # lead car

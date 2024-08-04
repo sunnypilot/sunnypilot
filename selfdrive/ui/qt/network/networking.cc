@@ -6,11 +6,16 @@
 #include <QScrollBar>
 #include <QStyle>
 
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/home.h"
 
 static const int ICON_WIDTH = 49;
 
@@ -26,28 +31,16 @@ Networking::Networking(QWidget* parent, bool show_advanced) : QFrame(parent) {
   wifiScreen = new QWidget(this);
   QVBoxLayout* vlayout = new QVBoxLayout(wifiScreen);
   vlayout->setContentsMargins(20, 20, 20, 20);
-  QHBoxLayout* hlayout = new QHBoxLayout();
-  QPushButton* scanButton = new QPushButton(tr("Scan"));
-  scanButton->setObjectName("scan_btn");
-  scanButton->setFixedSize(400, 100);
-  connect(wifi, &WifiManager::refreshSignal, this, [=]() { scanButton->setText(tr("Scan")); scanButton->setEnabled(true); });
-  connect(scanButton, &QPushButton::clicked, [=]() { scanButton->setText(tr("Scanning...")); scanButton->setEnabled(false); wifi->requestScan(); });
-
-  hlayout->addWidget(scanButton);
-  hlayout->addStretch(1); // Pushes the button all the way to the left
-
   if (show_advanced) {
-    hlayout->setSpacing(10);
-
     QPushButton* advancedSettings = new QPushButton(tr("Advanced"));
     advancedSettings->setObjectName("advanced_btn");
+    advancedSettings->setStyleSheet("margin-right: 30px;");
     advancedSettings->setFixedSize(400, 100);
     connect(advancedSettings, &QPushButton::clicked, [=]() { main_layout->setCurrentWidget(an); });
-    hlayout->addWidget(advancedSettings);
+    vlayout->addSpacing(10);
+    vlayout->addWidget(advancedSettings, 0, Qt::AlignRight);
+    vlayout->addSpacing(10);
   }
-
-  vlayout->addLayout(hlayout);
-  vlayout->addSpacing(10);
 
   wifiWidget = new WifiUI(this, wifi);
   wifiWidget->setObjectName("wifiWidget");
@@ -69,7 +62,7 @@ Networking::Networking(QWidget* parent, bool show_advanced) : QFrame(parent) {
   setPalette(pal);
 
   setStyleSheet(R"(
-    #wifiWidget > QPushButton, #back_btn, #advanced_btn, #scan_btn{
+    #wifiWidget > QPushButton, #back_btn, #advanced_btn {
       font-size: 50px;
       margin: 0px;
       padding: 15px;
@@ -78,7 +71,7 @@ Networking::Networking(QWidget* parent, bool show_advanced) : QFrame(parent) {
       color: #dddddd;
       background-color: #393939;
     }
-    #back_btn:pressed, #advanced_btn:pressed, #scan_btn:pressed {
+    #back_btn:pressed, #advanced_btn:pressed {
       background-color:  #4a4a4a;
     }
   )");
@@ -139,22 +132,9 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
 
   ListWidget *list = new ListWidget(this);
   // Enable tethering layout
-  const bool set_hotspot_on_boot = params.getBool("HotspotOnBoot") && params.getBool("HotspotOnBootConfirmed");
-  tetheringToggle = new ToggleControl(tr("Enable Tethering"), "", "", wifi->isTetheringEnabled() || set_hotspot_on_boot);
+  tetheringToggle = new ToggleControl(tr("Enable Tethering"), "", "", wifi->isTetheringEnabled());
   list->addItem(tetheringToggle);
   QObject::connect(tetheringToggle, &ToggleControl::toggleFlipped, this, &AdvancedNetworking::toggleTethering);
-
-  hotspotOnBootToggle = new ToggleControl(
-    tr("Retain hotspot/tethering state"),
-    tr("Enabling this toggle will retain the hotspot/tethering toggle state across reboots."),
-    "",
-    params.getBool("HotspotOnBoot")
-  );
-  hotspotOnBootToggle->setEnabled(wifi->isTetheringEnabled() || set_hotspot_on_boot);
-  QObject::connect(hotspotOnBootToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    params.putBool("HotspotOnBoot", state);
-  });
-  list->addItem(hotspotOnBootToggle);
 
   // Change tethering password
   ButtonControl *editPasswordButton = new ButtonControl(tr("Tethering Password"), tr("EDIT"));
@@ -226,19 +206,6 @@ AdvancedNetworking::AdvancedNetworking(QWidget* parent, WifiManager* wifi): QWid
   });
   list->addItem(hiddenNetworkButton);
 
-  // Ngrok
-  QProcess process;
-  process.start("sudo service ngrok status | grep running");
-  process.waitForFinished();
-  QString output = QString(process.readAllStandardOutput());
-  bool ngrokRunning = !output.isEmpty();
-  ToggleControl *ngrokToggle = new ToggleControl(tr("Ngrok Service"), "", "", ngrokRunning);
-  connect(ngrokToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    if (state) std::system("sudo ngrok service start");
-    else std::system("sudo ngrok service stop");
-  });
-  list->addItem(ngrokToggle);
-
   // Set initial config
   wifi->updateGsmSettings(roamingEnabled, QString::fromStdString(params.get("GsmApn")), metered);
 
@@ -260,14 +227,8 @@ void AdvancedNetworking::refresh() {
 }
 
 void AdvancedNetworking::toggleTethering(bool enabled) {
-  params.putBool("HotspotOnBootConfirmed", enabled);
   wifi->setTetheringEnabled(enabled);
   tetheringToggle->setEnabled(false);
-
-  hotspotOnBootToggle->setEnabled(enabled);
-  if (!enabled) {
-    params.remove("HotspotOnBoot");
-  }
 }
 
 // WifiUI functions

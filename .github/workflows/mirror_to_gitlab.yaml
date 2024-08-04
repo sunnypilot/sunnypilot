@@ -1,0 +1,46 @@
+name: Mirror to GitLab
+
+on:
+  push:
+  delete:
+  workflow_dispatch:  # This enables manual triggering
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for other instances of this workflow to conclude
+        uses: softprops/turnstyle@8db075d65b19bf94e6e8687b504db69938dc3c65
+        with:
+          same-branch-only: 'true'
+          abort-after-seconds: 300
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0  # Fetch full history
+
+      - name: Set up Git
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add GitLab public keys
+        run: |
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      # Note: If you have issues with "push rejected missing LFS" or something make sure you disabled LFS on the GITLAB repo if you intend to use a different LFS repo other than the target repo.
+      - name: Sync and commit changes
+        id: sync-and-commit
+        run: |
+          # Add GitLab remote
+          git remote add gitlab git@gitlab.com:sunnypilot/sunnyhaibin/sunnypilot-github-mirror.git
+          git push -u --force gitlab ${{ github.ref }}

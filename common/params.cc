@@ -24,8 +24,8 @@ int fsync_dir(const std::string &path) {
   int result = -1;
   int fd = HANDLE_EINTR(open(path.c_str(), O_RDONLY, 0755));
   if (fd >= 0) {
-    result = fsync(fd);
-    close(fd);
+    result = HANDLE_EINTR(fsync(fd));
+    HANDLE_EINTR(close(fd));
   }
   return result;
 }
@@ -319,7 +319,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"TorqueFriction", PERSISTENT | BACKUP},
     {"TorqueMaxLatAccel", PERSISTENT | BACKUP},
     {"TorquedOverride", PERSISTENT | BACKUP},
-    {"ToyotaAutoHold", PERSISTENT | BACKUP},
     {"ToyotaAutoLockBySpeed", PERSISTENT | BACKUP},
     {"ToyotaAutoUnlockByShifter", PERSISTENT | BACKUP},
     {"ToyotaEnhancedBsm", PERSISTENT | BACKUP},
