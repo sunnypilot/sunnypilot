@@ -426,8 +426,6 @@ class CarInterfaceBase(ABC):
     self.CS.button_events = []
     self.CS.params_list = params_list
 
-    self.CS.button_events = []
-
     # get CarState
     ret = self._update(c)
 
