@@ -55,7 +55,7 @@ class CarState(CarStateBase):
 
     self.lfa_enabled = False
     self.prev_lfa_enabled = False
-    self.mainEnabled = True
+    self.mainEnabled = True if CP.spFlags & HyundaiFlagsSP.SP_CAN_LFA_BTN or CP.carFingerprint in CANFD_CAR else False
     self.escc_aeb_warning = 0
     self.escc_aeb_dec_cmd_act = 0
     self.escc_cmd_act = 0
