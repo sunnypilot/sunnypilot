@@ -148,7 +148,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaTss2LongTune->setConfirmation(true, false);
   addItem(toyotaTss2LongTune);
 
-  auto toyotaAbh = new ParamControl(
+  auto toyotaAbh = new ParamControlSP(
     "ToyotaAutoHold",
     tr("Enable Automatic Brake Hold (AHB)"),
     QString("<b>%1</b><br><br>%2<br><br><b>%3</b>")
@@ -160,7 +160,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaAbh->setConfirmation(true, false);
   addItem(toyotaAbh);
 
-  toyotaEnhancedBsm = new ParamControl(
+  toyotaEnhancedBsm = new ParamControlSP(
     "ToyotaEnhancedBsm",
     tr("Enable Enhanced Blind Spot Monitor"),
     "",
