@@ -109,6 +109,13 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   hkgSmoothStop->setConfirmation(true, false);
   addItem(hkgSmoothStop);
 
+  hyundaiCruiseMainDefault = new ParamControlSP(
+    "HyundaiCruiseMainDefault",
+    tr("HKG CAN: Enable Cruise Main By Default"),
+    tr("Enabling this toggle sets CRUISE MAIN to ON by default when the car starts, without engaging MADS. The user still needs to manually engage MADS"),
+    "../assets/offroad/icon_blank.png");
+  addItem(hyundaiCruiseMainDefault);
+
   // Subaru
   addItem(new LabelControlSP(tr("Subaru")));
   auto subaruManualParkingBrakeSng = new ParamControlSP(
@@ -194,6 +201,7 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
     is_onroad = !offroad;
     hkgSmoothStop->setEnabled(offroad);
+    hyundaiCruiseMainDefault->setEnabled(offroad);
     toyotaTss2LongTune->setEnabled(offroad);
     toyotaEnhancedBsm->setEnabled(offroad);
     toyotaSngHack->setEnabled(offroad);
@@ -222,6 +230,17 @@ void SPVehiclesTogglesPanel::updateToggles() {
     AlignedBuffer aligned_buf;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    // Hyundai/Kia/Genesis
+    {
+      if (CP.getCarName() == "hyundai") {
+        if ((CP.getSpFlags() & 2) and !(CP.getFlags() & 8192)) {
+          hyundaiCruiseMainDefault->setEnabled(true);
+        } else {
+          hyundaiCruiseMainDefault->setEnabled(false);
+        }
+      }
+    }
 
     // Toyota: Enhanced Blind Spot Monitor
     {
