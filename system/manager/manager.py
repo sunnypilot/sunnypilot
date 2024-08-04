@@ -71,6 +71,7 @@ def manager_init() -> None:
     ("FeatureStatus", "1"),
     ("HandsOnWheelMonitoring", "0"),
     ("HasAcceptedTermsSP", "0"),
+    ("HyundaiCruiseMainDefault", "0"),
     ("HideVEgoUi", "0"),
     ("LastSpeedLimitSignTap", "0"),
     ("LkasToggle", "0"),

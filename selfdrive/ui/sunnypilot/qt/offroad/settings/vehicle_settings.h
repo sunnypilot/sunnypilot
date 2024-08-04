@@ -69,6 +69,7 @@ private:
   Params params;
   bool is_onroad = false;
 
+  ParamControlSP *hyundaiCruiseMainDefault;
   ParamControlSP *stockLongToyota;
   ParamControlSP *toyotaEnhancedBsm;
 
