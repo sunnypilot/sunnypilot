@@ -269,8 +269,8 @@ class CarController(CarControllerBase):
     return min(target_speed_kph, curve_speed)
 
   def get_button_control(self, CS, final_speed, v_cruise_kph_prev):
-    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not self.is_metric else 1))
-    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not self.is_metric else CV.MS_TO_KPH))
+    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
 
