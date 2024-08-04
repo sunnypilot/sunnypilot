@@ -543,7 +543,7 @@ class CarController(CarControllerBase):
     is_ice = not self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV)
     rate_up = 0.1
     rate_down = 0.1
-    if long_control == LongCtrlState.off or CS.out.standstill:
+    if long_control == LongCtrlState.off or (long_control == LongCtrlState.stopping and CS.out.standstill):
       self.accel_raw, self.accel_val = 0, 0
     else:
       #self.accel_val = clip(self.accel_raw, self.accel_last - rate_down, self.accel_last + rate_up)
