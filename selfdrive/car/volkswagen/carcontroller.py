@@ -4,8 +4,7 @@ from opendbc.can.packer import CANPacker
 from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_driver_steer_torque_limits
+from openpilot.selfdrive.car import DT_CTRL, apply_driver_steer_torque_limits
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.volkswagen import mqbcan, pqcan
 from openpilot.selfdrive.car.volkswagen.values import CANBUS, CarControllerParams, VolkswagenFlags
@@ -18,7 +17,7 @@ ButtonType = car.CarState.ButtonEvent.Type
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
-    self.CP = CP
+    super().__init__(dbc_name, CP, VM)
     self.CCP = CarControllerParams(CP)
     self.CCS = pqcan if CP.flags & VolkswagenFlags.PQ else mqbcan
     self.packer_pt = CANPacker(dbc_name)
@@ -26,7 +25,6 @@ class CarController(CarControllerBase):
 
     self.apply_steer_last = 0
     self.gra_acc_counter_last = None
-    self.frame = 0
     self.eps_timer_soft_disable_alert = False
     self.hca_frame_timer_running = 0
     self.hca_frame_same_torque = 0
@@ -296,8 +294,8 @@ class CarController(CarControllerBase):
     return min(target_speed_kph, curve_speed)
 
   def get_button_control(self, CS, final_speed, v_cruise_kph_prev):
-    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not self.is_metric else 1))
-    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not self.is_metric else CV.MS_TO_KPH))
+    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
 

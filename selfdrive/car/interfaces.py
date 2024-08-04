@@ -18,14 +18,15 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.simple_kalman import KF1D, get_kalman_gain
 from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG, ButtonEvents
+from openpilot.selfdrive.car import DT_CTRL, apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_friction, STD_CARGO_KG, \
+                                    ButtonEvents
 from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.car.values import PLATFORMS
 from openpilot.selfdrive.controls.lib.desire_helper import get_min_lateral_speed
-from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET, get_friction
+from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
+from openpilot.selfdrive.pandad import can_capnp_to_list
 
 ButtonType = car.CarState.ButtonEvent.Type
 GearShifter = car.CarState.GearShifter
@@ -71,6 +72,7 @@ class LatControlInputs(NamedTuple):
   aego: float
 
 
+SendCan = tuple[int, bytes, int]
 TorqueFromLateralAccelCallbackType = Callable[[LatControlInputs, car.CarParams.LateralTorqueTuning, float, float, bool, bool], float]
 
 
@@ -260,7 +262,7 @@ class CarInterfaceBase(ABC):
     self.lat_torque_nn_model, _ = get_nn_model(_car, eps_firmware)
     return self.lat_torque_nn_model is not None and self.param_s.get_bool("NNFF")
 
-  def apply(self, c: car.CarControl, now_nanos: int) -> tuple[car.CarControl.Actuators, list[tuple[int, int, bytes, int]]]:
+  def apply(self, c: car.CarControl, now_nanos: int) -> tuple[car.CarControl.Actuators, list[SendCan]]:
     return self.CC.update(c, self.CS, now_nanos)
 
   @staticmethod
@@ -416,9 +418,10 @@ class CarInterfaceBase(ABC):
 
   def update(self, c: car.CarControl, can_strings: list[bytes], params_list: SimpleNamespace) -> car.CarState:
     # parse can
+    can_list = can_capnp_to_list(can_strings)
     for cp in self.can_parsers:
       if cp is not None:
-        cp.update_strings(can_strings)
+        cp.update_strings(can_list)
 
     self.CS.button_events = []
     self.CS.params_list = params_list
@@ -730,6 +733,7 @@ class CarInterfaceBase(ABC):
 
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
+    self.CP = CP
     self.rcp = None
     self.pts = {}
     self.delay = 0
@@ -867,12 +871,10 @@ class CarStateBase(ABC):
     return None
 
 
-SendCan = tuple[int, int, bytes, int]
-
-
 class CarControllerBase(ABC):
   def __init__(self, dbc_name: str, CP, VM):
-    pass
+    self.CP = CP
+    self.frame = 0
 
   @abstractmethod
   def update(self, CC: car.CarControl.Actuators, CS: car.CarState, now_nanos: int) -> tuple[car.CarControl.Actuators, list[SendCan]]:

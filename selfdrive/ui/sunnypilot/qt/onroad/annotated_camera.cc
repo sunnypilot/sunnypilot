@@ -148,11 +148,13 @@ void AnnotatedCameraWidgetSP::updateState(const UIStateSP &s) {
   const auto lateral_plan_sp = sm["lateralPlanSPDEPRECATED"].getLateralPlanSPDEPRECATED();
   car_params = sm["carParams"].getCarParams();
 
+  is_metric = s.scene.is_metric;
+
   // Handle older routes where vCruiseCluster is not set
   float v_cruise = cs.getVCruiseCluster() == 0.0 ? cs.getVCruise() : cs.getVCruiseCluster();
   setSpeed = cs_alive ? v_cruise : SET_SPEED_NA;
   is_cruise_set = setSpeed > 0 && (int)setSpeed != SET_SPEED_NA;
-  if (is_cruise_set && !s.scene.is_metric) {
+  if (is_cruise_set && !is_metric) {
     setSpeed *= KM_TO_MILE;
   }
 
@@ -161,7 +163,7 @@ void AnnotatedCameraWidgetSP::updateState(const UIStateSP &s) {
   float v_ego = v_ego_cluster_seen ? car_state.getVEgoCluster() : car_state.getVEgo();
   v_ego = s.scene.true_vego_ui ? car_state.getVEgo() : v_ego;
   speed = cs_alive ? std::max<float>(0.0, v_ego) : 0.0;
-  speed *= s.scene.is_metric ? MS_TO_KPH : MS_TO_MPH;
+  speed *= is_metric ? MS_TO_KPH : MS_TO_MPH;
 
   auto speed_limit_sign = nav_instruction.getSpeedLimitSign();
   speedLimit = nav_alive ? nav_instruction.getSpeedLimit() : 0.0;
@@ -169,8 +171,7 @@ void AnnotatedCameraWidgetSP::updateState(const UIStateSP &s) {
 
   has_us_speed_limit = (nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::MUTCD);
   has_eu_speed_limit = (nav_alive && speed_limit_sign == cereal::NavInstruction::SpeedLimitSign::VIENNA);
-  is_metric = s.scene.is_metric;
-  speedUnit =  s.scene.is_metric ? tr("km/h") : tr("mph");
+  speedUnit = is_metric ? tr("km/h") : tr("mph");
   hideBottomIcons = (cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   status = s.status;
 
