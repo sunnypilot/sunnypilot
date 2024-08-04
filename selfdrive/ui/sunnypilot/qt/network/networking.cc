@@ -107,6 +107,10 @@ NetworkingSP::NetworkingSP(QWidget* parent, bool show_advanced) : QFrame(parent)
     #back_btn:pressed, #advanced_btn:pressed, #scan_btn:pressed {
       background-color:  #4a4a4a;
     }
+    #scan_btn:disabled {
+      background-color: #121212;
+      color: #33FFFFFF;
+    }
   )");
   main_layout->setCurrentWidget(wifiScreen);
 }
