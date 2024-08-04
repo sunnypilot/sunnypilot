@@ -200,7 +200,6 @@ sunnypilot_whitelist = [
   ".*CARS.md",
   ".*LIMITATIONS.md",
   ".*CONTRIBUTING.md",
-  ".*sunnyhaibin0850_qrcode_paypal.me.png",
   "opendbc/.*.dbc",
 ]
 
