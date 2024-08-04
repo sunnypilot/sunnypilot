@@ -6,8 +6,7 @@ import importlib
 from parameterized import parameterized
 
 from cereal import car, messaging
-from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import gen_empty_fingerprint
+from openpilot.selfdrive.car import DT_CTRL, gen_empty_fingerprint
 from openpilot.selfdrive.car.car_helpers import interfaces
 from openpilot.selfdrive.car.fingerprints import all_known_cars
 from openpilot.selfdrive.car.fw_versions import FW_VERSIONS, FW_QUERY_CONFIGS
@@ -16,6 +15,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
+from openpilot.selfdrive.pandad import can_capnp_to_list
 from openpilot.selfdrive.test.fuzzy_generation import DrawType, FuzzyGenerator
 
 ALL_ECUS = {ecu for ecus in FW_VERSIONS.values() for ecu in ecus.keys()}
@@ -133,7 +133,7 @@ class TestCarInterfaces:
 
     # Test radar fault
     if not car_params.radarUnavailable and radar_interface.rcp is not None:
-      cans = [messaging.new_message('can', 1).to_bytes() for _ in range(5)]
+      cans = can_capnp_to_list([messaging.new_message('can', 1).to_bytes() for _ in range(5)])
       rr = radar_interface.update(cans)
       assert rr is None or len(rr.errors) > 0
 

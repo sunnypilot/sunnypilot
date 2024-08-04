@@ -4,8 +4,7 @@ import cereal.messaging as messaging
 from common.conversions import Conversions as CV
 from opendbc.can.packer import CANPacker
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_meas_steer_torque_limits
+from openpilot.selfdrive.car import DT_CTRL, apply_meas_steer_torque_limits
 from openpilot.selfdrive.car.chrysler import chryslercan
 from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags, ChryslerFlagsSP
 from openpilot.selfdrive.car.interfaces import CarControllerBase, FORWARD_GEARS
@@ -16,9 +15,8 @@ ButtonType = car.CarState.ButtonEvent.Type
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
-    self.CP = CP
+    super().__init__(dbc_name, CP, VM)
     self.apply_steer_last = 0
-    self.frame = 0
 
     self.hud_count = 0
     self.last_lkas_falling_edge = 0
