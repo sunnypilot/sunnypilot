@@ -4,8 +4,7 @@ import cereal.messaging as messaging
 from common.conversions import Conversions as CV
 from opendbc.can.packer import CANPacker
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_meas_steer_torque_limits
+from openpilot.selfdrive.car import DT_CTRL, apply_meas_steer_torque_limits
 from openpilot.selfdrive.car.chrysler import chryslercan
 from openpilot.selfdrive.car.chrysler.values import RAM_CARS, RAM_DT, CarControllerParams, ChryslerFlags, ChryslerFlagsSP
 from openpilot.selfdrive.car.interfaces import CarControllerBase, FORWARD_GEARS
@@ -16,9 +15,8 @@ ButtonType = car.CarState.ButtonEvent.Type
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
-    self.CP = CP
+    super().__init__(dbc_name, CP, VM)
     self.apply_steer_last = 0
-    self.frame = 0
 
     self.hud_count = 0
     self.last_lkas_falling_edge = 0
@@ -271,8 +269,8 @@ class CarController(CarControllerBase):
     return min(target_speed_kph, curve_speed)
 
   def get_button_control(self, CS, final_speed, v_cruise_kph_prev):
-    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not self.is_metric else 1))
-    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not self.is_metric else CV.MS_TO_KPH))
+    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
 

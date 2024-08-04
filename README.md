@@ -48,7 +48,6 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 To use sunnypilot in a car, you need the following:
 * A supported device to run this software
     * a [comma three](https://comma.ai/shop/products/three), or
-    * a comma two (only with older versions below 0.8.13)
 * This software
 * One of [the 250+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
 * A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
@@ -115,40 +114,12 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 
 Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
-comma two
-------
-
-1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
-2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```https://smiskol.com/fork/sunnyhaibin/0.8.12-4-prod```
-4. Complete the rest of the installation following the onscreen instructions.
-
-Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
-
-  </details>
-
-  <details>
-  <summary>SSH (More Versatile)</summary>
-  <br>
-
-Prerequisites: [How to SSH](https://github.com/commaai/openpilot/wiki/SSH)
-
-If you are looking to install sunnypilot via SSH, run the following command in an SSH terminal after connecting to your device:
-
 comma three:
 ------
 * [`release-c3`](https://github.com/sunnyhaibin/openpilot/tree/release-c3):
 
   ```
-  cd /data; rm -rf ./openpilot; git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
-  ```
-
-comma two:
-------
-* [`0.8.12-prod-personal-hkg`](https://github.com/sunnyhaibin/openpilot/tree/0.8.12-prod-personal-hkg):
-
-  ```
-  cd /data; rm -rf ./openpilot; git clone -b 0.8.12-prod-personal-hkg --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot; cd openpilot; sudo reboot
+  cd /data && rm -rf ./openpilot && git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/sunnypilot.git openpilot && cd openpilot && sudo reboot
   ```
 
 After running the command to install the desired branch, your comma device should reboot.
@@ -355,7 +326,7 @@ Example:
 
 ---
 
-How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
+How-To instructions can be found in [HOW-TOS.md](HOW-TOS.md).
 
 </details>
 

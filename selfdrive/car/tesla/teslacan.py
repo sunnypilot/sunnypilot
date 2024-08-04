@@ -34,7 +34,7 @@ class TeslaCAN:
       "DAS_steeringControlCounter": counter,
     }
 
-    data = self.packer.make_can_msg("DAS_steeringControl", CANBUS.party, values)[2]
+    data = self.packer.make_can_msg("DAS_steeringControl", CANBUS.party, values)[1]
     values["DAS_steeringControlChecksum"] = self.checksum(0x488, data[:3])
     return self.packer.make_can_msg("DAS_steeringControl", CANBUS.party, values)
 
@@ -50,7 +50,7 @@ class TeslaCAN:
       "DAS_controlCounter": cnt,
       "DAS_controlChecksum": 0,
     }
-    data = self.packer.make_can_msg("DAS_control", CANBUS.party, values)[2]
+    data = self.packer.make_can_msg("DAS_control", CANBUS.party, values)[1]
     values["DAS_controlChecksum"] = self.checksum(0x2b9, data[:7])
     return self.packer.make_can_msg("DAS_control", CANBUS.party, values)
 
@@ -64,6 +64,6 @@ class TeslaCAN:
       "SCCM_rightStalkReserved2": 0,
     }
 
-    data = self.pt_packer.make_can_msg("SCCM_rightStalk", CANBUS.vehicle, values)[2]
+    data = self.pt_packer.make_can_msg("SCCM_rightStalk", CANBUS.vehicle, values)[1]
     values["SCCM_rightStalkCrc"] = self.right_stalk_crc(data[1:])
     return self.pt_packer.make_can_msg("SCCM_rightStalk", CANBUS.vehicle, values)

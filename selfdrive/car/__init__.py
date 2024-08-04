@@ -7,10 +7,12 @@ from dataclasses import replace
 import capnp
 
 from cereal import car
+from panda.python.uds import SERVICE_TYPE
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.utils import Freezable
 from openpilot.selfdrive.car.docs_definitions import CarDocs
 
+DT_CTRL = 0.01  # car state and control loop timestep (s)
 
 # kg of standard extra cargo to count for drive, gas, etc...
 STD_CARGO_KG = 136.
@@ -224,8 +226,39 @@ def create_gas_interceptor_command(packer, gas_amount, idx):
   return packer.make_can_msg("GAS_COMMAND", 0, values)
 
 
+def apply_center_deadzone(error, deadzone):
+  if (error > - deadzone) and (error < deadzone):
+    error = 0.
+  return error
+
+
+def rate_limit(new_value, last_value, dw_step, up_step):
+  return clip(new_value, last_value + dw_step, last_value + up_step)
+
+
+def get_friction(lateral_accel_error: float, lateral_accel_deadzone: float, friction_threshold: float,
+                 torque_params: car.CarParams.LateralTorqueTuning, friction_compensation: bool) -> float:
+  friction_interp = interp(
+    apply_center_deadzone(lateral_accel_error, lateral_accel_deadzone),
+    [-friction_threshold, friction_threshold],
+    [-torque_params.friction, torque_params.friction]
+  )
+  friction = float(friction_interp) if friction_compensation else 0.0
+  return friction
+
+
 def make_can_msg(addr, dat, bus):
-  return [addr, 0, dat, bus]
+  return [addr, dat, bus]
+
+
+def make_tester_present_msg(addr, bus, subaddr=None, suppress_response=False):
+  dat = [0x02, SERVICE_TYPE.TESTER_PRESENT]
+  if subaddr is not None:
+    dat.insert(0, subaddr)
+  dat.append(0x80 if suppress_response else 0x0)  # sub-function
+
+  dat.extend([0x0] * (8 - len(dat)))
+  return make_can_msg(addr, bytes(dat), bus)
 
 
 def get_safety_config(safety_model, safety_param = None):

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import platform
 import base64
-import bz2
 import hashlib
 import io
 import json
@@ -17,6 +16,7 @@ import tempfile
 import threading
 import time
 import gzip
+import zstandard as zstd
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from functools import partial
@@ -37,6 +37,7 @@ from openpilot.common.file_helpers import CallbackReader
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.system.hardware import HARDWARE, PC
+from openpilot.system.loggerd.uploader import LOG_COMPRESSION_LEVEL
 from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_build_metadata
@@ -105,8 +106,9 @@ cancelled_uploads: set[str] = set()
 cur_upload_items: dict[int, UploadItem | None] = {}
 
 
-def strip_bz2_extension(fn: str) -> str:
-  if fn.endswith('.bz2'):
+# TODO-SP: adapt zst for sunnylink
+def strip_zst_extension(fn: str) -> str:
+  if fn.endswith('.zst'):
     return fn[:-4]
   return fn
 
@@ -286,16 +288,16 @@ def _do_upload(upload_item: UploadItem, callback: Callable = None) -> requests.R
   path = upload_item.path
   compress = False
 
-  # If file does not exist, but does exist without the .bz2 extension we will compress on the fly
-  if not os.path.exists(path) and os.path.exists(strip_bz2_extension(path)):
-    path = strip_bz2_extension(path)
+  # If file does not exist, but does exist without the .zst extension we will compress on the fly
+  if not os.path.exists(path) and os.path.exists(strip_zst_extension(path)):
+    path = strip_zst_extension(path)
     compress = True
 
   with open(path, "rb") as f:
     content = f.read()
     if compress:
       cloudlog.event("athena.upload_handler.compress", fn=path, fn_orig=upload_item.path)
-      content = bz2.compress(content)
+      content = zstd.compress(content, LOG_COMPRESSION_LEVEL)
 
   with io.BytesIO(content) as data:
     return requests.put(upload_item.url,
@@ -391,7 +393,7 @@ def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlRespo
       continue
 
     path = os.path.join(Paths.log_root(), file.fn)
-    if not os.path.exists(path) and not os.path.exists(strip_bz2_extension(path)):
+    if not os.path.exists(path) and not os.path.exists(strip_zst_extension(path)):
       failed.append(file.fn)
       continue
 
@@ -417,6 +419,7 @@ def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlRespo
 
   resp: UploadFilesToUrlResponse = {"enqueued": len(items), "items": items}
   if failed:
+    cloudlog.event("athena.uploadFilesToUrls.failed", failed=failed, error=True)
     resp["failed"] = failed
 
   return resp
