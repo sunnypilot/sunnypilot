@@ -114,7 +114,7 @@ class CarInterface(CarInterfaceBase):
 
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.manumatic], pcm_enable=False)
 
-    events, ret = self.create_sp_events(self.CS, ret, events)
+    events, ret = self.create_sp_events(ret, events)
 
     if not self.CS.vehicle_sensors_valid:
       events.add(car.CarEvent.EventName.vehicleSensorsInvalid)

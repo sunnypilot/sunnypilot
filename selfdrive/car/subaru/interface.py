@@ -150,7 +150,7 @@ class CarInterface(CarInterfaceBase):
 
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low], pcm_enable=False)
 
-    events, ret = self.create_sp_events(self.CS, ret, events)
+    events, ret = self.create_sp_events(ret, events)
 
     ret.events = events.to_msg()
 

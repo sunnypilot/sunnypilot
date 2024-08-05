@@ -145,7 +145,7 @@ class CarInterface(CarInterfaceBase):
     # events
     events = self.create_common_events(ret, c, extra_gears=[car.CarState.GearShifter.low], pcm_enable=False)
 
-    events, ret = self.create_sp_events(self.CS, ret, events)
+    events, ret = self.create_sp_events(ret, events)
 
     # Low speed steer alert hysteresis logic
     if self.CP.carFingerprint in RAM_DT:

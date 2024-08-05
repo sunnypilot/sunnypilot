@@ -673,7 +673,7 @@ class CarInterfaceBase(ABC):
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
 
-  def create_sp_events(self, CS, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
+  def create_sp_events(self, cs_out, events, main_enabled=False, allow_enable=True, enable_pressed=False,
                        enable_from_brake=False, enable_pressed_long=False,
                        enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise)):
 
@@ -681,7 +681,7 @@ class CarInterfaceBase(ABC):
       if cs_out.disengageByBrake and cs_out.madsEnabled:
         enable_pressed = True
         enable_from_brake = True
-      CS.disengageByBrake = False
+      self.CS.disengageByBrake = False
       cs_out.disengageByBrake = False
 
     for b in cs_out.buttonEvents:
@@ -710,11 +710,11 @@ class CarInterfaceBase(ABC):
     if self.CP.pcmCruise:
       # do disable on button down
       if main_enabled:
-        if any(CS.main_buttons) and not cs_out.cruiseState.enabled:
+        if any(self.CS.main_buttons) and not cs_out.cruiseState.enabled:
           if not cs_out.madsEnabled:
             events.add(EventName.buttonCancel)
       # do enable on both accel and decel buttons
-      if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled and allow_enable:
+      if cs_out.cruiseState.enabled and not self.CS.out.cruiseState.enabled and allow_enable:
         enable_pressed = True
         enable_pressed_long = True
       elif not cs_out.cruiseState.enabled:

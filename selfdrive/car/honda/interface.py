@@ -312,7 +312,7 @@ class CarInterface(CarInterfaceBase):
     if self.CP.pcmCruise and ret.vEgo < self.CP.minEnableSpeed and not self.CS.madsEnabled:
       events.add(EventName.belowEngageSpeed)
 
-    events, ret = self.create_sp_events(self.CS, ret, events)
+    events, ret = self.create_sp_events(ret, events)
 
     #if self.CP.pcmCruise:
     #  # we engage when pcm is active (rising edge)

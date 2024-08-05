@@ -266,7 +266,7 @@ class CarInterface(CarInterfaceBase):
     #  if any(b.type == ButtonType.accelCruise and b.pressed for b in ret.buttonEvents):
     #    events.add(EventName.buttonEnable)
 
-    events, ret = self.create_sp_events(self.CS, ret, events, enable_pressed=self.CS.accEnabled,
+    events, ret = self.create_sp_events(ret, events, enable_pressed=self.CS.accEnabled,
                                         enable_buttons=(ButtonType.decelCruise,))
 
     # Enabling at a standstill with brake is allowed

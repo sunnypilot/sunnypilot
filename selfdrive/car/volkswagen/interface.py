@@ -151,7 +151,7 @@ class CarInterface(CarInterfaceBase):
                                        pcm_enable=False,
                                        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
-    events, ret = self.create_sp_events(self.CS, ret, events,
+    events, ret = self.create_sp_events(ret, events,
                                         enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     # Low speed steer alert hysteresis logic
