@@ -645,7 +645,7 @@ class Controls:
     if not self.joystick_mode:
       speeds = long_plan.speeds
       if len(speeds):
-        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1
+        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1 and self.CP.carName == "hyundai"
       else:
         resume = False
 
