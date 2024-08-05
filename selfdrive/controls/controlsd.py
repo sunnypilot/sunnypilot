@@ -643,9 +643,15 @@ class Controls:
       self.LoC.reset()
 
     if not self.joystick_mode:
+      speeds = long_plan.speeds
+      if len(speeds):
+        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1
+      else:
+        resume = False
+
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
-      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits)
+      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits, resume)
 
       # Steering PID loop and lateral MPC
       if self.model_use_lateral_planner:
