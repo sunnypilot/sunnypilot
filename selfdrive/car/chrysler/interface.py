@@ -100,8 +100,7 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            self.CS.button_events, c.vCruise,
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise,
                                                             enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise, ButtonType.resumeCruise) if not self.CP.pcmCruiseSpeed else
                                                                            (ButtonType.accelCruise, ButtonType.decelCruise),
                                                             resume_button=(ButtonType.resumeCruise,) if not self.CP.pcmCruiseSpeed else
