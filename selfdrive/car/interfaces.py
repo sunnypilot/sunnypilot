@@ -551,35 +551,32 @@ class CarInterfaceBase(ABC):
     return v_cruise != V_CRUISE_UNSET
 
   def get_acc_mads(self, cs_out):
-    mads_enabled = self.CS.madsEnabled
-
     if self.CS.params_list.acc_mads_combo:
       if not self.prev_acc_mads_combo and (cs_out.cruiseState.enabled or self.CS.accEnabled):
-        mads_enabled = True
+        self.CS.madsEnabled = True
       self.prev_acc_mads_combo = (cs_out.cruiseState.enabled or self.CS.accEnabled)
 
-    return mads_enabled
+    return self.CS.madsEnabled
 
   def get_sp_v_cruise_non_pcm_state(self, cs_out, vCruise,
                                     enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
                                     resume_button=(ButtonType.accelCruise, ButtonType.resumeCruise)):
-    acc_enabled = self.CS.accEnabled
 
     if cs_out.cruiseState.available:
       for b in self.CS.button_events:
         if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
           if b.type in enable_buttons and not b.pressed:
-            acc_enabled = True
+            self.CS.accEnabled = True
         if not self.CP.pcmCruise:
           if b.type in resume_button and not self.sp_v_cruise_initialized(vCruise):
-            acc_enabled = False
+            self.CS.accEnabled = False
         if not self.CP.pcmCruiseSpeed:
           if b.type == ButtonType.accelCruise and not cs_out.cruiseState.enabled:
-            acc_enabled = False
+            self.CS.accEnabled = False
     else:
-      acc_enabled = False
+      self.CS.accEnabled = False
 
-    return acc_enabled
+    return self.CS.accEnabled
 
   def get_sp_cancel_cruise_state(self):
     self.CS.madsEnabled = False if not self.enable_mads or self.disengage_on_accelerator else self.CS.madsEnabled
@@ -593,22 +590,20 @@ class CarInterfaceBase(ABC):
 
   def get_sp_cruise_main_state(self, cs_out):
     if not self.CS.control_initialized:
-      mads_enabled = False
+      return False
     elif not self.CS.params_list.mads_main_toggle:
-      mads_enabled = False
+      return False
     else:
-      mads_enabled = cs_out.cruiseState.available
+      return cs_out.cruiseState.available
 
-    return mads_enabled
-
-  def get_sp_started_mads(self, cs_out, CS):
-    if not cs_out.cruiseState.available and CS.out.cruiseState.available:
+  def get_sp_started_mads(self, cs_out):
+    if not cs_out.cruiseState.available and self.CS.out.cruiseState.available:
       self.madsEnabledInit = False
       self.madsEnabledInitPrev = False
       return False
     if not self.CS.params_list.mads_main_toggle or self.prev_acc_mads_combo:
-      return CS.madsEnabled
-    if not self.madsEnabledInit and CS.madsEnabled:
+      return self.CS.madsEnabled
+    if not self.madsEnabledInit and self.CS.madsEnabled:
       self.madsEnabledInit = True
       self.last_mads_init = time.monotonic()
     if cs_out.gearShifter not in FORWARD_GEARS:
@@ -619,7 +614,7 @@ class CarInterfaceBase(ABC):
       self.madsEnabledInitPrev = True
       return cs_out.cruiseState.available
     else:
-      return CS.madsEnabled
+      return self.CS.madsEnabled
 
   def get_sp_common_state(self, cs_out, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = self.CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
