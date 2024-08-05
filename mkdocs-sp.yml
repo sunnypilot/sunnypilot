@@ -48,10 +48,15 @@ theme:
         name: Switch to system preference
   navigation_depth: 3
 
+plugin:
+  -glightbox
+
 markdown_extensions:
   - admonition
+  - attr_list
   - def_list
   - footnotes
+  - md_in_html
   - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
@@ -75,7 +80,8 @@ nav:
     - URL Method: installation/url-method.md
     - SSH Method: installation/ssh-method.md
   - Features:
-    - Modified Assistive Driving Safety (M.A.D.S.): features/modified-assistive-driving-safety.md
+    - Modified Assistive Driving Safety (MADS): features/modified-assistive-driving-safety.md
+    - Dynamic Lane Profile (DLP): features/dynamic-lane-profile.md
   - How To:
     - Enable Mapbox navigation: how-to/enable-mapbox-navigation.md
     - Enable Radar Tracks: how-to/radar-tracks.md
