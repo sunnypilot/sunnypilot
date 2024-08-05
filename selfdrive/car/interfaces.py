@@ -621,17 +621,17 @@ class CarInterfaceBase(ABC):
     else:
       return CS.madsEnabled
 
-  def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
-    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
+  def get_sp_common_state(self, cs_out, gear_allowed=True, gap_button=False):
+    cs_out.cruiseState.enabled = self.CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
 
     if not self.enable_mads:
-      if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled:
-        CS.madsEnabled = True
-      elif not cs_out.cruiseState.enabled and CS.out.cruiseState.enabled:
-        CS.madsEnabled = False
+      if cs_out.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
+        self.CS.madsEnabled = True
+      elif not cs_out.cruiseState.enabled and self.CS.out.cruiseState.enabled:
+        self.CS.madsEnabled = False
 
     if self.CP.openpilotLongitudinalControl:
-      self.toggle_exp_mode(gap_button)
+      self.toggle_exp_mode(gap_button)  # TODO-SP: use buttonEvents to handle this, then remove gap_button
 
     lane_change_speed_min = get_min_lateral_speed(self.CS.params_list.pause_lateral_speed, self.CS.params_list.is_metric)
 
@@ -643,22 +643,22 @@ class CarInterfaceBase(ABC):
 
     cs_out.latActive = gear_allowed
 
-    if not CS.control_initialized:
-      CS.control_initialized = True
+    if not self.CS.control_initialized:
+      self.CS.control_initialized = True
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     if (cs_out.gasPressed and not self.CS.out.gasPressed and self.disengage_on_accelerator) or \
       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)) or \
       (cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)):
-      if CS.madsEnabled:
-        CS.disengageByBrake = True
+      if self.CS.madsEnabled:
+        self.CS.disengageByBrake = True
 
-    cs_out.madsEnabled = CS.madsEnabled
-    cs_out.accEnabled = CS.accEnabled
-    cs_out.disengageByBrake = CS.disengageByBrake
+    cs_out.madsEnabled = self.CS.madsEnabled
+    cs_out.accEnabled = self.CS.accEnabled
+    cs_out.disengageByBrake = self.CS.disengageByBrake
     cs_out.brakeLightsDEPRECATED |= cs_out.brakePressed or cs_out.brakeHoldActive or cs_out.parkingBrake or cs_out.regenBraking
 
-    return cs_out, CS
+    return cs_out
 
   # TODO: SP: use upstream's buttonEvents counter checks from controlsd
   def toggle_exp_mode(self, gap_pressed):
