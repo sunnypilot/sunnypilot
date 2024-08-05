@@ -1,6 +1,6 @@
 # Bug Reports
 
-sunnypilot is an actively maintained project that we constantly strive to improve. With project of this size and complexity, bugs may occur. If you think you have discovered a bug, you can help us by submitting an issue in our public [issue tracker](https://github.com/sunnypilot/sunnypilot/issues) or on our [Discord](https://discord.sunnypilot.ai), following this guide.
+sunnypilot is an actively maintained project that we constantly strive to improve. With project of this size and complexity, bugs may occur. If you think you have discovered a bug, you can help us by submitting an issue in [comma's public issue tracker](https://github.com/commaai/openpilot/issues), [sunnypilot's public issue tracker](https://github.com/sunnypilot/sunnypilot/issues) or on our [Discord](https://discord.sunnypilot.ai), following this guide.
 
 ## Before creating an issue
 
@@ -34,7 +34,8 @@ Now, before you go through the trouble of creating a bug report that is answered
 
 1. [Search our documentation] and look for the relevant sections that could be related to your problem. If found, make sure that the settings are configured correctly.
 2. [Search our Discord](https://discord.sunnypilot.ai) to learn if other users are struggling with similar problems and work together with our great comunity towards a solution. Many problems are solved there.
-3. [Search our issue tracker](https://github.com/sunnypilot/sunnypilot/issues), as another user might already have reported the same problem, and there might even be a known workaround or fix for it. Thus, no need to create a new issue.
+3. [Search comma's issue tracker](https://github.com/commaai/openpilot/issues), as another user might already have reported the same problem that may exist in stock openpilot, and there might even be a known workaround or fix for it. Thus, no need to create a new issue.
+3. [Search sunnypilot's issue tracker](https://github.com/sunnypilot/sunnypilot/issues), as another user might already have reported the same problem, and there might even be a known workaround or fix for it. Thus, no need to create a new issue.
 
 [Search our documentation]: ?q=
 
