@@ -2,7 +2,7 @@
 
 The URL installation method can be done in two ways, depending on your current setup and version of sunnypilot on your device.
 
-=== "sunnypilot not installed, or sunnypilot ≤ 0.8.17"
+=== "sunnypilot not installed, or sunnypilot < 0.8.17"
 
     1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
     2. After factory reset/uninstall, upon reboot, select `Custom Software` when given the option.
