@@ -1,4 +1,4 @@
-# **General**
+# **Installation**
 
 Please refer to the Recommended Branches to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
 

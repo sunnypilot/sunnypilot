@@ -23,7 +23,11 @@ theme:
     - content.code.select
     - navigation.expand
     - navigation.footer
+    - navigation.indexes
+    - navigation.path
+    - navigation.sections
     - navigation.tabs
+    - navigation.top
   font:
     text: Roboto
     code: Roboto Mono
@@ -47,9 +51,6 @@ theme:
         icon: material/toggle-switch-off
         name: Switch to system preference
   navigation_depth: 3
-
-plugin:
-  -glightbox
 
 markdown_extensions:
   - admonition
@@ -76,7 +77,7 @@ nav:
     - Safety: SAFETY.md
     - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
   - Installation:
-    - General: installation/general.md
+    - installation/index.md
     - URL Method: installation/url-method.md
     - SSH Method: installation/ssh-method.md
   - Features:
