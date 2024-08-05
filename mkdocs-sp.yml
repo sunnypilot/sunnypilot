@@ -1,4 +1,4 @@
-site_name: sunnypilot wiki
+site_name: sunnypilot docs
 repo_name: sunnypilot/sunnypilot
 repo_url: https://github.com/sunnypilot/sunnypilot/
 site_description: sunnypilot Documentation
@@ -19,6 +19,8 @@ theme:
     view: material/eye
   features:
     - content.action.edit
+    - content.code.copy
+    - content.code.select
     - navigation.expand
     - navigation.footer
     - navigation.tabs
@@ -49,8 +51,15 @@ theme:
 markdown_extensions:
   - admonition
   - def_list
+  - footnotes
   - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 nav:
   - Getting Started:
@@ -61,6 +70,10 @@ nav:
     - 🚨 Read before installing 🚨: safety/read-before-installing.md
     - Safety: SAFETY.md
     - Prohibited safety modifications: safety/prohibited-safety-modifications.md
+  - Installation:
+    - General: installation/general.md
+    - URL Method: installation/url-method.md
+    - SSH Method: installation/ssh-method.md
   - Features:
     - Modified Assistive Driving Safety (M.A.D.S.): features/modified-assistive-driving-safety.md
   - How To:
