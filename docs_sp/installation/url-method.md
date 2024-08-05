@@ -25,12 +25,12 @@ The URL installation method can be done in two ways, depending on your current s
     3. At the `Target Branch` option, press `SELECT` to open the `Target Branch` selector.
     4. Scroll and select the **Desired Branch** per Recommended Branches.
 
-    !!! info "Recommended Branches"
-        |    Branch    |
-        |:------------:|
-        | `release-c3` |
-        | `staging-c3` |
-        |   `dev-c3`   |
+    !!! info "[Recommended Branches](../branches/recommended-branches.md)"
+        |    Branch    |         Installation URL         |
+        |:------------:|:--------------------------------:|
+        | `release-c3` | release-c3.sunnypilot.ai |
+        | `staging-c3` | staging-c3.sunnypilot.ai |
+        |   `dev-c3`   | dev-c3.sunnypilot.ai     |
     !!! example "Example of Desired Branch"
         `release-c3`
 

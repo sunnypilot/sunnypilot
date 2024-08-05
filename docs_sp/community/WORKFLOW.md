@@ -1,8 +1,8 @@
-# openpilot development workflow
+# sunnypilot development workflow
 
-Aside from the ML models, most tools used for openpilot development are in this repo.
+Aside from the ML models, most tools used for sunnypilot development are in this repo.
 
-Most development happens on normal Ubuntu workstations, and not in cars or directly on comma devices. See the [setup guide](https://github.com/sunnypilot/sunnypilot/tree/master/tools) for getting your PC setup for openpilot development.
+Most development happens on normal Ubuntu workstations, and not in cars or directly on comma devices. See the [setup guide](https://github.com/sunnypilot/sunnypilot/tree/master/tools) for getting your PC setup for sunnypilot development.
 
 ## Quick start
 

@@ -82,9 +82,6 @@ nav:
     - installation/index.md
     - URL Method: installation/url-method.md
     - SSH Method: installation/ssh-method.md
-  - Branches:
-    - Definitions: branches/definitions.md
-    - Recommended Branches: branches/recommended-branches.md
   - Features:
     - Modified Assistive Driving Safety (MADS): features/modified-assistive-driving-safety.md
     - Dynamic Lane Profile (DLP): features/dynamic-lane-profile.md
@@ -92,3 +89,9 @@ nav:
     - Enable Mapbox navigation: how-to/enable-mapbox-navigation.md
     - Enable Radar Tracks: how-to/radar-tracks.md
     - Turn the speed blue: how-to/turn-the-speed-blue.md
+  - Branches:
+    - Definitions: branches/definitions.md
+    - Recommended Branches: branches/recommended-branches.md
+  - Community:
+    - Contributing: community/CONTRIBUTING.md
+    - Reporting a bug: community/reporting-a-bug.md
