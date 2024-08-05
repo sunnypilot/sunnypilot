@@ -80,6 +80,8 @@ nav:
     - installation/index.md
     - URL Method: installation/url-method.md
     - SSH Method: installation/ssh-method.md
+  - Branches:
+    - Definitions: branches/definitions.md
   - Features:
     - Modified Assistive Driving Safety (MADS): features/modified-assistive-driving-safety.md
     - Dynamic Lane Profile (DLP): features/dynamic-lane-profile.md
