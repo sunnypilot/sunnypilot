@@ -1,14 +1,14 @@
-# 🛡️ Modified Assistive Driving Safety (MADS)
+# **Modified Assistive Driving Safety (M.A.D.S.)**
+
+Modified Assistive Driving Safety (MADS) aims to elevate the user's driving experience by modifying the behaviors of driving assist engagements.
 
 !!! note
     This feature aligns closely with comma.ai's safety rules.
 
-Modified Assistive Driving Safety (MADS) aims to elevate the user's driving experience by modifying the behaviors of driving assist engagements.
-
 ## Independent Engagement
 MADS allows users to engage sunnypilot Automatic Lane Centering (ALC) for lateral control and Adaptive Cruise Control (ACC) or Smart Cruise Control (SCC) for longitudinal control independently.
 
-??? note "Why This Option Exists"
+??? note "Why This Feature Exists"
     While newer car models allow for independent engagement of lateral (steering) and longitudinal (speed) control, many older models and stock openpilot enforce engaging both controls together. MADS introduces this modern convenience to older models, effectively backporting a feature found in newer cars and providing users more flexibility.
 
 ## Dedicated Buttons
@@ -24,7 +24,7 @@ MADS allows users to engage sunnypilot Automatic Lane Centering (ALC) for latera
   - `CANCEL` button: Disables ACC/SCC only.
   - `CRUISE (MAIN)` must be `ON` to use ACC/SCC.
 
-!!! warning
+!!! info
     The `CRUISE (MAIN)` button disables sunnypilot completely when `OFF`. This is strictly enforced in the panda safety code.
 
 ## Lateral Control on Brake Pedal

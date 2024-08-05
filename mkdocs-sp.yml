@@ -67,9 +67,9 @@ nav:
     - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
     - Develop sunnypilot: getting-started/develop-sunnypilot.md
   - Safety Information:
-    - 🚨 Read before installing 🚨: safety/read-before-installing.md
+    - 🚨 Read before installing 🚨: safety-information/read-before-installing.md
     - Safety: SAFETY.md
-    - Prohibited safety modifications: safety/prohibited-safety-modifications.md
+    - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
   - Installation:
     - General: installation/general.md
     - URL Method: installation/url-method.md

@@ -1,4 +1,4 @@
-# To start using sunnypilot in a car
+# **To start using sunnypilot in a car**
 
 To use sunnypilot in a car, you need four things:
 
