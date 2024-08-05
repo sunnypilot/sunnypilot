@@ -16,3 +16,14 @@ Dynamic Lane Profile (DLP) aims to provide the best driving experience by confid
 - **Auto Lane**: sunnypilot dynamically selects between `Laneline` or `Laneless` model.
 - **Laneline**: uses the Laneline model only.
 - **Laneless**: uses the Laneless model only.
+
+### **Feature Location**
+
+**1. Settings**
+![Settings](../assets/features/dlp-1.png)
+
+**2. `sunnypilot` Panel**
+![sunnypilot Panel](../assets/features/dlp-2.png)
+
+**3. Select the desired mode**
+![DLP Select](../assets/features/dlp-3.png)
