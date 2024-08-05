@@ -221,7 +221,7 @@ class CarInterface(CarInterfaceBase):
       *create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}),
     ]
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
     if not self.CP.pcmCruise:
       if any(b.type == ButtonType.accelCruise and b.pressed for b in self.CS.button_events):

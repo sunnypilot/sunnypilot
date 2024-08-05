@@ -214,7 +214,7 @@ class CarInterface(CarInterfaceBase):
       self.CS.button_events = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
       distance_button = self.CS.distance_button
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
     if ret.cruiseState.available:
       if self.enable_mads:

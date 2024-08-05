@@ -117,7 +117,7 @@ class CarInterface(CarInterfaceBase):
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
     if ret.cruiseState.available:
       if self.enable_mads:

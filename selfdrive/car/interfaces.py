@@ -588,8 +588,8 @@ class CarInterfaceBase(ABC):
     regen = cs_out.regenBraking and (not self.CS.out.regenBraking or not cs_out.standstill)
     return accel_pedal or brake or regen
 
-  def get_sp_cruise_main_state(self, cs_out, CS):
-    if not CS.control_initialized:
+  def get_sp_cruise_main_state(self, cs_out):
+    if not self.CS.control_initialized:
       mads_enabled = False
     elif not self.CS.params_list.mads_main_toggle:
       mads_enabled = False
