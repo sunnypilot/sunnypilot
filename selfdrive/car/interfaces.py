@@ -734,6 +734,16 @@ class CarInterfaceBase(ABC):
 
     return events, cs_out
 
+  def update_custom_stock_long(self):
+    customStockLong = car.CarState.CustomStockLong.new_message()
+    customStockLong.cruiseButton = 0 if self.CC.cruise_button is None else int(self.CC.cruise_button)
+    customStockLong.finalSpeedKph = float(self.CC.final_speed_kph)
+    customStockLong.targetSpeed = float(self.CC.target_speed)
+    customStockLong.vSetDis = float(self.CC.v_set_dis)
+    customStockLong.speedDiff = float(self.CC.speed_diff)
+    customStockLong.buttonType = int(self.CC.button_type)
+    return customStockLong
+
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
     self.CP = CP
@@ -837,16 +847,6 @@ class CarStateBase(ABC):
 
     return bool(left_blinker_stalk or self.left_blinker_cnt > 0), bool(right_blinker_stalk or self.right_blinker_cnt > 0)
 
-  def update_custom_stock_long(self, cruise_button, final_speed_kph, target_speed, v_set_dis, speed_diff, button_type):
-    customStockLong = car.CarState.CustomStockLong.new_message()
-    customStockLong.cruiseButton = 0 if cruise_button is None else cruise_button
-    customStockLong.finalSpeedKph = final_speed_kph
-    customStockLong.targetSpeed = target_speed
-    customStockLong.vSetDis = v_set_dis
-    customStockLong.speedDiff = speed_diff
-    customStockLong.buttonType = button_type
-    return customStockLong
-
   @staticmethod
   def parse_gear_shifter(gear: str | None) -> car.CarState.GearShifter:
     if gear is None:
@@ -878,6 +878,13 @@ class CarControllerBase(ABC):
   def __init__(self, dbc_name: str, CP, VM):
     self.CP = CP
     self.frame = 0
+
+    self.cruise_button = 0
+    self.final_speed_kph = 0.0
+    self.target_speed = 0.0
+    self.v_set_dis = 0.0
+    self.speed_diff = 0.0
+    self.button_type = 0
 
   @abstractmethod
   def update(self, CC: car.CarControl.Actuators, CS: car.CarState, now_nanos: int) -> tuple[car.CarControl.Actuators, list[SendCan]]:

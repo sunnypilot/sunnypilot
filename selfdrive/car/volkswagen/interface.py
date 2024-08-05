@@ -171,9 +171,7 @@ class CarInterface(CarInterfaceBase):
     if self.CC.eps_timer_soft_disable_alert:
       events.add(EventName.steerTimeLimit)
 
-    ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
-                                                           self.CC.target_speed, self.CC.v_set_dis,
-                                                           self.CC.speed_diff, self.CC.button_type)
+    ret.customStockLong = self.update_custom_stock_long()
 
     ret.events = events.to_msg()
 

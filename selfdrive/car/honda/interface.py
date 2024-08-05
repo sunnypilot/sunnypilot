@@ -329,9 +329,7 @@ class CarInterface(CarInterfaceBase):
     if self.CS.CP.minEnableSpeed > 0 and ret.vEgo < 0.001:
       events.add(EventName.manualRestart)
 
-    ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
-                                                           self.CC.target_speed, self.CC.v_set_dis,
-                                                           self.CC.speed_diff, self.CC.button_type)
+    ret.customStockLong = self.update_custom_stock_long()
 
     ret.events = events.to_msg()
 
