@@ -89,7 +89,7 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+        self.CS.madsEnabled = self.get_acc_mads(ret)
     else:
       self.CS.madsEnabled = False
 

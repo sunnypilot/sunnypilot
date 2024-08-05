@@ -550,11 +550,13 @@ class CarInterfaceBase(ABC):
   def sp_v_cruise_initialized(v_cruise):
     return v_cruise != V_CRUISE_UNSET
 
-  def get_acc_mads(self, cruiseState_enabled, acc_enabled, mads_enabled):
+  def get_acc_mads(self, cs_out):
+    mads_enabled = self.CS.madsEnabled
+
     if self.CS.params_list.acc_mads_combo:
-      if not self.prev_acc_mads_combo and (cruiseState_enabled or acc_enabled):
+      if not self.prev_acc_mads_combo and (cs_out.cruiseState.enabled or self.CS.accEnabled):
         mads_enabled = True
-      self.prev_acc_mads_combo = (cruiseState_enabled or acc_enabled)
+      self.prev_acc_mads_combo = (cs_out.cruiseState.enabled or self.CS.accEnabled)
 
     return mads_enabled
 
