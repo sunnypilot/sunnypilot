@@ -63,6 +63,8 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -82,6 +84,7 @@ nav:
     - SSH Method: installation/ssh-method.md
   - Branches:
     - Definitions: branches/definitions.md
+    - Recommended Branches: branches/recommended-branches.md
   - Features:
     - Modified Assistive Driving Safety (MADS): features/modified-assistive-driving-safety.md
     - Dynamic Lane Profile (DLP): features/dynamic-lane-profile.md

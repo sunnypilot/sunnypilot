@@ -1,6 +1,6 @@
 # **Installation**
 
-Please refer to the Recommended Branches to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
+Please refer to the [Recommended Branches](../branches/recommended-branches.md) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
 
 You can install sunnypilot on your comma 3/3X using one of the following methods:
 

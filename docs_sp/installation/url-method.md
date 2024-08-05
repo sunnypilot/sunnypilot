@@ -6,10 +6,10 @@ The URL installation method can be done in two ways, depending on your current s
 
     1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
     2. After factory reset/uninstall, upon reboot, select `Custom Software` when given the option.
-    3. Input the **Installation URL** per Recommended Branch.
+    3. Input the **Installation URL** per [Recommended Branches](../branches/recommended-branches.md).
     4. Complete the rest of the installation by following the onscreen instructions.
 
-    !!! info "Recommended Branches"
+    !!! info "[Recommended Branches](../branches/recommended-branches.md)"
         |    Branch    |         Installation URL         |
         |:------------:|:--------------------------------:|
         | `release-c3` | release-c3.sunnypilot.ai |
