@@ -104,9 +104,13 @@ class CarInterface(CarInterfaceBase):
     ret.stoppingControl = True
     ret.startingState = True
     ret.vEgoStarting = 0.1
-    ret.startAccel = 1.6
-    ret.stopAccel = -1.0
+    ret.stopAccel = -0.5
     ret.longitudinalActuatorDelay = 0.5
+
+    if ret.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
+      ret.startAccel = 1.0
+    else:
+      ret.startAccel = 1.5
 
     if DBC[ret.carFingerprint]["radar"] is None:
       if ret.spFlags & (HyundaiFlagsSP.SP_ENHANCED_SCC | HyundaiFlagsSP.SP_CAMERA_SCC_LEAD):
