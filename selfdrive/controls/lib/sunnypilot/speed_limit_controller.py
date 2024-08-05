@@ -295,7 +295,7 @@ class SpeedLimitController:
 
   def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events=Events()):
     _car_state = sm['carState']
-    self._op_enabled = sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
+    self._op_enabled = enabled and sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
                        not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
                        not (events.contains(ET.OVERRIDE_LONGITUDINAL) and self._disengage_on_accelerator)
     self._v_ego = v_ego

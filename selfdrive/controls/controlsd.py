@@ -69,8 +69,7 @@ class Controls:
 
     if CI is None:
       cloudlog.info("controlsd is waiting for CarParams")
-      with car.CarParams.from_bytes(self.params.get("CarParams", block=True)) as msg:
-        self.CP = msg
+      self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
       cloudlog.info("controlsd got CarParams")
 
       # Uses car interface helper functions, altering state won't be considered by card for actuation
@@ -739,7 +738,9 @@ class Controls:
       CC.angularVelocity = angular_rate_value
 
     CC.cruiseControl.override = self.enabled_long and not CC.longActive and self.CP.openpilotLongitudinalControl
-    CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.enabled_long or (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)))
+    CC.cruiseControl.cancel = CS.cruiseState.enabled and \
+      (not self.enabled_long or (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or
+       (any(b.type == ButtonType.cancel for b in CS.buttonEvents) and self.CP.carName == "honda"))
     if self.joystick_mode and self.sm.recv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[0]:
       CC.cruiseControl.cancel = True
 

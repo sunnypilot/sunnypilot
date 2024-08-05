@@ -1,21 +1,18 @@
 [submodule "panda"]
   path = panda
-  url = ../../sunnyhaibin/panda-special.git
+  url = https://github.com/sunnyhaibin/panda.git
 [submodule "opendbc"]
-  path = opendbc
-  url = https://github.com/sunnyhaibin/opendbc.git
+  path = opendbc_repo
+  url = https://github.com/sunnypilot/opendbc.git
 [submodule "msgq"]
   path = msgq_repo
-  url = https://github.com/commaai/msgq.git
+  url = https://github.com/sunnypilot/msgq.git
 [submodule "rednose_repo"]
   path = rednose_repo
   url = https://github.com/commaai/rednose.git
-[submodule "body"]
-  path = body
-  url = https://github.com/commaai/body.git
 [submodule "teleoprtc_repo"]
   path = teleoprtc_repo
   url = https://github.com/commaai/teleoprtc
 [submodule "tinygrad"]
   path = tinygrad_repo
-  url = https://github.com/geohot/tinygrad.git
+  url = https://github.com/tinygrad/tinygrad.git

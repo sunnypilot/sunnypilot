@@ -8,7 +8,11 @@
 #include "common/util.h"
 #include "common/timing.h"
 #include "common/swaglog.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/maps/map_helpers.h"
+#else
 #include "selfdrive/ui/qt/maps/map_helpers.h"
+#endif
 
 const float DEFAULT_ZOOM = 13.5; // Don't go below 13 or features will start to disappear
 const int HEIGHT = 256, WIDTH = 256;

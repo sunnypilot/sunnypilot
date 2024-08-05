@@ -4,9 +4,9 @@ from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import mean
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.common.realtime import DT_CTRL
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
+from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.toyota.values import ToyotaFlags, ToyotaFlagsSP, CAR, DBC, STEER_THRESHOLD, NO_STOP_TIMER_CAR, \
                                                   TSS2_CAR, RADAR_ACC_CAR, EPS_SCALE, UNSUPPORTED_DSU_CAR
@@ -78,9 +78,6 @@ class CarState(CarStateBase):
     self._right_blindspot_d1 = 0
     self._right_blindspot_d2 = 0
     self._right_blindspot_counter = 0
-
-    if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-      self.pre_collision_2 = {}
 
     self.frame = 0
 
@@ -262,9 +259,6 @@ class CarState(CarStateBase):
 
     if self.CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM and self.frame > 199:
       ret.leftBlindspot, ret.rightBlindspot = self.sp_get_enhanced_bsm(cp)
-
-    if self.CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-      self.pre_collision_2 = copy.copy(cp_cam.vl["PRE_COLLISION_2"])
 
     self._update_traffic_signals(cp_cam)
     ret.cruiseState.speedLimit = self._calculate_speed_limit()
@@ -468,8 +462,5 @@ class CarState(CarStateBase):
         ("ACC_CONTROL", 33),
         ("PCS_HUD", 1),
       ]
-
-      if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
-        messages.append(("PRE_COLLISION_2", 33))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)

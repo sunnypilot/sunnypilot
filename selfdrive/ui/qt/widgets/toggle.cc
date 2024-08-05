@@ -75,9 +75,9 @@ void Toggle::setEnabled(bool value) {
   enabled = value;
   if (value) {
     circleColor.setRgb(0xfafafa);
-    green.setRgb(0x1e79e8);
+    green.setRgb(0x33ab4c);
   } else {
     circleColor.setRgb(0x888888);
-    green.setRgb(0x125db8);
+    green.setRgb(0x227722);
   }
 }

@@ -1,3 +1,4 @@
+import capnp
 import json
 import os
 import numpy as np
@@ -6,6 +7,7 @@ import tomllib
 from abc import abstractmethod, ABC
 from difflib import SequenceMatcher
 from enum import StrEnum
+from types import SimpleNamespace
 from typing import Any, NamedTuple
 from collections.abc import Callable
 from functools import cache
@@ -16,13 +18,15 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.simple_kalman import KF1D, get_kalman_gain
 from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params
-from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG
+from openpilot.selfdrive.car import DT_CTRL, apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, get_friction, STD_CARGO_KG, \
+                                    ButtonEvents
+from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.car.values import PLATFORMS
 from openpilot.selfdrive.controls.lib.desire_helper import get_min_lateral_speed
-from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET, get_friction
+from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
+from openpilot.selfdrive.pandad import can_capnp_to_list
 
 ButtonType = car.CarState.ButtonEvent.Type
 GearShifter = car.CarState.GearShifter
@@ -68,6 +72,7 @@ class LatControlInputs(NamedTuple):
   aego: float
 
 
+SendCan = tuple[int, bytes, int]
 TorqueFromLateralAccelCallbackType = Callable[[LatControlInputs, car.CarParams.LateralTorqueTuning, float, float, bool, bool], float]
 
 
@@ -237,22 +242,14 @@ class CarInterfaceBase(ABC):
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
     self.gear_warning = 0
     self.cruise_cancelled_btn = True
-    self.acc_mads_combo = self.param_s.get_bool("AccMadsCombo")
-    self.is_metric = self.param_s.get_bool("IsMetric")
-    self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
-    self.pause_lateral_speed = int(self.param_s.get("PauseLateralSpeed", encoding="utf8"))
     self.prev_acc_mads_combo = False
     self.mads_event_lock = True
     self.gap_button_counter = 0
     self.experimental_mode_hold = False
-    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
-    self._frame = 0
-    self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
-    self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
-    self.lkas_toggle = self.param_s.get_bool("LkasToggle")
     self.last_mads_init = 0.
     self.madsEnabledInit = False
     self.madsEnabledInitPrev = False
+    self.button_events = ButtonEvents()
 
     self.lat_torque_nn_model = None
     eps_firmware = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
@@ -265,7 +262,7 @@ class CarInterfaceBase(ABC):
     self.lat_torque_nn_model, _ = get_nn_model(_car, eps_firmware)
     return self.lat_torque_nn_model is not None and self.param_s.get_bool("NNFF")
 
-  def apply(self, c: car.CarControl, now_nanos: int) -> tuple[car.CarControl.Actuators, list[tuple[int, int, bytes, int]]]:
+  def apply(self, c: car.CarControl, now_nanos: int) -> tuple[car.CarControl.Actuators, list[SendCan]]:
     return self.CC.update(c, self.CS, now_nanos)
 
   @staticmethod
@@ -419,11 +416,15 @@ class CarInterfaceBase(ABC):
   def _update(self, c: car.CarControl) -> car.CarState:
     pass
 
-  def update(self, c: car.CarControl, can_strings: list[bytes]) -> car.CarState:
+  def update(self, c: car.CarControl, can_strings: list[bytes], params_list: SimpleNamespace) -> car.CarState:
     # parse can
+    can_list = can_capnp_to_list(can_strings)
     for cp in self.can_parsers:
       if cp is not None:
-        cp.update_strings(can_strings)
+        cp.update_strings(can_list)
+
+    self.CS.button_events = []
+    self.CS.params_list = params_list
 
     # get CarState
     ret = self._update(c)
@@ -460,18 +461,19 @@ class CarInterfaceBase(ABC):
       events.add(EventName.doorOpen)
     if cs_out.seatbeltUnlatched and cs_out.gearShifter != GearShifter.park:
       events.add(EventName.seatbeltNotLatched)
-    if cs_out.gearShifter != GearShifter.drive and cs_out.gearShifter not in extra_gears and not \
-            (cs_out.gearShifter == GearShifter.unknown and self.gear_warning < int(0.5/DT_CTRL)):
+    if cs_out.gearShifter != GearShifter.drive and (extra_gears is None or
+       cs_out.gearShifter not in extra_gears) and not (cs_out.gearShifter == GearShifter.unknown and
+       self.gear_warning < int(0.5/DT_CTRL)):
       if cs_out.vEgo < 5:
         events.add(EventName.silentWrongGear)
       else:
         events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
-      if not self.reverse_dm_cam and cs_out.vEgo < 5:
+      if not self.CS.params_list.reverse_dm_cam and cs_out.vEgo < 5:
         events.add(EventName.spReverseGear)
       elif cs_out.vEgo >= 5:
         events.add(EventName.reverseGear)
-    if not cs_out.cruiseState.available:
+    if not cs_out.cruiseState.available and cs_out.cruiseState.enabled:
       events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
       events.add(EventName.espDisabled)
@@ -549,7 +551,7 @@ class CarInterfaceBase(ABC):
     return v_cruise != V_CRUISE_UNSET
 
   def get_acc_mads(self, cruiseState_enabled, acc_enabled, mads_enabled):
-    if self.acc_mads_combo:
+    if self.CS.params_list.acc_mads_combo:
       if not self.prev_acc_mads_combo and (cruiseState_enabled or acc_enabled):
         mads_enabled = True
       self.prev_acc_mads_combo = (cruiseState_enabled or acc_enabled)
@@ -589,7 +591,7 @@ class CarInterfaceBase(ABC):
   def get_sp_cruise_main_state(self, cs_out, CS):
     if not CS.control_initialized:
       mads_enabled = False
-    elif not self.mads_main_toggle:
+    elif not self.CS.params_list.mads_main_toggle:
       mads_enabled = False
     else:
       mads_enabled = cs_out.cruiseState.available
@@ -601,7 +603,7 @@ class CarInterfaceBase(ABC):
       self.madsEnabledInit = False
       self.madsEnabledInitPrev = False
       return False
-    if not self.mads_main_toggle or self.prev_acc_mads_combo:
+    if not self.CS.params_list.mads_main_toggle or self.prev_acc_mads_combo:
       return CS.madsEnabled
     if not self.madsEnabledInit and CS.madsEnabled:
       self.madsEnabledInit = True
@@ -616,9 +618,8 @@ class CarInterfaceBase(ABC):
     else:
       return CS.madsEnabled
 
-  def get_sp_common_state(self, cs_out, CS, min_enable_speed_pcm=False, gear_allowed=True, gap_button=False):
-    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed or min_enable_speed_pcm else \
-                                 cs_out.cruiseState.enabled
+  def get_sp_common_state(self, cs_out, CS, gear_allowed=True, gap_button=False):
+    cs_out.cruiseState.enabled = CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
 
     if not self.enable_mads:
       if cs_out.cruiseState.enabled and not CS.out.cruiseState.enabled:
@@ -629,9 +630,9 @@ class CarInterfaceBase(ABC):
     if self.CP.openpilotLongitudinalControl:
       self.toggle_exp_mode(gap_button)
 
-    lane_change_speed_min = get_min_lateral_speed(self.pause_lateral_speed, self.is_metric)
+    lane_change_speed_min = get_min_lateral_speed(self.CS.params_list.pause_lateral_speed, self.CS.params_list.is_metric)
 
-    cs_out.belowLaneChangeSpeed = cs_out.vEgo < lane_change_speed_min and self.below_speed_pause
+    cs_out.belowLaneChangeSpeed = cs_out.vEgo < lane_change_speed_min and self.CS.params_list.below_speed_pause
 
     if cs_out.gearShifter in [GearShifter.park, GearShifter.reverse] or cs_out.doorOpen or \
       (cs_out.seatbeltUnlatched and cs_out.gearShifter != GearShifter.park):
@@ -664,7 +665,7 @@ class CarInterfaceBase(ABC):
         if self.gap_button_counter > 50:
           self.gap_button_counter = 0
           self.experimental_mode_hold = True
-          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.experimental_mode)
+          self.param_s.put_bool_nonblocking("ExperimentalMode", not self.CS.params_list.experimental_mode)
     else:
       self.gap_button_counter = 0
       self.experimental_mode_hold = False
@@ -730,19 +731,9 @@ class CarInterfaceBase(ABC):
 
     return events, cs_out
 
-  def sp_update_params(self):
-    self.experimental_mode = self.param_s.get_bool("ExperimentalMode")
-    self._frame += 1
-    if self._frame % 100 == 0:
-      self.is_metric = self.param_s.get_bool("IsMetric")
-      self.below_speed_pause = self.param_s.get_bool("BelowSpeedPause")
-      self.pause_lateral_speed = int(self.param_s.get("PauseLateralSpeed", encoding="utf8"))
-    if self._frame % 300 == 0:
-      self._frame = 0
-      self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
-
 class RadarInterfaceBase(ABC):
   def __init__(self, CP):
+    self.CP = CP
     self.rcp = None
     self.pts = {}
     self.delay = 0
@@ -771,14 +762,15 @@ class CarStateBase(ABC):
     self.cluster_speed_hyst_gap = 0.0
     self.cluster_min_speed = 0.0  # min speed before dropping to 0
 
-    self.param_s = Params()
     self.accEnabled = False
     self.madsEnabled = False
     self.disengageByBrake = False
     self.mads_enabled = False
     self.prev_mads_enabled = False
     self.control_initialized = False
-    self.pcm_cruise_enabled = False
+
+    self.button_events: list[capnp.lib.capnp._DynamicStructBuilder] = []
+    self.params_list: SimpleNamespace = ParamManager().get_params()
 
     Q = [[0.0, 0.0], [0.0, 100.0]]
     R = 0.3
@@ -879,12 +871,10 @@ class CarStateBase(ABC):
     return None
 
 
-SendCan = tuple[int, int, bytes, int]
-
-
 class CarControllerBase(ABC):
   def __init__(self, dbc_name: str, CP, VM):
-    pass
+    self.CP = CP
+    self.frame = 0
 
   @abstractmethod
   def update(self, CC: car.CarControl.Actuators, CS: car.CarState, now_nanos: int) -> tuple[car.CarControl.Actuators, list[SendCan]]:

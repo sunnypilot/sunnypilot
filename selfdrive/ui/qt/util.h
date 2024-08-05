@@ -13,13 +13,19 @@
 #include "cereal/gen/cpp/car.capnp.h"
 #include "common/params.h"
 
+#ifdef SUNNYPILOT
+#define RETURN_IF_SUNNYPILOT return;
+#else
+#define RETURN_IF_SUNNYPILOT // Do nothing
+#endif
+
 QString getVersion();
 QString getBrand();
-QString getUserAgent(bool sunnylink = false);
+QString getUserAgent();
+std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value);
 std::optional<QString> getDongleId();
-std::optional<QString> getSunnylinkDongleId();
+QMap<QString, QString> getFromJsonFile(const QString &path);
 QMap<QString, QString> getSupportedLanguages();
-QMap<QString, QString> getCarNames();
 void setQtSurfaceFormat();
 void sigTermHandler(int s);
 QString timeAgo(const QDateTime &date);
@@ -28,9 +34,6 @@ void initApp(int argc, char *argv[], bool disable_hidpi = true);
 QWidget* topWidget(QWidget* widget);
 QPixmap loadPixmap(const QString &fileName, const QSize &size = {}, Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio);
 QPixmap bootstrapPixmap(const QString &id);
-
-void drawRoundedRect(QPainter &painter, const QRectF &rect, qreal xRadiusTop, qreal yRadiusTop, qreal xRadiusBottom, qreal yRadiusBottom);
-QColor interpColor(float xv, std::vector<float> xp, std::vector<QColor> fp);
 bool hasLongitudinalControl(const cereal::CarParams::Reader &car_params);
 
 struct InterFont : public QFont {

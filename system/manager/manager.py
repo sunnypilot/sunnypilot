@@ -101,7 +101,6 @@ def manager_init() -> None:
     ("TorqueFriction", "1"),
     ("TorqueLateralJerk", "0"),
     ("TorqueMaxLatAccel", "250"),
-    ("ToyotaAutoHold", "0"),
     ("ToyotaAutoLockBySpeed", "0"),
     ("ToyotaAutoUnlockByShifter", "0"),
     ("ToyotaEnhancedBsm", "0"),
@@ -114,11 +113,13 @@ def manager_init() -> None:
     ("OsmDownloadedDate", "0"),
     ("OSMDownloadProgress", "{}"),
     ("SidebarTemperatureOptions", "0"),
-    ("SunnylinkEnabled", "0" if (build_metadata.release_channel or build_metadata.release_sp_channel) else "1"),
+    ("SunnylinkEnabled", "1"),
     ("SunnylinkDongleId", f"{UNREGISTERED_SUNNYLINK_DONGLE_ID}"),
     ("CustomDrivingModel", "0"),
     ("DrivingModelGeneration", "4"),
     ("LastSunnylinkPingTime", "0"),
+    ("EnableGitlabRunner", "0"),
+    ("EnableSunnylinkUploader", "0"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.now(datetime.UTC).replace(tzinfo=None).isoformat().encode('utf8')))

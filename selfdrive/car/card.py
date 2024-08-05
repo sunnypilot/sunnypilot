@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
+import threading
 import time
+from types import SimpleNamespace
 
 import cereal.messaging as messaging
 
@@ -9,11 +11,13 @@ from cereal import car
 from panda import ALTERNATIVE_EXPERIENCE
 
 from openpilot.common.params import Params
-from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper, DT_CTRL
+from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 
 from openpilot.selfdrive.pandad import can_list_to_can_capnp
+from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.car.car_helpers import get_car, get_one_can
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.param_manager import ParamManager
 from openpilot.selfdrive.controls.lib.events import Events
 
 REPLAY = "REPLAY" in os.environ
@@ -56,7 +60,6 @@ class Car:
     self.mads_disengage_lateral_on_brake = self.params.get_bool("DisengageLateralOnBrake")
     self.mads_dlob = self.enable_mads and self.mads_disengage_lateral_on_brake
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
-    self.sp_toyota_auto_brake_hold = self.params.get_bool("ToyotaAutoHold")
     self.CP.alternativeExperience = 0
     if not self.disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
@@ -64,8 +67,6 @@ class Car:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
     elif self.mads_ndlob:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_DISABLE_DISENGAGE_LATERAL_ON_BRAKE
-    if self.sp_toyota_auto_brake_hold:
-      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALLOW_AEB
 
     if self.CP.customStockLongAvailable and self.CP.pcmCruise and self.params.get_bool("CustomStockLong"):
       self.CP.pcmCruiseSpeed = False
@@ -93,6 +94,10 @@ class Car:
 
     self.events = Events()
 
+    self.param_manager: ParamManager = ParamManager()
+    self.param_manager.update(self.params)
+    self._params_list: SimpleNamespace = self.param_manager.get_params()
+
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
@@ -101,7 +106,7 @@ class Car:
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
-    CS = self.CI.update(self.CC_prev, can_strs)
+    CS = self.CI.update(self.CC_prev, can_strs, self._params_list)
 
     self.sm.update(0)
 
@@ -189,10 +194,23 @@ class Car:
     self.initialized_prev = initialized
     self.CS_prev = CS.as_reader()
 
+  def sp_params_thread(self, event: threading.Event) -> None:
+    while not event.is_set():
+      self.param_manager.update(self.params)
+      self._params_list = self.param_manager.get_params()
+      time.sleep(0.1)
+
   def card_thread(self):
-    while True:
-      self.step()
-      self.rk.monitor_time()
+    event = threading.Event()
+    thread = threading.Thread(target=self.sp_params_thread, args=(event, ))
+    try:
+      thread.start()
+      while True:
+        self.step()
+        self.rk.monitor_time()
+    finally:
+      event.set()
+      thread.join()
 
 
 def main():
