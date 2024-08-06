@@ -82,7 +82,7 @@ class LongitudinalPlanner:
     self.dt = dt
 
     self.a_desired = init_a
-    v_ego_sec = 0.5 if CP.carName == "hyundai" else 2.0
+    v_ego_sec = 0.6 if CP.carName == "hyundai" else 2.0
     self.v_desired_filter = FirstOrderFilter(init_v, v_ego_sec, self.dt)
     self.v_model_error = 0.0
 
