@@ -88,29 +88,30 @@ class LatControlTorque(LatControl):
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
 
-    if self.use_nn or self.use_lateral_jerk:
-      # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
-      # however, we can "look ahead" to the future planned lateral jerk in order to guage
-      # whether the current desired lateral jerk will persist into the future, i.e.
-      # whether it's "deliberate" or not. This lets us simply ignore short-lived jerk.
-      # Note that LAT_PLAN_MIN_IDX is defined above and is used in order to prevent
-      # using a "future" value that is actually planned to occur before the "current" desired
-      # value, which is offset by the steerActuatorDelay.
-      self.friction_look_ahead_v = [1.4, 2.0] # how many seconds in the future to look ahead in [0, ~2.1] in 0.1 increments
-      self.friction_look_ahead_bp = [9.0, 30.0] # corresponding speeds in m/s in [0, ~40] in 1.0 increments
+    # These are only used if use_nn or use_lateral_jerk is True,
+    # but they're defined here since use_lateral_jerk can be toggled while onroad
 
+    # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
+    # however, we can "look ahead" to the future planned lateral jerk in order to guage
+    # whether the current desired lateral jerk will persist into the future, i.e.
+    # whether it's "deliberate" or not. This lets us simply ignore short-lived jerk.
+    # Note that LAT_PLAN_MIN_IDX is defined above and is used in order to prevent
+    # using a "future" value that is actually planned to occur before the "current" desired
+    # value, which is offset by the steerActuatorDelay.
+    self.friction_look_ahead_v = [1.4, 2.0] # how many seconds in the future to look ahead in [0, ~2.1] in 0.1 increments
+    self.friction_look_ahead_bp = [9.0, 30.0] # corresponding speeds in m/s in [0, ~40] in 1.0 increments
+    # precompute time differences between ModelConstants.T_IDXS
+    self.t_diffs = np.diff(ModelConstants.T_IDXS)
+    self.desired_lat_jerk_time = CP.steerActuatorDelay + 0.3
+
+    if self.use_nn or self.use_lateral_jerk:
       # Scaling the lateral acceleration "friction response" could be helpful for some.
       # Increase for a stronger response, decrease for a weaker response.
       nnff_lateral_jerk_factor = 1.0 # replace with ---> float(self.param_s.get("NNFFLateralJerkFactor", encoding="utf8"))
       nnff_lateral_jerk_factor = max(0.0, min(1.0, nnff_lateral_jerk_factor))
-      
       self.lat_jerk_friction_factor = 0.4 * nnff_lateral_jerk_factor
       # Increasing lat accel friction factor to account for any decrease of the lat jerk friction factor from default
       self.lat_accel_friction_factor = 0.7 + (0.3 * (1.0 - nnff_lateral_jerk_factor)) # in [0, 3], in 0.05 increments. 3 is arbitrary safety limit
-
-      # precompute time differences between ModelConstants.T_IDXS
-      self.t_diffs = np.diff(ModelConstants.T_IDXS)
-      self.desired_lat_jerk_time = CP.steerActuatorDelay + 0.3
     if self.use_nn:
       self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
       # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
@@ -145,12 +146,13 @@ class LatControlTorque(LatControl):
       self._frame = 0
       self.torqued_override = self.param_s.get_bool("TorquedOverride")
       self.use_lateral_jerk = self.param_s.get_bool("TorqueLateralJerk")
-      nnff_lateral_jerk_factor = 1.0 # replace with ---> float(self.param_s.get("NNFFLateralJerkFactor", encoding="utf8"))
-      nnff_lateral_jerk_factor = max(0.0, min(1.0, nnff_lateral_jerk_factor))
-      self.lat_jerk_friction_factor = 0.4 * nnff_lateral_jerk_factor
-      # Increasing lat accel friction factor to account for any decrease of the lat jerk friction factor from default
-      self.lat_accel_friction_factor = 0.7 + (0.3 * (1.0 - nnff_lateral_jerk_factor)) # in [0, 3], in 0.05 increments. 3 is arbitrary safety limit
-      
+      if self.use_nn or self.use_lateral_jerk:
+        nnff_lateral_jerk_factor = 1.0 # replace with ---> float(self.param_s.get("NNFFLateralJerkFactor", encoding="utf8"))
+        nnff_lateral_jerk_factor = max(0.0, min(1.0, nnff_lateral_jerk_factor))
+        self.lat_jerk_friction_factor = 0.4 * nnff_lateral_jerk_factor
+        # Increasing lat accel friction factor to account for any decrease of the lat jerk friction factor from default
+        self.lat_accel_friction_factor = 0.7 + (0.3 * (1.0 - nnff_lateral_jerk_factor)) # in [0, 3], in 0.05 increments. 3 is arbitrary safety limit
+
       if not self.torqued_override:
         return
 
