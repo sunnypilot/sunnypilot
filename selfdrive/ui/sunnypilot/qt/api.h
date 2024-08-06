@@ -26,6 +26,11 @@ Last updated: July 29, 2024
 
 #pragma once
 
+#include <QJsonObject>
+#include <QNetworkReply>
+#include <QString>
+#include <QTimer>
+
 #include "selfdrive/ui/qt/api.h"
 #include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "common/util.h"

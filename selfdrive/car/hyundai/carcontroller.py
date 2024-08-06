@@ -62,7 +62,7 @@ class CarController(CarControllerBase):
     self.lat_disengage_init = False
     self.lat_active_last = False
 
-    sub_services = ['longitudinalPlanSP']
+    sub_services = ['longitudinalPlan', 'longitudinalPlanSP']
     if CP.openpilotLongitudinalControl:
       sub_services.append('radarState')
     # TODO: Always true, prep for future conditional refactoring
@@ -94,7 +94,10 @@ class CarController(CarControllerBase):
     self.v_tsc = 0
     self.m_tsc = 0
     self.steady_speed = 0
+    self.speeds = 0
+    self.v_target_plan = 0
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
+    self.custom_stock_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
     self.lead_distance = 0
 
     self.jerk = 0.0
@@ -126,6 +129,10 @@ class CarController(CarControllerBase):
       self.sm.update(0)
 
     if not self.CP.pcmCruiseSpeed:
+      if self.sm.updated['longitudinalPlan']:
+        _speeds = self.sm['longitudinalPlan'].speeds
+        self.speeds = _speeds[-1] if len(_speeds) else 0
+
       if self.sm.updated['longitudinalPlanSP']:
         self.v_tsc_state = self.sm['longitudinalPlanSP'].visionTurnControllerState
         self.slc_state = self.sm['longitudinalPlanSP'].speedLimitControlState
@@ -135,14 +142,21 @@ class CarController(CarControllerBase):
         self.v_tsc = self.sm['longitudinalPlanSP'].visionTurnSpeed
         self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
 
+      if self.frame % 200 == 0:
+        self.custom_stock_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
       self.v_cruise_min = HYUNDAI_V_CRUISE_MIN[CS.params_list.is_metric] * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1)
+      self.v_target_plan = min(CC.vCruise * CV.KPH_TO_MS, self.speeds)
 
     actuators = CC.actuators
     hud_control = CC.hudControl
 
     # steering torque
+    if self.CP.spFlags & HyundaiFlagsSP.SP_UPSTREAM_TACO.value:
+      self.params = CarControllerParams(self.CP, CS.out.vEgoRaw)
     new_steer = int(round(actuators.steer * self.params.STEER_MAX))
     apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.params)
+    if self.CP.spFlags & HyundaiFlagsSP.SP_UPSTREAM_TACO.value:
+      apply_steer = clip(apply_steer, -self.params.STEER_MAX, self.params.STEER_MAX)
 
     # >90 degree steering fault prevention
     self.angle_limit_counter, apply_steer_req = common_fault_avoidance(abs(CS.out.steeringAngleDeg) >= MAX_ANGLE, CC.latActive,
@@ -203,7 +217,7 @@ class CarController(CarControllerBase):
     if self.frame % 100 == 0 and not ((self.CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value) or escc) and \
       self.CP.carFingerprint not in CAMERA_SCC_CAR and self.CP.openpilotLongitudinalControl:
       # for longitudinal control, either radar or ADAS driving ECU
-      addr, bus = 0x7d0, 0
+      addr, bus = 0x7d0, self.CAN.ECAN if self.CP.carFingerprint in CANFD_CAR else 0
       if self.CP.flags & HyundaiFlags.CANFD_HDA2.value:
         addr, bus = 0x730, self.CAN.ECAN
       can_sends.append(make_tester_present_msg(addr, bus, suppress_response=True))
@@ -241,6 +255,8 @@ class CarController(CarControllerBase):
       if self.CP.openpilotLongitudinalControl:
         if hda2:
           can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame))
+        else:
+          can_sends.extend(hyundaicanfd.create_fca_warning_light(self.packer, self.CAN, self.frame))
         if self.frame % 2 == 0:
           can_sends.append(hyundaicanfd.create_acc_control(self.packer, self.CAN, CS, CC.enabled and CS.out.cruiseState.enabled, self.accel_last, accel, stopping, CC.cruiseControl.override,
                                                            set_speed_in_units, hud_control, self.jerk_u, self.jerk_l))
@@ -463,6 +479,8 @@ class CarController(CarControllerBase):
         target_speed_kph = set_speed_kph
       else:
         target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
+      if self.custom_stock_planner_speed:
+        target_speed_kph = self.curve_speed_hysteresis(self.v_target_plan * CV.MS_TO_KPH)
       if self.v_tsc_state != 0 or self.m_tsc_state > 1:
         self.final_speed_kph = self.get_curve_speed(target_speed_kph, v_cruise_kph_prev)
       else:

@@ -29,6 +29,9 @@ Last updated: July 29, 2024
 #include "selfdrive/ui/qt/onroad/onroad_home.h"
 
 #include "common/params.h"
+#include "selfdrive/ui/qt/onroad/alerts.h"
+// #include "selfdrive/ui/sunnypilot/qt/onroad/annotated_camera.h"
+
 
 class OnroadWindowSP : public OnroadWindow {
   Q_OBJECT
@@ -59,6 +62,7 @@ private:
   void createMapWidget();
   void createOnroadSettingsWidget();
   void mousePressEvent(QMouseEvent* e) override;
+  // AnnotatedCameraWidgetSP *nvg;
   QWidget *map = nullptr;
   QWidget *onroad_settings = nullptr;
 

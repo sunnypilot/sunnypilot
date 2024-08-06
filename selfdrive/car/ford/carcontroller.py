@@ -3,7 +3,7 @@ from opendbc.can.packer import CANPacker
 from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import apply_std_steer_angle_limits
 from openpilot.selfdrive.car.ford import fordcan
-from openpilot.selfdrive.car.ford.values import CarControllerParams, FordFlags
+from openpilot.selfdrive.car.ford.values import CarControllerParams, FordFlags, FordFlagsSP
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -35,6 +35,9 @@ class CarController(CarControllerBase):
     self.lkas_enabled_last = False
     self.steer_alert_last = False
     self.lead_distance_bars_last = None
+    self.path_angle = 0.
+    self.path_offset = 0.
+    self.curvature_rate = 0.
 
   def update(self, CC, CS, now_nanos):
     can_sends = []
@@ -74,7 +77,10 @@ class CarController(CarControllerBase):
         # TODO: extended mode
         mode = 1 if CC.latActive else 0
         counter = (self.frame // CarControllerParams.STEER_STEP) % 0x10
-        can_sends.append(fordcan.create_lat_ctl2_msg(self.packer, self.CAN, mode, 0., 0., -apply_curvature, 0., counter))
+        if self.CP.spFlags & FordFlagsSP.SP_ENHANCED_LAT_CONTROL.value:
+          can_sends.append(fordcan.create_lat_ctl2_msg(self.packer, self.CAN, mode, self.path_offset, self.path_angle, -apply_curvature, self.curvature_rate, counter))
+        else:
+          can_sends.append(fordcan.create_lat_ctl2_msg(self.packer, self.CAN, mode, 0., 0., -apply_curvature, 0., counter))
       else:
         can_sends.append(fordcan.create_lat_ctl_msg(self.packer, self.CAN, CC.latActive, 0., 0., -apply_curvature, 0.))
 

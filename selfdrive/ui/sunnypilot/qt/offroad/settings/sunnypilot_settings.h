@@ -29,6 +29,7 @@ Last updated: July 29, 2024
 #include <map>
 #include <string>
 
+#include "common/model.h"
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/custom_offsets_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/lane_change_settings.h"

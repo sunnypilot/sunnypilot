@@ -34,6 +34,7 @@ Last updated: July 29, 2024
 
 #include "common/transformations/orientation.hpp"
 #include "common/params.h"
+#include "common/swaglog.h"
 #include "common/util.h"
 #include "common/watchdog.h"
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/role_model.h"

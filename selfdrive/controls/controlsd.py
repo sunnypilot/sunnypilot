@@ -174,10 +174,13 @@ class Controls:
 
     self.live_torque = self.params.get_bool("LiveTorque")
     self.torqued_override = self.params.get_bool("TorquedOverride")
+    self.custom_stock_planner_speed = self.params.get_bool("CustomStockLongPlanner")
 
     self.enable_mads = self.params.get_bool("EnableMads")
     self.mads_disengage_lateral_on_brake = self.params.get_bool("DisengageLateralOnBrake")
     self.mads_ndlob = self.enable_mads and not self.mads_disengage_lateral_on_brake
+    self.pcm_v_cruise_override = self.params.get_bool("PCMVCruiseOverride")
+    self.pcm_v_cruise_override_speed = int(self.params.get("PCMVCruiseOverrideSpeed", encoding="utf-8"))
     self.process_not_running = False
 
     self.custom_model_metadata = CustomModelMetadata(params=self.params, init_only=True)
@@ -489,7 +492,9 @@ class Controls:
   def state_transition(self, CS):
     """Compute conditional state transitions and execute actions on state transitions"""
 
-    self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change, self.sm['longitudinalPlanSP'])
+    # sp - PCM speed override
+    sp_override_speed = self.pcm_v_cruise_override_speed if self.pcm_v_cruise_override else False
+    self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change, sp_override_speed, self.sm['longitudinalPlanSP'])
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
@@ -638,9 +643,14 @@ class Controls:
       self.LoC.reset()
 
     if not self.joystick_mode:
+      speeds = long_plan.speeds
+      resume = False
+      if len(speeds):
+        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1 and self.CP.carName == "hyundai"
+
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
-      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits)
+      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits, resume)
 
       # Steering PID loop and lateral MPC
       if self.model_use_lateral_planner:
@@ -920,7 +930,8 @@ class Controls:
   def params_thread(self, evt):
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
-      self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
+      self.experimental_mode = self.params.get_bool("ExperimentalMode") and (self.CP.openpilotLongitudinalControl or
+                                                                             (not self.CP.pcmCruiseSpeed and self.custom_stock_planner_speed))
       self.personality = self.read_personality_param()
       self.dynamic_personality = self.params.get_bool("DynamicPersonality")
       self.accel_personality = self.read_accel_personality_param()
@@ -932,6 +943,7 @@ class Controls:
 
       if self.sm.frame % int(2.5 / DT_CTRL) == 0:
         self.live_torque = self.params.get_bool("LiveTorque")
+        self.custom_stock_planner_speed = self.params.get_bool("CustomStockLongPlanner")
       time.sleep(0.1)
 
   def controlsd_thread(self):

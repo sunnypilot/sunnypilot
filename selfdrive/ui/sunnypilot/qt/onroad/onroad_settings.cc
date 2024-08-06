@@ -193,7 +193,7 @@ void OnroadSettings::changeDynamicPersonality() {
 void OnroadSettings::changeDynamicExperimentalControl() {
   UISceneSP &scene = uiStateSP()->scene;
   const auto cp = (*uiStateSP()->sm)["carParams"].getCarParams();
-  bool can_change = hasLongitudinalControl(cp);
+  bool can_change = hasLongitudinalControl(cp) || (!cp.getPcmCruiseSpeed() && params.getBool("CustomStockLongPlanner"));
   if (can_change) {
     scene.dynamic_experimental_control = !scene.dynamic_experimental_control;
     params.putBool("DynamicExperimentalControl", scene.dynamic_experimental_control);

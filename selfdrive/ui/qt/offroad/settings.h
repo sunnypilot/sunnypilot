@@ -91,6 +91,7 @@ protected:
   virtual void updateToggles();
 };
 
+
 class SoftwarePanel : public ListWidget {
   Q_OBJECT
 public:

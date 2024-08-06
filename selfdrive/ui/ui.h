@@ -59,6 +59,8 @@ typedef enum UIStatus {
   EXTRA_UI_STATES
 } UIStatus;
 
+
+
 enum PrimeType {
   UNKNOWN = -2,
   UNPAIRED = -1,
@@ -152,7 +154,7 @@ protected:
   QTimer *timer;
   PrimeType prime_type = PrimeType::UNKNOWN;
 
-private:  
+private:
   bool started_prev = false;
 };
 #undef UIScene

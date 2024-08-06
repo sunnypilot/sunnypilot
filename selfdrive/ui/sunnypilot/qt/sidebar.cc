@@ -34,6 +34,7 @@ Last updated: July 29, 2024
 #include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "common/params.h"
 
+
 SidebarSP::SidebarSP(QWidget *parent) : Sidebar(parent) {
   // Because I know that stock sidebar makes this connection, I will disconnect it and connect it to the new updateState function
   QObject::disconnect(uiState(), &UIState::uiUpdate, this, &Sidebar::updateState);
@@ -121,6 +122,7 @@ void SidebarSP::updateState(const UIStateSP &s) {
   sunnylinkStatus = ItemStatus{{tr("SUNNYLINK"), status}, color };
   setProperty("sunnylinkStatus", QVariant::fromValue(sunnylinkStatus));
 }
+
 
 void SidebarSP::DrawSidebar(QPainter &p){
   Sidebar::DrawSidebar(p);

@@ -31,6 +31,7 @@ Last updated: July 29, 2024
 #include "selfdrive/ui/qt/maps/map_settings.h"
 #endif
 
+
 class OffroadHomeSP : public OffroadHome {
   Q_OBJECT
 

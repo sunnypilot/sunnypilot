@@ -408,7 +408,7 @@ class CarInterfaceBase(ABC):
 
   @staticmethod
   def sp_configure_custom_torque_tune(ret, params):
-    ret.lateralTuning.torque.friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.01
+    ret.lateralTuning.torque.friction = float(params.get("TorqueFriction", encoding="utf8")) * 0.001
     ret.lateralTuning.torque.latAccelFactor = float(params.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
     return ret
 

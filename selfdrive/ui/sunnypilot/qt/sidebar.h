@@ -28,6 +28,8 @@ Last updated: July 29, 2024
 
 #include <memory>
 
+#include <QFrame>
+#include <QMap>
 #include "selfdrive/ui/qt/sidebar.h"
 
 #include "selfdrive/ui/sunnypilot/ui.h"

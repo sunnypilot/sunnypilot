@@ -28,8 +28,10 @@ Last updated: July 29, 2024
 
 #include <QApplication>
 
+#include "common/watchdog.h"
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class VehiclePanel : public QWidget {
   Q_OBJECT
@@ -67,6 +69,7 @@ private:
   Params params;
   bool is_onroad = false;
 
+  ParamControlSP *hyundaiCruiseMainDefault;
   ParamControlSP *stockLongToyota;
   ParamControlSP *toyotaEnhancedBsm;
 

@@ -28,9 +28,11 @@ Last updated: July 29, 2024
 
 #include <map>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class MonitoringPanel : public QFrame {
   Q_OBJECT

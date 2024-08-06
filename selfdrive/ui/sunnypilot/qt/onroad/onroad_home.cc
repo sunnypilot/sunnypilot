@@ -26,6 +26,8 @@ Last updated: July 29, 2024
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/onroad_home.h"
 
+#include <QPainter>
+#include <QStackedLayout>
 
 #ifdef ENABLE_MAPS
 #include "selfdrive/ui/sunnypilot/qt/maps/map_helpers.h"

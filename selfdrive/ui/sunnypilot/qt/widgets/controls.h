@@ -31,6 +31,13 @@ Last updated: July 29, 2024
 #include <string>
 #include <vector>
 
+#include <QButtonGroup>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPainter>
+#include <QPushButton>
+
 #include "common/params.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/input.h"
