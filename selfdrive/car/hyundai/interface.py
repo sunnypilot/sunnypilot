@@ -102,15 +102,15 @@ class CarInterface(CarInterfaceBase):
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
     ret.stoppingControl = True
-    ret.startingState = True
     ret.vEgoStarting = 0.5
+    ret.startAccel = 1.5
     ret.stopAccel = -1.0
     ret.longitudinalActuatorDelay = 0.5
 
     if ret.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
-      ret.startAccel = 1.0
+      ret.startingState = False
     else:
-      ret.startAccel = 1.5
+      ret.startingState = True
 
     if DBC[ret.carFingerprint]["radar"] is None:
       if ret.spFlags & (HyundaiFlagsSP.SP_ENHANCED_SCC | HyundaiFlagsSP.SP_CAMERA_SCC_LEAD):
