@@ -644,10 +644,9 @@ class Controls:
 
     if not self.joystick_mode:
       speeds = long_plan.speeds
+      resume = False
       if len(speeds):
         resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1 and self.CP.carName == "hyundai"
-      else:
-        resume = False
 
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
