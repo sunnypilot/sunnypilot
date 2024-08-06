@@ -83,8 +83,7 @@ class LatControlTorque(LatControl):
     self.torqued_override = self.param_s.get_bool("TorquedOverride")
     self._frame = 0
 
-    self.use_lateral_jerk = self.param_s.get_bool("TorqueLateralJerk")  # TODO: make this a parameter in the UI
-    self.nnff_no_lateral_jerk = self.param_s.get_bool("NNFFNoLateralJerk")  # TODO: make this a parameter in the UI
+    self.use_lateral_jerk = self.param_s.get_bool("TorqueLateralJerk")
 
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
@@ -102,8 +101,12 @@ class LatControlTorque(LatControl):
 
       # Scaling the lateral acceleration "friction response" could be helpful for some.
       # Increase for a stronger response, decrease for a weaker response.
-      self.lat_jerk_friction_factor = 0.4
-      self.lat_accel_friction_factor = 0.7 # in [0, 3], in 0.05 increments. 3 is arbitrary safety limit
+      nnff_lateral_jerk_factor = 1.0 # replace with ---> float(self.param_s.get("NNFFLateralJerkFactor", encoding="utf8"))
+      nnff_lateral_jerk_factor = max(0.0, min(1.0, nnff_lateral_jerk_factor))
+      
+      self.lat_jerk_friction_factor = 0.4 * nnff_lateral_jerk_factor
+      # Increasing lat accel friction factor to account for any decrease of the lat jerk friction factor from default
+      self.lat_accel_friction_factor = 0.7 + (0.3 * (1.0 - nnff_lateral_jerk_factor)) # in [0, 3], in 0.05 increments. 3 is arbitrary safety limit
 
       # precompute time differences between ModelConstants.T_IDXS
       self.t_diffs = np.diff(ModelConstants.T_IDXS)
