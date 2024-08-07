@@ -823,7 +823,7 @@ class Controls:
     curvature = -self.VM.calc_curvature(steer_angle_without_offset, CS.vEgo, lp.roll)
 
     lat_plan = self.sm['lateralPlanDEPRECATED']
-    long_plan = self.sm['longitudinalPlan'].hasLead
+    long_plan = self.sm['longitudinalPlan']
     dm_state = self.sm['driverMonitoringState']
     blinker_svs = lat_plan if self.model_use_lateral_planner else model_v2.meta
     overtaking_accel_allowed = ((blinker_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
