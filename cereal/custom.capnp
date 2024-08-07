@@ -16,6 +16,7 @@ enum LongitudinalPersonalitySP {
   moderate @1;
   standard @2;
   relaxed @3;
+  overtake @4;
 }
 
 enum AccelerationPersonality {
@@ -44,6 +45,7 @@ struct ControlsStateSP @0x81c2f05a394cf4af {
   personality @8 :LongitudinalPersonalitySP;
   dynamicPersonality @9 :Bool;
   accelPersonality @10 :AccelerationPersonality;
+  overtakingAccelerationAssist @11 :Bool;
 
   lateralControlState :union {
     indiState @1 :LateralINDIState;

@@ -3,7 +3,7 @@ import math
 import numpy as np
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
-from cereal import car, custom
+from cereal import car, log, custom
 
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
@@ -83,7 +83,7 @@ class LongitudinalPlanner:
     self.dt = dt
 
     self.a_desired = init_a
-    v_ego_sec = 0.5 if CP.carName == "hyundai" else 2.0
+    v_ego_sec = 0.6 if CP.carName == "hyundai" else 2.0
     self.v_desired_filter = FirstOrderFilter(init_v, v_ego_sec, self.dt)
     self.v_model_error = 0.0
 
@@ -194,11 +194,13 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint, personality=sm['controlsStateSP'].personality)
+    overtaking_accel_engaged = sm['controlsStateSP'].overtakingAccelerationAssist
+    self.mpc.set_weights(prev_accel_constraint, personality=custom.LongitudinalPersonalitySP.overtake if overtaking_accel_engaged else sm['controlsStateSP'].personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsStateSP'].personality, dynamic_personality=sm['controlsStateSP'].dynamicPersonality)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsStateSP'].personality,
+                    dynamic_personality=sm['controlsStateSP'].dynamicPersonality, overtaking_acceleration_assist=overtaking_accel_engaged)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)

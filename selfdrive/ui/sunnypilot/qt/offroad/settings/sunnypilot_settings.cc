@@ -50,6 +50,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "OvertakingAccelerationAssist",
+      tr("Overtaking Acceleration Assist"),
+      tr("Overtaking Acceleration Assist will operate when the turn signal indicator is turned on to the left (left-hand drive) or turned on to the right (right-hand drive) while Smart Cruise Control is operating."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "EnableSlc",
       tr("Speed Limit Control (SLC)"),
       tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
@@ -310,7 +316,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(dlp_settings);
     }
 
-    if (param == "VisionCurveLaneless") {
+    if (param == "OvertakingAccelerationAssist") {
       list->addItem(laneChangeSettingsLayout);
       list->addItem(horizontal_line());
 
@@ -389,6 +395,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
   toggles["CustomOffsets"]->showDescription();
+  toggles["OvertakingAccelerationAssist"]->setConfirmation(true, false);
 
   connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
   connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, [=](bool state) {

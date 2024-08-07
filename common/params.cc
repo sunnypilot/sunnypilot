@@ -294,6 +294,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"OsmLocationUrl", PERSISTENT},
     {"OsmWayTest", PERSISTENT},
     {"OsmDownloadedDate", PERSISTENT},
+    {"OvertakingAccelerationAssist", PERSISTENT},
     {"PathOffset", PERSISTENT | BACKUP},
     {"PauseLateralSpeed", PERSISTENT | BACKUP},
     {"PCMVCruiseOverride", PERSISTENT | BACKUP},

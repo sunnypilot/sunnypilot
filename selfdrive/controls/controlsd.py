@@ -188,6 +188,7 @@ class Controls:
                                      self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution
 
     self.dynamic_personality = self.params.get_bool("DynamicPersonality")
+    self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
 
     self.accel_personality = self.read_accel_personality_param()
 
@@ -816,10 +817,20 @@ class Controls:
 
     # Curvature & Steering angle
     lp = self.sm['liveParameters']
-    lp_mono_time_svs = 'lateralPlanDEPRECATED' if self.model_use_lateral_planner else 'modelV2'
+    dh = 'lateralPlanDEPRECATED' if self.model_use_lateral_planner else 'modelV2'
 
     steer_angle_without_offset = math.radians(CS.steeringAngleDeg - lp.angleOffsetDeg)
     curvature = -self.VM.calc_curvature(steer_angle_without_offset, CS.vEgo, lp.roll)
+
+    lc_svs = self.sm[dh]
+    long_plan = self.sm['longitudinalPlan'].hasLead
+    dm_state = self.sm['driverMonitoringState']
+    overtaking_accel_allowed = ((lc_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
+                                (lc_svs.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
+                               (lc_svs.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting))
+    overtaking_accel_engaged = self.overtaking_accel and overtaking_accel_allowed and \
+                               CS.vEgo > (60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS) and long_plan.hasLead and \
+                               long_plan.aTarget > -0.2 and not (CS.leftBlinker and CS.rightBlinker)
 
     # controlsState
     dat = messaging.new_message('controlsState')
@@ -835,7 +846,7 @@ class Controls:
       controlsState.alertSound = current_alert.audible_alert
 
     controlsState.longitudinalPlanMonoTime = self.sm.logMonoTime['longitudinalPlan']
-    controlsState.lateralPlanMonoTime = self.sm.logMonoTime[lp_mono_time_svs]
+    controlsState.lateralPlanMonoTime = self.sm.logMonoTime[dh]
     controlsState.enabled = not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and (self.enabled or CS.cruiseState.enabled) and CS.gearShifter not in [GearShifter.park, GearShifter.reverse]
     controlsState.active = not (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) and (self.active or CS.cruiseState.enabled)
     controlsState.curvature = curvature
@@ -873,6 +884,7 @@ class Controls:
     controlsStateSP.personality = self.personality
     controlsStateSP.dynamicPersonality = self.dynamic_personality
     controlsStateSP.accelPersonality = self.accel_personality
+    controlsStateSP.overtakingAccelerationAssist = overtaking_accel_engaged
 
     if self.enable_nnff and lat_tuning == 'torque':
       controlsStateSP.lateralControlState.torqueState = self.LaC.pid_long_sp
@@ -940,6 +952,7 @@ class Controls:
 
       self.reverse_acc_change = self.params.get_bool("ReverseAccChange")
       self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+      self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
 
       if self.sm.frame % int(2.5 / DT_CTRL) == 0:
         self.live_torque = self.params.get_bool("LiveTorque")
