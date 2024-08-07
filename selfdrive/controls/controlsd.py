@@ -829,7 +829,7 @@ class Controls:
     self.prev_overtaking_accel_engaged = self.overtaking_accel_engaged
     ttc = self.sm['radarState'].leadOne.dRel / CS.vEgo if CS.vEgo > 0 else 255
     overtaking_accel_engaged = self.overtaking_accel and overtaking_accel_allowed and \
-                               CS.vEgo > (60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS) and long_plan.hasLead and \
+                               (CS.vEgo > ((60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS))) and long_plan.hasLead and \
                                long_plan.aTarget > -0.2 and not (CS.leftBlinker and CS.rightBlinker) and ttc > 0.75
     if ttc <= 0.75 and self.prev_overtaking_accel_engaged and overtaking_accel_engaged:
       overtaking_accel_engaged = False
