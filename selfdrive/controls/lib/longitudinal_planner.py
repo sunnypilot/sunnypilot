@@ -3,7 +3,7 @@ import math
 import numpy as np
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
-from cereal import car, custom
+from cereal import car, log, custom
 
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
