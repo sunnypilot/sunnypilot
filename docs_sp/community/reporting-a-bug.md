@@ -10,7 +10,7 @@ With more than 2,500 users, issues are created frequently. The maintainers of th
 
 ### Upgrade to the latest version
 
-Chances are that the bug you discovered was already fixed in a subsequent version. Thus, before reporting an issue, ensure that you're running the [latest release version](https://github.com/sunnypilot/sunnypilot/releases) of sunnypilot. Please consult our [installation guide](../installation/index.md) to learn how to upgrade to the latest version.
+Chances are that the bug you discovered was already fixed in a subsequent version. Thus, before reporting an issue, ensure that you're running the [latest release version](https://github.com/sunnypilot/sunnypilot/releases) of sunnypilot. Please consult our [installation guide](../setup/read-before-installing.md) to learn how to upgrade to the latest version.
 
 !!! warning "Bug fixes are not backported"
     Please understand that only bugs that occur in the latest version of sunnypilot will be addressed. Also, to reduce duplicate efforts, fixes cannot be backported to earlier versions.

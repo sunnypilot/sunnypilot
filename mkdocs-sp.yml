@@ -21,12 +21,13 @@ theme:
     - content.action.edit
     - content.code.copy
     - content.code.select
-    - navigation.expand
+    #- navigation.expand
     - navigation.footer
     - navigation.indexes
     - navigation.path
     - navigation.sections
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
   font:
     text: Roboto
@@ -76,24 +77,27 @@ nav:
     - What is sunnypilot?: getting-started/what-is-sunnypilot.md
     - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
     - Develop sunnypilot: getting-started/develop-sunnypilot.md
-  - Safety Information:
-    - 🚨 Read before installing 🚨: safety-information/read-before-installing.md
-    - Safety: SAFETY.md
-    - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
-  - Installation:
-    - installation/index.md
-    - URL Method: installation/url-method.md
-    - SSH Method: installation/ssh-method.md
+    - Setup:
+      - 🚨 Read before installing 🚨: setup/read-before-installing.md
+      - Installation:
+        - URL Method: setup/url-method.md
+        - SSH Method: setup/ssh-method.md
+    - Changelogs:
+      - setup/changelogs/index.md
   - Features:
     - Modified Assistive Driving Safety (MADS): features/modified-assistive-driving-safety.md
     - Dynamic Lane Profile (DLP): features/dynamic-lane-profile.md
+  - Community:
+    - Contributing: community/CONTRIBUTING.md
+    - Reporting a bug: community/reporting-a-bug.md
+  - Safety Information:
+    - Safety: SAFETY.md
+    - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
   - How To:
     - Enable Mapbox navigation: how-to/enable-mapbox-navigation.md
     - Enable Radar Tracks: how-to/radar-tracks.md
     - Turn the speed blue: how-to/turn-the-speed-blue.md
-  - Branches:
-    - Definitions: branches/definitions.md
-    - Recommended Branches: branches/recommended-branches.md
-  - Community:
-    - Contributing: community/CONTRIBUTING.md
-    - Reporting a bug: community/reporting-a-bug.md
+  - References:
+    - Branches:
+      - Definitions: branches/definitions.md
+      - Recommended Branches: branches/recommended-branches.md

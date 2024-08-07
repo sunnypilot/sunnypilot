@@ -1,4 +1,4 @@
-# **URL Method**
+# URL Method
 
 The URL installation method can be done in two ways, depending on your current setup and version of sunnypilot on your device.
 

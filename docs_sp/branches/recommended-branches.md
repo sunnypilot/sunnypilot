@@ -1,4 +1,4 @@
-# **Recommended Branches**
+# Recommended Branches
 
 |      Branch      | Compatible Device | Installation URL          | Change Logs                                                                              |
 |:----------------:|-------------------|---------------------------|------------------------------------------------------------------------------------------|
