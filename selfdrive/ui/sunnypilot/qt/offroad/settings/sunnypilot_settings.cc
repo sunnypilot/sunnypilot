@@ -395,6 +395,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
   toggles["CustomOffsets"]->showDescription();
+  toggles["OvertakingAccelerationAssist"]->setConfirmation(true, false);
 
   connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
   connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, [=](bool state) {
