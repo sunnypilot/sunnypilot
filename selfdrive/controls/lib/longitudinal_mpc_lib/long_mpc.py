@@ -66,6 +66,8 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
     return 0.8
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 0.6
+  elif personality==custom.LongitudinalPersonalitySP.overtake:
+    return 0.25
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -79,6 +81,8 @@ def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
     return 1.25
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 1.0
+  elif personality==custom.LongitudinalPersonalitySP.overtake:
+    return 0.5
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -358,9 +362,11 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard, dynamic_personality=False):
+  def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard,
+             dynamic_personality=False, overtaking_acceleration_assist=False):
     v_ego = self.x0[1]
     t_follow = get_dynamic_personality(v_ego, personality) if dynamic_personality else get_T_FOLLOW(personality)
+    t_follow = get_T_FOLLOW(custom.LongitudinalPersonalitySP.overtake) if overtaking_acceleration_assist else t_follow
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)

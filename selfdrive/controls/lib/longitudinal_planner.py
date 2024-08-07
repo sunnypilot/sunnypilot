@@ -3,7 +3,7 @@ import math
 import numpy as np
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
-from cereal import car
+from cereal import car, custom
 
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
@@ -36,6 +36,8 @@ _A_TOTAL_MAX_BP = [20., 40.]
 
 
 EventName = car.CarEvent.EventName
+LaneChangeState = log.LaneChangeState
+LaneChangeDirection = log.LaneChangeDirection
 
 
 def get_max_accel(v_ego):
@@ -102,12 +104,16 @@ class LongitudinalPlanner:
     self.dynamic_experimental_controller = DynamicExperimentalController()
     self.accel_controller = AccelController()
 
+    self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
+
   def read_param(self):
     try:
       self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
     except AttributeError:
       self.dynamic_experimental_controller = DynamicExperimentalController()
       self.accel_controller = AccelController()
+
+    self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -168,6 +174,13 @@ class LongitudinalPlanner:
         accel_limits = [ACCEL_MIN, ACCEL_MAX]
         accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
+    lat_plan = sm['lateralPlanDEPRECATED']
+    dm_state = sm['driverMonitoringState']
+    overtaking_accel_allowed = ((lat_plan.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
+                                (lat_plan.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
+                               (lat_plan.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting))
+    overtaking_accel_engaged = self.overtaking_accel and overtaking_accel_allowed and v_ego > 40 * CV.MPH_TO_MS
+
     if reset_state:
       self.v_desired_filter.x = v_ego
       # Clip aEgo to cruise limits to prevent large accelerations when becoming active
@@ -190,11 +203,12 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    self.mpc.set_weights(prev_accel_constraint, personality=sm['controlsStateSP'].personality)
+    self.mpc.set_weights(prev_accel_constraint, personality=custom.LongitudinalPersonalitySP.overtake if overtaking_accel_engaged else sm['controlsStateSP'].personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
     x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsStateSP'].personality, dynamic_personality=sm['controlsStateSP'].dynamicPersonality)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['controlsStateSP'].personality,
+                    dynamic_personality=sm['controlsStateSP'].dynamicPersonality, overtaking_acceleration_assist=overtaking_accel_engaged)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)
