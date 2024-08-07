@@ -30,6 +30,7 @@ Last updated: July 29, 2024
 #include <vector>
 #include <QFileInfo>
 
+#include "common/watchdog.h"
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 

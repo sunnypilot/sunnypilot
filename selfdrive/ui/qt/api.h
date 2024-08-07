@@ -24,7 +24,7 @@ class HttpRequest : public QObject {
   Q_OBJECT
 
 public:
-  enum class Method {GET, DELETE, POST, PUT};
+  enum class Method { GET, DELETE, POST, PUT };
 
   explicit HttpRequest(QObject* parent, bool create_jwt = true, int timeout = 20000);
   virtual void sendRequest(const QString &requestURL, Method method);

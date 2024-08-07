@@ -83,7 +83,8 @@ class LatControlTorque(LatControl):
     self.torqued_override = self.param_s.get_bool("TorquedOverride")
     self._frame = 0
 
-    self.use_lateral_jerk = False  # TODO: make this a parameter in the UI
+    self.use_lateral_jerk = self.param_s.get_bool("TorqueLateralJerk")  # TODO: make this a parameter in the UI
+    self.nnff_no_lateral_jerk = self.param_s.get_bool("NNFFNoLateralJerk")  # TODO: make this a parameter in the UI
 
     # Twilsonco's Lateral Neural Network Feedforward
     self.use_nn = CI.has_lateral_torque_nn
@@ -140,11 +141,13 @@ class LatControlTorque(LatControl):
     if self._frame % 250 == 0:
       self._frame = 0
       self.torqued_override = self.param_s.get_bool("TorquedOverride")
+      self.use_lateral_jerk = self.param_s.get_bool("TorqueLateralJerk")
+      self.nnff_no_lateral_jerk = self.param_s.get_bool("NNFFNoLateralJerk")
       if not self.torqued_override:
         return
 
       self.torque_params.latAccelFactor = float(self.param_s.get("TorqueMaxLatAccel", encoding="utf8")) * 0.01
-      self.torque_params.friction = float(self.param_s.get("TorqueFriction", encoding="utf8")) * 0.01
+      self.torque_params.friction = float(self.param_s.get("TorqueFriction", encoding="utf8")) * 0.001
 
   @property
   def pid_long_sp(self):
@@ -197,7 +200,7 @@ class LatControlTorque(LatControl):
         predicted_lateral_jerk = get_predicted_lateral_jerk(model_data.acceleration.y, self.t_diffs)
         desired_lateral_jerk = (interp(self.desired_lat_jerk_time, ModelConstants.T_IDXS, model_data.acceleration.y) - desired_lateral_accel) / self.desired_lat_jerk_time
         lookahead_lateral_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx], desired_lateral_jerk)
-        if self.use_steering_angle or lookahead_lateral_jerk == 0.0:
+        if self.nnff_no_lateral_jerk or self.use_steering_angle or lookahead_lateral_jerk == 0.0:
           lookahead_lateral_jerk = 0.0
           actual_lateral_jerk = 0.0
           self.lat_accel_friction_factor = 1.0
@@ -206,6 +209,7 @@ class LatControlTorque(LatControl):
 
       if self.use_nn and model_good:
         # update past data
+        pitch = 0
         roll = params.roll
         if len(llk.calibratedOrientationNED.value) > 1:
           pitch = self.pitch.update(llk.calibratedOrientationNED.value[1])
@@ -231,7 +235,14 @@ class LatControlTorque(LatControl):
                                  + past_rolls + future_rolls
         torque_from_setpoint = self.torque_from_nn(nnff_setpoint_input)
         torque_from_measurement = self.torque_from_nn(nnff_measurement_input)
+
         pid_log.error = torque_from_setpoint - torque_from_measurement
+        error_blend_factor = interp(abs(desired_lateral_accel), [1.0, 2.0], [0.0, 1.0])
+        if error_blend_factor > 0.0:  # blend in stronger error response when in high lat accel
+          nnff_error_input = [CS.vEgo, setpoint - measurement, lateral_jerk_setpoint - lateral_jerk_measurement, 0.0]
+          torque_from_error = self.torque_from_nn(nnff_error_input)
+          if sign(pid_log.error) == sign(torque_from_error) and abs(pid_log.error) < abs(torque_from_error):
+            pid_log.error = pid_log.error * (1.0 - error_blend_factor) + torque_from_error * error_blend_factor
 
         # compute feedforward (same as nn setpoint output)
         error = setpoint - measurement

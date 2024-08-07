@@ -50,6 +50,12 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "OvertakingAccelerationAssist",
+      tr("Overtaking Acceleration Assist"),
+      tr("Overtaking Acceleration Assist will operate when the turn signal indicator is turned on to the left (left-hand drive) or turned on to the right (right-hand drive) while Smart Cruise Control is operating."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "EnableSlc",
       tr("Speed Limit Control (SLC)"),
       tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
@@ -92,9 +98,21 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "NNFFNoLateralJerk",
+      tr("NNLC: Remove Lateral Jerk Response (Alpha)"),
+      tr("When NNLC is active, enable this to disables the use of lateral jerk in steering torque calculations, focusing solely on lateral acceleration for a simplified control response."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "EnforceTorqueLateral",
       tr("Enforce Torque Lateral Control"),
       tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
+      "TorqueLateralJerk",
+      tr("Lateral Jerk with Torque Lateral Control (Alpha)"),
+      tr("Utilizes limited lateral jerk control for improved steering response, leveraging stock torque lateral controller capabilities. Designed to mimic NNLC behavior without training models or data collection."),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -298,7 +316,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       list->addItem(dlp_settings);
     }
 
-    if (param == "VisionCurveLaneless") {
+    if (param == "OvertakingAccelerationAssist") {
       list->addItem(laneChangeSettingsLayout);
       list->addItem(horizontal_line());
 
@@ -345,6 +363,17 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     }
   });
 
+  connect(toggles["EnforceTorqueLateral"], &ToggleControlSP::toggleFlipped, [=](bool state) {
+    if (state) {
+      toggles["NNFF"]->setEnabled(false);
+      params.putBool("NNFF", false);
+      toggles["NNFF"]->refresh();
+    } else {
+      toggles["NNFF"]->setEnabled(true);
+      toggles["NNFF"]->refresh();
+    }
+  });
+
   // trigger updateToggles() when toggleFlipped
   for (const auto& updateToggleName : updateTogglesNames) {
     if (toggles.find(updateToggleName) != toggles.end()) {
@@ -366,6 +395,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
   toggles["EnableMads"]->setConfirmation(true, false);
   toggles["EndToEndLongAlertLight"]->setConfirmation(true, false);
   toggles["CustomOffsets"]->showDescription();
+  toggles["OvertakingAccelerationAssist"]->setConfirmation(true, false);
 
   connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, mads_settings, &MadsSettings::updateToggles);
   connect(toggles["EnableMads"], &ToggleControlSP::toggleFlipped, [=](bool state) {
@@ -577,7 +607,7 @@ void SunnypilotPanel::updateToggles() {
   }
 
   // toggle names to update when EnforceTorqueLateral is flipped
-  std::vector<std::string> torqueLateralGroup{"CustomTorqueLateral", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
+  std::vector<std::string> torqueLateralGroup{"CustomTorqueLateral", "TorqueLateralJerk", "LiveTorque", "LiveTorqueRelaxed", "TorquedOverride"};
   for (const auto& torqueLateralToggle : torqueLateralGroup) {
     if (toggles.find(torqueLateralToggle) != toggles.end()) {
       if (nnff_toggle->isToggled()) {
@@ -591,6 +621,24 @@ void SunnypilotPanel::updateToggles() {
     if (toggles.find(torqueLateralToggle) != toggles.end()) {
       toggles[torqueLateralToggle]->setVisible(enforce_torque_lateral->isToggled());
       toggles[torqueLateralToggle]->setEnabled(enforce_torque_lateral->isToggled());
+    }
+  }
+
+  // toggle names to update when EnforceTorqueLateral is flipped
+  std::vector<std::string> nnffGroup{"NNFFNoLateralJerk"};
+  for (const auto& nnffToggle : nnffGroup) {
+    if (toggles.find(nnffToggle) != toggles.end()) {
+      if (enforce_torque_lateral->isToggled()) {
+        toggles[nnffToggle]->setVisible(false);
+        toggles[nnffToggle]->setEnabled(false);
+      }
+    }
+  }
+
+  for (const auto& nnffToggle : nnffGroup) {
+    if (toggles.find(nnffToggle) != toggles.end()) {
+      toggles[nnffToggle]->setVisible(nnff_toggle->isToggled());
+      toggles[nnffToggle]->setEnabled(nnff_toggle->isToggled());
     }
   }
 
@@ -622,13 +670,14 @@ TorqueFriction::TorqueFriction() : OptionControlSP(
   tr("FRICTION"),
   tr("Adjust Friction for the Torque Lateral Controller. <b>Live</b>: Override self-tune values; <b>Offline</b>: Override self-tune offline values at car restart."),
   "../assets/offroad/icon_blank.png",
-  {0, 50}) {
+  {0, 500},
+  5) {
 
   refresh();
 }
 
 void TorqueFriction::refresh() {
-  float torqueFrictionVal = QString::fromStdString(params.get("TorqueFriction")).toInt() * 0.01;
+  float torqueFrictionVal = QString::fromStdString(params.get("TorqueFriction")).toInt() * 0.001;
   setTitle("FRICTION - " + (params.getBool("TorquedOverride") ? tr("Real-time and Offline") : tr("Offline Only")));
   setLabel(QString::number(torqueFrictionVal));
 }

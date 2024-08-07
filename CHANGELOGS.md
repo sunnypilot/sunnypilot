@@ -28,6 +28,9 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 * UPDATED: Driving Model Selector v5
   * NEW❗: Driving Model additions
     * Notre Dame (July 01, 2024) - NDv3
+* UPDATED: Neural Network Lateral Control (NNLC)
+  * NEW❗: Remove Lateral Jerk Response (Alpha)
+  * FIXED: Hotfix for "lazy" steering performance in tighter curves thanks to twilsonco!
 * UPDATED: Toyota: Continued support for Smart DSU (SDSU) and Radar CAN Filter
   * In response to the official deprecation of support for Smart DSU (SDSU) and Radar CAN Filter in the upstream ([commaai/openpilot#32777](https://github.com/commaai/openpilot/pull/32777)), sunnypilot will continue maintaining software support for Smart DSU (SDSU) and Radar CAN Filter
 * UPDATED: Continued support for Mapbox navigation
@@ -45,6 +48,10 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
     * NEW❗: Time to Lead Car
       * Displays the time to reach the position previously occupied by the lead car
     * NEW❗: Display Distance, Speed, and Time to Lead Car simultaneously
+* Ford F-150 2022-23 support
+* Ford F-150 Lightning 2021-23 support
+* Ford Mustang Mach-E 2021-23 support
+* Hyundai Kona Electric Non-SCC 2019 support thanks to NikitaNekrasov!
 * Kia Ceed Plug-in Hybrid Non-SCC 2022 support thanks to TerminatorNL!
 
 sunnypilot - 0.9.7.1 (2024-06-13)
@@ -82,6 +89,8 @@ sunnypilot - 0.9.7.1 (2024-06-13)
   * Force sunnypilot in the offroad state even when the car is on
   * When Forced Offroad mode is on, allows changing offroad-only settings even when the car is turned on
   * To engage/disengage Force Offroad, go to Settings -> Device panel
+* NEW❗: Ford CAN-FD longitudinal
+  * NEW❗: Parse speed limit sign recognition from camera for certain supported platforms
 * UPDATED: Auto Lane Change Timer -> Auto Lane Change by Blinker
   * NEW❗: New "Off" option to disable lane change by blinker
 * UPDATED: Pause Lateral Below Speed with Blinker
@@ -89,6 +98,8 @@ sunnypilot - 0.9.7.1 (2024-06-13)
     * Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h.
 * UPDATED: Hyundai CAN Longitudinal
   * Auto-enable radar tracks on platforms with applicable Mando radar
+* UPDATED: Hyundai CAN-FD Radar-based SCC
+  * Longitudinal support for CAN-FD Radar-based SCC cars
 * UPDATED: Hyundai CAN-FD Camera-based SCC
   * NEW❗: Parse lead info for camera-based SCC platforms with longitudinal support
     * Improve lead tracking when using openpilot longitudinal

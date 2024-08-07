@@ -30,6 +30,7 @@ Last updated: July 29, 2024
 
 #include "selfdrive/ui/qt/offroad/experimental_mode.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
+#include <QStackedWidget>
 #include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
 
 #ifdef ENABLE_MAPS

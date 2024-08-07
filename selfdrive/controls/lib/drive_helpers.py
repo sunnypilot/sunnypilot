@@ -65,6 +65,10 @@ VOLKSWAGEN_V_CRUISE_MIN = {
   True: 30,
   False: int(20 * CV.MPH_TO_KPH),
 }
+GM_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
 
 SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 
@@ -84,11 +88,16 @@ class VCruiseHelper:
     self.slc_state_prev = SpeedLimitControlState.inactive
     self.slc_speed_limit_offsetted = 0
 
+    # sp: PCM speed override
+    self.sp_override_v_cruise_kph = V_CRUISE_UNSET
+    self.sp_override_cruise_speed_last = V_CRUISE_UNSET
+    self.sp_override_enabled_last = False
+
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, long_plan_sp):
+  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, sp_override_speed, long_plan_sp):
     self.v_cruise_kph_last = self.v_cruise_kph
     self.slc_state = long_plan_sp.speedLimitControlState
 
@@ -103,9 +112,28 @@ class VCruiseHelper:
         self.v_cruise_cluster_kph = self.v_cruise_kph
         self.update_button_timers(CS, enabled)
       else:
-        self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
-        self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
+        if enabled and sp_override_speed and CS.cruiseState.speed * CV.MS_TO_KPH < sp_override_speed:
+          if self.sp_override_v_cruise_kph == V_CRUISE_UNSET:
+            self.sp_override_v_cruise_kph = max(CS.vEgo * CV.MS_TO_KPH, V_CRUISE_MIN)
+        else:
+          self.sp_override_v_cruise_kph = V_CRUISE_UNSET
+
+        # when we have an override_speed, use it
+        if self.sp_override_v_cruise_kph != V_CRUISE_UNSET:
+          self.v_cruise_kph = self.sp_override_v_cruise_kph
+          self.v_cruise_cluster_kph = self.sp_override_v_cruise_kph
+        else:
+          self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+          self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
+
+          #print("sp_override_v_cruise_kph:", self.sp_override_v_cruise_kph)
+          #print("v_cruise_kph:", self.v_cruise_kph)
+          #print("v_cruise_cluster_kph:", self.v_cruise_cluster_kph)
+
+        self.sp_override_cruise_speed_last = CS.cruiseState.speed
+        self.sp_override_enabled_last = enabled
     else:
+      self.sp_override_v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
 
@@ -202,6 +230,8 @@ class VCruiseHelper:
         initial = MAZDA_V_CRUISE_MIN[is_metric]
       elif self.CP.carName == "volkswagen":
         initial = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "gm":
+        initial = GM_V_CRUISE_MIN[is_metric]
 
     # 250kph or above probably means we never had a set speed
     if any(b.type in resume_buttons for b in CS.buttonEvents) and self.v_cruise_kph_last < 250:
@@ -234,6 +264,8 @@ class VCruiseHelper:
         self.v_cruise_min = MAZDA_V_CRUISE_MIN[is_metric]
       elif self.CP.carName == "volkswagen":
         self.v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "gm":
+        self.v_cruise_min = GM_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric
 
 

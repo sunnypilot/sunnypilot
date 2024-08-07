@@ -33,9 +33,11 @@ Last updated: July 29, 2024
 #include "selfdrive/ui/ui.h"
 
 #include "cereal/messaging/messaging.h"
+#include "common/timing.h"
 #include "qt/network/sunnylink/models/role_model.h"
 #include "qt/network/sunnylink/models/sponsor_role_model.h"
 #include "qt/network/sunnylink/models/user_model.h"
+#include "selfdrive/ui/sunnypilot/qt/ui_scene.h"
 #include "system/hardware/hw.h"
 
 const int UI_ROAD_NAME_MARGIN_X = 14;

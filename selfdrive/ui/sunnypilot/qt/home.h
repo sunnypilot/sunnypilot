@@ -27,9 +27,14 @@ Last updated: July 29, 2024
 #pragma once
 
 #include <QFrame>
+#include <QLabel>
+#include <QPushButton>
+#include <QStackedLayout>
+#include <QTimer>
 #include <QWidget>
 
 #include "common/params.h"
+#include "selfdrive/ui/qt/offroad/driverview.h"
 #include "selfdrive/ui/qt/body.h"
 #include "selfdrive/ui/qt/widgets/offroad_alerts.h"
 #include "selfdrive/ui/sunnypilot/ui.h"
@@ -37,6 +42,7 @@ Last updated: July 29, 2024
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/sidebar.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_home.h"
 #define OnroadWindow OnroadWindowSP
 #else
 #include "selfdrive/ui/qt/sidebar.h"

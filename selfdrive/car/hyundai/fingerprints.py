@@ -1171,6 +1171,17 @@ FW_VERSIONS = {
       b'\xf1\x006T6J0_C2\x00\x006T6K1051\x00\x00TOS4N20NS2\x00\x00\x00\x00',
     ],
   },
+  CAR.HYUNDAI_KONA_EV_NON_SCC: {
+    (Ecu.abs, 0x7d1, None): [
+      b'\xf1\x00OS IEB \x02 212 \x11\x13 58520-K4000',
+    ],
+    (Ecu.eps, 0x7d4, None): [
+      b'\xf1\x00OS  MDPS C 1.00 1.04 56310K4000\x00 4OEDC104',
+    ],
+    (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00OSE LKAS AT USA LHD 1.00 1.00 95740-K4100 W40',
+    ],
+  },
   CAR.KIA_CEED_PHEV_2022_NON_SCC: {
     (Ecu.eps, 0x7D4, None): [
       b'\xf1\x00CD  MDPS C 1.00 1.01 56310-XX000 4CPHC101',

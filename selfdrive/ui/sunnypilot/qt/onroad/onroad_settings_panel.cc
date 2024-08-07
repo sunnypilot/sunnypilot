@@ -26,6 +26,7 @@ Last updated: July 29, 2024
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings_panel.h"
 
+#include <QHBoxLayout>
 #include <QWidget>
 
 #include "selfdrive/ui/sunnypilot/qt/onroad/onroad_settings.h"

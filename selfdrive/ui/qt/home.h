@@ -47,7 +47,7 @@ protected:
   void mouseDoubleClickEvent(QMouseEvent* e) override;
 
   Sidebar *sidebar;
-  OffroadHome *home;
+  OffroadHome* home;
   OnroadWindow *onroad;
   BodyWindow *body;
   DriverViewWindow *driver_view;

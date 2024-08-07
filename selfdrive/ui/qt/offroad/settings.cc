@@ -16,7 +16,7 @@
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/sunnypilot_main.h"
-#endif 
+#endif
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   RETURN_IF_SUNNYPILOT

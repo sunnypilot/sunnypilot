@@ -28,10 +28,13 @@ Last updated: July 29, 2024
 
 #include <QHBoxLayout>
 #include <QMouseEvent>
+#include <QStackedWidget>
+#include <QVBoxLayout>
 #include <common/swaglog.h>
 
 #include "selfdrive/ui/qt/offroad/experimental_mode.h"
 #include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/qt/widgets/prime.h"
 
 // HomeWindowSP: the container for the offroad and onroad UIs
 HomeWindowSP::HomeWindowSP(QWidget* parent) : HomeWindow(parent){    

@@ -11,6 +11,7 @@ DELPHI_ESR_RADAR_MSGS = list(range(0x500, 0x540))
 DELPHI_MRR_RADAR_START_ADDR = 0x120
 DELPHI_MRR_RADAR_MSG_COUNT = 64
 
+STEER_ASSIST_DATA_MSGS = 0x3d7
 
 def _create_delphi_esr_radar_can_parser(CP) -> CANParser:
   msg_n = len(DELPHI_ESR_RADAR_MSGS)
@@ -28,6 +29,9 @@ def _create_delphi_mrr_radar_can_parser(CP) -> CANParser:
 
   return CANParser(RADAR.DELPHI_MRR, messages, CanBus(CP).radar)
 
+def _create_steer_assist_data(CP) -> CANParser:
+  messages = [("Steer_Assist_Data", 20)]
+  return CANParser(RADAR.STEER_ASSIST_DATA, messages, CanBus(CP).camera)
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
@@ -45,6 +49,10 @@ class RadarInterface(RadarInterfaceBase):
     elif self.radar == RADAR.DELPHI_MRR:
       self.rcp = _create_delphi_mrr_radar_can_parser(CP)
       self.trigger_msg = DELPHI_MRR_RADAR_START_ADDR + DELPHI_MRR_RADAR_MSG_COUNT - 1
+    elif self.radar == RADAR.STEER_ASSIST_DATA:
+      self.rcp = _create_steer_assist_data(CP)
+      self.trigger_msg = STEER_ASSIST_DATA_MSGS
+
     else:
       raise ValueError(f"Unsupported radar: {self.radar}")
 
@@ -68,10 +76,66 @@ class RadarInterface(RadarInterfaceBase):
       self._update_delphi_esr()
     elif self.radar == RADAR.DELPHI_MRR:
       self._update_delphi_mrr()
+    elif self.radar == RADAR.STEER_ASSIST_DATA:
+      self._update_steer_assist_data()
 
     ret.points = list(self.pts.values())
     self.updated_messages.clear()
     return ret
+
+  def _update_steer_assist_data(self):
+    msg = self.rcp.vl["Steer_Assist_Data"]
+    updated_msg = self.updated_messages
+
+    dRel = msg['CmbbObjDistLong_L_Actl']
+    confidence = msg['CmbbObjConfdnc_D_Stat']
+    new_track = False
+
+    # if dRel < 1022:
+    if confidence > 0:
+      if 0 not in self.pts:
+        self.pts[0] = car.RadarData.RadarPoint.new_message()
+        self.pts[0].trackId = self.track_id
+        self.vRelCol[0] = collections.deque(maxlen=20)
+        self.track_id += 1
+        new_track = True
+
+      yRel = msg['CmbbObjDistLat_L_Actl']
+      vRel = msg['CmbbObjRelLong_V_Actl']
+      yvRel = msg['CmbbObjRelLat_V_Actl']
+      calc = 0
+      if not new_track:
+        # if this is a newly created track - we don't have historical data so skip it
+        # if we are on the same track
+        # Let's see if we are moving:
+        #   positive gap - lead is moving faster than us
+        #   negative gap - lead is moving slower than us
+        dDiff = dRel - self.pts[0].dRel
+        if (abs(vRel) < 1.0e-2):
+          self.vRelCol[0].append(dDiff)
+          vRel = sum(self.vRelCol[0])
+          calc = 1
+        else:
+          if len(self.vRelCol[0]) > 0:
+            self.vRelCol[0].clear()
+
+        if abs(self.pts[0].vRel - vRel) > 2 or abs(self.pts[0].dRel - dRel) > 5:
+          self.pts[0].trackId = self.track_id
+          if len(self.vRelCol[0]) > 0:
+            self.vRelCol[0].clear()
+          self.track_id += 1
+
+      self.pts[0].dRel = dRel  # from front of car
+      self.pts[0].yRel = yRel  # in car frame's y axis, left is positive
+      self.pts[0].vRel = vRel
+      self.pts[0].aRel = float('nan')
+      self.pts[0].yvRel = yvRel
+      self.pts[0].measured = True
+    else:
+      if 0 in self.pts:
+        del self.pts[0]
+        del self.vRelCol[0]
+
 
   def _update_delphi_esr(self):
     for ii in sorted(self.updated_messages):

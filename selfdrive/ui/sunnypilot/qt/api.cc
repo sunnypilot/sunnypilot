@@ -33,6 +33,7 @@ Last updated: July 29, 2024
 #include <QApplication>
 #include <QJsonDocument>
 
+#include <memory>
 #include <string>
 #include <common/swaglog.h>
 

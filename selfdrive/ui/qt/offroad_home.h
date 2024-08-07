@@ -1,12 +1,19 @@
 #pragma once
 
+#include <QFrame>
+#include <QLabel>
+#include <QPushButton>
+#include <QStackedLayout>
 #include <QStackedWidget>
+#include <QTimer>
 #include <QWidget>
 
 #include "common/params.h"
+#include "selfdrive/ui/qt/offroad/driverview.h"
 #include "selfdrive/ui/qt/body.h"
 #include "selfdrive/ui/qt/onroad/onroad_home.h"
 #include "selfdrive/ui/qt/widgets/offroad_alerts.h"
+#include "selfdrive/ui/ui.h"
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
