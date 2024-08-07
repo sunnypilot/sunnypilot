@@ -189,6 +189,8 @@ class Controls:
 
     self.dynamic_personality = self.params.get_bool("DynamicPersonality")
     self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
+    self.overtaking_accel_engaged = False
+    self.prev_overtaking_accel_engaged = False
 
     self.accel_personality = self.read_accel_personality_param()
 
@@ -829,9 +831,17 @@ class Controls:
     overtaking_accel_allowed = ((blinker_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
                                 (blinker_svs.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
                                (blinker_svs.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting))
+    self.prev_overtaking_accel_engaged = self.overtaking_accel_engaged
+    ttc = self.sm['radarState'].leadOne.dRel / CS.vEgo if CS.vEgo > 0 else 255
     overtaking_accel_engaged = self.overtaking_accel and overtaking_accel_allowed and \
                                CS.vEgo > (60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS) and long_plan.hasLead and \
-                               long_plan.aTarget > -0.2 and not (CS.leftBlinker and CS.rightBlinker)
+                               long_plan.aTarget > -0.2 and not (CS.leftBlinker and CS.rightBlinker) and ttc > 0.75
+    if ttc <= 0.75 and self.prev_overtaking_accel_engaged and overtaking_accel_engaged:
+      overtaking_accel_engaged = False
+    if overtaking_accel_engaged and not self.prev_overtaking_accel_engaged:
+      self.overtaking_accel_engaged = True
+    elif not overtaking_accel_engaged:
+      self.overtaking_accel_engaged = False
 
     # controlsState
     dat = messaging.new_message('controlsState')
@@ -885,7 +895,7 @@ class Controls:
     controlsStateSP.personality = self.personality
     controlsStateSP.dynamicPersonality = self.dynamic_personality
     controlsStateSP.accelPersonality = self.accel_personality
-    controlsStateSP.overtakingAccelerationAssist = overtaking_accel_engaged
+    controlsStateSP.overtakingAccelerationAssist = self.overtaking_accel_engaged
 
     if self.enable_nnff and lat_tuning == 'torque':
       controlsStateSP.lateralControlState.torqueState = self.LaC.pid_long_sp
