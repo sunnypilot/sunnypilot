@@ -822,12 +822,13 @@ class Controls:
     steer_angle_without_offset = math.radians(CS.steeringAngleDeg - lp.angleOffsetDeg)
     curvature = -self.VM.calc_curvature(steer_angle_without_offset, CS.vEgo, lp.roll)
 
-    lc_svs = self.sm[dh]
+    lat_plan = self.sm['lateralPlanDEPRECATED']
     long_plan = self.sm['longitudinalPlan'].hasLead
     dm_state = self.sm['driverMonitoringState']
-    overtaking_accel_allowed = ((lc_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
-                                (lc_svs.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
-                               (lc_svs.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting))
+    blinker_svs = lat_plan if self.model_use_lateral_planner else model_v2.meta
+    overtaking_accel_allowed = ((blinker_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
+                                (blinker_svs.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
+                               (blinker_svs.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting))
     overtaking_accel_engaged = self.overtaking_accel and overtaking_accel_allowed and \
                                CS.vEgo > (60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS) and long_plan.hasLead and \
                                long_plan.aTarget > -0.2 and not (CS.leftBlinker and CS.rightBlinker)
