@@ -154,8 +154,10 @@ class LongitudinalPlanner:
       accel_limits = [ACCEL_MIN, ACCEL_MAX]
       accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
 
+    overtaking_accel_engaged = sm['controlsStateSP'].overtakingAccelerationAssist
     # override accel using Accel Controller
-    if self.accel_controller.is_enabled(accel_personality=sm['controlsStateSP'].accelPersonality):
+    if self.accel_controller.is_enabled(accel_personality=custom.AccelerationPersonality.sport if overtaking_accel_engaged else
+                                                          sm['controlsStateSP'].accelPersonality):
       # get min, max from accel controller
       min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
       if self.mpc.mode == 'acc':
@@ -190,7 +192,6 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    overtaking_accel_engaged = sm['controlsStateSP'].overtakingAccelerationAssist
     self.mpc.set_weights(prev_accel_constraint, personality=custom.LongitudinalPersonalitySP.overtake if overtaking_accel_engaged else sm['controlsStateSP'].personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
