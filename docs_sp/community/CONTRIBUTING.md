@@ -21,12 +21,12 @@ Simple, well-tested bug fixes are the easiest to merge, and new features are the
 
 All of these are examples of good PRs:
 
-* [**typo fix**](https://github.com/commaai/openpilot/pull/30678)
-* [**removing unused code**](https://github.com/commaai/openpilot/pull/30573)
-* [**simple car model port**](https://github.com/commaai/openpilot/pull/30245)
-* [**car brand port**](https://github.com/commaai/openpilot/pull/23331)
-* [**UI design changes**](https://github.com/sunnypilot/sunnypilot/commit/84f6fce90639135611ec568c4d39a352a300bede)
-* [**new features**](https://github.com/sunnypilot/sunnypilot/commit/68e1379003bfdb599921cf9cd5684bfb762fd676)
+* [typo fix](https://github.com/commaai/openpilot/pull/30678)
+* [removing unused code](https://github.com/commaai/openpilot/pull/30573)
+* [simple car model port](https://github.com/commaai/openpilot/pull/30245)
+* [car brand port](https://github.com/commaai/openpilot/pull/23331)
+* [UI design changes](https://github.com/sunnypilot/sunnypilot/commit/84f6fce90639135611ec568c4d39a352a300bede)
+* [new features](https://github.com/sunnypilot/sunnypilot/commit/68e1379003bfdb599921cf9cd5684bfb762fd676)
 
 ### What doesn't get merged?
 
