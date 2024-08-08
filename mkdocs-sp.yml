@@ -80,6 +80,7 @@ markdown_extensions:
 
 nav:
   - Getting Started:
+    - index.md
     - What is sunnypilot?: getting-started/what-is-sunnypilot.md
     - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
     - Develop sunnypilot: getting-started/develop-sunnypilot.md
