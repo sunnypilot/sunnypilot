@@ -269,5 +269,6 @@ know to help you.
 - [ ] I have created a minimal reproduction and noted my comma Dongle ID.
 - [ ] I have shared my Dongle ID with sunnypilot at `support@sunnypilot.ai`.
 - [ ] I have filled out all required sections of the issue template.
+- [ ] I have followed this guide and ensured all necessary information is included.
 
 __We'll take it from here.__

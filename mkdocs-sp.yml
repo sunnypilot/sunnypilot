@@ -96,6 +96,7 @@ nav:
   - Community:
     - Contributing: community/CONTRIBUTING.md
     - Reporting a bug: community/reporting-a-bug.md
+    - Reporting a docs issue: community/reporting-a-docs-issue.md
   - Safety Information:
     - Safety: SAFETY.md
     - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
