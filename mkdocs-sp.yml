@@ -92,8 +92,7 @@ nav:
     - Changelogs:
       - setup/changelogs/index.md
   - Features:
-    - Modified Assistive Driving Safety (MADS): features/modified-assistive-driving-safety.md
-    - Dynamic Lane Profile (DLP): features/dynamic-lane-profile.md
+    - features/index.md
   - Community:
     - Contributing: community/CONTRIBUTING.md
     - Reporting a bug: community/reporting-a-bug.md
