@@ -15,10 +15,11 @@ theme:
   name: material
   icon:
     repo: fontawesome/brands/github
-    edit: material/lead-pencil
-    view: material/eye
+    edit: material/file-edit-outline
+    view: material/file-eye-outline
   features:
     - content.action.edit
+    - content.action.view
     - content.code.copy
     - content.code.select
     #- navigation.expand
