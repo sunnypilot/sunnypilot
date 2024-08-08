@@ -92,6 +92,11 @@ plugins:
       enable_creation_date: true
   - search
 
+extra:
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+
 nav:
   - Getting Started:
     - index.md
