@@ -112,10 +112,10 @@ nav:
     - Safety: SAFETY.md
     - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
   - How To:
-    - Enable Mapbox navigation: how-to/enable-mapbox-navigation.md
+    - Enabling Mapbox navigation: how-to/enabling-mapbox-navigation.md
     - Turn the speed blue: how-to/turn-the-speed-blue.md
     - Hyundai:
-      - Enable Radar Tracks: how-to/hyundai/radar-tracks.md
+      - Enabling Radar Tracks: how-to/hyundai/enabling-radar-tracks.md
   - References:
     - Branches:
       - Definitions: branches/definitions.md

@@ -1,4 +1,4 @@
-# Enable Mapbox navigation
+# :map: Enabling Mapbox navigation
 
 Enabling Mapbox Navigation on sunnypilot enhances your driving experience by providing accurate maps and directions.
 
