@@ -30,6 +30,9 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
   font:
     text: Roboto
     code: Roboto Mono
@@ -87,6 +90,7 @@ plugins:
       enabled: !ENV [CI, false]
   - git-revision-date-localized:
       enable_creation_date: true
+  - search
 
 nav:
   - Getting Started:
