@@ -66,4 +66,3 @@ A good pull request has all of the following:
 * Consider opting into driver camera uploads to improve the driver monitoring model.
 * Connect your device to Wi-Fi regularly, so that comma can pull data for training better driving models.
 * Run the `staging-c3` branch and report issues. This branch is like `master` but it's built just like a release.
-* Annotate images in the [comma10k dataset](https://github.com/commaai/comma10k).
