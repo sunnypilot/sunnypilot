@@ -79,6 +79,15 @@ markdown_extensions:
   - toc:
       permalink: true
 
+plugins:
+  - git-authors
+  - git-committers:
+      repository: sunnypilot/sunnypilot
+      branch: master
+      enabled: !ENV [CI, false]
+  - git-revision-date-localized:
+      enable_creation_date: true
+
 nav:
   - Getting Started:
     - index.md
