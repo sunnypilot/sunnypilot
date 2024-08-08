@@ -193,7 +193,7 @@ it allows us maintainers to instantly recreate the necessary conditions to
 inspect the bug to quickly find its root cause. It's a proven fact that issues
 with concise and small reproductions can be fixed much faster.
 
-After you have created the reproduction, take note of your <u>__comma dongle ID__</u>. It will be used during the bug 
+After you have created the reproduction, take note of your <u>__comma Dongle ID__</u>. It will be used during the bug 
 report.
 
 !!! note "__Why we need this__"
@@ -228,11 +228,46 @@ five-year-old, and focus on continuity.
     to observe the bug, as some bugs only occur at certain viewports or in
     specific conditions.
 
+### Uploading logs and preserving routes
+
+After reproducing the bug, please follow these steps to upload the necessary logs and preserve the routes.
+
+1. Ensure the route is fully uploaded at [comma Connect]. We cannot look 
+  into issues without routes, or at least a comma Dongle ID.
+
+    1. Visit [comma Connect], select the route with the issue reproduced.
+    2. Under the "Files" button, locate "All logs". Click "Upload x files".
+    3. View the upload queue, and confirm that all raw logs are uploaded.
+
+    !!! note
+        Sometimes when the qlogs of the route are still being uploaded, some raw logs may not be available to 
+        request for upload. Refresh the page a few times once you have confirmed all qlogs have been uploaded, 
+        then try to upload all raw logs again if available.
+
+2. Share your Dongle ID with sunnypilot on [comma Connect].
+
+    1. Visit [comma Connect], navigate to the gear icon.
+    2. Select "Share by email", and enter `support@sunnypilot.ai`.
+    3. Confirm the sharing by clicking the share icon again.
+    4. Set the device name to your vehicle's year/make/model and your Discord username, so it can be easily identified.
+
+3. Once all raw logs are uploaded, click "More info" and enable the "Preserved" option to preserve the route.
+4. Attach the route ID in your issue submission.
+
+  [comma Connect]: https://connect.comma.ai
+
 ### Checklist
 
 Thanks for following the guide and creating a high-quality and complete bug
 report – you are almost done. The checklist ensures that you have read this guide
 and have worked to your best knowledge to provide us with everything we need to
 know to help you.
+
+- [ ] I have upgraded to the latest release version of sunnypilot.
+- [ ] I have removed or disable any customizations and confirmed the bug persists.
+- [ ] I have searched the documentation, issue trackers, and Discord for similar issues.
+- [ ] I have created a minimal reproduction and noted my comma Dongle ID.
+- [ ] I have shared my Dongle ID with sunnypilot at `support@sunnypilot.ai`.
+- [ ] I have filled out all required sections of the issue template.
 
 __We'll take it from here.__
