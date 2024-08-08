@@ -1,41 +1,53 @@
----
-title: 🗺 Enable Mapbox Navigation
----
+# Enable Mapbox navigation
 
-Enabling Mapbox Navigation on your sunnypilot 🚗 enhances your driving experience by providing accurate maps and directions. Follow the steps below to set up and enjoy this feature:
+Enabling Mapbox Navigation on sunnypilot enhances your driving experience by providing accurate maps and directions.
 
-### **🛠 Setup Steps**
-1. **Create a Free Mapbox Account**:  
-   Sign up for a free Mapbox account. Although a credit card is required for verification, you will not be charged for the free tier.
+Following the instructions below, you will set up a free Mapbox account, generating your own access token, and 
+configuring on your comma 3/3X. Next:
 
-2. **Generate Access Tokens**:  
-   On the Dashboard, find the **Access Tokens** section and click `Create a Token`. Name it as you like and set the scopes to allow everything for both Public and Secret. Copy both keys. ⚠️ **Remember**: You won't be able to access the secret key after this window.
+## 1. Create a free Mapbox account
 
-3. **Enable Mapbox Navigation on C3**:  
-   Go to `SP - Visuals` on your C3 and toggle `Enable Mapbox Navigation*`. Accept the reboot prompt.
+Sign up for a free Mapbox account. Although a credit card is required for verification, you will not be charged for the
+free tier.
 
-4. **Connect C3 to Network**:  
-   Once rebooted, connect your C3 to a network with internet access and note the C3’s IP address.
+## 2. Generate access token
 
-5. **Configure Keys**:  
-   In a browser, navigate to `C3_IP:8082` (e.g., 192.168.1.69:8082). You should see the Comma logo and an input field. Paste your Public token (pk.xx), press enter, paste your Secret key (sk.xx), and press enter again. This page lets you search for destinations.
+!!! warning
+    You won't be able to access the secret key after this window.
 
-6. **Set Home and Work Addresses**:  
-   To set Home and Work addresses, search for a place, select Home/Work from the dropdown, and click Navigate. For other destinations, select Recent Places.
+On the Dashboard, find the **Access Tokens** section and click `Create a Token`. Name it as you like and set 
+the scopes to allow everything for both Public and Secret. Copy both keys.
 
-7. **Search on C3**:  
-   At this time, it is not possible to search directly on the C3.
+## 3. Connect comma 3/3X to a network
 
-:::tip **TIPS:**
-- If your C3 shows a "Map Loading" screen, a reboot via the UI should fix it.
-- Connect the C3 to your phone's hotspot and use your phone browser to search for places.
-- In the Navigation panel on the C3, select Home, Work, and Recent Places without needing a browser (assuming internet connection).
-  :::
+Once rebooted, connect your comma 3/3X to a network with internet access and note the comma 3/3X’s IP address.
 
-:::warning **IMPORTANT NOTE:**
-Your C3 requires an active internet connection to download map data, generate directions, and update ETA. Once data is downloaded, offline use is possible, but updates (like new directions after a missed turn) won't occur.
-:::
+## 4. Configure keys
 
-:::info **NAVIGATION NOTE:**
-Mapbox does not support alphanumeric addresses (e.g., W123N1234 Main St). There is currently no known workaround for this.
-:::
+In a browser, navigate to `C3_IP:8082` (e.g., 192.168.1.69:8082). You should see the comma logo and an input field. 
+Paste your Public token (pk.xx), press enter, paste your Secret key (sk.xx), and press enter again. This page lets 
+you search for destinations.
+
+## 5. Set Home and Work addresses
+
+To set Home and Work addresses, search for a place, select Home/Work from the dropdown, and click Navigate. For 
+other destinations, select Recent Places.
+
+!!! warning
+    Your comma 3/3X requires an active internet connection to download map data, generate directions, and update
+    ETA. Once data is downloaded, offline use is possible, but updates (like new directions after a missed turn)
+    won't occur.
+
+!!! info
+    At this time, it is not possible to search directly on the comma 3/3X.
+
+!!! info
+    Mapbox does not support alphanumeric addresses (e.g., W123N1234 Main St). There is currently no known
+    workaround for this.
+
+!!! tip
+    If your comma 3/3X shows a "Map Loading" screen, a reboot via the UI should fix it.
+    Connect the comma 3/3X to a network (i.e. your phone's hotspot) and use your phone browser to search for places.
+
+    In the Navigation panel on the comma 3/3X, select Home, Work, and Recent Places without needing a browser 
+    (assuming internet connection).
