@@ -27,16 +27,16 @@ from common.numpy_fast import interp
 # d-e2e, from modeldata.h
 TRAJECTORY_SIZE = 33
 
-LEAD_WINDOW_SIZE = 3
-LEAD_PROB = 0.5
+LEAD_WINDOW_SIZE = 4
+LEAD_PROB = 0.6
 
 SLOW_DOWN_WINDOW_SIZE = 5
-SLOW_DOWN_PROB = 0.5
+SLOW_DOWN_PROB = 0.6
 
 SLOW_DOWN_BP = [0., 10., 20., 30., 40., 50., 55., 60.]
 SLOW_DOWN_DIST = [20, 30., 50., 70., 80., 90., 105., 120.]
 
-SLOWNESS_WINDOW_SIZE = 10
+SLOWNESS_WINDOW_SIZE = 12
 SLOWNESS_PROB = 0.5
 SLOWNESS_CRUISE_OFFSET = 1.05
 
@@ -198,9 +198,9 @@ class DynamicExperimentalController:
 
     # when blinker is on and speed is driving below V_ACC_MIN: blended
     # we dont want it to switch mode at higher speed, blended may trigger hard brake
-    if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
-      self._set_mode('blended')
-      return
+    #if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
+    #  self._set_mode('blended')
+    #  return
 
     # when at highway cruise and SNG: blended
     # ensuring blended mode is used because acc is bad at catching SNG lead car
@@ -248,9 +248,9 @@ class DynamicExperimentalController:
 
     # when blinker is on and speed is driving below V_ACC_MIN: blended
     # we dont want it to switch mode at higher speed, blended may trigger hard brake
-    if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
-      self._set_mode('blended')
-      return
+    #if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
+    #  self._set_mode('blended')
+    #  return
 
     # when standstill: blended
     # in case of lead car suddenly move away under traffic light, acc mode won't brake at traffic light.
