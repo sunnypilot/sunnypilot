@@ -40,7 +40,7 @@ Current Openpilot policy is to identify with vision first and match it to a rada
 5. **Test Drive**:  
    Go for a quick drive, drive behind a lead car, and allow the drive to upload its `rlogs` in [comma Connect](https://connect.comma.ai).
 
-6. **Verify in Cabana**:  
+6. **Verify in Cabana**:
    Open the drive in Cabana from [comma Connect](https://connect.comma.ai), load `hyundai_kia_mando_front_radar.dbc`, search `RADAR_TRACK_50x`, and check `LONG_DIST`.
 
 7. **Confirmation**:  
