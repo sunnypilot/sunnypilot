@@ -66,7 +66,7 @@ BUTTONS = [
   Button(car.CarState.ButtonEvent.Type.decelCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightScrollTicks", list(range(-9, 0)), None),
   Button(car.CarState.ButtonEvent.Type.cancel, "SCCM_rightStalk", "SCCM_rightStalkStatus", [1, 2], None),
   Button(car.CarState.ButtonEvent.Type.resumeCruise, "SCCM_rightStalk", "SCCM_rightStalkStatus", [3, 4], None),
-  Button(car.CarState.ButtonEvent.Type.altButton2, "VCLEFT_switchStatus", "VCLEFT_swcRightDoublePress", [1], 1),  # Note that mux needs to be handled in carState
+  Button(car.CarState.ButtonEvent.Type.altButton2, "UI_status2", "UI_activeTouchPoints", [3], None), # 3-finger touch on center display for MADS
   Button(car.CarState.ButtonEvent.Type.gapAdjustCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightTiltRight", [2], 1),  # TODO: directional gap adjustment
 ]
 
