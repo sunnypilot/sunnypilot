@@ -102,8 +102,8 @@ class CarInterface(CarInterfaceBase):
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
     ret.stoppingControl = True
-    ret.vEgoStarting = 0.5
-    ret.startAccel = 1.0
+    ret.vEgoStarting = 0.1
+    ret.startAccel = 1.6
     ret.stopAccel = -1.0
     ret.longitudinalActuatorDelay = 0.5
 
