@@ -62,6 +62,8 @@ ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
 
 PERSONALITY_MAPPING = {0: 0, 1: 1, 2: 2, 3: 2}
 
+STOPPED_FRAMES = 100
+
 
 class Controls:
   def __init__(self, CI=None):
@@ -191,6 +193,8 @@ class Controls:
     self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
     self.overtaking_accel_engaged = False
     self.prev_overtaking_accel_engaged = False
+    self.stopping_frame = 0
+    self.stopping_state = 3
 
     self.accel_personality = self.read_accel_personality_param()
 
@@ -648,12 +652,51 @@ class Controls:
     if not self.joystick_mode:
       speeds = long_plan.speeds
       resume = False
+      stop_req = False
       if len(speeds):
-        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1 and self.CP.carName == "hyundai"
+        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1
+
+      if self.stopping_state == 3:
+        if actuators.longControlState == car.CarControl.Actuators.LongControlState.stopping and not resume:
+          stop_req = True
+          self.stopping_state = 0
+          self.stopping_frame = 1
+
+      elif self.stopping_state == 2:
+        if not resume:
+          stop_req = True
+          self.stopping_state = 0
+          self.stopping_frame = 1
+
+      elif self.stopping_state == 1:
+        stop_req = False
+        if self.stopping_frame > (STOPPED_FRAMES - 2):
+          if not resume:
+            stop_req = True
+            self.stopping_state = 0
+          else:
+            self.stopping_state = 2
+        else:
+          self.stopping_frame += 1
+
+      elif self.stopping_state == 0:
+        if self.stopping_frame > STOPPED_FRAMES:
+          stop_req = False
+          self.stopping_state = 1
+          self.stopping_frame = 0
+        else:
+          self.stopping_frame += 1
+
+      if actuators.longControlState != car.CarControl.Actuators.LongControlState.stopping or resume:
+        stop_req = False
+        self.stopping_state = 3
+        self.stopping_frame = 0
+
+      stop = stop_req if self.CP.carName == "hyundai" else long_plan.shouldStop
 
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
-      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits, resume)
+      actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits, stop)
 
       # Steering PID loop and lateral MPC
       if self.model_use_lateral_planner:

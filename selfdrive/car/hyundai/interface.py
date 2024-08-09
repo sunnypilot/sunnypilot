@@ -187,9 +187,6 @@ class CarInterface(CarInterfaceBase):
     if 0x2AA in fingerprint[0]:
       ret.minSteerSpeed = 0.
 
-    if Params().get_bool("HkgSmoothStop"):
-      ret.vEgoStopping = 0.1
-
     return ret
 
   @staticmethod

@@ -96,7 +96,6 @@ class CarController(CarControllerBase):
     self.steady_speed = 0
     self.speeds = 0
     self.v_target_plan = 0
-    self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
     self.custom_stock_planner_speed = self.param_s.get_bool("CustomStockLongPlanner")
     self.lead_distance = 0
 
@@ -303,9 +302,6 @@ class CarController(CarControllerBase):
         self.lead_distance = self.calculate_lead_distance(hud_control)
 
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
-        if self.hkg_can_smooth_stop:
-          stopping = stopping and CS.out.vEgoRaw < 0.05
-
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
         use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
