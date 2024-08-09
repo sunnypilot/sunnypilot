@@ -12,6 +12,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
+from openpilot.selfdrive.car.hyundai.values import HyundaiFlags
 from openpilot.selfdrive.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc
@@ -82,7 +83,7 @@ class LongitudinalPlanner:
     self.dt = dt
 
     self.a_desired = init_a
-    v_ego_sec = 0.6 if CP.carName == "hyundai" else 2.0
+    v_ego_sec = 0.6 if CP.carName == "hyundai" and not CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV) else 2.0
     self.v_desired_filter = FirstOrderFilter(init_v, v_ego_sec, self.dt)
     self.v_model_error = 0.0
 
