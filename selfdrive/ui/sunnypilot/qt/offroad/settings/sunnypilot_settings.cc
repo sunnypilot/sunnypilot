@@ -52,7 +52,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     {
       "OvertakingAccelerationAssist",
       tr("Overtaking Acceleration Assist"),
-      tr("Overtaking Acceleration Assist will operate when the turn signal indicator is turned on to the left (left-hand drive) or turned on to the right (right-hand drive) while Smart Cruise Control is operating."),
+      tr("Overtaking Acceleration Assist will operate when the turn signal indicator is turned on to the left (left-hand drive) or turned on to the right (right-hand drive) while openpilot Longitudinal Control is operating."),
       "../assets/offroad/icon_blank.png",
     },
     {
@@ -477,6 +477,8 @@ void SunnypilotPanel::updateToggles() {
   toggles["VisionCurveLaneless"]->setEnabled(dynamic_lane_profile_param == "2");
   toggles["VisionCurveLaneless"]->refresh();
 
+  auto overtaking_acceleration_assist = toggles["OvertakingAccelerationAssist"];
+
   bool custom_driving_model_valid = params.getBool("CustomDrivingModel");
   auto driving_model_generation = QString::fromStdString(params.get("DrivingModelGeneration"));
   bool model_use_lateral_planner = custom_driving_model_valid && driving_model_generation == "1";
@@ -556,6 +558,7 @@ void SunnypilotPanel::updateToggles() {
       if (!slcSettings->isVisible() && enable_slc_param) {
         slcSettings->setVisible(true);
       }
+      overtaking_acceleration_assist->setEnabled(hasLongitudinalControl(CP));
     } else {
       v_tsc->setEnabled(false);
       m_tsc->setEnabled(false);
@@ -563,18 +566,21 @@ void SunnypilotPanel::updateToggles() {
       slc_toggle->setEnabled(false);
       params.remove("EnableSlc");
       slcSettings->setEnabled(false);
+      overtaking_acceleration_assist->setEnabled(false);
     }
 
     enforce_torque_lateral->refresh();
     slc_toggle->refresh();
     nnff_toggle->refresh();
     m_tsc->refresh();
+    overtaking_acceleration_assist->refresh();
   } else {
     v_tsc->setEnabled(false);
     m_tsc->setEnabled(false);
     reverse_acc->setEnabled(false);
     slc_toggle->setEnabled(false);
     slcSettings->setEnabled(false);
+    overtaking_acceleration_assist->setEnabled(false);
 
     nnff_toggle->setDescription(nnff_toggle->isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
   }
