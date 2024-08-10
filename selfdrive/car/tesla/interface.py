@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import time
 from cereal import car
 from panda import Panda
 from openpilot.selfdrive.car.tesla.values import CAR

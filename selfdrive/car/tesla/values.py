@@ -7,7 +7,7 @@ from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request,
 
 Ecu = car.CarParams.Ecu
 
-Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values', 'mux'])
+Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 
 class CAR(Platforms):
@@ -60,14 +60,13 @@ GEAR_MAP = {
 }
 
 BUTTONS = [
-  Button(car.CarState.ButtonEvent.Type.leftBlinker, "SCCM_leftStalk", "SCCM_turnIndicatorStalkStatus", [3, 4], None),
-  Button(car.CarState.ButtonEvent.Type.rightBlinker, "SCCM_leftStalk", "SCCM_turnIndicatorStalkStatus", [1, 2], None),
-  Button(car.CarState.ButtonEvent.Type.accelCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightScrollTicks", list(range(1, 10)), None),
-  Button(car.CarState.ButtonEvent.Type.decelCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightScrollTicks", list(range(-9, 0)), None),
-  Button(car.CarState.ButtonEvent.Type.cancel, "SCCM_rightStalk", "SCCM_rightStalkStatus", [1, 2], None),
-  Button(car.CarState.ButtonEvent.Type.resumeCruise, "SCCM_rightStalk", "SCCM_rightStalkStatus", [3, 4], None),
-  Button(car.CarState.ButtonEvent.Type.altButton2, "UI_status2", "UI_activeTouchPoints", [3], None), # 3-finger touch on center display for MADS
-  Button(car.CarState.ButtonEvent.Type.gapAdjustCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightTiltRight", [2], 1),  # TODO: directional gap adjustment
+  Button(car.CarState.ButtonEvent.Type.leftBlinker, "SCCM_leftStalk", "SCCM_turnIndicatorStalkStatus", [3, 4]),
+  Button(car.CarState.ButtonEvent.Type.rightBlinker, "SCCM_leftStalk", "SCCM_turnIndicatorStalkStatus", [1, 2]),
+  Button(car.CarState.ButtonEvent.Type.accelCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightScrollTicks", list(range(1, 10))),
+  Button(car.CarState.ButtonEvent.Type.decelCruise, "VCLEFT_switchStatus", "VCLEFT_swcRightScrollTicks", list(range(-9, 0))),
+  Button(car.CarState.ButtonEvent.Type.cancel, "SCCM_rightStalk", "SCCM_rightStalkStatus", [1, 2]),
+  Button(car.CarState.ButtonEvent.Type.resumeCruise, "SCCM_rightStalk", "SCCM_rightStalkStatus", [3, 4]),
+  Button(car.CarState.ButtonEvent.Type.altButton2, "UI_status2", "UI_activeTouchPoints", [3]), # 3-finger touch on center display for MADS
 ]
 
 

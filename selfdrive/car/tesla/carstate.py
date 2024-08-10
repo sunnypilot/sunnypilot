@@ -67,11 +67,6 @@ class CarState(CarStateBase):
 
     button_events = []
     for button in BUTTONS:
-      if button.mux is not None:  # HACK: handle muxed signals
-        indexName = button.can_addr + "Index"
-        index = cp_adas.vl[button.can_addr][indexName]
-        if index != button.mux:
-          continue
       state = (cp_adas.vl[button.can_addr][button.can_msg] in button.values)
       if self.button_states[button.event_type] != state:
         event = car.CarState.ButtonEvent.new_message()
