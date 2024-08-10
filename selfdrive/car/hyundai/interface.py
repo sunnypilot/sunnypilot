@@ -216,9 +216,8 @@ class CarInterface(CarInterfaceBase):
       rt_avail_cache = params.get_bool("HyundaiRadarTracksAvailableCache")
       if rt_avail and rt_avail_cache:
         pass
-      elif rt_avail != rt_avail_cache:
-        params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", rt_avail)
       else:
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", rt_avail)
         fingerprint = ast.literal_eval(params.get("Fingerprints", encoding="utf8"))
         if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
           params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
