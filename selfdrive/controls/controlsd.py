@@ -191,6 +191,9 @@ class Controls:
     self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
     self.overtaking_accel_engaged = False
     self.prev_overtaking_accel_engaged = False
+    self.overtaking_accel_allowed = False
+    self.prev_overtaking_accel_allowed = False
+    self.overtaking_accel_blocked = False
 
     self.accel_personality = self.read_accel_personality_param()
 
@@ -828,17 +831,23 @@ class Controls:
     long_plan = self.sm['longitudinalPlan']
     dm_state = self.sm['driverMonitoringState']
     blinker_svs = lat_plan if self.model_use_lateral_planner else model_v2.meta
-    overtaking_accel_allowed = ((blinker_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
-                                (blinker_svs.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
-                               (blinker_svs.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting))
+    self.prev_overtaking_accel_allowed = self.overtaking_accel_allowed
+    if not self.overtaking_accel_allowed and not self.prev_overtaking_accel_allowed:
+      self.overtaking_accel_blocked = False
+    self.overtaking_accel_allowed = ((blinker_svs.laneChangeDirection == LaneChangeDirection.right and dm_state.isRHD) or
+                                     (blinker_svs.laneChangeDirection == LaneChangeDirection.left and not dm_state.isRHD)) and \
+                                    (blinker_svs.laneChangeState in (LaneChangeState.preLaneChange, LaneChangeState.laneChangeStarting)) and \
+                                    not self.overtaking_accel_blocked
     self.prev_overtaking_accel_engaged = self.overtaking_accel_engaged
     ttc = self.sm['radarState'].leadOne.dRel / CS.vEgo if CS.vEgo > 0 else 255
-    overtaking_accel_engaged = self.overtaking_accel and overtaking_accel_allowed and \
-                               (CS.vEgo > ((60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS))) and long_plan.hasLead and \
-                               long_plan.aTarget > -0.2 and not (CS.leftBlinker and CS.rightBlinker) and (0.75 < ttc < 3.0)
-    if ttc <= 0.75 and self.prev_overtaking_accel_engaged and overtaking_accel_engaged:
+    overtaking_accel_engaged = self.overtaking_accel and self.overtaking_accel_allowed and \
+                               (CS.vEgo > ((60 * CV.KPH_TO_MS) if self.is_metric else (40 * CV.MPH_TO_MS))) and \
+                               not (CS.leftBlinker and CS.rightBlinker)
+    if ttc < 0.75 and self.prev_overtaking_accel_engaged and overtaking_accel_engaged:
       overtaking_accel_engaged = False
-    if overtaking_accel_engaged and not self.prev_overtaking_accel_engaged:
+      self.overtaking_accel_blocked = True
+    if overtaking_accel_engaged and not self.prev_overtaking_accel_engaged and \
+      long_plan.hasLead and long_plan.aTarget > -0.1 and (0.75 < ttc < 3.0):
       self.overtaking_accel_engaged = True
     elif not overtaking_accel_engaged:
       self.overtaking_accel_engaged = False
