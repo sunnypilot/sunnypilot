@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Screen Recordings
+{% endblock %}
+
+{% block main %}
+    <br>
+    <h1>Screen Recordings</h1>
+    <br>
+    <video id="video" width="320" height="240" controls autoplay="autoplay" style="background:black">
+    </video>
+    <br><br>
+    current view: <span id="mycurrentview"></span>
+    <br>
+    <a href="/screenrecords/download/{{ clip }}">download: {{ clip }}</a><br><br>
+    <script>
+    var video = document.getElementById("video");
+    var track = {
+        play: function() {
+        return ( "/screenrecords/play/pipe/" + '{{ clip }}' );
+        }
+    }
+    video.src = track.play();
+    document.getElementById("mycurrentview").textContent=video.src.split("/")[6];
+    </script>
+    {% for row in rows %}
+        <a href="/screenrecords/{{ row }}">{{ row }}</a><br>
+    {% endfor %}
+    <br><br>
+{% endblock %}
