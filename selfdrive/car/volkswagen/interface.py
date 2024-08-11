@@ -114,26 +114,25 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_ext, self.CP.transmissionType)
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            self.CS.button_events, c.vCruise,
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise,
                                                             enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     if ret.cruiseState.available:
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+        self.CS.madsEnabled = self.get_acc_mads(ret)
     else:
       self.CS.madsEnabled = False
-    self.CS.madsEnabled = self.get_sp_started_mads(ret, self.CS)
+    self.CS.madsEnabled = self.get_sp_started_mads(ret)
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in self.CS.button_events):
-        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+        self.get_sp_cancel_cruise_state()
     if self.get_sp_pedal_disengage(ret):
-      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      self.get_sp_cancel_cruise_state()
       ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
 
     if self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed:
@@ -141,8 +140,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS,
-                                            gap_button=any(b.type == ButtonType.gapAdjustCruise and b.pressed for b in self.CS.button_events))
+    ret = self.get_sp_common_state(ret, gap_button=any(b.type == ButtonType.gapAdjustCruise and b.pressed for b in self.CS.button_events))
 
     ret.buttonEvents = [
       *self.CS.button_events,
@@ -153,7 +151,7 @@ class CarInterface(CarInterfaceBase):
                                        pcm_enable=False,
                                        enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
-    events, ret = self.create_sp_events(self.CS, ret, events,
+    events, ret = self.create_sp_events(ret, events,
                                         enable_buttons=(ButtonType.setCruise, ButtonType.resumeCruise))
 
     # Low speed steer alert hysteresis logic
@@ -173,9 +171,7 @@ class CarInterface(CarInterfaceBase):
     if self.CC.eps_timer_soft_disable_alert:
       events.add(EventName.steerTimeLimit)
 
-    ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
-                                                           self.CC.target_speed, self.CC.v_set_dis,
-                                                           self.CC.speed_diff, self.CC.button_type)
+    ret.customStockLong = self.update_custom_stock_long()
 
     ret.events = events.to_msg()
 
