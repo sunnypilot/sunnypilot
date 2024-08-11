@@ -18,7 +18,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           fetch-depth: 1
@@ -43,6 +43,8 @@ jobs:
         run: |
           # Add GitLab remote
           git remote add gitlab git@gitlab.com:sunnypilot/sunnyhaibin/sunnypilot-github-mirror.git
-          git push --force gitlab ${{ github.ref }}:${{ github.ref_name }} || \
-          (git push --set-upstream gitlab ${{ github.ref_name }} && \
-          git push --force gitlab ${{ github.ref }}:${{ github.ref_name }})
+          git fetch gitlab ${{ github.ref_name }} || true  # Allow fetch to fail if branch doesn't exist
+
+          git rebase gitlab/${{ github.ref_name }} || true
+
+          git push --force gitlab ${{ github.ref_name }}
