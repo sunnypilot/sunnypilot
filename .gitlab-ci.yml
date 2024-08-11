@@ -69,10 +69,6 @@ workflow: # If running on any branch other than main.
 
 build:
   stage: build
-  cache:
-    key: "${CI_COMMIT_REF_SLUG}"
-    paths:
-      - "${CI_DIR}/scons_cache"
   before_script:
     - find $BUILD_DIR/ -mindepth 1 -delete
     - *default_before_script
