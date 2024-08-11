@@ -18,10 +18,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.ref }}
-          fetch-depth: 1
+          fetch-depth: 0  # Fetch full history
 
       - name: Set up Git
         run: |
@@ -43,6 +43,4 @@ jobs:
         run: |
           # Add GitLab remote
           git remote add gitlab git@gitlab.com:sunnypilot/sunnyhaibin/sunnypilot-github-mirror.git
-          git push --force gitlab ${{ github.ref }}:${{ github.ref_name }} || \
-          (git push --set-upstream gitlab ${{ github.ref_name }} && \
-          git push --force gitlab ${{ github.ref }}:${{ github.ref_name }})
+          git push -u --force gitlab ${{ github.ref }}
