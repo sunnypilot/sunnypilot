@@ -82,10 +82,12 @@ build:
     - "echo VERSION: ${VERSION}"
     - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
+    - '[ -d /dev/shm/scons_cache ] || sudo mkdir -p /dev/shm/scons_cache'
+    - rsync -a "${CI_DIR}/scons_cache/" /dev/shm/scons_cache/
   script:
     - export PYTHONPATH="$BUILD_DIR"
     - "echo Building Panda..."
-    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache ${CI_PROJECT_DIR}/panda
+    - scons -j$(nproc) cache_dir=/dev/shm/scons_cache ${CI_PROJECT_DIR}/panda
     - mkdir -p ${BUILD_DIR}
     - ls -la ${BUILD_DIR}
     - "echo Building Rest..."
@@ -93,7 +95,7 @@ build:
     # - cp -pR --parents $(cat release/files_common release/files_tici | sort | uniq) $BUILD_DIR/ 2> >(grep -v 'warning:' >&2)
     - cd $BUILD_DIR
     - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
-    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache --minimal
+    - scons -j$(nproc) cache_dir=/dev/shm/scons_cache --minimal
     - touch ${BUILD_DIR}/prebuilt
     - sudo rm -rf ${OUTPUT_DIR}
     - mkdir -p ${OUTPUT_DIR}
@@ -138,7 +140,7 @@ build:
       --chown=comma:comma
       ${BUILD_DIR}/ ${OUTPUT_DIR}/
   after_script:
-    # cleanup build dir after doing work
+    - rsync -a /dev/shm/scons_cache/ "${CI_DIR}/scons_cache/"
     - find $BUILD_DIR/ -mindepth 1 -delete
   artifacts:
     paths:
