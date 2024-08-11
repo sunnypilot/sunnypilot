@@ -1,3 +1,5 @@
+import ast
+
 from cereal import car
 from panda import Panda
 from openpilot.common.params import Params
@@ -115,6 +117,7 @@ class CarInterface(CarInterfaceBase):
 
     if DBC[ret.carFingerprint]["radar"] is None:
       if ret.spFlags & (HyundaiFlagsSP.SP_ENHANCED_SCC | HyundaiFlagsSP.SP_CAMERA_SCC_LEAD):
+        ret.radarTimeStep = 0.02
         ret.radarUnavailable = False
 
     # *** feature detection ***
@@ -133,7 +136,8 @@ class CarInterface(CarInterfaceBase):
 
       if ret.flags & HyundaiFlags.MANDO_RADAR and ret.radarUnavailable:
         ret.spFlags |= HyundaiFlagsSP.SP_RADAR_TRACKS.value
-        ret.radarUnavailable = False
+        if Params().get_bool("HyundaiRadarTracksAvailable"):
+          ret.radarUnavailable = False
 
     # *** panda safety config ***
     if candidate in CANFD_CAR:
@@ -207,7 +211,19 @@ class CarInterface(CarInterfaceBase):
     # some CAN platforms are able to enable radar tracks config at the radar ECU,
     # but the config is reset after ignition cycle
     if CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS:
+      params = Params()
       enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
+      rt_avail = params.get_bool("HyundaiRadarTracksAvailable")
+      rt_avail_cache = params.get_bool("HyundaiRadarTracksAvailableCache")
+      if rt_avail and rt_avail_cache:
+        pass
+      else:
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", bool(rt_avail))
+        fingerprint = ast.literal_eval(params.get("Fingerprints", encoding="utf8"))
+        if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
+          params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
+        elif RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None:
+          params.put_bool_nonblocking("HyundaiRadarTracksAvailable", False)
 
   def _update(self, c):
     if not self.CS.control_initialized:
@@ -233,8 +249,8 @@ class CarInterface(CarInterfaceBase):
           self.CS.accEnabled = True
 
     if self.enable_mads:
-      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and \
-        (any(b.type == ButtonType.altButton3 for b in self.CS.button_events) and not self.CP.pcmCruise):
+      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and (self.CP.pcmCruise or
+        (any(b.type == ButtonType.altButton3 for b in self.CS.button_events) and not self.CP.pcmCruise)):
         self.CS.madsEnabled = True
       if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
         self.CS.madsEnabled = not self.CS.madsEnabled
@@ -277,6 +293,9 @@ class CarInterface(CarInterfaceBase):
       self.low_speed_alert = False
     if self.low_speed_alert and self.CS.madsEnabled:
       events.add(car.CarEvent.EventName.belowSteerSpeed)
+
+    if self.CS.params_list.hyundai_radar_tracks_available and not self.CS.params_list.hyundai_radar_tracks_available_cache:
+      events.add(car.CarEvent.EventName.hyundaiRadarTracksAvailable)
 
     ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
                                                            self.CC.target_speed, self.CC.v_set_dis,
