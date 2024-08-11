@@ -82,8 +82,8 @@ build:
     - "echo VERSION: ${VERSION}"
     - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
     - git config --global --add safe.directory ${CI_PROJECT_DIR}
-    - '[ -d /dev/shm/scons_cache ] || sudo mkdir -p /dev/shm/scons_cache'
-    - rsync -a "${CI_DIR}/scons_cache/" /dev/shm/scons_cache/
+    - '[ -d /dev/shm/scons_cache ] || (mkdir -p /dev/shm/scons_cache && chmod 1777 /dev/shm/scons_cache)'
+    - rsync -a --no-owner --no-group "${CI_DIR}/scons_cache/" /dev/shm/scons_cache/
   script:
     - export PYTHONPATH="$BUILD_DIR"
     - "echo Building Panda..."
