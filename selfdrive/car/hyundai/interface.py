@@ -203,18 +203,12 @@ class CarInterface(CarInterfaceBase):
     if CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS:
       params = Params()
       enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
-      rt_avail = params.get_bool("HyundaiRadarTracksAvailable")
-      rt_avail_cache = params.get_bool("HyundaiRadarTracksAvailableCache")
-      if rt_avail and rt_avail_cache:
-        pass
-      elif rt_avail != rt_avail_cache:
-        params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", rt_avail)
-      else:
-        _, fingerprint = can_fingerprint(lambda: get_one_can(logcan))
-        if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
-          params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
-        elif RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None:
-          params.put_bool_nonblocking("HyundaiRadarTracksAvailable", False)
+      params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", params.get_bool("HyundaiRadarTracksAvailable"))
+      _, fingerprint = can_fingerprint(lambda: get_one_can(logcan))
+      if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
+      elif RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None:
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailable", False)
 
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
