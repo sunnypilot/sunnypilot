@@ -723,7 +723,7 @@ class Controls:
         self.personality = (self.personality - 1) % 3
         self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
 
-    # toggle experimental mode on distance button hold
+    # toggle experimental mode once on distance button hold
     if self.CP.openpilotLongitudinalControl:
       if self.v_cruise_helper.experimental_mode_update and self.v_cruise_helper.button_timers[ButtonType.gapAdjustCruise] == 50:
         self.experimental_mode = not self.experimental_mode

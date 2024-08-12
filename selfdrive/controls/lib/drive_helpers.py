@@ -246,7 +246,6 @@ class VCruiseHelper:
         self.v_cruise_min = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric
 
-  # toggle experimental mode on distance button hold
   def _update_experimental_mode(self, CS):
     self.experimental_mode_update = False
 
