@@ -1,8 +1,7 @@
-import ast
-
 from cereal import car
 from panda import Panda
 from openpilot.common.params import Params
+from openpilot.selfdrive.car.sunnypilot.fingerprinting import can_fingerprint, get_one_can
 from openpilot.selfdrive.car.hyundai.enable_radar_tracks import enable_radar_tracks
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, \
@@ -208,9 +207,10 @@ class CarInterface(CarInterfaceBase):
       rt_avail_cache = params.get_bool("HyundaiRadarTracksAvailableCache")
       if rt_avail and rt_avail_cache:
         pass
+      elif rt_avail != rt_avail_cache:
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", rt_avail)
       else:
-        params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", bool(rt_avail))
-        fingerprint = ast.literal_eval(params.get("Fingerprints", encoding="utf8"))
+        _, fingerprint = can_fingerprint(lambda: get_one_can(logcan))
         if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
           params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
         elif RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None:
