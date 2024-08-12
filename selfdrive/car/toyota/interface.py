@@ -238,7 +238,7 @@ class CarInterface(CarInterfaceBase):
       if not self.CP.pcmCruise:
         ret.cruiseState.enabled = self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(distance_button))
+    ret, self.CS = self.get_sp_common_state(ret, self.CS)
 
     ret.buttonEvents = [
       *self.CS.button_events,
