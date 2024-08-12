@@ -221,8 +221,8 @@ class CarInterface(CarInterfaceBase):
           self.CS.accEnabled = True
 
     if self.enable_mads:
-      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and \
-        any(b.type == ButtonType.altButton3 for b in self.CS.button_events):
+      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and (self.CP.pcmCruise or
+        (any(b.type == ButtonType.altButton3 for b in self.CS.button_events) and not self.CP.pcmCruise)):
         self.CS.madsEnabled = True
       if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
         self.CS.madsEnabled = not self.CS.madsEnabled
