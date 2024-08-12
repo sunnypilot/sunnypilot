@@ -109,6 +109,7 @@ class CarInterface(CarInterfaceBase):
 
     if DBC[ret.carFingerprint]["radar"] is None:
       if ret.spFlags & (HyundaiFlagsSP.SP_ENHANCED_SCC | HyundaiFlagsSP.SP_CAMERA_SCC_LEAD):
+        ret.radarTimeStep = 0.02
         ret.radarUnavailable = False
 
     # *** feature detection ***
@@ -202,6 +203,11 @@ class CarInterface(CarInterfaceBase):
       enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
 
   def _update(self, c):
+    if not self.CS.control_initialized and not self.CP.pcmCruise:
+      can_cruise_main_default = self.CP.spFlags & HyundaiFlagsSP.SP_CAN_LFA_BTN and not self.CP.flags & HyundaiFlags.CANFD and \
+                                self.CS.params_list.hyundai_cruise_main_default
+      self.CS.mainEnabled = True if can_cruise_main_default or self.CP.carFingerprint in CANFD_CAR else False
+
     ret = self.CS.update(self.cp, self.cp_cam)
 
     self.CS.button_events = [
@@ -220,8 +226,8 @@ class CarInterface(CarInterfaceBase):
           self.CS.accEnabled = True
 
     if self.enable_mads:
-      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and \
-        any(b.type == ButtonType.altButton3 for b in self.CS.button_events):
+      if not self.CS.prev_mads_enabled and self.CS.mads_enabled and (self.CP.pcmCruise or
+        (any(b.type == ButtonType.altButton3 for b in self.CS.button_events) and not self.CP.pcmCruise)):
         self.CS.madsEnabled = True
       if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
         self.CS.madsEnabled = not self.CS.madsEnabled
