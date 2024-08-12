@@ -20,7 +20,7 @@ from openpilot.common.swaglog import cloudlog
 
 from openpilot.selfdrive.car.car_helpers import get_car_interface, get_startup_event
 from openpilot.selfdrive.controls.lib.alertmanager import AlertManager, set_offroad_alert
-from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature, get_lag_adjusted_curvature
+from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature, get_lag_adjusted_curvature, CRUISE_LONG_PRESS
 from openpilot.selfdrive.controls.lib.events import Events, ET
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl, MIN_LATERAL_CONTROL_SPEED
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
@@ -717,17 +717,19 @@ class Controls:
         cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
         setattr(actuators, p, 0.0)
 
-    # decrement personality on distance button press
-    if self.CP.openpilotLongitudinalControl:
-      if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
-        self.personality = (self.personality - 1) % 3
-        self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
-
     # toggle experimental mode once on distance button hold
     if self.CP.openpilotLongitudinalControl:
-      if self.v_cruise_helper.experimental_mode_update and self.v_cruise_helper.button_timers[ButtonType.gapAdjustCruise] == 50:
+      if self.v_cruise_helper.experimental_mode_update and self.v_cruise_helper.button_timers[ButtonType.gapAdjustCruise] == CRUISE_LONG_PRESS:
         self.experimental_mode = not self.experimental_mode
         self.params.put_bool_nonblocking("ExperimentalMode", self.experimental_mode)
+
+    # decrement personality on distance button press
+    if self.CP.openpilotLongitudinalControl:
+      if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents) and \
+            not self.v_cruise_helper.experimental_mode_update:
+        self.personality = (self.personality - 1) % 3
+        self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
+        self.v_cruise_helper.experimental_mode_update = False
 
     return CC, lac_log
 

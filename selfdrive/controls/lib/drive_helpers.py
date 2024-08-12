@@ -113,6 +113,7 @@ class VCruiseHelper:
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
+      self.experimental_mode_update = False
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_acc):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
@@ -242,15 +243,13 @@ class VCruiseHelper:
     self.is_metric_prev = is_metric
 
   def _update_experimental_mode(self, CS):
-    self.experimental_mode_update = False
-
     for b in CS.buttonEvents:
       if b.type == ButtonType.gapAdjustCruise and not b.pressed:
         if self.button_timers[ButtonType.gapAdjustCruise] > CRUISE_LONG_PRESS:
           return  # end long press
         break
     else:
-      if self.button_timers[ButtonType.gapAdjustCruise] and self.button_timers[ButtonType.gapAdjustCruise] % CRUISE_LONG_PRESS == 0:
+      if self.button_timers[ButtonType.gapAdjustCruise] and self.button_timers[ButtonType.gapAdjustCruise] == CRUISE_LONG_PRESS:
         self.experimental_mode_update = True
 
 
