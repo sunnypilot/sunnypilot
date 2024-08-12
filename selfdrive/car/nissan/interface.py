@@ -41,7 +41,7 @@ class CarInterface(CarInterfaceBase):
       if self.enable_mads:
         if not self.CS.prev_mads_enabled and self.CS.mads_enabled:
           self.CS.madsEnabled = True
-        self.CS.madsEnabled = self.get_acc_mads(ret)
+        self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
 

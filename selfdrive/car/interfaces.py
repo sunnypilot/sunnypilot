@@ -550,13 +550,13 @@ class CarInterfaceBase(ABC):
   def sp_v_cruise_initialized(v_cruise):
     return v_cruise != V_CRUISE_UNSET
 
-  def get_acc_mads(self, cs_out):
+  def get_acc_mads(self, cs_out, mads_enabled):
     if self.CS.params_list.acc_mads_combo:
       if not self.prev_acc_mads_combo and (cs_out.cruiseState.enabled or self.CS.accEnabled):
-        self.CS.madsEnabled = True
+        mads_enabled = True
       self.prev_acc_mads_combo = (cs_out.cruiseState.enabled or self.CS.accEnabled)
 
-    return self.CS.madsEnabled
+    return mads_enabled
 
   def get_sp_v_cruise_non_pcm_state(self, cs_out, vCruise, acc_enabled,
                                     enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
