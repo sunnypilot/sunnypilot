@@ -160,7 +160,7 @@ class CarInterface(CarInterfaceBase):
 
     sp_tss2_long_tune = Params().get_bool("ToyotaTSS2Long")
 
-    # hand tuned (July 1, 2024)
+    # hand tuned (August 12, 2024)
     def custom_tss2_longitudinal_tuning():
       ret.vEgoStopping = 0.25
       ret.vEgoStarting = 0.25
@@ -182,7 +182,7 @@ class CarInterface(CarInterfaceBase):
         #tune.kiV = [0.34, 0.35, 0.2896, 0.2237, 0.174, 0.10, 0.08, 0.06]
         #smooth
         tune.kiBP = [0.,   12.,  20.,  27.,  36.,  50]
-        tune.kiV = [0.333, 0.21, 0.17, 0.12, 0.08, 0.06]
+        tune.kiV = [0.333, 0.203, 0.17, 0.12, 0.08, 0.06]
         #tune.kiBP = [0.,  2.,   5.,  12.,  16,   20.,  27.,  36.,  50]
         #tune.kiV = [0.27, 0.24, 0.2205, 0.20, 0.18, 0.17, 0.12, 0.08, 0.06]
         custom_tss2_longitudinal_tuning()
