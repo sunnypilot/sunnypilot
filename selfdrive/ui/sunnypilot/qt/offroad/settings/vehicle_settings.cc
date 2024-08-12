@@ -112,13 +112,6 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
 
   hyundaiCruiseMainDefault = new ParamControlSP(
     "HyundaiCruiseMainDefault",
-    tr("HKG CAN: Enable Cruise Main By Default"),
-    tr("Enabling this toggle sets CRUISE MAIN to ON by default when the car starts, without engaging MADS. The user still needs to manually engage MADS"),
-    "../assets/offroad/icon_blank.png");
-  addItem(hyundaiCruiseMainDefault);
-
-  hyundaiCruiseMainDefault = new ParamControlSP(
-    "HyundaiCruiseMainDefault",
     tr("HKG CAN: Enable Cruise Main by Default"),
     QString("<b>%1</b><br><br>%2")
     .arg(tr("WARNING: This feature only applies when \"openpilot Longitudinal Control (Alpha)\" is enabled under \"Toggles\""))
