@@ -1,3 +1,4 @@
+import cereal.messaging as messaging
 from cereal import car
 from panda import Panda
 from openpilot.common.params import Params
@@ -213,7 +214,8 @@ class CarInterface(CarInterfaceBase):
       params = Params()
       enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
       params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", params.get_bool("HyundaiRadarTracksAvailable"))
-      _, fingerprint = can_fingerprint(lambda: get_one_can(logcan))
+      messaging.drain_sock_raw(logcan)
+      fingerprint = can_fingerprint(lambda: get_one_can(logcan))
       if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
         params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
       elif RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None:
