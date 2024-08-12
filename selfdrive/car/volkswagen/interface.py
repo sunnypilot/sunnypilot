@@ -126,7 +126,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
-    self.CS.madsEnabled = self.get_sp_started_mads(ret)
+    self.CS.madsEnabled = self.get_sp_started_mads(ret, self.CS.madsEnabled)
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0) or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in self.CS.button_events):

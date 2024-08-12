@@ -596,13 +596,13 @@ class CarInterfaceBase(ABC):
     else:
       return cs_out.cruiseState.available
 
-  def get_sp_started_mads(self, cs_out):
+  def get_sp_started_mads(self, cs_out, mads_enabled):
     if not cs_out.cruiseState.available and self.CS.out.cruiseState.available:
       self.madsEnabledInit = False
       self.madsEnabledInitPrev = False
       return False
     if not self.CS.params_list.mads_main_toggle or self.prev_acc_mads_combo:
-      return self.CS.madsEnabled
+      return mads_enabled
     if not self.madsEnabledInit and self.CS.madsEnabled:
       self.madsEnabledInit = True
       self.last_mads_init = time.monotonic()
@@ -614,7 +614,7 @@ class CarInterfaceBase(ABC):
       self.madsEnabledInitPrev = True
       return cs_out.cruiseState.available
     else:
-      return self.CS.madsEnabled
+      return mads_enabled
 
   def get_sp_common_state(self, cs_out, gear_allowed=True, gap_button=False):
     cs_out.cruiseState.enabled = self.CS.accEnabled if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed else cs_out.cruiseState.enabled
