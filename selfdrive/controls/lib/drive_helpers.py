@@ -98,19 +98,18 @@ class VCruiseHelper:
       self._update_v_cruise_min(is_metric)
 
     if CS.cruiseState.available:
+      if self.CP.openpilotLongitudinalControl:
+        self._update_experimental_mode(CS)
+
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
         self._update_v_cruise_slc(long_plan_sp)
         self.v_cruise_cluster_kph = self.v_cruise_kph
-        self.update_button_timers(CS, enabled)
       else:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
         self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
-
-      if self.CP.openpilotLongitudinalControl:
-        self._update_experimental_mode(CS)
-        self.update_button_timers(CS, enabled)
+      self.update_button_timers(CS, enabled)
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
