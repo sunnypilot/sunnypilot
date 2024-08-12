@@ -78,7 +78,6 @@ class VCruiseHelper:
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.gapAdjustCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
 
-    self.param_s = Params()
     self.is_metric_prev = None
     self.v_cruise_min = V_CRUISE_MIN
     self.slc_state = SpeedLimitControlState.inactive
