@@ -220,8 +220,9 @@ class CarInterface(CarInterfaceBase):
         params.put_bool_nonblocking("HyundaiRadarTracksAvailable", False)
 
   def _update(self, c):
-    if not self.CS.control_initialized:
-      can_cruise_main_default = self.CP.spFlags & HyundaiFlagsSP.SP_CAN_LFA_BTN and not self.CP.flags & HyundaiFlags.CANFD and self.CS.params_list.hyundai_cruise_main_default
+    if not self.CS.control_initialized and not self.CP.pcmCruise:
+      can_cruise_main_default = self.CP.spFlags & HyundaiFlagsSP.SP_CAN_LFA_BTN and not self.CP.flags & HyundaiFlags.CANFD and \
+                                self.CS.params_list.hyundai_cruise_main_default
       self.CS.mainEnabled = True if can_cruise_main_default or self.CP.carFingerprint in CANFD_CAR else False
 
     ret = self.CS.update(self.cp, self.cp_cam)
