@@ -4,7 +4,7 @@ from openpilot.selfdrive.car.fingerprints import eliminate_incompatible_cars, al
 import cereal.messaging as messaging
 from openpilot.selfdrive.car import gen_empty_fingerprint
 
-FRAME_FINGERPRINT = 100  # 1s
+FRAME_FINGERPRINT = 25  # 0.25s
 
 
 def get_one_can(logcan):
