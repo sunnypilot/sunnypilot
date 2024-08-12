@@ -143,10 +143,7 @@ class VCruiseHelper:
           long_press = True
           break
 
-    if button_type is None:
-      return
-
-    if button_type == ButtonType.gapAdjustCruise:
+    if button_type is None or button_type == ButtonType.gapAdjustCruise:
       return
 
     resume_button = ButtonType.accelCruise
