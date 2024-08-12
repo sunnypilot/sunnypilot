@@ -205,8 +205,6 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_loopback)
 
-    distance_button = 0
-
     # Don't add event if transitioning from INIT, unless it's to an actual button
     if self.CS.cruise_buttons != CruiseButtons.UNPRESS or self.CS.prev_cruise_buttons != CruiseButtons.INIT:
       self.CS.button_events = [
@@ -215,7 +213,6 @@ class CarInterface(CarInterfaceBase):
         *create_button_events(self.CS.distance_button, self.CS.prev_distance_button,
                               {1: ButtonType.gapAdjustCruise})
       ]
-      distance_button = self.CS.distance_button
 
     self.CS.button_events = [
       *self.CS.button_events,
@@ -252,7 +249,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret = self.get_sp_common_state(ret, gap_button=bool(distance_button))
+    ret = self.get_sp_common_state(ret)
 
     ret.buttonEvents = [
       *self.CS.button_events,

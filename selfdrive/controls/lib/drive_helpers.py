@@ -79,7 +79,7 @@ class VCruiseHelper:
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
-    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
+    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.gapAdjustCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
 
     self.is_metric_prev = None
@@ -93,6 +93,8 @@ class VCruiseHelper:
     self.sp_override_cruise_speed_last = V_CRUISE_UNSET
     self.sp_override_enabled_last = False
 
+    self.experimental_mode_update = False
+
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
@@ -105,12 +107,14 @@ class VCruiseHelper:
       self._update_v_cruise_min(is_metric)
 
     if CS.cruiseState.available:
+      if self.CP.openpilotLongitudinalControl:
+        self._update_experimental_mode(CS)
+
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
         self._update_v_cruise_slc(long_plan_sp)
         self.v_cruise_cluster_kph = self.v_cruise_kph
-        self.update_button_timers(CS, enabled)
       else:
         if enabled and sp_override_speed and CS.cruiseState.speed * CV.MS_TO_KPH < sp_override_speed:
           if self.sp_override_v_cruise_kph == V_CRUISE_UNSET:
@@ -132,10 +136,12 @@ class VCruiseHelper:
 
         self.sp_override_cruise_speed_last = CS.cruiseState.speed
         self.sp_override_enabled_last = enabled
+      self.update_button_timers(CS, enabled)
     else:
       self.sp_override_v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
+      self.experimental_mode_update = False
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_acc):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
@@ -165,7 +171,7 @@ class VCruiseHelper:
           long_press = True
           break
 
-    if button_type is None:
+    if button_type is None or button_type == ButtonType.gapAdjustCruise:
       return
 
     resume_button = ButtonType.accelCruise
@@ -267,6 +273,16 @@ class VCruiseHelper:
       elif self.CP.carName == "gm":
         self.v_cruise_min = GM_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric
+
+  def _update_experimental_mode(self, CS):
+    for b in CS.buttonEvents:
+      if b.type == ButtonType.gapAdjustCruise and not b.pressed:
+        if self.button_timers[ButtonType.gapAdjustCruise] > CRUISE_LONG_PRESS:
+          return  # end long press
+        break
+    else:
+      if self.button_timers[ButtonType.gapAdjustCruise] and self.button_timers[ButtonType.gapAdjustCruise] == CRUISE_LONG_PRESS:
+        self.experimental_mode_update = True
 
 
 def clip_curvature(v_ego, prev_curvature, new_curvature):
