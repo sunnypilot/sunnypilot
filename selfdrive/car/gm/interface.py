@@ -227,7 +227,7 @@ class CarInterface(CarInterfaceBase):
       if any(b.type == ButtonType.accelCruise and b.pressed for b in self.CS.button_events):
         self.CS.accEnabled = True
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise, self.CS.accEnabled)
 
     if ret.cruiseState.available:
       if self.enable_mads:

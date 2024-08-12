@@ -558,7 +558,7 @@ class CarInterfaceBase(ABC):
 
     return self.CS.madsEnabled
 
-  def get_sp_v_cruise_non_pcm_state(self, cs_out, vCruise,
+  def get_sp_v_cruise_non_pcm_state(self, cs_out, vCruise, acc_enabled,
                                     enable_buttons=(ButtonType.accelCruise, ButtonType.decelCruise),
                                     resume_button=(ButtonType.accelCruise, ButtonType.resumeCruise)):
 
@@ -566,17 +566,17 @@ class CarInterfaceBase(ABC):
       for b in self.CS.button_events:
         if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
           if b.type in enable_buttons and not b.pressed:
-            self.CS.accEnabled = True
+            acc_enabled = True
         if not self.CP.pcmCruise:
           if b.type in resume_button and not self.sp_v_cruise_initialized(vCruise):
-            self.CS.accEnabled = False
+            acc_enabled = False
         if not self.CP.pcmCruiseSpeed:
           if b.type == ButtonType.accelCruise and not cs_out.cruiseState.enabled:
-            self.CS.accEnabled = False
+            acc_enabled = False
     else:
-      self.CS.accEnabled = False
+      acc_enabled = False
 
-    return self.CS.accEnabled
+    return acc_enabled
 
   def get_sp_cancel_cruise_state(self):
     self.CS.madsEnabled = False if not self.enable_mads or self.disengage_on_accelerator else self.CS.madsEnabled

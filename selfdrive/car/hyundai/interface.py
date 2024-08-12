@@ -212,7 +212,7 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise, self.CS.accEnabled)
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
