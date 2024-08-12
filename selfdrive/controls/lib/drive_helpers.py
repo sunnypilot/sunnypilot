@@ -4,7 +4,6 @@ import numpy as np
 from cereal import car, log, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL, DT_CTRL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
@@ -86,11 +85,13 @@ class VCruiseHelper:
     self.slc_state_prev = SpeedLimitControlState.inactive
     self.slc_speed_limit_offsetted = 0
 
+    self.experimental_mode_update = False
+
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, long_plan_sp, experimental_mode):
+  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, long_plan_sp):
     self.v_cruise_kph_last = self.v_cruise_kph
     self.slc_state = long_plan_sp.speedLimitControlState
 
@@ -109,7 +110,7 @@ class VCruiseHelper:
         self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
 
       if self.CP.openpilotLongitudinalControl:
-        self._update_experimental_mode(CS, experimental_mode)
+        self._update_experimental_mode(CS)
         self.update_button_timers(CS, enabled)
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
@@ -246,27 +247,17 @@ class VCruiseHelper:
     self.is_metric_prev = is_metric
 
   # toggle experimental mode on distance button hold
-  def _update_experimental_mode(self, CS, experimental_mode):
-    long_press = False
-    button_type = None
+  def _update_experimental_mode(self, CS):
+    self.experimental_mode_update = False
 
     for b in CS.buttonEvents:
       if b.type == ButtonType.gapAdjustCruise and not b.pressed:
         if self.button_timers[ButtonType.gapAdjustCruise] > CRUISE_LONG_PRESS:
           return  # end long press
-        button_type = b.type
         break
     else:
       if self.button_timers[ButtonType.gapAdjustCruise] and self.button_timers[ButtonType.gapAdjustCruise] % CRUISE_LONG_PRESS == 0:
-        button_type = ButtonType.gapAdjustCruise
-        long_press = True
-
-    if button_type is None:
-      return
-
-    if long_press and self.button_timers[button_type] == CRUISE_LONG_PRESS:
-      self.experimental_mode_updated = True
-      self.param_s.put_bool_nonblocking("ExperimentalMode", not experimental_mode)
+        self.experimental_mode_update = True
 
 
 def clip_curvature(v_ego, prev_curvature, new_curvature):

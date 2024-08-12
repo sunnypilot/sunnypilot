@@ -489,8 +489,7 @@ class Controls:
   def state_transition(self, CS):
     """Compute conditional state transitions and execute actions on state transitions"""
 
-    self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change,
-                                         self.sm['longitudinalPlanSP'], self.experimental_mode)
+    self.v_cruise_helper.update_v_cruise(CS, self.enabled_long, self.is_metric, self.reverse_acc_change, self.sm['longitudinalPlanSP'])
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
@@ -723,6 +722,12 @@ class Controls:
       if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
         self.personality = (self.personality - 1) % 3
         self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
+
+    # toggle experimental mode on distance button hold
+    if self.CP.openpilotLongitudinalControl:
+      if self.v_cruise_helper.experimental_mode_update and self.v_cruise_helper.button_timers[ButtonType.gapAdjustCruise] == 50:
+        self.experimental_mode = not self.experimental_mode
+        self.params.put_bool_nonblocking("ExperimentalMode", self.experimental_mode)
 
     return CC, lac_log
 
