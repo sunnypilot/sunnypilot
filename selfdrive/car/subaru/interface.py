@@ -128,7 +128,7 @@ class CarInterface(CarInterfaceBase):
             self.CS.madsEnabled = not self.CS.madsEnabled
           elif self.CS.prev_lkas_enabled != self.CS.lkas_enabled and self.CS.prev_lkas_enabled == 2 and self.CS.lkas_enabled != 1:
             self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret)
+        self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
 

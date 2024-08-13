@@ -213,11 +213,8 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
 
-    distance_button = 0
-
     if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR) or (self.CP.flags & ToyotaFlags.SMART_DSU and not self.CP.flags & ToyotaFlags.RADAR_CAN_FILTER):
       self.CS.button_events = create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise})
-      distance_button = self.CS.distance_button
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
@@ -234,7 +231,7 @@ class CarInterface(CarInterfaceBase):
             if (not self.CS.prev_lkas_enabled and self.CS.lkas_enabled) or \
               (self.CS.prev_lkas_enabled == 1 and not self.CS.lkas_enabled):
               self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret)
+        self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
 

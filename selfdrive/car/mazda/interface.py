@@ -47,7 +47,7 @@ class CarInterface(CarInterfaceBase):
 
     self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise, self.CS.accEnabled)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -55,7 +55,7 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret)
+        self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
 

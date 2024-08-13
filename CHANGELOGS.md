@@ -43,6 +43,9 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
 * FIXED: Driving Personality:
   * Maniac mode now correctly enforced when selected
+* FIXED: Experimental Model Distance Button Hold
+  * Experimental Model toggle with distance button hold no longer changes Personality
+  * Personality setting remains consistent when switching between Chill and Experimental Mode
 * UI Updates
   * Display Metrics Below Chevron
     * NEW❗: Time to Lead Car

@@ -182,6 +182,7 @@ class Controls:
     self.pcm_v_cruise_override = self.params.get_bool("PCMVCruiseOverride")
     self.pcm_v_cruise_override_speed = int(self.params.get("PCMVCruiseOverrideSpeed", encoding="utf-8"))
     self.process_not_running = False
+    self.experimental_mode_update = False
 
     self.custom_model_metadata = CustomModelMetadata(params=self.params, init_only=True)
     self.model_use_lateral_planner = self.custom_model_metadata.valid and \
@@ -737,18 +738,18 @@ class Controls:
     # toggle experimental mode once on distance button hold
     if self.CP.openpilotLongitudinalControl:
       if self.v_cruise_helper.button_timers[ButtonType.gapAdjustCruise] == CRUISE_LONG_PRESS and \
-            not self.v_cruise_helper.experimental_mode_update:
+            not self.experimental_mode_update:
         self.experimental_mode = not self.experimental_mode
         self.params.put_bool_nonblocking("ExperimentalMode", self.experimental_mode)
-        self.v_cruise_helper.experimental_mode_update = True
+        self.experimental_mode_update = True
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
       if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
-        if not self.v_cruise_helper.experimental_mode_update:
+        if not self.experimental_mode_update:
           self.personality = (self.personality - 1) % 3
           self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
-        self.v_cruise_helper.experimental_mode_update = False
+        self.experimental_mode_update = False
 
     return CC, lac_log
 
