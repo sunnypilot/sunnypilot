@@ -31,6 +31,7 @@ class CarInterface(CarInterfaceBase):
       flags |= Panda.FLAG_TESLA_LONG_CONTROL
       ret.openpilotLongitudinalControl = True
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.tesla, flags)]
+      ret.enableBsm = True
 
     ret.steerLimitTimer = 1.0
     ret.steerActuatorDelay = 0.25
