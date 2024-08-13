@@ -351,7 +351,7 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
     }
   });
 
-  connect(toggles["EnforceTorqueLateral"], &ToggleControl::toggleFlipped, [=](bool state) {
+  connect(toggles["EnforceTorqueLateral"], &ToggleControlSP::toggleFlipped, [=](bool state) {
     if (state) {
       toggles["NNFF"]->setEnabled(false);
       params.putBool("NNFF", false);
