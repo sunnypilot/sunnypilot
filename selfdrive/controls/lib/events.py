@@ -1141,6 +1141,9 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.PERMANENT: torque_nn_load_alert,
   },
 
+  EventName.hyundaiRadarTracksAvailable: {
+    ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
+  }
 }
 
 
