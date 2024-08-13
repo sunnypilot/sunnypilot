@@ -213,11 +213,11 @@ class LatControlTorque(LatControl):
         if self.use_steering_angle or lookahead_lateral_jerk == 0.0:
           lookahead_lateral_jerk = 0.0
           actual_lateral_jerk = 0.0
-          lat_accel_friction_factor = 1.0
-        else:
-          lat_accel_friction_factor = self.lat_accel_friction_factor
         lateral_jerk_setpoint = self.lat_jerk_friction_factor * lookahead_lateral_jerk
         lateral_jerk_measurement = self.lat_jerk_friction_factor * actual_lateral_jerk
+
+      lat_accel_friction_factor = 1.0 if self.use_steering_angle or lookahead_lateral_jerk == 0.0 else \
+                                  self.lat_accel_friction_factor
 
       if self.use_nn and model_good:
         # update past data
