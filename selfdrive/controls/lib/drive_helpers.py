@@ -84,8 +84,6 @@ class VCruiseHelper:
     self.slc_state_prev = SpeedLimitControlState.inactive
     self.slc_speed_limit_offsetted = 0
 
-    self.experimental_mode_update = False
-
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
@@ -110,7 +108,6 @@ class VCruiseHelper:
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
-      self.experimental_mode_update = False
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_acc):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
