@@ -267,6 +267,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"HotspotOnBootConfirmed", PERSISTENT},
     {"HyundaiRadarTracksAvailable", PERSISTENT},
     {"HyundaiRadarTracksAvailableCache", PERSISTENT},
+    {"HyundaiRadarTracksAvailablePersistent", PERSISTENT},
     {"LastCarModel", PERSISTENT | BACKUP},
     {"LastSpeedLimitSignTap", PERSISTENT},
     {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
