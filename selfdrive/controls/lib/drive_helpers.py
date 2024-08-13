@@ -101,6 +101,7 @@ class VCruiseHelper:
 
   def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, sp_override_speed, long_plan_sp):
     self.v_cruise_kph_last = self.v_cruise_kph
+    self.slc_state_prev = self.slc_state
     self.slc_state = long_plan_sp.speedLimitControlState
 
     if not self.CP.pcmCruiseSpeed:
@@ -252,8 +253,6 @@ class VCruiseHelper:
 
     if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev == SpeedLimitControlState.preActive:
       self.v_cruise_kph = clip(round(self.slc_speed_limit_offsetted, 1), self.v_cruise_min, V_CRUISE_MAX)
-
-    self.slc_state_prev = self.slc_state
 
   def _update_v_cruise_min(self, is_metric):
     if is_metric != self.is_metric_prev:
