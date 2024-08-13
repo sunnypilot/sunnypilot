@@ -211,15 +211,18 @@ class CarInterface(CarInterfaceBase):
     # some CAN platforms are able to enable radar tracks config at the radar ECU,
     # but the config is reset after ignition cycle
     if CP.spFlags & HyundaiFlagsSP.SP_RADAR_TRACKS:
-      params = Params()
       enable_radar_tracks(logcan, sendcan, bus=0, addr=0x7d0, config_data_id=b'\x01\x42')
-      params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", params.get_bool("HyundaiRadarTracksAvailable"))
-      messaging.drain_sock_raw(logcan)
-      fingerprint = can_fingerprint(lambda: get_one_can(logcan))
-      if RADAR_START_ADDR in fingerprint[1] and DBC[CP.carFingerprint]["radar"] is not None:
-        params.put_bool_nonblocking("HyundaiRadarTracksAvailable", True)
-      elif RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None:
-        params.put_bool_nonblocking("HyundaiRadarTracksAvailable", False)
+
+      params = Params()
+      rt_avail = params.get_bool("HyundaiRadarTracksAvailable")
+      rt_avail_persist = params.get_bool("HyundaiRadarTracksAvailablePersistent")
+      params.put_bool_nonblocking("HyundaiRadarTracksAvailableCache", rt_avail)
+      if not rt_avail_persist:
+        messaging.drain_sock_raw(logcan)
+        fingerprint = can_fingerprint(lambda: get_one_can(logcan))
+        radar_unavailable = RADAR_START_ADDR not in fingerprint[1] or DBC[CP.carFingerprint]["radar"] is None
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailable", not radar_unavailable)
+        params.put_bool_nonblocking("HyundaiRadarTracksAvailablePersistent", True)
 
   def _update(self, c):
     if not self.CS.control_initialized and not self.CP.pcmCruise:
