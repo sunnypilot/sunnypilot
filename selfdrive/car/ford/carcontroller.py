@@ -34,6 +34,8 @@ class CarController(CarControllerBase):
     self.main_on_last = False
     self.lkas_enabled_last = False
     self.steer_alert_last = False
+    self.send_ui_last = False
+    self.send_ui_ts_last = 0
     self.lead_distance_bars_last = None
 
   def update(self, CC, CS, now_nanos):
@@ -103,12 +105,23 @@ class CarController(CarControllerBase):
     # send acc ui msg at 5Hz or if ui state changes
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       send_ui = True
+
+    # Logic to keep sending the UI for 4 seconds
+    if (self.send_ui_last == False and send_ui == True ):
+        # Save the frame # for the last flip from False to True
+        self.send_ui_ts_last = self.frame
+
+    # keep sending the UI for 4 seconds (400 at 100Hz)
+    if ( self.send_ui_ts_last > 0 and (self.frame - self.send_ui_ts_last) <= (400)):
+      send_ui = True
+
     if (self.frame % CarControllerParams.ACC_UI_STEP) == 0 or send_ui:
       can_sends.append(fordcan.create_acc_ui_msg(self.packer, self.CAN, self.CP, main_on, CC.latActive,
                                                  fcw_alert, CS.out.cruiseState.standstill, hud_control,
-                                                 CS.acc_tja_status_stock_values))
+                                                 CS.acc_tja_status_stock_values, send_ui))
 
     self.main_on_last = main_on
+    self.send_ui_last = send_ui
     self.lkas_enabled_last = CC.latActive
     self.steer_alert_last = steer_alert
     self.lead_distance_bars_last = hud_control.leadDistanceBars
