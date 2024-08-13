@@ -2685,6 +2685,14 @@ Reboot Required.</source>
         <source>Default is Laneless. In Auto mode, sunnnypilot dynamically chooses between Laneline or Laneless model based on lane recognition confidence level on road and certain conditions.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Lateral Jerk with Torque Lateral Control (Alpha)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Utilizes limited lateral jerk control for improved steering response, leveraging stock torque lateral controller capabilities. Designed to mimic NNLC behavior without training models or data collection.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>TermsPage</name>
