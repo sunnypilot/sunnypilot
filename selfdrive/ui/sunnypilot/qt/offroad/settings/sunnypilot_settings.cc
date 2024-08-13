@@ -92,12 +92,6 @@ SunnypilotPanel::SunnypilotPanel(QWidget *parent) : QFrame(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
-      "NNFFNoLateralJerk",
-      tr("NNLC: Remove Lateral Jerk Response (Alpha)"),
-      tr("When NNLC is active, enable this to disables the use of lateral jerk in steering torque calculations, focusing solely on lateral acceleration for a simplified control response."),
-      "../assets/offroad/icon_blank.png",
-    },
-    {
       "EnforceTorqueLateral",
       tr("Enforce Torque Lateral Control"),
       tr("Enable this to enforce sunnypilot to steer with Torque lateral control."),
@@ -614,24 +608,6 @@ void SunnypilotPanel::updateToggles() {
     if (toggles.find(torqueLateralToggle) != toggles.end()) {
       toggles[torqueLateralToggle]->setVisible(enforce_torque_lateral->isToggled());
       toggles[torqueLateralToggle]->setEnabled(enforce_torque_lateral->isToggled());
-    }
-  }
-
-  // toggle names to update when EnforceTorqueLateral is flipped
-  std::vector<std::string> nnffGroup{"NNFFNoLateralJerk"};
-  for (const auto& nnffToggle : nnffGroup) {
-    if (toggles.find(nnffToggle) != toggles.end()) {
-      if (enforce_torque_lateral->isToggled()) {
-        toggles[nnffToggle]->setVisible(false);
-        toggles[nnffToggle]->setEnabled(false);
-      }
-    }
-  }
-
-  for (const auto& nnffToggle : nnffGroup) {
-    if (toggles.find(nnffToggle) != toggles.end()) {
-      toggles[nnffToggle]->setVisible(nnff_toggle->isToggled());
-      toggles[nnffToggle]->setEnabled(nnff_toggle->isToggled());
     }
   }
 

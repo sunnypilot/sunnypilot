@@ -79,7 +79,6 @@ def manager_init() -> None:
     ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "9"),
     ("NNFF", "0"),
-    ("NNFFNoLateralJerk", "0"),
     ("OnroadScreenOff", "-2"),
     ("OnroadScreenOffBrightness", "50"),
     ("OnroadScreenOffEvent", "1"),

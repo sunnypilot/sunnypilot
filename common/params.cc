@@ -284,7 +284,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"NavModelUrl", PERSISTENT | BACKUP},
     {"NNFF", PERSISTENT | BACKUP},
     {"NNFFCarModel", PERSISTENT | BACKUP},
-    {"NNFFNoLateralJerk", PERSISTENT | BACKUP},
     {"OnroadScreenOff", PERSISTENT | BACKUP},
     {"OnroadScreenOffBrightness", PERSISTENT | BACKUP},
     {"OnroadScreenOffEvent", PERSISTENT | BACKUP},
