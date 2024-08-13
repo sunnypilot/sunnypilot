@@ -230,10 +230,9 @@ class CarInterface(CarInterfaceBase):
       *create_button_events(self.CS.main_buttons[-1], self.CS.prev_main_buttons, {1: ButtonType.altButton3}),
     ]
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            self.CS.button_events, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise, self.CS.accEnabled)
 
     if ret.cruiseState.available:
       if not self.CP.pcmCruiseSpeed:
@@ -246,7 +245,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.madsEnabled = True
       if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
         self.CS.madsEnabled = not self.CS.madsEnabled
-      self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+      self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
 
     if not ret.cruiseState.available and self.CS.out.cruiseState.available:
       self.CS.madsEnabled = False
@@ -254,15 +253,15 @@ class CarInterface(CarInterfaceBase):
     if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
       if not self.CP.pcmCruise:
         if any(b.type == ButtonType.cancel for b in self.CS.button_events):
-          self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+          self.get_sp_cancel_cruise_state()
       if not self.CP.pcmCruiseSpeed:
         if not ret.cruiseState.enabled:
-          self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+          self.get_sp_cancel_cruise_state()
     if self.get_sp_pedal_disengage(ret):
-      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      self.get_sp_cancel_cruise_state()
       ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.cruise_buttons[-1] == 3))
+    ret = self.get_sp_common_state(ret, gap_button=(self.CS.cruise_buttons[-1] == 3))
 
     ret.buttonEvents = [
       *self.CS.button_events,
@@ -276,7 +275,7 @@ class CarInterface(CarInterfaceBase):
     events = self.create_common_events(ret, c, extra_gears=[GearShifter.sport, GearShifter.low, GearShifter.manumatic],
                                        pcm_enable=False, allow_enable=allow_enable)
 
-    events, ret = self.create_sp_events(self.CS, ret, events, main_enabled=True, allow_enable=allow_enable)
+    events, ret = self.create_sp_events(ret, events, main_enabled=True, allow_enable=allow_enable)
 
     # low speed steer alert hysteresis logic (only for cars with steer cut off above 10 m/s)
     if ret.vEgo < (self.CP.minSteerSpeed + 2.) and self.CP.minSteerSpeed > 10.:
@@ -289,9 +288,7 @@ class CarInterface(CarInterfaceBase):
     if self.CS.params_list.hyundai_radar_tracks_available and not self.CS.params_list.hyundai_radar_tracks_available_cache:
       events.add(car.CarEvent.EventName.hyundaiRadarTracksAvailable)
 
-    ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
-                                                           self.CC.target_speed, self.CC.v_set_dis,
-                                                           self.CC.speed_diff, self.CC.button_type)
+    ret.customStockLong = self.update_custom_stock_long()
 
     ret.events = events.to_msg()
 

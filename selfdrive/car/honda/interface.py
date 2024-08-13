@@ -267,10 +267,9 @@ class CarInterface(CarInterfaceBase):
       *create_button_events(self.CS.cruise_setting, self.CS.prev_cruise_setting, SETTINGS_BUTTONS_DICT),
     ]
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            self.CS.button_events, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise, self.CS.accEnabled)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -278,7 +277,7 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+        self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
 
@@ -286,9 +285,9 @@ class CarInterface(CarInterfaceBase):
 
     if not self.CP.pcmCruise or min_enable_speed_pcm or not self.CP.pcmCruiseSpeed:
       if any(b.type == ButtonType.cancel for b in self.CS.button_events):
-        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+        self.get_sp_cancel_cruise_state()
     if self.get_sp_pedal_disengage(ret):
-      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      self.get_sp_cancel_cruise_state()
       ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads or min_enable_speed_pcm \
                                                         else False if self.CP.pcmCruise \
                                                         else self.CS.accEnabled
@@ -301,7 +300,7 @@ class CarInterface(CarInterfaceBase):
       elif not ret.cruiseState.enabled:
         self.CS.accEnabled = False
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=(self.CS.cruise_setting == 3))
+    ret = self.get_sp_common_state(ret, gap_button=(self.CS.cruise_setting == 3))
 
     ret.buttonEvents = [
       *self.CS.button_events,
@@ -313,7 +312,7 @@ class CarInterface(CarInterfaceBase):
     if self.CP.pcmCruise and ret.vEgo < self.CP.minEnableSpeed and not self.CS.madsEnabled:
       events.add(EventName.belowEngageSpeed)
 
-    events, ret = self.create_sp_events(self.CS, ret, events)
+    events, ret = self.create_sp_events(ret, events)
 
     #if self.CP.pcmCruise:
     #  # we engage when pcm is active (rising edge)
@@ -330,9 +329,7 @@ class CarInterface(CarInterfaceBase):
     if self.CS.CP.minEnableSpeed > 0 and ret.vEgo < 0.001:
       events.add(EventName.manualRestart)
 
-    ret.customStockLong = self.CS.update_custom_stock_long(self.CC.cruise_button, self.CC.final_speed_kph,
-                                                           self.CC.target_speed, self.CC.v_set_dis,
-                                                           self.CC.speed_diff, self.CC.button_type)
+    ret.customStockLong = self.update_custom_stock_long()
 
     ret.events = events.to_msg()
 
