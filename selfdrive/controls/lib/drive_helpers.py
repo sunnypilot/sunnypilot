@@ -107,9 +107,6 @@ class VCruiseHelper:
       self._update_v_cruise_min(is_metric)
 
     if CS.cruiseState.available:
-      if self.CP.openpilotLongitudinalControl:
-        self._update_experimental_mode(CS)
-
       if not self.CP.pcmCruise or not self.CP.pcmCruiseSpeed:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
@@ -273,16 +270,6 @@ class VCruiseHelper:
       elif self.CP.carName == "gm":
         self.v_cruise_min = GM_V_CRUISE_MIN[is_metric]
     self.is_metric_prev = is_metric
-
-  def _update_experimental_mode(self, CS):
-    for b in CS.buttonEvents:
-      if b.type == ButtonType.gapAdjustCruise and not b.pressed:
-        if self.button_timers[ButtonType.gapAdjustCruise] > CRUISE_LONG_PRESS:
-          return  # end long press
-        break
-    else:
-      if self.button_timers[ButtonType.gapAdjustCruise] and self.button_timers[ButtonType.gapAdjustCruise] == CRUISE_LONG_PRESS:
-        self.experimental_mode_update = True
 
 
 def clip_curvature(v_ego, prev_curvature, new_curvature):

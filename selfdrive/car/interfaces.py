@@ -244,8 +244,6 @@ class CarInterfaceBase(ABC):
     self.cruise_cancelled_btn = True
     self.prev_acc_mads_combo = False
     self.mads_event_lock = True
-    self.gap_button_counter = 0
-    self.experimental_mode_hold = False
     self.last_mads_init = 0.
     self.madsEnabledInit = False
     self.madsEnabledInitPrev = False
