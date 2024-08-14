@@ -20,7 +20,7 @@ from openpilot.common.swaglog import cloudlog
 
 from openpilot.selfdrive.car.car_helpers import get_car_interface, get_startup_event
 from openpilot.selfdrive.controls.lib.alertmanager import AlertManager, set_offroad_alert
-from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature, get_lag_adjusted_curvature
+from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature, get_lag_adjusted_curvature, CRUISE_LONG_PRESS
 from openpilot.selfdrive.controls.lib.events import Events, ET
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl, MIN_LATERAL_CONTROL_SPEED
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
@@ -182,6 +182,7 @@ class Controls:
     self.pcm_v_cruise_override = self.params.get_bool("PCMVCruiseOverride")
     self.pcm_v_cruise_override_speed = int(self.params.get("PCMVCruiseOverrideSpeed", encoding="utf-8"))
     self.process_not_running = False
+    self.experimental_mode_update = False
 
     self.custom_model_metadata = CustomModelMetadata(params=self.params, init_only=True)
     self.model_use_lateral_planner = self.custom_model_metadata.valid and \
@@ -650,9 +651,10 @@ class Controls:
 
     if not self.joystick_mode:
       speeds = long_plan.speeds
+      a_lead = self.sm['radarState'].leadOne.aLeadK
       resume = False
       if len(speeds):
-        resume = self.enabled_long and CS.standstill and speeds[-1] > 0.1 and self.CP.carName == "hyundai"
+        resume = self.enabled_long and CS.standstill and self.CP.carName == "hyundai" and speeds[-1] > 0.1 and a_lead > 0.1
 
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
@@ -733,11 +735,21 @@ class Controls:
         cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
         setattr(actuators, p, 0.0)
 
+    # toggle experimental mode once on distance button hold
+    if self.CP.openpilotLongitudinalControl:
+      if self.v_cruise_helper.button_timers[ButtonType.gapAdjustCruise] == CRUISE_LONG_PRESS and \
+            not self.experimental_mode_update:
+        self.experimental_mode = not self.experimental_mode
+        self.params.put_bool_nonblocking("ExperimentalMode", self.experimental_mode)
+        self.experimental_mode_update = True
+
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
       if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
-        self.personality = (self.personality - 1) % 3
-        self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
+        if not self.experimental_mode_update:
+          self.personality = (self.personality - 1) % 3
+          self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
+        self.experimental_mode_update = False
 
     return CC, lac_log
 

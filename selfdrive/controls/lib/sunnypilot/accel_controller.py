@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Last updated: July 1, 2024
+# Last updated: August 12, 2024
 
 from cereal import custom
 from openpilot.common.numpy_fast import interp

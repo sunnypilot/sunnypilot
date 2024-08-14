@@ -79,7 +79,7 @@ class VCruiseHelper:
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
-    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
+    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.gapAdjustCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
 
     self.is_metric_prev = None
@@ -93,12 +93,15 @@ class VCruiseHelper:
     self.sp_override_cruise_speed_last = V_CRUISE_UNSET
     self.sp_override_enabled_last = False
 
+    self.experimental_mode_update = False
+
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
   def update_v_cruise(self, CS, enabled, is_metric, reverse_acc, sp_override_speed, long_plan_sp):
     self.v_cruise_kph_last = self.v_cruise_kph
+    self.slc_state_prev = self.slc_state
     self.slc_state = long_plan_sp.speedLimitControlState
 
     if not self.CP.pcmCruiseSpeed:
@@ -110,7 +113,6 @@ class VCruiseHelper:
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
         self._update_v_cruise_slc(long_plan_sp)
         self.v_cruise_cluster_kph = self.v_cruise_kph
-        self.update_button_timers(CS, enabled)
       else:
         if enabled and sp_override_speed and CS.cruiseState.speed * CV.MS_TO_KPH < sp_override_speed:
           if self.sp_override_v_cruise_kph == V_CRUISE_UNSET:
@@ -132,10 +134,12 @@ class VCruiseHelper:
 
         self.sp_override_cruise_speed_last = CS.cruiseState.speed
         self.sp_override_enabled_last = enabled
+      self.update_button_timers(CS, enabled)
     else:
       self.sp_override_v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
+      self.experimental_mode_update = False
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_acc):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
@@ -165,7 +169,7 @@ class VCruiseHelper:
           long_press = True
           break
 
-    if button_type is None:
+    if button_type is None or button_type == ButtonType.gapAdjustCruise:
       return
 
     resume_button = ButtonType.accelCruise
@@ -249,8 +253,6 @@ class VCruiseHelper:
 
     if self.slc_state == SpeedLimitControlState.active and self.slc_state_prev == SpeedLimitControlState.preActive:
       self.v_cruise_kph = clip(round(self.slc_speed_limit_offsetted, 1), self.v_cruise_min, V_CRUISE_MAX)
-
-    self.slc_state_prev = self.slc_state
 
   def _update_v_cruise_min(self, is_metric):
     if is_metric != self.is_metric_prev:
