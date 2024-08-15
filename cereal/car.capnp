@@ -137,6 +137,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     speedLimitPreActive @139;
     speedLimitConfirmed @140;
     torqueNNLoad @141;
+    hyundaiRadarTracksAvailable @142;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
@@ -250,7 +251,7 @@ struct CarState {
   struct CustomStockLong {
     cruiseButton @0 :Int16;
     finalSpeedKph @1 :Float32;
-    vCruiseKphPrev @2 :Float32;
+    vCruiseKphPrevDEPRECATED @2 :Float32;
     targetSpeed @3 :Float32;
     vSetDis @4 :Float32;
     speedDiff @5 :Float32;
