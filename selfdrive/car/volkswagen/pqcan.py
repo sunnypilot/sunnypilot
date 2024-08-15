@@ -1,3 +1,16 @@
+def crc8_pedal(data):
+  crc = 0xFF    # standard init value
+  poly = 0xD5   # standard crc8: x8+x7+x6+x4+x2+1
+  size = len(data)
+  for i in range(size - 1, -1, -1):
+    crc ^= data[i]
+    for _ in range(8):
+      if ((crc & 0x80) != 0):
+        crc = ((crc << 1) ^ poly) & 0xFF
+      else:
+        crc <<= 1
+  return crc
+
 def create_steering_control(packer, bus, apply_steer, lkas_enabled):
   values = {
     "LM_Offset": abs(apply_steer),
@@ -111,3 +124,25 @@ def create_acc_hud_control(packer, bus, acc_hud_status, set_speed, lead_distance
   }
 
   return packer.make_can_msg("ACC_GRA_Anzeige", bus, values)
+
+def create_pedal_control(packer, bus, apply_gas, idx):
+  # Common gas pedal msg generator
+  enable = apply_gas > 0.001
+
+  values = {
+    "ENABLE": enable,
+    "COUNTER_PEDAL": idx & 0xF,
+  }
+
+  if enable:
+    if (apply_gas < 430):
+      apply_gas = 430
+    values["GAS_COMMAND"] = apply_gas
+    values["GAS_COMMAND2"] = apply_gas//2
+
+  dat = packer.make_can_msg("GAS_COMMAND", bus, values)[2]
+
+  checksum = crc8_pedal(dat[:-1])
+  values["CHECKSUM_PEDAL"] = checksum
+
+  return packer.make_can_msg("GAS_COMMAND", bus, values)

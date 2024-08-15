@@ -1,7 +1,7 @@
 from cereal import car
 import cereal.messaging as messaging
 from opendbc.can.packer import CANPacker
-from openpilot.common.numpy_fast import clip
+from openpilot.common.numpy_fast import clip,interp
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.car import DT_CTRL, apply_driver_steer_torque_limits
@@ -143,9 +143,25 @@ class CarController(CarControllerBase):
       accel = clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if CC.longActive else 0
       stopping = actuators.longControlState == LongCtrlState.stopping
       starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStopping)
+      if self.CP.enableGasInterceptorDEPRECATED and CS.out.vEgo < self.CP.vEgoStopping:
+        accel = clip(self.CP.stopAccel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if CC.longActive and (starting or CS.out.standstill) else accel
+        stopping = True if CC.longActive and (starting or CS.out.standstill) else stopping
+
       can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, CANBUS.pt, CS.acc_type, CC.longActive, accel,
                                                          acc_control, stopping, starting, CS.esp_hold_confirmation))
-
+      if self.CP.enableGasInterceptorDEPRECATED:
+        self.gas = 0.0
+        if CC.longActive and actuators.accel >0 and CS.out.vEgo <4:
+          PEDAL_SCALE = interp(CS.out.vEgo, [0.0, 3, 5], [0.9, 0.5, 0.0])
+          # offset for creep and windbrake
+          pedal_offset = interp(CS.out.vEgo, [0.0, 2.3, 5], [-.2, 0.0, 0.2])
+          pedal_command = 430 +PEDAL_SCALE * (actuators.accel + pedal_offset)*(1600-430)
+          interceptor_gas_cmd = clip(pedal_command, 420, 1300)
+          self.gas = interceptor_gas_cmd
+          #self.gas = apply_gas if apply_gas < 1200  else 1200
+        else:
+          self.gas = 0.0
+        can_sends.append(self.CCS.create_pedal_control(self.packer_pt,  CANBUS.pt, self.gas, self.frame // 2))
     # **** HUD Controls ***************************************************** #
 
     if self.frame % self.CCP.LDW_STEP == 0:
