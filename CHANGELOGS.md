@@ -14,6 +14,9 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * Provides a more responsive and tailored driving experience compared to predefined settings
 * UPDATED: Driving Personality: Updated mode names
   * Aggressive, Moderate, Standard, Relaxed
+* NEW❗: Hyundai CAN: Enable Cruise Main by Default
+  * Set CRUISE MAIN to ON by default when the car starts, without engaging MADS
+  * This feature only applies when "openpilot Longitudinal Control (Alpha)" is enabled under the "Toggles" menu
 * NEW❗: Toyota - Enhanced Blind Spot Monitor (BSM) thanks to arne182, rav4kumar, and eFiniLan!
   * Enables Blind Spot Monitor (BSM) signals parsing in sunnypilot using the factory Blind Spot Monitor (BSM)
   * sunnypilot will use debugging CAN messages to receive unfiltered BSM signals, allowing detection of more objects
@@ -37,6 +40,9 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
   * Auto Unlock by Shift to P: All doors are automatically unlocked when shifting the shift lever to P
 * FIXED: Driving Personality:
   * Maniac mode now correctly enforced when selected
+* FIXED: Experimental Model Distance Button Hold
+  * Experimental Model toggle with distance button hold no longer changes Personality
+  * Personality setting remains consistent when switching between Chill and Experimental Mode
 * UI Updates
   * Display Metrics Below Chevron
     * NEW❗: Time to Lead Car

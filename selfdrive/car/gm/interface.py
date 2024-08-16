@@ -204,8 +204,6 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_loopback)
 
-    distance_button = 0
-
     # Don't add event if transitioning from INIT, unless it's to an actual button
     if self.CS.cruise_buttons != CruiseButtons.UNPRESS or self.CS.prev_cruise_buttons != CruiseButtons.INIT:
       self.CS.button_events = [
@@ -214,21 +212,19 @@ class CarInterface(CarInterfaceBase):
         *create_button_events(self.CS.distance_button, self.CS.prev_distance_button,
                               {1: ButtonType.gapAdjustCruise})
       ]
-      distance_button = self.CS.distance_button
 
     self.CS.button_events = [
       *self.CS.button_events,
       *create_button_events(self.CS.lkas_enabled, self.CS.prev_lkas_enabled, {1: ButtonType.altButton1}),
     ]
 
-    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret, self.CS)
+    self.CS.mads_enabled = self.get_sp_cruise_main_state(ret)
 
     if not self.CP.pcmCruise:
       if any(b.type == ButtonType.accelCruise and b.pressed for b in self.CS.button_events):
         self.CS.accEnabled = True
 
-    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, self.CS.accEnabled,
-                                                            self.CS.button_events, c.vCruise)
+    self.CS.accEnabled = self.get_sp_v_cruise_non_pcm_state(ret, c.vCruise, self.CS.accEnabled)
 
     if ret.cruiseState.available:
       if self.enable_mads:
@@ -236,15 +232,15 @@ class CarInterface(CarInterfaceBase):
           self.CS.madsEnabled = True
         if any(b.type == ButtonType.altButton1 and b.pressed for b in self.CS.button_events):
           self.CS.madsEnabled = not self.CS.madsEnabled
-        self.CS.madsEnabled = self.get_acc_mads(ret.cruiseState.enabled, self.CS.accEnabled, self.CS.madsEnabled)
+        self.CS.madsEnabled = self.get_acc_mads(ret, self.CS.madsEnabled)
     else:
       self.CS.madsEnabled = False
 
     if not self.CP.pcmCruise or (self.CP.pcmCruise and self.CP.minEnableSpeed > 0):
       if any(b.type == ButtonType.cancel for b in self.CS.button_events):
-        self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+        self.get_sp_cancel_cruise_state()
     if self.get_sp_pedal_disengage(ret):
-      self.CS.madsEnabled, self.CS.accEnabled = self.get_sp_cancel_cruise_state(self.CS.madsEnabled)
+      self.get_sp_cancel_cruise_state()
       ret.cruiseState.enabled = ret.cruiseState.enabled if not self.enable_mads else False if self.CP.pcmCruise else self.CS.accEnabled
 
     if self.CP.pcmCruise and self.CP.minEnableSpeed > 0 and self.CP.pcmCruiseSpeed:
@@ -252,7 +248,7 @@ class CarInterface(CarInterfaceBase):
         self.CS.accEnabled = False
       self.CS.accEnabled = ret.cruiseState.enabled or self.CS.accEnabled
 
-    ret, self.CS = self.get_sp_common_state(ret, self.CS, gap_button=bool(distance_button))
+    ret = self.get_sp_common_state(ret)
 
     ret.buttonEvents = [
       *self.CS.button_events,
@@ -267,7 +263,7 @@ class CarInterface(CarInterfaceBase):
     #  if any(b.type == ButtonType.accelCruise and b.pressed for b in ret.buttonEvents):
     #    events.add(EventName.buttonEnable)
 
-    events, ret = self.create_sp_events(self.CS, ret, events, enable_pressed=self.CS.accEnabled,
+    events, ret = self.create_sp_events(ret, events, enable_pressed=self.CS.accEnabled,
                                         enable_buttons=(ButtonType.decelCruise,))
 
     # Enabling at a standstill with brake is allowed

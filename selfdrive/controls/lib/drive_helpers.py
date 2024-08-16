@@ -75,7 +75,7 @@ class VCruiseHelper:
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
-    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
+    self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0, ButtonType.gapAdjustCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
 
     self.is_metric_prev = None
@@ -101,10 +101,10 @@ class VCruiseHelper:
         self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
         self._update_v_cruise_slc(long_plan_sp)
         self.v_cruise_cluster_kph = self.v_cruise_kph
-        self.update_button_timers(CS, enabled)
       else:
         self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
         self.v_cruise_cluster_kph = CS.cruiseState.speedCluster * CV.MS_TO_KPH
+      self.update_button_timers(CS, enabled)
     else:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
@@ -137,7 +137,7 @@ class VCruiseHelper:
           long_press = True
           break
 
-    if button_type is None:
+    if button_type is None or button_type == ButtonType.gapAdjustCruise:
       return
 
     resume_button = ButtonType.accelCruise
