@@ -23,6 +23,7 @@
 #
 # Version = 2024-7-11
 from common.numpy_fast import interp
+import numpy as np
 
 # d-e2e, from modeldata.h
 TRAJECTORY_SIZE = 33
@@ -126,6 +127,24 @@ class DynamicExperimentalController:
     self._set_mode_timeout = 0
     pass
 
+
+  def _adaptive_slowdown_threshold(self):
+    """
+    Adapts the slow down threshold based on vehicle speed and recent behavior.
+    """
+    return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
+
+  def _anomaly_detection(self, recent_data, threshold=2.0):
+    """
+    Basic anomaly detection using standard deviation.
+    """
+    if len(recent_data) < 3:
+      return False
+    mean = np.mean(recent_data)
+    std_dev = np.std(recent_data)
+    anomaly = recent_data[-1] > mean + threshold * std_dev
+    return anomaly
+
   def _update(self, car_state, lead_one, md, controls_state, maneuver_distance):
     self._v_ego_kph = car_state.vEgo * 3.6
     self._v_cruise_kph = controls_state.vCruise
@@ -143,9 +162,16 @@ class DynamicExperimentalController:
     self._lead_gmac.add_data(lead_one.status)
     self._has_lead_filtered = self._lead_gmac.get_moving_average() > LEAD_PROB
 
-    # slow down detection
-    self._slow_down_gmac.add_data(len(md.orientation.x) == len(md.position.x) == TRAJECTORY_SIZE and md.position.x[TRAJECTORY_SIZE - 1] < interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST))
+    # adaptive slow down detection
+    adaptive_threshold = self._adaptive_slowdown_threshold()
+    slow_down_trigger = len(md.orientation.x) == len(md.position.x) == TRAJECTORY_SIZE and md.position.x[TRAJECTORY_SIZE - 1] < adaptive_threshold
+    self._slow_down_gmac.add_data(slow_down_trigger)
     self._has_slow_down = self._slow_down_gmac.get_moving_average() > SLOW_DOWN_PROB
+
+    # anomaly detection for slow down events
+    if self._anomaly_detection(self._slow_down_gmac.data):
+      # Handle anomaly: potentially log it, adjust behavior, or issue a warning
+      self._has_slow_down = False  # Reset slow down if anomaly detected
 
     # blinker detection
     self._has_blinkers = car_state.leftBlinker or car_state.rightBlinker
