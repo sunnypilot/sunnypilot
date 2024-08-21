@@ -83,6 +83,26 @@ class GenericMovingAverageCalculator:
     self.data = []
     self.total = 0
 
+class WeightedMovingAverageCalculator:
+  def __init__(self, window_size):
+    self.window_size = window_size
+    self.data = []
+    self.weights = np.linspace(1, 2, window_size)  # Linear weights, adjust as needed
+
+  def add_data(self, value):
+    if len(self.data) == self.window_size:
+      self.data.pop(0)
+    self.data.append(value)
+
+  def get_weighted_average(self):
+    if len(self.data) == 0:
+      return None
+    weighted_sum = np.dot(self.data, self.weights[-len(self.data):])
+    weight_total = np.sum(self.weights[-len(self.data):])
+    return weighted_sum / weight_total
+
+  def reset_data(self):
+    self.data = []
 
 class DynamicExperimentalController:
   def __init__(self):
@@ -92,21 +112,22 @@ class DynamicExperimentalController:
     self._mode_changed = False
     self._frame = 0
 
-    self._lead_gmac = GenericMovingAverageCalculator(window_size=LEAD_WINDOW_SIZE)
+    # Use weighted moving average for filtering leads
+    self._lead_gmac = WeightedMovingAverageCalculator(window_size=LEAD_WINDOW_SIZE)
     self._has_lead_filtered = False
     self._has_lead_filtered_prev = False
 
-    self._slow_down_gmac = GenericMovingAverageCalculator(window_size=SLOW_DOWN_WINDOW_SIZE)
+    self._slow_down_gmac = WeightedMovingAverageCalculator(window_size=SLOW_DOWN_WINDOW_SIZE)
     self._has_slow_down = False
 
     self._has_blinkers = False
 
-    self._slowness_gmac = GenericMovingAverageCalculator(window_size=SLOWNESS_WINDOW_SIZE)
+    self._slowness_gmac = WeightedMovingAverageCalculator(window_size=SLOWNESS_WINDOW_SIZE)
     self._has_slowness = False
 
     self._has_nav_instruction = False
 
-    self._dangerous_ttc_gmac = GenericMovingAverageCalculator(window_size=DANGEROUS_TTC_WINDOW_SIZE)
+    self._dangerous_ttc_gmac = WeightedMovingAverageCalculator(window_size=DANGEROUS_TTC_WINDOW_SIZE)
     self._has_dangerous_ttc = False
 
     self._v_ego_kph = 0.
@@ -120,7 +141,7 @@ class DynamicExperimentalController:
     self._sng_transit_frame = 0
     self._sng_state = SNG_State.off
 
-    self._mpc_fcw_gmac = GenericMovingAverageCalculator(window_size=MPC_FCW_WINDOW_SIZE)
+    self._mpc_fcw_gmac = WeightedMovingAverageCalculator(window_size=MPC_FCW_WINDOW_SIZE)
     self._has_mpc_fcw = False
     self._mpc_fcw_crash_cnt = 0
 
@@ -145,6 +166,21 @@ class DynamicExperimentalController:
     anomaly = recent_data[-1] > mean + threshold * std_dev
     return anomaly
 
+  def _smoothed_lead_detection(self, lead_prob, smoothing_factor=0.2):
+    """
+    Smoothing the lead detection to avoid erratic behavior.
+    """
+    self._has_lead_filtered = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
+    return self._has_lead_filtered > LEAD_PROB
+
+  def _adaptive_lead_prob_threshold(self):
+    """
+    Adapts lead probability threshold based on driving conditions.
+    """
+    if self._v_ego_kph > HIGHWAY_CRUISE_KPH:
+      return LEAD_PROB + 0.1  # Increase the threshold on highways
+    return LEAD_PROB
+
   def _update(self, car_state, lead_one, md, controls_state, maneuver_distance):
     self._v_ego_kph = car_state.vEgo * 3.6
     self._v_cruise_kph = controls_state.vCruise
@@ -158,9 +194,10 @@ class DynamicExperimentalController:
     # nav enable detection
     self._has_nav_instruction = md.navEnabledDEPRECATED and maneuver_distance / max(car_state.vEgo, 1) < 13
 
-    # lead detection
+    # lead detection with smoothing
     self._lead_gmac.add_data(lead_one.status)
-    self._has_lead_filtered = self._lead_gmac.get_moving_average() > LEAD_PROB
+    lead_prob = self._lead_gmac.get_weighted_average() or 0
+    self._has_lead_filtered = self._smoothed_lead_detection(lead_prob)
 
     # adaptive slow down detection
     adaptive_threshold = self._adaptive_slowdown_threshold()
