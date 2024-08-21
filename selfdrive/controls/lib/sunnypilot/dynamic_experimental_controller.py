@@ -240,7 +240,7 @@ class DynamicExperimentalController:
     if self._has_lead and car_state.vEgo >= 0.01:
       self._dangerous_ttc_gmac.add_data(lead_one.dRel/car_state.vEgo)
 
-    self._has_dangerous_ttc = self._dangerous_ttc_gmac.get_weighted_average() is not None and self._dangerous_ttc_gmac.get_moving_average() <= DANGEROUS_TTC
+    self._has_dangerous_ttc = self._dangerous_ttc_gmac.get_weighted_average() is not None and self._dangerous_ttc_gmac.get_weighted_average() <= DANGEROUS_TTC
 
     # keep prev values
     self._has_standstill_prev = self._has_standstill
