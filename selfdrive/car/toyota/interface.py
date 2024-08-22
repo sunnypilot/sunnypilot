@@ -178,13 +178,8 @@ class CarInterface(CarInterfaceBase):
     tune = ret.longitudinalTuning
     if candidate in TSS2_CAR or ret.enableGasInterceptorDEPRECATED:
       if sp_tss2_long_tune:
-        #tune.kiBP = [0., 0.1,  3.,  12.,   20.,  26.,  36.,  50]
-        #tune.kiV = [0.34, 0.35, 0.2896, 0.2237, 0.174, 0.10, 0.08, 0.06]
-        #smooth
-        tune.kiBP = [0.,   6.,   12.,  20.,  27.,  36.,  50]
-        tune.kiV = [0.326, 0.223, 0.20, 0.17, 0.12, 0.08, 0.06]
-        #tune.kiBP = [0.,  2.,   5.,  12.,  16,   20.,  27.,  36.,  50]
-        #tune.kiV = [0.27, 0.24, 0.2205, 0.20, 0.18, 0.17, 0.12, 0.08, 0.06]
+        tune.kiBP = [0.,   3.,    12.,  20.,  27.,  36.,  50]
+        tune.kiV = [0.322, 0.26,  0.20, 0.17, 0.12, 0.08, 0.06]
         custom_tss2_longitudinal_tuning()
       else:
         tune.kpV = [0.0]
