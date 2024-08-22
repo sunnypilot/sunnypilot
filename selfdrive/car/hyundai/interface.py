@@ -126,7 +126,7 @@ class CarInterface(CarInterfaceBase):
 
       if 0x1fa in fingerprint[CAN.ECAN]:
         ret.spFlags |= HyundaiFlagsSP.SP_NAV_MSG.value
-      if Params().get("DongleId", encoding='utf8') in ("012c95f06918eca4", "68d6a96e703c00c9", "11c1f1909ca37bca"):
+      if Params().get("DongleId", encoding='utf8') in ("012c95f06918eca4", "68d6a96e703c00c9"):
         ret.spFlags |= HyundaiFlagsSP.SP_UPSTREAM_TACO.value
     else:
       ret.enableBsm = 0x58b in fingerprint[0]
