@@ -196,8 +196,9 @@ class DynamicExperimentalController:
 
     # lead detection with smoothing
     self._lead_gmac.add_data(lead_one.status)
-    lead_prob = self._lead_gmac.get_weighted_average() or 0
-    self._has_lead_filtered = self._smoothed_lead_detection(lead_prob)
+    self._has_lead_filtered = self._lead_gmac.get_weighted_average() > LEAD_PROB
+    #lead_prob = self._lead_gmac.get_weighted_average() or 0
+    #self._has_lead_filtered = self._smoothed_lead_detection(lead_prob)
 
     # adaptive slow down detection
     adaptive_threshold = self._adaptive_slowdown_threshold()
