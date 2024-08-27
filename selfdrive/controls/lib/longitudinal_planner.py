@@ -36,6 +36,7 @@ _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
 
 
+MpcSource = custom.MpcSource
 EventName = car.CarEvent.EventName
 
 
@@ -131,9 +132,12 @@ class LongitudinalPlanner:
       self.read_param()
     self.param_read_counter += 1
     if self.dynamic_experimental_controller.is_enabled() and sm['controlsState'].experimentalMode:
-      self.mpc.mode = self.dynamic_experimental_controller.get_mpc_mode(self.CP.radarUnavailable, sm['carState'], sm['radarState'].leadOne, sm['modelV2'], sm['controlsState'], sm['navInstruction'].maneuverDistance)
+      self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
+      self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm['carState'], sm['radarState'].leadOne, sm['modelV2'], sm['controlsState'], sm['navInstruction'].maneuverDistance)
+      self.mpc.mode = self.dynamic_experimental_controller.get_mpc_mode()
     else:
       self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
+
 
     v_ego = sm['carState'].vEgo
     v_cruise_kph = min(sm['controlsState'].vCruise, V_CRUISE_MAX)
@@ -267,7 +271,8 @@ class LongitudinalPlanner:
     longitudinalPlanSP.turnSpeedControlState = self.turn_speed_controller.state
     longitudinalPlanSP.turnSpeed = float(self.turn_speed_controller.v_target)
 
-    longitudinalPlanSP.e2eBlended = self.mpc.mode
+    longitudinalPlanSP.mpcSource = MpcSource.blended if self.mpc.mode == 'blended' else MpcSource.acc
+    longitudinalPlanSP.dynamicExperimentalControl = self.dynamic_experimental_controller.is_enabled()
 
     pm.send('longitudinalPlanSP', plan_sp_send)
 

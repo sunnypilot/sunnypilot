@@ -192,7 +192,7 @@ private:
   cereal::LongitudinalPlanSP::SpeedLimitControlState slcState;
   int longitudinalPersonality;
   int dynamicLaneProfile;
-  QString mpcMode;
+  QString mpcSource;
 
   int speed_limit_frame;
   bool slcShowSign = true;

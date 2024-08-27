@@ -320,8 +320,8 @@ void AnnotatedCameraWidgetSP::updateState(const UIStateSP &s) {
   // TODO: Add toggle variables to cereal, and parse from cereal
   longitudinalPersonality = s.scene.longitudinal_personality;
   dynamicLaneProfile = s.scene.dynamic_lane_profile;
-  mpcMode = QString::fromStdString(lp_sp.getE2eBlended());
-  mpcMode = (mpcMode == "blended") ? mpcMode.replace(0, 1, mpcMode[0].toUpper()) : mpcMode.toUpper();
+  const auto mpc_source = lp_sp.getMpcSource();
+  mpcSource = mpc_source == cereal::MpcSource::BLENDED ? QString(tr("blended")) : QString(tr("acc"));
 
   static int reverse_delay = 0;
   bool reverse_allowed = false;
@@ -1061,7 +1061,7 @@ void AnnotatedCameraWidgetSP::drawFeatureStatusText(QPainter &p, int x, int y) {
     p.setBrush(dec_color);
     p.drawEllipse(dec_btn);
     QString dec_status_text;
-    dec_status_text.sprintf("DEC: %s\n", dynamicExperimentalControlToggle ? (experimentalMode ? QString(mpcMode).toStdString().c_str() : QString("Inactive").toStdString().c_str()) : "OFF");
+    dec_status_text.sprintf("DEC: %s\n", dynamicExperimentalControlToggle ? (experimentalMode ? QString(mpcSource).toStdString().c_str() : QString("Inactive").toStdString().c_str()) : "OFF");
     p.setPen(QPen(shadow_color, 2));
     p.drawText(x + drop_shadow_size, y + drop_shadow_size, dec_status_text);
     p.setPen(QPen(text_color, 2));
@@ -1177,6 +1177,10 @@ void AnnotatedCameraWidgetSP::drawLaneLines(QPainter &painter, const UIStateSP *
 
   // paint path
   QLinearGradient bg(0, height(), 0, 0);
+  const auto long_plan_sp = sm["longitudinalPlanSP"].getLongitudinalPlanSP();
+  bool exp_mode_path = (long_plan_sp.getDynamicExperimentalControl() && long_plan_sp.getMpcSource() == cereal::MpcSource::BLENDED) ||
+                       (!long_plan_sp.getDynamicExperimentalControl() && sm["controlsState"].getControlsState().getExperimentalMode());
+
   if (madsEnabled || car_state.getCruiseState().getEnabled()) {
     if (steerOverride && latActive) {
       bg.setColorAt(0.0, QColor::fromHslF(20 / 360., 0.94, 0.51, 0.17));
@@ -1185,7 +1189,7 @@ void AnnotatedCameraWidgetSP::drawLaneLines(QPainter &painter, const UIStateSP *
     } else if (!(latActive || car_state.getCruiseState().getEnabled())) {
       bg.setColorAt(0, whiteColor());
       bg.setColorAt(1, whiteColor(0));
-    } else if (sm["controlsState"].getControlsState().getExperimentalMode()) {
+    } else if (exp_mode_path) {
       // The first half of track_vertices are the points for the right side of the path
       const auto &acceleration = sm["modelV2"].getModelV2().getAcceleration().getX();
       const int max_len = std::min<int>(scene.track_vertices.length() / 2, acceleration.size());
