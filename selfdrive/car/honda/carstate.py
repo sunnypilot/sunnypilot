@@ -9,7 +9,7 @@ from openpilot.selfdrive.car.honda.hondacan import CanBus, get_cruise_speed_conv
 from openpilot.selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, HONDA_BOSCH, \
                                                  HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_RADARLESS, \
                                                  HondaFlags, SERIAL_STEERING
-from openpilot.selfdrive.car.interfaces import CarStateBase
+from openpilot.selfdrive.car.interfaces import CarStateBase, GearShifter
 
 TransmissionType = car.CarParams.TransmissionType
 
@@ -41,6 +41,9 @@ def get_can_messages(CP, gearbox_msg):
 
   if CP.carFingerprint in (CAR.HONDA_CRV_HYBRID, CAR.HONDA_CIVIC_BOSCH_DIESEL, CAR.ACURA_RDX_3G, CAR.HONDA_E):
     messages.append((gearbox_msg, 50))
+  # on manual transmission cars where gearbox is not showing on CAN such as Honda Fit/Jazz
+  elif CP.transmissionType == TransmissionType.unknown:
+    messages.append((gearbox_msg, 0))
   else:
     messages.append((gearbox_msg, 100))
 
@@ -193,8 +196,12 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in (HONDA_BOSCH | {CAR.HONDA_CIVIC, CAR.HONDA_ODYSSEY, CAR.HONDA_ODYSSEY_CHN, CAR.HONDA_CLARITY}):
       ret.parkingBrake = cp.vl["EPB_STATUS"]["EPB_STATE"] != 0
 
-    gear = int(cp.vl[self.gearbox_msg]["GEAR_SHIFTER"])
-    ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(gear, None))
+    # on manual transmission cars where gearbox is not showing on CAN such as Honda Fit/Jazz
+    if self.CP.transmissionType == TransmissionType.unknown:
+      ret.gearShifter = GearShifter.drive
+    else:
+      gear = int(cp.vl[self.gearbox_msg]["GEAR_SHIFTER"])
+      ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(gear, None))
 
     if self.CP.enableGasInterceptorDEPRECATED:
       # Same threshold as panda, equivalent to 1e-5 with previous DBC scaling
