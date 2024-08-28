@@ -176,6 +176,7 @@ private:
   float latAccelFactorFiltered;
   float frictionCoefficientFiltered;
   bool liveValid;
+  bool ecoMode;
   // ############################## DEV UI END ##############################
 
   float btnPerc;
