@@ -216,6 +216,7 @@ void AnnotatedCameraWidgetSP::updateState(const UIStateSP &s) {
   latAccelFactorFiltered = ltp.getLatAccelFactorFiltered();
   frictionCoefficientFiltered = ltp.getFrictionCoefficientFiltered();
   liveValid = ltp.getLiveValid();
+  ecoMode = vEgo > 0 && car_state.getEngineRpm() == 0;
   // ############################## DEV UI END ##############################
 
   btnPerc = s.scene.sleep_btn_opacity * 0.05;
@@ -523,10 +524,32 @@ void AnnotatedCameraWidgetSP::drawHud(QPainter &p) {
 
   // current speed
   if (!hideVEgoUi) {
+    // Set up the font for the speed text
     p.setFont(InterFont(176, QFont::Bold));
-    drawColoredText(p, rect().center().x(), 210, speedStr, brakeLights ? QColor(0xff, 0, 0, 255) : QColor(0xff, 0xff, 0xff, 255));
+
+    // Define text coordinates
+    int centerX = rect().center().x();
+    int centerY = 210;
+
+    // Draw a red border if brakeLights is active
+    if (brakeLights) {
+      for (int offsetX = -6; offsetX <= 6; offsetX++) {
+        for (int offsetY = -6; offsetY <= 6; offsetY++) {
+          // Avoid drawing at the original text position
+          if (offsetX != 0 || offsetY != 0) {
+            drawColoredText(p, centerX + offsetX, centerY + offsetY, speedStr, QColor(255, 0, 0, 255)); // Red border
+          }
+        }
+      }
+    }
+
+    // Draw the main speed text: green if ecoMode is on, otherwise white
+    QColor speedTextColor = ecoMode ? QColor(0, 245, 0) : QColor(255, 255, 255, 255);
+    drawColoredText(p, centerX, centerY, speedStr, speedTextColor);
+
+    // Draw the speed unit below the main text
     p.setFont(InterFont(66));
-    drawText(p, rect().center().x(), 290, speedUnit, 200);
+    drawText(p, centerX, 290, speedUnit, 200);
   }
 
   if (!reversing) {
