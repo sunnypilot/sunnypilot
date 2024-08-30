@@ -31,7 +31,7 @@ TRAJECTORY_SIZE = 33
 LEAD_WINDOW_SIZE = 4
 LEAD_PROB = 0.6
 
-SLOW_DOWN_WINDOW_SIZE = 5
+SLOW_DOWN_WINDOW_SIZE = 4
 SLOW_DOWN_PROB = 0.6
 
 SLOW_DOWN_BP = [0., 10., 20., 30., 40., 50., 55., 60.]
@@ -87,7 +87,7 @@ class WeightedMovingAverageCalculator:
   def __init__(self, window_size):
     self.window_size = window_size
     self.data = []
-    self.weights = np.linspace(1, 2, window_size)  # Linear weights, adjust as needed
+    self.weights = np.linspace(1, 3, window_size)  # Linear weights, adjust as needed
 
   def add_data(self, value):
     if len(self.data) == self.window_size:
@@ -153,13 +153,13 @@ class DynamicExperimentalController:
     """
     Adapts the slow down threshold based on vehicle speed and recent behavior.
     """
-    return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
+    return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.03 * np.log(1 + len(self._slow_down_gmac.data)))
 
   def _anomaly_detection(self, recent_data, threshold=2.0):
     """
     Basic anomaly detection using standard deviation.
     """
-    if len(recent_data) < 3:
+    if len(recent_data) < 5:
       return False
     mean = np.mean(recent_data)
     std_dev = np.std(recent_data)
