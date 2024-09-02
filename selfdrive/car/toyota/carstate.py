@@ -56,6 +56,9 @@ class CarState(CarStateBase):
     self.low_speed_lockout = False
     self.acc_type = 1
     self.lkas_hud = {}
+    self.pcm_accel_net = 0.0
+    self.pcm_neutral_force = 0.0
+    self.vsc_slope_angle = 0.0
 
     self.lkas_enabled = None
     self.prev_lkas_enabled = None
@@ -116,6 +119,11 @@ class CarState(CarStateBase):
     ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr])
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = ret.vEgo * 1.015  # minimum of all the cars
+
+    # thought to be the gas/brake as issued by the pcm (0=coasting)
+    self.pcm_accel_net = cp.vl["PCM_CRUISE"]["ACCEL_NET"]
+    self.pcm_neutral_force = cp.vl["PCM_CRUISE"]["NEUTRAL_FORCE"]
+    self.vsc_slope_angle = cp.vl["VSC1"]["SLOPE_ANGLE"]
 
     ret.standstill = abs(ret.vEgoRaw) < 1e-3
 
@@ -402,6 +410,7 @@ class CarState(CarStateBase):
       ("STEER_ANGLE_SENSOR", 80),
       ("PCM_CRUISE", 33),
       ("PCM_CRUISE_SM", 1),
+      ("VSC1", 20),
       ("STEER_TORQUE_SENSOR", 50),
     ]
 
