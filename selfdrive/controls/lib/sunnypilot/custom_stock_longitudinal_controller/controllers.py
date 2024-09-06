@@ -58,6 +58,15 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.button_mappings = self.get_button_mappings()
 
+  # copy for logs in interface update
+  def update_logs(self):
+    self.car_controller.cruise_button = self.cruise_button
+    self.car_controller.final_speed_kph = self.final_speed_kph
+    self.car_controller.target_speed = self.target_speed
+    self.car_controller.v_set_dis = self.v_set_dis
+    self.car_controller.speed_diff = self.speed_diff
+    self.car_controller.button_type = self.button_type
+
   # multikyd methods, sunnypilot logic
   def get_cruise_buttons_status(self, CS):
     if not CS.out.cruiseState.enabled or self.get_set_speed_buttons(CS):
@@ -173,6 +182,9 @@ class CustomStockLongitudinalControllerBase(ABC):
         self.final_speed_kph = target_speed_kph
 
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
+
+    self.update_logs()
+
     return cruise_button
 
   @abstractmethod
