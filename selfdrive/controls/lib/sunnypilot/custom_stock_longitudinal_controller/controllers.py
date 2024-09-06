@@ -59,7 +59,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.button_mappings = self.get_button_mappings()
 
   # copy for logs in interface update
-  def update_logs(self):
+  def update_logs(self) -> None:
     self.car_controller.cruise_button = self.cruise_button
     self.car_controller.final_speed_kph = self.final_speed_kph
     self.car_controller.target_speed = self.target_speed
@@ -68,16 +68,16 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.car_controller.button_type = self.button_type
 
   # multikyd methods, sunnypilot logic
-  def get_cruise_buttons_status(self, CS):
+  def get_cruise_buttons_status(self, CS: car.CarState) -> bool:
     if not CS.out.cruiseState.enabled or self.get_set_speed_buttons(CS):
       self.timer = 40
     elif self.timer:
       self.timer -= 1
     else:
-      return 1
-    return 0
+      return True
+    return False
 
-  def get_target_speed(self, v_cruise_kph_prev):
+  def get_target_speed(self, v_cruise_kph_prev: float) -> float:
     v_cruise_kph = v_cruise_kph_prev
     if self.slc_state > 1:
       v_cruise_kph = (self.speed_limit + self.speed_limit_offset) * CV.MS_TO_KPH
@@ -85,16 +85,16 @@ class CustomStockLongitudinalControllerBase(ABC):
         v_cruise_kph = v_cruise_kph_prev
     return v_cruise_kph
 
-  def get_button_type(self, button_type):
+  def get_button_type(self, button_type: int) -> int | str:
     self.type_status = "type_" + str(button_type)
     self.button_picker = getattr(self, self.type_status, lambda: "default")
     return self.button_picker()
 
-  def type_default(self):
+  def type_default(self) -> None:
     self.button_type = 0
     return None
 
-  def type_0(self):
+  def type_0(self) -> None:
     self.button_count = 0
     self.target_speed = self.init_speed
     self.speed_diff = self.target_speed - self.v_set_dis
@@ -104,7 +104,7 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.button_type = 2
     return None
 
-  def type_1(self):
+  def type_1(self) -> int:
     cruise_button = self.button_mappings['type_1']
     self.button_count += 1
     if self.target_speed <= self.v_set_dis:
@@ -115,7 +115,7 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.button_type = 3
     return cruise_button
 
-  def type_2(self):
+  def type_2(self) -> int:
     cruise_button = self.button_mappings['type_2']
     self.button_count += 1
     if self.target_speed >= self.v_set_dis or self.v_set_dis <= self.v_cruise_min:
@@ -126,14 +126,14 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.button_type = 3
     return cruise_button
 
-  def type_3(self):
+  def type_3(self) -> None:
     cruise_button = None
     self.button_count += 1
     if self.button_count > self.t_interval:
       self.button_type = 0
     return cruise_button
 
-  def get_curve_speed(self, target_speed_kph, v_cruise_kph_prev):
+  def get_curve_speed(self, target_speed_kph: float, v_cruise_kph_prev: float) -> float:
     if self.v_tsc_state != 0:
       vision_v_cruise_kph = self.v_tsc * CV.MS_TO_KPH
       if int(vision_v_cruise_kph) == int(v_cruise_kph_prev):
@@ -149,20 +149,20 @@ class CustomStockLongitudinalControllerBase(ABC):
     curve_speed = self.curve_speed_hysteresis(min(vision_v_cruise_kph, map_v_cruise_kph) + 2 * CV.MPH_TO_KPH)
     return min(target_speed_kph, curve_speed)
 
-  def get_button_control(self, CS, final_speed, v_cruise_kph_prev):
+  def get_button_control(self, CS: car.CarState, final_speed: float, v_cruise_kph_prev: float) -> int:
     self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
     self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.get_button_type(self.button_type)
     return cruise_button
 
-  def curve_speed_hysteresis(self, cur_speed: float, hyst=(0.75 * CV.MPH_TO_KPH)):
+  def curve_speed_hysteresis(self, cur_speed: float, hyst: float = (0.75 * CV.MPH_TO_KPH)) -> float:
     if cur_speed > self.steady_speed:
       self.steady_speed = cur_speed
     elif cur_speed < self.steady_speed - hyst:
       self.steady_speed = cur_speed
     return self.steady_speed
 
-  def get_cruise_buttons(self, CS, v_cruise_kph_prev):
+  def get_cruise_buttons(self, CS: car.CarState, v_cruise_kph_prev: float) -> int | None:
     cruise_button = None
     if not self.get_cruise_buttons_status(CS):
       pass

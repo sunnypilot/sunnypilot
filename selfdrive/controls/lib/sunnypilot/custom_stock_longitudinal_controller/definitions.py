@@ -29,7 +29,7 @@ class MinimumSetPoint:
     self.set_point: float = 0
     self.is_metric_prev: bool | None = None
 
-  def get_set_point(self, is_metric) -> float:
+  def get_set_point(self, is_metric: bool) -> float:
     if is_metric != self.is_metric_prev:
       if self.CP.carName == "honda":
         self.set_point = HONDA_V_CRUISE_MIN[is_metric]
