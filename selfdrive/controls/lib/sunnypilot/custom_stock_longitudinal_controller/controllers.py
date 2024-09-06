@@ -90,10 +90,6 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.button_picker = getattr(self, self.type_status, lambda: "default")
     return self.button_picker()
 
-  def reset_button(self):
-    if self.button_type != 3:
-      self.button_type = 0
-
   def type_default(self):
     self.button_type = 0
     return None
