@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from dataclasses import dataclass
 
 from cereal import car
@@ -7,13 +8,15 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.definitions import MinimumSetPoint
 
+SendCan = tuple[int, bytes, int]
+
 
 @dataclass
 class Service:
   long_plan_sp: str = 'longitudinalPlanSP'
 
 
-class CustomStockLongitudinalController:
+class CustomStockLongitudinalControllerBase(ABC):
   def __init__(self, car_controller, CP):
     self.car_controller = car_controller
     self.CP = CP
@@ -53,11 +56,11 @@ class CustomStockLongitudinalController:
     self.m_tsc = 0
     self.steady_speed = 0
 
-    # TODO: SP - instantiate buttons per imported brand
+    self.button_mappings = self.get_button_mappings()
 
   # multikyd methods, sunnypilot logic
   def get_cruise_buttons_status(self, CS):
-    if not CS.out.cruiseState.enabled or CS.cruise_buttons[-1] != Buttons.NONE:
+    if not CS.out.cruiseState.enabled or self.get_set_speed_buttons(CS):
       self.timer = 40
     elif self.timer:
       self.timer -= 1
@@ -97,7 +100,7 @@ class CustomStockLongitudinalController:
     return None
 
   def type_1(self):
-    cruise_button = Buttons.RES_ACCEL
+    cruise_button = self.button_mappings['type_1']
     self.button_count += 1
     if self.target_speed <= self.v_set_dis:
       self.button_count = 0
@@ -108,7 +111,7 @@ class CustomStockLongitudinalController:
     return cruise_button
 
   def type_2(self):
-    cruise_button = Buttons.SET_DECEL
+    cruise_button = self.button_mappings['type_2']
     self.button_count += 1
     if self.target_speed >= self.v_set_dis or self.v_set_dis <= self.v_cruise_min:
       self.button_count = 0
@@ -172,15 +175,17 @@ class CustomStockLongitudinalController:
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
     return cruise_button
 
-  def create_button_messages(self, CS: car.CarState, CC: car.CarControl):
-    can_sends = []
-    self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
+  @abstractmethod
+  def get_set_speed_buttons(self, CS: car.CarState) -> bool:
+    pass
 
-    if self.cruise_button is None:
-      return can_sends
-    else:
-      # TODO: SP - import per brand
-      pass
+  @abstractmethod
+  def get_button_mappings(self) -> dict[str, int]:
+    pass
+
+  @abstractmethod
+  def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+    pass
 
   def update(self, CS):
     self.car_controller.sm.update(0)
