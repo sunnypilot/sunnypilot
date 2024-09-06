@@ -199,7 +199,7 @@ class CustomStockLongitudinalControllerBase(ABC):
   def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     pass
 
-  def update(self, CS):
+  def update(self, CS: car.CarState) -> None:
     self.car_controller.sm.update(0)
 
     if self.car_controller.sm.updated[self.long_plan_sp]:
