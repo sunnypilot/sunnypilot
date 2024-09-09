@@ -69,7 +69,8 @@ class CarController(CarControllerBase):
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
     self.lead_distance = 0
 
-    self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, CP)
+    if not CP.pcmCruiseSpeed:
+      self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, CP)
 
   def calculate_lead_distance(self, hud_control: car.CarControl.HUDControl) -> float:
     lead_one = self.sm["radarState"].leadOne
@@ -222,7 +223,7 @@ class CarController(CarControllerBase):
         can_sends.append(hyundaican.create_frt_radar_opt(self.packer))
 
     if not self.CP.pcmCruiseSpeed:
-      self.custom_stock_longitudinal_controller.create_mock_button_messages(CS, CC)
+      can_sends.extend(self.custom_stock_longitudinal_controller.create_mock_button_messages(CS, CC))
 
     new_actuators = actuators.as_builder()
     new_actuators.steer = apply_steer / self.params.STEER_MAX
