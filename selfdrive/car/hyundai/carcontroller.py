@@ -62,12 +62,8 @@ class CarController(CarControllerBase):
     self.lat_disengage_init = False
     self.lat_active_last = False
 
-    sub_services = []
     if CP.openpilotLongitudinalControl:
-      sub_services.append('radarState')
-    # TODO: Always true, prep for future conditional refactoring
-    if sub_services:
-      self.sm = messaging.SubMaster(sub_services)
+      self.sm = messaging.SubMaster(['radarState'])
 
     self.param_s = Params()
     self.hkg_can_smooth_stop = self.param_s.get_bool("HkgSmoothStop")
