@@ -9,7 +9,6 @@ from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_contr
 ButtonType = car.CarState.ButtonEvent.Type
 
 BUTTON_MAPPINGS = {'type_1': Buttons.RES_ACCEL, 'type_2': Buttons.SET_DECEL}
-V_CRUISE_MIN = {True: 30, False: int(20 * CV.MPH_TO_KPH)}
 SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.decelCruise)
 
 
@@ -18,7 +17,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     super().__init__(car_controller, CP)
 
   def get_set_point(self, is_metric: bool) -> float:
-    return V_CRUISE_MIN[is_metric]
+    return 30 if is_metric else int(20 * CV.MPH_TO_KPH)
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in SET_SPEED_BUTTONS for be in CS.out.buttonEvents)
