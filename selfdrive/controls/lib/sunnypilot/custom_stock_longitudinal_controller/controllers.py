@@ -1,5 +1,4 @@
 from abc import abstractmethod, ABC
-from dataclasses import dataclass
 
 from cereal import car
 import cereal.messaging as messaging
@@ -10,22 +9,15 @@ from openpilot.selfdrive.car import DT_CTRL
 SendCan = tuple[int, bytes, int]
 
 
-@dataclass
-class Service:
-  long_plan_sp: str = 'longitudinalPlanSP'
-
-
 class CustomStockLongitudinalControllerBase(ABC):
   def __init__(self, car_controller, CP):
     self.car_controller = car_controller
     self.CP = CP
 
-    self.long_plan_sp = Service.long_plan_sp
+    self.services = {'longitudinalPlanSP'}
     if hasattr(car_controller, 'sm'):
-      new_services = self.car_controller.sm.data.keys() | {self.long_plan_sp}
-      self.car_controller.sm = messaging.SubMaster(list(new_services))
-    else:
-      self.car_controller.sm = messaging.SubMaster([self.long_plan_sp])
+      self.services = car_controller.sm.data.keys() | self.services
+    car_controller.sm = messaging.SubMaster(list(self.services))
 
     self.params = Params()
     self.last_speed_limit_sign_tap_prev = False
@@ -199,14 +191,14 @@ class CustomStockLongitudinalControllerBase(ABC):
   def update(self, CS: car.CarState) -> None:
     self.car_controller.sm.update(0)
 
-    if self.car_controller.sm.updated[self.long_plan_sp]:
-      self.v_tsc_state = self.car_controller.sm[self.long_plan_sp].visionTurnControllerState
-      self.slc_state = self.car_controller.sm[self.long_plan_sp].speedLimitControlState
-      self.m_tsc_state = self.car_controller.sm[self.long_plan_sp].turnSpeedControlState
-      self.speed_limit = self.car_controller.sm[self.long_plan_sp].speedLimit
-      self.speed_limit_offset = self.car_controller.sm[self.long_plan_sp].speedLimitOffset
-      self.v_tsc = self.car_controller.sm[self.long_plan_sp].visionTurnSpeed
-      self.m_tsc = self.car_controller.sm[self.long_plan_sp].turnSpeed
+    if self.car_controller.sm.updated['longitudinalPlanSP']:
+      self.v_tsc_state = self.car_controller.sm['longitudinalPlanSP'].visionTurnControllerState
+      self.slc_state = self.car_controller.sm['longitudinalPlanSP'].speedLimitControlState
+      self.m_tsc_state = self.car_controller.sm['longitudinalPlanSP'].turnSpeedControlState
+      self.speed_limit = self.car_controller.sm['longitudinalPlanSP'].speedLimit
+      self.speed_limit_offset = self.car_controller.sm['longitudinalPlanSP'].speedLimitOffset
+      self.v_tsc = self.car_controller.sm['longitudinalPlanSP'].visionTurnSpeed
+      self.m_tsc = self.car_controller.sm['longitudinalPlanSP'].turnSpeed
 
     self.v_cruise_min = self.get_set_point(CS.params_list.is_metric)
 
