@@ -9,10 +9,8 @@ from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_contr
 ButtonType = car.CarState.ButtonEvent.Type
 SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.decelCruise)
 
-HYUNDAI_V_CRUISE_MIN = {
-  True: 30,
-  False: int(20 * CV.MPH_TO_KPH),
-}
+HYUNDAI_BUTTON_MAPPINGS = {'type_1': Buttons.RES_ACCEL, 'type_2': Buttons.SET_DECEL}
+HYUNDAI_V_CRUISE_MIN = {True: 30, False: int(20 * CV.MPH_TO_KPH)}
 
 
 class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
@@ -26,11 +24,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     return any(be.type in SET_SPEED_BUTTONS for be in CS.out.buttonEvents)
 
   def get_button_mappings(self) -> dict[str, int]:
-    btn_mapping = {
-      'type_1': Buttons.RES_ACCEL,
-      'type_2': Buttons.SET_DECEL,
-    }
-    return btn_mapping
+    return HYUNDAI_BUTTON_MAPPINGS
 
   def create_can_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
