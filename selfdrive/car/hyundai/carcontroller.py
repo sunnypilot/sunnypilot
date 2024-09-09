@@ -84,11 +84,10 @@ class CarController(CarControllerBase):
     return 19 if hud_control.leadVisible else 0
 
   def update(self, CC, CS, now_nanos):
-    if self.CP.openpilotLongitudinalControl and self.frame % 5 == 0:
-      self.sm.update(0)
-
     if not self.CP.pcmCruiseSpeed:
       self.custom_stock_longitudinal_controller.update(CS)
+    elif self.CP.openpilotLongitudinalControl:
+      self.sm.update(0)
 
     actuators = CC.actuators
     hud_control = CC.hudControl
