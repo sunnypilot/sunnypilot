@@ -8,10 +8,6 @@ HONDA_V_CRUISE_MIN = {
   True: 40,
   False: int(25 * CV.MPH_TO_KPH),
 }
-HYUNDAI_V_CRUISE_MIN = {
-  True: 30,
-  False: int(20 * CV.MPH_TO_KPH),
-}
 MAZDA_V_CRUISE_MIN = {
   True: 30,
   False: int(20 * CV.MPH_TO_KPH),
@@ -33,8 +29,6 @@ class MinimumSetPoint:
     if is_metric != self.is_metric_prev:
       if self.CP.carName == "honda":
         self.set_point = HONDA_V_CRUISE_MIN[is_metric]
-      elif self.CP.carName == "hyundai":
-        self.set_point = HYUNDAI_V_CRUISE_MIN[is_metric]
       elif self.CP.carName == "chrysler":
         self.set_point = FCA_V_CRUISE_MIN[is_metric]
       elif self.CP.carName == "mazda":

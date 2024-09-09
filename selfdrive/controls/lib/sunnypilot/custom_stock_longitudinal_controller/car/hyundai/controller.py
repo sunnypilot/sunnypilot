@@ -1,4 +1,5 @@
 from cereal import car
+from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CANFD_CAR, LEGACY_SAFETY_MODE_CAR
@@ -8,10 +9,18 @@ from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_contr
 ButtonType = car.CarState.ButtonEvent.Type
 SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.decelCruise)
 
+HYUNDAI_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
+
 
 class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
   def __init__(self, car_controller, CP):
     super().__init__(car_controller, CP)
+
+  def get_set_point(self, is_metric: bool) -> float:
+    return HYUNDAI_V_CRUISE_MIN[is_metric]
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in SET_SPEED_BUTTONS for be in CS.out.buttonEvents)

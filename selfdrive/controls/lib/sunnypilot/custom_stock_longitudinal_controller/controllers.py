@@ -6,7 +6,6 @@ import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.car import DT_CTRL
-from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.definitions import MinimumSetPoint
 
 SendCan = tuple[int, bytes, int]
 
@@ -27,8 +26,6 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.car_controller.sm = messaging.SubMaster(list(new_services))
     else:
       self.car_controller.sm = messaging.SubMaster([self.long_plan_sp])
-
-    self.min_set_point = MinimumSetPoint(CP)
 
     self.params = Params()
     self.last_speed_limit_sign_tap_prev = False
@@ -195,6 +192,10 @@ class CustomStockLongitudinalControllerBase(ABC):
   def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     pass
 
+  @abstractmethod
+  def get_set_point(self, is_metric: bool) -> float:
+    pass
+
   def update(self, CS: car.CarState) -> None:
     self.car_controller.sm.update(0)
 
@@ -207,7 +208,7 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.v_tsc = self.car_controller.sm[self.long_plan_sp].visionTurnSpeed
       self.m_tsc = self.car_controller.sm[self.long_plan_sp].turnSpeed
 
-    self.v_cruise_min = self.min_set_point.get_set_point(CS.params_list.is_metric)
+    self.v_cruise_min = self.get_set_point(CS.params_list.is_metric)
 
     if not self.last_speed_limit_sign_tap_prev and CS.params_list.last_speed_limit_sign_tap:
       self.sl_force_active_timer = self.car_controller.frame
