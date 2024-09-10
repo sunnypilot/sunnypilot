@@ -35,7 +35,7 @@ SLOW_DOWN_WINDOW_SIZE = 4
 SLOW_DOWN_PROB = 0.6
 
 SLOW_DOWN_BP = [0., 10., 20., 30., 40., 50., 55., 60.]
-SLOW_DOWN_DIST = [20, 30., 50., 70., 80., 90., 105., 120.]
+SLOW_DOWN_DIST = [25., 40., 60., 85., 100., 110., 120., 130.]
 
 SLOWNESS_WINDOW_SIZE = 12
 SLOWNESS_PROB = 0.5
@@ -155,7 +155,7 @@ class DynamicExperimentalController:
     """
     return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.03 * np.log(1 + len(self._slow_down_gmac.data)))
 
-  def _anomaly_detection(self, recent_data, threshold=2.0):
+  def _anomaly_detection(self, recent_data, threshold=2.0, context_check=True):
     """
     Basic anomaly detection using standard deviation.
     """
@@ -164,6 +164,10 @@ class DynamicExperimentalController:
     mean = np.mean(recent_data)
     std_dev = np.std(recent_data)
     anomaly = recent_data[-1] > mean + threshold * std_dev
+
+    # Context check to ensure repeated anomaly
+    if context_check:
+      return np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1
     return anomaly
 
   def _smoothed_lead_detection(self, lead_prob, smoothing_factor=0.2):
