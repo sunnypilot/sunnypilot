@@ -61,11 +61,11 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
     return 1.0
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    return 0.8
-  elif personality==custom.LongitudinalPersonalitySP.moderate:
     return 0.5
-  elif personality==custom.LongitudinalPersonalitySP.aggressive:
+  elif personality==custom.LongitudinalPersonalitySP.moderate:
     return 0.3
+  elif personality==custom.LongitudinalPersonalitySP.aggressive:
+    return 0.2
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     return 0.1
   else:
@@ -98,8 +98,8 @@ def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.
     x_vel =  [0,    5.,   5.01, 8.33,  8.34,  27.69, 27.7]
     y_dist = [0.0,  1.4,  1.4,  1.4,   1.45,  1.45,  1.50]
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    x_vel =  [0,    5.,   5.01,  17.0, 17.01, 27.69, 27.7]
-    y_dist = [0.0,  1.2,  1.2,   1.2,  1.25,  1.25,  1.3]
+    x_vel =  [0,    5.,   5.01, 17.0, 17.01, 27.69, 27.7]
+    y_dist = [0.0,  1.2,  1.2,  1.2,  1.25,  1.25,  1.3]
   else:
     raise NotImplementedError("Dynamic personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
