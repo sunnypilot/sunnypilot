@@ -22,16 +22,12 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.CP = CP
 
     self.params = Params()
-    self.last_speed_limit_sign_tap_prev = False
     self.timer = 0
     self.final_speed_kph = 0
     self.target_speed = 0
-    self.current_speed = 0
     self.v_cruise = 0
     self.v_cruise_min = 0
     self.button_state = ButtonControlState.inactive
-    self.slc_active_stock = False
-    self.sl_force_active_timer = 0
 
     self.v_tsc_state = VisionTurnControllerState.disabled
     self.slc_state = SpeedLimitControlState.inactive
