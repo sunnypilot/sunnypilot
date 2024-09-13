@@ -10,14 +10,13 @@ SendCan = tuple[int, bytes, int]
 
 
 class CustomStockLongitudinalControllerBase(ABC):
-  def __init__(self, car_controller, CP):
-    self.car_controller = car_controller
+  def __init__(self, car, CP):
+    self.car = car
     self.CP = CP
 
     self.services = {'longitudinalPlanSP'}
-    if hasattr(car_controller, 'sm'):
-      self.services = car_controller.sm.data.keys() | self.services
-    car_controller.sm = messaging.SubMaster(list(self.services))
+    self.services = car.sm.data.keys() | self.services
+    car.sm = messaging.SubMaster(list(self.services))
 
     self.params = Params()
     self.last_speed_limit_sign_tap_prev = False
@@ -46,15 +45,6 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.steady_speed = 0
 
     self.button_mappings = self.get_button_mappings()
-
-  # copy for logs in interface update
-  def update_logs(self) -> None:
-    self.car_controller.cruise_button = self.cruise_button
-    self.car_controller.final_speed_kph = self.final_speed_kph
-    self.car_controller.target_speed = self.target_speed
-    self.car_controller.v_set_dis = self.v_set_dis
-    self.car_controller.speed_diff = self.speed_diff
-    self.car_controller.button_type = self.button_type
 
   # multikyd methods, sunnypilot logic
   def get_cruise_buttons_status(self, CS: car.CarState) -> bool:
@@ -168,8 +158,6 @@ class CustomStockLongitudinalControllerBase(ABC):
 
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
 
-    self.update_logs()
-
     return cruise_button
 
   @abstractmethod
@@ -189,25 +177,23 @@ class CustomStockLongitudinalControllerBase(ABC):
     pass
 
   def update(self, CS: car.CarState) -> None:
-    self.car_controller.sm.update(0)
-
-    if self.car_controller.sm.updated['longitudinalPlanSP']:
-      self.v_tsc_state = self.car_controller.sm['longitudinalPlanSP'].visionTurnControllerState
-      self.slc_state = self.car_controller.sm['longitudinalPlanSP'].speedLimitControlState
-      self.m_tsc_state = self.car_controller.sm['longitudinalPlanSP'].turnSpeedControlState
-      self.speed_limit = self.car_controller.sm['longitudinalPlanSP'].speedLimit
-      self.speed_limit_offset = self.car_controller.sm['longitudinalPlanSP'].speedLimitOffset
-      self.v_tsc = self.car_controller.sm['longitudinalPlanSP'].visionTurnSpeed
-      self.m_tsc = self.car_controller.sm['longitudinalPlanSP'].turnSpeed
+    if self.car.sm.updated['longitudinalPlanSP']:
+      self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
+      self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
+      self.m_tsc_state = self.car.sm['longitudinalPlanSP'].turnSpeedControlState
+      self.speed_limit = self.car.sm['longitudinalPlanSP'].speedLimit
+      self.speed_limit_offset = self.car.sm['longitudinalPlanSP'].speedLimitOffset
+      self.v_tsc = self.car.sm['longitudinalPlanSP'].visionTurnSpeed
+      self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
     self.v_cruise_min = self.get_set_point(CS.params_list.is_metric)
 
     if not self.last_speed_limit_sign_tap_prev and CS.params_list.last_speed_limit_sign_tap:
-      self.sl_force_active_timer = self.car_controller.frame
+      self.sl_force_active_timer = self.car.sm.frame
       self.params.put_bool_nonblocking("LastSpeedLimitSignTap", False)
     self.last_speed_limit_sign_tap_prev = CS.params_list.last_speed_limit_sign_tap
 
-    sl_force_active = CS.params_list.speed_limit_control_enabled and (self.car_controller.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
+    sl_force_active = CS.params_list.speed_limit_control_enabled and (self.car.sm.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
     sl_inactive = not sl_force_active and (not CS.params_list.speed_limit_control_enabled or (True if self.slc_state == 0 else False))
     sl_temp_inactive = not sl_force_active and (CS.params_list.speed_limit_control_enabled and (True if self.slc_state == 1 else False))
     slc_active = not sl_inactive and not sl_temp_inactive
