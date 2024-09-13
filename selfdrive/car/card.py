@@ -73,6 +73,10 @@ class Car:
       services = self.sm.data.keys() | {'longitudinalPlan'}
       self.sm = messaging.SubMaster(list(services))
 
+      cslc_path = f'openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.car.{self.CP.carName}'
+      CustomStockLongitudinalController = __import__(cslc_path + '.controller', fromlist=['CustomStockLongitudinalController']).CustomStockLongitudinalController
+      self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, self.CI.CC, self.CP)
+
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
     controller_available = self.CI.CC is not None and openpilot_enabled_toggle and not self.CP.dashcamOnly
@@ -177,6 +181,8 @@ class Car:
       # send car controls over can
       now_nanos = self.can_log_mono_time if REPLAY else int(time.monotonic() * 1e9)
       self.last_actuators_output, can_sends = self.CI.apply(CC, now_nanos)
+      if not self.CP.pcmCruiseSpeed:
+        can_sends.extend(self.custom_stock_longitudinal_controller.update(CS, CC))
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
       self.CC_prev = CC

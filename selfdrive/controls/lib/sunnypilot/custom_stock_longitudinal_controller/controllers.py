@@ -151,7 +151,7 @@ class CustomStockLongitudinalControllerBase(ABC):
   def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     pass
 
-  def update(self, CS: car.CarState) -> None:
+  def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     if self.car.sm.updated['longitudinalPlanSP']:
       self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
       self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
@@ -174,3 +174,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     slc_active = not sl_inactive and not sl_temp_inactive
 
     self.slc_active_stock = slc_active
+
+    can_sends = self.create_mock_button_messages(CS, CC)
+
+    return can_sends
