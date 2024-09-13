@@ -29,7 +29,6 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.v_set_dis = 0
     self.v_cruise_min = 0
     self.button_state = ButtonControlState.inactive
-    self.button_select = 0
     self.slc_active_stock = False
     self.sl_force_active_timer = 0
     self.v_tsc_state = 0
