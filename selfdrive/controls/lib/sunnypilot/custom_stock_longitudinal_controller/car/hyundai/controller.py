@@ -8,22 +8,21 @@ from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_contr
 
 ButtonType = car.CarState.ButtonEvent.Type
 
-BUTTON_MAPPINGS = {'type_1': Buttons.RES_ACCEL, 'type_2': Buttons.SET_DECEL}
 SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.decelCruise)
 
 
 class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
-  def __init__(self, car_controller, CP):
-    super().__init__(car_controller, CP)
+  def __init__(self, car, car_controller, CP):
+    super().__init__(car, car_controller, CP)
+    self.accel_button = Buttons.RES_ACCEL
+    self.decel_button = Buttons.SET_DECEL
+    self.initialize_button_mapping()
 
   def get_set_point(self, is_metric: bool) -> float:
     return 30 if is_metric else int(20 * CV.MPH_TO_KPH)
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in SET_SPEED_BUTTONS for be in CS.out.buttonEvents)
-
-  def get_button_mappings(self) -> dict[str, int]:
-    return BUTTON_MAPPINGS
 
   def create_can_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
