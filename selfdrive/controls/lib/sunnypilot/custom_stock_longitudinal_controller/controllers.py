@@ -60,13 +60,13 @@ class CustomStockLongitudinalControllerBase(ABC):
       ButtonControlState.resetting: resetting_state,
     }
 
-  def initialize_button_mapping(self):
+  def initialize_button_mapping(self) -> None:
     self.button_mapping = {
       'accelerating': self.accel_button,
       'decelerating': self.decel_button,
     }
 
-  def get_set_speed_buttons(self, CS):
+  def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in self.set_speed_buttons for be in CS.out.buttonEvents)
 
   def handle_button_state(self) -> int | None:
