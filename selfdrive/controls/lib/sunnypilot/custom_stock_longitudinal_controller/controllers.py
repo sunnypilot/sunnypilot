@@ -37,6 +37,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.speed_limit_offseted = 0
     self.m_tsc = 0
 
+    self.cruise_enabled = False
     self.cruise_button = None
     self.steady_speed = 0
 
@@ -79,7 +80,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
   # multikyd methods, sunnypilot logic
   def get_cruise_buttons_status(self, CS: car.CarState) -> bool:
-    if not CS.out.cruiseState.enabled or self.get_set_speed_buttons(CS):
+    if not self.cruise_enabled or self.get_set_speed_buttons(CS):
       self.timer = 40
     elif self.timer:
       self.timer -= 1
@@ -112,7 +113,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     cruise_button = None
     if not self.get_cruise_buttons_status(CS):
       pass
-    elif CS.out.cruiseState.enabled:
+    elif self.cruise_enabled:
       self.final_speed_kph = self.get_v_target(CC)
       cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
     return cruise_button
@@ -122,6 +123,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     pass
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+    self.cruise_enabled = CS.out.cruiseState.enabled
     if self.car.sm.updated['longitudinalPlanSP']:
       self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
       self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
