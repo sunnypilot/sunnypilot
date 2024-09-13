@@ -212,8 +212,7 @@ struct CarControlSP @0xb86e6369214c01c8 {
     finalSpeedKph @2 :Float32;
     targetSpeed @3 :Float32;
     vSetDis @4 :Float32;
-    speedDiff @5 :Float32;
-    buttonType @6 :Int16;
+    buttonType @5 :Int16;
 
     enum ButtonControlState {
       inactive @0;        # No button press or default state
