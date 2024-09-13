@@ -91,11 +91,10 @@ class CustomStockLongitudinalControllerBase(ABC):
     return False
 
   def get_target_speed(self, v_cruise_kph_prev: float) -> float:
-    v_cruise_kph = v_cruise_kph_prev
     if self.slc_state > SpeedLimitControlState.tempInactive:
       v_cruise_kph = self.speed_limit_offseted * CV.MS_TO_KPH
-      if not self.slc_active_stock:
-        v_cruise_kph = v_cruise_kph_prev
+    else:
+      v_cruise_kph = v_cruise_kph_prev
     return v_cruise_kph
 
   def get_curve_speed(self, target_speed_kph: float, v_cruise_kph_prev: float) -> float:
@@ -165,18 +164,6 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
     self.v_cruise_min = self.get_set_point(CS.params_list.is_metric)
-
-    if not self.last_speed_limit_sign_tap_prev and CS.params_list.last_speed_limit_sign_tap:
-      self.sl_force_active_timer = self.car.sm.frame
-      self.params.put_bool_nonblocking("LastSpeedLimitSignTap", False)
-    self.last_speed_limit_sign_tap_prev = CS.params_list.last_speed_limit_sign_tap
-
-    sl_force_active = CS.params_list.speed_limit_control_enabled and (self.car.sm.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
-    sl_inactive = not sl_force_active and (not CS.params_list.speed_limit_control_enabled or (True if self.slc_state == SpeedLimitControlState.inactive else False))
-    sl_temp_inactive = not sl_force_active and (CS.params_list.speed_limit_control_enabled and (True if self.slc_state == SpeedLimitControlState.tempInactive else False))
-    slc_active = not sl_inactive and not sl_temp_inactive
-
-    self.slc_active_stock = slc_active
 
     can_sends = self.create_mock_button_messages(CS, CC)
 
