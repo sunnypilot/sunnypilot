@@ -19,7 +19,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
   def create_can_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
     if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled:
-      self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
+      self.cruise_button = self.get_cruise_buttons(CS, CC)
       if self.cruise_button is not None:
         if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
           send_freq = 1
@@ -43,7 +43,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
         # TODO: resume for alt button cars
         pass
       else:
-        self.cruise_button = self.get_cruise_buttons(CS, CC.vCruise)
+        self.cruise_button = self.get_cruise_buttons(CS, CC)
         if self.cruise_button is not None:
           if self.car_controller.frame % 2 == 0:
             can_sends.append(hyundaicanfd.create_buttons(self.car_controller.packer, self.CP, self.car_controller.CAN, ((self.car_controller.frame // 2) + 1) % 0x10, self.cruise_button))
