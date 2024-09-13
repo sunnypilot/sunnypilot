@@ -18,9 +18,6 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
 
     self.set_speed_buttons = (ButtonType.accelCruise, ButtonType.decelCruise)
 
-  def get_set_point(self, is_metric: bool) -> float:
-    return 30 if is_metric else int(20 * CV.MPH_TO_KPH)
-
   def create_can_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
     if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled:

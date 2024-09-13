@@ -144,12 +144,12 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     return cruise_button
 
-  @abstractmethod
-  def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
-    pass
+  @staticmethod
+  def get_set_point(is_metric: bool) -> float:
+    return 30 if is_metric else int(20 * CV.MPH_TO_KPH)
 
   @abstractmethod
-  def get_set_point(self, is_metric: bool) -> float:
+  def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     pass
 
   def update(self, CS: car.CarState) -> None:
