@@ -70,6 +70,8 @@ class Car:
 
     if self.CP.customStockLongAvailable and self.CP.pcmCruise and self.params.get_bool("CustomStockLong"):
       self.CP.pcmCruiseSpeed = False
+      services = self.sm.data.keys() | {'longitudinalPlan'}
+      self.sm = messaging.SubMaster(list(services))
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 

@@ -1,22 +1,22 @@
 from abc import abstractmethod, ABC
 
-from cereal import car
-import cereal.messaging as messaging
+from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.car import DT_CTRL
+from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.states import InactiveState, \
+  AcceleratingState, DeceleratingState, HoldingState, ResettingState
+
+ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
 
 SendCan = tuple[int, bytes, int]
 
 
 class CustomStockLongitudinalControllerBase(ABC):
-  def __init__(self, car, CP):
+  def __init__(self, car, car_controller, CP):
     self.car = car
+    self.car_controller = car_controller
     self.CP = CP
-
-    self.services = {'longitudinalPlanSP'}
-    self.services = car.sm.data.keys() | self.services
-    car.sm = messaging.SubMaster(list(self.services))
 
     self.params = Params()
     self.last_speed_limit_sign_tap_prev = False
@@ -24,27 +24,44 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.speed_limit_offset = 0
     self.timer = 0
     self.final_speed_kph = 0
-    self.init_speed = 0
+    self.target_speed = 0
     self.current_speed = 0
     self.v_set_dis = 0
     self.v_cruise_min = 0
-    self.button_type = 0
+    self.button_state = ButtonControlState.inactive
     self.button_select = 0
-    self.button_count = 0
-    self.target_speed = 0
-    self.t_interval = 7
     self.slc_active_stock = False
     self.sl_force_active_timer = 0
     self.v_tsc_state = 0
     self.slc_state = 0
     self.m_tsc_state = 0
     self.cruise_button = None
-    self.speed_diff = 0
     self.v_tsc = 0
     self.m_tsc = 0
     self.steady_speed = 0
 
     self.button_mappings = self.get_button_mappings()
+
+    inactive_state = InactiveState()
+    accelerating_state = AcceleratingState()
+    decelerating_state = DeceleratingState()
+    holding_state = HoldingState()
+    resetting_state = ResettingState()
+
+    self.button_states = {
+      ButtonControlState.inactive: inactive_state,
+      ButtonControlState.accelerating: accelerating_state,
+      ButtonControlState.decelerating: decelerating_state,
+      ButtonControlState.holding: holding_state,
+      ButtonControlState.resetting: resetting_state,
+    }
+
+  def handle_button_state(self) -> int | None:
+    state = self.button_states.get(self.button_state)
+    if state:
+      return state.handle(self)
+    else:
+      raise ValueError(f"Unhandled button state: {self.button_state}")
 
   # multikyd methods, sunnypilot logic
   def get_cruise_buttons_status(self, CS: car.CarState) -> bool:
@@ -64,54 +81,6 @@ class CustomStockLongitudinalControllerBase(ABC):
         v_cruise_kph = v_cruise_kph_prev
     return v_cruise_kph
 
-  def get_button_type(self, button_type: int) -> int | str:
-    self.type_status = "type_" + str(button_type)
-    self.button_picker = getattr(self, self.type_status, lambda: "default")
-    return self.button_picker()
-
-  def type_default(self) -> None:
-    self.button_type = 0
-    return None
-
-  def type_0(self) -> None:
-    self.button_count = 0
-    self.target_speed = self.init_speed
-    self.speed_diff = self.target_speed - self.v_set_dis
-    if self.target_speed > self.v_set_dis:
-      self.button_type = 1
-    elif self.target_speed < self.v_set_dis and self.v_set_dis > self.v_cruise_min:
-      self.button_type = 2
-    return None
-
-  def type_1(self) -> int:
-    cruise_button = self.button_mappings['type_1']
-    self.button_count += 1
-    if self.target_speed <= self.v_set_dis:
-      self.button_count = 0
-      self.button_type = 3
-    elif self.button_count > 5:
-      self.button_count = 0
-      self.button_type = 3
-    return cruise_button
-
-  def type_2(self) -> int:
-    cruise_button = self.button_mappings['type_2']
-    self.button_count += 1
-    if self.target_speed >= self.v_set_dis or self.v_set_dis <= self.v_cruise_min:
-      self.button_count = 0
-      self.button_type = 3
-    elif self.button_count > 5:
-      self.button_count = 0
-      self.button_type = 3
-    return cruise_button
-
-  def type_3(self) -> None:
-    cruise_button = None
-    self.button_count += 1
-    if self.button_count > self.t_interval:
-      self.button_type = 0
-    return cruise_button
-
   def get_curve_speed(self, target_speed_kph: float, v_cruise_kph_prev: float) -> float:
     if self.v_tsc_state != 0:
       vision_v_cruise_kph = self.v_tsc * CV.MS_TO_KPH
@@ -129,9 +98,10 @@ class CustomStockLongitudinalControllerBase(ABC):
     return min(target_speed_kph, curve_speed)
 
   def get_button_control(self, CS: car.CarState, final_speed: float, v_cruise_kph_prev: float) -> int:
-    self.init_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+    self.target_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
     self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
-    cruise_button = self.get_button_type(self.button_type)
+    cruise_button = self.handle_button_state()
+
     return cruise_button
 
   def curve_speed_hysteresis(self, cur_speed: float, hyst: float = (0.75 * CV.MPH_TO_KPH)) -> float:
