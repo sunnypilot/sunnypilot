@@ -14,8 +14,6 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     super().__init__(car, car_controller, CP)
     self.accel_button = Buttons.RES_ACCEL
     self.decel_button = Buttons.SET_DECEL
-    self.initialize_button_mapping()
-
     self.set_speed_buttons = (ButtonType.accelCruise, ButtonType.decelCruise)
 
   def create_can_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
