@@ -98,7 +98,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     return v_cruise_kph
 
   def get_curve_speed(self, target_speed_kph: float, v_cruise_kph_prev: float) -> float:
-    if self.v_tsc_state != TurnSpeedControlState.inactive:
+    if self.v_tsc_state != VisionTurnControllerState.disabled:
       vision_v_cruise_kph = self.v_tsc * CV.MS_TO_KPH
       if int(vision_v_cruise_kph) == int(v_cruise_kph_prev):
         vision_v_cruise_kph = 255
@@ -137,7 +137,7 @@ class CustomStockLongitudinalControllerBase(ABC):
         target_speed_kph = set_speed_kph
       else:
         target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
-      if self.v_tsc_state != TurnSpeedControlState.inactive or self.m_tsc_state > TurnSpeedControlState.tempInactive:
+      if self.v_tsc_state != VisionTurnControllerState.disabled or self.m_tsc_state > TurnSpeedControlState.tempInactive:
         self.final_speed_kph = self.get_curve_speed(target_speed_kph, v_cruise_kph_prev)
       else:
         self.final_speed_kph = target_speed_kph
