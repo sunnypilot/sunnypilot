@@ -3,9 +3,9 @@ from abc import abstractmethod, ABC
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.states import InactiveState, \
   AcceleratingState, DeceleratingState, HoldingState, ResettingState
+from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
 SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
@@ -27,7 +27,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.final_speed_kph = 0
     self.target_speed = 0
     self.current_speed = 0
-    self.v_set_dis = 0
+    self.v_cruise = 0
     self.v_cruise_min = 0
     self.button_state = ButtonControlState.inactive
     self.slc_active_stock = False
@@ -90,35 +90,13 @@ class CustomStockLongitudinalControllerBase(ABC):
       return True
     return False
 
-  def get_target_speed(self, v_cruise_kph_prev: float) -> float:
-    if self.slc_state > SpeedLimitControlState.tempInactive:
-      v_cruise_kph = self.speed_limit_offseted * CV.MS_TO_KPH
-    else:
-      v_cruise_kph = v_cruise_kph_prev
-    return v_cruise_kph
+  def get_v_target(self, v_cruise_kph_prev: float):
+    v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
+    slc_target = self.speed_limit_offseted * CV.MS_TO_KPH if self.slc_state in ACTIVE_STATES else 255
+    m_tsc_target = self.m_tsc * CV.MS_TO_KPH if self.m_tsc_state > TurnSpeedControlState.tempInactive else 255
+    tsc_target = self.curve_speed_hysteresis(min(v_tsc_target, m_tsc_target) + 2 * CV.MPH_TO_KPH)
 
-  def get_curve_speed(self, target_speed_kph: float, v_cruise_kph_prev: float) -> float:
-    if self.v_tsc_state != VisionTurnControllerState.disabled:
-      vision_v_cruise_kph = self.v_tsc * CV.MS_TO_KPH
-      if int(vision_v_cruise_kph) == int(v_cruise_kph_prev):
-        vision_v_cruise_kph = 255
-    else:
-      vision_v_cruise_kph = 255
-    if self.m_tsc_state > TurnSpeedControlState.tempInactive:
-      map_v_cruise_kph = self.m_tsc * CV.MS_TO_KPH
-      if int(map_v_cruise_kph) == 0.0:
-        map_v_cruise_kph = 255
-    else:
-      map_v_cruise_kph = 255
-    curve_speed = self.curve_speed_hysteresis(min(vision_v_cruise_kph, map_v_cruise_kph) + 2 * CV.MPH_TO_KPH)
-    return min(target_speed_kph, curve_speed)
-
-  def get_button_control(self, CS: car.CarState, final_speed: float, v_cruise_kph_prev: float) -> int:
-    self.target_speed = round(min(final_speed, v_cruise_kph_prev) * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
-    self.v_set_dis = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
-    cruise_button = self.handle_button_state()
-
-    return cruise_button
+    return min(v_cruise_kph_prev, slc_target, tsc_target)
 
   def curve_speed_hysteresis(self, cur_speed: float, hyst: float = (0.75 * CV.MPH_TO_KPH)) -> float:
     if cur_speed > self.steady_speed:
@@ -127,23 +105,19 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.steady_speed = cur_speed
     return self.steady_speed
 
+  def get_button_control(self, CS: car.CarState, final_speed: float) -> int:
+    self.target_speed = round(final_speed * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+    self.v_cruise = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
+    cruise_button = self.handle_button_state()
+    return cruise_button
+
   def get_cruise_buttons(self, CS: car.CarState, v_cruise_kph_prev: float) -> int | None:
     cruise_button = None
     if not self.get_cruise_buttons_status(CS):
       pass
     elif CS.out.cruiseState.enabled:
-      set_speed_kph = self.get_target_speed(v_cruise_kph_prev)
-      if self.slc_state > SpeedLimitControlState.tempInactive:
-        target_speed_kph = set_speed_kph
-      else:
-        target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
-      if self.v_tsc_state != VisionTurnControllerState.disabled or self.m_tsc_state > TurnSpeedControlState.tempInactive:
-        self.final_speed_kph = self.get_curve_speed(target_speed_kph, v_cruise_kph_prev)
-      else:
-        self.final_speed_kph = target_speed_kph
-
-      cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
-
+      self.final_speed_kph = self.get_v_target(v_cruise_kph_prev)
+      cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
     return cruise_button
 
   @staticmethod
