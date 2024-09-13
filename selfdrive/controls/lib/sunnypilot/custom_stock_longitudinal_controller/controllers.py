@@ -8,6 +8,9 @@ from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_contr
   AcceleratingState, DeceleratingState, HoldingState, ResettingState
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
+SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
+TurnSpeedControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
+VisionTurnControllerState = custom.LongitudinalPlanSP.VisionTurnControllerState
 
 SendCan = tuple[int, bytes, int]
 
@@ -20,8 +23,6 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.params = Params()
     self.last_speed_limit_sign_tap_prev = False
-    self.speed_limit = 0.
-    self.speed_limit_offset = 0
     self.timer = 0
     self.final_speed_kph = 0
     self.target_speed = 0
@@ -31,12 +32,15 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.button_state = ButtonControlState.inactive
     self.slc_active_stock = False
     self.sl_force_active_timer = 0
-    self.v_tsc_state = 0
-    self.slc_state = 0
-    self.m_tsc_state = 0
-    self.cruise_button = None
+
+    self.v_tsc_state = VisionTurnControllerState.disabled
+    self.slc_state = SpeedLimitControlState.inactive
+    self.m_tsc_state = TurnSpeedControlState.inactive
     self.v_tsc = 0
+    self.speed_limit_offseted = 0
     self.m_tsc = 0
+
+    self.cruise_button = None
     self.steady_speed = 0
 
     self.button_mapping = {}
@@ -88,20 +92,20 @@ class CustomStockLongitudinalControllerBase(ABC):
 
   def get_target_speed(self, v_cruise_kph_prev: float) -> float:
     v_cruise_kph = v_cruise_kph_prev
-    if self.slc_state > 1:
-      v_cruise_kph = (self.speed_limit + self.speed_limit_offset) * CV.MS_TO_KPH
+    if self.slc_state > SpeedLimitControlState.tempInactive:
+      v_cruise_kph = self.speed_limit_offseted * CV.MS_TO_KPH
       if not self.slc_active_stock:
         v_cruise_kph = v_cruise_kph_prev
     return v_cruise_kph
 
   def get_curve_speed(self, target_speed_kph: float, v_cruise_kph_prev: float) -> float:
-    if self.v_tsc_state != 0:
+    if self.v_tsc_state != TurnSpeedControlState.inactive:
       vision_v_cruise_kph = self.v_tsc * CV.MS_TO_KPH
       if int(vision_v_cruise_kph) == int(v_cruise_kph_prev):
         vision_v_cruise_kph = 255
     else:
       vision_v_cruise_kph = 255
-    if self.m_tsc_state > 1:
+    if self.m_tsc_state > TurnSpeedControlState.tempInactive:
       map_v_cruise_kph = self.m_tsc * CV.MS_TO_KPH
       if int(map_v_cruise_kph) == 0.0:
         map_v_cruise_kph = 255
@@ -130,11 +134,11 @@ class CustomStockLongitudinalControllerBase(ABC):
       pass
     elif CS.out.cruiseState.enabled:
       set_speed_kph = self.get_target_speed(v_cruise_kph_prev)
-      if self.slc_state > 1:
+      if self.slc_state > SpeedLimitControlState.tempInactive:
         target_speed_kph = set_speed_kph
       else:
         target_speed_kph = min(v_cruise_kph_prev, set_speed_kph)
-      if self.v_tsc_state != 0 or self.m_tsc_state > 1:
+      if self.v_tsc_state != TurnSpeedControlState.inactive or self.m_tsc_state > TurnSpeedControlState.tempInactive:
         self.final_speed_kph = self.get_curve_speed(target_speed_kph, v_cruise_kph_prev)
       else:
         self.final_speed_kph = target_speed_kph
@@ -156,9 +160,8 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
       self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
       self.m_tsc_state = self.car.sm['longitudinalPlanSP'].turnSpeedControlState
-      self.speed_limit = self.car.sm['longitudinalPlanSP'].speedLimit
-      self.speed_limit_offset = self.car.sm['longitudinalPlanSP'].speedLimitOffset
       self.v_tsc = self.car.sm['longitudinalPlanSP'].visionTurnSpeed
+      self.speed_limit_offseted = self.car.sm['longitudinalPlanSP'].speedLimitOffseted
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
     self.v_cruise_min = self.get_set_point(CS.params_list.is_metric)
@@ -169,8 +172,8 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.last_speed_limit_sign_tap_prev = CS.params_list.last_speed_limit_sign_tap
 
     sl_force_active = CS.params_list.speed_limit_control_enabled and (self.car.sm.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
-    sl_inactive = not sl_force_active and (not CS.params_list.speed_limit_control_enabled or (True if self.slc_state == 0 else False))
-    sl_temp_inactive = not sl_force_active and (CS.params_list.speed_limit_control_enabled and (True if self.slc_state == 1 else False))
+    sl_inactive = not sl_force_active and (not CS.params_list.speed_limit_control_enabled or (True if self.slc_state == SpeedLimitControlState.inactive else False))
+    sl_temp_inactive = not sl_force_active and (CS.params_list.speed_limit_control_enabled and (True if self.slc_state == SpeedLimitControlState.tempInactive else False))
     slc_active = not sl_inactive and not sl_temp_inactive
 
     self.slc_active_stock = slc_active
