@@ -45,6 +45,8 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.decel_button = None
     self.initialize_button_mapping()
 
+    self.set_speed_buttons = None
+
     inactive_state = InactiveState()
     accelerating_state = AcceleratingState()
     decelerating_state = DeceleratingState()
@@ -64,6 +66,9 @@ class CustomStockLongitudinalControllerBase(ABC):
       'accelerating': self.accel_button,
       'decelerating': self.decel_button,
     }
+
+  def get_set_speed_buttons(self, CS):
+    return any(be.type in self.set_speed_buttons for be in CS.out.buttonEvents)
 
   def handle_button_state(self) -> int | None:
     state = self.button_states.get(self.button_state)
@@ -138,10 +143,6 @@ class CustomStockLongitudinalControllerBase(ABC):
       cruise_button = self.get_button_control(CS, self.final_speed_kph, v_cruise_kph_prev)  # MPH/KPH based button presses
 
     return cruise_button
-
-  @abstractmethod
-  def get_set_speed_buttons(self, CS: car.CarState) -> bool:
-    pass
 
   @abstractmethod
   def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
