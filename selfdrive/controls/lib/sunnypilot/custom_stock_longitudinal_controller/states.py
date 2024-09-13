@@ -8,7 +8,7 @@ RESET_COUNT = 5
 T_INTERNAL = 7
 
 
-class ButtonState(ABC):
+class ButtonStateBase(ABC):
   def __init__(self):
     self.button_count = 0
 
@@ -17,7 +17,7 @@ class ButtonState(ABC):
     pass
 
 
-class InactiveState(ButtonState):
+class InactiveState(ButtonStateBase):
   def handle(self, controller) -> None:
     self.button_count = 0
 
@@ -28,7 +28,7 @@ class InactiveState(ButtonState):
     return None
 
 
-class AcceleratingState(ButtonState):
+class AcceleratingState(ButtonStateBase):
   def handle(self, controller) -> int:
     cruise_button = controller.button_mapping['accelerating']
     self.button_count += 1
@@ -38,7 +38,7 @@ class AcceleratingState(ButtonState):
     return cruise_button
 
 
-class DeceleratingState(ButtonState):
+class DeceleratingState(ButtonStateBase):
   def handle(self, controller) -> int:
     cruise_button = controller.button_mapping['decelerating']
     self.button_count += 1
@@ -48,7 +48,7 @@ class DeceleratingState(ButtonState):
     return cruise_button
 
 
-class HoldingState(ButtonState):
+class HoldingState(ButtonStateBase):
   def handle(self, controller) -> None:
     self.button_count += 1
     if self.button_count > T_INTERNAL:
@@ -56,7 +56,7 @@ class HoldingState(ButtonState):
     return None
 
 
-class ResettingState(ButtonState):
+class ResettingState(ButtonStateBase):
   def handle(self, controller) -> None:
     controller.button_state = ButtonControlState.inactive
     return None
