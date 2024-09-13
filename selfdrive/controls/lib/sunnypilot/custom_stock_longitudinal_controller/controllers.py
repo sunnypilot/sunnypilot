@@ -5,6 +5,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.states import InactiveState, \
   AcceleratingState, DeceleratingState, HoldingState, ResettingState
+from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.helpers import get_set_point
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
@@ -116,10 +117,6 @@ class CustomStockLongitudinalControllerBase(ABC):
       cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
     return cruise_button
 
-  @staticmethod
-  def get_set_point(is_metric: bool) -> float:
-    return 30 if is_metric else int(20 * CV.MPH_TO_KPH)
-
   @abstractmethod
   def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     pass
@@ -133,7 +130,7 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.speed_limit_offseted = self.car.sm['longitudinalPlanSP'].speedLimitOffseted
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
-    self.v_cruise_min = self.get_set_point(CS.params_list.is_metric)
+    self.v_cruise_min = get_set_point(CS.params_list.is_metric)
 
     can_sends = self.create_mock_button_messages(CS, CC)
 
