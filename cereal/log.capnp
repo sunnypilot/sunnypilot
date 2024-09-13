@@ -2388,7 +2388,7 @@ struct Event {
     liveMapDataSP @111 :Custom.LiveMapDataSP;
     e2eLongStateSP @112 :Custom.E2eLongStateSP;
     modelV2SP @113 :Custom.ModelDataV2SP;
-    customReserved7 @114 :Custom.CustomReserved7;
+    carControlSP @114 :Custom.CarControlSP;
     customReserved8 @115 :Custom.CustomReserved8;
     customReserved9 @116 :Custom.CustomReserved9;
 

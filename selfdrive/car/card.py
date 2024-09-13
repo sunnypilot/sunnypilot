@@ -31,7 +31,7 @@ class Car:
   def __init__(self, CI=None):
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'])
-    self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput'])
+    self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'carControlSP'])
 
     self.can_rcv_cum_timeout_counter = 0
 
@@ -178,6 +178,10 @@ class Car:
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
       self.CC_prev = CC
+
+      car_control_sp_send = messaging.new_message('carControlSP')
+      car_control_sp_send.valid = self.sm.all_checks(['carControl'])
+      self.pm.send('carControlSP', car_control_sp_send)
 
   def step(self):
     CS = self.state_update()

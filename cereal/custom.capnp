@@ -203,7 +203,26 @@ struct ModelDataV2SP @0xf98d843bfd7004a3 {
   modelCapabilities @4 :UInt32;
 }
 
-struct CustomReserved7 @0xb86e6369214c01c8 {
+struct CarControlSP @0xb86e6369214c01c8 {
+  customStockLongitudinalControl @0 :List(CustomStockLongitudinalControl);
+
+  struct CustomStockLongitudinalControl {
+    state @0 :CustomStockLongitudinalControlState;
+    cruiseButton @1 :Int16;
+    finalSpeedKph @2 :Float32;
+    targetSpeed @3 :Float32;
+    vSetDis @4 :Float32;
+    speedDiff @5 :Float32;
+    buttonType @6 :Int16;
+  }
+
+  enum CustomStockLongitudinalControlState {
+    inactive @0;        # No button press or default state
+    resetting @1;       # Resetting to default state
+    accelerating @2;    # Increasing speed
+    decelerating @3;    # Decreasing speed
+    holding @4;         # Holding steady speed
+  }
 }
 
 struct CustomReserved8 @0xf416ec09499d9d19 {
