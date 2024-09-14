@@ -23,7 +23,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
       if self.cruise_button is not None:
         if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
           send_freq = 1
-          if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_set_dis) <= 2:
+          if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_cruise) <= 2:
             send_freq = 5
           # send resume at a max freq of 10Hz
           if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL > 0.1 * send_freq:
