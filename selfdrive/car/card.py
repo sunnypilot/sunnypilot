@@ -190,7 +190,7 @@ class Car:
       car_control_sp_send = messaging.new_message('carControlSP')
       car_control_sp_send.valid = self.sm.all_checks(['carControl'])
       if not self.CP.pcmCruiseSpeed:
-        car_control_sp_send.CustomStockLongitudinalControl = self.custom_stock_longitudinal_controller.state_publish()
+        car_control_sp_send.customStockLongitudinalControl = self.custom_stock_longitudinal_controller.state_publish()
       self.pm.send('carControlSP', car_control_sp_send)
 
   def step(self):
