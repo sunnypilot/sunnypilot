@@ -83,28 +83,25 @@ class CustomStockLongitudinalControllerBase(ABC):
 
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
-  def update_v_target(self, CC: car.CarControl) -> None:
+  def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
+    self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
+
     v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
     slc_target = self.speed_limit_offseted * CV.MS_TO_KPH if self.slc_state in ACTIVE_STATES else 255
     m_tsc_target = self.m_tsc * CV.MS_TO_KPH if self.m_tsc_state > TurnSpeedControlState.tempInactive else 255
-
     tsc_target = min(v_tsc_target, slc_target, m_tsc_target)
-
     self.speed = speed_hysteresis(tsc_target, self.speed_steady, 1.5 * (1 if self.car_state.params_list.is_metric else CV.MPH_TO_KPH))
+    self.speed_steady = self.speed
 
     self.final_speed_kph = min(self.speed, CC.vCruise)
 
-    self.speed_steady = self.speed
-
-  def ready_state_update(self, CS: car.CarState, CC: car.CarControl) -> None:
-    ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
-    button_pressed = any(be.type in self.set_speed_buttons for be in CS.buttonEvents)
-
-    self.is_ready = ready and not button_pressed
-
-  def update_cruise_button(self, CS: car.CarState) -> None:
     self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not self.car_state.params_list.is_metric else 1))
     self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
+
+  def update_state(self, CS: car.CarState, CC: car.CarControl) -> None:
+    ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
+    button_pressed = any(be.type in self.set_speed_buttons for be in CS.buttonEvents)
+    self.is_ready = ready and not button_pressed
 
     self.cruise_button = self.button_states[self.button_state](self)
 
@@ -113,13 +110,9 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.update_msgs()
 
-    self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
+    self.update_calculations(CS, CC)
 
-    self.update_v_target(CC)
-
-    self.ready_state_update(CS, CC)
-
-    self.update_cruise_button(CS)
+    self.update_state(CS, CC)
 
     can_sends.extend(self.create_mock_button_messages())
 
