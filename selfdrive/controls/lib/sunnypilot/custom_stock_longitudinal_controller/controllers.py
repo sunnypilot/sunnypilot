@@ -70,6 +70,19 @@ class CustomStockLongitudinalControllerBase(ABC):
     customStockLongitudinalControl.vCruise = float(self.v_cruise)
     return customStockLongitudinalControl
 
+  def update_msgs(self) -> None:
+    if self.car.sm.updated['longitudinalPlanSP']:
+      self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
+      self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
+      self.m_tsc_state = self.car.sm['longitudinalPlanSP'].turnSpeedControlState
+      self.v_tsc = self.car.sm['longitudinalPlanSP'].visionTurnSpeed
+
+      speed_limit = self.car.sm['longitudinalPlanSP'].speedLimit
+      speed_limit_offset = self.car.sm['longitudinalPlanSP'].speedLimitOffset
+      self.speed_limit_offseted = speed_limit + speed_limit_offset
+
+      self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
+
   def update_v_target(self, CC: car.CarControl) -> None:
     v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
     slc_target = self.speed_limit_offseted * CV.MS_TO_KPH if self.slc_state in ACTIVE_STATES else 255
@@ -89,7 +102,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.is_ready = ready and not button_pressed
 
-  def get_cruise_button(self, CS: car.CarState) -> None:
+  def update_cruise_button(self, CS: car.CarState) -> None:
     self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not self.car_state.params_list.is_metric else 1))
     self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
 
@@ -97,13 +110,8 @@ class CustomStockLongitudinalControllerBase(ABC):
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
-    if self.car.sm.updated['longitudinalPlanSP']:
-      self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
-      self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
-      self.m_tsc_state = self.car.sm['longitudinalPlanSP'].turnSpeedControlState
-      self.v_tsc = self.car.sm['longitudinalPlanSP'].visionTurnSpeed
-      self.speed_limit_offseted = self.car.sm['longitudinalPlanSP'].speedLimit + self.car.sm['longitudinalPlanSP'].speedLimitOffset
-      self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
+
+    self.update_msgs()
 
     self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
 
@@ -111,7 +119,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.ready_state_update(CS, CC)
 
-    self.get_cruise_button(CS)
+    self.update_cruise_button(CS)
 
     can_sends.extend(self.create_mock_button_messages())
 
