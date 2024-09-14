@@ -37,7 +37,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.speed_limit_offseted = 0
     self.m_tsc = 0
 
-    self.cruise_enabled = False
+    self.is_active = False
     self.cruise_button = None
     self.steady_speed = 0
 
@@ -65,7 +65,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
   # multikyd methods, sunnypilot logic
   def get_cruise_buttons_status(self, CS: car.CarState) -> bool:
-    if not self.cruise_enabled or self.get_set_speed_buttons(CS):
+    if not self.is_active or self.get_set_speed_buttons(CS):
       self.timer = 40
     elif self.timer:
       self.timer -= 1
@@ -94,13 +94,13 @@ class CustomStockLongitudinalControllerBase(ABC):
     cruise_button = self.handle_button_state()
     return cruise_button
 
-  def get_cruise_buttons(self, CS: car.CarState, CC: car.CarControl) -> int | None:
-    cruise_button = None
+  def get_cruise_button(self, CS: car.CarState, CC: car.CarControl) -> int | None:
+    self.final_speed_kph = self.get_v_target(CC)
+    cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
+
     if not self.get_cruise_buttons_status(CS):
-      pass
-    elif self.cruise_enabled:
-      self.final_speed_kph = self.get_v_target(CC)
-      cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
+      return None
+
     return cruise_button
 
   @abstractmethod
@@ -108,7 +108,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     pass
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
-    self.cruise_enabled = CS.out.cruiseState.enabled
+    self.is_active = CS.out.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
     if self.car.sm.updated['longitudinalPlanSP']:
       self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
       self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
@@ -119,6 +119,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.v_cruise_min = get_set_point(CS.params_list.is_metric)
 
+    self.cruise_button = self.get_cruise_button(CS, CC)
     can_sends = self.create_mock_button_messages(CS, CC)
 
     return can_sends

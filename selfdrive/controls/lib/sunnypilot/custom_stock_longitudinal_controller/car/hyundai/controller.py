@@ -15,45 +15,41 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     self.decel_button = Buttons.SET_DECEL
     self.set_speed_buttons = (ButtonType.accelCruise, ButtonType.decelCruise)
 
-  def create_can_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+  def create_can_mock_button_messages(self, CS: car.CarState) -> list[SendCan]:
     can_sends = []
-    if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled:
-      self.cruise_button = self.get_cruise_buttons(CS, CC)
-      if self.cruise_button is not None:
-        if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
-          send_freq = 1
-          if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_cruise) <= 2:
-            send_freq = 5
-          # send resume at a max freq of 10Hz
-          if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL > 0.1 * send_freq:
-            # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
-            can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_controller.frame, CS.clu11, self.cruise_button, self.CP)] * 25)
-            if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
-              self.car_controller.last_button_frame = self.car_controller.frame
-        elif self.car_controller.frame % 2 == 0:
-          can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, (self.car_controller.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
+    if self.cruise_button is not None:
+      if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
+        send_freq = 1
+        if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_cruise) <= 2:
+          send_freq = 5
+        # send resume at a max freq of 10Hz
+        if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL > 0.1 * send_freq:
+          # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
+          can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_controller.frame, CS.clu11, self.cruise_button, self.CP)] * 25)
+          if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
+            self.car_controller.last_button_frame = self.car_controller.frame
+      elif self.car_controller.frame % 2 == 0:
+        can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, (self.car_controller.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
 
     return can_sends
 
-  def create_canfd_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+  def create_canfd_mock_button_messages(self) -> list[SendCan]:
     can_sends = []
-    if not (CC.cruiseControl.cancel or CC.cruiseControl.resume) and CS.out.cruiseState.enabled:
-      if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
-        # TODO: resume for alt button cars
-        pass
-      else:
-        self.cruise_button = self.get_cruise_buttons(CS, CC)
-        if self.cruise_button is not None:
-          if self.car_controller.frame % 2 == 0:
-            can_sends.append(hyundaicanfd.create_buttons(self.car_controller.packer, self.CP, self.car_controller.CAN, ((self.car_controller.frame // 2) + 1) % 0x10, self.cruise_button))
+    if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
+      # TODO: resume for alt button cars
+      pass
+    else:
+      if self.cruise_button is not None:
+        if self.car_controller.frame % 2 == 0:
+          can_sends.append(hyundaicanfd.create_buttons(self.car_controller.packer, self.CP, self.car_controller.CAN, ((self.car_controller.frame // 2) + 1) % 0x10, self.cruise_button))
 
     return can_sends
 
   def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
     if self.CP.carFingerprint in CANFD_CAR:
-      can_sends.extend(self.create_canfd_mock_button_messages(CS, CC))
+      can_sends.extend(self.create_canfd_mock_button_messages())
     else:
-      can_sends.extend(self.create_can_mock_button_messages(CS, CC))
+      can_sends.extend(self.create_can_mock_button_messages(CS))
 
     return can_sends
