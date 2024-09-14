@@ -12,6 +12,9 @@ class ButtonStateBase(ABC):
   def __init__(self):
     self.button_count = 0
 
+  def __call__(self, controller, CS: car.CarState) -> int | None:
+    return self.handle(controller, CS)
+
   @abstractmethod
   def handle(self, controller, CS: car.CarState) -> int | None:
     pass

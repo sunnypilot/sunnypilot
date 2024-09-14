@@ -67,13 +67,6 @@ class CustomStockLongitudinalControllerBase(ABC):
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in self.set_speed_buttons for be in CS.buttonEvents)
 
-  def handle_button_state(self, CS: car.CarState) -> int | None:
-    state = self.button_states.get(self.button_state)
-    if state:
-      return state.handle(self, CS)
-    else:
-      raise ValueError(f"Unhandled button state: {self.button_state}")
-
   def get_v_target(self, CC: car.CarControl) -> float:
     v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
     slc_target = self.speed_limit_offseted * CV.MS_TO_KPH if self.slc_state in ACTIVE_STATES else 255
@@ -92,7 +85,7 @@ class CustomStockLongitudinalControllerBase(ABC):
   def get_cruise_button(self, CS: car.CarState) -> int:
     self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not self.car_state.params_list.is_metric else 1))
     self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
-    cruise_button = self.handle_button_state(CS)
+    cruise_button = self.button_states[self.button_state](self, CS)
     return cruise_button
 
   @abstractmethod
