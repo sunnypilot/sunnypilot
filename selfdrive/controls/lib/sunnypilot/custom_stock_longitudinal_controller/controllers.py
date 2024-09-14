@@ -79,16 +79,10 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.steady_speed = cur_speed
     return self.steady_speed
 
-  def get_button_control(self, CS: car.CarState, final_speed: float) -> int:
-    self.target_speed = round(final_speed * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
+  def get_cruise_button(self, CS: car.CarState) -> int:
+    self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
     self.v_cruise = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.handle_button_state(CS)
-    return cruise_button
-
-  def get_cruise_button(self, CS: car.CarState, CC: car.CarControl) -> int | None:
-    self.final_speed_kph = self.get_v_target(CC)
-    cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
-
     return cruise_button
 
   @abstractmethod
@@ -107,7 +101,9 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.v_cruise_min = get_set_point(CS.params_list.is_metric)
 
-    self.cruise_button = self.get_cruise_button(CS, CC)
+    self.final_speed_kph = self.get_v_target(CC)
+    self.cruise_button = self.get_cruise_button(CS)
+
     can_sends = self.create_mock_button_messages(CS, CC)
 
     return can_sends
