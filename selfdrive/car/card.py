@@ -70,12 +70,12 @@ class Car:
 
     if self.CP.customStockLongAvailable and self.CP.pcmCruise and self.params.get_bool("CustomStockLong"):
       self.CP.pcmCruiseSpeed = False
-      services = self.sm.data.keys() | {'longitudinalPlan'}
+      services = self.sm.data.keys() | {'longitudinalPlanSP'}
       self.sm = messaging.SubMaster(list(services))
 
       cslc_path = f'openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.car.{self.CP.carName}'
       CustomStockLongitudinalController = __import__(cslc_path + '.controller', fromlist=['CustomStockLongitudinalController']).CustomStockLongitudinalController
-      self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, self.CI.CC, self.CP)
+      self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, self.CI.CC, self.CI.CS, self.CP)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 

@@ -9,13 +9,13 @@ ButtonType = car.CarState.ButtonEvent.Type
 
 
 class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
-  def __init__(self, car, car_controller, CP):
-    super().__init__(car, car_controller, CP)
+  def __init__(self, car, car_controller, car_state, CP):
+    super().__init__(car, car_controller, car_state, CP)
     self.accel_button = Buttons.RES_ACCEL
     self.decel_button = Buttons.SET_DECEL
     self.set_speed_buttons = (ButtonType.accelCruise, ButtonType.decelCruise)
 
-  def create_can_mock_button_messages(self, CS: car.CarState) -> list[SendCan]:
+  def create_can_mock_button_messages(self) -> list[SendCan]:
     can_sends = []
     if self.cruise_button is not None:
       if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
@@ -25,11 +25,11 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
         # send resume at a max freq of 10Hz
         if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL > 0.1 * send_freq:
           # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
-          can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_controller.frame, CS.clu11, self.cruise_button, self.CP)] * 25)
+          can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_controller.frame, self.car_state.clu11, self.cruise_button, self.CP)] * 25)
           if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
             self.car_controller.last_button_frame = self.car_controller.frame
       elif self.car_controller.frame % 2 == 0:
-        can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, (self.car_controller.frame // 2) + 1, CS.clu11, self.cruise_button, self.CP)] * 25)
+        can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, (self.car_controller.frame // 2) + 1, self.car_state.clu11, self.cruise_button, self.CP)] * 25)
 
     return can_sends
 
@@ -45,11 +45,11 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
 
     return can_sends
 
-  def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+  def create_mock_button_messages(self) -> list[SendCan]:
     can_sends = []
     if self.CP.carFingerprint in CANFD_CAR:
       can_sends.extend(self.create_canfd_mock_button_messages())
     else:
-      can_sends.extend(self.create_can_mock_button_messages(CS))
+      can_sends.extend(self.create_can_mock_button_messages())
 
     return can_sends

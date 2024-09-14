@@ -17,9 +17,10 @@ SendCan = tuple[int, bytes, int]
 
 
 class CustomStockLongitudinalControllerBase(ABC):
-  def __init__(self, car, car_controller, CP):
+  def __init__(self, car, car_controller, car_state, CP):
     self.car = car
     self.car_controller = car_controller
+    self.car_state = car_state
     self.CP = CP
 
     self.params = Params()
@@ -64,7 +65,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     return customStockLongitudinalControl
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
-    return any(be.type in self.set_speed_buttons for be in CS.out.buttonEvents)
+    return any(be.type in self.set_speed_buttons for be in CS.buttonEvents)
 
   def handle_button_state(self, CS: car.CarState) -> int | None:
     state = self.button_states.get(self.button_state)
@@ -89,30 +90,30 @@ class CustomStockLongitudinalControllerBase(ABC):
     return self.steady_speed
 
   def get_cruise_button(self, CS: car.CarState) -> int:
-    self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
-    self.v_cruise = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
+    self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not self.car_state.params_list.is_metric else 1))
+    self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
     cruise_button = self.handle_button_state(CS)
     return cruise_button
 
   @abstractmethod
-  def create_mock_button_messages(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+  def create_mock_button_messages(self) -> list[SendCan]:
     pass
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
-    self.is_active = CS.out.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
+    self.is_active = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
     if self.car.sm.updated['longitudinalPlanSP']:
       self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
       self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
       self.m_tsc_state = self.car.sm['longitudinalPlanSP'].turnSpeedControlState
       self.v_tsc = self.car.sm['longitudinalPlanSP'].visionTurnSpeed
-      self.speed_limit_offseted = self.car.sm['longitudinalPlanSP'].speedLimitOffseted
+      self.speed_limit_offseted = self.car.sm['longitudinalPlanSP'].speedLimit + self.car.sm['longitudinalPlanSP'].speedLimitOffset
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
-    self.v_cruise_min = get_set_point(CS.params_list.is_metric)
+    self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
 
     self.final_speed_kph = self.get_v_target(CC)
     self.cruise_button = self.get_cruise_button(CS)
 
-    can_sends = self.create_mock_button_messages(CS, CC)
+    can_sends = self.create_mock_button_messages()
 
     return can_sends
