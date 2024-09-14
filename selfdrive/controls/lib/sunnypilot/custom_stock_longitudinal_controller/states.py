@@ -30,22 +30,20 @@ class InactiveState(ButtonStateBase):
 
 class AcceleratingState(ButtonStateBase):
   def handle(self, controller) -> int:
-    cruise_button = controller.button_mapping['accelerating']
     self.button_count += 1
     if controller.target_speed <= controller.v_cruise or self.button_count > RESET_COUNT:
       self.button_count = 0
       controller.button_state = ButtonControlState.holding
-    return cruise_button
+    return controller.accel_button
 
 
 class DeceleratingState(ButtonStateBase):
   def handle(self, controller) -> int:
-    cruise_button = controller.button_mapping['decelerating']
     self.button_count += 1
     if controller.target_speed >= controller.v_cruise or controller.v_cruise <= controller.v_cruise_min or self.button_count > RESET_COUNT:
       self.button_count = 0
       controller.button_state = ButtonControlState.holding
-    return cruise_button
+    return controller.decel_button
 
 
 class HoldingState(ButtonStateBase):

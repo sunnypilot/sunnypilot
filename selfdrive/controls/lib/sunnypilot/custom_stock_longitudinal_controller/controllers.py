@@ -41,10 +41,8 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.cruise_button = None
     self.steady_speed = 0
 
-    self.button_mapping = {}
     self.accel_button = None
     self.decel_button = None
-    self.initialize_button_mapping()
 
     self.set_speed_buttons = None
 
@@ -60,12 +58,6 @@ class CustomStockLongitudinalControllerBase(ABC):
       ButtonControlState.decelerating: decelerating_state,
       ButtonControlState.holding: holding_state,
       ButtonControlState.resetting: resetting_state,
-    }
-
-  def initialize_button_mapping(self) -> None:
-    self.button_mapping = {
-      'accelerating': self.accel_button,
-      'decelerating': self.decel_button,
     }
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
