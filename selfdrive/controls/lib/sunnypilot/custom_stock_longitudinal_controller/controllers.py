@@ -4,7 +4,7 @@ from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.states import InactiveState, \
-  AcceleratingState, DeceleratingState, HoldingState, ResettingState
+  AcceleratingState, DeceleratingState, HoldingState, ResettingState, LoadingState
 from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.helpers import get_set_point
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
 
@@ -51,27 +51,18 @@ class CustomStockLongitudinalControllerBase(ABC):
       ButtonControlState.decelerating: DeceleratingState(),
       ButtonControlState.holding: HoldingState(),
       ButtonControlState.resetting: ResettingState(),
+      ButtonControlState.loading: LoadingState(),
     }
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in self.set_speed_buttons for be in CS.out.buttonEvents)
 
-  def handle_button_state(self) -> int | None:
+  def handle_button_state(self, CS: car.CarState) -> int | None:
     state = self.button_states.get(self.button_state)
     if state:
-      return state.handle(self)
+      return state.handle(self, CS)
     else:
       raise ValueError(f"Unhandled button state: {self.button_state}")
-
-  # multikyd methods, sunnypilot logic
-  def get_cruise_buttons_status(self, CS: car.CarState) -> bool:
-    if not self.is_active or self.get_set_speed_buttons(CS):
-      self.timer = 40
-    elif self.timer:
-      self.timer -= 1
-    else:
-      return True
-    return False
 
   def get_v_target(self, CC: car.CarControl) -> float:
     v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
@@ -91,15 +82,12 @@ class CustomStockLongitudinalControllerBase(ABC):
   def get_button_control(self, CS: car.CarState, final_speed: float) -> int:
     self.target_speed = round(final_speed * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1))
     self.v_cruise = round(CS.out.cruiseState.speed * (CV.MS_TO_MPH if not CS.params_list.is_metric else CV.MS_TO_KPH))
-    cruise_button = self.handle_button_state()
+    cruise_button = self.handle_button_state(CS)
     return cruise_button
 
   def get_cruise_button(self, CS: car.CarState, CC: car.CarControl) -> int | None:
     self.final_speed_kph = self.get_v_target(CC)
     cruise_button = self.get_button_control(CS, self.final_speed_kph)  # MPH/KPH based button presses
-
-    if not self.get_cruise_buttons_status(CS):
-      return None
 
     return cruise_button
 

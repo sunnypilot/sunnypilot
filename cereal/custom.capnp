@@ -220,6 +220,7 @@ struct CarControlSP @0xb86e6369214c01c8 {
       accelerating @2;    # Increasing speed
       decelerating @3;    # Decreasing speed
       holding @4;         # Holding steady speed
+      loading @5;         # Loading state before transitioning to accelerating or decelerating
     }
   }
 }

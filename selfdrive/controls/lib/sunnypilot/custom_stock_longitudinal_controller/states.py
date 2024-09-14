@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from cereal import custom
+from cereal import car, custom
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
 
@@ -13,23 +13,38 @@ class ButtonStateBase(ABC):
     self.button_count = 0
 
   @abstractmethod
-  def handle(self, controller) -> int | None:
+  def handle(self, controller, CS: car.CarState) -> int | None:
     pass
 
 
 class InactiveState(ButtonStateBase):
-  def handle(self, controller) -> None:
+  def handle(self, controller, CS: car.CarState) -> None:
     self.button_count = 0
 
-    if controller.target_speed > controller.v_cruise:
-      controller.button_state = ButtonControlState.accelerating
-    elif controller.target_speed < controller.v_cruise and controller.v_cruise > controller.v_cruise_min:
-      controller.button_state = ButtonControlState.decelerating
+    if controller.target_speed > controller.v_cruise or \
+        controller.target_speed < controller.v_cruise and controller.v_cruise > controller.v_cruise_min:
+      controller.button_state = ButtonControlState.loading
+    return None
+
+
+class LoadingState(ButtonStateBase):
+  def handle(self, controller, CS: car.CarState) -> None:
+    if not controller.is_active or controller.get_set_speed_buttons(CS):
+      controller.timer = 40
+    elif controller.timer > 0:
+      controller.timer -= 1
+    else:
+      if controller.target_speed > controller.v_cruise:
+        controller.button_state = ButtonControlState.accelerating
+      elif controller.target_speed < controller.v_cruise and controller.v_cruise > controller.v_cruise_min:
+        controller.button_state = ButtonControlState.decelerating
+      else:
+        controller.button_state = ButtonControlState.holding
     return None
 
 
 class AcceleratingState(ButtonStateBase):
-  def handle(self, controller) -> int:
+  def handle(self, controller, CS: car.CarState) -> int:
     self.button_count += 1
     if controller.target_speed <= controller.v_cruise or self.button_count > RESET_COUNT:
       self.button_count = 0
@@ -38,7 +53,7 @@ class AcceleratingState(ButtonStateBase):
 
 
 class DeceleratingState(ButtonStateBase):
-  def handle(self, controller) -> int:
+  def handle(self, controller, CS: car.CarState) -> int:
     self.button_count += 1
     if controller.target_speed >= controller.v_cruise or controller.v_cruise <= controller.v_cruise_min or self.button_count > RESET_COUNT:
       self.button_count = 0
@@ -47,7 +62,7 @@ class DeceleratingState(ButtonStateBase):
 
 
 class HoldingState(ButtonStateBase):
-  def handle(self, controller) -> None:
+  def handle(self, controller, CS: car.CarState) -> None:
     self.button_count += 1
     if self.button_count > T_INTERNAL:
       controller.button_state = ButtonControlState.resetting
@@ -55,6 +70,6 @@ class HoldingState(ButtonStateBase):
 
 
 class ResettingState(ButtonStateBase):
-  def handle(self, controller) -> None:
+  def handle(self, controller, CS: car.CarState) -> None:
     controller.button_state = ButtonControlState.inactive
     return None
