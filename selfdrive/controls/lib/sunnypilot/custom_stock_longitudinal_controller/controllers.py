@@ -1,5 +1,7 @@
 from abc import abstractmethod, ABC
 
+import capnp
+
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
@@ -61,7 +63,7 @@ class CustomStockLongitudinalControllerBase(ABC):
   def create_mock_button_messages(self) -> list[SendCan]:
     pass
 
-  def state_publish(self):
+  def state_publish(self) -> capnp.lib.capnp._DynamicStructBuilder:
     customStockLongitudinalControl = custom.CarControlSP.CustomStockLongitudinalControl.new_message()
     customStockLongitudinalControl.state = self.button_state
     customStockLongitudinalControl.cruiseButton = 0 if self.cruise_button is None else int(self.cruise_button)

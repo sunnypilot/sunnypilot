@@ -204,7 +204,7 @@ struct ModelDataV2SP @0xf98d843bfd7004a3 {
 }
 
 struct CarControlSP @0xb86e6369214c01c8 {
-  customStockLongitudinalControl @0 :List(CustomStockLongitudinalControl);
+  customStockLongitudinalControl @0 :CustomStockLongitudinalControl;
 
   struct CustomStockLongitudinalControl {
     state @0 :ButtonControlState;
