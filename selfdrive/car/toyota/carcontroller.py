@@ -1,4 +1,7 @@
 from cereal import car
+import math
+from openpilot.common.params import Params
+from openpilot.selfdrive.controls.lib.pid import PIDController
 from common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.selfdrive.car import apply_meas_steer_torque_limits, apply_std_steer_angle_limits, common_fault_avoidance, make_can_msg, make_tester_present_msg, \
@@ -13,6 +16,7 @@ from opendbc.can.packer import CANPacker
 GearShifter = car.CarState.GearShifter
 SteerControlType = car.CarParams.SteerControlType
 VisualAlert = car.CarControl.HUDControl.VisualAlert
+LongCtrlState = car.CarControl.Actuators.LongControlState
 
 # LKA limits
 # EPS faults if you apply torque while the steering rate is above 100 deg/s for too long
@@ -44,7 +48,10 @@ class CarController(CarControllerBase):
     self.last_standstill = False
     self.standstill_req = False
     self.steer_rate_counter = 0
+    self.pcm_accel_comp = 0
     self.distance_button = 0
+
+    self.pid = PIDController(k_p=0.5, k_i=0.25, k_f=0)
 
     self.packer = CANPacker(dbc_name)
     self.gas = 0
@@ -140,6 +147,38 @@ class CarController(CarControllerBase):
                                                           lta_active, self.frame // 2, torque_wind_down))
 
     # *** gas and brake ***
+    sp_tss2_long_tune = Params().get_bool("ToyotaTSS2Long")
+
+    # When sp_tss2_long_tune is True and CC.longActive
+    if sp_tss2_long_tune:
+      # we will throw out PCM's compensations, but that may be a good thing. for example:
+      # we lose things like pitch compensation, gas to maintain speed, brake to compensate for creeping, etc.
+      # but also remove undesirable "snap to standstill" behavior when not requesting enough accel at low speeds,
+      # lag to start moving, lag to start braking, etc.
+      # PI should compensate for lack of the desirable behaviors, but might be worse than the PCM doing them
+
+      # FIXME? neutral force will only be positive under ~5 mph, which messes up stopping control considerably
+      # not sure why this isn't captured in the PCM accel net, maybe that just ignores creep force + high speed deceleration
+      # it also doesn't seem to capture slightly more braking on downhills (VSC1S07->ASLP (pitch, deg.) might have some clues)
+      offset = min(CS.pcm_neutral_force / self.CP.mass, 0.0)
+      pitch_offset = math.sin(math.radians(CS.vsc_slope_angle)) * 9.81  # downhill is negative
+      # TODO: these limits are too slow to prevent a jerk when engaging, ramp down on engage?
+      # self.pcm_accel_comp = clip(actuators.accel - CS.pcm_accel_net, self.pcm_accel_comp - 0.05, self.pcm_accel_comp + 0.05)
+      pcm_accel_comp = self.pid.update(actuators.accel - CS.pcm_true_accel_net)
+      self.pcm_accel_comp = clip(pcm_accel_comp, self.pcm_accel_comp - 0.005, self.pcm_accel_comp + 0.005)
+      if CS.out.cruiseState.standstill or actuators.longControlState == LongCtrlState.stopping:
+        self.pcm_accel_comp = 0.0
+        self.pid.reset()
+      # TODO: just set kp to 1 and remove *2 here
+      pcm_accel_cmd = actuators.accel + self.pcm_accel_comp * 2  # + offset
+      # pcm_accel_cmd = actuators.accel - pitch_offset
+
+      if not CC.longActive:
+        self.pid.reset()
+        self.pcm_accel_comp = 0.0
+        pcm_accel_cmd = 0.0
+
+
     if self.CP.enableGasInterceptorDEPRECATED and CC.longActive:
       MAX_INTERCEPTOR_GAS = 0.5
       # RAV4 has very sensitive gas pedal
@@ -155,7 +194,10 @@ class CarController(CarControllerBase):
       interceptor_gas_cmd = clip(pedal_command, 0., MAX_INTERCEPTOR_GAS)
     else:
       interceptor_gas_cmd = 0.
-    pcm_accel_cmd = clip(actuators.accel, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
+    if sp_tss2_long_tune:
+      pcm_accel_cmd = clip(pcm_accel_cmd, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
+    else:
+      pcm_accel_cmd = clip(actuators.accel, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
 
     # TODO: probably can delete this. CS.pcm_acc_status uses a different signal
     # than CS.cruiseState.enabled. confirm they're not meaningfully different
