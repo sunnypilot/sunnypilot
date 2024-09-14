@@ -54,6 +54,14 @@ class CustomStockLongitudinalControllerBase(ABC):
       ButtonControlState.loading: LoadingState(),
     }
 
+  def state_publish(self):
+    customStockLongitudinalControl = custom.CarControlSP.CustomStockLongitudinalControl.new_message()
+    customStockLongitudinalControl.state = self.button_state
+    customStockLongitudinalControl.cruiseButton = 0 if self.cruise_button is None else int(self.cruise_button)
+    customStockLongitudinalControl.finalSpeedKph = float(self.final_speed_kph)
+    customStockLongitudinalControl.targetSpeed = float(self.target_speed)
+    customStockLongitudinalControl.vCruise = float(self.v_cruise)
+
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in self.set_speed_buttons for be in CS.out.buttonEvents)
 
