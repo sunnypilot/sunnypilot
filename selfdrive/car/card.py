@@ -185,13 +185,13 @@ class Car:
         can_sends.extend(self.custom_stock_longitudinal_controller.update(CS, CC))
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
-      self.CC_prev = CC
-
-      car_control_sp_send = messaging.new_message('carControlSP')
-      car_control_sp_send.valid = self.sm.all_checks(['carControl'])
+      cc_send_sp = messaging.new_message('carControlSP')
+      cc_send_sp.valid = self.sm.all_checks(['carControl'])
       if not self.CP.pcmCruiseSpeed:
-        car_control_sp_send.customStockLongitudinalControl = self.custom_stock_longitudinal_controller.state_publish()
-      self.pm.send('carControlSP', car_control_sp_send)
+        cc_send_sp.carControlSP.customStockLongitudinalControl = self.custom_stock_longitudinal_controller.state_publish()
+      self.pm.send('carControlSP', cc_send_sp)
+
+      self.CC_prev = CC
 
   def step(self):
     CS = self.state_update()

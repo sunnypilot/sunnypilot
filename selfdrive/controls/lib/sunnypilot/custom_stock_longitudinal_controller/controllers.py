@@ -61,6 +61,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     customStockLongitudinalControl.finalSpeedKph = float(self.final_speed_kph)
     customStockLongitudinalControl.targetSpeed = float(self.target_speed)
     customStockLongitudinalControl.vCruise = float(self.v_cruise)
+    return customStockLongitudinalControl
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
     return any(be.type in self.set_speed_buttons for be in CS.out.buttonEvents)
