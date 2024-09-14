@@ -1,5 +1,4 @@
 from cereal import car
-from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CANFD_CAR, LEGACY_SAFETY_MODE_CAR
