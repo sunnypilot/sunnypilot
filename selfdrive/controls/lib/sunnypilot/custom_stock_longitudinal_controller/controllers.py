@@ -43,21 +43,14 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.accel_button = None
     self.decel_button = None
-
     self.set_speed_buttons = None
 
-    inactive_state = InactiveState()
-    accelerating_state = AcceleratingState()
-    decelerating_state = DeceleratingState()
-    holding_state = HoldingState()
-    resetting_state = ResettingState()
-
     self.button_states = {
-      ButtonControlState.inactive: inactive_state,
-      ButtonControlState.accelerating: accelerating_state,
-      ButtonControlState.decelerating: decelerating_state,
-      ButtonControlState.holding: holding_state,
-      ButtonControlState.resetting: resetting_state,
+      ButtonControlState.inactive: InactiveState(),
+      ButtonControlState.accelerating: AcceleratingState(),
+      ButtonControlState.decelerating: DeceleratingState(),
+      ButtonControlState.holding: HoldingState(),
+      ButtonControlState.resetting: ResettingState(),
     }
 
   def get_set_speed_buttons(self, CS: car.CarState) -> bool:
