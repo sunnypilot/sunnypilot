@@ -55,6 +55,10 @@ class CustomStockLongitudinalControllerBase(ABC):
       ButtonControlState.loading: LoadingState(),
     }
 
+  @abstractmethod
+  def create_mock_button_messages(self) -> list[SendCan]:
+    pass
+
   def state_publish(self):
     customStockLongitudinalControl = custom.CarControlSP.CustomStockLongitudinalControl.new_message()
     customStockLongitudinalControl.state = self.button_state
@@ -82,15 +86,11 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.steady_speed = cur_speed
     return self.steady_speed
 
-  def get_cruise_button(self, CS: car.CarState) -> int:
+  def get_cruise_button(self, CS: car.CarState) -> None:
     self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not self.car_state.params_list.is_metric else 1))
     self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
-    cruise_button = self.button_states[self.button_state](self, CS)
-    return cruise_button
 
-  @abstractmethod
-  def create_mock_button_messages(self) -> list[SendCan]:
-    pass
+    self.cruise_button = self.button_states[self.button_state](self, CS)
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     self.is_active = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
@@ -105,7 +105,8 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
 
     self.final_speed_kph = self.get_v_target(CC)
-    self.cruise_button = self.get_cruise_button(CS)
+
+    self.get_cruise_button(CS)
 
     can_sends = self.create_mock_button_messages()
 
