@@ -96,6 +96,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.cruise_button = self.button_states[self.button_state](self)
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
+    can_sends = []
     if self.car.sm.updated['longitudinalPlanSP']:
       self.v_tsc_state = self.car.sm['longitudinalPlanSP'].visionTurnControllerState
       self.slc_state = self.car.sm['longitudinalPlanSP'].speedLimitControlState
@@ -112,6 +113,6 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.get_cruise_button(CS)
 
-    can_sends = self.create_mock_button_messages()
+    can_sends.extend(self.create_mock_button_messages())
 
     return can_sends
