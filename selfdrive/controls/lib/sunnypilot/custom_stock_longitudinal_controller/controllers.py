@@ -5,7 +5,8 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.states import InactiveState, \
   AcceleratingState, DeceleratingState, HoldingState, ResettingState, LoadingState
-from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.helpers import get_set_point
+from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.helpers import get_set_point, \
+  speed_hysteresis
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
@@ -40,7 +41,8 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.is_ready = False
     self.cruise_button = None
-    self.steady_speed = 0
+    self.speed = 0
+    self.speed_steady = 0
 
     self.accel_button = None
     self.decel_button = None
@@ -68,20 +70,18 @@ class CustomStockLongitudinalControllerBase(ABC):
     customStockLongitudinalControl.vCruise = float(self.v_cruise)
     return customStockLongitudinalControl
 
-  def get_v_target(self, CC: car.CarControl) -> float:
+  def update_v_target(self, CC: car.CarControl) -> None:
     v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
     slc_target = self.speed_limit_offseted * CV.MS_TO_KPH if self.slc_state in ACTIVE_STATES else 255
     m_tsc_target = self.m_tsc * CV.MS_TO_KPH if self.m_tsc_state > TurnSpeedControlState.tempInactive else 255
-    tsc_target = self.curve_speed_hysteresis(min(v_tsc_target, m_tsc_target) + 2 * CV.MPH_TO_KPH)
 
-    return min(CC.vCruise, slc_target, tsc_target)
+    tsc_target = min(v_tsc_target, slc_target, m_tsc_target)
 
-  def curve_speed_hysteresis(self, cur_speed: float, hyst: float = (0.75 * CV.MPH_TO_KPH)) -> float:
-    if cur_speed > self.steady_speed:
-      self.steady_speed = cur_speed
-    elif cur_speed < self.steady_speed - hyst:
-      self.steady_speed = cur_speed
-    return self.steady_speed
+    self.speed = speed_hysteresis(tsc_target, self.speed_steady, 1.5 * (1 if self.car_state.params_list.is_metric else CV.MPH_TO_KPH))
+
+    self.final_speed_kph = min(self.speed, CC.vCruise)
+
+    self.speed_steady = self.speed
 
   def ready_state_update(self, CS: car.CarState, CC: car.CarControl) -> None:
     ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
@@ -107,7 +107,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
 
-    self.final_speed_kph = self.get_v_target(CC)
+    self.update_v_target(CC)
 
     self.ready_state_update(CS, CC)
 
