@@ -23,8 +23,10 @@ class ButtonStateBase(ABC):
 
   def __call__(self) -> int | None:
     if self.controller.is_ready:
-      hold_time_offset = HOLD_TIME_METRIC if self.car_state.params_list.is_metric else HOLD_TIME_IMPERIAL
-      self.hold_time = randint(self.hold_time_custom + hold_time_offset[0], self.hold_time_custom + hold_time_offset[1])
+      # TODO-SP: Validate different intervals for different platforms to prevent temporary cruise fault
+      self.hold_time = HOLD_TIME
+      #hold_time_offset = HOLD_TIME_METRIC if self.car_state.params_list.is_metric else HOLD_TIME_IMPERIAL
+      #self.hold_time = randint(self.hold_time_custom + hold_time_offset[0], self.hold_time_custom + hold_time_offset[1])
     else:
       if self.controller.is_ready_prev:
         self.controller.button_state = ButtonControlState.inactive
