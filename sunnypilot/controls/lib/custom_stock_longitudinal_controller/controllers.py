@@ -63,7 +63,7 @@ class CustomStockLongitudinalControllerBase(ABC):
   def create_mock_button_messages(self) -> list[SendCan]:
     pass
 
-  def state_publish(self) -> capnp.lib.capnp._DynamicStructBuilder:
+  def state_publish(self) -> custom.CarControlSP.CustomStockLongitudinalControl:
     customStockLongitudinalControl = custom.CarControlSP.CustomStockLongitudinalControl.new_message()
     customStockLongitudinalControl.state = self.button_state
     customStockLongitudinalControl.cruiseButton = 0 if self.cruise_button is None else int(self.cruise_button)
