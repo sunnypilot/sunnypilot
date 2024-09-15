@@ -9,5 +9,5 @@ def speed_hysteresis(speed: float, speed_steady: float, hyst: float) -> float:
   if speed > speed_steady + hyst:
     speed_steady = speed - hyst
   elif speed < speed_steady - hyst:
-    speed_steady = speed = hyst
+    speed_steady = speed + hyst
   return speed_steady
