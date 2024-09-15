@@ -51,11 +51,11 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.button_states = {
       ButtonControlState.inactive: InactiveState(self),
+      ButtonControlState.loading: LoadingState(self),
       ButtonControlState.accelerating: AcceleratingState(self),
       ButtonControlState.decelerating: DeceleratingState(self),
       ButtonControlState.holding: HoldingState(self),
       ButtonControlState.resetting: ResettingState(self),
-      ButtonControlState.loading: LoadingState(self),
     }
 
   @abstractmethod
