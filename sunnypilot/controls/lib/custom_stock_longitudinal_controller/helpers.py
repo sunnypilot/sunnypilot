@@ -1,11 +1,10 @@
 from cereal import car
-from openpilot.common.conversions import Conversions as CV
 
 ButtonType = car.CarState.ButtonEvent.Type
 
 
 def get_set_point(is_metric: bool) -> float:
-  return 30 if is_metric else int(20 * CV.MPH_TO_KPH)
+  return 30 if is_metric else 20
 
 
 def speed_hysteresis(speed: float, speed_steady: float, hyst: float) -> float:
