@@ -85,19 +85,29 @@ class CustomStockLongitudinalControllerBase(ABC):
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
   def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
-    self.v_cruise_min = get_set_point(self.car_state.params_list.is_metric)
+    is_metric = self.car_state.params_list.is_metric
+    self.v_cruise_min = get_set_point(is_metric)
 
-    v_tsc_target = self.v_tsc * CV.MS_TO_KPH if self.v_tsc_state != VisionTurnControllerState.disabled else 255
-    slc_target = self.speed_limit_offseted * CV.MS_TO_KPH if self.slc_state in ACTIVE_STATES else 255
-    m_tsc_target = self.m_tsc * CV.MS_TO_KPH if self.m_tsc_state > TurnSpeedControlState.tempInactive else 255
-    tsc_target = min(v_tsc_target, slc_target, m_tsc_target)
-    self.speed = speed_hysteresis(tsc_target, self.speed_steady, 1.5 * (1 if self.car_state.params_list.is_metric else CV.MPH_TO_KPH))
+    v_target = {'cruise': CC.vCruise}
+
+    if self.v_tsc_state != VisionTurnControllerState.disabled:
+      v_target['v_tsc'] = self.v_tsc * CV.MS_TO_KPH
+
+    if self.slc_state in ACTIVE_STATES:
+      v_target['slc'] = self.speed_limit_offseted * CV.MS_TO_KPH
+
+    if self.m_tsc_state > TurnSpeedControlState.tempInactive:
+      v_target['m_tsc'] = self.m_tsc * CV.MS_TO_KPH
+
+    source = min(v_target, key=v_target.get)
+
+    self.speed = speed_hysteresis(v_target[source], self.speed_steady, 1.5 * (1 if is_metric else CV.MPH_TO_KPH))
     self.speed_steady = self.speed
 
     self.final_speed_kph = min(self.speed, CC.vCruise)
 
-    self.target_speed = round(self.final_speed_kph * (CV.KPH_TO_MPH if not self.car_state.params_list.is_metric else 1))
-    self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
+    self.target_speed = round(self.final_speed_kph * (1 if is_metric else CV.KPH_TO_MPH))
+    self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
 
   def update_state(self, CS: car.CarState, CC: car.CarControl) -> None:
     update_manual_button_timers(CS, self.cruise_buttons)
