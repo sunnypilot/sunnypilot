@@ -89,8 +89,6 @@ class CarInterface(CarInterfaceBase):
     if self.CS.low_speed_alert:
       events.add(EventName.belowSteerSpeed)
 
-    ret.customStockLong = self.update_custom_stock_long()
-
     ret.events = events.to_msg()
 
     return ret
