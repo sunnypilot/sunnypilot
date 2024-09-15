@@ -10,8 +10,9 @@ INACTIVE_TIMER = 40
 
 
 class ButtonStateBase(ABC):
-  def __init__(self, controller):
+  def __init__(self, controller, car_state):
     self.controller = controller
+    self.car_state = car_state
     self.button_count = 0
     self.timer = INACTIVE_TIMER
 
@@ -28,8 +29,8 @@ class ButtonStateBase(ABC):
 
 
 class InactiveState(ButtonStateBase):
-  def __init__(self, controller):
-    super().__init__(controller)
+  def __init__(self, controller, car_state):
+    super().__init__(controller, car_state)
 
   def handle(self) -> None:
     self.button_count = 0
@@ -44,8 +45,8 @@ class InactiveState(ButtonStateBase):
 
 
 class LoadingState(ButtonStateBase):
-  def __init__(self, controller):
-    super().__init__(controller)
+  def __init__(self, controller, car_state):
+    super().__init__(controller, car_state)
 
   def handle(self) -> None:
     if self.controller.target_speed > self.controller.v_cruise:
@@ -58,8 +59,8 @@ class LoadingState(ButtonStateBase):
 
 
 class AcceleratingState(ButtonStateBase):
-  def __init__(self, controller):
-    super().__init__(controller)
+  def __init__(self, controller, car_state):
+    super().__init__(controller, car_state)
 
   def handle(self) -> int | None:
     self.button_count += 1
@@ -71,8 +72,8 @@ class AcceleratingState(ButtonStateBase):
 
 
 class DeceleratingState(ButtonStateBase):
-  def __init__(self, controller):
-    super().__init__(controller)
+  def __init__(self, controller, car_state):
+    super().__init__(controller, car_state)
 
   def handle(self) -> int | None:
     self.button_count += 1
@@ -84,8 +85,8 @@ class DeceleratingState(ButtonStateBase):
 
 
 class HoldingState(ButtonStateBase):
-  def __init__(self, controller):
-    super().__init__(controller)
+  def __init__(self, controller, car_state):
+    super().__init__(controller, car_state)
 
   def handle(self) -> None:
     self.button_count += 1
@@ -96,8 +97,8 @@ class HoldingState(ButtonStateBase):
 
 
 class ResettingState(ButtonStateBase):
-  def __init__(self, controller):
-    super().__init__(controller)
+  def __init__(self, controller, car_state):
+    super().__init__(controller, car_state)
 
   def handle(self) -> None:
     self.controller.button_state = ButtonControlState.loading
