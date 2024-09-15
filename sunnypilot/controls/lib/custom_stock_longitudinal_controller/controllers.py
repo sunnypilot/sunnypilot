@@ -1,7 +1,5 @@
 from abc import abstractmethod, ABC
 
-import capnp
-
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
@@ -51,12 +49,12 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.set_speed_buttons = None
 
     self.button_states = {
-      ButtonControlState.inactive: InactiveState(),
-      ButtonControlState.accelerating: AcceleratingState(),
-      ButtonControlState.decelerating: DeceleratingState(),
-      ButtonControlState.holding: HoldingState(),
-      ButtonControlState.resetting: ResettingState(),
-      ButtonControlState.loading: LoadingState(),
+      ButtonControlState.inactive: InactiveState(self),
+      ButtonControlState.accelerating: AcceleratingState(self),
+      ButtonControlState.decelerating: DeceleratingState(self),
+      ButtonControlState.holding: HoldingState(self),
+      ButtonControlState.resetting: ResettingState(self),
+      ButtonControlState.loading: LoadingState(self),
     }
 
   @abstractmethod
@@ -105,7 +103,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     button_pressed = any(be.type in self.set_speed_buttons for be in CS.buttonEvents)
     self.is_ready = ready and not button_pressed
 
-    self.cruise_button = self.button_states[self.button_state](self)
+    self.cruise_button = self.button_states[self.button_state]()
 
     self.is_ready_prev = self.is_ready
 
