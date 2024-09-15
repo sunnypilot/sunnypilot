@@ -5,7 +5,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.states import InactiveState, \
-  AcceleratingState, DeceleratingState, HoldingState, ResettingState, LoadingState
+  LoadingState, AcceleratingState, DeceleratingState, HoldingState
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.helpers import get_set_point, \
   speed_hysteresis, update_manual_button_timers
 
@@ -53,7 +53,6 @@ class CustomStockLongitudinalControllerBase(ABC):
       ButtonControlState.accelerating: AcceleratingState(self),
       ButtonControlState.decelerating: DeceleratingState(self),
       ButtonControlState.holding: HoldingState(self),
-      ButtonControlState.resetting: ResettingState(self),
     }
 
   @abstractmethod

@@ -81,11 +81,5 @@ class HoldingState(ButtonStateBase):
     self.button_count += 1
     if self.button_count > HOLD_TIME:
       self.button_count = 0
-      self.controller.button_state = ButtonControlState.resetting
-    return None
-
-
-class ResettingState(ButtonStateBase):
-  def handle(self) -> None:
-    self.controller.button_state = ButtonControlState.loading
+      self.controller.button_state = ButtonControlState.loading
     return None
