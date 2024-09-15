@@ -119,14 +119,12 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.is_ready_prev = self.is_ready
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
-    can_sends = []
-
     self.update_msgs()
 
     self.update_calculations(CS, CC)
 
     self.update_state(CS, CC)
 
-    can_sends.extend(self.create_mock_button_messages())
+    can_sends = self.create_mock_button_messages()
 
     return can_sends
