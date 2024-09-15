@@ -24,24 +24,23 @@ class InactiveState(ButtonStateBase):
   def handle(self, controller) -> None:
     self.button_count = 0
 
-    if controller.is_ready:
+    if not controller.is_ready:
+      controller.timer = 40
+    elif controller.timer > 0:
+      controller.timer -= 1
+    else:
       controller.button_state = ButtonControlState.loading
     return None
 
 
 class LoadingState(ButtonStateBase):
   def handle(self, controller) -> None:
-    if not controller.is_ready:
-      controller.timer = 40
-    elif controller.timer > 0:
-      controller.timer -= 1
+    if controller.target_speed > controller.v_cruise:
+      controller.button_state = ButtonControlState.accelerating
+    elif controller.target_speed < controller.v_cruise and controller.v_cruise > controller.v_cruise_min:
+      controller.button_state = ButtonControlState.decelerating
     else:
-      if controller.target_speed > controller.v_cruise:
-        controller.button_state = ButtonControlState.accelerating
-      elif controller.target_speed < controller.v_cruise and controller.v_cruise > controller.v_cruise_min:
-        controller.button_state = ButtonControlState.decelerating
-      else:
-        controller.button_state = ButtonControlState.holding
+      controller.button_state = ButtonControlState.holding
     return None
 
 
@@ -73,5 +72,8 @@ class HoldingState(ButtonStateBase):
 
 class ResettingState(ButtonStateBase):
   def handle(self, controller) -> None:
-    controller.button_state = ButtonControlState.inactive
+    if controller.is_ready:
+      controller.button_state = ButtonControlState.loading
+    else:
+      controller.button_state = ButtonControlState.inactive
     return None
