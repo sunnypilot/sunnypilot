@@ -7,8 +7,9 @@ from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import A
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.states import InactiveState, \
   AcceleratingState, DeceleratingState, HoldingState, ResettingState, LoadingState
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.helpers import get_set_point, \
-  speed_hysteresis
+  speed_hysteresis, update_manual_button_timers
 
+ButtonType = car.CarState.ButtonEvent.Type
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
 SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
 TurnSpeedControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
@@ -46,7 +47,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.accel_button = None
     self.decel_button = None
-    self.set_speed_buttons = None
+    self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
 
     self.button_states = {
       ButtonControlState.inactive: InactiveState(self, car_state),
@@ -99,8 +100,11 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_MPH if not self.car_state.params_list.is_metric else CV.MS_TO_KPH))
 
   def update_state(self, CS: car.CarState, CC: car.CarControl) -> None:
+    update_manual_button_timers(CS, self.cruise_buttons)
+
     ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
-    button_pressed = any(be.type in self.set_speed_buttons for be in CS.buttonEvents)
+    button_pressed = any(self.cruise_buttons[k] > 0 for k in CS.buttonEvents)
+
     self.is_ready = ready and not button_pressed
 
     self.cruise_button = self.button_states[self.button_state]()
