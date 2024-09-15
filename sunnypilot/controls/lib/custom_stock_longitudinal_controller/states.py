@@ -13,6 +13,9 @@ class ButtonStateBase(ABC):
     self.button_count = 0
 
   def __call__(self, controller) -> int | None:
+    if not controller.is_ready:
+      controller.button_state = ButtonControlState.inactive
+
     return self.handle(controller)
 
   @abstractmethod
