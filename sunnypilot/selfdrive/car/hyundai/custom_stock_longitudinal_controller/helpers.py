@@ -1,3 +1,5 @@
+from openpilot.selfdrive.car.hyundai.values import HyundaiFlags
+
 def create_clu11(packer, clu11, button, CP):
   values = {s: clu11[s] for s in [
     "CF_Clu_CruiseSwState",
