@@ -15,9 +15,9 @@ class ButtonStateBase(ABC):
     self.timer = INACTIVE_TIMER
 
   def __call__(self, controller) -> int | None:
-    if not controller.is_ready:
-      self.timer = INACTIVE_TIMER
+    if not controller.is_ready and controller.is_ready_prev:
       controller.button_state = ButtonControlState.inactive
+      return None
 
     return self.handle(controller)
 
@@ -30,11 +30,12 @@ class InactiveState(ButtonStateBase):
   def handle(self, controller) -> None:
     self.button_count = 0
 
-    if controller.is_ready:
-      if self.timer > 0:
-        self.timer -= 1
-      else:
-        controller.button_state = ButtonControlState.loading
+    if not controller.is_ready:
+      self.timer = INACTIVE_TIMER
+    elif self.timer > 0:
+      self.timer -= 1
+    else:
+      controller.button_state = ButtonControlState.loading
     return None
 
 

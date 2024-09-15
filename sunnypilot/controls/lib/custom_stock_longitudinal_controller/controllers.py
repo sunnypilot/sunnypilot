@@ -41,6 +41,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.m_tsc = 0
 
     self.is_ready = False
+    self.is_ready_prev = False
     self.cruise_button = None
     self.speed = 0
     self.speed_steady = 0
@@ -105,6 +106,8 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.is_ready = ready and not button_pressed
 
     self.cruise_button = self.button_states[self.button_state](self)
+
+    self.is_ready_prev = self.is_ready
 
   def update(self, CS: car.CarState, CC: car.CarControl) -> list[SendCan]:
     can_sends = []
