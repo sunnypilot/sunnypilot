@@ -81,8 +81,5 @@ class HoldingState(ButtonStateBase):
 
 class ResettingState(ButtonStateBase):
   def handle(self, controller) -> None:
-    if controller.is_ready:
-      controller.button_state = ButtonControlState.loading
-    else:
-      controller.button_state = ButtonControlState.inactive
+    controller.button_state = ButtonControlState.loading
     return None
