@@ -6,15 +6,17 @@ ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonCo
 
 RESET_COUNT = 5
 T_INTERNAL = 7
+INACTIVE_TIMER = 40
 
 
 class ButtonStateBase(ABC):
   def __init__(self):
     self.button_count = 0
+    self.timer = INACTIVE_TIMER
 
   def __call__(self, controller) -> int | None:
     if not controller.is_ready:
-      controller.timer = 40
+      self.timer = INACTIVE_TIMER
       controller.button_state = ButtonControlState.inactive
 
     return self.handle(controller)
@@ -29,8 +31,8 @@ class InactiveState(ButtonStateBase):
     self.button_count = 0
 
     if controller.is_ready:
-      if controller.timer > 0:
-        controller.timer -= 1
+      if self.timer > 0:
+        self.timer -= 1
       else:
         controller.button_state = ButtonControlState.loading
     return None

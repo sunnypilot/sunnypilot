@@ -27,7 +27,6 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.CP = CP
 
     self.params = Params()
-    self.timer = 0
     self.final_speed_kph = 0
     self.target_speed = 0
     self.v_cruise = 0
