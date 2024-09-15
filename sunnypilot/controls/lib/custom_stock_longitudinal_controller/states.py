@@ -71,6 +71,7 @@ class HoldingState(ButtonStateBase):
   def handle(self, controller) -> None:
     self.button_count += 1
     if self.button_count > T_INTERNAL:
+      self.button_count = 0
       controller.button_state = ButtonControlState.resetting
     return None
 
