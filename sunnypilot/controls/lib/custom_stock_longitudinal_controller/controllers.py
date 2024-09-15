@@ -80,7 +80,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
-  def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> float:
+  def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
     is_metric = self.car_state.params_list.is_metric
     v_cruise_kph = CC.vCruise
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
@@ -104,7 +104,7 @@ class CustomStockLongitudinalControllerBase(ABC):
     v_target = min(v_target, v_cruise)
     v_target = round(v_target * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
 
-    return v_target
+    self.v_target = v_target
 
   def update_state(self, CS: car.CarState, CC: car.CarControl) -> None:
     update_manual_button_timers(CS, self.cruise_buttons)
@@ -123,7 +123,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.update_msgs()
 
-    self.v_target = self.update_calculations(CS, CC)
+    self.update_calculations(CS, CC)
 
     self.update_state(CS, CC)
 
