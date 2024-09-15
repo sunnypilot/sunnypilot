@@ -50,12 +50,12 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.cruise_buttons = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
 
     self.button_states = {
-      ButtonControlState.inactive: InactiveState(self, car_state),
-      ButtonControlState.accelerating: AcceleratingState(self, car_state),
-      ButtonControlState.decelerating: DeceleratingState(self, car_state),
-      ButtonControlState.holding: HoldingState(self, car_state),
-      ButtonControlState.resetting: ResettingState(self, car_state),
-      ButtonControlState.loading: LoadingState(self, car_state),
+      ButtonControlState.inactive: InactiveState(self),
+      ButtonControlState.accelerating: AcceleratingState(self),
+      ButtonControlState.decelerating: DeceleratingState(self),
+      ButtonControlState.holding: HoldingState(self),
+      ButtonControlState.resetting: ResettingState(self),
+      ButtonControlState.loading: LoadingState(self),
     }
 
   @abstractmethod
