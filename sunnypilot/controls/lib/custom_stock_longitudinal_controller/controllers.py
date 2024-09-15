@@ -42,7 +42,6 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.is_ready = False
     self.is_ready_prev = False
     self.cruise_button = None
-    self.speed = 0
     self.speed_steady = 0
 
     self.accel_button = None
@@ -101,10 +100,9 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     source = min(v_target, key=v_target.get)
 
-    self.speed = speed_hysteresis(v_target[source], self.speed_steady, 1.5 * (1 if is_metric else CV.MPH_TO_KPH))
-    self.speed_steady = self.speed
+    speed_filtered = speed_hysteresis(self, v_target[source], self.speed_steady, 1.5 * (1 if is_metric else CV.MPH_TO_KPH))
 
-    self.final_speed_kph = min(self.speed, CC.vCruise)
+    self.final_speed_kph = min(speed_filtered, CC.vCruise)
 
     self.target_speed = round(self.final_speed_kph * (1 if is_metric else CV.KPH_TO_MPH))
     self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
