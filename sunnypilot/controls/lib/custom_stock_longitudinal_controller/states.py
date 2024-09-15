@@ -8,25 +8,18 @@ ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonCo
 INACTIVE_TIMER = 40
 RESET_COUNT = 5
 HOLD_TIME = 7
-HOLD_TIME_IMPERIAL = [3, 5]
-HOLD_TIME_METRIC = [0, 2]
 
 
 class ButtonStateBase(ABC):
-  def __init__(self, controller, car_state):
+  def __init__(self, controller):
     self.controller = controller
-    self.car_state = car_state
     self.button_count = 0
     self.timer = INACTIVE_TIMER
-    self.hold_time = HOLD_TIME
-    self.hold_time_custom = HOLD_TIME
 
   def __call__(self) -> int | None:
     if self.controller.is_ready:
-      # TODO-SP: Validate different intervals for different platforms to prevent temporary cruise fault
-      self.hold_time = HOLD_TIME
-      #hold_time_offset = HOLD_TIME_METRIC if self.car_state.params_list.is_metric else HOLD_TIME_IMPERIAL
-      #self.hold_time = randint(self.hold_time_custom + hold_time_offset[0], self.hold_time_custom + hold_time_offset[1])
+      # TODO-SP: Validate different hold time intervals for different platforms to prevent temporary cruise fault
+      pass
     else:
       if self.controller.is_ready_prev:
         self.controller.button_state = ButtonControlState.inactive
@@ -40,9 +33,6 @@ class ButtonStateBase(ABC):
 
 
 class InactiveState(ButtonStateBase):
-  def __init__(self, controller, car_state):
-    super().__init__(controller, car_state)
-
   def handle(self) -> None:
     self.button_count = 0
 
@@ -56,9 +46,6 @@ class InactiveState(ButtonStateBase):
 
 
 class LoadingState(ButtonStateBase):
-  def __init__(self, controller, car_state):
-    super().__init__(controller, car_state)
-
   def handle(self) -> None:
     if self.controller.target_speed > self.controller.v_cruise:
       self.controller.button_state = ButtonControlState.accelerating
@@ -70,9 +57,6 @@ class LoadingState(ButtonStateBase):
 
 
 class AcceleratingState(ButtonStateBase):
-  def __init__(self, controller, car_state):
-    super().__init__(controller, car_state)
-
   def handle(self) -> int | None:
     self.button_count += 1
     if self.controller.target_speed <= self.controller.v_cruise or self.button_count > RESET_COUNT:
@@ -83,9 +67,6 @@ class AcceleratingState(ButtonStateBase):
 
 
 class DeceleratingState(ButtonStateBase):
-  def __init__(self, controller, car_state):
-    super().__init__(controller, car_state)
-
   def handle(self) -> int | None:
     self.button_count += 1
     if self.controller.target_speed >= self.controller.v_cruise or self.controller.v_cruise <= self.controller.v_cruise_min or self.button_count > RESET_COUNT:
@@ -96,21 +77,15 @@ class DeceleratingState(ButtonStateBase):
 
 
 class HoldingState(ButtonStateBase):
-  def __init__(self, controller, car_state):
-    super().__init__(controller, car_state)
-
   def handle(self) -> None:
     self.button_count += 1
-    if self.button_count > self.hold_time:
+    if self.button_count > HOLD_TIME:
       self.button_count = 0
       self.controller.button_state = ButtonControlState.resetting
     return None
 
 
 class ResettingState(ButtonStateBase):
-  def __init__(self, controller, car_state):
-    super().__init__(controller, car_state)
-
   def handle(self) -> None:
     self.controller.button_state = ButtonControlState.loading
     return None
