@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
+from random import randint
 
 from cereal import custom
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
 
-RESET_COUNT = 5
-T_INTERNAL = 7
 INACTIVE_TIMER = 40
+RESET_COUNT = 5
+HOLD_TIME = 7
+HOLD_TIME_IMPERIAL = [3, 5]
+HOLD_TIME_METRIC = [0, 2]
 
 
 class ButtonStateBase(ABC):
@@ -15,11 +18,16 @@ class ButtonStateBase(ABC):
     self.car_state = car_state
     self.button_count = 0
     self.timer = INACTIVE_TIMER
+    self.hold_time = HOLD_TIME
+    self.hold_time_2 = HOLD_TIME
 
   def __call__(self) -> int | None:
     if not self.controller.is_ready and self.controller.is_ready_prev:
       self.controller.button_state = ButtonControlState.inactive
       return None
+
+    hold_time_offset = HOLD_TIME_METRIC if self.car_state.params_list.is_metric else HOLD_TIME_IMPERIAL
+    self.hold_time = randint(self.hold_time_2 + hold_time_offset[0], self.hold_time_2 + hold_time_offset[1])
 
     return self.handle()
 
@@ -90,7 +98,7 @@ class HoldingState(ButtonStateBase):
 
   def handle(self) -> None:
     self.button_count += 1
-    if self.button_count > T_INTERNAL:
+    if self.button_count > self.hold_time:
       self.button_count = 0
       self.controller.button_state = ButtonControlState.resetting
     return None
