@@ -1,11 +1,21 @@
+from random import choices
+
 from cereal import car
-from openpilot.selfdrive.car import DT_CTRL
-from openpilot.selfdrive.car.hyundai import hyundaicanfd, hyundaican
-from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CANFD_CAR, LEGACY_SAFETY_MODE_CAR
+from openpilot.common.numpy_fast import interp
+from openpilot.selfdrive.car.hyundai import hyundaicanfd
+from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CANFD_CAR
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.controllers import CustomStockLongitudinalControllerBase, \
   SendCan
+from openpilot.sunnypilot.selfdrive.car.hyundai.custom_stock_longitudinal_controller import hyundaican
 
 ButtonType = car.CarState.ButtonEvent.Type
+
+BUTTON_COPIES = 2
+BUTTON_COPIES_TIME = 7
+BUTTON_COPIES_TIME_IMPERIAL = [BUTTON_COPIES_TIME + 3, 70]
+BUTTON_COPIES_TIME_METRIC = [BUTTON_COPIES_TIME, 40]
+POPULATION = [0, 1]
+WEIGHTS = [0.51, 0.49]
 
 
 class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
@@ -18,18 +28,9 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
   def create_can_mock_button_messages(self) -> list[SendCan]:
     can_sends = []
     if self.cruise_button is not None:
-      if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
-        send_freq = 1
-        if not (self.v_tsc_state != 0 or self.m_tsc_state > 1) and abs(self.target_speed - self.v_cruise) <= 2:
-          send_freq = 5
-        # send resume at a max freq of 10Hz
-        if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL > 0.1 * send_freq:
-          # send 25 messages at a time to increases the likelihood of cruise buttons being accepted
-          can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_controller.frame, self.car_state.clu11, self.cruise_button, self.CP)] * 25)
-          if (self.car_controller.frame - self.car_controller.last_button_frame) * DT_CTRL >= 0.15 * send_freq:
-            self.car_controller.last_button_frame = self.car_controller.frame
-      elif self.car_controller.frame % 2 == 0:
-        can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, (self.car_controller.frame // 2) + 1, self.car_state.clu11, self.cruise_button, self.CP)] * 25)
+      copies_xp = BUTTON_COPIES_TIME_METRIC if self.car_state.params_list.is_metric else BUTTON_COPIES_TIME_IMPERIAL
+      copies = int(interp(BUTTON_COPIES_TIME, copies_xp, [1, BUTTON_COPIES]))
+      can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_state.clu11, self.cruise_button, self.CP)] * copies)
 
     return can_sends
 
@@ -40,8 +41,10 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
       pass
     else:
       if self.cruise_button is not None:
-        if self.car_controller.frame % 2 == 0:
-          can_sends.append(hyundaicanfd.create_buttons(self.car_controller.packer, self.CP, self.car_controller.CAN, ((self.car_controller.frame // 2) + 1) % 0x10, self.cruise_button))
+        for _ in range(BUTTON_COPIES):
+          can_sends.append(hyundaicanfd.create_buttons(self.car_controller.packer, self.CP, self.car_controller.CAN,
+                                                       self.car_state.button_counters + choices(POPULATION, WEIGHTS)[0],
+                                                       self.cruise_button))
 
     return can_sends
 
