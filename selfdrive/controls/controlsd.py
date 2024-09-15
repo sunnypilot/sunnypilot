@@ -758,7 +758,7 @@ class Controls:
     speeds = self.sm['longitudinalPlan'].speeds
     if len(speeds):
       CC.cruiseControl.resume = self.enabled_long and CS.cruiseState.standstill and speeds[-1] > 0.1
-    CC.vCruise = float(self.v_cruise_helper.v_cruise_kph)
+    CC.vCruise = float(self.v_cruise_helper.v_cruise_kph)  # TODO-SP: Move to controlsStateSP to decopule from CC
 
     hudControl = CC.hudControl
     hudControl.setSpeed = float(self.v_cruise_helper.v_cruise_cluster_kph * CV.KPH_TO_MS)
