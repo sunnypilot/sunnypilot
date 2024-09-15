@@ -28,6 +28,9 @@ class ButtonStateBase(ABC):
 
 
 class InactiveState(ButtonStateBase):
+  def __init__(self, controller):
+    super().__init__(controller)
+
   def handle(self) -> None:
     self.button_count = 0
 
@@ -41,6 +44,9 @@ class InactiveState(ButtonStateBase):
 
 
 class LoadingState(ButtonStateBase):
+  def __init__(self, controller):
+    super().__init__(controller)
+
   def handle(self) -> None:
     if self.controller.target_speed > self.controller.v_cruise:
       self.controller.button_state = ButtonControlState.accelerating
@@ -52,6 +58,9 @@ class LoadingState(ButtonStateBase):
 
 
 class AcceleratingState(ButtonStateBase):
+  def __init__(self, controller):
+    super().__init__(controller)
+
   def handle(self) -> int | None:
     self.button_count += 1
     if self.controller.target_speed <= self.controller.v_cruise or self.button_count > RESET_COUNT:
@@ -62,6 +71,9 @@ class AcceleratingState(ButtonStateBase):
 
 
 class DeceleratingState(ButtonStateBase):
+  def __init__(self, controller):
+    super().__init__(controller)
+
   def handle(self) -> int | None:
     self.button_count += 1
     if self.controller.target_speed >= self.controller.v_cruise or self.controller.v_cruise <= self.controller.v_cruise_min or self.button_count > RESET_COUNT:
@@ -72,6 +84,9 @@ class DeceleratingState(ButtonStateBase):
 
 
 class HoldingState(ButtonStateBase):
+  def __init__(self, controller):
+    super().__init__(controller)
+
   def handle(self) -> None:
     self.button_count += 1
     if self.button_count > T_INTERNAL:
@@ -81,6 +96,9 @@ class HoldingState(ButtonStateBase):
 
 
 class ResettingState(ButtonStateBase):
+  def __init__(self, controller):
+    super().__init__(controller)
+
   def handle(self) -> None:
     self.controller.button_state = ButtonControlState.loading
     return None
