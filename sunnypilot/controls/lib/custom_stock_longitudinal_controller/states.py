@@ -19,15 +19,16 @@ class ButtonStateBase(ABC):
     self.button_count = 0
     self.timer = INACTIVE_TIMER
     self.hold_time = HOLD_TIME
-    self.hold_time_2 = HOLD_TIME
+    self.hold_time_custom = HOLD_TIME
 
   def __call__(self) -> int | None:
-    if not self.controller.is_ready and self.controller.is_ready_prev:
-      self.controller.button_state = ButtonControlState.inactive
-      return None
-
-    hold_time_offset = HOLD_TIME_METRIC if self.car_state.params_list.is_metric else HOLD_TIME_IMPERIAL
-    self.hold_time = randint(self.hold_time_2 + hold_time_offset[0], self.hold_time_2 + hold_time_offset[1])
+    if self.controller.is_ready:
+      hold_time_offset = HOLD_TIME_METRIC if self.car_state.params_list.is_metric else HOLD_TIME_IMPERIAL
+      self.hold_time = randint(self.hold_time_custom + hold_time_offset[0], self.hold_time_custom + hold_time_offset[1])
+    else:
+      if self.controller.is_ready_prev:
+        self.controller.button_state = ButtonControlState.inactive
+        return None
 
     return self.handle()
 
