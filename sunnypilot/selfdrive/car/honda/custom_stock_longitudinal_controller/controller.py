@@ -20,6 +20,6 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     can_sends = []
 
     if self.cruise_button is not None:
-      can_sends.append(hondacan.spam_buttons_command(self.packer, self.CAN, self.cruise_button, self.CP.carFingerprint))
+      can_sends.append(hondacan.spam_buttons_command(self.car_controller.packer, self.car_controller.CAN, self.cruise_button, self.CP.carFingerprint))
 
     return can_sends
