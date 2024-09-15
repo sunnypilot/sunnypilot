@@ -24,8 +24,7 @@ class InactiveState(ButtonStateBase):
   def handle(self, controller) -> None:
     self.button_count = 0
 
-    if controller.target_speed > controller.v_cruise or \
-        controller.target_speed < controller.v_cruise and controller.v_cruise > controller.v_cruise_min:
+    if controller.is_ready:
       controller.button_state = ButtonControlState.loading
     return None
 
