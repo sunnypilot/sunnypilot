@@ -65,14 +65,9 @@ def create_lkas_command(packer, CP, apply_steer, lkas_control_bit):
 
 def create_cruise_buttons(packer, frame, bus, CP, cruise_buttons_msg=None, buttons=0, cancel=False, resume=False):
 
-  acc_accel = 1 if buttons == 1 else 0
-  acc_decel = 1 if buttons == 2 else 0
-
   values = {
     "ACC_Cancel": cancel,
     "ACC_Resume": resume,
-    "ACC_Accel": acc_accel,
-    "ACC_Decel": acc_decel,
     "COUNTER": frame % 0x10,
   }
 
