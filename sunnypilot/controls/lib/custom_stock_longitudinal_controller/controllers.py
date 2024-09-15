@@ -26,10 +26,10 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.CP = CP
 
     self.params = Params()
-    self.final_speed_kph = 0
-    self.target_speed = 0
-    self.v_cruise = 0
+    self.v_target = 0
+    self.v_cruise_cluster = 0
     self.v_cruise_min = 0
+    self.cruise_button = None
     self.button_state = ButtonControlState.inactive
 
     self.v_tsc_state = VisionTurnControllerState.disabled
@@ -41,7 +41,6 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.is_ready = False
     self.is_ready_prev = False
-    self.cruise_button = None
     self.speed_steady = 0
 
     self.accel_button = None
@@ -65,9 +64,8 @@ class CustomStockLongitudinalControllerBase(ABC):
     customStockLongitudinalControl = custom.CarControlSP.CustomStockLongitudinalControl.new_message()
     customStockLongitudinalControl.state = self.button_state
     customStockLongitudinalControl.cruiseButton = 0 if self.cruise_button is None else int(self.cruise_button)
-    customStockLongitudinalControl.finalSpeedKph = float(self.final_speed_kph)
-    customStockLongitudinalControl.targetSpeed = float(self.target_speed)
-    customStockLongitudinalControl.vCruise = float(self.v_cruise)
+    customStockLongitudinalControl.vTarget = float(self.v_target)
+    customStockLongitudinalControl.vCruiseCluster = float(self.v_cruise_cluster)
     return customStockLongitudinalControl
 
   def update_msgs(self) -> None:
@@ -83,29 +81,31 @@ class CustomStockLongitudinalControllerBase(ABC):
 
       self.m_tsc = self.car.sm['longitudinalPlanSP'].turnSpeed
 
-  def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> None:
+  def update_calculations(self, CS: car.CarState, CC: car.CarControl) -> float:
     is_metric = self.car_state.params_list.is_metric
+    v_cruise_kph = CC.vCruise
+    v_cruise = v_cruise_kph * CV.KPH_TO_MS
     self.v_cruise_min = get_set_point(is_metric)
+    self.v_cruise_cluster = round(CS.cruiseState.speed * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
 
-    v_target = {'cruise': CC.vCruise}
+    v_targets = {'cruise': CC.vCruise}
 
     if self.v_tsc_state != VisionTurnControllerState.disabled:
-      v_target['v_tsc'] = self.v_tsc * CV.MS_TO_KPH
+      v_targets['v_tsc'] = self.v_tsc
 
     if self.slc_state in ACTIVE_STATES:
-      v_target['slc'] = self.speed_limit_offseted * CV.MS_TO_KPH
+      v_targets['slc'] = self.speed_limit_offseted
 
     if self.m_tsc_state > TurnSpeedControlState.tempInactive:
-      v_target['m_tsc'] = self.m_tsc * CV.MS_TO_KPH
+      v_targets['m_tsc'] = self.m_tsc
 
-    source = min(v_target, key=v_target.get)
+    source = min(v_targets, key=v_targets.get)
 
-    speed_filtered = speed_hysteresis(self, v_target[source], self.speed_steady, 1.5 * (1 if is_metric else CV.MPH_TO_KPH))
+    v_target = speed_hysteresis(self, v_targets[source], self.speed_steady, 1.5 * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS))
+    v_target = min(v_target, v_cruise)
+    v_target = round(v_target * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
 
-    self.final_speed_kph = min(speed_filtered, CC.vCruise)
-
-    self.target_speed = round(self.final_speed_kph * (1 if is_metric else CV.KPH_TO_MPH))
-    self.v_cruise = round(CS.cruiseState.speed * (CV.MS_TO_KPH if is_metric else CV.MS_TO_MPH))
+    return v_target
 
   def update_state(self, CS: car.CarState, CC: car.CarControl) -> None:
     update_manual_button_timers(CS, self.cruise_buttons)
@@ -124,7 +124,7 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     self.update_msgs()
 
-    self.update_calculations(CS, CC)
+    self.v_target = self.update_calculations(CS, CC)
 
     self.update_state(CS, CC)
 

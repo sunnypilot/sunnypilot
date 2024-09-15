@@ -209,9 +209,9 @@ struct CarControlSP @0xb86e6369214c01c8 {
   struct CustomStockLongitudinalControl {
     state @0 :ButtonControlState;
     cruiseButton @1 :Int16;
-    finalSpeedKph @2 :Float32;
-    targetSpeed @3 :Float32;
-    vCruise @4 :Float32;
+    finalSpeedKphDEPRECATED @2 :Float32;
+    vTarget @3 :Float32;
+    vCruiseCluster @4 :Float32;
 
     enum ButtonControlState {
       inactive @0;        # No button press or default state
