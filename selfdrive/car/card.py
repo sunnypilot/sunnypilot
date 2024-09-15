@@ -73,7 +73,7 @@ class Car:
       services = self.sm.data.keys() | {'longitudinalPlanSP'}
       self.sm = messaging.SubMaster(list(services))
 
-      cslc_path = f'openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.car.{self.CP.carName}'
+      cslc_path = f'openpilot.sunnypilot.selfdrive.car.{self.CP.carName}.custom_stock_longitudinal_controller'
       CustomStockLongitudinalController = __import__(cslc_path + '.controller', fromlist=['CustomStockLongitudinalController']).CustomStockLongitudinalController
       self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, self.CI.CC, self.CI.CS, self.CP)
 

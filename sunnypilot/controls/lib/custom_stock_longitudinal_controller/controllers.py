@@ -5,11 +5,11 @@ import capnp
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.states import InactiveState, \
-  AcceleratingState, DeceleratingState, HoldingState, ResettingState, LoadingState
-from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.helpers import get_set_point, \
-  speed_hysteresis
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
+from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.states import InactiveState, \
+  AcceleratingState, DeceleratingState, HoldingState, ResettingState, LoadingState
+from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.helpers import get_set_point, \
+  speed_hysteresis
 
 ButtonControlState = custom.CarControlSP.CustomStockLongitudinalControl.ButtonControlState
 SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState

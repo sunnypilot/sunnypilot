@@ -2,7 +2,7 @@ from cereal import car
 from openpilot.selfdrive.car import DT_CTRL
 from openpilot.selfdrive.car.hyundai import hyundaicanfd, hyundaican
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CANFD_CAR, LEGACY_SAFETY_MODE_CAR
-from openpilot.selfdrive.controls.lib.sunnypilot.custom_stock_longitudinal_controller.controllers import CustomStockLongitudinalControllerBase, \
+from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.controllers import CustomStockLongitudinalControllerBase, \
   SendCan
 
 ButtonType = car.CarState.ButtonEvent.Type
