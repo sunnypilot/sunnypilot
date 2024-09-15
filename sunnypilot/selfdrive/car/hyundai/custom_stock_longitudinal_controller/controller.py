@@ -6,7 +6,7 @@ from openpilot.selfdrive.car.hyundai import hyundaicanfd
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CANFD_CAR
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.controllers import CustomStockLongitudinalControllerBase, \
   SendCan
-from openpilot.sunnypilot.selfdrive.car.hyundai.custom_stock_longitudinal_controller import hyundaican
+from openpilot.sunnypilot.selfdrive.car.hyundai.custom_stock_longitudinal_controller import helpers
 
 ButtonType = car.CarState.ButtonEvent.Type
 
@@ -30,7 +30,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     if self.cruise_button is not None:
       copies_xp = BUTTON_COPIES_TIME_METRIC if self.car_state.params_list.is_metric else BUTTON_COPIES_TIME_IMPERIAL
       copies = int(interp(BUTTON_COPIES_TIME, copies_xp, [1, BUTTON_COPIES]))
-      can_sends.extend([hyundaican.create_clu11(self.car_controller.packer, self.car_state.clu11, self.cruise_button, self.CP)] * copies)
+      can_sends.extend([helpers.create_clu11(self.car_controller.packer, self.car_state.clu11, self.cruise_button, self.CP)] * copies)
 
     return can_sends
 
