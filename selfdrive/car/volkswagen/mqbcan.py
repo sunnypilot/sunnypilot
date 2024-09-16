@@ -49,7 +49,7 @@ def create_lka_hud_control(packer, bus, ldw_stock_values, lat_active, steering_p
   return packer.make_can_msg("LDW_02", bus, values)
 
 
-def create_acc_buttons_control(packer, bus, gra_stock_values, frame=0, buttons=0, cancel=False, resume=False, custom_stock_long=False):
+def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resume=False):
   values = {s: gra_stock_values[s] for s in [
     "GRA_Hauptschalter",           # ACC button, on/off
     "GRA_Typ_Hauptschalter",       # ACC main button type
@@ -58,18 +58,10 @@ def create_acc_buttons_control(packer, bus, gra_stock_values, frame=0, buttons=0
     "GRA_ButtonTypeInfo",          # unknown related to stalk type
   ]}
 
-  accel_cruise = 1 if buttons == 1 else 0
-  decel_cruise = 1 if buttons == 2 else 0
-  resume_cruise = 1 if buttons == 3 else 0
-  set_cruise = 1 if buttons == 4 else 0
-
   values.update({
-    "COUNTER": (frame + 1) % 0x10 if custom_stock_long else (gra_stock_values["COUNTER"] + 1) % 16,
+    "COUNTER": (gra_stock_values["COUNTER"] + 1) % 16,
     "GRA_Abbrechen": cancel,
-    "GRA_Tip_Wiederaufnahme": resume or resume_cruise,
-    "GRA_Tip_Setzen": set_cruise,
-    "GRA_Tip_Runter": decel_cruise,
-    "GRA_Tip_Hoch": accel_cruise,
+    "GRA_Tip_Wiederaufnahme": resume,
   })
 
   return packer.make_can_msg("GRA_ACC_01", bus, values)
