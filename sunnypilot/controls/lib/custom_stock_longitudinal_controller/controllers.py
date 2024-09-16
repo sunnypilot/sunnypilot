@@ -109,7 +109,6 @@ class CustomStockLongitudinalControllerBase(ABC):
 
     ready = CS.cruiseState.enabled and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
     button_pressed = any(self.cruise_buttons[k] > 0 for k in self.cruise_buttons)
-
     self.is_ready = ready and not button_pressed
 
     self.cruise_button = self.button_states[self.button_state]()
