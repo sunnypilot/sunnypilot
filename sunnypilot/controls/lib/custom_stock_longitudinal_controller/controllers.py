@@ -2,7 +2,6 @@ from abc import abstractmethod, ABC
 
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.params import Params
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import ACTIVE_STATES
 from openpilot.sunnypilot.controls.lib.custom_stock_longitudinal_controller.states import InactiveState, \
   LoadingState, AcceleratingState, DeceleratingState, HoldingState
@@ -25,7 +24,6 @@ class CustomStockLongitudinalControllerBase(ABC):
     self.car_state = car_state
     self.CP = CP
 
-    self.params = Params()
     self.v_target = 0
     self.v_cruise_cluster = 0
     self.v_cruise_min = 0
