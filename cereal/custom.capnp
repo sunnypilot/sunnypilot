@@ -212,7 +212,24 @@ struct ModelDataV2SP @0xf98d843bfd7004a3 {
   modelCapabilities @4 :UInt32;
 }
 
-struct CustomReserved7 @0xb86e6369214c01c8 {
+struct CarControlSP @0xb86e6369214c01c8 {
+  customStockLongitudinalControl @0 :CustomStockLongitudinalControl;
+
+  struct CustomStockLongitudinalControl {
+    state @0 :ButtonControlState;
+    cruiseButton @1 :Int16;
+    finalSpeedKphDEPRECATED @2 :Float32;
+    vTarget @3 :Float32;
+    vCruiseCluster @4 :Float32;
+
+    enum ButtonControlState {
+      inactive @0;        # No button press or default state
+      loading @1;         # Loading state before transitioning to accelerating or decelerating
+      accelerating @2;    # Increasing speed
+      decelerating @3;    # Decreasing speed
+      holding @4;         # Holding steady speed
+    }
+  }
 }
 
 struct CustomReserved8 @0xf416ec09499d9d19 {

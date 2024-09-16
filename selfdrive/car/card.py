@@ -31,7 +31,7 @@ class Car:
   def __init__(self, CI=None):
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'])
-    self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput'])
+    self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'carControlSP'])
 
     self.can_rcv_cum_timeout_counter = 0
 
@@ -70,6 +70,12 @@ class Car:
 
     if self.CP.customStockLongAvailable and self.CP.pcmCruise and self.params.get_bool("CustomStockLong"):
       self.CP.pcmCruiseSpeed = False
+      services = self.sm.data.keys() | {'longitudinalPlanSP'}
+      self.sm = messaging.SubMaster(list(services))
+
+      cslc_path = f'openpilot.sunnypilot.selfdrive.car.{self.CP.carName}.custom_stock_longitudinal_controller'
+      CustomStockLongitudinalController = __import__(cslc_path + '.controller', fromlist=['CustomStockLongitudinalController']).CustomStockLongitudinalController
+      self.custom_stock_longitudinal_controller = CustomStockLongitudinalController(self, self.CI.CC, self.CI.CS, self.CP)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
@@ -175,7 +181,15 @@ class Car:
       # send car controls over can
       now_nanos = self.can_log_mono_time if REPLAY else int(time.monotonic() * 1e9)
       self.last_actuators_output, can_sends = self.CI.apply(CC, now_nanos)
+      if not self.CP.pcmCruiseSpeed:
+        can_sends.extend(self.custom_stock_longitudinal_controller.update(CS, CC))
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
+
+      cc_send_sp = messaging.new_message('carControlSP')
+      cc_send_sp.valid = self.sm.all_checks(['carControl'])
+      if not self.CP.pcmCruiseSpeed:
+        cc_send_sp.carControlSP.customStockLongitudinalControl = self.custom_stock_longitudinal_controller.state_publish()
+      self.pm.send('carControlSP', cc_send_sp)
 
       self.CC_prev = CC
 
