@@ -333,6 +333,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ToyotaAutoHold", PERSISTENT | BACKUP},
     {"ToyotaAutoLockBySpeed", PERSISTENT | BACKUP},
     {"ToyotaAutoUnlockByShifter", PERSISTENT | BACKUP},
+    {"ToyotaDriveMode", PERSISTENT | BACKUP},
     {"ToyotaEnhancedBsm", PERSISTENT | BACKUP},
     {"ToyotaSnG", PERSISTENT | BACKUP},
     {"ToyotaTSS2Long", PERSISTENT | BACKUP},
