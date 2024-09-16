@@ -47,9 +47,9 @@ class InactiveState(ButtonStateBase):
 
 class LoadingState(ButtonStateBase):
   def handle(self) -> None:
-    if self.controller.target_speed > self.controller.v_cruise:
+    if self.controller.v_target > self.controller.v_cruise_cluster:
       self.controller.button_state = ButtonControlState.accelerating
-    elif self.controller.target_speed < self.controller.v_cruise and self.controller.v_cruise > self.controller.v_cruise_min:
+    elif self.controller.v_target < self.controller.v_cruise_cluster and self.controller.v_cruise_cluster > self.controller.v_cruise_min:
       self.controller.button_state = ButtonControlState.decelerating
     else:
       self.controller.button_state = ButtonControlState.holding
@@ -59,7 +59,7 @@ class LoadingState(ButtonStateBase):
 class AcceleratingState(ButtonStateBase):
   def handle(self) -> int | None:
     self.button_count += 1
-    if self.controller.target_speed <= self.controller.v_cruise or self.button_count > RESET_COUNT:
+    if self.controller.v_target <= self.controller.v_cruise_cluster or self.button_count > RESET_COUNT:
       self.button_count = 0
       self.controller.button_state = ButtonControlState.holding
       return None
@@ -69,7 +69,7 @@ class AcceleratingState(ButtonStateBase):
 class DeceleratingState(ButtonStateBase):
   def handle(self) -> int | None:
     self.button_count += 1
-    if self.controller.target_speed >= self.controller.v_cruise or self.controller.v_cruise <= self.controller.v_cruise_min or self.button_count > RESET_COUNT:
+    if self.controller.v_target >= self.controller.v_cruise_cluster or self.controller.v_cruise_cluster <= self.controller.v_cruise_min or self.button_count > RESET_COUNT:
       self.button_count = 0
       self.controller.button_state = ButtonControlState.holding
       return None
@@ -81,11 +81,5 @@ class HoldingState(ButtonStateBase):
     self.button_count += 1
     if self.button_count > HOLD_TIME:
       self.button_count = 0
-      self.controller.button_state = ButtonControlState.resetting
-    return None
-
-
-class ResettingState(ButtonStateBase):
-  def handle(self) -> None:
-    self.controller.button_state = ButtonControlState.loading
+      self.controller.button_state = ButtonControlState.loading
     return None
