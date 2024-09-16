@@ -25,8 +25,8 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
 
     if self.cruise_button is not None:
       if ram_cars:
-        can_sends.append(helpers.create_cruise_buttons(self.car_controller.packer, self.car_state.button_counter, das_bus, self.CP, self.cruise_button))
+        can_sends.append(helpers.create_cruise_buttons(self.car_controller.packer, self.car_state.button_counter, das_bus, self.cruise_button))
       elif button_counter_offset is not None:
-        can_sends.append(helpers.create_cruise_buttons(self.car_controller.packer, self.car_state.button_counter + button_counter_offset, das_bus, self.CP, self.cruise_button))
+        can_sends.append(helpers.create_cruise_buttons(self.car_controller.packer, self.car_state.button_counter + button_counter_offset, das_bus, self.cruise_button))
 
     return can_sends
