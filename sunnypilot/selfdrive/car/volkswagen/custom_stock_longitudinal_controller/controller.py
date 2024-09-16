@@ -33,6 +33,19 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
     self.initial_v_target = 0
     self.initial_v_cruise_cluster = 0
 
+  def update_checks(self) -> None:
+    if self.button_state > ButtonControlState.inactive:
+      self.button_frame += 1
+      if self.button_frame == 1:
+        self.initial_v_target = self.v_target
+        self.initial_v_cruise_cluster = self.v_cruise_cluster
+
+      self.set_acc_type()
+    else:
+      self.button_frame = 0
+      self.initial_v_target = 0
+      self.initial_v_cruise_cluster = 0
+
   def set_acc_type(self):
     current_v_cruise_diff = abs(self.v_target - self.v_cruise_cluster)
     initial_v_cruise_diff = abs(self.initial_v_target - self.initial_v_cruise_cluster)
@@ -52,17 +65,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
   def create_mock_button_messages(self) -> list[SendCan]:
     can_sends = []
 
-    if self.button_state > ButtonControlState.inactive:
-      self.button_frame += 1
-      if self.button_frame == 1:
-        self.initial_v_target = self.v_target
-        self.initial_v_cruise_cluster = self.v_cruise_cluster
-
-      self.set_acc_type()
-    else:
-      self.button_frame = 0
-      self.initial_v_target = 0
-      self.initial_v_cruise_cluster = 0
+    self.update_checks()
 
     if self.cruise_button is not None:
       if self.car_state.gra_stock_values["COUNTER"] != self.car_controller.gra_acc_counter_last:
