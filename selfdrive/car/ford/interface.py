@@ -24,6 +24,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
+    ret.customStockLongAvailable = True
 
     if Params().get("DongleId", encoding='utf8') in ("4fde83db16dc0802", "112e4d6e0cad05e1", "e36b272d5679115f", "24574459dd7fb3e0", "83a4e056c7072678"):
       ret.spFlags |= FordFlagsSP.SP_ENHANCED_LAT_CONTROL.value
