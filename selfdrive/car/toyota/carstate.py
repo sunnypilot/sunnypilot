@@ -219,12 +219,12 @@ class CarState(CarStateBase):
         eco_mode = cp.vl["GEAR_PACKET"]['ECON_ON'] if self.eco_signal_seen else 0
 
       # Set acceleration profile based on mode
-      if sport_mode:
-        self.accel_profile = AccelPersonality.sport
-      elif eco_mode:
-        self.accel_profile = AccelPersonality.eco
-      else:
+      if sport_mode == 0 and eco_mode == 0:
         self.accel_profile = AccelPersonality.normal
+      elif eco_mode == 1:
+        self.accel_profile = AccelPersonality.eco
+      elif sport_mode == 1:
+        self.accel_profile = AccelPersonality.sport
 
       # If not initialized, sync profile with the current mode on the car
       if not self.accel_profile_init or self.accel_profile != self.prev_accel_profile:
