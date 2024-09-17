@@ -183,8 +183,8 @@ class CarInterface(CarInterfaceBase):
         #tune.kiV = [0.1,  0.12, 0.08, 0.06, 0.5, 1.0]
         #tune.kpBP = [0., 5., 20.]
         #tune.kpV = [2.3, 1.0, 0.7]
-        tune.kiBP = [0.,  3.,   12.,  20.,  27.,  40.]
-        tune.kiV = [.34, .28,   .21,  .18,  .10, .06] 
+        tune.kiBP = [0.,  3.,   8.,  20.,  27.,  40.]
+        tune.kiV = [.35,  .235,  .20,  .17,  .10, .06]
         custom_tss2_longitudinal_tuning()
       else:
         tune.kpV = [0.0]
