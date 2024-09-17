@@ -209,7 +209,7 @@ class CarState(CarStateBase):
       if not self.signals_checked:
         self.signals_checked = True
 
-        # Get sport and eco signals
+        # Get sport and eco signals, using default values if not present
         sport_mode = cp.vl["GEAR_PACKET"].get(sport_signal, 0)
         eco_mode = cp.vl["GEAR_PACKET"].get('ECON_ON', 0)
 
@@ -217,17 +217,19 @@ class CarState(CarStateBase):
         self.sport_signal_seen = bool(sport_mode)
         self.eco_signal_seen = bool(eco_mode)
       else:
-        # Use previously detected signals
-        sport_mode = cp.vl["GEAR_PACKET"][sport_signal] if self.sport_signal_seen else 0
-        eco_mode = cp.vl["GEAR_PACKET"]['ECON_ON'] if self.eco_signal_seen else 0
+        # Use previously detected signals if they were seen
+        sport_mode = cp.vl["GEAR_PACKET"].get(sport_signal, 0) if self.sport_signal_seen else 0
+        eco_mode = cp.vl["GEAR_PACKET"].get('ECON_ON', 0) if self.eco_signal_seen else 0
 
-      # Set acceleration profile based on mode
-      if sport_mode == 0 and eco_mode == 0:
-        self.accel_profile = AccelPersonality.normal
-      elif eco_mode == 1:
+      # Set acceleration profile based on detected modes, prioritize eco over sport if both are detected
+      if eco_mode == 1:
         self.accel_profile = AccelPersonality.eco
       elif sport_mode == 1:
         self.accel_profile = AccelPersonality.sport
+      else:
+        self.accel_profile = AccelPersonality.normal
+
+      print(f"Accel profile set to: {self.accel_profile}")
 
       # If not initialized, sync profile with the current mode on the car
       if not self.accel_profile_init or self.accel_profile != self.prev_accel_profile:
