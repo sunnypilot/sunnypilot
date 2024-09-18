@@ -128,7 +128,7 @@ class SelfdriveD:
     elif self.CP.passive:
       self.events.add(EventName.dashcamMode, static=True)
 
-    sock_services = [self.pm.sock.keys()] + ['selfdriveStateSP']
+    sock_services = list(self.pm.sock.keys()) + ['selfdriveStateSP']
     self.pm = messaging.PubMaster(sock_services)
 
     self.mads = ModifiedAssistDrivingSystem(self)
