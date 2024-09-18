@@ -58,10 +58,10 @@ class CarState(CarStateBase):
     self.acc_type = 1
     self.lkas_hud = {}
     self.pcm_accel_net = 0.0
-    self.pcm_true_accel_net = 0.0
-    self.pcm_calc_accel_net = 0.0
-    self.pcm_neutral_force = 0.0
-    self.vsc_slope_angle = 0.0
+    #self.pcm_true_accel_net = 0.0
+    #self.pcm_calc_accel_net = 0.0
+    #self.pcm_neutral_force = 0.0
+    #self.vsc_slope_angle = 0.0
 
     self.lkas_enabled = None
     self.prev_lkas_enabled = None
@@ -133,11 +133,11 @@ class CarState(CarStateBase):
 
     # thought to be the gas/brake as issued by the pcm (0=coasting)
     self.pcm_accel_net = cp.vl["PCM_CRUISE"]["ACCEL_NET"]  # this is only accurate for braking * 43
-    self.pcm_true_accel_net = cp.vl["CLUTCH"]["TRUE_ACCEL_NET"]  # this is only accurate for acceleration * 78
-    self.pcm_calc_accel_net = cp.vl["GEAR_PACKET_HYBRID"]["CAR_MOVEMENT"] / 78 - cp.vl["BRAKE"]["BRAKE_PEDAL"] / 43
-    self.pcm_true_accel_net = cp.vl["CLUTCH"]["TRUE_ACCEL_NET"]
-    self.pcm_neutral_force = cp.vl["PCM_CRUISE"]["NEUTRAL_FORCE"]
-    self.vsc_slope_angle = cp.vl["VSC1S07"]["ASLP"]
+    #self.pcm_true_accel_net = cp.vl["CLUTCH"]["TRUE_ACCEL_NET"]  # this is only accurate for acceleration * 78
+    #self.pcm_calc_accel_net = cp.vl["GEAR_PACKET_HYBRID"]["CAR_MOVEMENT"] / 78 - cp.vl["BRAKE"]["BRAKE_PEDAL"] / 43
+    #self.pcm_true_accel_net = cp.vl["CLUTCH"]["TRUE_ACCEL_NET"]
+    #self.pcm_neutral_force = cp.vl["PCM_CRUISE"]["NEUTRAL_FORCE"]
+    #self.vsc_slope_angle = cp.vl["VSC1S07"]["ASLP"]
 
     ret.standstill = abs(ret.vEgoRaw) < 1e-3
 
@@ -457,14 +457,14 @@ class CarState(CarStateBase):
       ("BODY_CONTROL_STATE_2", 2),
       ("ESP_CONTROL", 3),
       ("EPS_STATUS", 25),
-      ("GEAR_PACKET_HYBRID", 60),
-      ("BRAKE", 80),
+      #("GEAR_PACKET_HYBRID", 60),
+      #("BRAKE", 80),
       ("BRAKE_MODULE", 40),
       ("WHEEL_SPEEDS", 80),
       ("STEER_ANGLE_SENSOR", 80),
       ("PCM_CRUISE", 33),
       ("PCM_CRUISE_SM", 1),
-      ("VSC1S07", 20),
+      #("VSC1S07", 20),
       ("STEER_TORQUE_SENSOR", 50),
       ("CLUTCH", 16),
     ]
