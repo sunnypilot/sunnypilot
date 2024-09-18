@@ -1,7 +1,8 @@
 from cereal import car, custom
-from openpilot.sunnypilot.mads.state import Disabled, Paused, Enabled, SoftDisabling, Overriding
 
-from openpilot.selfdrive.selfdrived.events import Events
+from panda import ALTERNATIVE_EXPERIENCE
+
+from openpilot.sunnypilot.mads.state import Disabled, Paused, Enabled, SoftDisabling, Overriding
 
 State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
@@ -25,10 +26,19 @@ class ModifiedAssistDrivingSystem:
 
     self.enabled_toggle = True  # TODO-SP: Apply with toggle
     self.main_enabled_toggle = True  # TODO-SP: Apply with toggle
-    self.disengage_on_brake_toggle = False  # TODO-SP: Apply with toggle
+    self.disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
 
     self.mads_enabled = False
     self.mads_alt_button_enabled = False
+
+  def set_alternative_experience(self, alt_experience: int = 0):
+    if self.enabled_toggle:
+      if self.disengage_lateral_on_brake_toggle:
+        alt_experience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+      else:
+        alt_experience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_LATERAL_ON_BRAKE
+
+    return alt_experience
 
   def update_availability(self, CS: car.CarState, available: bool = False) -> bool:
     if self.main_enabled_toggle:
@@ -53,7 +63,7 @@ class ModifiedAssistDrivingSystem:
       self.selfdrive.events.remove(EventName.wrongCruiseMode)
       self.selfdrive.events.remove(EventName.wrongCarMode)
 
-    if self.disengage_on_brake_toggle:
+    if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
         self.selfdrive.events.remove(EventName.brakeHold)
         self.selfdrive.events.add(EventName.silentBrakeHold)
