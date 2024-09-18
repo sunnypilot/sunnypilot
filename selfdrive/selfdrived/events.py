@@ -105,6 +105,19 @@ class Events:
       ret.append(event)
     return ret
 
+  def has(self, event_name: int) -> bool:
+    return event_name in self.events
+
+  def remove(self, event_name: int, static: bool = False) -> None:
+    if static and event_name in self.static_events:
+      self.static_events.remove(event_name)
+
+    if event_name in self.events:
+      self.events.remove(event_name)
+
+      if event_name in self.event_counters:
+        self.event_counters[event_name] = 0
+
 
 class Alert:
   def __init__(self,

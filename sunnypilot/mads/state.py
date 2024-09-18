@@ -1,61 +1,68 @@
 from abc import ABC, abstractmethod
 
 from cereal import car, custom
-from openpilot.selfdrive.selfdrived.events import ET
-from openpilot.selfdrive.selfdrived.state import ACTIVE_STATES, SOFT_DISABLE_TIME
+from openpilot.selfdrive.selfdrived.events import ET, Events
+from openpilot.selfdrive.selfdrived.state import SOFT_DISABLE_TIME
 from openpilot.common.realtime import DT_CTRL
 
 State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
 EventName = car.OnroadEvent.EventName
+
+ENABLED_STATES = (State.enabled, State.softDisabling, State.overriding)
+ACTIVE_STATES = (State.paused, *ENABLED_STATES)
 
 
 class StateMachineBase(ABC):
   def __init__(self, mads):
     self.mads = mads
     self.selfdrive = mads.selfdrive
-    self.ss_state_machine = mads.ss_state_machine
+    self.ss_state_machine = mads.selfdrive.ss_state_machine
 
     self.state = State.disabled
 
-  def __call__(self) -> State:
+  def __call__(self, events: Events) -> State:
     if self.state != State.disabled:
-      if self.selfdrive.events.contains(ET.USER_DISABLE):
-        if EventName.silentPedalPressed in self.selfdrive.events.events:
+      if events.contains(ET.USER_DISABLE):
+        if events.has(EventName.silentPedalPressed) or events.has(EventName.silentBrakeHold):
           self.state = State.paused
         else:
           self.state = State.disabled
         self.add_current_alert_types(ET.USER_DISABLE)
-        return self.state
 
-      elif self.selfdrive.events.contains(ET.IMMEDIATE_DISABLE):
+      elif events.contains(ET.IMMEDIATE_DISABLE):
         self.state = State.disabled
         self.add_current_alert_types(ET.IMMEDIATE_DISABLE)
-        return self.state
 
-    self.handle()
+      else:
+        self.handle(events)
 
-    if self.state in ACTIVE_STATES:
+    elif self.state == State.disabled:
+      self.handle(events)
+
+    enabled = self.state in ENABLED_STATES and self.mads.mads_enabled
+    active = self.state in ACTIVE_STATES and self.mads.mads_enabled
+    if active:
       self.add_current_alert_types(ET.WARNING)
 
-    return self.state
+    return self.state, enabled, active
 
   def add_current_alert_types(self, alert_type):
     if not self.selfdrive.active:
       self.add_current_alert_types(alert_type)
 
   @abstractmethod
-  def handle(self):
+  def handle(self, events: Events):
     pass
 
 
 class InactiveBase(StateMachineBase):
-  def handle(self):
-    if self.selfdrive.events.contain(ET.ENABLE):
-      if self.selfdrive.events.contain(ET.NO_ENTRY):
+  def handle(self, events: Events):
+    if events.contains(ET.ENABLE):
+      if events.contains(ET.NO_ENTRY):
         self.add_current_alert_types(ET.NO_ENTRY)
 
       else:
-        if self.selfdrive.events.contain(ET.OVERRIDE_LATERAL):
+        if events.contains(ET.OVERRIDE_LATERAL):
           self.state = State.overriding
         else:
           self.state = State.enabled
@@ -71,21 +78,21 @@ class Paused(InactiveBase):
 
 
 class Enabled(StateMachineBase):
-  def handle(self):
-    if self.selfdrive.events.contain(ET.SOFT_DISABLE):
+  def handle(self, events: Events):
+    if events.contains(ET.SOFT_DISABLE):
       self.state = State.softDisabling
       if not self.selfdrive.active:
         self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
       self.add_current_alert_types(ET.SOFT_DISABLE)
 
-    elif self.selfdrive.events.contains(ET.OVERRIDE_LATERAL):
+    elif events.contains(ET.OVERRIDE_LATERAL):
       self.state = State.overriding
       self.add_current_alert_types(ET.OVERRIDE_LATERAL)
 
 
 class SoftDisabling(StateMachineBase):
-  def handle(self):
-    if not self.selfdrive.events.contain(ET.SOFT_DISABLE):
+  def handle(self, events: Events):
+    if not events.contains(ET.SOFT_DISABLE):
       # no more soft disabling condition, so go back to ENABLED
       self.state = State.enabled
 
@@ -97,13 +104,13 @@ class SoftDisabling(StateMachineBase):
 
 
 class Overriding(StateMachineBase):
-  def handle(self):
-    if self.selfdrive.events.contain(ET.SOFT_DISABLE):
+  def handle(self, events: Events):
+    if events.contains(ET.SOFT_DISABLE):
       self.state = State.softDisabling
       if not self.selfdrive.active:
         self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
       self.add_current_alert_types(ET.SOFT_DISABLE)
-    elif not self.selfdrive.events.contain(ET.OVERRIDE_LATERAL):
+    elif not events.contains(ET.OVERRIDE_LATERAL):
       self.state = State.enabled
     else:
       self.ss_state_machine.current_alert_types += [ET.OVERRIDE_LATERAL]

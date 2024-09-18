@@ -449,12 +449,26 @@ class SelfdriveD:
       self.pm.send('onroadEvents', ce_send)
     self.events_prev = self.events.names.copy()
 
+  def publish_selfdriveStateSP(self):
+    # selfdriveStateSP
+    ss_sp_msg = messaging.new_message('selfdriveStateSP')
+    ss_sp_msg.valid = self.sm.all_checks(['selfdriveState'])
+    ss_sp = ss_sp_msg.selfdriveStateSP
+
+    # mads
+    mads = ss_sp.mads
+    mads.state = self.mads.current_state
+    mads.enabled = self.mads.enabled
+    mads.active = self.mads.active
+
+    self.pm.send('selfdriveStateSP', ss_sp_msg)
+
   def step(self):
     CS = self.data_sample()
     self.update_events(CS)
     if not self.CP.passive and self.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
-      self.mads.update(CS)
+    self.mads.update(CS)
     self.update_alerts(CS)
 
     self.publish_selfdriveState(CS)
