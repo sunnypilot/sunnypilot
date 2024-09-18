@@ -16,7 +16,7 @@ from opendbc.can.packer import CANPacker
 GearShifter = car.CarState.GearShifter
 SteerControlType = car.CarParams.SteerControlType
 VisualAlert = car.CarControl.HUDControl.VisualAlert
-LongCtrlState = car.CarControl.Actuators.LongControlState
+#LongCtrlState = car.CarControl.Actuators.LongControlState
 
 # LKA limits
 # EPS faults if you apply torque while the steering rate is above 100 deg/s for too long
@@ -51,7 +51,7 @@ class CarController(CarControllerBase):
     self.pcm_accel_compensation = 0.0
     self.distance_button = 0
 
-    self.pid = PIDController(k_p=1.0, k_i=0.25, k_f=0)
+    #self.pid = PIDController(k_p=1.0, k_i=0.25, k_f=0)
 
     self.packer = CANPacker(dbc_name)
     self.gas = 0
