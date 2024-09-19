@@ -43,7 +43,7 @@ class CustomStockLongitudinalController(CustomStockLongitudinalControllerBase):
       if self.cruise_button is not None:
         for _ in range(BUTTON_COPIES):
           can_sends.append(hyundaicanfd.create_buttons(self.car_controller.packer, self.CP, self.car_controller.CAN,
-                                                       self.car_state.button_counters + choices(POPULATION, WEIGHTS)[0],
+                                                       self.car_state.buttons_counter + choices(POPULATION, WEIGHTS)[0],
                                                        self.cruise_button))
 
     return can_sends
