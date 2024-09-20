@@ -130,6 +130,7 @@ if __name__ == "__main__":
       ignore = [
         'logMonoTime',
         'drivingModelData.frameDropPerc',
+        'drivingModelData.modelExecutionTime',
         'modelV2.frameDropPerc',
         'modelV2.modelExecutionTime',
         'driverStateV2.modelExecutionTime',
