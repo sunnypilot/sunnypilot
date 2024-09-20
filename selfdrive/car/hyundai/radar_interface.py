@@ -5,6 +5,7 @@ from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import DBC, HyundaiFlagsSP, CANFD_CAR
+from openpilot.common.filter_simple import SpecialRangeFilter
 
 RADAR_START_ADDR = 0x500
 RADAR_MSG_COUNT = 32
@@ -44,6 +45,7 @@ class RadarInterface(RadarInterfaceBase):
                        0x420 if self.camera_scc else \
                        (RADAR_START_ADDR + RADAR_MSG_COUNT - 1)
     self.track_id = 0
+    self.rangeFilter = SpecialRangeFilter(1, True)
 
     self.radar_off_can = CP.radarUnavailable
     self.rcp = get_radar_can_parser(CP)
@@ -87,8 +89,11 @@ class RadarInterface(RadarInterfaceBase):
                 "SCC_CONTROL" if self.CP.carFingerprint in CANFD_CAR else \
                 "SCC11"
       msg = self.rcp.vl[msg_src]
-      valid = msg['ACC_ObjDist'] < 204.6 if self.CP.carFingerprint in CANFD_CAR else \
+      valid = self.rangeFilter.update(msg['ACC_ObjStatus'], msg['ACC_ObjDist']) if self.enhanced_scc else \
+              msg['ACC_ObjDist'] < 204.6 if self.CP.carFingerprint in CANFD_CAR else \
               msg['ACC_ObjStatus']
+
+      #valid = self.rangeFilter.update(msg['ACC_ObjStatus'], msg['ACC_ObjDist'])
       for ii in range(1):
         if valid:
           if ii not in self.pts:
