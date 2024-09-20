@@ -56,7 +56,7 @@ class Controls:
     elif self.CP.lateralTuning.which() == 'torque':
       self.LaC = LatControlTorque(self.CP, self.CI)
 
-    data_services = list(self.pm.sock.keys()) + ['selfdriveStateSP']
+    data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveState')
 
   def update(self):
