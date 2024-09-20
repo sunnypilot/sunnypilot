@@ -209,15 +209,23 @@ class CarState(CarStateBase):
       if not self.signals_checked:
         self.signals_checked = True
 
-        # Get sport and eco signals, handling missing signals
-        sport_mode = cp.vl["GEAR_PACKET"].get(sport_signal, 0)
-        eco_mode = cp.vl["GEAR_PACKET"].get('ECON_ON', 0)
+        # Try to detect sport mode signal, handle missing signal with a fallback
+        try:
+          sport_mode = cp.vl["GEAR_PACKET"][sport_signal]
+          self.sport_signal_seen = True
+        except KeyError:
+          sport_mode = 0
+          self.sport_signal_seen = False
 
-        # Track if signals were detected
-        self.sport_signal_seen = sport_mode == 1
-        self.eco_signal_seen = eco_mode == 1
+        # Try to detect eco mode signal, handle missing signal with a fallback
+        try:
+          eco_mode = cp.vl["GEAR_PACKET"]['ECON_ON']
+          self.eco_signal_seen = True
+        except KeyError:
+          eco_mode = 0
+          self.eco_signal_seen = False
       else:
-        # Use previously detected signals if they were seen
+        # Use previously detected signals
         sport_mode = 1 if self.sport_signal_seen else 0
         eco_mode = 1 if self.eco_signal_seen else 0
 
@@ -228,6 +236,7 @@ class CarState(CarStateBase):
         self.accel_profile = AccelPersonality.sport
       else:
         self.accel_profile = AccelPersonality.normal
+
 
       print(f"Accel profile set to: {self.accel_profile}")
 
