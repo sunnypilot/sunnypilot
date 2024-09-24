@@ -17,7 +17,7 @@ GearShifter = car.CarState.GearShifter
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
-    return CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX
+    return CarControllerParams(CP).ACCEL_MIN, CarControllerParams(CP).ACCEL_MAX
 
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
@@ -62,6 +62,9 @@ class CarInterface(CarInterfaceBase):
     found_ecus = [fw.ecu for fw in car_fw]
     ret.enableDsu = len(found_ecus) > 0 and Ecu.dsu not in found_ecus and candidate not in (NO_DSU_CAR | UNSUPPORTED_DSU_CAR) \
                                         and not (ret.flags & ToyotaFlags.SMART_DSU)
+
+    if candidate in (CAR.LEXUS_ES_TSS2, CAR.TOYOTA_COROLLA_TSS2, CAR.TOYOTA_PRIUS_TSS2) and Ecu.hybrid not in found_ecus:
+      ret.flags |= ToyotaFlags.RAISED_ACCEL_LIMIT.value
 
     if candidate == CAR.TOYOTA_PRIUS:
       zss = ret.spFlags & ToyotaFlagsSP.SP_ZSS
@@ -169,7 +172,7 @@ class CarInterface(CarInterfaceBase):
 
     def default_tss2_longitudinal_tuning():
       ret.vEgoStopping = 0.25
-      ret.vEgoStarting = 0.01
+      ret.vEgoStarting = 0.25
       ret.stoppingDecelRate = 0.3  # reach stopping target smoothly
 
     def default_longitudinal_tuning():
@@ -189,6 +192,10 @@ class CarInterface(CarInterfaceBase):
       else:
         tune.kpV = [0.0]
         tune.kiV = [0.5]
+        # Since we compensate for imprecise acceleration in carcontroller, we can be less aggressive with tuning
+        # This also prevents unnecessary request windup due to internal car jerk limits
+        if ret.flags & ToyotaFlags.RAISED_ACCEL_LIMIT:
+          tune.kiV = [0.25]
       if candidate in TSS2_CAR:
         default_tss2_longitudinal_tuning()
     else:

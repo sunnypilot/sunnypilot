@@ -16,7 +16,9 @@ from opendbc.can.packer import CANPacker
 GearShifter = car.CarState.GearShifter
 SteerControlType = car.CarParams.SteerControlType
 VisualAlert = car.CarControl.HUDControl.VisualAlert
-#LongCtrlState = car.CarControl.Actuators.LongControlState
+LongCtrlState = car.CarControl.Actuators.LongControlState
+
+ACCELERATION_DUE_TO_GRAVITY = 9.81
 
 # LKA limits
 # EPS faults if you apply torque while the steering rate is above 100 deg/s for too long
@@ -147,28 +149,28 @@ class CarController(CarControllerBase):
                                                           lta_active, self.frame // 2, torque_wind_down))
 
     # *** gas and brake ***
-    sp_tss2_long_tune = Params().get_bool("ToyotaTSS2Long")
-
     # When sp_tss2_long_tune is True and CC.longActive
-    if sp_tss2_long_tune:
-      # For cars where we allow a higher max acceleration of 2.0 m/s^2, compensate for PCM request overshoot
-      # TODO: validate PCM_CRUISE->ACCEL_NET for braking requests and compensate for imprecise braking as well
-      if CC.longActive:
-        pcm_accel_compensation = 2.0 * (CS.pcm_accel_net - actuators.accel) if actuators.accel > 0 else 0.0
+    if self.CP.flags & ToyotaFlags.RAISED_ACCEL_LIMIT and CC.longActive and not CS.out.cruiseState.standstill:
+      # calculate amount of acceleration PCM should apply to reach target, given pitch
+      accel_due_to_pitch = math.sin(CS.slope_angle) * ACCELERATION_DUE_TO_GRAVITY
+      net_acceleration_request = actuators.accel + accel_due_to_pitch
 
-        # prevent compensation windup
-        if actuators.accel - pcm_accel_compensation > self.params.ACCEL_MAX:
-          pcm_accel_compensation = actuators.accel - self.params.ACCEL_MAX
+      # let PCM handle stopping for now
+      pcm_accel_compensation = 0.0
+      if actuators.longControlState != LongCtrlState.stopping:
+        pcm_accel_compensation = 2.0 * (CS.pcm_accel_net - net_acceleration_request)
 
-        self.pcm_accel_compensation = rate_limit(pcm_accel_compensation, self.pcm_accel_compensation, -0.01, 0.01)
-        pcm_accel_cmd = actuators.accel - self.pcm_accel_compensation
-      else:
-        self.pcm_accel_compensation = 0.0
-        pcm_accel_cmd = actuators.accel
+      # prevent compensation windup
+      pcm_accel_compensation = clip(pcm_accel_compensation, actuators.accel - self.params.ACCEL_MAX,
+                                    actuators.accel - self.params.ACCEL_MIN)
 
-      pcm_accel_cmd = clip(pcm_accel_cmd, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
+      self.pcm_accel_compensation = rate_limit(pcm_accel_compensation, self.pcm_accel_compensation, -0.01, 0.01)
+      pcm_accel_cmd = actuators.accel - self.pcm_accel_compensation
     else:
-      pcm_accel_cmd = clip(actuators.accel, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
+      self.pcm_accel_compensation = 0.0
+      pcm_accel_cmd = actuators.accel
+
+    pcm_accel_cmd = clip(pcm_accel_cmd, self.params.ACCEL_MIN, self.params.ACCEL_MAX)
 
 
     if self.CP.enableGasInterceptorDEPRECATED and CC.longActive:
@@ -229,6 +231,10 @@ class CarController(CarControllerBase):
       if pcm_cancel_cmd and self.CP.carFingerprint in UNSUPPORTED_DSU_CAR:
         can_sends.append(toyotacan.create_acc_cancel_command(self.packer))
       elif self.CP.openpilotLongitudinalControl:
+        # internal PCM gas command can get stuck unwinding from negative accel. send one frame of zero when transitioning from braking to gas
+        if pcm_accel_cmd > 0 > self.accel and abs(pcm_accel_cmd - self.accel) > 0.5:
+          pcm_accel_cmd = 0
+
         can_sends.append(toyotacan.create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type, fcw_alert,
                                                         self.distance_button, reverse_acc))
         self.accel = pcm_accel_cmd
