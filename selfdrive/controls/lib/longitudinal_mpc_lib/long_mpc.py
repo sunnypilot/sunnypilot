@@ -63,9 +63,9 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   elif personality==custom.LongitudinalPersonalitySP.standard:
     return 1.0
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    return 0.3
+    return 0.8
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    return 0.2
+    return 0.65
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     return 0.1
   else:
@@ -76,11 +76,11 @@ def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
     return 1.75
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    return 1.50
+    return 1.45
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    return 1.35
+    return 1.25
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    return 1.20
+    return 1.0
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     return 0.25
   else:
@@ -89,17 +89,17 @@ def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
 
 def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
-    x_vel =  [0,    5.,   5.01, 8.33,  8.34,  27.69, 27.7]
-    y_dist = [0.0,  1.2,  1.7,  1.7,   1.75,  1.75,  1.83]
+    x_vel =  [0,    20.,   27.7]
+    y_dist = [1.75, 1.75,  2.00]
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    x_vel =  [0,    5.0,  5.01, 8.33,  8.34,  27.69, 27.7]
-    y_dist = [0.0,  1.6,  1.6,  1.6,   1.75,  1.75,  1.80]
+    x_vel =  [0,    20.,   27.7]
+    y_dist = [1.75, 1.75,  2.00]
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    x_vel =  [0,    5.,   5.01, 8.33,  8.34,  27.69, 27.7]
-    y_dist = [0.0,  1.4,  1.4,  1.4,   1.45,  1.45,  1.50]
+    x_vel =  [0,    20.,   27.7]
+    y_dist = [1.45, 1.45,  1.60]
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    x_vel =  [0,    5.,   5.01,  17.0, 17.01, 27.69, 27.7]
-    y_dist = [0.0,  1.2,  1.2,   1.2,  1.25,  1.25,  1.3]
+    x_vel =  [0,    20.,   27.7]
+    y_dist = [1.28, 1.28,  1.35]
   else:
     raise NotImplementedError("Dynamic personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
