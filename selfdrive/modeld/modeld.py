@@ -377,7 +377,7 @@ def main(demo=False):
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, timestamp_llk, model_execution_time, nav_enabled, live_calib_seen,
-                     custom_model_metadata)
+                     custom_model_metadata.valid, custom_model_metadata.capabilities)
 
       if not (custom_model_metadata.valid and custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution):
         desire_state = modelv2_send.modelV2.meta.desireState

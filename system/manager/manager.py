@@ -11,7 +11,6 @@ import openpilot.system.sentry as sentry
 from openpilot.common.api.sunnylink import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.text_window import TextWindow
-from openpilot.selfdrive.modeld.custom_model_metadata import DRIVING_MODEL_SELECTOR_VERSION
 from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.manager.helpers import unblock_stdout, write_onroad_params, save_bootlog
 from openpilot.system.manager.mapd_installer import VERSION
@@ -65,7 +64,6 @@ def manager_init() -> None:
     ("DisableOnroadUploads", "0"),
     ("DisengageLateralOnBrake", "0"),
     ("DrivingModelGeneration", "0"),
-    ("DrivingModelSelectorVersion", str(DRIVING_MODEL_SELECTOR_VERSION)),
     ("DynamicLaneProfile", "1"),
     ("DynamicPersonality", "0"),
     ("EnableMads", "1"),

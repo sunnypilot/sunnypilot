@@ -3,7 +3,7 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
-from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
+from openpilot.selfdrive.modeld.custom_model_metadata import ModelCapabilities
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -55,8 +55,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
                    timestamp_eof: int, timestamp_llk: int, model_execution_time: float,
                    nav_enabled: bool, valid: bool,
-                   custom_model: CustomModelMetadata) -> None:
-  custom_model.custom_meta()
+                   custom_model_valid: bool, custom_model_capabilities: ModelCapabilities) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
   extended_msg.valid = valid
@@ -70,7 +69,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.modelExecutionTime = model_execution_time
 
   action = driving_model_data.action
-  model_use_lateral_planner = custom_model.valid and custom_model.capabilities & ModelCapabilities.LateralPlannerSolution
+  model_use_lateral_planner = custom_model_valid and custom_model_capabilities & ModelCapabilities.LateralPlannerSolution
   if not model_use_lateral_planner:
     action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
 
@@ -80,7 +79,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.frameAge = frame_age
   modelV2.frameDropPerc = frame_drop_perc
   modelV2.timestampEof = timestamp_eof
-  model_use_nav = custom_model.valid and custom_model.capabilities & ModelCapabilities.NoO
+  model_use_nav = custom_model_valid and custom_model_capabilities & ModelCapabilities.NoO
   if model_use_nav:
     modelV2.locationMonoTimeDEPRECATED = timestamp_llk
   modelV2.modelExecutionTime = model_execution_time
@@ -187,17 +186,11 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # temporal pose
   temporal_pose = modelV2.temporalPose
-  if custom_model.valid:
-    if custom_model.capabilities & ModelCapabilities.PlanTemporalPose:
-      temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
-      temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
-      temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
-      temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
-    else:
-      temporal_pose.trans = net_output_data['sim_pose'][0,:3].tolist()
-      temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:3].tolist()
-      temporal_pose.rot = net_output_data['sim_pose'][0,3:].tolist()
-      temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,3:].tolist()
+  if custom_model_valid and custom_model_capabilities & ModelCapabilities.TemporalPoseV1:
+    temporal_pose.trans = net_output_data['sim_pose'][0,:3].tolist()
+    temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:3].tolist()
+    temporal_pose.rot = net_output_data['sim_pose'][0,3:].tolist()
+    temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,3:].tolist()
   else:
     temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
     temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
