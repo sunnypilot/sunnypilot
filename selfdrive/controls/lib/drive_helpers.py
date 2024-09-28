@@ -6,7 +6,6 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_MDL, DT_CTRL
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
 
 # WARNING: this value was determined based on the model's training distribution,
 #          model predictions above this speed can be unpredictable
@@ -274,15 +273,10 @@ def get_lag_adjusted_curvature(CP, v_ego, psis, curvatures):
   return safe_desired_curvature
 
 
-def get_speed_error(modelV2: log.ModelDataV2, v_ego: float, custom_model_metadata: CustomModelMetadata) -> float:
-  source = modelV2.velocity.x  # default for Tomb Raider
-  if custom_model_metadata.valid:
-    if custom_model_metadata.capabilities & ModelCapabilities.TemporalPose:
-      source = modelV2.temporalPose.trans
-
+def get_speed_error(modelV2: log.ModelDataV2, v_ego: float) -> float:
   # ToDo: Try relative error, and absolute speed
-  if len(source):
-    vel_err = clip(source[0] - v_ego, -MAX_VEL_ERR, MAX_VEL_ERR)
+  if len(modelV2.temporalPose.trans):
+    vel_err = clip(modelV2.temporalPose.trans[0] - v_ego, -MAX_VEL_ERR, MAX_VEL_ERR)
     return float(vel_err)
   return 0.0
 

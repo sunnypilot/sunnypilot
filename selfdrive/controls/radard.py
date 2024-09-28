@@ -6,7 +6,6 @@ from typing import Any
 
 import capnp
 from cereal import messaging, log, car
-from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL, Ratekeeper, Priority, config_realtime_process
@@ -213,9 +212,6 @@ class RadarD:
 
     self.CP = CP
 
-    self.param_s = Params()
-    self.custom_model_metadata = CustomModelMetadata(params=self.param_s, init_only=True)
-
   def update(self, sm: messaging.SubMaster, rr):
     self.ready = sm.seen['modelV2']
     self.current_time = 1e-9*max(sm.logMonoTime.values())
@@ -259,13 +255,8 @@ class RadarD:
     self.radar_state.radarErrors = list(radar_errors)
     self.radar_state.carStateMonoTime = sm.logMonoTime['carState']
 
-    source = sm['modelV2'].velocity.x  # default for Tomb Raider
-    if self.custom_model_metadata.valid:
-      if self.custom_model_metadata.capabilities & ModelCapabilities.TemporalPose:
-        source = sm['modelV2'].temporalPose.trans
-
-    if len(source):
-      model_v_ego = source[0]
+    if len(sm['modelV2'].temporalPose.trans):
+      model_v_ego = sm['modelV2'].temporalPose.trans[0]
     else:
       model_v_ego = self.v_ego
     leads_v3 = sm['modelV2'].leadsV3

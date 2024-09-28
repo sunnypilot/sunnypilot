@@ -33,7 +33,7 @@ class ModelCapabilities(IntFlag):
   In V2, 'prev_desired_curv' (no plural) is used as the input for the same 'desired_curvature' output.
   """
 
-  TemporalPose = 2 ** 5
+  TemporalPoseV1 = 2 ** 5
 
 
 class CustomModelMetadata:
