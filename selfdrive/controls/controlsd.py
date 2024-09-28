@@ -188,7 +188,7 @@ class Controls:
     self.model_use_lateral_planner = self.custom_model_metadata.valid and \
                                      self.custom_model_metadata.capabilities & ModelCapabilities.LateralPlannerSolution
 
-
+    self.dynamic_personality = self.params.get_bool("DynamicPersonality")
     self.overtaking_accel = self.params.get_bool("OvertakingAccelerationAssist")
     self.overtaking_accel_engaged = False
     self.prev_overtaking_accel_engaged = False
@@ -914,6 +914,7 @@ class Controls:
 
     controlsStateSP.lateralState = lat_tuning
     controlsStateSP.personality = self.personality
+    controlsStateSP.dynamicPersonality = self.dynamic_personality
     controlsStateSP.accelPersonality = self.accel_personality
     controlsStateSP.overtakingAccelerationAssist = self.overtaking_accel_engaged
 
@@ -976,6 +977,7 @@ class Controls:
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and (self.CP.openpilotLongitudinalControl or
                                                                              (not self.CP.pcmCruiseSpeed and self.custom_stock_planner_speed))
       self.personality = self.read_personality_param()
+      self.dynamic_personality = self.params.get_bool("DynamicPersonality")
       self.accel_personality = self.read_accel_personality_param()
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")

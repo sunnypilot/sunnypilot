@@ -76,6 +76,13 @@ TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "DynamicPersonality",
+      tr("Enable Dynamic Personality"),
+      tr("Enable this to allow sunnypilot to dynamically adjust following distance and reaction based on your \"Driving Personality\" setting. "
+        "Instead of predefined settings for each personality, every personality now adapts dynamically according to your speed and the distance to the lead car."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
