@@ -4,6 +4,7 @@ import os, sys
 from cereal import custom
 from openpilot.common.params import Params
 
+DRIVING_MODEL_SELECTOR_VERSION = 6
 SIMULATION = "SIMULATION" in os.environ
 
 ModelGeneration = custom.ModelGeneration
