@@ -239,6 +239,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"DrivingModelGeneration", PERSISTENT},
     {"DrivingModelMetadataText", PERSISTENT},
     {"DrivingModelName", PERSISTENT},
+    {"DrivingModelSelectorVersion", CLEAR_ON_MANAGER_START},
     {"DrivingModelText", PERSISTENT},
     {"DrivingModelUrl", PERSISTENT},
     {"DynamicExperimentalControl", PERSISTENT | BACKUP},
