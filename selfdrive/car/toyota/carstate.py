@@ -107,6 +107,7 @@ class CarState(CarStateBase):
     # These signals only have meaning when ACC is active
     if self.CP.flags & ToyotaFlags.RAISED_ACCEL_LIMIT:
       self.pcm_accel_net = max(cp.vl["CLUTCH"]["ACCEL_NET"], 0.0)
+
       # Sometimes ACC_BRAKING can be 1 while showing we're applying gas already
       if cp.vl["PCM_CRUISE"]["ACC_BRAKING"]:
         self.pcm_accel_net += min(cp.vl["PCM_CRUISE"]["ACCEL_NET"], 0.0)
@@ -462,17 +463,14 @@ class CarState(CarStateBase):
       ("BODY_CONTROL_STATE", 3),
       ("BODY_CONTROL_STATE_2", 2),
       ("ESP_CONTROL", 3),
+      ("VSC1S07", 20),
       ("EPS_STATUS", 25),
-      #("GEAR_PACKET_HYBRID", 60),
-      #("BRAKE", 80),
       ("BRAKE_MODULE", 40),
       ("WHEEL_SPEEDS", 80),
       ("STEER_ANGLE_SENSOR", 80),
       ("PCM_CRUISE", 33),
       ("PCM_CRUISE_SM", 1),
-      ("VSC1S07", 20),
       ("STEER_TORQUE_SENSOR", 50),
-      #("CLUTCH", 16),
     ]
 
     if CP.flags & ToyotaFlags.RAISED_ACCEL_LIMIT:
