@@ -177,5 +177,18 @@ std::vector<Model> ModelsFetcher::getModelsFromURL(const QString&url) {
 }
 
 std::vector<Model> ModelsFetcher::getModelsFromURL() {
-  return getModelsFromURL("https://docs.sunnypilot.ai/models_v5.json");
+  return getModelsFromURL("https://docs.sunnypilot.ai/driving_models.json");
+}
+
+std::vector<Model> ModelsFetcher::getCompatibleModels(const QString &selector_version) {
+  std::vector<Model> allModels = getModelsFromURL();
+  std::vector<Model> compatibleModels;
+
+  for (const auto &model : allModels) {
+    if (model.isCompatible(selector_version)) {
+      compatibleModels.push_back(model);
+    }
+  }
+
+  return compatibleModels;
 }

@@ -210,12 +210,13 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   checkNetwork();
   const auto currentModelName = QString::fromStdString(params.get("DrivingModelName"));
   const bool is_release_sp = params.getBool("IsReleaseSPBranch");
-  const auto models = ModelsFetcher::getModelsFromURL();
+  const QString selector_version = QString::fromStdString(params.get("DrivingModelSelectorVersion"));
+  const auto compatible_models = ModelsFetcher::getCompatibleModels(selector_version);
 
   QMap<QString, QString> index_to_model;
 
   // Collecting indices with display names
-  for (const auto &model : models) {
+  for (const auto &model : compatible_models) {
     if ((is_release_sp && model.environment == "release") || !is_release_sp) {
       index_to_model.insert(model.index, model.displayName);
     }
@@ -243,7 +244,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   }
 
   // Finding and setting the selected model
-  for (auto &model : models) {
+  for (auto &model : compatible_models) {
     if (model.displayName == selectedModelName) {
       selectedModelToDownload = model;
       selectedNavModelToDownload = model;

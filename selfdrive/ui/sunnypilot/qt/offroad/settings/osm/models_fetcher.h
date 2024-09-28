@@ -34,6 +34,7 @@ Last updated: July 29, 2024
 #include <QDir>
 #include <QJsonObject>
 #include <QTimer>
+#include <QVersionNumber>
 
 #include "common/swaglog.h"
 #include "common/util.h"
@@ -86,6 +87,8 @@ public:
     index = json["index"].toString();
     environment = json["environment"].toString();
     generation = json["generation"].toString();
+
+    minDrivingModelSelectorVersion = json["minimum_selector_version"].toString();
   }
 
   // Method to convert model back to QJsonObject, if needed
@@ -117,6 +120,9 @@ public:
     json["index"] = index;
     json["environment"] = environment;
     json["generation"] = generation;
+
+    json["minimum_selector_version"] = minDrivingModelSelectorVersion;
+
     return json;
   }
 
@@ -134,6 +140,13 @@ public:
   QString index;
   QString environment;
   QString generation;
+
+  QString minDrivingModelSelectorVersion;
+
+  bool isCompatible(const QString &selector_version) const {
+    return QVersionNumber::fromString(selector_version) >=
+           QVersionNumber::fromString(minDrivingModelSelectorVersion);
+  }
 };
 
 class ModelsFetcher : public QObject {
@@ -145,6 +158,7 @@ public:
   static std::vector<Model> getModelsFromURL(const QUrl&url);
   static std::vector<Model> getModelsFromURL(const QString&url);
   static std::vector<Model> getModelsFromURL();
+  static std::vector<Model> getCompatibleModels(const QString &selector_version);
 
 signals:
   void downloadProgress(double percentage);
