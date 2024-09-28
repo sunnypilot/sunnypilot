@@ -63,7 +63,7 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   elif personality==custom.LongitudinalPersonalitySP.standard:
     return 1.0
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    return 0.8
+    return 0.5
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 0.65
   elif personality==custom.LongitudinalPersonalitySP.overtake:
@@ -85,24 +85,6 @@ def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
     return 0.25
   else:
     raise NotImplementedError("Longitudinal personality not supported")
-
-
-def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.standard):
-  if personality==custom.LongitudinalPersonalitySP.relaxed:
-    x_vel =  [0,    20.,   27.7]
-    y_dist = [1.75, 1.75,  2.00]
-  elif personality==custom.LongitudinalPersonalitySP.standard:
-    x_vel =  [0,    20.,   27.7]
-    y_dist = [1.75, 1.75,  2.00]
-  elif personality==custom.LongitudinalPersonalitySP.moderate:
-    x_vel =  [0,    20.,   27.7]
-    y_dist = [1.45, 1.45,  1.60]
-  elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    x_vel =  [0,    20.,   27.7]
-    y_dist = [1.28, 1.28,  1.35]
-  else:
-    raise NotImplementedError("Dynamic personality not supported")
-  return np.interp(v_ego, x_vel, y_dist)
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
@@ -360,10 +342,9 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard,
-             dynamic_personality=False, overtaking_acceleration_assist=False):
+  def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard, overtaking_acceleration_assist=False):
+    t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
-    t_follow = get_dynamic_personality(v_ego, personality) if dynamic_personality else get_T_FOLLOW(personality)
     t_follow = get_T_FOLLOW(custom.LongitudinalPersonalitySP.overtake) if overtaking_acceleration_assist else t_follow
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 

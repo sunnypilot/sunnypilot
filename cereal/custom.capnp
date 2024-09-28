@@ -43,9 +43,8 @@ enum MpcSource {
 struct ControlsStateSP @0x81c2f05a394cf4af {
   lateralState @0 :Text;
   personality @8 :LongitudinalPersonalitySP;
-  dynamicPersonality @9 :Bool;
-  accelPersonality @10 :AccelerationPersonality;
-  overtakingAccelerationAssist @11 :Bool;
+  accelPersonality @9 :AccelerationPersonality;
+  overtakingAccelerationAssist @10 :Bool;
 
   lateralControlState :union {
     indiState @1 :LateralINDIState;

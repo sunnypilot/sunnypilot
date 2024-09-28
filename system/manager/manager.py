@@ -65,7 +65,6 @@ def manager_init() -> None:
     ("DisengageLateralOnBrake", "0"),
     ("DrivingModelGeneration", "0"),
     ("DynamicLaneProfile", "1"),
-    ("DynamicPersonality", "0"),
     ("EnableMads", "1"),
     ("EnhancedScc", "0"),
     ("FeatureStatus", "1"),
