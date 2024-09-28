@@ -50,6 +50,7 @@ class CustomModelMetadata:
     self.capabilities: ModelCapabilities = self.get_model_capabilities()
     self.valid: bool = self.params.get_bool("CustomDrivingModel") and not SIMULATION and \
                        self.capabilities != ModelCapabilities.Default
+    self.initialized = False
 
   def read_model_generation_param(self) -> ModelGeneration:
     return int(self.params.get('DrivingModelGeneration') or ModelGeneration.default)
@@ -76,20 +77,27 @@ class CustomModelMetadata:
       return ModelCapabilities.Default
 
   def custom_meta(self):
-    if self.capabilities & ModelCapabilities.ModelOutputSlicesV1:
-      class Meta:
-        ENGAGED = slice(0, 1)
-        # next 2, 4, 6, 8, 10 seconds
-        GAS_DISENGAGE = slice(1, 41, 8)
-        BRAKE_DISENGAGE = slice(2, 41, 8)
-        STEER_OVERRIDE = slice(3, 41, 8)
-        HARD_BRAKE_3 = slice(4, 41, 8)
-        HARD_BRAKE_4 = slice(5, 41, 8)
-        HARD_BRAKE_5 = slice(6, 41, 8)
-        GAS_PRESS = slice(7, 41, 8)
-        BRAKE_PRESS = slice(8, 41, 8)
-        # next 0, 2, 4, 6, 8, 10 seconds
-        LEFT_BLINKER = slice(41, 53, 2)
-        RIGHT_BLINKER = slice(42, 53, 2)
+    if not self.initialized:
+      if self.capabilities & ModelCapabilities.ModelOutputSlicesV1:
+        class Meta:
+          ENGAGED = slice(0, 1)
+          # next 2, 4, 6, 8, 10 seconds
+          GAS_DISENGAGE = slice(1, 41, 8)
+          BRAKE_DISENGAGE = slice(2, 41, 8)
+          STEER_OVERRIDE = slice(3, 41, 8)
+          HARD_BRAKE_3 = slice(4, 41, 8)
+          HARD_BRAKE_4 = slice(5, 41, 8)
+          HARD_BRAKE_5 = slice(6, 41, 8)
+          GAS_PRESS = slice(7, 41, 8)
+          BRAKE_PRESS = slice(8, 41, 8)
+          # next 0, 2, 4, 6, 8, 10 seconds
+          LEFT_BLINKER = slice(41, 53, 2)
+          RIGHT_BLINKER = slice(42, 53, 2)
 
-      sys.modules['constants'].Meta = Meta
+        module = 'openpilot.selfdrive.modeld.constants'
+        if module in sys.modules:
+          sys.modules[module].Meta = Meta
+        else:
+          raise ImportError(f"The module '{module}' is not imported yet or does not exist.")
+
+      self.initialized = True
