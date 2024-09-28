@@ -188,15 +188,15 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   temporal_pose = modelV2.temporalPose
   if custom_model_valid:
     if custom_model_capabilities & ModelCapabilities.PlanTemporalPose:
-      temporal_pose.trans = net_output_data['sim_pose'][0,:3].tolist()
-      temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:3].tolist()
-      temporal_pose.rot = net_output_data['sim_pose'][0,3:].tolist()
-      temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,3:].tolist()
-    else:
       temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
       temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
       temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
       temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
+    else:
+      temporal_pose.trans = net_output_data['sim_pose'][0,:3].tolist()
+      temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:3].tolist()
+      temporal_pose.rot = net_output_data['sim_pose'][0,3:].tolist()
+      temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,3:].tolist()
   else:
     temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
     temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
