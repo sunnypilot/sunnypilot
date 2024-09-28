@@ -10,6 +10,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata
 from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
 from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_controller import SpeedLimitController
 from openpilot.selfdrive.car.interfaces import ACCEL_MIN, ACCEL_MAX
@@ -100,6 +101,7 @@ class LongitudinalPlanner:
     self.turn_speed_controller = TurnSpeedController()
     self.dynamic_experimental_controller = DynamicExperimentalController()
     self.accel_controller = AccelController()
+    self.custom_model_metadata = CustomModelMetadata(params=self.params, init_only=True)
 
   def read_param(self):
     try:
@@ -175,7 +177,7 @@ class LongitudinalPlanner:
     # Prevent divergence, smooth in current v_ego
     self.v_desired_filter.x = max(0.0, self.v_desired_filter.update(v_ego))
     # Compute model v_ego error
-    self.v_model_error = get_speed_error(sm['modelV2'], v_ego)
+    self.v_model_error = get_speed_error(sm['modelV2'], v_ego, self.custom_model_metadata)
 
     if force_slow_decel:
       v_cruise = 0.0

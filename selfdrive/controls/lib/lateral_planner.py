@@ -5,6 +5,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.modeld.custom_model_metadata import CustomModelMetadata
 from openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc import LateralMpc
 from openpilot.selfdrive.controls.lib.lateral_mpc_lib.lat_mpc import N as LAT_MPC_N
 from openpilot.selfdrive.controls.lib.lane_planner import LanePlanner, TRAJECTORY_SIZE
@@ -74,6 +75,7 @@ class LateralPlanner:
     self.read_param()
 
     self.model_use_lateral_planner = model_use_lateral_planner
+    self.custom_model_metadata = CustomModelMetadata(params=self.param_s, init_only=True)
 
   def read_param(self):
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding='utf8'))
@@ -110,7 +112,7 @@ class LateralPlanner:
           self.x_sol = np.column_stack([md.lateralPlannerSolutionDEPRECATED.x, md.lateralPlannerSolutionDEPRECATED.y, md.lateralPlannerSolutionDEPRECATED.yaw, md.lateralPlannerSolutionDEPRECATED.yawRate])
         self.path_xyz = np.column_stack([md.position.x, md.position.y, md.position.z])
         self.velocity_xyz = np.column_stack([md.velocity.x, md.velocity.y, md.velocity.z])
-        car_speed = np.linalg.norm(self.velocity_xyz, axis=1) - get_speed_error(md, v_ego_car)
+        car_speed = np.linalg.norm(self.velocity_xyz, axis=1) - get_speed_error(md, v_ego_car, self.custom_model_metadata)
         self.v_plan = np.clip(car_speed, MIN_SPEED, np.inf)
         self.v_ego = self.v_plan[0]
 
