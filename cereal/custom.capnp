@@ -35,6 +35,11 @@ enum ModelGeneration {
   five @5;
 }
 
+enum MpcSource {
+  acc @0;
+  blended @1;
+}
+
 struct ControlsStateSP @0x81c2f05a394cf4af {
   lateralState @0 :Text;
   personality @8 :LongitudinalPersonalitySP;
@@ -92,8 +97,10 @@ struct LongitudinalPlanSP @0xaedffd8f31e7b55d {
   desiredTF @13 :Float32;
   notSpeedLimit @14 :Int16;
   e2eX @15 :List(Float32);
-  e2eBlended @18 :Text;
+  e2eBlendedDEPRECATED @18 :Text;
   e2eStatus @22 :Bool;
+  mpcSource @23 :MpcSource;
+  dynamicExperimentalControl @24 :Bool;
 
   distToTurn @7 :Float32;
   turnSpeed @8 :Float32;
