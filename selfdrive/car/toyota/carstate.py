@@ -203,7 +203,7 @@ class CarState(CarStateBase):
 
     if self.toyota_drive_mode:
       # Determine sport signal based on car model
-      sport_signal = 'SPORT_ON_2' if self.CP.carFingerprint in (CAR.TOYOTA_RAV4_TSS2, CAR.LEXUS_ES_TSS2, CAR.HIGHLANDER_TSS2) else 'SPORT_ON'
+      sport_signal = 'SPORT_ON_2' if self.CP.carFingerprint in (CAR.TOYOTA_RAV4_TSS2, CAR.LEXUS_ES_TSS2, CAR.TOYOTA_HIGHLANDER_TSS2) else 'SPORT_ON'
 
       # Check signals once
       if not self.signals_checked:
