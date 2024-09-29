@@ -34,7 +34,7 @@ class ModelCapabilities(IntFlag):
   In V2, 'prev_desired_curv' (no plural) is used as the input for the same 'desired_curvature' output.
   """
 
-  PlanTemporalPose = 2 ** 5
+  PlanVelocity = 2 ** 5
 
   ModelOutputSlicesV1 = 2 ** 6
 
@@ -58,10 +58,10 @@ class CustomModelMetadata:
   def get_model_capabilities(self) -> ModelCapabilities:
     """Returns the model capabilities for a given generation."""
     if self.generation == ModelGeneration.seven:
-      return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.PlanTemporalPose | \
+      return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.PlanVelocity | \
              ModelCapabilities.ModelOutputSlicesV1
     elif self.generation == ModelGeneration.six:
-      return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.PlanTemporalPose
+      return ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.PlanVelocity
     elif self.generation == ModelGeneration.five:
       return ModelCapabilities.DesiredCurvatureV2
     elif self.generation == ModelGeneration.four:
