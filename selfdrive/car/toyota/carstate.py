@@ -203,7 +203,7 @@ class CarState(CarStateBase):
 
     if self.toyota_drive_mode:
       # Determine sport signal based on car model
-      sport_signal = 'SPORT_ON_2' if self.CP.carFingerprint in (CAR.TOYOTA_RAV4_TSS2, CAR.LEXUS_ES_TSS2) else 'SPORT_ON'
+      sport_signal = 'SPORT_ON_2' if self.CP.carFingerprint in (CAR.TOYOTA_RAV4_TSS2, CAR.LEXUS_ES_TSS2, CAR.HIGHLANDER_TSS2) else 'SPORT_ON'
 
       # Check signals once
       if not self.signals_checked:
@@ -225,18 +225,17 @@ class CarState(CarStateBase):
           eco_mode = 0
           self.eco_signal_seen = False
       else:
-        # Use previously detected signals
-        sport_mode = 1 if self.sport_signal_seen else 0
-        eco_mode = 1 if self.eco_signal_seen else 0
+        # Always re-check the signals to account for mode changes
+        sport_mode = cp.vl["GEAR_PACKET"][sport_signal] if self.sport_signal_seen else 0
+        eco_mode = cp.vl["GEAR_PACKET"]['ECON_ON'] if self.eco_signal_seen else 0
 
-      # Set acceleration profile based on detected modes, prioritize eco over sport if both are detected
-      if eco_mode == 1:
-        self.accel_profile = AccelPersonality.eco
-      elif sport_mode == 1:
+      # Set acceleration profile based on detected modes, with sport mode having higher priority
+      if sport_mode == 1:
         self.accel_profile = AccelPersonality.sport
+      elif eco_mode == 1:
+        self.accel_profile = AccelPersonality.eco
       else:
         self.accel_profile = AccelPersonality.normal
-
 
       print(f"Accel profile set to: {self.accel_profile}")
 
@@ -244,9 +243,8 @@ class CarState(CarStateBase):
       if not self.accel_profile_init or self.accel_profile != self.prev_accel_profile:
         Params().put_nonblocking('AccelPersonality', str(self.accel_profile))
         self.accel_profile_init = True
-
-      # Update the previous profile
-      self.prev_accel_profile = self.accel_profile
+        # Update the previous profile to prevent unnecessary re-syncing
+        self.prev_accel_profile = self.accel_profile
 
     if self.CP.carFingerprint != CAR.TOYOTA_MIRAI:
       ret.engineRpm = cp.vl["ENGINE_RPM"]["RPM"]
