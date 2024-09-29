@@ -118,6 +118,11 @@ class Car:
     self.CP.alternativeExperience = 0
     if not self.disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
+
+    # mads
+    self.mads_enabled_toggle = True  # TODO-SP: Apply with toggle
+    data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
+    self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
     self.CP.alternativeExperience |= ModifiedAssistDrivingSystem(self).set_alternative_experience()
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
@@ -154,10 +159,6 @@ class Car:
 
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
-
-    data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
-    self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
-    self.mads_enabled_toggle = True  # TODO-SP: Apply with toggle
 
   def state_update(self) -> tuple[car.CarState, structs.RadarData | None]:
     """carState update loop, driven by can"""
