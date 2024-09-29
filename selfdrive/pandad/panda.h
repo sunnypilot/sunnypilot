@@ -75,7 +75,7 @@ public:
   std::optional<std::string> get_serial();
   void set_power_saving(bool power_saving);
   void enable_deepsleep();
-  void send_heartbeat(bool engaged, bool mads_engaged);
+  void send_heartbeat(bool engaged);
   void set_can_speed_kbps(uint16_t bus, uint16_t speed);
   void set_data_speed_kbps(uint16_t bus, uint16_t speed);
   void set_canfd_non_iso(uint16_t bus, bool non_iso);
