@@ -4,7 +4,7 @@ from opendbc.car import DT_CTRL, structs
 from opendbc.car.interfaces import CarStateBase
 
 MadsDataSP = namedtuple("MadsDataSP",
-                        ["enabled_toggle", "lat_active", "disengaging", "lfa_icon"])
+                        ["enabled_toggle", "lat_active", "disengaging", "paused"])
 
 
 class CarControllerSP:
@@ -28,11 +28,6 @@ class CarControllerSP:
     paused = CS.mads_enabled and not CC.latActive
     disengaging = (self.CC.frame - self.lat_disengage_blink) * DT_CTRL < 1.0 if self.lat_disengage_init else False
 
-    if CS.mads_enabled_toggle:
-      lfa_icon = 2 if CC.latActive else 3 if disengaging else 1 if paused else 0
-    else:
-      lfa_icon = 2 if CC.enabled else 0
-
     self.prev_lat_active = CC.latActive
 
-    return MadsDataSP(CS.mads_enabled_toggle, CC.latActive, disengaging, lfa_icon)
+    return MadsDataSP(CS.mads_enabled_toggle, CC.latActive, disengaging, paused)
