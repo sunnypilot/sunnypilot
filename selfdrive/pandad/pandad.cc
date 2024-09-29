@@ -313,7 +313,7 @@ void send_peripheral_state(Panda *panda, PubMaster *pm) {
 }
 
 void process_panda_state(std::vector<Panda *> &pandas, PubMaster *pm, bool spoofing_started) {
-  static SubMaster sm({"selfdriveState"});
+  static SubMaster sm({"selfdriveState", "selfdriveStateSP"});
 
   std::vector<std::string> connected_serials;
   for (Panda *p : pandas) {
@@ -352,8 +352,9 @@ void process_panda_state(std::vector<Panda *> &pandas, PubMaster *pm, bool spoof
 
     sm.update(0);
     const bool engaged = sm.allAliveAndValid({"selfdriveState"}) && sm["selfdriveState"].getSelfdriveState().getEnabled();
+    const bool mads_engaged = sm.allAliveAndValid({"selfdriveStateSP"}) && sm["selfdriveStateSP"].getSelfdriveStateSP().getMads().getEnabled();
     for (const auto &panda : pandas) {
-      panda->send_heartbeat(engaged);
+      panda->send_heartbeat(engaged, mads_engaged);
     }
   }
 }

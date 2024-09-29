@@ -155,6 +155,10 @@ class Car:
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
+    data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
+    self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
+    self.mads_enabled_toggle = True  # TODO-SP: Apply with toggle
+
   def state_update(self) -> tuple[car.CarState, structs.RadarData | None]:
     """carState update loop, driven by can"""
 
@@ -250,6 +254,11 @@ class Car:
       self.CI.init(self.CP, *self.can_callbacks)
       # signal pandad to switch to car safety mode
       self.params.put_bool_nonblocking("ControlsReady", True)
+
+    if self.mads_enabled_toggle:
+      self.CI.mads_enabled = self.sm['selfdriveStateSP'].mads.enabled
+    else:
+      self.CI.mads_enabled = self.sm['carControl'].enabled
 
     if self.sm.all_alive(['carControl']):
       # send car controls over can

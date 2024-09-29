@@ -39,8 +39,8 @@ class StateMachineBase(ABC):
     elif self.state == State.disabled:
       self.handle(events)
 
-    enabled = self.state in ENABLED_STATES and self.mads.mads_enabled
-    active = self.state in ACTIVE_STATES and self.mads.mads_enabled
+    enabled = self.state in ENABLED_STATES and self.mads.available
+    active = self.state in ACTIVE_STATES and self.mads.available
     if active:
       self.add_current_alert_types(ET.WARNING)
 

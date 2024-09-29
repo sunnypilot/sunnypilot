@@ -28,14 +28,13 @@ class ModifiedAssistDrivingSystem:
     self.main_enabled_toggle = True  # TODO-SP: Apply with toggle
     self.disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
 
-    self.mads_enabled = False
+    self.available = False
     self.mads_alt_button_enabled = False
 
   def set_alternative_experience(self, alt_experience: int = 0):
     if self.enabled_toggle:
-      if self.disengage_lateral_on_brake_toggle:
-        alt_experience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
-      else:
+      alt_experience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+      if not self.disengage_lateral_on_brake_toggle:
         alt_experience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_LATERAL_ON_BRAKE
 
     return alt_experience
@@ -73,7 +72,7 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.add(EventName.silentPedalPressed)
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
-        if self.current_state == State.paused and self.mads_enabled:
+        if self.current_state == State.paused and self.available:
           self.selfdrive.events.add(EventName.silentButtonEnable)
 
     for be in CS.buttonEvents:
@@ -81,7 +80,7 @@ class ModifiedAssistDrivingSystem:
         if self.selfdrive.enabled:
           self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.altButton1 and be.pressed:
-        if not self.mads_enabled:
+        if not self.available:
           if not self.selfdrive.enabled:
             self.selfdrive.events.add(EventName.buttonCancel)
           else:
@@ -94,7 +93,7 @@ class ModifiedAssistDrivingSystem:
     if not self.enabled_toggle:
       return
 
-    self.mads_enabled = self.update_availability(CS)
+    self.available = self.update_availability(CS)
 
     self.update_events(CS)
 

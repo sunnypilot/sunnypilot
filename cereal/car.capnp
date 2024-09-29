@@ -519,7 +519,7 @@ struct CarParams {
     safetyModel @0 :SafetyModel;
     safetyParam @3 :UInt16;
     safetyParamDEPRECATED @1 :Int16;
-    safetyParam2DEPRECATED @2 :UInt32;
+    spFlags @2 :UInt32;  # flags for car specific quirks in sunnypilot
   }
 
   struct LateralParams {
