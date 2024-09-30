@@ -52,7 +52,7 @@ class StateMachineBase(ABC):
 
   def add_current_alert_types(self, alert_type):
     if not self.selfdrive.active:
-      self.ss_state_machine.current_alert_types(alert_type)
+      self.ss_state_machine.current_alert_types.append(alert_type)
 
 
 class InactiveBase(StateMachineBase):
