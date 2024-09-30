@@ -447,7 +447,7 @@ class SelfdriveD:
 
     # mads
     mads = ss_sp.mads
-    mads.state = self.mads.current_state
+    mads.state = self.mads.state_machine.state
     mads.enabled = self.mads.enabled
     mads.active = self.mads.active
 

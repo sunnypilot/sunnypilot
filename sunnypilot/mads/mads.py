@@ -2,7 +2,7 @@ from cereal import car, custom
 
 from panda import ALTERNATIVE_EXPERIENCE
 
-from openpilot.sunnypilot.mads.state import Disabled, Paused, Enabled, SoftDisabling, Overriding
+from openpilot.sunnypilot.mads.state import StateMachine
 
 State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
@@ -11,16 +11,9 @@ EventName = car.OnroadEvent.EventName
 
 class ModifiedAssistDrivingSystem:
   def __init__(self, selfdrive=None):
-    self.current_state = State.disabled
     self.enabled = False
     self.active = False
-    self.state_machine = {
-      State.disabled: Disabled(self),
-      State.paused: Paused(self),
-      State.enabled: Enabled(self),
-      State.softDisabling: SoftDisabling(self),
-      State.overriding: Overriding(self),
-    }
+    self.state_machine = StateMachine(self)
 
     if selfdrive is not None:
       self.selfdrive = selfdrive
@@ -98,4 +91,4 @@ class ModifiedAssistDrivingSystem:
     self.update_events(CS)
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
-      self.current_state, self.enabled, self.active = self.state_machine[self.current_state](self.selfdrive.events)
+      self.enabled, self.active = self.state_machine.update(self.selfdrive.events)
