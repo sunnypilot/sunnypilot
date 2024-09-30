@@ -61,7 +61,7 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.add(EventName.silentPedalPressed)
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
-        if self.state_machine.state == State.paused and self.available:
+        if self.state_machine.state == State.paused and self.active:
           self.selfdrive.events.add(EventName.silentButtonEnable)
 
     for be in CS.buttonEvents:
@@ -69,7 +69,7 @@ class ModifiedAssistDrivingSystem:
         if self.selfdrive.enabled:
           self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.altButton1 and be.pressed:
-        if not self.available:
+        if not self.active:
           if not self.selfdrive.enabled:
             self.selfdrive.events.add(EventName.buttonCancel)
           else:
