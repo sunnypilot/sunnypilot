@@ -20,7 +20,7 @@ class StateMachineBase(ABC):
 
     self.state = State.disabled
 
-  def __call__(self, events: Events) -> State:
+  def __call__(self, events: Events) -> tuple[State, bool, bool]:
     if self.state != State.disabled:
       if events.contains(ET.USER_DISABLE):
         if events.has(EventName.silentPedalPressed) or events.has(EventName.silentBrakeHold):
@@ -46,13 +46,13 @@ class StateMachineBase(ABC):
 
     return self.state, enabled, active
 
-  def add_current_alert_types(self, alert_type):
-    if not self.selfdrive.active:
-      self.ss_state_machine.current_alert_types(alert_type)
-
   @abstractmethod
   def handle(self, events: Events):
     pass
+
+  def add_current_alert_types(self, alert_type):
+    if not self.selfdrive.active:
+      self.ss_state_machine.current_alert_types(alert_type)
 
 
 class InactiveBase(StateMachineBase):
