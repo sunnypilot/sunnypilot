@@ -83,7 +83,7 @@ class Enabled(StateMachineBase):
       self.state = State.softDisabling
       if not self.selfdrive.active:
         self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
-      self.add_current_alert_types(ET.SOFT_DISABLE)
+        self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
 
     elif events.contains(ET.OVERRIDE_LATERAL):
       self.state = State.overriding
@@ -109,7 +109,7 @@ class Overriding(StateMachineBase):
       self.state = State.softDisabling
       if not self.selfdrive.active:
         self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
-      self.add_current_alert_types(ET.SOFT_DISABLE)
+        self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
     elif not events.contains(ET.OVERRIDE_LATERAL):
       self.state = State.enabled
     else:
