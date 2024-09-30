@@ -5,9 +5,16 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
 * UPDATED: Synced with commaai's openpilot
   * master commit 4ef757c (July 06, 2024)
 * NEW❗: Default Driving Model: Notre Dame (July 01, 2024)
-* NEW❗: Longitudinal: Acceleration Personality thanks to kegman, rav4kumar, and arne1282!
+* NEW❗: Longitudinal: Acceleration Personality thanks to kegman, rav4kumar, and arne1282! (CTV 2.0: GlideTech)
   * Select from three distinct acceleration personalities: Eco, Normal, and Sport
   * Acceleration personalities are integrated directly into the model's acceleration matrix and can be activated in real-time!
+* NEW❗: Toyota - Drive Mode Selector
+  *  When enabled you can control acceleration personality just with press of button!
+* UPDATED: Dynamic Experimental Control
+  * Switched to weighted moving averages to enhance responsiveness to recent data.
+  * Goal is to improve real-time detection accuracy in dynamic conditions.
+  * Capable of handling the increased complexity that comes with this approach.
+  * Particularly beneficial in environments where recent changes are critical to performance.
 * NEW❗: Longitudinal: Dynamic Personality thanks to rav4kumar!
   * Dynamically adjusts following distance and reaction based on your "Driving Personality" setting
   * Personalities adapt in real-time to your speed and the distance to the lead car
@@ -26,8 +33,8 @@ sunnypilot - 0.9.8.0 (2024-xx-xx)
     * Toyota TSS1/1.5, equipped with factory Blind Spot Monitoring (BSM)
     * Prius TSS2, equipped with factory Blind Spot Monitoring (BSM)
   * NOTE: Only enable this feature if your Toyota/Lexus vehicle has factory Blind Spot Monitor equipped, and mentioned in the supported platforms list
-* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning
-  * Re-tuned and tested by the community (July 1, 2024)
+* UPDATED: Toyota: TSS2 longitudinal: Custom Tuning (CTV 2.0: GlideTech)
+  * Re-tuned and tested by the community (September 29, 2024)
 * UPDATED: Driving Model Selector v5
   * NEW❗: Driving Model additions
     * Notre Dame (July 01, 2024) - NDv3
