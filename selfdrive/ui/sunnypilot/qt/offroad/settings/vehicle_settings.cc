@@ -191,6 +191,14 @@ SPVehiclesTogglesPanel::SPVehiclesTogglesPanel(VehiclePanel *parent) : ListWidge
   toyotaAutoUnlock->setConfirmation(true, false);
   addItem(toyotaAutoUnlock);
 
+  auto toyotaDriveMode = new ParamControlSP(
+    "ToyotaDriveMode",
+    tr("Enable Toyota Drive Mode Button"),
+    tr("Sunnypilot will link the Acceleration Personality to the car's physical drive mode selector.\nReboot Required."),
+    "../assets/offroad/icon_blank.png");
+  toyotaDriveMode->setConfirmation(true, false);
+  addItem(toyotaDriveMode);
+
   // Volkswagen
   addItem(new LabelControlSP(tr("Volkswagen")));
   auto volkswagenCCOnly = new ParamControlSP(

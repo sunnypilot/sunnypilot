@@ -1,18 +1,19 @@
 import copy
 
-from cereal import car
+from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import mean
 from openpilot.common.filter_simple import FirstOrderFilter
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car import DT_CTRL
+from openpilot.common.params import Params
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.toyota.values import ToyotaFlags, ToyotaFlagsSP, CAR, DBC, STEER_THRESHOLD, NO_STOP_TIMER_CAR, \
                                                   TSS2_CAR, RADAR_ACC_CAR, EPS_SCALE, UNSUPPORTED_DSU_CAR
 
 SteerControlType = car.CarParams.SteerControlType
-
+AccelPersonality = custom.AccelerationPersonality
 # These steering fault definitions seem to be common across LKA (torque) and LTA (angle):
 # - high steer rate fault: goes to 21 or 25 for 1 frame, then 9 for 2 seconds
 # - lka/lta msg drop out: goes to 9 then 11 for a combined total of 2 seconds, then 3.
@@ -79,6 +80,13 @@ class CarState(CarStateBase):
     self._right_blindspot_d2 = 0
     self._right_blindspot_counter = 0
 
+    self.signals_checked = False
+    self.sport_signal_seen = False
+    self.eco_signal_seen = False
+    self.accel_profile = None
+    self.prev_accel_profile = None
+    self.accel_profile_init = False
+    self.toyota_drive_mode = Params().get_bool('ToyotaDriveMode')
     self.frame = 0
 
   def update(self, cp, cp_cam):
@@ -175,6 +183,51 @@ class CarState(CarStateBase):
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
     ret.leftBlinker = ret.leftBlinkerOn = cp.vl["BLINKERS_STATE"]["TURN_SIGNALS"] == 1
     ret.rightBlinker = ret.rightBlinkerOn = cp.vl["BLINKERS_STATE"]["TURN_SIGNALS"] == 2
+
+    if self.toyota_drive_mode:
+      # Determine sport signal based on car model
+      sport_signal = 'SPORT_ON_2' if self.CP.carFingerprint in (CAR.TOYOTA_RAV4_TSS2, CAR.LEXUS_ES_TSS2, CAR.TOYOTA_HIGHLANDER_TSS2) else 'SPORT_ON'
+
+      # Check signals once
+      if not self.signals_checked:
+        self.signals_checked = True
+
+        # Try to detect sport mode signal, handle missing signal with a fallback
+        try:
+          sport_mode = cp.vl["GEAR_PACKET"][sport_signal]
+          self.sport_signal_seen = True
+        except KeyError:
+          sport_mode = 0
+          self.sport_signal_seen = False
+
+        # Try to detect eco mode signal, handle missing signal with a fallback
+        try:
+          eco_mode = cp.vl["GEAR_PACKET"]['ECON_ON']
+          self.eco_signal_seen = True
+        except KeyError:
+          eco_mode = 0
+          self.eco_signal_seen = False
+      else:
+        # Always re-check the signals to account for mode changes
+        sport_mode = cp.vl["GEAR_PACKET"][sport_signal] if self.sport_signal_seen else 0
+        eco_mode = cp.vl["GEAR_PACKET"]['ECON_ON'] if self.eco_signal_seen else 0
+
+      # Set acceleration profile based on detected modes, with sport mode having higher priority
+      if sport_mode == 1:
+        self.accel_profile = AccelPersonality.sport
+      elif eco_mode == 1:
+        self.accel_profile = AccelPersonality.eco
+      else:
+        self.accel_profile = AccelPersonality.normal
+
+      print(f"Accel profile set to: {self.accel_profile}")
+
+      # If not initialized, sync profile with the current mode on the car
+      if not self.accel_profile_init or self.accel_profile != self.prev_accel_profile:
+        Params().put_nonblocking('AccelPersonality', str(self.accel_profile))
+        self.accel_profile_init = True
+        # Update the previous profile to prevent unnecessary re-syncing
+        self.prev_accel_profile = self.accel_profile
 
     if self.CP.carFingerprint != CAR.TOYOTA_MIRAI:
       ret.engineRpm = cp.vl["ENGINE_RPM"]["RPM"]
