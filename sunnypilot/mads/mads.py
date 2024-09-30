@@ -10,9 +10,7 @@ EventName = car.OnroadEvent.EventName
 
 
 class ModifiedAssistDrivingSystem:
-  def __init__(self, selfdrive):
-    self.selfdrive = selfdrive
-
+  def __init__(self, selfdrive=None):
     self.current_state = State.disabled
     self.enabled = False
     self.active = False
@@ -24,6 +22,9 @@ class ModifiedAssistDrivingSystem:
       State.overriding: Overriding(self),
     }
 
+    if selfdrive is not None:
+      self.selfdrive = selfdrive
+
     self.enabled_toggle = True  # TODO-SP: Apply with toggle
     self.main_enabled_toggle = True  # TODO-SP: Apply with toggle
     self.disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
@@ -32,10 +33,9 @@ class ModifiedAssistDrivingSystem:
     self.mads_alt_button_enabled = False
 
   def set_alternative_experience(self, alt_experience: int = 0):
-    if self.enabled_toggle:
-      alt_experience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
-      if not self.disengage_lateral_on_brake_toggle:
-        alt_experience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_LATERAL_ON_BRAKE
+    alt_experience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+    if not self.disengage_lateral_on_brake_toggle:
+      alt_experience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_LATERAL_ON_BRAKE
 
     return alt_experience
 

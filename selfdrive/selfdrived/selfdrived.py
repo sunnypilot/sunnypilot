@@ -442,7 +442,7 @@ class SelfdriveD:
   def publish_selfdriveStateSP(self):
     # selfdriveStateSP
     ss_sp_msg = messaging.new_message('selfdriveStateSP')
-    ss_sp_msg.valid = self.sm.all_checks(['selfdriveState'])
+    ss_sp_msg.valid = True
     ss_sp = ss_sp_msg.selfdriveStateSP
 
     # mads

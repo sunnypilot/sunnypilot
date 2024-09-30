@@ -16,7 +16,7 @@ class StateMachineBase(ABC):
   def __init__(self, mads):
     self.mads = mads
     self.selfdrive = mads.selfdrive
-    self.ss_state_machine = mads.selfdrive.ss_state_machine
+    self.ss_state_machine = mads.selfdrive.state_machine
 
     self.state = State.disabled
 
@@ -48,7 +48,7 @@ class StateMachineBase(ABC):
 
   def add_current_alert_types(self, alert_type):
     if not self.selfdrive.active:
-      self.add_current_alert_types(alert_type)
+      self.ss_state_machine.current_alert_types(alert_type)
 
   @abstractmethod
   def handle(self, events: Events):

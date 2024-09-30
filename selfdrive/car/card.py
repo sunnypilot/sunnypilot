@@ -123,7 +123,8 @@ class Car:
     self.mads_enabled_toggle = True  # TODO-SP: Apply with toggle
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
-    self.CP.alternativeExperience |= ModifiedAssistDrivingSystem(self).set_alternative_experience()
+    if self.mads_enabled_toggle:
+      self.CP.alternativeExperience |= ModifiedAssistDrivingSystem().set_alternative_experience()
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
@@ -258,8 +259,6 @@ class Car:
 
     if self.mads_enabled_toggle:
       self.CI.mads_enabled = self.sm['selfdriveStateSP'].mads.enabled
-    else:
-      self.CI.mads_enabled = self.sm['carControl'].enabled
 
     if self.sm.all_alive(['carControl']):
       # send car controls over can
