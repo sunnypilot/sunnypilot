@@ -1004,7 +1004,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0., 0.),
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0.),
   },
 
   EventName.silentBrakeHold: {
@@ -1012,7 +1012,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0., 0.),
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0.),
     ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
   },
 
@@ -1021,12 +1021,12 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Gear not D",
       "openpilot Unavailable",
       AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 2., 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 3.),
     ET.NO_ENTRY: Alert(
       "Gear not D",
       "openpilot Unavailable",
       AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 2., 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 3.),
   },
 
 }
