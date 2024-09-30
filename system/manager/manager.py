@@ -106,6 +106,7 @@ def manager_init() -> None:
     ("TorqueMaxLatAccel", "250"),
     ("ToyotaAutoLockBySpeed", "0"),
     ("ToyotaAutoUnlockByShifter", "0"),
+    ("ToyotaDriveMode", "0"),
     ("ToyotaEnhancedBsm", "0"),
     ("TrueVEgoUi", "0"),
     ("TurnSpeedControl", "0"),
