@@ -13,6 +13,7 @@ class ModifiedAssistDrivingSystem:
   def __init__(self, selfdrive=None):
     self.enabled = False
     self.active = False
+    self.available = False
     self.state_machine = StateMachine(self)
 
     if selfdrive is not None:
@@ -21,9 +22,6 @@ class ModifiedAssistDrivingSystem:
     self.enabled_toggle = True  # TODO-SP: Apply with toggle
     self.main_enabled_toggle = True  # TODO-SP: Apply with toggle
     self.disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
-
-    self.available = False
-    self.mads_alt_button_enabled = False
 
   def set_alternative_experience(self, alt_experience: int = 0):
     alt_experience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
@@ -36,8 +34,6 @@ class ModifiedAssistDrivingSystem:
     if self.main_enabled_toggle:
       available |= CS.cruiseState.available
 
-    available |= self.mads_alt_button_enabled
-
     return available
 
   def update_events(self, CS: car.CarState):
@@ -49,7 +45,7 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.add(EventName.silentWrongGear)
         self.selfdrive.events.remove(EventName.wrongGear)
 
-    if not self.selfdrive.enabled:
+    else:
       self.selfdrive.events.remove(EventName.buttonEnable)
       self.selfdrive.events.remove(EventName.buttonCancel)
       self.selfdrive.events.remove(EventName.wrongCruiseMode)
@@ -65,7 +61,7 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.add(EventName.silentPedalPressed)
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
-        if self.current_state == State.paused and self.available:
+        if self.state_machine.state == State.paused and self.available:
           self.selfdrive.events.add(EventName.silentButtonEnable)
 
     for be in CS.buttonEvents:
@@ -86,9 +82,9 @@ class ModifiedAssistDrivingSystem:
     if not self.enabled_toggle:
       return
 
-    self.available = self.update_availability(CS)
-
     self.update_events(CS)
+
+    self.available = self.update_availability(CS)
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update(self.selfdrive.events)

@@ -450,6 +450,7 @@ class SelfdriveD:
     mads.state = self.mads.state_machine.state
     mads.enabled = self.mads.enabled
     mads.active = self.mads.active
+    mads.available = self.mads.available
 
     self.pm.send('selfdriveStateSP', ss_sp_msg)
 
