@@ -972,6 +972,63 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: personality_changed_alert,
   },
 
+  # sunnypilot
+  EventName.manualSteeringRequired: {
+    ET.WARNING: Alert(
+      "Automatic Lane Centering is OFF",
+      "Manual Steering Required",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.disengage, 1.),
+  },
+
+  EventName.manualLongitudinalRequired: {
+    ET.WARNING: Alert(
+      "Smart/Adaptive Cruise Control is OFF",
+      "Manual Gas/Brakes Required",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
+  },
+
+  EventName.silentPedalPressed: {
+    ET.USER_DISABLE: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2),
+    ET.NO_ENTRY: NoEntryAlert("Pedal Pressed During Attempt",
+                              visual_alert=VisualAlert.brakePressed),
+  },
+
+  EventName.silentButtonEnable: {
+    ET.ENABLE: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0., 0.),
+  },
+
+  EventName.silentBrakeHold: {
+    ET.USER_DISABLE: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0., 0.),
+    ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
+  },
+
+  EventName.silentWrongGear: {
+    ET.SOFT_DISABLE: Alert(
+      "Gear not D",
+      "openpilot Unavailable",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 2., 3.),
+    ET.NO_ENTRY: Alert(
+      "Gear not D",
+      "openpilot Unavailable",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 2., 3.),
+  },
+
 }
 
 
