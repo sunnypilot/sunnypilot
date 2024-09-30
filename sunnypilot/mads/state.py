@@ -21,7 +21,13 @@ class StateMachineBase(ABC):
     self.state = State.disabled
 
   def __call__(self, events: Events) -> tuple[State, bool, bool]:
+    # soft disable timer and current alert types are from the state machine of openpilot
+    # decrement the soft disable timer at every step, as it's reset on
+    # entrance in SOFT_DISABLING state
+
+    # ENABLED, SOFT DISABLING, PAUSED, OVERRIDING
     if self.state != State.disabled:
+      # user and immediate disable always have priority in a non-disabled state
       if events.contains(ET.USER_DISABLE):
         if events.has(EventName.silentPedalPressed) or events.has(EventName.silentBrakeHold):
           self.state = State.paused
@@ -34,16 +40,18 @@ class StateMachineBase(ABC):
         self.add_current_alert_types(ET.IMMEDIATE_DISABLE)
 
       else:
+        # ENABLED, SOFT DISABLING, PAUSED, OVERRIDING
         self.handle(events)
 
+    # DISABLED
     elif self.state == State.disabled:
       self.handle(events)
 
+    # check if MADS is engaged & available, and actuators are enabled
     enabled = self.state in ENABLED_STATES and self.mads.available
     active = self.state in ACTIVE_STATES and self.mads.available
     if active:
       self.add_current_alert_types(ET.WARNING)
-
     return self.state, enabled, active
 
   @abstractmethod
