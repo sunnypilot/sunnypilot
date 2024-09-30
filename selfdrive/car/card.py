@@ -24,8 +24,6 @@ from openpilot.selfdrive.car.car_specific import CarSpecificEvents, MockCarState
 from openpilot.selfdrive.car.helpers import convert_carControl, convert_to_capnp
 from openpilot.selfdrive.selfdrived.events import Events, ET
 
-from openpilot.sunnypilot.mads.mads import ModifiedAssistDrivingSystem
-
 REPLAY = "REPLAY" in os.environ
 
 EventName = car.OnroadEvent.EventName
@@ -121,10 +119,13 @@ class Car:
 
     # mads
     self.mads_enabled_toggle = True  # TODO-SP: Apply with toggle
+    self.mads_disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
     if self.mads_enabled_toggle:
-      self.CP.alternativeExperience |= ModifiedAssistDrivingSystem().set_alternative_experience()
+      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+      if not self.mads_disengage_lateral_on_brake_toggle:
+        self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_LATERAL_ON_BRAKE
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
