@@ -89,17 +89,17 @@ def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
 
 def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
-    x_vel =  [0.,   22.,  22.01,  36.1]
-    y_dist = [1.6,  1.6,  1.80,   1.80]
+    x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
+    y_dist = [1.6,  1.6,  1.61, 1.61, 1.6,  1.6,  1.80,   1.80]
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    x_vel =  [0.,   22.,  22.01,  36.1]
-    y_dist = [1.5,  1.5,  1.70,   1.70]
+    x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
+    y_dist = [1.5,  1.5,  1.51, 1.51, 1.5,  1.5,  1.70,   1.70]
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    x_vel =  [0.,   22.,  22.01,  36.1]
-    y_dist = [1.3,  1.3,  1.40,   1.40]
+    x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
+    y_dist = [1.4,  1.4,  1.41, 1.41, 1.4,  1.4,  1.50,   1.50]
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    x_vel =  [0.,   22.,  22.01,  36.1]
-    y_dist = [1.15, 1.15, 1.25,   1.25]
+    x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
+    y_dist = [1.15, 1.15, 1.16, 1.16, 1.15, 1.15, 1.30,   1.30]
   else:
     raise NotImplementedError("Dynamic personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
