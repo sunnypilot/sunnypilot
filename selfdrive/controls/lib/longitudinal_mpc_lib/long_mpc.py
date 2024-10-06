@@ -63,9 +63,9 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   elif personality==custom.LongitudinalPersonalitySP.standard:
     return 1.0
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    return 0.5
+    return 1.0
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    return 0.2
+    return 0.5
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     return 0.1
   else:
@@ -93,13 +93,13 @@ def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.
     y_dist = [1.6,  1.6,  1.61, 1.61, 1.6,  1.6,  1.80,   1.80]
   elif personality==custom.LongitudinalPersonalitySP.standard:
     x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
-    y_dist = [1.5,  1.5,  1.51, 1.51, 1.5,  1.5,  1.70,   1.70]
+    y_dist = [1.5,  1.5,  1.51, 1.51, 1.5,  1.5,  1.60,   1.60]
   elif personality==custom.LongitudinalPersonalitySP.moderate:
     x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
-    y_dist = [1.4,  1.4,  1.41, 1.41, 1.4,  1.4,  1.50,   1.50]
+    y_dist = [1.4,  1.4,  1.41, 1.41, 1.4,  1.4,  1.42,   1.42]
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    x_vel =  [0.,   11.9, 12.,  14.,  16.,  22.,  22.01,  36.1]
-    y_dist = [1.15, 1.15, 1.16, 1.16, 1.15, 1.15, 1.30,   1.30]
+    x_vel =  [0.,    11.9,  12.,  14.,  16.,  22.,  22.01,  36.1]
+    y_dist = [1.133, 1.133, 1.14, 1.14, 1.13, 1.12, 1.20,   1.20]
   else:
     raise NotImplementedError("Dynamic personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
