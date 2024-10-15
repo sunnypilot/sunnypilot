@@ -29,10 +29,10 @@ from openpilot.common.numpy_fast import interp
 AccelPersonality = custom.AccelerationPersonality
 
 # accel personality by @arne182 modified by cgw and kumar
-_DP_CRUISE_MIN_V =       [-1.0,  -1.0,  -1.0]
-_DP_CRUISE_MIN_V_ECO =   [-1.0,  -1.0,  -1.0]
-_DP_CRUISE_MIN_V_SPORT = [-1.0,  -1.0,  -1.0]
-_DP_CRUISE_MIN_BP =      [0.,    10.,   20.]
+_DP_CRUISE_MIN_V =       [-0.015, -0.015,  -1.0,  -1.0]
+_DP_CRUISE_MIN_V_ECO =   [-0.010, -0.010,  -1.0,  -1.0]
+_DP_CRUISE_MIN_V_SPORT = [-0.020, -0.020,  -1.0,  -1.0]
+_DP_CRUISE_MIN_BP =      [0.,     5.,     5.01,   20.]
 
 _DP_CRUISE_MAX_V =       [2.0, 2.0, 2.0, 1.80, 1.03, .62,  .47,  .35,  .10]
 _DP_CRUISE_MAX_V_ECO =   [2.0, 2.0, 2.0, 1.65, 0.92, .532, .432, .315, .084]
