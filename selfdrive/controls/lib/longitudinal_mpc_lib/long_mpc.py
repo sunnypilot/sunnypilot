@@ -365,7 +365,7 @@ class LongitudinalMpc:
     for i in range(N):
       self.solver.cost_set(i, 'Zl', Zl)
 
-  def set_weights(self, prev_accel_constraint=True, personality=custom.LongitudinalPersonalitySP.standard):
+  def set_weights(self, prev_accel_constraint=True, v_lead0 = 0., v_lead1 = 0., personality=custom.LongitudinalPersonalitySP.standard):
     v_ego = self.x0[1]
     jerk_factor = get_jerk_factor(personality)
     a_change_factor = get_a_change_factor(v_ego, v_lead0, v_lead1, personality)
