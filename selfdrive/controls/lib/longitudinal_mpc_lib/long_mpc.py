@@ -87,6 +87,9 @@ def get_a_change_factor(v_ego, v_lead0, v_lead1, personality=custom.Longitudinal
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
     a_change_cost_high_speed_factor = 5.0  # Much higher penalty for abrupt changes at high speeds (very cautious at high speeds)
+  elif personality==custom.LongitudinalPersonalitySP.overtake:
+    a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
+    a_change_cost_high_speed_factor = 5.0  # Much higher penalty for abrupt changes at high speeds (very cautious at high speeds)
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -130,6 +133,8 @@ def get_danger_zone_factor(personality=custom.LongitudinalPersonalitySP.standard
   elif personality==custom.LongitudinalPersonalitySP.moderate:
     return 1.3  # Medium danger zone cost for moderate personality (similar to standard)
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
+    return 1.0  # Lowest danger zone cost for aggressive personality (less cautious)
+  elif personality==custom.LongitudinalPersonalitySP.overtake:
     return 1.0  # Lowest danger zone cost for aggressive personality (less cautious)
   else:
     raise NotImplementedError("Longitudinal personality not supported")
