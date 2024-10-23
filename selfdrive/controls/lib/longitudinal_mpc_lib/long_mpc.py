@@ -61,11 +61,11 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
     return 1.3
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    return 1.2
-  elif personality==custom.LongitudinalPersonalitySP.moderate:
     return 1.0
+  elif personality==custom.LongitudinalPersonalitySP.moderate:
+    return 0.5
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    return 0.8
+    return 0.2
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     return 0.1
   else:
@@ -86,7 +86,7 @@ def get_a_change_factor(v_ego, v_lead0, v_lead1, personality=custom.Longitudinal
     a_change_cost_high_speed_factor = 1.5  # Similar to standard (higher penalty for high speeds)
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
-    a_change_cost_high_speed_factor = 5.0  # Much higher penalty for abrupt changes at high speeds (very cautious at high speeds)
+    a_change_cost_high_speed_factor = 3.0  # Much higher penalty for abrupt changes at high speeds (very cautious at high speeds)
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
     a_change_cost_high_speed_factor = 5.0  # Much higher penalty for abrupt changes at high speeds (very cautious at high speeds)
