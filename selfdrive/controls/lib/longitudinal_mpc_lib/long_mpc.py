@@ -427,7 +427,7 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard,
+  def update(self, radarstate, v_cruise, prev_accel_constraint, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard,
              dynamic_personality=False, overtaking_acceleration_assist=False):
     v_ego = self.x0[1]
     t_follow = get_dynamic_personality(v_ego, personality) if dynamic_personality else get_T_FOLLOW(personality)
@@ -436,6 +436,8 @@ class LongitudinalMpc:
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
+
+    self.set_weights(prev_accel_constraint=prev_accel_constraint, v_lead0=lead_xv_0[0, 1], v_lead1=lead_xv_1[0, 1], personality=personality)
 
     # To estimate a safe distance from a moving lead, we calculate how much stopping
     # distance that lead needs as a minimum. We can add that to the current distance
