@@ -55,7 +55,7 @@ T_IDXS = np.array(T_IDXS_LST)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
-STOP_DISTANCE = 5.0
+STOP_DISTANCE = 4.5
 
 def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   if personality==custom.LongitudinalPersonalitySP.relaxed:
@@ -79,10 +79,10 @@ def get_a_change_factor(v_ego, v_lead0, v_lead1, personality=custom.Longitudinal
     a_change_cost_multiplier_follow = 1.0  # Highest cost for changing acceleration, meaning more gradual transitions
     a_change_cost_high_speed_factor = 1.5  # No extra penalty for high-speed changes (more cautious)
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    a_change_cost_multiplier_follow = 0.5  # Moderate cost for changing acceleration (quicker transitions compared to relaxed)
+    a_change_cost_multiplier_follow = 0.3  # Moderate cost for changing acceleration (quicker transitions compared to relaxed)
     a_change_cost_high_speed_factor = 3.0  # Higher penalty for changes at higher speeds (more cautious)
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    a_change_cost_multiplier_follow = 0.5  # Similar to standard (quicker transitions compared to relaxed)
+    a_change_cost_multiplier_follow = 0.2  # Similar to standard (quicker transitions compared to relaxed)
     a_change_cost_high_speed_factor = 3.0  # Similar to standard (higher penalty for high speeds)
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
@@ -168,10 +168,11 @@ def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.
     y_dist = [1.45, 1.45,  1.55,   1.55]
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     x_vel =  [0.,   19.7,  19.71,  36.1]
-    y_dist = [1.25, 1.25,  1.35,   1.35]
+    y_dist = [1.00, 1.00,  1.25,   1.25]
   else:
     raise NotImplementedError("Dynamic personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
+
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
