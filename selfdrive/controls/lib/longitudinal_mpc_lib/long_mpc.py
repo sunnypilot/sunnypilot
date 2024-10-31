@@ -173,7 +173,6 @@ def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.
     raise NotImplementedError("Dynamic personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
 
-
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
 
