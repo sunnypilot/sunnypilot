@@ -63,7 +63,7 @@ def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
   elif personality==custom.LongitudinalPersonalitySP.standard:
     return 1.0
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    return 0.5
+    return 0.6
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 0.2
   elif personality==custom.LongitudinalPersonalitySP.overtake:
@@ -76,16 +76,16 @@ def get_a_change_factor(v_ego, v_lead0, v_lead1, personality=custom.Longitudinal
   # These values adjust the sensitivity of acceleration change.
   # Higher value = more cautious (slower reaction), smaller value = quicker response (more aggressive driving)
   if personality==custom.LongitudinalPersonalitySP.relaxed:
-    a_change_cost_multiplier_follow = 1.0  # Highest cost for changing acceleration, meaning more gradual transitions
-    a_change_cost_high_speed_factor = 1.5  # No extra penalty for high-speed changes (more cautious)
+    a_change_cost_multiplier_follow = 1.2  # Highest cost for changing acceleration, meaning more gradual transitions
+    a_change_cost_high_speed_factor = 2.0  # No extra penalty for high-speed changes (more cautious)
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    a_change_cost_multiplier_follow = 0.3  # Moderate cost for changing acceleration (quicker transitions compared to relaxed)
-    a_change_cost_high_speed_factor = 3.0  # Higher penalty for changes at higher speeds (more cautious)
+    a_change_cost_multiplier_follow = 0.6  # Moderate cost for changing acceleration (quicker transitions compared to relaxed)
+    a_change_cost_high_speed_factor = 2.5  # Higher penalty for changes at higher speeds (more cautious)
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    a_change_cost_multiplier_follow = 0.2  # Similar to standard (quicker transitions compared to relaxed)
+    a_change_cost_multiplier_follow = 0.4  # Similar to standard (quicker transitions compared to relaxed)
     a_change_cost_high_speed_factor = 3.0  # Similar to standard (higher penalty for high speeds)
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
-    a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
+    a_change_cost_multiplier_follow = 0.2  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
     a_change_cost_high_speed_factor = 5.0  # Much higher penalty for abrupt changes at high speeds (very cautious at high speeds)
   elif personality==custom.LongitudinalPersonalitySP.overtake:
     a_change_cost_multiplier_follow = 0.1  # Very low cost for changing acceleration, meaning quicker reactions (less cautious)
@@ -95,7 +95,7 @@ def get_a_change_factor(v_ego, v_lead0, v_lead1, personality=custom.Longitudinal
 
   # Variables to modify the acceleration change based on speed and lead vehicle conditions.
   # LEAD_AUGMENTATION_BP_MAX defines the vEgo threshold for rapid acceleration.
-  LEAD_AUGMENTATION_BP_MAX = 5.0  # Maximum speed (5 m/s ~ 18 km/h) where rapid acceleration adjustments are allowed
+  LEAD_AUGMENTATION_BP_MAX = 5.  # Maximum speed (5 m/s ~ 18 km/h) where rapid acceleration adjustments are allowed
 
   # LEAD_AUGMENTATION_BP: breakpoints for ego vehicle speed (vEgo) in m/s
   # LEAD_AUGMENTATION_V: multiplier values for ego vehicle speed interpolation
@@ -127,11 +127,11 @@ def get_a_change_factor(v_ego, v_lead0, v_lead1, personality=custom.Longitudinal
 def get_danger_zone_factor(personality=custom.LongitudinalPersonalitySP.standard):
   # Higher values mean more cautious driving in dangerous situations, scaling the cost accordingly
   if personality==custom.LongitudinalPersonalitySP.relaxed:
-    return 1.6  # Higher danger zone cost for relaxed personality (more cautious)
+    return 1.8  # Higher danger zone cost for relaxed personality (more cautious)
   elif personality==custom.LongitudinalPersonalitySP.standard:
-    return 1.3  # Medium danger zone cost for standard personality
+    return 1.5  # Medium danger zone cost for standard personality
   elif personality==custom.LongitudinalPersonalitySP.moderate:
-    return 1.3  # Medium danger zone cost for moderate personality (similar to standard)
+    return 1.2  # Medium danger zone cost for moderate personality (similar to standard)
   elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 1.0  # Lowest danger zone cost for aggressive personality (less cautious)
   elif personality==custom.LongitudinalPersonalitySP.overtake:
