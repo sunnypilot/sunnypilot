@@ -113,10 +113,8 @@ class Events:
       self.static_events.remove(event_name)
 
     if event_name in self.events:
+      self.event_counters[event_name] = self.event_counters[event_name] + 1
       self.events.remove(event_name)
-
-      if event_name in self.event_counters:
-        self.event_counters[event_name] = 0
 
 
 class Alert:
