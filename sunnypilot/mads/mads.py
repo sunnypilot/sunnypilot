@@ -19,11 +19,11 @@ class ModifiedAssistDrivingSystem:
     self.main_enabled_toggle = True  # TODO-SP: Apply with toggle
     self.disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
 
-  def update_availability(self, CS: car.CarState, available: bool = False) -> bool:
+  def update_availability(self, CS: car.CarState, available: bool = False) -> None:
     if self.main_enabled_toggle:
       available |= CS.cruiseState.available
 
-    return available
+    self.available = available
 
   def update_events(self, CS: car.CarState):
     self.selfdrive.events.remove(EventName.pcmEnable)
@@ -72,8 +72,7 @@ class ModifiedAssistDrivingSystem:
       return
 
     self.update_events(CS)
-
-    self.available = self.update_availability(CS)
+    self.update_availability(CS)
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update(self.selfdrive.events)
