@@ -31,6 +31,7 @@ class ModifiedAssistDrivingSystem:
   def update_events(self, CS: car.CarState):
     self.selfdrive.events.remove(EventName.pcmEnable)
     self.selfdrive.events.remove(EventName.pcmDisable)
+    self.selfdrive.events.remove(EventName.pedalPressed)
 
     if self.selfdrive.enabled:
       if self.selfdrive.events.has(EventName.wrongGear) and CS.vEgo < 5:
@@ -49,7 +50,6 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.add(EventName.silentBrakeHold)
 
       if self.selfdrive.events.has(EventName.pedalPressed):
-        self.selfdrive.events.remove(EventName.pedalPressed)
         self.selfdrive.events.add(EventName.silentPedalPressed)
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
