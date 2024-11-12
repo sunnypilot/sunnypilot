@@ -1,12 +1,10 @@
-from cereal import car, custom
-
-from panda import ALTERNATIVE_EXPERIENCE
+from cereal import car, log, custom
 
 from openpilot.sunnypilot.mads.state import StateMachine
 
 State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
-EventName = car.OnroadEvent.EventName
+EventName = log.OnroadEvent.EventName
 
 
 class ModifiedAssistDrivingSystem:

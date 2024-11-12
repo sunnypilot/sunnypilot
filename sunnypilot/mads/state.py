@@ -1,10 +1,10 @@
-from cereal import car, custom
+from cereal import log, custom
 from openpilot.selfdrive.selfdrived.events import ET, Events
 from openpilot.selfdrive.selfdrived.state import SOFT_DISABLE_TIME
 from openpilot.common.realtime import DT_CTRL
 
 State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
-EventName = car.OnroadEvent.EventName
+EventName = log.OnroadEvent.EventName
 
 ENABLED_STATES = (State.enabled, State.softDisabling, State.overriding)
 ACTIVE_STATES = (State.paused, *ENABLED_STATES)
