@@ -58,11 +58,11 @@ class ModifiedAssistDrivingSystem:
         if self.selfdrive.enabled:
           self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed:
-        if not self.active:
-          if not self.selfdrive.enabled:
-            self.selfdrive.events.add(EventName.buttonCancel)
-          else:
+        if self.active:
+          if self.selfdrive.enabled:
             self.selfdrive.events.add(EventName.manualSteeringRequired)
+          else:
+            self.selfdrive.events.add(EventName.buttonCancel)
         else:
           if not self.selfdrive.enabled:
             self.selfdrive.events.add(EventName.buttonEnable)
