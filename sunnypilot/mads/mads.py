@@ -32,6 +32,8 @@ class ModifiedAssistDrivingSystem:
     self.selfdrive.events.remove(EventName.pcmEnable)
     self.selfdrive.events.remove(EventName.pcmDisable)
     self.selfdrive.events.remove(EventName.pedalPressed)
+    self.selfdrive.events.remove(EventName.buttonEnable)
+    self.selfdrive.events.remove(EventName.buttonCancel)
 
     if self.selfdrive.enabled:
       if self.selfdrive.events.has(EventName.wrongGear) and CS.vEgo < 5:
@@ -39,8 +41,6 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.remove(EventName.wrongGear)
 
     else:
-      self.selfdrive.events.remove(EventName.buttonEnable)
-      self.selfdrive.events.remove(EventName.buttonCancel)
       self.selfdrive.events.remove(EventName.wrongCruiseMode)
       self.selfdrive.events.remove(EventName.wrongCarMode)
 
