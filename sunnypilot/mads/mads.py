@@ -1,5 +1,6 @@
 from cereal import car, log, custom
 
+from openpilot.sunnypilot.mads.helpers import MadsParams
 from openpilot.sunnypilot.mads.state import StateMachine
 
 State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
@@ -9,6 +10,8 @@ EventName = log.OnroadEvent.EventName
 
 class ModifiedAssistDrivingSystem:
   def __init__(self, selfdrive):
+    mads_params = MadsParams()
+
     self.enabled = False
     self.active = False
     self.available = False
@@ -17,9 +20,9 @@ class ModifiedAssistDrivingSystem:
     self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
-    self.enabled_toggle = True  # TODO-SP: Apply with toggle
-    self.main_enabled_toggle = True  # TODO-SP: Apply with toggle
-    self.disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
+    self.enabled_toggle = mads_params.read_enabled_param(self.selfdrive.params)
+    self.main_enabled_toggle = mads_params.read_main_enabled_param(self.selfdrive.params)
+    self.disengage_lateral_on_brake_toggle = mads_params.read_disengage_lateral_on_brake_param(self.selfdrive.params)
 
   def update_availability(self, CS: car.CarState, available: bool = False) -> bool:
     if self.main_enabled_toggle:

@@ -22,6 +22,8 @@ from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
 
+from openpilot.sunnypilot.mads.mads import MadsParams
+
 REPLAY = "REPLAY" in os.environ
 
 EventName = log.OnroadEvent.EventName
@@ -114,8 +116,8 @@ class Car:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
     # mads
-    self.mads_enabled_toggle = True  # TODO-SP: Apply with toggle
-    self.mads_disengage_lateral_on_brake_toggle = False  # TODO-SP: Apply with toggle
+    self.mads_enabled_toggle = MadsParams.read_enabled_param(self.params)
+    self.mads_disengage_lateral_on_brake_toggle = MadsParams.read_disengage_lateral_on_brake_param(self.params)
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
     if self.mads_enabled_toggle:

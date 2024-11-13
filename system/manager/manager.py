@@ -42,11 +42,17 @@ def manager_init() -> None:
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
   ]
 
+  sunnypilot_default_params: list[tuple[str, str | bytes]] = [
+    ("Mads", "1"),
+    ("MadsCruiseMain", "1"),
+    ("MadsDisengageLateralOnBrake", "0"),
+  ]
+
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
   # set unset params
-  for k, v in default_params:
+  for k, v in (default_params + sunnypilot_default_params):
     if params.get(k) is None:
       params.put(k, v)
 
