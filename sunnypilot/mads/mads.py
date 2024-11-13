@@ -71,5 +71,10 @@ class ModifiedAssistDrivingSystem:
             self.selfdrive.events.add(EventName.buttonEnable)
 
   def update(self, CS: car.CarState):
+    if not self.enabled_toggle:
+      return
+
     self.update_availability(CS)
-    self.update_events(CS)
+
+    if not self.selfdrive.CP.passive and self.selfdrive.initialized:
+      self.enabled, self.active = self.state_machine.update(self.selfdrive.events)
