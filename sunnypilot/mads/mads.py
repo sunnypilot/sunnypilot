@@ -34,9 +34,8 @@ class ModifiedAssistDrivingSystem:
     return available
 
   def update_events(self, CS: car.CarState):
-    self.selfdrive.events.remove(EventName.pcmEnable)
+    # TODO-SP: Handle pcmEnable and buttonEnable conditionally below
     self.selfdrive.events.remove(EventName.pcmDisable)
-    self.selfdrive.events.remove(EventName.buttonEnable)
     self.selfdrive.events.remove(EventName.buttonCancel)
 
     if self.selfdrive.enabled_prev:
