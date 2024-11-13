@@ -91,8 +91,9 @@ class Controls:
 
     # Check which actuators can be enabled
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, MIN_LATERAL_CONTROL_SPEED) or CS.standstill
-    CC.latActive = self.sm['selfdriveState'].active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and not standstill
-    CC.latActive = CC.latActive or (self.sm['selfdriveStateSP'].mads.enabled and self.sm['selfdriveStateSP'].mads.available)
+
+    _lat_active = self.sm['selfdriveState'].active or (self.sm['selfdriveStateSP'].mads.available and self.sm['selfdriveStateSP'].mads.enabled)
+    CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and not standstill
     CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
 
     actuators = CC.actuators
