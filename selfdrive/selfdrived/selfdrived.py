@@ -368,6 +368,9 @@ class SelfdriveD:
         self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
         self.events.add(EventName.personalityChanged)
 
+    if self.mads.enabled_toggle:
+      self.mads.update_events(CS)
+
   def data_sample(self):
     car_state = messaging.recv_one(self.car_state_sock)
     CS = car_state.carState if car_state else self.CS_prev
