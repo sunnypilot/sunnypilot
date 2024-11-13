@@ -116,14 +116,9 @@ class Car:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
     # mads
-    self.mads_enabled_toggle = MadsParams.read_enabled_param(self.params)
-    self.mads_disengage_lateral_on_brake_toggle = MadsParams.read_disengage_lateral_on_brake_param(self.params)
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
-    if self.mads_enabled_toggle:
-      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
-      if not self.mads_disengage_lateral_on_brake_toggle:
-        self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_LATERAL_ON_BRAKE
+    MadsParams().set_alternative_experience(self.CP, self.params)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
