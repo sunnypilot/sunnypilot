@@ -31,7 +31,6 @@ class ModifiedAssistDrivingSystem:
   def update_events(self, CS: car.CarState):
     self.selfdrive.events.remove(EventName.pcmEnable)
     self.selfdrive.events.remove(EventName.pcmDisable)
-    self.selfdrive.events.remove(EventName.pedalPressed)
     self.selfdrive.events.remove(EventName.buttonEnable)
     self.selfdrive.events.remove(EventName.buttonCancel)
 
@@ -69,6 +68,8 @@ class ModifiedAssistDrivingSystem:
         else:
           if not self.selfdrive.enabled:
             self.selfdrive.events.add(EventName.buttonEnable)
+
+    self.selfdrive.events.remove(EventName.pedalPressed)
 
   def update(self, CS: car.CarState):
     if not self.enabled_toggle:
