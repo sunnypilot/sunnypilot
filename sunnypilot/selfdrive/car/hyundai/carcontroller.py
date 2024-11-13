@@ -1,16 +1,17 @@
+from abc import abstractmethod
 from collections import namedtuple
 
 from opendbc.car import DT_CTRL, structs
-from opendbc.car.interfaces import CarStateBase
+from opendbc.car.can_definitions import CanData
+from opendbc.car.interfaces import CarStateBase, CarControllerBase
 
 MadsDataSP = namedtuple("MadsDataSP",
                         ["enabled_toggle", "lat_active", "disengaging", "paused"])
 
 
-class CarControllerSP:
-  def __init__(self, car_controller):
-    self.CC = car_controller
-
+class CarControllerSP(CarControllerBase):
+  def __init__(self, dbc_name: str, CP: structs.CarParams):
+    super().__init__(dbc_name, CP)
     self.lat_disengage_blink = 0
     self.lat_disengage_init = False
     self.prev_lat_active = False
@@ -23,11 +24,15 @@ class CarControllerSP:
       self.lat_disengage_init = True
 
     if not self.lat_disengage_init:
-      self.lat_disengage_blink = self.CC.frame
+      self.lat_disengage_blink = self.frame
 
-    paused = CS.mads_enabled and not CC.latActive
-    disengaging = (self.CC.frame - self.lat_disengage_blink) * DT_CTRL < 1.0 if self.lat_disengage_init else False
+    paused = CC.madsActive and not CC.latActive
+    disengaging = (self.frame - self.lat_disengage_blink) * DT_CTRL < 1.0 if self.lat_disengage_init else False
 
     self.prev_lat_active = CC.latActive
 
     return MadsDataSP(CS.mads_enabled_toggle, CC.latActive, disengaging, paused)
+
+  @abstractmethod
+  def update(self, CC: structs.CarControl, CS: CarStateBase, now_nanos: int) -> tuple[structs.CarControl.Actuators, list[CanData]]:
+    pass
