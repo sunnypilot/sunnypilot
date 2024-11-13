@@ -19,7 +19,7 @@ class StateMachine:
     self.state = State.disabled
 
   def add_current_alert_types(self, alert_type):
-    if not self.selfdrive.active_prev:
+    if not self.selfdrive.active:
       self.ss_state_machine.current_alert_types.append(alert_type)
 
   def update(self, events: Events):
@@ -46,7 +46,7 @@ class StateMachine:
         if self.state == State.enabled:
           if events.contains(ET.SOFT_DISABLE):
             self.state = State.softDisabling
-            if not self.selfdrive.active_prev:
+            if not self.selfdrive.active:
               self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
               self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
 
@@ -83,7 +83,7 @@ class StateMachine:
         elif self.state == State.overriding:
           if events.contains(ET.SOFT_DISABLE):
             self.state = State.softDisabling
-            if not self.selfdrive.active_prev:
+            if not self.selfdrive.active:
               self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
               self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
           elif not events.contains(ET.OVERRIDE_LATERAL):
