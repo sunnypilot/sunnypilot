@@ -13,6 +13,8 @@ class ModifiedAssistDrivingSystem:
     self.active = False
     self.available = False
     self.selfdrive = selfdrive
+    self.selfdrive.enabled_prev = False
+    self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
     self.enabled_toggle = True  # TODO-SP: Apply with toggle
@@ -34,7 +36,7 @@ class ModifiedAssistDrivingSystem:
     self.selfdrive.events.remove(EventName.buttonEnable)
     self.selfdrive.events.remove(EventName.buttonCancel)
 
-    if self.selfdrive.enabled:
+    if self.selfdrive.enabled_prev:
       if self.selfdrive.events.has(EventName.wrongGear) and CS.vEgo < 5:
         self.selfdrive.events.add(EventName.silentWrongGear)
         self.selfdrive.events.remove(EventName.wrongGear)
@@ -57,16 +59,16 @@ class ModifiedAssistDrivingSystem:
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
-        if self.selfdrive.enabled:
+        if self.selfdrive.enabled_prev:
           self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed:
         if self.active:
-          if self.selfdrive.enabled:
+          if self.selfdrive.enabled_prev:
             self.selfdrive.events.add(EventName.manualSteeringRequired)
           else:
             self.selfdrive.events.add(EventName.buttonCancel)
         else:
-          if not self.selfdrive.enabled:
+          if not self.selfdrive.enabled_prev:
             self.selfdrive.events.add(EventName.buttonEnable)
 
     self.selfdrive.events.remove(EventName.pedalPressed)
@@ -81,3 +83,6 @@ class ModifiedAssistDrivingSystem:
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update(self.selfdrive.events)
+
+    # Copy of previous SelfdriveD states for MADS events handling
+    self.selfdrive.enabled_prev, self.selfdrive.active_prev = self.selfdrive.enabled, self.selfdrive.active
