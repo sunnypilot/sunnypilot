@@ -457,13 +457,10 @@ class SelfdriveD:
       self.pm.send('onroadEvents', ce_send)
     self.events_prev = self.events.names.copy()
 
-  def publish_selfdriveStateSP(self):
     # selfdriveStateSP
     ss_sp_msg = messaging.new_message('selfdriveStateSP')
     ss_sp_msg.valid = True
     ss_sp = ss_sp_msg.selfdriveStateSP
-
-    # mads
     mads = ss_sp.mads
     mads.state = self.mads.state_machine.state
     mads.enabled = self.mads.enabled
@@ -481,7 +478,6 @@ class SelfdriveD:
     self.update_alerts(CS)
 
     self.publish_selfdriveState(CS)
-    self.publish_selfdriveStateSP()
 
     self.CS_prev = CS
 
