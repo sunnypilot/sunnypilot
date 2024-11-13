@@ -33,4 +33,14 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
     }
   });
 
+  // FIXME-SP: Move to sunnypilot panels before merging
+  auto madsToggle = new ParamControl("Mads", tr("Modular Assistive Driving System (MADS)"), "", "");
+  addItem(madsToggle);
+
+  // TODO-SP: Rename toggle
+  auto madsCruiseMainToggle = new ParamControl("MadsCruiseMain", tr("MADS: Cruise Main"), "", "");
+  addItem(madsCruiseMainToggle);
+
+  auto madsDisengageLateralOnBrakeToggle = new ParamControl("MadsDisengageLateralOnBrake", tr("MADS: Disengage Lateral on Brake"), "", "");
+  addItem(madsDisengageLateralOnBrakeToggle);
 }

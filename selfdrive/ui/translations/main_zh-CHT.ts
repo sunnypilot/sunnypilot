@@ -123,6 +123,18 @@
         <source>Longitudinal Maneuver Mode</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>MADS: Cruise Main</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MADS: Disengage Lateral on Brake</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Modular Assistive Driving System (MADS)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>
