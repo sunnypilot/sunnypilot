@@ -239,9 +239,6 @@ class Car:
       # signal pandad to switch to car safety mode
       self.params.put_bool_nonblocking("ControlsReady", True)
 
-    if self.mads_enabled_toggle:
-      self.CI.mads_enabled = self.sm['selfdriveStateSP'].mads.enabled
-
     if self.sm.all_alive(['carControl']):
       # send car controls over can
       now_nanos = self.can_log_mono_time if REPLAY else int(time.monotonic() * 1e9)
