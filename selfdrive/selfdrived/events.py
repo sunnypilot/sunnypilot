@@ -972,7 +972,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.manualSteeringRequired: {
-    ET.WARNING: Alert(
+    ET.USER_DISABLE: Alert(
       "Automatic Lane Centering is OFF",
       "Manual Steering Required",
       AlertStatus.normal, AlertSize.mid,
