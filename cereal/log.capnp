@@ -132,7 +132,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     manualSteeringRequired @95;
     manualLongitudinalRequired @96;
     silentPedalPressed @97;
-    silentButtonEnable @98;
+    silentLkasEnable @98;
     silentBrakeHold @99;
     silentWrongGear @100;
 

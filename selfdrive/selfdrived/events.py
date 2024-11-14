@@ -997,7 +997,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
                               visual_alert=VisualAlert.brakePressed),
   },
 
-  EventName.silentButtonEnable: {
+  EventName.silentLkasEnable: {
     ET.ENABLE: Alert(
       "",
       "",
