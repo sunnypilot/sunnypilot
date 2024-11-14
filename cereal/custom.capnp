@@ -16,6 +16,7 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     enabled @1 :Bool;
     active @2 :Bool;
     available @3 :Bool;
+    on @4 :Bool;
 
     enum ModifiedAssistDrivingSystemState {
       disabled @0;
