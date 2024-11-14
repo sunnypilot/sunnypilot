@@ -127,12 +127,14 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     aeb @92;
 
     # sunnypilot
-    manualSteeringRequired @93;
-    manualLongitudinalRequired @94;
-    silentPedalPressed @95;
-    silentButtonEnable @96;
-    silentBrakeHold @97;
-    silentWrongGear @98;
+    lkasEnable @93;
+    lkasDisable @94;
+    manualSteeringRequired @95;
+    manualLongitudinalRequired @96;
+    silentPedalPressed @97;
+    silentButtonEnable @98;
+    silentBrakeHold @99;
+    silentWrongGear @100;
 
     soundsUnavailableDEPRECATED @47;
   }

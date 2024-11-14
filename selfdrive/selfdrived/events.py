@@ -963,6 +963,14 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   # sunnypilot
+  EventName.lkasEnable: {
+    ET.ENABLE: EngagementAlert(AudibleAlert.engage),
+  },
+
+  EventName.lkasDisable: {
+    ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
+  },
+
   EventName.manualSteeringRequired: {
     ET.WARNING: Alert(
       "Automatic Lane Centering is OFF",
