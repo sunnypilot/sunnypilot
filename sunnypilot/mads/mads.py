@@ -27,9 +27,6 @@ class ModifiedAssistDrivingSystem:
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
 
   def update_events(self, CS: car.CarState):
-    self.selfdrive.events.remove(EventName.pcmDisable)
-    self.selfdrive.events.remove(EventName.buttonCancel)
-
     if self.selfdrive.enabled_prev:
       if self.selfdrive.events.has(EventName.wrongGear) and CS.vEgo < 5:
         self.selfdrive.events.add(EventName.silentWrongGear)
@@ -57,27 +54,31 @@ class ModifiedAssistDrivingSystem:
       if self.selfdrive.events.has(EventName.buttonEnable):
         self.selfdrive.events.remove(EventName.buttonEnable)
 
-    if self.main_enabled_toggle:
-      if self.selfdrive.CP.pcmCruise:
-        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
-          self.selfdrive.events.add(EventName.lkasEnable)
-      else:
-        if any(be.type == ButtonType.mainCruise and not be.pressed for be in CS.buttonEvents):
-          self.selfdrive.events.add(EventName.lkasEnable)
-
-    for be in CS.buttonEvents:
-      if be.type == ButtonType.cancel:
-        if self.selfdrive.enabled_prev:
-          self.selfdrive.events.add(EventName.manualLongitudinalRequired)
-      if be.type == ButtonType.lkas and be.pressed:
-        if self.active:
-          if self.selfdrive.enabled_prev:
-            self.selfdrive.events.add(EventName.manualSteeringRequired)
-          else:
-            self.selfdrive.events.add(EventName.lkasDisable)
-        else:
-          if not self.selfdrive.enabled_prev:
+    if CS.cruiseState.available:
+      if self.main_enabled_toggle:
+        if self.selfdrive.CP.pcmCruise:
+          if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
             self.selfdrive.events.add(EventName.lkasEnable)
+        else:
+          if any(be.type == ButtonType.mainCruise and not be.pressed for be in CS.buttonEvents):
+            self.selfdrive.events.add(EventName.lkasEnable)
+
+      for be in CS.buttonEvents:
+        if be.type == ButtonType.cancel:
+          if self.selfdrive.enabled_prev:
+            self.selfdrive.events.add(EventName.manualLongitudinalRequired)
+        if be.type == ButtonType.lkas and be.pressed:
+          if self.active:
+            if self.selfdrive.enabled_prev:
+              self.selfdrive.events.add(EventName.manualSteeringRequired)
+            else:
+              self.selfdrive.events.add(EventName.lkasDisable)
+          else:
+            if not self.selfdrive.enabled_prev:
+              self.selfdrive.events.add(EventName.lkasEnable)
+
+      self.selfdrive.events.remove(EventName.pcmDisable)
+      self.selfdrive.events.remove(EventName.buttonCancel)
 
     self.selfdrive.events.remove(EventName.pedalPressed)
 
