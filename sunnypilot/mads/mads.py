@@ -36,7 +36,6 @@ class ModifiedAssistDrivingSystem:
     return available
 
   def update_events(self, CS: car.CarState):
-    # TODO-SP: Handle pcmEnable and buttonEnable conditionally below
     self.selfdrive.events.remove(EventName.pcmDisable)
     self.selfdrive.events.remove(EventName.buttonCancel)
 
@@ -60,6 +59,12 @@ class ModifiedAssistDrivingSystem:
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
         if self.state_machine.state == State.paused and self.active:
           self.selfdrive.events.add(EventName.silentLkasEnable)
+
+    if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
+      if self.selfdrive.events.has(EventName.pcmEnable):
+        self.selfdrive.events.remove(EventName.pcmEnable)
+      if self.selfdrive.events.has(EventName.buttonEnable):
+        self.selfdrive.events.remove(EventName.buttonEnable)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
