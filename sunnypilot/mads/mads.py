@@ -20,6 +20,7 @@ class ModifiedAssistDrivingSystem:
     self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
+    # TODO-SP: do we need to pass the params object from SelfdriveD?
     self.enabled_toggle = mads_params.read_param("Mads", self.selfdrive.params)
     self.main_enabled_toggle = mads_params.read_param("MadsCruiseMain", self.selfdrive.params)
     self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake", self.selfdrive.params)
