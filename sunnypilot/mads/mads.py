@@ -26,13 +26,15 @@ class ModifiedAssistDrivingSystem:
     self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake", self.selfdrive.params)
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
 
-  def update_availability(self, CS: car.CarState) -> None:
+  def update_availability(self, CS: car.CarState, available: bool = False) -> None:
     if self.main_enabled_toggle:
-      self.available = CS.cruiseState.available
+      available |= CS.cruiseState.available
 
     if self.selfdrive.CP.carName == "hyundai":
       if any(be.type == ButtonType.lkas and be.pressed for be in CS.buttonEvents):
-        self.available = True
+        available = True
+
+    self.available = available
 
   def update_events(self, CS: car.CarState):
     self.selfdrive.events.remove(EventName.pcmDisable)
@@ -66,8 +68,12 @@ class ModifiedAssistDrivingSystem:
         self.selfdrive.events.remove(EventName.buttonEnable)
 
     if self.main_enabled_toggle:
-      if CS.cruiseState.available:
-        self.selfdrive.events.add(EventName.lkasEnable)
+      if self.selfdrive.CP.pcmCruise:
+        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
+          self.selfdrive.events.add(EventName.lkasEnable)
+      else:
+        if any(be.type == ButtonType.mainCruise and not be.pressed for be in CS.buttonEvents):
+          self.selfdrive.events.add(EventName.lkasEnable)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
@@ -83,8 +89,6 @@ class ModifiedAssistDrivingSystem:
           if not self.selfdrive.enabled_prev:
             self.selfdrive.events.add(EventName.lkasEnable)
 
-    if not self.available:
-      self.selfdrive.events.add(EventName.lkasDisable)
     self.selfdrive.events.remove(EventName.pedalPressed)
 
   def update(self, CS: car.CarState):
