@@ -23,6 +23,7 @@ class ModifiedAssistDrivingSystem:
     self.enabled_toggle = mads_params.read_enabled_param(self.selfdrive.params)
     self.main_enabled_toggle = mads_params.read_main_enabled_param(self.selfdrive.params)
     self.disengage_lateral_on_brake_toggle = mads_params.read_disengage_lateral_on_brake_param(self.selfdrive.params)
+    self.unified_engagement_mode = mads_params.read_unified_engagement_mode_param(self.selfdrive.params)
 
   def update_availability(self, CS: car.CarState, available: bool = False) -> bool:
     if self.main_enabled_toggle:

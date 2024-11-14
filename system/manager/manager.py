@@ -46,6 +46,7 @@ def manager_init() -> None:
     ("Mads", "1"),
     ("MadsCruiseMain", "1"),
     ("MadsDisengageLateralOnBrake", "0"),
+    ("MadsUnifiedEngagementMode", "1"),
   ]
 
   if params.get_bool("RecordFrontLock"):

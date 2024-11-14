@@ -22,6 +22,10 @@ class MadsParams:
     params = self.init_params(params)
     return params.get_bool("MadsDisengageLateralOnBrake")
 
+  def read_unified_engagement_mode_param(self, params=None):
+    params = self.init_params(params)
+    return params.get_bool("MadsUnifiedEngagementMode")
+
   def set_alternative_experience(self, CP, params):
     enabled = self.read_enabled_param(params)
     disengage_lateral_on_brake = self.read_disengage_lateral_on_brake_param(params)
