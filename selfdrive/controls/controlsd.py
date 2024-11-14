@@ -95,7 +95,7 @@ class Controls:
     ss_sp = self.sm['selfdriveStateSP']
     CC.madsActive = ss_sp.mads.available and ss_sp.mads.active
 
-    _lat_active = ss_sp.mads.available and ss_sp.mads.enabled if ss_sp.mads.on else self.sm['selfdriveState'].active
+    _lat_active = ss_sp.mads.enabled if ss_sp.mads.available else self.sm['selfdriveState'].active
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and not standstill
     CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
 
