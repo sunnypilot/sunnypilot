@@ -5,30 +5,15 @@ from openpilot.common.params import Params
 
 class MadsParams:
   @staticmethod
-  def init_params(params):
+  def read_param(key: str, params=None):
     if params is None:
-      return Params()
-    return params
+      params = Params()
 
-  def read_enabled_param(self, params=None):
-    params = self.init_params(params)
-    return params.get_bool("Mads")
-
-  def read_main_enabled_param(self, params=None):
-    params = self.init_params(params)
-    return params.get_bool("MadsCruiseMain")
-
-  def read_disengage_lateral_on_brake_param(self, params=None):
-    params = self.init_params(params)
-    return params.get_bool("MadsDisengageLateralOnBrake")
-
-  def read_unified_engagement_mode_param(self, params=None):
-    params = self.init_params(params)
-    return params.get_bool("MadsUnifiedEngagementMode")
+    return params.get_bool(key)
 
   def set_alternative_experience(self, CP, params):
-    enabled = self.read_enabled_param(params)
-    disengage_lateral_on_brake = self.read_disengage_lateral_on_brake_param(params)
+    enabled = self.read_param("Mads", params)
+    disengage_lateral_on_brake = self.read_param("MadsDisengageLateralOnBrake", params)
 
     if enabled:
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS

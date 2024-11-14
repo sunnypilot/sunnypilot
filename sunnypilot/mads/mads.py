@@ -20,10 +20,10 @@ class ModifiedAssistDrivingSystem:
     self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
-    self.enabled_toggle = mads_params.read_enabled_param(self.selfdrive.params)
-    self.main_enabled_toggle = mads_params.read_main_enabled_param(self.selfdrive.params)
-    self.disengage_lateral_on_brake_toggle = mads_params.read_disengage_lateral_on_brake_param(self.selfdrive.params)
-    self.unified_engagement_mode = mads_params.read_unified_engagement_mode_param(self.selfdrive.params)
+    self.enabled_toggle = mads_params.read_param("Mads", self.selfdrive.params)
+    self.main_enabled_toggle = mads_params.read_param("MadsCruiseMain", self.selfdrive.params)
+    self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake", self.selfdrive.params)
+    self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
 
   def update_availability(self, CS: car.CarState, available: bool = False) -> bool:
     if self.main_enabled_toggle:
