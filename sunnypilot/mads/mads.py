@@ -26,15 +26,13 @@ class ModifiedAssistDrivingSystem:
     self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake", self.selfdrive.params)
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
 
-  def update_availability(self, CS: car.CarState, available: bool = False) -> None:
+  def update_availability(self, CS: car.CarState) -> None:
     if self.main_enabled_toggle:
-      available |= CS.cruiseState.available
+      self.available = CS.cruiseState.available
 
     if self.selfdrive.CP.carName == "hyundai":
       if any(be.type == ButtonType.lkas and be.pressed for be in CS.buttonEvents):
-        available = True
-
-    self.available = available
+        self.available = True
 
   def update_events(self, CS: car.CarState):
     self.selfdrive.events.remove(EventName.pcmDisable)
