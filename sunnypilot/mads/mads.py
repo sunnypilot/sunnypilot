@@ -75,8 +75,7 @@ class ModifiedAssistDrivingSystem:
             else:
               self.selfdrive.events.add(EventName.lkasDisable)
           else:
-            if not self.selfdrive.enabled_prev:
-              self.selfdrive.events.add(EventName.lkasEnable)
+            self.selfdrive.events.add(EventName.lkasEnable)
         if be.type == ButtonType.mainCruise and be.pressed and not self.selfdrive.CP.pcmCruise:
           if self.active:
             self.selfdrive.events.add(EventName.lkasDisable)
