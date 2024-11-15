@@ -52,15 +52,16 @@ class ModifiedAssistDrivingSystem:
         if self.state_machine.state == State.paused and self.active:
           self.selfdrive.events.add(EventName.silentLkasEnable)
 
-    if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
-      if self.selfdrive.events.has(EventName.pcmEnable):
-        self.selfdrive.events.remove(EventName.pcmEnable)
-      if self.selfdrive.events.has(EventName.buttonEnable):
-        self.selfdrive.events.remove(EventName.buttonEnable)
-
-    if self.main_enabled_toggle:
-      if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
-        self.selfdrive.events.add(EventName.lkasEnable)
+    if self.selfdrive.events.has(EventName.pcmEnable) or self.selfdrive.events.has(EventName.buttonEnable):
+      if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
+        if self.selfdrive.events.has(EventName.pcmEnable):
+          self.selfdrive.events.remove(EventName.pcmEnable)
+        if self.selfdrive.events.has(EventName.buttonEnable):
+          self.selfdrive.events.remove(EventName.buttonEnable)
+    else:
+      if self.main_enabled_toggle:
+        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
+          self.selfdrive.events.add(EventName.lkasEnable)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
