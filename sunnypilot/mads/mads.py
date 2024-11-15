@@ -31,14 +31,15 @@ class ModifiedAssistDrivingSystem:
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
 
   def update_events(self, CS: car.CarState):
-    if self.selfdrive.enabled_prev:
-      if self.selfdrive.events.has(EventName.wrongGear) and CS.vEgo < 5:
-        self.selfdrive.events.add(EventName.silentWrongGear)
-        self.selfdrive.events.remove(EventName.wrongGear)
-
-    else:
+    if not self.selfdrive.enabled:
       self.selfdrive.events.remove(EventName.wrongCruiseMode)
       self.selfdrive.events.remove(EventName.wrongCarMode)
+      if self.selfdrive.events.has(EventName.wrongGear) and not self.selfdrive.events.has(EventName.reverseGear):
+        self.selfdrive.events.remove(EventName.wrongGear)
+        self.selfdrive.events.add(EventName.silentWrongGear)
+      if self.selfdrive.events.has(EventName.reverseGear) and CS.vEgo < 5:
+        self.selfdrive.events.remove(EventName.reverseGear)
+        self.selfdrive.events.add(EventName.silentReverseGear)
 
     if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
