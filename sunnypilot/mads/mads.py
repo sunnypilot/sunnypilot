@@ -15,14 +15,14 @@ class ModifiedAssistDrivingSystem:
     self.enabled = False
     self.active = False
     self.available = False
-    self.allowed_always = False
+    self.allow_always = False
     self.selfdrive = selfdrive
     self.selfdrive.enabled_prev = False
     self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
     if self.selfdrive.CP.carName == "hyundai":
-      self.allowed_always = True
+      self.allow_always = True
 
     # TODO-SP: do we need to pass the params object from SelfdriveD?
     self.enabled_toggle = mads_params.read_param("Mads", self.selfdrive.params)
@@ -59,7 +59,7 @@ class ModifiedAssistDrivingSystem:
       if self.selfdrive.events.has(EventName.buttonEnable):
         self.selfdrive.events.remove(EventName.buttonEnable)
 
-    if CS.cruiseState.available or self.allowed_always:
+    if CS.cruiseState.available or self.allow_always:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
           self.selfdrive.events.add(EventName.lkasEnable)
@@ -82,7 +82,8 @@ class ModifiedAssistDrivingSystem:
 
       self.selfdrive.events.remove(EventName.pcmDisable)
       self.selfdrive.events.remove(EventName.buttonCancel)
-    else:
+
+    if not CS.cruiseState.available:
       self.selfdrive.events.add(EventName.lkasDisable)
 
     self.selfdrive.events.remove(EventName.pedalPressed)
