@@ -82,8 +82,7 @@ class ModifiedAssistDrivingSystem:
 
       self.selfdrive.events.remove(EventName.pcmDisable)
       self.selfdrive.events.remove(EventName.buttonCancel)
-
-    if not CS.cruiseState.available and self.selfdrive.CS_prev.cruiseState.available:
+    elif self.selfdrive.CS_prev.cruiseState.available:
       self.selfdrive.events.add(EventName.lkasDisable)
 
     self.selfdrive.events.remove(EventName.pedalPressed)
