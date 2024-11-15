@@ -105,8 +105,8 @@ class StateMachine:
           self.add_current_alert_types(ET.ENABLE)
 
     # check if MADS is engaged & available, and actuators are enabled
-    enabled = self.state in ENABLED_STATES and self.mads.available
-    active = self.state in ACTIVE_STATES and self.mads.available
+    enabled = self.state in ENABLED_STATES
+    active = self.state in ACTIVE_STATES
     if active:
       self.add_current_alert_types(ET.WARNING)
 
