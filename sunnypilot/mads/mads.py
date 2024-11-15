@@ -76,8 +76,11 @@ class ModularAssistiveDrivingSystem:
         else:
           self.selfdrive.events.add(EventName.lkasEnable)
 
-    if not CS.cruiseState.available and self.selfdrive.CS_prev.cruiseState.available:
-      self.selfdrive.events.add(EventName.lkasDisable)
+    if not CS.cruiseState.available:
+      if self.selfdrive.events.has(EventName.buttonEnable):
+        self.selfdrive.events.remove(EventName.buttonEnable)
+      if self.selfdrive.CS_prev.cruiseState.available:
+        self.selfdrive.events.add(EventName.lkasDisable)
 
     self.selfdrive.events.remove(EventName.pcmDisable)
     self.selfdrive.events.remove(EventName.buttonCancel)
