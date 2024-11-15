@@ -65,7 +65,7 @@ class ModularAssistiveDrivingSystem:
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
-        if self.selfdrive.enabled_prev:
+        if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
           self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
         if self.active:
@@ -76,12 +76,11 @@ class ModularAssistiveDrivingSystem:
         else:
           self.selfdrive.events.add(EventName.lkasEnable)
 
-    if CS.cruiseState.available:
-      self.selfdrive.events.remove(EventName.pcmDisable)
-      self.selfdrive.events.remove(EventName.buttonCancel)
-    elif self.selfdrive.CS_prev.cruiseState.available:
+    if not CS.cruiseState.available and self.selfdrive.CS_prev.cruiseState.available:
       self.selfdrive.events.add(EventName.lkasDisable)
 
+    self.selfdrive.events.remove(EventName.pcmDisable)
+    self.selfdrive.events.remove(EventName.buttonCancel)
     self.selfdrive.events.remove(EventName.pedalPressed)
 
   def update(self, CS: car.CarState):
