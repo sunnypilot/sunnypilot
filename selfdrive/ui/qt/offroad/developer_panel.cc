@@ -24,6 +24,20 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(longManeuverToggle);
 
+  // FIXME-SP: Move to sunnypilot panels before merging
+  auto madsToggle = new ParamControl("Mads", tr("Modular Assistive Driving System (MADS)"), "", "");
+  addItem(madsToggle);
+
+  // TODO-SP: Rename toggle
+  auto madsCruiseMainToggle = new ParamControl("MadsCruiseMain", tr("MADS: Cruise Main"), "", "");
+  addItem(madsCruiseMainToggle);
+
+  auto madsDisengageLateralOnBrakeToggle = new ParamControl("MadsDisengageLateralOnBrake", tr("MADS: Disengage Lateral on Brake"), "", "");
+  addItem(madsDisengageLateralOnBrakeToggle);
+
+  auto madsUnifiedEngagementModeToggle = new ParamControl("MadsUnifiedEngagementMode", tr("MADS: Unified Engagement Mode"), "", "");
+  addItem(madsUnifiedEngagementModeToggle);
+
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");
 
@@ -49,20 +63,6 @@ void DeveloperPanel::updateToggles(bool _offroad) {
   }
 
   offroad = _offroad;
-
-  // FIXME-SP: Move to sunnypilot panels before merging
-  auto madsToggle = new ParamControl("Mads", tr("Modular Assistive Driving System (MADS)"), "", "");
-  addItem(madsToggle);
-
-  // TODO-SP: Rename toggle
-  auto madsCruiseMainToggle = new ParamControl("MadsCruiseMain", tr("MADS: Cruise Main"), "", "");
-  addItem(madsCruiseMainToggle);
-
-  auto madsDisengageLateralOnBrakeToggle = new ParamControl("MadsDisengageLateralOnBrake", tr("MADS: Disengage Lateral on Brake"), "", "");
-  addItem(madsDisengageLateralOnBrakeToggle);
-
-  auto madsUnifiedEngagementModeToggle = new ParamControl("MadsUnifiedEngagementMode", tr("MADS: Unified Engagement Mode"), "", "");
-  addItem(madsUnifiedEngagementModeToggle);
 }
 
 void DeveloperPanel::showEvent(QShowEvent *event) {
