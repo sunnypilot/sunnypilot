@@ -1,6 +1,7 @@
 #include "tools/replay/timeline.h"
 
 #include <array>
+#include <algorithm>
 
 #include "cereal/gen/cpp/log.capnp.h"
 
@@ -70,11 +71,11 @@ void Timeline::buildTimeline(const Route &route, uint64_t route_start_ts, bool l
       }
     }
 
-    callback(log);  // Notify the callback once the log is processed
-
     // Sort and finalize the timeline entries
     std::sort(staging_entries_.begin(), staging_entries_.end(), [](auto &a, auto &b) { return a.start_time < b.start_time; });
     timeline_entries_ = std::make_shared<std::vector<Entry>>(staging_entries_);
+
+    callback(log);  // Notify the callback once the log is processed
   }
 }
 
