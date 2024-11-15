@@ -40,6 +40,11 @@ class ModularAssistiveDrivingSystem:
         self.selfdrive.events.remove(EventName.reverseGear)
         self.selfdrive.events.add(EventName.silentReverseGear)
 
+      # TODO-SP: Combine with L56-L58
+      if not self.selfdrive.events.has(EventName.silentReverseGear) and not self.selfdrive.events.has(EventName.silentReverseGear):
+        if self.state_machine.state == State.paused and self.active:
+          self.selfdrive.events.add(EventName.silentLkasEnable)
+
     if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
         self.selfdrive.events.remove(EventName.brakeHold)
@@ -48,6 +53,7 @@ class ModularAssistiveDrivingSystem:
       if self.selfdrive.events.has(EventName.pedalPressed):
         self.selfdrive.events.add(EventName.silentPedalPressed)
 
+      # TODO-SP: Combine with L44-L46
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
         if self.state_machine.state == State.paused and self.active:
           self.selfdrive.events.add(EventName.silentLkasEnable)
