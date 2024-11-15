@@ -18,7 +18,6 @@ class ModifiedAssistDrivingSystem:
     self.allow_always = False
     self.selfdrive = selfdrive
     self.selfdrive.enabled_prev = False
-    self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
     if self.selfdrive.CP.carName == "hyundai":
@@ -59,27 +58,27 @@ class ModifiedAssistDrivingSystem:
       if self.selfdrive.events.has(EventName.buttonEnable):
         self.selfdrive.events.remove(EventName.buttonEnable)
 
-    if CS.cruiseState.available:
-      if self.main_enabled_toggle:
-        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
-          self.selfdrive.events.add(EventName.lkasEnable)
+    if self.main_enabled_toggle:
+      if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
+        self.selfdrive.events.add(EventName.lkasEnable)
 
-      for be in CS.buttonEvents:
-        if be.type == ButtonType.cancel:
-          if self.selfdrive.enabled_prev:
-            self.selfdrive.events.add(EventName.manualLongitudinalRequired)
-        if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
-          if self.active:
-            if self.selfdrive.enabled_prev:
-              self.selfdrive.events.add(EventName.manualSteeringRequired)
-            else:
-              self.selfdrive.events.add(EventName.lkasDisable)
+    for be in CS.buttonEvents:
+      if be.type == ButtonType.cancel:
+        if self.selfdrive.enabled_prev:
+          self.selfdrive.events.add(EventName.manualLongitudinalRequired)
+      if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
+        if self.active:
+          if self.selfdrive.enabled:
+            self.selfdrive.events.add(EventName.manualSteeringRequired)
           else:
-            self.selfdrive.events.add(EventName.lkasEnable)
-        if be.type == ButtonType.mainCruise and be.pressed and not self.selfdrive.CP.pcmCruise:
-          if self.active:
             self.selfdrive.events.add(EventName.lkasDisable)
+        else:
+          self.selfdrive.events.add(EventName.lkasEnable)
+      if be.type == ButtonType.mainCruise and be.pressed and not self.selfdrive.CP.pcmCruise:
+        if self.active:
+          self.selfdrive.events.add(EventName.lkasDisable)
 
+    if CS.cruiseState.available:
       self.selfdrive.events.remove(EventName.pcmDisable)
       self.selfdrive.events.remove(EventName.buttonCancel)
     elif self.selfdrive.CS_prev.cruiseState.available:
@@ -97,4 +96,4 @@ class ModifiedAssistDrivingSystem:
       self.enabled, self.active = self.state_machine.update(self.selfdrive.events)
 
     # Copy of previous SelfdriveD states for MADS events handling
-    self.selfdrive.enabled_prev, self.selfdrive.active_prev = self.selfdrive.enabled, self.selfdrive.active
+    self.selfdrive.enabled_prev = self.selfdrive.enabled
