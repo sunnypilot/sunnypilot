@@ -23,7 +23,7 @@ from openpilot.selfdrive.controls.lib.latcontrol import MIN_LATERAL_CONTROL_SPEE
 
 from openpilot.system.version import get_build_metadata
 
-from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
+from opendbc.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ

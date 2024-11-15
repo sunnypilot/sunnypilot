@@ -22,7 +22,7 @@ from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
 
-from openpilot.sunnypilot.mads.mads import MadsParams
+from opendbc.sunnypilot.mads.mads import MadsParams
 
 REPLAY = "REPLAY" in os.environ
 
