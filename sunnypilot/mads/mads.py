@@ -59,7 +59,7 @@ class ModifiedAssistDrivingSystem:
       if self.selfdrive.events.has(EventName.buttonEnable):
         self.selfdrive.events.remove(EventName.buttonEnable)
 
-    if CS.cruiseState.available or self.allow_always:
+    if CS.cruiseState.available:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
           self.selfdrive.events.add(EventName.lkasEnable)
@@ -68,7 +68,7 @@ class ModifiedAssistDrivingSystem:
         if be.type == ButtonType.cancel:
           if self.selfdrive.enabled_prev:
             self.selfdrive.events.add(EventName.manualLongitudinalRequired)
-        if be.type == ButtonType.lkas and be.pressed:
+        if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
           if self.active:
             if self.selfdrive.enabled_prev:
               self.selfdrive.events.add(EventName.manualSteeringRequired)
@@ -83,7 +83,7 @@ class ModifiedAssistDrivingSystem:
       self.selfdrive.events.remove(EventName.pcmDisable)
       self.selfdrive.events.remove(EventName.buttonCancel)
 
-    if not CS.cruiseState.available:
+    if not CS.cruiseState.available and self.selfdrive.CS_prev.cruiseState.available:
       self.selfdrive.events.add(EventName.lkasDisable)
 
     self.selfdrive.events.remove(EventName.pedalPressed)
