@@ -149,7 +149,7 @@ class CarSpecificEvents:
       # Main button also can trigger an engagement on these cars
       self.cruise_buttons.append(any(ev.type in HYUNDAI_ENABLE_BUTTONS for ev in CS.buttonEvents))
       events = self.create_common_events(CS, CS_prev, pcm_enable=self.CP.pcmCruise, allow_enable=any(self.cruise_buttons),
-                                         (self.CP.pcmCruise and b.pressed) or not self.CP.pcmCruise)
+                                         allow_disengage=(self.CP.pcmCruise and b.pressed) or not self.CP.pcmCruise)
 
       # low speed steer alert hysteresis logic (only for cars with steer cut off above 10 m/s)
       if CS.vEgo < (self.CP.minSteerSpeed + 2.) and self.CP.minSteerSpeed > 10.:
