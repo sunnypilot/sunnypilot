@@ -23,7 +23,7 @@ from openpilot.selfdrive.controls.lib.latcontrol import MIN_LATERAL_CONTROL_SPEE
 
 from openpilot.system.version import get_build_metadata
 
-from openpilot.sunnypilot.mads.mads import ModifiedAssistDrivingSystem
+from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -133,7 +133,7 @@ class SelfdriveD:
     elif self.CP.passive:
       self.events.add(EventName.dashcamMode, static=True)
 
-    self.mads = ModifiedAssistDrivingSystem(self)
+    self.mads = ModularAssistiveDrivingSystem(self)
     sock_services = list(self.pm.sock.keys()) + ['selfdriveStateSP']
     self.pm = messaging.PubMaster(sock_services)
 

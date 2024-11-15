@@ -3,7 +3,7 @@ from openpilot.selfdrive.selfdrived.events import ET, Events
 from openpilot.selfdrive.selfdrived.state import SOFT_DISABLE_TIME
 from openpilot.common.realtime import DT_CTRL
 
-State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
+State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventName = log.OnroadEvent.EventName
 
 ENABLED_STATES = (State.enabled, State.softDisabling, State.overriding)

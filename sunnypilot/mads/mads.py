@@ -3,12 +3,12 @@ from cereal import car, log, custom
 from openpilot.sunnypilot.mads.helpers import MadsParams
 from openpilot.sunnypilot.mads.state import StateMachine
 
-State = custom.SelfdriveStateSP.ModifiedAssistDrivingSystem.ModifiedAssistDrivingSystemState
+State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
 
 
-class ModifiedAssistDrivingSystem:
+class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
     mads_params = MadsParams()
 

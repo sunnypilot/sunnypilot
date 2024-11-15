@@ -9,15 +9,15 @@ $Cxx.namespace("cereal");
 
 # you can rename the struct, but don't change the identifier
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
-  mads @0 :ModifiedAssistDrivingSystem;
+  mads @0 :ModularAssistiveDrivingSystem;
 
-  struct ModifiedAssistDrivingSystem {
-    state @0 :ModifiedAssistDrivingSystemState;
+  struct ModularAssistiveDrivingSystem {
+    state @0 :ModularAssistiveDrivingSystemState;
     enabled @1 :Bool;
     active @2 :Bool;
     available @3 :Bool;
 
-    enum ModifiedAssistDrivingSystemState {
+    enum ModularAssistiveDrivingSystemState {
       disabled @0;
       paused @1;
       enabled @2;
