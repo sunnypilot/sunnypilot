@@ -32,6 +32,7 @@ env:
 
 jobs:
   build_release:
+    if: github.repository == 'commaai/openpilot' # build_release blocked for the time being to only comma as we may have a different process.
     name: build release
     runs-on: ${{ ((github.repository == 'commaai/openpilot') &&
                    ((github.event_name != 'pull_request') ||
