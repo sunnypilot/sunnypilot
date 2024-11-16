@@ -103,7 +103,7 @@ jobs:
       timeout-minutes: ${{ ((steps.restore-scons-cache.outputs.cache-hit == 'true') && 15 || 30) }} # allow more time when we missed the scons cache
 
   build_mac:
-    if: github.repository == 'commaai/openpilot' # Blocking macos builds as well since they have a 10x miltiplier for GH aciton minutes, waaaay too much!
+    if: github.repository == 'commaai/openpilot' # Blocking macos builds as well since they have a 10x miltiplier for GH action minutes, waaaay too much!
     name: build macOS
     runs-on: ${{ ((github.repository == 'commaai/openpilot') &&
                    ((github.event_name != 'pull_request') ||
