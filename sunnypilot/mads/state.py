@@ -95,6 +95,7 @@ class StateMachine:
     # DISABLED
     elif self.state == State.disabled:
       if events.contains(ET.ENABLE):
+        # TODO-SP: Allow entering State.paused if ET.NO_ENTRY
         if events.contains(ET.NO_ENTRY):
           self.add_current_alert_types(ET.NO_ENTRY)
 
