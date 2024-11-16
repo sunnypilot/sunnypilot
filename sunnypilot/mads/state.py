@@ -36,7 +36,7 @@ class StateMachine:
           self.state = State.paused
         else:
           self.state = State.disabled
-        self.add_current_alert_types(ET.USER_DISABLE)
+        self.ss_state_machine.current_alert_types.append(ET.USER_DISABLE)
 
       elif events.contains(ET.IMMEDIATE_DISABLE):
         self.state = State.disabled
