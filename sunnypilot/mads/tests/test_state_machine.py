@@ -29,7 +29,6 @@ class MockMADS:
     self.selfdrive = mocker.MagicMock()
     self.selfdrive.state_machine = mocker.MagicMock()
     self.selfdrive.active = False
-    self.available = True
 
 
 class TestMADSStateMachine:
