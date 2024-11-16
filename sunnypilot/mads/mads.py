@@ -23,11 +23,10 @@ class ModularAssistiveDrivingSystem:
     if self.selfdrive.CP.carName == "hyundai":
       self.allow_always = True
 
-    # TODO-SP: do we need to pass the params object from SelfdriveD?
-    self.enabled_toggle = mads_params.read_param("Mads", self.selfdrive.params)
-    self.main_enabled_toggle = mads_params.read_param("MadsCruiseMain", self.selfdrive.params)
-    self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake", self.selfdrive.params)
-    self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
+    self.enabled_toggle = mads_params.read_param("Mads")
+    self.main_enabled_toggle = mads_params.read_param("MadsCruiseMain")
+    self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake")
+    self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode")
 
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
