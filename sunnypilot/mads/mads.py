@@ -32,10 +32,8 @@ class ModularAssistiveDrivingSystem:
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
       if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
-        if self.selfdrive.events.has(EventName.pcmEnable):
-          self.selfdrive.events.remove(EventName.pcmEnable)
-        if self.selfdrive.events.has(EventName.buttonEnable):
-          self.selfdrive.events.remove(EventName.buttonEnable)
+        self.selfdrive.events.remove(EventName.pcmEnable)
+        self.selfdrive.events.remove(EventName.buttonEnable)
 
     def update_silent_lkas_enable():
       if self.state_machine.state == State.paused and self.active:
@@ -83,8 +81,7 @@ class ModularAssistiveDrivingSystem:
           self.selfdrive.events.add(EventName.lkasEnable)
 
     if not CS.cruiseState.available:
-      if self.selfdrive.events.has(EventName.buttonEnable):
-        self.selfdrive.events.remove(EventName.buttonEnable)
+      self.selfdrive.events.remove(EventName.buttonEnable)
       if self.selfdrive.CS_prev.cruiseState.available:
         self.selfdrive.events.add(EventName.lkasDisable)
 
