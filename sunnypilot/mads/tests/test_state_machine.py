@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from pytest_mock import MockerFixture
 
 from cereal import custom
 from openpilot.common.realtime import DT_CTRL
@@ -25,17 +25,17 @@ def make_event(event_types):
 
 
 class MockMADS:
-  def __init__(self):
-    self.selfdrive = MagicMock()
-    self.selfdrive.state_machine = MagicMock()
+  def __init__(self, mocker: MockerFixture):
+    self.selfdrive = mocker.MagicMock()
+    self.selfdrive.state_machine = mocker.MagicMock()
     self.selfdrive.active = False
     self.available = True
 
 
 class TestMADSStateMachine:
   @pytest.fixture(autouse=True)
-  def setup_method(self):
-    self.mads = MockMADS()
+  def setup_method(self, mocker: MockerFixture):
+    self.mads = MockMADS(mocker)
     self.events = Events()
     self.state_machine = StateMachine(self.mads)
     self.mads.selfdrive.state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
