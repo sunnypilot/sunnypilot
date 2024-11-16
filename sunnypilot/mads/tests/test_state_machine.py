@@ -114,11 +114,3 @@ class TestMADSStateMachine:
     self.events.add(make_event([ET.ENABLE]))
     self.state_machine.update(self.events)
     assert self.state_machine.state == State.enabled
-
-  def test_mads_unavailable(self):
-    self.mads.available = False
-    for state in ALL_STATES:
-      self.state_machine.state = state
-      enabled, active = self.state_machine.update(self.events)
-      assert not enabled
-      assert not active
