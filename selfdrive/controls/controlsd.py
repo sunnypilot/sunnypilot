@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import math
 from typing import SupportsFloat
+import time
+import threading
 
 from cereal import car, log
 import cereal.messaging as messaging
@@ -58,6 +60,8 @@ class Controls:
 
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveState')
+
+    self.enable_mads = self.params.get_bool("Mads")
 
   def update(self):
     self.sm.update(15)
@@ -165,6 +169,9 @@ class Controls:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
       hudControl.rightLaneDepart = self.sm['driverAssistance'].rightLaneDeparture
 
+    sunnyLiveParams = CC.sunnyLiveParams
+    sunnyLiveParams.enableMads = self.enable_mads
+
     if self.sm['selfdriveState'].active:
       CO = self.sm['carOutput']
       if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
@@ -211,13 +218,25 @@ class Controls:
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
+  def params_thread(self, evt):
+    while not evt.is_set():
+      self.enable_mads = self.params.get_bool("Mads")
+      time.sleep(0.1)
+
   def run(self):
+    e = threading.Event()
+    t = threading.Thread(target=self.params_thread, args=(e, ))
     rk = Ratekeeper(100, print_delay_threshold=None)
-    while True:
-      self.update()
-      CC, lac_log = self.state_control()
-      self.publish(CC, lac_log)
-      rk.monitor_time()
+    try:
+      t.start()
+      while True:
+        self.update()
+        CC, lac_log = self.state_control()
+        self.publish(CC, lac_log)
+        rk.monitor_time()
+    finally:
+      e.set()
+      t.join()
 
 def main():
   config_realtime_process(4, Priority.CTRL_HIGH)
