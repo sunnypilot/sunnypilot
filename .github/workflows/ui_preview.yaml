@@ -9,6 +9,7 @@ on:
     branches:
       - 'master'
       - 'master-new'
+      - 'fix-more-ui-diff'
     paths:
       - 'selfdrive/ui/**'
   workflow_dispatch:
