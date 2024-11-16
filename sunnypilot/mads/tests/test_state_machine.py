@@ -93,16 +93,6 @@ class TestMADSStateMachine:
     self.state_machine.update(self.events)
     assert self.state_machine.state == State.paused
 
-  def test_maintain_states(self):
-    for state in ALL_STATES:
-      for et in MAINTAIN_STATES[state]:
-        self.state_machine.state = state
-        if et is not None:
-          self.events.add(make_event([et]))
-        self.state_machine.update(self.events)
-        assert self.state_machine.state == state
-        self.events.clear()
-
   def test_override_lateral(self):
     self.state_machine.state = State.enabled
     self.events.add(make_event([ET.OVERRIDE_LATERAL]))
@@ -114,3 +104,13 @@ class TestMADSStateMachine:
     self.events.add(make_event([ET.ENABLE]))
     self.state_machine.update(self.events)
     assert self.state_machine.state == State.enabled
+
+  def test_maintain_states(self):
+    for state in ALL_STATES:
+      for et in MAINTAIN_STATES[state]:
+        self.state_machine.state = state
+        if et is not None:
+          self.events.add(make_event([et]))
+        self.state_machine.update(self.events)
+        assert self.state_machine.state == state
+        self.events.clear()
