@@ -24,7 +24,7 @@ jobs:
     # Check PR target branch
     - name: check branch
       uses: Vankka/pr-target-branch-action@def32ec9d93514138d6ac0132ee62e120a72aed5
-      if: github.repository == 'commaai/openpilot'
+      if: github.repository == 'sunnypilot/sunnypilot'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -37,7 +37,7 @@ jobs:
     # Welcome comment
     - name: "First timers PR"
       uses: actions/first-interaction@v1
-      if: github.event.pull_request.head.repo.full_name != 'commaai/openpilot'
+      if: github.event.pull_request.head.repo.full_name != 'sunnypilot/sunnypilot'
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         pr-message: |
@@ -50,4 +50,4 @@ jobs:
               * all the tests are passing
               * the change is [something we merge](https://github.com/commaai/openpilot/blob/master/docs/CONTRIBUTING.md#what-gets-merged)
               * include a route or your device' dongle ID if relevant
-      
+
