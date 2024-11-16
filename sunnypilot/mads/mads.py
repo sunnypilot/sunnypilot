@@ -40,8 +40,6 @@ class ModularAssistiveDrivingSystem:
         self.selfdrive.events.add(EventName.silentLkasEnable)
 
     if not self.selfdrive.enabled:
-      self.selfdrive.events.remove(EventName.wrongCruiseMode)
-      self.selfdrive.events.remove(EventName.wrongCarMode)
       if self.selfdrive.events.has(EventName.wrongGear) and not self.selfdrive.events.has(EventName.reverseGear):
         self.selfdrive.events.replace(EventName.wrongGear, EventName.silentWrongGear)
       if self.selfdrive.events.has(EventName.reverseGear) and CS.vEgo < 5:
@@ -88,6 +86,8 @@ class ModularAssistiveDrivingSystem:
     self.selfdrive.events.remove(EventName.pcmDisable)
     self.selfdrive.events.remove(EventName.buttonCancel)
     self.selfdrive.events.remove(EventName.pedalPressed)
+    self.selfdrive.events.remove(EventName.wrongCruiseMode)
+    self.selfdrive.events.remove(EventName.wrongCarMode)
 
   def update(self, CS: car.CarState):
     if not self.enabled_toggle:
