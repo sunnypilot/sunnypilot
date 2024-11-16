@@ -53,7 +53,7 @@ jobs:
       run: TARGET_DIR=$STRIPPED_DIR release/build_devel.sh
     - uses: ./.github/workflows/setup-with-retry
     - name: Check submodules
-      if: github.repository == 'commaai/openpilot'
+      if: github.repository == 'sunnypilot/sunnypilot'
       timeout-minutes: 3
       run: release/check-submodules.sh
     - name: Build openpilot and run checks
