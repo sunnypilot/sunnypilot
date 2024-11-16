@@ -114,6 +114,7 @@ jobs:
       uses: ./.github/workflows/auto-cache
       with:
         path: ~/Library/Caches/Homebrew
+        key: build_macos_${{ hashFiles('.github/workflows/selfdrive_tests.yaml') }}
     - name: Install dependencies
       run: ./tools/mac_setup.sh
       env:
@@ -125,6 +126,7 @@ jobs:
       uses: ./.github/workflows/auto-cache
       with:
         path: /tmp/scons_cache
+        key: build_macos_${{ hashFiles('.github/workflows/selfdrive_tests.yaml') }}
     - name: Building openpilot
       run: . .venv/bin/activate && scons -j$(nproc)
 
