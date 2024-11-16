@@ -24,7 +24,7 @@ class ModularAssistiveDrivingSystem:
     self.state_machine = StateMachine(self)
 
     if self.selfdrive.CP.carName == "hyundai":
-      if (self.selfdrive.CP.sunnyParams.flags & HyundaiFlagsSP.HAS_LFA_BUTTON) or \
+      if (self.selfdrive.CP.sunnypilotFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or \
             (self.selfdrive.CP.flags & HyundaiFlags.CANFD):
         self.allow_always = True
 

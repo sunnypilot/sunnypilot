@@ -21,6 +21,7 @@ from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
+from opendbc.sunnypilot import SunnypilotParamFlags
 
 State = log.SelfdriveState.OpenpilotState
 LaneChangeState = log.LaneChangeState
@@ -169,8 +170,9 @@ class Controls:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
       hudControl.rightLaneDepart = self.sm['driverAssistance'].rightLaneDeparture
 
-    sunnyLiveParams = CC.sunnyLiveParams
-    sunnyLiveParams.enableMads = self.enable_mads
+    sunnypilotParams = CC.sunnypilotParams
+    if self.enable_mads:
+      sunnypilotParams |= SunnypilotParamFlags.ENABLE_MADS.value
 
     if self.sm['selfdriveState'].active:
       CO = self.sm['carOutput']
