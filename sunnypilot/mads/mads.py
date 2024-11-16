@@ -30,6 +30,17 @@ class ModularAssistiveDrivingSystem:
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode", self.selfdrive.params)
 
   def update_events(self, CS: car.CarState):
+    def update_unified_engagement_mode():
+      if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
+        if self.selfdrive.events.has(EventName.pcmEnable):
+          self.selfdrive.events.remove(EventName.pcmEnable)
+        if self.selfdrive.events.has(EventName.buttonEnable):
+          self.selfdrive.events.remove(EventName.buttonEnable)
+
+    def update_silent_lkas_enable():
+      if self.state_machine.state == State.paused and self.active:
+        self.selfdrive.events.add(EventName.silentLkasEnable)
+
     if not self.selfdrive.enabled:
       self.selfdrive.events.remove(EventName.wrongCruiseMode)
       self.selfdrive.events.remove(EventName.wrongCarMode)
@@ -40,10 +51,8 @@ class ModularAssistiveDrivingSystem:
         self.selfdrive.events.remove(EventName.reverseGear)
         self.selfdrive.events.add(EventName.silentReverseGear)
 
-      # TODO-SP: Combine with L56-L58
       if not self.selfdrive.events.has(EventName.silentReverseGear) and not self.selfdrive.events.has(EventName.silentReverseGear):
-        if self.state_machine.state == State.paused and self.active:
-          self.selfdrive.events.add(EventName.silentLkasEnable)
+        update_silent_lkas_enable()
 
     if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
@@ -53,17 +62,11 @@ class ModularAssistiveDrivingSystem:
       if self.selfdrive.events.has(EventName.pedalPressed):
         self.selfdrive.events.add(EventName.silentPedalPressed)
 
-      # TODO-SP: Combine with L44-L46
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
-        if self.state_machine.state == State.paused and self.active:
-          self.selfdrive.events.add(EventName.silentLkasEnable)
+        update_silent_lkas_enable()
 
     if self.selfdrive.events.has(EventName.pcmEnable) or self.selfdrive.events.has(EventName.buttonEnable):
-      if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
-        if self.selfdrive.events.has(EventName.pcmEnable):
-          self.selfdrive.events.remove(EventName.pcmEnable)
-        if self.selfdrive.events.has(EventName.buttonEnable):
-          self.selfdrive.events.remove(EventName.buttonEnable)
+      update_unified_engagement_mode()
     else:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
