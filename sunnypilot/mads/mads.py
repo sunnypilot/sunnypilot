@@ -45,19 +45,16 @@ class ModularAssistiveDrivingSystem:
       self.selfdrive.events.remove(EventName.wrongCruiseMode)
       self.selfdrive.events.remove(EventName.wrongCarMode)
       if self.selfdrive.events.has(EventName.wrongGear) and not self.selfdrive.events.has(EventName.reverseGear):
-        self.selfdrive.events.remove(EventName.wrongGear)
-        self.selfdrive.events.add(EventName.silentWrongGear)
+        self.selfdrive.events.replace(EventName.wrongGear, EventName.silentWrongGear)
       if self.selfdrive.events.has(EventName.reverseGear) and CS.vEgo < 5:
-        self.selfdrive.events.remove(EventName.reverseGear)
-        self.selfdrive.events.add(EventName.silentReverseGear)
+        self.selfdrive.events.replace(EventName.reverseGear, EventName.silentReverseGear)
 
       if not self.selfdrive.events.has(EventName.silentReverseGear) and not self.selfdrive.events.has(EventName.silentReverseGear):
         update_silent_lkas_enable()
 
     if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
-        self.selfdrive.events.remove(EventName.brakeHold)
-        self.selfdrive.events.add(EventName.silentBrakeHold)
+        self.selfdrive.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
 
       if self.selfdrive.events.has(EventName.pedalPressed):
         self.selfdrive.events.add(EventName.silentPedalPressed)
