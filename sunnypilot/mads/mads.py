@@ -1,6 +1,7 @@
 from cereal import car, log, custom
 
-from opendbc.car.hyundai.values import HyundaiFlags, HyundaiFlagsSP
+from opendbc.car.hyundai.values import HyundaiFlags
+from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
 from openpilot.sunnypilot.mads.helpers import MadsParams
 from openpilot.sunnypilot.mads.state import StateMachine
@@ -23,7 +24,7 @@ class ModularAssistiveDrivingSystem:
     self.state_machine = StateMachine(self)
 
     if self.selfdrive.CP.carName == "hyundai":
-      if (self.selfdrive.CP.safetyConfigs[-1].spFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or \
+      if (self.selfdrive.CP.sunnyParams.flags & HyundaiFlagsSP.HAS_LFA_BUTTON) or \
             (self.selfdrive.CP.flags & HyundaiFlags.CANFD):
         self.allow_always = True
 
