@@ -116,6 +116,10 @@ class Events:
       self.event_counters[event_name] = self.event_counters[event_name] + 1
       self.events.remove(event_name)
 
+  def replace(self, prev_event_name: int, cur_event_name: int, static: bool = False) -> None:
+    self.remove(prev_event_name, static)
+    self.add(cur_event_name, static)
+
 
 class Alert:
   def __init__(self,
