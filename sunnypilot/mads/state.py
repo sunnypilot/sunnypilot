@@ -6,8 +6,8 @@ from openpilot.common.realtime import DT_CTRL
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventName = log.OnroadEvent.EventName
 
-ENABLED_STATES = (State.enabled, State.softDisabling, State.overriding)
-ACTIVE_STATES = (State.paused, *ENABLED_STATES)
+ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
+ENABLED_STATES = (State.paused, *ACTIVE_STATES)
 
 
 class StateMachine:
@@ -19,7 +19,7 @@ class StateMachine:
     self.state = State.disabled
 
   def add_current_alert_types(self, alert_type):
-    if not self.selfdrive.active:
+    if not self.selfdrive.enabled:
       self.ss_state_machine.current_alert_types.append(alert_type)
 
   def update(self, events: Events):
@@ -47,7 +47,7 @@ class StateMachine:
         if self.state == State.enabled:
           if events.contains(ET.SOFT_DISABLE):
             self.state = State.softDisabling
-            if not self.selfdrive.active:
+            if not self.selfdrive.enabled:
               self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
               self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
 
@@ -84,7 +84,7 @@ class StateMachine:
         elif self.state == State.overriding:
           if events.contains(ET.SOFT_DISABLE):
             self.state = State.softDisabling
-            if not self.selfdrive.active:
+            if not self.selfdrive.enabled:
               self.ss_state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
               self.ss_state_machine.current_alert_types.append(ET.SOFT_DISABLE)
           elif not events.contains(ET.OVERRIDE_LATERAL):

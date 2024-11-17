@@ -79,7 +79,7 @@ void UIState::updateStatus() {
       status = STATUS_OVERRIDE;
     } else {
       if (mads.getAvailable()) {
-        if (mads.getActive()) {
+        if (mads.getEnabled()) {
           status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_LAT_ONLY;
         } else {
           status = STATUS_DISENGAGED;
