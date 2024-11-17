@@ -15,6 +15,7 @@ class OpenpilotPrefix:
     self.clean_dirs_on_exit = clean_dirs_on_exit
     self.shared_download_cache = shared_download_cache
 
+
   def __enter__(self):
     self.original_prefix = os.environ.get('OPENPILOT_PREFIX', None)
     os.environ['OPENPILOT_PREFIX'] = self.prefix
