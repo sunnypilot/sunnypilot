@@ -17,10 +17,13 @@ class ModularAssistiveDrivingSystem:
 
     self.enabled = False
     self.active = False
+    self.enabled_prev = False
+    self.active_prev = False
     self.available = False
     self.allow_always = False
     self.selfdrive = selfdrive
     self.selfdrive.enabled_prev = False
+    self.selfdrive.active_prev = False
     self.state_machine = StateMachine(self)
 
     if self.selfdrive.CP.carName == "hyundai":
@@ -102,5 +105,10 @@ class ModularAssistiveDrivingSystem:
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update(self.selfdrive.events)
 
-    # Copy of previous SelfdriveD states for MADS events handling
-    self.selfdrive.enabled_prev = self.selfdrive.enabled
+    # update MADS status events
+    if self.selfdrive.active != self.selfdrive.active_prev or self.active != self.active_prev:
+      self.selfdrive.events.add(EventName.madsStatusChanged)
+
+    # Copy of previous SelfdriveD and MADS states for MADS events handling
+    self.selfdrive.enabled_prev, self.selfdrive.active_prev = self.selfdrive.enabled, self.selfdrive.active
+    self.enabled_prev, self.active_prev = self.enabled, self.active

@@ -356,6 +356,13 @@ def personality_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging
   return NormalPermanentAlert(f"Driving Personality: {personality}", duration=1.5)
 
 
+def mads_status_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+  ss = sm["selfdriveState"]
+  mads = sm["selfdriveStateSP"].mads
+  lat_active_str = "ON" if mads.active else "OFF"
+  long_active_str = "ON" if ss.active else "OFF"
+  return NormalPermanentAlert(f"Lateral: {lat_active_str} | Longitudinal: {long_active_str}", duration=1.5)
+
 
 EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # ********** events with no alerts **********
@@ -1043,6 +1050,10 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       AlertStatus.normal, AlertSize.full,
       Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.5),
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
+  },
+
+  EventName.madsStatusChanged: {
+    ET.WARNING: mads_status_changed_alert,
   },
 
 }

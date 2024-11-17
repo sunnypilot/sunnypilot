@@ -194,6 +194,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     silentBrakeHold @157;
     silentWrongGear @158;
     silentReverseGear @159;
+    madsStatusChanged @160;
 
     soundsUnavailableDEPRECATED @47;
   }
