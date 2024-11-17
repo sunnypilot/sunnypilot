@@ -379,9 +379,31 @@ def personality_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging
 def mads_status_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality,
                               mads_status: tuple[bool, bool]) -> Alert:
   lat_active, long_active = mads_status
+
   lat_active_str = "ON" if lat_active else "OFF"
   long_active_str = "ON" if long_active else "OFF"
-  return NormalPermanentAlert(f"Steering: {lat_active_str} | ACC: {long_active_str}", duration=1.5)
+
+  left_str = f"Steering: {lat_active_str}"
+  right_str = f"ACC: {long_active_str}"
+
+  rec_width = 1848
+  font_width_per_char = 20
+
+  left_str_width = len(left_str) * font_width_per_char
+  right_str_width = len(right_str) * font_width_per_char
+  pipe_width = font_width_per_char
+
+  total_padding = rec_width - (left_str_width + right_str_width + pipe_width)
+  left_padding = total_padding // 2
+  right_padding = total_padding - left_padding
+
+  final_str = (
+    f"{' ' * (left_padding // font_width_per_char)}{left_str} "
+    f"| "
+    f"{right_str}{' ' * (right_padding // font_width_per_char)}"
+  )
+
+  return NormalPermanentAlert(final_str, duration=1.5)
 
 
 EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
