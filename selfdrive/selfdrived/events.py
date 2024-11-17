@@ -399,8 +399,8 @@ def mads_status_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging
 
   final_str = (
     f"{' ' * (left_padding // font_width_per_char)}{left_str} "
-    f"| "
-    f"{right_str}{' ' * (right_padding // font_width_per_char)}"
+    + f"| "
+    + f"{right_str}{' ' * (right_padding // font_width_per_char)}"
   )
 
   return NormalPermanentAlert(final_str, duration=1.5)
