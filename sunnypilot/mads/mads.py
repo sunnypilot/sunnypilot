@@ -55,6 +55,8 @@ class ModularAssistiveDrivingSystem:
       if not self.selfdrive.events.has(EventName.silentWrongGear) and not self.selfdrive.events.has(EventName.silentReverseGear):
         update_silent_lkas_enable()
 
+      self.selfdrive.events.remove(EventName.preEnableStandstill)
+
     if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
         self.selfdrive.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
