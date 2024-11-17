@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - master-new
+      - 'fix-yet-more-ui'
   pull_request:
   workflow_dispatch:
   workflow_call:
