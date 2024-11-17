@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - master-new
-      - 'fix-yet-more-ui'
   pull_request:
   workflow_dispatch:
   workflow_call:
@@ -16,12 +15,11 @@ on:
         type: string
 
 concurrency:
-  group: selfdrive-tests-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new' || github.ref == 'refs/heads/fix-yet-more-ui') && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
+  group: selfdrive-tests-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new') && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}
   cancel-in-progress: true
 
 env:
-  REPORT_NAME: report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new' || github.ref == 'refs/heads/fix-yet-more-ui') && 'master' || github.event.number }}
-  DEBUG_GH_REF: ${{ github.ref }}
+  REPORT_NAME: report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new') && 'master' || github.event.number }}
   PYTHONWARNINGS: error
   BASE_IMAGE: openpilot-base
   AZURE_TOKEN: ${{ secrets.AZURE_COMMADATACI_OPENPILOTCI_TOKEN }}
