@@ -20,6 +20,7 @@ concurrency:
 
 env:
   REPORT_NAME: report-${{ inputs.run_number || '1' }}-${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new' || github.ref == 'refs/heads/fix-yet-more-ui') && 'master' || github.event.number }}
+  DEBUG_GH_REF: ${{ github.ref }}
   PYTHONWARNINGS: error
   BASE_IMAGE: openpilot-base
   AZURE_TOKEN: ${{ secrets.AZURE_COMMADATACI_OPENPILOTCI_TOKEN }}
