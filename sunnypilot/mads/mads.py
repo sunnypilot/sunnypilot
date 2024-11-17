@@ -73,15 +73,9 @@ class ModularAssistiveDrivingSystem:
           self.selfdrive.events.add(EventName.lkasEnable)
 
     for be in CS.buttonEvents:
-      if be.type == ButtonType.cancel:
-        if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
-          self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
         if self.active:
-          if self.selfdrive.enabled:
-            self.selfdrive.events.add(EventName.manualSteeringRequired)
-          else:
-            self.selfdrive.events.add(EventName.lkasDisable)
+          self.selfdrive.events.add(EventName.lkasDisable)
         else:
           self.selfdrive.events.add(EventName.lkasEnable)
 
