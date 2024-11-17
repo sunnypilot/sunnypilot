@@ -222,7 +222,7 @@ def get_display_speed(speed_ms: float, metric: bool) -> str:
 
 # ********** alert callback functions **********
 
-AlertCallbackType = Callable[[car.CarParams, car.CarState, messaging.SubMaster, bool, int, log.ControlsState], Alert]
+AlertCallbackType = Callable[[car.CarParams, car.CarState, messaging.SubMaster, bool, int, log.ControlsState, tuple], Alert]
 
 
 def soft_disable_alert(alert_text_2: str) -> AlertCallbackType:
@@ -399,7 +399,7 @@ def mads_status_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging
 
   final_str = (
     f"{' ' * (left_padding // font_width_per_char)}{left_str} "
-    + f"| "
+    + "| "
     + f"{right_str}{' ' * (right_padding // font_width_per_char)}"
   )
 
@@ -1116,7 +1116,7 @@ if __name__ == '__main__':
   for i, alerts in EVENTS.items():
     for et, alert in alerts.items():
       if callable(alert):
-        alert = alert(CP, CS, sm, False, 1, log.LongitudinalPersonality.standard)
+        alert = alert(CP, CS, sm, False, 1, log.LongitudinalPersonality.standard, (True, True))
       alerts_by_type[et][alert.priority].append(event_names[i])
 
   all_alerts: dict[str, list[tuple[Priority, list[str]]]] = {}
