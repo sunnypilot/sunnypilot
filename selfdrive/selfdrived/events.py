@@ -1023,12 +1023,12 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Gear not D",
       "openpilot Unavailable",
       AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 0.),
     ET.NO_ENTRY: Alert(
       "Gear not D",
       "openpilot Unavailable",
       AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 3.),
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0., 0.),
   },
 
   EventName.silentReverseGear: {
@@ -1041,7 +1041,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Reverse\nGear",
       "",
       AlertStatus.normal, AlertSize.full,
-      Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.5),
+      Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.),
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
   },
 
