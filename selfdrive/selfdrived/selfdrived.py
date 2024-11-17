@@ -424,8 +424,7 @@ class SelfdriveD:
 
     pers = LONGITUDINAL_PERSONALITY_MAP[self.personality]
     alerts = self.events.create_alerts(self.state_machine.current_alert_types, [self.CP, CS, self.sm, self.is_metric,
-                                                                                self.state_machine.soft_disable_timer, pers,
-                                                                                (self.mads.enabled, self.enabled)])
+                                                                                self.state_machine.soft_disable_timer, pers])
     self.AM.add_many(self.sm.frame, alerts)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
 
