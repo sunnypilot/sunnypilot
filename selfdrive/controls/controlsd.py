@@ -170,9 +170,8 @@ class Controls:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
       hudControl.rightLaneDepart = self.sm['driverAssistance'].rightLaneDeparture
 
-    sunnypilotParams = CC.sunnypilotParams
     if self.enable_mads:
-      sunnypilotParams |= SunnypilotParamFlags.ENABLE_MADS.value
+      CC.sunnypilotParams |= SunnypilotParamFlags.ENABLE_MADS.value
 
     if self.sm['selfdriveState'].active:
       CO = self.sm['carOutput']
