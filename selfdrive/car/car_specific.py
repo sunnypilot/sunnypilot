@@ -218,6 +218,7 @@ class CarSpecificEvents:
       if not self.CP.pcmCruise and (b.type in enable_buttons and not b.pressed):
         events.add(EventName.buttonEnable)
       # Disable on rising and falling edge of cancel for both stock and OP long
+      # TODO-SP: Implement in separate PR for 'allow_cancel'
       if b.type == ButtonType.cancel and allow_cancel:
         events.add(EventName.buttonCancel)
 
