@@ -4,13 +4,11 @@ on:
     branches:
       - master
       - master-new
-      - 'fix-more-ui-diff'
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
     branches:
       - 'master'
       - 'master-new'
-      - 'fix-more-ui-diff'
     paths:
       - 'selfdrive/ui/**'
   workflow_dispatch:
@@ -68,7 +66,7 @@ jobs:
           ref: openpilot_master_ui
 
       - name: Saving new master ui
-        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new' || github.ref == 'refs/heads/fix-more-ui-diff') && github.event_name == 'push'
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new') && github.event_name == 'push'
         working-directory: ${{ github.workspace }}/master_ui
         run: |
           git checkout --orphan=new_master_ui
