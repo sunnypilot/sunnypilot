@@ -47,7 +47,7 @@ class ModularAssistiveDrivingSystem:
       if self.state_machine.state != State.paused:
         self.selfdrive.events.add(EventName.silentLkasDisable)
 
-    if not self.selfdrive.enabled:
+    if not self.selfdrive.enabled and self.enabled:
       if self.selfdrive.events.has(EventName.wrongGear) and not self.selfdrive.events.has(EventName.reverseGear):
         self.selfdrive.events.replace(EventName.wrongGear, EventName.silentWrongGear)
         transition_paused_state()
@@ -64,7 +64,6 @@ class ModularAssistiveDrivingSystem:
         transition_paused_state()
 
       if self.selfdrive.events.has(EventName.pedalPressed):
-        self.selfdrive.events.add(EventName.silentPedalPressed)
         transition_paused_state()
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
