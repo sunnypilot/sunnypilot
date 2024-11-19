@@ -1017,7 +1017,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.silentWrongGear: {
-    ET.PERMANENT: Alert(
+    ET.WARNING: Alert(
       "Gear not D",
       "openpilot Unavailable",
       AlertStatus.normal, AlertSize.mid,
