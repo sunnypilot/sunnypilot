@@ -35,12 +35,12 @@ class ModularAssistiveDrivingSystem:
 
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
-      if (self.unified_engagement_mode and self.active) or not self.unified_engagement_mode:
+      if (self.unified_engagement_mode and self.enabled) or not self.unified_engagement_mode:
         self.selfdrive.events.remove(EventName.pcmEnable)
         self.selfdrive.events.remove(EventName.buttonEnable)
 
     def update_silent_lkas_enable():
-      if self.state_machine.state == State.paused and self.active:
+      if self.state_machine.state == State.paused and self.enabled:
         self.selfdrive.events.add(EventName.silentLkasEnable)
 
     if not self.selfdrive.enabled:
@@ -74,7 +74,7 @@ class ModularAssistiveDrivingSystem:
         if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
           self.selfdrive.events.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
-        if self.active:
+        if self.enabled:
           if self.selfdrive.enabled:
             self.selfdrive.events.add(EventName.manualSteeringRequired)
           else:
