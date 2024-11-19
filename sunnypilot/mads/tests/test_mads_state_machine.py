@@ -1,12 +1,13 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from cereal import custom
+from cereal import log, custom
 from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.mads.state import StateMachine, SOFT_DISABLE_TIME
 from openpilot.selfdrive.selfdrived.events import Events, ET, EVENTS, NormalPermanentAlert
 
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
+EventName = log.OnroadEvent.EventName
 
 # The event types that maintain the current state
 MAINTAIN_STATES = {State.enabled: (None,), State.disabled: (None,), State.softDisabling: (ET.SOFT_DISABLE,),
@@ -54,7 +55,18 @@ class TestMADSStateMachine:
         self.events.add(make_event([et, ET.USER_DISABLE]))
         self.state_machine.state = state
         self.state_machine.update(self.events)
-        assert self.state_machine.state in (State.disabled, State.paused)
+        assert State.disabled == self.state_machine.state
+        self.events.clear()
+
+  def test_user_disable_to_paused(self):
+    for state in ALL_STATES:
+      for et in MAINTAIN_STATES[state]:
+        self.events.add(make_event([et, ET.USER_DISABLE]))
+        self.events.add(EventName.silentLkasDisable)
+        self.state_machine.state = state
+        self.state_machine.update(self.events)
+        final_state = State.paused if self.events.has(EventName.silentLkasDisable) and state != State.disabled else State.disabled
+        assert self.state_machine.state == final_state
         self.events.clear()
 
   def test_soft_disable(self):
