@@ -992,11 +992,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.silentPedalPressed: {
-    ET.USER_DISABLE: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .2),
     ET.NO_ENTRY: NoEntryAlert("Pedal Pressed During Attempt",
                               visual_alert=VisualAlert.brakePressed),
   },
@@ -1009,17 +1004,20 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0.),
   },
 
-  EventName.silentBrakeHold: {
+  EventName.silentLkasDisable: {
     ET.USER_DISABLE: Alert(
       "",
       "",
       AlertStatus.normal, AlertSize.none,
       Priority.MID, VisualAlert.none, AudibleAlert.none, .2, 0.),
+  },
+
+  EventName.silentBrakeHold: {
     ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
   },
 
   EventName.silentWrongGear: {
-    ET.USER_DISABLE: Alert(
+    ET.PERMANENT: Alert(
       "Gear not D",
       "openpilot Unavailable",
       AlertStatus.normal, AlertSize.mid,
@@ -1037,11 +1035,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       AlertStatus.normal, AlertSize.full,
       Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.5),
-    ET.USER_DISABLE: Alert(
-      "Reverse\nGear",
-      "",
-      AlertStatus.normal, AlertSize.full,
-      Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.),
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
   },
 

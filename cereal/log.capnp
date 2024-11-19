@@ -191,9 +191,10 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     manualLongitudinalRequired @154;
     silentPedalPressed @155;
     silentLkasEnable @156;
-    silentBrakeHold @157;
-    silentWrongGear @158;
-    silentReverseGear @159;
+    silentLkasDisable @157;
+    silentBrakeHold @158;
+    silentWrongGear @159;
+    silentReverseGear @160;
 
     soundsUnavailableDEPRECATED @47;
   }

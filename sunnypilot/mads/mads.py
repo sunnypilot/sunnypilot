@@ -43,11 +43,17 @@ class ModularAssistiveDrivingSystem:
       if self.state_machine.state == State.paused and self.enabled:
         self.selfdrive.events.add(EventName.silentLkasEnable)
 
+    def transition_paused_state():
+      if self.state_machine.state != State.paused:
+        self.selfdrive.events.add(EventName.silentLkasDisable)
+
     if not self.selfdrive.enabled:
       if self.selfdrive.events.has(EventName.wrongGear) and not self.selfdrive.events.has(EventName.reverseGear):
         self.selfdrive.events.replace(EventName.wrongGear, EventName.silentWrongGear)
+        transition_paused_state()
       if self.selfdrive.events.has(EventName.reverseGear) and CS.vEgo < 5:
         self.selfdrive.events.replace(EventName.reverseGear, EventName.silentReverseGear)
+        transition_paused_state()
 
       if not self.selfdrive.events.has(EventName.silentWrongGear) and not self.selfdrive.events.has(EventName.silentReverseGear):
         update_silent_lkas_enable()
@@ -55,9 +61,11 @@ class ModularAssistiveDrivingSystem:
     if self.disengage_lateral_on_brake_toggle:
       if self.selfdrive.events.has(EventName.brakeHold):
         self.selfdrive.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
+        transition_paused_state()
 
       if self.selfdrive.events.has(EventName.pedalPressed):
         self.selfdrive.events.add(EventName.silentPedalPressed)
+        transition_paused_state()
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
         update_silent_lkas_enable()

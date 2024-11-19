@@ -31,8 +31,7 @@ class StateMachine:
     if self.state != State.disabled:
       # user and immediate disable always have priority in a non-disabled state
       if events.contains(ET.USER_DISABLE):
-        if events.has(EventName.silentPedalPressed) or events.has(EventName.silentBrakeHold) or \
-           events.has(EventName.silentWrongGear) or events.has(EventName.silentReverseGear):
+        if events.has(EventName.silentLkasDisable):
           self.state = State.paused
         else:
           self.state = State.disabled
