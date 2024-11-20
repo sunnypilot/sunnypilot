@@ -64,6 +64,7 @@ class ModularAssistiveDrivingSystem:
         transition_paused_state()
 
       if self.selfdrive.events.has(EventName.pedalPressed):
+        self.selfdrive.events.add(EventName.silentPedalPressed)
         transition_paused_state()
 
       if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:

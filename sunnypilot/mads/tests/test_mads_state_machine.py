@@ -59,15 +59,17 @@ class TestMADSStateMachine:
         self.events.clear()
 
   def test_user_disable_to_paused(self):
+    paused_events = (EventName.silentLkasDisable, EventName.silentPedalPressed)
     for state in ALL_STATES:
       for et in MAINTAIN_STATES[state]:
         self.events.add(make_event([et, ET.USER_DISABLE]))
-        self.events.add(EventName.silentLkasDisable)
-        self.state_machine.state = state
-        self.state_machine.update(self.events)
-        final_state = State.paused if self.events.has(EventName.silentLkasDisable) and state != State.disabled else State.disabled
-        assert self.state_machine.state == final_state
-        self.events.clear()
+        for en in paused_events:
+          self.events.add(en)
+          self.state_machine.state = state
+          self.state_machine.update(self.events)
+          final_state = State.paused if self.events.has(en) and state != State.disabled else State.disabled
+          assert self.state_machine.state == final_state
+          self.events.clear()
 
   def test_soft_disable(self):
     for state in ALL_STATES:
