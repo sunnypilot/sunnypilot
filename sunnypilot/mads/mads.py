@@ -59,7 +59,7 @@ class ModularAssistiveDrivingSystem:
         self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
         transition_paused_state()
 
-      if self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
+      if not self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
         update_silent_lkas_enable()
 
     if self.disengage_lateral_on_brake_toggle:
