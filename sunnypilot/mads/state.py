@@ -16,7 +16,6 @@ ALLOW_PAUSED = [EventName.silentPedalPressed, *GEARS_ALLOW_PAUSED]
 
 class StateMachine:
   def __init__(self, mads):
-    self.mads = mads
     self.selfdrive = mads.selfdrive
     self.ss_state_machine = mads.selfdrive.state_machine
 
