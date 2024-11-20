@@ -40,10 +40,6 @@ class ModularAssistiveDrivingSystem:
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)
 
-    def update_silent_lkas_enable():
-      if self.state_machine.state == State.paused:
-        self.events.add(EventName.silentLkasEnable)
-
     def transition_paused_state():
       if self.state_machine.state != State.paused:
         self.events.add(EventName.silentLkasDisable)
@@ -59,16 +55,15 @@ class ModularAssistiveDrivingSystem:
         self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
         transition_paused_state()
 
-      if not self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
-        update_silent_lkas_enable()
-
       if self.disengage_lateral_on_brake_toggle:
         if self.events.has(EventName.pedalPressed):
           self.events.add(EventName.silentPedalPressed)
           transition_paused_state()
 
-        if not self.events.has(EventName.silentPedalPressed):
-          update_silent_lkas_enable()
+      if not (self.disengage_lateral_on_brake_toggle and self.events.has(EventName.pedalPressed)) and \
+         not self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
+        if self.state_machine.state == State.paused:
+          self.events.add(EventName.silentLkasEnable)
 
     if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
       update_unified_engagement_mode()
