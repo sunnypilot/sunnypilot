@@ -62,13 +62,13 @@ class ModularAssistiveDrivingSystem:
       if not self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
         update_silent_lkas_enable()
 
-    if self.disengage_lateral_on_brake_toggle:
-      if self.events.has(EventName.pedalPressed):
-        self.events.add(EventName.silentPedalPressed)
-        transition_paused_state()
+      if self.disengage_lateral_on_brake_toggle:
+        if self.events.has(EventName.pedalPressed):
+          self.events.add(EventName.silentPedalPressed)
+          transition_paused_state()
 
-      if not CS.brakePressed and not CS.brakeHoldActive and not CS.parkingBrake and not CS.regenBraking:
-        update_silent_lkas_enable()
+        if not self.events.has(EventName.silentPedalPressed):
+          update_silent_lkas_enable()
 
     if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
       update_unified_engagement_mode()
