@@ -41,7 +41,7 @@ class ModularAssistiveDrivingSystem:
         self.events.remove(EventName.buttonEnable)
 
     def update_silent_lkas_enable():
-      if self.state_machine.state == State.paused and self.enabled:
+      if self.state_machine.state == State.paused:
         self.events.add(EventName.silentLkasEnable)
 
     def transition_paused_state():
