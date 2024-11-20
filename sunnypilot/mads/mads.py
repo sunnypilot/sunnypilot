@@ -4,7 +4,7 @@ from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
 from openpilot.sunnypilot.mads.helpers import MadsParams
-from openpilot.sunnypilot.mads.state import StateMachine
+from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
@@ -58,9 +58,7 @@ class ModularAssistiveDrivingSystem:
         self.selfdrive.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
         transition_paused_state()
 
-      if not self.selfdrive.events.has(EventName.silentWrongGear) and \
-         not self.selfdrive.events.has(EventName.silentReverseGear) and \
-         not self.selfdrive.events.has(EventName.silentBrakeHold):
+      if self.selfdrive.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
         update_silent_lkas_enable()
 
     if self.disengage_lateral_on_brake_toggle:

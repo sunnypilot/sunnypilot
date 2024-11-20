@@ -108,6 +108,9 @@ class Events:
   def has(self, event_name: int) -> bool:
     return event_name in self.events
 
+  def has_list(self, events_list: list[int]) -> bool:
+    return all(event_name in self.events for event_name in events_list)
+
   def remove(self, event_name: int, static: bool = False) -> None:
     if static and event_name in self.static_events:
       self.static_events.remove(event_name)

@@ -9,6 +9,10 @@ EventName = log.OnroadEvent.EventName
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.paused, *ACTIVE_STATES)
 
+GEARS_ALLOW_PAUSED_SILENT = [EventName.silentWrongGear, EventName.silentReverseGear, EventName.silentBrakeHold]
+GEARS_ALLOW_PAUSED = [EventName.wrongGear, EventName.reverseGear, EventName.brakeHold, *GEARS_ALLOW_PAUSED_SILENT]
+ALLOW_PAUSED = [EventName.silentPedalPressed, *GEARS_ALLOW_PAUSED]
+
 
 class StateMachine:
   def __init__(self, mads):
@@ -96,7 +100,8 @@ class StateMachine:
     elif self.state == State.disabled:
       if events.contains(ET.ENABLE):
         if events.contains(ET.NO_ENTRY):
-          self.state = State.paused
+          if events.has_list(ALLOW_PAUSED):
+            self.state = State.paused
           self.add_current_alert_types(ET.NO_ENTRY)
 
         else:
