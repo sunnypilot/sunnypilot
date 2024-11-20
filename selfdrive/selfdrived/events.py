@@ -985,8 +985,8 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.manualLongitudinalRequired: {
     ET.WARNING: Alert(
-      "Smart/Adaptive Cruise Control is OFF",
-      "Manual Gas/Brakes Required",
+      "Smart/Adaptive Cruise Control: OFF",
+      "Manual Speed Control Required",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
@@ -998,19 +998,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.silentLkasEnable: {
-    ET.ENABLE: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .2),
+    ET.ENABLE: EngagementAlert(AudibleAlert.none),
   },
 
   EventName.silentLkasDisable: {
-    ET.USER_DISABLE: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .2),
+    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
   },
 
   EventName.silentBrakeHold: {
