@@ -218,9 +218,14 @@ void can_recv_thread(std::vector<Panda *> pandas) {
     evt.setValid(comms_healthy);
     auto canData = evt.initCan(raw_can_data.size());
     for (uint i = 0; i<raw_can_data.size(); i++) {
+       int src = raw_can_data[i].src;
+       if (src >= 4) {
+         src -= 4;
+       }
       canData[i].setAddress(raw_can_data[i].address);
       canData[i].setDat(kj::arrayPtr((uint8_t*)raw_can_data[i].dat.data(), raw_can_data[i].dat.size()));
-      canData[i].setSrc(raw_can_data[i].src);
+     //canData[i].setSrc(raw_can_data[i].src);
+      canData[i].setSrc(src);
     }
     pm.send("can", msg);
 
