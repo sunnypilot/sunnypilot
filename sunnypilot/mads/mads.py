@@ -57,7 +57,6 @@ class ModularAssistiveDrivingSystem:
 
       if self.disengage_lateral_on_brake_toggle:
         if self.events.has(EventName.pedalPressed):
-          self.events.add(EventName.silentPedalPressed)
           transition_paused_state()
 
       if not (self.disengage_lateral_on_brake_toggle and self.events.has(EventName.pedalPressed)) and \
