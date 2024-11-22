@@ -67,7 +67,7 @@ class ModelsFetcher:
       bytes_downloaded = 0
 
       with open(full_path, "wb") as file:
-        for chunk in response.iter_content(chunk_size=1024):
+        for chunk in response.iter_content(chunk_size=5120):
           file.write(chunk)
           bytes_downloaded += len(chunk)
           if progress_callback and total_size > 0:
@@ -116,7 +116,7 @@ class ModelsFetcher:
 
 # Example usage:
 def progress_report(progress):
-  params.put_nonblocking("ModelsFetcher_DownloadProgress", str(progress))
+  params.put("ModelsFetcher_DownloadProgress", str(progress))
   cloudlog.debug(f"Download progress: {progress:.2f}%")
 
 
@@ -138,7 +138,7 @@ def progress_report(progress):
 
 
 def main_thread(sm=None, pm=None):
-  rk = Ratekeeper(0.5, print_delay_threshold=None)
+  rk = Ratekeeper(1, print_delay_threshold=None)
   fetcher = ModelsFetcher()
 
   while True:
