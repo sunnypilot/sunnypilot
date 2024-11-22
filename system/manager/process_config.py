@@ -64,7 +64,7 @@ def and_(*fns):
   return lambda *args: operator.and_(*(fn(*args) for fn in fns))
 
 procs = [
-  DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
+  DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid", enabled=not PC),
 
   NativeProcess("camerad", "system/camerad", ["./camerad"], driverview),
   NativeProcess("logcatd", "system/logcatd", ["./logcatd"], only_onroad),
@@ -112,6 +112,11 @@ procs = [
   PythonProcess("webrtcd", "system.webrtc.webrtcd", notcar),
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
   PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
+]
+
+# sunnypilot
+procs += [
+  PythonProcess("models_manager", "sunnypilot.models.model_manager", only_offroad),
 ]
 
 if os.path.exists("./github_runner.sh"):

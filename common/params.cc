@@ -200,6 +200,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
+
+    // sunnypilot params
+    {"ModelManager_DownloadIndex", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION | CLEAR_ON_ONROAD_TRANSITION},
     {"EnableGithubRunner", PERSISTENT},
 };
 
