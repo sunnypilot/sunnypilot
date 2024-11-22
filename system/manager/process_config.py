@@ -110,4 +110,9 @@ procs = [
   PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
 ]
 
+# sunnypilot
+procs += [
+  PythonProcess("models_fetcher", "sunnypilot.models_models_fetcher", only_offroad),
+]
+
 managed_processes = {p.name: p for p in procs}
