@@ -27,7 +27,20 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
   }
 }
 
-struct CustomReserved1 @0xaedffd8f31e7b55d {
+struct ModelSelectorSP @0xaedffd8f31e7b55d {
+    downloadProgress @0 :DownloadProgress;
+
+    struct DownloadProgress {
+        status @0 :DownloadStatus;
+        progress @1 :Float32;
+        eta @2 :Float32;
+    }
+
+    enum DownloadStatus {
+        downloading @0;
+        downloaded @1;
+        failed @2;
+    }
 }
 
 struct CustomReserved2 @0xf35cc4560bbf6ec2 {

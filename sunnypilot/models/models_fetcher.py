@@ -6,13 +6,14 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.params import Params
 from openpilot.system.hardware.hw import Paths
+import cereal.messaging as messaging
 
 import requests
 params = Params()
 
 class ModelsFetcher:
   def __init__(self):
-    pass
+    self.pm = messaging.PubMaster(["ModelsFetcher"])
 
   @staticmethod
   def verify_file_hash(file_path, expected_hash):
@@ -38,8 +39,8 @@ class ModelsFetcher:
     # Return the file data if hash matches or no hash was provided; empty otherwise
     return file_data if hash_matches else b"", hash_matches
 
-  @staticmethod
-  def download(download_info, filename, destination_path, progress_callback=None):
+
+  def download(self, download_info, filename, destination_path):
     """
     Downloads a file from the given URL.
     :param download_info: Dictionary containing 'url' and 'sha256'.
@@ -57,8 +58,7 @@ class ModelsFetcher:
     file_data, hash_matches = ModelsFetcher.verify_file_hash(full_path, expected_hash)
     if os.path.exists(full_path) and hash_matches:
       print(f"File already downloaded and verified: {filename}")
-      if progress_callback:
-        progress_callback(100)
+      self.progress_report(100)
       return file_data, True
 
     # Proceed with the download if file does not exist or hash verification failed
@@ -71,8 +71,8 @@ class ModelsFetcher:
         for chunk in response.iter_content(chunk_size=5120):
           file.write(chunk)
           bytes_downloaded += len(chunk)
-          if progress_callback and total_size > 0:
-            progress_callback((bytes_downloaded / total_size) * 100)
+          if total_size > 0:
+           self.progress_report(((bytes_downloaded / total_size) * 100))
 
     # Verify the hash after download
     _, hash_matches = ModelsFetcher.verify_file_hash(full_path, expected_hash)
@@ -115,12 +115,16 @@ class ModelsFetcher:
     return [{"model_name": key, **value} for key, value in json_data.items()]
 
 
-# Example usage:
-def progress_report(progress):
-  pass
-  #params.put("ModelsFetcher_DownloadProgress", str(progress))
-  #cloudlog.debug(f"Download progress: {progress:.2f}%")
-
+  # Example usage:
+  def progress_report(self, progress):
+    model_selector_msg = messaging.new_message('modelSelectorSP')
+    model_selector_msg.valid = True
+    model_selector_sp = model_selector_msg.modelSelectorSP
+    download_progress = model_selector_sp.downloadProgress
+    download_progress.status = 0
+    download_progress.progress = progress
+    download_progress.eta = 0
+    self.pm.send('ModelsFetcher', model_selector_msg)
 
 # if __name__ == "__main__":
 #
@@ -144,21 +148,21 @@ def main_thread(sm=None, pm=None):
   fetcher = ModelsFetcher()
 
   while True:
-    model_to_download = params.get("ModelsFetcher_DownloadRequested", block=True, encoding="utf-8")
+    model_to_download = params.get("ModelsFetcher_DownloadRequested", block=False, encoding="utf-8")
     if model_to_download:
       try:
         model_data = json.loads(model_to_download)
-        fetcher.download(model_data.get('download_uri'), model_data.get('file_name'), Paths.model_root, progress_callback=progress_report)
+        fetcher.download(model_data.get('download_uri'), model_data.get('file_name'), Paths.model_root())
 
         model_uri_nav = model_data.get('download_uri_nav')
         if model_uri_nav:
-          fetcher.download(model_uri_nav, model_data.get('file_name_nav'), Paths.model_root, progress_callback=progress_report)
+          fetcher.download(model_uri_nav, model_data.get('file_name_nav'), Paths.model_root())
 
         model_uri_metadata = model_data.get('download_uri_metadata')
         if model_uri_metadata:
-          fetcher.download(model_data.get('download_uri_metadata'), model_data.get('file_name_metadata'), Paths.model_root, progress_callback=progress_report)
-      except Exception:
-        cloudlog.exception()
+          fetcher.download(model_data.get('download_uri_metadata'), model_data.get('file_name_metadata'), Paths.model_root())
+      except Exception as e:
+        cloudlog.exception(e)
       finally:
         params.put("ModelsFetcher_DownloadRequested", "")
 
