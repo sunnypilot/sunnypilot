@@ -5,6 +5,7 @@ import os
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.params import Params
+from openpilot.system.hardware.hw import Paths
 
 import requests
 params = Params()
@@ -116,8 +117,9 @@ class ModelsFetcher:
 
 # Example usage:
 def progress_report(progress):
-  params.put("ModelsFetcher_DownloadProgress", str(progress))
-  cloudlog.debug(f"Download progress: {progress:.2f}%")
+  pass
+  #params.put("ModelsFetcher_DownloadProgress", str(progress))
+  #cloudlog.debug(f"Download progress: {progress:.2f}%")
 
 
 # if __name__ == "__main__":
@@ -146,7 +148,15 @@ def main_thread(sm=None, pm=None):
     if model_to_download:
       try:
         model_data = json.loads(model_to_download)
-        fetcher.download(model_data.get('download_uri'), model_data.get('file_name'), "./downloads", progress_callback=progress_report)
+        fetcher.download(model_data.get('download_uri'), model_data.get('file_name'), Paths.model_root, progress_callback=progress_report)
+
+        model_uri_nav = model_data.get('download_uri_nav')
+        if model_uri_nav:
+          fetcher.download(model_uri_nav, model_data.get('file_name_nav'), Paths.model_root, progress_callback=progress_report)
+
+        model_uri_metadata = model_data.get('download_uri_metadata')
+        if model_uri_metadata:
+          fetcher.download(model_data.get('download_uri_metadata'), model_data.get('file_name_metadata'), Paths.model_root, progress_callback=progress_report)
       except Exception:
         cloudlog.exception()
       finally:
