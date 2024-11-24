@@ -3,10 +3,8 @@ import hashlib
 import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple, Optional
-
 import aiohttp
 import requests
-
 from cereal import messaging, custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
@@ -15,68 +13,41 @@ from openpilot.system.hardware.hw import Paths
 
 params = Params()
 
+MODEL_STATUS_NOT_DOWNLOADING = 0
+MODEL_STATUS_DOWNLOADING = 1
+MODEL_STATUS_DOWNLOADED = 2
+MODEL_STATUS_ERROR = 3
+
+
+def fetch_model_data(value):
+  download_uri = custom.ModelManagerSP.DownloadUri(uri=value["download_uri"]["url"], sha256=value["download_uri"]["sha256"])
+  download_uri_nav = custom.ModelManagerSP.DownloadUri(uri=value.get("download_uri_nav", {}).get("url", ""),
+                                                       sha256=value.get("download_uri_nav", {}).get("sha256", ""))
+  download_uri_metadata = custom.ModelManagerSP.DownloadUri(uri=value.get("download_uri_metadata", {}).get("url", ""),
+                                                            sha256=value.get("download_uri_metadata", {}).get("sha256", ""))
+  models = [custom.ModelManagerSP.Model(fullName=value["full_name"], fileName=value["file_name"], downloadUri=download_uri, type=0)]
+  if download_uri_nav.uri:
+    models.append(
+      custom.ModelManagerSP.Model(fullName=value["full_name_nav"], fileName=value["file_name_nav"], downloadUri=download_uri_nav, type=1))
+  if download_uri_metadata.uri:
+    models.append(custom.ModelManagerSP.Model(fullName=value["full_name_metadata"], fileName=value["file_name_metadata"],
+                                              downloadUri=download_uri_metadata, type=2))
+  return models
+
 
 def get_models_from_url(url) -> list[custom.ModelManagerSP.ModelBundle]:
-  """
-  Fetches models from a given URL and parses them.
-  :param url: URL to fetch models from.
-  :return: List of ModelBundle objects.
-  """
   response = requests.get(url)
   response.raise_for_status()
   json_data = response.json()
-
   model_bundles = []
   for key, value in json_data.items():
-    model_bundle = custom.ModelManagerSP.ModelBundle()
-    download_uri = custom.ModelManagerSP.DownloadUri()
-    download_uri_nav = custom.ModelManagerSP.DownloadUri()
-    download_uri_metadata = custom.ModelManagerSP.DownloadUri()
-
-    download_uri.uri = value["download_uri"]["url"]
-    download_uri.sha256 = value["download_uri"]["sha256"]
-
-    if value.get("download_uri_nav"):
-      download_uri_nav.uri = value["download_uri_nav"]["url"]
-      download_uri_nav.sha256 = value["download_uri_nav"]["sha256"]
-
-    if value.get("download_uri_metadata"):
-      download_uri_metadata.uri = value["download_uri_metadata"]["url"]
-      download_uri_metadata.sha256 = value["download_uri_metadata"]["sha256"]
-
-    models = []
-    driving_model = custom.ModelManagerSP.Model()
-    driving_model.fullName = value["full_name"]
-    driving_model.fileName = value["file_name"]
-    driving_model.downloadUri = download_uri
-    driving_model.type = 0
-    models.append(driving_model)
-
-    if value.get("download_uri_nav"):
-      nav_model = custom.ModelManagerSP.Model()
-      nav_model.fullName = value["full_name_nav"]
-      nav_model.fileName = value["file_name_nav"]
-      nav_model.downloadUri = download_uri_nav
-      nav_model.type = 1
-      models.append(nav_model)
-
-    if value.get("download_uri_metadata"):
-      metadata_model = custom.ModelManagerSP.Model()
-      metadata_model.fullName = value["full_name_metadata"]
-      metadata_model.fileName = value["file_name_metadata"]
-      metadata_model.downloadUri = download_uri_metadata
-      metadata_model.type = 2
-      models.append(metadata_model)
-
-
-    model_bundle.index = int(value["index"])
-    model_bundle.internalName = key
-    model_bundle.displayName = value["display_name"]
-    model_bundle.models = models
-    model_bundle.status = 0  # Adjust this as needed
-
+    models = fetch_model_data(value)
+    model_bundle = custom.ModelManagerSP.ModelBundle(index=int(value["index"]),
+                                                     internalName=key,
+                                                     displayName=value["display_name"],
+                                                     models=models,
+                                                     status=MODEL_STATUS_NOT_DOWNLOADING)
     model_bundles.append(model_bundle)
-
   return model_bundles
 
 
@@ -102,25 +73,18 @@ class ModelManagerSP:
     """Calculate SHA256 hash of a file"""
     sha256_hash = hashlib.sha256()
     file_data = b""
-
     if os.path.exists(file_path):
       with open(file_path, "rb") as file:
         file_data = file.read()
         sha256_hash.update(file_data)
-
     return file_data, sha256_hash.hexdigest()
 
   async def verify_file_hash(self, file_path: str, expected_hash: str) -> Tuple[bytes, bool]:
-    """
-    Verifies the file's hash against the expected hash.
-    Returns: Tuple (file_data, hash_matches)
-    """
+    """Verifies the file's hash against the expected hash."""
     if not expected_hash:
       return b"", True
-
     file_data, current_hash = await self._calculate_hash(file_path)
-    hash_matches = (current_hash.lower() == expected_hash.lower())
-    return file_data if hash_matches else b"", hash_matches
+    return file_data if current_hash.lower() == expected_hash.lower() else b"", current_hash.lower() == expected_hash.lower()
 
   async def _write_chunk(self, file, chunk):
     """Write chunk to file using executor to avoid blocking"""
@@ -134,7 +98,6 @@ class ModelManagerSP:
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
         bytes_downloaded = 0
-
         with open(full_path, 'wb') as f:
           while True:
             chunk = await response.content.read(self._chunk_size)
@@ -143,94 +106,60 @@ class ModelManagerSP:
             await self._write_chunk(f, chunk)
             bytes_downloaded += len(chunk)
             if total_size > 0:
-              model.downloadProgress.status = 1
+              model.downloadProgress.status = MODEL_STATUS_DOWNLOADING
               model.downloadProgress.progress = (bytes_downloaded / total_size) * 100
               model.downloadProgress.eta = 0
               self.report_status()
 
   async def _process_model(self, model, destination_path: str) -> None:
     """Process a single model download including verification"""
-    url = model.downloadUri.uri
-    expected_hash = model.downloadUri.sha256
-    filename = model.fileName
-    full_path = os.path.join(destination_path, filename)
-
+    full_path = os.path.join(destination_path, model.fileName)
     try:
-      # Check if file exists and hash matches
-      _, hash_matches = await self.verify_file_hash(full_path, expected_hash)
-      if os.path.exists(full_path) and hash_matches:
-        model.downloadProgress.status = 2
-        model.downloadProgress.progress = 100
-        model.downloadProgress.eta = 0
-        self.report_status()
-        return
-
-      # Download file
-      await self._download_file(url, full_path, model)
-
-      # Verify downloaded file
-      _, hash_matches = await self.verify_file_hash(full_path, expected_hash)
+      if os.path.exists(full_path):
+        _, hash_matches = await self.verify_file_hash(full_path, model.downloadUri.sha256)
+        if hash_matches:
+          model.downloadProgress.status = MODEL_STATUS_DOWNLOADED
+          model.downloadProgress.progress = 100
+          model.downloadProgress.eta = 0
+          self.report_status()
+          return
+      await self._download_file(model.downloadUri.uri, full_path, model)
+      _, hash_matches = await self.verify_file_hash(full_path, model.downloadUri.sha256)
       if not hash_matches:
-        raise ValueError(f"Hash validation failed for {filename}")
-
-      model.downloadProgress.status = 2
+        raise ValueError(f"Hash validation failed for {model.fileName}")
+      model.downloadProgress.status = MODEL_STATUS_DOWNLOADED
       self.report_status()
-
     except Exception as e:
-      cloudlog.error(f"Error downloading {filename}: {str(e)}")
+      cloudlog.error(f"Error downloading {model.fileName}: {str(e)}")
       if os.path.exists(full_path):
         os.remove(full_path)
-      model.downloadProgress.status = 3
-      self.selected_bundle.status = 3
+      model.downloadProgress.status = MODEL_STATUS_ERROR
+      self.selected_bundle.status = MODEL_STATUS_ERROR
       self.report_status()
       raise
 
   async def _download_all(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path: str) -> None:
     """Download all models in parallel"""
     self.selected_bundle = model_bundle
-    self.selected_bundle.status = 1
+    self.selected_bundle.status = MODEL_STATUS_DOWNLOADING
     os.makedirs(destination_path, exist_ok=True)
-
-    try:
-      # Create download tasks for all models
-      tasks = [
-        self._process_model(model, destination_path)
-        for model in self.selected_bundle.models
-      ]
-
-      # Run downloads in parallel
-      await asyncio.gather(*tasks)
-
-      self.selected_bundle.status = 2
-      self.report_status()
-
-    except Exception as e:
-      self.selected_bundle.status = 3
-      self.report_status()
-      raise
+    download_tasks = [self._process_model(model, destination_path) for model in self.selected_bundle.models]
+    await asyncio.gather(*download_tasks)
+    self.selected_bundle.status = MODEL_STATUS_DOWNLOADED
+    self.report_status()
 
   def download(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path: str) -> None:
-    """
-    Downloads files from the given ModelBundle.
-    This is the main entry point that maintains the same interface as before.
-    """
+    """Maintain the same interface for downloading files."""
     asyncio.run(self._download_all(model_bundle, destination_path))
 
   def main_thread(self):
     rk = Ratekeeper(1, print_delay_threshold=None)
-
     models_url = "https://docs.sunnypilot.ai/models_v5.json"
     self.available_models = get_models_from_url(models_url)
-
     while True:
       index_of_model_to_download = params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8")
-      model_to_download = None
-      if index_of_model_to_download:
-        for model in self.available_models:
-          if model.index == int(index_of_model_to_download):
-            model_to_download = model
-            break
-
+      model_to_download = next((model for model in self.available_models if model.index == int(index_of_model_to_download)),
+                               None) if index_of_model_to_download else None
       if model_to_download:
         try:
           self.download(model_to_download, Paths.model_root())
@@ -238,7 +167,6 @@ class ModelManagerSP:
           cloudlog.exception(e)
         finally:
           params.put("ModelManager_DownloadIndex", "")
-
       self.report_status()
       rk.keep_time()
 
