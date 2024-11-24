@@ -122,6 +122,11 @@ class ModelManagerSP:
     hash_matches = (current_hash.lower() == expected_hash.lower())
     return file_data if hash_matches else b"", hash_matches
 
+  async def _write_chunk(self, file, chunk):
+    """Write chunk to file using executor to avoid blocking"""
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(self._executor, file.write, chunk)
+
   async def _download_file(self, url: str, full_path: str, model) -> None:
     """Download a single file with progress tracking"""
     async with aiohttp.ClientSession() as session:
@@ -131,8 +136,11 @@ class ModelManagerSP:
         bytes_downloaded = 0
 
         with open(full_path, 'wb') as f:
-          async for chunk in response.content.iter_chunked(self._chunk_size):
-            f.write(chunk)
+          while True:
+            chunk = await response.content.read(self._chunk_size)
+            if not chunk:
+              break
+            await self._write_chunk(f, chunk)
             bytes_downloaded += len(chunk)
             if total_size > 0:
               model.downloadProgress.status = 1
