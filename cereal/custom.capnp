@@ -27,8 +27,33 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
   }
 }
 
-struct ModelSelectorSP @0xaedffd8f31e7b55d {
-    downloadProgress @0 :DownloadProgress;
+struct ModelManagerSP @0xaedffd8f31e7b55d {
+    modelBundle @0 :ModelBundle;
+
+    struct DownloadUri {
+        uri @0 :Text;
+        sha256 @1 :Text;
+    }
+
+    enum Type {
+        drive @0;
+        navigation @1;
+        metadata @2;
+    }
+
+    struct Model {
+        fullName @0 :Text;
+        fileName @1 :Text;
+        downloadUri @2 :DownloadUri;
+        downloadProgress @3 :DownloadProgress;
+        type @4 :Type;
+    }
+
+    enum DownloadStatus {
+        downloading @0;
+        downloaded @1;
+        failed @2;
+    }
 
     struct DownloadProgress {
         status @0 :DownloadStatus;
@@ -36,10 +61,12 @@ struct ModelSelectorSP @0xaedffd8f31e7b55d {
         eta @2 :Float32;
     }
 
-    enum DownloadStatus {
-        downloading @0;
-        downloaded @1;
-        failed @2;
+    struct ModelBundle {
+        index @0 :UInt32;
+        internalName @1 :Text;
+        displayName @2 :Text;
+        models @3 :List(Model);
+        status @4 :DownloadStatus;
     }
 }
 

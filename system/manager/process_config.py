@@ -112,7 +112,7 @@ procs = [
 
 # sunnypilot
 procs += [
-  PythonProcess("models_fetcher", "sunnypilot.models.models_fetcher", only_offroad),
+  PythonProcess("models_fetcher", "sunnypilot.models.model_manager", only_offroad),
 ]
 
 managed_processes = {p.name: p for p in procs}
