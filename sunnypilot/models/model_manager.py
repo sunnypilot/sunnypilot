@@ -1,15 +1,17 @@
 import asyncio
-import hashlib
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Tuple, Optional
+from typing import Optional
+
 import aiohttp
 import requests
+
 from cereal import messaging, custom
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
+from sunnypilot.models.utils import verify_file_hash
 
 params = Params()
 
@@ -68,24 +70,6 @@ class ModelManagerSP:
     model_manager_state.availableBundles = self.available_models
     self.pm.send('modelManagerSP', msg)
 
-  @staticmethod
-  async def _calculate_hash(file_path: str) -> Tuple[bytes, str]:
-    """Calculate SHA256 hash of a file"""
-    sha256_hash = hashlib.sha256()
-    file_data = b""
-    if os.path.exists(file_path):
-      with open(file_path, "rb") as file:
-        file_data = file.read()
-        sha256_hash.update(file_data)
-    return file_data, sha256_hash.hexdigest()
-
-  async def verify_file_hash(self, file_path: str, expected_hash: str) -> Tuple[bytes, bool]:
-    """Verifies the file's hash against the expected hash."""
-    if not expected_hash:
-      return b"", True
-    file_data, current_hash = await self._calculate_hash(file_path)
-    return file_data if current_hash.lower() == expected_hash.lower() else b"", current_hash.lower() == expected_hash.lower()
-
   async def _write_chunk(self, file, chunk):
     """Write chunk to file using executor to avoid blocking"""
     loop = asyncio.get_event_loop()
@@ -116,7 +100,7 @@ class ModelManagerSP:
     full_path = os.path.join(destination_path, model.fileName)
     try:
       if os.path.exists(full_path):
-        _, hash_matches = await self.verify_file_hash(full_path, model.downloadUri.sha256)
+        _, hash_matches = await verify_file_hash(full_path, model.downloadUri.sha256)
         if hash_matches:
           model.downloadProgress.status = MODEL_STATUS_DOWNLOADED
           model.downloadProgress.progress = 100
@@ -124,7 +108,7 @@ class ModelManagerSP:
           self.report_status()
           return
       await self._download_file(model.downloadUri.uri, full_path, model)
-      _, hash_matches = await self.verify_file_hash(full_path, model.downloadUri.sha256)
+      _, hash_matches = await verify_file_hash(full_path, model.downloadUri.sha256)
       if not hash_matches:
         raise ValueError(f"Hash validation failed for {model.fileName}")
       model.downloadProgress.status = MODEL_STATUS_DOWNLOADED
