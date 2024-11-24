@@ -28,7 +28,8 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
-    modelBundle @0 :ModelBundle;
+    selectedBundle @0 :ModelBundle;
+    availableBundles @1 :List(ModelBundle);
 
     struct DownloadUri {
         uri @0 :Text;
@@ -50,9 +51,10 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     }
 
     enum DownloadStatus {
-        downloading @0;
-        downloaded @1;
-        failed @2;
+        notDownloading @0;
+        downloading @1;
+        downloaded @2;
+        failed @3;
     }
 
     struct DownloadProgress {
