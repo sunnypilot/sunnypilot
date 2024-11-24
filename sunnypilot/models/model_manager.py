@@ -1,13 +1,17 @@
+import asyncio
 import hashlib
 import os
+from concurrent.futures import ThreadPoolExecutor
+from typing import Tuple, Optional
 
-from openpilot.common.swaglog import cloudlog
-from openpilot.common.realtime import Ratekeeper
-from openpilot.common.params import Params
-from openpilot.system.hardware.hw import Paths
-from cereal import messaging, custom
-
+import aiohttp
 import requests
+
+from cereal import messaging, custom
+from openpilot.common.params import Params
+from openpilot.common.realtime import Ratekeeper
+from openpilot.common.swaglog import cloudlog
+from openpilot.system.hardware.hw import Paths
 
 params = Params()
 
@@ -80,94 +84,129 @@ class ModelManagerSP:
   def __init__(self):
     self.pm = messaging.PubMaster(["modelManagerSP"])
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
-    self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
-
-  @staticmethod
-  def verify_file_hash(file_path, expected_hash):
-    """
-    Verifies the file's hash against the expected hash.
-    :param file_path: Path to the file to verify.
-    :param expected_hash: Expected SHA256 hash of the file.
-    :return: Tuple (file_data, hash_matches)
-    """
-    hash_matches = False
-    file_data = b""
-
-    if not expected_hash:
-      # If no hash is provided, assume verification isn't required
-      hash_matches = True
-    else:
-      if os.path.exists(file_path):
-        with open(file_path, "rb") as file:
-          file_data = file.read()
-          current_hash = hashlib.sha256(file_data).hexdigest()
-          hash_matches = (current_hash == expected_hash)
-
-    # Return the file data if hash matches or no hash was provided; empty otherwise
-    return file_data if hash_matches else b"", hash_matches
-
-  def download(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path):
-    """
-    Downloads files from the given ModelBundle.
-    :param model_bundle: ModelBundle object containing models to download.
-    :param destination_path: Directory to save the files.
-    """
-    self.selected_bundle = model_bundle
-    self.selected_bundle.status = 1
-    os.makedirs(destination_path, exist_ok=True)
-
-    for model in self.selected_bundle.models:
-      url = model.downloadUri.uri
-      expected_hash = model.downloadUri.sha256
-      filename = model.fileName
-      full_path = os.path.join(destination_path, filename)
-
-      # Verify if the file already exists and its hash matches
-      file_data, hash_matches = ModelManagerSP.verify_file_hash(full_path, expected_hash)
-      if os.path.exists(full_path) and hash_matches:
-        model.downloadProgress.status = 2
-        model.downloadProgress.progress = 100
-        model.downloadProgress.eta = 0
-        self.report_status()
-        continue
-
-      # Proceed with the download if file does not exist or hash verification failed
-      with requests.get(url, stream=True) as response:
-        response.raise_for_status()
-        total_size = int(response.headers.get("Content-Length", 0))
-        bytes_downloaded = 0
-        chunk_size = 128 * 1000  # 512 KB
-
-        with open(full_path, "wb") as file:
-          for chunk in response.iter_content(chunk_size=chunk_size):
-            file.write(chunk)
-            bytes_downloaded += len(chunk)
-            if total_size > 0:
-              model.downloadProgress.status = 1
-              model.downloadProgress.progress = ((bytes_downloaded / total_size) * 100)
-              model.downloadProgress.eta = 0
-              self.report_status()
-          model.downloadProgress.status = 2
-          self.report_status()
-
-      # Verify the hash after download
-      _, hash_matches = ModelManagerSP.verify_file_hash(full_path, expected_hash)
-      if not hash_matches:
-        cloudlog.error(f"The downloaded file didn't pass hash validation: {filename}")
-        os.remove(full_path)
-        model.downloadProgress.status = 3
-        self.selected_bundle.status = 3
-        self.report_status()
-        raise ValueError("Hash validation failed!")
-    self.selected_bundle.status = 2
+    self.selected_bundle: Optional[custom.ModelManagerSP.ModelBundle] = None
+    self._executor = ThreadPoolExecutor(max_workers=4)
+    self._chunk_size = 128 * 1000  # 128 KB chunks
 
   def report_status(self):
+    """Report current status through messaging system"""
     msg = messaging.new_message('modelManagerSP', valid=True)
     model_manager_state = msg.modelManagerSP
     if self.selected_bundle:
       model_manager_state.selectedBundle = self.selected_bundle
     model_manager_state.availableBundles = self.available_models
     self.pm.send('modelManagerSP', msg)
+
+  @staticmethod
+  async def _calculate_hash(file_path: str) -> Tuple[bytes, str]:
+    """Calculate SHA256 hash of a file"""
+    sha256_hash = hashlib.sha256()
+    file_data = b""
+
+    if os.path.exists(file_path):
+      with open(file_path, "rb") as file:
+        file_data = file.read()
+        sha256_hash.update(file_data)
+
+    return file_data, sha256_hash.hexdigest()
+
+  async def verify_file_hash(self, file_path: str, expected_hash: str) -> Tuple[bytes, bool]:
+    """
+    Verifies the file's hash against the expected hash.
+    Returns: Tuple (file_data, hash_matches)
+    """
+    if not expected_hash:
+      return b"", True
+
+    file_data, current_hash = await self._calculate_hash(file_path)
+    hash_matches = (current_hash.lower() == expected_hash.lower())
+    return file_data if hash_matches else b"", hash_matches
+
+  async def _download_file(self, url: str, full_path: str, model) -> None:
+    """Download a single file with progress tracking"""
+    async with aiohttp.ClientSession() as session:
+      async with session.get(url) as response:
+        response.raise_for_status()
+        total_size = int(response.headers.get("content-length", 0))
+        bytes_downloaded = 0
+
+        with open(full_path, 'wb') as f:
+          async for chunk in response.content.iter_chunked(self._chunk_size):
+            f.write(chunk)
+            bytes_downloaded += len(chunk)
+            if total_size > 0:
+              model.downloadProgress.status = 1
+              model.downloadProgress.progress = (bytes_downloaded / total_size) * 100
+              model.downloadProgress.eta = 0
+              self.report_status()
+
+  async def _process_model(self, model, destination_path: str) -> None:
+    """Process a single model download including verification"""
+    url = model.downloadUri.uri
+    expected_hash = model.downloadUri.sha256
+    filename = model.fileName
+    full_path = os.path.join(destination_path, filename)
+
+    try:
+      # Check if file exists and hash matches
+      _, hash_matches = await self.verify_file_hash(full_path, expected_hash)
+      if os.path.exists(full_path) and hash_matches:
+        model.downloadProgress.status = 2
+        model.downloadProgress.progress = 100
+        model.downloadProgress.eta = 0
+        self.report_status()
+        return
+
+      # Download file
+      await self._download_file(url, full_path, model)
+
+      # Verify downloaded file
+      _, hash_matches = await self.verify_file_hash(full_path, expected_hash)
+      if not hash_matches:
+        raise ValueError(f"Hash validation failed for {filename}")
+
+      model.downloadProgress.status = 2
+      self.report_status()
+
+    except Exception as e:
+      cloudlog.error(f"Error downloading {filename}: {str(e)}")
+      if os.path.exists(full_path):
+        os.remove(full_path)
+      model.downloadProgress.status = 3
+      self.selected_bundle.status = 3
+      self.report_status()
+      raise
+
+  async def _download_all(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path: str) -> None:
+    """Download all models in parallel"""
+    self.selected_bundle = model_bundle
+    self.selected_bundle.status = 1
+    os.makedirs(destination_path, exist_ok=True)
+
+    try:
+      # Create download tasks for all models
+      tasks = [
+        self._process_model(model, destination_path)
+        for model in self.selected_bundle.models
+      ]
+
+      # Run downloads in parallel
+      await asyncio.gather(*tasks)
+
+      self.selected_bundle.status = 2
+      self.report_status()
+
+    except Exception as e:
+      self.selected_bundle.status = 3
+      self.report_status()
+      raise
+
+  def download(self, model_bundle: custom.ModelManagerSP.ModelBundle, destination_path: str) -> None:
+    """
+    Downloads files from the given ModelBundle.
+    This is the main entry point that maintains the same interface as before.
+    """
+    asyncio.run(self._download_all(model_bundle, destination_path))
 
   def main_thread(self):
     rk = Ratekeeper(1, print_delay_threshold=None)
