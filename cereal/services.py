@@ -75,6 +75,7 @@ _services: dict[str, tuple] = {
 
   # sunnypilot
   "selfdriveStateSP": (True, 100., 10),
+  "modelSelectorSP": (True, 0.),
 
   # debug
   "uiDebug": (True, 0., 1),
