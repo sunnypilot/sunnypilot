@@ -44,28 +44,29 @@ class ModularAssistiveDrivingSystem:
       if self.state_machine.state != State.paused:
         self.events.add(EventName.silentLkasDisable)
 
-    if not self.selfdrive.enabled and self.enabled:
-      if self.events.has(EventName.wrongGear):
-        self.events.replace(EventName.wrongGear, EventName.silentWrongGear)
-        transition_paused_state()
-      if self.events.has(EventName.reverseGear):
-        self.events.replace(EventName.reverseGear, EventName.silentReverseGear)
-        transition_paused_state()
-      if self.events.has(EventName.brakeHold):
-        self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
-        transition_paused_state()
-      if self.events.has(EventName.doorOpen):
-        self.events.replace(EventName.doorOpen, EventName.silentDoorOpen)
-        transition_paused_state()
-      if self.events.has(EventName.seatbeltNotLatched):
-        self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
-        transition_paused_state()
-
-      if self.disengage_lateral_on_brake_toggle:
-        if self.events.has(EventName.pedalPressed):
+    if not self.selfdrive.enabled:
+      if self.enabled:
+        if self.disengage_lateral_on_brake_toggle:
+          if self.events.has(EventName.pedalPressed):
+            transition_paused_state()
+      else:
+        if self.events.has(EventName.wrongGear):
+          self.events.replace(EventName.wrongGear, EventName.silentWrongGear)
+          transition_paused_state()
+        if self.events.has(EventName.reverseGear):
+          self.events.replace(EventName.reverseGear, EventName.silentReverseGear)
+          transition_paused_state()
+        if self.events.has(EventName.brakeHold):
+          self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
+          transition_paused_state()
+        if self.events.has(EventName.doorOpen):
+          self.events.replace(EventName.doorOpen, EventName.silentDoorOpen)
+          transition_paused_state()
+        if self.events.has(EventName.seatbeltNotLatched):
+          self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
           transition_paused_state()
 
-      if not (self.disengage_lateral_on_brake_toggle and self.events.has(EventName.pedalPressed)) and \
+      if not (self.disengage_lateral_on_brake_toggle and self.events.has(EventName.pedalPressed) and self.enabled) and \
          not self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
           self.events.add(EventName.silentLkasEnable)
