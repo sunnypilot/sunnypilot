@@ -1037,12 +1037,20 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.silentDoorOpen: {
-    ET.SOFT_DISABLE: user_soft_disable_alert("Door Open"),
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
     ET.NO_ENTRY: NoEntryAlert("Door Open"),
   },
 
   EventName.silentSeatbeltNotLatched: {
-    ET.SOFT_DISABLE: user_soft_disable_alert("Seatbelt Unlatched"),
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
     ET.NO_ENTRY: NoEntryAlert("Seatbelt Unlatched"),
   },
 
