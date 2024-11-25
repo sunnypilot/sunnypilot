@@ -54,6 +54,12 @@ class ModularAssistiveDrivingSystem:
       if self.events.has(EventName.brakeHold):
         self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
         transition_paused_state()
+      if self.events.has(EventName.doorOpen):
+        self.events.replace(EventName.doorOpen, EventName.silentDoorOpen)
+        transition_paused_state()
+      if self.events.has(EventName.seatbeltNotLatched):
+        self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
+        transition_paused_state()
 
       if self.disengage_lateral_on_brake_toggle:
         if self.events.has(EventName.pedalPressed):

@@ -1036,6 +1036,16 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
   },
 
+  EventName.silentDoorOpen: {
+    ET.SOFT_DISABLE: user_soft_disable_alert("Door Open"),
+    ET.NO_ENTRY: NoEntryAlert("Door Open"),
+  },
+
+  EventName.silentSeatbeltNotLatched: {
+    ET.SOFT_DISABLE: user_soft_disable_alert("Seatbelt Unlatched"),
+    ET.NO_ENTRY: NoEntryAlert("Seatbelt Unlatched"),
+  },
+
 }
 
 

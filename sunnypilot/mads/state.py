@@ -9,8 +9,10 @@ EventName = log.OnroadEvent.EventName
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.paused, *ACTIVE_STATES)
 
-GEARS_ALLOW_PAUSED_SILENT = [EventName.silentWrongGear, EventName.silentReverseGear, EventName.silentBrakeHold]
-GEARS_ALLOW_PAUSED = [EventName.wrongGear, EventName.reverseGear, EventName.brakeHold, *GEARS_ALLOW_PAUSED_SILENT]
+GEARS_ALLOW_PAUSED_SILENT = [EventName.silentWrongGear, EventName.silentReverseGear, EventName.silentBrakeHold,
+                             EventName.silentDoorOpen, EventName.silentSeatbeltNotLatched]
+GEARS_ALLOW_PAUSED = [EventName.wrongGear, EventName.reverseGear, EventName.brakeHold,
+                      EventName.doorOpen, EventName.seatbeltNotLatched, *GEARS_ALLOW_PAUSED_SILENT]
 
 
 class StateMachine:
