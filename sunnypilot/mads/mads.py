@@ -60,6 +60,9 @@ class ModularAssistiveDrivingSystem:
       if self.events.has(EventName.seatbeltNotLatched):
         self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
         transition_paused_state()
+      if self.events.has(EventName.parkBrake):
+        self.events.replace(EventName.parkBrake, EventName.silentParkBrake)
+        transition_paused_state()
 
       if self.disengage_lateral_on_brake_toggle:
         if self.events.has(EventName.pedalPressed):

@@ -1054,6 +1054,15 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Seatbelt Unlatched"),
   },
 
+  EventName.silentParkBrake: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
+    ET.NO_ENTRY: NoEntryAlert("Parking Brake Engaged"),
+  },
+
 }
 
 
