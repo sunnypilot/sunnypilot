@@ -96,7 +96,7 @@ class TestMADSStateMachine:
   def test_no_entry(self):
     for et in ENABLE_EVENT_TYPES:
       self.events.add(make_event([ET.NO_ENTRY, et]))
-      if not self.events.has_list(GEARS_ALLOW_PAUSED):
+      if not self.events.contains_in_list(GEARS_ALLOW_PAUSED):
         self.state_machine.update(self.events)
         assert self.state_machine.state == State.disabled
         self.events.clear()

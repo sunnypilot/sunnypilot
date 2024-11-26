@@ -66,7 +66,7 @@ class ModularAssistiveDrivingSystem:
           transition_paused_state()
 
       if not (self.disengage_lateral_on_brake_toggle and self.events.has(EventName.pedalPressed)) and \
-         not self.events.has_list(GEARS_ALLOW_PAUSED_SILENT):
+         not self.events.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
           self.events.add(EventName.silentLkasEnable)
 

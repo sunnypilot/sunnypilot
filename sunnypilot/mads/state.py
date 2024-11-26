@@ -99,7 +99,7 @@ class StateMachine:
     elif self.state == State.disabled:
       if events.contains(ET.ENABLE):
         if events.contains(ET.NO_ENTRY):
-          if events.has_list(GEARS_ALLOW_PAUSED):
+          if events.contains_in_list(GEARS_ALLOW_PAUSED):
             self.state = State.paused
           self.add_current_alert_types(ET.NO_ENTRY)
 
