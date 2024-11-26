@@ -10,9 +10,9 @@ ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.paused, *ACTIVE_STATES)
 
 GEARS_ALLOW_PAUSED_SILENT = [EventName.silentWrongGear, EventName.silentReverseGear, EventName.silentBrakeHold,
-                             EventName.silentDoorOpen, EventName.silentSeatbeltNotLatched, EventName.parkBrake]
+                             EventName.silentDoorOpen, EventName.silentSeatbeltNotLatched, EventName.silentParkBrake]
 GEARS_ALLOW_PAUSED = [EventName.wrongGear, EventName.reverseGear, EventName.brakeHold,
-                      EventName.doorOpen, EventName.seatbeltNotLatched, EventName.silentParkBrake,
+                      EventName.doorOpen, EventName.seatbeltNotLatched, EventName.parkBrake,
                       *GEARS_ALLOW_PAUSED_SILENT]
 
 
