@@ -42,10 +42,6 @@ class HardwareBase(ABC):
     pass
 
   @abstractmethod
-  def get_sound_card_online(self):
-    pass
-
-  @abstractmethod
   def get_imei(self, slot) -> str:
     pass
 
@@ -109,9 +105,6 @@ class HardwareBase(ABC):
     pass
 
   def get_modem_version(self):
-    return None
-
-  def get_modem_nv(self):
     return None
 
   @abstractmethod

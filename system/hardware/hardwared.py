@@ -16,7 +16,7 @@ from openpilot.common.dict_helpers import strip_deprecated_keys
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_HW
-from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
+from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.system.hardware import HARDWARE, TICI, AGNOS
 from openpilot.system.loggerd.config import get_available_percent
 from openpilot.system.statsd import statlog
@@ -99,7 +99,6 @@ def hw_state_thread(end_event, hw_queue):
   prev_hw_state = None
 
   modem_version = None
-  modem_nv = None
   modem_configured = False
   modem_restarted = False
   modem_missing_count = 0
@@ -114,12 +113,11 @@ def hw_state_thread(end_event, hw_queue):
           modem_temps = prev_hw_state.modem_temps
 
         # Log modem version once
-        if AGNOS and ((modem_version is None) or (modem_nv is None)):
+        if AGNOS and (modem_version is None):
           modem_version = HARDWARE.get_modem_version()
-          modem_nv = HARDWARE.get_modem_nv()
 
-          if (modem_version is not None) and (modem_nv is not None):
-            cloudlog.event("modem version", version=modem_version, nv=modem_nv)
+          if modem_version is not None:
+            cloudlog.event("modem version", version=modem_version)
           else:
             if not modem_restarted:
               # TODO: we may be able to remove this with a MM update
@@ -148,8 +146,7 @@ def hw_state_thread(end_event, hw_queue):
         except queue.Full:
           pass
 
-        # TODO: remove this once the config is in AGNOS
-        if not modem_configured and len(HARDWARE.get_sim_info().get('sim_id', '')) > 0:
+        if not modem_configured and HARDWARE.get_modem_version() is not None:
           cloudlog.warning("configuring modem")
           HARDWARE.configure_modem()
           modem_configured = True
@@ -164,7 +161,7 @@ def hw_state_thread(end_event, hw_queue):
 
 def hardware_thread(end_event, hw_queue) -> None:
   pm = messaging.PubMaster(['deviceState'])
-  sm = messaging.SubMaster(["peripheralState", "gpsLocationExternal", "controlsState", "pandaStates"], poll="pandaStates")
+  sm = messaging.SubMaster(["peripheralState", "gpsLocationExternal", "selfdriveState", "pandaStates"], poll="pandaStates")
 
   count = 0
 
@@ -230,8 +227,8 @@ def hardware_thread(end_event, hw_queue) -> None:
         onroad_conditions["ignition"] = False
         cloudlog.error("panda timed out onroad")
 
-    # Run at 2Hz, plus rising edge of ignition
-    ign_edge = started_ts is None and onroad_conditions["ignition"]
+    # Run at 2Hz, plus either edge of ignition
+    ign_edge = (started_ts is not None) != onroad_conditions["ignition"]
     if (sm.frame % round(SERVICE_LIST['pandaStates'].frequency * DT_HW) != 0) and not ign_edge:
       continue
 
@@ -316,7 +313,7 @@ def hardware_thread(end_event, hw_queue) -> None:
     set_offroad_alert_if_changed("Offroad_TemperatureTooHigh", show_alert, extra_text=extra_text)
 
     # TODO: this should move to TICI.initialize_hardware, but we currently can't import params there
-    if TICI:
+    if TICI and HARDWARE.get_device_type() == "tici":
       if not os.path.isfile("/persist/comma/living-in-the-moment"):
         if not Path("/data/media").is_mount():
           set_offroad_alert_if_changed("Offroad_StorageMissing", True)
@@ -341,8 +338,8 @@ def hardware_thread(end_event, hw_queue) -> None:
       engaged_prev = False
       HARDWARE.set_power_save(not should_start)
 
-    if sm.updated['controlsState']:
-      engaged = sm['controlsState'].enabled
+    if sm.updated['selfdriveState']:
+      engaged = sm['selfdriveState'].enabled
       if engaged != engaged_prev:
         params.put_bool("IsEngaged", engaged)
         engaged_prev = engaged
