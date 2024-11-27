@@ -23,6 +23,10 @@ void set_controls_allowed(bool c){
   controls_allowed = c;
 }
 
+void set_controls_allowed_lat(bool c){
+  controls_allowed_lat = c;
+}
+
 void set_alternative_experience(int mode){
   alternative_experience = mode;
 }
@@ -33,6 +37,10 @@ void set_relay_malfunction(bool c){
 
 bool get_controls_allowed(void){
   return controls_allowed;
+}
+
+bool get_controls_allowed_lat(void){
+  return controls_allowed_lat;
 }
 
 int get_alternative_experience(void){
@@ -179,6 +187,10 @@ void set_honda_fwd_brake(bool c){
 
 bool get_honda_fwd_brake(void){
   return honda_fwd_brake;
+}
+
+void set_enable_mads(bool c){
+  enable_mads = c;
 }
 
 void init_tests(void){

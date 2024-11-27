@@ -24,6 +24,29 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(longManeuverToggle);
 
+  // FIXME-SP: Move to sunnypilot panels before merging
+  auto madsToggle = new ParamControl("Mads", tr("Modular Assistive Driving System (MADS)"), "", "");
+  addItem(madsToggle);
+
+  // TODO-SP: Rename toggle
+  auto madsCruiseMainToggle = new ParamControl("MadsCruiseMain", tr("MADS: Cruise Main"), "", "");
+  addItem(madsCruiseMainToggle);
+
+  auto madsDisengageLateralOnBrakeToggle = new ParamControl("MadsDisengageLateralOnBrake", tr("MADS: Disengage Lateral on Brake"), "", "");
+  addItem(madsDisengageLateralOnBrakeToggle);
+
+  auto madsUnifiedEngagementModeToggle = new ParamControl("MadsUnifiedEngagementMode", tr("MADS: Unified Engagement Mode"), "", "");
+  addItem(madsUnifiedEngagementModeToggle);
+
+  auto toyotaabhToggle = new ParamControl("ToyotaAutoHold", tr("Toyota: Auto Brake Hold"), "", "");
+  addItem(toyotaabhToggle);
+
+  auto toyotaebsmToggle = new ParamControl("ToyotaEnhancedBsm", tr("Toyota: Enhanced BSM"), "", "");
+  addItem(toyotaebsmToggle);
+
+  auto toyotatss2longToggle = new ParamControl("ToyotaTSS2Long", tr("Toyota: custom tune"), "", "");
+  addItem(toyotatss2longToggle);
+
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");
 

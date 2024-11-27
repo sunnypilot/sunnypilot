@@ -125,6 +125,79 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     espActive @90;
     personalityChanged @91;
     aeb @92;
+    eventReserved93 @93;
+    eventReserved94 @94;
+    eventReserved95 @95;
+    eventReserved96 @96;
+    eventReserved97 @97;
+    eventReserved98 @98;
+    eventReserved99 @99;
+    eventReserved100 @100;
+    eventReserved101 @101;
+    eventReserved102 @102;
+    eventReserved103 @103;
+    eventReserved104 @104;
+    eventReserved105 @105;
+    eventReserved106 @106;
+    eventReserved107 @107;
+    eventReserved108 @108;
+    eventReserved109 @109;
+    eventReserved110 @110;
+    eventReserved111 @111;
+    eventReserved112 @112;
+    eventReserved113 @113;
+    eventReserved114 @114;
+    eventReserved115 @115;
+    eventReserved116 @116;
+    eventReserved117 @117;
+    eventReserved118 @118;
+    eventReserved119 @119;
+    eventReserved120 @120;
+    eventReserved121 @121;
+    eventReserved122 @122;
+    eventReserved123 @123;
+    eventReserved124 @124;
+    eventReserved125 @125;
+    eventReserved126 @126;
+    eventReserved127 @127;
+    eventReserved128 @128;
+    eventReserved129 @129;
+    eventReserved130 @130;
+    eventReserved131 @131;
+    eventReserved132 @132;
+    eventReserved133 @133;
+    eventReserved134 @134;
+    eventReserved135 @135;
+    eventReserved136 @136;
+    eventReserved137 @137;
+    eventReserved138 @138;
+    eventReserved139 @139;
+    eventReserved140 @140;
+    eventReserved141 @141;
+    eventReserved142 @142;
+    eventReserved143 @143;
+    eventReserved144 @144;
+    eventReserved145 @145;
+    eventReserved146 @146;
+    eventReserved147 @147;
+    eventReserved148 @148;
+    eventReserved149 @149;
+    eventReserved150 @150;
+
+    # sunnypilot
+    lkasEnable @151;
+    lkasDisable @152;
+    manualSteeringRequired @153;
+    manualLongitudinalRequired @154;
+    silentPedalPressed @155;
+    silentLkasEnable @156;
+    silentLkasDisable @157;
+    silentBrakeHold @158;
+    silentWrongGear @159;
+    silentReverseGear @160;
+    silentDoorOpen @161;
+    silentSeatbeltNotLatched @162;
+    silentParkBrake @163;
 
     soundsUnavailableDEPRECATED @47;
   }
@@ -586,6 +659,7 @@ struct PandaState @0xa7649e2575e4591e {
 
   # safety stuff
   controlsAllowed @3 :Bool;
+  controlsAllowedLat @5 :Bool;
   safetyRxInvalid @19 :UInt32;
   safetyTxBlocked @24 :UInt32;
   safetyModel @14 :Car.CarParams.SafetyModel;
@@ -693,7 +767,6 @@ struct PandaState @0xa7649e2575e4591e {
   }
 
   gasInterceptorDetectedDEPRECATED @4 :Bool;
-  startedSignalDetectedDEPRECATED @5 :Bool;
   hasGpsDEPRECATED @6 :Bool;
   gmlanSendErrsDEPRECATED @9 :UInt32;
   fanSpeedRpmDEPRECATED @11 :UInt16;
@@ -2544,7 +2617,7 @@ struct Event {
     customReservedRawData2 @126 :Data;
 
     # *********** Custom: reserved for forks ***********
-    customReserved0 @107 :Custom.CustomReserved0;
+    selfdriveStateSP @107 :Custom.SelfdriveStateSP;
     customReserved1 @108 :Custom.CustomReserved1;
     customReserved2 @109 :Custom.CustomReserved2;
     customReserved3 @110 :Custom.CustomReserved3;

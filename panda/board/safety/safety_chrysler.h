@@ -78,6 +78,9 @@ static void chrysler_rx_hook(const CANPacket_t *to_push) {
   if ((bus == das_3_bus) && (addr == chrysler_addrs->DAS_3)) {
     bool cruise_engaged = GET_BIT(to_push, 21U);
     pcm_cruise_check(cruise_engaged);
+
+    acc_main_on = GET_BIT(to_push, 20U);
+    mads_check_acc_main();
   }
 
   // TODO: use the same message for both

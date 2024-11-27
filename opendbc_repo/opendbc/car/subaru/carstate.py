@@ -7,10 +7,14 @@ from opendbc.car.interfaces import CarStateBase
 from opendbc.car.subaru.values import DBC, CanBus, SubaruFlags
 from opendbc.car import CanSignalRateCalculator
 
+from opendbc.sunnypilot.car.subaru.mads import MadsCarState
 
-class CarState(CarStateBase):
+ButtonType = structs.CarState.ButtonEvent.Type
+
+class CarState(CarStateBase, MadsCarState):
   def __init__(self, CP):
-    super().__init__(CP)
+    CarStateBase.__init__(self, CP)
+    MadsCarState.__init__(self)
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
     self.shifter_values = can_define.dv["Transmission"]["Gear"]
 
@@ -127,6 +131,12 @@ class CarState(CarStateBase):
     self.es_dashstatus_msg = copy.copy(cp_cam.vl["ES_DashStatus"])
     if self.CP.flags & SubaruFlags.SEND_INFOTAINMENT:
       self.es_infotainment_msg = copy.copy(cp_cam.vl["ES_Infotainment"])
+
+    prev_lkas_button = self.lkas_button
+    if not self.CP.flags & SubaruFlags.PREGLOBAL:
+      self.lkas_button = cp_cam.vl["ES_LKAS_State"]["LKAS_Dash_State"]
+
+    ret.buttonEvents = self.create_lkas_button_events(self.lkas_button, prev_lkas_button, {1: ButtonType.lkas})
 
     return ret
 

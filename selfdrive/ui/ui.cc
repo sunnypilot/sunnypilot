@@ -68,13 +68,26 @@ void ui_update_params(UIState *s) {
 }
 
 void UIState::updateStatus() {
-  if (scene.started && sm->updated("selfdriveState")) {
+  if (scene.started && (sm->updated("selfdriveState") || sm->updated("selfdriveStateSP"))) {
     auto ss = (*sm)["selfdriveState"].getSelfdriveState();
+    auto ss_sp = (*sm)["selfdriveStateSP"].getSelfdriveStateSP();
+    auto mads = ss_sp.getMads();
     auto state = ss.getState();
-    if (state == cereal::SelfdriveState::OpenpilotState::PRE_ENABLED || state == cereal::SelfdriveState::OpenpilotState::OVERRIDING) {
+    auto state_mads = mads.getState();
+    if (state == cereal::SelfdriveState::OpenpilotState::PRE_ENABLED || state == cereal::SelfdriveState::OpenpilotState::OVERRIDING ||
+        state_mads == cereal::SelfdriveStateSP::ModularAssistiveDrivingSystem::ModularAssistiveDrivingSystemState::PAUSED ||
+        state_mads == cereal::SelfdriveStateSP::ModularAssistiveDrivingSystem::ModularAssistiveDrivingSystemState::OVERRIDING) {
       status = STATUS_OVERRIDE;
     } else {
-      status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
+      if (mads.getAvailable()) {
+        if (mads.getEnabled()) {
+          status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_LAT_ONLY;
+        } else {
+          status = STATUS_DISENGAGED;
+        }
+      } else {
+        status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
+      }
     }
   }
 
@@ -94,6 +107,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "driverStateV2",
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
+    "selfdriveStateSP",
   });
   prime_state = new PrimeState(this);
   language = QString::fromStdString(Params().get("LanguageSetting"));
@@ -155,8 +169,8 @@ void Device::updateBrightness(const UIState &s) {
       clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
     }
 
-    // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+    // Scale back to 5% to 100%
+    clipped_brightness = std::clamp(100.0f * clipped_brightness, 5.0f, 100.0f);
   }
 
   int brightness = brightness_filter.update(clipped_brightness);

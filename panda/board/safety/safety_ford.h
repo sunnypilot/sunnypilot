@@ -180,6 +180,14 @@ static void ford_rx_hook(const CANPacket_t *to_push) {
       unsigned int cruise_state = GET_BYTE(to_push, 1) & 0x07U;
       bool cruise_engaged = (cruise_state == 4U) || (cruise_state == 5U);
       pcm_cruise_check(cruise_engaged);
+
+      acc_main_on = (cruise_state == 3U) || cruise_engaged;
+      mads_check_acc_main();
+    }
+
+    if (addr == FORD_Steering_Data_FD1) {
+      lkas_button = GET_BIT(to_push, 40U);
+      mads_check_lkas_button();
     }
 
     // If steering controls messages are received on the destination bus, it's an indication

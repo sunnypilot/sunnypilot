@@ -6,6 +6,8 @@ from opendbc.car.interfaces import MAX_CTRL_SPEED
 from opendbc.car.volkswagen.values import CarControllerParams as VWCarControllerParams
 from opendbc.car.hyundai.interface import ENABLE_BUTTONS as HYUNDAI_ENABLE_BUTTONS
 from opendbc.car.hyundai.carstate import PREV_BUTTON_SAMPLES as HYUNDAI_PREV_BUTTON_SAMPLES
+from opendbc.car.toyota.values import ToyotaFlagsSP
+
 
 from openpilot.selfdrive.selfdrived.events import Events
 
@@ -100,6 +102,10 @@ class CarSpecificEvents:
           if CS.vEgo < 0.001:
             # while in standstill, send a user alert
             events.add(EventName.manualRestart)
+
+      #if self.CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+        #if CC.brake_hold_active:
+          #events.add(EventName.brakeHold)
 
     elif self.CP.carName == 'gm':
       # The ECM allows enabling on falling edge of set, but only rising edge of resume

@@ -210,15 +210,6 @@ BO_ 835 ACC_CONTROL: 8 DSU
  SG_ ACCEL_CMD_ALT : 47|8@0- (0.05,0) [0|0] "m/s^2" XXX
  SG_ CHECKSUM : 63|8@0+ (1,0) [0|255] "" XXX
 
-BO_ 836 PRE_COLLISION_2: 8 DSU
- SG_ DSS1GDRV : 7|10@0- (0.1,0) [0|0] "m/s^2" Vector__XXX
- SG_ PCSALM : 17|1@0+ (1,0) [0|0] "" FCM
- SG_ IBTRGR : 27|1@0+ (1,0) [0|0] "" FCM
- SG_ PBATRGR : 30|2@0+ (1,0) [0|0] "" Vector__XXX
- SG_ PREFILL : 33|1@0+ (1,0) [0|0] "" Vector__XXX
- SG_ AVSTRGR : 36|1@0+ (1,0) [0|0] "" SCS
- SG_ CHECKSUM : 63|8@0+ (1,0) [0|0] "" XXX
-
 BO_ 865 CLUTCH: 8 XXX
  SG_ ACC_FAULTED : 32|1@0+ (1,0) [0|1] "" XXX
  SG_ GAS_PEDAL_ALT : 23|8@0+ (0.005,0) [0|1] "" XXX
@@ -254,6 +245,7 @@ BO_ 956 GEAR_PACKET: 8 XXX
  SG_ SPORT_GEAR_ON : 33|1@0+ (1,0) [0|1] "" XXX
  SG_ SPORT_GEAR : 38|3@0+ (1,0) [0|7] "" XXX
  SG_ ECON_ON : 40|1@0+ (1,0) [0|1] "" XXX
+ SG_ SPORT_ON_2 : 55|1@0+ (1,0) [0|1] "" XXX
  SG_ B_GEAR_ENGAGED : 41|1@0+ (1,0) [0|1] "" XXX
  SG_ DRIVE_ENGAGED : 47|1@0+ (1,0) [0|1] "" XXX
 
@@ -570,6 +562,7 @@ VAL_ 956 GEAR 0 "D" 1 "S" 8 "N" 16 "R" 32 "P";
 VAL_ 956 SPORT_GEAR_ON 0 "off" 1 "on";
 VAL_ 956 SPORT_GEAR 1 "S1" 2 "S2" 3 "S3" 4 "S4" 5 "S5" 6 "S6";
 VAL_ 956 ECON_ON 0 "off" 1 "on";
+VAL_ 956 SPORT_ON_2 0 "off" 1 "on";
 VAL_ 956 B_GEAR_ENGAGED 0 "off" 1 "on";
 VAL_ 956 DRIVE_ENGAGED 0 "off" 1 "on";
 VAL_ 1005 REVERSE_CAMERA_GUIDELINES 3 "No guidelines" 2 "Static guidelines" 1 "Active guidelines";

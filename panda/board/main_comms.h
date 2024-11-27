@@ -17,6 +17,7 @@ static int get_health_pkt(void *dat) {
   health->ignition_can_pkt = ignition_can;
 
   health->controls_allowed_pkt = controls_allowed;
+  health->controls_allowed_lat_pkt = controls_allowed_lat;
   health->safety_tx_blocked_pkt = safety_tx_blocked;
   health->safety_rx_invalid_pkt = safety_rx_invalid;
   health->tx_buffer_overflow_pkt = tx_buffer_overflow;
@@ -247,6 +248,8 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
       // you can only set this if you are in a non car safety mode
       if (!is_car_safety_mode(current_safety_mode)) {
         alternative_experience = req->param1;
+        enable_mads = (alternative_experience & ALT_EXP_ENABLE_MADS) != 0;
+        disengage_lateral_on_brake = enable_mads && !(alternative_experience & ALT_EXP_DISABLE_DISENGAGE_LATERAL_ON_BRAKE);
       }
       break;
     // **** 0xe0: uart read

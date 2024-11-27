@@ -201,6 +201,8 @@ def get_friction(lateral_accel_error: float, lateral_accel_deadzone: float, fric
   friction = float(friction_interp) if friction_compensation else 0.0
   return friction
 
+def make_can_msg(addr, dat, bus):
+  return [addr, dat, bus]
 
 def make_tester_present_msg(addr, bus, subaddr=None, suppress_response=False):
   dat = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT]
@@ -289,6 +291,8 @@ class PlatformConfigBase(Freezable):
 
   flags: int = 0
 
+  spFlags: int = 0
+
   platform_str: str | None = None
 
   def __hash__(self) -> int:
@@ -346,3 +350,11 @@ class Platforms(str, ReprEnum, metaclass=PlatformsType):
   @classmethod
   def with_flags(cls, flags: IntFlag) -> set['Platforms']:
     return {p for p in cls if p.config.flags & flags}
+
+  @classmethod
+  def with_sp_flags(cls, spFlags: IntFlag) -> set['Platforms']:
+    return {p for p in cls if p.config.spFlags & spFlags}
+
+  @classmethod
+  def without_sp_flags(cls, spFlags: IntFlag) -> set['Platforms']:
+    return {p for p in cls if not (p.config.spFlags & spFlags)}

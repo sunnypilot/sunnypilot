@@ -41,7 +41,7 @@ class TestAlerts:
     events = log.OnroadEvent.EventName.schema.enumerants
 
     for name, e in events.items():
-      if not name.endswith("DEPRECATED"):
+      if not name.endswith("DEPRECATED") and not name.startswith("eventReserved"):
         fail_msg = "%s @%d not in EVENTS" % (name, e)
         assert e in EVENTS.keys(), fail_msg
 

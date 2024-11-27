@@ -114,6 +114,7 @@ static void honda_rx_hook(const CANPacket_t *to_push) {
   // 0x1A6 for the ILX, 0x296 for the Civic Touring
   if (((addr == 0x1A6) || (addr == 0x296)) && (bus == pt_bus)) {
     int button = (GET_BYTE(to_push, 0) & 0xE0U) >> 5;
+    int settings_button = (GET_BYTE(to_push, (addr == 0x296) ? 0 : 5) & 0x0CU) >> 2;
 
     // enter controls on the falling edge of set or resume
     bool set = (button != HONDA_BTN_SET) && (cruise_button_prev == HONDA_BTN_SET);
@@ -127,6 +128,9 @@ static void honda_rx_hook(const CANPacket_t *to_push) {
       controls_allowed = false;
     }
     cruise_button_prev = button;
+
+    lkas_button = (settings_button == 1);
+    mads_check_lkas_button();
   }
 
   // user brake signal on 0x17C reports applied brake from computer brake on accord

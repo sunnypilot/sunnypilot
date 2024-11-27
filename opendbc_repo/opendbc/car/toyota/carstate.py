@@ -1,5 +1,5 @@
 import copy
-
+from openpilot.common.params import Params
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from opendbc.car import Bus, DT_CTRL, create_button_events, structs
@@ -7,8 +7,10 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.filter_simple import FirstOrderFilter
 from opendbc.car.common.numpy_fast import mean
 from opendbc.car.interfaces import CarStateBase
-from opendbc.car.toyota.values import ToyotaFlags, CAR, DBC, STEER_THRESHOLD, NO_STOP_TIMER_CAR, \
+from opendbc.car.toyota.values import ToyotaFlags, ToyotaFlagsSP, CAR, DBC, STEER_THRESHOLD, NO_STOP_TIMER_CAR, \
                                                   TSS2_CAR, RADAR_ACC_CAR, EPS_SCALE, UNSUPPORTED_DSU_CAR, SECOC_CAR
+
+from opendbc.sunnypilot.car.toyota.mads import MadsCarState
 
 ButtonType = structs.CarState.ButtonEvent.Type
 SteerControlType = structs.CarParams.SteerControlType
@@ -25,9 +27,10 @@ TEMP_STEER_FAULTS = (0, 9, 11, 21, 25)
 PERM_STEER_FAULTS = (3, 17)
 
 
-class CarState(CarStateBase):
+class CarState(CarStateBase, MadsCarState):
   def __init__(self, CP):
-    super().__init__(CP)
+    CarStateBase.__init__(self, CP)
+    MadsCarState.__init__(self)
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
     self.eps_torque_scale = EPS_SCALE[CP.carFingerprint] / 100.
     self.cluster_speed_hyst_gap = CV.KPH_TO_MS / 2.
@@ -51,7 +54,23 @@ class CarState(CarStateBase):
     self.acc_type = 1
     self.lkas_hud = {}
     self.pcm_accel_net = 0.0
+    self.gvc = 0.0
     self.secoc_synchronization = None
+
+    self._left_blindspot = False
+    self._left_blindspot_d1 = 0
+    self._left_blindspot_d2 = 0
+    self._left_blindspot_counter = 0
+
+    self._right_blindspot = False
+    self._right_blindspot_d1 = 0
+    self._right_blindspot_d2 = 0
+    self._right_blindspot_counter = 0
+
+    if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+      self.pre_collision_2 = {}
+
+    self.frame = 0
 
   def update(self, can_parsers) -> structs.CarState:
     cp = can_parsers[Bus.pt]
@@ -59,6 +78,9 @@ class CarState(CarStateBase):
 
     ret = structs.CarState()
     cp_acc = cp_cam if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR) else cp
+
+    if not self.CP.flags & ToyotaFlags.SECOC.value:
+      self.gvc = cp.vl["VSC1S07"]["GVC"]
 
     # Describes the acceleration request from the PCM if on flat ground, may be higher or lower if pitched
     # CLUTCH->ACCEL_NET is only accurate for gas, PCM_CRUISE->ACCEL_NET is only accurate for brake
@@ -80,7 +102,7 @@ class CarState(CarStateBase):
     ret.parkingBrake = cp.vl["BODY_CONTROL_STATE"]["PARKING_BRAKE"] == 1
 
     ret.brakePressed = cp.vl["BRAKE_MODULE"]["BRAKE_PRESSED"] != 0
-    ret.brakeHoldActive = cp.vl["ESP_CONTROL"]["BRAKE_HOLD_ACTIVE"] == 1
+    #ret.brakeHoldActive = cp.vl["ESP_CONTROL"]["BRAKE_HOLD_ACTIVE"] == 1
 
     if self.CP.flags & ToyotaFlags.SECOC.value:
       self.secoc_synchronization = copy.copy(cp.vl["SECOC_SYNCHRONIZATION"])
@@ -199,9 +221,64 @@ class CarState(CarStateBase):
       prev_distance_button = self.distance_button
       self.distance_button = cp_acc.vl["ACC_CONTROL"]["DISTANCE"]
 
-      ret.buttonEvents = create_button_events(self.distance_button, prev_distance_button, {1: ButtonType.gapAdjustCruise})
+      self.distance_button_events = create_button_events(self.distance_button, prev_distance_button, {1: ButtonType.gapAdjustCruise})
 
+    if self.CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
+      prev_lkas_button = self.lkas_button
+      self.lkas_button = self.get_lkas_button(cp_cam)
+
+      self.lkas_button_events = self.create_lkas_button_events(self.lkas_button, prev_lkas_button, {1: ButtonType.lkas})
+
+    ret.buttonEvents = [
+      *self.distance_button_events,
+      *self.lkas_button_events,
+    ]
+
+    if self.CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM and self.frame > 199:
+      ret.leftBlindspot, ret.rightBlindspot = self.sp_get_enhanced_bsm(cp)
+
+    if self.CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+      self.pre_collision_2 = copy.copy(cp_cam.vl["PRE_COLLISION_2"])
+
+    self.frame += 1
     return ret
+
+  # Enhanced BSM (@arne182, @rav4kumar)
+  def sp_get_enhanced_bsm(self, cp):
+    # Let's keep all the commented out code for easy debug purposes in the future.
+    distance_1 = cp.vl["DEBUG"].get('BLINDSPOTD1')
+    distance_2 = cp.vl["DEBUG"].get('BLINDSPOTD2')
+    side = cp.vl["DEBUG"].get('BLINDSPOTSIDE')
+
+    if all(val is not None for val in [distance_1, distance_2, side]):
+      if side == 65:  # left blind spot
+        if distance_1 != self._left_blindspot_d1 or distance_2 != self._left_blindspot_d2:
+          self._left_blindspot_d1 = distance_1
+          self._left_blindspot_d2 = distance_2
+          self._left_blindspot_counter = 100
+        self._left_blindspot = distance_1 > 10 or distance_2 > 10
+
+      elif side == 66:  # right blind spot
+        if distance_1 != self._right_blindspot_d1 or distance_2 != self._right_blindspot_d2:
+          self._right_blindspot_d1 = distance_1
+          self._right_blindspot_d2 = distance_2
+          self._right_blindspot_counter = 100
+        self._right_blindspot = distance_1 > 10 or distance_2 > 10
+
+      # update counters
+      self._left_blindspot_counter = max(0, self._left_blindspot_counter - 1)
+      self._right_blindspot_counter = max(0, self._right_blindspot_counter - 1)
+
+      # reset blind spot status if counter reaches 0
+      if self._left_blindspot_counter == 0:
+        self._left_blindspot = False
+        self._left_blindspot_d1 = self._left_blindspot_d2 = 0
+
+      if self._right_blindspot_counter == 0:
+        self._right_blindspot = False
+        self._right_blindspot_d1 = self._right_blindspot_d2 = 0
+
+    return self._left_blindspot, self._right_blindspot
 
   @staticmethod
   def get_can_parsers(CP):
@@ -227,6 +304,7 @@ class CarState(CarStateBase):
         ("GAS_PEDAL", 42),
       ]
     else:
+      pt_messages.append(("VSC1S07", 20))
       if CP.carFingerprint not in [CAR.TOYOTA_MIRAI]:
         pt_messages.append(("ENGINE_RPM", 42))
 
@@ -257,6 +335,10 @@ class CarState(CarStateBase):
         ("PRE_COLLISION", 33),
       ]
 
+    if CP.spFlags & ToyotaFlagsSP.SP_ENHANCED_BSM:
+      pt_messages.append(("DEBUG", 65))
+
+
     cam_messages = []
     if CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
       cam_messages += [
@@ -274,6 +356,9 @@ class CarState(CarStateBase):
         cam_messages += [
           ("PRE_COLLISION", 33),
         ]
+
+    if CP.spFlags & ToyotaFlagsSP.SP_AUTO_BRAKE_HOLD:
+      cam_messages.append(("PRE_COLLISION_2", 33))
 
     return {
       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),

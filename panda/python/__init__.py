@@ -108,6 +108,10 @@ class ALTERNATIVE_EXPERIENCE:
   RAISE_LONGITUDINAL_LIMITS_TO_ISO_MAX = 8
   ALLOW_AEB = 16
 
+  # sunnypilot
+  ENABLE_MADS = 2 ** 10
+  DISABLE_DISENGAGE_LATERAL_ON_BRAKE = 2 ** 11
+
 class Panda:
 
   # matches cereal.car.CarParams.SafetyModel
@@ -163,7 +167,7 @@ class Panda:
   CAN_PACKET_VERSION = 4
   HEALTH_PACKET_VERSION = 16
   CAN_HEALTH_PACKET_VERSION = 5
-  HEALTH_STRUCT = struct.Struct("<IIIIIIIIBBBBBHBBBHfBBHBHHB")
+  HEALTH_STRUCT = struct.Struct("<IIIIIIIIBBBBBHBBBHfBBHBHHBB")
   CAN_HEALTH_STRUCT = struct.Struct("<BIBBBBBBBBIIIIIIIHHBBBIIII")
 
   F4_DEVICES = [HW_TYPE_WHITE_PANDA, HW_TYPE_GREY_PANDA, HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS]
@@ -202,6 +206,7 @@ class Panda:
   FLAG_HYUNDAI_CANFD_ALT_BUTTONS = 32
   FLAG_HYUNDAI_ALT_LIMITS = 64
   FLAG_HYUNDAI_CANFD_HDA2_ALT_STEERING = 128
+  FLAG_HYUNDAI_ESCC = 512
 
   FLAG_TESLA_POWERTRAIN = 1
   FLAG_TESLA_LONG_CONTROL = 2
@@ -323,6 +328,10 @@ class Panda:
 
     # reset comms
     self.can_reset_communications()
+
+    # disable automatic CAN-FD switching
+    for bus in range(PANDA_BUS_CNT):
+      self.set_canfd_auto(bus, False)
 
     # set CAN speed
     for bus in range(PANDA_BUS_CNT):
@@ -648,6 +657,7 @@ class Panda:
       "sbu1_voltage_mV": a[23],
       "sbu2_voltage_mV": a[24],
       "som_reset_triggered": a[25],
+      "controls_allowed_lat": a[26],
     }
 
   @ensure_can_health_packet_version

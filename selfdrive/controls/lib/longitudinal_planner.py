@@ -18,8 +18,10 @@ from openpilot.common.swaglog import cloudlog
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
-A_CRUISE_MAX_VALS = [1.6, 1.2, 0.8, 0.6]
-A_CRUISE_MAX_BP = [0., 10.0, 25., 40.]
+A_CRUISE_MAX_VALS = [2.0, 2.0, 2.0, 1.80, 0.95, .534, .435, .32,  .088]
+A_CRUISE_MAX_BP =   [0.,  1.,  7.,  8.,   11.,  20.,  25.,  30.,  55.]
+A_CRUISE_MIN_VALS = [-0.040,  -0.040,  -0.15,  -0.15,  -1.0,  -1.0]
+A_CRUISE_MIN_BP =   [0.,      5.55,    5.56,   12.,    12.01, 20.]
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 ALLOW_THROTTLE_THRESHOLD = 0.5
 MIN_ALLOW_THROTTLE_SPEED = 2.5
@@ -35,6 +37,8 @@ def get_max_accel(v_ego):
 def get_coast_accel(pitch):
   return np.sin(pitch) * -5.65 - 0.3  # fitted from data using xx/projects/allow_throttle/compute_coast_accel.py
 
+def get_min_accel(v_ego):
+  return interp(v_ego, A_CRUISE_MIN_BP, A_CRUISE_MIN_VALS)
 
 def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
   """
@@ -133,7 +137,8 @@ class LongitudinalPlanner:
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
 
     if self.mpc.mode == 'acc':
-      accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
+      # accel_limits = [A_CRUISE_MIN, get_max_accel(v_ego)]
+      accel_limits = [get_min_accel(v_ego), get_max_accel(v_ego)]
       steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
       accel_limits_turns = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_limits, self.CP)
     else:
