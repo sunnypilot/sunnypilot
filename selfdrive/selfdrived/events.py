@@ -108,8 +108,8 @@ class Events:
   def has(self, event_name: int) -> bool:
     return event_name in self.events
 
-  def has_list(self, events_list: list[int]) -> bool:
-    return all(event_name in self.events for event_name in events_list)
+  def contains_in_list(self, events_list: list[int]) -> bool:
+    return any(event_name in self.events for event_name in events_list)
 
   def remove(self, event_name: int, static: bool = False) -> None:
     if static and event_name in self.static_events:
@@ -1016,8 +1016,8 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.silentWrongGear: {
     ET.WARNING: Alert(
-      "Gear not D",
-      "openpilot Unavailable",
+      "",
+      "",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
     ET.NO_ENTRY: Alert(
@@ -1034,6 +1034,33 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       AlertStatus.normal, AlertSize.full,
       Priority.LOWEST, VisualAlert.none, AudibleAlert.none, .2, creation_delay=0.5),
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
+  },
+
+  EventName.silentDoorOpen: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
+    ET.NO_ENTRY: NoEntryAlert("Door Open"),
+  },
+
+  EventName.silentSeatbeltNotLatched: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
+    ET.NO_ENTRY: NoEntryAlert("Seatbelt Unlatched"),
+  },
+
+  EventName.silentParkBrake: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 0.),
+    ET.NO_ENTRY: NoEntryAlert("Parking Brake Engaged"),
   },
 
 }
