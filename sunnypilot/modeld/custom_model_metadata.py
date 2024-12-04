@@ -9,7 +9,7 @@ from openpilot.sunnypilot.modeld.model_capabilities import ModelCapabilities
 
 SIMULATION = "SIMULATION" in os.environ
 
-ModelGeneration = custom.ModelGeneration
+ModelGeneration = custom.ModelDataV2SP.ModelGeneration
 
 
 class CustomModelMetadata:
@@ -23,7 +23,7 @@ class CustomModelMetadata:
     self.valid = self.params.get_bool("CustomDrivingModel") and not SIMULATION and \
                  self.capabilities != ModelCapabilities.Default
 
-  def get_meta(self) -> ModelMeta:
+  def get_meta(self):
     meta = Meta
 
     if self.capabilities & ModelCapabilities.Meta_V1:

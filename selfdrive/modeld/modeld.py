@@ -36,7 +36,7 @@ MODEL_PATHS = {
 
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
-ModelGeneration = custom.ModelGeneration
+ModelGeneration = custom.ModelDataV2SP.ModelGeneration
 
 
 class FrameMeta:

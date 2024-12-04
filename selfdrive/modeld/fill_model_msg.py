@@ -2,10 +2,9 @@ import os
 import capnp
 import numpy as np
 from cereal import log
-from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
+from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 
-from openpilot.sunnypilot.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
-from openpilot.sunnypilot.modeld.constants import MetaV1
+from openpilot.sunnypilot.modeld.custom_model_metadata import CustomModelMetadata
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
