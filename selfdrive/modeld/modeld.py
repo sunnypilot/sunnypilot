@@ -188,6 +188,10 @@ def main(demo=False):
   pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
   sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"])
 
+  # sunnypilot
+  sock_services = list(pm.sock.keys()) + ['modelV2SP']
+  pm = messaging.PubMaster(sock_services)
+
   publish_state = PublishState()
   params = Params()
 
@@ -297,6 +301,7 @@ def main(demo=False):
 
     if model_output is not None:
       modelv2_send = messaging.new_message('modelV2')
+      modelv2_sp_send = messaging.new_message('modelV2SP')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
@@ -313,7 +318,15 @@ def main(demo=False):
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
+
+      modelv2_sp = modelv2_sp_send.modelV2SP
+      modelv2_sp.valid = live_calib_seen
+      modelv2_sp.customModel = CMM.valid
+      modelv2_sp.modelGeneration = CMM.generation
+      modelv2_sp.modelCapabilities = CMM.capabilities
+
       pm.send('modelV2', modelv2_send)
+      pm.send('modelV2SP', modelv2_sp_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
 
