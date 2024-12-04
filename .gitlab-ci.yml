@@ -1,0 +1,240 @@
+variables:
+  BUILD_DIR: "/data/openpilot"
+  OUTPUT_DIR: "${CI_PROJECT_DIR}/output"
+  CI_DIR: "${CI_PROJECT_DIR}/release/ci"
+  VERSION: 'echo $(date "+%Y.%m.%d")'
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+  DEV_C3_SOURCE_BRANCH: "master-dev-c3"
+  GIT_CONFIG_USER_EMAIL: "gitlab@pipeline.com"
+  GIT_CONFIG_USER_NAME: "Gitlab Pipeline"
+  PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
+  BASE_BUILD_NUMER: 3000
+
+  EXTRA_VERSION_IDENTIFIER: "${CI_PIPELINE_IID}"
+  NEW_BRANCH: ${CI_COMMIT_REF_NAME}-prebuilt
+
+stages:
+  - build
+  - sanity
+  - publish
+  - notify
+
+default:
+  retry: 2
+  tags:
+    - sunnypilot
+    - x86
+
+.default_before_script: &default_before_script
+  - 'if [ "$EXTRA_VERSION_IDENTIFIER" = "$CI_PIPELINE_IID" ]; then export EXTRA_VERSION_IDENTIFIER=$((CI_PIPELINE_IID + BASE_BUILD_NUMER)); fi'
+  - 'export VERSION=$(eval $VERSION)-${EXTRA_VERSION_IDENTIFIER}'
+  - 'mkdir -p "${BUILD_DIR}/"'
+  - 'git config --global user.email "${GIT_CONFIG_USER_EMAIL}"'
+  - 'git config --global user.name "${GIT_CONFIG_USER_NAME}"'
+
+
+workflow: # If running on any branch other than main.
+  rules:
+    # We are an MR, but it's a draft, we won't proceed with anything.
+    - if: '$CI_MERGE_REQUEST_TITLE =~ /^wip:/i || $CI_MERGE_REQUEST_TITLE =~ /^draft:/i'
+      when: never
+
+    # Below are the rules when a commit is done (code has been added to the branch)
+    # Commit to master-dev-c3
+    - if: $CI_COMMIT_REF_NAME == $DEV_C3_SOURCE_BRANCH
+      variables:
+        EXTRA_VERSION_IDENTIFIER: "${CI_PIPELINE_IID}"
+        NEW_BRANCH: "dev-c3"
+        AUTO_BUILD: true
+      when: always
+    #commit made to main (master)
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      variables:
+        NEW_BRANCH: "staging-c3"
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
+        EXTRA_VERSION_IDENTIFIER: "staging"
+        AUTO_PUBLISH: true
+        AUTO_BUILD: true
+      when: always
+    # if tag
+    - if: $CI_COMMIT_TAG
+      variables:
+        NEW_BRANCH: "release-c3"
+        VERSION: 'cat common/version.h | grep COMMA_VERSION | sed -e "s/[^0-9|.]//g"'
+        EXTRA_VERSION_IDENTIFIER: "release"
+        AUTO_BUILD: true
+    - when: always
+
+
+build:
+  stage: build
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - "${CI_DIR}/scons_cache"
+  before_script:
+    - find $BUILD_DIR/ -mindepth 1 -delete
+    - *default_before_script
+    - "echo Starting build stage..."
+    - "echo BUILD_DIR: ${BUILD_DIR}"
+    - "echo CI_DIR: ${CI_DIR}"
+    - "echo VERSION: ${VERSION}"
+    - "echo CI_COMMIT_REF_NAME: ${CI_COMMIT_REF_NAME}"
+    - git config --global --add safe.directory ${CI_PROJECT_DIR}
+  script:
+    - export PYTHONPATH="$BUILD_DIR"
+    - "echo Building Panda..."
+    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache ${CI_PROJECT_DIR}/panda
+    - mkdir -p ${BUILD_DIR}
+    - ls -la ${BUILD_DIR}
+    - "echo Building Rest..."
+    - ./release/release_files.py | sort | uniq | rsync -vrRl --files-from=- . $BUILD_DIR/
+    # - cp -pR --parents $(cat release/files_common release/files_tici | sort | uniq) $BUILD_DIR/ 2> >(grep -v 'warning:' >&2)
+    - cd $BUILD_DIR
+    - sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py # comment panda jungle when prebuilt
+    - scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache --minimal
+    - touch ${BUILD_DIR}/prebuilt
+    - sudo rm -rf ${OUTPUT_DIR}
+    - mkdir -p ${OUTPUT_DIR}
+    # We first include the paths we want to keep, even if we later will be excluding the other things on those paths
+    - rsync -avm
+      --include='**/panda/board/'
+      --include='**/panda/board/obj'
+      --include='**/panda/board/obj/panda.bin.signed'
+      --include='**/panda/board/obj/panda_h7.bin.signed'
+      --include='**/panda/board/obj/bootstub.panda.bin'
+      --include='**/panda/board/obj/bootstub.panda_h7.bin'
+      --exclude='.sconsign.dblite'
+      --exclude='*.a'
+      --exclude='*.A'
+      --exclude='*.o'
+      --exclude='*.O'
+      --exclude='*.os'
+      --exclude='*.OS'
+      --exclude='*.pyc'
+      --exclude='*.PYC'
+      --exclude='moc_*'
+      --exclude='MOC_*'
+      --exclude='*.cc'
+      --exclude='*.CC'
+      --exclude='Jenkinsfile'
+      --exclude='supercombo.onnx'
+      --exclude='**/panda/board/*'
+      --exclude='**/panda/board/obj/**'
+      --exclude='**/panda/certs/'
+      --exclude='**/panda/crypto/'
+      --exclude='**/release/'
+      --exclude='**/.github/'
+      --exclude='**/selfdrive/ui/replay/'
+      --exclude='**/__pycache__/'
+      --exclude='**/selfdrive/ui/*.h'
+      --exclude='**/selfdrive/ui/**/*.h'
+      --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/'
+      --exclude='**/.git/'
+      --exclude='**/SConstruct'
+      --exclude='**/SConscript'
+      --delete-excluded
+      --chown=comma:comma
+      ${BUILD_DIR}/ ${OUTPUT_DIR}/
+  after_script:
+    # cleanup build dir after doing work
+    - find $BUILD_DIR/ -mindepth 1 -delete
+  artifacts:
+    paths:
+      - ${OUTPUT_DIR}/
+  tags: [ 'sunnypilot', 'tici' ]
+  rules:
+    - if: $AUTO_BUILD
+      when: always
+    - when: manual
+
+.publish_base: &publish_base
+  image: alpine
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  stage: publish
+  needs:
+    - job: build
+      artifacts: true
+  before_script:
+    - 'apk update && apk upgrade'
+    - 'apk add git bash openssh'
+    - 'eval $(ssh-agent -s)'
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - 'mkdir -p ~/.ssh/'
+    - 'chmod 700 ~/.ssh'
+    - export HOST=$(echo ${GIT_ORIGIN} | cut -d'@' -f2 | cut -d':' -f1)
+    - echo fetching ssh pub keys for ${HOST}
+    - 'ssh-keyscan -H ${HOST} >> ~/.ssh/known_hosts' # Adding gitlab to trusted
+    - 'chmod 644 ~/.ssh/known_hosts'
+    - *default_before_script
+  script:
+    - echo "${GIT_ORIGIN}"
+    - echo "Calling to publish [${CI_DIR}/publish.sh ${CI_PROJECT_DIR} ${OUTPUT_DIR} ${NEW_BRANCH} ${VERSION} ${GIT_ORIGIN}]"
+    - git config --global --add safe.directory ${OUTPUT_DIR}
+    - $CI_DIR/publish.sh "${CI_PROJECT_DIR}" "${OUTPUT_DIR}" "${NEW_BRANCH}" "${VERSION}" "${GIT_ORIGIN}" "-${EXTRA_VERSION_IDENTIFIER}"
+  allow_failure: false
+
+publish to private gitlab prebuilt:
+  extends: ".publish_base"
+  variables:
+    GIT_ORIGIN: git@gitlab.com:sunnypilot/public/sunnypilot-prebuilts.git
+  rules:
+    - if: $AUTO_BUILD
+      when: on_success
+    - if: $CI_MERGE_REQUEST_IID
+      when: on_success
+    - when: manual
+
+publish to public github prebuilt:
+  extends: ".publish_base"
+  variables:
+    GIT_ORIGIN: git@github.com:sunnyhaibin/sunnypilot.git
+    GIT_CONFIG_USER_EMAIL: "jason.wen@sunnypilot.ai"
+    GIT_CONFIG_USER_NAME: "Jason Wen"
+  rules:
+    - if: $AUTO_PUBLISH
+      when: on_success
+    - when: manual
+
+.notify_discord: &notify_discord
+  image: alpine
+  stage: notify
+  needs: ["build"]
+  variables:
+    DISCORD_HOOK: "${DISCORD_MANUAL_BUILD_WEBHOOK_URL}" # Default hook if not overriden by children
+  before_script:
+    - 'apk add curl jq envsubst'
+  script:
+    - echo using [${TEMPLATE}]
+    - cat release/ci/${TEMPLATE} | envsubst | tee payload.json
+    - 'curl -X POST -H "Content-Type: application/json" -d "$(cat payload.json)" ${DISCORD_HOOK} | jq .'
+  rules:
+    - if: $NEW_BRANCH
+      when: on_success
+    - when: never
+  allow_failure: true
+
+notify pending action:
+  extends: ".notify_discord"
+  variables:
+    TEMPLATE: "discord_template_notify_dev_private.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export AVATAR_URL=$(curl -s -X GET "https://gitlab.com/api/v4/avatar?email=${GITLAB_USER_EMAIL}" | jq -r '.avatar_url')
+
+notify new dev build:
+  extends: ".notify_discord"
+  stage: notify
+  needs: ["publish to public github prebuilt"] # This notify shall only happen after a publish to github public
+  variables:
+    TEMPLATE: "discord_template_notify_dev_public.json"
+  before_script:
+    - !reference [".notify_discord", "before_script"]
+    - export EXTRA_VERSION_IDENTIFIER=$((CI_PIPELINE_IID + BASE_BUILD_NUMER))
+  rules:
+    - if: $NEW_BRANCH == "dev-c3"
+      variables:
+        DISCORD_HOOK: "${DISCORD_NEW_BUILD_WEBHOOK_URL}" # Overriding hook because we know we are dev-c3
+    - !reference [".notify_discord", "rules"]
