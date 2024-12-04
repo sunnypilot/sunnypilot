@@ -3,6 +3,7 @@ import os
 from cereal import custom
 from openpilot.common.params import Params
 
+from openpilot.sunnypilot.modeld.constants import ModelMeta
 from openpilot.sunnypilot.modeld.model_capabilities import ModelCapabilities
 
 SIMULATION = "SIMULATION" in os.environ
@@ -21,6 +22,10 @@ class CustomModelMetadata:
     self.valid = self.params.get_bool("CustomDrivingModel") and not SIMULATION and \
                  self.capabilities != ModelCapabilities.Default
 
+  @staticmethod
+  def get_model_meta(meta) -> ModelMeta:
+    return ModelMeta(meta)
+
   def read_model_generation_param(self):
     try:
       return int(self.params.get("DrivingModelGeneration"))
@@ -33,11 +38,13 @@ class CustomModelMetadata:
   def get_model_capabilities(self):
     capabilities = {
       ModelGeneration.eight: ModelCapabilities.MLSIM,
-      ModelGeneration.five: ModelCapabilities.DesiredCurvatureV2,
-      ModelGeneration.four: ModelCapabilities.DesiredCurvatureV2,
-      ModelGeneration.three: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NoO,
-      ModelGeneration.two: ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NoO,
-      ModelGeneration.one: ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO,
+      ModelGeneration.seven: ModelCapabilities.DesiredCurvatureV2,
+      ModelGeneration.six: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
+      ModelGeneration.five: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
+      ModelGeneration.four: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
+      ModelGeneration.three: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NoO | ModelCapabilities.Meta_V1,
+      ModelGeneration.two: ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NoO | ModelCapabilities.Meta_V1,
+      ModelGeneration.one: ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO | ModelCapabilities.Meta_V1,
       ModelGeneration.default: ModelCapabilities.Default,
     }
 

@@ -27,3 +27,6 @@ class ModelCapabilities(IntFlag):
 
   MLSIM = 2 ** 5
   """MLSIM, used for models that support the MLSIM trained models."""
+
+  Meta_V1 = 2 ** 6
+  """Meta_V1, used for models that require the older meta cosntants."""

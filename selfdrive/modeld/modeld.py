@@ -216,6 +216,8 @@ def main(demo=False):
 
   DH = DesireHelper()
 
+  CMM = CustomModelMetadata()
+
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
     while meta_main.timestamp_sof < meta_extra.timestamp_sof + 25000000:
@@ -298,7 +300,7 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
-                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
+                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, CMM)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
