@@ -16,6 +16,8 @@
 #include "selfdrive/modeld/transforms/loadyuv.h"
 #include "selfdrive/modeld/transforms/transform.h"
 
+#include "common/params.h"
+
 class ModelFrame {
 public:
   ModelFrame(cl_device_id device_id, cl_context context);
@@ -32,7 +34,25 @@ private:
   Transform transform;
   LoadYUVState loadyuv;
   cl_command_queue q;
-  cl_mem y_cl, u_cl, v_cl, img_buffer_20hz_cl, last_img_cl;
+  cl_mem y_cl, u_cl, v_cl, net_input_cl, img_buffer_20hz_cl, last_img_cl;
   cl_buffer_region region;
   std::unique_ptr<uint8_t[]> input_frames;
+
+  std::pair<int, bool> getDrivingModelGeneration() {
+    Params params;
+    bool enabled;
+    int generation = 0;
+    try {
+      enabled = params.getBool("CustomDrivingModel");
+      generation = std::stoi(params.get("DrivingModelGeneration"));
+    } catch (...) {
+      enabled = false;
+      generation = 0;
+    }
+    return std::make_pair(generation, enabled);
+  }
+
+  std::pair<int, bool> model_params = getDrivingModelGeneration();
+  int model_generation = model_params.first;
+  int custom_model = model_params.second;
 };

@@ -40,6 +40,10 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+
+    # sunnypilot
+    ("CustomDrivingModel", "0"),
+    ("DrivingModelGeneration", "0"),
   ]
 
   if params.get_bool("RecordFrontLock"):

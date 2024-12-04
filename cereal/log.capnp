@@ -2546,7 +2546,7 @@ struct Event {
     # *********** Custom: reserved for forks ***********
     customReserved0 @107 :Custom.CustomReserved0;
     customReserved1 @108 :Custom.CustomReserved1;
-    customReserved2 @109 :Custom.CustomReserved2;
+    modelV2SP @109 :Custom.ModelDataV2SP;
     customReserved3 @110 :Custom.CustomReserved3;
     customReserved4 @111 :Custom.CustomReserved4;
     customReserved5 @112 :Custom.CustomReserved5;

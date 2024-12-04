@@ -14,7 +14,24 @@ struct CustomReserved0 @0x81c2f05a394cf4af {
 struct CustomReserved1 @0xaedffd8f31e7b55d {
 }
 
-struct CustomReserved2 @0xf35cc4560bbf6ec2 {
+struct ModelDataV2SP @0xf35cc4560bbf6ec2 {
+  customModel @0 :Bool;
+  modelGeneration @1 :ModelGeneration;
+  modelCapabilities @2 :UInt32;
+
+  enum ModelGeneration {
+    default @0;
+    one @1;
+    two @2;
+    three @3;
+    four @4;
+    five @5;
+    six @6;
+    seven @7;
+    eight @8;
+    nine @9;
+    ten @10;
+  }
 }
 
 struct CustomReserved3 @0xda96579883444c35 {
