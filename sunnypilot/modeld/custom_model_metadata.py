@@ -3,7 +3,8 @@ import os
 from cereal import custom
 from openpilot.common.params import Params
 
-from openpilot.sunnypilot.modeld.constants import ModelMeta
+from openpilot.selfdrive.modeld.constants import Meta
+from openpilot.sunnypilot.modeld.constants import ModelMeta, MetaV1
 from openpilot.sunnypilot.modeld.model_capabilities import ModelCapabilities
 
 SIMULATION = "SIMULATION" in os.environ
@@ -22,8 +23,12 @@ class CustomModelMetadata:
     self.valid = self.params.get_bool("CustomDrivingModel") and not SIMULATION and \
                  self.capabilities != ModelCapabilities.Default
 
-  @staticmethod
-  def get_model_meta(meta) -> ModelMeta:
+  def get_meta(self) -> ModelMeta:
+    meta = Meta
+
+    if self.capabilities & ModelCapabilities.Meta_V1:
+      meta = MetaV1
+
     return ModelMeta(meta)
 
   def read_model_generation_param(self):
