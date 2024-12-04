@@ -43,4 +43,5 @@ jobs:
         run: |
           # Add GitLab remote
           git remote add gitlab git@gitlab.com:sunnypilot/sunnyhaibin/sunnypilot-github-mirror.git
+          rm -f .lfsconfig
           git push -u --force gitlab ${{ github.ref }}
