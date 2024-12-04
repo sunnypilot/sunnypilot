@@ -41,17 +41,18 @@ class CustomModelMetadata:
     return self.generation
 
   def get_model_capabilities(self):
+    MC = ModelCapabilities
     capabilities = {
-      ModelGeneration.eight: ModelCapabilities.MLSIM,
-      ModelGeneration.seven: ModelCapabilities.DesiredCurvatureV2,
-      ModelGeneration.six: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
-      ModelGeneration.five: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
-      ModelGeneration.four: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
-      ModelGeneration.three: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NavigateOnOpenpilot | ModelCapabilities.Meta_V1,
-      ModelGeneration.two: ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NavigateOnOpenpilot | ModelCapabilities.Meta_V1,
-      ModelGeneration.one: ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NavigateOnOpenpilot | ModelCapabilities.Meta_V1,
-      ModelGeneration.default: ModelCapabilities.Default,
+      ModelGeneration.eight: MC.MLSIM,
+      ModelGeneration.seven: MC.DesiredCurvatureV2,
+      ModelGeneration.six: MC.DesiredCurvatureV2 | MC.Meta_V1,
+      ModelGeneration.five: MC.DesiredCurvatureV2 | MC.Meta_V1,
+      ModelGeneration.four: MC.DesiredCurvatureV2 | MC.Meta_V1,
+      ModelGeneration.three: MC.DesiredCurvatureV2 | MC.NavigateOnOpenpilot | MC.Meta_V1,
+      ModelGeneration.two: MC.DesiredCurvatureV1 | MC.NavigateOnOpenpilot | MC.Meta_V1,
+      ModelGeneration.one: MC.LateralPlannerSolution | MC.NavigateOnOpenpilot | MC.Meta_V1,
+      ModelGeneration.default: MC.Default,
     }
 
     # Default model is meant to represent the capabilities of the prebuilt model
-    return capabilities.get(self.generation, ModelCapabilities.Default)
+    return capabilities.get(self.generation, MC.Default)
