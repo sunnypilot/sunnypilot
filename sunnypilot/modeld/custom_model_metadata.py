@@ -47,9 +47,9 @@ class CustomModelMetadata:
       ModelGeneration.six: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
       ModelGeneration.five: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
       ModelGeneration.four: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.Meta_V1,
-      ModelGeneration.three: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NoO | ModelCapabilities.Meta_V1,
-      ModelGeneration.two: ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NoO | ModelCapabilities.Meta_V1,
-      ModelGeneration.one: ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NoO | ModelCapabilities.Meta_V1,
+      ModelGeneration.three: ModelCapabilities.DesiredCurvatureV2 | ModelCapabilities.NavigateOnOpenpilot | ModelCapabilities.Meta_V1,
+      ModelGeneration.two: ModelCapabilities.DesiredCurvatureV1 | ModelCapabilities.NavigateOnOpenpilot | ModelCapabilities.Meta_V1,
+      ModelGeneration.one: ModelCapabilities.LateralPlannerSolution | ModelCapabilities.NavigateOnOpenpilot | ModelCapabilities.Meta_V1,
       ModelGeneration.default: ModelCapabilities.Default,
     }
 

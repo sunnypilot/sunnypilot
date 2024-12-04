@@ -7,7 +7,7 @@ class ModelCapabilities(IntFlag):
   Default = 1
   """Default, used for the prebuilt model."""
 
-  NoO = 2
+  NavigateOnOpenpilot = 2
   """Navigation on openpilot, used for models support navigation."""
 
   LateralPlannerSolution = 2 ** 2
