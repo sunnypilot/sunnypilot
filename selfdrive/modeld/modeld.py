@@ -57,7 +57,7 @@ class ModelState:
   model: ModelRunner
 
   def __init__(self, context: CLContext):
-    self.cmm = CustomModelMetadata()
+    self.cmm = CustomModelMetadata(params=Params(), init_only=True)
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
@@ -220,7 +220,7 @@ def main(demo=False):
 
   DH = DesireHelper()
 
-  CMM = CustomModelMetadata()
+  CMM = CustomModelMetadata(params=params, init_only=True)
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
