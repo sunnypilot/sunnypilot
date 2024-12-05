@@ -319,8 +319,8 @@ def main(demo=False):
 
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
 
+      modelv2_sp_send.valid = live_calib_seen
       modelv2_sp = modelv2_sp_send.modelV2SP
-      modelv2_sp.valid = live_calib_seen
       modelv2_sp.customModel = CMM.valid
       modelv2_sp.modelGeneration = CMM.generation
       modelv2_sp.modelCapabilities = CMM.capabilities
