@@ -25,7 +25,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
 from openpilot.sunnypilot.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
-from openpilot.sunnypilot.modeld.constants import ModelConstantsSP
+from openpilot.sunnypilot.modeld.constants import ModelConstantsV1
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -69,7 +69,7 @@ class ModelState:
     if self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
       _history_buffer_len = ModelConstants.HISTORY_BUFFER_LEN
     else:
-      _history_buffer_len = ModelConstantsSP.HISTORY_BUFFER_LEN
+      _history_buffer_len = ModelConstantsV1.HISTORY_BUFFER_LEN
 
     # img buffers are managed in openCL transform code
     self.inputs = {

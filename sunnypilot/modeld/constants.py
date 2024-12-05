@@ -1,4 +1,4 @@
-class ModelConstantsSP:
+class ModelConstantsV1:
   HISTORY_BUFFER_LEN = 99
 
 
