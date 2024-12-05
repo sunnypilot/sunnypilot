@@ -37,9 +37,6 @@ class CustomModelMetadata:
     except (ValueError, TypeError):
       return ModelGeneration.default
 
-  def get_model_generation(self):
-    return self.generation
-
   def get_model_capabilities(self):
     MC = ModelCapabilities
     capabilities = {
