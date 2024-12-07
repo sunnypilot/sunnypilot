@@ -70,8 +70,7 @@ void ui_update_params(UIState *s) {
 void UIState::updateStatus() {
   if (scene.started && (sm->updated("selfdriveState") || sm->updated("selfdriveStateSP"))) {
     auto ss = (*sm)["selfdriveState"].getSelfdriveState();
-    auto ss_sp = (*sm)["selfdriveStateSP"].getSelfdriveStateSP();
-    auto mads = ss_sp.getMads();
+    auto mads = (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads();
     auto state = ss.getState();
     auto state_mads = mads.getState();
     if (state == cereal::SelfdriveState::OpenpilotState::PRE_ENABLED || state == cereal::SelfdriveState::OpenpilotState::OVERRIDING ||
