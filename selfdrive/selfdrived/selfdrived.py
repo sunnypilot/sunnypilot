@@ -248,6 +248,7 @@ class SelfdriveD:
       else:
         safety_mismatch = pandaState.safetyModel not in IGNORED_SAFETY_MODES
 
+      # TODO-SP: add controlsMismatchLat for controlsAllowedLat
       # safety mismatch allows some time for pandad to set the safety mode and publish it back from panda
       if (safety_mismatch and self.sm.frame*DT_CTRL > 10.) or pandaState.safetyRxChecksInvalid or self.mismatch_counter >= 200:
         self.events.add(EventName.controlsMismatch)
