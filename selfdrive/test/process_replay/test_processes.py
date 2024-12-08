@@ -79,8 +79,7 @@ def run_test_process(data):
   if args.update_refs or args.upload_only:
     print(f'Uploading: {os.path.basename(cur_log_fn)}')
     assert os.path.exists(cur_log_fn), f"Cannot find log to upload: {cur_log_fn}"
-    upload_file(cur_log_fn, os.path.basename(cur_log_fn))
-    os.remove(cur_log_fn)
+    os.system(f"git add '{os.path.realpath(cur_log_fn)}'")
   return (segment, cfg.proc_name, res)
 
 
@@ -118,6 +117,15 @@ def test_process(cfg, lr, segment, ref_log_path, new_log_path, ignore_fields=Non
   except Exception as e:
     return str(e), log_msgs
 
+
+def cleanup_fakedata(cur_commit, ref_commit):
+  """Remove files in fakedata folder that don't contain current or reference commit."""
+  removed = 0
+  for f in os.listdir(FAKEDATA):
+    if not (cur_commit in f or ref_commit in f):
+      os.remove(os.path.join(FAKEDATA, f))
+      removed += 1
+  print(f"Removed {removed} old files from {FAKEDATA}")
 
 if __name__ == "__main__":
   all_cars = {car for car, _ in segments}
@@ -167,6 +175,9 @@ if __name__ == "__main__":
   cur_commit = get_commit()
   if not cur_commit:
     raise Exception("Couldn't get current commit")
+
+  if args.update_refs or args.upload_only:
+    cleanup_fakedata(cur_commit, ref_commit)
 
   print(f"***** testing against commit {ref_commit} *****")
 
@@ -233,5 +244,14 @@ if __name__ == "__main__":
     with open(REF_COMMIT_FN, "w") as f:
       f.write(cur_commit)
     print(f"\n\nUpdated reference logs for commit: {cur_commit}")
+
+    # Git operations
+    try:
+      os.system(f"git add -A {FAKEDATA}/*")
+      commit_msg = f"test_processes: update ref logs to {cur_commit[:7]}"
+      os.system(f'git commit -m "{commit_msg}"')
+      print("Successfully committed reference log updates")
+    except Exception as e:
+      print(f"Failed to commit changes: {e}")
 
   sys.exit(int(failed))
