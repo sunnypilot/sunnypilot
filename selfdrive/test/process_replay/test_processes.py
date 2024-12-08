@@ -247,9 +247,8 @@ if __name__ == "__main__":
 
     # Git operations
     try:
-      os.system(f"git add -A {FAKEDATA}/*")
       commit_msg = f"test_processes: update ref logs to {cur_commit[:7]}"
-      os.system(f'git commit -m "{commit_msg}"')
+      os.system(f'git commit -am "{commit_msg}"')
       print("Successfully committed reference log updates")
     except Exception as e:
       print(f"Failed to commit changes: {e}")
