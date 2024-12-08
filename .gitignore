@@ -77,7 +77,6 @@ selfdrive/modeld/models/*.pkl
 
 *.bz2
 *.zst
-!selfdrive/test/process_replay/fakedata/*.zst
 
 build/
 
