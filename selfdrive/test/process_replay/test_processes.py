@@ -9,7 +9,7 @@ from typing import Any
 
 from opendbc.car.car_helpers import interface_names
 from openpilot.common.git import get_commit
-from openpilot.tools.lib.openpilotci import get_url, upload_file
+from openpilot.tools.lib.openpilotci import get_url
 from openpilot.selfdrive.test.process_replay.compare_logs import compare_logs, format_diff
 from openpilot.selfdrive.test.process_replay.process_replay import CONFIGS, PROC_REPLAY_DIR, FAKEDATA, replay_process, \
                                                                    check_most_messages_valid
