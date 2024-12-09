@@ -148,6 +148,10 @@ class CAR(Platforms):
     [FordCarDocs("Ford Ranger 2024", "Adaptive Cruise Control with Lane Centering", support_type=SupportType.REVIEW)],
     CarSpecs(mass=2000, wheelbase=3.27, steerRatio=17.0),
   )
+  FORD_MUSTANG_MK7 = FordCANFDPlatformConfig(
+    [FordCarDocs("Ford Mustang 2024", "Co-Pilot360 Active 2.0", support_type=SupportType.REVIEW)],
+    CarSpecs(mass=1743, wheelbase=2.72, steerRatio=15.5),
+  )
 
 
 # FW response contains a combined software and part number
