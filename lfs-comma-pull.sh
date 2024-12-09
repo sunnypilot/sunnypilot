@@ -105,7 +105,7 @@ if [ -f .lfsconfig-comma ]; then
       echo -e "${GREEN}Successfully fetched missing LFS objects${NC}"
     else
       echo -e "${GREEN}No missing LFS objects to fetch${NC}"
-    }
+    fi
   fi
 else
   echo -e "${RED}Warning: .lfsconfig-comma not found${NC}"
