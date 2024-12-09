@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Define directories and user
 GITLAB_BASE_DIR="/data/gitlab"
 BIN_DIR="$GITLAB_BASE_DIR/bin"
