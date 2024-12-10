@@ -28,7 +28,6 @@ from panda import Panda, ALTERNATIVE_EXPERIENCE
 
 from openpilot.common.params import Params
 
-from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
 
