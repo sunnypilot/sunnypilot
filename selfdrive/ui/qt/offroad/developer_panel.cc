@@ -29,8 +29,8 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(madsToggle);
 
   // TODO-SP: Rename toggle
-  auto madsCruiseMainToggle = new ParamControl("MadsCruiseMain", tr("MADS: Cruise Main"), "", "");
-  addItem(madsCruiseMainToggle);
+  auto madsMainCruiseToggle = new ParamControl("MadsMainCruiseAllowed", tr("MADS: Toggle with Main Cruise"), "", "");
+  addItem(madsMainCruiseToggle);
 
   auto madsDisengageLateralOnBrakeToggle = new ParamControl("MadsDisengageLateralOnBrake", tr("MADS: Disengage Lateral on Brake"), "", "");
   addItem(madsDisengageLateralOnBrakeToggle);

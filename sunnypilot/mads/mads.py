@@ -30,7 +30,7 @@ class ModularAssistiveDrivingSystem:
         self.allow_always = True
 
     self.enabled_toggle = mads_params.read_param("Mads")
-    self.main_enabled_toggle = mads_params.read_param("MadsCruiseMain")
+    self.main_enabled_toggle = mads_params.read_param("MadsMainCruiseAllowed")
     self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake")
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode")
 

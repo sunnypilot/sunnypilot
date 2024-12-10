@@ -124,10 +124,6 @@
         <translation>롱컨 기동 모드</translation>
     </message>
     <message>
-        <source>MADS: Cruise Main</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>MADS: Disengage Lateral on Brake</source>
         <translation type="unfinished"></translation>
     </message>
@@ -137,6 +133,10 @@
     </message>
     <message>
         <source>MADS: Unified Engagement Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MADS: Toggle with Main Cruise</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

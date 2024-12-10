@@ -119,6 +119,7 @@ class Car:
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
     MadsParams().set_alternative_experience(self.CP)
+    MadsParams().set_car_specific_params(self.CP)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 

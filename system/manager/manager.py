@@ -44,9 +44,10 @@ def manager_init() -> None:
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
     ("Mads", "1"),
-    ("MadsCruiseMain", "1"),
+    ("MadsMainCruiseAllowed", "1"),
     ("MadsDisengageLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
+    ("HyundaiLongitudinalMainCruiseToggleable", "1"),
   ]
 
   if params.get_bool("RecordFrontLock"):
