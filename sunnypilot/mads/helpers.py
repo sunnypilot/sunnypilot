@@ -60,10 +60,6 @@ class MadsParams:
 
   def set_car_specific_params(self, CP):
     if CP.carName == "hyundai":
-      if (CP.sunnypilotFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or (CP.flags & HyundaiFlags.CANFD):
-        self.allow_always = True
-        CP.safetyConfig[-1].safetyParam |= Panda.FLAG_HYUNDAI_MADS_BUTTON_ALLOWED
-
       # TODO-SP: This should be separated from MADS module for future implementations
       hyundai_cruise_main_toggleable = self.read_param("HyundaiLongitudinalMainCruiseToggleable")
       if hyundai_cruise_main_toggleable:
