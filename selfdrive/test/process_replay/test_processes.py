@@ -9,7 +9,7 @@ from typing import Any
 
 from opendbc.car.car_helpers import interface_names
 from openpilot.common.git import get_commit
-from openpilot.tools.lib.openpilotci import get_url
+from openpilot.tools.lib.openpilotci import get_url, upload_file
 from openpilot.selfdrive.test.process_replay.compare_logs import compare_logs, format_diff
 from openpilot.selfdrive.test.process_replay.process_replay import CONFIGS, PROC_REPLAY_DIR, FAKEDATA, replay_process, \
                                                                    check_most_messages_valid
@@ -67,6 +67,28 @@ REF_COMMIT_FN = os.path.join(PROC_REPLAY_DIR, "ref_commit")
 EXCLUDED_PROCS = {"modeld", "dmonitoringmodeld"}
 
 
+def cleanup_fakedata(cur_commit, ref_commit):
+  """Remove files in fakedata folder that don't contain current or reference commit."""
+  removed = 0
+  for f in os.listdir(FAKEDATA):
+    if not (cur_commit in f or ref_commit in f):
+      os.remove(os.path.join(FAKEDATA, f))
+      removed += 1
+  if removed > 0:
+    print(f"Removed {removed} old files from {FAKEDATA}")
+
+
+def handle_output_file(cur_log_fn, local):
+  """Handle the output file based on whether we're using remote or local storage."""
+  assert os.path.exists(cur_log_fn), f"Cannot find log to upload: {cur_log_fn}"
+
+  if local:
+    os.system(f"git add '{os.path.realpath(cur_log_fn)}'")
+  else:
+    upload_file(cur_log_fn, os.path.basename(cur_log_fn))
+    os.remove(cur_log_fn)
+
+
 def run_test_process(data):
   segment, cfg, args, cur_log_fn, ref_log_path, lr_dat = data
   res = None
@@ -77,9 +99,9 @@ def run_test_process(data):
     save_log(cur_log_fn, log_msgs)
 
   if args.update_refs or args.upload_only:
-    print(f'Uploading: {os.path.basename(cur_log_fn)}')
-    assert os.path.exists(cur_log_fn), f"Cannot find log to upload: {cur_log_fn}"
-    os.system(f"git add '{os.path.realpath(cur_log_fn)}'")
+    print(f'Processing: {os.path.basename(cur_log_fn)}')
+    handle_output_file(cur_log_fn, args.local)
+
   return (segment, cfg.proc_name, res)
 
 
@@ -118,14 +140,18 @@ def test_process(cfg, lr, segment, ref_log_path, new_log_path, ignore_fields=Non
     return str(e), log_msgs
 
 
-def cleanup_fakedata(cur_commit, ref_commit):
-  """Remove files in fakedata folder that don't contain current or reference commit."""
-  removed = 0
-  for f in os.listdir(FAKEDATA):
-    if not (cur_commit in f or ref_commit in f):
-      os.remove(os.path.join(FAKEDATA, f))
-      removed += 1
-  print(f"Removed {removed} old files from {FAKEDATA}")
+def finalize_git_updates(cur_commit, ref_commit_fn):
+  """Finalize git updates and create commit."""
+  try:
+    os.system(f"git add {os.path.realpath(ref_commit_fn)}")
+    os.system(f"git add {os.path.realpath(FAKEDATA)}/*.zst")
+    os.system(f"git add -u {os.path.realpath(FAKEDATA)}")
+    commit_msg = f"test_processes: update ref logs to {cur_commit[:7]}"
+    os.system(f'git commit -m "{commit_msg}"')
+    print("Successfully committed reference log updates")
+  except Exception as e:
+    print(f"Failed to commit changes: {e}")
+
 
 if __name__ == "__main__":
   all_cars = {car for car, _ in segments}
@@ -150,6 +176,8 @@ if __name__ == "__main__":
                       help="Updates reference logs using current commit")
   parser.add_argument("--upload-only", action="store_true",
                       help="Skips testing processes and uploads logs from previous test run")
+  parser.add_argument("--local", action="store_true",
+                      help="Use  local git/ storage instead of remote (Azure for Comma)")
   parser.add_argument("-j", "--jobs", type=int, default=max(cpu_count - 2, 1),
                       help="Max amount of parallel jobs")
   args = parser.parse_args()
@@ -176,7 +204,9 @@ if __name__ == "__main__":
   if not cur_commit:
     raise Exception("Couldn't get current commit")
 
-  if args.update_refs or args.upload_only:
+  # Clean up old files before starting
+  if args.local:
+    print(f"***** Cleaning up old fakedata for local/git tracked refs *****")
     cleanup_fakedata(cur_commit, ref_commit)
 
   print(f"***** testing against commit {ref_commit} *****")
@@ -245,16 +275,8 @@ if __name__ == "__main__":
       f.write(cur_commit)
     print(f"\n\nUpdated reference logs for commit: {cur_commit}")
 
-    # Git operations
-    try:
-      os.system(f"git add {os.path.realpath(REF_COMMIT_FN)}")
-      os.system(f"git add {os.path.realpath(FAKEDATA)}/*.zst")
-      cleanup_fakedata(cur_commit, ref_commit)
-      os.system(f"git add -u {os.path.realpath(FAKEDATA)}")
-      commit_msg = f"test_processes: update ref logs to {cur_commit[:7]}"
-      os.system(f'git commit -m "{commit_msg}"')
-      print("Successfully committed reference log updates")
-    except Exception as e:
-      print(f"Failed to commit changes: {e}")
+    # Only do git operations if we're not in remote mode
+    if args.local:
+      finalize_git_updates(cur_commit, REF_COMMIT_FN)
 
   sys.exit(int(failed))
