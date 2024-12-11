@@ -13,7 +13,7 @@ cd $ROOT
 
 FAILED=0
 
-IGNORED_FILES="uv\.lock|docs\/CARS.md|LICENSE\.md"
+IGNORED_FILES="uv\.lock|docs\/CARS.md|LICENSE\.md|.*\.zst"
 IGNORED_DIRS="^third_party.*|^msgq.*|^msgq_repo.*|^opendbc.*|^opendbc_repo.*|^cereal.*|^panda.*|^rednose.*|^rednose_repo.*|^tinygrad.*|^tinygrad_repo.*|^teleoprtc.*|^teleoprtc_repo.*"
 
 function run() {
@@ -57,7 +57,7 @@ function run_tests() {
 
   if [[ -z "$FAST" ]]; then
     run "mypy" mypy $PYTHON_FILES
-    run "codespell" codespell $ALL_FILES
+    run "codespell" codespell $ALL_FILES -L Wen
   fi
 
   return $FAILED
