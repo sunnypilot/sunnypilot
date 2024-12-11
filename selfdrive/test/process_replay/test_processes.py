@@ -247,6 +247,8 @@ if __name__ == "__main__":
 
     # Git operations
     try:
+      os.system(f"git add {os.path.realpath(REF_COMMIT_FN)}")
+      os.system(f"git add {os.path.realpath(FAKEDATA)}/*.zst")
       os.system(f"git add -u {os.path.realpath(FAKEDATA)}")
       commit_msg = f"test_processes: update ref logs to {cur_commit[:7]}"
       os.system(f'git commit -m "{commit_msg}"')
