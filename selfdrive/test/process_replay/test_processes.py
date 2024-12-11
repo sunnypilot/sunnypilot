@@ -67,11 +67,11 @@ REF_COMMIT_FN = os.path.join(PROC_REPLAY_DIR, "ref_commit")
 EXCLUDED_PROCS = {"modeld", "dmonitoringmodeld"}
 
 
-def cleanup_fakedata(cur_commit, ref_commit):
-  """Remove files in fakedata folder that don't contain current or reference commit."""
+def preserve_only_specified_files_from_ref_commit(*commits_to_keep):
+  """Keep only files in fakedata that contain any of the specified commit hashes."""
   removed = 0
   for f in os.listdir(FAKEDATA):
-    if not (cur_commit in f or ref_commit in f):
+    if not any(commit in f for commit in commits_to_keep):
       os.remove(os.path.join(FAKEDATA, f))
       removed += 1
   if removed > 0:
@@ -143,9 +143,17 @@ def test_process(cfg, lr, segment, ref_log_path, new_log_path, ignore_fields=Non
 def finalize_git_updates(cur_commit, ref_commit_fn):
   """Finalize git updates and create commit."""
   try:
+    # Add all new files first
     os.system(f"git add {os.path.realpath(ref_commit_fn)}")
     os.system(f"git add {os.path.realpath(FAKEDATA)}/*.zst")
+
+    # Clean up old files - keep only new ref files since they're becoming the reference
+    preserve_only_specified_files_from_ref_commit(cur_commit)
+
+    # Add the deletions to git
     os.system(f"git add -u {os.path.realpath(FAKEDATA)}")
+
+    # Create the commit
     commit_msg = f"test_processes: update ref logs to {cur_commit[:7]}"
     os.system(f'git commit -m "{commit_msg}"')
     print("Successfully committed reference log updates")
@@ -207,7 +215,7 @@ if __name__ == "__main__":
   # Clean up old files before starting
   if args.local:
     print(f"***** Cleaning up old fakedata for local/git tracked refs *****")
-    cleanup_fakedata(cur_commit, ref_commit)
+    preserve_only_specified_files_from_ref_commit(cur_commit, ref_commit)
 
   print(f"***** testing against commit {ref_commit} *****")
 
@@ -275,7 +283,7 @@ if __name__ == "__main__":
       f.write(cur_commit)
     print(f"\n\nUpdated reference logs for commit: {cur_commit}")
 
-    # Only do git operations if we're not in remote mode
+    # Only do git operations if we're in local mode
     if args.local:
       finalize_git_updates(cur_commit, REF_COMMIT_FN)
 
