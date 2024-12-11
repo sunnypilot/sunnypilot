@@ -57,6 +57,10 @@ class MadsParams:
       if unified_engagement_mode:
         CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.UNIFIED_ENGAGEMENT_MODE
 
+      if CP.carName == "hyundai":
+        if (CP.sunnypilotFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or (CP.flags & HyundaiFlags.CANFD):
+          CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALWAYS_ALLOW_MADS_BUTTON
+
   def set_car_specific_params(self, CP):
     if CP.carName == "hyundai":
       # TODO-SP: This should be separated from MADS module for future implementations
