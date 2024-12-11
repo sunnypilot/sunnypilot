@@ -16,7 +16,7 @@ from openpilot.selfdrive.test.process_replay.process_replay import CONFIGS, PROC
 from openpilot.tools.lib.filereader import FileReader
 from openpilot.tools.lib.logreader import LogReader, save_log
 
-IS_LOCAL_FORCED = not os.getenv("AZURE_TOKEN")
+IS_AZURE_TOKEN_DEFINED = os.getenv("AZURE_TOKEN")
 
 source_segments = [
   ("BODY", "937ccb7243511b65|2022-05-24--16-03-09--1"),        # COMMA.COMMA_BODY
@@ -186,7 +186,7 @@ if __name__ == "__main__":
                       help="Updates reference logs using current commit")
   parser.add_argument("--upload-only", action="store_true",
                       help="Skips testing processes and uploads logs from previous test run")
-  parser.add_argument("--local", action="store_true", default=IS_LOCAL_FORCED,
+  parser.add_argument("--local", action="store_true",
                       help="Use  local git/ storage instead of remote (Azure for Comma)")
   parser.add_argument("-j", "--jobs", type=int, default=max(cpu_count - 2, 1),
                       help="Max amount of parallel jobs")
@@ -214,8 +214,10 @@ if __name__ == "__main__":
   if not cur_commit:
     raise Exception("Couldn't get current commit")
 
-  if IS_LOCAL_FORCED:
-    print(f"***** Warning: local/git run is forced since AZURE_TOKEN was NOT found on the env variables! *****")
+  # Could be set as default in args, but wanted to be more explicit on the flow.
+  if not args.local and not IS_AZURE_TOKEN_DEFINED:
+    print(f"***** Warning: local/git run was used by default since AZURE_TOKEN was NOT found on the env variables! *****")
+    args.local = True
 
   # Clean up old files before starting
   if args.local:
