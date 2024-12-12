@@ -44,7 +44,6 @@ class MadsParams:
     enabled = self.read_param("Mads")
     disengage_lateral_on_brake = self.read_param("MadsDisengageLateralOnBrake")
     main_cruise = self.read_param("MadsMainCruiseAllowed")
-    unified_engagement_mode = self.read_param("MadsUnifiedEngagementMode")
 
     if enabled:
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
@@ -54,9 +53,6 @@ class MadsParams:
 
       if main_cruise:
         CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MAIN_CRUISE_ALLOWED
-
-      if unified_engagement_mode:
-        CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.UNIFIED_ENGAGEMENT_MODE
 
       if CP.carName == "hyundai":
         if (CP.sunnypilotFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or (CP.flags & HyundaiFlags.CANFD):
