@@ -42,16 +42,12 @@ class MadsParams:
   def set_alternative_experience(self, CP):
     enabled = self.read_param("Mads")
     disengage_lateral_on_brake = self.read_param("MadsDisengageLateralOnBrake")
-    main_cruise = self.read_param("MadsMainCruiseAllowed")
 
     if enabled:
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
 
       if disengage_lateral_on_brake:
         CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISENGAGE_LATERAL_ON_BRAKE
-
-      if main_cruise:
-        CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MAIN_CRUISE_ALLOWED
 
   def set_car_specific_params(self, CP):
     if CP.carName == "hyundai":
