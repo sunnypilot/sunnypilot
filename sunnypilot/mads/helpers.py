@@ -28,7 +28,6 @@ from panda import Panda, ALTERNATIVE_EXPERIENCE
 
 from openpilot.common.params import Params
 
-from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
 
@@ -53,10 +52,6 @@ class MadsParams:
 
       if main_cruise:
         CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MAIN_CRUISE_ALLOWED
-
-      if CP.carName == "hyundai":
-        if (CP.sunnypilotFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or (CP.flags & HyundaiFlags.CANFD):
-          CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALWAYS_ALLOW_MADS_BUTTON
 
   def set_car_specific_params(self, CP):
     if CP.carName == "hyundai":
