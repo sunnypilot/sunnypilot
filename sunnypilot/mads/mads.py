@@ -24,7 +24,7 @@ THE SOFTWARE.
 Last updated: July 29, 2024
 """
 
-from cereal import car, log, custom
+from cereal import messaging, car, log, custom
 
 from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
@@ -35,6 +35,9 @@ from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SIL
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
+SafetyModel = car.CarParams.SafetyModel
+
+IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
 class ModularAssistiveDrivingSystem:
@@ -44,6 +47,7 @@ class ModularAssistiveDrivingSystem:
     self.enabled = False
     self.active = False
     self.available = False
+    self.mismatch_counter = 0
     self.allow_always = False
     self.selfdrive = selfdrive
     self.selfdrive.enabled_prev = False
@@ -130,9 +134,22 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.wrongCruiseMode)
     self.events.remove(EventName.wrongCarMode)
 
-  def update(self, CS: car.CarState):
+    if self.mismatch_counter >= 200:
+      self.events.add(EventName.controlsMismatchLateral)
+
+  def data_sample(self, sm: messaging.SubMaster):
+    if not self.enabled:
+      self.mismatch_counter = 0
+
+    if self.enabled and any(not ps.controlsAllowedLat for ps in sm['pandaStates']
+                            if ps.safetyModel not in IGNORED_SAFETY_MODES):
+      self.mismatch_counter += 1
+
+  def update(self, CS: car.CarState, sm: messaging.SubMaster):
     if not self.enabled_toggle:
       return
+
+    self.data_sample(sm)
 
     self.update_events(CS)
 
