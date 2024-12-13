@@ -103,6 +103,8 @@ class ModularAssistiveDrivingSystem:
         if self.state_machine.state == State.paused:
           self.events.add(EventName.silentLkasEnable)
 
+      self.events.remove(EventName.preEnableStandstill)
+
     if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
       update_unified_engagement_mode()
     else:
