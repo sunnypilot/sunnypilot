@@ -63,6 +63,7 @@ class CarController(CarControllerBase):
     self.lat_active_last = False
 
     self.apply_angle_now = 0
+    self.apply_angle_last = 0
 
     sub_services = ['longitudinalPlan', 'longitudinalPlanSP']
     if CP.openpilotLongitudinalControl:
@@ -173,6 +174,7 @@ class CarController(CarControllerBase):
     # Hold torque with induced temporary fault when cutting the actuation bit
     torque_fault = CC.latActive and not apply_steer_req
 
+    self.apply_angle_last = self.apply_angle
     self.apply_steer_last = apply_steer
 
     # accel + longitudinal
