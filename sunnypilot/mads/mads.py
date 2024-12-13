@@ -148,7 +148,7 @@ class ModularAssistiveDrivingSystem:
       self.mismatch_counter = 0
 
     if self.active and any(not ps.controlsAllowedLat for ps in sm['pandaStates']
-                            if ps.safetyModel not in IGNORED_SAFETY_MODES):
+                           if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
 
   def update(self, CS: car.CarState, sm: messaging.SubMaster):
