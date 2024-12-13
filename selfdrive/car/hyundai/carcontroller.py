@@ -191,8 +191,8 @@ class CarController(CarControllerBase):
 
     new_steer = int(round(actuators.steer * self.params.STEER_MAX))
 
-    if is_angle_control:
-      new_steer = self.smooth_steer(new_steer, CS)
+    # if is_angle_control:
+    #   new_steer = self.smooth_steer(new_steer, CS)
 
     apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.params)
     if self.CP.spFlags & HyundaiFlagsSP.SP_UPSTREAM_TACO.value:
