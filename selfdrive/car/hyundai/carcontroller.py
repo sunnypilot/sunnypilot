@@ -206,6 +206,7 @@ class CarController(CarControllerBase):
 
     if not CC.latActive:
       apply_steer = 0
+      self.apply_angle_now = 0
 
     # Hold torque with induced temporary fault when cutting the actuation bit
     torque_fault = CC.latActive and not apply_steer_req
@@ -370,6 +371,7 @@ class CarController(CarControllerBase):
     new_actuators = actuators.as_builder()
     new_actuators.steer = apply_steer / self.params.STEER_MAX
     new_actuators.steerOutputCan = apply_steer
+    new_actuators.steeringAngleDeg = self.apply_angle_now
     new_actuators.accel = accel
 
     self.frame += 1
