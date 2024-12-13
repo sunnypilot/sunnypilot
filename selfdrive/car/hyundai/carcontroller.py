@@ -64,6 +64,10 @@ class CarController(CarControllerBase):
 
     self.apply_angle_now = 0
     self.apply_angle_last = 0
+    self.max_steering_angle = 90
+    self.max_driver_angle_wait = 0.002
+    self.max_steer_angle_wait = 0.001
+    self.driver_angle_wait = 0.001
 
     self.steer_timer_apply_torque = 1.0
     self.DT_STEER = 0.005  # 0.01 1sec, 0.005  2sec
@@ -130,13 +134,13 @@ class CarController(CarControllerBase):
     return 19 if hud_control.leadVisible else 0
 
   def smooth_steer(self, apply_torque, CS):
-    if self.CP.smoothSteer.maxSteeringAngle and abs(CS.out.steeringAngleDeg) > self.CP.smoothSteer.maxSteeringAngle:
-      if self.CP.smoothSteer.maxDriverAngleWait and CS.out.steeringPressed:
-        self.steer_timer_apply_torque -= self.CP.smoothSteer.maxDriverAngleWait  # 0.002 #self.DT_STEER   # 0.01 1sec, 0.005  2sec   0.002  5sec
-      elif self.CP.smoothSteer.maxSteerAngleWait:
-        self.steer_timer_apply_torque -= self.CP.smoothSteer.maxSteerAngleWait  # 0.001  # 10 sec
-    elif self.CP.smoothSteer.driverAngleWait and CS.out.steeringPressed:
-      self.steer_timer_apply_torque -= self.CP.smoothSteer.driverAngleWait  # 0.001
+    if self.max_steering_angle and abs(CS.out.steeringAngleDeg) > self.max_steering_angle:
+      if self.max_driver_angle_wait and CS.out.steeringPressed:
+        self.steer_timer_apply_torque -= self.max_driver_angle_wait  # 0.002 #self.DT_STEER   # 0.01 1sec, 0.005  2sec   0.002  5sec
+      elif self.max_steer_angle_wait:
+        self.steer_timer_apply_torque -= self.max_steer_angle_wait  # 0.001  # 10 sec
+    elif self.driver_angle_wait and CS.out.steeringPressed:
+      self.steer_timer_apply_torque -= self.driver_angle_wait  # 0.001
     else:
       if self.steer_timer_apply_torque >= 1:
         return int(round(float(apply_torque)))
