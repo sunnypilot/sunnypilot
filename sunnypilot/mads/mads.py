@@ -75,6 +75,12 @@ class ModularAssistiveDrivingSystem:
         self.events.add(EventName.silentLkasDisable)
 
     if not self.selfdrive.enabled and self.enabled:
+      if self.events.has(EventName.doorOpen):
+        self.events.replace(EventName.doorOpen, EventName.silentDoorOpen)
+        transition_paused_state()
+      if self.events.has(EventName.seatbeltNotLatched):
+        self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
+        transition_paused_state()
       if self.events.has(EventName.wrongGear):
         self.events.replace(EventName.wrongGear, EventName.silentWrongGear)
         transition_paused_state()
@@ -84,14 +90,14 @@ class ModularAssistiveDrivingSystem:
       if self.events.has(EventName.brakeHold):
         self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
         transition_paused_state()
-      if self.events.has(EventName.doorOpen):
-        self.events.replace(EventName.doorOpen, EventName.silentDoorOpen)
-        transition_paused_state()
-      if self.events.has(EventName.seatbeltNotLatched):
-        self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
-        transition_paused_state()
       if self.events.has(EventName.parkBrake):
         self.events.replace(EventName.parkBrake, EventName.silentParkBrake)
+        transition_paused_state()
+      if self.events.has(EventName.wrongCarMode):
+        self.events.replace(EventName.wrongCarMode, EventName.wrongCarModeNoEntry)
+        transition_paused_state()
+      if self.events.has(EventName.wrongCruiseMode):
+        self.events.replace(EventName.wrongCruiseMode, EventName.wrongCruiseModeNoEntry)
         transition_paused_state()
 
       if self.disengage_lateral_on_brake_toggle:
@@ -133,8 +139,6 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
-    self.events.remove(EventName.wrongCruiseMode)
-    self.events.remove(EventName.wrongCarMode)
 
     if self.mismatch_counter >= 200:
       self.events.add(EventName.controlsMismatchLateral)
