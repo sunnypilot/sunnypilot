@@ -65,6 +65,9 @@ class CarController(CarControllerBase):
     self.apply_angle_now = 0
     self.apply_angle_last = 0
 
+    self.steer_timer_apply_torque = 1.0
+    self.DT_STEER = 0.005  # 0.01 1sec, 0.005  2sec
+
     sub_services = ['longitudinalPlan', 'longitudinalPlanSP']
     if CP.openpilotLongitudinalControl:
       sub_services.append('radarState')
@@ -126,7 +129,31 @@ class CarController(CarControllerBase):
 
     return 19 if hud_control.leadVisible else 0
 
+  def smooth_steer(self, apply_torque, CS):
+    if self.CP.smoothSteer.maxSteeringAngle and abs(CS.out.steeringAngleDeg) > self.CP.smoothSteer.maxSteeringAngle:
+      if self.CP.smoothSteer.maxDriverAngleWait and CS.out.steeringPressed:
+        self.steer_timer_apply_torque -= self.CP.smoothSteer.maxDriverAngleWait  # 0.002 #self.DT_STEER   # 0.01 1sec, 0.005  2sec   0.002  5sec
+      elif self.CP.smoothSteer.maxSteerAngleWait:
+        self.steer_timer_apply_torque -= self.CP.smoothSteer.maxSteerAngleWait  # 0.001  # 10 sec
+    elif self.CP.smoothSteer.driverAngleWait and CS.out.steeringPressed:
+      self.steer_timer_apply_torque -= self.CP.smoothSteer.driverAngleWait  # 0.001
+    else:
+      if self.steer_timer_apply_torque >= 1:
+        return int(round(float(apply_torque)))
+      self.steer_timer_apply_torque += self.DT_STEER
+
+    if self.steer_timer_apply_torque < 0:
+      self.steer_timer_apply_torque = 0
+    elif self.steer_timer_apply_torque > 1:
+      self.steer_timer_apply_torque = 1
+
+    apply_torque *= self.steer_timer_apply_torque
+
+    return int(round(float(apply_torque)))
+
   def update(self, CC, CS, now_nanos):
+    is_angle_control = self.CP.carFingerprint in ANGLE_CONTROL_CAR
+
     if not self.CP.pcmCruiseSpeed or (self.CP.openpilotLongitudinalControl and self.frame % 5 == 0):
       self.sm.update(0)
 
@@ -155,7 +182,12 @@ class CarController(CarControllerBase):
     # steering torque
     if self.CP.spFlags & HyundaiFlagsSP.SP_UPSTREAM_TACO.value:
       self.params = CarControllerParams(self.CP, CS.out.vEgoRaw)
+
     new_steer = int(round(actuators.steer * self.params.STEER_MAX))
+
+    if is_angle_control:
+      new_steer = self.smooth_steer(new_steer, CS)
+
     apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.params)
     if self.CP.spFlags & HyundaiFlagsSP.SP_UPSTREAM_TACO.value:
       apply_steer = clip(apply_steer, -self.params.STEER_MAX, self.params.STEER_MAX)
@@ -241,11 +273,10 @@ class CarController(CarControllerBase):
       hda2_long = hda2 and self.CP.openpilotLongitudinalControl
 
       # steering control
-      angle_control = self.CP.carFingerprint in ANGLE_CONTROL_CAR
       can_sends.extend(hyundaicanfd.create_steering_messages(self.packer, self.CP, self.CAN, CC.enabled,
                                                              apply_steer_req, apply_steer, lateral_paused,
                                                              blinking_icon,
-                                                             self.apply_angle_now, angle_control))
+                                                             self.apply_angle_now, is_angle_control))
 
       # prevent LFA from activating on HDA2 by sending "no lane lines detected" to ADAS ECU
       if self.frame % 5 == 0 and hda2:
