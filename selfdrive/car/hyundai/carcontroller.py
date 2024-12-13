@@ -68,6 +68,8 @@ class CarController(CarControllerBase):
     self.max_driver_angle_wait = 0.002
     self.max_steer_angle_wait = 0.001
     self.driver_angle_wait = 0.001
+    self.lkas_max_torque = 0
+    self.driver_steering_angle_above_timer = 150
 
     self.steer_timer_apply_torque = 1.0
     self.DT_STEER = 0.005  # 0.01 1sec, 0.005  2sec
@@ -204,9 +206,27 @@ class CarController(CarControllerBase):
     self.apply_angle_now = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgoRaw,
                                                self.params)
 
+    lkas_max_torque = 180
+    if abs(CS.out.steeringTorque) > 200:
+      self.driver_steering_angle_above_timer -= 1
+      if self.driver_steering_angle_above_timer <= 30:
+        self.driver_steering_angle_above_timer = 30
+    else:
+      self.driver_steering_angle_above_timer += 1
+      if self.driver_steering_angle_above_timer >= 150:
+        self.driver_steering_angle_above_timer = 150
+
+    ego_weight = interp(CS.out.vEgo, [0, 5, 10, 20], [0.2, 0.3, 0.5, 1.0])
+
+    if 0 <= self.driver_steering_angle_above_timer < 150:
+      self.lkas_max_torque = int(round(lkas_max_torque * (self.driver_steering_angle_above_timer / 150) * ego_weight))
+    else:
+      self.lkas_max_torque = lkas_max_torque * ego_weight
+
     if not CC.latActive:
       apply_steer = 0
       self.apply_angle_now = 0
+      self.lkas_max_torque = 0
 
     # Hold torque with induced temporary fault when cutting the actuation bit
     torque_fault = CC.latActive and not apply_steer_req
@@ -281,7 +301,8 @@ class CarController(CarControllerBase):
       can_sends.extend(hyundaicanfd.create_steering_messages(self.packer, self.CP, self.CAN, CC.enabled,
                                                              apply_steer_req, apply_steer, lateral_paused,
                                                              blinking_icon,
-                                                             self.apply_angle_now, is_angle_control))
+                                                             self.apply_angle_now, self.lkas_max_torque,
+                                                             is_angle_control))
 
       # prevent LFA from activating on HDA2 by sending "no lane lines detected" to ADAS ECU
       if self.frame % 5 == 0 and hda2:

@@ -35,7 +35,8 @@ class CanBus(CanBusBase):
     return self._cam
 
 
-def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer , lateral_paused, blinking_icon, apply_angle, angle_control):
+def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer , lateral_paused, blinking_icon,
+                             apply_angle, max_torque, angle_control):
 
   ret = []
 
@@ -55,7 +56,7 @@ def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer ,
       "LKAS_ANGLE_ACTIVE": 2 if lat_active else 1,
       # a torque scale value? ramps up when steering, highest seen is 234
       # "UNKNOWN": 50 if lat_active and not steering_pressed else 0,
-      "UNKNOWN": 180 if lat_active else 0,
+      "UNKNOWN": max_torque if lat_active else 0,
       "NEW_SIGNAL_1": 10,
       "NEW_SIGNAL_3": 9,
       "NEW_SIGNAL_4": 1,
