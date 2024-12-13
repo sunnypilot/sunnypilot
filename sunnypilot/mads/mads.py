@@ -66,7 +66,7 @@ class ModularAssistiveDrivingSystem:
 
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
-      if (self.unified_engagement_mode and self.enabled) or not self.unified_engagement_mode:
+      if (self.unified_engagement_mode and (self.enabled or self.selfdrive.enabled)) or not self.unified_engagement_mode:
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)
 
