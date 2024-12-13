@@ -140,10 +140,10 @@ class ModularAssistiveDrivingSystem:
       self.events.add(EventName.controlsMismatchLateral)
 
   def data_sample(self, sm: messaging.SubMaster):
-    if not self.enabled:
+    if not self.active:
       self.mismatch_counter = 0
 
-    if self.enabled and any(not ps.controlsAllowedLat for ps in sm['pandaStates']
+    if self.active and any(not ps.controlsAllowedLat for ps in sm['pandaStates']
                             if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
 

@@ -367,7 +367,7 @@ void process_panda_state(std::vector<Panda *> &pandas, PubMaster *pm, bool spoof
 
     sm.update(0);
     const bool engaged = sm.allAliveAndValid({"selfdriveState"}) && sm["selfdriveState"].getSelfdriveState().getEnabled();
-    const bool engaged_mads = sm.allAliveAndValid({"selfdriveStateSP"}) && sm["selfdriveStateSP"].getSelfdriveStateSP().getMads().getEnabled();
+    const bool engaged_mads = sm.allAliveAndValid({"selfdriveStateSP"}) && sm["selfdriveStateSP"].getSelfdriveStateSP().getMads().getActive();
     for (const auto &panda : pandas) {
       panda->send_heartbeat(engaged, engaged_mads);
     }
