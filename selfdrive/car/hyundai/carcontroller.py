@@ -165,7 +165,7 @@ class CarController(CarControllerBase):
                                                                        self.angle_limit_counter, MAX_ANGLE_FRAMES,
                                                                        MAX_ANGLE_CONSECUTIVE_FRAMES)
 
-    self.apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgoRaw,
+    self.apply_angle_now = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgoRaw,
                                                self.params)
 
     if not CC.latActive:
@@ -174,7 +174,7 @@ class CarController(CarControllerBase):
     # Hold torque with induced temporary fault when cutting the actuation bit
     torque_fault = CC.latActive and not apply_steer_req
 
-    self.apply_angle_last = self.apply_angle
+    self.apply_angle_last = self.apply_angle_now
     self.apply_steer_last = apply_steer
 
     # accel + longitudinal
