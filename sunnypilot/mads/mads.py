@@ -126,7 +126,7 @@ class ModularAssistiveDrivingSystem:
         else:
           self.events.add(EventName.lkasEnable)
       if be.type not in (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise):
-        self.events.remove(EventName.wrongCruiseMode)
+        self.events.remove(EventName.wrongCarMode)
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
@@ -136,7 +136,7 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
-    self.events.remove(EventName.wrongCarMode)
+    self.events.remove(EventName.wrongCruiseMode)
 
     if self.mismatch_counter >= 200:
       self.events.add(EventName.controlsMismatchLateral)
