@@ -64,7 +64,20 @@ class ModularAssistiveDrivingSystem:
     self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake")
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode")
 
-  def update_events(self, CS: car.CarState):
+  def update_controls_mismatch(self, sm: messaging.SubMaster):
+    heartbeat_engaged = self.active if self.disengage_lateral_on_brake_toggle else self.enabled
+
+    if not heartbeat_engaged:
+      self.mismatch_counter = 0
+
+    if heartbeat_engaged and any(not ps.controlsAllowedLat for ps in sm['pandaStates']
+                                 if ps.safetyModel not in IGNORED_SAFETY_MODES):
+      self.mismatch_counter += 1
+
+    if self.mismatch_counter >= 200:
+      self.events.add(EventName.controlsMismatchLateral)
+
+  def update_events(self, CS: car.CarState, sm: messaging.SubMaster):
     def update_unified_engagement_mode():
       uem_blocked = self.enabled or (self.selfdrive.enabled and self.selfdrive.enabled_prev)
       if (self.unified_engagement_mode and uem_blocked) or not self.unified_engagement_mode:
@@ -138,24 +151,13 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
 
-    if self.mismatch_counter >= 200:
-      self.events.add(EventName.controlsMismatchLateral)
-
-  def data_sample(self, sm: messaging.SubMaster):
-    if not self.active:
-      self.mismatch_counter = 0
-
-    if self.active and any(not ps.controlsAllowedLat for ps in sm['pandaStates']
-                           if ps.safetyModel not in IGNORED_SAFETY_MODES):
-      self.mismatch_counter += 1
+    self.update_controls_mismatch(sm)
 
   def update(self, CS: car.CarState, sm: messaging.SubMaster):
     if not self.enabled_toggle:
       return
 
-    self.data_sample(sm)
-
-    self.update_events(CS)
+    self.update_events(CS, sm)
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update(self.events)
