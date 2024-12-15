@@ -56,3 +56,8 @@ class MadsParams:
       if hyundai_cruise_main_toggleable:
         CP.sunnypilotFlags |= HyundaiFlagsSP.LONGITUDINAL_MAIN_CRUISE_TOGGLEABLE.value
         CP.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_LONG_MAIN_CRUISE_TOGGLEABLE
+
+    # MADS is currently not supported in Tesla due to lack of consistent states to engage controls
+    # TODO-SP: To enable MADS for Tesla Identify consistent signals for MADS toggling
+    if CP.carName == "tesla":
+      self.params.remove("Mads")
