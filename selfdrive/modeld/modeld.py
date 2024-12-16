@@ -12,6 +12,8 @@ from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from opendbc.car.car_helpers import get_demo_car_params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
+from openpilot.common.numpy_fast import interp
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import config_realtime_process
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
@@ -24,8 +26,9 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
-from openpilot.sunnypilot.modeld.custom_model_metadata import CustomModelMetadata, ModelCapabilities
+from openpilot.sunnypilot.modeld.custom_model_metadata import ModelCapabilities
 from openpilot.sunnypilot.modeld.constants import ModelConstantsV1
+from openpilot.sunnypilot.modeld.model_state_base import ModelStateBase
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -48,7 +51,7 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
-class ModelState:
+class ModelState(ModelStateBase):
   frame: ModelFrame
   wide_frame: ModelFrame
   inputs: dict[str, np.ndarray]
@@ -57,30 +60,26 @@ class ModelState:
   model: ModelRunner
 
   def __init__(self, context: CLContext):
-    self.cmm = CustomModelMetadata(params=Params(), init_only=True)
+    super().__init__()
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    if self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
+    if self.model_capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
       self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
       self.prev_desired_curv_20hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
 
-    if self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
-      _history_buffer_len = ModelConstants.HISTORY_BUFFER_LEN
-    else:
-      _history_buffer_len = ModelConstantsV1.HISTORY_BUFFER_LEN
-
     # img buffers are managed in openCL transform code
+    self.setup_inputs()
     self.inputs = {
-      'desire': np.zeros(ModelConstants.DESIRE_LEN * (_history_buffer_len+1), dtype=np.float32),
+      'desire': np.zeros(ModelConstants.DESIRE_LEN * (self.history_buffer_len+1), dtype=np.float32),
       'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
-      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
-      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (_history_buffer_len+1), dtype=np.float32),
-      'features_buffer': np.zeros(_history_buffer_len * ModelConstants.FEATURE_LEN, dtype=np.float32),
+      **self._inputs,
+      **self._inputs_2,
+      'features_buffer': np.zeros(self.history_buffer_len * ModelConstants.FEATURE_LEN, dtype=np.float32),
     }
 
-    with open(METADATA_PATH, 'rb') as f:
+    with open(self.metadata_path, 'rb') as f:
       model_metadata = pickle.load(f)
 
     self.output_slices = model_metadata['output_slices']
@@ -88,7 +87,7 @@ class ModelState:
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    self.model = ModelRunner(MODEL_PATHS, self.output, Runtime.GPU, False, context)
+    self.model = ModelRunner(self.model_paths, self.output, Runtime.GPU, False, context)
     self.model.addInput("input_imgs", None)
     self.model.addInput("big_input_imgs", None)
     for k,v in self.inputs.items():
@@ -104,22 +103,27 @@ class ModelState:
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
-    if not (self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default)):
+    if not (self.model_capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default)):
       self.inputs['desire'][:-ModelConstants.DESIRE_LEN] = self.inputs['desire'][ModelConstants.DESIRE_LEN:]
       self.inputs['desire'][-ModelConstants.DESIRE_LEN:] = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    if self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
+    if self.model_capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
       new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
       self.desire_20Hz[:-1] = self.desire_20Hz[1:]
       self.desire_20Hz[-1] = new_desire
       self.inputs['desire'][:] = self.desire_20Hz.reshape((25,4,-1)).max(axis=1).flatten()
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    if not (self.custom_model and self.model_capabilities & ModelCapabilities.LateralPlannerSolution):
+      self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    if self.custom_model and self.model_capabilities & ModelCapabilities.NavigateOnOpenpilot:
+      self.inputs['nav_features'][:] = inputs['nav_features']
+      self.inputs['nav_instructions'][:] = inputs['nav_instructions']
 
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
-    self.model.setInputBuffer("big_input_imgs", self.wide_frame.prepare(wbuf, transform_wide.flatten(), self.model.getCLBuffer("big_input_imgs")))
+    if self.model_capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default) or wbuf is not None:
+      self.model.setInputBuffer("big_input_imgs", self.wide_frame.prepare(wbuf, transform_wide.flatten(), self.model.getCLBuffer("big_input_imgs")))
 
     if prepare_only:
       return None
@@ -127,7 +131,7 @@ class ModelState:
     self.model.execute()
     outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
 
-    if self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
+    if self.model_capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default):
       self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
       self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
@@ -138,11 +142,18 @@ class ModelState:
       self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
       # TODO model only uses last value now, once that changes we need to input strided action history buffer
       self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = 0. * self.prev_desired_curv_20hz[-4, :]
-    elif not (self.cmm.capabilities & (ModelCapabilities.MLSIM | ModelCapabilities.Default)):
+    elif self.custom_model:
       self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
       self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
-      self.inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
-      self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][0, :]
+      if self.model_capabilities & ModelCapabilities.LateralPlannerSolution:
+        self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
+        self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
+      if self.model_capabilities & ModelCapabilities.DesiredCurvatureV1:
+        self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
+        self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
+      if self.model_capabilities & ModelCapabilities.DesiredCurvatureV2:
+        self.inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
+        self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][0, :]
 
     return outputs
 
@@ -220,8 +231,6 @@ def main(demo=False):
 
   DH = DesireHelper()
 
-  CMM = CustomModelMetadata(params=params, init_only=True)
-
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
     while meta_main.timestamp_sof < meta_extra.timestamp_sof + 25000000:
@@ -275,6 +284,9 @@ def main(demo=False):
     if desire >= 0 and desire < ModelConstants.DESIRE_LEN:
       vec_desire[desire] = 1
 
+    if model.custom_model and model.model_capabilities & ModelCapabilities.NavigateOnOpenpilot:
+      model.setup_nav(sm)
+
     # tracked dropped frames
     vipc_dropped_frames = max(0, meta_main.frame_id - last_vipc_frame_id - 1)
     frames_dropped = frame_dropped_filter.update(min(vipc_dropped_frames, 10))
@@ -288,10 +300,27 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
+    if model.custom_model and model.model_capabilities & ModelCapabilities.LateralPlannerSolution:
+      _inputs = {
+        'driving_style': model.driving_style
+      }
+    else:
+      _inputs = {
+        'lateral_control_params': lateral_control_params
+      }
+    if model.custom_model and model.model_capabilities & ModelCapabilities.NavigateOnOpenpilot:
+      _inputs_2 = {
+        'nav_features': model.nav_features,
+        'nav_instructions': model.nav_instructions
+      }
+    else:
+      _inputs_2 = {}
+
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
-      'lateral_control_params': lateral_control_params,
+      **_inputs,
+      **_inputs_2,
       }
 
     mt1 = time.perf_counter()
@@ -305,7 +334,7 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
-                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, CMM)
+                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, model)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
@@ -321,9 +350,9 @@ def main(demo=False):
 
       modelv2_sp_send.valid = live_calib_seen
       modelv2_sp = modelv2_sp_send.modelV2SP
-      modelv2_sp.customModel = CMM.valid
-      modelv2_sp.modelGeneration = CMM.generation
-      modelv2_sp.modelCapabilities = int(CMM.capabilities)
+      modelv2_sp.customModel = model.custom_model
+      modelv2_sp.modelGeneration = model.model_generation
+      modelv2_sp.modelCapabilities = int(model.model_capabilities)
 
       pm.send('modelV2', modelv2_send)
       pm.send('modelV2SP', modelv2_sp_send)

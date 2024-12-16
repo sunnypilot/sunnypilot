@@ -4,7 +4,7 @@ import numpy as np
 from cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 
-from openpilot.sunnypilot.modeld.custom_model_metadata import CustomModelMetadata
+from openpilot.sunnypilot.modeld.model_capabilities import ModelCapabilities
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -59,8 +59,8 @@ def fill_lane_line_meta(builder, lane_lines, lane_line_probs):
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
                    net_output_data: dict[str, np.ndarray], publish_state: PublishState,
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
-                   timestamp_eof: int, model_execution_time: float, valid: bool, CMM: CustomModelMetadata) -> None:
-  _meta_src = CMM.get_meta()
+                   timestamp_eof: int, model_execution_time: float, valid: bool, model) -> None:
+  _meta_src = model.get_meta()
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
   extended_msg.valid = valid
@@ -74,7 +74,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.modelExecutionTime = model_execution_time
 
   action = driving_model_data.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  if not (model.custom_model and model.model_capabilities & ModelCapabilities.LateralPlannerSolution):
+    action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -83,6 +84,11 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   modelV2.frameDropPerc = frame_drop_perc
   modelV2.timestampEof = timestamp_eof
   modelV2.modelExecutionTime = model_execution_time
+
+  # nav
+  if model.custom_model and model.model_capabilities & ModelCapabilities.NavigateOnOpenpilot:
+    modelV2.locationMonoTimeDEPRECATED = model.timestamp_llk
+    modelV2.navEnabledDEPRECATED = model.nav_enabled
 
   # plan
   position = modelV2.position
@@ -98,18 +104,29 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # temporal pose
   temporal_pose = modelV2.temporalPose
-  temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
-  temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
-  temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
-  temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
+  if model.custom_model and model.model_capabilities & ModelCapabilities.SIM_POSE:
+    temporal_pose.trans = net_output_data['sim_pose'][0,:3].tolist()
+    temporal_pose.transStd = net_output_data['sim_pose_stds'][0,:3].tolist()
+    temporal_pose.rot = net_output_data['sim_pose'][0,3:].tolist()
+    temporal_pose.rotStd = net_output_data['sim_pose_stds'][0,3:].tolist()
+  else:
+    temporal_pose.trans = net_output_data['plan'][0,0,Plan.VELOCITY].tolist()
+    temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
+    temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
+    temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
 
   # poly path
   poly_path = driving_model_data.path
   fill_xyz_poly(poly_path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
   # lateral planning
-  action = modelV2.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  if model.custom_model and model.model_capabilities & ModelCapabilities.LateralPlannerSolution:
+    solution = modelV2.lateralPlannerSolutionDEPRECATED
+    solution.x, solution.y, solution.yaw, solution.yawRate = [net_output_data['lat_planner_solution'][0,:,i].tolist() for i in range(4)]
+    solution.xStd, solution.yStd, solution.yawStd, solution.yawRateStd = [net_output_data['lat_planner_solution_stds'][0,:,i].tolist() for i in range(4)]
+  else:
+    action = modelV2.action
+    action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
 
   # times at X_IDXS according to model plan
   PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N

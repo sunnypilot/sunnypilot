@@ -30,3 +30,6 @@ class ModelCapabilities(IntFlag):
 
   Meta_V1 = 2 ** 6
   """Meta_V1, used for models that require the older meta cosntants."""
+
+  SIM_POSE = 2 ** 7
+  """SIM_POSE, used for models that support the SIM_POSE input."""

@@ -2,6 +2,8 @@ from cereal import log
 from openpilot.common.numpy_fast import clip
 from openpilot.common.realtime import DT_CTRL
 
+from openpilot.sunnypilot.modeld.model_capabilities import ModelCapabilities
+
 MIN_SPEED = 1.0
 CONTROL_N = 17
 CAR_ROTATION_RADIUS = 0.0
