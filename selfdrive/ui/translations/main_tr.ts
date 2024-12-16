@@ -139,6 +139,10 @@
         <source>MADS: Toggle with Main Cruise</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>

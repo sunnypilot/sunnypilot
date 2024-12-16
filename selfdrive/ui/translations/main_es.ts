@@ -125,7 +125,7 @@
     </message>
     <message>
         <source>MADS: Disengage Lateral on Brake</source>
-        <translation type="unfinished"></translation>
+        <translation>MADS: Deshabilitar control lateral en frenada</translation>
     </message>
     <message>
         <source>Modular Assistive Driving System (MADS)</source>
@@ -133,11 +133,15 @@
     </message>
     <message>
         <source>MADS: Unified Engagement Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>MADS: Modo de activación unificado.</translation>
     </message>
     <message>
         <source>MADS: Toggle with Main Cruise</source>
-        <translation type="unfinished"></translation>
+        <translation>MADS: Activar con botón de crucero principal.</translation>
+    </message>
+    <message>
+        <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
+        <translation>Nota: Para vehículos sin botón de LFA/LKAS, deshabilitar este ajuste evitará que se active el control lateral.</translation>
     </message>
 </context>
 <context>
