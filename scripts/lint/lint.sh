@@ -13,7 +13,7 @@ cd $ROOT
 
 FAILED=0
 
-IGNORED_FILES="uv\.lock|docs\/CARS.md|LICENSE\.md"
+IGNORED_FILES="uv\.lock|docs\/CARS.md|LICENSE\.md|.*\.zst"
 IGNORED_DIRS="^third_party.*|^msgq.*|^msgq_repo.*|^opendbc.*|^opendbc_repo.*|^cereal.*|^panda.*|^rednose.*|^rednose_repo.*|^tinygrad.*|^tinygrad_repo.*|^teleoprtc.*|^teleoprtc_repo.*"
 
 function run() {
@@ -53,6 +53,7 @@ function run_tests() {
   run "check_shebang_scripts_are_executable" python3 -m pre_commit_hooks.check_shebang_scripts_are_executable $ALL_FILES
   run "check_shebang_format" $DIR/check_shebang_format.sh $ALL_FILES
   run "check_nomerge_comments" $DIR/check_nomerge_comments.sh $ALL_FILES
+  run "check_raylib_includes" $DIR/check_raylib_includes.sh $ALL_FILES
 
   if [[ -z "$FAST" ]]; then
     run "mypy" mypy $PYTHON_FILES
