@@ -34,7 +34,6 @@ from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 class MadsParams:
   def __init__(self):
     self.params = Params()
-    self.allow_always = False
 
   def read_param(self, key: str):
     return self.params.get_bool(key)
