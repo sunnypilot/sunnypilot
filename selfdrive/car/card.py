@@ -116,8 +116,6 @@ class Car:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
     # mads
-    data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
-    self.sm = messaging.SubMaster(data_services, poll='selfdriveStateSP')
     MadsParams().set_alternative_experience(self.CP)
     MadsParams().set_car_specific_params(self.CP)
 
