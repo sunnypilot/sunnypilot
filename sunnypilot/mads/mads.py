@@ -61,11 +61,11 @@ class ModularAssistiveDrivingSystem:
 
     self.enabled_toggle = mads_params.read_param("Mads")
     self.main_enabled_toggle = mads_params.read_param("MadsMainCruiseAllowed")
-    self.disengage_lateral_on_brake_toggle = mads_params.read_param("MadsDisengageLateralOnBrake")
+    self.pause_lateral_on_brake_toggle = mads_params.read_param("MadsPauseLateralOnBrake")
     self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode")
 
   def update_controls_mismatch(self, sm: messaging.SubMaster):
-    heartbeat_engaged = self.active if self.disengage_lateral_on_brake_toggle else self.enabled
+    heartbeat_engaged = self.active if self.pause_lateral_on_brake_toggle else self.enabled
 
     if not heartbeat_engaged:
       self.mismatch_counter = 0
@@ -108,11 +108,11 @@ class ModularAssistiveDrivingSystem:
         self.events.replace(EventName.parkBrake, EventName.silentParkBrake)
         transition_paused_state()
 
-      if self.disengage_lateral_on_brake_toggle:
+      if self.pause_lateral_on_brake_toggle:
         if CS.brakePressed:
           transition_paused_state()
 
-      if not (self.disengage_lateral_on_brake_toggle and CS.brakePressed) and \
+      if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
          not self.events.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
           self.events.add(EventName.silentLkasEnable)

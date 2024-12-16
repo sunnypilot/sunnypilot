@@ -204,7 +204,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     // sunnypilot params
     {"Mads", PERSISTENT},
     {"MadsMainCruiseAllowed", PERSISTENT},
-    {"MadsDisengageLateralOnBrake", PERSISTENT},
+    {"MadsPauseLateralOnBrake", PERSISTENT},
     {"MadsUnifiedEngagementMode", PERSISTENT},
     {"HyundaiLongitudinalMainCruiseToggleable", PERSISTENT},
 };

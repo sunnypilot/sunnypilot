@@ -124,10 +124,6 @@
         <translation>Modo de maniobra longitudinal</translation>
     </message>
     <message>
-        <source>MADS: Disengage Lateral on Brake</source>
-        <translation>MADS: Deshabilitar control lateral en frenada</translation>
-    </message>
-    <message>
         <source>Modular Assistive Driving System (MADS)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -142,6 +138,10 @@
     <message>
         <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
         <translation>Nota: Para vehículos sin botón de LFA/LKAS, deshabilitar este ajuste evitará que se active el control lateral.</translation>
+    </message>
+    <message>
+        <source>MADS: Pause Lateral on Brake</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

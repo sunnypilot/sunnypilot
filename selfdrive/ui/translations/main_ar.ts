@@ -124,10 +124,6 @@
         <translation>وضع المناورة الطولية</translation>
     </message>
     <message>
-        <source>MADS: Disengage Lateral on Brake</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Modular Assistive Driving System (MADS)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -141,6 +137,10 @@
     </message>
     <message>
         <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MADS: Pause Lateral on Brake</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
