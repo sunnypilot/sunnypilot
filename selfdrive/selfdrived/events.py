@@ -1068,13 +1068,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Controls Mismatch: Lateral"),
   },
 
-  EventName.wrongCarModeNoEntry: {
-    ET.NO_ENTRY: wrong_car_mode_alert,
-  },
-
-  EventName.wrongCruiseModeNoEntry: {
-    ET.NO_ENTRY: NoEntryAlert("Adaptive Cruise Disabled"),
-  },
 
 }
 
