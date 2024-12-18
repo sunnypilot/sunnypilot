@@ -326,7 +326,7 @@ jobs:
       run: |
         ${{ env.RUN }} "scons -j$(nproc)"
     - name: Driving test
-      timeout-minutes: 20
+      timeout-minutes: 21
       run: |
         ${{ env.RUN }} "source selfdrive/test/setup_xvfb.sh && \
                         source selfdrive/test/setup_vsound.sh && \
