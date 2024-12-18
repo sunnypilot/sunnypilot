@@ -41,7 +41,7 @@ def manager_init() -> None:
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
     ("ModelManager_LastSyncTime", "0"),
-    ("ModelManager_ModelsCache", "{}")
+    ("ModelManager_ModelsCache", "")
   ]
 
   if params.get_bool("RecordFrontLock"):
