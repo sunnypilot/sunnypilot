@@ -6,7 +6,7 @@ venv/
 .DS_Store
 .tags
 .ipynb_checkpoints
-.idea
+#.idea
 .overlay_init
 .overlay_consistent
 .sconsign.dblite
