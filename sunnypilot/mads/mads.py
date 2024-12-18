@@ -37,6 +37,7 @@ ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
 SafetyModel = car.CarParams.SafetyModel
 
+SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise)
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
@@ -138,8 +139,6 @@ class ModularAssistiveDrivingSystem:
             self.events.add(EventName.lkasDisable)
         else:
           self.events.add(EventName.lkasEnable)
-      if be.type not in (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise):
-        self.events.remove(EventName.wrongCarMode)
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
@@ -150,6 +149,8 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
+    if not any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
+      self.events.remove(EventName.wrongCarMode)
 
     self.update_controls_mismatch(sm)
 
