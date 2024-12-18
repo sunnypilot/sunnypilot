@@ -1,6 +1,7 @@
 import asyncio
 import os
-from typing import Optional
+import time
+from typing import Optional, Dict
 
 import aiohttp
 from openpilot.common.params import Params
@@ -23,9 +24,27 @@ class ModelManagerSP:
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
     self.selected_bundle: Optional[custom.ModelManagerSP.ModelBundle] = None
     self._chunk_size = 128 * 1000  # 128 KB chunks
+    self._download_start_times: Dict[str, float] = {}  # Track start time per model
+
+  def _calculate_eta(self, filename: str, progress: float) -> int:
+    """Calculate ETA based on elapsed time and current progress"""
+    if filename not in self._download_start_times or progress <= 0:
+      return 60  # Default ETA for new downloads
+
+    elapsed_time = time.monotonic() - self._download_start_times[filename]
+    if elapsed_time <= 0:
+      return 60
+
+    # If we're at X% after Y seconds, we can estimate total time as (Y / X) * 100
+    total_estimated_time = (elapsed_time / progress) * 100
+    eta = total_estimated_time - elapsed_time
+
+    return max(1, int(eta))  # Return at least 1 second if download is ongoing
 
   async def _download_file(self, url: str, path: str, model) -> None:
     """Downloads a file with progress tracking"""
+    self._download_start_times[model.fileName] = time.monotonic()
+
     async with aiohttp.ClientSession() as session:
       async with session.get(url) as response:
         response.raise_for_status()
@@ -36,11 +55,16 @@ class ModelManagerSP:
           async for chunk in response.content.iter_chunked(self._chunk_size):  # type: bytes
             f.write(chunk)
             bytes_downloaded += len(chunk)
+
             if total_size > 0:
+              progress = (bytes_downloaded / total_size) * 100
               model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
-              model.downloadProgress.progress = (bytes_downloaded / total_size) * 100
-              model.downloadProgress.eta = 0
+              model.downloadProgress.progress = progress
+              model.downloadProgress.eta = self._calculate_eta(model.fileName, progress)
               self._report_status()
+
+        # Clean up start time after download completes
+        del self._download_start_times[model.fileName]
 
   async def _process_model(self, model, destination_path: str) -> None:
     """Processes a single model download including verification"""
@@ -64,6 +88,7 @@ class ModelManagerSP:
         raise ValueError(f"Hash validation failed for {filename}")
 
       model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
+      model.downloadProgress.eta = 0
       self._report_status()
 
     except Exception as e:
@@ -71,8 +96,11 @@ class ModelManagerSP:
       if os.path.exists(full_path):
         os.remove(full_path)
       model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
+      model.downloadProgress.eta = 0
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
       self._report_status()
+      # Clean up start time if it exists
+      self._download_start_times.pop(model.fileName, None)
       raise
 
   def _report_status(self) -> None:

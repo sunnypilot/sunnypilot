@@ -44,7 +44,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     struct DownloadProgress {
         status @0 :DownloadStatus;
         progress @1 :Float32;
-        eta @2 :Float32;
+        eta @2 :UInt32;
     }
 
     struct ModelBundle {
