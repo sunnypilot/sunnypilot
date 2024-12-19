@@ -1,9 +1,5 @@
 name: Sync comma's LFS
 
-# Define the default branch as an environment variable
-env:
-  DEFAULT_BRANCH: master-new
-
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
@@ -23,9 +19,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-#        with:
-#          ref: ${{ github.ref }}
-#          fetch-depth: 0  # Fetch full history
 
       - name: Set up Git
         run: |
