@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          repository: 'https://github.com/commaai/openpilot.git'
+          repository: 'commaai/openpilot'
           ref: ${{ inputs.upstream_branch }}
           lfs: true
             
