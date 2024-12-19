@@ -1,15 +1,26 @@
 name: Sync comma's LFS
 
+# Define the default branch as an environment variable
+env:
+  DEFAULT_BRANCH: master-new
+
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
   push:
-  delete:
-  workflow_dispatch:  # This enables manual triggering
+    branches:
+      - ${{ env.DEFAULT_BRANCH }}
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+    branches:
+      - ${{ env.DEFAULT_BRANCH }}
+  workflow_dispatch:  # enables manual triggering
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # Skip if PR is in draft mode
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -38,6 +49,7 @@ jobs:
           git config lfs.allowincompletepush true
           
           # Run LFS sync script if it exists and is executable
+          la -la
           if [ -f "./lfs-comma-sync.sh" ] && [ -x "./lfs-comma-sync.sh" ]; then
             echo "Running LFS sync script..."
             ./lfs-comma-sync.sh --all
