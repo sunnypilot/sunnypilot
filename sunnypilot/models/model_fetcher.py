@@ -1,6 +1,5 @@
 import json
 import time
-from typing import Optional, List
 
 import requests
 from openpilot.common.params import Params
@@ -67,7 +66,7 @@ class ModelParser:
     return model_bundle
 
   @staticmethod
-  def parse_models(json_data: dict) -> List[custom.ModelManagerSP.ModelBundle]:
+  def parse_models(json_data: dict) -> list[custom.ModelManagerSP.ModelBundle]:
     return [ModelParser._parse_bundle(key, value) for key, value in json_data.items()]
 
 
@@ -86,7 +85,7 @@ class ModelCache:
     last_sync = int(self.params.get(self._LAST_SYNC_KEY, encoding="utf-8") or 0)
     return (current_time - last_sync) >= self.cache_timeout
 
-  def get(self) -> tuple[Optional[dict], bool]:
+  def get(self) -> tuple[dict | None, bool]:
     """
     Retrieves cached model data and expiration status atomically.
     Returns: Tuple of (cached_data, is_expired)
@@ -115,7 +114,7 @@ class ModelFetcher:
     self.model_cache = ModelCache(params)
     self.model_parser = ModelParser()
 
-  def _fetch_and_cache_models(self) -> List[custom.ModelManagerSP.ModelBundle]:
+  def _fetch_and_cache_models(self) -> list[custom.ModelManagerSP.ModelBundle]:
     """Fetches fresh model data from remote and updates cache"""
     try:
       response = requests.get(self.MODEL_URL, timeout=10)
@@ -129,7 +128,7 @@ class ModelFetcher:
       cloudlog.exception(f"Error fetching models")
       raise
 
-  def get_available_models(self) -> List[custom.ModelManagerSP.ModelBundle]:
+  def get_available_models(self) -> list[custom.ModelManagerSP.ModelBundle]:
     """Gets the list of available models, with smart cache handling"""
     cached_data, is_expired = self.model_cache.get()
 

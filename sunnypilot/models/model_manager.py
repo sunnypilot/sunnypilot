@@ -1,7 +1,7 @@
 import asyncio
 import os
 import time
-from typing import Optional, Dict
+from typing import Optional
 
 import aiohttp
 from openpilot.common.params import Params
@@ -22,9 +22,9 @@ class ModelManagerSP:
     self.model_fetcher = ModelFetcher(self.params)
     self.pm = messaging.PubMaster(["modelManagerSP"])
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
-    self.selected_bundle: Optional[custom.ModelManagerSP.ModelBundle] = None
+    self.selected_bundle: custom.ModelManagerSP.ModelBundle | None = None
     self._chunk_size = 128 * 1000  # 128 KB chunks
-    self._download_start_times: Dict[str, float] = {}  # Track start time per model
+    self._download_start_times: dict[str, float] = {}  # Track start time per model
 
   def _calculate_eta(self, filename: str, progress: float) -> int:
     """Calculate ETA based on elapsed time and current progress"""
@@ -124,7 +124,7 @@ class ModelManagerSP:
       await asyncio.gather(*tasks)
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
 
-    except Exception as e:
+    except Exception:
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
       raise
 
