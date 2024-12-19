@@ -1,0 +1,47 @@
+name: Sync comma's LFS
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+  push:
+  delete:
+  workflow_dispatch:  # This enables manual triggering
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0  # Fetch full history
+
+      - name: Set up Git
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add GitLab public keys
+        run: |
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Sync and commit changes
+        id: sync-and-commit
+        run: |
+          # Add GitLab remote
+          git config lfs.allowincompletepush true
+          
+          # Run LFS sync script if it exists and is executable
+          if [ -f "./lfs-comma-sync.sh" ] && [ -x "./lfs-comma-sync.sh" ]; then
+            echo "Running LFS sync script..."
+            ./lfs-comma-sync.sh --all
+            git lfs push --all origin
+          else
+            echo "LFS sync script not found or not executable"
+          fi
