@@ -18,4 +18,4 @@
   url = https://github.com/tinygrad/tinygrad.git
 [submodule "fakedata"]
   path = selfdrive/test/process_replay/fakedata
-  url = https://gitlab.com/sunnypilot/public/fakedata.git
+  url = https://github.com/sunnypilot/fakedata.git
