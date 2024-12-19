@@ -11,9 +11,12 @@ on:
     branches:
       - 'master-new'
   pull_request:
-    types: [opened, reopened, ready_for_review]
     branches:
-      - 'master-new'
+      - 'master-new'  # Hardcode here since env vars don't work in 'on:'
+    types:
+      - opened
+      - reopened
+      - ready_for_review
   workflow_dispatch:  # enables manual triggering
 
 jobs:
