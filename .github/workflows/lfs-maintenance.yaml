@@ -30,7 +30,10 @@ jobs:
         with:
           repository: 'commaai/openpilot'
           ref: ${{ inputs.upstream_branch }}
-          lfs: true
+      
+      - name: LFS Fetch
+        run: |
+          git lfs fetch
 
       - name: Set up Git
         run: |
