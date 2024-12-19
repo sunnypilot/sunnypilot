@@ -42,7 +42,7 @@ jobs:
         id: sync-and-commit
         run: |
           # Add GitLab remote
-          echo ${{ inputs.run_number }}
+          echo ${{ inputs.upstream_branch }}
           git config lfs.allowincompletepush true
           
           # Run LFS sync script if it exists and is executable
