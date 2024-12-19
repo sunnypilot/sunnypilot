@@ -1,5 +1,9 @@
 name: Sync comma's LFS
 
+env:
+  LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
+  LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
+
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
@@ -8,13 +12,13 @@ on:
       - 'master-new'
   pull_request:
     branches:
-      - 'master-new' 
+      - 'master-new'
   workflow_dispatch:  # enables manual triggering
     inputs:
       upstream_branch:
         default: 'master'
         type: string
-        
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -27,7 +31,6 @@ jobs:
           repository: 'commaai/openpilot'
           ref: ${{ inputs.upstream_branch }}
           lfs: true
-            
 
       - name: Set up Git
         run: |
@@ -42,10 +45,13 @@ jobs:
       - name: Add GitLab public keys
         run: |
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-      
-      - name: Set SP LFS
+
+      - name: Update LFS Config
         run: |
-          git config lfs.pushurl="ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git"
+          echo '[lfs]' > .lfsconfig
+          echo '    url = ${{ env.LFS_URL }}' >> .lfsconfig
+          echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
+          echo '    locksverify = false' >> .lfsconfig
 
       - name: Push LFS
         id: sync-and-commit
