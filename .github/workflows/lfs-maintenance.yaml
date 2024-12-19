@@ -13,10 +13,6 @@ on:
   pull_request:
     branches:
       - 'master-new'  # Hardcode here since env vars don't work in 'on:'
-#    types:
-#      - opened
-#      - reopened
-#      - ready_for_review
   workflow_dispatch:  # enables manual triggering
 
 jobs:
@@ -52,10 +48,10 @@ jobs:
           git config lfs.allowincompletepush true
           
           # Run LFS sync script if it exists and is executable
-          la -la
-          if [ -f "./lfs-comma-sync.sh" ] && [ -x "./lfs-comma-sync.sh" ]; then
+          ls -la
+          if [ -f "./lfs-comma-pull.sh" ] && [ -x "./lfs-comma-pull.sh" ]; then
             echo "Running LFS sync script..."
-            ./lfs-comma-sync.sh --all
+            ./lfs-comma-pull.sh --all
             git lfs push --all origin
           else
             echo "LFS sync script not found or not executable"
