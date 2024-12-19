@@ -9,11 +9,11 @@ on:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
   push:
     branches:
-      - ${{ env.DEFAULT_BRANCH }}
+      - 'master-new'
   pull_request:
     types: [opened, reopened, ready_for_review]
     branches:
-      - ${{ env.DEFAULT_BRANCH }}
+      - 'master-new'
   workflow_dispatch:  # enables manual triggering
 
 jobs:
