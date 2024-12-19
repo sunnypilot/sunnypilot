@@ -45,7 +45,7 @@ jobs:
       
       - name: Set SP LFS
         run: |
-          git config lfs.pushurl="ssh://git@gitlab.com-devtekve/sunnypilot/public/sunnypilot-new-lfs.git"
+          git config lfs.pushurl="ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git"
 
       - name: Push LFS
         id: sync-and-commit
