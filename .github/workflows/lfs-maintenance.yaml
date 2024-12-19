@@ -51,7 +51,7 @@ jobs:
           ls -la
           if [ -f "./lfs-comma-pull.sh" ] && [ -x "./lfs-comma-pull.sh" ]; then
             echo "Running LFS sync script..."
-            ./lfs-comma-pull.sh --all
+            ./lfs-comma-pull.sh --all || true # Ignoring errors
             git lfs push --all origin
           else
             echo "LFS sync script not found or not executable"
