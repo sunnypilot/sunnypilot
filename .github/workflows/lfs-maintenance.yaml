@@ -8,7 +8,7 @@ on:
       - 'master-new'
   pull_request:
     branches:
-      - 'master-new'  # Hardcode here since env vars don't work in 'on:'
+      - 'master-new' 
   workflow_dispatch:  # enables manual triggering
     inputs:
       upstream_branch:
@@ -22,7 +22,12 @@ jobs:
     if: github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          repository: 'https://github.com/commaai/openpilot.git'
+          ref: ${{ inputs.upstream_branch }}
+          lfs: true
+            
 
       - name: Set up Git
         run: |
@@ -37,20 +42,12 @@ jobs:
       - name: Add GitLab public keys
         run: |
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+      
+      - name: Set SP LFS
+        run: |
+          git config lfs.pushurl="ssh://git@gitlab.com-devtekve/sunnypilot/public/sunnypilot-new-lfs.git"
 
-      - name: Sync and commit changes
+      - name: Push LFS
         id: sync-and-commit
         run: |
-          # Add GitLab remote
-          echo ${{ inputs.upstream_branch }}
-          git config lfs.allowincompletepush true
-          
-          # Run LFS sync script if it exists and is executable
-          ls -la
-          if [ -f "./lfs-comma-pull.sh" ] && [ -x "./lfs-comma-pull.sh" ]; then
-            echo "Running LFS sync script..."
-            ./lfs-comma-pull.sh --all || true # Ignoring errors
-            git lfs push --all origin
-          else
-            echo "LFS sync script not found or not executable"
-          fi
+          git lfs push --all origin
