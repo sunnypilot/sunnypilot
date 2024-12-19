@@ -125,7 +125,7 @@ class ModelFetcher:
       cloudlog.debug("Successfully updated models cache")
       return self.model_parser.parse_models(json_data)
     except Exception:
-      cloudlog.exception(f"Error fetching models")
+      cloudlog.exception("Error fetching models")
       raise
 
   def get_available_models(self) -> list[custom.ModelManagerSP.ModelBundle]:

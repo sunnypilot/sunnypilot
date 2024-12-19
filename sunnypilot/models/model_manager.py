@@ -1,7 +1,6 @@
 import asyncio
 import os
 import time
-from typing import Optional
 
 import aiohttp
 from openpilot.common.params import Params
