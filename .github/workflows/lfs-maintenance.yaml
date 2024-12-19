@@ -10,12 +10,16 @@ on:
     branches:
       - 'master-new'  # Hardcode here since env vars don't work in 'on:'
   workflow_dispatch:  # enables manual triggering
-
+    inputs:
+      upstream_branch:
+        default: 'master'
+        type: string
+        
 jobs:
   sync:
     runs-on: ubuntu-latest
     # Skip if PR is in draft mode
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -38,6 +42,7 @@ jobs:
         id: sync-and-commit
         run: |
           # Add GitLab remote
+          echo ${{ inputs.run_number }}
           git config lfs.allowincompletepush true
           
           # Run LFS sync script if it exists and is executable
