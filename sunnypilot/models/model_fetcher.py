@@ -132,18 +132,16 @@ class ModelFetcher:
     """Gets the list of available models, with smart cache handling"""
     cached_data, is_expired = self.model_cache.get()
 
-    # If we have valid cache data, use it
     if cached_data and not is_expired:
       cloudlog.debug("Using valid cached models data")
       return self.model_parser.parse_models(cached_data)
 
-    # Cache is expired or empty, try to fetch fresh data
-    if is_expired:
-      try:
-        return self._fetch_and_cache_models()
-      except Exception:
-        if cached_data:
-          cloudlog.warning("Failed to fetch fresh data. Using expired cache as fallback")
-          return self.model_parser.parse_models(cached_data)
+    try:
+      return self._fetch_and_cache_models()
+    except Exception:
+      if not cached_data:
         cloudlog.exception("Failed to fetch fresh data and no cache available")
-        raise  # Only raise if we have no fallback
+        raise
+
+    cloudlog.warning("Failed to fetch fresh data. Using expired cache as fallback")
+    return self.model_parser.parse_models(cached_data)

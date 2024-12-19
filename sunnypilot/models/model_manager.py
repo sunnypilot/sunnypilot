@@ -21,7 +21,7 @@ class ModelManagerSP:
     self.model_fetcher = ModelFetcher(self.params)
     self.pm = messaging.PubMaster(["modelManagerSP"])
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
-    self.selected_bundle: custom.ModelManagerSP.ModelBundle | None = None
+    self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
     self._chunk_size = 128 * 1000  # 128 KB chunks
     self._download_start_times: dict[str, float] = {}  # Track start time per model
 
