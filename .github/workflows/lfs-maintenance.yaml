@@ -48,6 +48,15 @@ jobs:
       - name: Add GitLab public keys
         run: |
           ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+      
+      - name: Ensure branch
+        run: |
+          if git symbolic-ref -q HEAD >/dev/null; then
+              echo "Already on a branch, proceeding with push"
+            else
+              echo "Detached HEAD state detected, creating temporary branch"
+            git checkout -b temp_branch
+          fi
 
       - name: Update LFS Config
         run: |
