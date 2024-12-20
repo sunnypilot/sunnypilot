@@ -14,6 +14,11 @@ on:
         required: true
         default: 'master'
         type: string
+      custom_name:
+        description: 'Custom name for the model'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build_model:
@@ -78,5 +83,5 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ github.event.inputs.upstream_branch }}-${{ github.run_number }}
+          name: ${{ github.event.inputs.custom_name != '' && format('model-{}-{}', github.event.inputs.custom_name, github.run_number) || format('model-{}-{}', github.event.inputs.upstream_branch, github.run_number) }}
           path: ${{ env.OUTPUT_DIR }}
