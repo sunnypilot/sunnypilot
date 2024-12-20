@@ -80,8 +80,16 @@ jobs:
             --chown=comma:comma \
             ./selfdrive/modeld/models/ ${OUTPUT_DIR}/
 
-      - name: Upload Build Artifacts
+      - name: Upload Build Artifacts (Custom Name)
+        if: github.event.inputs.custom_name != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.inputs.custom_name != '' && format('model-{}-{}', github.event.inputs.custom_name, github.run_number) || format('model-{}-{}', github.event.inputs.upstream_branch, github.run_number) }}
+          name: model-${{ github.event.inputs.custom_name }}-${{ github.run_number }}
+          path: ${{ env.OUTPUT_DIR }}
+
+      - name: Upload Build Artifacts (Default Name)
+        if: github.event.inputs.custom_name == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ github.event.inputs.upstream_branch }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
