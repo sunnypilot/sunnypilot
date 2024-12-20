@@ -44,6 +44,12 @@ jobs:
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
           echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
+      
+      - name: Patch SConstruct to pass arbitrary cache
+        run: |
+          sed -i.bak 's#cache_dir =#default_cache_dir =#' ${{ github.workspace }}/SConstruct
+          printf '/default_cache_dir/a\\\ncache_dir = ARGUMENTS.get("cache_dir", default_cache_dir)\n' | sed -i.bak -f - ${{ github.workspace }}/SConstruct
+          cat ${{ github.workspace }}/SConstruct
 
       - name: Build Model
         run: |
