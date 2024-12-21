@@ -4,7 +4,7 @@ env:
   BUILD_DIR: "/data/openpilot"
   OUTPUT_DIR: ${{ github.workspace }}/output
   CI_DIR: ${{ github.workspace }}/release/ci
-  BASE_BUILD_NUMBER: 3000
+  SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
   DEV_C3_SOURCE_BRANCH: "master-dev-c3"
 
@@ -38,8 +38,8 @@ jobs:
       - name: Cache SCons
         uses: actions/cache@v4
         with:
-          path: ./release/ci/scons_cache
-          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}-${{ github.sha }}
+          path: ${{env.SCONS_CACHE_DIR}}
+          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}
             scons-${{ runner.os }}-${{ runner.arch }}-master-new
@@ -106,7 +106,6 @@ jobs:
           echo "BUILD_DIR: ${BUILD_DIR}"
           echo "CI_DIR: ${CI_DIR}"
           echo "VERSION: ${{ steps.set-env.outputs.version }}"
-          echo "BASE_BUILD_NUMBER: ${{ env.BASE_BUILD_NUMBER }}"
           echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
           echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
           echo "-------"
@@ -116,7 +115,7 @@ jobs:
 
       - name: Build Panda
         run: |
-          scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache ${{ github.workspace }}/panda
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} ${{ github.workspace }}/panda
 
       - name: Build Main Project
         run: |
@@ -124,7 +123,7 @@ jobs:
           ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
           cd $BUILD_DIR
           sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
-          scons -j$(nproc) cache_dir=${CI_DIR}/scons_cache --minimal
+          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
             ls -la ${BUILD_DIR}
@@ -161,6 +160,7 @@ jobs:
             --exclude='**/selfdrive/ui/*.h' \
             --exclude='**/selfdrive/ui/**/*.h' \
             --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/' \
+            --exclude='${{env.SCONS_CACHE_DIR}}' \
             --exclude='**/.git/' \
             --exclude='**/SConstruct' \
             --exclude='**/SConscript' \
