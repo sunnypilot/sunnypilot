@@ -47,7 +47,7 @@ REPO_URL="${REPO_URL:-$DEFAULT_REPO_URL}"
 # Constants
 RUNNER_USER="github-runner"
 USER_GROUPS="comma,gpu,gpio,sudo"
-BASE_DIR="/data/github"
+BASE_DIR="/data/media/0/github"
 RUNNER_DIR="${BASE_DIR}/runner"
 BUILDS_DIR="${BASE_DIR}/builds"
 LOGS_DIR="${BASE_DIR}/logs"

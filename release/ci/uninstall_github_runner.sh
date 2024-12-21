@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Define directories and user
-GITHUB_BASE_DIR="/data/github"
+GITHUB_BASE_DIR="/data/media/0/github"
 BIN_DIR="$GITHUB_BASE_DIR/bin"
 BUILDS_DIR="$GITHUB_BASE_DIR/builds"
 OPENPILOT_DIR="$GITHUB_BASE_DIR/openpilot"
