@@ -245,7 +245,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ needs.build.outputs.new_branch == 'dev-c3' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
         run: |
-          TEMPLATE="${{ needs.build.outputs.new_branch == 'dev-c3' && 'discord_template_notify_dev_public.json' || 'discord_template_notify_dev_private.json' }}"
+          TEMPLATE="${{ needs.publish-public.result == 'skipped' && 'discord_template_notify_dev_private.json' || 'discord_template_notify_dev_public.json' }}"
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
           cat release/ci/${TEMPLATE} | envsubst > payload.json
