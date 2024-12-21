@@ -123,6 +123,10 @@
         <source>Longitudinal Maneuver Mode</source>
         <translation>Modo de maniobra longitudinal</translation>
     </message>
+    <message>
+        <source>Enable GitHub runner service</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>
