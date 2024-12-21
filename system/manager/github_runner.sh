@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Define the service name
 SERVICE_NAME="actions.runner.sunnypilot.$(uname -n)"
