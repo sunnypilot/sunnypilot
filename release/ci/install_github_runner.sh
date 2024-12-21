@@ -1,16 +1,50 @@
 #!/usr/bin/env bash
 set -e
 
+# Default values
 DEFAULT_REPO_URL="https://github.com/sunnypilot"
-if [ $# -eq 0 ]; then
-    echo "Required argument: <github_token>"
-    echo "Optional argument: <repository_url> (default: ${DEFAULT_REPO_URL})"
+START_AT_BOOT=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --start-at-boot)
+            START_AT_BOOT=true
+            shift
+            ;;
+        --token)
+            GITHUB_TOKEN="$2"
+            shift 2
+            ;;
+        --repo)
+            REPO_URL="$2"
+            shift 2
+            ;;
+        *)
+            if [ -z "$GITHUB_TOKEN" ]; then
+                GITHUB_TOKEN="$1"
+            elif [ -z "$REPO_URL" ]; then
+                REPO_URL="$1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Check required arguments
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "Usage: $0 [--start-at-boot] [--token <github_token>] [--repo <repository_url>]"
+    echo "Required argument: github_token"
+    echo "Optional arguments:"
+    echo "  --start-at-boot    Enable auto-start at boot (default: false)"
+    echo "  --repo            Repository URL (default: ${DEFAULT_REPO_URL})"
     exit 1
 fi
 
+# Set repository URL if not provided
+REPO_URL="${REPO_URL:-$DEFAULT_REPO_URL}"
+
 # Constants
-GITHUB_TOKEN="$1"
-REPO_URL="${2:-$DEFAULT_REPO_URL}"
 RUNNER_USER="github-runner"
 USER_GROUPS="comma,gpu,gpio,sudo"
 BASE_DIR="/data/github"
@@ -55,29 +89,30 @@ set_directory_permissions() {
     sudo chmod g+s "$BASE_DIR"
 }
 
-#modify_service_template() {
-#    cat <<EOL > "$RUNNER_DIR/bin/actions.runner.service.template"
-#[Unit]
-#Description={{Description}}
-#After=network.target
-#StartLimitInterval=5
-#StartLimitBurst=10
-#
-#[Service]
-#Type=simple
-#User=={{User}} 
-#ExecStart=sudo /usr/bin/unshare -m -- /bin/bash -c 'mount --bind ${OPENPILOT_DIR} /data/openpilot && setpriv --reuid={{User}} --regid={{User}} --init-groups {{RunnerRoot}}/runsvc.sh'
-#WorkingDirectory={{RunnerRoot}}
-#KillMode=process
-#KillSignal=SIGTERM
-#TimeoutStopSec=5min
-#Restart=always
-#RestartSec=120
-#
-#[Install]
-#WantedBy=multi-user.target
-#EOL
-#}
+modify_service_template() {
+    cat <<EOL > "$RUNNER_DIR/bin/actions.runner.service.template"
+[Unit]
+Description={{Description}}
+After=network-online.target nss-lookup.target time-sync.target
+Wants=network-online.target nss-lookup.target time-sync.target
+StartLimitInterval=5
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/unshare -m -- /bin/bash -c 'mount --bind ${OPENPILOT_DIR} /data/openpilot && setpriv --reuid={{User}} --regid={{User}} --init-groups env HOME=${BASE_DIR} USER={{User}} LOGNAME={{User}} MAIL=/var/mail/{{User}} {{RunnerRoot}}/runsvc.sh'
+WorkingDirectory={{RunnerRoot}}
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=5min
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target
+EOL
+}
 
 # Make filesystem writable
 sudo mount -o remount,rw /
@@ -90,12 +125,17 @@ setup_runner_user
 create_sudoers_entry
 create_directories
 download_and_setup_runner
-#modify_service_template
+modify_service_template
 configure_runner
 set_directory_permissions
 
 # Install and start service using built-in installer
 cd "$RUNNER_DIR"
 sudo ./svc.sh install $RUNNER_USER
-#sudo systemctl disable actions.runner.sunnypilot.$(uname -n) # Comment this line to make it start on boot
+
+# Handle auto-start configuration
+if [ "$START_AT_BOOT" = false ]; then
+    sudo systemctl disable actions.runner.sunnypilot.$(uname -n)
+fi
+
 sudo ./svc.sh start
