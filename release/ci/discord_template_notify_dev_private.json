@@ -1,12 +1,12 @@
 {
   "embeds": [
     {
-      "title": "❗️ Action Required for `${CI_COMMIT_REF_NAME}` ❗️",
-      "description": "[${CI_PROJECT_NAME}](${CI_PROJECT_URL}): Pipeline [#${CI_PIPELINE_ID}](${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}) of branch [${CI_COMMIT_REF_NAME}](${CI_PROJECT_URL}/-/commits/${CI_COMMIT_REF_NAME}) by ${GITLAB_USER_NAME} (${GITLAB_USER_LOGIN}) is ready to publish manually as [${NEW_BRANCH}](${PUBLIC_REPO_URL}/tree/${NEW_BRANCH})",
+      "title": "❗️ Action Required for `${GITHUB_REF_NAME}` ❗️",
+      "description": "[sunnypilot](${PUBLIC_REPO_URL}): Workflow [#${GITHUB_RUN_NUMBER}](${PUBLIC_REPO_URL}/actions/runs/${GITHUB_RUN_ID}) of branch [${GITHUB_REF_NAME}](${PUBLIC_REPO_URL}/tree/${GITHUB_REF_NAME}) by ${GITHUB_ACTOR} is ready to publish manually as [${new_branch}](${PUBLIC_REPO_URL}/tree/${new_branch})",
       "color": 16763904,
       "author": {
-        "name": "${GITLAB_USER_LOGIN}",
-        "icon_url": "${AVATAR_URL}"
+        "name": "${GITHUB_ACTOR}",
+        "icon_url": "https://github.com/${GITHUB_ACTOR}.png"
       }
     }
   ]
