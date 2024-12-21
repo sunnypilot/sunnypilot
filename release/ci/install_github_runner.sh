@@ -55,29 +55,30 @@ set_directory_permissions() {
     sudo chmod g+s "$BASE_DIR"
 }
 
-#modify_service_template() {
-#    cat <<EOL > "$RUNNER_DIR/bin/actions.runner.service.template"
-#[Unit]
-#Description={{Description}}
-#After=network.target
-#StartLimitInterval=5
-#StartLimitBurst=10
-#
-#[Service]
-#Type=simple
-#User=={{User}} 
-#ExecStart=sudo /usr/bin/unshare -m -- /bin/bash -c 'mount --bind ${OPENPILOT_DIR} /data/openpilot && setpriv --reuid={{User}} --regid={{User}} --init-groups {{RunnerRoot}}/runsvc.sh'
-#WorkingDirectory={{RunnerRoot}}
-#KillMode=process
-#KillSignal=SIGTERM
-#TimeoutStopSec=5min
-#Restart=always
-#RestartSec=120
-#
-#[Install]
-#WantedBy=multi-user.target
-#EOL
-#}
+modify_service_template() {
+    cat <<EOL > "$RUNNER_DIR/bin/actions.runner.service.template"
+[Unit]
+Description={{Description}}
+After=network-online.target nss-lookup.target time-sync.target
+Wants=network-online.target nss-lookup.target time-sync.target
+StartLimitInterval=5
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/unshare -m -- /bin/bash -c 'mount --bind ${OPENPILOT_DIR} /data/openpilot && setpriv --reuid={{User}} --regid={{User}} --init-groups env HOME=${BASE_DIR} USER={{User}} LOGNAME={{User}} MAIL=/var/mail/{{User}} {{RunnerRoot}}/runsvc.sh'
+WorkingDirectory={{RunnerRoot}}
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=5min
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target
+EOL
+}
 
 # Make filesystem writable
 sudo mount -o remount,rw /
@@ -90,7 +91,7 @@ setup_runner_user
 create_sudoers_entry
 create_directories
 download_and_setup_runner
-#modify_service_template
+modify_service_template
 configure_runner
 set_directory_permissions
 
