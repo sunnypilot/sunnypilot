@@ -6,11 +6,20 @@ env:
   CI_DIR: ${{ github.workspace }}/release/ci
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
-  DEV_C3_SOURCE_BRANCH: "master-dev-c3"
+  
+  # Branch configurations
+  MASTER_BRANCH: "master"
+  MASTER_NEW_BRANCH: "master-new"
+  DEV_C3_SOURCE_BRANCH: "master-dev-c3-new"
+  
+  # Target branch configurations
+  STAGING_TARGET_BRANCH: "staging-c3-new"
+  DEV_TARGET_BRANCH: "dev-c3-new"
+  RELEASE_TARGET_BRANCH: "release-c3-new"
 
 on:
   push:
-    branches: [ master, master-new, master-dev-c3 ]
+    branches: [ master, master-new, master-dev-c3-new ]
     tags: [ '*' ]
   pull_request:
     branches: [ master, master-new ]
@@ -43,23 +52,23 @@ jobs:
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-${{ github.head_ref }}
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}
-            scons-${{ runner.os }}-${{ runner.arch }}-master-new
-            scons-${{ runner.os }}-${{ runner.arch }}-master
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
       - name: Configure for dev branch
         if: github.ref_name == env.DEV_C3_SOURCE_BRANCH
         run: |
           echo "BRANCH_TYPE=dev" >> $GITHUB_ENV
-          echo "NEW_BRANCH=dev-c3-new" >> $GITHUB_ENV
+          echo "NEW_BRANCH=${{ env.DEV_TARGET_BRANCH }}" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=${{ github.run_number }}" >> $GITHUB_ENV
           echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
 
       - name: Configure for master branches
-        if: github.ref_name == 'master' || github.ref_name == 'master-new'
+        if: github.ref_name == env.MASTER_BRANCH || github.ref_name == env.MASTER_NEW_BRANCH
         run: |
           echo "BRANCH_TYPE=master" >> $GITHUB_ENV
-          echo "NEW_BRANCH=staging-c3-new" >> $GITHUB_ENV
+          echo "NEW_BRANCH=${{ env.STAGING_TARGET_BRANCH }}" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=staging" >> $GITHUB_ENV
           echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_ENV
           echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
@@ -68,7 +77,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "BRANCH_TYPE=tag" >> $GITHUB_ENV
-          echo "NEW_BRANCH=release-c3-new" >> $GITHUB_ENV
+          echo "NEW_BRANCH=${{ env.RELEASE_TARGET_BRANCH }}" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=release" >> $GITHUB_ENV
           echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_ENV
           echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
