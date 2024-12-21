@@ -1,0 +1,9 @@
+widgets_src = [
+  "sunnypilot/qt/widgets/controls.cc",
+  "sunnypilot/qt/widgets/scrollview.cc",
+  "sunnypilot/qt/widgets/toggle.cc",
+]
+
+sp_widgets_src = widgets_src
+
+Export('sp_widgets_src')
