@@ -231,6 +231,7 @@ jobs:
   notify:
     needs: [ build, publish-public ]
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - uses: actions/checkout@v4
 
