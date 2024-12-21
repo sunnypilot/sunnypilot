@@ -57,7 +57,6 @@ sunnypilot_blacklist = [
   ".run/",
   ".*__pycache__/.*",
   ".*\\.pyc",
-  "tinygrad/*",
   "teleoprtc/*",
   "third_party/snpe/x86_64/*",
   "body/board/canloader.py",
