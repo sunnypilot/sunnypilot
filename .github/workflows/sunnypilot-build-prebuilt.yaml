@@ -61,6 +61,7 @@ jobs:
         run: |
           echo "BRANCH_TYPE=dev" >> $GITHUB_ENV
           echo "NEW_BRANCH=${{ env.DEV_TARGET_BRANCH }}" >> $GITHUB_ENV
+          echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=${{ github.run_number }}" >> $GITHUB_ENV
           echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
 
