@@ -49,6 +49,7 @@ jobs:
           echo "BRANCH_TYPE=dev" >> $GITHUB_ENV
           echo "NEW_BRANCH=dev-c3-new" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=${{ github.run_number }}" >> $GITHUB_ENV
+          echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
     
       - name: Configure for master branches
         if: github.ref_name == 'master' || github.ref_name == 'master-new'
@@ -57,6 +58,7 @@ jobs:
           echo "NEW_BRANCH=staging-c3-new" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=staging" >> $GITHUB_ENV
           echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_ENV
+          echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
   
       - name: Configure for tags
         if: startsWith(github.ref, 'refs/tags/')
@@ -65,6 +67,7 @@ jobs:
           echo "NEW_BRANCH=release-c3-new" >> $GITHUB_ENV
           echo "EXTRA_VERSION_IDENTIFIER=release" >> $GITHUB_ENV
           echo "VERSION=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_ENV
+          echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
   
       - name: Configure for manual build
         if: github.event_name == 'workflow_dispatch'
@@ -72,18 +75,8 @@ jobs:
           echo "BRANCH_TYPE=dispatch" >> $GITHUB_ENV
           echo "NEW_BRANCH=${{ github.ref_name }}-prebuilt" >> $GITHUB_ENV
           echo "VERSION=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_ENV
+          echo "SHOULD_PUBLISH=true" >> $GITHUB_ENV
   
-      - name: Error if no configuration matches
-        if: |
-          github.ref_name != env.DEV_C3_SOURCE_BRANCH &&
-          github.ref_name != 'master' &&
-          github.ref_name != 'master-new' &&
-          !startsWith(github.ref, 'refs/tags/') &&
-          github.event_name != 'workflow_dispatch'
-        run: |
-          echo "This workflow can only run on DEV_C3_SOURCE_BRANCH, master branches, tags, or via workflow_dispatch"
-          exit 1
-    
       - name: Set environment variables
         id: set-env
         run: |
@@ -91,6 +84,7 @@ jobs:
           echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
           [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
           [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "should_publish=${SHOULD_PUBLISH:-false}" >> $GITHUB_OUTPUT
           
           # Set up common environment
           source /etc/profile;
@@ -98,7 +92,7 @@ jobs:
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           cat $GITHUB_OUTPUT
           printenv >> $GITHUB_ENV
-
+  
       - name: Setup build environment
         run: |
           mkdir -p "${BUILD_DIR}/"
