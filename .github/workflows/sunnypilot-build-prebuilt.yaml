@@ -39,9 +39,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CI_DIR }}/scons_cache
-          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-${{ github.sha }}
+          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}-${{ github.sha }}
           restore-keys: |
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}
+            scons-${{ runner.os }}-${{ runner.arch }}-master-new
+            scons-${{ runner.os }}-${{ runner.arch }}-master
             scons-${{ runner.os }}-${{ runner.arch }}
 
       - name: Configure for dev branch
