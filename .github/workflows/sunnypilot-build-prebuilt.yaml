@@ -38,7 +38,7 @@ jobs:
       - name: Cache SCons
         uses: actions/cache@v4
         with:
-          path: ${{ env.CI_DIR }}/scons_cache
+          path: ./release/ci/scons_cache
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}-${{ github.sha }}
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}
