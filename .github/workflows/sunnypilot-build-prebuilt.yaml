@@ -84,20 +84,20 @@ jobs:
           echo "This workflow can only run on DEV_C3_SOURCE_BRANCH, master branches, tags, or via workflow_dispatch"
           exit 1
     
-        - name: Set environment variables
-          id: set-env
-          run: |
-            # Write to GITHUB_OUTPUT from environment variables
-            echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
-            [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
-            [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
-            
-            # Set up common environment
-            source /etc/profile;
-            export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-            export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-            cat $GITHUB_OUTPUT
-            printenv >> $GITHUB_ENV
+      - name: Set environment variables
+        id: set-env
+        run: |
+          # Write to GITHUB_OUTPUT from environment variables
+          echo "new_branch=$NEW_BRANCH" >> $GITHUB_OUTPUT
+          [[ ! -z "$EXTRA_VERSION_IDENTIFIER" ]] && echo "extra_version_identifier=$EXTRA_VERSION_IDENTIFIER" >> $GITHUB_OUTPUT
+          [[ ! -z "$VERSION" ]] && echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Set up common environment
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          cat $GITHUB_OUTPUT
+          printenv >> $GITHUB_ENV
 
       - name: Setup build environment
         run: |
