@@ -46,13 +46,7 @@ jobs:
       - name: Set environment variables
         id: set-env
         run: |
-          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-            # For slash command, always do prebuilt
-            PR_REF="${{ github.event.client_payload.github.payload.issue.pull_request.head.ref }}"
-            echo "new_branch=${PR_REF}-prebuilt" >> $GITHUB_OUTPUT
-            echo "version=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
-            echo "extra_version_identifier=prebuilt" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" == "${{ env.DEV_C3_SOURCE_BRANCH }}" ]]; then
+          if [[ "${{ github.ref_name }}" == "${{ env.DEV_C3_SOURCE_BRANCH }}" ]]; then
             echo "new_branch=dev-c3-new" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=${{ github.run_number }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref_name }}" == "master" || "${{ github.ref_name }}" == "master-new" ]]; then
@@ -63,6 +57,12 @@ jobs:
             echo "new_branch=release-c3-new" >> $GITHUB_OUTPUT
             echo "extra_version_identifier=release" >> $GITHUB_OUTPUT
             echo "version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "new_branch=${{ github.ref_name }}-prebuilt" >> $GITHUB_OUTPUT
+            echo "version=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
+          else
+            echo "This workflow can only run on DEV_C3_SOURCE_BRANCH, master branches, tags, or via workflow_dispatch"
+            exit 1
           fi
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
