@@ -43,27 +43,50 @@ jobs:
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-
             scons-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Set environment variables
+      - name: Set env for dev branch
         id: set-env
+        if: github.ref_name == env.DEV_C3_SOURCE_BRANCH
         run: |
-          if [[ "${{ github.ref_name }}" == "${{ env.DEV_C3_SOURCE_BRANCH }}" ]]; then
-            echo "new_branch=dev-c3-new" >> $GITHUB_OUTPUT
-            echo "extra_version_identifier=${{ github.run_number }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" == "master" || "${{ github.ref_name }}" == "master-new" ]]; then
-            echo "new_branch=staging-c3-new" >> $GITHUB_OUTPUT
-            echo "extra_version_identifier=staging" >> $GITHUB_OUTPUT
-            echo "version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "new_branch=release-c3-new" >> $GITHUB_OUTPUT
-            echo "extra_version_identifier=release" >> $GITHUB_OUTPUT
-            echo "version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "new_branch=${{ github.ref_name }}-prebuilt" >> $GITHUB_OUTPUT
-            echo "version=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
-          else
-            echo "This workflow can only run on DEV_C3_SOURCE_BRANCH, master branches, tags, or via workflow_dispatch"
-            exit 1
-          fi
+          echo "new_branch=dev-c3-new" >> $GITHUB_OUTPUT
+          echo "extra_version_identifier=${{ github.run_number }}" >> $GITHUB_OUTPUT
+  
+      - name: Set env for master branches
+        id: set-env
+        if: github.ref_name == 'master' || github.ref_name == 'master-new'
+        run: |
+          echo "new_branch=staging-c3-new" >> $GITHUB_OUTPUT
+          echo "extra_version_identifier=staging" >> $GITHUB_OUTPUT
+          echo "version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_OUTPUT
+  
+      - name: Set env for tags
+        id: set-env
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "new_branch=release-c3-new" >> $GITHUB_OUTPUT
+          echo "extra_version_identifier=release" >> $GITHUB_OUTPUT
+          echo "version=$(cat common/version.h | grep COMMA_VERSION | sed -e 's/[^0-9|.]//g')" >> $GITHUB_OUTPUT
+  
+      - name: Set env for other branches
+        id: set-env
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "new_branch=${{ github.ref_name }}-prebuilt" >> $GITHUB_OUTPUT
+          echo "version=$(date '+%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
+  
+      - name: Error if no condition matched
+        if: |
+          github.ref_name != env.DEV_C3_SOURCE_BRANCH &&
+          github.ref_name != 'master' &&
+          github.ref_name != 'master-new' &&
+          !startsWith(github.ref, 'refs/tags/') &&
+          github.event_name != 'workflow_dispatch'
+        run: |
+          echo "This workflow can only run on DEV_C3_SOURCE_BRANCH, master branches, tags, or via workflow_dispatch"
+          exit 1
+  
+      - name: Set common environment
+        if: success()
+        run: |
           source /etc/profile;
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
