@@ -231,8 +231,6 @@ jobs:
   notify:
     needs: [ build, publish-public ]
     runs-on: ubuntu-latest
-    if: needs.build.outputs.new_branch != ''
-
     steps:
       - uses: actions/checkout@v4
 
