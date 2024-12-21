@@ -28,6 +28,7 @@ jobs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
       version: ${{ steps.set-env.outputs.version }}
       extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
+      should_publish: ${{ steps.set-env.outputs.should_publish }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -175,7 +176,7 @@ jobs:
   publish-public:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref_name == 'master-dev-c3' || github.ref_name == 'master-new' || startsWith(github.ref, 'refs/tags/')))
+    if: needs.build.outputs.should_publish == 'true'
     steps:
       - uses: actions/checkout@v4
 
