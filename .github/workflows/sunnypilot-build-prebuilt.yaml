@@ -41,8 +41,8 @@ jobs:
           path: ${{ env.CI_DIR }}/scons_cache
           key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-
-            scons-${{ runner.os }}-${{ runner.arch }}-
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}
+            scons-${{ runner.os }}-${{ runner.arch }}
 
       - name: Configure for dev branch
         if: github.ref_name == env.DEV_C3_SOURCE_BRANCH
