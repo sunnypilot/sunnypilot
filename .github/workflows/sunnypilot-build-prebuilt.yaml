@@ -231,7 +231,7 @@ jobs:
           echo "----   ℹ️ To update the list of branches that auto deploy prebuilts  -----"
           echo ""
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/AUTO_DEPLOY_PREBUILT_BRANCHES"
-          echo "2. Current value: [${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}]"
+          echo "2. Current value: ${{ vars.AUTO_DEPLOY_PREBUILT_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
 
   notify:
