@@ -244,10 +244,12 @@ jobs:
         id: check-branch
         run: |
           # Split the comma-separated list into an array and check if branch exists
+          export branch_name=${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
           IFS=',' read -ra BRANCHES <<< "${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
           for branch in "${BRANCHES[@]}"; do
-            if [ "${{ needs.build.outputs.new_branch }}" = "$branch" ]; then 
-              echo ${{ needs.build.outputs.new_branch }} is in the list
+            echo "Testing if $branch is in the list"
+            if [ "$branch_name" = "$branch" ]; then 
+              echo $branch_name is in the list
               echo "is_dev_branch=true" >> $GITHUB_OUTPUT
               break
             fi
