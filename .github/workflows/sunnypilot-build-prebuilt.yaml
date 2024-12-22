@@ -239,11 +239,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Alpine Linux environment
+        uses: jirutka/setup-alpine@v1.2.0
+        with:
+          packages: 'jq gettext curl'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl jq gettext-base
+#      - name: Install dependencies
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y curl jq gettext-base
 
       - name: Send Discord Notification
         env:
@@ -264,3 +268,4 @@ jobs:
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/DEV_FEEDBACK_NOTIFICATION_BRANCHES"
           echo "2. Current value: [${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}]"
           echo "3. Update as needed (JSON array with no spaces)"
+        shell: alpine-target.sh {0}
