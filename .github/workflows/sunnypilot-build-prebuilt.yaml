@@ -278,7 +278,7 @@ jobs:
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
           export branch_name=${{ github.head_ref || github.ref_name }}
-          export new_branch=${{ needs.build.outputs.new_branch || github.head_ref || github.ref_name }}
+          export new_branch=${{ needs.build.outputs.new_branch || format('{0}-prebuilt', github.head_ref || github.ref_name) }}
           export extra_version_identifier=${{ needs.build.outputs.extra_version_identifier || github.run_number}}
           echo ${TEMPLATE} | envsubst | jq -c '.' | tee payload.json
           curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
