@@ -1,7 +1,7 @@
 name: sunnypilot prebuilt action
 
 concurrency:
-  group: prebuilt-${{ github.ref }}-${{ github.event_name }}
+  group: prebuilt-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 env:
@@ -37,7 +37,7 @@ on:
 jobs:
   build:
     concurrency:
-      group: build-${{ github.ref }}-${{ github.event_name }}
+      group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
     runs-on: self-hosted
     outputs:
@@ -54,9 +54,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{env.SCONS_CACHE_DIR}}
-          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-${{ github.head_ref }}-${{ github.sha }}
+          key: scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}-${{ github.head_ref }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ github.head_ref }}
             scons-${{ runner.os }}-${{ runner.arch }}-${{ github.ref_name }}
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
