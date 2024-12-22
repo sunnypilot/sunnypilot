@@ -252,7 +252,7 @@ jobs:
           curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
           
           echo ""
-          echo "----   ℹ️ To update the list of branches that notify to dev-feedback   -----"
+          echo "----   ℹ️ To update the list of branches that notify to dev-feedback  -----"
           echo ""
           echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/DEV_FEEDBACK_NOTIFICATION_BRANCHES"
           echo "2. Current value: [${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}]"
