@@ -197,7 +197,7 @@ jobs:
   publish-public:
     needs: build
     runs-on: ubuntu-24.04
-    if: needs.build.outputs.should_publish == 'true'
+    environment: ${{ contains(fromJSON('["master", "master-new", "master-dev-c3-new"]'), github.ref_name) && 'production' || 'development' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -231,7 +231,6 @@ jobs:
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
             "-${{ needs.build.outputs.extra_version_identifier }}"
 
-  
   notify:
     needs: [ build, publish-public ]
     runs-on: ubuntu-24.04
@@ -243,7 +242,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y curl jq gettext-base
-          
+
       - name: Check notification branch
         id: check-branch
         run: |
