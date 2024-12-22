@@ -99,35 +99,54 @@ jobs:
           script: |
             const verbose = process.env.VERBOSE === 'true';
             const log = msg => verbose && console.log('🔍 VERBOSE:', msg);
-            
+
             const runId = '${{ github.event_name }}' === 'workflow_run' 
               ? context.payload.workflow_run.id
               : ${{ steps.find-run.outputs.run_id }};
-            
+
             log(`Getting job outputs for run ID: ${runId}`);
             const run = await github.rest.actions.listJobsForWorkflowRun({
               owner: context.repo.owner,
               repo: context.repo.repo,
               run_id: runId
             });
-            
+
             log(`Found ${run.data.jobs.length} jobs in the workflow run`);
             const buildJob = run.data.jobs.find(j => j.name === 'build');
+
             if (buildJob) {
+              log('Build job details:', JSON.stringify(buildJob, null, 2));
               log('Found build job, processing outputs');
-              for (const step of buildJob.steps) {
-                if (step.name === 'Set environment variables') {
-                  const outputs = {};
-                  for (const [key, value] of Object.entries(buildJob.outputs)) {
-                    core.setOutput(key, value);
-                    outputs[key] = value;
-                  }
-                  log('Build outputs:', outputs);
-                  break;
+
+              // Check if outputs exist
+              if (buildJob.outputs && Object.keys(buildJob.outputs).length > 0) {
+                log('Processing job outputs');
+                const outputs = {};
+                for (const [key, value] of Object.entries(buildJob.outputs)) {
+                  core.setOutput(key, value);
+                  outputs[key] = value;
                 }
+                log('Build outputs:', outputs);
+              } else {
+                log('No outputs found in build job');
+                // Optionally set a failure or warning
+                // core.setFailed('No outputs found in build job');
+              }
+
+              // If you specifically need outputs from the "Set environment variables" step
+              const envVarStep = buildJob.steps.find(step => step.name === 'Set environment variables');
+              if (envVarStep && envVarStep.outputs) {
+                log('Processing environment variables step outputs');
+                for (const [key, value] of Object.entries(envVarStep.outputs)) {
+                  core.setOutput(key, value);
+                }
+              } else {
+                log('No "Set environment variables" step found or no outputs available');
               }
             } else {
               log('No build job found in workflow run');
+              // Optionally set a failure
+              // core.setFailed('No build job found in workflow run');
             }
 
   publish:
