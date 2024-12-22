@@ -239,11 +239,25 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y curl jq gettext-base
+          
+      - name: Check notification branch
+        id: check-branch
+        run: |
+          # Split the comma-separated list into an array and check if branch exists
+          IFS=',' read -ra BRANCHES <<< "${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
+          for branch in "${BRANCHES[@]}"; do
+            if [ "${{ needs.build.outputs.new_branch }}" = "$branch" ]; then 
+              echo ${{ needs.build.outputs.new_branch }} is in the list
+              echo "is_dev_branch=true" >> $GITHUB_OUTPUT
+              break
+            fi
+          done
 
       - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ needs.build.outputs.new_branch == 'dev-c3' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
         run: |
+          echo '${{ toJSON(steps.check-branch.outputs) }}'
           TEMPLATE='${{ needs.publish-public.result == 'skipped' && vars.DISCORD_INTERNAL_WORKFLOW_ALERT || vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
