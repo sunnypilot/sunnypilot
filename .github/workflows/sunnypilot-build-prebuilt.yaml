@@ -196,7 +196,7 @@ jobs:
 
   publish-public:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: needs.build.outputs.should_publish == 'true'
     steps:
       - uses: actions/checkout@v4
@@ -234,7 +234,7 @@ jobs:
   
   notify:
     needs: [ build, publish-public ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: always() && needs.build.result == 'success'
     steps:
       - uses: actions/checkout@v4
