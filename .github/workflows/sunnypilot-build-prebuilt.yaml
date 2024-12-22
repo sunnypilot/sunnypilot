@@ -232,10 +232,11 @@ jobs:
             "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
             "-${{ needs.build.outputs.extra_version_identifier }}"
 
+  
   notify:
     needs: [ build, publish-public ]
     runs-on: ubuntu-latest
-    if: always()
+    if: needs.build.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
