@@ -1,7 +1,7 @@
 name: sunnypilot prebuilt action
 
 concurrency:
-  group: build-${{ github.ref }}-${{ github.event_name }}
+  group: prebuilt-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 env:
@@ -36,6 +36,9 @@ on:
 
 jobs:
   build:
+    concurrency:
+      group: build-${{ github.ref }}-${{ github.event_name }}
+      cancel-in-progress: false
     runs-on: self-hosted
     outputs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
