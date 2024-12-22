@@ -105,42 +105,51 @@ jobs:
               : ${{ steps.find-run.outputs.run_id }};
 
             log(`Getting job outputs for run ID: ${runId}`);
-            const run = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: runId
-            });
 
-            const buildJob = run.data.jobs.find(j => j.name === 'build');
+            try {
+              const run = await github.rest.actions.getWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId
+              });
 
-            if (buildJob) {
-              log('Found build job with ID:', buildJob.id);
+              log('Workflow run details:', JSON.stringify(run.data, null, 2));
 
-              // Try to get step outputs specifically
-              try {
-                const stepOutputs = await github.rest.actions.getJobForWorkflowRun({
+              const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId
+              });
+
+              const buildJob = jobs.data.jobs.find(j => j.name === 'build');
+              if (buildJob) {
+                log('Build job details:', JSON.stringify(buildJob, null, 2));
+
+                // Try to get artifacts
+                const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  job_id: buildJob.id
+                  run_id: runId
                 });
 
-                log('Full step outputs:', JSON.stringify(stepOutputs.data, null, 2));
+                log('Artifacts:', JSON.stringify(artifacts.data, null, 2));
 
-                // Look for environment variables step
-                const envStep = stepOutputs.data.steps.find(s => s.name === 'Set environment variables');
-                if (envStep && envStep.outputs) {
-                  log('Environment variables step outputs:', JSON.stringify(envStep.outputs, null, 2));
-                  for (const [key, value] of Object.entries(envStep.outputs)) {
-                    core.setOutput(key, value);
+                if (buildJob.steps) {
+                  const envStep = buildJob.steps.find(s => s.name === 'Set environment variables');
+                  if (envStep) {
+                    log('Environment step:', JSON.stringify(envStep, null, 2));
                   }
-                } else {
-                  log('No outputs found in environment variables step');
+
+                  // Log all step names and their conclusions
+                  log('All steps:');
+                  buildJob.steps.forEach(step => {
+                    log(`Step ${step.name}: ${step.conclusion}`);
+                  });
                 }
-              } catch (error) {
-                log('Error getting detailed job info:', error.message);
               }
-            } else {
-              log('No build job found in workflow run');
+            } catch (error) {
+              log('Error:', error.message);
+              core.setFailed(error.message);
             }
 
   publish:
