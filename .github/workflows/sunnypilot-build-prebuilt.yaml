@@ -250,5 +250,5 @@ jobs:
           export branch_name=${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
           export new_branch=${new_branch:-$branch_name}
           export extra_version_identifier=${EXTRA_VERSION_IDENTIFIER:-$GITHUB_RUN_NUMBER}
-          echo ${TEMPLATE} | envsubst | | jq -c '.' | tee payload.json
+          echo ${TEMPLATE} | envsubst | jq -c '.' | tee payload.json
           curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
