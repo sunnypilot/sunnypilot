@@ -2,7 +2,6 @@ name: sunnypilot prebuilt action
 
 concurrency:
   group: build-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
 
 env:
   BUILD_DIR: "/data/openpilot"
@@ -236,7 +235,7 @@ jobs:
   notify:
     needs: [ build, publish-public ]
     runs-on: ubuntu-latest
-    if: needs.build.result == 'success'
+    if: always() && needs.build.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
