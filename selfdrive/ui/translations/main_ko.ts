@@ -124,23 +124,11 @@
         <translation>롱컨 기동 모드</translation>
     </message>
     <message>
-        <source>Modular Assistive Driving System (MADS)</source>
+        <source>Enable GitHub runner service</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>MADS: Unified Engagement Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>MADS: Toggle with Main Cruise</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>MADS: Pause Lateral on Brake</source>
+        <source>Enables or disables the github runner service.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

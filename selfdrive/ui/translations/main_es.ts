@@ -124,23 +124,11 @@
         <translation>Modo de maniobra longitudinal</translation>
     </message>
     <message>
-        <source>Modular Assistive Driving System (MADS)</source>
+        <source>Enable GitHub runner service</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>MADS: Unified Engagement Mode</source>
-        <translation>MADS: Modo de activación unificado.</translation>
-    </message>
-    <message>
-        <source>MADS: Toggle with Main Cruise</source>
-        <translation>MADS: Activar con botón de crucero principal.</translation>
-    </message>
-    <message>
-        <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
-        <translation>Nota: Para vehículos sin botón de LFA/LKAS, deshabilitar este ajuste evitará que se active el control lateral.</translation>
-    </message>
-    <message>
-        <source>MADS: Pause Lateral on Brake</source>
+        <source>Enables or disables the github runner service.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
