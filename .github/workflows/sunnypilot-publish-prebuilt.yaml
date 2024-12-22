@@ -58,9 +58,10 @@ jobs:
             const runs = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'sunnypilot-build-prebuilt.yml',
+              workflow_id: 'sunnypilot-build-prebuilt.yaml',
               branch: targetBranch,
-              status: 'success'
+              status: 'success',
+              per_page: 1
             });
             
             if (runs.data.workflow_runs.length === 0) {
