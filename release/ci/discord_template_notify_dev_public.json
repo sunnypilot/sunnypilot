@@ -1,9 +1,0 @@
-{
-  "embeds": [
-    {
-      "title": "🎉 sunnypilot `${new_branch}` New Update 🎉",
-      "description": "[sunnypilot](${PUBLIC_REPO_URL}): Build #${extra_version_identifier} of branch [${new_branch}](${PUBLIC_REPO_URL}/tree/${new_branch}) has been published.\n\nDrive safe! 🚗💨",
-      "color": 4321431
-    }
-  ]
-}
