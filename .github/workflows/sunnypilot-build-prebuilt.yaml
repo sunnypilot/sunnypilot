@@ -230,8 +230,6 @@ jobs:
   notify:
     needs: [ build, publish ]
     runs-on: ubuntu-24.04
-    env:
-      TEST: ${{ contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_2), github.head_ref || github.ref_name) }}
     steps:
       - uses: actions/checkout@v4
 
