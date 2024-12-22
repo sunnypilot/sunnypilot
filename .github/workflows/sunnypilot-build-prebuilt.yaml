@@ -230,7 +230,6 @@ jobs:
   notify:
     needs: [ build, publish ]
     runs-on: ubuntu-24.04
-    if: always() && needs.build.result == 'success'
     env:
       TEST: ${{ contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_2), github.head_ref || github.ref_name) }}
     steps:
@@ -274,7 +273,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ steps.check-branch.outputs.is_dev_feedback_notifiable_branch == 'true' && needs.publish.result != 'skipped' && secrets.DISCORD_DEV_FEEDBACK_CHANNEL_WEBHOOK || secrets.DISCORD_DEV_PRIVATE_CHANNEL_WEBHOOK }}
         run: |
-          TEMPLATE='${{ needs.publish.result == 'skipped' && vars.DISCORD_INTERNAL_WORKFLOW_ALERT || vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
+          TEMPLATE='${{ vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
           export branch_name=${{ github.head_ref || github.ref_name }}
