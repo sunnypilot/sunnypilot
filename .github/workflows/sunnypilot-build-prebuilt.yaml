@@ -193,7 +193,7 @@ jobs:
       cancel-in-progress: true
     needs: build
     runs-on: ubuntu-24.04
-    environment: ${{ contains(fromJSON('["master", "master-new", "master-dev-c3-new"]'), github.ref_name) && 'production' || 'development' }}
+    environment: ${{ contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) && 'production' || 'development' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -231,6 +231,8 @@ jobs:
     needs: [ build, publish ]
     runs-on: ubuntu-24.04
     if: always() && needs.build.result == 'success'
+    env:
+      TEST: ${{ contains(fromJSON(vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES_2), github.head_ref || github.ref_name) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -245,6 +247,8 @@ jobs:
           # Get current branch name
           export branch_name=${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
           echo "🔍 Current branch: $branch_name"
+          echo "🔍 TEST: $TEST"
+ 
 
           echo "📋 Checking against dev-feedback notification branches list..."
           echo "Current notifiable branches: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
