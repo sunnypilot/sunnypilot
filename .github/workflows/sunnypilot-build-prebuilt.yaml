@@ -193,7 +193,7 @@ jobs:
       cancel-in-progress: true
     needs: build
     runs-on: ubuntu-24.04
-    environment: ${{ contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) && 'production' || 'development' }}
+    environment: ${{ contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) && 'auto-deploy' || 'feature-branch' }}
     steps:
       - uses: actions/checkout@v4
 
