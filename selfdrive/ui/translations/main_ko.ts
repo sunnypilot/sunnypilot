@@ -127,6 +127,10 @@
         <source>Enable GitHub runner service</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Enables or disables the github runner service.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>
