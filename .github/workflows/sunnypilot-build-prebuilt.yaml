@@ -249,5 +249,6 @@ jobs:
           export VERSION="${{ needs.build.outputs.version }}"
           export branch_name=${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
           export new_branch=${new_branch:-$branch_name}
+          export extra_version_identifier=${EXTRA_VERSION_IDENTIFIER:-$GITHUB_RUN_NUMBER}
           cat release/ci/${TEMPLATE} | envsubst > payload.json
           curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
