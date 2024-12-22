@@ -23,6 +23,8 @@ on:
     tags: [ '*' ]
   pull_request:
     branches: [ master, master-new ]
+    types: [ opened, synchronize, reopened ]
+    drafts: true
   workflow_dispatch:
     inputs:
       extra_version:
@@ -188,7 +190,6 @@ jobs:
           path: prebuilt.tar.gz
 
   publish:
-    continue-on-error: true
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
