@@ -259,7 +259,7 @@ jobs:
           for branch in "${BRANCHES[@]}"; do
             if [ "$branch_name" = "$branch" ]; then 
               echo "✅ Match found! '$branch_name' will notify to dev-feedback channel"
-              echo "is_dev_branch=true" >> $GITHUB_OUTPUT
+              echo "is_dev_feedback_notifiable_branch=true" >> $GITHUB_OUTPUT
               break
             fi
           done
@@ -273,9 +273,8 @@ jobs:
 
       - name: Send Discord Notification
         env:
-          DISCORD_WEBHOOK: ${{ needs.build.outputs.new_branch == 'dev-c3' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ steps.check-branch.outputs.is_dev_feedback_notifiable_branch == 'true' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
         run: |
-          echo '${{ toJSON(steps.check-branch.outputs) }}'
           TEMPLATE='${{ needs.publish-public.result == 'skipped' && vars.DISCORD_INTERNAL_WORKFLOW_ALERT || vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
