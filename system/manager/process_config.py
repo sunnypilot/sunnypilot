@@ -3,7 +3,7 @@ import operator
 
 from cereal import car
 from openpilot.common.params import Params
-from openpilot.system.hardware import PC, TICI, HARDWARE
+from openpilot.system.hardware import PC, TICI
 from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
@@ -55,8 +55,7 @@ def only_offroad(started: bool, params: Params, CP: car.CarParams) -> bool:
   return not started
 
 def use_github_runner(started, params, CP: car.CarParams) -> bool:
-  network_type = HARDWARE.get_network_type()
-  return not PC and params.get_bool("EnableGithubRunner") and only_offroad(started, params, CP) and not HARDWARE.get_network_metered(network_type)
+  return not PC and params.get_bool("EnableGithubRunner") and not params.get_bool("NetworkMetered")
 
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
@@ -116,6 +115,6 @@ procs = [
 ]
 
 if os.path.exists("./github_runner.sh"):
-  procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], use_github_runner, sigkill=False)]
+  procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 
 managed_processes = {p.name: p for p in procs}
