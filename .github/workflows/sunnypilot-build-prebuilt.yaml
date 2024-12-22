@@ -244,7 +244,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ needs.build.outputs.new_branch == 'dev-c3' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
         run: |
-          TEMPLATE="${{ needs.publish-public.result == 'skipped' && DISCORD_INTERNAL_WORKFLOW_ALERT || DISCORD_GENERAL_UPDATE_NOTICE }}"
+          TEMPLATE="${{ needs.publish-public.result == 'skipped' && env.DISCORD_INTERNAL_WORKFLOW_ALERT || env.DISCORD_GENERAL_UPDATE_NOTICE }}"
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
           export branch_name=${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
