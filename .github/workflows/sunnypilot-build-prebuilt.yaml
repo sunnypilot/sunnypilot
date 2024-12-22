@@ -188,6 +188,7 @@ jobs:
           path: prebuilt.tar.gz
 
   publish:
+    continue-on-error: true
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
@@ -237,6 +238,7 @@ jobs:
   notify:
     needs: [ build, publish ]
     runs-on: ubuntu-24.04
+    if: steps.publish.outcome == 'success'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Alpine Linux environment
