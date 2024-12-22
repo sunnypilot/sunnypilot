@@ -2,6 +2,9 @@ name: sunnypilot publish and notify
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - fix-version-number-for-dev-c3
   workflow_run:
     workflows: ["sunnypilot prebuilt action"]
     types:
