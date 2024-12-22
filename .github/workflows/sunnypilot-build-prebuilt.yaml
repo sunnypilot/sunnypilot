@@ -1,9 +1,5 @@
 name: sunnypilot prebuilt action
 
-concurrency:
-  group: prebuilt-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
-
 env:
   BUILD_DIR: "/data/openpilot"
   OUTPUT_DIR: ${{ github.workspace }}/output
@@ -191,7 +187,10 @@ jobs:
           name: prebuilt
           path: prebuilt.tar.gz
 
-  publish-public:
+  publish:
+    concurrency:
+      group: publish-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
     needs: build
     runs-on: ubuntu-24.04
     environment: ${{ contains(fromJSON('["master", "master-new", "master-dev-c3-new"]'), github.ref_name) && 'production' || 'development' }}
@@ -229,7 +228,7 @@ jobs:
             "-${{ needs.build.outputs.extra_version_identifier }}"
 
   notify:
-    needs: [ build, publish-public ]
+    needs: [ build, publish ]
     runs-on: ubuntu-24.04
     if: always() && needs.build.result == 'success'
     steps:
@@ -269,9 +268,9 @@ jobs:
 
       - name: Send Discord Notification
         env:
-          DISCORD_WEBHOOK: ${{ steps.check-branch.outputs.is_dev_feedback_notifiable_branch == 'true' && needs.publish-public.result != 'skipped' && secrets.DISCORD_DEV_FEEDBACK_CHANNEL_WEBHOOK || secrets.DISCORD_DEV_PRIVATE_CHANNEL_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ steps.check-branch.outputs.is_dev_feedback_notifiable_branch == 'true' && needs.publish.result != 'skipped' && secrets.DISCORD_DEV_FEEDBACK_CHANNEL_WEBHOOK || secrets.DISCORD_DEV_PRIVATE_CHANNEL_WEBHOOK }}
         run: |
-          TEMPLATE='${{ needs.publish-public.result == 'skipped' && vars.DISCORD_INTERNAL_WORKFLOW_ALERT || vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
+          TEMPLATE='${{ needs.publish.result == 'skipped' && vars.DISCORD_INTERNAL_WORKFLOW_ALERT || vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
           export VERSION="${{ needs.build.outputs.version }}"
           export branch_name=${{ github.head_ref || github.ref_name }}
