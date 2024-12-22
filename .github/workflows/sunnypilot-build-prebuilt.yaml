@@ -238,7 +238,7 @@ jobs:
   notify:
     needs: [ build, publish ]
     runs-on: ubuntu-24.04
-    if: ${{ steps.publish.outcome == 'success' }}
+    if: success()
     steps:
       - uses: actions/checkout@v4
       - name: Setup Alpine Linux environment
