@@ -2,7 +2,7 @@
   "embeds": [
     {
       "title": "❗️ Action Required for `${new_branch}` ❗️",
-      "description": "[sunnypilot](${PUBLIC_REPO_URL}): Workflow [#${GITHUB_RUN_NUMBER}](${PUBLIC_REPO_URL}/actions/runs/${GITHUB_RUN_ID}) of branch [${new_branch}](${PUBLIC_REPO_URL}/tree/${new_branch}) by ${GITHUB_ACTOR} is ready to publish manually as [${new_branch}](${PUBLIC_REPO_URL}/tree/${new_branch})",
+      "description": "[sunnypilot](${PUBLIC_REPO_URL}): Workflow [#${GITHUB_RUN_NUMBER}](${PUBLIC_REPO_URL}/actions/runs/${GITHUB_RUN_ID}) of branch [${new_branch}](${PUBLIC_REPO_URL}/tree/${new_branch}) by ${GITHUB_ACTOR} is ready to publish manually as prebuilt.",
       "color": 16763904,
       "author": {
         "name": "${GITHUB_ACTOR}",
