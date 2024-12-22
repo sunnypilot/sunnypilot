@@ -273,7 +273,7 @@ jobs:
 
       - name: Send Discord Notification
         env:
-          DISCORD_WEBHOOK: ${{ steps.check-branch.outputs.is_dev_feedback_notifiable_branch == 'true' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ steps.check-branch.outputs.is_dev_feedback_notifiable_branch == 'true' && needs.publish-public.result != 'skipped' && secrets.DISCORD_NEW_BUILD_WEBHOOK_URL || secrets.DISCORD_MANUAL_BUILD_WEBHOOK_URL }}
         run: |
           TEMPLATE='${{ needs.publish-public.result == 'skipped' && vars.DISCORD_INTERNAL_WORKFLOW_ALERT || vars.DISCORD_GENERAL_UPDATE_NOTICE }}'
           export EXTRA_VERSION_IDENTIFIER="${{ needs.build.outputs.extra_version_identifier }}"
