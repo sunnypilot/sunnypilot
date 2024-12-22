@@ -247,17 +247,26 @@ jobs:
       - name: Check notification branch
         id: check-branch
         run: |
-          # Split the comma-separated list into an array and check if branch exists
+          # Get current branch name
           export branch_name=${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
+          echo "🔍 Current branch: $branch_name"
+
+          echo "📋 Checking against dev-feedback notification branches list..."
+          echo "Current notifiable branches: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
+
           IFS=',' read -ra BRANCHES <<< "${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
           for branch in "${BRANCHES[@]}"; do
-            echo "Testing if $branch is in the list"
             if [ "$branch_name" = "$branch" ]; then 
-              echo $branch_name is in the list
+              echo "✅ Match found! '$branch_name' will notify to dev-feedback channel"
               echo "is_dev_branch=true" >> $GITHUB_OUTPUT
               break
             fi
           done
+
+          echo "ℹ️ To update the list of branches that notify to dev-feedback:"
+          echo "1. Go to: ${{ github.server_url }}/${{ github.repository }}/settings/variables/actions/DEV_FEEDBACK_NOTIFICATION_BRANCHES"
+          echo "2. Current value: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
+          echo "3. Update as needed (comma-separated list with no spaces)"
 
       - name: Send Discord Notification
         env:
