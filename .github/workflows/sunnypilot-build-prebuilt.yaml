@@ -5,7 +5,7 @@ env:
   OUTPUT_DIR: ${{ github.workspace }}/output
   CI_DIR: ${{ github.workspace }}/release/ci
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
-  PUBLIC_REPO_URL: "https://github.com/sunnyhaibin/sunnypilot"
+  PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
   
   # Branch configurations
   MASTER_BRANCH: "master"
