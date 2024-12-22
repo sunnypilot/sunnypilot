@@ -58,7 +58,7 @@ jobs:
             const runs = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'sunnypilot-build.yml',
+              workflow_id: 'sunnypilot-build-prebuilt.yml',
               branch: targetBranch,
               status: 'success'
             });
@@ -75,17 +75,17 @@ jobs:
 
       - name: Download workflow artifact from workflow_run
         if: github.event_name == 'workflow_run'
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          run_id: ${{ github.event.workflow_run.id }}
           name: prebuilt
-
+          run-id: ${{ github.event.workflow_run.id }}
+        
       - name: Download workflow artifact from workflow_dispatch
         if: github.event_name == 'workflow_dispatch'
-        uses: dawidd6/action-download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          run_id: ${{ steps.find-run.outputs.run_id }}
           name: prebuilt
+          run-id: ${{ steps.find-run.outputs.run_id }}
 
       - name: Get build job outputs
         id: get-build-outputs
@@ -156,13 +156,13 @@ jobs:
             echo "🔍 VERBOSE: Version: ${{ needs.prepare.outputs.version }}"
           fi
           
-          ${{ env.CI_DIR }}/publish.sh \
-            "${{ github.workspace }}" \
-            "${{ env.OUTPUT_DIR }}" \
-            "${{ needs.prepare.outputs.new_branch }}" \
-            "${{ needs.prepare.outputs.version }}" \
-            "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
-            "-${{ needs.prepare.outputs.extra_version_identifier }}"
+#          ${{ env.CI_DIR }}/publish.sh \
+#            "${{ github.workspace }}" \
+#            "${{ env.OUTPUT_DIR }}" \
+#            "${{ needs.prepare.outputs.new_branch }}" \
+#            "${{ needs.prepare.outputs.version }}" \
+#            "https://x-access-token:${{github.token}}@github.com/sunnypilot/sunnypilot.git" \
+#            "-${{ needs.prepare.outputs.extra_version_identifier }}"
 
   notify:
     needs: [prepare, publish]
@@ -220,4 +220,4 @@ jobs:
           export extra_version_identifier="${{ needs.prepare.outputs.extra_version_identifier }}"
           
           echo ${TEMPLATE} | envsubst | jq -c '.' | tee payload.json
-          curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
+#          curl -X POST -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
