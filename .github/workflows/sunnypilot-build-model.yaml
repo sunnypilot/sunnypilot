@@ -20,14 +20,31 @@ on:
         type: string
 
 jobs:
-  build_model:
-    runs-on: self-hosted
+  get_model:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ github.event.inputs.upstream_branch }}
+          submodules: recursive
+
+      - run: git lfs pull
+        
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: models
+          path: ${{ github.workspace }}/selfdrive/modeld/models
+
+      
+  build_model:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
           submodules: recursive
 
       - run: git lfs pull
@@ -54,12 +71,16 @@ jobs:
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
           echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
-      
-      - name: Patch SConstruct to pass arbitrary cache
+        
+      - name: Delete existing model
         run: |
-          sed -i.bak 's#cache_dir =#default_cache_dir =#' ${{ github.workspace }}/SConstruct
-          printf '/default_cache_dir/a\\\ncache_dir = ARGUMENTS.get("cache_dir", default_cache_dir)\n' | sed -i.bak -f - ${{ github.workspace }}/SConstruct
-          cat ${{ github.workspace }}/SConstruct
+          sudo rm -rf ${{ github.workspace }}/selfdrive/modeld/models/*
+      
+      - name: Download model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: models
+          path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
         run: |
