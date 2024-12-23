@@ -7,7 +7,6 @@ import signal
 import contextlib
 import tempfile
 import os
-from typing import Optional, List
 
 
 def run_command(command: str) -> tuple[int, str, str]:
@@ -28,7 +27,7 @@ def is_gh_available() -> bool:
   return shutil.which('gh') is not None
 
 
-def get_current_branch() -> Optional[str]:
+def get_current_branch() -> str | None:
   """Get the name of the current git branch."""
   code, output, error = run_command("git rev-parse --abbrev-ref HEAD")
   if code != 0:
@@ -48,7 +47,7 @@ def backup_branch(branch_name: str) -> bool:
   return True
 
 
-def get_commit_messages(source_branch: str, target_branch: str) -> Optional[List[str]]:
+def get_commit_messages(source_branch: str, target_branch: str) -> list[str] | None:
   """Get all commit messages between source and target branches."""
   code, output, error = run_command(f"git log {target_branch}..{source_branch} --format=%B")
   if code != 0:
@@ -57,7 +56,7 @@ def get_commit_messages(source_branch: str, target_branch: str) -> Optional[List
   return [msg.strip() for msg in output.splitlines() if msg and not msg.startswith('Merge')]
 
 
-def get_pr_info(branch_name: str) -> Optional[str]:
+def get_pr_info(branch_name: str) -> str | None:
   """Get PR title using GitHub CLI."""
   if not is_gh_available():
     print("Warning: GitHub CLI not found. Install it to auto-fetch PR titles:")
@@ -73,7 +72,7 @@ def get_pr_info(branch_name: str) -> Optional[str]:
   return output
 
 
-def create_squash_message(pr_title: Optional[str], commit_messages: List[str], source_branch: str) -> str:
+def create_squash_message(pr_title: str | None, commit_messages: list[str], source_branch: str) -> str:
   """Create a squash commit message from PR title and commit messages."""
   parts = []
 
@@ -191,7 +190,7 @@ def create_commit_with_message(message: str) -> bool:
     return False
 
 
-def squash_and_merge(source_branch: str, target_branch: str, manual_title: Optional[str], backup: bool = False, push: bool = False) -> bool:
+def squash_and_merge(source_branch: str, target_branch: str, manual_title: str | None, backup: bool = False, push: bool = False) -> bool:
   """
   Squash the source branch and merge into target branch.
   """
@@ -256,7 +255,7 @@ def squash_and_merge(source_branch: str, target_branch: str, manual_title: Optio
         print(f"Error creating temp branch: {error}")
         return False
 
-      print(f"Preparing squash by resetting temporary branch to merge base...")
+      print("Preparing squash by resetting temporary branch to merge base...")
       code, _, error = run_command(f"git reset --soft {merge_base}")
       if code != 0:
         print(f"Error resetting for squash: {error}")
@@ -291,7 +290,7 @@ def squash_and_merge(source_branch: str, target_branch: str, manual_title: Optio
         print("   git add <resolved-files>")
         print("   git commit")
         print(f"   git push origin {target_branch}  # when ready to push")
-        print(f"\nTo clean up after successful merge:")
+        print("\nTo clean up after successful merge:")
         print(f"   git branch -D {temp_branch}")
 
         # Make sure to abort the merge
