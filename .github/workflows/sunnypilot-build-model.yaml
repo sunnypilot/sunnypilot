@@ -36,11 +36,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: models
-          path: ${{ github.workspace }}/selfdrive/modeld/models
+          path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
 
       
   build_model:
     runs-on: self-hosted
+    needs: get_model
 
     steps:
       - uses: actions/checkout@v4
@@ -72,9 +73,9 @@ jobs:
           echo "Starting build stage..."
           echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
         
-      - name: Delete existing model
-        run: |
-          sudo rm -rf ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
+#      - name: Delete existing model
+#        run: |
+#          sudo rm -rf ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
       
       - name: Download model artifacts
         uses: actions/download-artifact@v4
