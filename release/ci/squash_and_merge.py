@@ -102,7 +102,7 @@ def workspace_manager(original_branch: str):
   """Context manager to handle workspace state and cleanup."""
   stash_created = False
   stash_restored = False
-  temp_branch = None
+  temp_branch: str | None = None
 
   def cleanup_handler(signum=None, frame=None):
     """Clean up workspace state."""
