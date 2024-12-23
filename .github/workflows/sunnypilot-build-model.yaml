@@ -72,16 +72,12 @@ jobs:
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
           echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
-        
-#      - name: Delete existing model
-#        run: |
-#          sudo rm -rf ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
       
       - name: Download model artifacts
         uses: actions/download-artifact@v4
         with:
           name: models
-          path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
+          path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
         run: |
@@ -103,6 +99,7 @@ jobs:
             --delete-excluded \
             --chown=comma:comma \
             ./selfdrive/modeld/models/ ${OUTPUT_DIR}/
+          echo "${{ github.event.inputs.custom_name }} - ${{ github.event.inputs.upstream_branch }}" > ${OUTPUT_DIR}/ref           
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
