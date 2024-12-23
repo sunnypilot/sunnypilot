@@ -200,7 +200,7 @@ def squash_and_merge(source_branch: str, target_branch: str, manual_title: str |
     return False
 
   class State:
-    temp_branch = None
+    temp_branch: str | None = None
 
   state = State()
 
