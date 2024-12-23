@@ -74,13 +74,13 @@ jobs:
         
       - name: Delete existing model
         run: |
-          sudo rm -rf ${{ github.workspace }}/selfdrive/modeld/models/*
+          sudo rm -rf ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
       
       - name: Download model artifacts
         uses: actions/download-artifact@v4
         with:
           name: models
-          path: ${{ github.workspace }}/selfdrive/modeld/models
+          path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
 
       - name: Build Model
         run: |
