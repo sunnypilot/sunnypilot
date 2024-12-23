@@ -200,7 +200,16 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
+
+
+
+    // Sunnypilot
     {"EnableGithubRunner", PERSISTENT},
+    {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
+    {"SunnylinkDongleId", PERSISTENT},
+    {"SunnylinkEnabled", PERSISTENT},
+    {"SunnylinkdPid", PERSISTENT},
+    {"EnableSunnylinkUploader", PERSISTENT},
 };
 
 } // namespace
