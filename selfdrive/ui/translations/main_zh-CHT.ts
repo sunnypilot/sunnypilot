@@ -978,6 +978,21 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>TermsPageSP</name>
+    <message>
+        <source>Terms &amp; Conditions</source>
+        <translation type="obsolete">條款和條件</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation type="obsolete">拒絕</translation>
+    </message>
+    <message>
+        <source>Scroll to accept</source>
+        <translation type="obsolete">滑動至頁尾接受條款</translation>
+    </message>
+</context>
+<context>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>

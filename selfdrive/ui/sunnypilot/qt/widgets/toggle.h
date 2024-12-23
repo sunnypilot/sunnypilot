@@ -1,5 +1,5 @@
 /**
-* The MIT License
+ * The MIT License
  *
  * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
  *

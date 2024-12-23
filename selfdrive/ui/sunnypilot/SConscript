@@ -1,10 +1,15 @@
 widgets_src = [
+  "sunnypilot/ui.cc",
   "sunnypilot/qt/widgets/controls.cc",
   "sunnypilot/qt/widgets/drive_stats.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
   "sunnypilot/qt/widgets/toggle.cc",
 ]
 
-sp_widgets_src = widgets_src
+qt_src = [
+]
 
-Export('sp_widgets_src')
+sp_widgets_src = widgets_src
+sp_qt_src = qt_src
+
+Export('sp_widgets_src', 'sp_qt_src')

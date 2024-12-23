@@ -26,26 +26,35 @@
 
 #pragma once
 
-#include <QJsonDocument>
-#include <QLabel>
+#include "selfdrive/ui/ui.h"
 
-class DriveStats : public QFrame {
+class UIStateSP : public UIState {
   Q_OBJECT
 
 public:
-  explicit DriveStats(QWidget* parent = 0);
+  UIStateSP(QObject* parent = 0);
+  void updateStatus() override;
 
-private:
-  void showEvent(QShowEvent *event) override;
-  void updateStats();
-  inline QString getDistanceUnit() const { return metric_ ? tr("KM") : tr("Miles"); }
-
-  bool metric_;
-  QJsonDocument stats_;
-  struct StatsLabels {
-    QLabel *routes, *distance, *distance_unit, *hours;
-  } all_, week_;
+signals:
+  void uiUpdate(const UIStateSP &s);
 
 private slots:
-  void parseResponse(const QString &response, bool success);
+  void update() override;
 };
+
+UIStateSP *uiStateSP();
+UIStateSP *uiState();
+
+// device management class
+class DeviceSP : public Device {
+  Q_OBJECT
+
+public:
+  DeviceSP(QObject *parent = 0);
+protected:
+  void updateBrightness(const UIStateSP &s);
+  void updateBrightness(const UIState &s) override { updateBrightness(dynamic_cast<const UIStateSP &>(s)); }
+};
+
+DeviceSP *deviceSP();
+inline DeviceSP *device() { return deviceSP(); }

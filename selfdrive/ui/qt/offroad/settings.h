@@ -10,9 +10,21 @@
 #include <QStackedWidget>
 #include <QWidget>
 
-#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
+
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#define ListWidget ListWidgetSP
+#define ParamControl ParamControlSP
+#define ButtonControl ButtonControlSP
+#define ButtonParamControl ButtonParamControlSP
+#define ToggleControl ToggleControlSP
+#define LabelControl LabelControlSP
+#else
+#include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
+#endif
 
 // ********** settings window + top-level panels **********
 class SettingsWindow : public QFrame {

@@ -982,6 +982,21 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
 </context>
 <context>
+    <name>TermsPageSP</name>
+    <message>
+        <source>Terms &amp; Conditions</source>
+        <translation type="obsolete">Termes &amp; Conditions</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation type="obsolete">Refuser</translation>
+    </message>
+    <message>
+        <source>Scroll to accept</source>
+        <translation type="obsolete">Faire défiler pour accepter</translation>
+    </message>
+</context>
+<context>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>

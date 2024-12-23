@@ -24,28 +24,31 @@
  * Last updated: July 29, 2024
  */
 
-#pragma once
+#include "selfdrive/ui/sunnypilot/ui.h"
 
-#include <QJsonDocument>
-#include <QLabel>
+#include "common/watchdog.h"
 
-class DriveStats : public QFrame {
-  Q_OBJECT
+UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
+  sm = std::make_unique<SubMaster>(std::vector<const char*>{
+    "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
+    "pandaStates", "carParams", "driverMonitoringState", "carState", "driverStateV2",
+    "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
+  });
 
-public:
-  explicit DriveStats(QWidget* parent = 0);
+  // update timer
+  timer = new QTimer(this);
+  QObject::connect(timer, &QTimer::timeout, this, &UIStateSP::update);
+  timer->start(1000 / UI_FREQ);
+}
 
-private:
-  void showEvent(QShowEvent *event) override;
-  void updateStats();
-  inline QString getDistanceUnit() const { return metric_ ? tr("KM") : tr("Miles"); }
+// This method overrides completely the update method from the parent class intentionally.
+void UIStateSP::update() {
+  update_sockets(this);
+  update_state(this);
+  updateStatus();
 
-  bool metric_;
-  QJsonDocument stats_;
-  struct StatsLabels {
-    QLabel *routes, *distance, *distance_unit, *hours;
-  } all_, week_;
-
-private slots:
-  void parseResponse(const QString &response, bool success);
-};
+  if (sm->frame % UI_FREQ == 0) {
+    watchdog_kick(nanos_since_boot());
+  }
+  emit uiUpdate(*this);
+}
