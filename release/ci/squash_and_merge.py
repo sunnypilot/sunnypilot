@@ -54,10 +54,7 @@ def get_commit_messages(source_branch: str, target_branch: str) -> Optional[List
   if code != 0:
     print(f"Error getting commit messages: {error}")
     return None
-
-  # Filter out empty lines and merge commits
-  messages = [msg.strip() for msg in output.split('\n') if msg.strip() and not msg.strip().startswith('Merge')]
-  return messages
+  return [msg.strip() for msg in output.splitlines() if msg and not msg.startswith('Merge')]
 
 
 def get_pr_info(branch_name: str) -> Optional[str]:
@@ -98,10 +95,7 @@ def create_squash_message(pr_title: Optional[str], commit_messages: List[str], s
 
 def prompt_for_title() -> str:
   """Prompt user for a commit title."""
-  while True:
-    title = input("Enter commit title (or press Enter to use default): ").strip()
-    if title or True:  # Allow empty title, will use default
-      return title
+  return input("Enter commit title (or press Enter to use default): ").strip()
 
 
 @contextlib.contextmanager
