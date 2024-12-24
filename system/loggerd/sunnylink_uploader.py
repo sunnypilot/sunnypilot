@@ -201,7 +201,8 @@ class Uploader:
         success = True
       elif stat is not None:  # 401, 403... Not sure why they were up to begin with
         success = False
-        cloudlog.event("upload_failed with content", stat=stat, exc=last_exc, key=key, fn=fn, sz=sz, network_type=network_type, metered=metered, error=stat.content.decode("utf-8"))
+        cloudlog.event("upload_failed with content", stat=stat, exc=last_exc, key=key, fn=fn, sz=sz, network_type=network_type, metered=metered,
+                       error=stat.content.decode("utf-8"))
       else:
         success = False
         cloudlog.event("upload_failed", stat=stat, exc=last_exc, key=key, fn=fn, sz=sz, network_type=network_type, metered=metered)

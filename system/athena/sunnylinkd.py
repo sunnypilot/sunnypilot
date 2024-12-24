@@ -67,13 +67,14 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       metered = sm['deviceState'].networkMetered
 
       if DISALLOW_LOG_UPLOAD.is_set() and not comma_prime_cellular_end_event.is_set():
-        cloudlog.debug(f"sunnylinkd.handle_long_poll: DISALLOW_LOG_UPLOAD, setting comma_prime_cellular_end_event")
+        cloudlog.debug("sunnylinkd.handle_long_poll: DISALLOW_LOG_UPLOAD, setting comma_prime_cellular_end_event")
         comma_prime_cellular_end_event.set()
       elif metered and int(prime_type) > 2:
         cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
         comma_prime_cellular_end_event.set()
       elif comma_prime_cellular_end_event.is_set() and not DISALLOW_LOG_UPLOAD.is_set():
-        cloudlog.debug(f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
+        cloudlog.debug(
+          f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
         comma_prime_cellular_end_event.clear()
   finally:
     end_event.set()
@@ -95,7 +96,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
         recv_queue.put_nowait(data)
         cloudlog.debug(f"sunnylinkd.ws_recv.recv {data}")
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
-        cloudlog.debug(f"sunnylinkd.ws_recv.pong")
+        cloudlog.debug("sunnylinkd.ws_recv.pong")
         last_ping = int(time.monotonic() * 1e9)
         Params().put("LastSunnylinkPingTime", str(last_ping))
     except WebSocketTimeoutException:
@@ -113,11 +114,11 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
   while not end_event.wait(SUNNYLINK_RECONNECT_TIMEOUT_S * 0.7):  # Sleep about 70% before a timeout
     try:
       ws.ping()
-      cloudlog.debug(f"sunnylinkd.ws_recv.ws_ping: Pinging")
+      cloudlog.debug("sunnylinkd.ws_recv.ws_ping: Pinging")
     except Exception:
       cloudlog.exception("sunnylinkd.ws_ping.exception")
       end_event.set()
-  cloudlog.debug(f"sunnylinkd.ws_ping.end_event is set, exiting ws_ping thread")
+  cloudlog.debug("sunnylinkd.ws_ping.end_event is set, exiting ws_ping thread")
 
 def ws_queue(end_event: threading.Event) -> None:
   resume_requested = False
@@ -126,7 +127,7 @@ def ws_queue(end_event: threading.Event) -> None:
   while not end_event.is_set() and not resume_requested:
     try:
       if not resume_requested:
-        cloudlog.debug(f"sunnylinkd.ws_queue.resume_queued")
+        cloudlog.debug("sunnylinkd.ws_queue.resume_queued")
         sunnylink_api.resume_queued(timeout=29)
         resume_requested = True
         tries = 0

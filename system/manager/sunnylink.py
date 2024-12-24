@@ -14,15 +14,17 @@ def is_network_connected() -> bool:
   return HARDWARE.get_network_type() != NetworkType.none
 
 
-def get_sunnylink_status(params=Params()) -> tuple[bool, bool]:
+def get_sunnylink_status(params=None) -> tuple[bool, bool]:
   """Get the status of Sunnylink on the device. Returns a tuple of (is_sunnylink_enabled, is_registered)."""
+  params = params or Params()
   is_sunnylink_enabled = params.get_bool("SunnylinkEnabled")
   is_registered = params.get("SunnylinkDongleId", encoding='utf-8') not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID)
   return is_sunnylink_enabled, is_registered
 
 
-def sunnylink_ready(params=Params()) -> bool:
+def sunnylink_ready(params=None) -> bool:
   """Check if the device is ready to communicate with Sunnylink. That means it is enabled and registered."""
+  params = params or Params()
   is_sunnylink_enabled, is_registered = get_sunnylink_status(params)
   return is_sunnylink_enabled and is_registered
 
@@ -32,8 +34,9 @@ def use_sunnylink_uploader(params) -> bool:
   return sunnylink_ready(params) and params.get_bool("EnableSunnylinkUploader")
 
 
-def sunnylink_need_register(params=Params()) -> bool:
+def sunnylink_need_register(params=None) -> bool:
   """Check if the device needs to be registered with Sunnylink."""
+  params = params or Params()
   is_sunnylink_enabled, is_registered = get_sunnylink_status(params)
   return is_sunnylink_enabled and not is_registered and is_network_connected()
 
