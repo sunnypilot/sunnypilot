@@ -106,6 +106,5 @@ Pipfile
 
 ### JetBrains ###
 !.idea/customTargets.xml
-!.idea/tools/External Tools.xml
-!.run/Build Debug.run.xml
-!.run/Build Release.run.xml
+!.idea/tools/*
+!.run/*
