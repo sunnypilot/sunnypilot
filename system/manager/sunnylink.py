@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
+import time
+
 from openpilot.common.api.sunnylink import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params
-from openpilot.system.hardware import HARDWARE
+from openpilot.common.realtime import Ratekeeper
+from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import is_prebuilt
 
-from cereal import log
+from cereal import log, messaging
 
 NetworkType = log.DeviceState.NetworkType
-
-
-# TODO-SP: I don't think we should check with HARDWARE as I've noticed a severe degradation impact in the past when it was on manager. Causing massive delay.
-def is_network_connected() -> bool:
-  """Check if the device is connected to a network."""
-  return bool(HARDWARE.get_network_type() != NetworkType.none)
-
 
 def get_sunnylink_status(params=None) -> tuple[bool, bool]:
   """Get the status of Sunnylink on the device. Returns a tuple of (is_sunnylink_enabled, is_registered)."""
@@ -39,7 +35,7 @@ def sunnylink_need_register(params=None) -> bool:
   """Check if the device needs to be registered with Sunnylink."""
   params = params or Params()
   is_sunnylink_enabled, is_registered = get_sunnylink_status(params)
-  return is_sunnylink_enabled and not is_registered and is_network_connected()
+  return is_sunnylink_enabled and not is_registered
 
 
 def register_sunnylink():
@@ -62,6 +58,16 @@ def register_sunnylink():
 
 def main():
   """The main method is expected to be called by the manager when the device boots up."""
+  rk = Ratekeeper(.5)
+  sm = messaging.SubMaster(['deviceState'], poll='deviceState')
+  while True:
+    sm.update(1000)
+    if sm['deviceState'].networkType != NetworkType.none:
+      break
+
+    cloudlog.info(f"Waiting to become online... {time.monotonic()}")
+    rk.keep_time()
+
   register_sunnylink()
 
 
