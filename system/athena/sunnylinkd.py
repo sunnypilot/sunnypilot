@@ -182,16 +182,16 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
   params = Params()
-  try:
-    params_dict = {key: base64.b64decode(value) for key, value in params_to_update.items()}
+  params_dict = {key: base64.b64decode(value) for key, value in params_to_update.items()}
 
-    if compression:
-      params_dict = {key: gzip.decompress(value) for key, value in params_dict.items()}
+  if compression:
+    params_dict = {key: gzip.decompress(value) for key, value in params_dict.items()}
 
-    for key, value in params_dict.items():
+  for key, value in params_dict.items():
+    try:
       params.put(key, value)
-  except Exception as e:
-    return cloudlog.exception("sunnylinkd.saveParams.exception", e)
+    except Exception as e:
+      cloudlog.error(f"sunnylinkd.saveParams.exception {e}")
 
 
 def main(exit_event: threading.Event = None):
