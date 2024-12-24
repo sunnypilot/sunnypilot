@@ -61,8 +61,8 @@ class SunnylinkApi(BaseApi):
     return imei1, imei2
 
   def _resolve_serial(self):
-    serial = self.params.get("HardwareSerial", encoding='utf8') or HARDWARE.get_serial()
-    return serial
+    return (self.params.get("HardwareSerial", encoding='utf8')
+            or HARDWARE.get_serial())
 
   def register_device(self, spinner=None, timeout=60, verbose=False):
     self.spinner = spinner
@@ -79,8 +79,8 @@ class SunnylinkApi(BaseApi):
     if sunnylink_dongle_id not in (None, UNREGISTERED_SUNNYLINK_DONGLE_ID):
       return sunnylink_dongle_id
 
-    privkey_path = Path(Paths.persist_root()+"/comma/id_rsa")
-    pubkey_path = Path(Paths.persist_root()+"/comma/id_rsa.pub")
+    privkey_path = Path(f"{Paths.persist_root()}/comma/id_rsa")
+    pubkey_path = Path(f"{Paths.persist_root()}/comma/id_rsa.pub")
 
     start_time = time.monotonic()
     successful_registration = False

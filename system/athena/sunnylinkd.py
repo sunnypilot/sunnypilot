@@ -215,10 +215,12 @@ def main(exit_event: threading.Event = None):
         conn_start = time.monotonic()
 
       cloudlog.event("sunnylinkd.main.connecting_ws", ws_uri=ws_uri, retries=conn_retries)
-      ws = create_connection(ws_uri,
-                             cookie="jwt=" + sunnylink_api.get_token(),
-                             enable_multithread=True,
-                             timeout=SUNNYLINK_RECONNECT_TIMEOUT_S)
+      ws = create_connection(
+          ws_uri,
+          cookie=f"jwt={sunnylink_api.get_token()}",
+          enable_multithread=True,
+          timeout=SUNNYLINK_RECONNECT_TIMEOUT_S,
+      )
       cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
                      duration=time.monotonic() - conn_start)
       conn_start = None

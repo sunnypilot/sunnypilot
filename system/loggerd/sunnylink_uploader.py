@@ -134,14 +134,19 @@ class Uploader:
       if any(f in fn for f in self.immediate_folders):
         return name, key, fn
 
-    for name, key, fn in upload_files:
-      if name in self.immediate_priority:
-        return name, key, fn
-
-    return None
+    return next(
+        ((name, key, fn)
+         for name, key, fn in upload_files if name in self.immediate_priority),
+        None,
+    )
 
   def do_upload(self, key: str, fn: str):
-    url_resp = self.api.get("device/" + self.dongle_id + "/upload_url/", timeout=10, path=key, access_token=self.api.get_token())
+    url_resp = self.api.get(
+        f"device/{self.dongle_id}/upload_url/",
+        timeout=10,
+        path=key,
+        access_token=self.api.get_token(),
+    )
     if url_resp.status_code == 412:
       return url_resp
 
@@ -265,7 +270,7 @@ def main(exit_event: threading.Event = None) -> None:
       offroad_transition_prev = time.monotonic()
     offroad_last = offroad
 
-    network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
+    network_type = NetworkType.wifi if force_wifi else sm['deviceState'].networkType
     if network_type == NetworkType.none:
       if allow_sleep:
         time.sleep(60 if offroad else 5)
@@ -278,7 +283,7 @@ def main(exit_event: threading.Event = None) -> None:
         else:
           wait_minutes = int(OFFROAD_TRANSITION_TIMEOUT / 60)
           time_left = OFFROAD_TRANSITION_TIMEOUT - (t - offroad_transition_prev)
-          if time_left / 60. > 2.:
+          if time_left > 2.0 * 60.0:
             time_left_str = f"{int(time_left / 60)} minute(s)"
           else:
             time_left_str = f"{int(time_left)} seconds(s)"

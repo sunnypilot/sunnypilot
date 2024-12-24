@@ -11,7 +11,7 @@ class BaseApi:
     self.dongle_id = dongle_id
     self.api_host = api_host
     self.user_agent = user_agent
-    with open(Paths.persist_root()+'/comma/id_rsa') as f:
+    with open(f'{Paths.persist_root()}/comma/id_rsa') as f:
       self.private_key = f.read()
 
   def get(self, *args, **kwargs):
