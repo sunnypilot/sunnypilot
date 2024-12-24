@@ -8,18 +8,18 @@ import os
 import threading
 import time
 
-from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
-  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
 from jsonrpc import dispatcher
-from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
-                       create_connection)
-
-from openpilot.common.api import SunnylinkApi
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
-from openpilot.system.manager.sunnylink import sunnylink_need_register, sunnylink_ready
+from openpilot.system.athena.athenad import ws_send, jsonrpc_handler, \
+  recv_queue, UploadQueueCache, upload_queue, cur_upload_items, backoff, ws_manage, log_handler
+from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
+                       create_connection)
+
 import cereal.messaging as messaging
+from sunnypilot.sunnylink.api import SunnylinkApi
+from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -30,6 +30,8 @@ DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
 sunnylink_api = SunnylinkApi(params.get("SunnylinkDongleId", encoding='utf-8'))
+
+
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   cloudlog.info("sunnylinkd.handle_long_poll started")
   sm = messaging.SubMaster(['deviceState'])
@@ -37,18 +39,18 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
   comma_prime_cellular_end_event = threading.Event()
 
   threads = [
-    threading.Thread(target=ws_manage, args=(ws, end_event), name='ws_manage'),
-    threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
-    threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
-    threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
-    threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
-    # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-    # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
-    # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
-  ] + [
-    threading.Thread(target=jsonrpc_handler, args=(end_event,), name=f'worker_{x}')
-    for x in range(HANDLER_THREADS)
-  ]
+              threading.Thread(target=ws_manage, args=(ws, end_event), name='ws_manage'),
+              threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
+              threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
+              threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
+              threading.Thread(target=ws_queue, args=(end_event,), name='ws_queue'),
+              # threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
+              # threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
+              # threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
+            ] + [
+              threading.Thread(target=jsonrpc_handler, args=(end_event,), name=f'worker_{x}')
+              for x in range(HANDLER_THREADS)
+            ]
 
   for thread in threads:
     thread.start()
@@ -120,6 +122,7 @@ def ws_ping(ws: WebSocket, end_event: threading.Event) -> None:
       end_event.set()
   cloudlog.debug("sunnylinkd.ws_ping.end_event is set, exiting ws_ping thread")
 
+
 def ws_queue(end_event: threading.Event) -> None:
   resume_requested = False
   tries = 0
@@ -156,6 +159,7 @@ def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event
 def toggleLogUpload(enabled: bool):
   DISALLOW_LOG_UPLOAD.clear() if enabled and DISALLOW_LOG_UPLOAD.is_set() else DISALLOW_LOG_UPLOAD.set()
 
+
 @dispatcher.add_method
 def getParamsAllKeys() -> list[str]:
   keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
@@ -178,6 +182,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
   except Exception as e:
     cloudlog.exception("sunnylinkd.getParams.exception", e)
     raise
+
 
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
@@ -216,10 +221,10 @@ def main(exit_event: threading.Event = None):
 
       cloudlog.event("sunnylinkd.main.connecting_ws", ws_uri=ws_uri, retries=conn_retries)
       ws = create_connection(
-          ws_uri,
-          cookie=f"jwt={sunnylink_api.get_token()}",
-          enable_multithread=True,
-          timeout=SUNNYLINK_RECONNECT_TIMEOUT_S,
+        ws_uri,
+        cookie=f"jwt={sunnylink_api.get_token()}",
+        enable_multithread=True,
+        timeout=SUNNYLINK_RECONNECT_TIMEOUT_S,
       )
       cloudlog.event("sunnylinkd.main.connected_ws", ws_uri=ws_uri, retries=conn_retries,
                      duration=time.monotonic() - conn_start)

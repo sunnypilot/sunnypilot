@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 import bz2
+import datetime
 import io
 import json
 import os
 import random
-import requests
 import threading
 import time
 import traceback
-import datetime
-from typing import BinaryIO
 from collections.abc import Iterator
+from typing import BinaryIO
 
-from cereal import log
-import cereal.messaging as messaging
-from openpilot.common.api import SunnylinkApi
+import requests
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
+from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
-from openpilot.common.swaglog import cloudlog
+
+import cereal.messaging as messaging
+from cereal import log
+from sunnypilot.sunnylink.api import SunnylinkApi
 
 NetworkType = log.DeviceState.NetworkType
 UPLOAD_ATTR_NAME = 'user.sunny.upload'
@@ -51,6 +52,7 @@ def get_directory_sort(d: str) -> list[str]:
   o = ["0", ] if d.startswith("2024-") else ["1", ]
   return o + [s.rjust(10, '0') for s in d.rsplit('--', 1)]
 
+
 def listdir_by_creation(d: str) -> list[str]:
   if not os.path.isdir(d):
     return []
@@ -62,6 +64,7 @@ def listdir_by_creation(d: str) -> list[str]:
   except OSError:
     cloudlog.exception("listdir_by_creation failed")
     return []
+
 
 def clear_locks(root: str) -> None:
   for logdir in os.listdir(root):
@@ -135,17 +138,17 @@ class Uploader:
         return name, key, fn
 
     return next(
-        ((name, key, fn)
-         for name, key, fn in upload_files if name in self.immediate_priority),
-        None,
+      ((name, key, fn)
+       for name, key, fn in upload_files if name in self.immediate_priority),
+      None,
     )
 
   def do_upload(self, key: str, fn: str):
     url_resp = self.api.get(
-        f"device/{self.dongle_id}/upload_url/",
-        timeout=10,
-        path=key,
-        access_token=self.api.get_token(),
+      f"device/{self.dongle_id}/upload_url/",
+      timeout=10,
+      path=key,
+      access_token=self.api.get_token(),
     )
     if url_resp.status_code == 412:
       return url_resp
@@ -220,7 +223,6 @@ class Uploader:
         cloudlog.event("uploader_setxattr_failed", exc=last_exc, key=key, fn=fn, sz=sz)
 
     return success
-
 
   def step(self, network_type: int, metered: bool) -> bool | None:
     d = self.next_file_to_upload(metered)
@@ -299,7 +301,7 @@ def main(exit_event: threading.Event = None) -> None:
       backoff = 0.1
     else:
       cloudlog.info("upload backoff %r", backoff)
-      backoff = min(backoff*2, 120)
+      backoff = min(backoff * 2, 120)
     if allow_sleep:
       time.sleep(backoff + random.uniform(0, backoff))
 

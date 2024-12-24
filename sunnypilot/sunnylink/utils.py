@@ -1,15 +1,7 @@
-#!/usr/bin/env python3
-import time
-
-from openpilot.common.api.sunnylink import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
+from sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.common.params import Params
-from openpilot.common.realtime import Ratekeeper
-from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import is_prebuilt
 
-from cereal import log, messaging
-
-NetworkType = log.DeviceState.NetworkType
 
 def get_sunnylink_status(params=None) -> tuple[bool, bool]:
   """Get the status of Sunnylink on the device. Returns a tuple of (is_sunnylink_enabled, is_registered)."""
@@ -54,22 +46,3 @@ def register_sunnylink():
 
   sunnylink_id = SunnylinkApi(None).register_device(None, **extra_args)
   print(f"SunnyLinkId: {sunnylink_id}")
-
-
-def main():
-  """The main method is expected to be called by the manager when the device boots up."""
-  rk = Ratekeeper(.5)
-  sm = messaging.SubMaster(['deviceState'], poll='deviceState')
-  while True:
-    sm.update(1000)
-    if sm['deviceState'].networkType != NetworkType.none:
-      break
-
-    cloudlog.info(f"Waiting to become online... {time.monotonic()}")
-    rk.keep_time()
-
-  register_sunnylink()
-
-
-if __name__ == "__main__":
-  main()
