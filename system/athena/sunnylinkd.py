@@ -176,7 +176,8 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
     return {key: base64.b64encode(value).decode('utf-8') for key, value in params_dict.items()}
 
   except Exception as e:
-    return cloudlog.exception("sunnylinkd.getParams.exception", e)
+    cloudlog.exception("sunnylinkd.getParams.exception", e)
+    raise
 
 @dispatcher.add_method
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
