@@ -1155,6 +1155,85 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>TogglesPanelSP</name>
+    <message>
+        <source>Enable openpilot</source>
+        <translation type="obsolete">เปิดใช้งาน openpilot</translation>
+    </message>
+    <message>
+        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation type="obsolete">ใช้ระบบ openpilot สำหรับระบบควบคุมความเร็วอัตโนมัติ และระบบช่วยควบคุมรถให้อยู่ในเลน คุณจำเป็นต้องให้ความสนใจตลอดเวลาที่ใช้คุณสมบัตินี้ การเปลี่ยนการตั้งค่านี้จะมีผลเมื่อคุณดับเครื่องยนต์</translation>
+    </message>
+    <message>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation type="obsolete">ระบบควบคุมการเร่ง/เบรคโดย openpilot (Alpha)</translation>
+    </message>
+    <message>
+        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="obsolete">คำเตือน: การควบคุมการเร่ง/เบรคโดย openpilot สำหรับรถคันนี้ยังอยู่ในสถานะ alpha และระบบเบรคฉุกเฉินอัตโนมัติ (AEB) จะถูกปิด</translation>
+    </message>
+    <message>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation type="obsolete">โดยปกติสำหรับรถคันนี้ openpilot จะควบคุมการเร่ง/เบรคด้วยระบบ ACC จากโรงงาน แทนการควยคุมโดย openpilot เปิดสวิตซ์นี้เพื่อให้ openpilot ควบคุมการเร่ง/เบรค แนะนำให้เปิดโหมดทดลองเมื่อต้องการให้ openpilot ควบคุมการเร่ง/เบรค ซึ่งอยู่ในสถานะ alpha</translation>
+    </message>
+    <message>
+        <source>Experimental Mode</source>
+        <translation type="obsolete">โหมดทดลอง</translation>
+    </message>
+    <message>
+        <source>Disengage on Accelerator Pedal</source>
+        <translation type="obsolete">ยกเลิกระบบช่วยขับเมื่อเหยียบคันเร่ง</translation>
+    </message>
+    <message>
+        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
+        <translation type="obsolete">เมื่อเปิดใช้งาน การกดแป้นคันเร่งจะเป็นการยกเลิกระบบช่วยขับโดย openpilot</translation>
+    </message>
+    <message>
+        <source>Enable Lane Departure Warnings</source>
+        <translation type="obsolete">เปิดใช้งานการเตือนการออกนอกเลน</translation>
+    </message>
+    <message>
+        <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
+        <translation type="obsolete">รับการแจ้งเตือนให้เลี้ยวกลับเข้าเลนเมื่อรถของคุณตรวจพบการข้ามช่องจราจรโดยไม่เปิดสัญญาณไฟเลี้ยวในขณะขับขี่ที่ความเร็วเกิน 31 ไมล์ต่อชั่วโมง (50 กม./ชม)</translation>
+    </message>
+    <message>
+        <source>Record and Upload Driver Camera</source>
+        <translation type="obsolete">บันทึกและอัปโหลดภาพจากกล้องคนขับ</translation>
+    </message>
+    <message>
+        <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
+        <translation type="obsolete">อัปโหลดข้อมูลจากกล้องที่หันหน้าไปทางคนขับ และช่วยปรับปรุงอัลกอริธึมการตรวจสอบผู้ขับขี่</translation>
+    </message>
+    <message>
+        <source>Use Metric System</source>
+        <translation type="obsolete">ใช้ระบบเมตริก</translation>
+    </message>
+    <message>
+        <source>Display speed in km/h instead of mph.</source>
+        <translation type="obsolete">แสดงความเร็วเป็น กม./ชม. แทน ไมล์/ชั่วโมง</translation>
+    </message>
+    <message>
+        <source>Aggressive</source>
+        <translation type="obsolete">ดุดัน</translation>
+    </message>
+    <message>
+        <source>Standard</source>
+        <translation type="obsolete">มาตรฐาน</translation>
+    </message>
+    <message>
+        <source>Relaxed</source>
+        <translation type="obsolete">ผ่อนคลาย</translation>
+    </message>
+    <message>
+        <source>Driving Personality</source>
+        <translation type="obsolete">บุคลิกการขับขี่</translation>
+    </message>
+    <message>
+        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation type="obsolete">แนะนำให้ใช้แบบมาตรฐาน ในโหมดดุดัน openpilot จะตามรถคันหน้าใกล้ขึ้นและเร่งและเบรคแบบดุดันมากขึ้น ในโหมดผ่อนคลาย openpilot จะอยู่ห่างจากรถคันหน้ามากขึ้น ในรถรุ่นที่รองรับคุณสามารถเปลี่ยนบุคลิกไปแบบต่าง ๆ โดยใช้ปุ่มปรับระยะห่างบนพวงมาลัย</translation>
+    </message>
+</context>
+<context>
     <name>Updater</name>
     <message>
         <source>Update Required</source>

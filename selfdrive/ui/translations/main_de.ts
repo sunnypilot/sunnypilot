@@ -1159,6 +1159,53 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>TogglesPanelSP</name>
+    <message>
+        <source>Enable openpilot</source>
+        <translation type="obsolete">Openpilot aktivieren</translation>
+    </message>
+    <message>
+        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation type="obsolete">Benutze das Openpilot System als adaptiven Tempomaten und Spurhalteassistenten. Deine Aufmerksamkeit ist jederzeit erforderlich, um diese Funktion zu nutzen. Diese Einstellung wird übernommen, wenn das Auto aus ist.</translation>
+    </message>
+    <message>
+        <source>Experimental Mode</source>
+        <translation type="obsolete">Experimenteller Modus</translation>
+    </message>
+    <message>
+        <source>Disengage on Accelerator Pedal</source>
+        <translation type="obsolete">Bei Gasbetätigung ausschalten</translation>
+    </message>
+    <message>
+        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
+        <translation type="obsolete">Wenn aktiviert, deaktiviert sich Openpilot sobald das Gaspedal betätigt wird.</translation>
+    </message>
+    <message>
+        <source>Enable Lane Departure Warnings</source>
+        <translation type="obsolete">Spurverlassenswarnungen aktivieren</translation>
+    </message>
+    <message>
+        <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
+        <translation type="obsolete">Erhalte Warnungen, zurück in die Spur zu lenken, wenn dein Auto über eine erkannte Fahrstreifenmarkierung ohne aktivierten Blinker mit mehr als 50 km/h fährt.</translation>
+    </message>
+    <message>
+        <source>Record and Upload Driver Camera</source>
+        <translation type="obsolete">Fahrerkamera aufnehmen und hochladen</translation>
+    </message>
+    <message>
+        <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
+        <translation type="obsolete">Lade Daten der Fahreraufmerksamkeitsüberwachungskamera hoch, um die Fahreraufmerksamkeitsüberwachungsalgorithmen zu verbessern.</translation>
+    </message>
+    <message>
+        <source>Use Metric System</source>
+        <translation type="obsolete">Benutze das metrische System</translation>
+    </message>
+    <message>
+        <source>Display speed in km/h instead of mph.</source>
+        <translation type="obsolete">Zeige die Geschwindigkeit in km/h anstatt von mph.</translation>
+    </message>
+</context>
+<context>
     <name>Updater</name>
     <message>
         <source>Update Required</source>
