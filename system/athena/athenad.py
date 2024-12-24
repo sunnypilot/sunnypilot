@@ -827,9 +827,8 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
       onroad_prev = onroad
 
       if sock is not None:
-        if platform.system() == 'Darwin':  # macOS
+        if sys.platform == 'darwin':  # macOS
           sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-          # Type ignore for macOS-specific socket option
           sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPALIVE, 7 if onroad else 30)
         else:
           # While not sending data, onroad, we can expect to time out in 7 + (7 * 2) = 21s
