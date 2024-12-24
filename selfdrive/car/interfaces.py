@@ -167,8 +167,8 @@ def get_nn_model_path(_car, eps_firmware) -> tuple[str | None, float]:
           _max_similarity = similarity_score
           _model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
     return _model_path, _max_similarity
-
-def check_candidate(_car, eps_firmware):
+  
+  def check_candidate(_car, eps_firmware):
     if len(eps_firmware) > 3:
       eps_firmware = eps_firmware.replace("\\", "")
       check_model = f"{_car} {eps_firmware}"
@@ -181,11 +181,11 @@ def check_candidate(_car, eps_firmware):
       if _car not in model_path or 0.0 <= max_similarity < 0.9:
         model_path = None
     return model_path, max_similarity
-
+  
   with open(TORQUE_SUBSTITUTE_PATH, 'rb') as f:
     sub = tomllib.load(f)
   sub_candidate = sub.get(_car, _car)
-
+  
   for candidate in [_car, sub_candidate]:
     model, similarity_score = check_candidate(candidate, eps_firmware)
     if model is not None:
