@@ -8,6 +8,7 @@ from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.hardware.hw import Paths
 
+import random
 from openpilot.common.api.base import BaseApi
 
 API_HOST = os.getenv('SUNNYLINK_API_HOST', 'https://stg.api.sunnypilot.ai')
@@ -134,7 +135,7 @@ class SunnylinkApi(BaseApi):
           with open(f'{CRASH_LOG_DIR}/error.txt', 'a') as f:
             f.write(f"[{datetime.now()}] sunnylink: {str(e)}\n")
 
-          backoff = min(backoff * 2, 60)
+          backoff = min(backoff * 2 * (0.5 + random.random()), 60)
           time.sleep(backoff)
 
         if time.monotonic() - start_time > timeout:

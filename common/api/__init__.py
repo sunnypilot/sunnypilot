@@ -23,5 +23,5 @@ class Api:
 
 
 def api_get(endpoint, method='GET', timeout=None, access_token=None, use_sunnylink=False, **params):
-  return SunnylinkApi(None).api_get(endpoint, method, timeout, access_token, **params) if use_sunnylink else CommaConnectApi(None).api_get(
-    endpoint, method, timeout, access_token, **params)
+  return SunnylinkApi(None).api_get(endpoint, method, timeout, access_token, **params) if use_sunnylink \
+    else CommaConnectApi(None).api_get(endpoint, method, timeout, access_token, **params)
