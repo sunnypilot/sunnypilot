@@ -1001,15 +1001,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="obsolete">الشروط والأحكام</translation>
+        <translation type="unfinished">الشروط والأحكام</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="obsolete">رفض</translation>
+        <translation type="unfinished">رفض</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="obsolete">قم بالتمرير للقبول</translation>
+        <translation type="unfinished">قم بالتمرير للقبول</translation>
     </message>
 </context>
 <context>

@@ -979,15 +979,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="obsolete">Şartlar ve Koşullar</translation>
+        <translation type="unfinished">Şartlar ve Koşullar</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="obsolete">Reddet</translation>
+        <translation type="unfinished">Reddet</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="obsolete">Kabul etmek için kaydırın</translation>
+        <translation type="unfinished">Kabul etmek için kaydırın</translation>
     </message>
 </context>
 <context>

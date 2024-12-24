@@ -985,15 +985,15 @@ Esto puede tardar un minuto.</translation>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="obsolete">Términos &amp; Condiciones</translation>
+        <translation type="unfinished">Términos &amp; Condiciones</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="obsolete">Rechazar</translation>
+        <translation type="unfinished">Rechazar</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="obsolete">Desliza para aceptar</translation>
+        <translation type="unfinished">Desliza para aceptar</translation>
     </message>
 </context>
 <context>

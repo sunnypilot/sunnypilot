@@ -981,15 +981,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="obsolete">ข้อตกลงและเงื่อนไข</translation>
+        <translation type="unfinished">ข้อตกลงและเงื่อนไข</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="obsolete">ปฏิเสธ</translation>
+        <translation type="unfinished">ปฏิเสธ</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="obsolete">เลื่อนเพื่อตอบรับข้อตกลง</translation>
+        <translation type="unfinished">เลื่อนเพื่อตอบรับข้อตกลง</translation>
     </message>
 </context>
 <context>

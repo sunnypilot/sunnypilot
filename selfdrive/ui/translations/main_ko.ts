@@ -981,15 +981,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="obsolete">이용약관</translation>
+        <translation type="unfinished">이용약관</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="obsolete">거절</translation>
+        <translation type="unfinished">거절</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="obsolete">동의하려면 아래로 스크롤하세요</translation>
+        <translation type="unfinished">동의하려면 아래로 스크롤하세요</translation>
     </message>
 </context>
 <context>

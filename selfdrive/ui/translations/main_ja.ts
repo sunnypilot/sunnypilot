@@ -979,15 +979,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="obsolete">利用規約</translation>
+        <translation type="unfinished">利用規約</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="obsolete">拒否</translation>
+        <translation type="unfinished">拒否</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="obsolete">スクロールして同意</translation>
+        <translation type="unfinished">スクロールして同意</translation>
     </message>
 </context>
 <context>
