@@ -583,11 +583,11 @@ def get_logs_to_send_sorted(log_attr_name=LOG_ATTR_NAME) -> list[str]:
   return sorted(logs)[:-1]
 
 
-def add_log_to_queue(log_path, log_id, is_sunnylink = False):
+def add_log_to_queue(log_path, log_id, is_sunnylink=False):
   MAX_SIZE_KB = 32
   MAX_SIZE_BYTES = MAX_SIZE_KB * 1024
 
-  with open(log_path, 'r') as f:
+  with open(log_path) as f:
     data = f.read()
 
     # Check if the file is empty
@@ -612,9 +612,9 @@ def add_log_to_queue(log_path, log_id, is_sunnylink = False):
       # Log the size after compression and encoding
       compressed_size = len(compressed_data)
       encoded_size = len(payload)
-      cloudlog.debug(f"Size of log file {log_path} "
-                    f"after compression: {compressed_size} bytes, "
-                    f"after encoding: {encoded_size} bytes")
+      cloudlog.debug(f"Size of log file {log_path} " +
+                     f"after compression: {compressed_size} bytes, " +
+                     f"after encoding: {encoded_size} bytes")
 
     jsonrpc = {
       "method": "forwardLogs",
@@ -829,6 +829,7 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
       if sock is not None:
         if platform.system() == 'Darwin':  # macOS
           sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+          # Type ignore for macOS-specific socket option
           sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPALIVE, 7 if onroad else 30)
         else:
           # While not sending data, onroad, we can expect to time out in 7 + (7 * 2) = 21s

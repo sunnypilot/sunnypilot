@@ -9,7 +9,7 @@ from cereal import log
 NetworkType = log.DeviceState.NetworkType
 
 
-# TODO-SP: I don't think we should check with HARDWARE as I've noticed a severe degradation impact in the past when it was on manager. Causing massive delay.  
+# TODO-SP: I don't think we should check with HARDWARE as I've noticed a severe degradation impact in the past when it was on manager. Causing massive delay.
 def is_network_connected() -> bool:
   """Check if the device is connected to a network."""
   return bool(HARDWARE.get_network_type() != NetworkType.none)
