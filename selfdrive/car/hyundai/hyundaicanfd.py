@@ -41,7 +41,6 @@ def create_steering_messages(packer, CP, CAN, enabled, lat_active, apply_steer ,
   ret = []
 
   if angle_control:
-    print('angle control', -apply_angle)
     values = {
       "LKA_MODE": 0,
       "LKA_ICON": 2 if enabled else 1,
