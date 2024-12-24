@@ -1,5 +1,5 @@
 from openpilot.common.api.comma_connect import CommaConnectApi
-from openpilot.common.api.sunnylink import SunnylinkApi
+from sunnypilot.sunnylink.api import SunnylinkApi
 
 
 class Api:

@@ -1,20 +1,21 @@
-import os
-import time
-import jwt
 import json
-from pathlib import Path
+import os
+import random
+import time
 from datetime import datetime, timedelta
+from pathlib import Path
+
+import jwt
+from openpilot.common.api.base import BaseApi
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.hardware.hw import Paths
-
-import random
-from openpilot.common.api.base import BaseApi
 
 API_HOST = os.getenv('SUNNYLINK_API_HOST', 'https://stg.api.sunnypilot.ai')
 UNREGISTERED_SUNNYLINK_DONGLE_ID = "UnregisteredDevice"
 MAX_RETRIES = 6
 CRASH_LOG_DIR = '/data/community/crashes'
+
 
 class SunnylinkApi(BaseApi):
   def __init__(self, dongle_id):
@@ -56,7 +57,7 @@ class SunnylinkApi(BaseApi):
       try:
         imei1, imei2 = self.params.get("IMEI", encoding='utf8') or HARDWARE.get_imei(0), HARDWARE.get_imei(1)
       except Exception:
-        self._status_update(f"Error getting imei, trying again... [{imei_try+1}/{MAX_RETRIES}]")
+        self._status_update(f"Error getting imei, trying again... [{imei_try + 1}/{MAX_RETRIES}]")
         time.sleep(1)
       imei_try += 1
     return imei1, imei2
