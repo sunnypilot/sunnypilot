@@ -53,4 +53,4 @@ class BaseApi:
     version = self.remove_non_ascii_chars(get_version())
     headers['User-Agent'] = self.user_agent + version
 
-    return requests.request(method, self.api_host + "/" + endpoint, timeout=timeout, headers=headers, params=params)
+    return requests.request(method, f"{self.api_host}/{endpoint}", timeout=timeout, headers=headers, params=params)
