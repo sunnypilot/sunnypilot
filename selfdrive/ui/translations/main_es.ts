@@ -657,6 +657,37 @@ Esto puede tardar un minuto.</translation>
     </message>
 </context>
 <context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation type="unfinished">×</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation type="unfinished">Dispositivo</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished">Red</translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation type="unfinished">Ajustes</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished">Software</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished">Desarrollador</translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>Setup</name>
     <message>
         <source>Something went wrong. Reboot the device.</source>

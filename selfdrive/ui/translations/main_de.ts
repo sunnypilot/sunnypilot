@@ -655,6 +655,37 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation type="unfinished">x</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation type="unfinished">Gerät</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished">Netzwerk</translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation type="unfinished">Schalter</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished">Software</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>Setup</name>
     <message>
         <source>WARNING: Low Voltage</source>

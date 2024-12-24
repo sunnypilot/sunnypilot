@@ -265,7 +265,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
 
   // power buttons
-  QHBoxLayout *power_layout = new QHBoxLayout();
+  power_layout = new QHBoxLayout();
   power_layout->setSpacing(30);
 
   QPushButton *reboot_btn = new QPushButton(tr("Reboot"));
@@ -354,6 +354,7 @@ void SettingsWindow::setCurrentPanel(int index, const QString &param) {
 }
 
 SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
+  RETURN_IF_SUNNYPILOT
 
   // setup two main layouts
   sidebar_widget = new QWidget;

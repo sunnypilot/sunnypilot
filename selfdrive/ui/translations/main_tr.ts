@@ -651,6 +651,37 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation type="unfinished">x</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation type="unfinished">Cihaz</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished">Ağ</translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation type="unfinished">Değiştirme</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished">Yazılım</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>Setup</name>
     <message>
         <source>WARNING: Low Voltage</source>

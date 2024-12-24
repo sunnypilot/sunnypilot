@@ -1,5 +1,6 @@
 widgets_src = [
   "sunnypilot/ui.cc",
+  "sunnypilot/qt/window.cc",
   "sunnypilot/qt/widgets/controls.cc",
   "sunnypilot/qt/widgets/drive_stats.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
@@ -10,6 +11,7 @@ qt_src = [
   "sunnypilot/qt/home.cc",
   "sunnypilot/qt/sidebar.cc",
   "sunnypilot/qt/offroad/settings/onboarding.cc",
+  "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
 ]
 
