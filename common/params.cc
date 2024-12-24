@@ -201,9 +201,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
 
-
-
-    // Sunnypilot
+  // sunnypilot params
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
     {"SunnylinkDongleId", PERSISTENT},
