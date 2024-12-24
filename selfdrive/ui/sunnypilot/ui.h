@@ -51,9 +51,6 @@ class DeviceSP : public Device {
 
 public:
   DeviceSP(QObject *parent = 0);
-protected:
-  void updateBrightness(const UIStateSP &s);
-  void updateBrightness(const UIState &s) override { updateBrightness(dynamic_cast<const UIStateSP &>(s)); }
 };
 
 DeviceSP *deviceSP();

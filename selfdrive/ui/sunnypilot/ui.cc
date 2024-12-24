@@ -28,6 +28,10 @@
 
 #include "common/watchdog.h"
 
+void UIStateSP::updateStatus() {
+  UIState::updateStatus();
+}
+
 UIStateSP::UIStateSP(QObject *parent) : UIState(parent) {
   sm = std::make_unique<SubMaster>(std::vector<const char*>{
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
@@ -51,4 +55,19 @@ void UIStateSP::update() {
     watchdog_kick(nanos_since_boot());
   }
   emit uiUpdate(*this);
+}
+
+DeviceSP::DeviceSP(QObject *parent) : Device(parent){
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &DeviceSP::update);
+}
+
+UIStateSP *uiStateSP() {
+  static UIStateSP ui_state;
+  return &ui_state;
+}
+UIStateSP *uiState() { return uiStateSP(); }
+
+DeviceSP *deviceSP() {
+  static DeviceSP _device;
+  return &_device;
 }
