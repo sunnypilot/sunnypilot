@@ -624,6 +624,13 @@ class CAR(Platforms):
     flags=HyundaiFlags.CHECKSUM_CRC8,
     spFlags=HyundaiFlagsSP.SP_NON_SCC | HyundaiFlagsSP.SP_NON_SCC_FCA | HyundaiFlagsSP.SP_NON_SCC_RADAR_FCA,
   )
+  KIA_EV9 = HyundaiCanFDPlatformConfig(
+    [
+      HyundaiCarDocs("Kia EV9", "All", car_parts=CarParts.common([CarHarness.hyundai_r]))
+    ],
+    CarSpecs(mass=2960, wheelbase=3.1, steerRatio=16.02),
+    flags=HyundaiFlags.EV | HyundaiFlags.ANGLE_CONTROL,
+  )
 
 
 class Buttons:
