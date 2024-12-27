@@ -63,15 +63,14 @@ class ModelState:
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
-    self.numpy_inputs = {
-      'desire': np.zeros((1, (ModelConstants.HISTORY_BUFFER_LEN+1), ModelConstants.DESIRE_LEN), dtype=np.float32),
-      'traffic_convention': np.zeros((1, ModelConstants.TRAFFIC_CONVENTION_LEN), dtype=np.float32),
-      'features_buffer': np.zeros((1, ModelConstants.HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
-    }
+    self.numpy_inputs = {}
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
     self.input_shapes =  model_metadata['input_shapes']
+
+    for key, shape in self.input_shapes.items():
+      self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
