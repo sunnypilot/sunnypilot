@@ -84,6 +84,12 @@ class ModelState:
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
 
+    num_elements = self.numpy_inputs['features_buffer'].shape[1]
+    step_size = int(-100 / num_elements)
+    self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+
+    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
     if SEND_RAW_PRED:
@@ -99,7 +105,7 @@ class ModelState:
 
     self.desire_20Hz[:-1] = self.desire_20Hz[1:]
     self.desire_20Hz[-1] = new_desire
-    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape((1,25,4,-1)).max(axis=2)
+    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
 
     self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
@@ -127,8 +133,7 @@ class ModelState:
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
-    idxs = np.arange(-4,-100,-4)[::-1]
-    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[idxs]
+    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
     return outputs
 
 
