@@ -9,7 +9,7 @@ if TICI:
   from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
   os.environ['QCOM'] = '1'
 else:
-  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner
+  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 import time
 import pickle
 import numpy as np
@@ -84,6 +84,7 @@ class ModelState:
         self.model_run = pickle.load(f)
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
+      self.onnx_model_metadata = {input.name: input.type for input in self.onnx_cpu_runner.get_inputs()}
 
     num_elements = self.numpy_inputs['features_buffer'].shape[1]
     step_size = int(-100 / num_elements)
@@ -120,7 +121,8 @@ class ModelState:
           self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtype)
     else:
       for key in imgs_cl:
-        self.numpy_inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
+        dtype = self.onnx_model_metadata[key]
+        self.numpy_inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).astype(ORT_TYPES_TO_NP_TYPES[dtype]).reshape(self.input_shapes[key])
 
     if prepare_only:
       return None
@@ -136,6 +138,14 @@ class ModelState:
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
     self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
+    if "desired_curvature" in outputs:
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        self.numpy_inputs['prev_desired_curvs'][:-1] = self.numpy_inputs['prev_desired_curvs'][1:]
+        self.numpy_inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][:, 0:1, None]  # Reshape to (1,1,1)
+      if "prev_desired_curv" in self.numpy_inputs.keys():
+        # First shift everything
+        self.numpy_inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.numpy_inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
+        self.numpy_inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][:, :1].reshape(1, -1, 1)
     return outputs
 
 
@@ -246,6 +256,10 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
+    lateral_control_params = None #TODO-SP: hardcoded ,this shouldnt' be here this way. We should do it more dynamically
+    if "lateral_control_params" in model.numpy_inputs.keys(): #TODO-SP: hardcoded ,this shouldnt' be here this way. We should do it more dynamically
+      lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -277,6 +291,8 @@ def main(demo=False):
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
       }
+    if "lateral_control_params" in model.numpy_inputs.keys():
+      inputs['lateral_control_params'] = lateral_control_params
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
