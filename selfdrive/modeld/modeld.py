@@ -70,7 +70,8 @@ class ModelState:
     self.input_shapes =  model_metadata['input_shapes']
 
     for key, shape in self.input_shapes.items():
-      self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
+      if key not in self.frames: # Managed by opencl
+        self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
@@ -78,14 +79,9 @@ class ModelState:
     self.parser = Parser()
 
     if TICI:
+      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
       with open(MODEL_PKL_PATH, "rb") as f:
         self.model_run = pickle.load(f)
-      
-      self.tensor_inputs = {}
-      for k, v in self.numpy_inputs.items():
-        index = self.model_run.captured.expected_names.index(k)
-        _, _, dtype, device = self.model_run.captured.expected_st_vars_dtype_device[index]
-        self.tensor_inputs[k] = Tensor(v, device=device, dtype=dtype).realize()
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
 
