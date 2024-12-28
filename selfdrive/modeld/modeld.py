@@ -115,7 +115,9 @@ class ModelState:
       # The imgs tensors are backed by opencl memory, only need init once
       for key in imgs_cl:
         if key not in self.tensor_inputs:
-          self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
+          index = self.model_run.captured.expected_names.index(key)
+          _, _, dtype, _ = self.model_run.captured.expected_st_vars_dtype_device[index]
+          self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtype)
     else:
       for key in imgs_cl:
         self.numpy_inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
