@@ -3,7 +3,8 @@ import os
 from openpilot.system.hardware import TICI
 
 #
-if TICI:
+USE_TINYGRAD = os.getenv('USE_TINYGRAD', True) or TICI
+if USE_TINYGRAD:
   from tinygrad.tensor import Tensor
   from tinygrad.dtype import dtypes
   from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
@@ -60,7 +61,7 @@ class ModelState:
     self.frames = {'input_imgs': DrivingModelFrame(context), 'big_input_imgs': DrivingModelFrame(context)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-    self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -78,7 +79,7 @@ class ModelState:
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    if TICI:
+    if USE_TINYGRAD:
       self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
       with open(MODEL_PKL_PATH, "rb") as f:
         self.model_run = pickle.load(f)
@@ -112,13 +113,17 @@ class ModelState:
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
-    if TICI:
+    if USE_TINYGRAD:
       # The imgs tensors are backed by opencl memory, only need init once
       for key in imgs_cl:
-        if key not in self.tensor_inputs:
+        if not TICI or key not in self.tensor_inputs:
           index = self.model_run.captured.expected_names.index(key)
-          _, _, dtype, _ = self.model_run.captured.expected_st_vars_dtype_device[index]
-          self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtype)
+          _, _, dtype, device = self.model_run.captured.expected_st_vars_dtype_device[index]
+          if TICI:
+            self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtype)
+          else:
+            shape = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
+            self.tensor_inputs[key] = Tensor(shape, device=device, dtype=dtype).realize()
     else:
       for key in imgs_cl:
         dtype = self.onnx_model_metadata[key]
@@ -127,7 +132,7 @@ class ModelState:
     if prepare_only:
       return None
 
-    if TICI:
+    if USE_TINYGRAD:
       self.output = self.model_run(**self.tensor_inputs).numpy().flatten()
     else:
       self.output = self.onnx_cpu_runner.run(None, self.numpy_inputs)[0].flatten()
