@@ -78,16 +78,20 @@ class ModelState:
     self.parser = Parser()
 
     if TICI:
-      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
       with open(MODEL_PKL_PATH, "rb") as f:
         self.model_run = pickle.load(f)
+      
+      self.tensor_inputs = {}
+      for k, v in self.numpy_inputs.items():
+        index = self.model_run.captured.expected_names.index(k)
+        _, _, dtype, device = self.model_run.captured.expected_st_vars_dtype_device[index]
+        self.tensor_inputs[k] = Tensor(v, device=device, dtype=dtype).realize()
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
 
     num_elements = self.numpy_inputs['features_buffer'].shape[1]
     step_size = int(-100 / num_elements)
     self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-
     self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
