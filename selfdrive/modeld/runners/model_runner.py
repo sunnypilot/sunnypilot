@@ -6,7 +6,6 @@ if TICI:
   from tinygrad.tensor import Tensor
   from tinygrad.dtype import dtypes
   from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-
   os.environ['QCOM'] = '1'
 else:
   from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner
