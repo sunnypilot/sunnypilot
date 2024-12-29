@@ -79,13 +79,13 @@ class ModelState:
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
     # Prepare inputs using the model runner
-    prepared_inputs = self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs)
+    self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs)
 
     if prepare_only:
       return None
 
     # Run model inference
-    self.output = self.model_runner.run_model(prepared_inputs)
+    self.output = self.model_runner.run_model()
     outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output))
 
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
