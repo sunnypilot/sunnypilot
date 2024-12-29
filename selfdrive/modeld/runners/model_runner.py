@@ -31,7 +31,7 @@ class ModelRunner(ABC):
       self.model_metadata = pickle.load(f)
     self.input_shapes = self.model_metadata['input_shapes']
     self.output_slices = self.model_metadata['output_slices']
-    self.inputs = {}
+    self.inputs: dict[str, np.ndarray | Tensor] = {}
 
   @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
@@ -58,7 +58,7 @@ class TinygradRunner(ModelRunner):
     with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
 
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict[str, Tensor]:
     # Initialize image tensors if not already done
     for key in imgs_cl:
       if key not in self.inputs:
