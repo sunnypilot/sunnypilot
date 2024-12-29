@@ -33,14 +33,14 @@ class ModelRunner(ABC):
     self.inputs: dict[str, np.ndarray | Tensor] = {}
 
   @abstractmethod
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray])-> dict:
     """Prepare inputs for model inference."""
 
   @abstractmethod
   def run_model(self) -> np.ndarray:
     """Run model inference with prepared inputs."""
 
-  def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
+  def slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
     parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
     if SEND_RAW_PRED:
@@ -57,7 +57,7 @@ class TinygradRunner(ModelRunner):
     with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
 
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict[str, Tensor]:
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     # Initialize image tensors if not already done
     for key in imgs_cl:
       if key not in self.inputs:
@@ -82,10 +82,10 @@ class ONNXRunner(ModelRunner):
     self.runner = make_onnx_cpu_runner(MODEL_PATH)
     self.frames = frames
 
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
+    self.inputs = numpy_inputs.copy()
     for key in imgs_cl:
-      numpy_inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
-    self.inputs = numpy_inputs
+      self.inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
     return self.inputs
 
   def run_model(self) -> np.ndarray:
