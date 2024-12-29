@@ -119,7 +119,13 @@ VideoDecoder::~VideoDecoder() {
 }
 
 bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
-  const AVCodec *decoder = avcodec_find_decoder(codecpar->codec_id);
+  const AVCodec *decoder = avcodec_find_decoder_by_name("h264_mediacodec");
+  if (!decoder) {
+    decoder = avcodec_find_decoder_by_name("h264_qcom");
+  }
+  if (!decoder) {
+    decoder = avcodec_find_decoder(codecpar->codec_id);
+  }
   if (!decoder) return false;
 
   decoder_ctx = avcodec_alloc_context3(decoder);
@@ -127,6 +133,23 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
     rError("Failed to allocate or initialize codec context");
     return false;
   }
+
+  // More aggressive settings focused on reducing lag
+  decoder_ctx->thread_count = static_cast<int>(std::min(std::thread::hardware_concurrency(), 16u));
+  decoder_ctx->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+    
+  // Very aggressive frame dropping
+  decoder_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+  decoder_ctx->flags2 |= AV_CODEC_FLAG2_FAST;
+  decoder_ctx->skip_frame = AVDISCARD_BIDIR;  // More aggressive frame skipping
+  decoder_ctx->skip_loop_filter = AVDISCARD_ALL;
+  decoder_ctx->workaround_bugs = FF_BUG_AUTODETECT;
+    
+  // Minimize buffering
+  decoder_ctx->max_b_frames = 0;
+  decoder_ctx->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;  // Allow faster non-standard optimizations
+  decoder_ctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;  // Output frames even if slightly corrupted
+
   width = (decoder_ctx->width + 3) & ~3;
   height = decoder_ctx->height;
 
