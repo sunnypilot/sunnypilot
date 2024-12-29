@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 MODEL_PATH = Path(__file__).parent / '../models/supercombo.onnx'
@@ -35,12 +35,10 @@ class ModelRunner(ABC):
   @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, any], numpy_inputs: dict[str, np.ndarray]) -> dict[str, any]:
     """Prepare inputs for model inference."""
-    pass
 
   @abstractmethod
   def run_model(self, inputs: dict[str, any]) -> np.ndarray:
     """Run model inference with prepared inputs."""
-    pass
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     """Slice model outputs according to metadata configuration."""
