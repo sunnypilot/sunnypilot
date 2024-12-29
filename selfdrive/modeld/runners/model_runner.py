@@ -17,16 +17,17 @@ from abc import ABC, abstractmethod
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
+MODEL_PATH = Path(__file__).parent / '../models/supercombo.onnx'
+MODEL_PKL_PATH = Path(__file__).parent / '../models/supercombo_tinygrad.pkl'
+METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 
 
 class ModelRunner(ABC):
   """Abstract base class for model runners that defines the interface for running ML models."""
 
-  def __init__(self, model_path: Path, metadata_path: Path, frames: dict[str, DrivingModelFrame]):
+  def __init__(self):
     """Initialize the model runner with paths to model and metadata files."""
-    self.model_path = model_path
-    self.frames = frames
-    with open(metadata_path, 'rb') as f:
+    with open(METADATA_PATH, 'rb') as f:
       self.model_metadata = pickle.load(f)
     self.input_shapes = self.model_metadata['input_shapes']
     self.output_slices = self.model_metadata['output_slices']
@@ -52,10 +53,10 @@ class ModelRunner(ABC):
 class TinyGradRunner(ModelRunner):
   """TinyGrad implementation of model runner for TICI hardware."""
 
-  def __init__(self, model_path: Path, metadata_path: Path, frames: dict[str, DrivingModelFrame]):
-    super().__init__(model_path, metadata_path, frames)
+  def __init__(self):
+    super().__init__()
     # Load TinyGrad model
-    with open(model_path, "rb") as f:
+    with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
     self.tensor_inputs = {}
 
@@ -81,9 +82,10 @@ class TinyGradRunner(ModelRunner):
 class ONNXRunner(ModelRunner):
   """ONNX implementation of model runner for non-TICI hardware."""
 
-  def __init__(self, model_path: Path, metadata_path: Path, frames: dict[str, DrivingModelFrame]):
-    super().__init__(model_path, metadata_path, frames)
-    self.runner = make_onnx_cpu_runner(model_path)
+  def __init__(self, frames: dict[str, DrivingModelFrame]):
+    super().__init__()
+    self.runner = make_onnx_cpu_runner(MODEL_PATH)
+    self.frames = frames
 
   def prepare_inputs(self, imgs_cl: dict[str, any], numpy_inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     for key in imgs_cl:
@@ -92,11 +94,3 @@ class ONNXRunner(ModelRunner):
 
   def run_model(self, inputs: dict[str, any]) -> np.ndarray:
     return self.runner.run(None, inputs)[0].flatten()
-
-
-def create_model_runner(model_path: Path, metadata_path: Path, frames: dict[str, DrivingModelFrame], tinygrad_path: Path | None = None,
-                        is_tici: bool = False) -> ModelRunner:
-  """Factory function to create appropriate model runner based on hardware."""
-  if is_tici:
-    return TinyGradRunner(tinygrad_path or model_path, metadata_path, frames)
-  return ONNXRunner(model_path, metadata_path, frames)

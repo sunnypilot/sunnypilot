@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from openpilot.system.hardware import TICI
 
-from openpilot.selfdrive.modeld.runners.model_runner import create_model_runner
+from openpilot.selfdrive.modeld.runners.model_runner import ONNXRunner, TinyGradRunner
 
 #
 import time
@@ -28,9 +28,6 @@ from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame,
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
-MODEL_PATH = Path(__file__).parent / 'models/supercombo.onnx'
-MODEL_PKL_PATH = Path(__file__).parent / 'models/supercombo_tinygrad.pkl'
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
 class FrameMeta:
   frame_id: int = 0
@@ -61,13 +58,7 @@ class ModelState:
     }
 
     # Initialize model runner
-    self.model_runner = create_model_runner(
-      model_path=MODEL_PATH,
-      metadata_path=METADATA_PATH,
-      frames=self.frames,
-      tinygrad_path=MODEL_PKL_PATH,
-      is_tici=TICI
-    )
+    self.model_runner = TinyGradRunner() if TICI else ONNXRunner(self.frames)
     self.parser = Parser()
 
     net_output_size = self.model_runner.model_metadata['output_shapes']['outputs'][1]
