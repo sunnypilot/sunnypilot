@@ -49,12 +49,12 @@ class ModelRunner(ABC):
     return parsed_outputs
 
 
-class TinyGradRunner(ModelRunner):
-  """TinyGrad implementation of model runner for TICI hardware."""
+class TinygradRunner(ModelRunner):
+  """Tinygrad implementation of model runner for TICI hardware."""
 
   def __init__(self):
     super().__init__()
-    # Load TinyGrad model
+    # Load Tinygrad model
     with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
 
