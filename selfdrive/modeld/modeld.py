@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from openpilot.system.hardware import TICI
 
-from openpilot.selfdrive.modeld.runners.model_runner import ONNXRunner, TinyGradRunner
+from openpilot.selfdrive.modeld.runners.model_runner import ONNXRunner, TinygradRunner
 
 #
 import time
@@ -57,7 +57,7 @@ class ModelState:
     }
 
     # Initialize model runner
-    self.model_runner = TinyGradRunner() if TICI else ONNXRunner(self.frames)
+    self.model_runner = TinygradRunner() if TICI else ONNXRunner(self.frames)
     self.parser = Parser()
 
     net_output_size = self.model_runner.model_metadata['output_shapes']['outputs'][1]
