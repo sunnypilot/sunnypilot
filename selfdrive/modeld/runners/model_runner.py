@@ -31,13 +31,14 @@ class ModelRunner(ABC):
       self.model_metadata = pickle.load(f)
     self.input_shapes = self.model_metadata['input_shapes']
     self.output_slices = self.model_metadata['output_slices']
+    self.inputs = {}
 
   @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, any], numpy_inputs: dict[str, np.ndarray]) -> dict[str, any]:
     """Prepare inputs for model inference."""
 
   @abstractmethod
-  def run_model(self, inputs: dict[str, any]) -> np.ndarray:
+  def run_model(self) -> np.ndarray:
     """Run model inference with prepared inputs."""
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
@@ -56,23 +57,22 @@ class TinyGradRunner(ModelRunner):
     # Load TinyGrad model
     with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
-    self.tensor_inputs = {}
 
   def prepare_inputs(self, imgs_cl: dict[str, any], numpy_inputs: dict[str, np.ndarray]) -> dict[str, any]:
     # Initialize image tensors if not already done
     for key in imgs_cl:
-      if key not in self.tensor_inputs:
-        self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
+      if key not in self.inputs:
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
 
     # Update numpy inputs
     for k, v in numpy_inputs.items():
-      if k not in self.tensor_inputs:
-        self.tensor_inputs[k] = Tensor(v, device='NPY').realize()
+      if k not in self.inputs:
+        self.inputs[k] = Tensor(v, device='NPY').realize()
 
-    return self.tensor_inputs
+    return self.inputs
 
-  def run_model(self, inputs: dict[str, any]) -> np.ndarray:
-    return self.model_run(**inputs).numpy().flatten()
+  def run_model(self) -> np.ndarray:
+    return self.model_run(**self.inputs).numpy().flatten()
 
 
 class ONNXRunner(ModelRunner):
@@ -86,7 +86,8 @@ class ONNXRunner(ModelRunner):
   def prepare_inputs(self, imgs_cl: dict[str, any], numpy_inputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     for key in imgs_cl:
       numpy_inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
-    return numpy_inputs
+    self.inputs = numpy_inputs
+    return self.inputs
 
-  def run_model(self, inputs: dict[str, any]) -> np.ndarray:
-    return self.runner.run(None, inputs)[0].flatten()
+  def run_model(self) -> np.ndarray:
+    return self.runner.run(None, self.inputs)[0].flatten()
