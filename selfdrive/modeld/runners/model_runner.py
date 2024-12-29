@@ -63,11 +63,7 @@ class TinyGradRunner(ModelRunner):
     # Initialize image tensors if not already done
     for key in imgs_cl:
       if key not in self.tensor_inputs:
-        self.tensor_inputs[key] = qcom_tensor_from_opencl_address(
-          imgs_cl[key].mem_address,
-          self.input_shapes[key],
-          dtype=dtypes.uint8
-        )
+        self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
 
     # Update numpy inputs
     for k, v in numpy_inputs.items():
@@ -98,13 +94,8 @@ class ONNXRunner(ModelRunner):
     return self.runner.run(None, inputs)[0].flatten()
 
 
-def create_model_runner(
-  model_path: Path,
-  metadata_path: Path,
-  frames: dict[str, DrivingModelFrame],
-  tinygrad_path: Path | None = None,
-  is_tici: bool = False
-) -> ModelRunner:
+def create_model_runner(model_path: Path, metadata_path: Path, frames: dict[str, DrivingModelFrame], tinygrad_path: Path | None = None,
+                        is_tici: bool = False) -> ModelRunner:
   """Factory function to create appropriate model runner based on hardware."""
   if is_tici:
     return TinyGradRunner(tinygrad_path or model_path, metadata_path, frames)
