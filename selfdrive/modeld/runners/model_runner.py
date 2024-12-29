@@ -72,7 +72,7 @@ class TinyGradRunner(ModelRunner):
     return self.tensor_inputs
 
   def run_model(self, inputs: dict[str, any]) -> np.ndarray:
-    return self.model_run(**inputs).flatten()
+    return self.model_run(**inputs).numpy().flatten()
 
 
 class ONNXRunner(ModelRunner):
