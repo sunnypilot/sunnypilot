@@ -70,8 +70,6 @@ class TinyGradRunner(ModelRunner):
     for k, v in numpy_inputs.items():
       if k not in self.tensor_inputs:
         self.tensor_inputs[k] = Tensor(v, device='NPY').realize()
-      else:
-        self.tensor_inputs[k].assign(v)
 
     return self.tensor_inputs
 
