@@ -49,7 +49,7 @@ class ModelState:
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
     # Initialize model runner
-    self.model_runner = TinygradRunner() if TICI else ONNXRunner(self.frames)
+    self.model_runner = TinygradRunner(self.frames) if TICI else ONNXRunner(self.frames)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
