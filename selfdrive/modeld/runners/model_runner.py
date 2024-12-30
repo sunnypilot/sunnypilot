@@ -71,7 +71,7 @@ class TinygradRunner(ModelRunner):
     for key in imgs_cl:
       if TICI and key not in self.inputs:
         self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
-      else:
+      elif not TICI:
         shape = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
         self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
