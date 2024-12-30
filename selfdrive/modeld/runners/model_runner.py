@@ -2,7 +2,7 @@ import os
 from openpilot.system.hardware import TICI
 
 #
-from tinygrad.tensor import Tensor
+from tinygrad.tensor import Tensor, dtypes
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 import pickle
@@ -65,13 +65,18 @@ class TinygradRunner(ModelRunner):
 
     assert TICI or frames is not None, "TinygradRunner requires frames for non-TICI hardware"
     self.frames = frames
+    self.is_memory_model = None  # Use None to indicate that it hasn't been determined yet
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
+    if self.is_memory_model is None:
+      self.is_memory_model = any(self.input_to_dtype[key] == dtypes.uint8 for key in imgs_cl)
+      print(f"Memory model: {self.is_memory_model}")
+
     # Initialize image tensors if not already done
     for key in imgs_cl:
-      if TICI and key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
-      elif not TICI:
+      if TICI and self.is_memory_model and key not in self.inputs:
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
+      elif not TICI or not self.is_memory_model:
         shape = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
         self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
