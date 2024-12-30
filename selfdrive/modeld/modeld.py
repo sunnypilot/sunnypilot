@@ -97,6 +97,14 @@ class ModelState:
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
     self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
+    if "desired_curvature" in outputs:
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        self.numpy_inputs['prev_desired_curvs'][:-1] = self.numpy_inputs['prev_desired_curvs'][1:]
+        self.numpy_inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][:, 0:1, None]  # Reshape to (1,1,1)
+      if "prev_desired_curv" in self.numpy_inputs.keys():
+        # First shift everything
+        self.numpy_inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.numpy_inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
+        self.numpy_inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][:, :1].reshape(1, -1, 1)
     return outputs
 
 
