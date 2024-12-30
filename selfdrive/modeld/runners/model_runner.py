@@ -2,17 +2,17 @@ import os
 from openpilot.system.hardware import TICI
 
 #
-if TICI:
-  from tinygrad.tensor import Tensor
-  from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-  os.environ['QCOM'] = '1'
-else:
-  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
+from tinygrad.tensor import Tensor
+from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 import pickle
 import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLMem
+
+if TICI:
+  os.environ['QCOM'] = '1'
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 MODEL_PATH = Path(__file__).parent / '../models/supercombo.onnx'
@@ -50,27 +50,35 @@ class ModelRunner(ABC):
 class TinygradRunner(ModelRunner):
   """Tinygrad implementation of model runner for TICI hardware."""
 
-  def __init__(self):
+  def __init__(self, frames: dict[str, DrivingModelFrame] | None = None):
     super().__init__()
     # Load Tinygrad model
     with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
 
-    self.input_to_dtype = {
-      name: self.model_run.captured.expected_st_vars_dtype_device[idx]
-      for idx, name in enumerate(self.model_run.captured.expected_names)
-    }
+    self.input_to_dtype = {}
+    self.input_to_device = {}
+
+    for idx, name in enumerate(self.model_run.captured.expected_names):
+      self.input_to_dtype[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][2]  # 2 is the dtype
+      self.input_to_device[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][3]  # 3 is the device
+
+    assert TICI or frames is not None, "TinygradRunner requires frames for non-TICI hardware"
+    self.frames = frames
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     # Initialize image tensors if not already done
     for key in imgs_cl:
-      if not key not in self.inputs: # TODO-SP: Because this is only run once, if we are on PC this is not updated
+      if TICI and key not in self.inputs:
         self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
+      else:
+        shape = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
+        self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
     # Update numpy inputs
-    for k, v in numpy_inputs.items():
-      if k not in self.inputs:
-        self.inputs[k] = Tensor(v, device='NPY').realize()
+    for key, value in numpy_inputs.items():
+      if key not in imgs_cl:
+        self.inputs[key] = Tensor(value, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
     return self.inputs
 
