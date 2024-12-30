@@ -251,6 +251,9 @@ def main(demo=False):
       'traffic_convention': traffic_convention,
       }
 
+    if "lateral_control_params" in model.numpy_inputs.keys():
+      inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
     mt2 = time.perf_counter()
