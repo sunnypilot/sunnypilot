@@ -79,7 +79,10 @@ class ModelState:
     self.desire_20Hz[-1] = new_desire
     self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
 
-    self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
+    for key in self.numpy_inputs:
+      if key in inputs and key not in ['desire']:
+        self.numpy_inputs[key][:] = inputs[key]
+
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
