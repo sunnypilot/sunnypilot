@@ -48,20 +48,25 @@ class ModelState:
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
-
-    # img buffers are managed in openCL transform code
-    self.numpy_inputs = {
-      'desire': np.zeros((1, (ModelConstants.HISTORY_BUFFER_LEN+1), ModelConstants.DESIRE_LEN), dtype=np.float32),
-      'traffic_convention': np.zeros((1, ModelConstants.TRAFFIC_CONVENTION_LEN), dtype=np.float32),
-      'features_buffer': np.zeros((1, ModelConstants.HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
-    }
-
     # Initialize model runner
     self.model_runner = TinygradRunner() if TICI else ONNXRunner(self.frames)
+
+    # img buffers are managed in openCL transform code
+    self.numpy_inputs = {}
+
+    for key, shape in self.model_runner.input_shapes.items():
+      if key not in self.frames: # Managed by opencl
+        self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
+
     self.parser = Parser()
 
     net_output_size = self.model_runner.model_metadata['output_shapes']['outputs'][1]
     self.output = np.zeros(net_output_size, dtype=np.float32)
+
+    num_elements = self.numpy_inputs['features_buffer'].shape[1]
+    step_size = int(-100 / num_elements)
+    self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -72,7 +77,7 @@ class ModelState:
 
     self.desire_20Hz[:-1] = self.desire_20Hz[1:]
     self.desire_20Hz[-1] = new_desire
-    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape((1,25,4,-1)).max(axis=2)
+    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
 
     self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
@@ -91,8 +96,7 @@ class ModelState:
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
-    idxs = np.arange(-4,-100,-4)[::-1]
-    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[idxs]
+    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
     return outputs
 
 

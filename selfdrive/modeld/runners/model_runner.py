@@ -4,11 +4,10 @@ from openpilot.system.hardware import TICI
 #
 if TICI:
   from tinygrad.tensor import Tensor
-  from tinygrad.dtype import dtypes
   from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
   os.environ['QCOM'] = '1'
 else:
-  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner
+  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 import pickle
 import numpy as np
 from pathlib import Path
@@ -57,11 +56,16 @@ class TinygradRunner(ModelRunner):
     with open(MODEL_PKL_PATH, "rb") as f:
       self.model_run = pickle.load(f)
 
+    self.input_to_dtype = {
+      name: self.model_run.captured.expected_st_vars_dtype_device[idx]
+      for idx, name in enumerate(self.model_run.captured.expected_names)
+    }
+
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     # Initialize image tensors if not already done
     for key in imgs_cl:
-      if key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
+      if not key not in self.inputs: # TODO-SP: Because this is only run once, if we are on PC this is not updated
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
 
     # Update numpy inputs
     for k, v in numpy_inputs.items():
@@ -82,10 +86,15 @@ class ONNXRunner(ModelRunner):
     self.runner = make_onnx_cpu_runner(MODEL_PATH)
     self.frames = frames
 
+    self.input_to_nptype = {
+      model_input.name: ORT_TYPES_TO_NP_TYPES[model_input.type]
+      for model_input in self.runner.get_inputs()
+    }
+
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     self.inputs = numpy_inputs.copy()
     for key in imgs_cl:
-      self.inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
+      self.inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).astype(self.input_to_nptype[key]).reshape(self.input_shapes[key])
     return self.inputs
 
   def run_model(self):
