@@ -81,6 +81,11 @@ class ModelState:
     for k,v in self.inputs.items():
       self.model.addInput(k, v)
 
+    num_elements = model_metadata['input_shapes']['features_buffer'][1]
+    step_size = int(-100 / num_elements)
+    self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+    self.desire_reshape_dims = (model_metadata['input_shapes']['desire'][0], model_metadata['input_shapes']['desire'][1], -1, model_metadata['input_shapes']['desire'][2])
+
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
     if SEND_RAW_PRED:
@@ -96,7 +101,7 @@ class ModelState:
 
     self.desire_20Hz[:-1] = self.desire_20Hz[1:]
     self.desire_20Hz[-1] = new_desire
-    self.inputs['desire'][:] = self.desire_20Hz.reshape((25,4,-1)).max(axis=1).flatten()
+    self.inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=1).flatten()
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
 
