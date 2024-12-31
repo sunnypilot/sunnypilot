@@ -1162,87 +1162,87 @@ Isso pode levar até um minuto.</translation>
     <name>TogglesPanelSP</name>
     <message>
         <source>Enable openpilot</source>
-        <translation type="unfinished">Ativar openpilot</translation>
+        <translation type="obsolete">Ativar openpilot</translation>
     </message>
     <message>
         <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="unfinished">Use o sistema openpilot para controle de cruzeiro adaptativo e assistência ao motorista de manutenção de faixa. Sua atenção é necessária o tempo todo para usar esse recurso. A alteração desta configuração tem efeito quando o carro é desligado.</translation>
+        <translation type="obsolete">Use o sistema openpilot para controle de cruzeiro adaptativo e assistência ao motorista de manutenção de faixa. Sua atenção é necessária o tempo todo para usar esse recurso. A alteração desta configuração tem efeito quando o carro é desligado.</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished">Controle Longitudinal openpilot (Embrionário)</translation>
+        <translation type="obsolete">Controle Longitudinal openpilot (Embrionário)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished">AVISO: o controle longitudinal openpilot está em estado embrionário para este carro e desativará a Frenagem Automática de Emergência (AEB).</translation>
+        <translation type="obsolete">AVISO: o controle longitudinal openpilot está em estado embrionário para este carro e desativará a Frenagem Automática de Emergência (AEB).</translation>
     </message>
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished">Neste carro, o openpilot tem como padrão o ACC embutido do carro em vez do controle longitudinal do openpilot. Habilite isso para alternar para o controle longitudinal openpilot. Recomenda-se ativar o modo Experimental ao ativar o embrionário controle longitudinal openpilot.</translation>
+        <translation type="obsolete">Neste carro, o openpilot tem como padrão o ACC embutido do carro em vez do controle longitudinal do openpilot. Habilite isso para alternar para o controle longitudinal openpilot. Recomenda-se ativar o modo Experimental ao ativar o embrionário controle longitudinal openpilot.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
-        <translation type="unfinished">Modo Experimental</translation>
+        <translation type="obsolete">Modo Experimental</translation>
     </message>
     <message>
         <source>Disengage on Accelerator Pedal</source>
-        <translation type="unfinished">Desacionar com Pedal do Acelerador</translation>
+        <translation type="obsolete">Desacionar com Pedal do Acelerador</translation>
     </message>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation type="unfinished">Quando ativado, pressionar o pedal do acelerador desacionará o openpilot.</translation>
+        <translation type="obsolete">Quando ativado, pressionar o pedal do acelerador desacionará o openpilot.</translation>
     </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
-        <translation type="unfinished">Ativar Avisos de Saída de Faixa</translation>
+        <translation type="obsolete">Ativar Avisos de Saída de Faixa</translation>
     </message>
     <message>
         <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
-        <translation type="unfinished">Receba alertas para voltar para a pista se o seu veículo sair da faixa e a seta não tiver sido acionada previamente quando em velocidades superiores a 50 km/h.</translation>
+        <translation type="obsolete">Receba alertas para voltar para a pista se o seu veículo sair da faixa e a seta não tiver sido acionada previamente quando em velocidades superiores a 50 km/h.</translation>
     </message>
     <message>
         <source>Always-On Driver Monitoring</source>
-        <translation type="unfinished">Monitoramento do Motorista Sempre Ativo</translation>
+        <translation type="obsolete">Monitoramento do Motorista Sempre Ativo</translation>
     </message>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation type="unfinished">Habilite o monitoramento do motorista mesmo quando o openpilot não estiver acionado.</translation>
+        <translation type="obsolete">Habilite o monitoramento do motorista mesmo quando o openpilot não estiver acionado.</translation>
     </message>
     <message>
         <source>Record and Upload Driver Camera</source>
-        <translation type="unfinished">Gravar e Upload Câmera Motorista</translation>
+        <translation type="obsolete">Gravar e Upload Câmera Motorista</translation>
     </message>
     <message>
         <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
-        <translation type="unfinished">Upload dados da câmera voltada para o motorista e ajude a melhorar o algoritmo de monitoramentor.</translation>
+        <translation type="obsolete">Upload dados da câmera voltada para o motorista e ajude a melhorar o algoritmo de monitoramentor.</translation>
     </message>
     <message>
         <source>Use Metric System</source>
-        <translation type="unfinished">Usar Sistema Métrico</translation>
+        <translation type="obsolete">Usar Sistema Métrico</translation>
     </message>
     <message>
         <source>Display speed in km/h instead of mph.</source>
-        <translation type="unfinished">Exibir velocidade em km/h invés de mph.</translation>
+        <translation type="obsolete">Exibir velocidade em km/h invés de mph.</translation>
     </message>
     <message>
         <source>Aggressive</source>
-        <translation type="unfinished">Disputa</translation>
+        <translation type="obsolete">Disputa</translation>
     </message>
     <message>
         <source>Standard</source>
-        <translation type="unfinished">Neutro</translation>
+        <translation type="obsolete">Neutro</translation>
     </message>
     <message>
         <source>Relaxed</source>
-        <translation type="unfinished">Calmo</translation>
+        <translation type="obsolete">Calmo</translation>
     </message>
     <message>
         <source>Driving Personality</source>
-        <translation type="unfinished">Temperamento de Direção</translation>
+        <translation type="obsolete">Temperamento de Direção</translation>
     </message>
     <message>
         <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation type="unfinished">Neutro é o recomendado. No modo disputa o openpilot seguirá o carro da frente mais de perto e será mais agressivo com a aceleração e frenagem. No modo calmo o openpilot se manterá mais longe do carro da frente. Em carros compatíveis, você pode alternar esses temperamentos com o botão de distância do volante.</translation>
+        <translation type="obsolete">Neutro é o recomendado. No modo disputa o openpilot seguirá o carro da frente mais de perto e será mais agressivo com a aceleração e frenagem. No modo calmo o openpilot se manterá mais longe do carro da frente. Em carros compatíveis, você pode alternar esses temperamentos com o botão de distância do volante.</translation>
     </message>
 </context>
 <context>
