@@ -78,13 +78,21 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                           tr("Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
                                              "In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
                                              "your steering wheel distance button."),
+#ifdef SUNNYPILOT
+                                          BLANK_ICON,
+#else
                                           "../assets/offroad/icon_speed_limit.png",
+#endif
                                           longi_button_texts);
 
   // set up uiState update for personality setting
   QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
+#ifdef SUNNYPILOT
+    icon = BLANK_ICON;
+#endif
+
     auto toggle = new ParamControl(param, title, desc, icon, this);
 
     bool locked = params.getBool((param + "Lock").toStdString());
@@ -100,7 +108,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   }
 
   // Toggles with confirmation dialogs
+#ifndef SUNNYPILOT
   toggles["ExperimentalMode"]->setActiveIcon("../assets/img_experimental.svg");
+#endif
   toggles["ExperimentalMode"]->setConfirmation(true, true);
   toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
 
