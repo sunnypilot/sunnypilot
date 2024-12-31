@@ -55,10 +55,4 @@ public:
 
 private slots:
   void updateState(const UIStateSP &s);
-
-private:
-  ButtonParamControlSP *long_personality_setting;
-  ButtonParamControlSP *accel_personality_setting;
-
-  ParamWatcher *param_watcher;
 };
