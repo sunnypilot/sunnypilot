@@ -23,7 +23,7 @@ public:
     q = CL_CHECK_ERR(clCreateCommandQueue(context, device_id, 0, &err));
   }
   virtual ~ModelFrame() {}
-  virtual uint8_t* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output) { return NULL; }
+  virtual float* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output) { return NULL; }
   /*
   uint8_t* buffer_from_cl(cl_mem *in_frames, int buffer_size) {
     CL_CHECK(clEnqueueReadBuffer(q, *in_frames, CL_TRUE, 0, buffer_size, input_frames.get(), 0, nullptr, nullptr));
@@ -41,7 +41,7 @@ protected:
   cl_mem y_cl, u_cl, v_cl;
   Transform transform;
   cl_command_queue q;
-  std::unique_ptr<uint8_t[]> input_frames;
+  std::unique_ptr<float[]> input_frames;
 
   void init_transform(cl_device_id device_id, cl_context context, int model_width, int model_height) {
     y_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, model_width * model_height, NULL, &err));
@@ -68,13 +68,13 @@ class DrivingModelFrame : public ModelFrame {
 public:
   DrivingModelFrame(cl_device_id device_id, cl_context context);
   ~DrivingModelFrame();
-  uint8_t* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output);
+  float* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output);
 
   const int MODEL_WIDTH = 512;
   const int MODEL_HEIGHT = 256;
   const int MODEL_FRAME_SIZE = MODEL_WIDTH * MODEL_HEIGHT * 3 / 2;
   const int buf_size = MODEL_FRAME_SIZE * 2;
-  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(uint8_t);
+  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(float);
 
 private:
   LoadYUVState loadyuv;
@@ -86,7 +86,7 @@ class MonitoringModelFrame : public ModelFrame {
 public:
   MonitoringModelFrame(cl_device_id device_id, cl_context context);
   ~MonitoringModelFrame();
-  uint8_t* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output);
+  float* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output);
 
   const int MODEL_WIDTH = 1440;
   const int MODEL_HEIGHT = 960;

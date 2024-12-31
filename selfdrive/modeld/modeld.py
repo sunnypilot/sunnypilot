@@ -84,7 +84,10 @@ class ModelState:
     num_elements = model_metadata['input_shapes']['features_buffer'][1]
     step_size = int(-100 / num_elements)
     self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-    self.desire_reshape_dims = (model_metadata['input_shapes']['desire'][0], model_metadata['input_shapes']['desire'][1], -1, model_metadata['input_shapes']['desire'][2])
+
+    desired_shape = int(self.inputs['desire'].shape[0] / self.desire_20Hz.shape[1])
+    middle_dim = int(self.desire_20Hz.shape[0] / desired_shape)
+    self.desire_reshape_dims = (desired_shape, middle_dim, -1)
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
@@ -117,8 +120,8 @@ class ModelState:
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
-    idxs = np.arange(-4,-100,-4)[::-1]
-    self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
+    # idxs = np.arange(-4,-100,-4)[::-1]
+    self.inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs].flatten()
 
     if "lat_planner_solution" in outputs:
       if "lat_planner_state" in self.inputs.keys():
@@ -134,8 +137,8 @@ class ModelState:
 
       if input_name_prev is not None:
         len = outputs['desired_curvature'][0].size
-        self.inputs[input_name_prev][0, :-len, 0] = self.inputs[input_name_prev][0, len:, 0]
-        self.inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
+        self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
+        self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :len]
     return outputs
 
 
@@ -279,7 +282,7 @@ def main(demo=False):
       }
 
     if "lateral_control_params" in model.inputs.keys():
-      inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
 
     if "driving_style" in model.inputs.keys():
       inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
