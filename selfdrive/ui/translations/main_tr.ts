@@ -1156,39 +1156,87 @@ This may take up to a minute.</source>
     <name>TogglesPanelSP</name>
     <message>
         <source>Enable openpilot</source>
-        <translation type="obsolete">openpilot&apos;u aktifleştir</translation>
+        <translation type="unfinished">openpilot&apos;u aktifleştir</translation>
     </message>
     <message>
         <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="obsolete">Ayarlanabilir hız sabitleyici ve şeritte kalma yardımı için openpilot sistemini kullanın. Bu özelliği kullanırken her zaman dikkatli olmanız gerekiyor. Bu ayarın değiştirilmesi için araç kapatılıp açılması gerekiyor.</translation>
+        <translation type="unfinished">Ayarlanabilir hız sabitleyici ve şeritte kalma yardımı için openpilot sistemini kullanın. Bu özelliği kullanırken her zaman dikkatli olmanız gerekiyor. Bu ayarın değiştirilmesi için araç kapatılıp açılması gerekiyor.</translation>
     </message>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation type="obsolete">Aktifleştirilirse eğer gaz pedalına basınca openpilot devre dışı kalır.</translation>
+        <translation type="unfinished">Aktifleştirilirse eğer gaz pedalına basınca openpilot devre dışı kalır.</translation>
     </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
-        <translation type="obsolete">Şerit ihlali uyarı alın</translation>
+        <translation type="unfinished">Şerit ihlali uyarı alın</translation>
     </message>
     <message>
         <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
-        <translation type="obsolete">50 km/s (31 mph) hızın üzerinde sürüş sırasında aracınız dönüş sinyali vermeden algılanan bir sonraki başlatılışında çekilir. şerit çizgisi ihlalinde şeride geri dönmek için uyarılar alın.</translation>
+        <translation type="unfinished">50 km/s (31 mph) hızın üzerinde sürüş sırasında aracınız dönüş sinyali vermeden algılanan bir sonraki başlatılışında çekilir. şerit çizgisi ihlalinde şeride geri dönmek için uyarılar alın.</translation>
     </message>
     <message>
         <source>Record and Upload Driver Camera</source>
-        <translation type="obsolete">Sürücü kamerasını kayıt et.</translation>
+        <translation type="unfinished">Sürücü kamerasını kayıt et.</translation>
     </message>
     <message>
         <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
-        <translation type="obsolete">Sürücüye bakan kamera verisini yükleyin ve Cihazın algoritmasını geliştirmemize yardımcı olun.</translation>
+        <translation type="unfinished">Sürücüye bakan kamera verisini yükleyin ve Cihazın algoritmasını geliştirmemize yardımcı olun.</translation>
     </message>
     <message>
         <source>Use Metric System</source>
-        <translation type="obsolete">Metrik sistemi kullan</translation>
+        <translation type="unfinished">Metrik sistemi kullan</translation>
     </message>
     <message>
         <source>Display speed in km/h instead of mph.</source>
-        <translation type="obsolete">Hızı mph yerine km/h şeklinde görüntüleyin.</translation>
+        <translation type="unfinished">Hızı mph yerine km/h şeklinde görüntüleyin.</translation>
+    </message>
+    <message>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Experimental Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Disengage on Accelerator Pedal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Always-On Driver Monitoring</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Aggressive</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Standard</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Relaxed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Driving Personality</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

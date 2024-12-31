@@ -1162,75 +1162,87 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     <name>TogglesPanelSP</name>
     <message>
         <source>Enable openpilot</source>
-        <translation type="obsolete">Activer openpilot</translation>
+        <translation type="unfinished">Activer openpilot</translation>
     </message>
     <message>
         <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="obsolete">Utilisez le système openpilot pour le régulateur de vitesse adaptatif et l&apos;assistance au maintien de voie. Votre attention est requise en permanence pour utiliser cette fonctionnalité. La modification de ce paramètre prend effet lorsque la voiture est éteinte.</translation>
+        <translation type="unfinished">Utilisez le système openpilot pour le régulateur de vitesse adaptatif et l&apos;assistance au maintien de voie. Votre attention est requise en permanence pour utiliser cette fonctionnalité. La modification de ce paramètre prend effet lorsque la voiture est éteinte.</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="obsolete">Contrôle longitudinal openpilot (Alpha)</translation>
+        <translation type="unfinished">Contrôle longitudinal openpilot (Alpha)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="obsolete">ATTENTION : le contrôle longitudinal openpilot est en alpha pour cette voiture et désactivera le freinage d&apos;urgence automatique (AEB).</translation>
+        <translation type="unfinished">ATTENTION : le contrôle longitudinal openpilot est en alpha pour cette voiture et désactivera le freinage d&apos;urgence automatique (AEB).</translation>
     </message>
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="obsolete">Sur cette voiture, openpilot utilise par défaut le régulateur de vitesse adaptatif intégré à la voiture plutôt que le contrôle longitudinal d&apos;openpilot. Activez ceci pour passer au contrôle longitudinal openpilot. Il est recommandé d&apos;activer le mode expérimental lors de l&apos;activation du contrôle longitudinal openpilot alpha.</translation>
+        <translation type="unfinished">Sur cette voiture, openpilot utilise par défaut le régulateur de vitesse adaptatif intégré à la voiture plutôt que le contrôle longitudinal d&apos;openpilot. Activez ceci pour passer au contrôle longitudinal openpilot. Il est recommandé d&apos;activer le mode expérimental lors de l&apos;activation du contrôle longitudinal openpilot alpha.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
-        <translation type="obsolete">Mode expérimental</translation>
+        <translation type="unfinished">Mode expérimental</translation>
     </message>
     <message>
         <source>Disengage on Accelerator Pedal</source>
-        <translation type="obsolete">Désengager avec la pédale d&apos;accélérateur</translation>
+        <translation type="unfinished">Désengager avec la pédale d&apos;accélérateur</translation>
     </message>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation type="obsolete">Lorsqu&apos;il est activé, appuyer sur la pédale d&apos;accélérateur désengagera openpilot.</translation>
+        <translation type="unfinished">Lorsqu&apos;il est activé, appuyer sur la pédale d&apos;accélérateur désengagera openpilot.</translation>
     </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
-        <translation type="obsolete">Activer les avertissements de sortie de voie</translation>
+        <translation type="unfinished">Activer les avertissements de sortie de voie</translation>
     </message>
     <message>
         <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
-        <translation type="obsolete">Recevez des alertes pour revenir dans la voie lorsque votre véhicule dérive au-delà d&apos;une ligne de voie détectée sans clignotant activé en roulant à plus de 31 mph (50 km/h).</translation>
+        <translation type="unfinished">Recevez des alertes pour revenir dans la voie lorsque votre véhicule dérive au-delà d&apos;une ligne de voie détectée sans clignotant activé en roulant à plus de 31 mph (50 km/h).</translation>
     </message>
     <message>
         <source>Record and Upload Driver Camera</source>
-        <translation type="obsolete">Enregistrer et télécharger la caméra conducteur</translation>
+        <translation type="unfinished">Enregistrer et télécharger la caméra conducteur</translation>
     </message>
     <message>
         <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
-        <translation type="obsolete">Publiez les données de la caméra orientée vers le conducteur et aidez à améliorer l&apos;algorithme de surveillance du conducteur.</translation>
+        <translation type="unfinished">Publiez les données de la caméra orientée vers le conducteur et aidez à améliorer l&apos;algorithme de surveillance du conducteur.</translation>
     </message>
     <message>
         <source>Use Metric System</source>
-        <translation type="obsolete">Utiliser le système métrique</translation>
+        <translation type="unfinished">Utiliser le système métrique</translation>
     </message>
     <message>
         <source>Display speed in km/h instead of mph.</source>
-        <translation type="obsolete">Afficher la vitesse en km/h au lieu de mph.</translation>
+        <translation type="unfinished">Afficher la vitesse en km/h au lieu de mph.</translation>
     </message>
     <message>
         <source>Aggressive</source>
-        <translation type="obsolete">Aggressif</translation>
+        <translation type="unfinished">Aggressif</translation>
     </message>
     <message>
         <source>Standard</source>
-        <translation type="obsolete">Standard</translation>
+        <translation type="unfinished">Standard</translation>
     </message>
     <message>
         <source>Relaxed</source>
-        <translation type="obsolete">Détendu</translation>
+        <translation type="unfinished">Détendu</translation>
     </message>
     <message>
         <source>Driving Personality</source>
-        <translation type="obsolete">Personnalité de conduite</translation>
+        <translation type="unfinished">Personnalité de conduite</translation>
+    </message>
+    <message>
+        <source>Always-On Driver Monitoring</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

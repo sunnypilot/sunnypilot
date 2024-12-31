@@ -1158,87 +1158,87 @@ This may take up to a minute.</source>
     <name>TogglesPanelSP</name>
     <message>
         <source>Enable openpilot</source>
-        <translation type="obsolete">啟用 openpilot</translation>
+        <translation type="unfinished">啟用 openpilot</translation>
     </message>
     <message>
         <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="obsolete">使用 openpilot 的主動式巡航和車道保持功能，開啟後您需要持續集中注意力，設定變更在重新啟動車輛後生效。</translation>
+        <translation type="unfinished">使用 openpilot 的主動式巡航和車道保持功能，開啟後您需要持續集中注意力，設定變更在重新啟動車輛後生效。</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="obsolete">openpilot 縱向控制 (Alpha 版)</translation>
+        <translation type="unfinished">openpilot 縱向控制 (Alpha 版)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="obsolete">警告：此車輛的 openpilot 縱向控制功能目前處於 Alpha 版本，使用此功能將會停用自動緊急煞車（AEB）功能。</translation>
+        <translation type="unfinished">警告：此車輛的 openpilot 縱向控制功能目前處於 Alpha 版本，使用此功能將會停用自動緊急煞車（AEB）功能。</translation>
     </message>
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="obsolete">在這輛車上，openpilot 預設使用車輛內建的主動巡航控制（ACC），而非 openpilot 的縱向控制。啟用此項功能可切換至 openpilot 的縱向控制。當啟用 openpilot 縱向控制 Alpha 版本時，建議同時啟用實驗性模式（Experimental mode）。</translation>
+        <translation type="unfinished">在這輛車上，openpilot 預設使用車輛內建的主動巡航控制（ACC），而非 openpilot 的縱向控制。啟用此項功能可切換至 openpilot 的縱向控制。當啟用 openpilot 縱向控制 Alpha 版本時，建議同時啟用實驗性模式（Experimental mode）。</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
-        <translation type="obsolete">實驗模式</translation>
+        <translation type="unfinished">實驗模式</translation>
     </message>
     <message>
         <source>Disengage on Accelerator Pedal</source>
-        <translation type="obsolete">油門取消控車</translation>
+        <translation type="unfinished">油門取消控車</translation>
     </message>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation type="obsolete">啟用後，踩踏油門將會取消 openpilot 控制。</translation>
+        <translation type="unfinished">啟用後，踩踏油門將會取消 openpilot 控制。</translation>
     </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
-        <translation type="obsolete">啟用車道偏離警告</translation>
+        <translation type="unfinished">啟用車道偏離警告</translation>
     </message>
     <message>
         <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
-        <translation type="obsolete">車速在時速 50 公里 (31 英里) 以上且未打方向燈的情況下，如果偵測到車輛駛出目前車道線時，發出車道偏離警告。</translation>
+        <translation type="unfinished">車速在時速 50 公里 (31 英里) 以上且未打方向燈的情況下，如果偵測到車輛駛出目前車道線時，發出車道偏離警告。</translation>
     </message>
     <message>
         <source>Always-On Driver Monitoring</source>
-        <translation type="obsolete">駕駛監控常開</translation>
+        <translation type="unfinished">駕駛監控常開</translation>
     </message>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation type="obsolete">即使在openpilot未激活時也啟用駕駛監控。</translation>
+        <translation type="unfinished">即使在openpilot未激活時也啟用駕駛監控。</translation>
     </message>
     <message>
         <source>Record and Upload Driver Camera</source>
-        <translation type="obsolete">記錄並上傳駕駛監控影像</translation>
+        <translation type="unfinished">記錄並上傳駕駛監控影像</translation>
     </message>
     <message>
         <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
-        <translation type="obsolete">上傳駕駛監控的錄影來協助我們提升駕駛監控的準確率。</translation>
+        <translation type="unfinished">上傳駕駛監控的錄影來協助我們提升駕駛監控的準確率。</translation>
     </message>
     <message>
         <source>Use Metric System</source>
-        <translation type="obsolete">使用公制單位</translation>
+        <translation type="unfinished">使用公制單位</translation>
     </message>
     <message>
         <source>Display speed in km/h instead of mph.</source>
-        <translation type="obsolete">啟用後，速度單位顯示將從 mp/h 改為 km/h。</translation>
+        <translation type="unfinished">啟用後，速度單位顯示將從 mp/h 改為 km/h。</translation>
     </message>
     <message>
         <source>Aggressive</source>
-        <translation type="obsolete">積極</translation>
+        <translation type="unfinished">積極</translation>
     </message>
     <message>
         <source>Standard</source>
-        <translation type="obsolete">標準</translation>
+        <translation type="unfinished">標準</translation>
     </message>
     <message>
         <source>Relaxed</source>
-        <translation type="obsolete">舒適</translation>
+        <translation type="unfinished">舒適</translation>
     </message>
     <message>
         <source>Driving Personality</source>
-        <translation type="obsolete">駕駛風格</translation>
+        <translation type="unfinished">駕駛風格</translation>
     </message>
     <message>
         <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation type="obsolete">建議使用標準模式。在積極模式下，openpilot 會更接近前車並更積極地使用油門和剎車。在輕鬆模式下，openpilot 會與前車保持較遠距離。對於支援的汽車，您可以使用方向盤上的距離按鈕來切換這些駕駛風格。</translation>
+        <translation type="unfinished">建議使用標準模式。在積極模式下，openpilot 會更接近前車並更積極地使用油門和剎車。在輕鬆模式下，openpilot 會與前車保持較遠距離。對於支援的汽車，您可以使用方向盤上的距離按鈕來切換這些駕駛風格。</translation>
     </message>
 </context>
 <context>
