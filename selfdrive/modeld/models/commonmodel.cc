@@ -6,7 +6,7 @@
 #include "common/clutil.h"
 
 DrivingModelFrame::DrivingModelFrame(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
-  input_frames = std::make_unique<uint8_t[]>(buf_size);
+  input_frames = std::make_unique<float[]>(buf_size);
   //input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
   img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 5*frame_size_bytes, NULL, &err));
   region.origin = 4 * frame_size_bytes;
@@ -17,7 +17,7 @@ DrivingModelFrame::DrivingModelFrame(cl_device_id device_id, cl_context context)
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
 
-uint8_t* DrivingModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output) {
+float* DrivingModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
 
   for (int i = 0; i < 4; i++) {
@@ -50,14 +50,14 @@ DrivingModelFrame::~DrivingModelFrame() {
 
 
 MonitoringModelFrame::MonitoringModelFrame(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
-  input_frames = std::make_unique<uint8_t[]>(buf_size);
+  input_frames = std::make_unique<float[]>(buf_size);
   //input_frame_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
 
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
-uint8_t* MonitoringModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output) {
+float* MonitoringModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection, cl_mem* output) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
-  CL_CHECK(clEnqueueReadBuffer(q, y_cl, CL_TRUE, 0, MODEL_FRAME_SIZE * sizeof(uint8_t), input_frames.get(), 0, nullptr, nullptr));
+  CL_CHECK(clEnqueueReadBuffer(q, y_cl, CL_TRUE, 0, MODEL_FRAME_SIZE * sizeof(float), input_frames.get(), 0, nullptr, nullptr));
   clFinish(q);
   //return &y_cl;
   return input_frames.get();
