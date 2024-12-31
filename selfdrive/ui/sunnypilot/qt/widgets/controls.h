@@ -338,7 +338,11 @@ protected:
     }
 
     // Draw the rectangle
+#ifdef Q_OS_MAC
+    QRect rect(0 + 2, h - 16, w, h);
+#else
     QRect rect(0 + 2, h - 24, w, h);
+#endif
     p.setPen(QPen(QColor(button_group_enabled ? "#696868" : "#121212"), 3));
     p.drawRoundedRect(rect, 20, 20);
   }
