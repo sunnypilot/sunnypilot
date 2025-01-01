@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame_uint8 as DrivingModelFrame, DrivingModelFrame_float, CLMem
+from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame_uint8 as DrivingModelFrame, DrivingModelFrame_float  as DrivingModelFrame, CLMem
 
 if TICI:
   os.environ['QCOM'] = '1'
