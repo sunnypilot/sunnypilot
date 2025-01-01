@@ -119,5 +119,5 @@ public:
 
 private:
   LoadYUVState loadyuv;
-  cl_mem net_input_cl, input_frames_cl;
+  cl_mem img_buffer_cl, input_frames_cl;
 };
