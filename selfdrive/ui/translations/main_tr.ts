@@ -1153,45 +1153,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>TogglesPanelSP</name>
-    <message>
-        <source>Enable openpilot</source>
-        <translation type="obsolete">openpilot&apos;u aktifleştir</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="obsolete">Ayarlanabilir hız sabitleyici ve şeritte kalma yardımı için openpilot sistemini kullanın. Bu özelliği kullanırken her zaman dikkatli olmanız gerekiyor. Bu ayarın değiştirilmesi için araç kapatılıp açılması gerekiyor.</translation>
-    </message>
-    <message>
-        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation type="obsolete">Aktifleştirilirse eğer gaz pedalına basınca openpilot devre dışı kalır.</translation>
-    </message>
-    <message>
-        <source>Enable Lane Departure Warnings</source>
-        <translation type="obsolete">Şerit ihlali uyarı alın</translation>
-    </message>
-    <message>
-        <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
-        <translation type="obsolete">50 km/s (31 mph) hızın üzerinde sürüş sırasında aracınız dönüş sinyali vermeden algılanan bir sonraki başlatılışında çekilir. şerit çizgisi ihlalinde şeride geri dönmek için uyarılar alın.</translation>
-    </message>
-    <message>
-        <source>Record and Upload Driver Camera</source>
-        <translation type="obsolete">Sürücü kamerasını kayıt et.</translation>
-    </message>
-    <message>
-        <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
-        <translation type="obsolete">Sürücüye bakan kamera verisini yükleyin ve Cihazın algoritmasını geliştirmemize yardımcı olun.</translation>
-    </message>
-    <message>
-        <source>Use Metric System</source>
-        <translation type="obsolete">Metrik sistemi kullan</translation>
-    </message>
-    <message>
-        <source>Display speed in km/h instead of mph.</source>
-        <translation type="obsolete">Hızı mph yerine km/h şeklinde görüntüleyin.</translation>
-    </message>
-</context>
-<context>
     <name>Updater</name>
     <message>
         <source>Update Required</source>

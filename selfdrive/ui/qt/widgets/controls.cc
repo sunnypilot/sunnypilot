@@ -2,7 +2,8 @@
 
 #include <QPainter>
 #include <QStyleOption>
-#include <selfdrive/ui/qt/util.h>
+
+#include "selfdrive/ui/qt/util.h"
 
 AbstractControl::AbstractControl(const QString &title, const QString &desc, const QString &icon, QWidget *parent) : QFrame(parent) {
   RETURN_IF_SUNNYPILOT

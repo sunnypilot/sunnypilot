@@ -162,7 +162,8 @@ public:
     if (state) {
       toggle.togglePosition();
     }
-    hlayout->addWidget(&toggle);
+    hlayout->insertWidget(0, &toggle);
+    hlayout->insertWidget(1, this->icon_label);
     QObject::connect(&toggle, &ToggleSP::stateChanged, this, &ToggleControlSP::toggleFlipped);
   }
 

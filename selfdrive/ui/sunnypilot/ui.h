@@ -28,8 +28,6 @@
 
 #include "selfdrive/ui/ui.h"
 
-static const QString BLANK_ICON = "../../sunnypilot/selfdrive/assets/offroad/icon_blank.png";
-
 class UIStateSP : public UIState {
   Q_OBJECT
 

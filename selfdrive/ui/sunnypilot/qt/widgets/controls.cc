@@ -53,15 +53,9 @@ AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, 
  hlayout->setMargin(0);
  hlayout->setSpacing(20);
 
- // left icon
+ // space between toggle and title
  icon_label = new QLabel(this);
  hlayout->addWidget(icon_label);
- if (!icon.isEmpty()) {
-  icon_pixmap = QPixmap(icon).scaledToWidth(80, Qt::SmoothTransformation);
-  icon_label->setPixmap(icon_pixmap);
-  icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
- }
- icon_label->setVisible(!icon.isEmpty());
 
  // title
  title_label = new QPushButton(title);
@@ -224,9 +218,6 @@ ParamControlSP::ParamControlSP(const QString &param, const QString &title, const
   hlayout->insertWidget(0, &toggle);
 
   hlayout->removeWidget(this->icon_label);
-  this->icon_pixmap = QPixmap(icon).scaledToWidth(20, Qt::SmoothTransformation);
-  this->icon_label->setPixmap(this->icon_pixmap);
-  this->icon_label->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
   hlayout->insertWidget(1, this->icon_label);
 }
 

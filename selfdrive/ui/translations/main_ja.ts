@@ -1153,53 +1153,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>TogglesPanelSP</name>
-    <message>
-        <source>Enable openpilot</source>
-        <translation type="obsolete">openpilot を有効化</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation type="obsolete">openpilotによるアダプティブクルーズコントロールとレーンキーピングドライバーアシストを利用します。この機能を利用する際は、常に前方への注意が必要です。この設定を変更すると、車の電源が切れた時に反映されます。</translation>
-    </message>
-    <message>
-        <source>Experimental Mode</source>
-        <translation type="obsolete">実験モード</translation>
-    </message>
-    <message>
-        <source>Disengage on Accelerator Pedal</source>
-        <translation type="obsolete">ｱｸｾﾙを踏むと openpilot を中断</translation>
-    </message>
-    <message>
-        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation type="obsolete">この機能を有効化すると、openpilotを利用中にアクセルを踏むとopenpilotによる運転サポートを中断します。</translation>
-    </message>
-    <message>
-        <source>Enable Lane Departure Warnings</source>
-        <translation type="obsolete">車線逸脱警報機能を有効化</translation>
-    </message>
-    <message>
-        <source>Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h).</source>
-        <translation type="obsolete">時速31マイル（50km）を超えるスピードで走行中、ウインカーを作動させずに検出された車線ライン上に車両が触れた場合、手動で車線内に戻るように警告を行います。</translation>
-    </message>
-    <message>
-        <source>Record and Upload Driver Camera</source>
-        <translation type="obsolete">車内カメラの録画とアップロード</translation>
-    </message>
-    <message>
-        <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
-        <translation type="obsolete">車内カメラの映像をアップロードし、ドライバー監視システムのアルゴリズムの向上に役立てます。</translation>
-    </message>
-    <message>
-        <source>Use Metric System</source>
-        <translation type="obsolete">メートル法を使用</translation>
-    </message>
-    <message>
-        <source>Display speed in km/h instead of mph.</source>
-        <translation type="obsolete">速度は mph ではなく km/h で表示されます。</translation>
-    </message>
-</context>
-<context>
     <name>Updater</name>
     <message>
         <source>Update Required</source>
