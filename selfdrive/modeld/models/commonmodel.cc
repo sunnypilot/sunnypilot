@@ -47,7 +47,7 @@ DrivingModelFrame<T>::~DrivingModelFrame() {
 DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
   input_frames = std::make_unique<float[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_size_bytes, NULL, &err));
-  img_buffer_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_size_bytes, NULL, &err));
+  img_buffer_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 2*frame_size_bytes, NULL, &err));
 
   loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, true);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
@@ -55,12 +55,12 @@ DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_cont
 
 cl_mem* DrivingModelFrameLegacy::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
-  CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_cl, img_buffer_cl, 0, buf_size, buf_size, 0, nullptr, nullptr));
+
+  CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_cl, img_buffer_cl, 0, frame_size_bytes, frame_size_bytes, 0, nullptr, nullptr));
   loadyuv_queue(&loadyuv, q, y_cl, u_cl, v_cl, img_buffer_cl);
   CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_cl, input_frames_cl, 0, 0, frame_size_bytes, 0, nullptr, nullptr));
   clFinish(q);
   
-  // Return the pointer to the final buffer
   return &input_frames_cl;
 }
 
