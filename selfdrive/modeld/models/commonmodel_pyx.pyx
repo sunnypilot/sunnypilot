@@ -9,7 +9,7 @@ from libc.stdint cimport uintptr_t, uint8_t
 from msgq.visionipc.visionipc cimport cl_mem
 from msgq.visionipc.visionipc_pyx cimport VisionBuf, CLContext as BaseCLContext
 from .commonmodel cimport CL_DEVICE_TYPE_DEFAULT, cl_get_device_id, cl_create_context
-from .commonmodel cimport mat3, ModelFrame as cppModelFrame, DrivingModelFrame as cppDrivingModelFrame, MonitoringModelFrame as cppMonitoringModelFrame
+from .commonmodel cimport mat3, ModelFrame as cppModelFrame, DrivingModelFrame as cppDrivingModelFrame, DrivingModelFrameLegacy as cppDrivingModelFrameLegacy, MonitoringModelFrame as cppMonitoringModelFrame
 
 
 cdef class CLContext(BaseCLContext):
@@ -80,11 +80,19 @@ cdef class DrivingModelFrame_uint8(ModelFrame):
     self.frame = <cppModelFrame[uint8_t]*>(self._frame)
     self.buf_size = self._frame.buf_size
 
-cdef class DrivingModelFrame_float(ModelFrame_float):
-  cdef cppDrivingModelFrame[float] * _frame
+#cdef class DrivingModelFrame_float(ModelFrame_float):
+#  cdef cppDrivingModelFrame[float] * _frame
+
+#  def __cinit__(self, CLContext context):
+#    self._frame = new cppDrivingModelFrame[float](context.device_id, context.context)
+#    self.frame = <cppModelFrame[float]*>(self._frame)
+#    self.buf_size = self._frame.buf_size
+
+cdef class DrivingModelFrameLegacy(ModelFrame_float):
+  cdef cppDrivingModelFrameLegacy * _frame
 
   def __cinit__(self, CLContext context):
-    self._frame = new cppDrivingModelFrame[float](context.device_id, context.context)
+    self._frame = new cppDrivingModelFrameLegacy(context.device_id, context.context)
     self.frame = <cppModelFrame[float]*>(self._frame)
     self.buf_size = self._frame.buf_size
 

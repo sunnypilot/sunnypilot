@@ -44,6 +44,38 @@ DrivingModelFrame<T>::~DrivingModelFrame() {
   CL_CHECK(clReleaseCommandQueue(q));
 }
 
+DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
+  input_frames = std::make_unique<float[]>(buf_size);
+  input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
+  net_input_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_size_bytes, NULL, &err));
+  // region.origin = 2 * frame_size_bytes;
+  // region.size = frame_size_bytes;
+  // last_img_cl = CL_CHECK_ERR(clCreateSubBuffer(net_input_cl, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err));
+
+  loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, true);
+  init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
+}
+
+cl_mem* DrivingModelFrameLegacy::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
+  run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
+  loadyuv_queue(&loadyuv, q, y_cl, u_cl, v_cl, net_input_cl);
+
+  CL_CHECK(clEnqueueReadBuffer(q, net_input_cl, CL_TRUE, 0, frame_size_bytes, &input_frames[0], 0, nullptr, nullptr));
+  copy_queue(&loadyuv, q, net_input_cl, input_frames_cl, 0, 0, frame_size_bytes);
+
+  // NOTE: Since thneed is using a different command queue, this clFinish is needed to ensure the image is ready.
+  clFinish(q);
+  return &input_frames_cl;
+}
+
+DrivingModelFrameLegacy::~DrivingModelFrameLegacy() {
+  deinit_transform();
+  loadyuv_destroy(&loadyuv);
+  CL_CHECK(clReleaseMemObject(net_input_cl));
+  CL_CHECK(clReleaseMemObject(input_frames_cl));
+  CL_CHECK(clReleaseCommandQueue(q));
+}
+
 
 MonitoringModelFrame::MonitoringModelFrame(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
   input_frames = std::make_unique<uint8_t[]>(buf_size);

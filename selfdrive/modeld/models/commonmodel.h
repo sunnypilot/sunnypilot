@@ -100,3 +100,24 @@ public:
 private:
   cl_mem input_frame_cl;
 };
+
+class DrivingModelFrameLegacy : public ModelFrame<float> {
+  // using ModelFrame<T>::q, ModelFrame<T>::y_cl, ModelFrame<T>::u_cl, ModelFrame<T>::v_cl;
+  // using ModelFrame<T>::init_transform, ModelFrame<T>::deinit_transform, ModelFrame<T>::run_transform;
+  // using ModelFrame<T>::input_frames;
+  
+public:
+  DrivingModelFrameLegacy(cl_device_id device_id, cl_context context);
+  ~DrivingModelFrameLegacy();
+  cl_mem* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection);
+
+  const int MODEL_WIDTH = 512;
+  const int MODEL_HEIGHT = 256;
+  const int MODEL_FRAME_SIZE = MODEL_WIDTH * MODEL_HEIGHT * 3 / 2;
+  const int buf_size = MODEL_FRAME_SIZE * 2;
+  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(float);
+
+private:
+  LoadYUVState loadyuv;
+  cl_mem net_input_cl, input_frames_cl;
+};
