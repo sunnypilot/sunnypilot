@@ -48,9 +48,6 @@ DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_cont
   input_frames = std::make_unique<float[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
   net_input_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_size_bytes, NULL, &err));
-  // region.origin = 2 * frame_size_bytes;
-  // region.size = frame_size_bytes;
-  // last_img_cl = CL_CHECK_ERR(clCreateSubBuffer(net_input_cl, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err));
 
   loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, true);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
