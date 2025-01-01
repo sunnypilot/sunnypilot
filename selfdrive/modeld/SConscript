@@ -21,7 +21,7 @@ else:
   libs += ['OpenCL']
 
 # Set path definitions
-for pathdef, fn in {'TRANSFORM': 'transforms/transform.cl', 'LOADYUV': 'transforms/loadyuv.cl'}.items():
+for pathdef, fn in {'TRANSFORM': 'transforms/transform.cl', 'LOADYUV': 'transforms/loadyuv.cl', 'LOADYUV_FLOAT': 'transforms/loadyuv_float.cl'}.items():
   for xenv in (lenv, lenvCython):
     xenv['CXXFLAGS'].append(f'-D{pathdef}_PATH=\\"{File(fn).abspath}\\"')
 

@@ -17,6 +17,7 @@
 #include "selfdrive/modeld/transforms/loadyuv.h"
 #include "selfdrive/modeld/transforms/transform.h"
 
+template <typename T = uint8_t>
 class ModelFrame {
 public:
   ModelFrame(cl_device_id device_id, cl_context context) {
@@ -24,7 +25,7 @@ public:
   }
   virtual ~ModelFrame() {}
   virtual cl_mem* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) { return NULL; }
-  uint8_t* buffer_from_cl(cl_mem *in_frames, int buffer_size) {
+  T* buffer_from_cl(cl_mem *in_frames, int buffer_size) {
     CL_CHECK(clEnqueueReadBuffer(q, *in_frames, CL_TRUE, 0, buffer_size, input_frames.get(), 0, nullptr, nullptr));
     clFinish(q);
     return &input_frames[0];
@@ -39,7 +40,7 @@ protected:
   cl_mem y_cl, u_cl, v_cl;
   Transform transform;
   cl_command_queue q;
-  std::unique_ptr<uint8_t[]> input_frames;
+  std::unique_ptr<T[]> input_frames;
 
   void init_transform(cl_device_id device_id, cl_context context, int model_width, int model_height) {
     y_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, model_width * model_height, NULL, &err));
@@ -62,7 +63,12 @@ protected:
   }
 };
 
-class DrivingModelFrame : public ModelFrame {
+template <typename T>
+class DrivingModelFrame : public ModelFrame<T> {
+  using ModelFrame<T>::q, ModelFrame<T>::y_cl, ModelFrame<T>::u_cl, ModelFrame<T>::v_cl;
+  using ModelFrame<T>::init_transform, ModelFrame<T>::deinit_transform, ModelFrame<T>::run_transform;
+  using ModelFrame<T>::input_frames;
+  
 public:
   DrivingModelFrame(cl_device_id device_id, cl_context context);
   ~DrivingModelFrame();
@@ -80,7 +86,7 @@ private:
   cl_buffer_region region;
 };
 
-class MonitoringModelFrame : public ModelFrame {
+class MonitoringModelFrame : public ModelFrame<> {
 public:
   MonitoringModelFrame(cl_device_id device_id, cl_context context);
   ~MonitoringModelFrame();

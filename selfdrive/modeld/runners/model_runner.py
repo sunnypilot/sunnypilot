@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLMem
+from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame_uint8 as DrivingModelFrame, DrivingModelFrame_float, CLMem
 
 if TICI:
   os.environ['QCOM'] = '1'
@@ -107,7 +107,7 @@ class ONNXRunner(ModelRunner):
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     self.inputs = numpy_inputs.copy()
     for key in imgs_cl:
-      self.inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).astype(self.input_to_nptype[key]).reshape(self.input_shapes[key])
+      self.inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
     return self.inputs
 
   def run_model(self):

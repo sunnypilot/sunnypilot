@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
-void loadyuv_init(LoadYUVState* s, cl_context ctx, cl_device_id device_id, int width, int height) {
+void loadyuv_init(LoadYUVState* s, cl_context ctx, cl_device_id device_id, int width, int height, bool use_float) {
   memset(s, 0, sizeof(*s));
 
   s->width = width;
@@ -15,7 +15,9 @@ void loadyuv_init(LoadYUVState* s, cl_context ctx, cl_device_id device_id, int w
            "-cl-fast-relaxed-math -cl-denorms-are-zero "
            "-DTRANSFORMED_WIDTH=%d -DTRANSFORMED_HEIGHT=%d",
            width, height);
-  cl_program prg = cl_program_from_file(ctx, device_id, LOADYUV_PATH, args);
+  const char * loadyuv_path = use_float ? LOADYUV_FLOAT_PATH : LOADYUV_PATH;
+  printf(" Use float: %d\n Using loadyuv_path: %s\n", use_float, loadyuv_path);
+  cl_program prg = cl_program_from_file(ctx, device_id, loadyuv_path, args);
 
   s->loadys_krnl = CL_CHECK_ERR(clCreateKernel(prg, "loadys", &err));
   s->loaduv_krnl = CL_CHECK_ERR(clCreateKernel(prg, "loaduv", &err));

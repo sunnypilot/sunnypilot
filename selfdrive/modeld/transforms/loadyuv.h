@@ -7,7 +7,8 @@ typedef struct {
   cl_kernel loadys_krnl, loaduv_krnl, copy_krnl;
 } LoadYUVState;
 
-void loadyuv_init(LoadYUVState* s, cl_context ctx, cl_device_id device_id, int width, int height);
+void loadyuv_init(LoadYUVState* s, cl_context ctx, cl_device_id device_id, int width, int height, bool use_float);
+inline void loadyuv_init(LoadYUVState* s, cl_context ctx, cl_device_id device_id, int width, int height) { loadyuv_init(s, ctx, device_id, width, height, false); };
 
 void loadyuv_destroy(LoadYUVState* s);
 
