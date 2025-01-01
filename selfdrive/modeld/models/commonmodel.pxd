@@ -21,6 +21,10 @@ cdef extern from "selfdrive/modeld/models/commonmodel.h":
     int buf_size
     DrivingModelFrame(cl_device_id, cl_context)
 
+  cppclass DrivingModelFrameLegacy:
+    int buf_size
+    DrivingModelFrameLegacy(cl_device_id, cl_context)
+
   cppclass MonitoringModelFrame:
     int buf_size
     MonitoringModelFrame(cl_device_id, cl_context)
