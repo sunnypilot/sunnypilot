@@ -5,19 +5,21 @@
 
 #include "common/clutil.h"
 
-DrivingModelFrame::DrivingModelFrame(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
-  input_frames = std::make_unique<uint8_t[]>(buf_size);
+template <typename T>
+DrivingModelFrame<T>::DrivingModelFrame(cl_device_id device_id, cl_context context) : ModelFrame<T>(device_id, context) {
+  input_frames = std::make_unique<T[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
   img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 5*frame_size_bytes, NULL, &err));
   region.origin = 4 * frame_size_bytes;
   region.size = frame_size_bytes;
   last_img_cl = CL_CHECK_ERR(clCreateSubBuffer(img_buffer_20hz_cl, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err));
 
-  loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT);
+  loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, std::is_same<T, float>::value);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
 
-cl_mem* DrivingModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
+template <typename T>
+cl_mem* DrivingModelFrame<T>::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
 
   for (int i = 0; i < 4; i++) {
@@ -33,7 +35,8 @@ cl_mem* DrivingModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_hei
   return &input_frames_cl;
 }
 
-DrivingModelFrame::~DrivingModelFrame() {
+template <typename T>
+DrivingModelFrame<T>::~DrivingModelFrame() {
   deinit_transform();
   loadyuv_destroy(&loadyuv);
   CL_CHECK(clReleaseMemObject(img_buffer_20hz_cl));
@@ -59,3 +62,6 @@ MonitoringModelFrame::~MonitoringModelFrame() {
   deinit_transform();
   CL_CHECK(clReleaseCommandQueue(q));
 }
+
+template class DrivingModelFrame<uint8_t>;
+template class DrivingModelFrame<float>;
