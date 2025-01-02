@@ -51,7 +51,7 @@ AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, 
 
   hlayout = new QHBoxLayout;
   hlayout->setMargin(0);
-  hlayout->setSpacing(0);
+  hlayout->setSpacing(20);
 
   // title
   title_label = new QPushButton(title);
