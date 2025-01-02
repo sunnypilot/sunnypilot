@@ -161,6 +161,10 @@ class ToggleControlSP : public AbstractControlSP {
 
 public:
   ToggleControlSP(const QString &title, const QString &desc = "", const QString &icon = "", const bool state = false, QWidget *parent = nullptr) : AbstractControlSP(title, desc, icon, parent) {
+    // space between toggle and title
+    icon_label = new QLabel(this);
+    hlayout->addWidget(icon_label);
+
     toggle.setFixedSize(150, 100);
     if (state) {
       toggle.togglePosition();
@@ -344,9 +348,9 @@ protected:
 
     // Draw the rectangle
 #ifdef Q_OS_MAC
-    QRect rect(0 + 2, h - 46, w, h);
+    QRect rect(0 + 2, h - 16, w, h);
 #else
-    QRect rect(0 + 2, h - 24, w, h);
+    QRect rect(0 + 2, h - 4, w, h);
 #endif
     p.setPen(QPen(QColor(button_group_enabled ? "#696868" : "#121212"), 3));
     p.drawRoundedRect(rect, 20, 20);
@@ -406,7 +410,7 @@ private:
       if ((widget == nullptr || widget->isVisible()) && _split_line) {
         QRect r = inner_layout.itemAt(i)->geometry();
         int bottom = r.bottom() + inner_layout.spacing() / 2;
-        p.drawLine(r.left() + 40, bottom, r.right() - 40, bottom);
+        p.drawLine(r.left(), bottom, r.right(), bottom);
       }
     }
   }

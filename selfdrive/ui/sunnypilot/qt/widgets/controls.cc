@@ -51,11 +51,7 @@ AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, 
 
   hlayout = new QHBoxLayout;
   hlayout->setMargin(0);
-  hlayout->setSpacing(20);
-
-  // space between toggle and title
-  icon_label = new QLabel(this);
-  hlayout->addWidget(icon_label);
+  hlayout->setSpacing(0);
 
   // title
   title_label = new QPushButton(title);
@@ -133,8 +129,8 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   // title
   if (!title.isEmpty()) {
     title_label = new QPushButton(title);
-    title_label->setFixedHeight(90);
-    title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none; padding: 10 0 0 0");
+    title_label->setFixedHeight(120);
+    title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none; padding: 20 0 0 0");
     main_layout->addWidget(title_label, 1);
 
     connect(title_label, &QPushButton::clicked, [=]() {
@@ -151,18 +147,18 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
           delete spacingItem;
           spacingItem = nullptr;
         } else if (!isVisible && spacingItem == nullptr) {
-          spacingItem = new QSpacerItem(24, 24, QSizePolicy::Minimum, QSizePolicy::Fixed);
+          spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
           main_layout->insertItem(main_layout->indexOf(description), spacingItem);
         }
       }
     });
   } else {
-    main_layout->addSpacing(24);
+    main_layout->addSpacing(20);
   }
 
   main_layout->addLayout(hlayout);
   if (!desc.isEmpty() && spacingItem == nullptr) {
-    spacingItem = new QSpacerItem(24, 24, QSizePolicy::Minimum, QSizePolicy::Fixed);
+    spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
     main_layout->insertItem(main_layout->count(), spacingItem);
   }
 
