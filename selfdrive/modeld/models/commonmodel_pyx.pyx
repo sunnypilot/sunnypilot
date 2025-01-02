@@ -80,13 +80,13 @@ cdef class DrivingModelFrame_uint8(ModelFrame):
     self.frame = <cppModelFrame[uint8_t]*>(self._frame)
     self.buf_size = self._frame.buf_size
 
-#cdef class DrivingModelFrame_float(ModelFrame_float):
-#  cdef cppDrivingModelFrame[float] * _frame
+cdef class DrivingModelFrame_float(ModelFrame_float):
+  cdef cppDrivingModelFrame[float] * _frame
 
-#  def __cinit__(self, CLContext context):
-#    self._frame = new cppDrivingModelFrame[float](context.device_id, context.context)
-#    self.frame = <cppModelFrame[float]*>(self._frame)
-#    self.buf_size = self._frame.buf_size
+  def __cinit__(self, CLContext context):
+    self._frame = new cppDrivingModelFrame[float](context.device_id, context.context)
+    self.frame = <cppModelFrame[float]*>(self._frame)
+    self.buf_size = self._frame.buf_size
 
 cdef class DrivingModelFrameLegacy(ModelFrame_float):
   cdef cppDrivingModelFrameLegacy * _frame

@@ -79,6 +79,8 @@ public:
   const int MODEL_FRAME_SIZE = MODEL_WIDTH * MODEL_HEIGHT * 3 / 2;
   const int buf_size = MODEL_FRAME_SIZE * 2;
   const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(T);
+  const bool is_float = std::is_same<T, float>::value;
+  const uint8_t buffer_length = is_float ? 2 : 5;
 
 private:
   LoadYUVState loadyuv;

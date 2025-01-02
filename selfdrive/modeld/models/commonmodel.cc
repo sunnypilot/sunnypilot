@@ -9,12 +9,13 @@ template <typename T>
 DrivingModelFrame<T>::DrivingModelFrame(cl_device_id device_id, cl_context context) : ModelFrame<T>(device_id, context) {
   input_frames = std::make_unique<T[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
-  img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 5*frame_size_bytes, NULL, &err));
-  region.origin = 4 * frame_size_bytes;
+  img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_length*frame_size_bytes, NULL, &err));
+  region.origin = (buffer_length - 1)  * frame_size_bytes;
   region.size = frame_size_bytes;
   last_img_cl = CL_CHECK_ERR(clCreateSubBuffer(img_buffer_20hz_cl, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err));
+  printf("Buffer length: %d, region origin: %lu, region size: %lu\n", buffer_length, region.origin, region.size);
 
-  loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, std::is_same<T, float>::value);
+  loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, is_float);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
 
@@ -22,13 +23,17 @@ template <typename T>
 cl_mem* DrivingModelFrame<T>::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < (buffer_length - 1); i++) {
+    printf("Moving %d to %d from src_offset %lu to dst_offset %lu with size %lu\n", i+1, i, (i+1)*frame_size_bytes, i*frame_size_bytes, frame_size_bytes);
     CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_20hz_cl, img_buffer_20hz_cl, (i+1)*frame_size_bytes, i*frame_size_bytes, frame_size_bytes, 0, nullptr, nullptr));
   }
+  printf("Loop done\n");
   loadyuv_queue(&loadyuv, q, y_cl, u_cl, v_cl, last_img_cl);
 
   copy_queue(&loadyuv, q, img_buffer_20hz_cl, input_frames_cl, 0, 0, frame_size_bytes);
+  printf("Copying from %p to %p with size %lu\n", img_buffer_20hz_cl, input_frames_cl, frame_size_bytes);
   copy_queue(&loadyuv, q, last_img_cl, input_frames_cl, 0, frame_size_bytes, frame_size_bytes);
+  printf("Copying from %p to %p with size %lu\n", last_img_cl, input_frames_cl, frame_size_bytes);
 
   // NOTE: Since thneed is using a different command queue, this clFinish is needed to ensure the image is ready.
   clFinish(q);
@@ -48,7 +53,7 @@ DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_cont
   input_frames = std::make_unique<float[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_size_bytes, NULL, &err));
   img_buffer_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 2*frame_size_bytes, NULL, &err));
-
+  printf("WTF");
   loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, true);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
