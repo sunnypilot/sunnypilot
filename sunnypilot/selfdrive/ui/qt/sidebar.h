@@ -24,14 +24,23 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/home.h"
+#pragma once
 
-HomeWindowSP::HomeWindowSP(QWidget* parent) : HomeWindow(parent) {}
+#include <memory>
 
-void HomeWindowSP::updateState(const UIState &s) {
-  HomeWindow::updateState(s);
-}
+#include "selfdrive/ui/qt/sidebar.h"
 
-void HomeWindowSP::mousePressEvent(QMouseEvent* e) {
-  HomeWindow::mousePressEvent(e);
-}
+#include "../../sunnypilot/selfdrive/ui/ui.h"
+
+class SidebarSP : public Sidebar {
+  Q_OBJECT
+
+public slots:
+  void updateState(const UIStateSP &s);
+
+public:
+  explicit SidebarSP(QWidget* parent = 0);
+
+private:
+  void paintSidebar(QPainter &p) override;
+};

@@ -276,33 +276,6 @@
     </message>
 </context>
 <context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -508,17 +481,6 @@
     </message>
 </context>
 <context>
-    <name>ParamControlSP</name>
-    <message>
-        <source>Enable</source>
-        <translation type="unfinished">تمكين</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">إلغاء</translation>
-    </message>
-</context>
-<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -678,37 +640,6 @@ This may take up to a minute.</source>
     <message>
         <source>Developer</source>
         <translation>المطور</translation>
-    </message>
-</context>
-<context>
-    <name>SettingsWindowSP</name>
-    <message>
-        <source>×</source>
-        <translation type="unfinished">×</translation>
-    </message>
-    <message>
-        <source>Device</source>
-        <translation type="unfinished">الجهاز</translation>
-    </message>
-    <message>
-        <source>Network</source>
-        <translation type="unfinished">الشبكة</translation>
-    </message>
-    <message>
-        <source>Toggles</source>
-        <translation type="unfinished">المثبتتات</translation>
-    </message>
-    <message>
-        <source>Software</source>
-        <translation type="unfinished">البرنامج</translation>
-    </message>
-    <message>
-        <source>Developer</source>
-        <translation type="unfinished">المطور</translation>
-    </message>
-    <message>
-        <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1034,21 +965,6 @@ This may take up to a minute.</source>
     <message>
         <source>Agree</source>
         <translation>أوافق</translation>
-    </message>
-</context>
-<context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">الشروط والأحكام</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation type="unfinished">رفض</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation type="unfinished">قم بالتمرير للقبول</translation>
     </message>
 </context>
 <context>

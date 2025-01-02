@@ -24,16 +24,14 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/window.h"
+#include "../../sunnypilot/selfdrive/ui/qt/home.h"
 
-MainWindowSP::MainWindowSP(QWidget *parent) :
-    MainWindow(parent, new HomeWindowSP(parent), new SettingsWindowSP(parent), new OnboardingWindowSP(parent)) {
+HomeWindowSP::HomeWindowSP(QWidget* parent) : HomeWindow(parent) {}
 
-  homeWindow = dynamic_cast<HomeWindowSP*>(MainWindow::homeWindow);
-  settingsWindow = dynamic_cast<SettingsWindowSP*>(MainWindow::settingsWindow);
-  onboardingWindow = dynamic_cast<OnboardingWindowSP*>(MainWindow::onboardingWindow);
+void HomeWindowSP::updateState(const UIState &s) {
+  HomeWindow::updateState(s);
 }
 
-void MainWindowSP::closeSettings() {
-  MainWindow::closeSettings();
+void HomeWindowSP::mousePressEvent(QMouseEvent* e) {
+  HomeWindow::mousePressEvent(e);
 }

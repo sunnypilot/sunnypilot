@@ -276,33 +276,6 @@
     </message>
 </context>
 <context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -503,17 +476,6 @@
     </message>
 </context>
 <context>
-    <name>ParamControlSP</name>
-    <message>
-        <source>Enable</source>
-        <translation type="unfinished">启用</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
-    </message>
-</context>
-<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -657,37 +619,6 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Developer</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>SettingsWindowSP</name>
-    <message>
-        <source>×</source>
-        <translation type="unfinished">×</translation>
-    </message>
-    <message>
-        <source>Device</source>
-        <translation type="unfinished">设备</translation>
-    </message>
-    <message>
-        <source>Network</source>
-        <translation type="unfinished">网络</translation>
-    </message>
-    <message>
-        <source>Toggles</source>
-        <translation type="unfinished">设定</translation>
-    </message>
-    <message>
-        <source>Software</source>
-        <translation type="unfinished">软件</translation>
-    </message>
-    <message>
-        <source>Developer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>sunnypilot</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1014,21 +945,6 @@ This may take up to a minute.</source>
     <message>
         <source>Agree</source>
         <translation>同意</translation>
-    </message>
-</context>
-<context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">条款和条件</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation type="unfinished">拒绝</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation type="unfinished">滑动以接受</translation>
     </message>
 </context>
 <context>

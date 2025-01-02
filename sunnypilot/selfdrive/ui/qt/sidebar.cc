@@ -24,34 +24,23 @@
  * Last updated: July 29, 2024
  */
 
-#pragma once
+#include "../../sunnypilot/selfdrive/ui/qt/sidebar.h"
 
-#include <QFrame>
-#include <QWidget>
+#include <cmath>
+#include <QMouseEvent>
 
-#include "common/params.h"
-#include "selfdrive/ui/qt/body.h"
-#include "selfdrive/ui/qt/widgets/offroad_alerts.h"
-#include "selfdrive/ui/sunnypilot/ui.h"
-#include "selfdrive/ui/qt/home.h"
+#include "selfdrive/ui/qt/util.h"
 
-#ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/sidebar.h"
-#define OnroadWindow OnroadWindowSP
-#else
-#include "selfdrive/ui/qt/sidebar.h"
-#include "selfdrive/ui/qt/onroad/onroad_home.h"
-#endif
+SidebarSP::SidebarSP(QWidget *parent) : Sidebar(parent) {
+  QObject::disconnect(uiState(), &UIState::uiUpdate, this, &Sidebar::updateState);
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SidebarSP::updateState);
+}
 
-class HomeWindowSP : public HomeWindow {
-  Q_OBJECT
+void SidebarSP::updateState(const UIStateSP &s) {
+  if (!isVisible()) return;
+  Sidebar::updateState(s);
+}
 
-public:
-  explicit HomeWindowSP(QWidget* parent = 0);
-
-protected:
-  void mousePressEvent(QMouseEvent* e) override;
-
-private slots:
-  void updateState(const UIState &s) override;
-};
+void SidebarSP::paintSidebar(QPainter &p){
+  Sidebar::paintSidebar(p);
+}

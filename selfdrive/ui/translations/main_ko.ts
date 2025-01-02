@@ -276,33 +276,6 @@
     </message>
 </context>
 <context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -503,17 +476,6 @@
     </message>
 </context>
 <context>
-    <name>ParamControlSP</name>
-    <message>
-        <source>Enable</source>
-        <translation type="unfinished">활성화</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">취소</translation>
-    </message>
-</context>
-<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -658,37 +620,6 @@ This may take up to a minute.</source>
     <message>
         <source>Developer</source>
         <translation>개발자</translation>
-    </message>
-</context>
-<context>
-    <name>SettingsWindowSP</name>
-    <message>
-        <source>×</source>
-        <translation type="unfinished">×</translation>
-    </message>
-    <message>
-        <source>Device</source>
-        <translation type="unfinished">장치</translation>
-    </message>
-    <message>
-        <source>Network</source>
-        <translation type="unfinished">네트워크</translation>
-    </message>
-    <message>
-        <source>Toggles</source>
-        <translation type="unfinished">토글</translation>
-    </message>
-    <message>
-        <source>Software</source>
-        <translation type="unfinished">소프트웨어</translation>
-    </message>
-    <message>
-        <source>Developer</source>
-        <translation type="unfinished">개발자</translation>
-    </message>
-    <message>
-        <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1014,21 +945,6 @@ This may take up to a minute.</source>
     <message>
         <source>Agree</source>
         <translation>동의</translation>
-    </message>
-</context>
-<context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">이용약관</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation type="unfinished">거절</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation type="unfinished">동의하려면 아래로 스크롤하세요</translation>
     </message>
 </context>
 <context>

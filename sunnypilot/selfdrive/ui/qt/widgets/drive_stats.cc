@@ -24,7 +24,7 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/widgets/drive_stats.h"
+#include "../../sunnypilot/selfdrive/ui/qt/widgets/drive_stats.h"
 
 #include <QDebug>
 #include <QGridLayout>

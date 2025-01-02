@@ -1,5 +1,5 @@
 /**
-* The MIT License
+ * The MIT License
  *
  * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
  *
@@ -24,28 +24,26 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_home.h"
+#include "../../sunnypilot/selfdrive/ui/qt/widgets/toggle.h"
 
-#include "common/swaglog.h"
-#include "selfdrive/ui/qt/util.h"
+#include <QPainter>
 
-OnroadWindowSP::OnroadWindowSP(QWidget *parent) : OnroadWindow(parent) {
-  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &OnroadWindowSP::updateState);
-  QObject::connect(uiStateSP(), &UIStateSP::offroadTransition, this, &OnroadWindowSP::offroadTransition);
+ToggleSP::ToggleSP(QWidget *parent) : Toggle(parent) {
+ _height_rect = 80;
 }
 
-void OnroadWindowSP::updateState(const UIStateSP &s) {
-  if (!s.scene.started) {
-    return;
-  }
+void ToggleSP::paintEvent(QPaintEvent *e) {
+ this->setFixedHeight(100);
+ QPainter p(this);
+ p.setPen(Qt::NoPen);
+ p.setRenderHint(QPainter::Antialiasing, true);
 
-  OnroadWindow::updateState(s);
-}
+ // Draw toggle background
+ enabled ? green.setRgb(0x1e79e8) : green.setRgb(0x125db8);
+ p.setBrush(on ? green : QColor(0x292929));
+ p.drawRoundedRect(QRect(0, 10, width(), _height_rect),_height_rect/2, _height_rect/2);
 
-void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
-  OnroadWindow::mousePressEvent(e);
-}
-
-void OnroadWindowSP::offroadTransition(bool offroad) {
-  OnroadWindow::offroadTransition(offroad);
+ // Draw toggle circle
+ p.setBrush(circleColor);
+ p.drawEllipse(QRectF(_x_circle - _radius + 6, 16, 68, 68));
 }

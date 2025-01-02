@@ -24,7 +24,7 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/ui.h"
+#include "../../sunnypilot/selfdrive/ui/ui.h"
 
 #include "common/watchdog.h"
 

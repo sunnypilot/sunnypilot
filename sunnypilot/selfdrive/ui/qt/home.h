@@ -26,21 +26,32 @@
 
 #pragma once
 
-#include <memory>
+#include <QFrame>
+#include <QWidget>
 
+#include "common/params.h"
+#include "selfdrive/ui/qt/body.h"
+#include "selfdrive/ui/qt/widgets/offroad_alerts.h"
+#include "../../sunnypilot/selfdrive/ui/ui.h"
+#include "selfdrive/ui/qt/home.h"
+
+#ifdef SUNNYPILOT
+#include "../../sunnypilot/selfdrive/ui/qt/sidebar.h"
+#define OnroadWindow OnroadWindowSP
+#else
 #include "selfdrive/ui/qt/sidebar.h"
+#include "selfdrive/ui/qt/onroad/onroad_home.h"
+#endif
 
-#include "selfdrive/ui/sunnypilot/ui.h"
-
-class SidebarSP : public Sidebar {
+class HomeWindowSP : public HomeWindow {
   Q_OBJECT
 
-public slots:
-  void updateState(const UIStateSP &s);
-
 public:
-  explicit SidebarSP(QWidget* parent = 0);
+  explicit HomeWindowSP(QWidget* parent = 0);
 
-private:
-  void paintSidebar(QPainter &p) override;
+protected:
+  void mousePressEvent(QMouseEvent* e) override;
+
+private slots:
+  void updateState(const UIState &s) override;
 };

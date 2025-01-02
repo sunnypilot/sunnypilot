@@ -24,23 +24,16 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/sidebar.h"
+#include "../../sunnypilot/selfdrive/ui/qt/window.h"
 
-#include <cmath>
-#include <QMouseEvent>
+MainWindowSP::MainWindowSP(QWidget *parent) :
+    MainWindow(parent, new HomeWindowSP(parent), new SettingsWindowSP(parent), new OnboardingWindowSP(parent)) {
 
-#include "selfdrive/ui/qt/util.h"
-
-SidebarSP::SidebarSP(QWidget *parent) : Sidebar(parent) {
-  QObject::disconnect(uiState(), &UIState::uiUpdate, this, &Sidebar::updateState);
-  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SidebarSP::updateState);
+  homeWindow = dynamic_cast<HomeWindowSP*>(MainWindow::homeWindow);
+  settingsWindow = dynamic_cast<SettingsWindowSP*>(MainWindow::settingsWindow);
+  onboardingWindow = dynamic_cast<OnboardingWindowSP*>(MainWindow::onboardingWindow);
 }
 
-void SidebarSP::updateState(const UIStateSP &s) {
-  if (!isVisible()) return;
-  Sidebar::updateState(s);
-}
-
-void SidebarSP::paintSidebar(QPainter &p){
-  Sidebar::paintSidebar(p);
+void MainWindowSP::closeSettings() {
+  MainWindow::closeSettings();
 }

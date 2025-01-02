@@ -24,22 +24,28 @@
  * Last updated: July 29, 2024
  */
 
-#pragma once
+#include "../../sunnypilot/selfdrive/ui/qt/onroad/onroad_home.h"
 
-#include "selfdrive/ui/qt/window.h"
-#include "selfdrive/ui/sunnypilot/qt/home.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "offroad/settings/onboarding.h"
+#include "common/swaglog.h"
+#include "selfdrive/ui/qt/util.h"
 
-class MainWindowSP : public MainWindow {
-  Q_OBJECT
+OnroadWindowSP::OnroadWindowSP(QWidget *parent) : OnroadWindow(parent) {
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &OnroadWindowSP::updateState);
+  QObject::connect(uiStateSP(), &UIStateSP::offroadTransition, this, &OnroadWindowSP::offroadTransition);
+}
 
-public:
-  explicit MainWindowSP(QWidget *parent = 0);
+void OnroadWindowSP::updateState(const UIStateSP &s) {
+  if (!s.scene.started) {
+    return;
+  }
 
-private:
-  HomeWindowSP *homeWindow;
-  SettingsWindowSP *settingsWindow;
-  OnboardingWindowSP *onboardingWindow;
-  void closeSettings() override;
-};
+  OnroadWindow::updateState(s);
+}
+
+void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
+  OnroadWindow::mousePressEvent(e);
+}
+
+void OnroadWindowSP::offroadTransition(bool offroad) {
+  OnroadWindow::offroadTransition(offroad);
+}

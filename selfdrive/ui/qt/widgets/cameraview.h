@@ -25,7 +25,7 @@
 #include "msgq/visionipc/visionipc_client.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/ui.h"
+#include "../../sunnypilot/selfdrive/ui/ui.h"
 #else
 #include "selfdrive/ui/ui.h"
 #endif

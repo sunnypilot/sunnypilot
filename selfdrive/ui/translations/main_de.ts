@@ -276,33 +276,6 @@
     </message>
 </context>
 <context>
-    <name>DriveStats</name>
-    <message>
-        <source>Drives</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>KM</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Miles</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -503,17 +476,6 @@
     </message>
 </context>
 <context>
-    <name>ParamControlSP</name>
-    <message>
-        <source>Enable</source>
-        <translation type="unfinished">Aktivieren</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">Abbrechen</translation>
-    </message>
-</context>
-<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -659,37 +621,6 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Developer</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>SettingsWindowSP</name>
-    <message>
-        <source>×</source>
-        <translation type="unfinished">x</translation>
-    </message>
-    <message>
-        <source>Device</source>
-        <translation type="unfinished">Gerät</translation>
-    </message>
-    <message>
-        <source>Network</source>
-        <translation type="unfinished">Netzwerk</translation>
-    </message>
-    <message>
-        <source>Toggles</source>
-        <translation type="unfinished">Schalter</translation>
-    </message>
-    <message>
-        <source>Software</source>
-        <translation type="unfinished">Software</translation>
-    </message>
-    <message>
-        <source>Developer</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>sunnypilot</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1018,21 +949,6 @@ This may take up to a minute.</source>
     <message>
         <source>Agree</source>
         <translation>Zustimmen</translation>
-    </message>
-</context>
-<context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">Benutzungsbedingungen</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation type="unfinished">Ablehnen</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation type="unfinished">Scrolle herunter um zu akzeptieren</translation>
     </message>
 </context>
 <context>

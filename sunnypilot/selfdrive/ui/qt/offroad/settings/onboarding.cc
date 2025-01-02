@@ -24,7 +24,7 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/onboarding.h"
+#include "../../sunnypilot/selfdrive/ui/qt/offroad/settings/onboarding.h"
 
 #include <string>
 

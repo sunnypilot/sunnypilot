@@ -24,10 +24,10 @@
  * Last updated: July 29, 2024
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "../../sunnypilot/selfdrive/ui/qt/offroad/settings/settings.h"
 
 #include "selfdrive/ui/qt/network/networking.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+#include "../../sunnypilot/selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {

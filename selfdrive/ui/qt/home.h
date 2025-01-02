@@ -13,9 +13,9 @@
 #include "selfdrive/ui/ui.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
-#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_home.h"
-#include "selfdrive/ui/sunnypilot/qt/sidebar.h"
+#include "../../sunnypilot/selfdrive/ui/qt/widgets/controls.h"
+#include "../../sunnypilot/selfdrive/ui/qt/onroad/onroad_home.h"
+#include "../../sunnypilot/selfdrive/ui/qt/sidebar.h"
 #define OnroadWindow OnroadWindowSP
 #define LayoutWidget LayoutWidgetSP
 #define Sidebar SidebarSP
