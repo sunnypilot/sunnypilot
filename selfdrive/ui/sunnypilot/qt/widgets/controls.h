@@ -38,7 +38,7 @@
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
 
-inline void ReplaceWidget(QWidget* old_widget, QWidget* new_widget) {
+inline void ReplaceWidget(QWidget *old_widget, QWidget *new_widget) {
   if (old_widget && old_widget->parentWidget() && old_widget->parentWidget()->layout()) {
     old_widget->parentWidget()->layout()->replaceWidget(old_widget, new_widget);
     old_widget->hide();
@@ -57,12 +57,12 @@ public:
     setStyleSheet("QLabel { color : " + color + "; }");
   }
 
-  signals:
-    void clicked();
+signals:
+  void clicked();
 
 protected:
   void paintEvent(QPaintEvent *event) override;
-  void resizeEvent(QResizeEvent* event) override;
+  void resizeEvent(QResizeEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override {
     if (rect().contains(event->pos())) {
       emit clicked();
@@ -94,8 +94,8 @@ public:
     description->setVisible(false);
   }
 
-  public slots:
-    void showDescription() {
+public slots:
+  void showDescription() {
     description->setVisible(true);
   }
 
@@ -143,11 +143,11 @@ public:
   inline QString text() const { return btn.text(); }
   inline void click() { btn.click(); }
 
-  signals:
-    void clicked();
+signals:
+  void clicked();
 
-  public slots:
-    void setEnabled(bool enabled) { btn.setEnabled(enabled); }
+public slots:
+  void setEnabled(bool enabled) { btn.setEnabled(enabled); }
 
 private:
   QPushButton btn;
@@ -227,9 +227,10 @@ private:
 
 class ButtonParamControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
+
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                     const std::vector<QString> &button_texts, const int minimum_button_width = 300) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts) {
+                       const std::vector<QString> &button_texts, const int minimum_button_width = 300) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -278,7 +279,7 @@ public:
   }
 
   void setEnabled(bool enable) {
-    for (auto btn : button_group->buttons()) {
+    for (auto btn: button_group->buttons()) {
       btn->setEnabled(enable);
     }
     button_group_enabled = enable;
@@ -362,7 +363,8 @@ private:
 
 class ListWidgetSP : public QWidget {
   Q_OBJECT
- public:
+
+public:
   explicit ListWidgetSP(QWidget *parent = 0, const bool split_line = true) : QWidget(parent), _split_line(split_line), outer_layout(this) {
     outer_layout.setMargin(0);
     outer_layout.setSpacing(0);
@@ -377,7 +379,7 @@ class ListWidgetSP : public QWidget {
 
   inline void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
   inline void RemoveWidgetAt(const int index) {
-    if (QLayoutItem* item; (item = inner_layout.takeAt(index)) != nullptr) {
+    if (QLayoutItem *item; (item = inner_layout.takeAt(index)) != nullptr) {
       if (item->widget()) delete item->widget();
       delete item;
     }
@@ -502,7 +504,7 @@ public:
   inline void setLabel(const QString &text) { label.setText(text); }
 
   void setEnabled(bool enabled) {
-    for (auto btn : button_group->buttons()) {
+    for (auto btn: button_group->buttons()) {
       btn->setEnabled(enabled);
     }
     label.setEnabled(enabled);
