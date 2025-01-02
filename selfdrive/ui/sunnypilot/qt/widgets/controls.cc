@@ -101,6 +101,16 @@ void AbstractControlSP::hideEvent(QHideEvent *e) {
 AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : AbstractControlSP(title, desc, icon, parent) {
 
+  if (title_label != nullptr) {
+    delete title_label;
+    title_label = nullptr;
+  }
+
+  if (description != nullptr) {
+    delete description;
+    description = nullptr;
+  }
+
   if (value != nullptr) {
     ReplaceWidget(value, new QWidget());
     value = nullptr;
