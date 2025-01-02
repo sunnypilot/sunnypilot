@@ -115,6 +115,7 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
 
 protected:
   AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  void hideEvent(QHideEvent *e) override;
 
 private:
   QSpacerItem *spacingItem = nullptr;

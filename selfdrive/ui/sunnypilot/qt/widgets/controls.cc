@@ -173,6 +173,17 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   main_layout->addStretch();
 }
 
+void AbstractControlSP_SELECTOR::hideEvent(QHideEvent *e) {
+  if (description != nullptr) {
+    description->hide();
+  }
+
+  if (spacingItem == nullptr) {
+    spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
+    main_layout->insertItem(main_layout->indexOf(description), spacingItem);
+  }
+}
+
 // controls
 
 ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControlSP(title, desc, "", parent) {
