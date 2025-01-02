@@ -1,7 +1,6 @@
 widgets_src = [
   "sunnypilot/ui.cc",
   "sunnypilot/qt/window.cc",
-  "sunnypilot/qt/network/networking.cc",
   "sunnypilot/qt/widgets/controls.cc",
   "sunnypilot/qt/widgets/drive_stats.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
