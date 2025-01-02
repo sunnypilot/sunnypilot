@@ -34,28 +34,29 @@ DATA: dict[str, capnp.lib.capnp._DynamicStructBuilder] = dict.fromkeys(
   "liveCalibration", "modelV2", "radarState", "driverMonitoringState", "carState",
   "driverStateV2", "roadCameraState", "wideRoadCameraState", "driverCameraState"], None)
 
-def setup_homescreen(click, pm: PubMaster):
+def setup_homescreen(click, pm: PubMaster, scroll):
   pass
 
-def setup_settings_device(click, pm: PubMaster):
+def setup_settings_device(click, pm: PubMaster, scroll=None):
   click(100, 100)
 
-def setup_settings_toggles(click, pm: PubMaster):
+def setup_settings_toggles(click, pm: PubMaster, scroll):
   setup_settings_device(click, pm)
   click(278, 650)
+  scroll(-300, 1300, 720)
   time.sleep(UI_DELAY)
 
-def setup_settings_software(click, pm: PubMaster):
+def setup_settings_software(click, pm: PubMaster, scroll):
   setup_settings_device(click, pm)
   click(278, 800)
   time.sleep(UI_DELAY)
 
-def setup_settings_developer(click, pm: PubMaster):
+def setup_settings_developer(click, pm: PubMaster, scroll):
   setup_settings_device(click, pm)
   click(278, 960)
   time.sleep(UI_DELAY)
 
-def setup_onroad(click, pm: PubMaster):
+def setup_onroad(click, pm: PubMaster, scroll=None):
   vipc_server = VisionIpcServer("camerad")
   for stream_type, cam, _ in STREAMS:
     vipc_server.create_buffers(stream_type, 5, cam.width, cam.height)
@@ -87,52 +88,52 @@ def setup_onroad(click, pm: PubMaster):
     packet_id += 1
     time.sleep(0.05)
 
-def setup_onroad_disengaged(click, pm: PubMaster):
+def setup_onroad_disengaged(click, pm: PubMaster, scroll):
   DATA['selfdriveState'].selfdriveState.enabled = False
   setup_onroad(click, pm)
   DATA['selfdriveState'].selfdriveState.enabled = True
 
-def setup_onroad_override(click, pm: PubMaster):
+def setup_onroad_override(click, pm: PubMaster, scroll):
   DATA['selfdriveState'].selfdriveState.state = log.SelfdriveState.OpenpilotState.overriding
   setup_onroad(click, pm)
   DATA['selfdriveState'].selfdriveState.state = log.SelfdriveState.OpenpilotState.enabled
 
 
-def setup_onroad_wide(click, pm: PubMaster):
+def setup_onroad_wide(click, pm: PubMaster, scroll=None):
   DATA['selfdriveState'].selfdriveState.experimentalMode = True
   DATA["carState"].carState.vEgo = 1
   setup_onroad(click, pm)
 
-def setup_onroad_sidebar(click, pm: PubMaster):
+def setup_onroad_sidebar(click, pm: PubMaster, scroll):
   setup_onroad(click, pm)
   click(500, 500)
   setup_onroad(click, pm)
 
-def setup_onroad_wide_sidebar(click, pm: PubMaster):
+def setup_onroad_wide_sidebar(click, pm: PubMaster, scroll):
   setup_onroad_wide(click, pm)
   click(500, 500)
   setup_onroad_wide(click, pm)
 
-def setup_body(click, pm: PubMaster):
+def setup_body(click, pm: PubMaster, scroll):
   DATA['carParams'].carParams.carName = "BODY"
   DATA['carParams'].carParams.notCar = True
   DATA['carState'].carState.charging = True
   DATA['carState'].carState.fuelGauge = 50.0
   setup_onroad(click, pm)
 
-def setup_keyboard(click, pm: PubMaster):
+def setup_keyboard(click, pm: PubMaster, scroll):
   setup_settings_device(click, pm)
   click(250, 965)
   click(1930, 228)
 
-def setup_driver_camera(click, pm: PubMaster):
+def setup_driver_camera(click, pm: PubMaster, scroll):
   setup_settings_device(click, pm)
   click(1950, 435)
   DATA['deviceState'].deviceState.started = False
   setup_onroad(click, pm)
   DATA['deviceState'].deviceState.started = True
 
-def setup_onroad_alert(click, pm: PubMaster, text1, text2, size, status=log.SelfdriveState.AlertStatus.normal):
+def setup_onroad_alert(click, pm: PubMaster, text1, text2, size, status=log.SelfdriveState.AlertStatus.normal, scroll=None):
   print(f'setup onroad alert, size: {size}')
   state = DATA['selfdriveState']
   origin_state_bytes = state.to_bytes()
@@ -145,16 +146,16 @@ def setup_onroad_alert(click, pm: PubMaster, text1, text2, size, status=log.Self
   setup_onroad(click, pm)
   DATA['selfdriveState'] = log_from_bytes(origin_state_bytes).as_builder()
 
-def setup_onroad_alert_small(click, pm: PubMaster):
+def setup_onroad_alert_small(click, pm: PubMaster, scroll):
   setup_onroad_alert(click, pm, 'This is a small alert message', '', log.SelfdriveState.AlertSize.small)
 
-def setup_onroad_alert_mid(click, pm: PubMaster):
+def setup_onroad_alert_mid(click, pm: PubMaster, scroll):
   setup_onroad_alert(click, pm, 'Medium Alert', 'This is a medium alert message', log.SelfdriveState.AlertSize.mid)
 
-def setup_onroad_alert_full(click, pm: PubMaster):
+def setup_onroad_alert_full(click, pm: PubMaster, scroll):
   setup_onroad_alert(click, pm, 'Full Alert', 'This is a full alert message', log.SelfdriveState.AlertSize.full)
 
-def setup_offroad_alert(click, pm: PubMaster):
+def setup_offroad_alert(click, pm: PubMaster, scroll):
   for alert in OFFROAD_ALERTS:
     set_offroad_alert(alert, True)
 
@@ -162,7 +163,7 @@ def setup_offroad_alert(click, pm: PubMaster):
   setup_settings_device(click, pm)
   click(100, 100)
 
-def setup_update_available(click, pm: PubMaster):
+def setup_update_available(click, pm: PubMaster, scroll):
   Params().put_bool("UpdateAvailable", True)
   release_notes_path = os.path.join(BASEDIR, "RELEASES.md")
   with open(release_notes_path) as file:
@@ -172,7 +173,7 @@ def setup_update_available(click, pm: PubMaster):
   setup_settings_device(click, pm)
   click(100, 100)
 
-def setup_pair_device(click, pm: PubMaster):
+def setup_pair_device(click, pm: PubMaster, scroll):
   click(1950, 435)
   click(1800, 900)
 
@@ -234,10 +235,14 @@ class TestUI:
     pyautogui.click(self.ui.left + x, self.ui.top + y, *args, **kwargs)
     time.sleep(UI_DELAY) # give enough time for the UI to react
 
+  def scroll(self, clicks, x, y, *args, **kwargs):
+    pyautogui.scroll(clicks, self.ui.left + x, self.ui.top + y, *args, **kwargs)
+    time.sleep(UI_DELAY)
+
   @with_processes(["ui"])
   def test_ui(self, name, setup_case):
     self.setup()
-    setup_case(self.click, self.pm)
+    setup_case(self.click, self.pm, self.scroll)
     self.screenshot(name)
 
 def create_screenshots():
