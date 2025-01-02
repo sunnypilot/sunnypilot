@@ -8,6 +8,8 @@
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/ui.h"
+#define UIState UIStateSP
+#define uiState uiStateSP
 #else
 #include "selfdrive/ui/ui.h"
 #endif
