@@ -88,7 +88,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
     PanelInfo("   " + tr("Network"), networking, "../assets/offroad/icon_network.png"),
     PanelInfo("   " + tr("Toggles"), toggles, "../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
     PanelInfo("   " + tr("Software"), new SoftwarePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_software.png"),
-    PanelInfo("   " + tr("Developer"), new DeveloperPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_software.png"),
+    PanelInfo("   " + tr("Developer"), new DeveloperPanel(this), "../assets/offroad/icon_shell.png"),
   };
 
   nav_btns = new QButtonGroup(this);
