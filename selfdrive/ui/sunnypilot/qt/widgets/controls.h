@@ -115,6 +115,9 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
 
 protected:
   AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+
+private:
+  QSpacerItem *spacingItem = nullptr;
 };
 
 // widget to display a value
@@ -341,7 +344,7 @@ protected:
 
     // Draw the rectangle
 #ifdef Q_OS_MAC
-    QRect rect(0 + 2, h - 16, w, h);
+    QRect rect(0 + 2, h - 46, w, h);
 #else
     QRect rect(0 + 2, h - 24, w, h);
 #endif
