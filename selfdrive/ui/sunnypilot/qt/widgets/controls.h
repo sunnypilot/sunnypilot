@@ -348,7 +348,7 @@ protected:
     }
 
     // Draw the rectangle
-#ifdef Q_OS_MAC
+#ifdef __APPLE__
     QRect rect(0 + 2, h - 16, w, h);
 #else
     QRect rect(0 + 2, h - 24, w, h);
