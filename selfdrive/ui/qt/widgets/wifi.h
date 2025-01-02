@@ -6,6 +6,7 @@
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/ui.h"
+#define UIState UIStateSP
 #else
 #include "selfdrive/ui/ui.h"
 #endif
