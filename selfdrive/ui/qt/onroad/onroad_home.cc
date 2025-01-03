@@ -36,6 +36,7 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
 
   setAttribute(Qt::WA_OpaquePaintEvent);
 
+  // We handle the connection of the signals on the derived class
 #ifndef SUNNYPILOT
   QObject::connect(uiState(), &UIState::uiUpdate, this, &OnroadWindow::updateState);
   QObject::connect(uiState(), &UIState::offroadTransition, this, &OnroadWindow::offroadTransition);

@@ -4,6 +4,7 @@
 
 #include "system/hardware/hw.h"
 
+// We have this constructor so that we can provide custom implementations of the windows. By default (stock_ui) would receive them as nullptr, so they'll be instantiated with stock. Otherwise they'd be SP instances
 MainWindow::MainWindow(QWidget *parent, HomeWindow *hw, SettingsWindow *sw, OnboardingWindow *ow) :
     QWidget(parent),
     homeWindow(hw ? hw : new HomeWindow(this)),
