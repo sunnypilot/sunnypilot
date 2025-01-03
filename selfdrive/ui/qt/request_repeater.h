@@ -4,7 +4,7 @@
 #include "selfdrive/ui/qt/api.h"
 
 #ifdef SUNNYPILOT
-#include "../../sunnypilot/selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 #else
 #include "selfdrive/ui/ui.h"
 #endif

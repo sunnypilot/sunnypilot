@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/drive_stats.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/drive_stats.h"
 
 #include <QDebug>
 #include <QGridLayout>

@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "../../sunnypilot/selfdrive/ui/qt/window.h"
+#include "selfdrive/ui/sunnypilot/qt/window.h"
 
 MainWindowSP::MainWindowSP(QWidget *parent)
     : MainWindow(parent, new HomeWindowSP(parent), new SettingsWindowSP(parent), new OnboardingWindowSP(parent)) {

@@ -11,7 +11,7 @@
 
 #include "selfdrive/ui/qt/sidebar.h"
 
-#include "../../sunnypilot/selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 class SidebarSP : public Sidebar {
   Q_OBJECT

@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef SUNNYPILOT
-#include "../../sunnypilot/selfdrive/ui/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #else
 #include "selfdrive/ui/qt/offroad/settings.h"
 #endif

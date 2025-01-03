@@ -13,8 +13,8 @@
 #include "selfdrive/ui/qt/util.h"
 
 #ifdef SUNNYPILOT
-#include "../../sunnypilot/selfdrive/ui/ui.h"
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #define ListWidget ListWidgetSP
 #define ParamControl ParamControlSP
 #define ButtonControl ButtonControlSP

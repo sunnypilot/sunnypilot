@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "../../sunnypilot/selfdrive/ui/ui.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 #include "common/watchdog.h"
 

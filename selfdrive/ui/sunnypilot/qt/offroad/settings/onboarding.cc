@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "../../sunnypilot/selfdrive/ui/qt/offroad/settings/onboarding.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/onboarding.h"
 
 #include <string>
 

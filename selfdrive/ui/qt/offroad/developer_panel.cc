@@ -5,7 +5,7 @@
 #include "common/util.h"
 
 #ifdef SUNNYPILOT
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif

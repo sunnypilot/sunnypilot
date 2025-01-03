@@ -10,8 +10,8 @@
 #include "selfdrive/ui/qt/util.h"
 
 #ifdef SUNNYPILOT
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/controls.h"
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"

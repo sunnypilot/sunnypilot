@@ -276,6 +276,33 @@
     </message>
 </context>
 <context>
+    <name>DriveStats</name>
+    <message>
+        <source>Drives</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hours</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ALL TIME</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PAST WEEK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>KM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Miles</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -477,6 +504,17 @@
     </message>
 </context>
 <context>
+    <name>ParamControlSP</name>
+    <message>
+        <source>Enable</source>
+        <translation type="unfinished">Ativar</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">Cancelar</translation>
+    </message>
+</context>
+<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -624,6 +662,37 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>Developer</source>
         <translation>Desenvdor</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation type="unfinished">×</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation type="unfinished">Dispositivo</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished">Rede</translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation type="unfinished">Ajustes</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished">Software</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished">Desenvdor</translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -949,6 +1018,21 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>Agree</source>
         <translation>Concordo</translation>
+    </message>
+</context>
+<context>
+    <name>TermsPageSP</name>
+    <message>
+        <source>Terms &amp; Conditions</source>
+        <translation type="unfinished">Termos &amp; Condições</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation type="unfinished">Declinar</translation>
+    </message>
+    <message>
+        <source>Scroll to accept</source>
+        <translation type="unfinished">Role a tela para aceitar</translation>
     </message>
 </context>
 <context>
