@@ -29,15 +29,15 @@
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 
 class ScrollViewSP : public ScrollView {
- Q_OBJECT
+  Q_OBJECT
 
 public:
- explicit ScrollViewSP(QWidget *w = nullptr, QWidget *parent = nullptr) : ScrollView(w, parent) {}
+  explicit ScrollViewSP(QWidget *w = nullptr, QWidget *parent = nullptr) : ScrollView(w, parent) {}
 
- public slots:
-   void setLastScrollPosition();
- void restoreScrollPosition();
+public slots:
+  void setLastScrollPosition();
+  void restoreScrollPosition();
 
 private:
- int lastScrollPosition = 0;
+  int lastScrollPosition = 0;
 };

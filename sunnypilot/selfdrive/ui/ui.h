@@ -32,7 +32,7 @@ class UIStateSP : public UIState {
   Q_OBJECT
 
 public:
-  UIStateSP(QObject* parent = 0);
+  UIStateSP(QObject *parent = 0);
   void updateStatus() override;
 
 signals:
@@ -43,7 +43,7 @@ private slots:
 };
 
 UIStateSP *uiStateSP();
-UIStateSP *uiState();
+inline UIStateSP *uiState() { return uiStateSP(); };
 
 // device management class
 class DeviceSP : public Device {

@@ -42,7 +42,7 @@ void OnroadWindowSP::updateState(const UIStateSP &s) {
   OnroadWindow::updateState(s);
 }
 
-void OnroadWindowSP::mousePressEvent(QMouseEvent* e) {
+void OnroadWindowSP::mousePressEvent(QMouseEvent *e) {
   OnroadWindow::mousePressEvent(e);
 }
 

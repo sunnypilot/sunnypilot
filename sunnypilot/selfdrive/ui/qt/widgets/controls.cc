@@ -186,7 +186,9 @@ void AbstractControlSP_SELECTOR::hideEvent(QHideEvent *e) {
 
 // controls
 
-ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent) : AbstractControlSP(title, desc, "", parent) {
+ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent)
+    : AbstractControlSP(title, desc, "", parent) {
+
   btn.setText(text);
   btn.setStyleSheet(R"(
     QPushButton {
@@ -211,7 +213,8 @@ ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, cons
 
 // ElidedLabelSP
 
-ElidedLabelSP::ElidedLabelSP(QWidget *parent) : ElidedLabelSP({}, parent) {}
+ElidedLabelSP::ElidedLabelSP(QWidget *parent) : ElidedLabelSP({}, parent) {
+}
 
 ElidedLabelSP::ElidedLabelSP(const QString &text, QWidget *parent) : QLabel(text.trimmed(), parent) {
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -241,6 +244,7 @@ void ElidedLabelSP::paintEvent(QPaintEvent *event) {
 
 ParamControlSP::ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ToggleControlSP(title, desc, icon, false, parent) {
+
   key = param.toStdString();
   QObject::connect(this, &ParamControlSP::toggleFlipped, this, &ParamControlSP::toggleClicked);
 

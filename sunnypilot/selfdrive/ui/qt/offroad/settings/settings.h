@@ -35,7 +35,7 @@ class SettingsWindowSP : public SettingsWindow {
   Q_OBJECT
 
 public:
-  explicit SettingsWindowSP(QWidget* parent = nullptr);
+  explicit SettingsWindowSP(QWidget *parent = nullptr);
 
 protected:
   struct PanelInfo {

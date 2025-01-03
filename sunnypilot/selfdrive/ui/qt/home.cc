@@ -26,12 +26,13 @@
 
 #include "../../sunnypilot/selfdrive/ui/qt/home.h"
 
-HomeWindowSP::HomeWindowSP(QWidget* parent) : HomeWindow(parent) {}
+HomeWindowSP::HomeWindowSP(QWidget *parent) : HomeWindow(parent) {
+}
 
 void HomeWindowSP::updateState(const UIState &s) {
   HomeWindow::updateState(s);
 }
 
-void HomeWindowSP::mousePressEvent(QMouseEvent* e) {
+void HomeWindowSP::mousePressEvent(QMouseEvent *e) {
   HomeWindow::mousePressEvent(e);
 }

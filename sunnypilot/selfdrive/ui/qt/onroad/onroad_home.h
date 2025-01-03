@@ -32,10 +32,10 @@ class OnroadWindowSP : public OnroadWindow {
   Q_OBJECT
 
 public:
-  OnroadWindowSP(QWidget* parent = 0);
+  OnroadWindowSP(QWidget *parent = 0);
 
 private:
-  void mousePressEvent(QMouseEvent* e) override;
+  void mousePressEvent(QMouseEvent *e) override;
 
 protected slots:
   void offroadTransition(bool offroad) override;

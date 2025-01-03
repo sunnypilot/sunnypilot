@@ -39,7 +39,6 @@ void TogglesPanelSP::updateState(const UIStateSP &s) {
 }
 
 SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
-
   // setup two main layouts
   sidebar_widget = new QWidget;
   QVBoxLayout *sidebar_layout = new QVBoxLayout(sidebar_widget);
@@ -143,7 +142,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
   sidebar_layout->addLayout(close_btn_layout);
 
   // add layout for buttons scrolling
-  ScrollViewSP *buttons_scrollview  = new ScrollViewSP(buttons_widget, this);
+  ScrollViewSP *buttons_scrollview = new ScrollViewSP(buttons_widget, this);
   sidebar_layout->addWidget(buttons_scrollview);
 
   sidebar_widget->setFixedWidth(500);

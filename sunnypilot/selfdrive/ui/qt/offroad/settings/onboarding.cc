@@ -63,7 +63,7 @@ void TermsPageSP::showEvent(QShowEvent *event) {
   main_layout->addWidget(scroll);
   main_layout->addSpacing(50);
 
-  QHBoxLayout* buttons = new QHBoxLayout;
+  QHBoxLayout *buttons = new QHBoxLayout;
   buttons->setMargin(0);
   buttons->setSpacing(45);
   main_layout->addLayout(buttons);
@@ -96,7 +96,7 @@ void TermsPageSP::showEvent(QShowEvent *event) {
 }
 
 void OnboardingWindowSP::updateActiveScreen() {
-  if(accepted_terms && training_done && !accepted_terms_sp) {
+  if (accepted_terms && training_done && !accepted_terms_sp) {
     setCurrentIndex(3);
   } else {
     OnboardingWindow::updateActiveScreen();
@@ -108,8 +108,8 @@ OnboardingWindowSP::OnboardingWindowSP(QWidget *parent) : OnboardingWindow(paren
   accepted_terms_sp = params.get("HasAcceptedTermsSP") == current_terms_version_sp;
   LOGD("accepted_terms_sp: %s", params.get("HasAcceptedTermsSP").c_str());
 
-  auto* terms_sp = new TermsPageSP(true, parent);
-  addWidget(terms_sp);  // index = 3
+  auto *terms_sp = new TermsPageSP(true, parent);
+  addWidget(terms_sp); // index = 3
   connect(terms_sp, &TermsPageSP::acceptedTerms, [=]() {
     params.put("HasAcceptedTermsSP", current_terms_version_sp);
     accepted_terms_sp = true;

@@ -47,10 +47,10 @@ class HomeWindowSP : public HomeWindow {
   Q_OBJECT
 
 public:
-  explicit HomeWindowSP(QWidget* parent = 0);
+  explicit HomeWindowSP(QWidget *parent = 0);
 
 protected:
-  void mousePressEvent(QMouseEvent* e) override;
+  void mousePressEvent(QMouseEvent *e) override;
 
 private slots:
   void updateState(const UIState &s) override;

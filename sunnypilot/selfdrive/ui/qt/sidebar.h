@@ -39,7 +39,7 @@ public slots:
   void updateState(const UIStateSP &s);
 
 public:
-  explicit SidebarSP(QWidget* parent = 0);
+  explicit SidebarSP(QWidget *parent = 0);
 
 private:
   void paintSidebar(QPainter &p) override;

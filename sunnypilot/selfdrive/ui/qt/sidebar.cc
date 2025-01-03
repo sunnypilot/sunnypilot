@@ -41,6 +41,6 @@ void SidebarSP::updateState(const UIStateSP &s) {
   Sidebar::updateState(s);
 }
 
-void SidebarSP::paintSidebar(QPainter &p){
+void SidebarSP::paintSidebar(QPainter &p) {
   Sidebar::paintSidebar(p);
 }
