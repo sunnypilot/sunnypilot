@@ -65,7 +65,6 @@ protected slots:
 protected:
   Params params;
   ButtonControl *pair_device;
-  QHBoxLayout *power_layout;
 };
 
 class TogglesPanel : public ListWidget {

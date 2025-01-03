@@ -267,7 +267,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
 
   // power buttons
-  power_layout = new QHBoxLayout();
+  QHBoxLayout *power_layout = new QHBoxLayout();
   power_layout->setSpacing(30);
 
   QPushButton *reboot_btn = new QPushButton(tr("Reboot"));
