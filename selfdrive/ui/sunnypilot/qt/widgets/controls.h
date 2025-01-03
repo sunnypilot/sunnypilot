@@ -15,7 +15,7 @@
 #include "common/params.h"
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "selfdrive/ui/qt/widgets/input.h"
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/toggle.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/toggle.h"
 
 QFrame *horizontal_line(QWidget *parent = nullptr);
 

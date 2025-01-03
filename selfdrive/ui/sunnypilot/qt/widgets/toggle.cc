@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/toggle.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/toggle.h"
 
 #include <QPainter>
 

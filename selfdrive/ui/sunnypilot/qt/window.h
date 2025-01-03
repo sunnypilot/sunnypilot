@@ -8,9 +8,8 @@
 #pragma once
 
 #include "selfdrive/ui/qt/window.h"
-#include "../../sunnypilot/selfdrive/ui/qt/home.h"
-#include "../../sunnypilot/selfdrive/ui/qt/offroad/settings/settings.h"
-#include "offroad/settings/onboarding.h"
+#include "selfdrive/ui/sunnypilot/qt/home.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class MainWindowSP : public MainWindow {
   Q_OBJECT
@@ -21,6 +20,5 @@ public:
 private:
   HomeWindowSP *homeWindow;
   SettingsWindowSP *settingsWindow;
-  OnboardingWindowSP *onboardingWindow;
   void closeSettings() override;
 };

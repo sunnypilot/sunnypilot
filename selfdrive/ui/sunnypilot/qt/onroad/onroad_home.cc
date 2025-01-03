@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "../../sunnypilot/selfdrive/ui/qt/onroad/onroad_home.h"
+#include "selfdrive/ui/sunnypilot/qt/onroad/onroad_home.h"
 
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/util.h"
