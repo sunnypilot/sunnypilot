@@ -990,21 +990,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation>条款和条件</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation>拒绝</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation>滑动以接受</translation>
-    </message>
-</context>
-<context>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>

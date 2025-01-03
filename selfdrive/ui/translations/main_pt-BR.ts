@@ -994,21 +994,6 @@ Isso pode levar até um minuto.</translation>
     </message>
 </context>
 <context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation>Termos &amp; Condições</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation>Declinar</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation>Role a tela para aceitar</translation>
-    </message>
-</context>
-<context>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>

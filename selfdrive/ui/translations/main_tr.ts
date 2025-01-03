@@ -988,21 +988,6 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
-    <name>TermsPageSP</name>
-    <message>
-        <source>Terms &amp; Conditions</source>
-        <translation>Şartlar ve Koşullar</translation>
-    </message>
-    <message>
-        <source>Decline</source>
-        <translation>Reddet</translation>
-    </message>
-    <message>
-        <source>Scroll to accept</source>
-        <translation>Kabul etmek için kaydırın</translation>
-    </message>
-</context>
-<context>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>

@@ -9,7 +9,6 @@ widgets_src = [
 qt_src = [
   "sunnypilot/qt/home.cc",
   "sunnypilot/qt/sidebar.cc",
-  "sunnypilot/qt/offroad/settings/onboarding.cc",
   "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
 ]
