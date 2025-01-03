@@ -206,7 +206,7 @@ class CarController(CarControllerBase):
     self.apply_angle_now = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgoRaw,
                                                self.params)
 
-    lkas_max_torque = 200
+    lkas_max_torque = 180
     if abs(CS.out.steeringTorque) > 200:
       self.driver_steering_angle_above_timer -= 1
       if self.driver_steering_angle_above_timer <= 30:
