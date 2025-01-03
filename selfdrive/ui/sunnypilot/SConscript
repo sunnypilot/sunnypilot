@@ -1,14 +1,14 @@
 widgets_src = [
-  "sunnypilot/ui.cc",
-  "sunnypilot/qt/window.cc",
+  "sunnypilot/qt/widgets/toggle.cc",
   "sunnypilot/qt/widgets/controls.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
-  "sunnypilot/qt/widgets/toggle.cc",
 ]
 
 qt_src = [
-  "sunnypilot/qt/home.cc",
+  "sunnypilot/ui.cc",
   "sunnypilot/qt/sidebar.cc",
+  "sunnypilot/qt/window.cc",
+  "sunnypilot/qt/home.cc",
   "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
 ]
