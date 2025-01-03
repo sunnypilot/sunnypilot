@@ -15,10 +15,9 @@ class TermsPageSP : public TermsPage {
   Q_OBJECT
 
 public:
-  explicit TermsPageSP(bool sunnypilot = false, QWidget *parent = 0) : TermsPage(parent), sunnypilot_tc(sunnypilot) {}
+  explicit TermsPageSP(QWidget *parent = 0) : TermsPage(parent) {}
 
 private:
-  bool sunnypilot_tc = false;
   void showEvent(QShowEvent *event) override;
 };
 

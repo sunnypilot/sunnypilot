@@ -35,8 +35,7 @@ void TermsPageSP::showEvent(QShowEvent *event) {
   QLabel *text = new QLabel(this);
   text->setTextFormat(Qt::RichText);
   text->setWordWrap(true);
-  std::string tc_text = sunnypilot_tc ? "../assets/offroad/sp_tc.html" : "../assets/offroad/tc.html";
-  text->setText(QString::fromStdString(util::read_file(tc_text)));
+  text->setText(QString::fromStdString(util::read_file("../../sunnypilot/selfdrive/assets/offroad/sp_tc.html")));
   text->setStyleSheet("font-size:50px; font-weight: 200; color: #C9C9C9; background-color:#1B1B1B; padding:50px 50px;");
   ScrollView *scroll = new ScrollView(text, this);
 
@@ -44,7 +43,7 @@ void TermsPageSP::showEvent(QShowEvent *event) {
   main_layout->addWidget(scroll);
   main_layout->addSpacing(50);
 
-  QHBoxLayout *buttons = new QHBoxLayout;
+  QHBoxLayout* buttons = new QHBoxLayout;
   buttons->setMargin(0);
   buttons->setSpacing(45);
   main_layout->addLayout(buttons);
@@ -87,9 +86,8 @@ void OnboardingWindowSP::updateActiveScreen() {
 OnboardingWindowSP::OnboardingWindowSP(QWidget *parent) : OnboardingWindow(parent) {
   std::string current_terms_version_sp = params.get("TermsVersionSunnypilot");
   accepted_terms_sp = params.get("HasAcceptedTermsSP") == current_terms_version_sp;
-  LOGD("accepted_terms_sp: %s", params.get("HasAcceptedTermsSP").c_str());
 
-  auto *terms_sp = new TermsPageSP(true, parent);
+  TermsPageSP* terms_sp = new TermsPageSP(parent);
   addWidget(terms_sp); // index = 3
   connect(terms_sp, &TermsPageSP::acceptedTerms, [=]() {
     params.put("HasAcceptedTermsSP", current_terms_version_sp);
