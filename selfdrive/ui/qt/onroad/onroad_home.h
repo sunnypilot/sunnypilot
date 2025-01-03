@@ -5,7 +5,6 @@
 
 #ifdef SUNNYPILOT
 #define UIState UIStateSP
-#define uiState uiStateSP
 #endif
 
 class OnroadWindow : public QWidget {
