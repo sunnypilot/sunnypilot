@@ -5,7 +5,7 @@
 #include "system/hardware/hw.h"
 
 #ifdef SUNNYPILOT
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #define ButtonControl ButtonControlSP
 #define ToggleControl ToggleControlSP
 #else

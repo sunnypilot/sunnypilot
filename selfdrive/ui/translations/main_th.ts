@@ -276,6 +276,33 @@
     </message>
 </context>
 <context>
+    <name>DriveStats</name>
+    <message>
+        <source>Drives</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hours</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ALL TIME</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PAST WEEK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>KM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Miles</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -476,6 +503,17 @@
     </message>
 </context>
 <context>
+    <name>ParamControlSP</name>
+    <message>
+        <source>Enable</source>
+        <translation type="unfinished">เปิดใช้งาน</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">ยกเลิก</translation>
+    </message>
+</context>
+<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -619,6 +657,37 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Developer</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation type="unfinished">×</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation type="unfinished">อุปกรณ์</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation type="unfinished">เครือข่าย</translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation type="unfinished">ตัวเลือก</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished">ซอฟต์แวร์</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -945,6 +1014,21 @@ This may take up to a minute.</source>
     <message>
         <source>Agree</source>
         <translation>ยอมรับ</translation>
+    </message>
+</context>
+<context>
+    <name>TermsPageSP</name>
+    <message>
+        <source>Terms &amp; Conditions</source>
+        <translation type="unfinished">ข้อตกลงและเงื่อนไข</translation>
+    </message>
+    <message>
+        <source>Decline</source>
+        <translation type="unfinished">ปฏิเสธ</translation>
+    </message>
+    <message>
+        <source>Scroll to accept</source>
+        <translation type="unfinished">เลื่อนเพื่อตอบรับข้อตกลง</translation>
     </message>
 </context>
 <context>

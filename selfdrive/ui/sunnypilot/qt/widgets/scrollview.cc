@@ -24,7 +24,7 @@
  * Last updated: July 29, 2024
 */
 
-#include "../../sunnypilot/selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 #include <QScrollBar>
 
