@@ -477,12 +477,12 @@
 <context>
     <name>ParamControlSP</name>
     <message>
-        <source>Enable</source>
-        <translation type="unfinished">を有効化</translation>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation type="unfinished">キャンセル</translation>
+        <source>Enable</source>
+        <translation>を有効化</translation>
     </message>
 </context>
 <context>
@@ -635,23 +635,23 @@ This may take up to a minute.</source>
     <name>SettingsWindowSP</name>
     <message>
         <source>×</source>
-        <translation type="unfinished">×</translation>
+        <translation>×</translation>
     </message>
     <message>
         <source>Device</source>
-        <translation type="unfinished">デバイス</translation>
+        <translation>デバイス</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation type="unfinished">ﾈｯﾄﾜｰｸ</translation>
+        <translation>ﾈｯﾄﾜｰｸ</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation type="unfinished">機能設定</translation>
+        <translation>機能設定</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation type="unfinished">ｿﾌﾄｳｪｱ</translation>
+        <translation>ｿﾌﾄｳｪｱ</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -659,7 +659,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -991,15 +991,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">利用規約</translation>
+        <translation>利用規約</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="unfinished">拒否</translation>
+        <translation>拒否</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="unfinished">スクロールして同意</translation>
+        <translation>スクロールして同意</translation>
     </message>
 </context>
 <context>

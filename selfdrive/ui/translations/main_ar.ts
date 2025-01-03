@@ -484,11 +484,11 @@
     <name>ParamControlSP</name>
     <message>
         <source>Enable</source>
-        <translation type="unfinished">تمكين</translation>
+        <translation>تمكين</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">إلغاء</translation>
+        <translation>إلغاء</translation>
     </message>
 </context>
 <context>
@@ -657,31 +657,31 @@ This may take up to a minute.</source>
     <name>SettingsWindowSP</name>
     <message>
         <source>×</source>
-        <translation type="unfinished">×</translation>
+        <translation>×</translation>
     </message>
     <message>
         <source>Device</source>
-        <translation type="unfinished">الجهاز</translation>
+        <translation>الجهاز</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation type="unfinished">الشبكة</translation>
+        <translation>الشبكة</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation type="unfinished">المثبتتات</translation>
+        <translation>المثبتتات</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation type="unfinished">البرنامج</translation>
+        <translation>البرنامج</translation>
     </message>
     <message>
         <source>Developer</source>
-        <translation type="unfinished">المطور</translation>
+        <translation>المطور</translation>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -1013,15 +1013,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">الشروط والأحكام</translation>
+        <translation>الشروط والأحكام</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="unfinished">رفض</translation>
+        <translation>رفض</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="unfinished">قم بالتمرير للقبول</translation>
+        <translation>قم بالتمرير للقبول</translation>
     </message>
 </context>
 <context>

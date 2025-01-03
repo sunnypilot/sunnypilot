@@ -478,12 +478,12 @@
 <context>
     <name>ParamControlSP</name>
     <message>
-        <source>Enable</source>
-        <translation type="unfinished">启用</translation>
+        <source>Cancel</source>
+        <translation>取消</translation>
     </message>
     <message>
-        <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
+        <source>Enable</source>
+        <translation>启用</translation>
     </message>
 </context>
 <context>
@@ -637,23 +637,23 @@ This may take up to a minute.</source>
     <name>SettingsWindowSP</name>
     <message>
         <source>×</source>
-        <translation type="unfinished">×</translation>
+        <translation>×</translation>
     </message>
     <message>
         <source>Device</source>
-        <translation type="unfinished">设备</translation>
+        <translation>设备</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation type="unfinished">网络</translation>
+        <translation>网络</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation type="unfinished">设定</translation>
+        <translation>设定</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation type="unfinished">软件</translation>
+        <translation>软件</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -661,7 +661,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -993,15 +993,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">条款和条件</translation>
+        <translation>条款和条件</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="unfinished">拒绝</translation>
+        <translation>拒绝</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="unfinished">滑动以接受</translation>
+        <translation>滑动以接受</translation>
     </message>
 </context>
 <context>

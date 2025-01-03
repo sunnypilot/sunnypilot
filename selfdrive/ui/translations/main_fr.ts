@@ -480,11 +480,11 @@
     <name>ParamControlSP</name>
     <message>
         <source>Enable</source>
-        <translation type="unfinished">Activer</translation>
+        <translation>Activer</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">Annuler</translation>
+        <translation>Annuler</translation>
     </message>
 </context>
 <context>
@@ -641,23 +641,23 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     <name>SettingsWindowSP</name>
     <message>
         <source>×</source>
-        <translation type="unfinished">×</translation>
+        <translation>×</translation>
     </message>
     <message>
         <source>Device</source>
-        <translation type="unfinished">Appareil</translation>
+        <translation>Appareil</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation type="unfinished">Réseau</translation>
+        <translation>Réseau</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation type="unfinished">Options</translation>
+        <translation>Options</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation type="unfinished">Logiciel</translation>
+        <translation>Logiciel</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -665,7 +665,7 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -997,15 +997,15 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">Termes &amp; Conditions</translation>
+        <translation>Termes &amp; Conditions</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="unfinished">Refuser</translation>
+        <translation>Refuser</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="unfinished">Faire défiler pour accepter</translation>
+        <translation>Faire défiler pour accepter</translation>
     </message>
 </context>
 <context>

@@ -479,11 +479,11 @@
     <name>ParamControlSP</name>
     <message>
         <source>Enable</source>
-        <translation type="unfinished">เปิดใช้งาน</translation>
+        <translation>เปิดใช้งาน</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">ยกเลิก</translation>
+        <translation>ยกเลิก</translation>
     </message>
 </context>
 <context>
@@ -637,23 +637,23 @@ This may take up to a minute.</source>
     <name>SettingsWindowSP</name>
     <message>
         <source>×</source>
-        <translation type="unfinished">×</translation>
+        <translation>×</translation>
     </message>
     <message>
         <source>Device</source>
-        <translation type="unfinished">อุปกรณ์</translation>
+        <translation>อุปกรณ์</translation>
     </message>
     <message>
         <source>Network</source>
-        <translation type="unfinished">เครือข่าย</translation>
+        <translation>เครือข่าย</translation>
     </message>
     <message>
         <source>Toggles</source>
-        <translation type="unfinished">ตัวเลือก</translation>
+        <translation>ตัวเลือก</translation>
     </message>
     <message>
         <source>Software</source>
-        <translation type="unfinished">ซอฟต์แวร์</translation>
+        <translation>ซอฟต์แวร์</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -661,7 +661,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -993,15 +993,15 @@ This may take up to a minute.</source>
     <name>TermsPageSP</name>
     <message>
         <source>Terms &amp; Conditions</source>
-        <translation type="unfinished">ข้อตกลงและเงื่อนไข</translation>
+        <translation>ข้อตกลงและเงื่อนไข</translation>
     </message>
     <message>
         <source>Decline</source>
-        <translation type="unfinished">ปฏิเสธ</translation>
+        <translation>ปฏิเสธ</translation>
     </message>
     <message>
         <source>Scroll to accept</source>
-        <translation type="unfinished">เลื่อนเพื่อตอบรับข้อตกลง</translation>
+        <translation>เลื่อนเพื่อตอบรับข้อตกลง</translation>
     </message>
 </context>
 <context>
