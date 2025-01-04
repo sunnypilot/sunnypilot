@@ -994,13 +994,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 1.),
   },
 
-  # TODO-SP: remove prior merging
-  EventName.silentPedalPressed: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
-    ET.NO_ENTRY: NoEntryAlert("Pedal Pressed During Attempt",
-                              visual_alert=VisualAlert.brakePressed),
-  },
-
   EventName.silentLkasEnable: {
     ET.ENABLE: EngagementAlert(AudibleAlert.none),
   },

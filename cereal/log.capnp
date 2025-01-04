@@ -189,16 +189,15 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     lkasDisable @152;
     manualSteeringRequired @153;
     manualLongitudinalRequired @154;
-    silentPedalPressed @155;
-    silentLkasEnable @156;
-    silentLkasDisable @157;
-    silentBrakeHold @158;
-    silentWrongGear @159;
-    silentReverseGear @160;
-    silentDoorOpen @161;
-    silentSeatbeltNotLatched @162;
-    silentParkBrake @163;
-    controlsMismatchLateral @164;
+    silentLkasEnable @155;
+    silentLkasDisable @156;
+    silentBrakeHold @157;
+    silentWrongGear @158;
+    silentReverseGear @159;
+    silentDoorOpen @160;
+    silentSeatbeltNotLatched @161;
+    silentParkBrake @162;
+    controlsMismatchLateral @163;
 
     soundsUnavailableDEPRECATED @47;
   }
