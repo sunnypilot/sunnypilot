@@ -21,8 +21,7 @@ def get_active_bundle(params: Params) -> custom.ModelManagerSP.ModelBundle:
   if params is None:
     params = Params()
 
-  active_bundle = params.get("ModelManager_ActiveBundle")
-  if active_bundle:
+  if active_bundle := params.get("ModelManager_ActiveBundle"):
     return messaging.log_from_bytes(active_bundle, custom.ModelManagerSP.ModelBundle)
 
   return None
