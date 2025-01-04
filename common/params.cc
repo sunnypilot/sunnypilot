@@ -223,6 +223,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SunnylinkDongleId", PERSISTENT},
     {"SunnylinkdPid", PERSISTENT},
     {"SunnylinkEnabled", PERSISTENT},
+    {"EnableGithubRunner", PERSISTENT},
+
+    {"DynamicExperimentalControl", PERSISTENT},
 };
 
 } // namespace

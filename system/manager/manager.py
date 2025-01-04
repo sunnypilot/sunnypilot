@@ -40,6 +40,7 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+    ("DynamicExperimentalControl", "0"),
   ]
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [

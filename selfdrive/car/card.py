@@ -76,6 +76,8 @@ class Car:
     self.CC_prev = car.CarControl.new_message()
     self.initialized_prev = False
 
+    self.dynamic_experimental_control = False
+
     self.last_actuators_output = structs.CarControl.Actuators()
 
     self.params = Params()
@@ -157,6 +159,7 @@ class Car:
 
     self.is_metric = self.params.get_bool("IsMetric")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
+    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
 
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
