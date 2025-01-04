@@ -46,11 +46,13 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
   // Helper lambda to get status line for a specific model type
   auto getModelStatusLine = [&](cereal::ModelManagerSP::Type type) -> QString {
     for (const auto &model : models) {
+      auto model_name = QString::fromStdString(model.getFullName());
       if (model.getType() == type) {
         QString modelType;
         switch (type) {
           case cereal::ModelManagerSP::Type::DRIVE:
             modelType = tr("Driving");
+            model_name = bundleName;
             break;
           case cereal::ModelManagerSP::Type::NAVIGATION:
             modelType = tr("Navigation");
@@ -65,13 +67,13 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
         
         if (status == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
           float percent = progress.getProgress();
-          return tr("Downloading %1 model [%2]... (%3%)").arg(modelType, bundleName).arg(percent, 0, 'f', 2);
+          return tr("Downloading %1 model [%2]... (%3%)").arg(modelType, model_name).arg(percent, 0, 'f', 2);
         } else if (status == cereal::ModelManagerSP::DownloadStatus::DOWNLOADED) {
-          return tr("%1 model [%2] downloaded").arg(modelType, bundleName);
+          return tr("%1 model [%2] downloaded").arg(modelType, model_name);
         } else if (status == cereal::ModelManagerSP::DownloadStatus::FAILED) {
-          return tr("%1 model [%2] download failed").arg(modelType, bundleName);
+          return tr("%1 model [%2] download failed").arg(modelType, model_name);
         } else {
-          return tr("%1 model [%2] pending...").arg(modelType, bundleName);
+          return tr("%1 model [%2] pending...").arg(modelType, model_name);
         }
       }
     }
@@ -160,7 +162,9 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   for (const auto &bundle : bundles) {
     if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
       params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
-      showResetParamsDialog();
+      if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
+        showResetParamsDialog();
+      }
       break;
     }
   }
