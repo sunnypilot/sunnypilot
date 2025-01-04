@@ -76,7 +76,7 @@ class ModelManagerSP:
     try:
       # Check existing file
       if os.path.exists(full_path) and await verify_file(full_path, expected_hash):
-        model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
+        model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
         model.downloadProgress.progress = 100
         model.downloadProgress.eta = 0
         self._report_status()
@@ -109,7 +109,7 @@ class ModelManagerSP:
     model_manager_state = msg.modelManagerSP
     if self.selected_bundle:
       model_manager_state.selectedBundle = self.selected_bundle
-    
+
     if self.active_bundle:
       model_manager_state.activeBundle = self.active_bundle
 
@@ -175,6 +175,7 @@ class ModelManagerSP:
 
 def main():
   ModelManagerSP().main_thread()
+
 
 if __name__ == "__main__":
   main()
