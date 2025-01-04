@@ -99,7 +99,7 @@ class ModelCache:
       if not cached_data:
         cloudlog.warning("No cached model data available")
         return {}, True
-      return cached_data, self._is_expired()
+      return json.loads(cached_data), self._is_expired()
     except Exception as e:
       cloudlog.exception(f"Error retrieving cached model data: {str(e)}")
       return {}, True
