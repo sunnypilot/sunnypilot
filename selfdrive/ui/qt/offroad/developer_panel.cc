@@ -32,20 +32,6 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   auto enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
-  // FIXME-SP: Move to sunnypilot panels before merging
-  auto madsToggle = new ParamControl("Mads", tr("Modular Assistive Driving System (MADS)"), "", "");
-  addItem(madsToggle);
-
-  // TODO-SP: Rename toggle
-  auto madsMainCruiseToggle = new ParamControl("MadsMainCruiseAllowed", tr("MADS: Toggle with Main Cruise"), tr("Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement."), "");
-  addItem(madsMainCruiseToggle);
-
-  auto madsPauseLateralOnBrakeToggle = new ParamControl("MadsPauseLateralOnBrake", tr("MADS: Pause Lateral on Brake"), "", "");
-  addItem(madsPauseLateralOnBrakeToggle);
-
-  auto madsUnifiedEngagementModeToggle = new ParamControl("MadsUnifiedEngagementMode", tr("MADS: Unified Engagement Mode"), "", "");
-  addItem(madsUnifiedEngagementModeToggle);
-
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");
 
