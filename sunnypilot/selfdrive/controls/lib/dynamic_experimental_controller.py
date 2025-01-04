@@ -144,7 +144,6 @@ class DynamicExperimentalController:
     self._mpc_fcw_crash_cnt = 0
 
     self._set_mode_timeout = 0
-    pass
 
 
   def _adaptive_slowdown_threshold(self):
