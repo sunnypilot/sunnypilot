@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # The MIT License
 #
 # Copyright (c) 2019-, Rick Lan, dragonpilot community, and a number of other of contributors.
@@ -22,7 +21,7 @@
 # THE SOFTWARE.
 #
 # Version = 2024-7-11
-from common.numpy_fast import interp
+from openpilot.common.numpy_fast import interp
 import numpy as np
 
 # d-e2e, from modeldata.h
@@ -262,7 +261,7 @@ class DynamicExperimentalController:
     #  return
 
     # when blinker is on and speed is driving below V_ACC_MIN: blended
-    # we dont want it to switch mode at higher speed, blended may trigger hard brake
+    # we don't want it to switch mode at higher speed, blended may trigger hard brake
     #if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
     #  self._set_mode('blended')
     #  return
@@ -312,7 +311,7 @@ class DynamicExperimentalController:
       return
 
     # when blinker is on and speed is driving below V_ACC_MIN: blended
-    # we dont want it to switch mode at higher speed, blended may trigger hard brake
+    # we don't want it to switch mode at higher speed, blended may trigger hard brake
     #if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
     #  self._set_mode('blended')
     #  return
