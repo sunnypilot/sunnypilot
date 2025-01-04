@@ -971,6 +971,22 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>%1 model [%2] pending...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fetching bundles...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Bundle download has started in the background.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Current Model</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Driving</source>
         <translation type="unfinished"></translation>
     </message>
@@ -995,23 +1011,11 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>%1 model [%2] pending...</source>
+        <source>%1 model [%2] from cache</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Fetching bundles...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select a Model Bundle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Bundle download has started in the background.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Current Model</source>
+        <source>Select a Model</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

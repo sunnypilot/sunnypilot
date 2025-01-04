@@ -955,48 +955,52 @@ Esto puede tardar un minuto.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Driving</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Navigation</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Metadata</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloading %1 model [%2]... (%3%)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1 model [%2] downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1 model [%2] download failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>%1 model [%2] pending...</source>
-        <translation type="unfinished"></translation>
+        <translation>modelo de %1 [%2] pendiente...</translation>
     </message>
     <message>
-        <source>Fetching bundles...</source>
-        <translation type="unfinished"></translation>
+        <source>Fetching models...</source>
+        <translation>Obteniendo modelos</translation>
     </message>
     <message>
-        <source>Select a Model Bundle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Bundle download has started in the background.</source>
-        <translation type="unfinished"></translation>
+        <source>Model download has started in the background.</source>
+        <translation>Descarga de modelo iniciada en segundo plano.</translation>
     </message>
     <message>
         <source>Current Model</source>
-        <translation type="unfinished"></translation>
+        <translation>Modelo Actual</translation>
+    </message>
+    <message>
+        <source>Driving</source>
+        <translation>Conducción</translation>
+    </message>
+    <message>
+        <source>Navigation</source>
+        <translation>Navegación</translation>
+    </message>
+    <message>
+        <source>Metadata</source>
+        <translation>Metadatos</translation>
+    </message>
+    <message>
+        <source>Downloading %1 model [%2]... (%3%)</source>
+        <translation>Descargando modelo de %1 [%2]... (%3%)</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] downloaded</source>
+        <translation>Modelo de %1 [%2] descargado</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] download failed</source>
+        <translation>Falló descarga modelo de %1 [%2]</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] from cache</source>
+        <translation>Modelo de %1 [%2] desde caché</translation>
+    </message>
+    <message>
+        <source>Select a Model</source>
+        <translation>Selecciona un Modelo</translation>
     </message>
 </context>
 <context>
