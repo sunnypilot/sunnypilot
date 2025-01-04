@@ -1,3 +1,8 @@
+# Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+#
+# This file is part of sunnypilot and is licensed under the MIT License.
+# See the LICENSE.md file in the root directory for more details.
+
 import json
 import time
 
@@ -12,7 +17,8 @@ class ModelParser:
   """Handles parsing of model data into cereal objects"""
 
   @staticmethod
-  def _parse_model(full_name: str, file_name: str, uri_data: dict, model_type: custom.ModelManagerSP.Type) -> custom.ModelManagerSP.Model:
+  def _parse_model(full_name: str, file_name: str, uri_data: dict,
+                   model_type: custom.ModelManagerSP.Type) -> custom.ModelManagerSP.Model:
     model = custom.ModelManagerSP.Model()
     download_uri = custom.ModelManagerSP.DownloadUri()
 
@@ -103,7 +109,6 @@ class ModelCache:
     except Exception as e:
       cloudlog.exception(f"Error retrieving cached model data: {str(e)}")
       return {}, True
-
 
   def set(self, data: dict) -> None:
     """Updates the cache with new model data"""

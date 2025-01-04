@@ -1,5 +1,5 @@
 /**
-* Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+ * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
  *
  * This file is part of sunnypilot and is licensed under the MIT License.
  * See the LICENSE.md file in the root directory for more details.
@@ -42,10 +42,10 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
   QStringList status;
 
   // Get status for each model type in order
-  for (const auto &model : models) {
+  for (const auto &model: models) {
     QString typeName;
     QString modelName;
-    
+
     switch (model.getType()) {
       case cereal::ModelManagerSP::Type::DRIVE:
         typeName = tr("Driving");
@@ -79,11 +79,11 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
   }
 
   currentModelLblBtn->setDescription(status.join("\n"));
-  
+
   if (bundle.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
     currentModelLblBtn->showDescription();
   }
-  
+
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
 }
 
@@ -98,7 +98,7 @@ QString SoftwarePanelSP::GetActiveModelName() {
   if (model_manager.hasActiveBundle()) {
     return QString::fromStdString(model_manager.getActiveBundle().getDisplayName());
   }
-  
+
   return "";
 }
 
@@ -112,11 +112,11 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
 
   const SubMaster &sm = *(uiStateSP()->sm);
   const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
-  
+
   // Create mapping of bundle indices to display names
   QMap<uint32_t, QString> index_to_bundle;
   const auto bundles = model_manager.getAvailableBundles();
-  for (const auto &bundle : bundles) {
+  for (const auto &bundle: bundles) {
     index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundle.getDisplayName()));
   }
 
@@ -124,7 +124,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   QStringList bundleNames;
   auto indices = index_to_bundle.keys();
   std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
-  for (const auto &index : indices) {
+  for (const auto &index: indices) {
     bundleNames.append(index_to_bundle[index]);
   }
 
@@ -139,7 +139,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   }
 
   // Find selected bundle and initiate download
-  for (const auto &bundle : bundles) {
+  for (const auto &bundle: bundles) {
     if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
       params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
       if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
@@ -148,7 +148,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
       break;
     }
   }
-  
+
   updateLabels();
 }
 
@@ -170,7 +170,7 @@ void SoftwarePanelSP::updateLabels() {
  */
 void SoftwarePanelSP::showResetParamsDialog() {
   const auto confirmMsg = tr("Model download has started in the background.") + "\n" +
-                         tr("We STRONGLY suggest you to reset calibration. Would you like to do that now?");
+                          tr("We STRONGLY suggest you to reset calibration. Would you like to do that now?");
   const auto button_text = tr("Reset Calibration");
 
   if (showConfirmationDialog(confirmMsg, button_text, false)) {

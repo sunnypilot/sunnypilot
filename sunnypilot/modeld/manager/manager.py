@@ -1,3 +1,8 @@
+# Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+#
+# This file is part of sunnypilot and is licensed under the MIT License.
+# See the LICENSE.md file in the root directory for more details.
+
 import asyncio
 import os
 import time
@@ -9,8 +14,8 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 
 from cereal import messaging, custom
-from sunnypilot.models.model_fetcher import ModelFetcher
-from sunnypilot.models.model_helper import verify_file, get_active_bundle
+from sunnypilot.modeld.manager.fetcher import ModelFetcher
+from sunnypilot.modeld.manager.helpers import verify_file, get_active_bundle
 
 
 class ModelManagerSP:
