@@ -361,7 +361,7 @@ class CAR(Platforms):
       VWCarDocs("Volkswagen Caravelle 2020"),
       VWCarDocs("Volkswagen California 2021-23"),
     ],
-    VolkswagenCarSpecs(mass=1926, wheelbase=3.00, minSteerSpeed=14.0),
+    VolkswagenCarSpecs(mass=1926, wheelbase=3.00, minSteerSpeed=10.0),
     chassis_codes={"7H", "7L"},
     wmis={WMI.VOLKSWAGEN_COMMERCIAL_BUS_VAN},
   )
