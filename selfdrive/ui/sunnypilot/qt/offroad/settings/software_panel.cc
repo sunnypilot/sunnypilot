@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <QJsonDocument>
-#include "common/swaglog.h"
 
 /**
  * @brief Constructs the software panel with model bundle selection functionality
