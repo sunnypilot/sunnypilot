@@ -925,23 +925,7 @@ This may take up to a minute.</source>
 <context>
     <name>SoftwarePanelSP</name>
     <message>
-        <source>Driving Model</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>SELECT</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Fetching models...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Select a Driving Model</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Download has started in the background.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -962,6 +946,50 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>on Metered</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Model Bundle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Driving</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Navigation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloading %1 model [%2]... (%3%)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 model [%2] downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 model [%2] download failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 model [%2] pending...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fetching bundles...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select a Model Bundle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Bundle download has started in the background.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
