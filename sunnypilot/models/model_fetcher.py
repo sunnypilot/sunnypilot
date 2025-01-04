@@ -88,20 +88,22 @@ class ModelCache:
     last_sync = int(self.params.get(self._LAST_SYNC_KEY, encoding="utf-8") or 0)
     return (current_time - last_sync) >= self.cache_timeout
 
-  def get(self) -> tuple[dict | None, bool]:
+  def get(self) -> tuple[dict, bool]:
     """
     Retrieves cached model data and expiration status atomically.
     Returns: Tuple of (cached_data, is_expired)
+    If no cached data exists or on error, returns an empty dict
     """
-    cached_data = self.params.get(self._CACHE_KEY, encoding="utf-8")
-    if not cached_data:
-      return None, True
-
     try:
-      return json.loads(cached_data), self._is_expired()
-    except json.JSONDecodeError:
-      cloudlog.warning("Failed to parse cached models data")
-      return None, True
+      cached_data = self.params.get(self._CACHE_KEY, encoding="utf-8")
+      if not cached_data:
+        cloudlog.warning("No cached model data available")
+        return {}, True
+      return cached_data, self._is_expired()
+    except Exception as e:
+      cloudlog.exception(f"Error retrieving cached model data: {str(e)}")
+      return {}, True
+
 
   def set(self, data: dict) -> None:
     """Updates the cache with new model data"""
