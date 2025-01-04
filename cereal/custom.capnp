@@ -39,7 +39,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
         notDownloading @0;
         downloading @1;
         downloaded @2;
-        failed @3;
+        cached @3;
+        failed @4;
     }
 
     struct DownloadProgress {

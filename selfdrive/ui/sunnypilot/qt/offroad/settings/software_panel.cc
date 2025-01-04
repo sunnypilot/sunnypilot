@@ -32,69 +32,56 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
 void SoftwarePanelSP::handleBundleDownloadProgress() {
   const SubMaster &sm = *(uiStateSP()->sm);
   const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
-  QString description;
 
   if (!model_manager.hasSelectedBundle()) {
-    currentModelLblBtn->setDescription(description);
+    currentModelLblBtn->setDescription("");
     return;
   }
 
   const auto &bundle = model_manager.getSelectedBundle();
-  const QString bundleName = QString::fromStdString(bundle.getDisplayName());
-  const auto models = bundle.getModels();  // Get models from bundle
-  
-  // Helper lambda to get status line for a specific model type
-  auto getModelStatusLine = [&](cereal::ModelManagerSP::Type type) -> QString {
-    for (const auto &model : models) {
-      auto model_name = QString::fromStdString(model.getFullName());
-      if (model.getType() == type) {
-        QString modelType;
-        switch (type) {
-          case cereal::ModelManagerSP::Type::DRIVE:
-            modelType = tr("Driving");
-            model_name = bundleName;
-            break;
-          case cereal::ModelManagerSP::Type::NAVIGATION:
-            modelType = tr("Navigation");
-            break;
-          case cereal::ModelManagerSP::Type::METADATA:
-            modelType = tr("Metadata");
-            break;
-        }
+  const auto &models = bundle.getModels();
+  QStringList status;
 
-        const auto &progress = model.getDownloadProgress();
-        auto status = progress.getStatus();
-        
-        if (status == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
-          float percent = progress.getProgress();
-          return tr("Downloading %1 model [%2]... (%3%)").arg(modelType, model_name).arg(percent, 0, 'f', 2);
-        } else if (status == cereal::ModelManagerSP::DownloadStatus::DOWNLOADED) {
-          return tr("%1 model [%2] downloaded").arg(modelType, model_name);
-        } else if (status == cereal::ModelManagerSP::DownloadStatus::FAILED) {
-          return tr("%1 model [%2] download failed").arg(modelType, model_name);
-        } else {
-          return tr("%1 model [%2] pending...").arg(modelType, model_name);
-        }
-      }
+  // Get status for each model type in order
+  for (const auto &model : models) {
+    QString typeName;
+    QString modelName;
+    
+    switch (model.getType()) {
+      case cereal::ModelManagerSP::Type::DRIVE:
+        typeName = tr("Driving");
+        modelName = QString::fromStdString(bundle.getDisplayName());
+        break;
+      case cereal::ModelManagerSP::Type::NAVIGATION:
+        typeName = tr("Navigation");
+        modelName = QString::fromStdString(model.getFullName());
+        break;
+      case cereal::ModelManagerSP::Type::METADATA:
+        typeName = tr("Metadata");
+        modelName = QString::fromStdString(model.getFullName());
+        break;
     }
-    return QString();
-  };
 
-  // Always show status for all model types in consistent order
-  QStringList modelTypes = {
-    getModelStatusLine(cereal::ModelManagerSP::Type::DRIVE),
-    getModelStatusLine(cereal::ModelManagerSP::Type::NAVIGATION),
-    getModelStatusLine(cereal::ModelManagerSP::Type::METADATA)
-  };
+    const auto &progress = model.getDownloadProgress();
+    QString line;
 
-  // Build description with all non-empty status lines
-  description = modelTypes.filter(QRegExp(".+")).join("\n");
-
-  if (!description.isEmpty()) {
-    currentModelLblBtn->setDescription(description);
+    if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
+      line = tr("Downloading %1 model [%2]... (%3%)").arg(typeName, modelName).arg(progress.getProgress(), 0, 'f', 2);
+    } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADED) {
+      line = tr("%1 model [%2] downloaded").arg(typeName, modelName);
+    } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::CACHED) {
+      line = tr("%1 model [%2] from cache").arg(typeName, modelName);
+    } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::FAILED) {
+      line = tr("%1 model [%2] download failed").arg(typeName, modelName);
+    } else {
+      line = tr("%1 model [%2] pending...").arg(typeName, modelName);
+    }
+    status.append(line);
   }
 
-  if (model_manager.getSelectedBundle().getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
+  currentModelLblBtn->setDescription(status.join("\n"));
+  
+  if (bundle.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
     currentModelLblBtn->showDescription();
   }
   

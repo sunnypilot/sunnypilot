@@ -76,7 +76,7 @@ class ModelManagerSP:
     try:
       # Check existing file
       if os.path.exists(full_path) and await verify_file(full_path, expected_hash):
-        model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
+        model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
         model.downloadProgress.progress = 100
         model.downloadProgress.eta = 0
         self._report_status()
