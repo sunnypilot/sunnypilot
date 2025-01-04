@@ -75,9 +75,7 @@ class GenericMovingAverageCalculator:
     self.total += value
 
   def get_moving_average(self):
-    if len(self.data) == 0:
-      return None
-    return self.total / len(self.data)
+    return None if len(self.data) == 0 else self.total / len(self.data)
 
   def reset_data(self):
     self.data = []
