@@ -61,9 +61,7 @@ void MadsSettings::showEvent(QShowEvent *event) {
 }
 
 void MadsSettings::updateToggles(bool _offroad) {
-  for (auto setting : findChildren<ButtonParamControl*>()) {
-    setting->setEnabled(_offroad);
-  }
+  madsPauseLateralOnBrake->setEnabled(_offroad);
 
   offroad = _offroad;
 }
