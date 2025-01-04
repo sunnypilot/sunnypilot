@@ -21,6 +21,11 @@ class SunnypilotPanel : public QFrame {
 
 public:
   explicit SunnypilotPanel(SettingsWindowSP *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+  void hideEvent(QHideEvent* event) override;
+
+public slots:
+  void updateToggles();
 
 private:
   QStackedLayout* main_layout = nullptr;

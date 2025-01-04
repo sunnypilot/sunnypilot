@@ -64,3 +64,17 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   main_layout->setCurrentWidget(sunnypilotScreen);
 }
+
+void SunnypilotPanel::showEvent(QShowEvent *event) {
+  updateToggles();
+}
+
+void SunnypilotPanel::hideEvent(QHideEvent *event) {
+  main_layout->setCurrentWidget(sunnypilotScreen);
+}
+
+void SunnypilotPanel::updateToggles() {
+  if (!isVisible()) {
+    return;
+  }
+}
