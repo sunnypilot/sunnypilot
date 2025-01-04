@@ -75,7 +75,7 @@ _services: dict[str, tuple] = {
   "microphone": (True, 10., 10),
 
   # sunnypilot
-  "modelManagerSP": (True, 0.1, 1),
+  "modelManagerSP": (True, 1., 1),
 
   # debug
   "uiDebug": (True, 0., 1),

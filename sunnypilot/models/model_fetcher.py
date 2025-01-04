@@ -113,7 +113,7 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://docs.sunnypilot.ai/models_v5.json"
+  MODEL_URL = "https://docs.sunnypilot.ai/driving_models.json"
 
   def __init__(self, params: Params):
     self.params = params
