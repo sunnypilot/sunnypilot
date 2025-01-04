@@ -858,6 +858,49 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>SidebarSP</name>
+    <message>
+        <source>TEMP</source>
+        <translation type="obsolete">온도</translation>
+    </message>
+    <message>
+        <source>HIGH</source>
+        <translation type="obsolete">높음</translation>
+    </message>
+    <message>
+        <source>GOOD</source>
+        <translation type="obsolete">좋음</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation type="obsolete">OK</translation>
+    </message>
+    <message>
+        <source>DISABLED</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>OFFLINE</source>
+        <translation type="unfinished">연결 안됨</translation>
+    </message>
+    <message>
+        <source>REGIST...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ONLINE</source>
+        <translation type="unfinished">온라인</translation>
+    </message>
+    <message>
+        <source>ERROR</source>
+        <translation type="unfinished">오류</translation>
+    </message>
+    <message>
+        <source>SUNNYLINK</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>SoftwarePanel</name>
     <message>
         <source>Updates are only downloaded while the car is off.</source>

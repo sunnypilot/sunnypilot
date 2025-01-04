@@ -139,6 +139,7 @@ void Sidebar::paintSidebar(QPainter &p) {
   p.setPen(QColor(0xff, 0xff, 0xff));
   const QRect r = QRect(58, 247, width() - 100, 50);
   p.drawText(r, Qt::AlignLeft | Qt::AlignVCenter, net_type);
+  RETURN_IF_SUNNYPILOT // Because we draw ourselves
 
   // metrics
   drawMetric(p, temp_status.first, temp_status.second, 338);

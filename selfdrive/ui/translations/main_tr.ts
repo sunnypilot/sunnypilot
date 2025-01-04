@@ -856,6 +856,49 @@ This may take up to a minute.</source>
     </message>
 </context>
 <context>
+    <name>SidebarSP</name>
+    <message>
+        <source>TEMP</source>
+        <translation type="obsolete">SICAKLIK</translation>
+    </message>
+    <message>
+        <source>HIGH</source>
+        <translation type="obsolete">YÜKSEK</translation>
+    </message>
+    <message>
+        <source>GOOD</source>
+        <translation type="obsolete">İYİ</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation type="obsolete">TAMAM</translation>
+    </message>
+    <message>
+        <source>DISABLED</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>OFFLINE</source>
+        <translation type="unfinished">ÇEVRİMDIŞI</translation>
+    </message>
+    <message>
+        <source>REGIST...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ONLINE</source>
+        <translation type="unfinished">ÇEVRİMİÇİ</translation>
+    </message>
+    <message>
+        <source>ERROR</source>
+        <translation type="unfinished">HATA</translation>
+    </message>
+    <message>
+        <source>SUNNYLINK</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>SoftwarePanel</name>
     <message>
         <source>Uninstall %1</source>
