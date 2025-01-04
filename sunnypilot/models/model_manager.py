@@ -143,7 +143,7 @@ class ModelManagerSP:
 
   def main_thread(self) -> None:
     """Main thread for model management"""
-    rk = Ratekeeper(1, print_delay_threshold=None)
+    rk = Ratekeeper(0.1, print_delay_threshold=None)
 
     while True:
       try:
