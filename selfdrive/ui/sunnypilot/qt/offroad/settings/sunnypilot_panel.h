@@ -28,5 +28,5 @@ private:
   ScrollViewSP *scrollView = nullptr;
 
   ParamControl *madsToggle;
-  MadsSettings* mads_settings = nullptr;
+  MadsSettings *madsWidget = nullptr;
 };

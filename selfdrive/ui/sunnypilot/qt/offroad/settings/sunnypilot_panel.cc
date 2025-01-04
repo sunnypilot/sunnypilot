@@ -33,11 +33,11 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   madsSettingsLayout->addWidget(madsSettingsButton);
   connect(madsSettingsButton, &QPushButton::clicked, [=]() {
     scrollView->setLastScrollPosition();
-    main_layout->setCurrentWidget(mads_settings);
+    main_layout->setCurrentWidget(madsWidget);
   });
 
-  mads_settings = new MadsSettings(this);
-  connect(mads_settings, &MadsSettings::backPress, [=]() {
+  madsWidget = new MadsSettings(this);
+  connect(madsWidget, &MadsSettings::backPress, [=]() {
     scrollView->restoreScrollPosition();
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
@@ -46,8 +46,9 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   scrollView = new ScrollViewSP(list, this);
   vlayout->addWidget(scrollView);
   vlayout->addStretch(1);
+
   main_layout->addWidget(sunnypilotScreen);
-  main_layout->addWidget(mads_settings);
+  main_layout->addWidget(madsWidget);
 
   setStyleSheet(R"(
     #back_btn {
