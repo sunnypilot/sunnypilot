@@ -25,7 +25,7 @@ public:
 private:
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
-  ScrollViewSP *scrollView = nullptr;
+  ScrollViewSP *sunnypilotScroller = nullptr;
 
   ParamControl *madsToggle;
   MadsSettings *madsWidget = nullptr;

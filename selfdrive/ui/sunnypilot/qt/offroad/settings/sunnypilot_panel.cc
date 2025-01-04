@@ -28,23 +28,20 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   SubPanelButton *madsSettingsButton = new SubPanelButton(tr("Customize MADS"));
   madsSettingsButton->setObjectName("mads_btn");
-  QVBoxLayout* madsSettingsLayout = new QVBoxLayout;
-  madsSettingsLayout->setContentsMargins(0, 0, 0, 30);
-  madsSettingsLayout->addWidget(madsSettingsButton);
   connect(madsSettingsButton, &QPushButton::clicked, [=]() {
-    scrollView->setLastScrollPosition();
+    sunnypilotScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(madsWidget);
   });
 
   madsWidget = new MadsSettings(this);
   connect(madsWidget, &MadsSettings::backPress, [=]() {
-    scrollView->restoreScrollPosition();
+    sunnypilotScroller->restoreScrollPosition();
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
-  list->addItem(madsSettingsLayout);
+  list->addItem(madsSettingsButton);
 
-  scrollView = new ScrollViewSP(list, this);
-  vlayout->addWidget(scrollView);
+  sunnypilotScroller = new ScrollViewSP(list, this);
+  vlayout->addWidget(sunnypilotScroller);
   vlayout->addStretch(1);
 
   main_layout->addWidget(sunnypilotScreen);
