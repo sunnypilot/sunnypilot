@@ -201,6 +201,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
     {"EnableGithubRunner", PERSISTENT},
+
+    {"DynamicExperimentalControl", PERSISTENT},
 };
 
 } // namespace

@@ -2,6 +2,8 @@
 import math
 import numpy as np
 from openpilot.common.numpy_fast import clip, interp
+from openpilot.common.params import Params
+from cereal import custom
 
 import cereal.messaging as messaging
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
@@ -16,6 +18,9 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_speed_
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
 
+from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
+
+
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
 A_CRUISE_MAX_VALS = [1.6, 1.2, 0.8, 0.6]
@@ -28,6 +33,7 @@ MIN_ALLOW_THROTTLE_SPEED = 2.5
 _A_TOTAL_MAX_V = [1.7, 3.2]
 _A_TOTAL_MAX_BP = [20., 40.]
 
+MpcSource = custom.MpcSource
 
 def get_max_accel(v_ego):
   return interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS)
@@ -84,6 +90,18 @@ class LongitudinalPlanner:
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
 
+    self.params = Params()
+    self.param_read_counter = 0
+    self.read_param()
+
+    self.dynamic_experimental_controller = DynamicExperimentalController()
+
+  def read_param(self):
+    try:
+      self.dynamic_experimental_controller.set_enabled(self.params.get_bool("DynamicExperimentalControl"))
+    except AttributeError:
+      self.dynamic_experimental_controller = DynamicExperimentalController()
+
   @staticmethod
   def parse_model(model_msg, model_error):
     if (len(model_msg.position.x) == ModelConstants.IDX_N and
@@ -103,6 +121,17 @@ class LongitudinalPlanner:
     else:
       throttle_prob = 1.0
     return x, v, a, j, throttle_prob
+
+  def update(self, sm):
+    if self.param_read_counter % 50 == 0:
+      self.read_param()
+    self.param_read_counter += 1
+    if self.dynamic_experimental_controller.is_enabled() and sm['controlsState'].experimentalMode:
+      self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
+      self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm['carState'], sm['radarState'].leadOne, sm['modelV2'], sm['controlsState']) #, sm['navInstruction'].maneuverDistance)
+      self.mpc.mode = self.dynamic_experimental_controller.get_mpc_mode()
+    else:
+      self.mpc.mode = 'blended' if sm['controlsState'].experimentalMode else 'acc'
 
   def update(self, sm):
     self.mpc.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
@@ -206,3 +235,20 @@ class LongitudinalPlanner:
     longitudinalPlan.allowThrottle = self.allow_throttle
 
     pm.send('longitudinalPlan', plan_send)
+
+    plan_sp_send = messaging.new_message('longitudinalPlanSP')
+
+    plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
+
+    longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
+
+    # DEC
+    longitudinalPlanSP.mpcSource = MpcSource.blended if self.mpc.mode == 'blended' else MpcSource.acc
+    print(f"mpcSource: {longitudinalPlanSP.mpcSource}")
+
+    longitudinalPlanSP.dynamicExperimentalControl = self.dynamic_experimental_controller.is_enabled()
+    print(f"dynamicExperimentalControl: {longitudinalPlanSP.dynamicExperimentalControl}")
+
+
+    pm.send('longitudinalPlanSP', plan_sp_send)
+
