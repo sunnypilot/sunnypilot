@@ -116,7 +116,7 @@ procs = [
 
 # sunnypilot
 procs += [
-  PythonProcess("models_manager", "sunnypilot.modeld.manager.manager", only_offroad),
+  PythonProcess("models_manager", "sunnypilot.models.manager", only_offroad),
 ]
 
 if os.path.exists("./github_runner.sh"):
