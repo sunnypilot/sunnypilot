@@ -74,6 +74,8 @@ _services: dict[str, tuple] = {
   "userFlag": (True, 0., 1),
   "microphone": (True, 10., 10),
 
+  # sunnypilot
+  "modelManagerSP": (False, 1., 1),
   "longitudinalPlanSP": (True, 20., 5),
 
   # debug

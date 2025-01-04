@@ -2559,8 +2559,8 @@ struct Event {
 
     # *********** Custom: reserved for forks ***********
     customReserved0 @107 :Custom.CustomReserved0;
-    longitudinalPlanSP @108 :Custom.LongitudinalPlanSP;
-    customReserved2 @109 :Custom.CustomReserved2;
+    modelManagerSP @108 :Custom.ModelManagerSP;
+    longitudinalPlanSP @109 :Custom.LongitudinalPlanSP;
     customReserved3 @110 :Custom.CustomReserved3;
     customReserved4 @111 :Custom.CustomReserved4;
     customReserved5 @112 :Custom.CustomReserved5;
