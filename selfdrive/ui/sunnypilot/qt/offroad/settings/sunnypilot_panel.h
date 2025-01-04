@@ -14,7 +14,7 @@
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
-class SunnypilotPanel : public ListWidget {
+class SunnypilotPanel : public QFrame {
   Q_OBJECT
 
 public:
