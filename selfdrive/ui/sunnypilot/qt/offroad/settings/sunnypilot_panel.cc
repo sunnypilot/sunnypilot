@@ -34,6 +34,7 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(madsWidget);
   });
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+  QObject::connect(madsToggle, &ToggleControl::toggleFlipped, madsSettingsButton, &SubPanelButton::setEnabled);
 
   madsWidget = new MadsSettings(this);
   connect(madsWidget, &MadsSettings::backPress, [=]() {
@@ -42,9 +43,9 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
-  QObject::connect(madsToggle, &ToggleControl::toggleFlipped, [=](bool state) {
-    madsSettingsButton->setEnabled(state);
-  });
+  toggleOffroadOnly = {
+    madsToggle,
+  };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &SunnypilotPanel::updateToggles);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
@@ -81,5 +82,9 @@ void SunnypilotPanel::hideEvent(QHideEvent *event) {
 }
 
 void SunnypilotPanel::updateToggles(bool _offroad) {
+  for (auto *toggle : toggleOffroadOnly) {
+    toggle->setEnabled(_offroad);
+  }
+
   offroad = _offroad;
 }

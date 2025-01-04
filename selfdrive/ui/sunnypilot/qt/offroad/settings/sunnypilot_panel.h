@@ -31,6 +31,7 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   ScrollViewSP *sunnypilotScroller = nullptr;
+  std::vector<ParamControl *> toggleOffroadOnly;
   bool offroad;
 
   ParamControl *madsToggle;
