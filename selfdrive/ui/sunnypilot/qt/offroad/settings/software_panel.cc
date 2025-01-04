@@ -8,7 +8,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/software_panel.h"
 
 #include <algorithm>
-#include "common/model.h"
 #include <QJsonDocument>
 #include "common/swaglog.h"
 
@@ -18,7 +17,7 @@
  */
 SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   const auto current_model = GetModelName();
-  currentModelLblBtn = new ButtonControlSP(tr("Model Bundle"), tr("SELECT"), current_model);
+  currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
   connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
@@ -36,6 +35,7 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
   QString description;
 
   if (!model_manager.hasSelectedBundle()) {
+    currentModelLblBtn->setDescription(description);
     return;
   }
 
@@ -108,12 +108,12 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
 QString SoftwarePanelSP::GetModelName() {
   const SubMaster &sm = *(uiStateSP()->sm);
   const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
-  
-  if (model_manager.hasSelectedBundle()) {
-    return QString::fromStdString(model_manager.getSelectedBundle().getDisplayName());
+
+  if (model_manager.hasActiveBundle()) {
+    return QString::fromStdString(model_manager.getActiveBundle().getDisplayName());
   }
   
-  return CURRENT_MODEL;
+  return "";
 }
 
 /**

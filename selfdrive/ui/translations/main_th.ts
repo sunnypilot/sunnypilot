@@ -951,10 +951,6 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Model Bundle</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Driving</source>
         <translation type="unfinished"></translation>
     </message>
@@ -992,6 +988,10 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Bundle download has started in the background.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Current Model</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
