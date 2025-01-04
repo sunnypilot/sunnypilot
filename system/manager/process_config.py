@@ -131,6 +131,11 @@ procs = [
   PythonProcess("sunnylink_registration_manager", "sunnypilot.sunnylink.registration_manager", sunnylink_need_register_shim),
 ]
 
+# sunnypilot
+procs += [
+  PythonProcess("models_manager", "sunnypilot.models.manager", only_offroad),
+]
+
 if os.path.exists("./github_runner.sh"):
   procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 

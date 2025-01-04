@@ -477,6 +477,17 @@
     </message>
 </context>
 <context>
+    <name>ParamControlSP</name>
+    <message>
+        <source>Enable</source>
+        <translation>Activar</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+</context>
+<context>
     <name>PrimeAdWidget</name>
     <message>
         <source>Upgrade Now</source>
@@ -624,6 +635,37 @@ Esto puede tardar un minuto.</translation>
     <message>
         <source>Developer</source>
         <translation>Desarrollador</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsWindowSP</name>
+    <message>
+        <source>×</source>
+        <translation>×</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Dispositivo</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation>Red</translation>
+    </message>
+    <message>
+        <source>Toggles</source>
+        <translation>Ajustes</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation>Software</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation>Desarrollador</translation>
+    </message>
+    <message>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
 </context>
 <context>
@@ -884,6 +926,81 @@ Esto puede tardar un minuto.</translation>
     <message>
         <source>up to date, last checked %1</source>
         <translation>actualizado, último chequeo %1</translation>
+    </message>
+</context>
+<context>
+    <name>SoftwarePanelSP</name>
+    <message>
+        <source>SELECT</source>
+        <translation type="unfinished">SELECCIONAR</translation>
+    </message>
+    <message>
+        <source>We STRONGLY suggest you to reset calibration. Would you like to do that now?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset Calibration</source>
+        <translation type="unfinished">Formatear Calibración</translation>
+    </message>
+    <message>
+        <source>Warning: You are on a metered connection!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Continue</source>
+        <translation type="unfinished">Continuar</translation>
+    </message>
+    <message>
+        <source>on Metered</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 model [%2] pending...</source>
+        <translation>modelo de %1 [%2] pendiente...</translation>
+    </message>
+    <message>
+        <source>Fetching models...</source>
+        <translation>Obteniendo modelos</translation>
+    </message>
+    <message>
+        <source>Model download has started in the background.</source>
+        <translation>Descarga de modelo iniciada en segundo plano.</translation>
+    </message>
+    <message>
+        <source>Current Model</source>
+        <translation>Modelo Actual</translation>
+    </message>
+    <message>
+        <source>Driving</source>
+        <translation>Conducción</translation>
+    </message>
+    <message>
+        <source>Navigation</source>
+        <translation>Navegación</translation>
+    </message>
+    <message>
+        <source>Metadata</source>
+        <translation>Metadatos</translation>
+    </message>
+    <message>
+        <source>Downloading %1 model [%2]... (%3%)</source>
+        <translation>Descargando modelo de %1 [%2]... (%3%)</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] downloaded</source>
+        <translation>Modelo de %1 [%2] descargado</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] download failed</source>
+        <translation>Falló descarga modelo de %1 [%2]</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] from cache</source>
+        <translation>Modelo de %1 [%2] desde caché</translation>
+    </message>
+    <message>
+        <source>Select a Model</source>
+        <translation>Selecciona un Modelo</translation>
     </message>
 </context>
 <context>
