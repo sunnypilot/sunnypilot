@@ -109,7 +109,7 @@ QString SoftwarePanelSP::GetActiveModelName() {
  */
 void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
-  currentModelLblBtn->setValue(tr("Fetching bundles..."));
+  currentModelLblBtn->setValue(tr("Fetching models..."));
 
   const SubMaster &sm = *(uiStateSP()->sm);
   const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
@@ -133,7 +133,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setValue(GetActiveModelName());
 
   const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model Bundle"), bundleNames, GetActiveModelName(), this);
+    tr("Select a Model"), bundleNames, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
@@ -170,7 +170,7 @@ void SoftwarePanelSP::updateLabels() {
  * @brief Shows dialog prompting user to reset calibration after model download
  */
 void SoftwarePanelSP::showResetParamsDialog() {
-  const auto confirmMsg = tr("Bundle download has started in the background.") + "\n" +
+  const auto confirmMsg = tr("Model download has started in the background.") + "\n" +
                          tr("We STRONGLY suggest you to reset calibration. Would you like to do that now?");
   const auto button_text = tr("Reset Calibration");
 
