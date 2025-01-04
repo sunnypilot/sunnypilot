@@ -18,6 +18,7 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   QVBoxLayout* vlayout = new QVBoxLayout(sunnypilotScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
+  // MADS
   madsToggle = new ParamControl(
     "Mads",
     tr("Modular Assistive Driving System (MADS)"),
@@ -25,12 +26,12 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
     "");
   list->addItem(madsToggle);
 
-  SubPanelButton *madsSettings = new SubPanelButton(tr("Customize MADS"));
-  madsSettings->setObjectName("mads_btn");
+  SubPanelButton *madsSettingsButton = new SubPanelButton(tr("Customize MADS"));
+  madsSettingsButton->setObjectName("mads_btn");
   QVBoxLayout* madsSettingsLayout = new QVBoxLayout;
   madsSettingsLayout->setContentsMargins(0, 0, 0, 30);
-  madsSettingsLayout->addWidget(madsSettings);
-  connect(madsSettings, &QPushButton::clicked, [=]() {
+  madsSettingsLayout->addWidget(madsSettingsButton);
+  connect(madsSettingsButton, &QPushButton::clicked, [=]() {
     scrollView->setLastScrollPosition();
     main_layout->setCurrentWidget(mads_settings);
   });

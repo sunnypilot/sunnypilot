@@ -20,6 +20,7 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
   ListWidget *list = new ListWidget(this, false);
+  // Main cruise
   madsMainCruiseToggle = new ParamControl(
     "MadsMainCruiseAllowed",
     tr("Toggle with Main Cruise"),
@@ -27,6 +28,7 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(madsMainCruiseToggle);
 
+  // Unified Engagement Mode
   madsUnifiedEngagementModeToggle = new ParamControl(
     "MadsUnifiedEngagementMode",
     tr("Unified Engagement Mode (UEM)"),
@@ -37,6 +39,7 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(madsUnifiedEngagementModeToggle);
 
+  // Pause Lateral On Brake
   std::vector<QString> lateral_on_brake_texts{tr("Remain Active"), tr("Pause Steering")};
   madsPauseLateralOnBrake = new ButtonParamControl(
     "MadsPauseLateralOnBrake",
