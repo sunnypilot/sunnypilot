@@ -109,7 +109,7 @@ class ModelManagerSP:
     model_manager_state = msg.modelManagerSP
     if self.selected_bundle:
       model_manager_state.selectedBundle = self.selected_bundle
-    
+
     if self.active_bundle:
       model_manager_state.activeBundle = self.active_bundle
 
@@ -175,6 +175,7 @@ class ModelManagerSP:
 
 def main():
   ModelManagerSP().main_thread()
+
 
 if __name__ == "__main__":
   main()
