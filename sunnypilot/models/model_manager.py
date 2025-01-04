@@ -166,5 +166,8 @@ class ModelManagerSP:
         rk.keep_time()
 
 
-if __name__ == "__main__":
+def main():
   ModelManagerSP().main_thread()
+
+if __name__ == "__main__":
+  main()
