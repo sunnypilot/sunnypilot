@@ -62,6 +62,8 @@ class ModelParser:
     model_bundle.displayName = value["display_name"]
     model_bundle.models = models
     model_bundle.status = 0
+    model_bundle.generation = int(value["generation"])
+    model_bundle.environment = value["environment"]
 
     return model_bundle
 
@@ -111,6 +113,7 @@ class ModelFetcher:
   MODEL_URL = "https://docs.sunnypilot.ai/models_v5.json"
 
   def __init__(self, params: Params):
+    self.params = params
     self.model_cache = ModelCache(params)
     self.model_parser = ModelParser()
 

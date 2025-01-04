@@ -12,8 +12,9 @@ struct CustomReserved0 @0x81c2f05a394cf4af {
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
-    selectedBundle @0 :ModelBundle;
-    availableBundles @1 :List(ModelBundle);
+    activeBundle @0 :ModelBundle;
+    selectedBundle @1 :ModelBundle;
+    availableBundles @2 :List(ModelBundle);
 
     struct DownloadUri {
         uri @0 :Text;
@@ -53,6 +54,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
         displayName @2 :Text;
         models @3 :List(Model);
         status @4 :DownloadStatus;
+        generation @5 :UInt32;
+        environment @6 :Text;
     }
 }
 

@@ -1,5 +1,7 @@
 import hashlib
 import os
+from openpilot.common.params import Params
+from cereal import custom, messaging
 
 
 async def verify_file(file_path: str, expected_hash: str) -> bool:
@@ -13,3 +15,14 @@ async def verify_file(file_path: str, expected_hash: str) -> bool:
       sha256_hash.update(chunk)
 
   return sha256_hash.hexdigest().lower() == expected_hash.lower()
+
+def get_active_bundle(params: Params) -> custom.ModelManagerSP.ModelBundle:
+  """Gets the active model bundle from cache"""
+  if params is None:
+    params = Params()
+
+  active_bundle = params.get("ModelManager_ActiveBundle")
+  if active_bundle:
+    return messaging.log_from_bytes(active_bundle, custom.ModelManagerSP.ModelBundle)
+
+  return None

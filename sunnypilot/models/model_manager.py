@@ -10,7 +10,7 @@ from openpilot.system.hardware.hw import Paths
 
 from cereal import messaging, custom
 from sunnypilot.models.model_fetcher import ModelFetcher
-from sunnypilot.models.model_helper import verify_file
+from sunnypilot.models.model_helper import verify_file, get_active_bundle
 
 
 class ModelManagerSP:
@@ -22,6 +22,7 @@ class ModelManagerSP:
     self.pm = messaging.PubMaster(["modelManagerSP"])
     self.available_models: list[custom.ModelManagerSP.ModelBundle] = []
     self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
+    self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params)
     self._chunk_size = 128 * 1000  # 128 KB chunks
     self._download_start_times: dict[str, float] = {}  # Track start time per model
 
@@ -108,6 +109,10 @@ class ModelManagerSP:
     model_manager_state = msg.modelManagerSP
     if self.selected_bundle:
       model_manager_state.selectedBundle = self.selected_bundle
+    
+    if self.active_bundle:
+      model_manager_state.activeBundle = self.active_bundle
+
     model_manager_state.availableBundles = self.available_models
     self.pm.send('modelManagerSP', msg)
 
@@ -122,6 +127,8 @@ class ModelManagerSP:
                for model in self.selected_bundle.models]
       await asyncio.gather(*tasks)
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
+      self.active_bundle = self.selected_bundle
+      self.params.put("ModelManager_ActiveBundle", self.selected_bundle.to_bytes())
 
     except Exception:
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
