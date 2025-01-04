@@ -18,7 +18,7 @@ public:
   explicit SoftwarePanelSP(QWidget *parent = nullptr);
 
 private:
-  QString GetModelName();
+  QString GetActiveModelName();
 
   bool isDownloading() const {
     const SubMaster &sm = *(uiStateSP()->sm);

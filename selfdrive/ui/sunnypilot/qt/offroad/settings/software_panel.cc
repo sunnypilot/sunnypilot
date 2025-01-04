@@ -16,7 +16,7 @@
  * @param parent Parent widget
  */
 SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
-  const auto current_model = GetModelName();
+  const auto current_model = GetActiveModelName();
   currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
@@ -105,7 +105,7 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
  * @brief Gets the name of the currently selected model bundle
  * @return Display name of the selected bundle or default model name
  */
-QString SoftwarePanelSP::GetModelName() {
+QString SoftwarePanelSP::GetActiveModelName() {
   const SubMaster &sm = *(uiStateSP()->sm);
   const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
 
@@ -143,16 +143,10 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   }
 
   currentModelLblBtn->setEnabled(!is_onroad);
-  currentModelLblBtn->setValue(GetModelName());
-
-  // Get current selection for default option
-  QString currentBundleName;
-  if (model_manager.hasSelectedBundle()) {
-    currentBundleName = QString::fromStdString(model_manager.getSelectedBundle().getDisplayName());
-  }
+  currentModelLblBtn->setValue(GetActiveModelName());
 
   const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model Bundle"), bundleNames, currentBundleName, this);
+    tr("Select a Model Bundle"), bundleNames, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
@@ -181,7 +175,7 @@ void SoftwarePanelSP::updateLabels() {
   }
 
   handleBundleDownloadProgress();
-  currentModelLblBtn->setValue(GetModelName());
+  currentModelLblBtn->setValue(GetActiveModelName());
   SoftwarePanel::updateLabels();
 }
 
