@@ -90,6 +90,9 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
 
   if (!description.isEmpty()) {
     currentModelLblBtn->setDescription(description);
+  }
+
+  if (model_manager.getSelectedBundle().getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
     currentModelLblBtn->showDescription();
   }
   
