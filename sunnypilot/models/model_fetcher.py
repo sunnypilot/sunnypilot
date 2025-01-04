@@ -29,15 +29,16 @@ class ModelParser:
   @staticmethod
   def _parse_bundle(key: str, value: dict) -> custom.ModelManagerSP.ModelBundle:
     model_bundle = custom.ModelManagerSP.ModelBundle()
-    models = []
 
     # Parse main driving model
-    models.append(ModelParser._parse_model(
-      value["full_name"],
-      value["file_name"],
-      value["download_uri"],
-      custom.ModelManagerSP.Type.drive
-    ))
+    models = [
+      ModelParser._parse_model(
+        value["full_name"],
+        value["file_name"],
+        value["download_uri"],
+        custom.ModelManagerSP.Type.drive
+      )
+    ]
 
     # Parse navigation model if exists
     if value.get("download_uri_nav"):

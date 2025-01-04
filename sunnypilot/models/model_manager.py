@@ -149,8 +149,7 @@ class ModelManagerSP:
       try:
         self.available_models = self.model_fetcher.get_available_models()
 
-        index_to_download = self.params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8")
-        if index_to_download:
+        if index_to_download := self.params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8"):
           model_to_download = next(
             (model for model in self.available_models
              if model.index == int(index_to_download)),
