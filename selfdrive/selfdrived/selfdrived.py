@@ -493,6 +493,8 @@ class SelfdriveD:
       self.is_metric = self.params.get_bool("IsMetric")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.read_personality_param()
+
+      self.mads.read_params()
       time.sleep(0.1)
 
   def run(self):

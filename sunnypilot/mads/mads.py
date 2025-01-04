@@ -43,7 +43,7 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
-    mads_params = MadsParams()
+    self.mads_params = MadsParams()
 
     self.enabled = False
     self.active = False
@@ -60,10 +60,15 @@ class ModularAssistiveDrivingSystem:
             (self.selfdrive.CP.flags & HyundaiFlags.CANFD):
         self.allow_always = True
 
-    self.enabled_toggle = mads_params.read_param("Mads")
-    self.main_enabled_toggle = mads_params.read_param("MadsMainCruiseAllowed")
-    self.pause_lateral_on_brake_toggle = mads_params.read_param("MadsPauseLateralOnBrake")
-    self.unified_engagement_mode = mads_params.read_param("MadsUnifiedEngagementMode")
+    # read params on init
+    self.enabled_toggle = self.mads_params.read_param("Mads")
+    self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
+    self.pause_lateral_on_brake_toggle = self.mads_params.read_param("MadsPauseLateralOnBrake")
+    self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
+
+  def read_params(self):
+    self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
+    self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
 
   def update_controls_mismatch(self, sm: messaging.SubMaster):
     heartbeat_engaged = self.active if self.pause_lateral_on_brake_toggle else self.enabled
