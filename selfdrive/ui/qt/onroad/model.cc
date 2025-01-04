@@ -107,6 +107,15 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
 
 void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height) {
   QLinearGradient bg(0, height, 0, 0);
+  auto *s = uiState();
+  auto &sm = *(s->sm);
+
+  float v_ego = sm["carState"].getCarState().getVEgo();
+
+  // Get the current time in milliseconds for dynamic effect (speed of rainbow movement)
+  auto now = std::chrono::steady_clock::now().time_since_epoch();
+  float time_offset = std::chrono::duration_cast<std::chrono::milliseconds>(now).count() / 1000.0f; // seconds
+
   if (experimental_mode) {
     // The first half of track_vertices are the points for the right side of the path
     const auto &acceleration = model.getAcceleration().getX();
@@ -134,6 +143,30 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
       i += (i + 2) < max_len ? 1 : 0;
     }
 
+  } else if (false) {  // Rainbow Mode
+    const int max_len = track_vertices.length();
+    bg.setSpread(QGradient::RepeatSpread);  // Repeat gradient for continuous effect
+
+    for (int i = 0; i < max_len; i += 2) {  // Skip every other point for performance
+      // Skip points out of the visible frame
+      if (track_vertices[i].y() < 0 || track_vertices[i].y() > height) continue;
+
+      // Normalize for gradient positioning
+      float lin_grad_point = (height - track_vertices[i].y()) / height;
+
+      // Dynamic hue based on speed (v_ego) and time offset for smooth movement
+      float path_hue = fmod(lin_grad_point * 360.0 + (v_ego * 30.0) + (time_offset * 120.0), 360.0);
+
+      // Define constant saturation and lightness for vivid colors
+      float saturation = 1.0f;
+      float lightness = 0.5f;
+
+      // Adjust alpha fading for smoother transitions
+      float alpha = util::map_val(lin_grad_point, 0.75f / 2.f, 0.75f, 0.6f, 0.0f);
+
+      // Set color at the calculated gradient point
+      bg.setColorAt(lin_grad_point, QColor::fromHslF(path_hue / 360.0, saturation, lightness, alpha));
+    }
   } else {
     updatePathGradient(bg);
   }
@@ -141,6 +174,7 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
   painter.setBrush(bg);
   painter.drawPolygon(track_vertices);
 }
+
 
 void ModelRenderer::updatePathGradient(QLinearGradient &bg) {
   static const QColor throttle_colors[] = {
