@@ -54,7 +54,6 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
   QObject::connect(uiState(), &UIState::offroadTransition, this, &MadsSettings::updateToggles);
 
   main_layout->addWidget(new ScrollViewSP(list, this));
-  main_layout->addStretch(1);
 }
 
 void MadsSettings::showEvent(QShowEvent *event) {
