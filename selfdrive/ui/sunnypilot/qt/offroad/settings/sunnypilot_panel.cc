@@ -10,5 +10,5 @@
 #include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
+SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : ListWidget(parent) {
 }
