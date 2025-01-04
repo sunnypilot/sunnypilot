@@ -24,6 +24,7 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
     tr("Modular Assistive Driving System (MADS)"),
     tr("Enable the beloved MADS feature. Disable toggle to revert back to stock openpilot engagement/disengagement."),
     "");
+  madsToggle->setConfirmation(true, false);
   list->addItem(madsToggle);
 
   SubPanelButton *madsSettingsButton = new SubPanelButton(tr("Customize MADS"));
@@ -32,6 +33,7 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
     sunnypilotScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(madsWidget);
   });
+  madsSettingsButton->setEnabled(madsToggle->isToggled());
 
   madsWidget = new MadsSettings(this);
   connect(madsWidget, &MadsSettings::backPress, [=]() {
@@ -39,6 +41,11 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
   list->addItem(madsSettingsButton);
+
+  QObject::connect(madsToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    madsSettingsButton->setEnabled(state);
+  });
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &SunnypilotPanel::updateToggles);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
@@ -66,15 +73,13 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
 }
 
 void SunnypilotPanel::showEvent(QShowEvent *event) {
-  updateToggles();
+  updateToggles(offroad);
 }
 
 void SunnypilotPanel::hideEvent(QHideEvent *event) {
   main_layout->setCurrentWidget(sunnypilotScreen);
 }
 
-void SunnypilotPanel::updateToggles() {
-  if (!isVisible()) {
-    return;
-  }
+void SunnypilotPanel::updateToggles(bool _offroad) {
+  offroad = _offroad;
 }

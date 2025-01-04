@@ -25,12 +25,13 @@ public:
   void hideEvent(QHideEvent* event) override;
 
 public slots:
-  void updateToggles();
+  void updateToggles(bool _offroad);
 
 private:
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   ScrollViewSP *sunnypilotScroller = nullptr;
+  bool offroad;
 
   ParamControl *madsToggle;
   MadsSettings *madsWidget = nullptr;
