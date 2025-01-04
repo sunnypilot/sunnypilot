@@ -49,7 +49,6 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
     "",
     lateral_on_brake_texts,
     500);
-  madsPauseLateralOnBrake->showDescription();
   list->addItem(madsPauseLateralOnBrake);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &MadsSettings::updateToggles);
