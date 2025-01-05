@@ -16,3 +16,6 @@
 [submodule "tinygrad"]
   path = tinygrad_repo
   url = https://github.com/commaai/tinygrad.git
+[submodule "tinygrad_snpe"]
+  path = sunnypilot/tinygrad_repo
+  url = https://github.com/commaai/tinygrad.git
