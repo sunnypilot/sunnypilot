@@ -49,9 +49,11 @@ class ModelManagerSP:
   async def _download_file(self, url: str, path: str, model) -> None:
     """Downloads a file with progress tracking"""
     self._download_start_times[model.fileName] = time.monotonic()
+    cloudlog.debug(f"Downloading {url} to {path}")
 
     async with aiohttp.ClientSession() as session:
       async with session.get(url) as response:
+        cloudlog.debug(f"Response status: {response.status}")
         response.raise_for_status()
         total_size = int(response.headers.get("content-length", 0))
         bytes_downloaded = 0
@@ -125,12 +127,15 @@ class ModelManagerSP:
     """Downloads all models in a bundle"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
+    cloudlog.debug(f"Downloading bundle {model_bundle.name} to {destination_path}")
     os.makedirs(destination_path, exist_ok=True)
 
     try:
+      cloudlog.debug(f"Downloading {len(self.selected_bundle.models)} models")
       tasks = [self._process_model(model, destination_path)
                for model in self.selected_bundle.models]
       await asyncio.gather(*tasks)
+      cloudlog.debug(f"Downloaded {len(self.selected_bundle.models)} models")
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
       self.active_bundle = self.selected_bundle
       self.params.put("ModelManager_ActiveBundle", self.selected_bundle.to_bytes())
@@ -155,7 +160,9 @@ class ModelManagerSP:
         self.available_models = self.model_fetcher.get_available_models()
 
         if index_to_download := self.params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8"):
+          cloudlog.debug(f"Downloading model with index {index_to_download}")
           if model_to_download := next((model for model in self.available_models if model.index == int(index_to_download)), None):
+            cloudlog.debug(f"Downloading model {model_to_download.fileName}")
             try:
               self.download(model_to_download, Paths.model_root())
             except Exception as e:
