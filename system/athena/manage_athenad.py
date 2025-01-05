@@ -42,5 +42,6 @@ def manage_athenad(dongle_id_param, pid_param, process_name, target):
   finally:
     params.remove(pid_param)
 
+
 if __name__ == '__main__':
   main()

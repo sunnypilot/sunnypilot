@@ -4,7 +4,7 @@ widgets_src = [
   "sunnypilot/qt/widgets/scrollview.cc",
 ]
 
-sp_qt_util = [
+qt_util = [
   "#selfdrive/ui/sunnypilot/qt/util.cc",
 ]
 
@@ -25,5 +25,6 @@ sunnypilot_panel_qt_src = [
 
 sp_widgets_src = widgets_src
 sp_qt_src = qt_src + sunnypilot_panel_qt_src
+sp_qt_util = qt_util
 
 Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")
