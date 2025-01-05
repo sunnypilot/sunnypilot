@@ -181,6 +181,14 @@ def setup_settings_sunnypilot(click, pm: PubMaster):
   click(278, 846)
   time.sleep(UI_DELAY)
 
+def setup_settings_sunnypilot_mads(click, pm: PubMaster):
+  setup_settings_device(click, pm)
+  click(278, 846)   # sunnypilot panel
+  click(550, 94)    # Enable MADS
+  click(1555, 870)  # Confirm Enable MADS
+  click(970, 250)   # Customize MADS
+  time.sleep(UI_DELAY)
+
 CASES = {
   "homescreen": setup_homescreen,
   "prime": setup_homescreen,
@@ -207,6 +215,7 @@ CASES = {
 
 CASES.update({
   "settings_sunnypilot": setup_settings_sunnypilot,
+  "settings_sunnypilot_mads": setup_settings_sunnypilot_mads,
 })
 
 TEST_DIR = pathlib.Path(__file__).parent
