@@ -12,7 +12,7 @@
 #include "common/params.h"
 
 SidebarSP::SidebarSP(QWidget *parent) : Sidebar(parent) {
-  // Because I know that stock sidebar makes this connection, I will disconnect it and connect it to the new updateState function
+  // Redirect uiUpdate signal to SidebarSP::updateState instead of Sidebar::updateState
   QObject::disconnect(uiState(), &UIState::uiUpdate, this, &Sidebar::updateState);
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SidebarSP::updateState);
 }

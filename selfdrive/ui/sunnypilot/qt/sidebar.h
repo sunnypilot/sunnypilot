@@ -22,11 +22,12 @@ public slots:
   void updateState(const UIStateSP &s);
 
 public:
-  explicit SidebarSP(QWidget* parent = 0);
+  explicit SidebarSP(QWidget *parent = 0);
 
 private:
-  Params params;
   void paintSidebar(QPainter &p) override;
+
+  Params params;
   QString sidebar_temp = "0";
   QString sidebar_temp_str = "0";
 
