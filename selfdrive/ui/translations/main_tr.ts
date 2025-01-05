@@ -900,22 +900,6 @@ This may take up to a minute.</source>
 <context>
     <name>SidebarSP</name>
     <message>
-        <source>TEMP</source>
-        <translation type="obsolete">SICAKLIK</translation>
-    </message>
-    <message>
-        <source>HIGH</source>
-        <translation type="obsolete">YÜKSEK</translation>
-    </message>
-    <message>
-        <source>GOOD</source>
-        <translation type="obsolete">İYİ</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">TAMAM</translation>
-    </message>
-    <message>
         <source>DISABLED</source>
         <translation type="unfinished"></translation>
     </message>

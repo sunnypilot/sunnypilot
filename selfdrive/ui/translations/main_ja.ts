@@ -900,22 +900,6 @@ This may take up to a minute.</source>
 <context>
     <name>SidebarSP</name>
     <message>
-        <source>TEMP</source>
-        <translation type="obsolete">温度</translation>
-    </message>
-    <message>
-        <source>HIGH</source>
-        <translation type="obsolete">高温</translation>
-    </message>
-    <message>
-        <source>GOOD</source>
-        <translation type="obsolete">最適</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">OK</translation>
-    </message>
-    <message>
         <source>DISABLED</source>
         <translation type="unfinished"></translation>
     </message>

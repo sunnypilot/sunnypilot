@@ -906,22 +906,6 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
 <context>
     <name>SidebarSP</name>
     <message>
-        <source>TEMP</source>
-        <translation type="obsolete">TEMP</translation>
-    </message>
-    <message>
-        <source>HIGH</source>
-        <translation type="obsolete">HAUT</translation>
-    </message>
-    <message>
-        <source>GOOD</source>
-        <translation type="obsolete">BON</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">OK</translation>
-    </message>
-    <message>
         <source>DISABLED</source>
         <translation type="unfinished"></translation>
     </message>

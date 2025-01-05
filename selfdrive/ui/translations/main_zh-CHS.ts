@@ -902,22 +902,6 @@ This may take up to a minute.</source>
 <context>
     <name>SidebarSP</name>
     <message>
-        <source>TEMP</source>
-        <translation type="obsolete">设备温度</translation>
-    </message>
-    <message>
-        <source>HIGH</source>
-        <translation type="obsolete">过热</translation>
-    </message>
-    <message>
-        <source>GOOD</source>
-        <translation type="obsolete">良好</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">一般</translation>
-    </message>
-    <message>
         <source>DISABLED</source>
         <translation type="unfinished"></translation>
     </message>

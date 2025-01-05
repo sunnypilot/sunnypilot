@@ -902,22 +902,6 @@ This may take up to a minute.</source>
 <context>
     <name>SidebarSP</name>
     <message>
-        <source>TEMP</source>
-        <translation type="obsolete">อุณหภูมิ</translation>
-    </message>
-    <message>
-        <source>HIGH</source>
-        <translation type="obsolete">สูง</translation>
-    </message>
-    <message>
-        <source>GOOD</source>
-        <translation type="obsolete">ดี</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">พอใช้</translation>
-    </message>
-    <message>
         <source>DISABLED</source>
         <translation type="unfinished"></translation>
     </message>
