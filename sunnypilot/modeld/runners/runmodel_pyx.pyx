@@ -4,7 +4,7 @@
 from libcpp.string cimport string
 
 from .runmodel cimport USE_CPU_RUNTIME, USE_GPU_RUNTIME, USE_DSP_RUNTIME
-from selfdrive.modeld.models.commonmodel_pyx cimport CLMem
+from sunnypilot.modeld.models.commonmodel_pyx cimport CLMem
 
 class Runtime:
   CPU = USE_CPU_RUNTIME
