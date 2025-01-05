@@ -60,7 +60,7 @@ cmd = f'python3 {Dir("#selfdrive/modeld").abspath}/get_model_metadata.py {fn}.on
 lenv.Command(fn + "_metadata.pkl", [fn + ".onnx"] + tinygrad_files, cmd)
 
 # Build thneed model
-pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:' + env.Dir("#sunnypilot/tinygrad_repo").abspath + '"'
+pythonpath_string = 'PYTHONPATH="${PYTHONPATH}:/data/openpilot/sunnypilot/tinygrad"'
 if arch == "larch64" or GetOption('pc_thneed'):
   tinygrad_opts = ''
   if not GetOption('pc_thneed'):
