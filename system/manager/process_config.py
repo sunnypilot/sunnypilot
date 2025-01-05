@@ -77,6 +77,10 @@ def is_snpe_model(started, params, CP: car.CarParams) -> bool:
   # TODO-SP: I want to do a little more optimization here to only check this once when we've transitioned from offroad to onroad.
   return get_active_model_runner(params) == custom.ModelManagerSP.Runner.snpe
 
+def is_stock_model(started, params, CP: car.CarParams) -> bool:
+  """Check if the active model runner is stock."""
+  return not is_snpe_model(started, params, CP)
+
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
 
@@ -99,7 +103,7 @@ procs = [
   NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], notcar),
   NativeProcess("loggerd", "system/loggerd", ["./loggerd"], logging),
   # TODO Make python process once TG allows opening QCOM from child proc
-  NativeProcess("modeld", "selfdrive/modeld", ["./modeld"], and_(only_onroad, not is_snpe_model)),
+  NativeProcess("modeld", "selfdrive/modeld", ["./modeld"], and_(only_onroad, is_stock_model)),
   NativeProcess("sensord", "system/sensord", ["./sensord"], only_onroad, enabled=not PC),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
@@ -141,7 +145,7 @@ procs = [
 # sunnypilot
 procs += [
   PythonProcess("models_manager", "sunnypilot.models.manager", only_offroad),
-  NativeProcess("modeld", "sunnypilot/modeld", ["./modeld"], and_(only_onroad, is_snpe_model)),
+  NativeProcess("modeld_snpe", "sunnypilot/modeld", ["./modeld"], and_(only_onroad, is_snpe_model)),
 ]
 
 if os.path.exists("./github_runner.sh"):
