@@ -4,8 +4,8 @@ import sys
 import numpy as np
 from typing import Any
 
-from openpilot.selfdrive.modeld.runners.runmodel_pyx import RunModel
-from openpilot.selfdrive.modeld.runners.ort_helpers import convert_fp16_to_fp32, ORT_TYPES_TO_NP_TYPES
+from openpilot.sunnypilot.modeld.runners.runmodel_pyx import RunModel
+from openpilot.sunnypilot.modeld.runners.ort_helpers import convert_fp16_to_fp32, ORT_TYPES_TO_NP_TYPES
 
 
 def create_ort_session(path, fp16_to_fp32):
