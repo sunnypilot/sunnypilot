@@ -278,6 +278,8 @@ CASES = {
 
 CASES.update({
   "settings_sunnylink": setup_settings_sunnylink,
+  "settings_sunnylink_sponsor_button": setup_settings_sunnylink_sponsor_button,
+  "settings_sunnylink_pair_button": setup_settings_sunnylink_pair_button,
   "settings_sunnypilot": setup_settings_sunnypilot,
   "settings_sunnypilot_mads": setup_settings_sunnypilot_mads,
   "settings_trips": setup_settings_trips,
