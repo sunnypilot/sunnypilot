@@ -182,11 +182,11 @@ def setup_settings_sunnypilot(click, pm: PubMaster):
   time.sleep(UI_DELAY)
 
 def setup_settings_sunnypilot_mads(click, pm: PubMaster):
+  Params().put_bool("Mads", True)
+
   setup_settings_device(click, pm)
-  click(278, 846)   # sunnypilot panel
-  click(550, 94)    # Enable MADS
-  click(1555, 870)  # Confirm Enable MADS
-  click(970, 250)   # Customize MADS
+  click(278, 846)
+  click(970, 250)
   time.sleep(UI_DELAY)
 
 CASES = {
