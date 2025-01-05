@@ -12,10 +12,10 @@
 
 SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
-  ListWidget *list = new ListWidget(this, false);
+  auto *list = new ListWidget(this, false);
 
   sunnylinkScreen = new QWidget(this);
-  QVBoxLayout *vlayout = new QVBoxLayout(sunnylinkScreen);
+  auto vlayout = new QVBoxLayout(sunnylinkScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
   QString sunnylinkEnabledBtnDesc = tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
@@ -32,15 +32,15 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   });
 
   connect(sunnylinkEnabledBtn, &ParamControl::toggleFlipped, [=](bool enabled) {
+    QString description;
     if (enabled) {
-      auto proud_description = "<font color='SeaGreen'>"+ tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀")+ "</font>";
-      sunnylinkEnabledBtn->showDescription();
-      sunnylinkEnabledBtn->setDescription(proud_description);
+      description = "<font color='SeaGreen'>"+ tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀")+ "</font>";
     } else {
-      auto shame_description = "<font color='orange'>"+ tr("👋Not going to lie, it's sad to see you disabled sunnylink 😢, but we'll be here when you're ready to come back 🎉.")+ "</font>";
-      sunnylinkEnabledBtn->showDescription();
-      sunnylinkEnabledBtn->setDescription(shame_description);
+      description = "<font color='orange'>"+ tr("👋Not going to lie, it's sad to see you disabled sunnylink 😢, but we'll be here when you're ready to come back 🎉.")+ "</font>";
+     
     }
+    sunnylinkEnabledBtn->showDescription();
+    sunnylinkEnabledBtn->setDescription(description);
 
     updatePanel(offroad);
   });

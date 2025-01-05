@@ -25,7 +25,7 @@ private:
   QStackedLayout *main_layout = nullptr;
   QWidget *sunnylinkScreen = nullptr;
   ScrollViewSP *sunnylinkScroller = nullptr;
-  bool offroad;
+  bool offroad = false;
 
   ParamControl *sunnylinkEnabledBtn;
 };
