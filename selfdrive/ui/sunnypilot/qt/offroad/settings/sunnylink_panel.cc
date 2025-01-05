@@ -58,7 +58,7 @@ void SunnylinkPanel::showEvent(QShowEvent *event) {
 }
 
 void SunnylinkPanel::updatePanel(bool _offroad) {
-  QString sunnylink_device_id = tr("Device ID") + " " + getSunnylinkDongleId().value_or(tr("N/A"));
+  QString sunnylink_device_id = tr("Device ID") + "  " + getSunnylinkDongleId().value_or(tr("N/A"));
 
   sunnylinkEnabledBtn->setEnabled(_offroad);
 
