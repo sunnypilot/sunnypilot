@@ -1138,8 +1138,7 @@ Esto puede tardar un minuto.</translation>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation>🎉Bienvenido de vuelta! Nos alegra ver que has habilitado sunnylink nuevamente! 🚀</translation>
-        
+        <translation>🎉¡Bienvenido de vuelta! Nos alegra que hayas reactivado sunnylink. 🚀</translation>
     </message>
     <message>
         <source>Device ID</source>
@@ -1147,7 +1146,7 @@ Esto puede tardar un minuto.</translation>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation>👋No te vamos a mentir, nos entristece ver que has deshabilitado sunnylink 😢, pero estaremos esperándote justo aquí cuando estés listo para volver 🎉.</translation>
+        <translation>👋No te mentiremos, nos entristece que hayas desactivado sunnylink 😢. Estaremos aquí cuando estes listo para volver 🎉.</translation>
     </message>
 </context>
 <context>
