@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
@@ -25,6 +26,10 @@ private:
   QStackedLayout *main_layout = nullptr;
   QWidget *sunnylinkScreen = nullptr;
   ScrollViewSP *sunnylinkScroller = nullptr;
+  SunnylinkSponsorPopup *status_popup;
+  SunnylinkSponsorPopup *pair_popup;
+  ButtonControlSP* sponsorBtn;
+  ButtonControlSP* pairSponsorBtn;
   bool offroad = false;
 
   ParamControl *sunnylinkEnabledBtn;

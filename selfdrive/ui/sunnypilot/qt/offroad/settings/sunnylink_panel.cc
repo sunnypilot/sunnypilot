@@ -26,6 +26,30 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     "");
   list->addItem(sunnylinkEnabledBtn);
 
+  status_popup = new SunnylinkSponsorPopup(false, this);
+  sponsorBtn = new ButtonControlSP(
+    tr("Sponsor Status"), tr("SPONSOR"),
+    tr("Become a sponsor of sunnypilot to get early access to sunnylink features when they become available."));
+  list->addItem(sponsorBtn);
+  connect(sponsorBtn, &ButtonControlSP::clicked, [=]() {
+    status_popup->exec();
+  });
+  list->addItem(horizontal_line());
+
+  pair_popup = new SunnylinkSponsorPopup(true, this);
+  pairSponsorBtn = new ButtonControlSP(
+    tr("Pair GitHub Account"), tr("PAIR"),
+    tr("Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.") + "🌟");
+  list->addItem(pairSponsorBtn);
+  connect(pairSponsorBtn, &ButtonControlSP::clicked, [=]() {
+    if (getSunnylinkDongleId().value_or(tr("N/A")) == "N/A") {
+      ConfirmationDialog::alert(tr("sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again."), this);
+    } else {
+      pair_popup->exec();
+    }
+  });
+  list->addItem(horizontal_line());
+
   connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
     // resets the description to the default one for the Easter egg
     sunnylinkEnabledBtn->setDescription(sunnylinkEnabledBtnDesc);

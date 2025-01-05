@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/user_model.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/role_model.h"
 #include "selfdrive/ui/ui.h"
 
 class UIStateSP : public UIState {
@@ -15,12 +17,21 @@ class UIStateSP : public UIState {
 public:
   UIStateSP(QObject *parent = 0);
   void updateStatus() override;
+  void setSunnylinkRoles(const std::vector<RoleModel> &roles);
+  void setSunnylinkDeviceUsers(const std::vector<UserModel> &users);
 
-signals:
+  signals:
+  void sunnylinkRoleChanged(bool subscriber);
+  void sunnylinkRolesChanged(std::vector<RoleModel> roles);
+  void sunnylinkDeviceUsersChanged(std::vector<UserModel> users);
   void uiUpdate(const UIStateSP &s);
 
 private slots:
-  void update() override;
+  void update() override;  
+
+private:
+  std::vector<RoleModel> sunnylinkRoles = {};
+  std::vector<UserModel> sunnylinkUsers = {};
 };
 
 UIStateSP *uiStateSP();
