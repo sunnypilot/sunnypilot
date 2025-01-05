@@ -83,8 +83,6 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
   if (bundle.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
     currentModelLblBtn->showDescription();
   }
-
-  currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
 }
 
 /**
@@ -161,6 +159,7 @@ void SoftwarePanelSP::updateLabels() {
   }
 
   handleBundleDownloadProgress();
+  currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelName());
   SoftwarePanel::updateLabels();
 }
