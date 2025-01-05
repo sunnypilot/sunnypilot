@@ -181,7 +181,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"PrimeType", PERSISTENT},
     {"RecordFront", PERSISTENT | BACKUP},
     {"RecordFrontLock", PERSISTENT},  // for the internal fleet
-    {"SecOCKey", PERSISTENT | DONT_LOG}, // Candidate for | BACKUP
+    {"SecOCKey", PERSISTENT | DONT_LOG},  // Candidate for | BACKUP
     {"RouteCount", PERSISTENT},
     {"SnoozeUpdate", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"SshEnabled", PERSISTENT | BACKUP},
@@ -205,14 +205,14 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"EnableSunnylinkUploader", PERSISTENT | BACKUP},
     {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
-    {"Mads", PERSISTENT},
-    {"MadsMainCruiseAllowed", PERSISTENT},
-    {"MadsPauseLateralOnBrake", PERSISTENT},
-    {"MadsUnifiedEngagementMode", PERSISTENT},
+    {"Mads", PERSISTENT | BACKUP},
+    {"MadsMainCruiseAllowed", PERSISTENT | BACKUP},
+    {"MadsPauseLateralOnBrake", PERSISTENT | BACKUP},
+    {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
     {"ModelManager_ActiveBundle", PERSISTENT},
     {"ModelManager_DownloadIndex", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION | CLEAR_ON_ONROAD_TRANSITION},
     {"ModelManager_LastSyncTime", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
-    {"ModelManager_ModelsCache", PERSISTENT},
+    {"ModelManager_ModelsCache", PERSISTENT | BACKUP},
     {"SunnylinkDongleId", PERSISTENT},
     {"SunnylinkdPid", PERSISTENT},
     {"SunnylinkEnabled", PERSISTENT},
