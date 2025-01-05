@@ -203,7 +203,6 @@ std::unordered_map<std::string, uint32_t> keys = {
 
     // sunnypilot params
     {"EnableGithubRunner", PERSISTENT},
-    {"HyundaiLongitudinalMainCruiseToggleable", PERSISTENT},
     {"MadsMainCruiseAllowed", PERSISTENT},
     {"MadsPauseLateralOnBrake", PERSISTENT},
     {"MadsUnifiedEngagementMode", PERSISTENT},

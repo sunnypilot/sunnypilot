@@ -49,7 +49,6 @@ def manager_init() -> None:
     ("MadsMainCruiseAllowed", "1"),
     ("MadsPauseLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
-    ("HyundaiLongitudinalMainCruiseToggleable", "1"),
   ]
 
   if params.get_bool("RecordFrontLock"):
