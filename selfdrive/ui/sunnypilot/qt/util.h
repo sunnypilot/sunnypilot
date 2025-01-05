@@ -16,5 +16,3 @@
 QString getUserAgent(bool sunnylink = false);
 std::optional<QString> getSunnylinkDongleId();
 std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value);
-void drawRoundedRect(QPainter &painter, const QRectF &rect, qreal xRadiusTop, qreal yRadiusTop, qreal xRadiusBottom, qreal yRadiusBottom);
-QColor interpColor(float xv, std::vector<float> xp, std::vector<QColor> fp);

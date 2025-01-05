@@ -44,8 +44,8 @@ void SidebarSP::updateState(const UIStateSP &s) {
   setProperty("sunnylinkStatus", QVariant::fromValue(sunnylinkStatus));
 }
 
-void SidebarSP::paintSidebar(QPainter &p) {
-  Sidebar::paintSidebar(p);
+void SidebarSP::drawSidebar(QPainter &p) {
+  Sidebar::drawSidebar(p);
   // metrics
   drawMetric(p, temp_status.first, temp_status.second, 310);
   drawMetric(p, panda_status.first, panda_status.second, 440);

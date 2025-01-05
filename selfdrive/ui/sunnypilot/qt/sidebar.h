@@ -25,7 +25,7 @@ public:
   explicit SidebarSP(QWidget *parent = 0);
 
 private:
-  void paintSidebar(QPainter &p) override;
+  void drawSidebar(QPainter &p) override;
 
   Params params;
   QString sidebar_temp = "0";
