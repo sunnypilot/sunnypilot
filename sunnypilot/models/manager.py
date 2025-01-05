@@ -127,7 +127,7 @@ class ModelManagerSP:
     """Downloads all models in a bundle"""
     self.selected_bundle = model_bundle
     self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloading
-    cloudlog.debug(f"Downloading bundle {model_bundle.name} to {destination_path}")
+    cloudlog.debug(f"Downloading bundle {model_bundle.displayName} to {destination_path}")
     os.makedirs(destination_path, exist_ok=True)
 
     try:
@@ -162,7 +162,7 @@ class ModelManagerSP:
         if index_to_download := self.params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8"):
           cloudlog.debug(f"Downloading model with index {index_to_download}")
           if model_to_download := next((model for model in self.available_models if model.index == int(index_to_download)), None):
-            cloudlog.debug(f"Downloading model {model_to_download.fileName}")
+            cloudlog.debug(f"Downloading model {model_to_download.displayName}")
             try:
               self.download(model_to_download, Paths.model_root())
             except Exception as e:
