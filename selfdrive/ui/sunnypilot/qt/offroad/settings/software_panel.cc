@@ -126,7 +126,6 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     bundleNames.append(index_to_bundle[index]);
   }
 
-  currentModelLblBtn->setEnabled(!is_onroad);
   currentModelLblBtn->setValue(GetActiveModelName());
 
   const QString selectedBundleName = MultiOptionDialog::getSelection(
