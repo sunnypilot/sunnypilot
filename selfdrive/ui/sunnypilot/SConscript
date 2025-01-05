@@ -5,7 +5,7 @@ widgets_src = [
 ]
 
 qt_util = [
-  "#selfdrive/ui/sunnypilot/qt/util.cc",
+  "sunnypilot/qt/util.cc",
 ]
 
 qt_src = [
