@@ -711,7 +711,7 @@ Esto puede tardar un minuto.</translation>
     </message>
     <message>
         <source>sunnylink</source>
-        <translation type="unfinished"></translation>
+        <translation>sunnylink</translation>
     </message>
 </context>
 <context>
@@ -903,7 +903,7 @@ Esto puede tardar un minuto.</translation>
     <name>SidebarSP</name>
     <message>
         <source>DISABLED</source>
-        <translation type="unfinished"></translation>
+        <translation>DESHABILITADO</translation>
     </message>
     <message>
         <source>OFFLINE</source>
@@ -911,19 +911,19 @@ Esto puede tardar un minuto.</translation>
     </message>
     <message>
         <source>REGIST...</source>
-        <translation type="unfinished"></translation>
+        <translation>REGIST...</translation>
     </message>
     <message>
         <source>ONLINE</source>
-        <translation type="unfinished">EN LÍNEA</translation>
+        <translation>EN LÍNEA</translation>
     </message>
     <message>
         <source>ERROR</source>
-        <translation type="unfinished">ERROR</translation>
+        <translation>ERROR</translation>
     </message>
     <message>
         <source>SUNNYLINK</source>
-        <translation type="unfinished"></translation>
+        <translation>SUNNYLINK</translation>
     </message>
 </context>
 <context>
@@ -1126,11 +1126,11 @@ Esto puede tardar un minuto.</translation>
     <name>SunnylinkPanel</name>
     <message>
         <source>This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.</source>
-        <translation type="unfinished"></translation>
+        <translation>Este es el interruptor principal; te permitirá desactivar completamente cualquier connectividad de sunnylink si así lo deseas.</translation>
     </message>
     <message>
         <source>Enable sunnylink</source>
-        <translation type="unfinished"></translation>
+        <translation>Habilitar sunnylink</translation>
     </message>
     <message>
         <source>N/A</source>
@@ -1138,15 +1138,16 @@ Esto puede tardar un minuto.</translation>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
-        <translation type="unfinished"></translation>
+        <translation>🎉Bienvenido de vuelta! Nos alegra ver que has habilitado sunnylink nuevamente! 🚀</translation>
+        
     </message>
     <message>
         <source>Device ID</source>
-        <translation type="unfinished"></translation>
+        <translation>ID del dispositivo</translation>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation type="unfinished"></translation>
+        <translation>👋No te vamos a mentir, nos entristece ver que has deshabilitado sunnylink 😢, pero estaremos esperándote justo aquí cuando estés listo para volver 🎉.</translation>
     </message>
 </context>
 <context>
