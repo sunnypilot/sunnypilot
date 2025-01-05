@@ -92,7 +92,7 @@ procs = [
   NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], notcar),
   NativeProcess("loggerd", "system/loggerd", ["./loggerd"], logging),
   # TODO Make python process once TG allows opening QCOM from child proc
-  NativeProcess("modeld", "selfdrive/modeld", ["./modeld"], only_onroad),
+  #NativeProcess("modeld", "selfdrive/modeld", ["./modeld"], only_onroad),
   NativeProcess("sensord", "system/sensord", ["./sensord"], only_onroad, enabled=not PC),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
@@ -134,6 +134,7 @@ procs = [
 # sunnypilot
 procs += [
   PythonProcess("models_manager", "sunnypilot.models.manager", only_offroad),
+  NativeProcess("modeld", "sunnypilot/modeld", ["./modeld"], only_onroad),
 ]
 
 if os.path.exists("./github_runner.sh"):
