@@ -13,6 +13,19 @@
 SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
   auto *list = new ListWidget(this, false);
+  param_watcher = new ParamWatcher(this);
+  param_watcher->addParam("SunnylinkEnabled");
+  connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+    paramsRefresh(param_name, param_value);
+  });
+
+  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  connect(uiStateSP(), &UIStateSP::sunnylinkRolesChanged, this, &SunnylinkPanel::updatePanel);
+  connect(uiStateSP(), &UIStateSP::sunnylinkDeviceUsersChanged, this, &SunnylinkPanel::updatePanel);
+  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
+    is_onroad = !offroad;
+    updatePanel();
+  });
 
   sunnylinkScreen = new QWidget(this);
   auto vlayout = new QVBoxLayout(sunnylinkScreen);
@@ -66,7 +79,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     sunnylinkEnabledBtn->showDescription();
     sunnylinkEnabledBtn->setDescription(description);
 
-    updatePanel(offroad);
+    updatePanel();
   });
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &SunnylinkPanel::updatePanel);
@@ -77,20 +90,72 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   main_layout->addWidget(sunnylinkScreen);
 }
 
-void SunnylinkPanel::showEvent(QShowEvent *event) {
-  updatePanel(offroad);
-}
-
-void SunnylinkPanel::updatePanel(bool _offroad) {
-  QString sunnylink_device_id = tr("Device ID") + "  " + getSunnylinkDongleId().value_or(tr("N/A"));
-
-  sunnylinkEnabledBtn->setEnabled(_offroad);
-
-  if (sunnylinkEnabledBtn->isToggled()) {
-    sunnylinkEnabledBtn->setValue(sunnylink_device_id);
-  } else {
-    sunnylinkEnabledBtn->setValue("");
+void SunnylinkPanel::paramsRefresh(const QString &param_name, const QString &param_value) {
+  // We do it on paramsRefresh because the toggleEvent happens before the value is updated
+  if (param_name == "SunnylinkEnabled" && param_value == "1") {
+    startSunnylink();
+  } else if (param_name == "SunnylinkEnabled" && param_value == "0") {
+    stopSunnylink();
   }
 
-  offroad = _offroad;
+  updatePanel();
+}
+
+void SunnylinkPanel::startSunnylink() const {
+  if (!sunnylink_client->role_service->isCurrentyPolling()) {
+    sunnylink_client->role_service->startPolling();
+  } else {
+    sunnylink_client->role_service->load();
+  }
+
+  if (!sunnylink_client->user_service->isCurrentyPolling()) {
+    sunnylink_client->user_service->startPolling();
+  } else {
+    sunnylink_client->user_service->load();
+  }
+}
+
+void SunnylinkPanel::stopSunnylink() const {
+  sunnylink_client->role_service->stopPolling();
+  sunnylink_client->user_service->stopPolling();
+}
+
+void SunnylinkPanel::showEvent(QShowEvent *event) {
+  updatePanel();
+}
+
+void SunnylinkPanel::updatePanel() {
+  if (!isVisible()) {
+    return;
+  }
+  
+  const auto sunnylinkDongleId = getSunnylinkDongleId().value_or(tr("N/A"));
+  sunnylinkEnabledBtn->setEnabled(!is_onroad);
+
+  is_sunnylink_enabled = Params().getBool("SunnylinkEnabled");
+  bool is_sub = uiStateSP()->isSunnylinkSponsor() && is_sunnylink_enabled;
+  auto max_current_sponsor_rule = uiStateSP()->sunnylinkSponsorRole();
+  auto role_name = max_current_sponsor_rule.getSponsorTierString();
+  std::optional role_color = max_current_sponsor_rule.getSponsorTierColor();
+  bool is_paired = uiStateSP()->isSunnylinkPaired();
+  auto paired_users = uiStateSP()->sunnylinkDeviceUsers();
+
+  sunnylinkEnabledBtn->setEnabled(!is_onroad);
+  sunnylinkEnabledBtn->setValue(tr("Device ID ")+ sunnylinkDongleId);
+
+  sponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
+  sponsorBtn->setText(is_sub ? tr("THANKS") + " ❤️" : tr("SPONSOR"));
+  sponsorBtn->setValue(is_sub ? tr(role_name.toStdString().c_str()) : tr("Not Sponsor"), role_color);
+
+  pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
+  pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
+
+  
+  if (!is_sunnylink_enabled) {
+    sunnylinkEnabledBtn->setValue("");
+    sponsorBtn->setValue("");
+    pairSponsorBtn->setValue("");
+  }
+
+  update();
 }
