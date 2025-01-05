@@ -12,7 +12,7 @@
 
 SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
-  auto *list = new ListWidget(this, false);
+  sunnylink_client = new SunnylinkClient(this);
   param_watcher = new ParamWatcher(this);
   param_watcher->addParam("SunnylinkEnabled");
   connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
@@ -31,6 +31,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   auto vlayout = new QVBoxLayout(sunnylinkScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
+  auto *list = new ListWidget(this, false);
   QString sunnylinkEnabledBtnDesc = tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
   sunnylinkEnabledBtn = new ParamControl(
     "SunnylinkEnabled",
@@ -88,6 +89,10 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   vlayout->addWidget(sunnylinkScroller);
 
   main_layout->addWidget(sunnylinkScreen);
+
+  if (is_sunnylink_enabled) {
+    startSunnylink();
+  }
 }
 
 void SunnylinkPanel::paramsRefresh(const QString &param_name, const QString &param_value) {
@@ -141,7 +146,7 @@ void SunnylinkPanel::updatePanel() {
   auto paired_users = uiStateSP()->sunnylinkDeviceUsers();
 
   sunnylinkEnabledBtn->setEnabled(!is_onroad);
-  sunnylinkEnabledBtn->setValue(tr("Device ID ")+ sunnylinkDongleId);
+  sunnylinkEnabledBtn->setValue(tr("Device ID") + " " + sunnylinkDongleId);
 
   sponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   sponsorBtn->setText(is_sub ? tr("THANKS") + " ❤️" : tr("SPONSOR"));
