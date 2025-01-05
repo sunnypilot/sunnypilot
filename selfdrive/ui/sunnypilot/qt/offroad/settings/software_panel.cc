@@ -19,10 +19,6 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
-  connect(uiStateSP(), &UIStateSP::offroadTransition, [=](bool offroad) {
-    is_onroad = !offroad;
-  });
-
   connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SoftwarePanelSP::updateLabels);
   AddWidgetAt(0, currentModelLblBtn);
