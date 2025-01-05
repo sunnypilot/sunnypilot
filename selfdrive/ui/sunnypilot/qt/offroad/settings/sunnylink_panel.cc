@@ -42,8 +42,10 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
       sunnylinkEnabledBtn->setDescription(shame_description);
     }
 
-    updateLabels();
+    updatePanel(offroad);
   });
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &SunnylinkPanel::updatePanel);
 
   sunnylinkScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnylinkScroller);
@@ -53,15 +55,19 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
 }
 
 void SunnylinkPanel::showEvent(QShowEvent *event) {
-  updateLabels();
+  updatePanel(offroad);
 }
 
-void SunnylinkPanel::updateLabels() {
+void SunnylinkPanel::updatePanel(bool _offroad) {
   QString sunnylink_device_id = tr("Device ID") + " " + getSunnylinkDongleId().value_or(tr("N/A"));
+
+  sunnylinkEnabledBtn->setEnabled(_offroad);
 
   if (sunnylinkEnabledBtn->isToggled()) {
     sunnylinkEnabledBtn->setValue(sunnylink_device_id);
   } else {
     sunnylinkEnabledBtn->setValue("");
   }
+
+  offroad = _offroad;
 }

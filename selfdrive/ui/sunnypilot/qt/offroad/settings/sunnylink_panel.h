@@ -18,13 +18,14 @@ public:
   void showEvent(QShowEvent *event) override;
 
 public slots:
-  void updateLabels();
+  void updatePanel(bool _offroad);
 
 private:
   Params params;
   QStackedLayout *main_layout = nullptr;
   QWidget *sunnylinkScreen = nullptr;
   ScrollViewSP *sunnylinkScroller = nullptr;
+  bool offroad;
 
   ParamControl *sunnylinkEnabledBtn;
 };
