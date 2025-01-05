@@ -66,7 +66,7 @@ if arch == "larch64" or GetOption('pc_thneed'):
   if not GetOption('pc_thneed'):
     # use FLOAT16 on device for speed + don't cache the CL kernels for space
     tinygrad_opts += ["FLOAT16=1", "PYOPENCL_NO_CACHE=1"]
-  cmd = f'{pythonpath_string} {tinygrad_opts} python3 {Dir("#sunnypilot/tinygrad_repo").abspath}/openpilot/compile2.py {fn}.onnx {fn}.thneed'
+  cmd = f'{pythonpath_string} {tinygrad_opts} python3 {Dir("#tinygrad_repo").abspath}/openpilot/compile2.py {fn}.onnx {fn}.thneed'
 
   lenv.Command(fn + ".thneed", [fn + ".onnx"] + tinygrad_files, cmd)
 
