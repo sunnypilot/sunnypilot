@@ -5,7 +5,7 @@
 #include "common/util.h"
 #include "common/clutil.h"
 #include "common/swaglog.h"
-#include "selfdrive/modeld/thneed/thneed.h"
+#include "sunnypilot/modeld/thneed/thneed.h"
 using namespace json11;
 
 extern map<cl_program, string> g_program_source;

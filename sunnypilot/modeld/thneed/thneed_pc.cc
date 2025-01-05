@@ -1,4 +1,4 @@
-#include "selfdrive/modeld/thneed/thneed.h"
+#include "sunnypilot/modeld/thneed/thneed.h"
 
 #include <cassert>
 
