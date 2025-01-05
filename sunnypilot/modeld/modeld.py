@@ -24,7 +24,7 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-PROCESS_NAME = "selfdrive.modeld.modeld"
+PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 MODEL_PATHS = {
