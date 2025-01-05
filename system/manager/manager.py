@@ -40,8 +40,6 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
-    ("ModelManager_LastSyncTime", "0"),
-    ("ModelManager_ModelsCache", "")
   ]
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
@@ -49,6 +47,8 @@ def manager_init() -> None:
     ("MadsMainCruiseAllowed", "1"),
     ("MadsPauseLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
+    ("ModelManager_LastSyncTime", "0"),
+    ("ModelManager_ModelsCache", "")
   ]
 
   if params.get_bool("RecordFrontLock"):
