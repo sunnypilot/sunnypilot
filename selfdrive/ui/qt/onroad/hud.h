@@ -13,6 +13,7 @@ class HudRenderer : public QObject {
 
 public:
   HudRenderer();
+  virtual ~HudRenderer() = default;
   virtual void updateState(const UIState &s);
   virtual void draw(QPainter &p, const QRect &surface_rect);
 

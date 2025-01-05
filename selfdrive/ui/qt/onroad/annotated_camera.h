@@ -18,6 +18,7 @@ class AnnotatedCameraWidget : public CameraWidget {
 
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
+  virtual ~AnnotatedCameraWidget() = default;
   virtual void updateState(const UIState &s);
 
 private:
