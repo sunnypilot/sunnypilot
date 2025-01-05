@@ -40,6 +40,8 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+    ("ModelManager_LastSyncTime", "0"),
+    ("ModelManager_ModelsCache", "")
   ]
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [

@@ -202,12 +202,15 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Version", PERSISTENT},
 
     // sunnypilot params
-    {"Mads", PERSISTENT},
+    {"EnableGithubRunner", PERSISTENT},
+    {"HyundaiLongitudinalMainCruiseToggleable", PERSISTENT},
     {"MadsMainCruiseAllowed", PERSISTENT},
     {"MadsPauseLateralOnBrake", PERSISTENT},
     {"MadsUnifiedEngagementMode", PERSISTENT},
-    {"HyundaiLongitudinalMainCruiseToggleable", PERSISTENT},
-    {"EnableGithubRunner", PERSISTENT},
+    {"ModelManager_ActiveBundle", PERSISTENT},
+    {"ModelManager_DownloadIndex", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION | CLEAR_ON_ONROAD_TRANSITION},
+    {"ModelManager_LastSyncTime", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
+    {"ModelManager_ModelsCache", PERSISTENT},
 };
 
 } // namespace
