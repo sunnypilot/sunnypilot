@@ -1141,11 +1141,11 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
+        <source>Device ID</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Device ID</source>
+        <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back. 🎉</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

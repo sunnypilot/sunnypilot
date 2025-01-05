@@ -27,7 +27,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   list->addItem(sunnylinkEnabledBtn);
 
   connect(sunnylinkEnabledBtn, &ParamControl::showDescriptionEvent, [=]() {
-    //resets the description to the default one for the easter egg
+    // resets the description to the default one for the Easter egg
     sunnylinkEnabledBtn->setDescription(sunnylinkEnabledBtnDesc);
   });
 
@@ -49,7 +49,6 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
 
   sunnylinkScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnylinkScroller);
-  vlayout->addStretch(1);
 
   main_layout->addWidget(sunnylinkScreen);
 }
