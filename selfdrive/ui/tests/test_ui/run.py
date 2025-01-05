@@ -50,11 +50,6 @@ def setup_settings_software(click, pm: PubMaster):
   click(278, 716)
   time.sleep(UI_DELAY)
 
-def setup_settings_sunnypilot(click, pm: PubMaster):
-  setup_settings_device(click, pm)
-  click(278, 846)
-  time.sleep(UI_DELAY)
-
 def setup_settings_developer(click, pm: PubMaster):
   setup_settings_device(click, pm)
   click(278, 976)
@@ -181,6 +176,11 @@ def setup_pair_device(click, pm: PubMaster):
   click(1950, 435)
   click(1800, 900)
 
+def setup_settings_sunnypilot(click, pm: PubMaster):
+  setup_settings_device(click, pm)
+  click(278, 846)
+  time.sleep(UI_DELAY)
+
 CASES = {
   "homescreen": setup_homescreen,
   "prime": setup_homescreen,
@@ -188,7 +188,6 @@ CASES = {
   "settings_device": setup_settings_device,
   "settings_toggles": setup_settings_toggles,
   "settings_software": setup_settings_software,
-  "settings_sunnypilot": setup_settings_sunnypilot,
   "settings_developer": setup_settings_developer,
   "onroad": setup_onroad,
   "onroad_disengaged": setup_onroad_disengaged,
@@ -205,6 +204,10 @@ CASES = {
   "update_available": setup_update_available,
   "keyboard": setup_keyboard
 }
+
+CASES.update({
+  "settings_sunnypilot": setup_settings_sunnypilot,
+})
 
 TEST_DIR = pathlib.Path(__file__).parent
 
