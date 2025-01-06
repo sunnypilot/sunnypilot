@@ -23,7 +23,9 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame_uint8, DrivingModelFrame_float as DrivingModelFrame, DrivingModelFrameLegacy, CLContext
+# from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrameLegacy as DrivingModelFrame, CLContext
+
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
@@ -49,7 +51,7 @@ class ModelState:
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
     # Initialize model runner
-    self.model_runner = TinygradRunner(self.frames) if TICI else ONNXRunner(self.frames)
+    self.model_runner = TinygradRunner(self.frames)# if TICI else ONNXRunner(self.frames)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}

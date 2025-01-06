@@ -17,7 +17,7 @@ cdef extern from "selfdrive/modeld/models/commonmodel.h":
     T * buffer_from_cl(cl_mem*, int);
     cl_mem * prepare(cl_mem, int, int, int, int, mat3)
 
-  cppclass DrivingModelFrame[T]:
+  cppclass DrivingModelFrame:
     int buf_size
     DrivingModelFrame(cl_device_id, cl_context)
 

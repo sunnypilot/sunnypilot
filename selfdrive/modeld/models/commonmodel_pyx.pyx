@@ -72,20 +72,12 @@ cdef class ModelFrame_float:
     return np.asarray(<cnp.float32_t[:self.buf_size]> data2)
 
 
-cdef class DrivingModelFrame_uint8(ModelFrame):
-  cdef cppDrivingModelFrame[uint8_t] * _frame
+cdef class DrivingModelFrame(ModelFrame):
+  cdef cppDrivingModelFrame * _frame
 
   def __cinit__(self, CLContext context):
-    self._frame = new cppDrivingModelFrame[uint8_t](context.device_id, context.context)
+    self._frame = new cppDrivingModelFrame(context.device_id, context.context)
     self.frame = <cppModelFrame[uint8_t]*>(self._frame)
-    self.buf_size = self._frame.buf_size
-
-cdef class DrivingModelFrame_float(ModelFrame_float):
-  cdef cppDrivingModelFrame[float] * _frame
-
-  def __cinit__(self, CLContext context):
-    self._frame = new cppDrivingModelFrame[float](context.device_id, context.context)
-    self.frame = <cppModelFrame[float]*>(self._frame)
     self.buf_size = self._frame.buf_size
 
 cdef class DrivingModelFrameLegacy(ModelFrame_float):

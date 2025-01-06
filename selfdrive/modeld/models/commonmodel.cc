@@ -5,9 +5,8 @@
 
 #include "common/clutil.h"
 
-template <typename T>
-DrivingModelFrame<T>::DrivingModelFrame(cl_device_id device_id, cl_context context) : ModelFrame<T>(device_id, context) {
-  input_frames = std::make_unique<T[]>(buf_size);
+DrivingModelFrame::DrivingModelFrame(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
+  input_frames = std::make_unique<uint8_t[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
   img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_length*frame_size_bytes, NULL, &err));
   region.origin = (buffer_length - 1)  * frame_size_bytes;
@@ -19,8 +18,7 @@ DrivingModelFrame<T>::DrivingModelFrame(cl_device_id device_id, cl_context conte
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
 
-template <typename T>
-cl_mem* DrivingModelFrame<T>::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
+cl_mem* DrivingModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
 
   for (int i = 0; i < (buffer_length - 1); i++) {
@@ -40,8 +38,7 @@ cl_mem* DrivingModelFrame<T>::prepare(cl_mem yuv_cl, int frame_width, int frame_
   return &input_frames_cl;
 }
 
-template <typename T>
-DrivingModelFrame<T>::~DrivingModelFrame() {
+DrivingModelFrame::~DrivingModelFrame() {
   deinit_transform();
   loadyuv_destroy(&loadyuv);
   CL_CHECK(clReleaseMemObject(img_buffer_20hz_cl));
@@ -49,34 +46,45 @@ DrivingModelFrame<T>::~DrivingModelFrame() {
   CL_CHECK(clReleaseCommandQueue(q));
 }
 
-DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
+DrivingModelFrameLegacy::DrivingModelFrameLegacy(cl_device_id device_id, cl_context context): ModelFrame(device_id, context) {
   input_frames = std::make_unique<float[]>(buf_size);
-  input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, frame_size_bytes, NULL, &err));
-  img_buffer_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 2*frame_size_bytes, NULL, &err));
-  printf("WTF");
+  input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size * sizeof(float), NULL, &err));
+  // Reduce buffer to 2 frames due to float size (4x bigger than uint8_t)
+  img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, 2 * frame_size_bytes * sizeof(float), NULL, &err));
+    
+  // Adjust region for 2-frame buffer
+  region.origin = frame_size_bytes * sizeof(float);  // Point to second frame
+  region.size = frame_size_bytes * sizeof(float);
+  last_img_cl = CL_CHECK_ERR(clCreateSubBuffer(img_buffer_20hz_cl, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err));
+
   loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT, true);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
 }
 
-cl_mem* DrivingModelFrameLegacy::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection) {
+cl_mem* DrivingModelFrameLegacy::prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset,
+  const mat3 &projection) {
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
 
-  CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_cl, img_buffer_cl, 0, frame_size_bytes, frame_size_bytes, 0, nullptr, nullptr));
-  loadyuv_queue(&loadyuv, q, y_cl, u_cl, v_cl, img_buffer_cl);
-  CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_cl, input_frames_cl, 0, 0, frame_size_bytes, 0, nullptr, nullptr));
+  // Rolling buffer with just 2 frames
+  CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_20hz_cl, img_buffer_20hz_cl, frame_size_bytes * sizeof(float), 0, frame_size_bytes * sizeof(float), 0, nullptr, nullptr));
+    
+  loadyuv_queue(&loadyuv, q, y_cl, u_cl, v_cl, last_img_cl);
+
+  // Copy both frames to input buffer
+  copy_queue(&loadyuv, q, img_buffer_20hz_cl, input_frames_cl, 0, 0, frame_size_bytes * sizeof(float));
+  copy_queue(&loadyuv, q, last_img_cl, input_frames_cl, 0, frame_size_bytes * sizeof(float), frame_size_bytes * sizeof(float));
+
   clFinish(q);
-  
   return &input_frames_cl;
 }
 
 DrivingModelFrameLegacy::~DrivingModelFrameLegacy() {
   deinit_transform();
   loadyuv_destroy(&loadyuv);
-  CL_CHECK(clReleaseMemObject(img_buffer_cl));
+  CL_CHECK(clReleaseMemObject(img_buffer_20hz_cl));
   CL_CHECK(clReleaseMemObject(input_frames_cl));
   CL_CHECK(clReleaseCommandQueue(q));
 }
-
 
 MonitoringModelFrame::MonitoringModelFrame(cl_device_id device_id, cl_context context) : ModelFrame(device_id, context) {
   input_frames = std::make_unique<uint8_t[]>(buf_size);
@@ -95,6 +103,3 @@ MonitoringModelFrame::~MonitoringModelFrame() {
   deinit_transform();
   CL_CHECK(clReleaseCommandQueue(q));
 }
-
-template class DrivingModelFrame<uint8_t>;
-template class DrivingModelFrame<float>;

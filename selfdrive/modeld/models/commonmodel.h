@@ -63,11 +63,10 @@ protected:
   }
 };
 
-template <typename T>
-class DrivingModelFrame : public ModelFrame<T> {
-  using ModelFrame<T>::q, ModelFrame<T>::y_cl, ModelFrame<T>::u_cl, ModelFrame<T>::v_cl;
-  using ModelFrame<T>::init_transform, ModelFrame<T>::deinit_transform, ModelFrame<T>::run_transform;
-  using ModelFrame<T>::input_frames;
+class DrivingModelFrame : public ModelFrame<> {
+  using ModelFrame::q, ModelFrame::y_cl, ModelFrame::u_cl, ModelFrame::v_cl;
+  using ModelFrame::init_transform, ModelFrame::deinit_transform, ModelFrame::run_transform;
+  using ModelFrame::input_frames;
   
 public:
   DrivingModelFrame(cl_device_id device_id, cl_context context);
@@ -78,8 +77,8 @@ public:
   const int MODEL_HEIGHT = 256;
   const int MODEL_FRAME_SIZE = MODEL_WIDTH * MODEL_HEIGHT * 3 / 2;
   const int buf_size = MODEL_FRAME_SIZE * 2;
-  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(T);
-  const bool is_float = std::is_same<T, float>::value;
+  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(uint8_t);
+  const bool is_float = false;
   const uint8_t buffer_length = is_float ? 2 : 5;
 
 private:
@@ -104,10 +103,6 @@ private:
 };
 
 class DrivingModelFrameLegacy : public ModelFrame<float> {
-  // using ModelFrame<T>::q, ModelFrame<T>::y_cl, ModelFrame<T>::u_cl, ModelFrame<T>::v_cl;
-  // using ModelFrame<T>::init_transform, ModelFrame<T>::deinit_transform, ModelFrame<T>::run_transform;
-  // using ModelFrame<T>::input_frames;
-  
 public:
   DrivingModelFrameLegacy(cl_device_id device_id, cl_context context);
   ~DrivingModelFrameLegacy();
@@ -117,9 +112,12 @@ public:
   const int MODEL_HEIGHT = 256;
   const int MODEL_FRAME_SIZE = MODEL_WIDTH * MODEL_HEIGHT * 3 / 2;
   const int buf_size = MODEL_FRAME_SIZE * 2;
-  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(float);
 
 private:
+  cl_mem input_frames_cl;
+  cl_mem img_buffer_20hz_cl;
+  cl_mem last_img_cl;
   LoadYUVState loadyuv;
-  cl_mem img_buffer_cl, input_frames_cl;
+  cl_buffer_region region;
+  const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(float);  // This is the only change
 };
