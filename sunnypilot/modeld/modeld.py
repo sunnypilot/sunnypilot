@@ -16,7 +16,6 @@ from openpilot.common.realtime import config_realtime_process
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
-from openpilot.selfdrive.car.card import convert_to_capnp
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.sunnypilot.modeld.runners import ModelRunner, Runtime
 from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
@@ -104,7 +103,7 @@ class ModelState:
       return None
 
     self.model.execute()
-    outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
+    outputs = self.parser.parse_outputs(self.slice_outputs(self.output), self.inputs.keys())
 
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
@@ -188,7 +187,7 @@ def main(demo=False):
 
 
   if demo:
-    CP = convert_to_capnp(get_demo_car_params())
+    CP = get_demo_car_params()
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.carName)
