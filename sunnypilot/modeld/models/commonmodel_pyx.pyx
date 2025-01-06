@@ -7,8 +7,8 @@ from libc.string cimport memcpy
 
 from msgq.visionipc.visionipc cimport cl_mem
 from msgq.visionipc.visionipc_pyx cimport VisionBuf, CLContext as BaseCLContext
-from .commonmodel cimport CL_DEVICE_TYPE_DEFAULT, cl_get_device_id, cl_create_context
-from .commonmodel cimport mat3, ModelFrame as cppModelFrame
+from openpilot.sunnypilot.modeld.models.commonmodel cimport CL_DEVICE_TYPE_DEFAULT, cl_get_device_id, cl_create_context
+from openpilot.sunnypilot.modeld.models.commonmodel cimport mat3, ModelFrame as cppModelFrame
 
 
 cdef class CLContext(BaseCLContext):
