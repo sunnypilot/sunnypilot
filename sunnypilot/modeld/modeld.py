@@ -22,7 +22,9 @@ from openpilot.sunnypilot.modeld.runners import ModelRunner, Runtime
 from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants
-from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
+from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+
+from openpilot.sunnypilot.modeld.runners.run_helpers import METADATA_PATH, prepare_inputs, parse_runner_inputs
 
 PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -31,7 +33,6 @@ MODEL_PATHS = {
   ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
   ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
 
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
 class FrameMeta:
   frame_id: int = 0
@@ -43,24 +44,22 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 class ModelState:
-  frame: ModelFrame
-  wide_frame: ModelFrame
+  frame: DrivingModelFrame
+  wide_frame: DrivingModelFrame
   inputs: dict[str, np.ndarray]
   output: np.ndarray
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
   model: ModelRunner
 
   def __init__(self, context: CLContext):
-    self.frame = ModelFrame(context)
-    self.wide_frame = ModelFrame(context)
+    self.frame = DrivingModelFrame(context)
+    self.wide_frame = DrivingModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    self.inputs = {
-      'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
-      'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
-      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
-      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
-      'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
-    }
+    self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
+    self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+
+    # img buffers are managed in openCL transform code
+    self.inputs = prepare_inputs()
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
@@ -86,17 +85,17 @@ class ModelState:
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
-    self.inputs['desire'][:-ModelConstants.DESIRE_LEN] = self.inputs['desire'][ModelConstants.DESIRE_LEN:]
-    self.inputs['desire'][-ModelConstants.DESIRE_LEN:] = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
+    new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    self.desire_20Hz[:-1] = self.desire_20Hz[1:]
+    self.desire_20Hz[-1] = new_desire
+    self.inputs['desire'][:] = self.desire_20Hz.reshape((25,4,-1)).max(axis=1).flatten()
 
-    # if getCLBuffer is not None, frame will be None
+    self.inputs['traffic_convention'][:] = inputs['traffic_convention']
+
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
-    if wbuf is not None:
-      self.model.setInputBuffer("big_input_imgs", self.wide_frame.prepare(wbuf, transform_wide.flatten(), self.model.getCLBuffer("big_input_imgs")))
+    self.model.setInputBuffer("big_input_imgs", self.wide_frame.prepare(wbuf, transform_wide.flatten(), self.model.getCLBuffer("big_input_imgs")))
 
     if prepare_only:
       return None
@@ -104,10 +103,11 @@ class ModelState:
     self.model.execute()
     outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
 
-    self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
-    self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
-    self.inputs['prev_desired_curv'][:-ModelConstants.PREV_DESIRED_CURV_LEN] = self.inputs['prev_desired_curv'][ModelConstants.PREV_DESIRED_CURV_LEN:]
-    self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = outputs['desired_curvature'][0, :]
+    self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
+    self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+
+    idxs = np.arange(-4,-100,-4)[::-1]
+    self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
     return outputs
 
 
@@ -173,7 +173,6 @@ def main(demo=False):
     CP = get_demo_car_params()
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
-
   cloudlog.info("modeld got CarParams: %s", CP.carName)
 
   # TODO this needs more thought, use .2s extra for now to estimate other delays
@@ -218,7 +217,7 @@ def main(demo=False):
     desire = DH.desire
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
-    lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+    v_ego = max(sm["carState"].vEgo, 0.)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -246,11 +245,7 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs:dict[str, np.ndarray] = {
-      'desire': vec_desire,
-      'traffic_convention': traffic_convention,
-      'lateral_control_params': lateral_control_params,
-      }
+    inputs = parse_runner_inputs(vec_desire, traffic_convention)
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
@@ -261,7 +256,8 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
-      fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, v_ego, steer_delay,
+                     publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
 
       desire_state = modelv2_send.modelV2.meta.desireState
