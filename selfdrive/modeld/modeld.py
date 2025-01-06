@@ -48,6 +48,7 @@ class ModelState:
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    self.is_20hz = False
     # Initialize model runner
     self.model_runner = TinygradRunner(self.frames) if TICI else ONNXRunner(self.frames)
 
@@ -69,15 +70,20 @@ class ModelState:
     self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    self.desire_20Hz[:-1] = self.desire_20Hz[1:]
-    self.desire_20Hz[-1] = new_desire
-    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
+    if self.is_20hz:
+      self.desire_20Hz[:-1] = self.desire_20Hz[1:]
+      self.desire_20Hz[-1] = new_desire
+      self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
+    else:
+      len = inputs['desire'].shape[0]
+      self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
+      self.numpy_inputs['desire'][0, -1, :len] = new_desire[:len]
 
     for key in self.numpy_inputs:
       if key in inputs and key not in ['desire']:
@@ -96,10 +102,15 @@ class ModelState:
     self.output = self.model_runner.run_model()
     outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output), self.numpy_inputs.keys())
 
-    self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
-    self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+    if self.is_20hz:
+      self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
+      self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+      self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
+    else:
+      feature_len = outputs['hidden_state'].shape[1]
+      self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
+      self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
-    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
 
     if "desired_curvature" in outputs:
       input_name_prev = None
@@ -113,20 +124,6 @@ class ModelState:
         len = outputs['desired_curvature'][0].size
         self.numpy_inputs[input_name_prev][0, :-len, 0] = self.numpy_inputs[input_name_prev][0, len:, 0]
         self.numpy_inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
-
-    # if "desired_curvature" in outputs:
-    #   input_name_prev = None
-    # 
-    #   if "prev_desired_curvs" in self.inputs.keys():
-    #     input_name_prev = 'prev_desired_curvs'
-    #   elif "prev_desired_curv" in self.inputs.keys():
-    #     input_name_prev = 'prev_desired_curv'
-    # 
-    #   if input_name_prev is not None:
-    #     len = outputs['desired_curvature'][0].size
-    #     self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
-    #     self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :]
-
     return outputs
 
 
@@ -266,7 +263,7 @@ def main(demo=False):
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
-      }
+    }
 
     if "lateral_control_params" in model.numpy_inputs.keys():
       inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
