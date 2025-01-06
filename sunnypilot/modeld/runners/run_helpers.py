@@ -55,12 +55,3 @@ def prepare_inputs(model_metadata) -> dict[str, np.ndarray]:
   }
 
   return inputs
-
-
-def parse_runner_inputs(vec_desire, traffic_convention) -> dict[str, np.ndarray]:
-  inputs: dict[str, np.ndarray] = {
-    'desire': vec_desire,
-    'traffic_convention': traffic_convention,
-  }
-
-  return inputs
