@@ -21,6 +21,8 @@ from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.common.realtime import DT_MDL
+from openpilot.common.numpy_fast import interp
 
 from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs, parse_runner_inputs
 
@@ -53,11 +55,11 @@ class ModelState:
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     model_paths = load_model()
-    model_metadata = load_metadata()
-    self.inputs = prepare_inputs(model_metadata)
+    self.model_metadata = load_metadata()
+    self.inputs = prepare_inputs(self.model_metadata)
 
-    self.output_slices = model_metadata['output_slices']
-    net_output_size = model_metadata['output_shapes']['outputs'][1]
+    self.output_slices = self.model_metadata['output_slices']
+    net_output_size = self.model_metadata['output_shapes']['outputs'][1]
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
@@ -67,11 +69,11 @@ class ModelState:
     for k,v in self.inputs.items():
       self.model.addInput(k, v)
 
-    num_elements = model_metadata['input_shapes']['features_buffer'][1]
+    num_elements = self.model_metadata['input_shapes']['features_buffer'][1]
     step_size = int(-100 / num_elements)
     self.feature_buffer_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
 
-    desired_shape = model_metadata["input_shapes"]["desire"][1]
+    desired_shape = self.model_metadata["input_shapes"]["desire"][1]
     middle_dim = int(self.desire_20Hz.shape[0] / desired_shape)
     self.desire_reshape_dims = (desired_shape, middle_dim, -1)
 
@@ -107,6 +109,38 @@ class ModelState:
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
     self.inputs['features_buffer'][:] = self.full_features_20Hz[self.feature_buffer_idxs].flatten()
+    # Code below needs to be adjusted because the inputs in legacy models were received as flattened arrays
+    # if "desired_curvature" in outputs:
+    #   input_name_prev = None
+    # 
+    #   if "prev_desired_curvs" in self.inputs.keys():
+    #     input_name_prev = 'prev_desired_curvs'
+    #   elif "prev_desired_curv" in self.inputs.keys():
+    #     input_name_prev = 'prev_desired_curv'
+    # 
+    #   if input_name_prev is not None:
+    #     len = outputs['desired_curvature'][0].size
+    #     self.inputs[input_name_prev][0, :-len, 0] = self.inputs[input_name_prev][0, len:, 0]
+    #     self.inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
+    # 
+    # 
+    # if "lat_planner_solution" in outputs:
+    #   if "lat_planner_state" in self.inputs.keys():
+    #     self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
+    #     self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
+    # 
+    # if "desired_curvature" in outputs:
+    #   input_name_prev = None
+    #   if "prev_desired_curvs" in self.inputs.keys():
+    #     input_name_prev = 'prev_desired_curvs'
+    #   elif "prev_desired_curv" in self.inputs.keys():
+    #     input_name_prev = 'prev_desired_curv'
+    # 
+    #   if input_name_prev is not None:
+    #     len = outputs['desired_curvature'][0].size
+    #     self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
+    #     self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :len]
+
     return outputs
 
 
@@ -244,7 +278,23 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs = parse_runner_inputs(vec_desire, traffic_convention)
+    inputs: dict[str, np.ndarray] = {
+      'desire': vec_desire,
+      'traffic_convention': traffic_convention,
+    }
+
+    if "lateral_control_params" in model.inputs.keys():
+      inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+
+    if "driving_style" in model.inputs.keys():
+     inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
+
+    if "nav_features" in model.inputs.keys():
+      inputs['nav_features'] = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)  # Get size from shape
+  
+    if "nav_instructions" in model.inputs.keys():
+      inputs['nav_instructions'] = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)  # Get size from shape
+
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
