@@ -16,7 +16,7 @@ from openpilot.system.hardware.hw import Paths
 USE_ONNX = os.getenv('USE_ONNX', PC)
 
 CUSTOM_MODEL_PATH = Paths.model_root()
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
+METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 
 ModelManager = custom.ModelManagerSP
 
