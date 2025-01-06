@@ -55,3 +55,11 @@ def prepare_inputs(metadata) -> dict[str, np.ndarray]:
   }
 
   return inputs
+
+
+def get_model_generation() -> int:
+  if bundle := get_active_bundle():
+    drive_model = next(model for model in bundle.models if model.type == ModelManager.Type.drive)
+    return drive_model.generation
+
+  return 0  # default generation
