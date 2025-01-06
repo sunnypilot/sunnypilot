@@ -46,9 +46,8 @@ def load_metadata():
   return metadata
 
 
-def prepare_inputs() -> dict[str, np.ndarray]:
-  model_metadata = load_metadata()
-
+def prepare_inputs(model_metadata) -> dict[str, np.ndarray]:
+  # img buffers are managed in openCL transform code so we don't pass them as inputs
   inputs: dict[str, np.ndarray] = {
     key: np.zeros(shape, dtype=np.float32)
     for key, shape in model_metadata['input_shapes'].items()

@@ -52,11 +52,9 @@ class ModelState:
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
-    # img buffers are managed in openCL transform code
-    self.inputs = prepare_inputs()
-
     model_paths = load_model()
     model_metadata = load_metadata()
+    self.inputs = prepare_inputs(model_metadata)
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
