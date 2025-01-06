@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import os
 import time
-import pickle
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
-from pathlib import Path
 from setproctitle import setproctitle
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
@@ -24,14 +22,10 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-from openpilot.sunnypilot.modeld.runners.run_helpers import METADATA_PATH, prepare_inputs, parse_runner_inputs
+from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs, parse_runner_inputs
 
 PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
-
-MODEL_PATHS = {
-  ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
-  ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
 
 
 class FrameMeta:
@@ -61,15 +55,15 @@ class ModelState:
     # img buffers are managed in openCL transform code
     self.inputs = prepare_inputs()
 
-    with open(METADATA_PATH, 'rb') as f:
-      model_metadata = pickle.load(f)
+    model_paths = load_model()
+    model_metadata = load_metadata()
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    self.model = ModelRunner(MODEL_PATHS, self.output, Runtime.GPU, False, context)
+    self.model = ModelRunner(model_paths, self.output, Runtime.GPU, False, context)
     self.model.addInput("input_imgs", None)
     self.model.addInput("big_input_imgs", None)
     for k,v in self.inputs.items():
