@@ -22,7 +22,7 @@ from openpilot.sunnypilot.modeld.runners import ModelRunner, Runtime
 from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants
-from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
 PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -44,16 +44,16 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 class ModelState:
-  frame: DrivingModelFrame
-  wide_frame: DrivingModelFrame
+  frame: ModelFrame
+  wide_frame: ModelFrame
   inputs: dict[str, np.ndarray]
   output: np.ndarray
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
   model: ModelRunner
 
   def __init__(self, context: CLContext):
-    self.frame = DrivingModelFrame(context)
-    self.wide_frame = DrivingModelFrame(context)
+    self.frame = ModelFrame(context)
+    self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
