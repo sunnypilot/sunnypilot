@@ -24,14 +24,14 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
+from openpilot.sunnypilot.modeld.runners.run_helpers import METADATA_PATH, prepare_inputs, parse_runner_inputs
+
 PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 MODEL_PATHS = {
   ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
   ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
-
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
 
 class FrameMeta:
@@ -59,11 +59,7 @@ class ModelState:
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
-    self.inputs = {
-      'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
-      'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
-      'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
-    }
+    self.inputs = prepare_inputs()
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
@@ -249,10 +245,7 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs:dict[str, np.ndarray] = {
-      'desire': vec_desire,
-      'traffic_convention': traffic_convention,
-      }
+    inputs = parse_runner_inputs(vec_desire, traffic_convention)
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
