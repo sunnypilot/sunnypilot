@@ -94,7 +94,7 @@ class ModelState:
 
     # Run model inference
     self.output = self.model_runner.run_model()
-    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output))
+    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output), self.numpy_inputs.keys())
 
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
