@@ -13,7 +13,7 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
 
-USE_ONNX = int(os.getenv('USE_ONNX', str(int(PC))))
+USE_ONNX = os.getenv('USE_ONNX', PC)
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
@@ -23,20 +23,20 @@ ModelManager = custom.ModelManagerSP
 
 def load_model():
   if USE_ONNX:
-    model_paths = {ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
+    model_paths = {ModelRunner.ONNX: Path(__file__).parent / '../models/supercombo.onnx'}
   elif bundle := get_active_bundle():
     drive_model = next(model for model in bundle.models if model.type == ModelManager.Type.drive)
     model_paths = {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/{drive_model.fileName}"}
   else:
-    model_paths = {ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed'}
+    model_paths = {ModelRunner.THNEED: Path(__file__).parent / '../models/supercombo.thneed'}
 
   return model_paths
 
 
 def load_metadata():
   if bundle := get_active_bundle():
-    drive_model = next(model for model in bundle.models if model.type == ModelManager.Type.metadata)
-    metadata_path = f"{CUSTOM_MODEL_PATH}/{drive_model.fileName}"
+    metadata_model = next(model for model in bundle.models if model.type == ModelManager.Type.metadata)
+    metadata_path = f"{CUSTOM_MODEL_PATH}/{metadata_model.fileName}"
   else:
     metadata_path = METADATA_PATH
 
