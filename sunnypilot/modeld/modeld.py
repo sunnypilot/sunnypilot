@@ -22,7 +22,7 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs, parse_runner_inputs
+from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs
 
 PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -51,6 +51,10 @@ class ModelState:
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    # Used for MLSIM V0 to Null Pointer
+    # inputs including: lateral_control_params & prev_desired_curv
+    # outputs including: desired_curvature
+    self.prev_desired_curv_20hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
 
     model_paths = load_model()
     model_metadata = load_metadata()
@@ -86,6 +90,9 @@ class ModelState:
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
 
+    if 'lateral_control_params' in inputs.keys():
+      self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
     self.model.setInputBuffer("big_input_imgs", self.wide_frame.prepare(wbuf, transform_wide.flatten(), self.model.getCLBuffer("big_input_imgs")))
 
@@ -98,8 +105,14 @@ class ModelState:
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
+    if 'desired_curvature' in outputs.keys():
+      self.prev_desired_curv_20hz[:-1] = self.prev_desired_curv_20hz[1:]
+      self.prev_desired_curv_20hz[-1] = outputs['desired_curvature'][0, :]
+
     idxs = np.arange(-4,-100,-4)[::-1]
     self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
+    if 'prev_desired_curv' in inputs.keys():
+      self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = 0. * self.prev_desired_curv_20hz[-4, :]
     return outputs
 
 
@@ -241,6 +254,9 @@ def main(demo=False):
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
     }
+
+    if 'lateral_control_params' in model.inputs.keys():
+      inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
