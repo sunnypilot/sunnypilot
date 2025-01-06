@@ -50,8 +50,9 @@ class ModelState:
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    self.is_20hz = False
     # Initialize model runner
-    self.model_runner = TinygradRunner(self.frames)# if TICI else ONNXRunner(self.frames)
+    self.model_runner = TinygradRunner(self.frames) if TICI else ONNXRunner(self.frames)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -77,9 +78,14 @@ class ModelState:
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    self.desire_20Hz[:-1] = self.desire_20Hz[1:]
-    self.desire_20Hz[-1] = new_desire
-    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
+    if self.is_20hz:
+      self.desire_20Hz[:-1] = self.desire_20Hz[1:]
+      self.desire_20Hz[-1] = new_desire
+      self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
+    else:
+      len = inputs['desire'].shape[0]
+      self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
+      self.numpy_inputs['desire'][0, -1, :len] = new_desire[:len]
 
     for key in self.numpy_inputs:
       if key in inputs and key not in ['desire']:
@@ -96,12 +102,17 @@ class ModelState:
 
     # Run model inference
     self.output = self.model_runner.run_model()
-    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output))
+    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output), self.numpy_inputs.keys())
 
-    self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
-    self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+    if self.is_20hz:
+      self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
+      self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+      self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
+    else:
+      feature_len = outputs['hidden_state'].shape[1]
+      self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
+      self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
-    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
 
     if "desired_curvature" in outputs:
       input_name_prev = None
