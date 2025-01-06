@@ -49,7 +49,7 @@ def load_metadata():
 def prepare_inputs(model_metadata) -> dict[str, np.ndarray]:
   # img buffers are managed in openCL transform code so we don't pass them as inputs
   inputs: dict[str, np.ndarray] = {
-    key: np.zeros(shape, dtype=np.float32)
+    key: np.zeros(shape, dtype=np.float32).flatten()  # Inputs were defined flattened back then
     for key, shape in model_metadata['input_shapes'].items()
     if key not in ['input_imgs', 'big_input_imgs']
   }

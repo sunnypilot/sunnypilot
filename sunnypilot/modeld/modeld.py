@@ -71,7 +71,7 @@ class ModelState:
     step_size = int(-100 / num_elements)
     self.feature_buffer_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
 
-    desired_shape = self.inputs['desire'].shape[1]
+    desired_shape = model_metadata["input_shapes"]["desire"][1]
     middle_dim = int(self.desire_20Hz.shape[0] / desired_shape)
     self.desire_reshape_dims = (desired_shape, middle_dim, -1)
 
