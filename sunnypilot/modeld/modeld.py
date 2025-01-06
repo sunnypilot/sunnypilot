@@ -94,6 +94,10 @@ class ModelState:
     self.desire_20Hz[-1] = new_desire
     self.inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=1).flatten()
 
+    for key in self.inputs:
+      if key in inputs and key not in ['desire']:
+        self.inputs[key][:] = inputs[key]
+
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
 
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
@@ -109,7 +113,6 @@ class ModelState:
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
     self.inputs['features_buffer'][:] = self.full_features_20Hz[self.feature_buffer_idxs].flatten()
-    # Code below needs to be adjusted because the inputs in legacy models were received as flattened arrays
     if "desired_curvature" in outputs:
       input_name_prev = None
 
@@ -272,14 +275,15 @@ def main(demo=False):
     if "lateral_control_params" in model.inputs.keys():
       inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
 
-    if "driving_style" in model.inputs.keys():
-     inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-
-    if "nav_features" in model.inputs.keys():
-      inputs['nav_features'] = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)  # Get size from shape
-  
-    if "nav_instructions" in model.inputs.keys():
-      inputs['nav_instructions'] = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)  # Get size from shape
+    # TODO-SP: Below should be good, but I have not tested a model with it so I can't be sure until we test it
+    # if "driving_style" in model.inputs.keys():
+    #  inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
+    # 
+    # if "nav_features" in model.inputs.keys():
+    #   inputs['nav_features'] = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)  # Get size from shape
+    # 
+    # if "nav_instructions" in model.inputs.keys():
+    #   inputs['nav_instructions'] = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)  # Get size from shape
 
 
     mt1 = time.perf_counter()

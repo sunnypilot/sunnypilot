@@ -64,8 +64,9 @@ class ONNXModel(RunModel):
     return None
 
   def execute(self):
-    # The input below causes issues because its converting the input data when in reality it doesn't need conversion as it was already the target type.
-    # I am leaving this comment and the input down because this needs to be looked before merging. I had similar issues when trying the tinygrad runner...
+    # TODO-SP: The input below causes issues because its converting the input data when in reality it doesn't need conversion as it was already the target type.
+    #    I am leaving this comment and the input down because this needs to be looked before merging. I had similar issues when trying the tinygrad runner...
+    #    Also I checked to see if I found a similar change like this on thneed but I didn't find any, so probably thneed is still working fine.
     # inputs = {k: v.view(self.input_dtypes[k]) for k,v in self.inputs.items()}
     inputs = {k: (v.view(np.uint8) / 255. if self.use_tf8 and k == 'input_img' else v) for k,v in self.inputs.items()}
     inputs = {k: v.reshape(self.input_shapes[k]).astype(self.input_dtypes[k]) for k,v in inputs.items()}
