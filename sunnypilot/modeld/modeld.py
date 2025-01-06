@@ -24,7 +24,7 @@ from openpilot.sunnypilot.modeld.models.commonmodel_pyx import DrivingModelFrame
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.numpy_fast import interp
 
-from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs, parse_runner_inputs
+from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs
 
 PROCESS_NAME = "sunnypilot.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
