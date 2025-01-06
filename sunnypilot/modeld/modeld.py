@@ -69,6 +69,14 @@ class ModelState:
     for k,v in self.inputs.items():
       self.model.addInput(k, v)
 
+    num_elements = model_metadata['input_shapes']['features_buffer'][1]
+    step_size = int(-100 / num_elements)
+    self.feature_buffer_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+
+    desired_shape = self.inputs['desire'].shape[1]
+    middle_dim = int(self.desire_20Hz.shape[0] / desired_shape)
+    self.desire_reshape_dims = (desired_shape, middle_dim, -1)
+
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
     if SEND_RAW_PRED:
@@ -84,7 +92,7 @@ class ModelState:
 
     self.desire_20Hz[:-1] = self.desire_20Hz[1:]
     self.desire_20Hz[-1] = new_desire
-    self.inputs['desire'][:] = self.desire_20Hz.reshape((25,4,-1)).max(axis=1).flatten()
+    self.inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=1).flatten()
 
     self.inputs['traffic_convention'][:] = inputs['traffic_convention']
 
@@ -100,8 +108,7 @@ class ModelState:
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
-    idxs = np.arange(-4,-100,-4)[::-1]
-    self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
+    self.inputs['features_buffer'][:] = self.full_features_20Hz[self.feature_buffer_idxs].flatten()
     return outputs
 
 
