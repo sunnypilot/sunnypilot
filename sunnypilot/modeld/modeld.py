@@ -52,11 +52,9 @@ class ModelState:
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
-    # img buffers are managed in openCL transform code
-    self.inputs = prepare_inputs()
-
     model_paths = load_model()
     model_metadata = load_metadata()
+    self.inputs = prepare_inputs(model_metadata)
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
@@ -239,7 +237,10 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs = parse_runner_inputs(vec_desire, traffic_convention)
+    inputs: dict[str, np.ndarray] = {
+      'desire': vec_desire,
+      'traffic_convention': traffic_convention,
+    }
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
