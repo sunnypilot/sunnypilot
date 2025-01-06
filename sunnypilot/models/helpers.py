@@ -22,7 +22,7 @@ async def verify_file(file_path: str, expected_hash: str) -> bool:
   return sha256_hash.hexdigest().lower() == expected_hash.lower()
 
 
-def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundle:
+def get_active_bundle(params: Params) -> custom.ModelManagerSP.ModelBundle:
   """Gets the active model bundle from cache"""
   if params is None:
     params = Params()
