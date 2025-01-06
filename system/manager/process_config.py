@@ -75,7 +75,8 @@ def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
 def is_snpe_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is SNPE."""
   # TODO-SP: I want to do a little more optimization here to only check this once when we've transitioned from offroad to onroad.
-  return bool(get_active_model_runner(params) == custom.ModelManagerSP.Runner.snpe)
+  return False
+  # return bool(get_active_model_runner(params) == custom.ModelManagerSP.Runner.snpe)
 
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""

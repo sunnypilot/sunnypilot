@@ -94,7 +94,7 @@ class ModelState:
 
     # Run model inference
     self.output = self.model_runner.run_model()
-    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output))
+    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output), self.numpy_inputs.keys())
 
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
@@ -113,6 +113,20 @@ class ModelState:
         len = outputs['desired_curvature'][0].size
         self.numpy_inputs[input_name_prev][0, :-len, 0] = self.numpy_inputs[input_name_prev][0, len:, 0]
         self.numpy_inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
+
+    # if "desired_curvature" in outputs:
+    #   input_name_prev = None
+    # 
+    #   if "prev_desired_curvs" in self.inputs.keys():
+    #     input_name_prev = 'prev_desired_curvs'
+    #   elif "prev_desired_curv" in self.inputs.keys():
+    #     input_name_prev = 'prev_desired_curv'
+    # 
+    #   if input_name_prev is not None:
+    #     len = outputs['desired_curvature'][0].size
+    #     self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
+    #     self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :]
+
     return outputs
 
 
