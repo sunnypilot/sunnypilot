@@ -103,44 +103,30 @@ class ModelState:
       return None
 
     self.model.execute()
-    outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
+    outputs = self.parser.parse_outputs(self.slice_outputs(self.output), self.inputs.keys())
 
     self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
     self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
 
     self.inputs['features_buffer'][:] = self.full_features_20Hz[self.feature_buffer_idxs].flatten()
     # Code below needs to be adjusted because the inputs in legacy models were received as flattened arrays
-    # if "desired_curvature" in outputs:
-    #   input_name_prev = None
-    # 
-    #   if "prev_desired_curvs" in self.inputs.keys():
-    #     input_name_prev = 'prev_desired_curvs'
-    #   elif "prev_desired_curv" in self.inputs.keys():
-    #     input_name_prev = 'prev_desired_curv'
-    # 
-    #   if input_name_prev is not None:
-    #     len = outputs['desired_curvature'][0].size
-    #     self.inputs[input_name_prev][0, :-len, 0] = self.inputs[input_name_prev][0, len:, 0]
-    #     self.inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
-    # 
-    # 
-    # if "lat_planner_solution" in outputs:
-    #   if "lat_planner_state" in self.inputs.keys():
-    #     self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
-    #     self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
-    # 
-    # if "desired_curvature" in outputs:
-    #   input_name_prev = None
-    #   if "prev_desired_curvs" in self.inputs.keys():
-    #     input_name_prev = 'prev_desired_curvs'
-    #   elif "prev_desired_curv" in self.inputs.keys():
-    #     input_name_prev = 'prev_desired_curv'
-    # 
-    #   if input_name_prev is not None:
-    #     len = outputs['desired_curvature'][0].size
-    #     self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
-    #     self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :len]
+    if "desired_curvature" in outputs:
+      input_name_prev = None
 
+      if "prev_desired_curvs" in self.inputs.keys():
+        input_name_prev = 'prev_desired_curvs'
+      elif "prev_desired_curv" in self.inputs.keys():
+        input_name_prev = 'prev_desired_curv'
+
+      if input_name_prev is not None:
+        len = outputs['desired_curvature'][0].size
+        self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
+        self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :]
+
+    if "lat_planner_solution" in outputs:
+      if "lat_planner_state" in self.inputs.keys():
+        self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
+        self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
     return outputs
 
 
