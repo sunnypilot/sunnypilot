@@ -3,7 +3,6 @@
 # This file is part of sunnypilot and is licensed under the MIT License.
 # See the LICENSE.md file in the root directory for more details.
 
-import os
 import pickle
 import numpy as np
 from pathlib import Path
