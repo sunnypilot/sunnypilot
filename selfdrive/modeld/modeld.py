@@ -23,7 +23,7 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame_uint8, DrivingModelFrameLegacy as DrivingModelFrame, CLContext
+from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
@@ -107,11 +107,8 @@ class ModelState:
       self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
       self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
     else:
-      feature_len = outputs['hidden_state'].shape[1]
       self.numpy_inputs['features_buffer'][0,:-1] = self.numpy_inputs['features_buffer'][0,1:]
       self.numpy_inputs['features_buffer'][0,-1] = outputs['hidden_state'][0, :]
-      # self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
-      # self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
 
     if "desired_curvature" in outputs:
