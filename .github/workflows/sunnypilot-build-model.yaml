@@ -19,6 +19,9 @@ on:
         required: false
         type: string
 
+
+run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
+
 jobs:
   get_model:
     runs-on: ubuntu-latest
