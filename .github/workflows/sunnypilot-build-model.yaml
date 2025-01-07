@@ -31,6 +31,9 @@ on:
 
 run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
 
+
+run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
+
 jobs:
   get_model:
     runs-on: ubuntu-latest
