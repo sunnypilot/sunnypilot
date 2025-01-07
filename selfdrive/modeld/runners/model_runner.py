@@ -1,6 +1,7 @@
 import os
 from openpilot.system.hardware import TICI
 
+from openpilot.sunnypilot.modeld.run_helpers import get_custom_model_paths
 #
 from tinygrad.tensor import Tensor, dtypes
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
@@ -10,14 +11,16 @@ import numpy as np
 from pathlib import Path
 from abc import ABC, abstractmethod
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLMem
+from openpilot.system.hardware import PC
 
 if TICI:
   os.environ['QCOM'] = '1'
 
-SEND_RAW_PRED = os.getenv('SEND_RAW_PRED') 
+SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 MODEL_PATH = Path(__file__).parent / '../models/supercombo.onnx'
 MODEL_PKL_PATH = Path(__file__).parent / '../models/supercombo_tinygrad.pkl'
 METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
+USE_ONNX = os.getenv('USE_ONNX', PC)
 
 
 class ModelRunner(ABC):
@@ -25,8 +28,12 @@ class ModelRunner(ABC):
 
   def __init__(self):
     """Initialize the model runner with paths to model and metadata files."""
-    with open(METADATA_PATH, 'rb') as f:
+    self.model_paths = ({"model": MODEL_PATH, "metadata": METADATA_PATH} if USE_ONNX else
+                        get_custom_model_paths() or {"model": MODEL_PKL_PATH, "metadata": METADATA_PATH})
+
+    with open(self.model_paths["metadata"], 'rb') as f:
       self.model_metadata = pickle.load(f)
+
     self.input_shapes = self.model_metadata['input_shapes']
     self.output_slices = self.model_metadata['output_slices']
     self.inputs: dict = {}
@@ -52,8 +59,11 @@ class TinygradRunner(ModelRunner):
 
   def __init__(self, frames: dict[str, DrivingModelFrame] | None = None):
     super().__init__()
+    if not str(self.model_paths["model"]).endswith("_tinygrad.pkl"):
+      raise ValueError(f"Tinygrad model must be a _tinygrad.pkl file, we got {self.model_paths['model']}")
+
     # Load Tinygrad model
-    with open(MODEL_PKL_PATH, "rb") as f:
+    with open(self.model_paths["model"], "rb") as f:
       self.model_run = pickle.load(f)
 
     self.input_to_dtype = {}
@@ -92,7 +102,7 @@ class ONNXRunner(ModelRunner):
 
   def __init__(self, frames: dict[str, DrivingModelFrame]):
     super().__init__()
-    self.runner = make_onnx_cpu_runner(MODEL_PATH)
+    self.runner = make_onnx_cpu_runner(self.model_paths["model"])
     self.frames = frames
 
     self.input_to_nptype = {

@@ -4,6 +4,7 @@ from openpilot.system.hardware import TICI
 from openpilot.selfdrive.modeld.runners.model_runner import ONNXRunner, TinygradRunner
 
 #
+import os
 import time
 import numpy as np
 import cereal.messaging as messaging
@@ -19,6 +20,7 @@ from openpilot.common.realtime import config_realtime_process
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
+from openpilot.system.hardware import PC
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
@@ -26,7 +28,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
-
+USE_ONNX = bool(os.getenv('USE_ONNX', PC))
 
 class FrameMeta:
   frame_id: int = 0
@@ -50,7 +52,7 @@ class ModelState:
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
     self.is_20hz = False
     # Initialize model runner
-    self.model_runner = TinygradRunner(self.frames) if TICI else ONNXRunner(self.frames)
+    self.model_runner = ONNXRunner(self.frames) if (not TICI) and USE_ONNX else TinygradRunner(self.frames)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}

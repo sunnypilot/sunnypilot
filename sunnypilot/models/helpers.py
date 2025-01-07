@@ -21,8 +21,25 @@ async def verify_file(file_path: str, expected_hash: str) -> bool:
 
   return sha256_hash.hexdigest().lower() == expected_hash.lower()
 
-def get_active_bundle(params: Params) -> custom.ModelManagerSP.ModelBundle:
-  """Gets the active model bundle from cache"""
+
+def get_active_bundle(params: Params | None) -> custom.ModelManagerSP.ModelBundle:
+  """
+  Retrieves and deserializes the active model bundle from the provided parameters.
+
+  This function attempts to extract and deserialize a model bundle from the given
+  `params`. If the parameter `ModelManager_ActiveBundle` is present, it is
+  deserialized into a `ModelBundle` object. If not, the function returns `None`.
+
+  Note: We intentionally don't set a default value for `params` to encourage
+  the caller to provide it explicitly. If not provided, the function will
+  instantiate a new `Params` object internally.
+
+  :param params: Optional. Can provide None and will instantiate it itself.
+  :type params: Params | None
+  :return: A deserialized `ModelBundle` instance if the active bundle
+      is found in the provided parameters, otherwise `None`.
+  :rtype: custom.ModelManagerSP.ModelBundle | None
+  """
   if params is None:
     params = Params()
 
