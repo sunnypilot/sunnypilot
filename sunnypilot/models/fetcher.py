@@ -71,6 +71,7 @@ class ModelParser:
     model_bundle.status = 0
     model_bundle.generation = int(value["generation"])
     model_bundle.environment = value["environment"]
+    model_bundle.is20hz = value.get("is_20hz", False)
 
     return model_bundle
 

@@ -47,3 +47,25 @@ def get_active_bundle(params: Params | None) -> custom.ModelManagerSP.ModelBundl
     return messaging.log_from_bytes(active_bundle, custom.ModelManagerSP.ModelBundle)
 
   return None
+
+def is_active_model_20hz(params: Params | None) -> [bool | None]:
+  """
+  Determine if the active model is operating at 20Hz.
+
+  This function evaluates the provided parameters to determine the active
+  bundle and checks its frequency status. If there is no active bundle,
+  the function will return None. If a bundle is active, the function will
+  return a boolean value indicating whether the model is operating at
+  20Hz.
+
+  :param params: System or configuration parameters used to fetch the 
+      active bundle. The parameter can be None.
+  :type params: Params | None
+  :return: A boolean indicating if the active model is operating at 20Hz,
+      or None if no active bundle is found.
+  :rtype: bool | None
+  """
+  if active_bundle := get_active_bundle(params):
+    return active_bundle.is20hz
+
+  return None

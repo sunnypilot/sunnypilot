@@ -2,6 +2,7 @@
 from openpilot.system.hardware import TICI
 
 from openpilot.selfdrive.modeld.runners.model_runner import ONNXRunner, TinygradRunner
+from openpilot.sunnypilot.models.helpers import is_active_model_20hz
 
 #
 import os
@@ -29,6 +30,7 @@ from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame,
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 USE_ONNX = bool(os.getenv('USE_ONNX', PC))
+IS_20HZ_MODEL_DEFAULT = False
 
 class FrameMeta:
   frame_id: int = 0
@@ -46,11 +48,14 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    self.frames = {'input_imgs': DrivingModelFrame(context), 'big_input_imgs': DrivingModelFrame(context)}
+    self.is_20hz = IS_20HZ_MODEL_DEFAULT
+    if (active_20hz := is_active_model_20hz(None)) is not None:
+      self.is_20hz = active_20hz
+
+    self.frames = {'input_imgs': DrivingModelFrame(context, self.is_20hz), 'big_input_imgs': DrivingModelFrame(context, self.is_20hz)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
-    self.is_20hz = False
     # Initialize model runner
     self.model_runner = ONNXRunner(self.frames) if (not TICI) and USE_ONNX else TinygradRunner(self.frames)
 
