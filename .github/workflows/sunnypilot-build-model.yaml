@@ -31,9 +31,6 @@ on:
 
 run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
 
-
-run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
-
 jobs:
   get_model:
     runs-on: ubuntu-latest
@@ -119,12 +116,12 @@ jobs:
           
           # Rename files if file_name is provided
           if [ ! -z "${{ inputs.file_name }}" ]; then
-            mv ${OUTPUT_DIR}/supercombo.thneed ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}.thneed
+            mv ${OUTPUT_DIR}/supercombo_tinygrad.pkl ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}_tinygrad.pkl
             mv ${OUTPUT_DIR}/supercombo_metadata.pkl ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}_metadata.pkl
           fi
           
           # Calculate SHA256 hashes
-          HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*.thneed | cut -d' ' -f1)
+          TINYGRAD_HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*_tinygrad.pkl | cut -d' ' -f1)
           METADATA_HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*_metadata.pkl | cut -d' ' -f1)
           
           # Create metadata.json
@@ -135,8 +132,8 @@ jobs:
             "is_20hz": ${{ inputs.is_20hz || false }},
             "files": {
               "drive_model": {
-                "file_name": "$(basename ${OUTPUT_DIR}/supercombo*.thneed)",
-                "sha256": "${HASH}"
+                "file_name": "$(basename ${OUTPUT_DIR}/supercombo*_tinygrad.pkl)",
+                "sha256": "${TINYGRAD_HASH}"
               },
               "metadata": {
                 "file_name": "$(basename ${OUTPUT_DIR}/supercombo*_metadata.pkl)",
@@ -145,7 +142,8 @@ jobs:
             },
             "ref": "${{ inputs.upstream_branch }}",
             "build_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }     
+          }
+          EOF        
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
