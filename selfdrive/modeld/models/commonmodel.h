@@ -64,15 +64,17 @@ protected:
 
 class DrivingModelFrame : public ModelFrame {
 public:
-  DrivingModelFrame(cl_device_id device_id, cl_context context);
+  DrivingModelFrame(cl_device_id device_id, cl_context context, bool is_20hz = false);
   ~DrivingModelFrame();
   cl_mem* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection);
 
+  const bool is_20hz;
   const int MODEL_WIDTH = 512;
   const int MODEL_HEIGHT = 256;
   const int MODEL_FRAME_SIZE = MODEL_WIDTH * MODEL_HEIGHT * 3 / 2;
   const int buf_size = MODEL_FRAME_SIZE * 2;
   const size_t frame_size_bytes = MODEL_FRAME_SIZE * sizeof(uint8_t);
+  const int buf_len = is_20hz ? 5 : 2;
 
 private:
   LoadYUVState loadyuv;

@@ -55,8 +55,8 @@ cdef class ModelFrame:
 cdef class DrivingModelFrame(ModelFrame):
   cdef cppDrivingModelFrame * _frame
 
-  def __cinit__(self, CLContext context):
-    self._frame = new cppDrivingModelFrame(context.device_id, context.context)
+  def __cinit__(self, CLContext context, bint is_20hz=False):
+    self._frame = new cppDrivingModelFrame(context.device_id, context.context, is_20hz)
     self.frame = <cppModelFrame*>(self._frame)
     self.buf_size = self._frame.buf_size
 
