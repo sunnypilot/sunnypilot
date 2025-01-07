@@ -39,7 +39,7 @@ class ModelRunner(ABC):
     self.inputs: dict = {}
 
   @abstractmethod
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray])-> dict:
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     """Prepare inputs for model inference."""
 
   @abstractmethod

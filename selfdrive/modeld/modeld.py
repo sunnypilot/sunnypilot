@@ -63,7 +63,7 @@ class ModelState:
     self.numpy_inputs = {}
 
     for key, shape in self.model_runner.input_shapes.items():
-      if key not in self.frames: # Managed by opencl
+      if key not in self.frames:  # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     self.parser = Parser()
@@ -77,7 +77,7 @@ class ModelState:
     self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
@@ -90,7 +90,6 @@ class ModelState:
     else:
       self.numpy_inputs['desire'][0,:-1] = self.numpy_inputs['desire'][0,1:]
       self.numpy_inputs['desire'][0,-1] = new_desire
-      
 
     for key in self.numpy_inputs:
       if key in inputs and key not in ['desire']:
@@ -116,7 +115,6 @@ class ModelState:
     else:
       self.numpy_inputs['features_buffer'][0,:-1] = self.numpy_inputs['features_buffer'][0,1:]
       self.numpy_inputs['features_buffer'][0,-1] = outputs['hidden_state'][0, :]
-
 
     if "desired_curvature" in outputs:
       input_name_prev = None
@@ -240,6 +238,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
+    lateral_control_params = np.array([v_ego, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -273,7 +272,7 @@ def main(demo=False):
     }
 
     if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = lateral_control_params
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)

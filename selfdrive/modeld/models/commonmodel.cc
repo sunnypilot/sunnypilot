@@ -6,7 +6,6 @@
 #include "common/clutil.h"
 
 DrivingModelFrame::DrivingModelFrame(cl_device_id device_id, cl_context context, bool is_20hz) : ModelFrame(device_id, context), is_20hz(is_20hz) {
-  printf("is_20hz: %d | buf_len: %d\n", is_20hz, buf_len);
   input_frames = std::make_unique<uint8_t[]>(buf_size);
   input_frames_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, &err));
   img_buffer_20hz_cl = CL_CHECK_ERR(clCreateBuffer(context, CL_MEM_READ_WRITE, buf_len*frame_size_bytes, NULL, &err));

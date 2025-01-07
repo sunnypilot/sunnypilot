@@ -48,6 +48,7 @@ def get_active_bundle(params: Params | None) -> custom.ModelManagerSP.ModelBundl
 
   return None
 
+
 def is_active_model_20hz(params: Params | None) -> [bool | None]:
   """
   Determine if the active model is operating at 20Hz.
