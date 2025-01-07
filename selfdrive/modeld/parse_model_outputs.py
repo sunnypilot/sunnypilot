@@ -84,7 +84,7 @@ class Parser:
     outs[name] = pred_mu_final.reshape(final_shape)
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
-  def parse_outputs(self, outs: dict[str, np.ndarray], input_keys: [str]) -> dict[str, np.ndarray]:
+  def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     """ Parse the model outputs into a dictionary of numpy arrays. The input_keys are used to determine how the output should be parsed. """
     self.parse_mdn('plan', outs, in_N=ModelConstants.PLAN_MHP_N, out_N=ModelConstants.PLAN_MHP_SELECTION,
                    out_shape=(ModelConstants.IDX_N,ModelConstants.PLAN_WIDTH))
@@ -97,7 +97,7 @@ class Parser:
                    out_shape=(ModelConstants.LEAD_TRAJ_LEN,ModelConstants.LEAD_WIDTH))
     if 'lat_planner_solution' in outs:
       self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(ModelConstants.IDX_N,ModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
-    if 'desired_curvature' in outs and "prev_desired_curv" in input_keys:
+    if 'desired_curvature' in outs:
       self.parse_mdn('desired_curvature', outs, in_N=0, out_N=0, out_shape=(ModelConstants.DESIRED_CURV_WIDTH,))
     for k in ['lead_prob', 'lane_lines_prob', 'meta']:
       self.parse_binary_crossentropy(k, outs)

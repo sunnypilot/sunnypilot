@@ -106,7 +106,7 @@ class ModelState:
 
     # Run model inference
     self.output = self.model_runner.run_model()
-    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output), self.numpy_inputs.keys())
+    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output))
 
     if self.is_20hz:
       self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
