@@ -238,7 +238,6 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    lateral_control_params = np.array([v_ego, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -272,7 +271,7 @@ def main(demo=False):
     }
 
     if "lateral_control_params" in model.numpy_inputs.keys():
-      inputs['lateral_control_params'] = lateral_control_params
+      inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
