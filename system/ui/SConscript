@@ -23,3 +23,4 @@ if not UBUNTU_FOCAL:
     renv.Program("spinner", ["raylib/spinner.cc"], LIBS=linked_libs, FRAMEWORKS=mac_frameworks)
     renv.Program("tsk-kbd", ["raylib/tsk-kbd.cc"], LIBS=linked_libs, FRAMEWORKS=mac_frameworks)
     renv.Program("tsk-text", ["raylib/tsk-text.cc"], LIBS=linked_libs, FRAMEWORKS=mac_frameworks)
+    renv.Program("tsk-manager", ["raylib/tsk-manager.cc"], LIBS=linked_libs, FRAMEWORKS=mac_frameworks)
