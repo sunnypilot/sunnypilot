@@ -205,6 +205,18 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
 
   // offroad-only buttons
 
+  auto tskBtn = new ButtonControl(tr("Toyota Security Key Manager"), tr("RUN"));
+  connect(tskBtn, &ButtonControl::clicked, [this, tskBtn]() {
+    if (ConfirmationDialog::confirm(tr("Run Toyota Security Key Manager and reboot?"), tr("RUN"), this)) {
+      tskBtn->setEnabled(false);
+      QProcess *process = new QProcess(this);
+      // This shell script launches TSK Manager on top of OP and then reboots,
+      // so there's no need to handle hiding and restoring OP application.
+      process->start("/data/openpilot/tsk/manager.sh");
+    }
+  });
+  addItem(tskBtn);
+
   auto dcamBtn = new ButtonControl(tr("Driver Camera"), tr("PREVIEW"),
                                    tr("Preview the driver facing camera to ensure that driver monitoring has good visibility. (vehicle must be off)"));
   connect(dcamBtn, &ButtonControl::clicked, [this, dcamBtn]() {
