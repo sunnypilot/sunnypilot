@@ -1,0 +1,3 @@
+git+https://github.com/commaai/panda.git@ea156f7c628a371bea9a15a29f9068d5392534ba
+tqdm==4.66.1
+pycryptodome==3.18.0
