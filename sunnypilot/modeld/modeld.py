@@ -4,7 +4,6 @@ import time
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
-from pathlib import Path
 from setproctitle import setproctitle
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
@@ -27,14 +26,8 @@ from openpilot.common.numpy_fast import interp
 
 from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs
 
-PROCESS_NAME = "sunnypilot.modeld.modeld"
+PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
-
-MODEL_PATHS = {
-  ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
-  ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
-
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
 class FrameMeta:
   frame_id: int = 0
@@ -103,7 +96,7 @@ class ModelState:
       return None
 
     self.model.execute()
-    outputs = self.parser.parse_outputs(self.slice_outputs(self.output), self.inputs.keys())
+    outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
 
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
@@ -267,7 +260,7 @@ def main(demo=False):
     }
 
     if "lateral_control_params" in model.inputs.keys():
-      inputs['lateral_control_params'] = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = np.array([max(sm["carState"].vEgo, 0.), steer_delay], dtype=np.float32)
 
     # TODO-SP: Below should be good, but I have not tested a model with it so I can't be sure until we test it
     # if "driving_style" in model.inputs.keys():
