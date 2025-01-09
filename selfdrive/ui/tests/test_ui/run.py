@@ -42,12 +42,12 @@ def setup_settings_device(click, pm: PubMaster):
 
 def setup_settings_toggles(click, pm: PubMaster):
   setup_settings_device(click, pm)
-  click(278, 640)
+  click(278, 632)
   time.sleep(UI_DELAY)
 
 def setup_settings_software(click, pm: PubMaster):
   setup_settings_device(click, pm)
-  click(278, 750)
+  click(278, 742)
   time.sleep(UI_DELAY)
 
 def setup_settings_developer(click, pm: PubMaster):
@@ -180,19 +180,19 @@ def setup_settings_sunnylink(click, pm: PubMaster):
   Params().put_bool("SunnylinkEnabled", True)
 
   setup_settings_device(click, pm)
-  click(278, 530)
+  click(278, 522)
   time.sleep(UI_DELAY)
 
 def setup_settings_sunnypilot(click, pm: PubMaster):
   setup_settings_device(click, pm)
-  click(278, 860)
+  click(278, 852)
   time.sleep(UI_DELAY)
 
 def setup_settings_sunnypilot_mads(click, pm: PubMaster):
   Params().put_bool("Mads", True)
 
   setup_settings_device(click, pm)
-  click(278, 860)
+  click(278, 852)
   click(970, 455)
   time.sleep(UI_DELAY)
 
