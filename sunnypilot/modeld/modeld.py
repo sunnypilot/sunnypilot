@@ -24,7 +24,7 @@ from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLCon
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.numpy_fast import interp
 
-from openpilot.sunnypilot.modeld.runners.run_helpers import load_model, load_metadata, prepare_inputs
+from openpilot.sunnypilot.modeld.runners.run_helpers import get_model_path, load_metadata, prepare_inputs
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -51,7 +51,7 @@ class ModelState:
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
 
-    model_paths = load_model()
+    model_paths = get_model_path()
     self.model_metadata = load_metadata()
     self.inputs = prepare_inputs(self.model_metadata)
 

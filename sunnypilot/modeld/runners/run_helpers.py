@@ -21,29 +21,26 @@ METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 ModelManager = custom.ModelManagerSP
 
 
-def load_model():
+def get_model_path():
   if USE_ONNX:
-    model_paths = {ModelRunner.ONNX: Path(__file__).parent / '../models/supercombo.onnx'}
-  elif bundle := get_active_bundle():
-    drive_model = next(model for model in bundle.models if model.type == ModelManager.Type.drive)
-    model_paths = {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/{drive_model.fileName}"}
-  else:
-    model_paths = {ModelRunner.THNEED: Path(__file__).parent / '../models/supercombo.thneed'}
+    return {ModelRunner.ONNX: Path(__file__).parent / '../models/supercombo.onnx'}
 
-  return model_paths
+  if bundle := get_active_bundle():
+    drive_model = next(model for model in bundle.models if model.type == ModelManager.Type.drive)
+    return {ModelRunner.THNEED: f"{CUSTOM_MODEL_PATH}/{drive_model.fileName}"}
+
+  return {ModelRunner.THNEED: Path(__file__).parent / '../models/supercombo.thneed'}
 
 
 def load_metadata():
+  metadata_path = METADATA_PATH
+
   if bundle := get_active_bundle():
     metadata_model = next(model for model in bundle.models if model.type == ModelManager.Type.metadata)
     metadata_path = f"{CUSTOM_MODEL_PATH}/{metadata_model.fileName}"
-  else:
-    metadata_path = METADATA_PATH
 
   with open(metadata_path, 'rb') as f:
-    metadata = pickle.load(f)
-
-  return metadata
+    return pickle.load(f)
 
 
 def prepare_inputs(model_metadata) -> dict[str, np.ndarray]:
