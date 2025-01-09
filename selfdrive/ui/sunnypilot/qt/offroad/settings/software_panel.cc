@@ -29,16 +29,15 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
  * Reads status from modelManagerSP cereal message and displays status for all models
  */
 void SoftwarePanelSP::handleBundleDownloadProgress() {
-  const SubMaster &sm = *(uiStateSP()->sm);
-  const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
-
-  if (!model_manager.hasSelectedBundle()) {
-    currentModelLblBtn->setDescription("");
+  if (!model_manager.hasSelectedBundle() && !model_manager.hasActiveBundle()) {
+    currentModelLblBtn->setDescription("No custom model selected!");
     return;
   }
 
-  const auto &bundle = model_manager.getSelectedBundle();
+  const auto &bundle = model_manager.hasSelectedBundle() && isDownloading() ? model_manager.getSelectedBundle() : model_manager.getActiveBundle();
   const auto &models = bundle.getModels();
+  download_status = bundle.getStatus();
+  const auto download_status_changed = prev_download_status != download_status;
   QStringList status;
 
   // Get status for each model type in order
@@ -67,9 +66,9 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
     if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
       line = tr("Downloading %1 model [%2]... (%3%)").arg(typeName, modelName).arg(progress.getProgress(), 0, 'f', 2);
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADED) {
-      line = tr("%1 model [%2] downloaded").arg(typeName, modelName);
+      line = tr("%1 model [%2] %3").arg(typeName, modelName, download_status_changed ? tr("downloaded") : tr("ready"));
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::CACHED) {
-      line = tr("%1 model [%2] from cache").arg(typeName, modelName);
+      line = tr("%1 model [%2] %3").arg(typeName, modelName, download_status_changed ? tr("from cache") : tr("ready"));
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::FAILED) {
       line = tr("%1 model [%2] download failed").arg(typeName, modelName);
     } else {
@@ -80,9 +79,19 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
 
   currentModelLblBtn->setDescription(status.join("\n"));
 
-  if (bundle.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
-    currentModelLblBtn->showDescription();
+  if (prev_download_status != download_status) {
+    switch (bundle.getStatus()) {
+      case cereal::ModelManagerSP::DownloadStatus::DOWNLOADING:
+      case cereal::ModelManagerSP::DownloadStatus::CACHED:
+      case cereal::ModelManagerSP::DownloadStatus::DOWNLOADED:
+          currentModelLblBtn->showDescription();
+        break;
+      case cereal::ModelManagerSP::DownloadStatus::FAILED:
+      default:
+        break;
+    }
   }
+  prev_download_status = download_status;
 }
 
 /**
@@ -90,14 +99,16 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
  * @return Display name of the selected bundle or default model name
  */
 QString SoftwarePanelSP::GetActiveModelName() {
-  const SubMaster &sm = *(uiStateSP()->sm);
-  const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
-
   if (model_manager.hasActiveBundle()) {
     return QString::fromStdString(model_manager.getActiveBundle().getDisplayName());
   }
 
   return "";
+}
+
+void SoftwarePanelSP::updateModelManagerState() {
+  const SubMaster &sm = *(uiStateSP()->sm);
+  model_manager = sm["modelManagerSP"].getModelManagerSP();
 }
 
 /**
@@ -107,9 +118,6 @@ QString SoftwarePanelSP::GetActiveModelName() {
 void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
-
-  const SubMaster &sm = *(uiStateSP()->sm);
-  const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
 
   // Create mapping of bundle indices to display names
   QMap<uint32_t, QString> index_to_bundle;
@@ -157,9 +165,14 @@ void SoftwarePanelSP::updateLabels() {
     return;
   }
 
+  updateModelManagerState();
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelName());
+  if (!isDownloading()) {
+    model_manager.hasSelectedBundle();
+  }
+  
   SoftwarePanel::updateLabels();
 }
 
