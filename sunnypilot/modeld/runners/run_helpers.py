@@ -6,12 +6,13 @@
 import os
 import pickle
 import numpy as np
-from pathlib import Path
+
 from cereal import custom
 from openpilot.sunnypilot.modeld.runners import ModelRunner
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.system.hardware import PC
 from openpilot.system.hardware.hw import Paths
+from pathlib import Path
 
 USE_ONNX = os.getenv('USE_ONNX', PC)
 
@@ -45,10 +46,10 @@ def load_metadata():
 
 def prepare_inputs(model_metadata) -> dict[str, np.ndarray]:
   # img buffers are managed in openCL transform code so we don't pass them as inputs
-  inputs: dict[str, np.ndarray] = {
-    key: np.zeros(shape, dtype=np.float32).flatten()  # Inputs were defined flattened back then
-    for key, shape in model_metadata['input_shapes'].items()
-    if key not in ['input_imgs', 'big_input_imgs']
+  inputs = {
+    k: np.zeros(v, dtype=np.float32).flatten()
+    for k, v in model_metadata['input_shapes'].items()
+    if 'img' not in k
   }
 
   return inputs
