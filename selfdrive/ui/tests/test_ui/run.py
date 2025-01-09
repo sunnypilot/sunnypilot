@@ -52,6 +52,7 @@ def setup_settings_software(click, pm: PubMaster, scroll=None):
 
 def setup_settings_developer(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
+  scroll(-100, 278, 962)
   click(278, 970)
   time.sleep(UI_DELAY)
 
@@ -194,6 +195,11 @@ def setup_settings_sunnypilot_mads(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   click(278, 852)
   click(970, 455)
+  time.sleep(UI_DELAY)
+
+def setup_settings_trips(click, pm: PubMaster, scroll=None):
+  setup_settings_device(click, pm)
+  click(278, 962)
   time.sleep(UI_DELAY)
 
 CASES = {
