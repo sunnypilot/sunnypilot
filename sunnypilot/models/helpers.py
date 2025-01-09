@@ -41,13 +41,35 @@ def get_model_runner_by_filename(filename: str) -> custom.ModelManagerSP.Runner:
     return custom.ModelManagerSP.Runner.tinygrad
 
 
-def get_active_model_runner(params: Params) -> custom.ModelManagerSP.Runner:
-  """Gets the model runner from the active model bundle. If no active bundle, returns tinygrad"""
+def get_active_model_runner(params: Params, force_check=False) -> custom.ModelManagerSP.Runner:
+  """
+  Get the active model runner based on the given parameters and optional force check.
+
+  This function is responsible for retrieving the active model runner, either by using
+  an existing cached model runner type or by determining it dynamically through the
+  model bundle and its associated models. If no active bundle or specific model type
+  is found, it defaults to stock runner (tinygrad).
+
+  :param params: A `Params` instance containing configuration details required to determine
+                 the active model runner. If `None`, a new `Params` instance is created.
+  :type params: Params
+  :param force_check: A boolean flag to forcefully skip the model runner type cache and resolve
+                      the active runner explicitly. Defaults to False.
+  :type force_check: bool
+  :return: The resolved active model runner, either from cache, bundle models, or a default runner.
+  :rtype: custom.ModelManagerSP.Runner
+  """
   if params is None:
     params = Params()
 
+  if not force_check and (cached_runner := params.get("ModelRunnerTypeCache")):
+    return cached_runner
+
+  runner = custom.ModelManagerSP.Runner.tinygrad
+
   if active_bundle := get_active_bundle(params):
     drive_model = next(model for model in active_bundle.models if model.type == custom.ModelManagerSP.Type.drive)
-    return get_model_runner_by_filename(drive_model.fileName)
+    runner = get_model_runner_by_filename(drive_model.fileName)
 
-  return custom.ModelManagerSP.Runner.tinygrad
+  params.put("ModelRunnerTypeCache", runner)
+  return runner
