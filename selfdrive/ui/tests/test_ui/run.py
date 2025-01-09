@@ -123,7 +123,8 @@ def setup_body(click, pm: PubMaster, scroll=None):
 
 def setup_keyboard(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  click(250, 965)
+  scroll(-100, 278, 962)
+  click(278, 970)
   click(1930, 228)
 
 def setup_driver_camera(click, pm: PubMaster, scroll=None):
