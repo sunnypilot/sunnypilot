@@ -110,9 +110,9 @@ class ModelState:
         input_name_prev = 'prev_desired_curv'
 
       if input_name_prev is not None:
-        len = outputs['desired_curvature'][0].size
-        self.inputs[input_name_prev][:-len] = self.inputs[input_name_prev][len:]
-        self.inputs[input_name_prev][-len:] = outputs['desired_curvature'][0, :]
+        length = outputs['desired_curvature'][0].size
+        self.inputs[input_name_prev][:-length] = self.inputs[input_name_prev][length:]
+        self.inputs[input_name_prev][-length:] = outputs['desired_curvature'][0, :]
 
     if "lat_planner_solution" in outputs:
       if "lat_planner_state" in self.inputs.keys():
@@ -265,10 +265,10 @@ def main(demo=False):
     # TODO-SP: Below should be good, but I have not tested a model with it so I can't be sure until we test it
     # if "driving_style" in model.inputs.keys():
     #  inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-    # 
+    #
     # if "nav_features" in model.inputs.keys():
     #   inputs['nav_features'] = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)  # Get size from shape
-    # 
+    #
     # if "nav_instructions" in model.inputs.keys():
     #   inputs['nav_instructions'] = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)  # Get size from shape
 
