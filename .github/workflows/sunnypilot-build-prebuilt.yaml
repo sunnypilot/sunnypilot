@@ -119,6 +119,7 @@ jobs:
           if [[ "${{ runner.debug }}" == "1" ]]; then
             printenv
           fi
+          ${{ github.workspace }}/scripts/disable-powersave.py
 
       - name: Build Panda
         run: |
