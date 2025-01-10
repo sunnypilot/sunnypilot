@@ -54,6 +54,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
                    timestamp_eof: int, model_execution_time: float, valid: bool, meta_const) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
+  desired_curvature = float(net_output_data['desired_curvature'][0,0]) if 'desired_curvature' in net_output_data else 0.0
   extended_msg.valid = valid
   base_msg.valid = valid
 
@@ -65,7 +66,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.modelExecutionTime = model_execution_time
 
   action = driving_model_data.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  action.desiredCurvature = desired_curvature
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -100,7 +101,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # lateral planning
   action = modelV2.action
-  action.desiredCurvature = float(net_output_data['desired_curvature'][0,0])
+  action.desiredCurvature = desired_curvature
 
   # times at X_IDXS according to model plan
   PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N
