@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import multiprocessing
 from openpilot.system.hardware import HARDWARE
 
 
@@ -15,6 +16,11 @@ def main():
     parser.error("Must specify either --enable or --disable")
 
   HARDWARE.set_power_save(args.enable)
+
+  cpu_count = multiprocessing.cpu_count()
+  state = "enabled" if args.enable else "disabled"
+  print(f"Power save mode [{state}]")
+  print(f"Number of CPU cores available: [{cpu_count}]")
 
 
 if __name__ == "__main__":
