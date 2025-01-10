@@ -228,9 +228,9 @@ def main(demo=False):
 
     sm.update(0)
     desire = DH.desire
+    v_ego = sm["carState"].vEgo
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
-    lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -261,11 +261,10 @@ def main(demo=False):
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
-      'lateral_control_params': lateral_control_params,
       }
 
     if "lateral_control_params" in model.inputs.keys():
-      inputs['lateral_control_params'] = np.array([max(sm["carState"].vEgo, 0.), steer_delay], dtype=np.float32)
+      inputs['lateral_control_params'] = np.array([max(v_ego, 0.), steer_delay], dtype=np.float32)
 
     if "driving_style" in model.inputs.keys():
       inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
@@ -286,7 +285,8 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
-                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, model.meta)
+                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen,
+                     v_ego, steer_delay, model.meta)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]

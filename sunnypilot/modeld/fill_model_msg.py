@@ -2,6 +2,7 @@ import os
 import capnp
 import numpy as np
 from cereal import log
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_lag_adjusted_curvature, MIN_SPEED
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -51,12 +52,21 @@ def fill_xyz_poly(builder, degree, x, y, z):
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
                    net_output_data: dict[str, np.ndarray], publish_state: PublishState,
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
-                   timestamp_eof: int, model_execution_time: float, valid: bool, meta_const) -> None:
+                   timestamp_eof: int, model_execution_time: float, valid: bool,
+                   v_ego: float, steer_delay: float, meta_const) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
-  desired_curvature = float(net_output_data['desired_curvature'][0,0]) if 'desired_curvature' in net_output_data else 0.0
   extended_msg.valid = valid
   base_msg.valid = valid
+
+  desired_curvature = float(net_output_data['desired_curvature'][0, 0])
+  if 'lat_planner_solution' in net_output_data:
+    x, y, yaw, yawRate = [net_output_data['lat_planner_solution'][0, :, i].tolist() for i in range(4)]
+    x_sol = np.column_stack([x, y, yaw, yawRate])
+    v_ego = max(MIN_SPEED, v_ego)
+    psis = x_sol[0:CONTROL_N, 2].tolist()
+    curvatures = (x_sol[0:CONTROL_N, 3] / v_ego).tolist()
+    desired_curvature = get_lag_adjusted_curvature(steer_delay, v_ego, psis, curvatures)
 
   driving_model_data = base_msg.drivingModelData
 
