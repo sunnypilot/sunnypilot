@@ -74,7 +74,8 @@ def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
 
 def is_snpe_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is SNPE."""
-  return get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.snpe
+  active_model_runner = get_active_model_runner(params, not started)
+  return active_model_runner == custom.ModelManagerSP.Runner.snpe
 
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
