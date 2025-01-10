@@ -167,6 +167,9 @@ def main(demo=False):
   model_transform_main = np.zeros((3, 3), dtype=np.float32)
   model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
+  driving_style = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
+  nav_features = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)
+  nav_instructions = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)
   buf_main, buf_extra = None, None
   meta_main = FrameMeta()
   meta_extra = FrameMeta()
@@ -255,16 +258,14 @@ def main(demo=False):
     if "lateral_control_params" in model.inputs.keys():
       inputs['lateral_control_params'] = np.array([max(sm["carState"].vEgo, 0.), steer_delay], dtype=np.float32)
 
-    # TODO-SP: Below should be good, but I have not tested a model with it so I can't be sure until we test it
-    # if "driving_style" in model.inputs.keys():
-    #  inputs['driving_style'] = np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.float32)
-    #
-    # if "nav_features" in model.inputs.keys():
-    #   inputs['nav_features'] = np.zeros(ModelConstants.NAV_FEATURE_LEN, dtype=np.float32)  # Get size from shape
-    #
-    # if "nav_instructions" in model.inputs.keys():
-    #   inputs['nav_instructions'] = np.zeros(ModelConstants.NAV_INSTRUCTION_LEN, dtype=np.float32)  # Get size from shape
+    if "driving_style" in model.inputs.keys():
+      inputs['driving_style'] = driving_style
 
+    if "nav_features" in model.inputs.keys():
+      inputs['nav_features'] = nav_features
+
+    if "nav_instructions" in model.inputs.keys():
+      inputs['nav_instructions'] = nav_instructions
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
