@@ -12,6 +12,7 @@ if __name__ == "__main__":
   params.put("CarParams", CP.to_bytes())
   if use_snpe_modeld := is_snpe_model(False, params, CP):
     print("Using SNPE modeld")
+  HARDWARE.set_power_save(False)
 
   procs = ['camerad', 'ui', 'calibrationd', 'plannerd', 'dmonitoringmodeld', 'dmonitoringd']
   procs += ["modeld_snpe" if use_snpe_modeld else "modeld"]
