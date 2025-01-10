@@ -2,7 +2,7 @@ import os
 import capnp
 import numpy as np
 from cereal import log
-from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan, Meta
+from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
