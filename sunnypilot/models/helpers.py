@@ -22,7 +22,7 @@ async def verify_file(file_path: str, expected_hash: str) -> bool:
   return sha256_hash.hexdigest().lower() == expected_hash.lower()
 
 
-def get_active_bundle(params: Params) -> custom.ModelManagerSP.ModelBundle:
+def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundle:
   """Gets the active model bundle from cache"""
   if params is None:
     params = Params()
@@ -41,7 +41,7 @@ def get_model_runner_by_filename(filename: str) -> custom.ModelManagerSP.Runner:
     return custom.ModelManagerSP.Runner.tinygrad
 
 
-def get_active_model_runner(params: Params, force_check=False) -> custom.ModelManagerSP.Runner:
+def get_active_model_runner(params: Params = None, force_check=False) -> custom.ModelManagerSP.Runner:
   """
   Determines and returns the active model runner type, based on provided parameters.
   The function utilizes caching to prevent redundant calculations and checks.
