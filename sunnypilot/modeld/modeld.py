@@ -80,12 +80,9 @@ class ModelState:
     self.inputs['desire'][-ModelConstants.DESIRE_LEN:] = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    for key in self.inputs:
-      if key in inputs and key not in ['desire']:
-        self.inputs[key][:] = inputs[key]
-
-    self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    # self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    for k in self.inputs:
+      if k != 'desire':
+        self.inputs[k][:] = inputs[k]
 
     # if getCLBuffer is not None, frame will be None
     self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
@@ -101,23 +98,19 @@ class ModelState:
     self.inputs['features_buffer'][:-ModelConstants.FEATURE_LEN] = self.inputs['features_buffer'][ModelConstants.FEATURE_LEN:]
     self.inputs['features_buffer'][-ModelConstants.FEATURE_LEN:] = outputs['hidden_state'][0, :]
 
-    if "desired_curvature" in outputs:
-      input_name_prev = None
-
-      if "prev_desired_curvs" in self.inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-
-      if input_name_prev is not None:
-        length = outputs['desired_curvature'][0].size
-        self.inputs[input_name_prev][:-length] = self.inputs[input_name_prev][length:]
-        self.inputs[input_name_prev][-length:] = outputs['desired_curvature'][0, :]
-
     if "lat_planner_solution" in outputs:
       if "lat_planner_state" in self.inputs.keys():
         self.inputs['lat_planner_state'][2] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 2])
         self.inputs['lat_planner_state'][3] = interp(DT_MDL, ModelConstants.T_IDXS, outputs['lat_planner_solution'][0, :, 3])
+
+    if "desired_curvature" in outputs:
+      if "prev_desired_curvs" in self.inputs.keys():
+        self.inputs['prev_desired_curvs'][:-1] = self.inputs['prev_desired_curvs'][1:]
+        self.inputs['prev_desired_curvs'][-1] = outputs['desired_curvature'][0, 0]
+
+      if "prev_desired_curv" in self.inputs.keys():
+        self.inputs['prev_desired_curv'][:-1] = self.inputs['prev_desired_curv'][1:]
+        self.inputs['prev_desired_curv'][-1:] = outputs['desired_curvature'][0, :]
     return outputs
 
 
