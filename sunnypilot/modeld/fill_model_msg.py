@@ -59,7 +59,6 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   extended_msg.valid = valid
   base_msg.valid = valid
 
-  desired_curvature = float(net_output_data['desired_curvature'][0, 0])
   if 'lat_planner_solution' in net_output_data:
     x, y, yaw, yawRate = [net_output_data['lat_planner_solution'][0, :, i].tolist() for i in range(4)]
     x_sol = np.column_stack([x, y, yaw, yawRate])
@@ -67,6 +66,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
     psis = x_sol[0:CONTROL_N, 2].tolist()
     curvatures = (x_sol[0:CONTROL_N, 3] / v_ego).tolist()
     desired_curvature = get_lag_adjusted_curvature(steer_delay, v_ego, psis, curvatures)
+  else:
+    desired_curvature = float(net_output_data['desired_curvature'][0, 0])
 
   driving_model_data = base_msg.drivingModelData
 
