@@ -82,7 +82,7 @@ class ModelState:
     self.prev_desire[:] = inputs['desire']
 
     for k in self.inputs:
-      if k != 'desire':
+      if k in inputs and k != 'desire':
         self.inputs[k][:] = inputs[k]
 
     # if getCLBuffer is not None, frame will be None
