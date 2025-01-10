@@ -1,12 +1,11 @@
 import os
 import operator
 
-from cereal import car, custom
+from cereal import car
 from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
 
-from sunnypilot.models.helpers import get_active_model_runner
 from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, use_sunnylink_uploader
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
@@ -74,7 +73,7 @@ def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
 
 def is_snpe_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is SNPE."""
-  return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.snpe)
+  return False  # FIXME-SP: Enable in future PR
 
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
