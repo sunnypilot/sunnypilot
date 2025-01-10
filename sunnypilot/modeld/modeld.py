@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import os
 import time
+import pickle
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
+from pathlib import Path
 from setproctitle import setproctitle
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
@@ -29,6 +31,12 @@ from openpilot.sunnypilot.modeld.runners.run_helpers import get_model_path, load
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
+MODEL_PATHS = {
+  ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
+  ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
+
+METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
+
 class FrameMeta:
   frame_id: int = 0
   timestamp_sof: int = 0
@@ -50,6 +58,13 @@ class ModelState:
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    self.inputs = {
+      'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
+      'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
+      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
+      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
+      'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
+    }
 
     model_paths = get_model_path()
     self.model_metadata = load_metadata()
@@ -177,6 +192,7 @@ def main(demo=False):
     CP = get_demo_car_params()
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
+
   cloudlog.info("modeld got CarParams: %s", CP.carName)
 
   # TODO this needs more thought, use .2s extra for now to estimate other delays
@@ -221,6 +237,7 @@ def main(demo=False):
     desire = DH.desire
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
+    lateral_control_params = np.array([sm["carState"].vEgo, steer_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -248,10 +265,11 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs: dict[str, np.ndarray] = {
+    inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
-    }
+      'lateral_control_params': lateral_control_params,
+      }
 
     if "lateral_control_params" in model.inputs.keys():
       inputs['lateral_control_params'] = np.array([max(sm["carState"].vEgo, 0.), steer_delay], dtype=np.float32)
