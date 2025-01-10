@@ -24,7 +24,7 @@ from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLCon
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.numpy_fast import interp
 
-from openpilot.sunnypilot.modeld.runners.run_helpers import get_model_path, load_metadata, prepare_inputs
+from openpilot.sunnypilot.modeld.runners.run_helpers import get_model_path, load_metadata, prepare_inputs, load_meta_constants
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -54,6 +54,7 @@ class ModelState:
     model_paths = get_model_path()
     self.model_metadata = load_metadata()
     self.inputs = prepare_inputs(self.model_metadata)
+    self.meta = load_meta_constants(self.model_metadata)
 
     self.output_slices = self.model_metadata['output_slices']
     net_output_size = self.model_metadata['output_shapes']['outputs'][1]
@@ -277,7 +278,7 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
       fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
-                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
+                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, model.meta)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
