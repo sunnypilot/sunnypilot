@@ -165,7 +165,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   disengage_predictions.brake3MetersPerSecondSquaredProbs = net_output_data['meta'][0,meta_const.HARD_BRAKE_3].tolist()
   disengage_predictions.brake4MetersPerSecondSquaredProbs = net_output_data['meta'][0,meta_const.HARD_BRAKE_4].tolist()
   disengage_predictions.brake5MetersPerSecondSquaredProbs = net_output_data['meta'][0,meta_const.HARD_BRAKE_5].tolist()
-  if 'sim_pose' in net_output_data:
+  if 'sim_pose' not in net_output_data:
     disengage_predictions.gasPressProbs = net_output_data['meta'][0,meta_const.GAS_PRESS].tolist()
     disengage_predictions.brakePressProbs = net_output_data['meta'][0,meta_const.BRAKE_PRESS].tolist()
 
