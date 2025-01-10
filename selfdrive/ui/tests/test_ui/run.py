@@ -42,17 +42,16 @@ def setup_settings_device(click, pm: PubMaster, scroll=None):
 
 def setup_settings_toggles(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  click(278, 632)
+  click(278, 640)
   time.sleep(UI_DELAY)
 
 def setup_settings_software(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  click(278, 742)
+  click(278, 750)
   time.sleep(UI_DELAY)
 
 def setup_settings_developer(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  scroll(-100, 278, 962)
   click(278, 970)
   time.sleep(UI_DELAY)
 
@@ -123,8 +122,7 @@ def setup_body(click, pm: PubMaster, scroll=None):
 
 def setup_keyboard(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  scroll(-100, 278, 962)
-  click(278, 970)
+  click(250, 965)
   click(1930, 228)
 
 def setup_driver_camera(click, pm: PubMaster, scroll=None):
@@ -182,25 +180,20 @@ def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
   Params().put_bool("SunnylinkEnabled", True)
 
   setup_settings_device(click, pm)
-  click(278, 522)
+  click(278, 530)
   time.sleep(UI_DELAY)
 
 def setup_settings_sunnypilot(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  click(278, 852)
+  click(278, 860)
   time.sleep(UI_DELAY)
 
 def setup_settings_sunnypilot_mads(click, pm: PubMaster, scroll=None):
   Params().put_bool("Mads", True)
 
   setup_settings_device(click, pm)
-  click(278, 852)
+  click(278, 860)
   click(970, 455)
-  time.sleep(UI_DELAY)
-
-def setup_settings_trips(click, pm: PubMaster, scroll=None):
-  setup_settings_device(click, pm)
-  click(278, 962)
   time.sleep(UI_DELAY)
 
 CASES = {
