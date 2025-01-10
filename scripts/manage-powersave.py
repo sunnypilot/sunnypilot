@@ -15,12 +15,12 @@ def main():
   elif not (args.enable or args.disable):
     parser.error("Must specify either --enable or --disable")
 
+  print(f"Number of CPU cores available before: [{multiprocessing.cpu_count()}]")
   HARDWARE.set_power_save(args.enable)
 
-  cpu_count = multiprocessing.cpu_count()
   state = "enabled" if args.enable else "disabled"
-  print(f"Power save mode [{state}]")
-  print(f"Number of CPU cores available: [{cpu_count}]")
+  print(f"Power save mode set to: [{state}]")
+  print(f"Number of CPU cores available now: [{multiprocessing.cpu_count()}]")
 
 
 if __name__ == "__main__":
