@@ -118,7 +118,7 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/update-model-json-mix-tinygrad-and-snpe-models/driving_models.json"
+  MODEL_URL = "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/update-model-json-mix-tinygrad-and-snpe-models/driving_models_new.json"
 
   def __init__(self, params: Params):
     self.params = params
