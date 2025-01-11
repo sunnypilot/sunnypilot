@@ -29,12 +29,14 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
  * Reads status from modelManagerSP cereal message and displays status for all models
  */
 void SoftwarePanelSP::handleBundleDownloadProgress() {
+  using DS = cereal::ModelManagerSP::DownloadStatus;
   if (!model_manager.hasSelectedBundle() && !model_manager.hasActiveBundle()) {
     currentModelLblBtn->setDescription("No custom model selected!");
     return;
   }
 
-  const auto &bundle = model_manager.hasSelectedBundle() && isDownloading() ? model_manager.getSelectedBundle() : model_manager.getActiveBundle();
+  const bool showSelectedBundle = model_manager.hasSelectedBundle() && (isDownloading() || model_manager.getSelectedBundle().getStatus() == DS::FAILED);
+  const auto &bundle = showSelectedBundle ? model_manager.getSelectedBundle() : model_manager.getActiveBundle();
   const auto &models = bundle.getModels();
   download_status = bundle.getStatus();
   const auto download_status_changed = prev_download_status != download_status;
@@ -169,9 +171,6 @@ void SoftwarePanelSP::updateLabels() {
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelName());
-  if (!isDownloading()) {
-    model_manager.hasSelectedBundle();
-  }
   
   SoftwarePanel::updateLabels();
 }
