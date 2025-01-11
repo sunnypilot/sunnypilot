@@ -33,6 +33,14 @@ def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundl
   return None
 
 
+def get_model_runner_by_filename(filename: str) -> custom.ModelManagerSP.Runner:
+  if filename.endswith(".thneed"):
+    return custom.ModelManagerSP.Runner.snpe
+
+  if filename.endswith("_tinygrad.pkl"):
+    return custom.ModelManagerSP.Runner.tinygrad
+
+
 def get_active_model_runner(params: Params = None, force_check=False) -> custom.ModelManagerSP.Runner:
   """
   Determines and returns the active model runner type, based on provided parameters.
@@ -62,7 +70,8 @@ def get_active_model_runner(params: Params = None, force_check=False) -> custom.
   runner_type = custom.ModelManagerSP.Runner.tinygrad
 
   if active_bundle := get_active_bundle(params):
-    runner_type = active_bundle.runner
+    drive_model = next(model for model in active_bundle.models if model.type == custom.ModelManagerSP.Type.drive)
+    runner_type = get_model_runner_by_filename(drive_model.fileName)
 
   if cached_runner_type != runner_type:
     params.put("ModelRunnerTypeCache", str(runner_type))
