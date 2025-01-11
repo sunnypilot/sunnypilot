@@ -282,10 +282,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Calibration Reset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Training Guide</source>
         <translation type="unfinished"></translation>
     </message>
@@ -298,12 +294,40 @@
         <translation type="unfinished">重新啟動</translation>
     </message>
     <message>
-        <source>Shutdown</source>
+        <source>Offroad Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
+        <source>Regulatory</source>
+        <translation type="unfinished">法規/監管</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset calibration?</source>
+        <translation type="unfinished">您確定要重設校準嗎？</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished">重設</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to review the training guide?</source>
+        <translation type="unfinished">您確定要觀看使用教學嗎？</translation>
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished">回顧</translation>
+    </message>
+    <message>
+        <source>Select a language</source>
+        <translation type="unfinished">選擇語言</translation>
+    </message>
+    <message>
+        <source>Calibration Status</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Power Off</source>
+        <translation type="unfinished">關機</translation>
     </message>
 </context>
 <context>

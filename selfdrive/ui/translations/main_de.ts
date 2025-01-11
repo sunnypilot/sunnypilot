@@ -282,10 +282,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Calibration Reset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Training Guide</source>
         <translation type="unfinished"></translation>
     </message>
@@ -298,12 +294,40 @@
         <translation type="unfinished">Neustart</translation>
     </message>
     <message>
-        <source>Shutdown</source>
+        <source>Offroad Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
+        <source>Regulatory</source>
+        <translation type="unfinished">Rechtliche Hinweise</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset calibration?</source>
+        <translation type="unfinished">Bist du sicher, dass du die Kalibrierung zurücksetzen möchtest?</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished">Zurücksetzen</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to review the training guide?</source>
+        <translation type="unfinished">Bist du sicher, dass du die Trainingsanleitung wiederholen möchtest?</translation>
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished">Überprüfen</translation>
+    </message>
+    <message>
+        <source>Select a language</source>
+        <translation type="unfinished">Sprache wählen</translation>
+    </message>
+    <message>
+        <source>Calibration Status</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Power Off</source>
+        <translation type="unfinished">Ausschalten</translation>
     </message>
 </context>
 <context>

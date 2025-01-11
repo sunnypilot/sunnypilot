@@ -282,10 +282,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Calibration Reset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Training Guide</source>
         <translation type="unfinished"></translation>
     </message>
@@ -298,12 +294,40 @@
         <translation type="unfinished">재부팅</translation>
     </message>
     <message>
-        <source>Shutdown</source>
+        <source>Offroad Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
+        <source>Regulatory</source>
+        <translation type="unfinished">규제</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset calibration?</source>
+        <translation type="unfinished">캘리브레이션을 초기화하시겠습니까?</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished">초기화</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to review the training guide?</source>
+        <translation type="unfinished">트레이닝 가이드를 다시 확인하시겠습니까?</translation>
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished">다시보기</translation>
+    </message>
+    <message>
+        <source>Select a language</source>
+        <translation type="unfinished">언어를 선택하세요</translation>
+    </message>
+    <message>
+        <source>Calibration Status</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Power Off</source>
+        <translation type="unfinished">전원 끄기</translation>
     </message>
 </context>
 <context>

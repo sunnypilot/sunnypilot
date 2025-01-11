@@ -6,7 +6,6 @@
 
 #include <QDebug>
 
-#include "common/watchdog.h"
 #include "common/util.h"
 #include "selfdrive/ui/qt/offroad/driverview.h"
 #include "selfdrive/ui/qt/network/networking.h"

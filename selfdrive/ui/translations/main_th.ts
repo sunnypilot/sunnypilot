@@ -282,10 +282,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Calibration Reset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Training Guide</source>
         <translation type="unfinished"></translation>
     </message>
@@ -298,12 +294,40 @@
         <translation type="unfinished">รีบูต</translation>
     </message>
     <message>
-        <source>Shutdown</source>
+        <source>Offroad Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
+        <source>Regulatory</source>
+        <translation type="unfinished">ระเบียบข้อบังคับ</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset calibration?</source>
+        <translation type="unfinished">คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตการคาลิเบรท?</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished">รีเซ็ต</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to review the training guide?</source>
+        <translation type="unfinished">คุณแน่ใจหรือไม่ว่าต้องการทบทวนคู่มือการใช้งาน?</translation>
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished">ทบทวน</translation>
+    </message>
+    <message>
+        <source>Select a language</source>
+        <translation type="unfinished">เลือกภาษา</translation>
+    </message>
+    <message>
+        <source>Calibration Status</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Power Off</source>
+        <translation type="unfinished">ปิดเครื่อง</translation>
     </message>
 </context>
 <context>

@@ -17,5 +17,51 @@ public:
   explicit DevicePanelSP(SettingsWindowSP *parent = 0);
 
 private:
-  std::map<QString, SubPanelButton*> buttons;
+  std::map<QString, PushButtonSP*> buttons;
+  PushButtonSP *offroadBtn;
+
+  const QString offroadButtonStyle = R"(
+    PushButtonSP {
+      border-radius: 20px;
+      font-size: 50px;
+      font-weight: 450;
+      height: 150px;
+      padding: 0 25px 0 25px;
+      color: #FFFFFF;
+      background-color: #393939;
+    }
+    PushButtonSP:pressed {
+      background-color: #4A4A4A;
+    }
+  )";
+
+  const QString rebootButtonStyle = R"(
+    PushButtonSP {
+      border-radius: 20px;
+      font-size: 50px;
+      font-weight: 450;
+      height: 150px;
+      padding: 0 25px 0 25px;
+      color: #FFFFFF;
+      background-color: #393939;
+    }
+    PushButtonSP:pressed {
+      background-color: #4A4A4A;
+    }
+  )";
+
+  const QString powerOffButtonStyle = R"(
+    PushButtonSP {
+      border-radius: 20px;
+      font-size: 50px;
+      font-weight: 450;
+      height: 150px;
+      padding: 0 25px 0 25px;
+      color: #FFFFFF;
+      background-color: #E22C2C;
+    }
+    PushButtonSP:pressed {
+      background-color: #FF2424;
+    }
+  )";
 };

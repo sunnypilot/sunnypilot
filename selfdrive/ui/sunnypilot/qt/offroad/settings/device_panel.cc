@@ -7,33 +7,100 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/device_panel.h"
 
-DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
-  QGridLayout *grid_layout = new QGridLayout;
-  grid_layout->setSpacing(30);
-  grid_layout->setHorizontalSpacing(5);
-  grid_layout->setVerticalSpacing(25);
+#include "common/watchdog.h"
+#include "selfdrive/ui/qt/offroad/driverview.h"
+#include "selfdrive/ui/qt/qt_window.h"
 
-  QStringList btns = {
-    tr("Driver Camera Preview"), tr("Calibration Reset"),
-    tr("Training Guide"),        tr("Language"),
-    tr("Reboot"),                tr("Shutdown"),
+DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
+  QGridLayout *device_grid_layout = new QGridLayout();
+  device_grid_layout->setSpacing(30);
+  device_grid_layout->setHorizontalSpacing(5);
+  device_grid_layout->setVerticalSpacing(25);
+
+  std::vector<std::pair<QString, QString>> device_btns = {
+    {"dcamBtn", tr("Driver Camera Preview")},
+    {"resetCalibBtn", tr("Calibration Status")},
+    {"retrainingBtn", tr("Training Guide")},
+    {"regulatoryBtn", tr("Regulatory")},
+    {"translateBtn", tr("Language")},
   };
 
-  int i = 0;
-  for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 2; col++) {
-      SubPanelButton *btn = new SubPanelButton(btns[i], 730, this);
-      grid_layout->addWidget(btn, row, col);
-      buttons[btns[i]] = btn;
-      i++;
-    }
+  for (int i = 0; i < device_btns.size(); i++) {
+    auto *btn = new PushButtonSP(device_btns[i].second, 730, this);
+    device_grid_layout->addWidget(btn, i / 2, i % 2);
+    buttons[device_btns[i].first] = btn;
   }
 
-  SubPanelButton *force_offroad_btn = new SubPanelButton(tr("Offroad Mode"), 730, this);
-  grid_layout->addWidget(force_offroad_btn, 3, 0, 1, 1);
+  connect(buttons["dcamBtn"], &PushButtonSP::clicked, [this]() {
+    buttons["dcamBtn"]->setEnabled(false);
+    DriverViewDialog driver_view(this);
+    driver_view.exec();
+    buttons["dcamBtn"]->setEnabled(true);
+  });
 
-  QWidget *space = new QWidget(this);
-  grid_layout->addWidget(space, 3, 1);
+  connect(buttons["resetCalibBtn"], &PushButtonSP::clicked, this, &DevicePanelSP::updateCalibDescription);
+  connect(buttons["resetCalibBtn"], &PushButtonSP::clicked, [&]() {
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset calibration?"), tr("Reset"), this)) {
+      params.remove("CalibrationParams");
+      params.remove("LiveTorqueParameters");
+    }
+  });
 
-  addItem(grid_layout);
+  connect(buttons["retrainingBtn"], &PushButtonSP::clicked, [=]() {
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to review the training guide?"), tr("Review"), this)) {
+      emit reviewTrainingGuide();
+    }
+  });
+
+  if (Hardware::TICI()) {
+    connect(buttons["regulatoryBtn"], &PushButtonSP::clicked, [=]() {
+      const std::string txt = util::read_file("../assets/offroad/fcc.html");
+      ConfirmationDialog::rich(QString::fromStdString(txt), this);
+    });
+  } else {
+    buttons["regulatoryBtn"]->setEnabled(false);
+  }
+
+  connect(buttons["translateBtn"], &PushButtonSP::clicked, [=]() {
+    QMap<QString, QString> langs = getSupportedLanguages();
+    QString selection = MultiOptionDialog::getSelection(tr("Select a language"), langs.keys(), langs.key(uiState()->language), this);
+    if (!selection.isEmpty()) {
+      // put language setting, exit Qt UI, and trigger fast restart
+      params.put("LanguageSetting", langs[selection].toStdString());
+      qApp->exit(18);
+      watchdog_kick(0);
+    }
+  });
+
+  addItem(device_grid_layout);
+
+  // offroad mode and power buttons
+
+  QHBoxLayout *power_layout = new QHBoxLayout();
+  power_layout->setSpacing(5);
+
+  QPushButton *rebootBtn = new PushButtonSP(tr("Reboot"), 730, this);
+  rebootBtn->setStyleSheet(rebootButtonStyle);
+  power_layout->addWidget(rebootBtn);
+  QObject::connect(rebootBtn, &PushButtonSP::clicked, this, &DevicePanelSP::reboot);
+
+  QPushButton *poweroffBtn = new PushButtonSP(tr("Power Off"), 730, this);
+  poweroffBtn->setStyleSheet(powerOffButtonStyle);
+  power_layout->addWidget(poweroffBtn);
+  QObject::connect(poweroffBtn, &PushButtonSP::clicked, this, &DevicePanelSP::poweroff);
+
+  if (!Hardware::PC()) {
+    connect(uiState(), &UIState::offroadTransition, poweroffBtn, &PushButtonSP::setVisible);
+  }
+
+  offroadBtn = new PushButtonSP(tr("Offroad Mode"));
+  offroadBtn->setFixedWidth(power_layout->sizeHint().width());
+  // QObject::connect(offroad_btn, &QPushButton::clicked, this, &DevicePanelSP::forceoffroad);
+
+  QVBoxLayout *power_group_layout = new QVBoxLayout();
+  power_group_layout->setSpacing(30);
+  power_group_layout->addWidget(offroadBtn, 0, Qt::AlignHCenter);
+  power_group_layout->addLayout(power_layout);
+
+  addItem(power_group_layout);
 }
