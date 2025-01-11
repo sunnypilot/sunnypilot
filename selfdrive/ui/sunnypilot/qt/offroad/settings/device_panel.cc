@@ -25,7 +25,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   };
 
   for (int i = 0; i < device_btns.size(); i++) {
-    auto *btn = new PushButtonSP(device_btns[i].second, 730, this);
+    auto *btn = new PushButtonSP(device_btns[i].second, 720, this);
     device_grid_layout->addWidget(btn, i / 2, i % 2);
     buttons[device_btns[i].first] = btn;
   }
@@ -70,12 +70,12 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   QHBoxLayout *power_layout = new QHBoxLayout();
   power_layout->setSpacing(5);
 
-  QPushButton *rebootBtn = new PushButtonSP(tr("Reboot"), 730, this);
+  QPushButton *rebootBtn = new PushButtonSP(tr("Reboot"), 720, this);
   rebootBtn->setStyleSheet(rebootButtonStyle);
   power_layout->addWidget(rebootBtn);
   QObject::connect(rebootBtn, &PushButtonSP::clicked, this, &DevicePanelSP::reboot);
 
-  QPushButton *poweroffBtn = new PushButtonSP(tr("Power Off"), 730, this);
+  QPushButton *poweroffBtn = new PushButtonSP(tr("Power Off"), 720, this);
   poweroffBtn->setStyleSheet(powerOffButtonStyle);
   power_layout->addWidget(poweroffBtn);
   QObject::connect(poweroffBtn, &PushButtonSP::clicked, this, &DevicePanelSP::poweroff);
