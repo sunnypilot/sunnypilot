@@ -298,14 +298,6 @@
         <translation type="unfinished">認証情報</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset calibration?</source>
-        <translation type="unfinished">ｷｬﾘﾌﾞﾚｰｼｮﾝをリセットしてもよろしいですか？</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="unfinished">リセット</translation>
-    </message>
-    <message>
         <source>Are you sure you want to review the training guide?</source>
         <translation type="unfinished">使い方の確認をしますか？</translation>
     </message>
@@ -316,10 +308,6 @@
     <message>
         <source>Select a language</source>
         <translation type="unfinished">言語を選択</translation>
-    </message>
-    <message>
-        <source>Calibration Status</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Power Off</source>

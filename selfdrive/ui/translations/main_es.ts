@@ -298,14 +298,6 @@
         <translation type="unfinished">Regulador</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset calibration?</source>
-        <translation type="unfinished">¿Seguro que quiere formatear la calibración?</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="unfinished">Formatear</translation>
-    </message>
-    <message>
         <source>Are you sure you want to review the training guide?</source>
         <translation type="unfinished">¿Seguro que quiere revisar la guía de entrenamiento?</translation>
     </message>
@@ -315,10 +307,6 @@
     </message>
     <message>
         <source>Select a language</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Calibration Status</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

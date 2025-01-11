@@ -298,14 +298,6 @@
         <translation type="unfinished">Mevzuat</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset calibration?</source>
-        <translation type="unfinished">Kalibrasyon ayarını sıfırlamak istediğinizden emin misiniz? </translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Are you sure you want to review the training guide?</source>
         <translation type="unfinished">Eğitim kılavuzunu incelemek istediğinizden emin misiniz?</translation>
     </message>
@@ -316,10 +308,6 @@
     <message>
         <source>Select a language</source>
         <translation type="unfinished">Dil seçin</translation>
-    </message>
-    <message>
-        <source>Calibration Status</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Power Off</source>

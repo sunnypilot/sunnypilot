@@ -19,7 +19,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   std::vector<std::pair<QString, QString>> device_btns = {
     {"dcamBtn", tr("Driver Camera Preview")},
-    {"resetCalibBtn", tr("Calibration Status")},
     {"retrainingBtn", tr("Training Guide")},
     {"regulatoryBtn", tr("Regulatory")},
     {"translateBtn", tr("Language")},
@@ -36,14 +35,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     DriverViewDialog driver_view(this);
     driver_view.exec();
     buttons["dcamBtn"]->setEnabled(true);
-  });
-
-  connect(buttons["resetCalibBtn"], &PushButtonSP::clicked, this, &DevicePanelSP::updateCalibDescription);
-  connect(buttons["resetCalibBtn"], &PushButtonSP::clicked, [&]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset calibration?"), tr("Reset"), this)) {
-      params.remove("CalibrationParams");
-      params.remove("LiveTorqueParameters");
-    }
   });
 
   connect(buttons["retrainingBtn"], &PushButtonSP::clicked, [=]() {

@@ -298,14 +298,6 @@
         <translation type="unfinished">التنظيمية</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset calibration?</source>
-        <translation type="unfinished">هل أنت متأكد أنك تريد إعادة ضبط المعايرة؟</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="unfinished">إعادة الضبط</translation>
-    </message>
-    <message>
         <source>Are you sure you want to review the training guide?</source>
         <translation type="unfinished">هل أنت متأكد أنك تريد مراجعة دليل التدريب؟</translation>
     </message>
@@ -316,10 +308,6 @@
     <message>
         <source>Select a language</source>
         <translation type="unfinished">اختر لغة</translation>
-    </message>
-    <message>
-        <source>Calibration Status</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Power Off</source>
