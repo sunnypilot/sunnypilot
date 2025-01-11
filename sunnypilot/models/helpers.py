@@ -57,7 +57,8 @@ def get_active_model_runner(params: Params = None, force_check=False) -> custom.
     params = Params()
 
   if (cached_runner_type := params.get("ModelRunnerTypeCache")) and not force_check:
-    return int(cached_runner_type)
+    if isinstance(cached_runner_type, str) and cached_runner_type.isdigit():
+      return int(cached_runner_type)
 
   runner_type = custom.ModelManagerSP.Runner.tinygrad
 
