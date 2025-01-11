@@ -31,7 +31,7 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
 void SoftwarePanelSP::handleBundleDownloadProgress() {
   using DS = cereal::ModelManagerSP::DownloadStatus;
   if (!model_manager.hasSelectedBundle() && !model_manager.hasActiveBundle()) {
-    currentModelLblBtn->setDescription("No custom model selected!");
+    currentModelLblBtn->setDescription(tr("No custom model selected!"));
     return;
   }
 
@@ -130,6 +130,9 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
 
   // Sort bundles by index in descending order
   QStringList bundleNames;
+  // Add "Default" as the first option
+  bundleNames.append(tr("Use Default"));
+  
   auto indices = index_to_bundle.keys();
   std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
   for (const auto &index: indices) {
@@ -145,14 +148,21 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
     return;
   }
 
-  // Find selected bundle and initiate download
-  for (const auto &bundle: bundles) {
-    if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
-      params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
-      if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
-        showResetParamsDialog();
+  // Handle "Stock" selection differently
+  if (selectedBundleName == tr("Use Default")) {
+    params.remove("ModelManager_ActiveBundle");
+    currentModelLblBtn->setValue(tr("Default"));
+    showResetParamsDialog();
+  } else {
+    // Find selected bundle and initiate download
+    for (const auto &bundle: bundles) {
+      if (QString::fromStdString(bundle.getDisplayName()) == selectedBundleName) {
+        params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
+        if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
+          showResetParamsDialog();
+        }
+        break;
       }
-      break;
     }
   }
 

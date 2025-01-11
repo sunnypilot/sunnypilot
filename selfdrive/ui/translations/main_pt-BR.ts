@@ -1114,6 +1114,18 @@ Isso pode levar até um minuto.</translation>
         <source>from cache</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Use Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No custom model selected!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SshControl</name>

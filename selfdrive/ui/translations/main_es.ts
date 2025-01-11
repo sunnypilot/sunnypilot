@@ -1114,6 +1114,18 @@ Esto puede tardar un minuto.</translation>
         <source>from cache</source>
         <translation>desde caché</translation>
     </message>
+    <message>
+        <source>Use Default</source>
+        <translation>Por Defecto</translation>
+    </message>
+    <message>
+        <source>No custom model selected!</source>
+        <translation>No hay ningún modelo personalizado elegido!.</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Por Defecto</translation>
+    </message>
 </context>
 <context>
     <name>SshControl</name>
