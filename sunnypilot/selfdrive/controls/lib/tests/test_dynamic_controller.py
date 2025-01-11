@@ -8,7 +8,7 @@ from sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import (
   SNG_State,
   SLOWNESS_CRUISE_OFFSET,
   SLOW_DOWN_BP,
-  SLOW_DOWN_DIST
+  SLOW_DOWN_DIST, STOP_AND_GO_FRAME
 )
 
 import unittest
@@ -20,7 +20,7 @@ class MockInterp:
     return np.interp(x, xp, fp)
 
 class MockCarState:
-  def __init__(self, v_ego=0, standstill=False, left_blinker=False, right_blinker=False):
+  def __init__(self, v_ego=0., standstill=False, left_blinker=False, right_blinker=False):
     self.vEgo = v_ego
     self.standstill = standstill
     self.leftBlinker = left_blinker
@@ -65,7 +65,7 @@ class TestDynamicExperimentalController(unittest.TestCase):
     self.assertFalse(self.controller._has_dangerous_ttc)
     self.assertFalse(self.controller._has_mpc_fcw)
 
-    def test_standstill_detection(self):
+  def test_standstill_detection(self):
       """Test standstill detection and state transitions"""
       car_state = MockCarState(standstill=True)
       lead_one = MockLeadOne()
