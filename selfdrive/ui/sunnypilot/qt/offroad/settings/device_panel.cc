@@ -93,14 +93,5 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     connect(uiState(), &UIState::offroadTransition, poweroffBtn, &PushButtonSP::setVisible);
   }
 
-  offroadBtn = new PushButtonSP(tr("Offroad Mode"));
-  offroadBtn->setFixedWidth(power_layout->sizeHint().width());
-  // QObject::connect(offroad_btn, &QPushButton::clicked, this, &DevicePanelSP::forceoffroad);
-
-  QVBoxLayout *power_group_layout = new QVBoxLayout();
-  power_group_layout->setSpacing(30);
-  power_group_layout->addWidget(offroadBtn, 0, Qt::AlignHCenter);
-  power_group_layout->addLayout(power_layout);
-
-  addItem(power_group_layout);
+  addItem(power_layout);
 }

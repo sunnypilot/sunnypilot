@@ -294,10 +294,6 @@
         <translation type="unfinished">Yeniden başlat</translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Regulatory</source>
         <translation type="unfinished">Mevzuat</translation>
     </message>

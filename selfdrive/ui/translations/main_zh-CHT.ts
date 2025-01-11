@@ -294,10 +294,6 @@
         <translation type="unfinished">重新啟動</translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Regulatory</source>
         <translation type="unfinished">法規/監管</translation>
     </message>

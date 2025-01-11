@@ -18,22 +18,6 @@ public:
 
 private:
   std::map<QString, PushButtonSP*> buttons;
-  PushButtonSP *offroadBtn;
-
-  const QString offroadButtonStyle = R"(
-    PushButtonSP {
-      border-radius: 20px;
-      font-size: 50px;
-      font-weight: 450;
-      height: 150px;
-      padding: 0 25px 0 25px;
-      color: #FFFFFF;
-      background-color: #393939;
-    }
-    PushButtonSP:pressed {
-      background-color: #4A4A4A;
-    }
-  )";
 
   const QString rebootButtonStyle = R"(
     PushButtonSP {

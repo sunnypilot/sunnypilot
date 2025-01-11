@@ -294,10 +294,6 @@
         <translation type="unfinished">재부팅</translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Regulatory</source>
         <translation type="unfinished">규제</translation>
     </message>

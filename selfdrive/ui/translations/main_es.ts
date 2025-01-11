@@ -294,10 +294,6 @@
         <translation type="unfinished">Reiniciar</translation>
     </message>
     <message>
-        <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Regulatory</source>
         <translation type="unfinished">Regulador</translation>
     </message>
