@@ -131,6 +131,10 @@
         <source>Enable GitHub runner service</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Hyundai: Enable Radar Tracks</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>

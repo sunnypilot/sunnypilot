@@ -32,6 +32,9 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   auto enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
+  hyundaiRadarTracksToggle = new ParamControl("HyundaiRadarTracksToggle", tr("Hyundai: Enable Radar Tracks"), "", "");
+  addItem(hyundaiRadarTracksToggle);
+
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");
 
