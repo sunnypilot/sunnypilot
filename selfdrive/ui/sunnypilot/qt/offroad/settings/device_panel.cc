@@ -11,7 +11,7 @@
 #include "selfdrive/ui/qt/offroad/driverview.h"
 #include "selfdrive/ui/qt/qt_window.h"
 
-DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
+DevicePanelSP::DevicePanelSP(SettingsWindow *parent) : DevicePanel(parent) {
   QGridLayout *device_grid_layout = new QGridLayout();
   device_grid_layout->setSpacing(30);
   device_grid_layout->setHorizontalSpacing(5);

@@ -14,7 +14,7 @@ class DevicePanelSP : public DevicePanel {
   Q_OBJECT
 
 public:
-  explicit DevicePanelSP(SettingsWindowSP *parent = 0);
+  explicit DevicePanelSP(SettingsWindow *parent = 0);
 
 private:
   std::map<QString, PushButtonSP*> buttons;
