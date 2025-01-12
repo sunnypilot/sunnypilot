@@ -1,4 +1,6 @@
-from sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import (
+from openpilot.common.params import Params
+
+from sunnypilot.selfdrive.controls.dec.dynamic_experimental_controller import (
   DynamicExperimentalController,
   TRAJECTORY_SIZE,
   LEAD_WINDOW_SIZE,
@@ -45,8 +47,9 @@ def interp(monkeypatch):
 
 @pytest.fixture
 def controller(interp):
+  params = Params()
+  params.put_bool("DynamicExperimentalControl", True)
   controller = DynamicExperimentalController()
-  controller.set_enabled(True)
   return controller
 
 def test_initial_state(controller):
