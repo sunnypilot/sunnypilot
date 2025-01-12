@@ -100,8 +100,8 @@ class WeightedMovingAverageCalculator:
   def get_weighted_average(self) -> float | None:
     if len(self.data) == 0:
       return None
-    weighted_sum = np.dot(self.data, self.weights[-len(self.data):])
-    weight_total = np.sum(self.weights[-len(self.data):])
+    weighted_sum: float = float(np.dot(self.data, self.weights[-len(self.data):]))
+    weight_total: float = float(np.sum(self.weights[-len(self.data):]))
     return weighted_sum / weight_total
 
   def reset_data(self) -> None:
@@ -160,11 +160,12 @@ class DynamicExperimentalController:
       return False
     mean: float = float(np.mean(recent_data))
     std_dev: float = float(np.std(recent_data))
-    anomaly: bool = bool(recent_data[-1] > mean + threshold * std_dev)
+    anomaly: bool = bool(float(recent_data[-1]) > mean + threshold * std_dev)
 
     # Context check to ensure repeated anomaly
     if context_check:
-      return bool(np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1)
+      count_above_threshold: int = int(np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev))
+      return count_above_threshold > 1
     return anomaly
 
   def _adaptive_slowdown_threshold(self) -> float:
