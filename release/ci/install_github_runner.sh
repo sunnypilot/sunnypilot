@@ -197,9 +197,9 @@ perform_restore() {
 
 perform_install() {
     echo "Starting fresh installation..."
-    remount_rw
     setup_directories
     install_runner
+    remount_rw
     setup_system_configs
     create_service_template
     configure_runner
