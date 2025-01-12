@@ -3,11 +3,11 @@ MpcSource = custom.MpcSource
 
 def get_mpc_mode(sm, dynamic_experimental_controller, mpc, CP):
   """
-  Determines the appropriate MPC mode based on the experimental state and system 
-  configurations. It either returns a default mode or updates the dynamic 
+  Determines the appropriate MPC mode based on the experimental state and system
+  configurations. It either returns a default mode or updates the dynamic
   experimental controller and retrieves the updated mode.
 
-  :param is_experimental: A flag indicating whether to use the experimental mode. 
+  :param is_experimental: A flag indicating whether to use the experimental mode.
                           If False, defaults to 'acc' mode.
   :type is_experimental: bool
 
