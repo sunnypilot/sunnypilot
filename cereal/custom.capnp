@@ -14,7 +14,6 @@ enum MpcSource {
   blended @1;
 }
 
-struct CustomReserved0 @0x81c2f05a394cf4af {
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
 
