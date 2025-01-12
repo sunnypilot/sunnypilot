@@ -52,12 +52,18 @@ LOGS_DIR="${BASE_DIR}/logs"
 CACHE_DIR="${BASE_DIR}/cache"
 OPENPILOT_DIR="${BASE_DIR}/openpilot"
 
-setup_system_configs() {
-    echo "Setting up system configurations..."
-    setup_runner_user
-    create_sudoers_entry
-    set_directory_permissions
+# Basic utility functions (no dependencies)
+remount_rw() {
+    sudo mount -o remount,rw /
 }
+
+remount_ro() {
+    sync || true  # Try to sync but continue even if it fails
+    sudo mount -o remount,ro /  # Always try to remount as read-only
+}
+
+# Always ensure we try to remount as read-only on exit
+trap remount_ro EXIT
 
 setup_runner_user() {
     sudo useradd --comment 'GitHub Runner' --create-home --home-dir ${BASE_DIR} ${RUNNER_USER} --shell /bin/bash -G ${USER_GROUPS} || sudo usermod -aG ${USER_GROUPS} ${RUNNER_USER}
@@ -82,6 +88,15 @@ setup_directories() {
     sudo chown -R comma:comma "/data/openpilot"
 }
 
+# System configuration functions (depends on basic utility functions)
+setup_system_configs() {
+    echo "Setting up system configurations..."
+    setup_runner_user
+    create_sudoers_entry
+    set_directory_permissions
+}
+
+# Runner setup functions
 install_runner() {
     echo "Downloading and setting up runner..."
     cd "$RUNNER_DIR"
@@ -199,27 +214,14 @@ perform_install() {
     echo "Starting fresh installation..."
     setup_directories
     install_runner
+    create_service_template
     remount_rw
     setup_system_configs
-    create_service_template
     configure_runner
     install_service
     remount_ro
     echo "Installation completed successfully"
 }
-
-# Define remount helper functions
-remount_rw() {
-    sudo mount -o remount,rw /
-}
-
-remount_ro() {
-    sync || true  # Try to sync but continue even if it fails
-    sudo mount -o remount,ro /  # Always try to remount as read-only
-}
-
-# Always ensure we try to remount as read-only on exit
-trap remount_ro EXIT
 
 main() {
     if [ "$RESTORE_MODE" = true ]; then
