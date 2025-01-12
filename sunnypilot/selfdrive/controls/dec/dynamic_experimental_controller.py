@@ -22,6 +22,7 @@
 #
 # Version = 2024-7-11
 from openpilot.common.numpy_fast import interp
+from openpilot.common.params import Params
 import numpy as np
 
 # d-e2e, from modeldata.h
@@ -102,8 +103,9 @@ class WeightedMovingAverageCalculator:
     self.data = []
 
 class DynamicExperimentalController:
-  def __init__(self):
-    self._is_enabled = False
+  def __init__(self, params = None):
+    self._params = params or Params()
+    self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
     self._mode = 'acc'
     self._mode_prev = 'acc'
     self._mode_changed = False
@@ -181,7 +183,7 @@ class DynamicExperimentalController:
       return LEAD_PROB + 0.1  # Increase the threshold on highways
     return LEAD_PROB
 
-  def _update(self, car_state, lead_one, md, controls_state): #, maneuver_distance):
+  def _update(self, car_state, lead_one, md, controls_state): #, maneuver_distance):   
     self._v_ego_kph = car_state.vEgo * 3.6
     self._v_cruise_kph = controls_state.vCruise
     self._has_lead = lead_one.status
@@ -246,7 +248,6 @@ class DynamicExperimentalController:
     # keep prev values
     self._has_standstill_prev = self._has_standstill
     self._has_lead_filtered_prev = self._has_lead_filtered
-    self._frame += 1
 
   def _radarless_mode(self):
     # when mpc fcw crash prob is high
@@ -341,6 +342,9 @@ class DynamicExperimentalController:
     self._set_mode('acc')
 
   def update(self, radar_unavailable, car_state, lead_one, md, controls_state): #, maneuver_distance):
+    if self._frame % 50 == 0:
+      self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
+    
     if self._is_enabled:
       self._update(car_state, lead_one, md, controls_state) #, maneuver_distance)
       if radar_unavailable:
@@ -349,6 +353,7 @@ class DynamicExperimentalController:
         self._radar_mode()
     self._mode_changed = self._mode != self._mode_prev
     self._mode_prev = self._mode
+    self._frame += 1
 
   def get_mpc_mode(self):
     return self._mode
