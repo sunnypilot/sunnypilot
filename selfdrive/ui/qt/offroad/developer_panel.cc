@@ -32,6 +32,7 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   auto enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
+  // TODO-SP: Move to Vehicles panel when ported back
   hyundaiRadarTracksToggle = new ParamControl("HyundaiRadarTracksToggle", tr("Hyundai: Enable Radar Tracks"), "", "");
   addItem(hyundaiRadarTracksToggle);
 

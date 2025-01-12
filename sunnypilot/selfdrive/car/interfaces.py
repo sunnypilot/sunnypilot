@@ -16,6 +16,8 @@ from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 def setup_car_interface_sp(CP: structs.CarParams, params):
   if CP.carName == 'hyundai':
     if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
+      # Having this automatic without a toggle causes a weird process replay diff because
+      # somehow it sees fewer logs than intended
       if params.get_bool("HyundaiRadarTracksToggle"):
         CP.sunnypilotFlags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
         if params.get_bool("HyundaiRadarTracks"):
