@@ -1,5 +1,3 @@
-from openpilot.common.params import Params
-
 from sunnypilot.selfdrive.controls.dec.dynamic_experimental_controller import (
   DynamicExperimentalController,
   TRAJECTORY_SIZE,
@@ -13,6 +11,7 @@ from sunnypilot.selfdrive.controls.dec.dynamic_experimental_controller import (
 
 import pytest
 import numpy as np
+from openpilot.common.params import Params
 
 class MockInterp:
   def __call__(self, x, xp, fp):
