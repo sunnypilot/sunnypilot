@@ -2,8 +2,8 @@ import os
 import capnp
 import numpy as np
 from cereal import log
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_lag_adjusted_curvature, MIN_SPEED
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
+from openpilot.sunnypilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_lag_adjusted_curvature, MIN_SPEED
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
