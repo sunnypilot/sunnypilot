@@ -203,11 +203,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(pair_device);
 
-  QObject::connect(uiState()->prime_state, &PrimeState::changed, [this] (PrimeState::Type type) {
-    pair_device->setVisible(type == PrimeState::PRIME_TYPE_UNPAIRED);
-  });
-
-#ifndef SUNNYPILOT
   // offroad-only buttons
 
   auto dcamBtn = new ButtonControl(tr("Driver Camera"), tr("PREVIEW"),
@@ -219,7 +214,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     dcamBtn->setEnabled(true);
   });
   addItem(dcamBtn);
-#endif
 
   auto resetCalibBtn = new ButtonControl(tr("Reset Calibration"), tr("RESET"), "");
   connect(resetCalibBtn, &ButtonControl::showDescriptionEvent, this, &DevicePanel::updateCalibDescription);
@@ -231,7 +225,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(resetCalibBtn);
 
-#ifndef SUNNYPILOT
   auto retrainingBtn = new ButtonControl(tr("Review Training Guide"), tr("REVIEW"), tr("Review the rules, features, and limitations of openpilot"));
   connect(retrainingBtn, &ButtonControl::clicked, [=]() {
     if (ConfirmationDialog::confirm(tr("Are you sure you want to review the training guide?"), tr("Review"), this)) {
@@ -262,6 +255,9 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(translateBtn);
 
+  QObject::connect(uiState()->prime_state, &PrimeState::changed, [this] (PrimeState::Type type) {
+    pair_device->setVisible(type == PrimeState::PRIME_TYPE_UNPAIRED);
+  });
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
       if (btn != pair_device) {
@@ -295,7 +291,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
   addItem(power_layout);
-#endif
 }
 
 void DevicePanel::updateCalibDescription() {
