@@ -16,7 +16,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_speed_
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
 
-from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec_longitudinal_planner import DecLongitudinalPlanner
+from openpilot.sunnypilot.selfdrive.controls.lib.dec.helpers import DecPlanner
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
@@ -69,11 +69,11 @@ def get_accel_from_plan(speeds, accels, action_t=DT_MDL, vEgoStopping=0.05):
   return a_target, should_stop
 
 
-class LongitudinalPlanner(DecLongitudinalPlanner):
+class LongitudinalPlanner(DecPlanner):
   def __init__(self, CP, init_v=0.0, init_a=0.0, dt=DT_MDL):
     self.CP = CP
     self.mpc = LongitudinalMpc(dt=dt)
-    DecLongitudinalPlanner.__init__(self, self.CP, self.mpc)
+    DecPlanner.__init__(self, self.CP, self.mpc)
     self.fcw = False
     self.dt = dt
     self.allow_throttle = True
@@ -108,7 +108,7 @@ class LongitudinalPlanner(DecLongitudinalPlanner):
     return x, v, a, j, throttle_prob
 
   def update(self, sm):
-    DecLongitudinalPlanner.update(self, sm)
+    DecPlanner.update(self, sm)
     self.mpc.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
     if dec_mpc_mode := self.get_mpc_mode(sm):
       self.mpc.mode = dec_mpc_mode
