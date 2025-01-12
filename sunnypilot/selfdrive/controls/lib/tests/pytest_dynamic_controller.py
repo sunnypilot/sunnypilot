@@ -64,7 +64,8 @@ def test_initial_state(controller):
   assert not controller._has_dangerous_ttc
   assert not controller._has_mpc_fcw
 
-def test_standstill_detection(controller):
+@pytest.mark.parametrize("has_radar", [True, False], ids=["with_radar", "without_radar"])
+def test_standstill_detection(controller, has_radar):
   """Test standstill detection and state transitions"""
   car_state = MockCarState(standstill=True)
   lead_one = MockLeadOne()
@@ -72,21 +73,22 @@ def test_standstill_detection(controller):
   controls_state = MockControlState()
 
   # Test transition to standstill
-  controller.update(False, car_state, lead_one, md, controls_state)
+  controller.update(not has_radar, car_state, lead_one, md, controls_state)
   assert controller._sng_state == SNG_State.stopped
   assert controller.get_mpc_mode() == 'blended'
 
   # Test transition from standstill to moving
   car_state.standstill = False
-  controller.update(False, car_state, lead_one, md, controls_state)
+  controller.update(not has_radar, car_state, lead_one, md, controls_state)
   assert controller._sng_state == SNG_State.going
 
   # Test complete transition to normal driving
   for _ in range(STOP_AND_GO_FRAME + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
   assert controller._sng_state == SNG_State.off
 
-def test_lead_detection(controller):
+@pytest.mark.parametrize("has_radar", [True, False], ids=["with_radar", "without_radar"])
+def test_lead_detection(controller, has_radar):
   """Test lead vehicle detection and filtering"""
   car_state = MockCarState(v_ego=20)  # 72 kph
   lead_one = MockLeadOne(status=True, d_rel=50)  # Safe distance
@@ -95,19 +97,21 @@ def test_lead_detection(controller):
 
   # Let moving average stabilize
   for _ in range(LEAD_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_lead_filtered
-  assert controller.get_mpc_mode() == 'acc'
+  expected_mode = 'acc' if has_radar else 'blended'
+  assert controller.get_mpc_mode() == expected_mode
 
   # Test lead loss detection
   lead_one.status = False
   for _ in range(LEAD_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert not controller._has_lead_filtered
 
-def test_slow_down_detection(controller):
+@pytest.mark.parametrize("has_radar", [True, False], ids=["with_radar", "without_radar"])
+def test_slow_down_detection(controller, has_radar):
   """Test slow down detection based on trajectory"""
   car_state = MockCarState(v_ego=10/3.6)  # 10 kph
   lead_one = MockLeadOne()
@@ -118,7 +122,7 @@ def test_slow_down_detection(controller):
 
   # Test slow down detection
   for _ in range(SLOW_DOWN_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_slow_down
   assert controller.get_mpc_mode() == 'blended'
@@ -127,11 +131,12 @@ def test_slow_down_detection(controller):
   positions = [200] * TRAJECTORY_SIZE  # Position outside slow down threshold
   md = MockModelData(x_vals=x_vals, positions=positions)
   for _ in range(SLOW_DOWN_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert not controller._has_slow_down
 
-def test_dangerous_ttc_detection(controller):
+@pytest.mark.parametrize("has_radar", [True, False], ids=["with_radar", "without_radar"])
+def test_dangerous_ttc_detection(controller, has_radar):
   """Test Time-To-Collision detection and handling"""
   car_state = MockCarState(v_ego=10)  # 36 kph
   lead_one = MockLeadOne(status=True)
@@ -141,7 +146,7 @@ def test_dangerous_ttc_detection(controller):
   # First establish normal conditions with lead
   lead_one.dRel = 100  # Safe distance
   for _ in range(LEAD_WINDOW_SIZE + 1):  # First establish lead detection
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_lead_filtered  # Verify lead is detected
 
@@ -151,15 +156,17 @@ def test_dangerous_ttc_detection(controller):
 
   # Need to update multiple times to allow the weighted average to stabilize
   for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_dangerous_ttc, f"TTC of 1s should be considered dangerous"
-  assert controller.get_mpc_mode() == 'blended', "Should be in blended mode with dangerous TTC"
+  expected_mode = 'acc' if has_radar else 'blended'
+  assert controller.get_mpc_mode() == expected_mode, f"Should be in [{expected_mode}] mode with dangerous TTC"
 
-def test_mode_transitions(controller):
+@pytest.mark.parametrize("has_radar", [True, False], ids=["with_radar", "without_radar"])
+def test_mode_transitions(controller, has_radar):
   """Test comprehensive mode transitions under different conditions"""
   # Initialize with normal driving conditions
-  car_state = MockCarState(v_ego=25)  # 90 kph
+  car_state = MockCarState(v_ego=25)# 90 kph
   lead_one = MockLeadOne(status=False)
   md = MockModelData(x_vals=[0] * TRAJECTORY_SIZE, positions=[200] * TRAJECTORY_SIZE)
   controls_state = MockControlState(v_cruise=100)
@@ -168,7 +175,7 @@ def test_mode_transitions(controller):
     """Helper to let all moving averages stabilize"""
     for _ in range(max(LEAD_WINDOW_SIZE, SLOW_DOWN_WINDOW_SIZE,
                        DANGEROUS_TTC_WINDOW_SIZE, MPC_FCW_WINDOW_SIZE) + 1):
-      controller.update(False, car_state, lead_one, md, controls_state)
+      controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   # Test 1: Normal driving -> ACC mode
   stabilize_filters()
@@ -176,14 +183,15 @@ def test_mode_transitions(controller):
 
   # Test 2: Standstill -> Blended mode
   car_state.standstill = True
-  controller.update(False, car_state, lead_one, md, controls_state)
+  controller.update(not has_radar, car_state, lead_one, md, controls_state)
   assert controller.get_mpc_mode() == 'blended', "Should be in blended mode during standstill"
 
   # Test 3: Lead car appears -> ACC mode
-  car_state = MockCarState(v_ego=25)  # Reset car state
+  car_state = MockCarState(v_ego=20)  # Reset car state
   lead_one.status = True
-  lead_one.dRel = 50
+  lead_one.dRel = 50 # Safe distance
   stabilize_filters()
+  assert controller._has_dangerous_ttc == False, "Should not have dangerous TTC"
   assert controller.get_mpc_mode() == 'acc', "Should be in ACC mode with safe lead distance"
 
   # Test 4: Dangerous TTC -> Blended mode
@@ -193,7 +201,7 @@ def test_mode_transitions(controller):
 
   # First establish lead detection
   for _ in range(LEAD_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_lead_filtered  # Verify lead is detected
 
@@ -201,12 +209,14 @@ def test_mode_transitions(controller):
   lead_one.dRel = 20  # This creates a TTC of 1s, well below DANGEROUS_TTC
 
   for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_dangerous_ttc, "Should detect dangerous TTC condition"
-  assert controller.get_mpc_mode() == 'blended', "Should be in blended mode with dangerous TTC"
+  expected_mode = 'acc' if has_radar else 'blended'
+  assert controller.get_mpc_mode() == expected_mode, f"Should be in [{expected_mode}] mode with dangerous TTC"
 
-def test_mpc_fcw_handling(controller):
+@pytest.mark.parametrize("has_radar", [True, False], ids=["with_radar", "without_radar"])
+def test_mpc_fcw_handling(controller, has_radar):
   """Test MPC FCW crash count handling and mode transitions"""
   car_state = MockCarState(v_ego=20)
   lead_one = MockLeadOne()
@@ -216,7 +226,7 @@ def test_mpc_fcw_handling(controller):
   # Test FCW activation
   controller.set_mpc_fcw_crash_cnt(5)
   for _ in range(MPC_FCW_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_mpc_fcw
   assert controller.get_mpc_mode() == 'blended'
@@ -224,7 +234,7 @@ def test_mpc_fcw_handling(controller):
   # Test FCW recovery
   controller.set_mpc_fcw_crash_cnt(0)
   for _ in range(MPC_FCW_WINDOW_SIZE + 1):
-    controller.update(False, car_state, lead_one, md, controls_state)
+    controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert not controller._has_mpc_fcw
 
