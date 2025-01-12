@@ -24,6 +24,7 @@ def setup_car_interface_sp(CP: structs.CarParams, params):
 def initialize_car_interface_sp(CP: structs.CarParams, params, can_recv: CanRecvCallable, can_send: CanSendCallable):
   if CP.carName == 'hyundai':
     if CP.sunnypilotFlags & HyundaiFlagsSP.ENABLE_RADAR_TRACKS:
+      can_recv()
       _, fingerprint = can_fingerprint(can_recv)
       radar_unavailable = RADAR_START_ADDR not in fingerprint[1] or Bus.radar not in HYUNDAI_DBC[CP.carFingerprint]
 
