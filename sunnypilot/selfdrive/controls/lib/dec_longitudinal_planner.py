@@ -1,5 +1,6 @@
 from cereal import messaging, custom
 from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
+
 MpcSource = custom.LongitudinalPlanSP.MpcSource
 
 
@@ -29,9 +30,7 @@ class DecLongitudinalPlanner:
 
     # DEC
     longitudinalPlanSP.mpcSource = MpcSource.blended if self.mpc.mode == 'blended' else MpcSource.acc
-    print(f"mpcSource: {longitudinalPlanSP.mpcSource}")
 
     longitudinalPlanSP.dynamicExperimentalControl = self.dynamic_experimental_controller.is_enabled()
-    print(f"dynamicExperimentalControl: {longitudinalPlanSP.dynamicExperimentalControl}")
 
     pm.send('longitudinalPlanSP', plan_sp_send)
