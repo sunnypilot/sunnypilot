@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">Neustart</translation>
+        <translation type="obsolete">Neustart</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">Ausschalten</translation>
+        <translation type="obsolete">Ausschalten</translation>
     </message>
 </context>
 <context>

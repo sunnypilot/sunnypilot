@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">重启</translation>
+        <translation type="obsolete">重启</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">关机</translation>
+        <translation type="obsolete">关机</translation>
     </message>
 </context>
 <context>

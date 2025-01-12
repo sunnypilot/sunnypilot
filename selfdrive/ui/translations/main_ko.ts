@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">재부팅</translation>
+        <translation type="obsolete">재부팅</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">전원 끄기</translation>
+        <translation type="obsolete">전원 끄기</translation>
     </message>
 </context>
 <context>

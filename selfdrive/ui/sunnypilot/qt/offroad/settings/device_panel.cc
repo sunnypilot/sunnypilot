@@ -64,25 +64,4 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   });
 
   addItem(device_grid_layout);
-
-  // offroad mode and power buttons
-
-  QHBoxLayout *power_layout = new QHBoxLayout();
-  power_layout->setSpacing(5);
-
-  QPushButton *rebootBtn = new PushButtonSP(tr("Reboot"), 720, this);
-  rebootBtn->setStyleSheet(rebootButtonStyle);
-  power_layout->addWidget(rebootBtn);
-  QObject::connect(rebootBtn, &PushButtonSP::clicked, this, &DevicePanelSP::reboot);
-
-  QPushButton *poweroffBtn = new PushButtonSP(tr("Power Off"), 720, this);
-  poweroffBtn->setStyleSheet(powerOffButtonStyle);
-  power_layout->addWidget(poweroffBtn);
-  QObject::connect(poweroffBtn, &PushButtonSP::clicked, this, &DevicePanelSP::poweroff);
-
-  if (!Hardware::PC()) {
-    connect(uiState(), &UIState::offroadTransition, poweroffBtn, &PushButtonSP::setVisible);
-  }
-
-  addItem(power_layout);
 }

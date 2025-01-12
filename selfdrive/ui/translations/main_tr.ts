@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">Yeniden başlat</translation>
+        <translation type="obsolete">Yeniden başlat</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">Sistemi kapat</translation>
+        <translation type="obsolete">Sistemi kapat</translation>
     </message>
 </context>
 <context>

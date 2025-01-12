@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">รีบูต</translation>
+        <translation type="obsolete">รีบูต</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">ปิดเครื่อง</translation>
+        <translation type="obsolete">ปิดเครื่อง</translation>
     </message>
 </context>
 <context>

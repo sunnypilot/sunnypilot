@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">再起動</translation>
+        <translation type="obsolete">再起動</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">電源を切る</translation>
+        <translation type="obsolete">電源を切る</translation>
     </message>
 </context>
 <context>

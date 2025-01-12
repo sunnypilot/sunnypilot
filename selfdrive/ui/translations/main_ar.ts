@@ -291,7 +291,7 @@
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">إعادة التشغيل</translation>
+        <translation type="obsolete">إعادة التشغيل</translation>
     </message>
     <message>
         <source>Regulatory</source>
@@ -311,7 +311,7 @@
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">إيقاف التشغيل</translation>
+        <translation type="obsolete">إيقاف التشغيل</translation>
     </message>
 </context>
 <context>
