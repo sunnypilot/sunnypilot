@@ -343,21 +343,6 @@ class DynamicExperimentalController:
 
     self._set_mode('acc')
 
-  def update(self, radar_unavailable, sm):
-    car_state = sm['carState']
-    lead_one = sm['radarState'].leadOne
-    md = sm['modelV2']
-    controls_state = sm['controlsState']
-
-    if self._is_enabled:
-      self._update(car_state, lead_one, md, controls_state)
-      if radar_unavailable:
-        self._radarless_mode()
-      else:
-        self._radar_mode()
-    self._mode_changed = self._mode != self._mode_prev
-    self._mode_prev = self._mode
-
   def get_mpc_mode(self):
     return self._mode
 
@@ -381,3 +366,18 @@ class DynamicExperimentalController:
 
     if self._set_mode_timeout > 0:
       self._set_mode_timeout -= 1
+
+  def update(self, radar_unavailable, sm):
+    car_state = sm['carState']
+    lead_one = sm['radarState'].leadOne
+    md = sm['modelV2']
+    controls_state = sm['controlsState']
+
+    if self._is_enabled:
+      self._update(car_state, lead_one, md, controls_state)
+      if radar_unavailable:
+        self._radarless_mode()
+      else:
+        self._radar_mode()
+    self._mode_changed = self._mode != self._mode_prev
+    self._mode_prev = self._mode
