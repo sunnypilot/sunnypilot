@@ -109,7 +109,7 @@ class DynamicExperimentalController:
     self._mode = 'acc'
     self._mode_prev = 'acc'
     self._mode_changed = False
-    self._frame = 0
+    # self._frame = 0
 
     # Use weighted moving average for filtering leads
     self._lead_gmac = WeightedMovingAverageCalculator(window_size=LEAD_WINDOW_SIZE)
@@ -341,9 +341,15 @@ class DynamicExperimentalController:
 
     self._set_mode('acc')
 
-  def update(self, radar_unavailable, car_state, lead_one, md, controls_state): #, maneuver_distance):
-    if self._frame % 50 == 0:
-      self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
+  def update(self, radar_unavailable, sm): #, maneuver_distance):
+    # if self._frame % 50 == 0:
+    #   self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
+
+    car_state =  sm['carState']
+    lead_one = sm['radarState'].leadOne
+    md  = sm['modelV2']
+    controls_state = sm['controlsState']
+
 
     if self._is_enabled:
       self._update(car_state, lead_one, md, controls_state) #, maneuver_distance)
@@ -353,7 +359,7 @@ class DynamicExperimentalController:
         self._radar_mode()
     self._mode_changed = self._mode != self._mode_prev
     self._mode_prev = self._mode
-    self._frame += 1
+    # self._frame += 1
 
   def get_mpc_mode(self):
     return self._mode

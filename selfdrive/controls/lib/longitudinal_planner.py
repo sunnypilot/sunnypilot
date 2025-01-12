@@ -15,8 +15,8 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDX
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_speed_error
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
-from sunnypilot.selfdrive.controls.dec.dynamic_experimental_controller import DynamicExperimentalController
-from sunnypilot.selfdrive.controls.dec.helpers import get_mpc_mode, publish_longitudinal_plan_sp
+
+from sunnypilot.selfdrive.controls.dec.dec_longitudinal_planner import DecLongitudinalPlanner
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
@@ -69,10 +69,11 @@ def get_accel_from_plan(speeds, accels, action_t=DT_MDL, vEgoStopping=0.05):
   return a_target, should_stop
 
 
-class LongitudinalPlanner:
+class LongitudinalPlanner(DecLongitudinalPlanner):
   def __init__(self, CP, init_v=0.0, init_a=0.0, dt=DT_MDL):
     self.CP = CP
     self.mpc = LongitudinalMpc(dt=dt)
+    DecLongitudinalPlanner.__init__(self, self.CP, self.mpc)
     self.fcw = False
     self.dt = dt
     self.allow_throttle = True
@@ -85,7 +86,6 @@ class LongitudinalPlanner:
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
-    self.dynamic_experimental_controller = DynamicExperimentalController()
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -108,7 +108,10 @@ class LongitudinalPlanner:
     return x, v, a, j, throttle_prob
 
   def update(self, sm):
-    self.mpc.mode = get_mpc_mode(sm, self.dynamic_experimental_controller, self.mpc, self.CP)
+    DecLongitudinalPlanner.update(self, sm)
+    self.mpc.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
+    if dec_mpc_mode := self.get_mpc_mode(sm):
+      self.mpc.mode = dec_mpc_mode
 
     if len(sm['carControl'].orientationNED) == 3:
       accel_coast = get_coast_accel(sm['carControl'].orientationNED[1])
@@ -209,4 +212,4 @@ class LongitudinalPlanner:
     longitudinalPlan.allowThrottle = self.allow_throttle
 
     pm.send('longitudinalPlan', plan_send)
-    publish_longitudinal_plan_sp(sm, pm, self.mpc, self.dynamic_experimental_controller)
+    self.publish_longitudinal_plan_sp(sm, pm)
