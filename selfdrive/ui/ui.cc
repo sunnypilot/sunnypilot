@@ -69,13 +69,25 @@ void ui_update_params(UIState *s) {
 }
 
 void UIState::updateStatus() {
-  if (scene.started && sm->updated("selfdriveState")) {
+  if (scene.started && (sm->updated("selfdriveState") || sm->updated("selfdriveStateSP"))) {
     auto ss = (*sm)["selfdriveState"].getSelfdriveState();
+    auto mads = (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads();
     auto state = ss.getState();
-    if (state == cereal::SelfdriveState::OpenpilotState::PRE_ENABLED || state == cereal::SelfdriveState::OpenpilotState::OVERRIDING) {
+    auto state_mads = mads.getState();
+    if (state == cereal::SelfdriveState::OpenpilotState::PRE_ENABLED || state == cereal::SelfdriveState::OpenpilotState::OVERRIDING ||
+        state_mads == cereal::SelfdriveStateSP::ModularAssistiveDrivingSystem::ModularAssistiveDrivingSystemState::PAUSED ||
+        state_mads == cereal::SelfdriveStateSP::ModularAssistiveDrivingSystem::ModularAssistiveDrivingSystemState::OVERRIDING) {
       status = STATUS_OVERRIDE;
     } else {
-      status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
+      if (mads.getAvailable()) {
+        if (mads.getEnabled()) {
+          status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_LAT_ONLY;
+        } else {
+          status = STATUS_DISENGAGED;
+        }
+      } else {
+        status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
+      }
     }
   }
 
@@ -99,15 +111,16 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   prime_state = new PrimeState(this);
   language = QString::fromStdString(Params().get("LanguageSetting"));
 
-  RETURN_IF_SUNNYPILOT
+#ifndef SUNNYPILOT
   // update timer
   timer = new QTimer(this);
   QObject::connect(timer, &QTimer::timeout, this, &UIState::update);
   timer->start(1000 / UI_FREQ);
+#endif
 }
 
 void UIState::update() {
-  RETURN_IF_SUNNYPILOT
+#ifndef SUNNYPILOT
   update_sockets(this);
   update_state(this);
   updateStatus();
@@ -116,6 +129,7 @@ void UIState::update() {
     watchdog_kick(nanos_since_boot());
   }
   emit uiUpdate(*this);
+#endif
 }
 
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {

@@ -14,14 +14,15 @@ if arch == "Darwin":
 
 sp_widgets_src = []
 sp_qt_src = []
+sp_qt_util = []
 if not GetOption('stock_ui'):
   SConscript(['sunnypilot/SConscript'])
-  Import('sp_widgets_src', 'sp_qt_src')
+  Import('sp_widgets_src', 'sp_qt_src', 'sp_qt_util')
 
 # FIXME: remove this once we're on 5.15 (24.04)
 qt_env['CXXFLAGS'] += ["-Wno-deprecated-declarations"]
 
-qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"], LIBS=base_libs)
+qt_util = qt_env.Library("qt_util", ["#selfdrive/ui/qt/api.cc", "#selfdrive/ui/qt/util.cc"] + sp_qt_util, LIBS=base_libs)
 widgets_src = ["qt/widgets/input.cc", "qt/widgets/wifi.cc", "qt/prime_state.cc",
                "qt/widgets/ssh_keys.cc", "qt/widgets/toggle.cc", "qt/widgets/controls.cc",
                "qt/widgets/offroad_alerts.cc", "qt/widgets/prime.cc", "qt/widgets/keyboard.cc",
@@ -33,7 +34,7 @@ Export('widgets')
 qt_libs = [widgets, qt_util] + base_libs
 
 qt_src = ["main.cc", "ui.cc", "qt/sidebar.cc", "qt/body.cc",
-          "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc",
+          "qt/window.cc", "qt/home.cc", "qt/offroad/settings.cc", "qt/offroad/offroad_home.cc",
           "qt/offroad/software_settings.cc", "qt/offroad/developer_panel.cc", "qt/offroad/onboarding.cc",
           "qt/offroad/driverview.cc", "qt/offroad/experimental_mode.cc",
           "qt/onroad/onroad_home.cc", "qt/onroad/annotated_camera.cc", "qt/onroad/model.cc",

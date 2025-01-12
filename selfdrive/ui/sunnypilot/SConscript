@@ -1,7 +1,13 @@
 widgets_src = [
   "sunnypilot/qt/widgets/toggle.cc",
   "sunnypilot/qt/widgets/controls.cc",
+  "sunnypilot/qt/widgets/drive_stats.cc",
+  "sunnypilot/qt/widgets/prime.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
+]
+
+qt_util = [
+  "sunnypilot/qt/util.cc",
 ]
 
 qt_src = [
@@ -9,13 +15,24 @@ qt_src = [
   "sunnypilot/qt/sidebar.cc",
   "sunnypilot/qt/window.cc",
   "sunnypilot/qt/home.cc",
+  "sunnypilot/qt/offroad/offroad_home.cc",
   "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/offroad/settings/software_panel.cc",
+  "sunnypilot/qt/offroad/settings/sunnylink_panel.cc",
   "sunnypilot/qt/offroad/settings/sunnypilot_panel.cc",
+  "sunnypilot/qt/offroad/settings/trips_panel.cc",
+  "sunnypilot/qt/onroad/annotated_camera.cc",
+  "sunnypilot/qt/onroad/hud.cc",
+  "sunnypilot/qt/onroad/model.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
 ]
 
-sp_widgets_src = widgets_src
-sp_qt_src = qt_src
+sunnypilot_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/sunnypilot/mads_settings.cc",
+]
 
-Export('sp_widgets_src', 'sp_qt_src')
+sp_widgets_src = widgets_src
+sp_qt_src = qt_src + sunnypilot_panel_qt_src
+sp_qt_util = qt_util
+
+Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")

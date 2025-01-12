@@ -40,6 +40,13 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
+  ]
+
+  sunnypilot_default_params: list[tuple[str, str | bytes]] = [
+    ("Mads", "1"),
+    ("MadsMainCruiseAllowed", "1"),
+    ("MadsPauseLateralOnBrake", "0"),
+    ("MadsUnifiedEngagementMode", "1"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("DynamicExperimentalControl", "0"),
@@ -49,7 +56,7 @@ def manager_init() -> None:
     params.put_bool("RecordFront", True)
 
   # set unset params
-  for k, v in default_params:
+  for k, v in (default_params + sunnypilot_default_params):
     if params.get(k) is None:
       params.put(k, v)
 
@@ -61,7 +68,8 @@ def manager_init() -> None:
   except PermissionError:
     print(f"WARNING: failed to make {Paths.shm_path()}")
 
-  # set version params
+  # set params
+  serial = HARDWARE.get_serial()
   params.put("Version", build_metadata.openpilot.version)
   params.put("TermsVersion", terms_version)
   params.put("TrainingVersion", training_version)
@@ -71,13 +79,13 @@ def manager_init() -> None:
   params.put("GitRemote", build_metadata.openpilot.git_origin)
   params.put_bool("IsTestedBranch", build_metadata.tested_channel)
   params.put_bool("IsReleaseBranch", build_metadata.release_channel)
+  params.put("HardwareSerial", serial)
 
   # set dongle id
   reg_res = register(show_spinner=True)
   if reg_res:
     dongle_id = reg_res
   else:
-    serial = params.get("HardwareSerial")
     raise Exception(f"Registration failed for device {serial}")
   os.environ['DONGLE_ID'] = dongle_id  # Needed for swaglog
   os.environ['GIT_ORIGIN'] = build_metadata.openpilot.git_normalized_origin # Needed for swaglog

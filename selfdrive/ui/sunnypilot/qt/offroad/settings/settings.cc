@@ -12,7 +12,9 @@
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/software_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/trips_panel.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindow *parent) : TogglesPanel(parent) {
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &TogglesPanelSP::updateState);
@@ -69,9 +71,11 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
   QList<PanelInfo> panels = {
     PanelInfo("   " + tr("Device"), device, "../../sunnypilot/selfdrive/assets/offroad/icon_home.svg"),
     PanelInfo("   " + tr("Network"), networking, "../assets/offroad/icon_network.png"),
+    PanelInfo("   " + tr("sunnylink"), new SunnylinkPanel(this), "../assets/offroad/icon_wifi_strength_full.svg"),
     PanelInfo("   " + tr("Toggles"), toggles, "../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
     PanelInfo("   " + tr("Software"), new SoftwarePanelSP(this), "../../sunnypilot/selfdrive/assets/offroad/icon_software.png"),
     PanelInfo("   " + tr("sunnypilot"), new SunnypilotPanel(this), "../assets/images/button_home.png"),
+    PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
     PanelInfo("   " + tr("Developer"), new DeveloperPanel(this), "../assets/offroad/icon_shell.png"),
   };
 

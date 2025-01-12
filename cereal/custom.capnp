@@ -8,13 +8,28 @@ $Cxx.namespace("cereal");
 # cereal, so use these if you want custom events in your fork.
 
 # you can rename the struct, but don't change the identifier
-
 enum MpcSource {
   acc @0;
   blended @1;
 }
 
-struct CustomReserved0 @0x81c2f05a394cf4af {
+struct SelfdriveStateSP @0x81c2f05a394cf4af {
+  mads @0 :ModularAssistiveDrivingSystem;
+
+  struct ModularAssistiveDrivingSystem {
+    state @0 :ModularAssistiveDrivingSystemState;
+    enabled @1 :Bool;
+    active @2 :Bool;
+    available @3 :Bool;
+
+    enum ModularAssistiveDrivingSystemState {
+      disabled @0;
+      paused @1;
+      enabled @2;
+      softDisabling @3;
+      overriding @4;
+    }
+  }
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
@@ -53,6 +68,11 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     status @0 :DownloadStatus;
     progress @1 :Float32;
     eta @2 :UInt32;
+  }
+
+  enum Runner {
+    snpe @0;
+    tinygrad @1;
   }
 
   struct ModelBundle {
