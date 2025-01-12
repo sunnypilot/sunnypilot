@@ -12,7 +12,6 @@
 #include "selfdrive/ui/qt/qt_window.h"
 
 DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
-#ifndef SUNNYPILOT
   QGridLayout *device_grid_layout = new QGridLayout();
   device_grid_layout->setSpacing(30);
   device_grid_layout->setHorizontalSpacing(5);
@@ -86,5 +85,4 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   }
 
   addItem(power_layout);
-#endif
 }
