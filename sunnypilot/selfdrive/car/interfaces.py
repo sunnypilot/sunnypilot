@@ -33,5 +33,5 @@ def initialize_car_interface_sp(CP: structs.CarParams, params, can_recv: CanRecv
       params.put_bool_nonblocking("HyundaiRadarTracksConfirmed", radar_tracks)
 
       if not radar_tracks_persistent:
-        params.put_nonblocking("HyundaiRadarTracks", not radar_unavailable)
-        params.put_nonblocking("HyundaiRadarTracksPersistent", True)
+        params.put_bool_nonblocking("HyundaiRadarTracks", not radar_unavailable)
+        params.put_bool_nonblocking("HyundaiRadarTracksPersistent", True)
