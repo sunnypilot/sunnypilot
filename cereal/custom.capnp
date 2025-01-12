@@ -8,7 +8,6 @@ $Cxx.namespace("cereal");
 # cereal, so use these if you want custom events in your fork.
 
 # you can rename the struct, but don't change the identifier
-
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
 
