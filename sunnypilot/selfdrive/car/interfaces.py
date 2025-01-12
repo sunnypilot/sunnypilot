@@ -6,17 +6,25 @@ from opendbc.car.hyundai.values import HyundaiFlags, DBC as HYUNDAI_DBC
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
 
-def setup_car_interface_sp(CP: structs.CarParams):
+def setup_car_interface_sp(CP: structs.CarParams, params):
   if CP.carName == 'hyundai':
     if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
       CP.sunnypilotFlags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
-      CP.radarUnavailable = False
+      if params.get_bool("HyundaiRadarPoints"):
+        CP.radarUnavailable = False
 
 
 def initialize_car_interface_sp(CP: structs.CarParams, params, can_recv: CanRecvCallable, can_send: CanSendCallable):
   if CP.carName == 'hyundai':
     if CP.sunnypilotFlags & HyundaiFlagsSP.ENABLE_RADAR_TRACKS:
-      if not params.get_bool("HyundaiRadarPoints"):
-        _, fingerprint = can_fingerprint(can_recv)
-        radar_unavailable = RADAR_START_ADDR not in fingerprint[1] or Bus.radar not in HYUNDAI_DBC[CP.carFingerprint]
-        params.put_nonblocking("HyundaiRadarPoints", radar_unavailable)
+      _, fingerprint = can_fingerprint(can_recv)
+      radar_unavailable = RADAR_START_ADDR not in fingerprint[1] or Bus.radar not in HYUNDAI_DBC[CP.carFingerprint]
+
+      radar_points = params.get_bool("HyundaiRadarPoints")
+      radar_points_persistent = params.get_bool("HyundaiRadarPointsPersistent")
+
+      params.put_bool_nonblocking("HyundaiRadarPointsConfirmed", radar_points)
+
+      if not radar_points_persistent:
+        params.put_nonblocking("HyundaiRadarPoints", not radar_unavailable)
+        params.put_nonblocking("HyundaiRadarPointsPersistent", True)

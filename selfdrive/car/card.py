@@ -120,7 +120,7 @@ class Car:
     MadsParams().set_alternative_experience(self.CP)
     MadsParams().set_car_specific_params(self.CP)
 
-    setup_car_interface_sp(self.CP)
+    setup_car_interface_sp(self.CP, self.params)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 

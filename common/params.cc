@@ -226,6 +226,8 @@ std::unordered_map<std::string, uint32_t> keys = {
 
     // sunnypilot car specific params
     {"HyundaiRadarPoints", PERSISTENT},
+    {"HyundaiRadarPointsConfirmed", PERSISTENT},
+    {"HyundaiRadarPointsPersistent", PERSISTENT},
 };
 
 } // namespace
