@@ -9,11 +9,6 @@ $Cxx.namespace("cereal");
 
 # you can rename the struct, but don't change the identifier
 
-enum MpcSource {
-  acc @0;
-  blended @1;
-}
-
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
 
@@ -93,6 +88,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   e2eStatus @1 :Bool;
   mpcSource @2 :MpcSource;
   dynamicExperimentalControl @3 :Bool;
+  
+  enum MpcSource {
+    acc @0;
+    blended @1;
+  }
 }
 
 struct CustomReserved3 @0xda96579883444c35 {

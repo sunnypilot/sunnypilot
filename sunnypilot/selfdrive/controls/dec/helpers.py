@@ -1,5 +1,5 @@
 from cereal import custom, messaging
-MpcSource = custom.MpcSource
+MpcSource = custom.LongitudinalPlanSP.MpcSource
 
 def get_mpc_mode(sm, dynamic_experimental_controller, mpc, CP):
   """
