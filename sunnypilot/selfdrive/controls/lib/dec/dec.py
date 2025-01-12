@@ -25,6 +25,7 @@
 import numpy as np
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
+from openpilot.common.realtime import DT_MDL
 
 # d-e2e, from modeldata.h
 TRAJECTORY_SIZE = 33
@@ -367,10 +368,16 @@ class DynamicExperimentalController:
     if self._set_mode_timeout > 0:
       self._set_mode_timeout -= 1
 
+  def _read_params(self, sm):
+    if sm.frame % int(1. / DT_MDL) == 0:
+      self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
+
   def update(self, radar_unavailable, sm):
     car_state = sm['carState']
     lead_one = sm['radarState'].leadOne
     md = sm['modelV2']
+
+    self._read_params(sm)
 
     if self._is_enabled:
       self._update(car_state, lead_one, md)
