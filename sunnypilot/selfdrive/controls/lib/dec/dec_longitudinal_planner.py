@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from cereal import messaging, custom
-from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
+from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 
 MpcSource = custom.LongitudinalPlanSP.MpcSource
 
