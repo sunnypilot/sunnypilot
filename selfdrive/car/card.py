@@ -23,6 +23,7 @@ from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
 
 from openpilot.sunnypilot.mads.mads import MadsParams
+from openpilot.sunnypilot.selfdrive.car.interfaces import setup_car_interface_sp, initialize_car_interface_sp
 
 REPLAY = "REPLAY" in os.environ
 
@@ -118,6 +119,8 @@ class Car:
     # mads
     MadsParams().set_alternative_experience(self.CP)
     MadsParams().set_car_specific_params(self.CP)
+
+    setup_car_interface_sp(self.CP)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
@@ -230,6 +233,7 @@ class Car:
       # Initialize CarInterface, once controls are ready
       # TODO: this can make us miss at least a few cycles when doing an ECU knockout
       self.CI.init(self.CP, *self.can_callbacks)
+      initialize_car_interface_sp(self.CP, self.params, *self.can_callbacks)
       # signal pandad to switch to car safety mode
       self.params.put_bool_nonblocking("ControlsReady", True)
 
