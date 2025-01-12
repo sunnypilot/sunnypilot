@@ -17,7 +17,7 @@ def setup_car_interface_sp(CP: structs.CarParams, params):
   if CP.carName == 'hyundai':
     if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
       CP.sunnypilotFlags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
-      if params.get_bool("HyundaiRadarPoints"):
+      if params.get_bool("HyundaiRadarTracks"):
         CP.radarUnavailable = False
 
 
@@ -27,11 +27,11 @@ def initialize_car_interface_sp(CP: structs.CarParams, params, can_recv: CanRecv
       _, fingerprint = can_fingerprint(can_recv)
       radar_unavailable = RADAR_START_ADDR not in fingerprint[1] or Bus.radar not in HYUNDAI_DBC[CP.carFingerprint]
 
-      radar_points = params.get_bool("HyundaiRadarPoints")
-      radar_points_persistent = params.get_bool("HyundaiRadarPointsPersistent")
+      radar_tracks = params.get_bool("HyundaiRadarTracks")
+      radar_tracks_persistent = params.get_bool("HyundaiRadarTracksPersistent")
 
-      params.put_bool_nonblocking("HyundaiRadarPointsConfirmed", radar_points)
+      params.put_bool_nonblocking("HyundaiRadarTracksConfirmed", radar_tracks)
 
-      if not radar_points_persistent:
-        params.put_nonblocking("HyundaiRadarPoints", not radar_unavailable)
-        params.put_nonblocking("HyundaiRadarPointsPersistent", True)
+      if not radar_tracks_persistent:
+        params.put_nonblocking("HyundaiRadarTracks", not radar_unavailable)
+        params.put_nonblocking("HyundaiRadarTracksPersistent", True)
