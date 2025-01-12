@@ -11,7 +11,6 @@ from sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import (
 
 import pytest
 import numpy as np
-from unittest.mock import MagicMock, patch
 
 class MockInterp:
   def __call__(self, x, xp, fp):
@@ -31,21 +30,18 @@ class MockLeadOne:
 
 class MockModelData:
   def __init__(self, x_vals=None, positions=None):
-    self.orientation = MagicMock()
-    self.position = MagicMock()
-    if x_vals is not None:
-      self.orientation.x = x_vals
-    if positions is not None:
-      self.position.x = positions
+    self.orientation = type('Orientation', (), {'x': x_vals})()
+    self.position = type('Position', (), {'x': positions})()
 
 class MockControlState:
   def __init__(self, v_cruise=0):
     self.vCruise = v_cruise
 
 @pytest.fixture
-def interp():
-  with patch('openpilot.common.numpy_fast.interp', new_callable=MockInterp) as mock:
-    yield mock
+def interp(monkeypatch):
+  mock_interp = MockInterp()
+  monkeypatch.setattr('openpilot.common.numpy_fast.interp', mock_interp)
+  return mock_interp
 
 @pytest.fixture
 def controller(interp):
@@ -158,7 +154,7 @@ def test_dangerous_ttc_detection(controller, has_radar):
   for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
-  assert controller._has_dangerous_ttc, f"TTC of 1s should be considered dangerous"
+  assert controller._has_dangerous_ttc, "TTC of 1s should be considered dangerous"
   expected_mode = 'acc' if has_radar else 'blended'
   assert controller.get_mpc_mode() == expected_mode, f"Should be in [{expected_mode}] mode with dangerous TTC"
 
@@ -166,7 +162,7 @@ def test_dangerous_ttc_detection(controller, has_radar):
 def test_mode_transitions(controller, has_radar):
   """Test comprehensive mode transitions under different conditions"""
   # Initialize with normal driving conditions
-  car_state = MockCarState(v_ego=25)# 90 kph
+  car_state = MockCarState(v_ego=25)  # 90 kph
   lead_one = MockLeadOne(status=False)
   md = MockModelData(x_vals=[0] * TRAJECTORY_SIZE, positions=[200] * TRAJECTORY_SIZE)
   controls_state = MockControlState(v_cruise=100)
@@ -189,9 +185,9 @@ def test_mode_transitions(controller, has_radar):
   # Test 3: Lead car appears -> ACC mode
   car_state = MockCarState(v_ego=20)  # Reset car state
   lead_one.status = True
-  lead_one.dRel = 50 # Safe distance
+  lead_one.dRel = 50  # Safe distance
   stabilize_filters()
-  assert controller._has_dangerous_ttc == False, "Should not have dangerous TTC"
+  assert not controller._has_dangerous_ttc, "Should not have dangerous TTC"
   assert controller.get_mpc_mode() == 'acc', "Should be in ACC mode with safe lead distance"
 
   # Test 4: Dangerous TTC -> Blended mode
