@@ -12,7 +12,8 @@ from opendbc.car.car_helpers import get_demo_car_params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.common.realtime import config_realtime_process
+from openpilot.common.realtime import DT_MDL, config_realtime_process
+from openpilot.common.numpy_fast import interp
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
@@ -22,9 +23,6 @@ from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
-from openpilot.common.realtime import DT_MDL
-from openpilot.common.numpy_fast import interp
-
 from openpilot.sunnypilot.modeld.runners.run_helpers import get_model_path, load_metadata, prepare_inputs, load_meta_constants
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
