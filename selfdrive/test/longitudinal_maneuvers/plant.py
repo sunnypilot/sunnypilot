@@ -45,6 +45,7 @@ class Plant:
 
     self.rk = Ratekeeper(self.rate, print_delay_threshold=100.0)
     self.ts = 1. / self.rate
+    self.frame = 0
     time.sleep(0.1)
     self.sm = messaging.SubMaster(['longitudinalPlan'])
 
@@ -133,7 +134,7 @@ class Plant:
           'selfdriveState': ss.selfdriveState,
           'liveParameters': lp.liveParameters,
           'modelV2': model.modelV2}
-    self.planner.update(sm)
+    self.planner.update(sm, self.frame)
     self.speed = self.planner.v_desired_filter.x
     self.acceleration = self.planner.a_desired
     self.speeds = self.planner.v_desired_trajectory.tolist()
@@ -160,6 +161,7 @@ class Plant:
     #   print("%2.2f sec   %6.2f m  %6.2f m/s  %6.2f m/s2   lead_rel: %6.2f m  %6.2f m/s"
     #         % (self.current_time, self.distance, self.speed, self.acceleration, d_rel, v_rel))
 
+    self.frame += 1
 
     # ******** update prevs ********
     self.rk.monitor_time()
