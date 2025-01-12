@@ -14,7 +14,7 @@ class DecLongitudinalPlanner:
     self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
     self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm)
 
-  def get_mpc_mode(self, sm) -> str | None:
+  def get_mpc_mode(self, sm):
     if not self.is_enabled or not sm['selfdriveState'].experimentalMode:
       return None
 
