@@ -1,4 +1,4 @@
-from sunnypilot.selfdrive.controls.dec.dynamic_experimental_controller import (
+from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import (
   DynamicExperimentalController,
   TRAJECTORY_SIZE,
   LEAD_WINDOW_SIZE,

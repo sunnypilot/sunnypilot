@@ -1,5 +1,5 @@
 from cereal import messaging, custom
-from sunnypilot.selfdrive.controls.dec.dynamic_experimental_controller import DynamicExperimentalController
+from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_experimental_controller import DynamicExperimentalController
 MpcSource = custom.LongitudinalPlanSP.MpcSource
 
 
