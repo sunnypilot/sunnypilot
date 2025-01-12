@@ -132,80 +132,80 @@ class TestDynamicExperimentalController(unittest.TestCase):
 
     self.assertFalse(self.controller._has_slow_down)
 
-    def test_dangerous_ttc_detection(self):
-      """Test Time-To-Collision detection and handling"""
-      car_state = MockCarState(v_ego=10)  # 36 kph
-      lead_one = MockLeadOne(status=True)
-      md = MockModelData(x_vals=[0] * TRAJECTORY_SIZE, positions=[150] * TRAJECTORY_SIZE)
-      controls_state = MockControlState(v_cruise=36)
+  def test_dangerous_ttc_detection(self):
+    """Test Time-To-Collision detection and handling"""
+    car_state = MockCarState(v_ego=10)  # 36 kph
+    lead_one = MockLeadOne(status=True)
+    md = MockModelData(x_vals=[0] * TRAJECTORY_SIZE, positions=[150] * TRAJECTORY_SIZE)
+    controls_state = MockControlState(v_cruise=36)
 
-      # First establish normal conditions
-      lead_one.dRel = 100  # Safe distance
-      for _ in range(DANGEROUS_TTC_WINDOW_SIZE + 1):
-        self.controller.update(False, car_state, lead_one, md, controls_state)
-
-      self.assertFalse(self.controller._has_dangerous_ttc)
-
-      # Now test dangerous TTC detection
-      lead_one.dRel = 10  # 10m distance - should trigger dangerous TTC
-      # TTC = dRel/vEgo = 10/10 = 1s (which is less than DANGEROUS_TTC = 2.3s)
-
-      # Need to update multiple times to allow the weighted average to stabilize
-      for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
-        self.controller.update(False, car_state, lead_one, md, controls_state)
-
-      self.assertTrue(self.controller._has_dangerous_ttc,
-                      f"TTC of 1s should be considered dangerous (threshold: {DANGEROUS_TTC}s)")
-      self.assertEqual(self.controller.get_mpc_mode(), 'blended',
-                       "Should be in blended mode with dangerous TTC")
-
-    def test_mode_transitions(self):
-      """Test comprehensive mode transitions under different conditions"""
-      # Initialize with normal driving conditions
-      car_state = MockCarState(v_ego=25)  # 90 kph
-      lead_one = MockLeadOne(status=False)
-      md = MockModelData(x_vals=[0] * TRAJECTORY_SIZE, positions=[200] * TRAJECTORY_SIZE)
-      controls_state = MockControlState(v_cruise=100)
-
-      def stabilize_filters():
-        """Helper to let all moving averages stabilize"""
-        for _ in range(max(LEAD_WINDOW_SIZE, SLOW_DOWN_WINDOW_SIZE,
-                           DANGEROUS_TTC_WINDOW_SIZE, MPC_FCW_WINDOW_SIZE) + 1):
-          self.controller.update(False, car_state, lead_one, md, controls_state)
-
-      # Test 1: Normal driving -> ACC mode
-      stabilize_filters()
-      self.assertEqual(self.controller.get_mpc_mode(), 'acc',
-                       "Should be in ACC mode under normal driving conditions")
-
-      # Test 2: Standstill -> Blended mode
-      car_state.standstill = True
+    # First establish normal conditions
+    lead_one.dRel = 100  # Safe distance
+    for _ in range(DANGEROUS_TTC_WINDOW_SIZE + 1):
       self.controller.update(False, car_state, lead_one, md, controls_state)
-      self.assertEqual(self.controller.get_mpc_mode(), 'blended',
-                       "Should be in blended mode during standstill")
 
-      # Test 3: Lead car appears -> ACC mode
-      car_state = MockCarState(v_ego=25)  # Reset car state
-      lead_one.status = True
-      lead_one.dRel = 50
-      stabilize_filters()
-      self.assertEqual(self.controller.get_mpc_mode(), 'acc',
-                       "Should be in ACC mode with safe lead distance")
+    self.assertFalse(self.controller._has_dangerous_ttc)
 
-      # Test 4: Dangerous TTC -> Blended mode
-      # Set up conditions that will definitely trigger dangerous TTC
-      car_state = MockCarState(v_ego=20)  # 72 kph
-      lead_one.status = True
-      lead_one.dRel = 20  # This creates a TTC of 1s, well below DANGEROUS_TTC
+    # Now test dangerous TTC detection
+    lead_one.dRel = 10  # 10m distance - should trigger dangerous TTC
+    # TTC = dRel/vEgo = 10/10 = 1s (which is less than DANGEROUS_TTC = 2.3s)
 
-      # Need more updates to allow the weighted average to stabilize
-      for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
+    # Need to update multiple times to allow the weighted average to stabilize
+    for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
+      self.controller.update(False, car_state, lead_one, md, controls_state)
+
+    self.assertTrue(self.controller._has_dangerous_ttc,
+                    f"TTC of 1s should be considered dangerous (threshold: {DANGEROUS_TTC}s)")
+    self.assertEqual(self.controller.get_mpc_mode(), 'blended',
+                     "Should be in blended mode with dangerous TTC")
+
+  def test_mode_transitions(self):
+    """Test comprehensive mode transitions under different conditions"""
+    # Initialize with normal driving conditions
+    car_state = MockCarState(v_ego=25)  # 90 kph
+    lead_one = MockLeadOne(status=False)
+    md = MockModelData(x_vals=[0] * TRAJECTORY_SIZE, positions=[200] * TRAJECTORY_SIZE)
+    controls_state = MockControlState(v_cruise=100)
+
+    def stabilize_filters():
+      """Helper to let all moving averages stabilize"""
+      for _ in range(max(LEAD_WINDOW_SIZE, SLOW_DOWN_WINDOW_SIZE,
+                         DANGEROUS_TTC_WINDOW_SIZE, MPC_FCW_WINDOW_SIZE) + 1):
         self.controller.update(False, car_state, lead_one, md, controls_state)
 
-      self.assertTrue(self.controller._has_dangerous_ttc,
-                      "Should detect dangerous TTC condition")
-      self.assertEqual(self.controller.get_mpc_mode(), 'blended',
-                       "Should be in blended mode with dangerous TTC")
+    # Test 1: Normal driving -> ACC mode
+    stabilize_filters()
+    self.assertEqual(self.controller.get_mpc_mode(), 'acc',
+                     "Should be in ACC mode under normal driving conditions")
+
+    # Test 2: Standstill -> Blended mode
+    car_state.standstill = True
+    self.controller.update(False, car_state, lead_one, md, controls_state)
+    self.assertEqual(self.controller.get_mpc_mode(), 'blended',
+                     "Should be in blended mode during standstill")
+
+    # Test 3: Lead car appears -> ACC mode
+    car_state = MockCarState(v_ego=25)  # Reset car state
+    lead_one.status = True
+    lead_one.dRel = 50
+    stabilize_filters()
+    self.assertEqual(self.controller.get_mpc_mode(), 'acc',
+                     "Should be in ACC mode with safe lead distance")
+
+    # Test 4: Dangerous TTC -> Blended mode
+    # Set up conditions that will definitely trigger dangerous TTC
+    car_state = MockCarState(v_ego=20)  # 72 kph
+    lead_one.status = True
+    lead_one.dRel = 20  # This creates a TTC of 1s, well below DANGEROUS_TTC
+
+    # Need more updates to allow the weighted average to stabilize
+    for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
+      self.controller.update(False, car_state, lead_one, md, controls_state)
+
+    self.assertTrue(self.controller._has_dangerous_ttc,
+                    "Should detect dangerous TTC condition")
+    self.assertEqual(self.controller.get_mpc_mode(), 'blended',
+                     "Should be in blended mode with dangerous TTC")
 
   def test_mpc_fcw_handling(self):
     """Test MPC FCW crash count handling and mode transitions"""
