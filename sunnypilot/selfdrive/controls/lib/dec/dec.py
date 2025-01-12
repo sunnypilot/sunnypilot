@@ -377,12 +377,12 @@ class DynamicExperimentalController:
     if self._set_mode_timeout > 0:
       self._set_mode_timeout -= 1
 
-  def _read_params(self, frame: int) -> None:
-    if frame % int(1. / DT_MDL) == 0:
+  def _read_params(self, sm: messaging.SubMaster) -> None:
+    if sm.frame % int(1. / DT_MDL) == 0:
       self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
 
-  def update(self, radar_unavailable: bool, sm: messaging.SubMaster, frame: int) -> None:
-    self._read_params(frame)
+  def update(self, radar_unavailable: bool, sm: messaging.SubMaster) -> None:
+    self._read_params(sm)
 
     if self._is_enabled:
       self._update(sm)

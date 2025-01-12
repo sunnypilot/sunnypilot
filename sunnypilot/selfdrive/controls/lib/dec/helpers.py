@@ -27,9 +27,9 @@ class DecPlanner:
 
     return self.dynamic_experimental_controller.get_mpc_mode()
 
-  def update(self, sm: messaging.SubMaster, frame: int) -> None:
+  def update(self, sm: messaging.SubMaster) -> None:
     self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
-    self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm, frame)
+    self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
