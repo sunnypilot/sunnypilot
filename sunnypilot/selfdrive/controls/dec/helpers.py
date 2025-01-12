@@ -1,4 +1,4 @@
-from cereal import custom
+from cereal import custom, messaging
 MpcSource = custom.MpcSource
 
 def get_mpc_mode(sm, dynamic_experimental_controller, mpc, CP):
