@@ -115,6 +115,7 @@ class DynamicExperimentalController:
     self._mode: str = 'acc'
     self._mode_prev: str = 'acc'
     self._mode_changed: bool = False
+    self._frame: int = 0
 
     # Use weighted moving average for filtering leads
     self._lead_gmac = WeightedMovingAverageCalculator(window_size=LEAD_WINDOW_SIZE)
@@ -377,12 +378,12 @@ class DynamicExperimentalController:
     if self._set_mode_timeout > 0:
       self._set_mode_timeout -= 1
 
-  def _read_params(self, sm: messaging.SubMaster) -> None:
-    if sm.frame % int(1. / DT_MDL) == 0:
+  def _read_params(self) -> None:
+    if self._frame % int(1. / DT_MDL) == 0:
       self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
 
   def update(self, radar_unavailable: bool, sm: messaging.SubMaster) -> None:
-    self._read_params(sm)
+    self._read_params()
 
     if self._is_enabled:
       self._update(sm)
@@ -394,3 +395,5 @@ class DynamicExperimentalController:
 
     self._mode_changed = self._mode != self._mode_prev
     self._mode_prev = self._mode
+
+    self._frame += 1
