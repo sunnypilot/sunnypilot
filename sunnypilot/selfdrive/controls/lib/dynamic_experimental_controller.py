@@ -148,13 +148,8 @@ class DynamicExperimentalController:
 
     self._set_mode_timeout = 0
 
-  def _adaptive_slowdown_threshold(self):
-    """
-    Adapts the slow-down threshold based on vehicle speed and recent behavior.
-    """
-    return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.03 * np.log(1 + len(self._slow_down_gmac.data)))
-
-  def _anomaly_detection(self, recent_data, threshold=2.0, context_check=True):
+  @staticmethod
+  def _anomaly_detection(recent_data, threshold=2.0, context_check=True):
     """
     Basic anomaly detection using standard deviation.
     """
@@ -168,6 +163,12 @@ class DynamicExperimentalController:
     if context_check:
       return np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1
     return anomaly
+
+  def _adaptive_slowdown_threshold(self):
+    """
+    Adapts the slow-down threshold based on vehicle speed and recent behavior.
+    """
+    return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.03 * np.log(1 + len(self._slow_down_gmac.data)))
 
   def _smoothed_lead_detection(self, lead_prob, smoothing_factor=0.2):
     """
