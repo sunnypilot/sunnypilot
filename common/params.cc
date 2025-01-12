@@ -201,7 +201,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Version", PERSISTENT},
 
     // --- sunnypilot params --- //
+    {"ApiCache_DriveStats", PERSISTENT},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
+    {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
 
     // MADS params
     {"Mads", PERSISTENT | BACKUP},

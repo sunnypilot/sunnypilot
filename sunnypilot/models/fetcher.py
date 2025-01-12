@@ -71,11 +71,14 @@ class ModelParser:
     model_bundle.status = 0
     model_bundle.generation = int(value["generation"])
     model_bundle.environment = value["environment"]
+    model_bundle.runner = value.get("runner", custom.ModelManagerSP.Runner.snpe)
 
     return model_bundle
 
   @staticmethod
   def parse_models(json_data: dict) -> list[custom.ModelManagerSP.ModelBundle]:
+    # TODO-SP: Remove the following filter once we add support for tinygrad model switcher
+    json_data = {k: v for k, v in json_data.items() if v.get("runner", -1) == custom.ModelManagerSP.Runner.snpe}
     return [ModelParser._parse_bundle(key, value) for key, value in json_data.items()]
 
 
@@ -92,7 +95,7 @@ class ModelCache:
     """Checks if the cache has expired"""
     current_time = int(time.monotonic() * 1e9)
     last_sync = int(self.params.get(self._LAST_SYNC_KEY, encoding="utf-8") or 0)
-    return (current_time - last_sync) >= self.cache_timeout
+    return last_sync == 0 or (current_time - last_sync) >= self.cache_timeout
 
   def get(self) -> tuple[dict, bool]:
     """

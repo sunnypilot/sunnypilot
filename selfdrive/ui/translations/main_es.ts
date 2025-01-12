@@ -276,6 +276,33 @@
     </message>
 </context>
 <context>
+    <name>DriveStats</name>
+    <message>
+        <source>Drives</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hours</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ALL TIME</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PAST WEEK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>KM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Miles</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DriverViewWindow</name>
     <message>
         <source>camera starting</source>
@@ -713,6 +740,10 @@ Esto puede tardar un minuto.</translation>
         <source>sunnylink</source>
         <translation>sunnylink</translation>
     </message>
+    <message>
+        <source>Trips</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
@@ -1060,20 +1091,40 @@ Esto puede tardar un minuto.</translation>
         <translation>Descargando modelo de %1 [%2]... (%3%)</translation>
     </message>
     <message>
-        <source>%1 model [%2] downloaded</source>
-        <translation>Modelo de %1 [%2] descargado</translation>
-    </message>
-    <message>
         <source>%1 model [%2] download failed</source>
         <translation>Falló descarga modelo de %1 [%2]</translation>
     </message>
     <message>
-        <source>%1 model [%2] from cache</source>
-        <translation>Modelo de %1 [%2] desde caché</translation>
-    </message>
-    <message>
         <source>Select a Model</source>
         <translation>Selecciona un Modelo</translation>
+    </message>
+    <message>
+        <source>%1 model [%2] %3</source>
+        <translation>Modelo de %1 [%2] %3</translation>
+    </message>
+    <message>
+        <source>downloaded</source>
+        <translation>descargado</translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation>listo</translation>
+    </message>
+    <message>
+        <source>from cache</source>
+        <translation>desde caché</translation>
+    </message>
+    <message>
+        <source>Use Default</source>
+        <translation>Por Defecto</translation>
+    </message>
+    <message>
+        <source>No custom model selected!</source>
+        <translation>No hay ningún modelo personalizado elegido!.</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Por Defecto</translation>
     </message>
 </context>
 <context>
