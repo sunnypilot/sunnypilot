@@ -86,7 +86,7 @@ void SoftwarePanelSP::handleBundleDownloadProgress() {
       case cereal::ModelManagerSP::DownloadStatus::DOWNLOADING:
       case cereal::ModelManagerSP::DownloadStatus::CACHED:
       case cereal::ModelManagerSP::DownloadStatus::DOWNLOADED:
-          currentModelLblBtn->showDescription();
+        currentModelLblBtn->showDescription();
         break;
       case cereal::ModelManagerSP::DownloadStatus::FAILED:
       default:
@@ -132,7 +132,7 @@ void SoftwarePanelSP::handleCurrentModelLblBtnClicked() {
   QStringList bundleNames;
   // Add "Default" as the first option
   bundleNames.append(tr("Use Default"));
-  
+
   auto indices = index_to_bundle.keys();
   std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
   for (const auto &index: indices) {
@@ -181,7 +181,7 @@ void SoftwarePanelSP::updateLabels() {
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelName());
-  
+
   SoftwarePanel::updateLabels();
 }
 
