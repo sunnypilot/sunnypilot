@@ -60,8 +60,8 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
   buttons_layout->addSpacing(10);
 
   // setup panels
-  DevicePanel *device = new DevicePanel(this);
-  QObject::connect(device, &DevicePanel::reviewTrainingGuide, this, &SettingsWindow::reviewTrainingGuide);
+  DevicePanelSP *device = new DevicePanelSP(this);
+  QObject::connect(device, &DevicePanelSP::reviewTrainingGuide, this, &SettingsWindow::reviewTrainingGuide);
 
   TogglesPanelSP *toggles = new TogglesPanelSP(this);
   QObject::connect(this, &SettingsWindow::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
