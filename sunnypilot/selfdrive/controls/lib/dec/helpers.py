@@ -6,13 +6,14 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from cereal import messaging, custom
+from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 
 MpcSource = custom.LongitudinalPlanSP.MpcSource
 
 
 class DecPlanner:
-  def __init__(self, CP, mpc):
+  def __init__(self, CP: structs.CarParams, mpc):
     self.CP = CP
     self.mpc = mpc
 
@@ -20,17 +21,17 @@ class DecPlanner:
 
     self.dynamic_experimental_controller = DynamicExperimentalController()
 
-  def get_mpc_mode(self, sm):
+  def get_mpc_mode(self, sm: messaging.SubMaster):
     if not self.is_enabled or not sm['selfdriveState'].experimentalMode:
       return None
 
     return self.dynamic_experimental_controller.get_mpc_mode()
 
-  def update(self, sm):
+  def update(self, sm: messaging.SubMaster) -> None:
     self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
     self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm)
 
-  def publish_longitudinal_plan_sp(self, sm, pm):
+  def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
 
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])

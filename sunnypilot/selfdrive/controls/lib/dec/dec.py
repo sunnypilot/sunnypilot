@@ -23,6 +23,9 @@
 # Version = 2024-7-11
 
 import numpy as np
+
+from cereal import messaging
+from opendbc.car import structs
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
@@ -70,16 +73,16 @@ class GenericMovingAverageCalculator:
     self.data = []
     self.total = 0
 
-  def add_data(self, value):
+  def add_data(self, value: float) -> None:
     if len(self.data) == self.window_size:
       self.total -= self.data.pop(0)
     self.data.append(value)
     self.total += value
 
-  def get_moving_average(self):
+  def get_moving_average(self) -> float | None:
     return None if len(self.data) == 0 else self.total / len(self.data)
 
-  def reset_data(self):
+  def reset_data(self) -> None:
     self.data = []
     self.total = 0
 
@@ -90,19 +93,19 @@ class WeightedMovingAverageCalculator:
     self.data = []
     self.weights = np.linspace(1, 3, window_size)  # Linear weights, adjust as needed
 
-  def add_data(self, value):
+  def add_data(self, value: float) -> None:
     if len(self.data) == self.window_size:
       self.data.pop(0)
     self.data.append(value)
 
-  def get_weighted_average(self):
+  def get_weighted_average(self) -> float | None:
     if len(self.data) == 0:
       return None
     weighted_sum = np.dot(self.data, self.weights[-len(self.data):])
     weight_total = np.sum(self.weights[-len(self.data):])
     return weighted_sum / weight_total
 
-  def reset_data(self):
+  def reset_data(self) -> None:
     self.data = []
 
 
@@ -150,7 +153,7 @@ class DynamicExperimentalController:
     self._set_mode_timeout = 0
 
   @staticmethod
-  def _anomaly_detection(recent_data, threshold=2.0, context_check=True):
+  def _anomaly_detection(recent_data: list[float], threshold: float = 2.0, context_check: bool = True) -> bool:
     """
     Basic anomaly detection using standard deviation.
     """
@@ -165,20 +168,20 @@ class DynamicExperimentalController:
       return np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1
     return anomaly
 
-  def _adaptive_slowdown_threshold(self):
+  def _adaptive_slowdown_threshold(self) -> float:
     """
     Adapts the slow-down threshold based on vehicle speed and recent behavior.
     """
     return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.03 * np.log(1 + len(self._slow_down_gmac.data)))
 
-  def _smoothed_lead_detection(self, lead_prob, smoothing_factor=0.2):
+  def _smoothed_lead_detection(self, lead_prob: float, smoothing_factor: float = 0.2) -> bool:
     """
     Smoothing the lead detection to avoid erratic behavior.
     """
     self._has_lead_filtered = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
     return self._has_lead_filtered > LEAD_PROB
 
-  def _adaptive_lead_prob_threshold(self):
+  def _adaptive_lead_prob_threshold(self) -> float:
     """
     Adapts lead probability threshold based on driving conditions.
     """
@@ -186,7 +189,11 @@ class DynamicExperimentalController:
       return LEAD_PROB + 0.1  # Increase the threshold on highways
     return LEAD_PROB
 
-  def _update(self, car_state, lead_one, md):
+  def _update(self, sm: messaging.SubMaster) -> None:
+    car_state = sm['carState']
+    lead_one = sm['radarState'].leadOne
+    md = sm['modelV2']
+
     self._v_ego_kph = car_state.vEgo * 3.6
     self._v_cruise_kph = car_state.vCruise
     self._has_lead = lead_one.status
@@ -252,7 +259,7 @@ class DynamicExperimentalController:
     self._has_standstill_prev = self._has_standstill
     self._has_lead_filtered_prev = self._has_lead_filtered
 
-  def _radarless_mode(self):
+  def _radarless_mode(self) -> None:
     # when mpc fcw crash prob is high
     # use blended to slow down quickly
     if self._has_mpc_fcw:
@@ -302,7 +309,7 @@ class DynamicExperimentalController:
 
     self._set_mode('acc')
 
-  def _radar_mode(self):
+  def _radar_mode(self) -> None:
     # when mpc fcw crash prob is high
     # use blended to slow down quickly
     if self._has_mpc_fcw:
@@ -344,43 +351,39 @@ class DynamicExperimentalController:
 
     self._set_mode('acc')
 
-  def get_mpc_mode(self):
+  def get_mpc_mode(self) -> str:
     return self._mode
 
-  def has_changed(self):
+  def has_changed(self) -> bool:
     return self._mode_changed
 
-  def set_enabled(self, enabled):
+  def set_enabled(self, enabled: bool) -> None:
     self._is_enabled = enabled
 
-  def is_enabled(self):
+  def is_enabled(self) -> bool:
     return self._is_enabled
 
-  def set_mpc_fcw_crash_cnt(self, crash_cnt):
+  def set_mpc_fcw_crash_cnt(self, crash_cnt: float) -> None:
     self._mpc_fcw_crash_cnt = crash_cnt
 
-  def _set_mode(self, mode):
+  def _set_mode(self, mode: str) -> None:
     if self._set_mode_timeout == 0:
       self._mode = mode
-      if mode == "blended":
+      if mode == 'blended':
         self._set_mode_timeout = SET_MODE_TIMEOUT
 
     if self._set_mode_timeout > 0:
       self._set_mode_timeout -= 1
 
-  def _read_params(self, sm):
+  def _read_params(self, sm: messaging.SubMaster) -> None:
     if sm.frame % int(1. / DT_MDL) == 0:
       self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
 
-  def update(self, radar_unavailable, sm):
-    car_state = sm['carState']
-    lead_one = sm['radarState'].leadOne
-    md = sm['modelV2']
-
+  def update(self, radar_unavailable: bool, sm: messaging.SubMaster) -> None:
     self._read_params(sm)
 
     if self._is_enabled:
-      self._update(car_state, lead_one, md)
+      self._update(sm)
 
       if radar_unavailable:
         self._radarless_mode()
