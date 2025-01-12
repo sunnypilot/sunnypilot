@@ -83,10 +83,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 }
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
-  e2eBlended @0 :Text;
-  e2eStatus @1 :Bool;
-  mpcSource @2 :MpcSource;
-  dynamicExperimentalControl @3 :Bool;
+  mpcSource @0 :MpcSource;
+  dynamicExperimentalControl @1 :Bool;
   
   enum MpcSource {
     acc @0;
