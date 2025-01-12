@@ -81,9 +81,9 @@ def load_meta_constants(model_metadata):
     meta_tf_slice = slice(5868, 5921, None)
 
     if (
-      meta_slice.start == meta_tf_slice.start and
-      meta_slice.stop == meta_tf_slice.stop and
-      meta_slice.step == meta_tf_slice.step
+          meta_slice.start == meta_tf_slice.start and
+          meta_slice.stop == meta_tf_slice.stop and
+          meta_slice.step == meta_tf_slice.step
     ):
       meta = MetaTombRaider
 
