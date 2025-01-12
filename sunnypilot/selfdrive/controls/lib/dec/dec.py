@@ -25,7 +25,6 @@
 import numpy as np
 
 from cereal import messaging
-from opendbc.car import structs
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
