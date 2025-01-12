@@ -78,7 +78,7 @@ jobs:
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          scons -j$(nproc) cache_dir=${{ env.SCONS_CACHE_DIR }} ${{ github.workspace }}/selfdrive/modeld
+          CXXFLAGS="-Wno-vla-extension -Wno-vla-cxx-extension" scons -j$(nproc) cache_dir=${{ env.SCONS_CACHE_DIR }} ${{ github.workspace }}/selfdrive/modeld
 
       - name: Prepare Output
         run: |
