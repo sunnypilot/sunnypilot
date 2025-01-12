@@ -158,35 +158,38 @@ class DynamicExperimentalController:
     """
     if len(recent_data) < 5:
       return False
-    mean = np.mean(recent_data)
-    std_dev = np.std(recent_data)
-    anomaly = recent_data[-1] > mean + threshold * std_dev
+    mean: float = float(np.mean(recent_data))
+    std_dev: float = float(np.std(recent_data))
+    anomaly: bool = bool(recent_data[-1] > mean + threshold * std_dev)
 
     # Context check to ensure repeated anomaly
     if context_check:
-      return np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1
+      return bool(np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1)
     return anomaly
 
   def _adaptive_slowdown_threshold(self) -> float:
     """
     Adapts the slow-down threshold based on vehicle speed and recent behavior.
     """
-    return interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
+    adaptive_threshold: float = float(
+      interp(self._v_ego_kph, SLOW_DOWN_BP, SLOW_DOWN_DIST) * (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
+    )
+    return adaptive_threshold
 
   def _smoothed_lead_detection(self, lead_prob: float, smoothing_factor: float = 0.2) -> bool:
     """
     Smoothing the lead detection to avoid erratic behavior.
     """
     self._has_lead_filtered = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
-    return self._has_lead_filtered > LEAD_PROB
+    return bool(self._has_lead_filtered > LEAD_PROB)
 
   def _adaptive_lead_prob_threshold(self) -> float:
     """
     Adapts lead probability threshold based on driving conditions.
     """
     if self._v_ego_kph > HIGHWAY_CRUISE_KPH:
-      return LEAD_PROB + 0.1  # Increase the threshold on highways
-    return LEAD_PROB
+      return float(LEAD_PROB + 0.1)  # Increase the threshold on highways
+    return float(LEAD_PROB)
 
   def _update(self, sm: messaging.SubMaster) -> None:
     car_state = sm['carState']
@@ -351,10 +354,10 @@ class DynamicExperimentalController:
     self._set_mode('acc')
 
   def get_mpc_mode(self) -> str:
-    return self._mode
+    return str(self._mode)
 
   def has_changed(self) -> bool:
-    return self._mode_changed
+    return bool(self._mode_changed)
 
   def set_enabled(self, enabled: bool) -> None:
     self._is_enabled = enabled
