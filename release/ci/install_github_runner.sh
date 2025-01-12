@@ -144,6 +144,13 @@ check_restore_prerequisites() {
     local can_restore=false
     local service_name=""
 
+    # Check if base runner directory exists
+    if [ ! -d "${RUNNER_DIR}" ]; then
+        echo "ERROR: Runner directory ${RUNNER_DIR} does not exist"
+        echo "This directory is required for restore operations"
+        exit 1
+    fi
+
     # First check if we have the required files for restoration
     if [ -f "${RUNNER_DIR}/.credentials" ] && [ -f "${RUNNER_DIR}/.service" ]; then
         can_restore=true
@@ -174,12 +181,13 @@ check_restore_prerequisites() {
         if [ "$needs_restore" = false ]; then
             echo "System is already properly configured (user and service exist)"
         fi
-        exit 1
+        exit 0
     fi
 }
 
 perform_restore() {
     echo "Starting runner restoration..."
+    setup_directories
     remount_rw
     setup_system_configs
     install_service
@@ -214,7 +222,6 @@ remount_ro() {
 trap remount_ro EXIT
 
 main() {
-
     if [ "$RESTORE_MODE" = true ]; then
         echo "Running in restore mode - will only restore system configurations..."
         check_restore_prerequisites
