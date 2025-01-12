@@ -83,6 +83,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     status @4 :DownloadStatus;
     generation @5 :UInt32;
     environment @6 :Text;
+    runner @7 :Runner;
   }
 }
 
