@@ -183,7 +183,7 @@ class DynamicExperimentalController:
       return LEAD_PROB + 0.1  # Increase the threshold on highways
     return LEAD_PROB
 
-  def _update(self, car_state, lead_one, md, controls_state): #, maneuver_distance):   
+  def _update(self, car_state, lead_one, md, controls_state): #, maneuver_distance):
     self._v_ego_kph = car_state.vEgo * 3.6
     self._v_cruise_kph = controls_state.vCruise
     self._has_lead = lead_one.status
@@ -344,7 +344,7 @@ class DynamicExperimentalController:
   def update(self, radar_unavailable, car_state, lead_one, md, controls_state): #, maneuver_distance):
     if self._frame % 50 == 0:
       self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
-    
+
     if self._is_enabled:
       self._update(car_state, lead_one, md, controls_state) #, maneuver_distance)
       if radar_unavailable:
