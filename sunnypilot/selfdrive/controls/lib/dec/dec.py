@@ -111,10 +111,10 @@ class WeightedMovingAverageCalculator:
 class DynamicExperimentalController:
   def __init__(self, params=None):
     self._params = params or Params()
-    self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
-    self._mode = 'acc'
-    self._mode_prev = 'acc'
-    self._mode_changed = False
+    self._is_enabled: bool = self._params.get_bool("DynamicExperimentalControl")
+    self._mode: str = 'acc'
+    self._mode_prev: str = 'acc'
+    self._mode_changed: bool = False
 
     # Use weighted moving average for filtering leads
     self._lead_gmac = WeightedMovingAverageCalculator(window_size=LEAD_WINDOW_SIZE)
@@ -160,12 +160,11 @@ class DynamicExperimentalController:
       return False
     mean: float = float(np.mean(recent_data))
     std_dev: float = float(np.std(recent_data))
-    anomaly: bool = bool(float(recent_data[-1]) > mean + threshold * std_dev)
+    anomaly: bool = bool(recent_data[-1] > mean + threshold * std_dev)
 
     # Context check to ensure repeated anomaly
     if context_check:
-      count_above_threshold: int = int(np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev))
-      return bool(count_above_threshold > 1)
+      return bool(np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1)
     return anomaly
 
   def _adaptive_slowdown_threshold(self) -> float:
