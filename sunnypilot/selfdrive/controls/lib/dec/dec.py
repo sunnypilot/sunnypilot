@@ -90,7 +90,7 @@ class WeightedMovingAverageCalculator:
   def __init__(self, window_size):
     self.window_size = window_size
     self.data = []
-    self.weights = np.linspace(1, 5, window_size)  # Linear weights, adjust as needed
+    self.weights = np.linspace(1, 3, window_size)  # Linear weights, adjust as needed
 
   def add_data(self, value: float) -> None:
     if len(self.data) == self.window_size:
