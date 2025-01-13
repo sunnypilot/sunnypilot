@@ -21,6 +21,10 @@ class CarSpecificEventsSP:
     self.hyundai_radar_tracks = self.params.get_bool("HyundaiRadarTracks")
     self.hyundai_radar_tracks_confirmed = self.params.get_bool("HyundaiRadarTracksConfirmed")
 
+  def read_params(self):
+    self.hyundai_radar_tracks = self.params.get_bool("HyundaiRadarTracks")
+    self.hyundai_radar_tracks_confirmed = self.params.get_bool("HyundaiRadarTracksConfirmed")
+
   def update(self):
     events = Events()
     if self.CP.carName == 'hyundai':

@@ -101,6 +101,7 @@ class Car:
           cached_params = _cached_params
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), experimental_long_allowed, num_pandas, cached_params)
+      setup_car_interface_sp(self.CI.CP, self.params)
       self.RI = get_radar_interface(self.CI.CP)
       self.CP = self.CI.CP
 
@@ -119,8 +120,6 @@ class Car:
     # mads
     MadsParams().set_alternative_experience(self.CP)
     MadsParams().set_car_specific_params(self.CP)
-
-    setup_car_interface_sp(self.CP, self.params)
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
