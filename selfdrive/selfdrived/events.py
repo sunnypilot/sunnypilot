@@ -1061,7 +1061,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Controls Mismatch: Lateral"),
   },
 
-  EventName.hyundaiRadarTracksAvailable: {
+  EventName.hyundaiRadarTracksConfirmed: {
     ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
   }
 
