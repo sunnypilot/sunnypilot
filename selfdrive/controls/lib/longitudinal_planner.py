@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import math
 import numpy as np
-
+from openpilot.common.params import Params
 import cereal.messaging as messaging
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.conversions import Conversions as CV
@@ -88,6 +88,19 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
 
+    self.params = Params()
+    self.param_read_counter = 0
+    self.read_param()
+
+    self.fast_take_off = False
+
+
+  def read_param(self):
+    try:
+      self.fast_take_off = self.params.get_bool("FastTakeOff")
+    except AttributeError:
+      pass
+
   @staticmethod
   def parse_model(model_msg, model_error):
     if (len(model_msg.position.x) == ModelConstants.IDX_N and
@@ -110,6 +123,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
   def update(self, sm):
     LongitudinalPlannerSP.update(self, sm)
+    if self.param_read_counter % 50 == 0:
+      self.read_param()
+    self.param_read_counter += 1
     self.mpc.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
     if dec_mpc_mode := self.get_mpc_mode():
       self.mpc.mode = dec_mpc_mode
@@ -165,7 +181,10 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality)
+    print("Fast take off status:", self.fast_take_off)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality, fast_take_off=self.fast_take_off)
+
+
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)

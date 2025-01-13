@@ -159,6 +159,18 @@
         <source>Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar. This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Toyota: Auto Brake Hold</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: Enhanced BSM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: custom tune</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>
