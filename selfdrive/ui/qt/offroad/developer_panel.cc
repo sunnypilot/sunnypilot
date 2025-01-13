@@ -36,7 +36,7 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   hyundaiRadarTracksToggle = new ParamControl(
     "HyundaiRadarTracksToggle",
     tr("Hyundai: Enable Radar Tracks"),
-    tr("Enable this to attempt to enable radar tracks for supported Hyundai, Kia, and Genesis models equipped with the applicable Mando SCC radar. "
+    tr("Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar. "
        "This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance."), "");
   hyundaiRadarTracksToggle->setConfirmation(true, false);
   QObject::connect(hyundaiRadarTracksToggle, &ParamControl::toggleFlipped, [=](bool state) {
