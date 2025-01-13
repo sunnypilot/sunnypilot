@@ -33,7 +33,15 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(enableGithubRunner);
 
   // TODO-SP: Move to Vehicles panel when ported back
-  hyundaiRadarTracksToggle = new ParamControl("HyundaiRadarTracksToggle", tr("Hyundai: Enable Radar Tracks"), "", "");
+  hyundaiRadarTracksToggle = new ParamControl(
+    "HyundaiRadarTracksToggle",
+    tr("Hyundai: Enable Radar Tracks"),
+    tr("Enable this to attempt to enable radar tracks for supported Hyundai, Kia, and Genesis models equipped with the applicable Mando SCC radar. "
+       "This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance."), "");
+  hyundaiRadarTracksToggle->setConfirmation(true, false);
+  QObject::connect(hyundaiRadarTracksToggle, &ParamControl::toggleFlipped, [=](bool state) {
+    updateToggles(offroad);
+  });
   addItem(hyundaiRadarTracksToggle);
 
   // Joystick and longitudinal maneuvers should be hidden on release branches
@@ -55,9 +63,15 @@ void DeveloperPanel::updateToggles(bool _offroad) {
     AlignedBuffer aligned_buf;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    auto hyundai = CP.getCarName() == "hyundai";
+    auto hyundai_mando_radar = hyundai && (CP.getFlags() & 4096);
+
     longManeuverToggle->setEnabled(hasLongitudinalControl(CP) && _offroad);
+    hyundaiRadarTracksToggle->setVisible(hyundai_mando_radar && hasLongitudinalControl(CP));
   } else {
     longManeuverToggle->setEnabled(false);
+    hyundaiRadarTracksToggle->setVisible(false);
   }
 
   offroad = _offroad;
