@@ -136,7 +136,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable this to enable radar tracks for supported Hyundai, Kia, and Genesis models equipped with the applicable Mando SCC radar. This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance.</source>
+        <source>Enable this to attempt to enable radar tracks for supported Hyundai, Kia, and Genesis models equipped with the applicable Mando SCC radar. This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
