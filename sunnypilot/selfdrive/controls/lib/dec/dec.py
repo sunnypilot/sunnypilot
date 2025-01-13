@@ -192,7 +192,7 @@ class DynamicExperimentalController:
       return float(LEAD_PROB + 0.1)  # Increase the threshold on highways
     return float(LEAD_PROB)
 
-  def _update(self, sm: messaging.SubMaster) -> None:
+  def _update_calculations(self, sm: messaging.SubMaster) -> None:
     car_state = sm['carState']
     lead_one = sm['radarState'].leadOne
     md = sm['modelV2']
@@ -386,7 +386,7 @@ class DynamicExperimentalController:
     self._read_params()
 
     if self._is_enabled:
-      self._update(sm)
+      self._update_calculations(sm)
 
       if radar_unavailable:
         self._radarless_mode()
