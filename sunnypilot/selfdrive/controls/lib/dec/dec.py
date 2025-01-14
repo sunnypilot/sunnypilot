@@ -111,7 +111,8 @@ class WeightedMovingAverageCalculator:
 class DynamicExperimentalController:
   def __init__(self, params=None):
     self._params = params or Params()
-    self._is_enabled: bool = self._params.get_bool("DynamicExperimentalControl")
+    self._enabled: bool = self._params.get_bool("DynamicExperimentalControl")
+    self._active: bool = False
     self._mode: str = 'acc'
     self._frame: int = 0
 
@@ -352,11 +353,14 @@ class DynamicExperimentalController:
 
     self._set_mode('acc')
 
-  def get_mpc_mode(self) -> str:
+  def mode(self) -> str:
     return str(self._mode)
 
-  def is_enabled(self) -> bool:
-    return self._is_enabled
+  def enabled(self) -> bool:
+    return self._enabled
+
+  def active(self) -> bool:
+    return self._active
 
   def set_mpc_fcw_crash_cnt(self, crash_cnt: float) -> None:
     self._mpc_fcw_crash_cnt = crash_cnt
@@ -372,17 +376,19 @@ class DynamicExperimentalController:
 
   def _read_params(self) -> None:
     if self._frame % int(1. / DT_MDL) == 0:
-      self._is_enabled = self._params.get_bool("DynamicExperimentalControl")
+      self._enabled = self._params.get_bool("DynamicExperimentalControl")
 
   def update(self, radar_unavailable: bool, sm: messaging.SubMaster) -> None:
     self._read_params()
 
-    if self._is_enabled:
+    if self._enabled:
       self._update_calculations(sm)
 
       if radar_unavailable:
         self._radarless_mode()
       else:
         self._radar_mode()
+
+    self._active = sm['selfdriveState'].experimentalMode and self._enabled
 
     self._frame += 1
