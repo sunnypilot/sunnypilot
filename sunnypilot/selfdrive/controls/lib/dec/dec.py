@@ -176,12 +176,12 @@ class DynamicExperimentalController:
     )
     return adaptive_threshold
 
-  def _smoothed_lead_detection(self, lead_prob: float, smoothing_factor: float = 0.2) -> bool:
+  def _smoothed_lead_detection(self, lead_prob: float, smoothing_factor: float = 0.2):
     """
     Smoothing the lead detection to avoid erratic behavior.
     """
     self._has_lead_filtered = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
-    return bool(self._has_lead_filtered > LEAD_PROB)
+    return self._has_lead_filtered > LEAD_PROB
 
   def _adaptive_lead_prob_threshold(self) -> float:
     """
