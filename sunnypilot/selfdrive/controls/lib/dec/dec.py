@@ -113,8 +113,6 @@ class DynamicExperimentalController:
     self._params = params or Params()
     self._is_enabled: bool = self._params.get_bool("DynamicExperimentalControl")
     self._mode: str = 'acc'
-    self._mode_prev: str = 'acc'
-    self._mode_changed: bool = False
     self._frame: int = 0
 
     # Use weighted moving average for filtering leads
@@ -357,12 +355,6 @@ class DynamicExperimentalController:
   def get_mpc_mode(self) -> str:
     return str(self._mode)
 
-  def has_changed(self) -> bool:
-    return bool(self._mode_changed)
-
-  def set_enabled(self, enabled: bool) -> None:
-    self._is_enabled = enabled
-
   def is_enabled(self) -> bool:
     return self._is_enabled
 
@@ -392,8 +384,5 @@ class DynamicExperimentalController:
         self._radarless_mode()
       else:
         self._radar_mode()
-
-    self._mode_changed = self._mode != self._mode_prev
-    self._mode_prev = self._mode
 
     self._frame += 1
