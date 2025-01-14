@@ -17,12 +17,10 @@ class DecPlanner:
     self.CP = CP
     self.mpc = mpc
 
-    self.is_enabled = False
-
     self.dynamic_experimental_controller = DynamicExperimentalController()
 
   def get_mpc_mode(self, sm: messaging.SubMaster):
-    if not self.is_enabled or not sm['selfdriveState'].experimentalMode:
+    if not self.dynamic_experimental_controller.is_enabled() or not sm['selfdriveState'].experimentalMode:
       return None
 
     return self.dynamic_experimental_controller.get_mpc_mode()
