@@ -164,7 +164,7 @@ class DynamicExperimentalController:
 
     # Context check to ensure repeated anomaly
     if context_check:
-      return bool(np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1)
+      return np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1
     return anomaly
 
   def _adaptive_slowdown_threshold(self) -> float:

@@ -48,8 +48,7 @@ def interp(monkeypatch):
 def controller(interp):
   params = Params()
   params.put_bool("DynamicExperimentalControl", True)
-  controller = DynamicExperimentalController()
-  return controller
+  return DynamicExperimentalController()
 
 def test_initial_state(controller):
   """Test initial state of the controller"""
