@@ -16,17 +16,17 @@ class DecPlanner:
   def __init__(self, CP: structs.CarParams, mpc):
     self.CP = CP
     self.mpc = mpc
-    self.dynamic_experimental_controller = DynamicExperimentalController()
+    self.dec = DynamicExperimentalController()
 
   def get_mpc_mode(self) -> str | None:
-    if not self.dynamic_experimental_controller.active():
+    if not self.dec.active():
       return None
 
-    return self.dynamic_experimental_controller.mode()
+    return self.dec.mode()
 
   def update(self, sm: messaging.SubMaster) -> None:
-    self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
-    self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm)
+    self.dec.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
+    self.dec.update(self.CP.radarUnavailable, sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -35,10 +35,10 @@ class DecPlanner:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
 
-    # DEC
+    # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec
-    dec.state = DecState.blended if self.dynamic_experimental_controller.mode() == 'blended' else DecState.acc
-    dec.enabled = self.dynamic_experimental_controller.enabled()
-    dec.active = self.dynamic_experimental_controller.active()
+    dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
+    dec.enabled = self.dec.enabled()
+    dec.active = self.dec.active()
 
     pm.send('longitudinalPlanSP', plan_sp_send)
