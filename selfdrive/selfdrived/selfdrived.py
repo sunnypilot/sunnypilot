@@ -25,7 +25,7 @@ from openpilot.system.version import get_build_metadata
 
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
-from openpilot.sunnypilot.selfdrive.car.experimental_switcher import ExperimentalSwitcher, DISTANCE_LONG_PRESS
+from openpilot.sunnypilot.selfdrive.car.experimental_switcher import ExperimentalSwitcher
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
