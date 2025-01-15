@@ -51,7 +51,7 @@ def process_pr(pr_data, target_branch, squash_script_path):
             subprocess.run(['git', 'branch', branch, f'origin/{branch}'], check=True)
 
             # Run squash script with proper error handling
-            result = subprocess.run([squash_script_path, '--target', target_branch, '--source', branch, '--title', title], check=True)
+            result = subprocess.run([squash_script_path, '--target', target_branch, '--source', branch, '--title', f"{title} (#{pr_number})"], check=True)
 
             print(f"Successfully processed PR #{pr_number}")
             success_count += 1
