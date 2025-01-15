@@ -4,6 +4,7 @@ import subprocess
 import sys
 import os
 import argparse
+import json
 
 
 def setup_argument_parser():
@@ -101,12 +102,13 @@ def main():
     try:
         args = parser.parse_args()
         validate_squash_script(args.squash_script_path)
+        pr_data_json = json.loads(args.pr_data)
 
         # First fetch all PR branches
-        fetch_pr_branches(args.pr_data)
+        fetch_pr_branches(pr_data_json)
 
         # Then process the PRs
-        success_count = process_pr(args.pr_data, args.target_branch, args.squash_script_path)
+        success_count = process_pr(pr_data_json, args.target_branch, args.squash_script_path)
         print(f"Successfully processed {success_count} PRs")
 
     except Exception as e:
