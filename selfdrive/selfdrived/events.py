@@ -1066,7 +1066,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.experimentalModeSwitched: {
-    ET.WARNING: NormalPermanentAlert(f"Experimental Mode Switched", duration=1.5)
+    ET.WARNING: NormalPermanentAlert("Experimental Mode Switched", duration=1.5)
   }
 
 }
