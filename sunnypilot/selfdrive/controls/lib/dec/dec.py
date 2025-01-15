@@ -101,17 +101,17 @@ class DynamicExperimentalController:
     self._has_lead_filtered_prev = False
 
     self._slow_down_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.SLOW_DOWN_WINDOW_SIZE)
-    self._has_slow_down = False
+    self._has_slow_down: bool = False
 
     self._has_blinkers = False
 
     self._slowness_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.SLOWNESS_WINDOW_SIZE)
-    self._has_slowness = False
+    self._has_slowness: bool = False
 
     self._has_nav_instruction = False
 
     self._dangerous_ttc_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.DANGEROUS_TTC_WINDOW_SIZE)
-    self._has_dangerous_ttc = False
+    self._has_dangerous_ttc: bool = False
 
     self._v_ego_kph = 0.
     self._v_cruise_kph = 0.
@@ -125,7 +125,7 @@ class DynamicExperimentalController:
     self._sng_state = SNG_State.off
 
     self._mpc_fcw_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.MPC_FCW_WINDOW_SIZE)
-    self._has_mpc_fcw = False
+    self._has_mpc_fcw: bool = False
     self._mpc_fcw_crash_cnt = 0
 
     self._set_mode_timeout = 0
