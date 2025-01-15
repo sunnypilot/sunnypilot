@@ -158,6 +158,15 @@ class DynamicExperimentalController:
     if self._frame % int(1. / DT_MDL) == 0:
       self._enabled = self._params.get_bool("DynamicExperimentalControl")
 
+  def mode(self) -> str:
+    return str(self._mode)
+
+  def enabled(self) -> bool:
+    return self._enabled
+
+  def active(self) -> bool:
+    return self._active
+
   @staticmethod
   def _anomaly_detection(recent_data: list[float], threshold: float = 2.0, context_check: bool = True) -> bool:
     """
@@ -359,15 +368,6 @@ class DynamicExperimentalController:
     #  return
 
     self._set_mode('acc')
-
-  def mode(self) -> str:
-    return str(self._mode)
-
-  def enabled(self) -> bool:
-    return self._enabled
-
-  def active(self) -> bool:
-    return self._active
 
   def set_mpc_fcw_crash_cnt(self) -> None:
     self._mpc_fcw_crash_cnt = self._mpc.crash_cnt
