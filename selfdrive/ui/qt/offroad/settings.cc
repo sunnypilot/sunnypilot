@@ -14,6 +14,7 @@
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
+#include "selfdrive/ui/qt/widgets/tsk_keyboard.h"
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
@@ -204,6 +205,8 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(pair_device);
 
   // offroad-only buttons
+
+  addItem(new TSKKeyboard());
 
   auto dcamBtn = new ButtonControl(tr("Driver Camera"), tr("PREVIEW"),
                                    tr("Preview the driver facing camera to ensure that driver monitoring has good visibility. (vehicle must be off)"));
