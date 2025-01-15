@@ -44,18 +44,14 @@ def process_pr(pr_data, target_branch, squash_script_path):
 
         try:
             # Fetch PR branch
-            subprocess.run(['git', 'fetch', 'origin', branch],
-                           check=True,
-                           capture_output=True,
-                           text=True)
+            subprocess.run(['git', 'fetch', 'origin', branch], check=True)
+            # Delete branch if it exists (ignore errors if it doesn't)
+            subprocess.run(['git', 'branch', '-D', branch], check=False)
+            # Create new branch pointing to origin's branch
+            subprocess.run(['git', 'branch', branch, f'origin/{branch}'], check=True)
 
             # Run squash script with proper error handling
-            result = subprocess.run([
-                squash_script_path,
-                '--target', target_branch,
-                '--source', branch,
-                '--title', title
-            ], check=True)
+            result = subprocess.run([squash_script_path, '--target', target_branch, '--source', branch, '--title', title], check=True)
 
             print(f"Successfully processed PR #{pr_number}")
             success_count += 1
@@ -72,40 +68,12 @@ def process_pr(pr_data, target_branch, squash_script_path):
     return success_count
 
 
-def fetch_pr_branches(pr_data):
-    """Fetch all PR branches before processing."""
-    nodes = pr_data.get('data', {}).get('search', {}).get('nodes', [])
-
-    for pr in nodes:
-        branch = pr.get('headRefName', '')
-        pr_number = pr.get('number', 'UNKNOWN')
-
-        if not branch:
-            print(f"Warning: Missing branch name for PR #{pr_number}, skipping")
-            continue
-
-        print(f"Fetching branch {branch} for PR #{pr_number}")
-        try:
-            subprocess.run(['git', 'fetch', 'origin', branch],
-                           check=True,
-                           capture_output=True,
-                           text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error fetching branch {branch} for PR #{pr_number}:")
-            print(f"Command failed with exit code {e.returncode}")
-            print(f"Error output: {e.stderr}")
-            raise
-
-
 def main():
     parser = setup_argument_parser()
     try:
         args = parser.parse_args()
         validate_squash_script(args.squash_script_path)
         pr_data_json = json.loads(args.pr_data)
-
-        # First fetch all PR branches
-        fetch_pr_branches(pr_data_json)
 
         # Then process the PRs
         success_count = process_pr(pr_data_json, args.target_branch, args.squash_script_path)
