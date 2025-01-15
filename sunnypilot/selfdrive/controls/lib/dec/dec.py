@@ -74,9 +74,9 @@ class WeightedMovingAverageCalculator:
       self.data.pop(0)
     self.data.append(value)
 
-  def get_weighted_average(self) -> float:
+  def get_weighted_average(self) -> float | None:
     if len(self.data) == 0:
-      return 0.0
+      return None
     weighted_sum: float = float(np.dot(self.data, self.weights[-len(self.data):]))
     weight_total: float = float(np.sum(self.weights[-len(self.data):]))
     return weighted_sum / weight_total
@@ -204,7 +204,7 @@ class DynamicExperimentalController:
     # lead detection with smoothing
     self._lead_gmac.add_data(lead_one.status)
     #self._has_lead_filtered = self._lead_gmac.get_weighted_average() > WMACConstants.LEAD_PROB
-    lead_prob = self._lead_gmac.get_weighted_average()
+    lead_prob = self._lead_gmac.get_weighted_average() or 0
     self._has_lead_filtered = self._smoothed_lead_detection(lead_prob)
 
     # adaptive slow down detection
@@ -248,7 +248,7 @@ class DynamicExperimentalController:
     if self._has_lead and car_state.vEgo >= 0.01:
       self._dangerous_ttc_gmac.add_data(lead_one.dRel / car_state.vEgo)
 
-    self._has_dangerous_ttc = self._dangerous_ttc_gmac.get_weighted_average() != 0.0 and self._dangerous_ttc_gmac.get_weighted_average() <= WMACConstants.DANGEROUS_TTC
+    self._has_dangerous_ttc = self._dangerous_ttc_gmac.get_weighted_average() is not None and self._dangerous_ttc_gmac.get_weighted_average() <= WMACConstants.DANGEROUS_TTC
 
     # keep prev values
     self._has_standstill_prev = self._has_standstill
