@@ -123,7 +123,10 @@ def process_pr(pr_data, target_branch, squash_script_path):
         return success_count
 
     except Exception as e:
+        import traceback
         print(f"Error in process_pr: {str(e)}")
+        print("Full traceback:")
+        print(traceback.format_exc())
         return 0
 
 
