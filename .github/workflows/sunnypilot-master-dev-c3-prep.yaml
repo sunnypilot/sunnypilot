@@ -110,6 +110,8 @@ jobs:
             --pr-data '${{ steps.get-prs.outputs.PR_LIST }}' \
             --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
             --squash-script-path '${{ github.workspace }}/release/ci/squash_and_merge.py'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes
         run: |
