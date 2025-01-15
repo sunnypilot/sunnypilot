@@ -6,6 +6,7 @@ env:
   PR_LABEL: "dev-c3"
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       source_branch:
