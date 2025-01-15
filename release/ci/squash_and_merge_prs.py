@@ -27,9 +27,7 @@ def validate_squash_script(script_path):
 
 def sort_prs_by_creation(pr_data):
     """Sort PRs by creation date"""
-    nodes = (pr_data.get('data', {})
-             .get('search', {})
-             .get('nodes', []))
+    nodes = (pr_data.get('data', {}).get('search', {}).get('nodes', []))
 
     return sorted(
         nodes,
@@ -84,11 +82,9 @@ def process_pr(pr_data, target_branch, squash_script_path):
                 continue
 
             # Check for merge conflicts using gh cli
-            merge_status = subprocess.run(
-                ['gh', 'pr', 'view', str(pr_number), '--json', 'mergeable'],
-                capture_output=True,
-                text=True
-            )
+            merge_status = subprocess.run(['gh', 'pr', 'view', str(pr_number), '--json', 'mergeable'], capture_output=True, text=True)
+            print(merge_status)
+            print(merge_status.stdout)
             merge_data = json.loads(merge_status.stdout)
             if not merge_data.get('mergeable'):
                 print(f"PR #{pr_number} has merge conflicts")
