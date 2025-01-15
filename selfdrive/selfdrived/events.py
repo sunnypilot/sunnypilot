@@ -1063,6 +1063,10 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.hyundaiRadarTracksConfirmed: {
     ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
+  },
+
+  EventName.experimentalModeSwitched: {
+    ET.WARNING: NormalPermanentAlert(f"Experimental Mode Switched", duration=1.5)
   }
 
 }
