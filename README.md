@@ -13,10 +13,7 @@ Table of Contents
 * [Driving Enhancements](#-driving-enhancements)
 * [Branch Definitions](#-branch-definitions)
 * [Recommended Branches](#-recommended-branches)
-* [How-To's](#-How-Tos)
 * [Pull Requests](#-Pull-Requests)
-* [Special Thanks](#-special-thanks)
-* [User Data](#-user-data)
 * [Licensing](#licensing)
 * [Donate](#-support-sunnypilot)
 
@@ -50,7 +47,7 @@ To use sunnypilot in a car, you need the following:
     * a [comma three](https://comma.ai/shop/products/three), or
     * a comma two (only with older versions below 0.8.13)
 * This software
-* One of [the 250+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
+* One of [the 290+ supported cars](https://github.com/commaai/openpilot/blob/master/docs/CARS.md). We support Honda, Toyota, Hyundai, Nissan, Kia, Chrysler, Lexus, Acura, Audi, VW, Ford and more. If your car is not supported but has adaptive cruise control and lane-keeping assist, it's likely able to run sunnypilot.
 * A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
 
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
@@ -163,50 +160,14 @@ After running the command to install the desired branch, your comma device shoul
 
 ### Quality of Life Enhancements
 - [**Modified Assistive Driving Safety (MADS)**](#modified-assistive-driving-safety-mads) - Automatic Lane Centering (ALC) / Lane Keep Assist System (LKAS) and Adaptive Cruise Control (ACC) / Smart Cruise Control (SCC) can be engaged independently of each other
-- [**Dynamic Lane Profile (DLP)**](#dynamic-lane-profile-dlp) - Dynamically switch lane profile (between Laneful and Laneless) based on lane recognition confidence
-- [**Enhanced Speed Control**](#enhanced-speed-control) - Automatically adjust cruise control speed using vision model, OpenStreetMap (OSM) data, and/or Speed Limit control (SLC) without user interaction
-    * Vision-based Turn Speed Control (V-TSC) - lower speed when going around corners using vision model
-    * Map-Data-based Turn Speed Control (M-TSC) - lower speed when going around corners using OSM data[^1]
-    * Speed Limit Control (SLC) - Set speed limit based on map data or car interface (if applicable)
-    * HKG only: Highway Driving Assist (HDA) status integration - Use cars native speed sign detection to set desired speed (on applicable HKG cars only)
-- [**Gap Adjust Cruise (GAC)**](#gap-adjust-cruise) - Allow `GAP`/`INTERVAL`/`DISTANCE` button on the steering wheel or on-screen button to adjust the follow distance from the lead car. See table below for options
-- [**Quiet Drive 🤫**](#-quiet-drive) - Toggle to mute all notification sounds (excluding driver safety warnings)
-- [**Auto Lane Change Timer**](#Auto-Lane-Change-Timer) - Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set
-- [**Force Car Recognition (FCR)**](#Force-Car-Recognition-) - Use a selector to force your car to be recognized by sunnypilot
-- [**Fix sunnypilot No Offroad**](#Fix-sunnypilot-No-Offroad) - Enforce sunnypilot to go offroad and turns off after shutting down the car. This feature fixes non-official devices running sunnypilot without comma power
-- [**Enable ACC+MADS with RES+/SET-**](#Enable-ACC+MADS-with-RES+/SET-) - Engage both ACC and MADS with a single press of RES+ or SET- button
-- [**Offline OSM Maps**](#Offline-OSM-Maps) - OSM database can now be downloaded locally for offline use[^2]. This enables offline SLC, V-TSC and M-TSC. Currently available for US South, US West, US Northeast, Florida, Taiwan, South Africa and New Zealand
-- [**Various Live Tuning**](#Various-Live-Tuning) - Ability to tailor your driving experience on the fly:
-    * Enforce Torque Lateral Control - Use the newest [torque controller](https://blog.comma.ai/0815release/#torque-controller) for all vehicles.
-    * Torque Lateral Control Live Tune - Ability to adjust the torque controller’s `FRICTION` and `LAT_ACCEL_FACTOR` values to suit your vehicle.
-    * Torque Lateral Controller Self-Tune - Enable automatic turning for the Torque controller.
 
 ### Visual Enhancements
-* **M.A.D.S Status Icon** - Dedicated icon to display M.A.D.S. engagement status
-    * Green🟢: M.A.D.S. engaged
+* **M.A.D.S Boarder color** - Dedicated icon to display M.A.D.S. engagement status* 
+    * Green🟢: openpilot is engaged as normal
+    * Black⚫: M.A.D.S. engaged, steering or longitudinal is being manually overridden by user
+    * Blue🔵: M.A.D.S. engaged but longitudinal is not
     * White⚪: M.A.D.S. suspended or disengaged
-* **Lane Path Color** - Various lane path colors to display real-time Lane Model and M.A.D.S. engagement status
-    * 0.8.14 and later:
-        * Blue🔵: Laneful mode & M.A.D.S. engaged
-        * Green🟢: Laneless mode & M.A.D.S. engaged
-        * Yellow🟡: Experimental e2e & M.A.D.S. engaged
-    * Pre 0.8.14:
-        * Green🟢: Laneful mode & M.A.D.S. engaged
-        * Red🔴: Laneless mode & M.A.D.S. engaged
-    * White⚪: M.A.D.S. suspended or disengaged
-    * Black⚫: M.A.D.S. engaged, steering is being manually overridden by user
-* **Developer (Dev) UI** - Display various real-time metrics on screen while driving
-* **Stand Still Timer** - Display time spent at a stop with M.A.D.S engaged (i.e., at traffic lights, stop signs, traffic congestions)
-* **Braking Status** - Current car speed text turns red when the car is braking by the driver or ACC/SCC
-
-### Operational Enhancements
-* **Fast Boot** - sunnypilot will fast boot by creating a Prebuilt file
-* **Disable Onroad Uploads** - Disable uploads completely when onroad. Necessary to avoid high data usage when connected to Wi-Fi hotspot
-* **Brightness Control (Global)** - Manually adjusts the global brightness of the screen
-* **Driving Screen Off Timer** - Turns off the device screen or reduces brightness to protect the screen after car starts
-* **Driving Screen Off Brightness (%)** - When using the Driving Screen Off feature, the brightness is reduced according to the automatic brightness ratio
-* **Max Time Offroad** - Device is automatically turned off after a set time when the engine is turned off (off-road) after driving (on-road)
-
+  -
 </details>
 
 <details><summary><h3>🚗 Driving Enhancements</h3></summary>
@@ -230,49 +191,11 @@ Dedicated toggle to handle Lateral state on brake pedal press and release:
 1. `ON`: `BRAKE pedal` press will pause Automatic Lane Centering; `BRAKE pedal` release will resume Automatic Lane Centering. Note: `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
 2. `OFF`: `BRAKE pedal` press will NOT pause Automatic Lane Centering; `BRAKE pedal` release will NOT resume ACC/SCC/Long control without explicit user engagement **(strictly enforced in panda safety code)**
 
-### Miscellaneous
-* `TURN SIGNALS` (`Left` or `Right`) will pause Automatic Lane Centering if the vehicle speed is below the [threshold](https://github.com/commaai/openpilot/blob/master/selfdrive/controls/lib/desire_helper.py#L8) for Automatic Lane Change
-* Event audible alerts are more relaxed to match manufacturer's stock behavior
-* Critical events trigger disengagement of Automatic Lane Centering completely. The disengagement is enforced in sunnypilot and panda safety
-
-### Dynamic Lane Profile (DLP)
-
-Dynamic Lane Profile (DLP) aims to provide the best driving experience at staying within a lane confidently. Dynamic Lane Profile allows sunnypilot to dynamically switch between lane profiles based on lane recognition confidence level on road.
-
-There are 3 modes to select on the onroad camera screen:
-* **Auto Lane**: sunnypilot dynamically chooses between `Laneline` or `Laneless` model
-* **Laneline**: sunnypilot uses Laneline model only.
-* **Laneless**: sunnypilot uses Laneless model only.
-
-To use Dynamic Lane Profile, do the following:
-```
-1. sunnypilot Settings -> `SP - Controls` -> Enable Dynamic Lane Profile -> ON toggle
-2. Reboot.
-3. Before driving, on the onroad camera screen, toggle between the 3 modes by pressing on the button.
-4. Drive.
-```
-
-### Enhanced Speed Control
-This fork now allows supported cars to dynamically adjust the longitudinal plan based on the fetched map data. Big thanks to the Move Fast team for the amazing implementation!
-
-**Supported cars:**
-* sunnypilot Longitudinal Control capable
-* Stock Longitudinal Control
-    * Hyundai/Kia/Genesis (non CAN-FD)
-    * Honda Bosch
-    * Volkswagen MQB
 
 Certain features are only available with an active data connection, via:
 * [comma Prime](https://comma.ai/prime) - Intuitive service provided directly by comma, or
 * Personal Hotspot - From your mobile device, or a dedicated hotspot from a cellular carrier.
 
-**Features:**
-* Vision-based Turn Speed Control (VTSC) - Use vision path predictions to estimate the appropriate speed to drive through turns ahead - i.e. slowing down for curves
-* Map-Data-based Turn Speed Control (MTSC) - Use curvature information from map data to define speed limits to take turns ahead - i.e. slowing down for curves[^1]
-* Speed Limit Control (SLC) - Use speed limit signs information from map data and car interface to automatically adapt cruise speed to road limits
-    * HKG only: Highway Driving Assist (HDA) status integration - on applicable HKG cars only[^1]
-    * Speed Limit Offset - When Speed Limit Control is enabled, set speed limit slightly higher than the actual speed limit for a more natural drive[^1]
-* Toggle Hands on Wheel Monitoring - Monitors and alerts the driver when their hands have not been on the steering wheel for an extended time
 
 ### Custom Stock Longitudinal Control
 While using stock Adaptive/Smart Cruise Control, Custom Stock Longitudinal Control in sunnypilot allows sunnypilot to manipulate and take over the set speed on the car's dashboard.
@@ -351,14 +274,6 @@ Example:
 
 </details>
 
-<details><summary><h3>📗 How To's</h3></summary>
-
----
-
-How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/openpilot/blob/(!)README/HOW-TOS.md).
-
-</details>
-
 
 <details><summary><h3>🎆 Pull Requests</h3></summary>
 
@@ -366,31 +281,7 @@ How-To instructions can be found in [HOW-TOS.md](https://github.com/sunnyhaibin/
 
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
 
-Pull requests should be against the most current `master` branch.
-
-</details>
-
-<details><summary><h3>🏆 Special Thanks</h3></summary>
-
----
-
-* [spektor56](https://github.com/spektor56/openpilot)
-* [rav4kumar](https://github.com/rav4kumar/openpilot)
-* [mob9221](https://github.com/mob9221/opendbc)
-* [briantran33](https://github.com/briantran33/openpilot)
-* [Aragon7777](https://github.com/aragon7777/openpilot)
-* [sshane](https://github.com/sshane/openpilot-installer-generator)
-* [jung](https://github.com/chanhojung/openpilot)
-* [dri94](https://github.com/dri94/openpilot)
-* [FrogAi](https://github.com/frogAi/FrogPilot/)
-* [twilsonco](https://github.com/twilsonco/openpilot)
-* [martinl](https://github.com/martinl/openpilot)
-* [multikyd](https://github.com/openpilotkr)
-* [Move Fast GmbH](https://github.com/move-fast/openpilot)
-* [dragonpilot](https://github.com/dragonpilot-community/dragonpilot)
-* [neokii](https://github.com/neokii/openpilot)
-* [AlexandreSato](https://github.com/AlexandreSato/openpilot)
-* [Moodkiller](https://github.com/moodkiller)
+Pull requests should be against the most current `master-new` branch.
 
 </details>
 
