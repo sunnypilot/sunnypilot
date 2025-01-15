@@ -30,19 +30,6 @@ jobs:
           fetch-depth: 0  # Fetch all history for all branches
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set branch variables
-        id: set-branches
-        run: |
-          # If this is a scheduled run, use defaults from env
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "SOURCE_BRANCH=${DEFAULT_SOURCE_BRANCH}" >> $GITHUB_OUTPUT
-            echo "TARGET_BRANCH=${DEFAULT_TARGET_BRANCH}" >> $GITHUB_OUTPUT
-          else
-            # Otherwise use the workflow inputs
-            echo "SOURCE_BRANCH=${{ inputs.source_branch }}" >> $GITHUB_OUTPUT
-            echo "TARGET_BRANCH=${{ inputs.target_branch }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Configure Git
         run: |
           git config --global user.name 'github-actions[bot]'
@@ -59,35 +46,31 @@ jobs:
           pip install PyGithub
 
       - name: Check branches exist
-        id: check-branches
         run: |
           # Check if source branch exists
-          if ! git ls-remote --heads origin ${{ steps.set-branches.outputs.SOURCE_BRANCH }} | grep -q "${{ steps.set-branches.outputs.SOURCE_BRANCH }}"; then
-            echo "Source branch ${{ steps.set-branches.outputs.SOURCE_BRANCH }} does not exist!"
+          if ! git ls-remote --heads origin ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }} | grep -q "${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"; then
+            echo "Source branch ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }} does not exist!"
             exit 1
           fi
           
           # Make sure we have the latest source branch
-          git fetch origin ${{ steps.set-branches.outputs.SOURCE_BRANCH }}
+          git fetch origin ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}
           
           # Check if target branch exists
-          if ! git ls-remote --heads origin ${{ steps.set-branches.outputs.TARGET_BRANCH }} | grep -q "${{ steps.set-branches.outputs.TARGET_BRANCH }}"; then
-            echo "Target branch ${{ steps.set-branches.outputs.TARGET_BRANCH }} does not exist, creating it from ${{ steps.set-branches.outputs.SOURCE_BRANCH }}"
-            git checkout -b ${{ steps.set-branches.outputs.TARGET_BRANCH }} origin/${{ steps.set-branches.outputs.SOURCE_BRANCH }}
-            git push origin ${{ steps.set-branches.outputs.TARGET_BRANCH }}
+          if ! git ls-remote --heads origin ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} | grep -q "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"; then
+            echo "Target branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} does not exist, creating it from ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"
+            git checkout -b ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} origin/${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}
+            git push origin ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}
           else
             # Fetch target branch if it exists
-            git fetch origin ${{ steps.set-branches.outputs.TARGET_BRANCH }}
+            git fetch origin ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}
           fi
 
       - name: Reset target branch
         run: |
-          # Reset target branch to source branch state
-          echo "Resetting ${{ steps.set-branches.outputs.TARGET_BRANCH }} to match ${{ steps.set-branches.outputs.SOURCE_BRANCH }}"
-          git checkout origin/${{ steps.set-branches.outputs.SOURCE_BRANCH }}
-          git checkout -B ${{ steps.set-branches.outputs.TARGET_BRANCH }}
-          
-          # Don't push yet, we'll do it after squashing PRs
+          echo "Resetting ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} to match ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"
+          git checkout origin/${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}
+          git checkout -B ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}
 
       - name: Get PRs to squash
         id: get-prs
@@ -114,15 +97,14 @@ jobs:
         run: |
           ${{ github.workspace }}/release/ci/squash_and_merge_prs.py \
             --pr-data '${{ steps.get-prs.outputs.PR_LIST }}' \
-            --target-branch ${{ steps.set-branches.outputs.TARGET_BRANCH }} \
+            --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
             --squash-script-path '${{ github.workspace }}/release/ci/squash_and_merge.py'
 
       - name: Push changes
         run: |
-          # First push the reset branch with force
-          if ! git push origin ${{ steps.set-branches.outputs.TARGET_BRANCH }} --force; then
-            echo "Failed to push changes to ${{ steps.set-branches.outputs.TARGET_BRANCH }}"
+          if ! git push origin ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} --force; then
+            echo "Failed to push changes to ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
             exit 1
           fi
           
-          echo "Branch ${{ steps.set-branches.outputs.TARGET_BRANCH }} has been reset and updated with squashed PRs"
+          echo "Branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} has been reset and updated with squashed PRs"
