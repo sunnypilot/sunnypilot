@@ -69,8 +69,9 @@ jobs:
       - name: Reset target branch
         run: |
           echo "Resetting ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} to match ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"
-          git checkout origin/${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}
-          git checkout -B ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}
+          # Delete if exists and recreate pointing to source
+          git branch -D ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} || true
+          git branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} origin/${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}
 
       - name: Get PRs to squash
         id: get-prs
