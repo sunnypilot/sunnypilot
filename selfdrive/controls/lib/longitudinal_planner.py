@@ -110,7 +110,7 @@ class LongitudinalPlanner(DecPlanner):
   def update(self, sm):
     DecPlanner.update(self, sm)
     self.mpc.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
-    if dec_mpc_mode := self.get_mpc_mode():
+    if dec_mpc_mode := self.get_dec_mpc_mode():
       self.mpc.mode = dec_mpc_mode
 
     if len(sm['carControl'].orientationNED) == 3:

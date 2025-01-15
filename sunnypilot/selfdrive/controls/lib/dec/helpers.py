@@ -18,7 +18,7 @@ class DecPlanner:
     self.mpc = mpc
     self.dec = DynamicExperimentalController()
 
-  def get_mpc_mode(self) -> str | None:
+  def get_dec_mpc_mode(self) -> str | None:
     if not self.dec.active():
       return None
 
