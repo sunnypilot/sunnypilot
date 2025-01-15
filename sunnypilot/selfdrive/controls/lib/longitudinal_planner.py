@@ -9,25 +9,21 @@ from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 
-MpcSource = custom.LongitudinalPlanSP.MpcSource
+DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 
 
-class DecPlanner:
+class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
-    self.CP = CP
-    self.mpc = mpc
+    self.dec = DynamicExperimentalController(CP, mpc)
 
-    self.dynamic_experimental_controller = DynamicExperimentalController()
-
-  def get_mpc_mode(self, sm: messaging.SubMaster):
-    if not self.dynamic_experimental_controller.is_enabled() or not sm['selfdriveState'].experimentalMode:
+  def get_mpc_mode(self) -> str | None:
+    if not self.dec.active():
       return None
 
-    return self.dynamic_experimental_controller.get_mpc_mode()
+    return self.dec.mode()
 
   def update(self, sm: messaging.SubMaster) -> None:
-    self.dynamic_experimental_controller.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
-    self.dynamic_experimental_controller.update(self.CP.radarUnavailable, sm)
+    self.dec.update(sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -36,9 +32,10 @@ class DecPlanner:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
 
-    # DEC
-    longitudinalPlanSP.mpcSource = MpcSource.blended if self.mpc.mode == 'blended' else MpcSource.acc
-
-    longitudinalPlanSP.dynamicExperimentalControl = self.dynamic_experimental_controller.is_enabled()
+    # Dynamic Experimental Control
+    dec = longitudinalPlanSP.dec
+    dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
+    dec.enabled = self.dec.enabled()
+    dec.active = self.dec.active()
 
     pm.send('longitudinalPlanSP', plan_sp_send)

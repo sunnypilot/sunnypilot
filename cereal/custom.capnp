@@ -83,12 +83,17 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 }
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
-  mpcSource @0 :MpcSource;
-  dynamicExperimentalControl @1 :Bool;
-  
-  enum MpcSource {
-    acc @0;
-    blended @1;
+  dec @0 :DynamicExperimentalControl;
+
+  struct DynamicExperimentalControl {
+    state @0 :DynamicExperimentalControlState;
+    enabled @1 :Bool;
+    active @2 :Bool;
+
+    enum DynamicExperimentalControlState {
+      acc @0;
+      blended @1;
+    }
   }
 }
 

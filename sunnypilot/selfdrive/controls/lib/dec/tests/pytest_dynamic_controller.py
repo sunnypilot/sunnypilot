@@ -1,17 +1,9 @@
-from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import (
-  DynamicExperimentalController,
-  TRAJECTORY_SIZE,
-  LEAD_WINDOW_SIZE,
-  SLOW_DOWN_WINDOW_SIZE,
-  DANGEROUS_TTC_WINDOW_SIZE,
-  MPC_FCW_WINDOW_SIZE,
-  SNG_State,
-  STOP_AND_GO_FRAME
-)
-
 import pytest
 import numpy as np
 from openpilot.common.params import Params
+
+from openpilot.sunnypilot.selfdrive.controls.lib.dec.constants import WMACConstants, SNG_State
+from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController, TRAJECTORY_SIZE, STOP_AND_GO_FRAME
 
 class MockInterp:
   def __call__(self, x, xp, fp):
@@ -48,8 +40,7 @@ def interp(monkeypatch):
 def controller(interp):
   params = Params()
   params.put_bool("DynamicExperimentalControl", True)
-  controller = DynamicExperimentalController()
-  return controller
+  return DynamicExperimentalController()
 
 def test_initial_state(controller):
   """Test initial state of the controller"""
@@ -94,7 +85,7 @@ def test_lead_detection(controller, has_radar):
   controls_state = MockControlState(v_cruise=72)
 
   # Let moving average stabilize
-  for _ in range(LEAD_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.LEAD_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_lead_filtered
@@ -103,7 +94,7 @@ def test_lead_detection(controller, has_radar):
 
   # Test lead loss detection
   lead_one.status = False
-  for _ in range(LEAD_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.LEAD_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert not controller._has_lead_filtered
@@ -119,7 +110,7 @@ def test_slow_down_detection(controller, has_radar):
   controls_state = MockControlState(v_cruise=30)
 
   # Test slow down detection
-  for _ in range(SLOW_DOWN_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.SLOW_DOWN_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_slow_down
@@ -128,7 +119,7 @@ def test_slow_down_detection(controller, has_radar):
   # Test slow down recovery
   positions = [200] * TRAJECTORY_SIZE  # Position outside slow down threshold
   md = MockModelData(x_vals=x_vals, positions=positions)
-  for _ in range(SLOW_DOWN_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.SLOW_DOWN_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert not controller._has_slow_down
@@ -143,7 +134,7 @@ def test_dangerous_ttc_detection(controller, has_radar):
 
   # First establish normal conditions with lead
   lead_one.dRel = 100  # Safe distance
-  for _ in range(LEAD_WINDOW_SIZE + 1):  # First establish lead detection
+  for _ in range(WMACConstants.LEAD_WINDOW_SIZE + 1):  # First establish lead detection
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_lead_filtered  # Verify lead is detected
@@ -153,7 +144,7 @@ def test_dangerous_ttc_detection(controller, has_radar):
   # TTC = dRel/vEgo = 10/10 = 1s (which is less than DANGEROUS_TTC = 2.3s)
 
   # Need to update multiple times to allow the weighted average to stabilize
-  for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
+  for _ in range(WMACConstants.DANGEROUS_TTC_WINDOW_SIZE * 2):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_dangerous_ttc, "TTC of 1s should be considered dangerous"
@@ -171,8 +162,8 @@ def test_mode_transitions(controller, has_radar):
 
   def stabilize_filters():
     """Helper to let all moving averages stabilize"""
-    for _ in range(max(LEAD_WINDOW_SIZE, SLOW_DOWN_WINDOW_SIZE,
-                       DANGEROUS_TTC_WINDOW_SIZE, MPC_FCW_WINDOW_SIZE) + 1):
+    for _ in range(max(WMACConstants.LEAD_WINDOW_SIZE, WMACConstants.SLOW_DOWN_WINDOW_SIZE,
+                       WMACConstants.DANGEROUS_TTC_WINDOW_SIZE, WMACConstants.MPC_FCW_WINDOW_SIZE) + 1):
       controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   # Test 1: Normal driving -> ACC mode
@@ -198,7 +189,7 @@ def test_mode_transitions(controller, has_radar):
   lead_one.dRel = 50  # First establish normal lead detection
 
   # First establish lead detection
-  for _ in range(LEAD_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.LEAD_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_lead_filtered  # Verify lead is detected
@@ -206,7 +197,7 @@ def test_mode_transitions(controller, has_radar):
   # Now create dangerous TTC condition
   lead_one.dRel = 20  # This creates a TTC of 1s, well below DANGEROUS_TTC
 
-  for _ in range(DANGEROUS_TTC_WINDOW_SIZE * 2):
+  for _ in range(WMACConstants.DANGEROUS_TTC_WINDOW_SIZE * 2):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_dangerous_ttc, "Should detect dangerous TTC condition"
@@ -223,7 +214,7 @@ def test_mpc_fcw_handling(controller, has_radar):
 
   # Test FCW activation
   controller.set_mpc_fcw_crash_cnt(5)
-  for _ in range(MPC_FCW_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.MPC_FCW_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert controller._has_mpc_fcw
@@ -231,7 +222,7 @@ def test_mpc_fcw_handling(controller, has_radar):
 
   # Test FCW recovery
   controller.set_mpc_fcw_crash_cnt(0)
-  for _ in range(MPC_FCW_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.MPC_FCW_WINDOW_SIZE + 1):
     controller.update(not has_radar, car_state, lead_one, md, controls_state)
 
   assert not controller._has_mpc_fcw
@@ -244,12 +235,12 @@ def test_radar_unavailable_handling(controller):
   controls_state = MockControlState(v_cruise=100)
 
   # Test with radar available
-  for _ in range(LEAD_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.LEAD_WINDOW_SIZE + 1):
     controller.update(False, car_state, lead_one, md, controls_state)
   radar_mode = controller.get_mpc_mode()
 
   # Test with radar unavailable
-  for _ in range(LEAD_WINDOW_SIZE + 1):
+  for _ in range(WMACConstants.LEAD_WINDOW_SIZE + 1):
     controller.update(True, car_state, lead_one, md, controls_state)
   radarless_mode = controller.get_mpc_mode()
 
