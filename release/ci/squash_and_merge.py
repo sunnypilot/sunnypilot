@@ -117,7 +117,7 @@ def workspace_manager(original_branch: str):
         if temp_branch:
           run_command(f"git branch -D {temp_branch}")
         print("\nOperation interrupted, but changes were already restored.")
-        sys.exit(1)
+        sys.exit(3)
 
       # First, switch back to original branch
       current = get_current_branch()
@@ -139,12 +139,12 @@ def workspace_manager(original_branch: str):
 
       if signum:
         print("\nOperation interrupted. Cleaned up and restored original state.")
-        sys.exit(1)
+        sys.exit(4)
 
     except Exception as e:
       print(f"Error during cleanup: {e}")
       if signum:
-        sys.exit(1)
+        sys.exit(5)
 
   try:
     # Set up signal handlers
@@ -344,7 +344,7 @@ def main():
   parser.add_argument('--push', action='store_true',
                       help='Push changes to remote after squashing')
 
-  args = parser.parse_args()
+  args, unknown = parser.parse_known_args()
 
   # Determine source branch early
   source_branch = args.source
@@ -354,7 +354,7 @@ def main():
       sys.exit(1)
 
   if not squash_and_merge(source_branch, args.target, args.title, args.backup, args.push):
-    sys.exit(1)
+    sys.exit(2)
 
 
 if __name__ == "__main__":
