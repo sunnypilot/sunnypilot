@@ -12,21 +12,18 @@ from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimen
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 
 
-class DecPlanner:
+class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
-    self.CP = CP
-    self.mpc = mpc
-    self.dec = DynamicExperimentalController()
+    self.dec = DynamicExperimentalController(CP, mpc)
 
-  def get_dec_mpc_mode(self) -> str | None:
+  def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
       return None
 
     return self.dec.mode()
 
   def update(self, sm: messaging.SubMaster) -> None:
-    self.dec.set_mpc_fcw_crash_cnt(self.mpc.crash_cnt)
-    self.dec.update(self.CP.radarUnavailable, sm)
+    self.dec.update(sm)
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')

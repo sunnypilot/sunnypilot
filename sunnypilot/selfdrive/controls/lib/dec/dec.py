@@ -25,6 +25,7 @@
 import numpy as np
 
 from cereal import messaging
+from opendbc.car import structs
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
@@ -109,7 +110,9 @@ class WeightedMovingAverageCalculator:
 
 
 class DynamicExperimentalController:
-  def __init__(self, params=None):
+  def __init__(self, CP: structs.CarParams, mpc, params=None):
+    self._CP = CP
+    self._mpc = mpc
     self._params = params or Params()
     self._enabled: bool = self._params.get_bool("DynamicExperimentalControl")
     self._active: bool = False
@@ -150,6 +153,10 @@ class DynamicExperimentalController:
     self._mpc_fcw_crash_cnt = 0
 
     self._set_mode_timeout = 0
+
+  def _read_params(self) -> None:
+    if self._frame % int(1. / DT_MDL) == 0:
+      self._enabled = self._params.get_bool("DynamicExperimentalControl")
 
   @staticmethod
   def _anomaly_detection(recent_data: list[float], threshold: float = 2.0, context_check: bool = True) -> bool:
@@ -362,8 +369,8 @@ class DynamicExperimentalController:
   def active(self) -> bool:
     return self._active
 
-  def set_mpc_fcw_crash_cnt(self, crash_cnt: float) -> None:
-    self._mpc_fcw_crash_cnt = crash_cnt
+  def set_mpc_fcw_crash_cnt(self) -> None:
+    self._mpc_fcw_crash_cnt = self._mpc.crash_cnt
 
   def _set_mode(self, mode: str) -> None:
     if self._set_mode_timeout == 0:
@@ -374,20 +381,17 @@ class DynamicExperimentalController:
     if self._set_mode_timeout > 0:
       self._set_mode_timeout -= 1
 
-  def _read_params(self) -> None:
-    if self._frame % int(1. / DT_MDL) == 0:
-      self._enabled = self._params.get_bool("DynamicExperimentalControl")
-
-  def update(self, radar_unavailable: bool, sm: messaging.SubMaster) -> None:
+  def update(self, sm: messaging.SubMaster) -> None:
     self._read_params()
 
-    if self._enabled:
-      self._update_calculations(sm)
+    self.set_mpc_fcw_crash_cnt()
 
-      if radar_unavailable:
-        self._radarless_mode()
-      else:
-        self._radar_mode()
+    self._update_calculations(sm)
+
+    if self._CP.radarUnavailable:
+      self._radarless_mode()
+    else:
+      self._radar_mode()
 
     self._active = sm['selfdriveState'].experimentalMode and self._enabled
 
