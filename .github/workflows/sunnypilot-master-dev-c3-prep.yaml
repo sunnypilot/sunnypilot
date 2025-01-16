@@ -121,3 +121,9 @@ jobs:
           fi
           
           echo "Branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} has been reset and updated with squashed PRs"
+
+      - name: Trigger next workflow
+        run: |
+          gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
