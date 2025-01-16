@@ -122,7 +122,31 @@ jobs:
           
           echo "Branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} has been reset and updated with squashed PRs"
 
-      - name: Trigger next workflow
+      - name: Trigger and wait for selfdrive tests
+        id: selfdrive-tests
+        run: |
+          # Trigger the workflow
+          WORKFLOW_ID=$(gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --json ID -q .ID)
+          echo "workflow_id=${WORKFLOW_ID}" >> $GITHUB_OUTPUT
+          
+          # Wait for completion and check status
+          while true; do
+            STATUS=$(gh run view $WORKFLOW_ID --json conclusion -q .conclusion)
+            if [ "$STATUS" = "success" ]; then
+              echo "Selfdrive tests completed successfully"
+              exit 0
+            elif [ "$STATUS" = "failure" ] || [ "$STATUS" = "cancelled" ]; then
+              echo "Selfdrive tests failed or were cancelled"
+              exit 1
+            fi
+            echo "Waiting for selfdrive tests to complete..."
+            sleep 60
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger prebuilt workflow
+        if: success() && steps.selfdrive-tests.outcome == 'success'
         run: |
           gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
         env:
