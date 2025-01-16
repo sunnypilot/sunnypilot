@@ -125,8 +125,9 @@ jobs:
       - name: Trigger and wait for selfdrive tests
         id: selfdrive-tests
         run: |
-          # Trigger the workflow
-          WORKFLOW_ID=$(gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --json ID -q .ID)
+          # Trigger the workflow and get the run ID
+          RUN_URL=$(gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" | grep -o 'https://github.com/.*/runs/[0-9]*')
+          WORKFLOW_ID=$(echo $RUN_URL | grep -o '[0-9]*$')
           echo "workflow_id=${WORKFLOW_ID}" >> $GITHUB_OUTPUT
           
           # Wait for completion and check status
