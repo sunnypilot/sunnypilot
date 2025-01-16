@@ -122,27 +122,20 @@ jobs:
           
           echo "Branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} has been reset and updated with squashed PRs"
 
-      - name: Trigger and wait for selfdrive tests
-        id: selfdrive-tests
+      - name: Trigger selfdrive tests
+        uses: convictional/trigger-workflow-and-wait@v1.6.5
+        with:
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow_file_name: selfdrive_tests.yaml
+          ref: ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}
+          wait_interval: 60
+
+      - name: Trigger prebuilt workflow
+        if: success()
         run: |
-          # Trigger the workflow and get the run ID
-          RUN_URL=$(gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" | grep -o 'https://github.com/.*/runs/[0-9]*')
-          WORKFLOW_ID=$(echo $RUN_URL | grep -o '[0-9]*$')
-          echo "workflow_id=${WORKFLOW_ID}" >> $GITHUB_OUTPUT
-          
-          # Wait for completion and check status
-          while true; do
-            STATUS=$(gh run view $WORKFLOW_ID --json conclusion -q .conclusion)
-            if [ "$STATUS" = "success" ]; then
-              echo "Selfdrive tests completed successfully"
-              exit 0
-            elif [ "$STATUS" = "failure" ] || [ "$STATUS" = "cancelled" ]; then
-              echo "Selfdrive tests failed or were cancelled"
-              exit 1
-            fi
-            echo "Waiting for selfdrive tests to complete..."
-            sleep 60
-          done
+          gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
