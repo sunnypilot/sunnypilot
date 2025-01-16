@@ -173,8 +173,8 @@ class DynamicExperimentalController:
     """
     Smoothing the lead detection to avoid erratic behavior.
     """
-    self._has_lead_filtered = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
-    return self._has_lead_filtered > WMACConstants.LEAD_PROB
+    lead_filtering: float = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
+    return lead_filtering > WMACConstants.LEAD_PROB
 
   def _adaptive_lead_prob_threshold(self) -> float:
     """
