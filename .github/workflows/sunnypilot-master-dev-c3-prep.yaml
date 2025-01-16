@@ -122,15 +122,18 @@ jobs:
           
           echo "Branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} has been reset and updated with squashed PRs"
 
-      - name: Trigger selfdrive tests
-        uses: convictional/trigger-workflow-and-wait@v1.6.5
-        with:
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.repository }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow_file_name: selfdrive_tests.yaml
-          ref: ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}
-          wait_interval: 60
+      - name: Trigger and wait for selfdrive tests
+        run: |
+          echo "Triggering selfdrive tests..."
+          gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+          
+          echo "Getting latest run ID..."
+          RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+          
+          echo "Watching run ID: $RUN_ID"
+          gh run watch "$RUN_ID"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger prebuilt workflow
         if: success()
