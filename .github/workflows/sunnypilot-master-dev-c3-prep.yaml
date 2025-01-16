@@ -18,8 +18,8 @@ on:
         required: true
         default: 'master-dev-c3-new-test'
         type: string
-  # schedule:
-  #   - cron: '0 0 * * *'  # Run at midnight UTC
+  schedule:
+     - cron: '0 0 * * *'  # Run at midnight UTC
 
 jobs:
   reset-and-squash:
