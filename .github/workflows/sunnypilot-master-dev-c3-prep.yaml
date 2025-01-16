@@ -127,6 +127,9 @@ jobs:
           echo "Triggering selfdrive tests..."
           gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
           
+          echo "Sleeping for 120s to give plenty of time for the action to start and then we wait"
+          sleep 120
+          
           echo "Getting latest run ID..."
           RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
           
