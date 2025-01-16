@@ -173,8 +173,8 @@ class DynamicExperimentalController:
     """
     Smoothing the lead detection to avoid erratic behavior.
     """
-    self._has_lead_filtered = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
-    return self._has_lead_filtered > WMACConstants.LEAD_PROB
+    lead_filtering: float = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
+    return lead_filtering > WMACConstants.LEAD_PROB
 
   def _adaptive_lead_prob_threshold(self) -> float:
     """
@@ -196,7 +196,8 @@ class DynamicExperimentalController:
 
     # fcw detection
     self._mpc_fcw_gmac.add_data(self._mpc_fcw_crash_cnt > 0)
-    self._has_mpc_fcw = self._mpc_fcw_gmac.get_weighted_average() > WMACConstants.MPC_FCW_PROB
+    if mpc_fcw_weighted_average := self._mpc_fcw_gmac.get_weighted_average():
+      self._has_mpc_fcw = mpc_fcw_weighted_average > WMACConstants.MPC_FCW_PROB
 
     # nav enable detection
     # self._has_nav_instruction = md.navEnabledDEPRECATED and maneuver_distance / max(car_state.vEgo, 1) < 13
@@ -211,7 +212,8 @@ class DynamicExperimentalController:
     adaptive_threshold = self._adaptive_slowdown_threshold()
     slow_down_trigger = len(md.orientation.x) == len(md.position.x) == TRAJECTORY_SIZE and md.position.x[TRAJECTORY_SIZE - 1] < adaptive_threshold
     self._slow_down_gmac.add_data(slow_down_trigger)
-    self._has_slow_down = self._slow_down_gmac.get_weighted_average() > WMACConstants.SLOW_DOWN_PROB
+    if slow_down_weighted_average := self._slow_down_gmac.get_weighted_average():
+      self._has_slow_down = slow_down_weighted_average > WMACConstants.SLOW_DOWN_PROB
 
     # anomaly detection for slow down events
     if self._anomaly_detection(self._slow_down_gmac.data):
@@ -238,7 +240,8 @@ class DynamicExperimentalController:
     # slowness detection
     if not self._has_standstill:
       self._slowness_gmac.add_data(self._v_ego_kph <= (self._v_cruise_kph * WMACConstants.SLOWNESS_CRUISE_OFFSET))
-      self._has_slowness = self._slowness_gmac.get_weighted_average() > WMACConstants.SLOWNESS_PROB
+      if slowness_weighted_average := self._slowness_gmac.get_weighted_average():
+        self._has_slowness = slowness_weighted_average > WMACConstants.SLOWNESS_PROB
 
     # dangerous TTC detection
     if not self._has_lead_filtered and self._has_lead_filtered_prev:
@@ -248,7 +251,8 @@ class DynamicExperimentalController:
     if self._has_lead and car_state.vEgo >= 0.01:
       self._dangerous_ttc_gmac.add_data(lead_one.dRel / car_state.vEgo)
 
-    self._has_dangerous_ttc = self._dangerous_ttc_gmac.get_weighted_average() is not None and self._dangerous_ttc_gmac.get_weighted_average() <= WMACConstants.DANGEROUS_TTC
+    if dangerous_ttc_weighted_average := self._dangerous_ttc_gmac.get_weighted_average():
+      self._has_dangerous_ttc = dangerous_ttc_weighted_average <= WMACConstants.DANGEROUS_TTC
 
     # keep prev values
     self._has_standstill_prev = self._has_standstill
