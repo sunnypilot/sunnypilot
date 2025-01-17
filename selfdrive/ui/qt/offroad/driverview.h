@@ -4,6 +4,10 @@
 #include "selfdrive/ui/qt/onroad/driver_monitoring.h"
 #include "selfdrive/ui/qt/widgets/input.h"
 
+#ifdef SUNNYPILOT
+#define Device DeviceSP
+#endif
+
 class DriverViewWindow : public CameraWidget {
   Q_OBJECT
 public:
