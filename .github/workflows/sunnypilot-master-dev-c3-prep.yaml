@@ -2,7 +2,7 @@ name: Nightly Branch Reset and PR Squash
 
 env:
   DEFAULT_SOURCE_BRANCH: "master-new"
-  DEFAULT_TARGET_BRANCH: "master-dev-c3-new-test"
+  DEFAULT_TARGET_BRANCH: "nightly"
   PR_LABEL: "dev-c3"
 
 on:
@@ -19,7 +19,7 @@ on:
         default: 'master-dev-c3-new-test'
         type: string
   schedule:
-     - cron: '0 0 * * *'  # Run at midnight UTC
+     - cron: '0 0 * * *'  # Run at midnight UTC for nightly
 
 jobs:
   reset-and-squash:

@@ -72,13 +72,13 @@ def process_pr(pr_data, target_branch, squash_script_path):
             commits = pr.get('commits', {}).get('nodes', [])
             if not commits:
                 print(f"No commit data found for PR #{pr_number}")
-                add_pr_comment(pr_number, "⚠️ This PR was skipped in the nightly squash because no commit data was found.")
+                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated {target_branch} squash because no commit data was found.")
                 continue
 
             status = commits[0].get('commit', {}).get('statusCheckRollup', {})
             if not status or status.get('state') != 'SUCCESS':
                 print(f"PR #{pr_number} checks haven't passed")
-                add_pr_comment(pr_number, "⚠️ This PR was skipped in the nightly squash because not all checks have passed.")
+                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated {target_branch} squash because not all checks have passed.")
                 continue
 
             # Check for merge conflicts using gh cli
@@ -88,7 +88,7 @@ def process_pr(pr_data, target_branch, squash_script_path):
             merge_data = json.loads(merge_status.stdout)
             if not merge_data.get('mergeable'):
                 print(f"PR #{pr_number} has merge conflicts")
-                add_pr_comment(pr_number, "⚠️ This PR was skipped in the nightly squash due to merge conflicts.")
+                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated {target_branch} squash due to merge conflicts.")
                 continue
 
             try:
@@ -110,7 +110,7 @@ def process_pr(pr_data, target_branch, squash_script_path):
                 print(f"Command failed with exit code {e.returncode}")
                 error_output = getattr(e, 'stderr', 'No error output available')
                 print(f"Error output: {error_output}")
-                add_pr_comment(pr_number, f"⚠️ Error during nightly squash:\n```\n{error_output}\n```")
+                add_pr_comment(pr_number, f"⚠️ Error during automated {target_branch} squash:\n```\n{error_output}\n```")
                 continue
             except Exception as e:
                 print(f"Unexpected error processing PR #{pr_number}: {str(e)}")
