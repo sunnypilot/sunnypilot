@@ -70,7 +70,7 @@ def save_exception(content: str) -> None:
 
     cloudlog.error(f"logged crash to {files}")
   except Exception:
-    cloudlog.exception("error when attemping to save exception")
+    cloudlog.exception("error when attempting to save exception")
 
 
 def capture_fingerprint_mock() -> None:
