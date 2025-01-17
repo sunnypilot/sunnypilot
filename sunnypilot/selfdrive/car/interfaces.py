@@ -12,7 +12,7 @@ from opendbc.car.hyundai.radar_interface import RADAR_START_ADDR
 from opendbc.car.hyundai.values import HyundaiFlags, DBC as HYUNDAI_DBC
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 
-from openpilot.system import sentry
+import openpilot.system.sentry as sentry
 
 
 def log_fingerprint(CP: structs.CarParams) -> None:
