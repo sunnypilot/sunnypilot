@@ -113,33 +113,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push changes
+      - name: Push changes if there are diffs
+        id: push-changes  # Add an id so we can reference this step
         run: |
-          if ! git push origin ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} --force; then
-            echo "Failed to push changes to ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+          TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+
+          # Fetch the latest from remote
+          git fetch origin $TARGET_BRANCH
+
+          # Check for diffs between local and remote
+          if git diff $TARGET_BRANCH origin/$TARGET_BRANCH --quiet; then
+            echo "No changes to push - local and remote branches are identical"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # If we get here, there are diffs, so push
+          if ! git push origin $TARGET_BRANCH --force; then
+            echo "Failed to push changes to $TARGET_BRANCH"
             exit 1
           fi
-          
-          echo "Branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} has been reset and updated with squashed PRs"
+
+          echo "Branch $TARGET_BRANCH has been reset and updated with squashed PRs"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
 
       - name: Trigger and wait for selfdrive tests
+        if: steps.push-changes.outputs.has_changes == 'true'
         run: |
           echo "Triggering selfdrive tests..."
           gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
-          
+
           echo "Sleeping for 120s to give plenty of time for the action to start and then we wait"
           sleep 120
-          
+
           echo "Getting latest run ID..."
           RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
-          
+
           echo "Watching run ID: $RUN_ID"
           gh run watch "$RUN_ID"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger prebuilt workflow
-        if: success()
+        if: success() && steps.push-changes.outputs.has_changes == 'true'
         run: |
           gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
         env:
