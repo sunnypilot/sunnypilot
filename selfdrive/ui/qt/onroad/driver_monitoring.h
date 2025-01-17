@@ -2,7 +2,12 @@
 
 #include <vector>
 #include <QPainter>
+
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/ui.h"
+#else
 #include "selfdrive/ui/ui.h"
+#endif
 
 class DriverMonitorRenderer {
 public:
