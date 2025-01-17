@@ -20,7 +20,7 @@ CRASHES_DIR = Paths.crash_log_root()
 
 class SentryProject(Enum):
   # python project
-  SELFDRIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE = "https://186a6736b7927e5ae9b92c869ba81b6b@o1138119.ingest.us.sentry.io/4508660076052480"
   # native project
   SELFDRIVE_NATIVE = SELFDRIVE
 
