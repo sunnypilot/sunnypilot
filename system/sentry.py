@@ -81,7 +81,7 @@ def capture_fingerprint_mock() -> None:
 
 
 def capture_fingerprint(candidate: str, car_name: str) -> None:
-  with sentry_sdk.get_current_scope() as scope:
+  with sentry_sdk.configure_scope() as scope:
     set_user()
     scope.set_extra("carFingerprint", candidate)
     scope.set_extra("carName", car_name)
