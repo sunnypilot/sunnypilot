@@ -74,20 +74,26 @@ def save_exception(content: str) -> None:
 
 
 def capture_fingerprint_mock() -> None:
-  set_user()
-  message = "car doesn't match any fingerprints"
-  sentry_sdk.capture_message(message=message, level="error")
-  sentry_sdk.flush()
+  try:
+    set_user()
+    message = "car doesn't match any fingerprints"
+    sentry_sdk.capture_message(message=message, level="error")
+    sentry_sdk.flush()
+  except Exception as e:
+    cloudlog.exception(f"sentry fingerprint MOCK exception: {e}")
 
 
 def capture_fingerprint(candidate: str, car_name: str) -> None:
-  set_user()
-  sentry_sdk.set_tag("carFingerprint", candidate)
-  sentry_sdk.set_tag("carName", car_name)
+  try:
+    set_user()
+    sentry_sdk.set_tag("carFingerprint", candidate)
+    sentry_sdk.set_tag("carName", car_name)
 
-  message = f"Fingerprinted {candidate}"
-  sentry_sdk.capture_message(message=message, level="info")
-  sentry_sdk.flush()
+    message = f"Fingerprinted {candidate}"
+    sentry_sdk.capture_message(message=message, level="info")
+    sentry_sdk.flush()
+  except Exception as e:
+    cloudlog.exception(f"sentry fingerprint exception: {e}")
 
 
 def set_tag(key: str, value: str) -> None:
