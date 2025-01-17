@@ -12,7 +12,6 @@ from panda import ALTERNATIVE_EXPERIENCE
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog, ForwardingHandler
-from openpilot.system import sentry
 
 from opendbc.car import DT_CTRL, carlog, structs
 from opendbc.car.can_definitions import CanData, CanRecvCallable, CanSendCallable
@@ -166,7 +165,6 @@ class Car:
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
     # log fingerprint in sentry
-    sentry.set_tag("daemon", "selfdrive.car.card")
     interfaces.log_fingerprint(self.CP)
 
   def state_update(self) -> tuple[car.CarState, structs.RadarDataT | None]:
