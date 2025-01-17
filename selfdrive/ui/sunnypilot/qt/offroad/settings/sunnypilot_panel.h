@@ -35,6 +35,6 @@ private:
   bool offroad;
 
   ParamControl *madsToggle;
-  PushButtonSP *madsSettingsButton;
+  SubPanelButton *madsSettingsButton;
   MadsSettings *madsWidget = nullptr;
 };

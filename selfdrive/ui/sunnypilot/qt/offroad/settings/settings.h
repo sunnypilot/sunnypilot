@@ -32,7 +32,7 @@ class TogglesPanelSP : public TogglesPanel {
   Q_OBJECT
 
 public:
-  explicit TogglesPanelSP(SettingsWindowSP *parent);
+  explicit TogglesPanelSP(SettingsWindow *parent);
 
 private slots:
   void updateState(const UIStateSP &s);

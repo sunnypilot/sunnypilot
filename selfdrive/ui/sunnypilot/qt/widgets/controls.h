@@ -546,11 +546,11 @@ private:
   bool button_enabled = true;
 };
 
-class PushButtonSP : public QPushButton {
+class SubPanelButton : public QPushButton {
   Q_OBJECT
 
 public:
-  PushButtonSP(const QString &text, const int minimum_button_width = 800, QWidget *parent = nullptr) : QPushButton(text, parent) {
+  SubPanelButton(const QString &text, const int minimum_button_width = 800, QWidget *parent = nullptr) : QPushButton(text, parent) {
     const QString buttonStyle = R"(
       QPushButton {
         border-radius: 20px;
