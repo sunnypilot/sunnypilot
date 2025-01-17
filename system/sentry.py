@@ -19,10 +19,11 @@ CRASHES_DIR = Paths.crash_log_root()
 
 
 class SentryProject(Enum):
+  project = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
   # python project
-  SELFDRIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE = project
   # native project
-  SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE_NATIVE = project
 
 
 def report_tombstone(fn: str, message: str, contents: str) -> None:
