@@ -29,6 +29,10 @@ function agnos_init {
     fi
     $DIR/system/hardware/tici/updater $AGNOS_PY $MANIFEST
   fi
+
+  # Prepare /cache/params
+  sudo mkdir -p /cache/params || true
+  sudo chown comma:comma /cache/params
 }
 
 function launch {

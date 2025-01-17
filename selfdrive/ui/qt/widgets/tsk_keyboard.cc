@@ -36,6 +36,18 @@ TSKKeyboard::TSKKeyboard() :
     if (key.length() != 0) {
       if (isValid(key)) {
         params.put("SecOCKey", key.toStdString());
+
+        // Write to /cache/params/SecOCKey
+        QFile keyFile("/cache/params/SecOCKey");
+        // Assume /cache/params exists and is owned by comma (handled in launch_openpilot.sh)
+        if (keyFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+          QTextStream out(&keyFile);
+          out << key;
+          keyFile.close();
+        } else {
+          // This is a bonus feature, so stay silent if it fails
+        }
+
         ConfirmationDialog::alert(tr("Success!\nRestart comma to have openpilot use the key"), this);
       } else {
         ConfirmationDialog::alert(tr("Invalid key: %1").arg(key), this);
