@@ -20,9 +20,9 @@ CRASHES_DIR = Paths.crash_log_root()
 
 class SentryProject(Enum):
   # python project
-  SELFDRIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE = "https://186a6736b7927e5ae9b92c869ba81b6b@o1138119.ingest.us.sentry.io/4508660076052480"
   # native project
-  SELFDRIVE_NATIVE = "https://7e3be9bfcfe04c9abe58bd25fe290d1a@o1138119.ingest.sentry.io/6191481"
+  SELFDRIVE_NATIVE = SELFDRIVE
 
 
 def report_tombstone(fn: str, message: str, contents: str) -> None:
@@ -69,24 +69,30 @@ def save_exception(content: str) -> None:
 
     cloudlog.error(f"logged crash to {files}")
   except Exception:
-    cloudlog.exception("error when attemping to save exception")
+    cloudlog.exception("error when attempting to save exception")
 
 
 def capture_fingerprint_mock() -> None:
-  set_user()
-  message = "car doesn't match any fingerprints"
-  sentry_sdk.capture_message(message=message, level="error")
-  sentry_sdk.flush()
+  try:
+    set_user()
+    message = "car doesn't match any fingerprints"
+    sentry_sdk.capture_message(message=message, level="error")
+    sentry_sdk.flush()
+  except Exception as e:
+    cloudlog.exception(f"sentry fingerprint MOCK exception: {e}")
 
 
 def capture_fingerprint(candidate: str, car_name: str) -> None:
-  with sentry_sdk.configure_scope() as scope:
+  try:
     set_user()
-    scope.set_extra("carFingerprint", candidate)
-    scope.set_extra("carName", car_name)
+    sentry_sdk.set_tag("carFingerprint", candidate)
+    sentry_sdk.set_tag("carName", car_name)
+
     message = f"Fingerprinted {candidate}"
     sentry_sdk.capture_message(message=message, level="info")
     sentry_sdk.flush()
+  except Exception as e:
+    cloudlog.exception(f"sentry fingerprint exception: {e}")
 
 
 def set_tag(key: str, value: str) -> None:
