@@ -81,13 +81,13 @@ def capture_fingerprint_mock() -> None:
 
 
 def capture_fingerprint(candidate: str, car_name: str) -> None:
-  with sentry_sdk.configure_scope() as scope:
-    set_user()
-    scope.set_extra("carFingerprint", candidate)
-    scope.set_extra("carName", car_name)
-    message = f"Fingerprinted {candidate}"
-    sentry_sdk.capture_message(message=message, level="info")
-    sentry_sdk.flush()
+  set_user()
+  sentry_sdk.set_tag("carFingerprint", candidate)
+  sentry_sdk.set_tag("carName", car_name)
+
+  message = f"Fingerprinted {candidate}"
+  sentry_sdk.capture_message(message=message, level="info")
+  sentry_sdk.flush()
 
 
 def set_tag(key: str, value: str) -> None:
