@@ -134,8 +134,7 @@ def init(project: SentryProject) -> bool:
                   integrations=integrations,
                   traces_sample_rate=1.0,
                   max_value_length=8192,
-                  environment=env,
-                  )
+                  environment=env)
 
   sentry_sdk.set_user({"id": dongle_id, "name": git_username})
   sentry_sdk.set_tag("dirty", build_metadata.openpilot.is_dirty)
