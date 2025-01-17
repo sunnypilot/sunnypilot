@@ -16,7 +16,6 @@ from openpilot.system.version import get_build_metadata, get_version
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 
 CRASHES_DIR = Paths.crash_log_root()
-IP_ADDRESS = "{{auto}}"
 
 
 class SentryProject(Enum):
@@ -96,7 +95,7 @@ def set_tag(key: str, value: str) -> None:
 
 def set_user() -> None:
   dongle_id, git_username, _ = get_properties()
-  sentry_sdk.set_user({"id": dongle_id, "ip_address": IP_ADDRESS, "name": git_username})
+  sentry_sdk.set_user({"id": dongle_id, "name": git_username})
 
 
 def get_properties() -> tuple[str, str, str]:
@@ -129,9 +128,10 @@ def init(project: SentryProject) -> bool:
                   integrations=integrations,
                   traces_sample_rate=1.0,
                   max_value_length=8192,
-                  environment=env)
+                  environment=env,
+                  )
 
-  sentry_sdk.set_user({"id": dongle_id, "ip_address": IP_ADDRESS, "name": git_username})
+  sentry_sdk.set_user({"id": dongle_id, "name": git_username})
   sentry_sdk.set_tag("dirty", build_metadata.openpilot.is_dirty)
   sentry_sdk.set_tag("origin", build_metadata.openpilot.git_origin)
   sentry_sdk.set_tag("branch", build_metadata.channel)
