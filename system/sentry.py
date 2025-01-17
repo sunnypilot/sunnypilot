@@ -84,7 +84,7 @@ def capture_fingerprint(candidate: str, car_name: str) -> None:
     set_user()
     scope.set_extra("carFingerprint", candidate)
     scope.set_extra("carName", car_name)
-    message = f"fingerprinted {candidate}"
+    message = f"Fingerprinted {candidate}"
     sentry_sdk.capture_message(message=message, level="info")
     sentry_sdk.flush()
 
