@@ -199,6 +199,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     silentParkBrake @162;
     controlsMismatchLateral @163;
     hyundaiRadarTracksConfirmed @164;
+    experimentalModeSwitched @165;
 
     soundsUnavailableDEPRECATED @47;
   }
@@ -483,6 +484,7 @@ struct GpsLocationData {
   speedAccuracy @12 :Float32;
 
   hasFix @13 :Bool;
+  satelliteCount @14 :Int8;
 
   enum SensorSource {
     android @0;
