@@ -29,7 +29,6 @@ from opendbc.car import structs
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
-from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.constants import WMACConstants, SNG_State
 
 # d-e2e, from modeldata.h
@@ -96,19 +95,22 @@ class DynamicExperimentalController:
     self._mode: str = 'acc'
     self._frame: int = 0
 
-    # Replace WMAC with FOF
+    # Use weighted moving average for filtering leads
+    self._lead_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.LEAD_WINDOW_SIZE)
+    self._has_lead_filtered = False
     self._has_lead_filtered_prev = False
 
-    self._lead_fof = FirstOrderFilter(x0=0.0, rc=0.8, dt=DT_MDL)  # Adjust rc for filtering
-    self._has_lead_filtered = False
-
-    self._slow_down_fof = FirstOrderFilter(x0=0.0, rc=0.8, dt=DT_MDL)
+    self._slow_down_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.SLOW_DOWN_WINDOW_SIZE)
     self._has_slow_down: bool = False
 
-    self._slowness_fof = FirstOrderFilter(x0=0.0, rc=0.8, dt=DT_MDL)
+    self._has_blinkers = False
+
+    self._slowness_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.SLOWNESS_WINDOW_SIZE)
     self._has_slowness: bool = False
 
-    self._dangerous_ttc_fof = FirstOrderFilter(x0=0.0, rc=0.8, dt=DT_MDL)
+    self._has_nav_instruction = False
+
+    self._dangerous_ttc_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.DANGEROUS_TTC_WINDOW_SIZE)
     self._has_dangerous_ttc: bool = False
 
     self._v_ego_kph = 0.
@@ -122,7 +124,7 @@ class DynamicExperimentalController:
     self._sng_transit_frame = 0
     self._sng_state = SNG_State.off
 
-    self._mpc_fcw_fof = FirstOrderFilter(x0=0.0, rc=0.5, dt=DT_MDL)
+    self._mpc_fcw_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.MPC_FCW_WINDOW_SIZE)
     self._has_mpc_fcw: bool = False
     self._mpc_fcw_crash_cnt = 0
 
@@ -146,13 +148,8 @@ class DynamicExperimentalController:
     """
     Basic anomaly detection using standard deviation.
     """
-    # Ensure that recent_data is a list or array
-    if not isinstance(recent_data, (list, np.ndarray)):
-      recent_data = [recent_data]  # Convert to list if it's a single float value
-
     if len(recent_data) < 5:
       return False
-
     mean: float = float(np.mean(recent_data))
     std_dev: float = float(np.std(recent_data))
     anomaly: bool = bool(recent_data[-1] > mean + threshold * std_dev)
@@ -162,24 +159,21 @@ class DynamicExperimentalController:
       return np.count_nonzero(np.array(recent_data) > mean + threshold * std_dev) > 1
     return anomaly
 
-
   def _adaptive_slowdown_threshold(self) -> float:
     """
     Adapts the slow-down threshold based on vehicle speed and recent behavior.
     """
-    # Apply a scaling factor based on the filtered value (x)
-    slowdown_scaling_factor: float = (1.0 + 0.05 * np.log(1 + self._slow_down_fof.x))
+    slowdown_scaling_factor: float = (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
     adaptive_threshold: float = float(
       interp(self._v_ego_kph, WMACConstants.SLOW_DOWN_BP, WMACConstants.SLOW_DOWN_DIST) * slowdown_scaling_factor
     )
     return adaptive_threshold
 
-
   def _smoothed_lead_detection(self, lead_prob: float, smoothing_factor: float = 0.2):
     """
     Smoothing the lead detection to avoid erratic behavior.
     """
-    lead_filtering = self._lead_fof.update(lead_prob)
+    lead_filtering: float = (1 - smoothing_factor) * self._has_lead_filtered + smoothing_factor * lead_prob
     return lead_filtering > WMACConstants.LEAD_PROB
 
   def _adaptive_lead_prob_threshold(self) -> float:
@@ -200,31 +194,33 @@ class DynamicExperimentalController:
     self._has_lead = lead_one.status
     self._has_standstill = car_state.standstill
 
-    # fcw detection with FirstOrderFilter
-    self._mpc_fcw_fof.update(self._mpc_fcw_crash_cnt > 0)
-    if _mpc_fcw_filtered := self._mpc_fcw_fof.x:
-      self._has_mpc_fcw = _mpc_fcw_filtered > WMACConstants.MPC_FCW_PROB
+    # fcw detection
+    self._mpc_fcw_gmac.add_data(self._mpc_fcw_crash_cnt > 0)
+    if _mpc_fcw_weighted_average := self._mpc_fcw_gmac.get_weighted_average():
+      self._has_mpc_fcw = _mpc_fcw_weighted_average > WMACConstants.MPC_FCW_PROB
     else:
       self._has_mpc_fcw = False
 
-    # lead detection with FirstOrderFilter
-    self._lead_fof.update(lead_one.status)
-    self._has_lead_filtered = self._lead_fof.x > WMACConstants.LEAD_PROB
+    # nav enable detection
+    # self._has_nav_instruction = md.navEnabledDEPRECATED and maneuver_distance / max(car_state.vEgo, 1) < 13
 
-    # Update previous state
-    self._has_lead_filtered_prev = self._has_lead_filtered
+    # lead detection with smoothing
+    self._lead_gmac.add_data(lead_one.status)
+    self._has_lead_filtered = self._lead_gmac.get_weighted_average() > WMACConstants.LEAD_PROB
+    #lead_prob = self._lead_gmac.get_weighted_average() or 0
+    #self._has_lead_filtered = self._smoothed_lead_detection(lead_prob)
 
-    # adaptive slow down detection with FOF
+    # adaptive slow down detection
     adaptive_threshold = self._adaptive_slowdown_threshold()
     slow_down_trigger = len(md.orientation.x) == len(md.position.x) == TRAJECTORY_SIZE and md.position.x[TRAJECTORY_SIZE - 1] < adaptive_threshold
-    self._slow_down_fof.update(slow_down_trigger)
-    if _has_slow_down_filtered := self._slow_down_fof.x:
-      self._has_slow_down = _has_slow_down_filtered > WMACConstants.SLOW_DOWN_PROB
+    self._slow_down_gmac.add_data(slow_down_trigger)
+    if _has_slow_down_weighted_average := self._slow_down_gmac.get_weighted_average():
+      self._has_slow_down = _has_slow_down_weighted_average > WMACConstants.SLOW_DOWN_PROB
     else:
       self._has_slow_down = False
 
     # anomaly detection for slow down events
-    if self._anomaly_detection(self._slow_down_fof.x):  # Use x, not data
+    if self._anomaly_detection(self._slow_down_gmac.data):
       # Handle anomaly: potentially log it, adjust behavior, or issue a warning
       self._has_slow_down = False  # Reset slow down if anomaly detected
 
@@ -245,31 +241,30 @@ class DynamicExperimentalController:
       elif self._sng_transit_frame > 0:
         self._sng_transit_frame -= 1
 
-    # slowness detection with FOF
+    # slowness detection
     if not self._has_standstill:
-      self._slowness_fof.update(self._v_ego_kph <= (self._v_cruise_kph * WMACConstants.SLOWNESS_CRUISE_OFFSET))
-      if _slowness_filtered := self._slowness_fof.x:
-        self._has_slowness = _slowness_filtered > WMACConstants.SLOWNESS_PROB
+      self._slowness_gmac.add_data(self._v_ego_kph <= (self._v_cruise_kph * WMACConstants.SLOWNESS_CRUISE_OFFSET))
+      if _slowness_weighted_average := self._slowness_gmac.get_weighted_average():
+        self._has_slowness = _slowness_weighted_average > WMACConstants.SLOWNESS_PROB
       else:
         self._has_slowness = False
 
-    # dangerous TTC detection with FOF
+    # dangerous TTC detection
     if not self._has_lead_filtered and self._has_lead_filtered_prev:
-      self._dangerous_ttc_fof.data = []  # Reset data for a new lead
+      self._dangerous_ttc_gmac.reset_data()
       self._has_dangerous_ttc = False
 
     if self._has_lead and car_state.vEgo >= 0.01:
-      self._dangerous_ttc_fof.update(lead_one.dRel / car_state.vEgo)
+      self._dangerous_ttc_gmac.add_data(lead_one.dRel / car_state.vEgo)
 
-    if _dangerous_ttc_filtered := self._dangerous_ttc_fof.x:
-      self._has_dangerous_ttc = _dangerous_ttc_filtered <= WMACConstants.DANGEROUS_TTC
+    if _dangerous_ttc_weighted_average := self._dangerous_ttc_gmac.get_weighted_average():
+      self._has_dangerous_ttc = _dangerous_ttc_weighted_average <= WMACConstants.DANGEROUS_TTC
     else:
       self._has_dangerous_ttc = False
 
     # keep prev values
     self._has_standstill_prev = self._has_standstill
     self._has_lead_filtered_prev = self._has_lead_filtered
-
 
   def _radarless_mode(self) -> None:
     # when mpc fcw crash prob is high
