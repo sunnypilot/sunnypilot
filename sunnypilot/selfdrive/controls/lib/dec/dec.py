@@ -99,16 +99,16 @@ class DynamicExperimentalController:
     # Replace WMAC with FOF
     self._has_lead_filtered_prev = False
 
-    self._lead_fof = FirstOrderFilter(x0=0.0, rc=0.5, dt=DT_MDL)
+    self._lead_fof = FirstOrderFilter(x0=0.0, rc=1, dt=DT_MDL)  # Adjust rc for filtering
     self._has_lead_filtered = False
 
-    self._slow_down_fof = FirstOrderFilter(x0=0.0, rc=0.5, dt=DT_MDL)
+    self._slow_down_fof = FirstOrderFilter(x0=0.0, rc=1, dt=DT_MDL)
     self._has_slow_down: bool = False
 
-    self._slowness_fof = FirstOrderFilter(x0=0.0, rc=0.5, dt=DT_MDL)
+    self._slowness_fof = FirstOrderFilter(x0=0.0, rc=1, dt=DT_MDL)
     self._has_slowness: bool = False
 
-    self._dangerous_ttc_fof = FirstOrderFilter(x0=0.0, rc=0.5, dt=DT_MDL)
+    self._dangerous_ttc_fof = FirstOrderFilter(x0=0.0, rc=1, dt=DT_MDL)
     self._has_dangerous_ttc: bool = False
 
     self._v_ego_kph = 0.
