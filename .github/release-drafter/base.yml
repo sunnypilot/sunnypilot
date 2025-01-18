@@ -20,6 +20,20 @@ replacers:
     replace: 'sunnypilot'
   - search: '/\b[Ss][Pp]\b/g'
     replace: 'SP'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+name-template: 'v$RESOLVED_VERSION 🌈'
+tag-template: 'v$RESOLVED_VERSION'
+version-template: "0.$MAJOR.$MINOR.$PATCH"
 template: |
   ## Changes
 
@@ -29,8 +43,3 @@ template: |
   NEXT_MINOR_VERSION = $NEXT_MINOR_VERSION
   NEXT_MAJOR_VERSION = $NEXT_MAJOR_VERSION
   RESOLVED_VERSION = $RESOLVED_VERSION
-
-  PATCH = $PATCH
-  MINOR = $MINOR
-  MAJOR = $MAJOR
-  COMPLETE $COMPLETE
