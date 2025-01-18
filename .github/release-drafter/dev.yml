@@ -1,4 +1,4 @@
 _extends: sunnypilot:.github/release-drafter/base.yml  # Inherit base config
-name-template: 'v$version 🌈'
-tag-template: 'v$version'
+name-template: 'v$RESOLVED_VERSION 🌈'
+tag-template: 'v$RESOLVED_VERSION'
 prerelease: true
