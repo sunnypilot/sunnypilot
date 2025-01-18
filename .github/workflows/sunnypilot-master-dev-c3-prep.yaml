@@ -16,10 +16,10 @@ on:
       target_branch:
         description: 'Target branch to reset and squash into'
         required: true
-        default: 'master-dev-c3-new-test'
+        default: 'master-dev-c3-new'
         type: string
-  schedule:
-     - cron: '0 0 * * *'  # Run at midnight UTC for nightly
+#  schedule:
+#     - cron: '0 0 * * *'  # Run at midnight UTC for nightly
 
 jobs:
   reset-and-squash:
