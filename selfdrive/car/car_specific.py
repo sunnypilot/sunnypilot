@@ -71,18 +71,18 @@ class CarSpecificEvents:
       if self.CP.pcmCruise and CS.vEgo < self.CP.minEnableSpeed:
         events.add(EventName.belowEngageSpeed)
 
-      if self.CP.pcmCruise:
-        # we engage when pcm is active (rising edge)
-        if CS.cruiseState.enabled and not CS_prev.cruiseState.enabled:
-          events.add(EventName.pcmEnable)
-        elif not CS.cruiseState.enabled and (CC.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
-          # it can happen that car cruise disables while comma system is enabled: need to
-          # keep braking if needed or if the speed is very low
-          if CS.vEgo < self.CP.minEnableSpeed + 2.:
-            # non loud alert if cruise disables below 25mph as expected (+ a little margin)
-            events.add(EventName.speedTooLow)
-          else:
-            events.add(EventName.cruiseDisabled)
+      # if self.CP.pcmCruise:
+      #   # we engage when pcm is active (rising edge)
+      #   if CS.cruiseState.enabled and not CS_prev.cruiseState.enabled:
+      #     events.add(EventName.pcmEnable)
+      #   elif not CS.cruiseState.enabled and (CC.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
+      #     # it can happen that car cruise disables while comma system is enabled: need to
+      #     # keep braking if needed or if the speed is very low
+      #     if CS.vEgo < self.CP.minEnableSpeed + 2.:
+      #       # non loud alert if cruise disables below 25mph as expected (+ a little margin)
+      #       events.add(EventName.speedTooLow)
+      #     else:
+      #       events.add(EventName.cruiseDisabled)
       if self.CP.minEnableSpeed > 0 and CS.vEgo < 0.001:
         events.add(EventName.manualRestart)
 
