@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-# Version = 2024-7-11
+# Version = 2025-1-18
 
 import numpy as np
 
@@ -163,7 +163,7 @@ class DynamicExperimentalController:
     """
     Adapts the slow-down threshold based on vehicle speed and recent behavior.
     """
-    slowdown_scaling_factor: float = (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
+    slowdown_scaling_factor: float = (1.0 + 0.07 * np.log(1 + len(self._slow_down_gmac.data)))
     adaptive_threshold: float = float(
       interp(self._v_ego_kph, WMACConstants.SLOW_DOWN_BP, WMACConstants.SLOW_DOWN_DIST) * slowdown_scaling_factor
     )
@@ -222,7 +222,7 @@ class DynamicExperimentalController:
     # anomaly detection for slow down events
     if self._anomaly_detection(self._slow_down_gmac.data):
       # Handle anomaly: potentially log it, adjust behavior, or issue a warning
-      self._has_slow_down = False  # Reset slow down if anomaly detected
+      self._has_slow_down *= 0.7 # Reduce rather than fully disablings
 
     # blinker detection
     self._has_blinkers = car_state.leftBlinker or car_state.rightBlinker
