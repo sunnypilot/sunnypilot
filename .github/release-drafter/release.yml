@@ -1,4 +1,4 @@
-_extends: release-drafter/base.yml  # Inherit base config
+_extends: base.yml  # Inherit base config
 name-template: 'v$RESOLVED_VERSION 🌈'
 tag-template: 'v$RESOLVED_VERSION'
 prerelease: false
