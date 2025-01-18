@@ -275,7 +275,7 @@ def squash_and_merge(source_branch: str, target_branch: str, manual_title: str |
         return False
 
       print(f"Attempting to merge changes from {temp_branch}...")
-      code, _, error = run_command(f"git merge {temp_branch}")
+      code, _, error = run_command(f"git rebase {temp_branch}")
 
       if code != 0:
         print(f"\nMerge failed with error: {error}")

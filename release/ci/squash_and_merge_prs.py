@@ -11,6 +11,8 @@ from datetime import datetime
 def setup_argument_parser():
     parser = argparse.ArgumentParser(description='Process and squash GitHub PRs')
     parser.add_argument('--pr-data', type=str, help='PR data in JSON format')
+    parser.add_argument('--source-branch', type=str, default='master-new',
+                        help='Source branch for merging')
     parser.add_argument('--target-branch', type=str, default='master-dev-c3-new-test',
                         help='Target branch for merging')
     parser.add_argument('--squash-script-path', type=str, required=True,
@@ -48,47 +50,55 @@ def add_pr_comment(pr_number, comment):
         print(f"Failed to add comment to PR #{pr_number}: {e.stderr}")
 
 
-def process_pr(pr_data, target_branch, squash_script_path):
+def validate_pr(pr):
+    """Validate a PR and return (is_valid, skip_reason)"""
+    pr_number = pr.get('number', 'UNKNOWN')
+    branch = pr.get('headRefName', '')
+
+    if not branch:
+        return False, f"Missing branch name for PR #{pr_number}"
+
+    # Check if checks have passed
+    commits = pr.get('commits', {}).get('nodes', [])
+    if not commits:
+        return False, "No commit data found"
+
+    status = commits[0].get('commit', {}).get('statusCheckRollup', {})
+    if not status or status.get('state') != 'SUCCESS':
+        return False, "Not all checks have passed"
+
+    # Check for merge conflicts
+    merge_status = subprocess.run(['gh', 'pr', 'view', str(pr_number), '--json', 'mergeable,mergeStateStatus'], capture_output=True, text=True)
+    merge_data = json.loads(merge_status.stdout)
+    if not merge_data.get('mergeable'):
+        return False, "Merge conflicts detected"
+
+    if (mergeStateStatus := merge_data.get('mergeStateStatus')) != "CLEAN":
+        return False, f"Branch is `{mergeStateStatus}`"
+
+    return True, None
+
+
+def process_pr(pr_data, source_branch, target_branch, squash_script_path):
     try:
-        # Sort PRs by creation date
         nodes = sort_prs_by_creation(pr_data)
         if not nodes:
             print("No PRs to squash")
             return 0
 
+        print(f"Deleting target branch {target_branch}")
+        subprocess.run(['git', 'branch', '-D', target_branch], check=False)
+        subprocess.run(['git', 'branch', target_branch, f'origin/{source_branch}'], check=True)
         success_count = 0
         for pr in nodes:
             pr_number = pr.get('number', 'UNKNOWN')
             branch = pr.get('headRefName', '')
             title = pr.get('title', '')
+            is_valid, skip_reason = validate_pr(pr)
 
-            if not branch:
-                print(f"Warning: Missing branch name for PR #{pr_number}, skipping")
-                continue
-
-            print(f"Processing PR #{pr_number} ({branch}): {title}")
-
-            # Check if checks have passed
-            commits = pr.get('commits', {}).get('nodes', [])
-            if not commits:
-                print(f"No commit data found for PR #{pr_number}")
-                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated {target_branch} squash because no commit data was found.")
-                continue
-
-            status = commits[0].get('commit', {}).get('statusCheckRollup', {})
-            if not status or status.get('state') != 'SUCCESS':
-                print(f"PR #{pr_number} checks haven't passed")
-                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated {target_branch} squash because not all checks have passed.")
-                continue
-
-            # Check for merge conflicts using gh cli
-            merge_status = subprocess.run(['gh', 'pr', 'view', str(pr_number), '--json', 'mergeable'], capture_output=True, text=True)
-            print(merge_status)
-            print(merge_status.stdout)
-            merge_data = json.loads(merge_status.stdout)
-            if not merge_data.get('mergeable'):
-                print(f"PR #{pr_number} has merge conflicts")
-                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated {target_branch} squash due to merge conflicts.")
+            if not is_valid:
+                print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
+                add_pr_comment(pr_number, f"⚠️ This PR was skipped in the automated `{target_branch}` squash because {skip_reason}.")
                 continue
 
             try:
@@ -100,7 +110,12 @@ def process_pr(pr_data, target_branch, squash_script_path):
                 subprocess.run(['git', 'branch', branch, f'origin/{branch}'], check=True)
 
                 # Run squash script
-                subprocess.run([squash_script_path, '--target', target_branch, '--source', branch, '--title', f"{title} (#{pr_number})"], check=True)
+                subprocess.run([
+                    squash_script_path,
+                    '--target', target_branch,
+                    '--source', branch,
+                    '--title', f"{title} (#{pr_number})",
+                ], check=True)
 
                 print(f"Successfully processed PR #{pr_number}")
                 success_count += 1
@@ -134,7 +149,7 @@ def main():
         pr_data_json = json.loads(args.pr_data)
 
         # Process the PRs
-        success_count = process_pr(pr_data_json, args.target_branch, args.squash_script_path)
+        success_count = process_pr(pr_data_json, args.source_branch, args.target_branch, args.squash_script_path)
         print(f"Successfully processed {success_count} PRs")
 
     except Exception as e:
