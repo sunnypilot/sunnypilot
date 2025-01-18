@@ -267,6 +267,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     }
   });
   addItem(translateBtn);
+#endif
 
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
@@ -276,6 +277,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     }
   });
 
+#ifndef SUNNYPILOT
   // power buttons
   QHBoxLayout *power_layout = new QHBoxLayout();
   power_layout->setSpacing(30);
