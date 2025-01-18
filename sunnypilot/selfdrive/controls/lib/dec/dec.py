@@ -206,7 +206,7 @@ class DynamicExperimentalController:
 
     # lead detection with smoothing
     self._lead_gmac.add_data(lead_one.status)
-    self._has_lead_filtered = self._lead_gmac.get_weighted_average() > WMACConstants.LEAD_PROB
+    self._has_lead_filtered = (self._lead_gmac.get_weighted_average() or -1.) > WMACConstants.LEAD_PROB
     #lead_prob = self._lead_gmac.get_weighted_average() or 0
     #self._has_lead_filtered = self._smoothed_lead_detection(lead_prob)
 
