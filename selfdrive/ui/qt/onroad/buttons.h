@@ -16,11 +16,12 @@ class ExperimentalButton : public QPushButton {
 
 public:
   explicit ExperimentalButton(QWidget *parent = 0);
-  void updateState(const UIState &s);
+  virtual void updateState(const UIState &s);
 
 private:
   void paintEvent(QPaintEvent *event) override;
   void changeMode();
+  virtual void drawButton(QPainter &p);
 
   Params params;
   QPixmap engage_img;

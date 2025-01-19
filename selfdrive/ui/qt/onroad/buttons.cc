@@ -52,6 +52,10 @@ void ExperimentalButton::updateState(const UIState &s) {
 
 void ExperimentalButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
+  drawButton(p);
+}
+
+void ExperimentalButton::drawButton(QPainter &p) {
   if (dynamic_experimental_control) {
     QPixmap left_half = engage_img.copy(0, 0, engage_img.width() / 2, engage_img.height());
     QPixmap right_half = experimental_img.copy(experimental_img.width() / 2, 0, experimental_img.width() / 2, experimental_img.height());
