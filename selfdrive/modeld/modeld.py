@@ -71,6 +71,7 @@ class ModelState:
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
     self.input_shapes = model_metadata['input_shapes']
+
     self.output_slices = model_metadata['output_slices']
 
     for key, shape in self.input_shapes.items():
