@@ -21,15 +21,16 @@ public:
 private:
   void paintEvent(QPaintEvent *event) override;
   void changeMode();
-  virtual void drawButton(QPainter &p);
 
   Params params;
+
+protected:
+  virtual void drawButton(QPainter &p);
+
   QPixmap engage_img;
   QPixmap experimental_img;
   bool experimental_mode;
   bool engageable;
-  bool dynamic_experimental_control;
-  int dec_mpc_mode;
 };
 
 void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity);
