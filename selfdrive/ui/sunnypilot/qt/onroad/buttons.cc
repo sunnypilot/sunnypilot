@@ -27,7 +27,6 @@ void ExperimentalButtonSP::updateState(const UIState &s) {
 }
 
 void ExperimentalButtonSP::drawButton(QPainter &p) {
-  ExperimentalButton::drawButton(p);
   if (dynamic_experimental_control) {
     QPixmap left_half = engage_img.copy(0, 0, engage_img.width() / 2, engage_img.height());
     QPixmap right_half = experimental_img.copy(experimental_img.width() / 2, 0, experimental_img.width() / 2, experimental_img.height());
@@ -46,5 +45,7 @@ void ExperimentalButtonSP::drawButton(QPainter &p) {
     combined_painter.end();
 
     drawIcon(p, QPoint(btn_size / 2, btn_size / 2), combined_img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
+  } else {
+    ExperimentalButton::drawButton(p);
   }
 }
