@@ -21,9 +21,10 @@ class CruiseHelper:
     self.params = Params()
 
     self.button_timers = {ButtonType.gapAdjustCruise: 0}
+    self._experimental_mode = False
     self.experimental_mode_switched = False
 
-  def update(self, CS, events, experimental_mode):
+  def update(self, CS, events, experimental_mode) -> None:
     if self.CP.openpilotLongitudinalControl:
       if CS.cruiseState.available:
         self.update_button_timers(CS)
@@ -42,7 +43,7 @@ class CruiseHelper:
 
   def update_experimental_mode(self, events, experimental_mode) -> None:
     if self.button_timers[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS and not self.experimental_mode_switched:
-      experimental_mode = not experimental_mode
-      self.params.put_bool_nonblocking("ExperimentalMode", experimental_mode)
+      self._experimental_mode = not experimental_mode
+      self.params.put_bool_nonblocking("ExperimentalMode", self._experimental_mode)
       events.add(EventName.experimentalModeSwitched)
       self.experimental_mode_switched = True
