@@ -65,8 +65,6 @@ class ModelState:
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
     self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
-    # img buffers are managed in openCL transform code
-    self.numpy_inputs = {}
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
@@ -74,6 +72,8 @@ class ModelState:
 
     self.output_slices = model_metadata['output_slices']
 
+    # img buffers are managed in openCL transform code
+    self.numpy_inputs = {}
     for key, shape in self.input_shapes.items():
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
