@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 from cereal import car, log
 from opendbc.car import structs
+from openpilot.common.params import Params
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
@@ -15,14 +16,15 @@ DISTANCE_LONG_PRESS = 50
 
 
 class CruiseHelper:
-  def __init__(self, params):
-    self.params = params
+  def __init__(self, CP: structs.CarParams):
+    self.CP = CP
+    self.params = Params()
 
     self.button_timers = {ButtonType.gapAdjustCruise: 0}
     self.experimental_mode_switched = False
 
-  def update(self, CP: structs.CarParams, CS, events, experimental_mode):
-    if CP.openpilotLongitudinalControl:
+  def update(self, CS, events, experimental_mode):
+    if self.CP.openpilotLongitudinalControl:
       if CS.cruiseState.available:
         self.update_button_timers(CS)
 

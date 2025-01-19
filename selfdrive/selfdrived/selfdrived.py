@@ -141,7 +141,7 @@ class SelfdriveD(CruiseHelper):
 
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.params)
 
-    CruiseHelper.__init__(self, self.params)
+    CruiseHelper.__init__(self, self.CP)
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
@@ -370,7 +370,7 @@ class SelfdriveD(CruiseHelper):
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
 
-    CruiseHelper.update(self, self.CP, CS, self.events, self.experimental_mode)
+    CruiseHelper.update(self, CS, self.events, self.experimental_mode)
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
