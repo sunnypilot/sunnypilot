@@ -25,7 +25,7 @@ from openpilot.system.version import get_build_metadata
 
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
-from openpilot.sunnypilot.selfdrive.car.experimental_switcher import ExperimentalSwitcher
+from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -45,7 +45,7 @@ SafetyModel = car.CarParams.SafetyModel
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
-class SelfdriveD(ExperimentalSwitcher):
+class SelfdriveD(CruiseHelper):
   def __init__(self, CP=None):
     self.params = Params()
 
@@ -141,7 +141,7 @@ class SelfdriveD(ExperimentalSwitcher):
 
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.params)
 
-    ExperimentalSwitcher.__init__(self, self.params)
+    CruiseHelper.__init__(self, self.params)
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
@@ -370,9 +370,7 @@ class SelfdriveD(ExperimentalSwitcher):
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
 
-    # toggle experimental mode once on distance button hold
-    if self.CP.openpilotLongitudinalControl:
-      ExperimentalSwitcher.update(self, CS, self.events, self.experimental_mode)
+    CruiseHelper.update(self, self.CP, CS, self.events, self.experimental_mode)
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:

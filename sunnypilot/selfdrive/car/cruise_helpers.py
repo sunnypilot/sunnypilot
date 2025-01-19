@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from cereal import car, log
+from opendbc.car import structs
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
@@ -13,17 +14,20 @@ EventName = log.OnroadEvent.EventName
 DISTANCE_LONG_PRESS = 50
 
 
-class ExperimentalSwitcher:
+class CruiseHelper:
   def __init__(self, params):
     self.params = params
 
     self.button_timers = {ButtonType.gapAdjustCruise: 0}
     self.experimental_mode_switched = False
 
-  def update(self, CS, events, experimental_mode):
-    if CS.cruiseState.available:
-      self.update_button_timers(CS)
-      self.update_mode(events, experimental_mode)
+  def update(self, CP: structs.CarParams, CS, events, experimental_mode):
+    if CP.openpilotLongitudinalControl:
+      if CS.cruiseState.available:
+        self.update_button_timers(CS)
+
+        # toggle experimental mode once on distance button hold
+        self.update_experimental_mode(events, experimental_mode)
 
   def update_button_timers(self, CS) -> None:
     for k in self.button_timers:
@@ -34,7 +38,7 @@ class ExperimentalSwitcher:
       if b.type.raw in self.button_timers:
         self.button_timers[b.type.raw] = 1 if b.pressed else 0
 
-  def update_mode(self, events, experimental_mode) -> None:
+  def update_experimental_mode(self, events, experimental_mode) -> None:
     if self.button_timers[ButtonType.gapAdjustCruise] >= DISTANCE_LONG_PRESS and not self.experimental_mode_switched:
       experimental_mode = not experimental_mode
       self.params.put_bool_nonblocking("ExperimentalMode", experimental_mode)
