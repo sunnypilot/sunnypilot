@@ -61,10 +61,10 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
     QPainter combined_painter(&combined_img);
 
-    combined_painter.setOpacity(dec_mpc_mode == 1 ? 0.2 : 1.0);
+    combined_painter.setOpacity(dec_mpc_mode == 1 ? 0.1 : 1.0);
     combined_painter.drawPixmap(0, 0, left_half);
 
-    combined_painter.setOpacity(dec_mpc_mode == 1 ? 1.0 : 0.2);
+    combined_painter.setOpacity(dec_mpc_mode == 1 ? 1.0 : 0.1);
     combined_painter.drawPixmap(engage_img.width() / 2, 0, right_half);
 
     combined_painter.end();
