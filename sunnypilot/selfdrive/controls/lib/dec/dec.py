@@ -102,6 +102,7 @@ class DynamicExperimentalController:
 
     self._slow_down_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.SLOW_DOWN_WINDOW_SIZE)
     self._has_slow_down: bool = False
+    self._slow_down_confidence: float = 0.0
 
     self._has_blinkers = False
 
