@@ -19,12 +19,10 @@ public:
 
 private:
   QString GetActiveModelName();
+  void updateModelManagerState();
 
   bool isDownloading() const {
-    const SubMaster &sm = *(uiStateSP()->sm);
-    const auto model_manager = sm["modelManagerSP"].getModelManagerSP();
-
-    if (!model_manager.hasSelectedBundle() || !sm.updated("modelManagerSP")) {
+    if (!model_manager.hasSelectedBundle()) {
       return false;
     }
 
@@ -37,6 +35,9 @@ private:
   void handleCurrentModelLblBtnClicked();
   void handleBundleDownloadProgress();
   void showResetParamsDialog();
+  cereal::ModelManagerSP::Reader model_manager;
+  cereal::ModelManagerSP::DownloadStatus download_status{};
+  cereal::ModelManagerSP::DownloadStatus prev_download_status{};
 
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;
@@ -52,7 +53,7 @@ private:
     const QString final_message = QString("%1%2").arg(!message.isEmpty() ? message + "\n" : QString(), warning_message);
     const QString final_buttonText = !confirmButtonText.isEmpty() ? confirmButtonText : QString(tr("Continue") + " %1").arg(show_metered_warning ? tr("on Metered") : "");
 
-    return ConfirmationDialog::confirm(final_message, final_buttonText, parent);
+    return ConfirmationDialog(final_message, final_buttonText, tr("Cancel"), true, parent).exec();
   }
 
   bool is_metered{};

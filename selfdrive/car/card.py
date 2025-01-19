@@ -23,6 +23,7 @@ from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
 
 from openpilot.sunnypilot.mads.mads import MadsParams
+from openpilot.sunnypilot.selfdrive.car import interfaces
 
 REPLAY = "REPLAY" in os.environ
 
@@ -74,6 +75,7 @@ class Car:
     self.can_rcv_cum_timeout_counter = 0
 
     self.CC_prev = car.CarControl.new_message()
+    self.CS_prev = car.CarState.new_message()
     self.initialized_prev = False
 
     self.last_actuators_output = structs.CarControl.Actuators()
@@ -100,6 +102,7 @@ class Car:
           cached_params = _cached_params
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), experimental_long_allowed, num_pandas, cached_params)
+      interfaces.setup_car_interface_sp(self.CI.CP, self.params)
       self.RI = get_radar_interface(self.CI.CP)
       self.CP = self.CI.CP
 
@@ -119,6 +122,9 @@ class Car:
     MadsParams().set_alternative_experience(self.CP)
     MadsParams().set_car_specific_params(self.CP)
 
+    # Dynamic Experimental Control
+    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
     controller_available = self.CI.CC is not None and openpilot_enabled_toggle and not self.CP.dashcamOnly
@@ -130,6 +136,15 @@ class Car:
       self.CP.safetyConfigs = [safety_config]
 
     if self.CP.secOcRequired and not self.params.get_bool("IsReleaseBranch"):
+      # Copy user key if available
+      try:
+        with open("/cache/params/SecOCKey") as f:
+          user_key = f.readline().strip()
+          if len(user_key) == 32:
+            self.params.put("SecOCKey", user_key)
+      except Exception:
+        pass
+
       secoc_key = self.params.get("SecOCKey", encoding='utf8')
       if secoc_key is not None:
         saved_secoc_key = bytes.fromhex(secoc_key.strip())
@@ -161,6 +176,9 @@ class Car:
     # card is driven by can recv, expected at 100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
+    # log fingerprint in sentry
+    interfaces.log_fingerprint(self.CP)
+
   def state_update(self) -> tuple[car.CarState, structs.RadarDataT | None]:
     """carState update loop, driven by can"""
 
@@ -186,8 +204,12 @@ class Car:
     if can_rcv_valid and REPLAY:
       self.can_log_mono_time = messaging.log_from_bytes(can_strs[0]).logMonoTime
 
-    # TODO: mirror the carState.cruiseState struct?
     self.v_cruise_helper.update_v_cruise(CS, self.sm['carControl'].enabled, self.is_metric)
+    if self.sm['carControl'].enabled and not self.CC_prev.enabled:
+      # Use CarState w/ buttons from the step selfdrived enables on
+      self.v_cruise_helper.initialize_v_cruise(self.CS_prev, self.experimental_mode, self.dynamic_experimental_control)
+
+    # TODO: mirror the carState.cruiseState struct?
     CS.vCruise = float(self.v_cruise_helper.v_cruise_kph)
     CS.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
 
@@ -230,6 +252,7 @@ class Car:
       # Initialize CarInterface, once controls are ready
       # TODO: this can make us miss at least a few cycles when doing an ECU knockout
       self.CI.init(self.CP, *self.can_callbacks)
+      interfaces.initialize_car_interface_sp(self.CP, self.params, *self.can_callbacks)
       # signal pandad to switch to car safety mode
       self.params.put_bool_nonblocking("ControlsReady", True)
 
@@ -244,9 +267,6 @@ class Car:
   def step(self):
     CS, RD = self.state_update()
 
-    if self.sm['carControl'].enabled and not self.CC_prev.enabled:
-      self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
-
     self.state_publish(CS, RD)
 
     initialized = (not any(e.name == EventName.selfdriveInitializing for e in self.sm['onroadEvents']) and
@@ -255,11 +275,16 @@ class Car:
       self.controls_update(CS, self.sm['carControl'])
 
     self.initialized_prev = initialized
+    self.CS_prev = CS
 
   def params_thread(self, evt):
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
+
+      # sunnypilot
+      self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+
       time.sleep(0.1)
 
   def card_thread(self):

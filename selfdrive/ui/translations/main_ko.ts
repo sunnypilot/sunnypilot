@@ -131,6 +131,14 @@
         <source>Enable GitHub runner service</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Hyundai: Enable Radar Tracks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar. This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicePanel</name>
@@ -273,6 +281,45 @@
     <message>
         <source>PAIR</source>
         <translation>동기화</translation>
+    </message>
+</context>
+<context>
+    <name>DevicePanelSP</name>
+    <message>
+        <source>Driver Camera Preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Training Guide</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reboot</source>
+        <translation type="unfinished">재부팅</translation>
+    </message>
+    <message>
+        <source>Regulatory</source>
+        <translation type="unfinished">규제</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to review the training guide?</source>
+        <translation type="unfinished">트레이닝 가이드를 다시 확인하시겠습니까?</translation>
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished">다시보기</translation>
+    </message>
+    <message>
+        <source>Select a language</source>
+        <translation type="unfinished">언어를 선택하세요</translation>
+    </message>
+    <message>
+        <source>Power Off</source>
+        <translation type="unfinished">전원 끄기</translation>
     </message>
 </context>
 <context>
@@ -531,6 +578,10 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <message>
         <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
         <translation>connect.comma.ai를 앱처럼 사용하려면 홈 화면에 바로가기를 만드세요</translation>
+    </message>
+    <message>
+        <source>Please connect to Wi-Fi to complete initial pairing</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1035,10 +1086,6 @@ This may take up to a minute.</source>
         <translation type="unfinished">선택</translation>
     </message>
     <message>
-        <source>We STRONGLY suggest you to reset calibration. Would you like to do that now?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Reset Calibration</source>
         <translation type="unfinished">캘리브레이션 초기화</translation>
     </message>
@@ -1079,15 +1126,7 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>%1 model [%2] downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>%1 model [%2] download failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>%1 model [%2] from cache</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1100,6 +1139,50 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Model download has started in the background.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 model [%2] %3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ready</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>from cache</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No custom model selected!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">취소</translation>
+    </message>
+    <message>
+        <source>Driving Model Selector</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>We STRONGLY suggest you to reset calibration.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Would you like to do that now?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1331,6 +1414,14 @@ This may take up to a minute.</source>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
         <translation>Openpilot이 활성화되지 않은 경우에도 드라이버 모니터링을 활성화합니다.</translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Experimental Control</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

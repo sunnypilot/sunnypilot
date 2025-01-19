@@ -1,8 +1,8 @@
 import math
+import numpy as np
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.numpy_fast import clip
 
 
 # WARNING: this value was determined based on the model's training distribution,
@@ -106,7 +106,7 @@ class VCruiseHelper:
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
       self.v_cruise_kph = max(self.v_cruise_kph, CS.vEgo * CV.MS_TO_KPH)
 
-    self.v_cruise_kph = clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
+    self.v_cruise_kph = np.clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
 
   def update_button_timers(self, CS, enabled):
     # increment timer for buttons still pressed
@@ -120,16 +120,17 @@ class VCruiseHelper:
         self.button_timers[b.type.raw] = 1 if b.pressed else 0
         self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
 
-  def initialize_v_cruise(self, CS, experimental_mode: bool) -> None:
+  def initialize_v_cruise(self, CS, experimental_mode: bool, dynamic_experimental_control: bool) -> None:
     # initializing is handled by the PCM
     if self.CP.pcmCruise:
       return
 
-    initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode else V_CRUISE_INITIAL
+    initial_experimental_mode = experimental_mode and not dynamic_experimental_control
+    initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if initial_experimental_mode else V_CRUISE_INITIAL
 
     if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_initialized:
       self.v_cruise_kph = self.v_cruise_kph_last
     else:
-      self.v_cruise_kph = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
+      self.v_cruise_kph = int(round(np.clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
 
     self.v_cruise_cluster_kph = self.v_cruise_kph

@@ -652,8 +652,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.brakeHold: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
-    ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
+    ET.WARNING: Alert(
+      "Press Resume to Exit Brake Hold",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2),
   },
 
   EventName.parkBrake: {
@@ -1061,6 +1064,13 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.NO_ENTRY: NoEntryAlert("Controls Mismatch: Lateral"),
   },
 
+  EventName.hyundaiRadarTracksConfirmed: {
+    ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
+  },
+
+  EventName.experimentalModeSwitched: {
+    ET.WARNING: NormalPermanentAlert("Experimental Mode Switched", duration=1.5)
+  }
 
 }
 
