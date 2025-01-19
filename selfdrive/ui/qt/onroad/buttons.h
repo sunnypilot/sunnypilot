@@ -28,6 +28,7 @@ private:
   bool experimental_mode;
   bool engageable;
   bool dynamic_experimental_control;
+  int dec_mpc_mode;
 };
 
 void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity);

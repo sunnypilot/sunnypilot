@@ -42,8 +42,10 @@ void ExperimentalButton::updateState(const UIState &s) {
     update();
   }
 
-  if (long_plan_sp.getDec().getEnabled() != dynamic_experimental_control) {
+  int mode = int(long_plan_sp.getDec().getState());
+  if ((long_plan_sp.getDec().getEnabled() != dynamic_experimental_control) || (mode != dec_mpc_mode)) {
     dynamic_experimental_control = long_plan_sp.getDec().getEnabled();
+    dec_mpc_mode = mode;
     update();
   }
 }
@@ -58,8 +60,13 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
     combined_img.fill(Qt::transparent);
 
     QPainter combined_painter(&combined_img);
+
+    combined_painter.setOpacity(dec_mpc_mode == 1 ? 0.6 : 1.0);
     combined_painter.drawPixmap(0, 0, left_half);
+
+    combined_painter.setOpacity(dec_mpc_mode == 1 ? 1.0 : 0.6);
     combined_painter.drawPixmap(engage_img.width() / 2, 0, right_half);
+
     combined_painter.end();
 
     drawIcon(p, QPoint(btn_size / 2, btn_size / 2), combined_img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
