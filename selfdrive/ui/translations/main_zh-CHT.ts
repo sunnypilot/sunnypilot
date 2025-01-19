@@ -579,6 +579,10 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
         <translation>將 connect.comma.ai 加入您的主螢幕，以便像手機 App 一樣使用它</translation>
     </message>
+    <message>
+        <source>Please connect to Wi-Fi to complete initial pairing</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ParamControl</name>
@@ -1082,10 +1086,6 @@ This may take up to a minute.</source>
         <translation type="unfinished">選取</translation>
     </message>
     <message>
-        <source>We STRONGLY suggest you to reset calibration. Would you like to do that now?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Reset Calibration</source>
         <translation type="unfinished">重設校準</translation>
     </message>
@@ -1167,6 +1167,22 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+    <message>
+        <source>Driving Model Selector</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>We STRONGLY suggest you to reset calibration.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Would you like to do that now?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
