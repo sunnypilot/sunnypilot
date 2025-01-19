@@ -57,23 +57,26 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    self.frames = {'input_imgs': DrivingModelFrame(context), 'big_input_imgs': DrivingModelFrame(context)}
+    self.is_20hz = False
+
+    buffer_length = 5 if self.is_20hz else 2
+    self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
+    self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
-    self.numpy_inputs = {
-      'desire': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN+1), ModelConstants.DESIRE_LEN), dtype=np.float32),
-      'traffic_convention': np.zeros((1, ModelConstants.TRAFFIC_CONVENTION_LEN), dtype=np.float32),
-      'lateral_control_params': np.zeros((1, ModelConstants.LATERAL_CONTROL_PARAMS_LEN), dtype=np.float32),
-      'prev_desired_curv': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN+1), ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32),
-      'features_buffer': np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
-    }
+    self.numpy_inputs = {}
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
-    self.input_shapes =  model_metadata['input_shapes']
-
+    self.input_shapes = model_metadata['input_shapes']
     self.output_slices = model_metadata['output_slices']
+
+    for key, shape in self.input_shapes.items():
+      if key not in self.frames: # Managed by opencl
+        self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
+
     net_output_size = model_metadata['output_shapes']['outputs'][1]
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
@@ -84,6 +87,14 @@ class ModelState:
         self.model_run = pickle.load(f)
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
+
+    net_output_size = model_metadata['output_shapes']['outputs'][1]
+    self.output = np.zeros(net_output_size, dtype=np.float32)
+
+    num_elements = self.numpy_inputs['features_buffer'].shape[1]
+    step_size = int(-100 / num_elements)
+    self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
@@ -98,11 +109,19 @@ class ModelState:
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    self.numpy_inputs['desire'][0,:-1] = self.numpy_inputs['desire'][0,1:]
-    self.numpy_inputs['desire'][0,-1] = new_desire
+    if not self.is_20hz:
+      len = inputs['desire'].shape[0]
+      self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
+      self.numpy_inputs['desire'][0, -1, :len] = new_desire[:len]
+    else:
+      self.desire_20Hz[:-1] = self.desire_20Hz[1:]
+      self.desire_20Hz[-1] = new_desire
+      self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
 
-    self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
-    self.numpy_inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    for key in self.numpy_inputs:
+      if key in inputs and key not in ['desire']:
+        self.numpy_inputs[key][:] = inputs[key]
+
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
@@ -125,13 +144,27 @@ class ModelState:
 
     outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
 
-    self.numpy_inputs['features_buffer'][0,:-1] = self.numpy_inputs['features_buffer'][0,1:]
-    self.numpy_inputs['features_buffer'][0,-1] = outputs['hidden_state'][0, :]
+    if not self.is_20hz:
+      feature_len = outputs['hidden_state'].shape[1]
+      self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
+      self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
+    else:
+      self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
+      self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+      self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
 
+    if "desired_curvature" in outputs:
+      input_name_prev = None
 
-    # TODO model only uses last value now
-    self.numpy_inputs['prev_desired_curv'][0,:-1] = self.numpy_inputs['prev_desired_curv'][0,1:]
-    self.numpy_inputs['prev_desired_curv'][0,-1,:] = outputs['desired_curvature'][0, :]
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curvs'
+      elif "prev_desired_curv" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curv'
+
+      if input_name_prev is not None:
+        len = outputs['desired_curvature'][0].size
+        self.numpy_inputs[input_name_prev][0, :-len, 0] = self.numpy_inputs[input_name_prev][0, len:, 0]
+        self.numpy_inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
     return outputs
 
 
