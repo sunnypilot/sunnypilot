@@ -163,7 +163,7 @@ class DynamicExperimentalController:
     """
     Adapts the slow-down threshold based on vehicle speed and recent behavior.
     """
-    slowdown_scaling_factor: float = (1.0 + 0.07 * np.log(1 + len(self._slow_down_gmac.data)))
+    slowdown_scaling_factor: float = (1.0 + 0.05 * np.log(1 + len(self._slow_down_gmac.data)))
     adaptive_threshold: float = float(
       interp(self._v_ego_kph, WMACConstants.SLOW_DOWN_BP, WMACConstants.SLOW_DOWN_DIST) * slowdown_scaling_factor
     )
@@ -216,13 +216,15 @@ class DynamicExperimentalController:
     self._slow_down_gmac.add_data(slow_down_trigger)
     if _has_slow_down_weighted_average := self._slow_down_gmac.get_weighted_average():
       self._has_slow_down = _has_slow_down_weighted_average > WMACConstants.SLOW_DOWN_PROB
+      self._slow_down_confidence = _has_slow_down_weighted_average  # Store confidence level
     else:
       self._has_slow_down = False
+      self._slow_down_confidence = 0.0  # No confidence if no slowdown
 
     # anomaly detection for slow down events
     if self._anomaly_detection(self._slow_down_gmac.data):
-      # Handle anomaly: potentially log it, adjust behavior, or issue a warning
-      self._has_slow_down *= 0.7 # Reduce rather than fully disablings
+      self._slow_down_confidence *= 0.85  # Reduce confidence
+      self._has_slow_down = self._slow_down_confidence > WMACConstants.SLOW_DOWN_PROB
 
     # blinker detection
     self._has_blinkers = car_state.leftBlinker or car_state.rightBlinker
