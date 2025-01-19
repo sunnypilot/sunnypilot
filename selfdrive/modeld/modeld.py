@@ -110,9 +110,9 @@ class ModelState:
     self.prev_desire[:] = inputs['desire']
 
     if not self.is_20hz:
-      len = inputs['desire'].shape[0]
+      length = inputs['desire'].shape[0]
       self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
-      self.numpy_inputs['desire'][0, -1, :len] = new_desire[:len]
+      self.numpy_inputs['desire'][0, -1, :length] = new_desire[:length]
     else:
       self.desire_20Hz[:-1] = self.desire_20Hz[1:]
       self.desire_20Hz[-1] = new_desire
@@ -162,9 +162,9 @@ class ModelState:
         input_name_prev = 'prev_desired_curv'
 
       if input_name_prev is not None:
-        len = outputs['desired_curvature'][0].size
-        self.numpy_inputs[input_name_prev][0, :-len, 0] = self.numpy_inputs[input_name_prev][0, len:, 0]
-        self.numpy_inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
+        length = outputs['desired_curvature'][0].size
+        self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
+        self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
     return outputs
 
 
