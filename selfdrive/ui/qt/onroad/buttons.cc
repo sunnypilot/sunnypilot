@@ -43,8 +43,8 @@ void ExperimentalButton::updateState(const UIState &s) {
   }
 
   int mode = int(long_plan_sp.getDec().getState());
-  if ((long_plan_sp.getDec().getEnabled() != dynamic_experimental_control) || (mode != dec_mpc_mode)) {
-    dynamic_experimental_control = long_plan_sp.getDec().getEnabled();
+  if ((long_plan_sp.getDec().getActive() != dynamic_experimental_control) || (mode != dec_mpc_mode)) {
+    dynamic_experimental_control = long_plan_sp.getDec().getActive();
     dec_mpc_mode = mode;
     update();
   }
@@ -61,10 +61,10 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
 
     QPainter combined_painter(&combined_img);
 
-    combined_painter.setOpacity(dec_mpc_mode == 1 ? 0.6 : 1.0);
+    combined_painter.setOpacity(dec_mpc_mode == 1 ? 0.2 : 1.0);
     combined_painter.drawPixmap(0, 0, left_half);
 
-    combined_painter.setOpacity(dec_mpc_mode == 1 ? 1.0 : 0.6);
+    combined_painter.setOpacity(dec_mpc_mode == 1 ? 1.0 : 0.2);
     combined_painter.drawPixmap(engage_img.width() / 2, 0, right_half);
 
     combined_painter.end();
