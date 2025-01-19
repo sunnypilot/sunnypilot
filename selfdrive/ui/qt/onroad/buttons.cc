@@ -34,16 +34,32 @@ void ExperimentalButton::changeMode() {
 
 void ExperimentalButton::updateState(const UIState &s) {
   const auto cs = (*s.sm)["selfdriveState"].getSelfdriveState();
+  const auto long_plan_sp = (*s.sm)["longitudinalPlanSP"].getLongitudinalPlanSP();
   bool eng = cs.getEngageable() || cs.getEnabled();
   if ((cs.getExperimentalMode() != experimental_mode) || (eng != engageable)) {
     engageable = eng;
     experimental_mode = cs.getExperimentalMode();
     update();
   }
+
+  if (long_plan_sp.getDec().getEnabled() != dynamic_experimental_control) {
+    dynamic_experimental_control = long_plan_sp.getDec().getEnabled();
+    update();
+  }
 }
 
 void ExperimentalButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  QPixmap img = experimental_mode ? experimental_img : engage_img;
-  drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
+  if (dynamic_experimental_control) {
+    QRect leftRect(0, 0, btn_size / 2, btn_size);
+    QRect rightRect(btn_size / 2, 0, btn_size / 2, btn_size);
+
+    p.setOpacity((isDown() || !engageable) ? 0.6 : 1.0);
+    p.drawPixmap(leftRect, engage_img);
+
+    p.drawPixmap(rightRect, experimental_img);
+  } else {
+    QPixmap img = experimental_mode ? experimental_img : engage_img;
+    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
+  }
 }

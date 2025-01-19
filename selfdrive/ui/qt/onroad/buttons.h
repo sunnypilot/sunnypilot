@@ -27,6 +27,7 @@ private:
   QPixmap experimental_img;
   bool experimental_mode;
   bool engageable;
+  bool dynamic_experimental_control;
 };
 
 void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity);
