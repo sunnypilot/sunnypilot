@@ -51,13 +51,18 @@ void ExperimentalButton::updateState(const UIState &s) {
 void ExperimentalButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   if (dynamic_experimental_control) {
-    QRect leftRect(0, 0, btn_size / 2, btn_size);
-    QRect rightRect(btn_size / 2, 0, btn_size / 2, btn_size);
+    QPixmap left_half = engage_img.copy(0, 0, engage_img.width() / 2, engage_img.height());
+    QPixmap right_half = experimental_img.copy(experimental_img.width() / 2, 0, experimental_img.width() / 2, experimental_img.height());
 
-    p.setOpacity((isDown() || !engageable) ? 0.6 : 1.0);
-    p.drawPixmap(leftRect, engage_img);
+    QPixmap combined_img(engage_img.width(), engage_img.height());
+    combined_img.fill(Qt::transparent);
 
-    p.drawPixmap(rightRect, experimental_img);
+    QPainter combined_painter(&combined_img);
+    combined_painter.drawPixmap(0, 0, left_half);
+    combined_painter.drawPixmap(engage_img.width() / 2, 0, right_half);
+    combined_painter.end();
+
+    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), combined_img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
   } else {
     QPixmap img = experimental_mode ? experimental_img : engage_img;
     drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, QColor(0, 0, 0, 166), (isDown() || !engageable) ? 0.6 : 1.0);
