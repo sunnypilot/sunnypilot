@@ -489,6 +489,8 @@ class SelfdriveD(CruiseHelper):
     mads.active = self.mads.active
     mads.available = self.mads.enabled_toggle
 
+    self.pm.send('selfdriveStateSP', ss_sp_msg)
+
     # onroadEventsSP - logged every second or on change
     if (self.sm.frame % int(1. / DT_CTRL) == 0) or (self.events_sp.names != self.events_sp_prev):
       ce_send_sp = messaging.new_message('onroadEventsSP', len(self.events_sp))
@@ -496,8 +498,6 @@ class SelfdriveD(CruiseHelper):
       ce_send_sp.onroadEventsSP = self.events_sp.to_msg()
       self.pm.send('onroadEventsSP', ce_send_sp)
     self.events_sp_prev = self.events_sp.names.copy()
-
-    self.pm.send('selfdriveStateSP', ss_sp_msg)
 
   def step(self):
     CS = self.data_sample()
