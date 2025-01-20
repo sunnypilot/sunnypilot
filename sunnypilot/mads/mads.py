@@ -24,7 +24,7 @@ THE SOFTWARE.
 Last updated: July 29, 2024
 """
 
-from cereal import messaging, car, log, custom
+from cereal import car, log, custom
 
 from opendbc.car.hyundai.values import HyundaiFlags
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
