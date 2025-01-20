@@ -41,3 +41,8 @@ class ModelState20Hz(ABC):
   @property
   def buffer_length(self):
     return 5 if self.is_20hz else 2
+
+  def get_full_features_20hz(self, outputs, idxs):
+    self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
+    self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+    return self.full_features_20Hz[idxs]

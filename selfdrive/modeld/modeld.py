@@ -11,6 +11,7 @@ if TICI:
   from tinygrad.tensor import Tensor
   from tinygrad.dtype import dtypes
   from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+
   os.environ['QCOM'] = '1'
 else:
   from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner
@@ -37,13 +38,13 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 MODEL_PATH = Path(__file__).parent / 'models/supercombo.onnx'
 MODEL_PKL_PATH = Path(__file__).parent / 'models/supercombo_tinygrad.pkl'
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
+
 
 class FrameMeta:
   frame_id: int = 0
@@ -53,6 +54,7 @@ class FrameMeta:
   def __init__(self, vipc=None):
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
+
 
 class ModelState(ModelState20Hz, ModelSwitcher, ModelSmartInput):
   frames: dict[str, DrivingModelFrame]
@@ -69,16 +71,16 @@ class ModelState(ModelState20Hz, ModelSwitcher, ModelSmartInput):
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {
-      'desire': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN+1), ModelConstants.DESIRE_LEN), dtype=np.float32),
+      'desire': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN + 1), ModelConstants.DESIRE_LEN), dtype=np.float32),
       'traffic_convention': np.zeros((1, ModelConstants.TRAFFIC_CONVENTION_LEN), dtype=np.float32),
       'lateral_control_params': np.zeros((1, ModelConstants.LATERAL_CONTROL_PARAMS_LEN), dtype=np.float32),
-      'prev_desired_curv': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN+1), ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32),
-      'features_buffer': np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
+      'prev_desired_curv': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN + 1), ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32),
+      'features_buffer': np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32),
     }
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
-    self.input_shapes =  model_metadata['input_shapes']
+    self.input_shapes = model_metadata['input_shapes']
 
     self.output_slices = model_metadata['output_slices']
     net_output_size = model_metadata['output_shapes']['outputs'][1]
@@ -86,20 +88,20 @@ class ModelState(ModelState20Hz, ModelSwitcher, ModelSmartInput):
     self.parser = Parser()
 
     if TICI:
-      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
+      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k, v in self.numpy_inputs.items()}
       with open(MODEL_PKL_PATH, "rb") as f:
         self.model_run = pickle.load(f)
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
-    parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
+    parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
     if SEND_RAW_PRED:
       parsed_model_outputs['raw_pred'] = model_outputs.copy()
     return parsed_model_outputs
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
@@ -139,28 +141,17 @@ class ModelState(ModelState20Hz, ModelSwitcher, ModelSmartInput):
       self.output = self.onnx_cpu_runner.run(None, self.numpy_inputs)[0].flatten()
 
     outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
-
     if not self.is_20hz:
-      feature_len = outputs['hidden_state'].shape[1]
-      self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
-      self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
+      self.numpy_inputs['features_buffer'][0,:-1] = self.numpy_inputs['features_buffer'][0,1:]
+      self.numpy_inputs['features_buffer'][0,-1] = outputs['hidden_state'][0, :]
     else:
-      self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
-      self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
+      self.numpy_inputs['features_buffer'][:] = self.get_full_features_20hz(outputs, self.full_features_20Hz_idxs)
 
-    if "desired_curvature" in outputs:
-      input_name_prev = None
-
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-
-      if input_name_prev is not None:
-        length = outputs['desired_curvature'][0].size
-        self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
-        self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
+    if not self.using_smart_input:
+      self.numpy_inputs['prev_desired_curv'][0,:-1] = self.numpy_inputs['prev_desired_curv'][0,1:]
+      self.numpy_inputs['prev_desired_curv'][0,-1,:] = outputs['desired_curvature'][0, :]
+    else:
+      self.process_outputs_smart(outputs)
     return outputs
 
 
@@ -220,7 +211,6 @@ def main(demo=False):
   buf_main, buf_extra = None, None
   meta_main = FrameMeta()
   meta_extra = FrameMeta()
-
 
   if demo:
     CP = get_demo_car_params()
@@ -289,7 +279,7 @@ def main(demo=False):
     # tracked dropped frames
     vipc_dropped_frames = max(0, meta_main.frame_id - last_vipc_frame_id - 1)
     frames_dropped = frame_dropped_filter.update(min(vipc_dropped_frames, 10))
-    if run_count < 10: # let frame drops warm up
+    if run_count < 10:  # let frame drops warm up
       frame_dropped_filter.x = 0.
       frames_dropped = 0.
     run_count = run_count + 1
@@ -299,11 +289,11 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs:dict[str, np.ndarray] = {
+    inputs: dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
       'lateral_control_params': lateral_control_params,
-      }
+    }
 
     mt1 = time.perf_counter()
     model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
@@ -338,6 +328,7 @@ def main(demo=False):
 if __name__ == "__main__":
   try:
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true', help='A boolean for demo mode.')
     args = parser.parse_args()
