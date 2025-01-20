@@ -2,6 +2,10 @@
 import os
 from openpilot.system.hardware import TICI
 
+from openpilot.sunnypilot.modeld_v2.model_smart_input import ModelSmartInput
+from openpilot.sunnypilot.modeld_v2.model_switcher import ModelSwitcher
+from openpilot.sunnypilot.modeld_v2.model_state_20hz import ModelState20Hz
+
 #
 if TICI:
   from tinygrad.tensor import Tensor
@@ -50,34 +54,33 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
-class ModelState:
+class ModelState(ModelState20Hz, ModelSwitcher, ModelSmartInput):
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   output: np.ndarray
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    self.is_20hz = False
+    ModelState20Hz.__init__(self, context)
+    ModelSmartInput.__init__(self, METADATA_PATH)
 
-    buffer_length = 5 if self.is_20hz else 2
-    self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
-    self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-    self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    self.frames = self.frames or {'input_imgs': DrivingModelFrame(context), 'big_input_imgs': DrivingModelFrame(context)}
+    self.prev_desire = self.prev_desire or np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
 
+    # img buffers are managed in openCL transform code
+    self.numpy_inputs = {
+      'desire': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN+1), ModelConstants.DESIRE_LEN), dtype=np.float32),
+      'traffic_convention': np.zeros((1, ModelConstants.TRAFFIC_CONVENTION_LEN), dtype=np.float32),
+      'lateral_control_params': np.zeros((1, ModelConstants.LATERAL_CONTROL_PARAMS_LEN), dtype=np.float32),
+      'prev_desired_curv': np.zeros((1, (ModelConstants.FULL_HISTORY_BUFFER_LEN+1), ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32),
+      'features_buffer': np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
+    }
 
     with open(METADATA_PATH, 'rb') as f:
       model_metadata = pickle.load(f)
-    self.input_shapes = model_metadata['input_shapes']
+    self.input_shapes =  model_metadata['input_shapes']
 
     self.output_slices = model_metadata['output_slices']
-
-    # img buffers are managed in openCL transform code
-    self.numpy_inputs = {}
-    for key, shape in self.input_shapes.items():
-      if key not in self.frames: # Managed by opencl
-        self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
-
     net_output_size = model_metadata['output_shapes']['outputs'][1]
     self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
@@ -88,14 +91,6 @@ class ModelState:
         self.model_run = pickle.load(f)
     else:
       self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
-
-    net_output_size = model_metadata['output_shapes']['outputs'][1]
-    self.output = np.zeros(net_output_size, dtype=np.float32)
-
-    num_elements = self.numpy_inputs['features_buffer'].shape[1]
-    step_size = int(-100 / num_elements)
-    self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
