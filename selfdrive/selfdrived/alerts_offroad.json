@@ -44,5 +44,9 @@
   "Offroad_Recalibration": {
     "text": "openpilot detected a change in the device's mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.",
     "severity": 0
+  },
+  "Offroad_ForceStatus": {
+    "text": "sunnypilot is now in Always Offroad mode. sunnypilot won't start until Forced Offroad mode is disabled. Go to \"Settings\" -> \"Device\" -> \"Offroad Mode\" to exit Always Offroad mode.",
+    "severity": 1
   }
 }
