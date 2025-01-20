@@ -26,6 +26,7 @@ from openpilot.system.version import get_build_metadata
 from openpilot.sunnypilot.mads.mads import ModularAssistiveDrivingSystem
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
 from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -136,7 +137,9 @@ class SelfdriveD(CruiseHelper):
       self.events.add(EventName.dashcamMode, static=True)
 
     self.mads = ModularAssistiveDrivingSystem(self)
-    sock_services = list(self.pm.sock.keys()) + ['selfdriveStateSP']
+    self.events_sp = EventsSP()
+    self.events_sp_prev = []
+    sock_services = list(self.pm.sock.keys()) + ['selfdriveStateSP', 'onroadEventsSP']
     self.pm = messaging.PubMaster(sock_services)
 
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.params)
@@ -184,7 +187,7 @@ class SelfdriveD(CruiseHelper):
       self.events.add_from_msg(car_events)
 
       car_events_sp = self.car_events_sp.update().to_msg()
-      self.events.add_from_msg(car_events_sp)
+      self.events_sp.add_from_msg(car_events_sp)
 
       if self.CP.notCar:
         # wait for everything to init first
@@ -370,7 +373,7 @@ class SelfdriveD(CruiseHelper):
       if self.sm['modelV2'].frameDropPerc > 20:
         self.events.add(EventName.modeldLagging)
 
-    CruiseHelper.update(self, CS, self.events, self.experimental_mode)
+    CruiseHelper.update(self, CS, self.events_sp, self.experimental_mode)
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
@@ -436,9 +439,13 @@ class SelfdriveD(CruiseHelper):
       clear_event_types.add(ET.NO_ENTRY)
 
     pers = LONGITUDINAL_PERSONALITY_MAP[self.personality]
-    alerts = self.events.create_alerts(self.state_machine.current_alert_types, [self.CP, CS, self.sm, self.is_metric,
-                                                                                self.state_machine.soft_disable_timer, pers])
-    self.AM.add_many(self.sm.frame, alerts)
+    callback_args = [self.CP, CS, self.sm, self.is_metric,
+                     self.state_machine.soft_disable_timer, pers]
+
+    alerts = self.events.create_alerts(self.state_machine.current_alert_types, callback_args)
+    alerts_sp = self.events_sp.create_alerts(self.state_machine.current_alert_types, callback_args)
+
+    self.AM.add_many(self.sm.frame, alerts + alerts_sp)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
 
   def publish_selfdriveState(self, CS):
@@ -480,6 +487,14 @@ class SelfdriveD(CruiseHelper):
     mads.enabled = self.mads.enabled
     mads.active = self.mads.active
     mads.available = self.mads.enabled_toggle
+
+    # onroadEventsSP - logged every second or on change
+    if (self.sm.frame % int(1. / DT_CTRL) == 0) or (self.events_sp.names != self.events_sp_prev):
+      ce_send_sp = messaging.new_message('onroadEventsSP', len(self.events_sp))
+      ce_send_sp.valid = True
+      ce_send_sp.onroadEventsSP = self.events_sp.to_msg()
+      self.pm.send('onroadEventsSP', ce_send_sp)
+    self.events_sp_prev = self.events_sp.names.copy()
 
     self.pm.send('selfdriveStateSP', ss_sp_msg)
 

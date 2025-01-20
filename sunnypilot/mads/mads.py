@@ -53,6 +53,7 @@ class ModularAssistiveDrivingSystem:
     self.selfdrive.enabled_prev = False
     self.state_machine = StateMachine(self)
     self.events = self.selfdrive.events
+    self.events_sp = self.selfdrive.events_sp
 
     if self.selfdrive.CP.carName == "hyundai":
       if (self.selfdrive.CP.sunnypilotFlags & HyundaiFlagsSP.HAS_LFA_BUTTON) or \
@@ -78,26 +79,32 @@ class ModularAssistiveDrivingSystem:
 
     def transition_paused_state():
       if self.state_machine.state != State.paused:
-        self.events.add(EventName.silentLkasDisable)
+        self.events_sp.add(EventName.silentLkasDisable)
 
     if not self.selfdrive.enabled and self.enabled:
       if self.events.has(EventName.doorOpen):
-        self.events.replace(EventName.doorOpen, EventName.silentDoorOpen)
+        self.events.remove(EventName.doorOpen)
+        self.events_sp.add(EventName.silentDoorOpen)
         transition_paused_state()
       if self.events.has(EventName.seatbeltNotLatched):
-        self.events.replace(EventName.seatbeltNotLatched, EventName.silentSeatbeltNotLatched)
+        self.events.remove(EventName.seatbeltNotLatched)
+        self.events_sp.add(EventName.silentSeatbeltNotLatched)
         transition_paused_state()
       if self.events.has(EventName.wrongGear):
-        self.events.replace(EventName.wrongGear, EventName.silentWrongGear)
+        self.events.remove(EventName.wrongGear)
+        self.events_sp.add(EventName.silentWrongGear)
         transition_paused_state()
       if self.events.has(EventName.reverseGear):
-        self.events.replace(EventName.reverseGear, EventName.silentReverseGear)
+        self.events.remove(EventName.reverseGear)
+        self.events_sp.add(EventName.silentReverseGear)
         transition_paused_state()
       if self.events.has(EventName.brakeHold):
-        self.events.replace(EventName.brakeHold, EventName.silentBrakeHold)
+        self.events.remove(EventName.brakeHold)
+        self.events_sp.add(EventName.silentBrakeHold)
         transition_paused_state()
       if self.events.has(EventName.parkBrake):
-        self.events.replace(EventName.parkBrake, EventName.silentParkBrake)
+        self.events.remove(EventName.parkBrake)
+        self.events_sp.add(EventName.silentParkBrake)
         transition_paused_state()
 
       if self.pause_lateral_on_brake_toggle:
@@ -107,7 +114,7 @@ class ModularAssistiveDrivingSystem:
       if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
          not self.events.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
-          self.events.add(EventName.silentLkasEnable)
+          self.events_sp.add(EventName.silentLkasEnable)
 
       self.events.remove(EventName.preEnableStandstill)
       self.events.remove(EventName.belowEngageSpeed)
@@ -120,25 +127,25 @@ class ModularAssistiveDrivingSystem:
     else:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
-          self.events.add(EventName.lkasEnable)
+          self.events_sp.add(EventName.lkasEnable)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
         if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
-          self.events.add(EventName.manualLongitudinalRequired)
+          self.events_sp.add(EventName.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
         if self.enabled:
           if self.selfdrive.enabled:
-            self.events.add(EventName.manualSteeringRequired)
+            self.events_sp.add(EventName.manualSteeringRequired)
           else:
-            self.events.add(EventName.lkasDisable)
+            self.events_sp.add(EventName.lkasDisable)
         else:
-          self.events.add(EventName.lkasEnable)
+          self.events_sp.add(EventName.lkasEnable)
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
       if self.selfdrive.CS_prev.cruiseState.available:
-        self.events.add(EventName.lkasDisable)
+        self.events_sp.add(EventName.lkasDisable)
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)

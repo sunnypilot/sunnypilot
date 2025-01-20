@@ -10,6 +10,28 @@ $Cxx.namespace("cereal");
 # DO rename the structs
 # DON'T change the identifier (e.g. @0x81c2f05a394cf4af)
 
+struct OnroadEventSP {
+  name @0 :EventName;
+
+  enum EventName {
+    lkasEnable @0;
+    lkasDisable @1;
+    manualSteeringRequired @2;
+    manualLongitudinalRequired @3;
+    silentLkasEnable @4;
+    silentLkasDisable @5;
+    silentBrakeHold @6;
+    silentWrongGear @7;
+    silentReverseGear @8;
+    silentDoorOpen @9;
+    silentSeatbeltNotLatched @10;
+    silentParkBrake @11;
+    controlsMismatchLateral @12;
+    hyundaiRadarTracksConfirmed @13;
+    experimentalModeSwitched @14;
+  }
+}
+
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
 
