@@ -41,11 +41,11 @@ class Alert:
   def __init__(self,
                alert_text_1: str,
                alert_text_2: str,
-               alert_status: AlertStatus,
-               alert_size: AlertSize,
+               alert_status: log.SelfdriveState.AlertStatus,
+               alert_size: log.SelfdriveState.AlertSize,
                priority: Priority,
-               visual_alert: VisualAlert,
-               audible_alert: AudibleAlert,
+               visual_alert: car.CarControl.HUDControl.VisualAlert,
+               audible_alert: car.CarControl.HUDControl.AudibleAlert,
                duration: float,
                creation_delay: float = 0.):
 
@@ -140,6 +140,9 @@ class EventsBase:
         setattr(event, event_type, True)
       ret.append(event)
     return ret
+
+  def has(self, event_name: int) -> bool:
+    return event_name in self.events
 
   def contains_in_list(self, events_list: list[int]) -> bool:
     return any(event_name in self.events for event_name in events_list)
