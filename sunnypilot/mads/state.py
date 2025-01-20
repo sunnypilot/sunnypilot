@@ -58,11 +58,11 @@ class StateMachine:
     if not self.selfdrive.enabled:
       self.ss_state_machine.current_alert_types.append(alert_type)
 
-  def check_contains(self, event: str) -> bool:
-    return self._events.contains(event) or self._events_sp.contains(event)
+  def check_contains(self, event_type: str) -> bool:
+    return bool(self._events.contains(event_type) or self._events_sp.contains(event_type))
 
   def check_contains_in_list(self, events_list: list[int]) -> bool:
-    return self._events.contains_in_list(events_list) or self._events_sp.contains_in_list(events_list)
+    return bool(self._events.contains_in_list(events_list) or self._events_sp.contains_in_list(events_list))
 
   def update(self, events: Events, events_sp: EventsSP):
     # soft disable timer and current alert types are from the state machine of openpilot
