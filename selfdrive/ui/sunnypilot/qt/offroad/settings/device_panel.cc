@@ -102,7 +102,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   power_group_layout->addWidget(offroadBtn, 0, Qt::AlignHCenter);
   power_group_layout->addLayout(power_layout);
 
-  addItem(power_layout);
+  addItem(power_group_layout);
 
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<PushButtonSP*>()) {
