@@ -552,7 +552,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>Temperatura do dispositivo muito alta. O sistema está sendo resfriado antes de iniciar. A temperatura atual do componente interno é: %1</translation>
     </message>
     <message>
-        <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Forced Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; -&gt; &quot;Offroad Mode&quot; to exit Always Offroad mode.</source>
+        <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -552,7 +552,7 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>openpilot a détecté un changement dans la position de montage de l&apos;appareil. Assurez-vous que l&apos;appareil est totalement inséré dans le support et que le support est fermement fixé au pare-brise.</translation>
     </message>
     <message>
-        <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Forced Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; -&gt; &quot;Offroad Mode&quot; to exit Always Offroad mode.</source>
+        <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
