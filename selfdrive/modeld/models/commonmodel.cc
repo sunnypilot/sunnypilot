@@ -12,7 +12,7 @@ DrivingModelFrame::DrivingModelFrame(cl_device_id device_id, cl_context context,
   region.origin = (buffer_length - 1)  * frame_size_bytes;
   region.size = frame_size_bytes;
   last_img_cl = CL_CHECK_ERR(clCreateSubBuffer(img_buffer_20hz_cl, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err));
-  printf("Buffer length: %d, region origin: %lu, region size: %lu\n", buffer_length, region.origin, region.size);
+  // printf("Buffer length: %d, region origin: %lu, region size: %lu\n", buffer_length, region.origin, region.size);
 
   loadyuv_init(&loadyuv, context, device_id, MODEL_WIDTH, MODEL_HEIGHT);
   init_transform(device_id, context, MODEL_WIDTH, MODEL_HEIGHT);
