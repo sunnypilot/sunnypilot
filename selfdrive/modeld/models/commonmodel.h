@@ -64,7 +64,7 @@ protected:
 
 class DrivingModelFrame : public ModelFrame {
 public:
-  DrivingModelFrame(cl_device_id device_id, cl_context context, uint8_t buffer_length = 2);
+  DrivingModelFrame(cl_device_id device_id, cl_context context, uint8_t buffer_length);
   ~DrivingModelFrame();
   cl_mem* prepare(cl_mem yuv_cl, int frame_width, int frame_height, int frame_stride, int frame_uv_offset, const mat3& projection);
 
