@@ -151,6 +151,7 @@ class SelfdriveD(CruiseHelper):
     """Compute onroadEvents from carState"""
 
     self.events.clear()
+    self.events_sp.clear()
 
     if self.sm['controlsState'].lateralControlState.which() == 'debugState':
       self.events.add(EventName.joystickDebug)
