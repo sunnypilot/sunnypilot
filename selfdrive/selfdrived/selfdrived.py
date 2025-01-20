@@ -136,9 +136,10 @@ class SelfdriveD(CruiseHelper):
     elif self.CP.passive:
       self.events.add(EventName.dashcamMode, static=True)
 
-    self.mads = ModularAssistiveDrivingSystem(self)
     self.events_sp = EventsSP()
     self.events_sp_prev = []
+
+    self.mads = ModularAssistiveDrivingSystem(self)
     sock_services = list(self.pm.sock.keys()) + ['selfdriveStateSP', 'onroadEventsSP']
     self.pm = messaging.PubMaster(sock_services)
 
