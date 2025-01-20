@@ -6,7 +6,7 @@ import numpy as np
 
 class ModelSmartInput(ABC):
   def __init__(self, METADATA_PATH):
-    self._using_smart_input = True
+    self.using_smart_input = True
     self.desire_reshape_dims = None
     self.output = None
     self.full_features_20Hz_idxs = None
@@ -14,7 +14,7 @@ class ModelSmartInput(ABC):
     self._input_shapes = None
     self._numpy_inputs = {}
 
-    if self._using_smart_input:
+    if self.using_smart_input:
       self.initialize_smart_input(METADATA_PATH)
 
   def initialize_smart_input(self, METADATA_PATH):
@@ -35,6 +35,20 @@ class ModelSmartInput(ABC):
     step_size = int(-100 / num_elements)
     self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
     self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+
+  def process_outputs_smart(self, outputs):
+    if "desired_curvature" in outputs:
+      input_name_prev = None
+
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curvs'
+      elif "prev_desired_curv" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curv'
+
+      if input_name_prev is not None:
+        length = outputs['desired_curvature'][0].size
+        self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
+        self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
 
   @property
   def input_shapes(self):
