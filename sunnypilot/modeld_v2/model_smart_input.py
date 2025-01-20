@@ -1,5 +1,6 @@
 import pickle
 from abc import abstractmethod, ABC
+from openpilot.common.swaglog import cloudlog
 
 import numpy as np
 
@@ -58,7 +59,7 @@ class ModelSmartInput(ABC):
   def input_shapes(self, value):
     if not self._input_shapes:
       self._input_shapes = value
-    print("Waring: ignoring input_shapes setter because ModelSmartInput is in use.")
+    cloudlog.warning("Ignoring input_shapes setter because ModelSmartInput is in use.")
 
   @property
   def output_slices(self):
@@ -68,7 +69,7 @@ class ModelSmartInput(ABC):
   def output_slices(self, value):
     if not self._output_slices:
       self._output_slices = value
-    print("Waring: ignoring output_slices setter because ModelSmartInput is in use.")
+    cloudlog.warning("Ignoring output_slices setter because ModelSmartInput is in use.")
 
   @property
   @abstractmethod
@@ -83,4 +84,4 @@ class ModelSmartInput(ABC):
   def numpy_inputs(self, value):
     if not self._numpy_inputs:
       self._numpy_inputs = value
-    print("Waring: ignoring numpy_inputs setter because ModelSmartInput is in use.")
+    cloudlog.warning("Ignoring numpy_inputs setter because ModelSmartInput is in use.")
