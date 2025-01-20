@@ -66,36 +66,49 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   elif personality==log.LongitudinalPersonality.standard:
     return 1.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 0.5
+    return 0.2
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.75
+    return 1.80
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.45
+    return 1.40
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 1.25
+    return 1.10
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
 
-def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego):
-  v_diff_offset = 0
-  v_diff_offset_max = 12
-  speed_to_reach_max_v_diff_offset = 26 # in kp/h
-  speed_to_reach_max_v_diff_offset = speed_to_reach_max_v_diff_offset * CV.KPH_TO_MS
+def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3):
+  v_diff_offset = np.zeros_like(v_lead)
   delta_speed = v_lead - v_ego
-  if np.all(delta_speed > 0):
-    v_diff_offset = delta_speed * 2
-    v_diff_offset = np.clip(v_diff_offset, 0, v_diff_offset_max)
-    # increase in a linear behavior
-    v_diff_offset = np.maximum(v_diff_offset * ((speed_to_reach_max_v_diff_offset - v_ego)/speed_to_reach_max_v_diff_offset), 0)
-  return (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
+
+  # Smooth offset increase based on relative speed, capped to a fraction of the stop distance
+  if np.any(delta_speed > 0):
+    v_diff_offset = np.clip(delta_speed, 0, STOP_DISTANCE / 2)
+
+    # Adaptive scaling factor based on ego vehicle speed
+    scaling_factor = np.maximum((10 - v_ego) / 10, 0)  # Ensures it's never negative
+    v_diff_offset *= scaling_factor
+
+    # If relative speed is high and ego speed is low, increase offset more aggressively
+    fast_takeoff_condition = (v_ego < 10) & (delta_speed > 2)  # Array-wise condition
+    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 1.5, 0, STOP_DISTANCE / 2), v_diff_offset)
+
+  # softer initial braking
+  initial_brake_factor = np.clip(v_ego / 30, 0, 1)  # Soft brake factor for the first 0.3 seconds
+  smooth_initial_brake = np.minimum(1, initial_brake_factor / time_to_max_brake)
+
+  # Calculate stopping distance
+  distance = (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
+  distance *= smooth_initial_brake  # Apply initial smooth brake force
+
+  return distance
 
 
 def get_safe_obstacle_distance(v_ego, t_follow):
