@@ -106,7 +106,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<PushButtonSP*>()) {
-      if (btn != rebootBtn && btn != poweroffBtn) {
+      if (btn != rebootBtn && btn != poweroffBtn && btn != offroadBtn) {
         btn->setEnabled(offroad);
       }
     }
