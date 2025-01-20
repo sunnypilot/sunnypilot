@@ -24,7 +24,7 @@ THE SOFTWARE.
 Last updated: July 29, 2024
 """
 
-from cereal import custom
+from cereal import log, custom
 from openpilot.selfdrive.selfdrived.events import ET, Events
 from openpilot.selfdrive.selfdrived.state import SOFT_DISABLE_TIME
 from openpilot.common.realtime import DT_CTRL
@@ -32,6 +32,7 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
+EventName = log.OnroadEvent.EventName
 EventNameSP = custom.OnroadEventSP.EventName
 
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
@@ -39,8 +40,8 @@ ENABLED_STATES = (State.paused, *ACTIVE_STATES)
 
 GEARS_ALLOW_PAUSED_SILENT = [EventNameSP.silentWrongGear, EventNameSP.silentReverseGear, EventNameSP.silentBrakeHold,
                              EventNameSP.silentDoorOpen, EventNameSP.silentSeatbeltNotLatched, EventNameSP.silentParkBrake]
-GEARS_ALLOW_PAUSED = [EventNameSP.wrongGear, EventNameSP.reverseGear, EventNameSP.brakeHold,
-                      EventNameSP.doorOpen, EventNameSP.seatbeltNotLatched, EventNameSP.parkBrake,
+GEARS_ALLOW_PAUSED = [EventName.wrongGear, EventName.reverseGear, EventName.brakeHold,
+                      EventName.doorOpen, EventName.seatbeltNotLatched, EventName.parkBrake,
                       *GEARS_ALLOW_PAUSED_SILENT]
 
 
