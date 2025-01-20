@@ -33,7 +33,7 @@ class Events(EventsBase):
   def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType]]:
     return EVENTS
 
-  def get_event_name(self, event: int) -> str:
+  def get_event_name(self, event: int):
     return EVENT_NAME[event]
 
   def get_event_msg_type(self):

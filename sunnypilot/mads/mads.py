@@ -35,6 +35,7 @@ from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SIL
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
+EventNameSP = custom.OnroadEventSP.EventName
 SafetyModel = car.CarParams.SafetyModel
 
 SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise)
@@ -79,32 +80,32 @@ class ModularAssistiveDrivingSystem:
 
     def transition_paused_state():
       if self.state_machine.state != State.paused:
-        self.events_sp.add(EventName.silentLkasDisable)
+        self.events_sp.add(EventNameSP.silentLkasDisable)
 
     if not self.selfdrive.enabled and self.enabled:
       if self.events.has(EventName.doorOpen):
         self.events.remove(EventName.doorOpen)
-        self.events_sp.add(EventName.silentDoorOpen)
+        self.events_sp.add(EventNameSP.silentDoorOpen)
         transition_paused_state()
       if self.events.has(EventName.seatbeltNotLatched):
         self.events.remove(EventName.seatbeltNotLatched)
-        self.events_sp.add(EventName.silentSeatbeltNotLatched)
+        self.events_sp.add(EventNameSP.silentSeatbeltNotLatched)
         transition_paused_state()
       if self.events.has(EventName.wrongGear):
         self.events.remove(EventName.wrongGear)
-        self.events_sp.add(EventName.silentWrongGear)
+        self.events_sp.add(EventNameSP.silentWrongGear)
         transition_paused_state()
       if self.events.has(EventName.reverseGear):
         self.events.remove(EventName.reverseGear)
-        self.events_sp.add(EventName.silentReverseGear)
+        self.events_sp.add(EventNameSP.silentReverseGear)
         transition_paused_state()
       if self.events.has(EventName.brakeHold):
         self.events.remove(EventName.brakeHold)
-        self.events_sp.add(EventName.silentBrakeHold)
+        self.events_sp.add(EventNameSP.silentBrakeHold)
         transition_paused_state()
       if self.events.has(EventName.parkBrake):
         self.events.remove(EventName.parkBrake)
-        self.events_sp.add(EventName.silentParkBrake)
+        self.events_sp.add(EventNameSP.silentParkBrake)
         transition_paused_state()
 
       if self.pause_lateral_on_brake_toggle:
@@ -114,7 +115,7 @@ class ModularAssistiveDrivingSystem:
       if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
          not self.events.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
-          self.events_sp.add(EventName.silentLkasEnable)
+          self.events_sp.add(EventNameSP.silentLkasEnable)
 
       self.events.remove(EventName.preEnableStandstill)
       self.events.remove(EventName.belowEngageSpeed)
@@ -127,25 +128,25 @@ class ModularAssistiveDrivingSystem:
     else:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
-          self.events_sp.add(EventName.lkasEnable)
+          self.events_sp.add(EventNameSP.lkasEnable)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
         if not self.selfdrive.enabled and self.selfdrive.enabled_prev:
-          self.events_sp.add(EventName.manualLongitudinalRequired)
+          self.events_sp.add(EventNameSP.manualLongitudinalRequired)
       if be.type == ButtonType.lkas and be.pressed and (CS.cruiseState.available or self.allow_always):
         if self.enabled:
           if self.selfdrive.enabled:
-            self.events_sp.add(EventName.manualSteeringRequired)
+            self.events_sp.add(EventNameSP.manualSteeringRequired)
           else:
-            self.events_sp.add(EventName.lkasDisable)
+            self.events_sp.add(EventNameSP.lkasDisable)
         else:
-          self.events_sp.add(EventName.lkasEnable)
+          self.events_sp.add(EventNameSP.lkasEnable)
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
       if self.selfdrive.CS_prev.cruiseState.available:
-        self.events_sp.add(EventName.lkasDisable)
+        self.events_sp.add(EventNameSP.lkasDisable)
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
@@ -161,7 +162,7 @@ class ModularAssistiveDrivingSystem:
     self.update_events(CS)
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
-      self.enabled, self.active = self.state_machine.update(self.events)
+      self.enabled, self.active = self.state_machine.update(self.events, self.events_sp)
 
     # Copy of previous SelfdriveD states for MADS events handling
     self.selfdrive.enabled_prev = self.selfdrive.enabled
