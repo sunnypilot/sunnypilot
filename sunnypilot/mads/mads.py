@@ -82,30 +82,28 @@ class ModularAssistiveDrivingSystem:
       if self.state_machine.state != State.paused:
         self.events_sp.add(EventNameSP.silentLkasDisable)
 
+    def replace_event(old_event: int, new_event: int):
+      self.events.remove(old_event)
+      self.events_sp.add(new_event)
+
     if not self.selfdrive.enabled and self.enabled:
       if self.events.has(EventName.doorOpen):
-        self.events.remove(EventName.doorOpen)
-        self.events_sp.add(EventNameSP.silentDoorOpen)
+        replace_event(EventName.doorOpen, EventNameSP.silentDoorOpen)
         transition_paused_state()
       if self.events.has(EventName.seatbeltNotLatched):
-        self.events.remove(EventName.seatbeltNotLatched)
-        self.events_sp.add(EventNameSP.silentSeatbeltNotLatched)
+        replace_event(EventName.seatbeltNotLatched, EventNameSP.silentSeatbeltNotLatched)
         transition_paused_state()
       if self.events.has(EventName.wrongGear):
-        self.events.remove(EventName.wrongGear)
-        self.events_sp.add(EventNameSP.silentWrongGear)
+        replace_event(EventName.wrongGear, EventNameSP.silentWrongGear)
         transition_paused_state()
       if self.events.has(EventName.reverseGear):
-        self.events.remove(EventName.reverseGear)
-        self.events_sp.add(EventNameSP.silentReverseGear)
+        replace_event(EventName.reverseGear, EventNameSP.silentReverseGear)
         transition_paused_state()
       if self.events.has(EventName.brakeHold):
-        self.events.remove(EventName.brakeHold)
-        self.events_sp.add(EventNameSP.silentBrakeHold)
+        replace_event(EventName.brakeHold, EventNameSP.silentBrakeHold)
         transition_paused_state()
       if self.events.has(EventName.parkBrake):
-        self.events.remove(EventName.parkBrake)
-        self.events_sp.add(EventNameSP.silentParkBrake)
+        replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
 
       if self.pause_lateral_on_brake_toggle:
