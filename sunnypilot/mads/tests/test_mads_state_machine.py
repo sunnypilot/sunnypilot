@@ -30,7 +30,8 @@ from pytest_mock import MockerFixture
 from cereal import custom
 from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.mads.state import StateMachine, SOFT_DISABLE_TIME, GEARS_ALLOW_PAUSED
-from openpilot.selfdrive.selfdrived.events import ET, EVENTS, NormalPermanentAlert
+from openpilot.selfdrive.selfdrived.events import ET, NormalPermanentAlert
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EVENTS_SP
 
 State = custom.SelfdriveStateSP.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventNameSP = custom.OnroadEventSP.EventName
@@ -47,7 +48,7 @@ def make_event(event_types):
   event = {}
   for ev in event_types:
     event[ev] = NormalPermanentAlert("alert")
-  EVENTS[0] = event
+  EVENTS_SP[0] = event
   return 0
 
 
@@ -99,7 +100,7 @@ class TestMADSStateMachine:
           self.events_sp.add(en)
           self.state_machine.state = state
           self.state_machine.update(self.events, self.events_sp)
-          final_state = State.paused if self.events.has(en) and state != State.disabled else State.disabled
+          final_state = State.paused if self.events_sp.has(en) and state != State.disabled else State.disabled
           assert self.state_machine.state == final_state
           self.reset()
 
