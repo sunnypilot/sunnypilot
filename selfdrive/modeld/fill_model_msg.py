@@ -185,7 +185,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   disengage_predictions.brake4MetersPerSecondSquaredProbs = net_output_data['meta'][0,model_meta.HARD_BRAKE_4].tolist()
   disengage_predictions.brake5MetersPerSecondSquaredProbs = net_output_data['meta'][0,model_meta.HARD_BRAKE_5].tolist()
 
-  if hasattr(Meta, 'GAS_PRESS') and hasattr(Meta, 'BRAKE_PRESS'):
+  if hasattr(model_meta, 'GAS_PRESS') and hasattr(model_meta, 'BRAKE_PRESS'):
     disengage_predictions.gasPressProbs = net_output_data['meta'][0,model_meta.GAS_PRESS].tolist()
     disengage_predictions.brakePressProbs = net_output_data['meta'][0,model_meta.BRAKE_PRESS].tolist()
 
