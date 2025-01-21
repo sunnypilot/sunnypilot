@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
-import os
-
 from openpilot.system.hardware import TICI
 
-#
-if TICI:
-  from tinygrad.tensor import Tensor
-  from tinygrad.dtype import dtypes
-  from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+from openpilot.sunnypilot.modeld_20hz.model_runner import ONNXRunner, TinygradRunner
 
-  os.environ['QCOM'] = '1'
-else:
-  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner
+#
 import time
-import pickle
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
@@ -33,10 +24,9 @@ from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
-from openpilot.selfdrive.modeld.modeld import MODEL_PATH, MODEL_PKL_PATH, METADATA_PATH
+
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
-SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 
 class FrameMeta:
@@ -48,7 +38,6 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
-
 class ModelState:
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
@@ -56,48 +45,30 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    buffer_length = 5
+    self.model_runner = TinygradRunner()# if TICI else ONNXRunner()
+    buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-    self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    # Initialize model runner
 
-    with open(METADATA_PATH, 'rb') as f:
-      model_metadata = pickle.load(f)
-    self.input_shapes = model_metadata['input_shapes']
-
-    self.output_slices = model_metadata['output_slices']
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
 
-    for key, shape in self.input_shapes.items():
-      if key not in ['input_imgs', 'big_input_imgs']:  # Managed by opencl
+    for key, shape in self.model_runner.input_shapes.items():
+      if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
-    net_output_size = model_metadata['output_shapes']['outputs'][1]
-    self.output = np.zeros(net_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    if TICI:
-      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k, v in self.numpy_inputs.items()}
-      with open(MODEL_PKL_PATH, "rb") as f:
-        self.model_run = pickle.load(f)
-    else:
-      self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
-
-    net_output_size = model_metadata['output_shapes']['outputs'][1]
+    net_output_size = self.model_runner.model_metadata['output_shapes']['outputs'][1]
     self.output = np.zeros(net_output_size, dtype=np.float32)
 
     num_elements = self.numpy_inputs['features_buffer'].shape[1]
     step_size = int(-100 / num_elements)
     self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
     self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
-
-  def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
-    parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
-    if SEND_RAW_PRED:
-      parsed_model_outputs['raw_pred'] = model_outputs.copy()
-    return parsed_model_outputs
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
           inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -106,38 +77,54 @@ class ModelState:
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    self.desire_20Hz[:-1] = self.desire_20Hz[1:]
-    self.desire_20Hz[-1] = new_desire
-    self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape((1, 25, 4, -1)).max(axis=2)
+    if self.model_runner.is_20hz:
+      self.desire_20Hz[:-1] = self.desire_20Hz[1:]
+      self.desire_20Hz[-1] = new_desire
+      self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
+    else:
+      len = inputs['desire'].shape[0]
+      self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
+      self.numpy_inputs['desire'][0, -1, :len] = new_desire[:len]
 
-    self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
+    for key in self.numpy_inputs:
+      if key in inputs and key not in ['desire']:
+        self.numpy_inputs[key][:] = inputs[key]
+
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
-    if TICI:
-      # The imgs tensors are backed by opencl memory, only need init once
-      for key in imgs_cl:
-        if key not in self.tensor_inputs:
-          self.tensor_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=dtypes.uint8)
-    else:
-      for key in imgs_cl:
-        self.numpy_inputs[key] = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
+    # Prepare inputs using the model runner
+    self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
 
     if prepare_only:
       return None
 
-    if TICI:
-      self.output = self.model_run(**self.tensor_inputs).numpy().flatten()
+    # Run model inference
+    self.output = self.model_runner.run_model()
+    outputs = self.parser.parse_outputs(self.model_runner.slice_outputs(self.output))
+
+    if self.model_runner.is_20hz:
+      self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
+      self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+      self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
     else:
-      self.output = self.onnx_cpu_runner.run(None, self.numpy_inputs)[0].flatten()
+      feature_len = outputs['hidden_state'].shape[1]
+      self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
+      self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
-    outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
 
-    self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
-    self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+    if "desired_curvature" in outputs:
+      input_name_prev = None
 
-    idxs = np.arange(-4, -100, -4)[::-1]
-    self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[idxs]
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curvs'
+      elif "prev_desired_curv" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curv'
+
+      if input_name_prev is not None:
+        len = outputs['desired_curvature'][0].size
+        self.numpy_inputs[input_name_prev][0, :-len, 0] = self.numpy_inputs[input_name_prev][0, len:, 0]
+        self.numpy_inputs[input_name_prev][0, -len:, 0] = outputs['desired_curvature'][0]
     return outputs
 
 
@@ -264,7 +251,7 @@ def main(demo=False):
     # tracked dropped frames
     vipc_dropped_frames = max(0, meta_main.frame_id - last_vipc_frame_id - 1)
     frames_dropped = frame_dropped_filter.update(min(vipc_dropped_frames, 10))
-    if run_count < 10:  # let frame drops warm up
+    if run_count < 10: # let frame drops warm up
       frame_dropped_filter.x = 0.
       frames_dropped = 0.
     run_count = run_count + 1
@@ -274,7 +261,7 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
-    inputs: dict[str, np.ndarray] = {
+    inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
     }
@@ -315,7 +302,6 @@ def main(demo=False):
 if __name__ == "__main__":
   try:
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--demo', action='store_true', help='A boolean for demo mode.')
     args = parser.parse_args()
