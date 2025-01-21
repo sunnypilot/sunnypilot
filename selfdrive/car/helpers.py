@@ -1,7 +1,7 @@
 import capnp
 from typing import Any
 
-from cereal import car
+from cereal import custom
 from opendbc.car import structs
 
 _FIELDS = '__dataclass_fields__'  # copy of dataclasses._FIELDS
@@ -35,24 +35,11 @@ def asdictref(obj) -> dict[str, Any]:
   return _asdictref_inner(obj)
 
 
-def convert_to_capnp(struct: structs.CarParams | structs.CarState | structs.CarControl.Actuators | structs.RadarData) -> capnp.lib.capnp._DynamicStructBuilder:
+def convert_to_capnp(struct: structs.CarParamsSP) -> capnp.lib.capnp._DynamicStructBuilder:
   struct_dict = asdictref(struct)
 
-  if isinstance(struct, structs.CarParams):
-    del struct_dict['lateralTuning']
-    struct_capnp = car.CarParams.new_message(**struct_dict)
-
-    # this is the only union, special handling
-    which = struct.lateralTuning.which()
-    struct_capnp.lateralTuning.init(which)
-    lateralTuning_dict = asdictref(getattr(struct.lateralTuning, which))
-    setattr(struct_capnp.lateralTuning, which, lateralTuning_dict)
-  elif isinstance(struct, structs.CarState):
-    struct_capnp = car.CarState.new_message(**struct_dict)
-  elif isinstance(struct, structs.CarControl.Actuators):
-    struct_capnp = car.CarControl.Actuators.new_message(**struct_dict)
-  elif isinstance(struct, structs.RadarData):
-    struct_capnp = car.RadarData.new_message(**struct_dict)
+  if isinstance(struct, structs.CarParamsSP):
+    struct_capnp = custom.CarParamsSP.new_message(**struct_dict)
   else:
     raise ValueError(f"Unsupported struct type: {type(struct)}")
 
