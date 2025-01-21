@@ -24,7 +24,7 @@ from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_pose_msg, PublishState
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
-from sunnypilot.modeld_20hz.fill_model_msg_20hz import Meta20hz
+from openpilot.sunnypilot.modeld_20hz.fill_model_msg_20hz import Meta20hz
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"

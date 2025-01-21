@@ -11,7 +11,7 @@ from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
 
 from cereal import custom
-from sunnypilot.models.helpers import get_active_bundle
+from openpilot.sunnypilot.models.helpers import get_active_bundle
 #
 from tinygrad.tensor import Tensor
 
