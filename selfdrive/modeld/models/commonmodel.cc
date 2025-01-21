@@ -22,7 +22,6 @@ cl_mem* DrivingModelFrame::prepare(cl_mem yuv_cl, int frame_width, int frame_hei
   run_transform(yuv_cl, MODEL_WIDTH, MODEL_HEIGHT, frame_width, frame_height, frame_stride, frame_uv_offset, projection);
 
   for (int i = 0; i < (buffer_length - 1); i++) {
-    printf("Moving %d to %d from src_offset %lu to dst_offset %lu with size %lu\n", i+1, i, (i+1)*frame_size_bytes, i*frame_size_bytes, frame_size_bytes);
     CL_CHECK(clEnqueueCopyBuffer(q, img_buffer_20hz_cl, img_buffer_20hz_cl, (i+1)*frame_size_bytes, i*frame_size_bytes, frame_size_bytes, 0, nullptr, nullptr));
   }
   loadyuv_queue(&loadyuv, q, y_cl, u_cl, v_cl, last_img_cl);
