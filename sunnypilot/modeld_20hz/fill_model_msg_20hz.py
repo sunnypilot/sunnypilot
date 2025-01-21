@@ -4,8 +4,8 @@ import capnp
 import numpy as np
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 
-from selfdrive.controls.lib.drive_helpers import MIN_SPEED
-from selfdrive.modeld.fill_model_msg import ConfidenceClass, fill_xyzt, fill_lane_line_meta, fill_xyz_poly, fill_xyvat, PublishState
+from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
+from openpilot.selfdrive.modeld.fill_model_msg import ConfidenceClass, fill_xyzt, fill_lane_line_meta, fill_xyz_poly, fill_xyvat, PublishState
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
