@@ -191,6 +191,9 @@ class Car:
     # log fingerprint in sentry
     interfaces.log_fingerprint(self.CP)
 
+    sock_services = list(self.pm.sock.keys()) + ['carParamsSP']
+    self.pm = messaging.PubMaster(sock_services)
+
   def state_update(self) -> tuple[car.CarState, structs.RadarDataT | None]:
     """carState update loop, driven by can"""
 
@@ -256,6 +259,13 @@ class Car:
       tracks_msg.valid = len(RD.errors) == 0
       tracks_msg.liveTracks = RD
       self.pm.send('liveTracks', tracks_msg)
+
+    # carParamsSP - logged every 50 seconds (> 1 per segment)
+    if self.sm.frame % int(50. / DT_CTRL) == 0:
+      cp_sp_send = messaging.new_message('carParamsSP')
+      cp_sp_send.valid = True
+      cp_sp_send.carParamsSP = self.CP_SP_capnp
+      self.pm.send('carParamsSP', cp_sp_send)
 
   def controls_update(self, CS: car.CarState, CC: car.CarControl):
     """control update loop, driven by carControl"""
