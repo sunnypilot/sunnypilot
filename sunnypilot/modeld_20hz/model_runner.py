@@ -3,7 +3,7 @@ import pickle
 from abc import ABC, abstractmethod
 
 import numpy as np
-from openpilot.selfdrive.modeld.modeld import MODEL_PATH, MODEL_PKL_PATH, METADATA_PATH
+from openpilot.selfdrive.modeld import MODEL_PATH, MODEL_PKL_PATH, METADATA_PATH
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLMem
 from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
