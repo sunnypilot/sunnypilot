@@ -173,7 +173,7 @@ class Car:
 
     # Write CarParamsSP for controls
     # convert to pycapnp representation for caching and logging
-    self.CP_capnp = convert_to_capnp(self.CP)
+    self.CP_SP_capnp = convert_to_capnp(self.CP_SP)
     cp_sp_bytes = self.CP_SP_capnp.to_bytes()
     self.params.put("CarParamsSP", cp_sp_bytes)
     self.params.put_nonblocking("CarParamsSPCache", cp_sp_bytes)
