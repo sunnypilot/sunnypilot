@@ -390,7 +390,7 @@ class TestCarModelBase(unittest.TestCase):
     controls_allowed_prev = False
     CS_prev = car.CarState.new_message()
     checks = defaultdict(int)
-    selfdrived = SelfdriveD(CP=self.CP)
+    selfdrived = SelfdriveD(CP=self.CP, CP_SP=self.CP_SP)
     selfdrived.initialized = True
     for idx, can in enumerate(self.can_msgs):
       CS = self.CI.update(can_capnp_to_list((can.as_builder().to_bytes(), ))).as_reader()
