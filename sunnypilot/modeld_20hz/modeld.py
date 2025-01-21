@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+
 from openpilot.system.hardware import TICI
 
 #
@@ -16,7 +17,6 @@ import pickle
 import numpy as np
 import cereal.messaging as messaging
 from cereal import car, log
-from pathlib import Path
 from setproctitle import setproctitle
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
