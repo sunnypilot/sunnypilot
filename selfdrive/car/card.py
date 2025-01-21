@@ -105,7 +105,7 @@ class Car:
           cached_params = _cached_params
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), experimental_long_allowed, num_pandas, cached_params)
-      interfaces.setup_car_interface_sp(self.CI.CP, self.params)
+      interfaces.setup_car_interface_sp(self.CI.CP, self.CI.CP_SP, self.params)
       self.RI = get_radar_interface(self.CI.CP, self.CI.CP_SP)
       self.CP = self.CI.CP
       self.CP_SP = self.CI.CP_SP
@@ -124,7 +124,7 @@ class Car:
 
     # mads
     MadsParams().set_alternative_experience(self.CP)
-    MadsParams().set_car_specific_params(self.CP)
+    MadsParams().set_car_specific_params(self.CP, self.CP_SP)
 
     # Dynamic Experimental Control
     self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
@@ -274,7 +274,7 @@ class Car:
       # Initialize CarInterface, once controls are ready
       # TODO: this can make us miss at least a few cycles when doing an ECU knockout
       self.CI.init(self.CP, *self.can_callbacks)
-      interfaces.initialize_car_interface_sp(self.CP, self.params, *self.can_callbacks)
+      interfaces.initialize_car_interface_sp(self.CP, self.CP_SP, self.params, *self.can_callbacks)
       # signal pandad to switch to car safety mode
       self.params.put_bool_nonblocking("ControlsReady", True)
 
