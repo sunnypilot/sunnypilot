@@ -5,7 +5,7 @@ import threading
 
 import cereal.messaging as messaging
 
-from cereal import car, log
+from cereal import car, log, custom
 
 from panda import ALTERNATIVE_EXPERIENCE
 
@@ -66,6 +66,7 @@ class Car:
   CI: CarInterfaceBase
   RI: RadarInterfaceBase
   CP: car.CarParams
+  CP_SP: custom.CarParamsSP
 
   def __init__(self, CI=None, RI=None) -> None:
     self.can_sock = messaging.sub_sock('can', timeout=20)
@@ -105,11 +106,12 @@ class Car:
       interfaces.setup_car_interface_sp(self.CI.CP, self.params)
       self.RI = get_radar_interface(self.CI.CP)
       self.CP = self.CI.CP
+      self.CP_SP = self.CI.CP_SP
 
       # continue onto next fingerprinting step in pandad
       self.params.put_bool("FirmwareQueryDone", True)
     else:
-      self.CI, self.CP = CI, CI.CP
+      self.CI, self.CP, self.CP_SP = CI, CI.CP, CI.CP_SP
       self.RI = RI
 
     # set alternative experiences from parameters
