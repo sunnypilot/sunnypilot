@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from openpilot.system.hardware import TICI
 
-from openpilot.sunnypilot.modeld_20hz.model_runner import ONNXRunner, TinygradRunner
+from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
 
 #
 import time
@@ -25,7 +25,7 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-from sunnypilot.modeld_20hz.meta_helper import load_meta_constants
+from sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 

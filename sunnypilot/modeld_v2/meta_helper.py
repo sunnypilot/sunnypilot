@@ -1,7 +1,7 @@
 from openpilot.selfdrive.modeld.constants import Meta
 from cereal import custom
-from sunnypilot.modeld_20hz.meta_20hz import Meta20hz
-from sunnypilot.models.helpers import get_active_bundle
+from openpilot.sunnypilot.modeld_v2.meta_20hz import Meta20hz
+from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 ModelBundle = custom.ModelManagerSP.ModelBundle
 
