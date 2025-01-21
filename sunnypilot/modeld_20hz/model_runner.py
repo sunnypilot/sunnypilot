@@ -10,10 +10,10 @@ from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from
 from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
 
-from sunnypilot.models.helpers import get_active_bundle
 from cereal import custom
+from sunnypilot.models.helpers import get_active_bundle
 #
-from tinygrad.tensor import Tensor, dtypes
+from tinygrad.tensor import Tensor
 
 if TICI:
   os.environ['QCOM'] = '1'
