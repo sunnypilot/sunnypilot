@@ -169,6 +169,12 @@ class Car:
     self.params.put_nonblocking("CarParamsCache", cp_bytes)
     self.params.put_nonblocking("CarParamsPersistent", cp_bytes)
 
+    # Write CarParamsSP for controls
+    cp_sp_bytes = self.CP_SP.to_bytes()
+    self.params.put("CarParamsSP", cp_sp_bytes)
+    self.params.put_nonblocking("CarParamsSPCache", cp_sp_bytes)
+    self.params.put_nonblocking("CarParamsSPPersistent", cp_sp_bytes)
+
     self.mock_carstate = MockCarState()
     self.v_cruise_helper = VCruiseHelper(self.CP)
 

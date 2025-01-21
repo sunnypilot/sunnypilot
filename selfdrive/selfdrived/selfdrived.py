@@ -5,7 +5,7 @@ import threading
 
 import cereal.messaging as messaging
 
-from cereal import car, log
+from cereal import car, log, custom
 from msgq.visionipc import VisionIpcClient, VisionStreamType
 from panda import ALTERNATIVE_EXPERIENCE
 
@@ -47,7 +47,7 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
 class SelfdriveD(CruiseHelper):
-  def __init__(self, CP=None):
+  def __init__(self, CP=None, CP_SP=None):
     self.params = Params()
 
     # Ensure the current branch is cached, otherwise the first cycle lags
@@ -59,6 +59,13 @@ class SelfdriveD(CruiseHelper):
       cloudlog.info("selfdrived got CarParams")
     else:
       self.CP = CP
+
+    if CP_SP is None:
+      cloudlog.info("controlsd is waiting for CarParamsSP")
+      self.CP_SP = messaging.log_from_bytes(self.params.get("CarParamsSP", block=True), custom.CarParamsSP)
+      cloudlog.info("controlsd got CarParamsSP")
+    else:
+      self.CP_SP = CP_SP
 
     self.car_events = CarSpecificEvents(self.CP)
     self.disengage_on_accelerator = not (self.CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS)
