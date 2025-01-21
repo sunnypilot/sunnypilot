@@ -61,9 +61,9 @@ class SelfdriveD(CruiseHelper):
       self.CP = CP
 
     if CP_SP is None:
-      cloudlog.info("controlsd is waiting for CarParamsSP")
+      cloudlog.info("selfdrived is waiting for CarParamsSP")
       self.CP_SP = messaging.log_from_bytes(self.params.get("CarParamsSP", block=True), custom.CarParamsSP)
-      cloudlog.info("controlsd got CarParamsSP")
+      cloudlog.info("selfdrived got CarParamsSP")
     else:
       self.CP_SP = CP_SP
 
