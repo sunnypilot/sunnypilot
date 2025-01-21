@@ -159,7 +159,7 @@ class TestCarModelBase(unittest.TestCase):
 
     cls.CarInterface, cls.CarController, cls.CarState, cls.RadarInterface = interfaces[cls.platform]
     cls.CP = cls.CarInterface.get_params(cls.platform,  cls.fingerprint, car_fw, experimental_long, docs=False)
-    cls.CP_SP = cls.CarInterface.get_params_sp(cls.CP, cls.platform,  cls.fingerprint, car_fw, experimental_long, docs=False)
+    cls.CP, cls.CP_SP = cls.CarInterface.get_params_sp(cls.CP, cls.platform,  cls.fingerprint, car_fw, experimental_long, docs=False)
     assert cls.CP
     assert cls.CP_SP
     assert cls.CP.carFingerprint == cls.platform
