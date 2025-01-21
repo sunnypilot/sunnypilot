@@ -220,7 +220,7 @@ class TestCarModelBase(unittest.TestCase):
     self.assertEqual(can_invalid_cnt, 0)
 
   def test_radar_interface(self):
-    RI = self.RadarInterface(self.CP)
+    RI = self.RadarInterface(self.CP, self.CP_SP)
     assert RI
 
     # Since OBD port is multiplexed to bus 1 (commonly radar bus) while fingerprinting,
