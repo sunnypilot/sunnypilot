@@ -1,4 +1,5 @@
 import capnp
+import copy
 import os
 import pytest
 import random
@@ -170,7 +171,7 @@ class TestCarModelBase(unittest.TestCase):
     del cls.can_msgs
 
   def setUp(self):
-    self.CI = self.CarInterface(self.CP.copy(), self.CP_SP.copy(), self.CarController, self.CarState)
+    self.CI = self.CarInterface(self.CP.copy(), copy.deepcopy(self.CP_SP), self.CarController, self.CarState)
     assert self.CI
 
     Params().put_bool("OpenpilotEnabledToggle", self.openpilot_enabled)
