@@ -280,7 +280,7 @@ class TestCarModelBase(unittest.TestCase):
     def test_car_controller(car_control):
       now_nanos = 0
       msgs_sent = 0
-      CI = self.CarInterface(self.CP, self.CarController, self.CarState)
+      CI = self.CarInterface(self.CP, self.CP_SP, self.CarController, self.CarState)
       for _ in range(round(10.0 / DT_CTRL)):  # make sure we hit the slowest messages
         CI.update([])
         _, sendcan = CI.apply(car_control, now_nanos)
