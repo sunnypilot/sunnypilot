@@ -40,8 +40,8 @@ class TestCarInterfaces:
 
     car_params = CarInterface.get_params(car_name, args['fingerprints'], args['car_fw'],
                                          experimental_long=args['experimental_long'], docs=False)
-    car_params_sp = CarInterface.get_params_sp(car_params, car_name, args['fingerprints'], args['car_fw'],
-                                               experimental_long=args['experimental_long'], docs=False)
+    car_params, car_params_sp = CarInterface.get_params_sp(car_params, car_name, args['fingerprints'], args['car_fw'],
+                                                           experimental_long=args['experimental_long'], docs=False)
     car_params = car_params.as_reader()
     car_interface = CarInterface(car_params, car_params_sp, CarController, CarState)
     assert car_params
