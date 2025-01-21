@@ -74,23 +74,17 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   addItem(device_grid_layout);
 
-  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
-    for (auto btn : findChildren<PushButtonSP*>()) {
-      btn->setEnabled(offroad);
-    }
-  });
-
   // offroad mode and power buttons
 
   QHBoxLayout *power_layout = new QHBoxLayout();
   power_layout->setSpacing(5);
 
-  QPushButton *rebootBtn = new PushButtonSP(tr("Reboot"), 720, this);
+  PushButtonSP *rebootBtn = new PushButtonSP(tr("Reboot"), 720, this);
   rebootBtn->setStyleSheet(rebootButtonStyle);
   power_layout->addWidget(rebootBtn);
   QObject::connect(rebootBtn, &PushButtonSP::clicked, this, &DevicePanelSP::reboot);
 
-  QPushButton *poweroffBtn = new PushButtonSP(tr("Power Off"), 720, this);
+  PushButtonSP *poweroffBtn = new PushButtonSP(tr("Power Off"), 720, this);
   poweroffBtn->setStyleSheet(powerOffButtonStyle);
   power_layout->addWidget(poweroffBtn);
   QObject::connect(poweroffBtn, &PushButtonSP::clicked, this, &DevicePanelSP::poweroff);
@@ -99,5 +93,60 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     connect(uiState(), &UIState::offroadTransition, poweroffBtn, &PushButtonSP::setVisible);
   }
 
-  addItem(power_layout);
+  offroadBtn = new PushButtonSP(tr("Offroad Mode"));
+  offroadBtn->setFixedWidth(power_layout->sizeHint().width());
+  QObject::connect(offroadBtn, &PushButtonSP::clicked, this, &DevicePanelSP::setOffroadMode);
+
+  QVBoxLayout *power_group_layout = new QVBoxLayout();
+  power_group_layout->setSpacing(30);
+  power_group_layout->addWidget(offroadBtn, 0, Qt::AlignHCenter);
+  power_group_layout->addLayout(power_layout);
+
+  addItem(power_group_layout);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
+    for (auto btn : findChildren<PushButtonSP*>()) {
+      if (btn != rebootBtn && btn != poweroffBtn && btn != offroadBtn) {
+        btn->setEnabled(offroad);
+      }
+    }
+  });
+}
+
+void DevicePanelSP::setOffroadMode() {
+  if (!uiState()->engaged()) {
+    if (params.getBool("OffroadMode")) {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to exit Always Offroad mode?"), tr("Confirm"), this)) {
+        // Check engaged again in case it changed while the dialog was open
+        if (!uiState()->engaged()) {
+          params.remove("OffroadMode");
+        }
+      }
+    } else {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to enter Always Offroad mode?"), tr("Confirm"), this)) {
+        // Check engaged again in case it changed while the dialog was open
+        if (!uiState()->engaged()) {
+          params.putBool("OffroadMode", true);
+        }
+      }
+    }
+  } else {
+    ConfirmationDialog::alert(tr("Disengage to Enter Always Offroad Mode"), this);
+  }
+
+  updateState();
+}
+
+void DevicePanelSP::showEvent(QShowEvent *event) {
+  updateState();
+}
+
+void DevicePanelSP::updateState() {
+  if (!isVisible()) {
+    return;
+  }
+
+  bool offroad_mode_param = params.getBool("OffroadMode");
+  offroadBtn->setText(offroad_mode_param ? tr("Exit Always Offroad") : tr("Always Offroad"));
+  offroadBtn->setStyleSheet(offroad_mode_param ? alwaysOffroadStyle : autoOffroadStyle);
 }
