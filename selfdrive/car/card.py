@@ -260,7 +260,7 @@ class Car:
     if self.sm.frame % int(50. / DT_CTRL) == 0:
       cp_sp_send = messaging.new_message('carParamsSP')
       cp_sp_send.valid = True
-      cp_sp_send.carParamsSP = self.CP_SP
+      cp_sp_send.carParamsSP = self.CP_SP_capnp
       self.pm.send('carParamsSP', cp_sp_send)
 
   def controls_update(self, CS: car.CarState, CC: car.CarControl):
