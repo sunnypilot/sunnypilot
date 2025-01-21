@@ -21,7 +21,6 @@ from opendbc.car.interfaces import CarInterfaceBase, RadarInterfaceBase
 from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
-from openpilot.selfdrive.car.helpers import convert_to_capnp
 
 from openpilot.sunnypilot.mads.mads import MadsParams
 from openpilot.sunnypilot.selfdrive.car import interfaces
@@ -67,8 +66,7 @@ class Car:
   CI: CarInterfaceBase
   RI: RadarInterfaceBase
   CP: car.CarParams
-  CP_SP: structs.CarParamsSP
-  CP_SP_capnp: custom.CarParamsSP
+  CP_SP: custom.CarParamsSP
 
   def __init__(self, CI=None, RI=None) -> None:
     self.can_sock = messaging.sub_sock('can', timeout=20)
@@ -172,9 +170,7 @@ class Car:
     self.params.put_nonblocking("CarParamsPersistent", cp_bytes)
 
     # Write CarParamsSP for controls
-    # convert to pycapnp representation for caching and logging
-    self.CP_capnp = convert_to_capnp(self.CP)
-    cp_sp_bytes = self.CP_SP_capnp.to_bytes()
+    cp_sp_bytes = self.CP_SP.to_bytes()
     self.params.put("CarParamsSP", cp_sp_bytes)
     self.params.put_nonblocking("CarParamsSPCache", cp_sp_bytes)
     self.params.put_nonblocking("CarParamsSPPersistent", cp_sp_bytes)
