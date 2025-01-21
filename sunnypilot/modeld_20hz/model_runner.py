@@ -30,6 +30,8 @@ class ModelRunner(ABC):
     """Initialize the model runner with paths to model and metadata files."""
     metadata_path = METADATA_PATH
     self.is_20hz = None
+    self._drive_model = None
+    self._metadata_model = None
 
     if bundle := get_active_bundle():
       bundle_models = {model.type.raw: model for model in bundle.models}
