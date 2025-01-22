@@ -381,7 +381,7 @@ class SelfdriveD(CruiseHelper):
         self.events.add(EventName.modeldLagging)
 
     # mute canBusMissing event if in Park, as it sometimes may trigger a false alarm with MADS in Paused state
-    if CS.gearShifter == car.CarState.GearShifter.park:
+    if CS.gearShifter == car.CarState.GearShifter.park and self.mads.enabled:
       self.events.remove(EventName.canBusMissing)
 
     CruiseHelper.update(self, CS, self.events_sp, self.experimental_mode)
