@@ -12,6 +12,7 @@ from openpilot.common.git import get_commit, get_origin, get_branch, get_short_b
 
 RELEASE_SP_BRANCHES = ['release-c3']
 TESTED_SP_BRANCHES = ['staging-c3', 'staging-c3-new']
+MASTER_SP_BRANCHES = ['master', 'master-new']
 RELEASE_BRANCHES = ['release3-staging', 'release3', 'nightly'] + RELEASE_SP_BRANCHES
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel', 'devel-staging', 'nightly-dev'] + TESTED_SP_BRANCHES
 
@@ -113,15 +114,21 @@ class BuildMetadata:
     return f"{self.openpilot.version} / {self.openpilot.git_commit[:6]} / {self.channel}"
 
   @property
+  def master_channel(self) -> bool:
+    return self.channel in MASTER_SP_BRANCHES
+
+  @property
   def channel_type(self) -> str:
     if self.channel.startswith("dev-"):
       return "development"
     elif self.channel.startswith("staging-"):
       return "staging"
+    elif self.master_channel:
+      return "master"
     elif self.tested_channel:
       return "release"
     else:
-      return "master"
+      return "feature"
 
 
 def build_metadata_from_dict(build_metadata: dict) -> BuildMetadata:
