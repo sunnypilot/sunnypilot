@@ -75,7 +75,7 @@ class TestCarInterfaces:
     now_nanos = 0
     CC = car.CarControl.new_message(**cc_msg)
     CC = CC.as_reader()
-    CC_SP = car.CarControlSP.new_message(**cc_sp_msg)
+    CC_SP = custom.CarControlSP.new_message(**cc_sp_msg)
     CC_SP = convert_carControlSP(CC_SP.as_reader())
     for _ in range(10):
       car_interface.update([])
