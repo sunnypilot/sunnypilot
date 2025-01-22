@@ -11,15 +11,24 @@ SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
 
+
 def curv_from_psis(psi_target, psi_rate, vego, delay):
   vego = np.clip(vego, MIN_SPEED, np.inf)
   curv_from_psi = psi_target / (vego * delay)  # epsilon to prevent divide-by-zero
-  return 2*curv_from_psi - psi_rate / vego
+  return 2 * curv_from_psi - psi_rate / vego
+
 
 def get_curvature_from_plan(plan, vego, delay):
   psi_target = np.interp(delay, ModelConstants.T_IDXS, plan[:, Plan.T_FROM_CURRENT_EULER][:, 2])
   psi_rate = plan[:, Plan.ORIENTATION_RATE][0, 2]
   return curv_from_psis(psi_target, psi_rate, vego, delay)
+
+
+def get_curvature_from_output(output, vego, delay):
+  if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
+    return float(desired_curv[0, 0])
+
+  return float(get_curvature_from_plan(output['plan'][0], vego, delay))
 
 class PublishState:
   def __init__(self):
@@ -77,10 +86,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   extended_msg.valid = valid
   base_msg.valid = valid
 
-  if out_desired_curv := net_output_data.get('desired_curvature'):
-    desired_curv = float(out_desired_curv[0,0])
-  else:
-    desired_curv = float(get_curvature_from_plan(net_output_data['plan'][0], v_ego, delay))
+  desired_curv = float(get_curvature_from_output(net_output_data, v_ego, delay))
 
   driving_model_data = base_msg.drivingModelData
 
