@@ -2570,7 +2570,7 @@ struct Event {
     longitudinalPlanSP @109 :Custom.LongitudinalPlanSP;
     onroadEventsSP @110 :List(Custom.OnroadEventSP);
     customReserved4 @111 :Custom.CustomReserved4;
-    customReserved5 @112 :Custom.CustomReserved5;
+    carControlSP @112 :Custom.CarControlSP;
     customReserved6 @113 :Custom.CustomReserved6;
     customReserved7 @114 :Custom.CustomReserved7;
     customReserved8 @115 :Custom.CustomReserved8;
