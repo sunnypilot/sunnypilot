@@ -1,6 +1,7 @@
 import capnp
 from typing import Any
 
+from cereal import custom
 from opendbc.car import structs
 
 _FIELDS = '__dataclass_fields__'  # copy of dataclasses._FIELDS
@@ -32,6 +33,17 @@ def asdictref(obj) -> dict[str, Any]:
     raise TypeError("asdictref() should be called on dataclass instances")
 
   return _asdictref_inner(obj)
+
+
+def convert_to_capnp(struct: structs.CarParamsSP) -> capnp.lib.capnp._DynamicStructBuilder:
+  struct_dict = asdictref(struct)
+
+  if isinstance(struct, structs.CarParamsSP):
+    struct_capnp = custom.CarParamsSP.new_message(**struct_dict)
+  else:
+    raise ValueError(f"Unsupported struct type: {type(struct)}")
+
+  return struct_capnp
 
 
 def convert_carControlSP(struct: capnp.lib.capnp._DynamicStructReader) -> structs.CarControlSP:
