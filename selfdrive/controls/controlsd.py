@@ -95,7 +95,6 @@ class Controls:
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, MIN_LATERAL_CONTROL_SPEED) or CS.standstill
 
     ss_sp = self.sm['selfdriveStateSP']
-    CC.madsEnabled = ss_sp.mads.enabled
     if ss_sp.mads.available:
       _lat_active = ss_sp.mads.active
     else:
