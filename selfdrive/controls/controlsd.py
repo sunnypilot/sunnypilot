@@ -42,7 +42,8 @@ class Controls:
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
-                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'], poll='selfdriveState')
+                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'] + ['selfdriveStateSP'],
+                                  poll='selfdriveState')
     self.pm = messaging.PubMaster(['carControl', 'controlsState'])
 
     self.steer_limited = False
@@ -60,9 +61,6 @@ class Controls:
       self.LaC = LatControlPID(self.CP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
       self.LaC = LatControlTorque(self.CP, self.CI)
-
-    data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
-    self.sm = messaging.SubMaster(data_services, poll='selfdriveState')
 
   def update(self):
     self.sm.update(15)
