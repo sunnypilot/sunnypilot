@@ -39,7 +39,7 @@ def setup_homescreen(click, pm: PubMaster, scroll=None):
 
 def setup_settings_device(click, pm: PubMaster, scroll=None):
   click(100, 100)
- 
+
 def setup_settings_network(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   click(278, 405)
