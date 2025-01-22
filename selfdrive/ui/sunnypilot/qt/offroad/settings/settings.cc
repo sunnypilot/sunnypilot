@@ -7,7 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
-//#include "selfdrive/ui/qt/network/networking.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/network/networking.h"
