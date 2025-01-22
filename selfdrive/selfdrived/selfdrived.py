@@ -71,7 +71,7 @@ class SelfdriveD(CruiseHelper):
     self.disengage_on_accelerator = not (self.CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS)
 
     # Setup sockets
-    self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'])
+    self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP'])
 
     self.gps_location_service = get_gps_location_service(self.params)
     self.gps_packets = [self.gps_location_service]
@@ -147,8 +147,6 @@ class SelfdriveD(CruiseHelper):
     self.events_sp_prev = []
 
     self.mads = ModularAssistiveDrivingSystem(self)
-    sock_services = list(self.pm.sock.keys()) + ['selfdriveStateSP', 'onroadEventsSP']
-    self.pm = messaging.PubMaster(sock_services)
 
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.params)
 
