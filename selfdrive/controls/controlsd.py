@@ -2,7 +2,7 @@
 import math
 from typing import SupportsFloat
 
-from cereal import car, log
+from cereal import car, log, custom
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
@@ -59,6 +59,9 @@ class Controls:
 
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveState')
+
+    sock_services = list(self.pm.sock.keys()) + ['carControl']
+    self.pm = messaging.PubMaster(sock_services)
 
   def update(self):
     self.sm.update(15)
@@ -139,9 +142,12 @@ class Controls:
         cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
         setattr(actuators, p, 0.0)
 
-    return CC, lac_log
+    CC_SP = custom.CarControlSP.new_message()
+    CC_SP.mads = ss_sp.mads
 
-  def publish(self, CC, lac_log):
+    return CC, CC_SP, lac_log
+
+  def publish(self, CC, CC_SP, lac_log):
     CS = self.sm['carState']
 
     # Orientation and angle rates can be useful for carcontroller
@@ -217,12 +223,18 @@ class Controls:
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
+    # carControlSP
+    cc_sp_send = messaging.new_message('carControlSP')
+    cc_sp_send.valid = CS.canValid
+    cc_sp_send.carControlSP = CC_SP
+    self.pm.send('carControlSP', cc_sp_send)
+
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
     while True:
       self.update()
-      CC, lac_log = self.state_control()
-      self.publish(CC, lac_log)
+      CC, CC_SP, lac_log = self.state_control()
+      self.publish(CC, CC_SP, lac_log)
       rk.monitor_time()
 
 def main():
