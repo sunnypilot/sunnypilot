@@ -343,8 +343,7 @@ def get_car_params_callback(rc, pm, msgs, fingerprint):
   params = Params()
   if fingerprint:
     CarInterface, _, _, _ = interfaces[fingerprint]
-    CP = CarInterface.get_non_essential_params(fingerprint)
-    CP, CP_SP = CarInterface.get_non_essential_params_sp(CP, fingerprint)
+    CP, CP_SP = CarInterface.get_non_essential_params_sp(fingerprint)
   else:
     can = DummySocket()
     sendcan = DummySocket()
