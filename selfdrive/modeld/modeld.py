@@ -46,12 +46,17 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    self.model_runner = TinygradRunner() if TICI else ONNXRunner()
+    try:
+      self.model_runner = TinygradRunner() if TICI else ONNXRunner()
+    except Exception as e:
+      cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
+
     buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-    self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    if self.model_runner.is_20hz:
+      self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
+      self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
     # Initialize model runner
 
     # img buffers are managed in openCL transform code
@@ -63,13 +68,14 @@ class ModelState:
 
     self.parser = Parser()
 
-    net_output_size = self.model_runner.model_metadata['output_shapes']['outputs'][1]
-    self.output = np.zeros(net_output_size, dtype=np.float32)
+    if self.model_runner.is_20hz:
+      net_output_size = self.model_runner.model_metadata['output_shapes']['outputs'][1]
+      self.output = np.zeros(net_output_size, dtype=np.float32)
 
-    num_elements = self.numpy_inputs['features_buffer'].shape[1]
-    step_size = int(-100 / num_elements)
-    self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+      num_elements = self.numpy_inputs['features_buffer'].shape[1]
+      step_size = int(-100 / num_elements)
+      self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
           inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
