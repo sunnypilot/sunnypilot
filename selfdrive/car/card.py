@@ -5,7 +5,7 @@ import threading
 
 import cereal.messaging as messaging
 
-from cereal import car, log
+from cereal import car, log, custom
 
 from panda import ALTERNATIVE_EXPERIENCE
 
@@ -71,6 +71,9 @@ class Car:
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'])
     self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'liveTracks'])
+
+    data_services = list(self.sm.data.keys()) + ['carControlSP']
+    self.sm = messaging.SubMaster(data_services)
 
     self.can_rcv_cum_timeout_counter = 0
 
@@ -245,7 +248,7 @@ class Car:
       tracks_msg.liveTracks = RD
       self.pm.send('liveTracks', tracks_msg)
 
-  def controls_update(self, CS: car.CarState, CC: car.CarControl):
+  def controls_update(self, CS: car.CarState, CC: car.CarControl, CC_SP: custom.CarControlSP):
     """control update loop, driven by carControl"""
 
     if not self.initialized_prev:
@@ -259,7 +262,7 @@ class Car:
     if self.sm.all_alive(['carControl']):
       # send car controls over can
       now_nanos = self.can_log_mono_time if REPLAY else int(time.monotonic() * 1e9)
-      self.last_actuators_output, can_sends = self.CI.apply(CC, now_nanos)
+      self.last_actuators_output, can_sends = self.CI.apply(CC, CC_SP, now_nanos)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
       self.CC_prev = CC
@@ -272,7 +275,7 @@ class Car:
     initialized = (not any(e.name == EventName.selfdriveInitializing for e in self.sm['onroadEvents']) and
                    self.sm.seen['onroadEvents'])
     if not self.CP.passive and initialized:
-      self.controls_update(CS, self.sm['carControl'])
+      self.controls_update(CS, self.sm['carControl'], self.sm['carControlSP'])
 
     self.initialized_prev = initialized
     self.CS_prev = CS
