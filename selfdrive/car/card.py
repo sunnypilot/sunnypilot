@@ -75,6 +75,9 @@ class Car:
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'])
     self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'liveTracks'])
 
+    sock_services = list(self.pm.sock.keys()) + ['carParamsSP']
+    self.pm = messaging.PubMaster(sock_services)
+
     self.can_rcv_cum_timeout_counter = 0
 
     self.CC_prev = car.CarControl.new_message()
@@ -190,9 +193,6 @@ class Car:
 
     # log fingerprint in sentry
     interfaces.log_fingerprint(self.CP)
-
-    sock_services = list(self.pm.sock.keys()) + ['carParamsSP']
-    self.pm = messaging.PubMaster(sock_services)
 
   def state_update(self) -> tuple[car.CarState, structs.RadarDataT | None]:
     """carState update loop, driven by can"""

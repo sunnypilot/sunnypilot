@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import math
 from typing import SupportsFloat
 
@@ -27,7 +26,6 @@ LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
-REPLAY = "REPLAY" in os.environ
 
 class Controls:
   def __init__(self) -> None:
@@ -36,12 +34,9 @@ class Controls:
     self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
     cloudlog.info("controlsd got CarParams")
 
-    if not REPLAY:
-      cloudlog.info("controlsd is waiting for CarParamsSP")
-      self.CP_SP = messaging.log_from_bytes(self.params.get("CarParamsSP", block=True), custom.CarParamsSP)
-      cloudlog.info("controlsd got CarParamsSP")
-    else:
-      self.CP_SP = None
+    cloudlog.info("controlsd is waiting for CarParamsSP")
+    self.CP_SP = messaging.log_from_bytes(self.params.get("CarParamsSP", block=True), custom.CarParamsSP)
+    cloudlog.info("controlsd got CarParamsSP")
 
     self.CI = get_car_interface(self.CP, self.CP_SP)
 
