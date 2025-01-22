@@ -58,7 +58,7 @@ class Controls:
     data_services = list(self.sm.data.keys()) + ['selfdriveStateSP']
     self.sm = messaging.SubMaster(data_services, poll='selfdriveState')
 
-    sock_services = list(self.pm.sock.keys()) + ['carControl']
+    sock_services = list(self.pm.sock.keys()) + ['carControlSP']
     self.pm = messaging.PubMaster(sock_services)
 
   def update(self):
