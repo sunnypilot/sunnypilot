@@ -46,7 +46,11 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
-    self.model_runner = TinygradRunner() if TICI else ONNXRunner()
+    try:
+      self.model_runner = TinygradRunner() if TICI else ONNXRunner()
+    except Exception as e:
+      cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
+
     buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
