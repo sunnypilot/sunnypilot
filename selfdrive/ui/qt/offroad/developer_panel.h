@@ -16,7 +16,9 @@ private:
   Params params;
   ParamControl* joystickToggle;
   ParamControl* longManeuverToggle;
+  ParamControl* alphaLongToggle;
   ParamControl* hyundaiRadarTracksToggle;
+
   bool is_release;
   bool offroad;
 
