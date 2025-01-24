@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from openpilot.system.hardware import TICI
 
-from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
-
 #
 import time
 import numpy as np
@@ -25,7 +23,8 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-from sunnypilot.modeld_v2.meta_helper import load_meta_constants
+from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
+from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
@@ -57,7 +56,6 @@ class ModelState:
     if self.model_runner.is_20hz:
       self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
-    # Initialize model runner
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -78,7 +76,7 @@ class ModelState:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)

@@ -1,11 +1,9 @@
 import os
-
 import capnp
 import numpy as np
-from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
-from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
-
 from cereal import log
+from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
+from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -29,6 +27,7 @@ def get_curvature_from_output(output, vego, delay):
     return float(desired_curv[0, 0])
 
   return float(get_curvature_from_plan(output['plan'][0], vego, delay))
+
 
 class PublishState:
   def __init__(self):
@@ -86,7 +85,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   extended_msg.valid = valid
   base_msg.valid = valid
 
-  desired_curv = float(get_curvature_from_output(net_output_data, v_ego, delay))
+  desired_curvature = float(get_curvature_from_output(net_output_data, v_ego, delay))
 
   driving_model_data = base_msg.drivingModelData
 
@@ -96,7 +95,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.modelExecutionTime = model_execution_time
 
   action = driving_model_data.action
-  action.desiredCurvature = desired_curv
+  action.desiredCurvature = desired_curvature
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -131,7 +130,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # lateral planning
   action = modelV2.action
-  action.desiredCurvature = desired_curv
+  action.desiredCurvature = desired_curvature
 
   # times at X_IDXS according to model plan
   PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N

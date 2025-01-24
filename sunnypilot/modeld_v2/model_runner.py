@@ -1,8 +1,9 @@
 import os
 import pickle
 from abc import ABC, abstractmethod
-
 import numpy as np
+
+from cereal import custom
 from openpilot.selfdrive.modeld import MODEL_PATH, MODEL_PKL_PATH, METADATA_PATH
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLMem
 from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
@@ -10,9 +11,7 @@ from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from
 from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
 
-from cereal import custom
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-#
 from tinygrad.tensor import Tensor
 
 if TICI:
