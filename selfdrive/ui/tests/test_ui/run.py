@@ -217,8 +217,9 @@ def setup_settings_trips(click, pm: PubMaster, scroll=None):
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  scroll(-200, 278, 862)
-  click(278, )
+  scroll(-400, 278, 862)
+  click(278, 862)
+  time.sleep(UI_DELAY)
 
 CASES = {
   "homescreen": setup_homescreen,
