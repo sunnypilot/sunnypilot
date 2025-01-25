@@ -7,5 +7,5 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
 
-VehiclePanel::VehiclePanel(QWidget *parent) : QWidget(parent) {
+VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
 }

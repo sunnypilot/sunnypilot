@@ -9,7 +9,7 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
-class VehiclePanel : public QWidget {
+class VehiclePanel : public QFrame {
   Q_OBJECT
 
 public:
