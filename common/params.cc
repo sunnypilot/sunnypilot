@@ -244,6 +244,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ToyotaTSS2Long", PERSISTENT},
     {"FastTakeOff", PERSISTENT},
     {"AccelPersonality", PERSISTENT},
+    {"ToyotaDriveMode", PERSISTENT},
 };
 
 } // namespace

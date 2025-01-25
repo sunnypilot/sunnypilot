@@ -61,6 +61,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "ToyotaDriveMode",
+      tr("Enable Toyota Drive Mode Button"),
+      tr("Sunnypilot will link the Acceleration Personality to the car's physical drive mode selector.\nReboot Required."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),

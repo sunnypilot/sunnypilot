@@ -1573,6 +1573,15 @@ This may take up to a minute.</source>
         <source>Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these acceleration personality within Onroad Settings on the driving screen.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Enable Toyota Drive Mode Button</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sunnypilot will link the Acceleration Personality to the car&apos;s physical drive mode selector.
+Reboot Required.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Updater</name>
