@@ -5,7 +5,7 @@ import signal
 import sys
 import traceback
 
-from cereal import log
+from cereal import log, custom
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
 from openpilot.common.params import Params, ParamKeyType
@@ -49,7 +49,8 @@ def manager_init() -> None:
     ("MadsPauseLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("ModelManager_LastSyncTime", "0"),
-    ("ModelManager_ModelsCache", "")
+    ("ModelManager_ModelsCache", ""),
+    ("AccelPersonality", str(custom.LongitudinalPlanSP.AccelerationPersonality.stock)),
   ]
 
   if params.get_bool("RecordFrontLock"):
