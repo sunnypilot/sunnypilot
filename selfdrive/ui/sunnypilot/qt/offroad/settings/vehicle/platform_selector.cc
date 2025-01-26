@@ -172,7 +172,8 @@ void PlatformSelector::searchPlatforms(const QString &query) {
   QString selected_platform = MultiOptionDialog::getSelection(tr("Select a vehicle"), results, "", this);
 
   if (!selected_platform.isEmpty()) {
-    params.put("CarPlatform", selected_platform.toStdString());
+    QVariantMap platform_data = platforms[selected_platform];
+    params.put("CarPlatform", platform_data["model"].toString().toStdString());
     params.put("CarPlatformName", selected_platform.toStdString());
   }
 }
