@@ -9,16 +9,19 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/platform_selector.h"
-
-class VehiclePanel : public QFrame {
+class PlatformSelector : public ButtonControl {
   Q_OBJECT
 
 public:
-  explicit VehiclePanel(QWidget *parent = nullptr);
+  PlatformSelector();
+
+public slots:
+  void refresh(bool _offroad);
 
 private:
-  QStackedLayout* main_layout = nullptr;
-  QWidget* vehicleScreen = nullptr;
-  PlatformSelector *platformSelector = nullptr;
+  void searchPlatforms(const QString &query);
+  QMap<QString, QVariantMap> loadPlatformList();
+
+  Params params;
+  bool offroad;
 };
