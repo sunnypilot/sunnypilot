@@ -172,7 +172,7 @@ void PlatformSelector::searchPlatforms(const QString &query) {
     }
   }
 
-  QStringList results = QStringList(matched_cars.begin(), matched_cars.end());
+  QStringList results = matched_cars.toList();
   results.sort();
 
   if (results.isEmpty()) {
