@@ -505,10 +505,6 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>NetworkingSP</name>
     <message>
-        <source>Advanced</source>
-        <translation type="obsolete">詳細</translation>
-    </message>
-    <message>
         <source>Scan</source>
         <translation type="unfinished"></translation>
     </message>
@@ -650,6 +646,37 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     <message>
         <source>Enable</source>
         <translation>を有効化</translation>
+    </message>
+</context>
+<context>
+    <name>PlatformSelector</name>
+    <message>
+        <source>Vehicle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SEARCH</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search your vehicle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SEARCHING</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No vehicles found for query: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select a vehicle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enter model year (e.g., 2021) and model name (Toyota Corolla):</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
