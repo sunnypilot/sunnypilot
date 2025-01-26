@@ -220,6 +220,7 @@ def setup_settings_trips(click, pm: PubMaster, scroll=None):
   time.sleep(UI_DELAY)
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
+  Params().put("CarPlatform", "HONDA_CIVIC_2022")
   Params().put("CarPlatformName", "Honda Civic 2022-24")
 
   setup_settings_device(click, pm)
