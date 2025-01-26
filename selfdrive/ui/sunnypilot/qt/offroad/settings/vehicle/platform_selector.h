@@ -15,10 +15,13 @@ class PlatformSelector : public ButtonControl {
 public:
   PlatformSelector();
 
-private:
-  Params params;
+public slots:
+  void refresh(bool _offroad);
 
-  void refresh();
+private:
   void searchPlatforms(const QString &query);
   QMap<QString, QVariantMap> loadPlatformList();
+
+  Params params;
+  bool offroad;
 };

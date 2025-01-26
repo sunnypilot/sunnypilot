@@ -22,19 +22,19 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
         setText(tr("SEARCHING"));
         setEnabled(false);
         searchPlatforms(query);
-        refresh();
+        refresh(offroad);
       }
     } else {
       params.remove("CarPlatform");
       params.remove("CarPlatformName");
-      refresh();
+      refresh(offroad);
     }
   });
 
-  refresh();
+  refresh(offroad);
 }
 
-void PlatformSelector::refresh() {
+void PlatformSelector::refresh(bool _offroad) {
   QString platform_param = QString::fromStdString(params.get("CarPlatform"));
   if (platform_param.length()) {
     setValue(QString::fromStdString(params.get("CarPlatformName")));
@@ -44,6 +44,8 @@ void PlatformSelector::refresh() {
     setText("SEARCH");
   }
   setEnabled(true);
+
+  offroad = _offroad;
 }
 
 QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
@@ -190,7 +192,19 @@ void PlatformSelector::searchPlatforms(const QString &query) {
 
   if (!selected_platform.isEmpty()) {
     QVariantMap platform_data = platforms[selected_platform];
-    params.put("CarPlatform", platform_data["platform"].toString().toStdString());
-    params.put("CarPlatformName", selected_platform.toStdString());
+
+    const QString offroad_msg = offroad ? tr("This setting will take effect immediately.") :
+                                          tr("This setting will take effect once the device enters offroad state.");
+    const QString msg = QString("<b>%1</b><br><br>%2")
+                        .arg(selected_platform)
+                        .arg(offroad_msg);
+
+    QString content("<body><h2 style=\"text-align: center;\">" + tr("Vehicle Selector") + "</h2><br>"
+                    "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
+
+    if (ConfirmationDialog(content, tr("Ok"), "", true, this).exec()) {
+      params.put("CarPlatform", platform_data["platform"].toString().toStdString());
+      params.put("CarPlatformName", selected_platform.toStdString());
+    }
   }
 }

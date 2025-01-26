@@ -6,7 +6,6 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/platform_selector.h"
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
@@ -18,10 +17,13 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   QVBoxLayout *vlayout = new QVBoxLayout(vehicleScreen);
   vlayout->setContentsMargins(50, 20, 50, 20);
 
-  list->addItem(new PlatformSelector());
+  platformSelector = new PlatformSelector();
+  list->addItem(platformSelector);
 
   ScrollViewSP *scroller = new ScrollViewSP(list, this);
   vlayout->addWidget(scroller);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, platformSelector, &PlatformSelector::refresh);
 
   main_layout->addWidget(vehicleScreen);
   main_layout->setCurrentWidget(vehicleScreen);
