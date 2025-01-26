@@ -49,7 +49,7 @@ void PlatformSelector::refresh() {
 QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
   QMap<QString, QVariantMap> platforms;
 
-  std::string json_data = util::read_file("../../sunnypilot/selfdrive/car/car_list_extra.json").c_str();
+  std::string json_data = util::read_file("../../sunnypilot/selfdrive/car/car_list.json").c_str();
 
   if (json_data.empty()) {
     return platforms;
