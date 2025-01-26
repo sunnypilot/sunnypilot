@@ -713,7 +713,15 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Ok</source>
+        <translation type="obsolete">확인</translation>
+    </message>
+    <message>
+        <source>Confirm</source>
         <translation type="unfinished">확인</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">취소</translation>
     </message>
 </context>
 <context>

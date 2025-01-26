@@ -102,7 +102,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
   int search_year = -1;
   QStringList search_terms;
 
-  // Extract year and other search terms
   for (const QString &token : tokens) {
     bool ok;
     int year = token.toInt(&ok);
@@ -117,7 +116,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
     QString platform_name = it.key();
     QVariantMap platform_data = it.value();
 
-    // Check year match if specified
     if (search_year != -1) {
       QVariantList year_list = platform_data["year"].toList();
       bool year_match = false;
@@ -131,7 +129,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
       if (!year_match) continue;
     }
 
-    // Normalize strings for comparison
     QString normalized_make = platform_data["make"].toString().normalized(QString::NormalizationForm_KD).toLower();
     QString normalized_model = platform_data["model"].toString().normalized(QString::NormalizationForm_KD).toLower();
     normalized_make.remove(QRegExp("[^a-zA-Z0-9\\s]"));
@@ -142,18 +139,14 @@ void PlatformSelector::searchPlatforms(const QString &query) {
       QString normalized_term = term.normalized(QString::NormalizationForm_KD).toLower();
       normalized_term.remove(QRegExp("[^a-zA-Z0-9\\s]"));
 
-      // Check if term matches make or model
       bool term_matched = false;
 
-      // Try to match make
       if (normalized_make.contains(normalized_term, Qt::CaseInsensitive)) {
         term_matched = true;
       }
 
-      // Try to match model (handle alphanumeric model numbers)
       if (!term_matched) {
         if (term.contains(QRegExp("[a-z]\\d|\\d[a-z]", Qt::CaseInsensitive))) {
-          // For model numbers like "g70"
           QString clean_model = normalized_model;
           QString clean_term = normalized_term;
           clean_model.remove(" ");
@@ -162,7 +155,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
             term_matched = true;
           }
         } else {
-          // For regular model names
           if (normalized_model.contains(normalized_term, Qt::CaseInsensitive)) {
             term_matched = true;
           }
@@ -202,7 +194,7 @@ void PlatformSelector::searchPlatforms(const QString &query) {
     QString content("<body><h2 style=\"text-align: center;\">" + tr("Vehicle Selector") + "</h2><br>"
                     "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
 
-    if (ConfirmationDialog(content, tr("Ok"), "", true, this).exec()) {
+    if (ConfirmationDialog(content, tr("Confirm"), tr("Cancel"), true, this).exec()) {
       params.put("CarPlatform", platform_data["platform"].toString().toStdString());
       params.put("CarPlatformName", selected_platform.toStdString());
     }
