@@ -74,7 +74,9 @@ QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
       }
 
       platform_data["year"] = yearList;
+      platform_data["make"] = attributes.value("make").toString();
       platform_data["model"] = attributes.value("model").toString();
+      platform_data["platform"] = attributes.value("platform").toString();
       platform_data["package"] = attributes.value("package").toString();
 
       platforms[key] = platform_data;
@@ -98,6 +100,7 @@ void PlatformSelector::searchPlatforms(const QString &query) {
   int search_year = -1;
   QStringList search_terms;
 
+  // Extract year and other search terms
   for (const QString &token : tokens) {
     bool ok;
     int year = token.toInt(&ok);
@@ -111,9 +114,10 @@ void PlatformSelector::searchPlatforms(const QString &query) {
   for (auto it = platforms.constBegin(); it != platforms.constEnd(); ++it) {
     QString platform_name = it.key();
     QVariantMap platform_data = it.value();
-    QVariantList year_list = platform_data["year"].toList();
 
+    // Check year match if specified
     if (search_year != -1) {
+      QVariantList year_list = platform_data["year"].toList();
       bool year_match = false;
       for (const QVariant &year_var : year_list) {
         int year = year_var.toString().toInt();
@@ -122,37 +126,50 @@ void PlatformSelector::searchPlatforms(const QString &query) {
           break;
         }
       }
-      if (!year_match) {
-        continue;
-      }
+      if (!year_match) continue;
     }
 
+    // Normalize strings for comparison
+    QString normalized_make = platform_data["make"].toString().normalized(QString::NormalizationForm_KD).toLower();
+    QString normalized_model = platform_data["model"].toString().normalized(QString::NormalizationForm_KD).toLower();
+    normalized_make.remove(QRegExp("[^a-zA-Z0-9\\s]"));
+    normalized_model.remove(QRegExp("[^a-zA-Z0-9\\s]"));
+
     bool all_terms_match = true;
-    QString platform_search = platform_name.toLower();
-
-    // Normalize platform name for searching (remove diacritical marks)
-    QString normalized_platform = platform_search.normalized(QString::NormalizationForm_KD);
-    normalized_platform.remove(QRegExp("[^a-zA-Z0-9\\s]"));
-
     for (const QString &term : search_terms) {
-      QString normalized_term = term.normalized(QString::NormalizationForm_KD);
+      QString normalized_term = term.normalized(QString::NormalizationForm_KD).toLower();
       normalized_term.remove(QRegExp("[^a-zA-Z0-9\\s]"));
 
-      if (term.contains(QRegExp("[a-z]\\d|\\d[a-z]", Qt::CaseInsensitive))) {
-        QString clean_platform = normalized_platform;
-        QString clean_term = normalized_term;
-        clean_platform.remove(" ");
-        clean_term.remove(" ");
-        if (!clean_platform.contains(clean_term, Qt::CaseInsensitive)) {
-          all_terms_match = false;
-          break;
+      // Check if term matches make or model
+      bool term_matched = false;
+
+      // Try to match make
+      if (normalized_make.contains(normalized_term, Qt::CaseInsensitive)) {
+        term_matched = true;
+      }
+
+      // Try to match model (handle alphanumeric model numbers)
+      if (!term_matched) {
+        if (term.contains(QRegExp("[a-z]\\d|\\d[a-z]", Qt::CaseInsensitive))) {
+          // For model numbers like "g70"
+          QString clean_model = normalized_model;
+          QString clean_term = normalized_term;
+          clean_model.remove(" ");
+          clean_term.remove(" ");
+          if (clean_model.contains(clean_term, Qt::CaseInsensitive)) {
+            term_matched = true;
+          }
+        } else {
+          // For regular model names
+          if (normalized_model.contains(normalized_term, Qt::CaseInsensitive)) {
+            term_matched = true;
+          }
         }
-      } else {
-        QRegExp wordMatch(QString("\\b%1\\b").arg(QRegExp::escape(normalized_term)), Qt::CaseInsensitive);
-        if (!normalized_platform.contains(wordMatch)) {
-          all_terms_match = false;
-          break;
-        }
+      }
+
+      if (!term_matched) {
+        all_terms_match = false;
+        break;
       }
     }
 
@@ -173,7 +190,7 @@ void PlatformSelector::searchPlatforms(const QString &query) {
 
   if (!selected_platform.isEmpty()) {
     QVariantMap platform_data = platforms[selected_platform];
-    params.put("CarPlatform", platform_data["model"].toString().toStdString());
+    params.put("CarPlatform", platform_data["platform"].toString().toStdString());
     params.put("CarPlatformName", selected_platform.toStdString());
   }
 }
