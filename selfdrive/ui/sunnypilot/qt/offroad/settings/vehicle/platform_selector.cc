@@ -97,7 +97,7 @@ void PlatformSelector::searchPlatforms(const QString &query) {
   QSet<QString> matched_cars;
 
   QString normalized_query = query.simplified().toLower();
-  QStringList tokens = normalized_query.split(" ", Qt::SkipEmptyParts);
+  QStringList tokens = normalized_query.split(" ", QString::SkipEmptyParts);
 
   int search_year = -1;
   QStringList search_terms;
