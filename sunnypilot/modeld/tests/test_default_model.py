@@ -31,5 +31,5 @@ class TestDefaultModel:
       f"Model reference mismatch!\n"
       f"Current ref: {current_ref}\n"
       f"New ref:  {ref}\n"
-      f"Please update {self.ref_path} if the driving model name has changed."
+      f"Please update common/model.h if the driving model name has changed."
     )
