@@ -29,7 +29,7 @@ from pytest_mock import MockerFixture
 
 from cereal import custom
 from openpilot.common.realtime import DT_CTRL
-from openpilot.sunnypilot.mads.state import StateMachine, SOFT_DISABLE_TIME, GEARS_ALLOW_PAUSED
+from openpilot.sunnypilot.mads.state import StateMachine, SOFT_DISABLE_TIME
 from openpilot.selfdrive.selfdrived.events import ET, NormalPermanentAlert
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EVENTS_SP
 
@@ -129,7 +129,7 @@ class TestMADSStateMachine:
   def test_no_entry(self):
     for et in ENABLE_EVENT_TYPES:
       self.events_sp.add(make_event([ET.NO_ENTRY, et]))
-      if not self.state_machine.check_contains_in_list(GEARS_ALLOW_PAUSED):
+      if not self.state_machine.check_gear_allow_paused_contains_in_list():
         self.state_machine.update(self.events, self.events_sp)
         assert self.state_machine.state == State.disabled
         self.reset()
