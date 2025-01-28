@@ -1,33 +1,34 @@
 import os
-import subprocess
+import hashlib
 
 from openpilot.common.basedir import BASEDIR
 
-REF_COMMIT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_HASH_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestDefaultModel:
   @classmethod
   def setup_class(cls):
     cls.onnx_path = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "supercombo.onnx")
-    cls.ref_path = os.path.join(REF_COMMIT_DIR, "ref_commit")
+    cls.current_hash_path = os.path.join(MODEL_HASH_DIR, "model_hash")
 
   @staticmethod
-  def get_git_ref(path: str) -> str:
-    try:
-      return subprocess.check_output(['git', 'log', '-n', '1', '--pretty=format:%H', '--', path], cwd=BASEDIR).decode("utf-8").strip()
-    except subprocess.CalledProcessError as e:
-      raise RuntimeError(f"Failed to get git ref for {path}: {e}") from e
+  def get_hash(path: str) -> str:
+    sha256_hash = hashlib.sha256()
+    with open(path, "rb") as f:
+      for byte_block in iter(lambda: f.read(4096), b""):
+        sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
 
-  def test_model_ref_matches(self):
-    ref = self.get_git_ref(str(self.onnx_path))
+  def test_compare_onnx_hashes(self):
+    new_hash = self.get_hash(str(self.onnx_path))
 
-    with open(self.ref_path) as f:
-      current_ref = f.read().strip()
+    with open(self.current_hash_path) as f:
+      current_hash = f.read().strip()
 
-    assert ref == current_ref, (
+    assert new_hash == current_hash, (
       "Driving model updated!\n" +
-      f"Current ref: {current_ref}\n" +
-      f"New ref: {ref}\n" +
+      f"Current hash: {current_hash}\n" +
+      f"New hash: {new_hash}\n" +
       "Please update common/model.h if the default driving model name has changed."
     )
