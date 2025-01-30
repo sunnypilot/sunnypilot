@@ -76,6 +76,7 @@ QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
 
       platform_data["year"] = yearList;
       platform_data["make"] = attributes.value("make").toString();
+      platform_data["brand"] = attributes.value("brand").toString();
       platform_data["model"] = attributes.value("model").toString();
       platform_data["platform"] = attributes.value("platform").toString();
       platform_data["package"] = attributes.value("package").toString();
