@@ -13,6 +13,17 @@
 #include <QJsonValue>
 #include <QMap>
 
+QVariant PlatformSelector::getPlatformBundle(const QString &key) {
+  QString platform_bundle = QString::fromStdString(params.get("CarPlatformBundle"));
+  if (!platform_bundle.isEmpty()) {
+    QJsonDocument json = QJsonDocument::fromJson(platform_bundle.toUtf8());
+    if (!json.isNull() && json.isObject()) {
+      return json.object().value(key).toVariant();
+    }
+  }
+  return {};
+}
+
 PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
   QObject::connect(this, &ButtonControl::clicked, [=]() {
     if (text() == tr("SEARCH")) {
@@ -33,20 +44,9 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 }
 
 void PlatformSelector::refresh(bool _offroad) {
-  QString platform_bundle = QString::fromStdString(params.get("CarPlatformBundle"));
-  if (!platform_bundle.isEmpty()) {
-    QJsonDocument json = QJsonDocument::fromJson(platform_bundle.toUtf8());
-
-    if (!json.isNull() && json.isObject()) {
-      setValue(json.object()["name"].toString());
-    } else {
-      setValue("");
-    }
-    setText("REMOVE");
-  } else {
-    setValue("");
-    setText("SEARCH");
-  }
+  QString name = getPlatformBundle("name").toString();
+  setValue(name);
+  setText(name.isEmpty() ? tr("SEARCH") : tr("SELECT"));
   setEnabled(true);
 
   offroad = _offroad;

@@ -14,6 +14,7 @@ class PlatformSelector : public ButtonControl {
 
 public:
   PlatformSelector();
+  QVariant getPlatformBundle(const QString &key);
 
 public slots:
   void refresh(bool _offroad);
