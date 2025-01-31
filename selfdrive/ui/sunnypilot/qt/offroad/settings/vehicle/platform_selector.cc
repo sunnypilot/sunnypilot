@@ -24,8 +24,7 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
         refresh(offroad);
       }
     } else {
-      params.remove("CarPlatform");
-      params.remove("CarPlatformName");
+      params.remove("CarPlatformBundle");
       refresh(offroad);
     }
   });
@@ -34,9 +33,15 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 }
 
 void PlatformSelector::refresh(bool _offroad) {
-  QString platform_param = QString::fromStdString(params.get("CarPlatform"));
-  if (platform_param.length()) {
-    setValue(QString::fromStdString(params.get("CarPlatformName")));
+  QString platform_bundle = QString::fromStdString(params.get("CarPlatformBundle"));
+  if (!platform_bundle.isEmpty()) {
+    QJsonDocument json = QJsonDocument::fromJson(platform_bundle.toUtf8());
+
+    if (!json.isNull() && json.isObject()) {
+      setValue(json.object()["name"].toString());
+    } else {
+      setValue("");
+    }
     setText("REMOVE");
   } else {
     setValue("");
@@ -195,8 +200,20 @@ void PlatformSelector::searchPlatforms(const QString &query) {
                     "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
 
     if (ConfirmationDialog(content, tr("Confirm"), tr("Cancel"), true, this).exec()) {
-      params.put("CarPlatform", platform_data["platform"].toString().toStdString());
-      params.put("CarPlatformName", selected_platform.toStdString());
+      QString platform = platform_data["platform"].toString();
+
+      QJsonObject json_bundle;
+      json_bundle["platform"] = platform;
+      json_bundle["name"] = selected_platform;
+      json_bundle["make"] = platform_data["make"].toString();
+      json_bundle["brand"] = platform_data["brand"].toString();
+      json_bundle["model"] = platform_data["model"].toString();
+      json_bundle["package"] = platform_data["package"].toString();
+
+      QString json_bundle_str = QString::fromUtf8(QJsonDocument(json_bundle).toJson(QJsonDocument::Compact));
+
+      params.put("CarPlatform", platform.toStdString());
+      params.put("CarPlatformBundle", json_bundle_str.toStdString());
     }
   }
 }
