@@ -46,7 +46,7 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 void PlatformSelector::refresh(bool _offroad) {
   QString name = getPlatformBundle("name").toString();
   setValue(name);
-  setText(name.isEmpty() ? tr("SEARCH") : tr("SELECT"));
+  setText(name.isEmpty() ? tr("SEARCH") : tr("REMOVE"));
   setEnabled(true);
 
   offroad = _offroad;
