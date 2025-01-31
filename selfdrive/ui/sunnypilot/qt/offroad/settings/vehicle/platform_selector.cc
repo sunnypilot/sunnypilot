@@ -200,10 +200,8 @@ void PlatformSelector::searchPlatforms(const QString &query) {
                     "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
 
     if (ConfirmationDialog(content, tr("Confirm"), tr("Cancel"), true, this).exec()) {
-      QString platform = platform_data["platform"].toString();
-
       QJsonObject json_bundle;
-      json_bundle["platform"] = platform;
+      json_bundle["platform"] = platform_data["platform"].toString();
       json_bundle["name"] = selected_platform;
       json_bundle["make"] = platform_data["make"].toString();
       json_bundle["brand"] = platform_data["brand"].toString();
@@ -212,7 +210,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
 
       QString json_bundle_str = QString::fromUtf8(QJsonDocument(json_bundle).toJson(QJsonDocument::Compact));
 
-      params.put("CarPlatform", platform.toStdString());
       params.put("CarPlatformBundle", json_bundle_str.toStdString());
     }
   }

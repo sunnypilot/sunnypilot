@@ -206,7 +206,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
-    {"CarPlatform", PERSISTENT},
     {"CarPlatformBundle", PERSISTENT},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
