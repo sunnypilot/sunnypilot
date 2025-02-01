@@ -56,7 +56,6 @@ class MockMADS:
   def __init__(self, mocker: MockerFixture):
     self.selfdrive = mocker.MagicMock()
     self.selfdrive.state_machine = mocker.MagicMock()
-    self.selfdrive.active = False
     self.selfdrive.events = Events()
     self.selfdrive.events_sp = EventsSP()
 
