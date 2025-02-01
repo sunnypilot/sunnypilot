@@ -14,6 +14,7 @@ class PlatformSelector : public ButtonControl {
 
 public:
   PlatformSelector();
+  QMap<QString, QVariantMap> loadPlatformList();
   QVariant getPlatformBundle(const QString &key);
 
 public slots:
@@ -21,7 +22,8 @@ public slots:
 
 private:
   void searchPlatforms(const QString &query);
-  QMap<QString, QVariantMap> loadPlatformList();
+  void setPlatform(const QString &platform = "");
+  QMap<QString, QVariantMap> platforms;
 
   Params params;
   bool offroad;

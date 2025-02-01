@@ -25,6 +25,8 @@ QVariant PlatformSelector::getPlatformBundle(const QString &key) {
 }
 
 PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
+  platforms = loadPlatformList();
+
   QObject::connect(this, &ButtonControl::clicked, [=]() {
     if (text() == tr("SEARCH")) {
       QString query = InputDialog::getText(tr("Search your vehicle"), this, tr("Enter model year (e.g., 2021) and model name (Toyota Corolla):"), false);
@@ -53,18 +55,18 @@ void PlatformSelector::refresh(bool _offroad) {
 }
 
 QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
-  QMap<QString, QVariantMap> platforms;
+  QMap<QString, QVariantMap> _platforms;
 
   std::string json_data = util::read_file("../../sunnypilot/selfdrive/car/car_list.json");
 
   if (json_data.empty()) {
-    return platforms;
+    return _platforms;
   }
 
   QJsonParseError json_error{};
   QJsonDocument doc = QJsonDocument::fromJson(QString::fromStdString(json_data).toUtf8(), &json_error);
   if (doc.isNull()) {
-    return platforms;
+    return _platforms;
   }
 
   if (doc.isObject()) {
@@ -86,11 +88,37 @@ QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
       platform_data["platform"] = attributes.value("platform").toString();
       platform_data["package"] = attributes.value("package").toString();
 
-      platforms[key] = platform_data;
+      _platforms[key] = platform_data;
     }
   }
 
-  return platforms;
+  return _platforms;
+}
+
+void PlatformSelector::setPlatform(const QString &platform) {
+  QVariantMap platform_data = platforms[platform];
+
+  const QString offroad_msg = offroad ? tr("This setting will take effect immediately.") :
+                                        tr("This setting will take effect once the device enters offroad state.");
+  const QString msg = QString("<b>%1</b><br><br>%2")
+                      .arg(platform, offroad_msg);
+
+  QString content("<body><h2 style=\"text-align: center;\">" + tr("Vehicle Selector") + "</h2><br>"
+                  "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
+
+  if (ConfirmationDialog(content, tr("Confirm"), tr("Cancel"), true, this).exec()) {
+    QJsonObject json_bundle;
+    json_bundle["platform"] = platform_data["platform"].toString();
+    json_bundle["name"] = platform;
+    json_bundle["make"] = platform_data["make"].toString();
+    json_bundle["brand"] = platform_data["brand"].toString();
+    json_bundle["model"] = platform_data["model"].toString();
+    json_bundle["package"] = platform_data["package"].toString();
+
+    QString json_bundle_str = QString::fromUtf8(QJsonDocument(json_bundle).toJson(QJsonDocument::Compact));
+
+    params.put("CarPlatformBundle", json_bundle_str.toStdString());
+  }
 }
 
 void PlatformSelector::searchPlatforms(const QString &query) {
@@ -98,7 +126,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
     return;
   }
 
-  QMap<QString, QVariantMap> platforms = loadPlatformList();
   QSet<QString> matched_cars;
 
   QString normalized_query = query.simplified().toLower();
@@ -188,28 +215,6 @@ void PlatformSelector::searchPlatforms(const QString &query) {
   QString selected_platform = MultiOptionDialog::getSelection(tr("Select a vehicle"), results, "", this);
 
   if (!selected_platform.isEmpty()) {
-    QVariantMap platform_data = platforms[selected_platform];
-
-    const QString offroad_msg = offroad ? tr("This setting will take effect immediately.") :
-                                          tr("This setting will take effect once the device enters offroad state.");
-    const QString msg = QString("<b>%1</b><br><br>%2")
-                        .arg(selected_platform, offroad_msg);
-
-    QString content("<body><h2 style=\"text-align: center;\">" + tr("Vehicle Selector") + "</h2><br>"
-                    "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
-
-    if (ConfirmationDialog(content, tr("Confirm"), tr("Cancel"), true, this).exec()) {
-      QJsonObject json_bundle;
-      json_bundle["platform"] = platform_data["platform"].toString();
-      json_bundle["name"] = selected_platform;
-      json_bundle["make"] = platform_data["make"].toString();
-      json_bundle["brand"] = platform_data["brand"].toString();
-      json_bundle["model"] = platform_data["model"].toString();
-      json_bundle["package"] = platform_data["package"].toString();
-
-      QString json_bundle_str = QString::fromUtf8(QJsonDocument(json_bundle).toJson(QJsonDocument::Compact));
-
-      params.put("CarPlatformBundle", json_bundle_str.toStdString());
-    }
+    setPlatform(selected_platform);
   }
 }
