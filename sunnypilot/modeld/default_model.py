@@ -24,21 +24,21 @@ def update_model_hash():
   print(f"Generated and updated new hash to {MODEL_HASH_PATH}")
 
 
-def update_default_model_name(name: str):
-  name = f'{name} (Default)'
+def get_current_default_model_name():
   print("[GET DEFAULT MODEL NAME]")
   with open(DEFAULT_MODEL_NAME_PATH) as f:
-    current_name = f.read().split('"')[1]
-  print(f'Current default model name: "{current_name}"')
-  if current_name != name:
-    print("[CHANGE DEFAULT MODEL NAME]")
-    with open(DEFAULT_MODEL_NAME_PATH, "w") as f:
-      f.write(f'#define DEFAULT_MODEL "{name}"\n')
-    print(f'New default model name: "{name}"')
-    print("[DONE]")
-  else:
-    print("[DONE]")
-    print("Provided new default model name is the same as the current one. Skipping...")
+    name = f.read().split('"')[1]
+  print(f'Current default model name: "{name}"')
+
+  return name
+
+
+def update_default_model_name(name: str):
+  print("[CHANGE DEFAULT MODEL NAME]")
+  with open(DEFAULT_MODEL_NAME_PATH, "w") as f:
+    f.write(f'#define DEFAULT_MODEL "{name}"\n')
+  print(f'New default model name: "{name}"')
+  print("[DONE]")
 
 
 if __name__ == "__main__":
@@ -46,8 +46,19 @@ if __name__ == "__main__":
   parser.add_argument("--new_name", type=str, help="New default model name")
   args = parser.parse_args()
 
-  if args.new_name:
-    update_default_model_name(args.new_name)
-    update_model_hash()
-  else:
-    print("Warning: No new default model name provided. Use --new_name to specify. Skipping...")
+  if not args.new_name:
+    print("Warning: No new default model name provided. Use --new_name to specify")
+    print("Default model name and hash will not be updated! (aborted)")
+    exit(0)
+
+  current_name = get_current_default_model_name()
+  new_name = f"{args.new_name} (Default)"
+  if current_name == new_name:
+    print(f'Proposed default model name: "{new_name}"')
+    confirm = input("Proposed default model name is the same as the current default model name. Confirm? (y/n):").upper().strip()
+    if confirm != "Y":
+      print("Default model name and hash will not be updated! (aborted)")
+      exit(0)
+
+  update_default_model_name(new_name)
+  update_model_hash()
