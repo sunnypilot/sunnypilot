@@ -75,12 +75,12 @@ void PlatformSelector::setPlatform(const QString &platform) {
     json_bundle["model"] = platform_data["model"].toString();
     json_bundle["package"] = platform_data["package"].toString();
 
-    QVariantList year_list = platform_data["year"].toList();
-    QJsonArray year_array;
-    for (const QVariant &year : year_list) {
-      year_array.append(year.toString());
+    QVariantList yearList = platform_data["year"].toList();
+    QJsonArray yearArray;
+    for (const QVariant &year : yearList) {
+      yearArray.append(year.toString());
     }
-    json_bundle["year"] = year_array;
+    json_bundle["year"] = yearArray;
 
     QString json_bundle_str = QString::fromUtf8(QJsonDocument(json_bundle).toJson(QJsonDocument::Compact));
 
