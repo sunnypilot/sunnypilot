@@ -55,13 +55,13 @@ void PlatformSelector::refresh(bool _offroad) {
 QMap<QString, QVariantMap> PlatformSelector::loadPlatformList() {
   QMap<QString, QVariantMap> platforms;
 
-  std::string json_data = util::read_file("../../sunnypilot/selfdrive/car/car_list.json").c_str();
+  std::string json_data = util::read_file("../../sunnypilot/selfdrive/car/car_list.json");
 
   if (json_data.empty()) {
     return platforms;
   }
 
-  QJsonParseError json_error;
+  QJsonParseError json_error{};
   QJsonDocument doc = QJsonDocument::fromJson(QString::fromStdString(json_data).toUtf8(), &json_error);
   if (doc.isNull()) {
     return platforms;
@@ -193,8 +193,7 @@ void PlatformSelector::searchPlatforms(const QString &query) {
     const QString offroad_msg = offroad ? tr("This setting will take effect immediately.") :
                                           tr("This setting will take effect once the device enters offroad state.");
     const QString msg = QString("<b>%1</b><br><br>%2")
-                        .arg(selected_platform)
-                        .arg(offroad_msg);
+                        .arg(selected_platform, offroad_msg);
 
     QString content("<body><h2 style=\"text-align: center;\">" + tr("Vehicle Selector") + "</h2><br>"
                     "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
