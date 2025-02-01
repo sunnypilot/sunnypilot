@@ -23,8 +23,18 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   ScrollViewSP *scroller = new ScrollViewSP(list, this);
   vlayout->addWidget(scroller);
 
-  QObject::connect(uiState(), &UIState::offroadTransition, platformSelector, &PlatformSelector::refresh);
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &VehiclePanel::updatePanel);
 
   main_layout->addWidget(vehicleScreen);
   main_layout->setCurrentWidget(vehicleScreen);
+}
+
+void VehiclePanel::showEvent(QShowEvent *event) {
+  updatePanel(offroad);
+}
+
+void VehiclePanel::updatePanel(bool _offroad) {
+  platformSelector->refresh(_offroad);
+
+  offroad = _offroad;
 }

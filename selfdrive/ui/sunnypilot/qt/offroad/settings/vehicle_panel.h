@@ -16,9 +16,14 @@ class VehiclePanel : public QFrame {
 
 public:
   explicit VehiclePanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updatePanel(bool _offroad);
 
 private:
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector *platformSelector = nullptr;
+  bool offroad;
 };
