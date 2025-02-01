@@ -25,12 +25,20 @@ def update_model_hash():
 
 
 def update_default_model_name(name: str):
+  name = f'{name} (Default)'
+  print("[GET DEFAULT MODEL NAME]")
   with open(DEFAULT_MODEL_NAME_PATH) as f:
     current_name = f.read().split('"')[1]
-  print(f'Old default model name: "{current_name}"')
-  with open(DEFAULT_MODEL_NAME_PATH, "w") as f:
-    f.write(f'#define DEFAULT_MODEL "{name}"\n')
-  print(f'New default model name: "{name}"')
+  print(f'Current default model name: "{current_name}"')
+  if current_name != name:
+    print("[CHANGE DEFAULT MODEL NAME]")
+    with open(DEFAULT_MODEL_NAME_PATH, "w") as f:
+      f.write(f'#define DEFAULT_MODEL "{name}"\n')
+    print(f'New default model name: "{name}"')
+    print("[DONE]")
+  else:
+    print("[DONE]")
+    print("Provided new default model name is the same as the current one. Skipping...")
 
 
 if __name__ == "__main__":

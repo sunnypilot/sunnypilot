@@ -1,5 +1,3 @@
-import os
-
 from openpilot.sunnypilot.modeld.default_model import get_hash, MODEL_HASH_PATH, ONNX_PATH
 
 
