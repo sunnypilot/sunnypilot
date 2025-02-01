@@ -14,7 +14,6 @@ class PlatformSelector : public ButtonControl {
 
 public:
   PlatformSelector();
-  QMap<QString, QVariantMap> loadPlatformList();
   QVariant getPlatformBundle(const QString &key);
 
 public slots:
