@@ -160,7 +160,7 @@ class ModularAssistiveDrivingSystem:
     self.update_events(CS)
 
     if not self.selfdrive.CP.passive and self.selfdrive.initialized:
-      self.enabled, self.active = self.state_machine.update(self.events, self.events_sp)
+      self.enabled, self.active = self.state_machine.update()
 
     # Copy of previous SelfdriveD states for MADS events handling
     self.selfdrive.enabled_prev = self.selfdrive.enabled

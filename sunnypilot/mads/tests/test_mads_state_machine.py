@@ -30,8 +30,8 @@ from pytest_mock import MockerFixture
 from cereal import custom
 from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.mads.state import StateMachine, SOFT_DISABLE_TIME
-from openpilot.selfdrive.selfdrived.events import ET, NormalPermanentAlert
-from openpilot.sunnypilot.selfdrive.selfdrived.events import EVENTS_SP
+from openpilot.selfdrive.selfdrived.events import ET, NormalPermanentAlert, Events
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP, EVENTS_SP
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventNameSP = custom.OnroadEventSP.EventName
@@ -57,6 +57,8 @@ class MockMADS:
     self.selfdrive = mocker.MagicMock()
     self.selfdrive.state_machine = mocker.MagicMock()
     self.selfdrive.active = False
+    self.selfdrive.events = Events()
+    self.selfdrive.events_sp = EventsSP()
 
 
 class TestMADSStateMachine:
@@ -64,8 +66,8 @@ class TestMADSStateMachine:
   def setup_method(self, mocker: MockerFixture):
     self.mads = MockMADS(mocker)
     self.state_machine = StateMachine(self.mads)
-    self.events = self.state_machine._events
-    self.events_sp = self.state_machine._events_sp
+    self.events = self.mads.selfdrive.events
+    self.events_sp = self.mads.selfdrive.events_sp
     self.mads.selfdrive.state_machine.soft_disable_timer = int(SOFT_DISABLE_TIME / DT_CTRL)
 
   def reset(self):
@@ -78,7 +80,7 @@ class TestMADSStateMachine:
       for et in MAINTAIN_STATES[state]:
         self.events_sp.add(make_event([et, ET.IMMEDIATE_DISABLE]))
         self.state_machine.state = state
-        self.state_machine.update(self.events, self.events_sp)
+        self.state_machine.update()
         assert State.disabled == self.state_machine.state
         self.reset()
 
@@ -87,7 +89,7 @@ class TestMADSStateMachine:
       for et in MAINTAIN_STATES[state]:
         self.events_sp.add(make_event([et, ET.USER_DISABLE]))
         self.state_machine.state = state
-        self.state_machine.update(self.events, self.events_sp)
+        self.state_machine.update()
         assert State.disabled == self.state_machine.state
         self.reset()
 
@@ -99,7 +101,7 @@ class TestMADSStateMachine:
         for en in paused_events:
           self.events_sp.add(en)
           self.state_machine.state = state
-          self.state_machine.update(self.events, self.events_sp)
+          self.state_machine.update()
           final_state = State.paused if self.events_sp.has(en) and state != State.disabled else State.disabled
           assert self.state_machine.state == final_state
           self.reset()
@@ -111,18 +113,18 @@ class TestMADSStateMachine:
       for et in MAINTAIN_STATES[state]:
         self.events_sp.add(make_event([et, ET.SOFT_DISABLE]))
         self.state_machine.state = state
-        self.state_machine.update(self.events, self.events_sp)
+        self.state_machine.update()
         assert self.state_machine.state == State.disabled if state == State.disabled else State.softDisabling
         self.reset()
 
   def test_soft_disable_timer(self):
     self.state_machine.state = State.enabled
     self.events_sp.add(make_event([ET.SOFT_DISABLE]))
-    self.state_machine.update(self.events, self.events_sp)
+    self.state_machine.update()
     for _ in range(int(SOFT_DISABLE_TIME / DT_CTRL)):
       assert self.state_machine.state == State.softDisabling
       self.mads.selfdrive.state_machine.soft_disable_timer -= 1
-      self.state_machine.update(self.events, self.events_sp)
+      self.state_machine.update()
 
     assert self.state_machine.state == State.disabled
 
@@ -130,26 +132,26 @@ class TestMADSStateMachine:
     for et in ENABLE_EVENT_TYPES:
       self.events_sp.add(make_event([ET.NO_ENTRY, et]))
       if not self.state_machine.check_contains_in_list():
-        self.state_machine.update(self.events, self.events_sp)
+        self.state_machine.update()
         assert self.state_machine.state == State.disabled
         self.reset()
 
   def test_no_entry_paused(self):
     self.state_machine.state = State.paused
     self.events_sp.add(make_event([ET.NO_ENTRY]))
-    self.state_machine.update(self.events, self.events_sp)
+    self.state_machine.update()
     assert self.state_machine.state == State.paused
 
   def test_override_lateral(self):
     self.state_machine.state = State.enabled
     self.events_sp.add(make_event([ET.OVERRIDE_LATERAL]))
-    self.state_machine.update(self.events, self.events_sp)
+    self.state_machine.update()
     assert self.state_machine.state == State.overriding
 
   def test_paused_to_enabled(self):
     self.state_machine.state = State.paused
     self.events_sp.add(make_event([ET.ENABLE]))
-    self.state_machine.update(self.events, self.events_sp)
+    self.state_machine.update()
     assert self.state_machine.state == State.enabled
 
   def test_maintain_states(self):
@@ -158,6 +160,6 @@ class TestMADSStateMachine:
         self.state_machine.state = state
         if et is not None:
           self.events_sp.add(make_event([et]))
-        self.state_machine.update(self.events, self.events_sp)
+        self.state_machine.update()
         assert self.state_machine.state == state
         self.reset()
