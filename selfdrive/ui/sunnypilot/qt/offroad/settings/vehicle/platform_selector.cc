@@ -7,6 +7,7 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/platform_selector.h"
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMap>
@@ -73,6 +74,13 @@ void PlatformSelector::setPlatform(const QString &platform) {
     json_bundle["brand"] = platform_data["brand"].toString();
     json_bundle["model"] = platform_data["model"].toString();
     json_bundle["package"] = platform_data["package"].toString();
+
+    QVariantList year_list = platform_data["year"].toList();
+    QJsonArray year_array;
+    for (const QVariant &year : year_list) {
+      year_array.append(year.toString());
+    }
+    json_bundle["year"] = year_array;
 
     QString json_bundle_str = QString::fromUtf8(QJsonDocument(json_bundle).toJson(QJsonDocument::Compact));
 
