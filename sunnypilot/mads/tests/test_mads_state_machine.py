@@ -108,8 +108,6 @@ class TestMADSStateMachine:
 
   def test_soft_disable(self):
     for state in ALL_STATES:
-      if state == State.paused:  # paused considers USER_DISABLE instead
-        continue
       for et in MAINTAIN_STATES[state]:
         self.events_sp.add(make_event([et, ET.SOFT_DISABLE]))
         self.state_machine.state = state
@@ -127,39 +125,41 @@ class TestMADSStateMachine:
       self.state_machine.update()
 
     assert self.state_machine.state == State.disabled
+    self.reset()
 
   def test_no_entry(self):
     for et in ENABLE_EVENT_TYPES:
       self.events_sp.add(make_event([ET.NO_ENTRY, et]))
-      if not self.state_machine.check_contains_in_list():
-        self.state_machine.update()
-        assert self.state_machine.state == State.disabled
-        self.reset()
+      self.state_machine.update()
+      assert self.state_machine.state == State.disabled
+      self.reset()
 
   def test_no_entry_paused(self):
     self.state_machine.state = State.paused
     self.events_sp.add(make_event([ET.NO_ENTRY]))
     self.state_machine.update()
     assert self.state_machine.state == State.paused
+    self.reset()
 
   def test_override_lateral(self):
     self.state_machine.state = State.enabled
     self.events_sp.add(make_event([ET.OVERRIDE_LATERAL]))
     self.state_machine.update()
     assert self.state_machine.state == State.overriding
+    self.reset()
 
   def test_paused_to_enabled(self):
     self.state_machine.state = State.paused
     self.events_sp.add(make_event([ET.ENABLE]))
     self.state_machine.update()
     assert self.state_machine.state == State.enabled
+    self.reset()
 
   def test_maintain_states(self):
     for state in ALL_STATES:
       for et in MAINTAIN_STATES[state]:
         self.state_machine.state = state
-        if et is not None:
-          self.events_sp.add(make_event([et]))
+        self.events_sp.add(make_event([et]))
         self.state_machine.update()
         assert self.state_machine.state == state
         self.reset()
