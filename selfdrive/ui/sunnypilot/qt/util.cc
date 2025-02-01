@@ -17,6 +17,7 @@
 #include <QJsonObject>
 #include <QLayoutItem>
 #include <QPainterPath>
+#include <QVariant>
 
 #include "system/hardware/hw.h"
 
