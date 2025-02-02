@@ -23,6 +23,7 @@ from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
 from openpilot.selfdrive.car.helpers import convert_carControlSP, convert_to_capnp
+from openpilot.selfdrive.car.tsk import TSK
 
 from openpilot.sunnypilot.mads.mads import MadsParams
 from openpilot.sunnypilot.selfdrive.car import interfaces
@@ -143,25 +144,28 @@ class Car:
       self.CP.safetyConfigs = [safety_config]
 
     if self.CP.secOcRequired and not self.params.get_bool("IsReleaseBranch"):
-      # Copy user key if available
-      try:
-        with open("/cache/params/SecOCKey") as f:
-          user_key = f.readline().strip()
-          if len(user_key) == 32:
-            self.params.put("SecOCKey", user_key)
-      except Exception:
-        pass
+      tsk: TSK = TSK(self)
+      # Try to retrieve the installed key.
+      key: bytes = tsk.get_installed()
 
-      secoc_key = self.params.get("SecOCKey", encoding='utf8')
-      if secoc_key is not None:
-        saved_secoc_key = bytes.fromhex(secoc_key.strip())
-        if len(saved_secoc_key) == 16:
-          self.CP.secOcKeyAvailable = True
-          self.CI.CS.secoc_key = saved_secoc_key
-          if controller_available:
-            self.CI.CC.secoc_key = saved_secoc_key
+      # If no key was installed, attempt to extract one.
+      if key is None: # TODO: and connected to the car
+        key = tsk.extract()
+
+      # Do we have a valid key?
+      if key is None:
+        if True: # TODO: if connected to the car
+          cloudlog.error("TSK: Failed")
+          # TODO: Tell user to put the car in Not Ready To Drive mode + restart comma
         else:
-          cloudlog.warning("Saved SecOC key is invalid")
+          cloudlog.warning("TSK: Failed")
+      else:
+        # Yes!
+        self.CP.secOcKeyAvailable = True
+        self.CI.CS.secoc_key = key
+        if controller_available:
+          self.CI.CC.secoc_key = key
+        cloudlog.info("TSK: Success")
 
     # Write previous route's CarParams
     prev_cp = self.params.get("CarParamsPersistent")
