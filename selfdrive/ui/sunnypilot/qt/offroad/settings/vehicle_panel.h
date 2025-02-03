@@ -17,13 +17,31 @@ class VehiclePanel : public QFrame {
 public:
   explicit VehiclePanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
-
+  // Toggle states
+  enum class ToggleState {
+    ENABLED,
+    DISABLED_LONGITUDINAL,
+    DISABLED_DRIVING
+  };
 public slots:
   void updatePanel(bool _offroad);
 
 private:
+  // UI elements
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector *platformSelector = nullptr;
   bool offroad;
+
+  // State tracking
+  Params params;
+
+  // Helper methods
+  ToggleState getToggleState(bool hasOpenpilotLong) const;
+  void updateToggleState(ParamControlSP* toggle, bool hasOpenpilotLong);
+
+private slots:
+  void updateCarToggles();
+  void updateToggles(bool offroad_transition);
+  void handleToggleAction(ParamControlSP* toggle, bool checked);
 };
