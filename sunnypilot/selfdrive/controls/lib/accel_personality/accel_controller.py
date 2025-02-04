@@ -33,17 +33,17 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 
 # Acceleration Profiles
 _DP_CRUISE_MIN_V = {
-  AccelPersonality.eco:    [-0.02, -0.02, -0.85, -0.85, -0.85, -0.85, -1.2, -1.2],
-  AccelPersonality.normal: [-0.02, -0.02, -0.90, -0.90, -0.90, -0.90, -1.2, -1.2],
-  AccelPersonality.sport:  [-0.02, -0.02, -1.0,  -1.0,  -1.0,  -1.0,  -1.2, -1.2],
+  AccelPersonality.eco:    [-0.015, -0.015, -1.2,  -1.2,  -1.2,  -1.2,  -1.2,  -1.2],
+  AccelPersonality.normal: [-0.018, -0.018, -1.2,  -1.2,  -1.2,  -1.2,  -1.2,  -1.2],
+  AccelPersonality.sport:  [-0.020, -0.020, -1.2,  -1.2,  -1.2,  -1.2,  -1.2,  -1.2],
 }
 _DP_CRUISE_MAX_V = {
   AccelPersonality.eco:    [1.60, 1.60, 1.58, 1.58, 0.86, .532, .432, .32,  .28,  .085],
   AccelPersonality.normal: [1.80, 1.80, 1.75, 1.75, 0.92, .65,  .56,  .36,  .30,  .12],
   AccelPersonality.sport:  [2.00, 2.00, 2.00, 2.00, 1.05, .79,  .61,  .42,  .333, .2],
 }
-_DP_CRUISE_MIN_BP = [0., 2.0, 2.01, 15., 15.01, 20., 20.01, 40.]
-_DP_CRUISE_MAX_BP = [0., 1., 6., 8., 11., 16, 20., 25., 30., 55.]
+_DP_CRUISE_MIN_BP = [0.,     2.0,    2.01,   15.,   15.01, 20.,   20.01, 40.]
+_DP_CRUISE_MAX_BP = [0.,   1.,   6.,   8.,   11.,  16,   20.,  25.,  30.,  55.]
 
 
 class AccelController:
