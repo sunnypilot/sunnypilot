@@ -136,6 +136,10 @@
         <translation>この車では、openpilotは車両内蔵のACC(アダプティブクルーズコントロール)をデフォルトとして使用し、openpilotのアクセル制御は無効化されています。アクセル制御をopenpilotに切り替えるにはこの設定を有効にしてください。また同時にExperimentalモードを推奨します。</translation>
     </message>
     <message>
+        <source>Enable ADB</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -153,10 +157,6 @@
     </message>
     <message>
         <source>Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar. This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>TEST</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
