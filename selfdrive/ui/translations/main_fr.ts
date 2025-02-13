@@ -136,10 +136,6 @@
         <translation>Sur cette voiture, openpilot utilise par défaut le régulateur de vitesse adaptatif intégré à la voiture plutôt que le contrôle longitudinal d&apos;openpilot. Activez ceci pour passer au contrôle longitudinal openpilot. Il est recommandé d&apos;activer le mode expérimental lors de l&apos;activation du contrôle longitudinal openpilot alpha.</translation>
     </message>
     <message>
-        <source>Enable ADB</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -157,6 +153,10 @@
     </message>
     <message>
         <source>Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar. This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>TEST</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

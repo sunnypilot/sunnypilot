@@ -140,10 +140,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable ADB</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -158,6 +154,10 @@
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
         <translation type="unfinished">Neste carro, o openpilot tem como padrão o ACC embutido do carro em vez do controle longitudinal do openpilot. Habilite isso para alternar para o controle longitudinal openpilot. Recomenda-se ativar o modo Experimental ao ativar o embrionário controle longitudinal openpilot.</translation>
+    </message>
+    <message>
+        <source>TEST</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
