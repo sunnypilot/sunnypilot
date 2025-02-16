@@ -31,6 +31,8 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector *platformSelector = nullptr;
+  ParamControlSP* hkgtuningToggle = nullptr;
+  ButtonControl* hkgBrakingButton = nullptr;
   bool offroad;
 
   // State tracking

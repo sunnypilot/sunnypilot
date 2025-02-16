@@ -32,6 +32,23 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
     QTimer::singleShot(100, this, &VehiclePanel::updateCarToggles);
   });
 
+  hkgtuningToggle = new ParamControlSP("HKGtuning",
+                               tr("Chubbs Tune"),
+                               tr("Enable to experience enhanced vehicle performance tuning"),
+                               "../assets/offroad/icon_shell.png",
+                               this);
+  list->addItem(hkgtuningToggle);
+  connect(hkgtuningToggle, &ToggleControlSP::toggleFlipped, this, [=](bool checked) {
+    handleToggleAction(hkgtuningToggle, checked);
+  });
+  hkgBrakingButton = new ButtonControl(tr("HKGBraking"), tr("Smoother Braking"));
+  hkgBrakingButton->setEnabled(false);
+  hkgtuningToggle->layout()->addWidget(hkgBrakingButton);
+  connect(hkgBrakingButton, &ButtonControl::clicked, [=]() {
+    params.putBool("HKGBraking", true);
+    hkgBrakingButton->setEnabled(false);
+  });
+
   main_layout->addWidget(vehicleScreen);
   main_layout->setCurrentWidget(vehicleScreen);
 }
@@ -114,6 +131,8 @@ void VehiclePanel::handleToggleAction(ParamControlSP* toggle, bool checked) {
   params.putBool(toggle->key, checked);
   updateToggleState(toggle, hasOpenpilotLong);
   updatePanel(offroad);
+
+  hkgBrakingButton->setEnabled(checked);
 }
 
 void VehiclePanel::updateCarToggles() {
@@ -123,4 +142,18 @@ void VehiclePanel::updateCarToggles() {
   QString brand = platforms.value(platformKey).value("brand").toString();
   QString make = platforms.value(platformKey).value("make").toString();
   QString model = platforms.value(platformKey).value("model").toString();
+
+  // Default state - no car selected
+  hkgtuningToggle->setVisible(false);
+  hkgBrakingButton->setVisible(false);
+
+  if (brand == "hyundai") {
+    hkgtuningToggle->setVisible(true);
+    hkgtuningToggle->setEnabled(offroad && hasOpenpilotLong);
+    updateToggleState(hkgtuningToggle, hasOpenpilotLong);
+    hkgBrakingButton->setVisible(true);
+    hkgBrakingButton->setEnabled(hkgtuningToggle->isChecked());
+  } else if (params.getBool(hkgtuningToggle->key)) {
+    params.putBool(hkgtuningToggle->key, false);
+  }
 }

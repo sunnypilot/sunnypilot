@@ -44,6 +44,8 @@ def manager_init() -> None:
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
     ("DynamicExperimentalControl", "0"),
+    ("HKGtuning", "0"),
+    ("HKGBraking", "0"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsPauseLateralOnBrake", "0"),
