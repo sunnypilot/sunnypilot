@@ -140,16 +140,24 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Toyota: Auto Brake Hold</source>
+        <source>Enable ADB</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Toyota: Enhanced BSM</source>
+        <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Toyota: custom tune</source>
-        <translation type="unfinished"></translation>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation type="unfinished">التحكم الطولي openpilot (ألفا)</translation>
+    </message>
+    <message>
+        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="unfinished">تحذير: التحكم الطولي في openpilot في المرحلة ألفا لهذه السيارة، وسيقوم بتعطيل مكابح الطوارئ الآلية (AEB).</translation>
+    </message>
+    <message>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation type="unfinished">في هذه السيارة يعمل openpilot افتراضياً بالشكل المدمج في التحكم التكيفي في السرعة بدلاً من التحكم الطولي. قم بتمكين هذا الخيار من أجل الانتقال إلى التحكم الطولي. يوصى بتمكين الوضع التجريبي عند استخدام وضع التحكم الطولي ألفا من openpilot.</translation>
     </message>
 </context>
 <context>
@@ -925,6 +933,10 @@ This may take up to a minute.</source>
         <source>Trips</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Vehicle</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
@@ -1471,15 +1483,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>التحكم الطولي openpilot (ألفا)</translation>
+        <translation type="vanished">التحكم الطولي openpilot (ألفا)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>تحذير: التحكم الطولي في openpilot في المرحلة ألفا لهذه السيارة، وسيقوم بتعطيل مكابح الطوارئ الآلية (AEB).</translation>
+        <translation type="vanished">تحذير: التحكم الطولي في openpilot في المرحلة ألفا لهذه السيارة، وسيقوم بتعطيل مكابح الطوارئ الآلية (AEB).</translation>
     </message>
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>في هذه السيارة يعمل openpilot افتراضياً بالشكل المدمج في التحكم التكيفي في السرعة بدلاً من التحكم الطولي. قم بتمكين هذا الخيار من أجل الانتقال إلى التحكم الطولي. يوصى بتمكين الوضع التجريبي عند استخدام وضع التحكم الطولي ألفا من openpilot.</translation>
+        <translation type="vanished">في هذه السيارة يعمل openpilot افتراضياً بالشكل المدمج في التحكم التكيفي في السرعة بدلاً من التحكم الطولي. قم بتمكين هذا الخيار من أجل الانتقال إلى التحكم الطولي. يوصى بتمكين الوضع التجريبي عند استخدام وضع التحكم الطولي ألفا من openpilot.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
@@ -1596,6 +1608,38 @@ This may take up to a minute.</source>
     <message>
         <source>Sunnypilot will link the Acceleration Personality to the car&apos;s physical drive mode selector.
 Reboot Required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Very fast prius</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When prius goes faster then sunnys car :) vroom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: Auto Brake Hold</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>umm auto brake hold?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: Enhanced BSM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>like blind spot monitoring but better?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: custom tune</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>idk something gas and brake</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

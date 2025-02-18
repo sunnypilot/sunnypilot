@@ -140,16 +140,24 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Toyota: Auto Brake Hold</source>
+        <source>Enable ADB</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Toyota: Enhanced BSM</source>
+        <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Toyota: custom tune</source>
-        <translation type="unfinished"></translation>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation type="unfinished">openpilot 가감속 제어 (알파)</translation>
+    </message>
+    <message>
+        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="unfinished">경고: openpilot 가감속 제어 알파 기능으로 차량의 자동긴급제동(AEB)을 비활성화합니다.</translation>
+    </message>
+    <message>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation type="unfinished">이 차량은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot의 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파를 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
     </message>
 </context>
 <context>
@@ -905,6 +913,10 @@ This may take up to a minute.</source>
         <source>Trips</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Vehicle</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
@@ -1475,15 +1487,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>openpilot 가감속 제어 (알파)</translation>
+        <translation type="vanished">openpilot 가감속 제어 (알파)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>경고: openpilot 가감속 제어 알파 기능으로 차량의 자동긴급제동(AEB)을 비활성화합니다.</translation>
+        <translation type="vanished">경고: openpilot 가감속 제어 알파 기능으로 차량의 자동긴급제동(AEB)을 비활성화합니다.</translation>
     </message>
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>이 차량은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot의 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파를 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
+        <translation type="vanished">이 차량은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot의 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파를 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
     </message>
     <message>
         <source>Aggressive</source>
@@ -1576,6 +1588,38 @@ This may take up to a minute.</source>
     <message>
         <source>Sunnypilot will link the Acceleration Personality to the car&apos;s physical drive mode selector.
 Reboot Required.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Very fast prius</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When prius goes faster then sunnys car :) vroom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: Auto Brake Hold</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>umm auto brake hold?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: Enhanced BSM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>like blind spot monitoring but better?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toyota: custom tune</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>idk something gas and brake</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

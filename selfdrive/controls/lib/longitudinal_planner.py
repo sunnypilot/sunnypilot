@@ -161,18 +161,17 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     # override accel using Accel Controller
     if self.accel_controller.is_enabled:
       # get min, max from accel controller
-      min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_limits)
+      min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_clip)
       #print(f"Accel limits from controller: min_limit={min_limit}, max_limit={max_limit}")
     if self.mpc.mode == 'acc':
       # VOACC car, just give it max min (-1.2) so I can brake harder
-      accel_limits = [A_CRUISE_MIN, max_limit] if self.CP.radarUnavailable else [min_limit, max_limit]
+      accel_clip = [ACCEL_MIN, max_limit] if self.CP.radarUnavailable else [min_limit, max_limit]
       # recalculate limit turn according to the new min, max
       steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
-      accel_limits_turns = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_limits, self.CP)
+      accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
     else:
       # blended, just give it max min (-3.5) and max from accel controller
-      accel_limits = [ACCEL_MIN, ACCEL_MAX]
-      accel_limits_turns = [ACCEL_MIN, ACCEL_MAX]
+      accel_clip = [ACCEL_MIN, ACCEL_MAX]
 
     if reset_state:
       self.v_desired_filter.x = v_ego
@@ -197,7 +196,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    print("Fast take off status:", self.fast_take_off)
+    #print("Fast take off status:", self.fast_take_off)
     self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality, fast_take_off=self.fast_take_off)
 
 
