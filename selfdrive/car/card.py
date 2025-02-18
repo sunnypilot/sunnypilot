@@ -121,9 +121,13 @@ class Car:
 
     # set alternative experiences from parameters
     disengage_on_accelerator = self.params.get_bool("DisengageOnAccelerator")
+    sp_toyota_auto_brake_hold = self.params.get_bool("ToyotaAutoHold")
     self.CP.alternativeExperience = 0
     if not disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
+    if sp_toyota_auto_brake_hold:
+      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALLOW_AEB
+
 
     # mads
     MadsParams().set_alternative_experience(self.CP)

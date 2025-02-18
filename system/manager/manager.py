@@ -49,7 +49,11 @@ def manager_init() -> None:
     ("MadsPauseLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("ModelManager_LastSyncTime", "0"),
-    ("ModelManager_ModelsCache", "")
+    ("ModelManager_ModelsCache", ""),
+
+    ("ToyotaAutoHold", "0"),
+    ("ToyotaEnhancedBsm", "0"),
+    ("ToyotaTSS2Long", "0"),
   ]
 
   if params.get_bool("RecordFrontLock"):
