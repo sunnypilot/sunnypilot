@@ -23,10 +23,11 @@ private:
   void update_leads(const cereal::RadarState::Reader &radar_state, const cereal::XYZTData::Reader &line);
   void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead);
   void drawLaneLines(QPainter &painter);
-  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height);
+  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height, int width);
   void updatePathGradient(QLinearGradient &bg);
   QColor blendColors(const QColor &start, const QColor &end, float t);
-
+  void LongFuel(QPainter &p, int height, int width);
+  void LateralFuel(QPainter &p, int height, int width);
   bool longitudinal_control = false;
   bool experimental_mode = false;
   float blend_factor = 1.0f;
