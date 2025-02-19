@@ -158,23 +158,26 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     else:
       accel_clip = [ACCEL_MIN, ACCEL_MAX]
 
-    # override accel using Accel Controller
+    # Override accel using Accel Controller if enabled
     if self.accel_controller.is_enabled:
-      # get min, max from accel controller
       min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_clip)
-      print(f"Accel Controller: min_limit={min_limit:.2f}, max_limit={max_limit:.2f}")
+      #TODO: If allow_throttle is causing issues, make sure it allows braking
+      #if not self.allow_throttle:
+      #  min_limit = min(min_limit, -3.5)  # Ensure braking is allowed if needed
+      #print(f"allow_throttle={self.allow_throttle}, min_limit before={min_limit:.2f}")
 
-    if self.mpc.mode == 'acc':
-      # Use the accel controller limits directly
-      accel_clip = [min_limit, max_limit]
-      # recalculate limit turn according to the new min, max
-      steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
-      accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
-      print(f"ACC Mode Final: v_ego={v_ego:.2f}, accel_clip={accel_clip}")
+      print(f"Accel Controller: min_limit={min_limit:.2f}, max_limit={max_limit:.2f}")
+      if self.mpc.mode == 'acc':
+        # Use the accel controller limits directly
+        accel_clip = [min_limit, max_limit]
+        # Recalculate limit turn according to the new min, max
+        steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
+        accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
+        print(f"ACC Mode Final: v_ego={v_ego:.2f}, accel_clip={accel_clip}")
+      else:
+        print(f"Blended Mode (Accel Controller Enabled): accel_clip={accel_clip}")
     else:
-      # blended, just give it max min (-3.5) and max from accel controller
-      accel_clip = [ACCEL_MIN, ACCEL_MAX]
-      print(f"Blended Mode: accel_clip={accel_clip}")
+      print(f"Accel Controller Disabled: accel_clip={accel_clip}")
 
     if reset_state:
       self.v_desired_filter.x = v_ego
