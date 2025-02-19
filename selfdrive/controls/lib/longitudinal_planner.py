@@ -162,9 +162,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if self.accel_controller.is_enabled:
       min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_clip)
       #TODO: If allow_throttle is causing issues, make sure it allows braking
-      #if not self.allow_throttle:
-      #  min_limit = min(min_limit, -3.5)  # Ensure braking is allowed if needed
-      #print(f"allow_throttle={self.allow_throttle}, min_limit before={min_limit:.2f}")
+      if not self.allow_throttle:
+        min_limit = min(min_limit, -3.5)  # Ensure braking is allowed if needed
+      print(f"allow_throttle={self.allow_throttle}, min_limit before={min_limit:.2f}")
 
       print(f"Accel Controller: min_limit={min_limit:.2f}, max_limit={max_limit:.2f}")
       if self.mpc.mode == 'acc':
