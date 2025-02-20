@@ -160,17 +160,23 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     # Override accel using Accel Controller if enabled
     if self.accel_controller.is_enabled:
-      min_limit, max_limit = self.accel_controller.get_accel_limits(v_ego, accel_clip)
-      #TODO: If allow_throttle is causing issues, make sure it allows braking
-      #if not self.allow_throttle:
-      #min_limit = min(min_limit, -3.5)  # Ensure braking is allowed if needed
-      #print(f"allow_throttle={self.allow_throttle}, min_limit before={min_limit:.2f}")
+      max_limit = self.accel_controller.get_accel_limits(v_ego, accel_clip)
 
-      print(f"Accel Controller: min_limit={min_limit:.2f}, max_limit={max_limit:.2f}")
+      # Ensure max_limit is a single float value
+      if isinstance(max_limit, list):
+        max_limit = max_limit[1]
+
+      # If needed, ensure braking is allowed
+      # if not self.allow_throttle:
+      #     max_limit = min(max_limit, -3.5)  # Ensure braking is allowed if needed
+      #     print(f"allow_throttle={self.allow_throttle}, max_limit before={max_limit:.2f}")
+
+      print(f"Accel Controller: max_limit={max_limit:.2f}")
+
       if self.mpc.mode == 'acc':
         # Use the accel controller limits directly
         accel_clip = [ACCEL_MIN, max_limit]
-        # Recalculate limit turn according to the new min, max
+        # Recalculate limit turn according to the new max limit
         steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
         accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
         print(f"ACC Mode Final: v_ego={v_ego:.2f}, accel_clip={accel_clip}")
@@ -178,6 +184,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
         print(f"Blended Mode (Accel Controller Enabled): accel_clip={accel_clip}")
     else:
       print(f"Accel Controller Disabled: accel_clip={accel_clip}")
+
+
 
     if reset_state:
       self.v_desired_filter.x = v_ego

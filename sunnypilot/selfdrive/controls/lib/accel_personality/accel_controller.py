@@ -1,6 +1,6 @@
 # The MIT License
 #
-# Copyright (c) 2019-, Rick Lan, dragonpilot community, and a number of other of contributors.
+# Copyright (c) 2019-, Rick Lan, dragonpilot community, and a number of other contributors.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Last updated: August 12, 2024
+# Last updated: February 20, 2025
 from cereal import custom
 from openpilot.common.numpy_fast import interp
 from openpilot.common.realtime import DT_MDL
@@ -58,23 +58,30 @@ class AccelController:
   def _dp_calc_cruise_accel_limits(self, v_ego: float) -> tuple[float, float]:
     self._read_params()  # Ensure personality updates
 
-    if self._personality == AccelPersonality.eco:
-      min_v = _DP_CRUISE_MIN_V_ECO
-      max_v = _DP_CRUISE_MAX_V_ECO
-      #print("ECO")
-    elif self._personality == AccelPersonality.sport:
-      min_v = _DP_CRUISE_MIN_V_SPORT
-      max_v = _DP_CRUISE_MAX_V_SPORT
-      #print("SPORT")
-    else:
-      min_v = _DP_CRUISE_MIN_V_NORMAL
-      max_v = _DP_CRUISE_MAX_V_NORMAL
-      #print("NORMAL")
+    # if self._personality == AccelPersonality.eco:
+    #     min_v = _DP_CRUISE_MIN_V_ECO
+    #     max_v = _DP_CRUISE_MAX_V_ECO
+    # elif self._personality == AccelPersonality.sport:
+    #     min_v = _DP_CRUISE_MIN_V_SPORT
+    #     max_v = _DP_CRUISE_MAX_V_SPORT
+    # else:
+    #     min_v = _DP_CRUISE_MIN_V_NORMAL
+    #     max_v = _DP_CRUISE_MAX_V_NORMAL
 
-    a_cruise_min = interp(v_ego, _DP_CRUISE_MIN_BP, min_v)
+    if self._personality == AccelPersonality.eco:
+      max_v = _DP_CRUISE_MAX_V_ECO
+      print("eco")
+    elif self._personality == AccelPersonality.sport:
+      max_v = _DP_CRUISE_MAX_V_SPORT
+      print("sport")
+    else:
+      max_v = _DP_CRUISE_MAX_V_NORMAL
+      print("normal")
+
+    # a_cruise_min = interp(v_ego, _DP_CRUISE_MIN_BP, min_v)
     a_cruise_max = interp(v_ego, _DP_CRUISE_MAX_BP, max_v)
 
-    return a_cruise_min, a_cruise_max
+    return a_cruise_max
 
   def get_accel_limits(self, v_ego: float, accel_limits: list[float]) -> tuple[float, float]:
     self._read_params()
