@@ -114,6 +114,37 @@
     </message>
 </context>
 <context>
+    <name>DeveloperPanel</name>
+    <message>
+        <source>Joystick Debug Mode</source>
+        <translation>Modo Joystick Debug</translation>
+    </message>
+    <message>
+        <source>Longitudinal Maneuver Mode</source>
+        <translation>Modo Longitudinal Maneuver</translation>
+    </message>
+    <message>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation>Controle Longitudinal openpilot (Embrionário)</translation>
+    </message>
+    <message>
+        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation>AVISO: o controle longitudinal openpilot está em estado embrionário para este carro e desativará a Frenagem Automática de Emergência (AEB).</translation>
+    </message>
+    <message>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation>Neste carro, o openpilot tem como padrão o ACC embutido do carro em vez do controle longitudinal do openpilot. Habilite isso para alternar para o controle longitudinal openpilot. Recomenda-se ativar o modo Experimental ao ativar o embrionário controle longitudinal openpilot.</translation>
+    </message>
+    <message>
+        <source>Enable ADB</source>
+        <translation>Habilitar ADB</translation>
+    </message>
+    <message>
+        <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
+        <translation>ADB (Android Debug Bridge) permite conectar ao seu dispositivo por meio do USB ou através da rede. Veja https://docs.comma.ai/how-to/connect-to-comma para maiores informações.</translation>
+    </message>
+</context>
+<context>
     <name>DevicePanel</name>
     <message>
         <source>Dongle ID</source>
@@ -445,6 +476,10 @@
         <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
         <translation>Salve connect.comma.ai como sua página inicial para utilizar como um app</translation>
     </message>
+    <message>
+        <source>Please connect to Wi-Fi to complete initial pairing</source>
+        <translation>Por favor conecte ao Wi-Fi para completar o pareamento inicial</translation>
+    </message>
 </context>
 <context>
     <name>ParamControl</name>
@@ -601,6 +636,10 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>Software</source>
         <translation>Software</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation>Desenvdor</translation>
     </message>
 </context>
 <context>
@@ -995,18 +1034,6 @@ Isso pode levar até um minuto.</translation>
         <translation>O controle longitudinal openpilot poderá vir em uma atualização futura.</translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>Controle Longitudinal openpilot (Embrionário)</translation>
-    </message>
-    <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>AVISO: o controle longitudinal openpilot está em estado embrionário para este carro e desativará a Frenagem Automática de Emergência (AEB).</translation>
-    </message>
-    <message>
-        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>Neste carro, o openpilot tem como padrão o ACC embutido do carro em vez do controle longitudinal do openpilot. Habilite isso para alternar para o controle longitudinal openpilot. Recomenda-se ativar o modo Experimental ao ativar o embrionário controle longitudinal openpilot.</translation>
-    </message>
-    <message>
         <source>Aggressive</source>
         <translation>Disputa</translation>
     </message>
@@ -1049,6 +1076,14 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
         <translation>Habilite o monitoramento do motorista mesmo quando o openpilot não estiver acionado.</translation>
+    </message>
+    <message>
+        <source>FIREHOSE Mode</source>
+        <translation>Modo FIREHOSE</translation>
+    </message>
+    <message>
+        <source>Enable &lt;b&gt;FIREHOSE Mode&lt;/b&gt; to get your driving data in the training set.&lt;br&gt;&lt;br&gt;Follow these steps to get your device ready:&lt;br&gt;  1. Bring your device inside and connect to a good USB-C adapter&lt;br&gt;  2. Connect to Wi-Fi&lt;br&gt;  3. Enable this toggle&lt;br&gt;  4. Leave it connected for at least 30 minutes&lt;br&gt;&lt;br&gt;This toggle turns off once you restart your device. Repeat once a week for maximum effectiveness.</source>
+        <translation>Habilite o &lt;b&gt;Modo FIREHOSE&lt;/b&gt; para obter seus dados de direção no conjunto de treinamento.&lt;br&gt;&lt;br&gt;Siga estas etapas para preparar seu dispositivo:&lt;br&gt;  1. Leve seu dispositivo para dentro e conecte-o a um bom adaptador USB-C&lt;br&gt;  2. Conecte-se ao Wi-Fi&lt;br&gt;  3. Habilite este toggle&lt;br&gt;  4. Deixe-o conectado por pelo menos 30 minutos.&lt;br&gt;&lt;br&gt;Este botão desativa após reiniciar o dispositivo. Repita uma vez por semana para obter a máxima eficácia.</translation>
     </message>
 </context>
 <context>

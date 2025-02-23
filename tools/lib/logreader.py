@@ -21,6 +21,7 @@ from openpilot.tools.lib.comma_car_segments import get_url as get_comma_segments
 from openpilot.tools.lib.openpilotci import get_url
 from openpilot.tools.lib.filereader import FileReader, file_exists, internal_source_available
 from openpilot.tools.lib.route import Route, SegmentRange
+from openpilot.tools.lib.log_time_series import msgs_to_time_series
 
 LogMessage = type[capnp._DynamicStructReader]
 LogIterable = Iterable[LogMessage]
@@ -38,6 +39,14 @@ def save_log(dest, log_msgs, compress=True):
   with open(dest, "wb") as f:
     f.write(dat)
 
+def decompress_stream(data: bytes):
+  dctx = zstd.ZstdDecompressor()
+  decompressed_data = b""
+
+  with dctx.stream_reader(data) as reader:
+    decompressed_data = reader.read()
+
+  return decompressed_data
 
 class _LogFileReader:
   def __init__(self, fn, canonicalize=True, only_union_types=False, sort_by_time=False, dat=None):
@@ -49,7 +58,7 @@ class _LogFileReader:
       _, ext = os.path.splitext(urllib.parse.urlparse(fn).path)
       if ext not in ('', '.bz2', '.zst'):
         # old rlogs weren't compressed
-        raise Exception(f"unknown extension {ext}")
+        raise ValueError(f"unknown extension {ext}")
 
       with FileReader(fn) as f:
         dat = f.read()
@@ -58,7 +67,7 @@ class _LogFileReader:
       dat = bz2.decompress(dat)
     elif ext == ".zst" or dat.startswith(b'\x28\xB5\x2F\xFD'):
       # https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md#zstandard-frames
-      dat = zstd.decompress(dat)
+      dat = decompress_stream(dat)
 
     ents = capnp_log.Event.read_multiple_bytes(dat)
 
@@ -99,6 +108,10 @@ Source = Callable[[SegmentRange, ReadMode], list[LogPath]]
 InternalUnavailableException = Exception("Internal source not available")
 
 
+class LogsUnavailable(Exception):
+  pass
+
+
 @cache
 def default_valid_file(fn: LogPath) -> bool:
   return fn is not None and file_exists(fn)
@@ -128,7 +141,7 @@ def apply_strategy(mode: ReadMode, rlog_paths: list[LogPath], qlog_paths: list[L
     return auto_strategy(rlog_paths, qlog_paths, False, valid_file)
   elif mode == ReadMode.AUTO_INTERACTIVE:
     return auto_strategy(rlog_paths, qlog_paths, True, valid_file)
-  raise Exception(f"invalid mode: {mode}")
+  raise ValueError(f"invalid mode: {mode}")
 
 
 def comma_api_source(sr: SegmentRange, mode: ReadMode) -> list[LogPath]:
@@ -224,8 +237,8 @@ def auto_source(sr: SegmentRange, mode=ReadMode.RLOG, sources: list[Source] = No
     except Exception as e:
       exceptions[source.__name__] = e
 
-  raise Exception("auto_source could not find any valid source, exceptions for sources:\n  - " +
-                  "\n  - ".join([f"{k}: {repr(v)}" for k, v in exceptions.items()]))
+  raise LogsUnavailable("auto_source could not find any valid source, exceptions for sources:\n  - " +
+                        "\n  - ".join([f"{k}: {repr(v)}" for k, v in exceptions.items()]))
 
 
 def parse_indirect(identifier: str) -> str:
@@ -310,6 +323,9 @@ class LogReader:
   def first(self, msg_type: str):
     return next(self.filter(msg_type), None)
 
+  @property
+  def time_series(self):
+    return msgs_to_time_series(self)
 
 if __name__ == "__main__":
   import codecs

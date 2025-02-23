@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 import math
+import numpy as np
 
 from cereal import messaging, car
-from openpilot.common.numpy_fast import clip
 from openpilot.common.realtime import DT_CTRL, Ratekeeper
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 
+LongCtrlState = car.CarControl.Actuators.LongControlState
 MAX_LAT_ACCEL = 2.5
 
 
@@ -31,6 +32,8 @@ def joystickd_thread():
     CC.enabled = sm['selfdriveState'].enabled
     CC.latActive = sm['selfdriveState'].active and not sm['carState'].steerFaultTemporary and not sm['carState'].steerFaultPermanent
     CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in sm['onroadEvents']) and CP.openpilotLongitudinalControl
+    CC.cruiseControl.cancel = sm['carState'].cruiseState.enabled and (not CC.enabled or not CP.pcmCruise)
+    CC.hudControl.leadDistanceBars = 2
 
     actuators = CC.actuators
 
@@ -43,13 +46,14 @@ def joystickd_thread():
       joystick_axes = [0.0, 0.0]
 
     if CC.longActive:
-      actuators.accel = 4.0 * clip(joystick_axes[0], -1, 1)
+      actuators.accel = 4.0 * float(np.clip(joystick_axes[0], -1, 1))
+      actuators.longControlState = LongCtrlState.pid if sm['carState'].vEgo > CP.vEgoStopping else LongCtrlState.stopping
 
     if CC.latActive:
       max_curvature = MAX_LAT_ACCEL / max(sm['carState'].vEgo ** 2, 5)
       max_angle = math.degrees(VM.get_steer_from_curvature(max_curvature, sm['carState'].vEgo, sm['liveParameters'].roll))
 
-      actuators.steer = clip(joystick_axes[1], -1, 1)
+      actuators.steer = float(np.clip(joystick_axes[1], -1, 1))
       actuators.steeringAngleDeg, actuators.curvature = actuators.steer * max_angle, actuators.steer * -max_curvature
 
     pm.send('carControl', cc_msg)
@@ -58,6 +62,11 @@ def joystickd_thread():
     cs_msg.valid = True
     controlsState = cs_msg.controlsState
     controlsState.lateralControlState.init('debugState')
+
+    lp = sm['liveParameters']
+    steer_angle_without_offset = math.radians(sm['carState'].steeringAngleDeg - lp.angleOffsetDeg)
+    controlsState.curvature = -VM.calc_curvature(steer_angle_without_offset, sm['carState'].vEgo, lp.roll)
+
     pm.send('controlsState', cs_msg)
 
     rk.keep_time()

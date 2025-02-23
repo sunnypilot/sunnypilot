@@ -51,7 +51,7 @@ MainWindow::MainWindow(AbstractStream *stream, const QString &dbc_file) : QMainW
     emit static_main_win->updateProgressBar(cur, total, success);
   });
   qInstallMessageHandler([](QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    if (type == QtDebugMsg) std::cout << msg.toStdString() << std::endl;
+    if (type == QtDebugMsg) return;
     emit static_main_win->showMessage(msg, 2000);
   });
   installMessageHandler([](ReplyMsgType type, const std::string msg) { qInfo() << msg.c_str(); });
@@ -191,6 +191,7 @@ void MainWindow::createDockWidgets() {
   video_splitter->handle(1)->setEnabled(!can->liveStreaming());
   video_dock->setWidget(video_splitter);
   QObject::connect(charts_widget, &ChartsWidget::toggleChartsDocking, this, &MainWindow::toggleChartsDocking);
+  QObject::connect(charts_widget, &ChartsWidget::showTip, video_widget, &VideoWidget::showThumbnail);
 }
 
 void MainWindow::createStatusBar() {
@@ -558,7 +559,9 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   if (can && !can->liveStreaming()) {
     settings.video_splitter_state = video_splitter->saveState();
   }
-  settings.message_header_state = messages_widget->saveHeaderState();
+  if (messages_widget) {
+    settings.message_header_state = messages_widget->saveHeaderState();
+  }
 
   QWidget::closeEvent(event);
 }

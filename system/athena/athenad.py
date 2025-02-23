@@ -14,7 +14,6 @@ import sys
 import tempfile
 import threading
 import time
-import zstandard as zstd
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from functools import partial
@@ -31,11 +30,10 @@ import cereal.messaging as messaging
 from cereal import log
 from cereal.services import SERVICE_LIST
 from openpilot.common.api import Api
-from openpilot.common.file_helpers import CallbackReader
+from openpilot.common.file_helpers import CallbackReader, get_upload_stream
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.system.hardware import HARDWARE, PC
-from openpilot.system.loggerd.uploader import LOG_COMPRESSION_LEVEL
 from openpilot.system.loggerd.xattr_cache import getxattr, setxattr
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.version import get_build_metadata
@@ -44,7 +42,7 @@ from openpilot.system.hardware.hw import Paths
 
 ATHENA_HOST = os.getenv('ATHENA_HOST', 'wss://athena.comma.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
-LOCAL_PORT_WHITELIST = {8022}
+LOCAL_PORT_WHITELIST = {22, }  # SSH
 
 LOG_ATTR_NAME = 'user.upload'
 LOG_ATTR_VALUE_MAX_UNIX_TIME = int.to_bytes(2147483647, 4, sys.byteorder)
@@ -54,6 +52,7 @@ RETRY_DELAY = 10  # seconds
 MAX_RETRY_COUNT = 30  # Try for at most 5 minutes if upload fails immediately
 MAX_AGE = 31 * 24 * 3600  # seconds
 WS_FRAME_SIZE = 4096
+DEVICE_STATE_UPDATE_INTERVAL = 1.0  # in seconds
 
 NetworkType = log.DeviceState.NetworkType
 
@@ -144,6 +143,9 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
     threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
     threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
     threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
+    threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler2'),
+    threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler3'),
+    threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler4'),
     threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
     threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
   ] + [
@@ -211,10 +213,11 @@ def retry_upload(tid: int, end_event: threading.Event, increase_count: bool = Tr
 def cb(sm, item, tid, end_event: threading.Event, sz: int, cur: int) -> None:
   # Abort transfer if connection changed to metered after starting upload
   # or if athenad is shutting down to re-connect the websocket
-  sm.update(0)
-  metered = sm['deviceState'].networkMetered
-  if metered and (not item.allow_cellular):
-    raise AbortTransferException
+  if not item.allow_cellular:
+    if (time.monotonic() - sm.recv_time['deviceState']) > DEVICE_STATE_UPDATE_INTERVAL:
+      sm.update(0)
+      if sm['deviceState'].networkMetered:
+        raise AbortTransferException
 
   if end_event.is_set():
     raise AbortTransferException
@@ -258,13 +261,13 @@ def upload_handler(end_event: threading.Event) -> None:
           sz = -1
 
         cloudlog.event("athena.upload_handler.upload_start", fn=fn, sz=sz, network_type=network_type, metered=metered, retry_count=item.retry_count)
-        response = _do_upload(item, partial(cb, sm, item, tid, end_event))
 
-        if response.status_code not in (200, 201, 401, 403, 412):
-          cloudlog.event("athena.upload_handler.retry", status_code=response.status_code, fn=fn, sz=sz, network_type=network_type, metered=metered)
-          retry_upload(tid, end_event)
-        else:
-          cloudlog.event("athena.upload_handler.success", fn=fn, sz=sz, network_type=network_type, metered=metered)
+        with _do_upload(item, partial(cb, sm, item, tid, end_event)) as response:
+          if response.status_code not in (200, 201, 401, 403, 412):
+            cloudlog.event("athena.upload_handler.retry", status_code=response.status_code, fn=fn, sz=sz, network_type=network_type, metered=metered)
+            retry_upload(tid, end_event)
+          else:
+            cloudlog.event("athena.upload_handler.success", fn=fn, sz=sz, network_type=network_type, metered=metered)
 
         UploadQueueCache.cache(upload_queue)
       except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.SSLError):
@@ -289,17 +292,17 @@ def _do_upload(upload_item: UploadItem, callback: Callable = None) -> requests.R
     path = strip_zst_extension(path)
     compress = True
 
-  with open(path, "rb") as f:
-    content = f.read()
-    if compress:
-      cloudlog.event("athena.upload_handler.compress", fn=path, fn_orig=upload_item.path)
-      content = zstd.compress(content, LOG_COMPRESSION_LEVEL)
-
-  with io.BytesIO(content) as data:
-    return requests.put(upload_item.url,
-                        data=CallbackReader(data, callback, len(content)) if callback else data,
-                        headers={**upload_item.headers, 'Content-Length': str(len(content))},
-                        timeout=30)
+  stream = None
+  try:
+    stream, content_length = get_upload_stream(path, compress)
+    response = requests.put(upload_item.url,
+                            data=CallbackReader(stream, callback, content_length) if callback else stream,
+                            headers={**upload_item.headers, 'Content-Length': str(content_length)},
+                            timeout=30)
+    return response
+  finally:
+    if stream:
+      stream.close()
 
 
 # security: user should be able to request any message from their car
@@ -309,13 +312,16 @@ def getMessage(service: str, timeout: int = 1000) -> dict:
     raise Exception("invalid service")
 
   socket = messaging.sub_sock(service, timeout=timeout)
-  ret = messaging.recv_one(socket)
+  try:
+    ret = messaging.recv_one(socket)
 
-  if ret is None:
-    raise TimeoutError
+    if ret is None:
+      raise TimeoutError
 
-  # this is because capnp._DynamicStructReader doesn't have typing information
-  return cast(dict, ret.to_dict())
+    # this is because capnp._DynamicStructReader doesn't have typing information
+    return cast(dict, ret.to_dict())
+  finally:
+    del socket
 
 
 @dispatcher.add_method
@@ -445,6 +451,10 @@ def setRouteViewed(route: str) -> dict[str, int | str]:
 
 def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
   try:
+    # migration, can be removed once 0.9.8 is out for a while
+    if local_port == 8022:
+      local_port = 22
+
     if local_port not in LOCAL_PORT_WHITELIST:
       raise Exception("Requested local port not whitelisted")
 
@@ -498,6 +508,9 @@ def getSshAuthorizedKeys() -> str:
 def getGithubUsername() -> str:
   return Params().get("GithubUsername", encoding='utf8') or ''
 
+@dispatcher.add_method
+def getFirehoseMode() -> bool:
+  return Params().get_bool("FirehoseMode") or False
 
 @dispatcher.add_method
 def getSimInfo():
@@ -622,8 +635,9 @@ def log_handler(end_event: threading.Event) -> None:
 
 def stat_handler(end_event: threading.Event) -> None:
   STATS_DIR = Paths.stats_root()
+  last_scan = 0.0
+
   while not end_event.is_set():
-    last_scan = 0.
     curr_scan = time.monotonic()
     try:
       if curr_scan - last_scan > 10:
@@ -797,6 +811,8 @@ def main(exit_event: threading.Event = None):
       cur_upload_items.clear()
 
       handle_long_poll(ws, exit_event)
+
+      ws.close()
     except (KeyboardInterrupt, SystemExit):
       break
     except (ConnectionError, TimeoutError, WebSocketException):

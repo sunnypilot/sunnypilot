@@ -49,10 +49,6 @@ AddOption('--ccflags',
           default='',
           help='pass arbitrary flags over the command line')
 
-AddOption('--snpe',
-          action='store_true',
-          help='use SNPE on PC')
-
 AddOption('--external-sconscript',
           action='store',
           metavar='FILE',
@@ -63,6 +59,10 @@ AddOption('--pc-thneed',
           action='store_true',
           dest='pc_thneed',
           help='use thneed on pc')
+
+AddOption('--mutation',
+          action='store_true',
+          help='generate mutation-ready code')
 
 AddOption('--minimal',
           action='store_false',
@@ -107,7 +107,6 @@ if arch == "larch64":
   ]
 
   libpath += [
-    "#third_party/snpe/larch64",
     "#third_party/libyuv/larch64/lib",
     "/usr/lib/aarch64-linux-gnu"
   ]
@@ -145,14 +144,6 @@ else:
       "/usr/lib",
       "/usr/local/lib",
     ]
-
-    if arch == "x86_64":
-      libpath += [
-        f"#third_party/snpe/{arch}"
-      ]
-      rpath += [
-        Dir(f"#third_party/snpe/{arch}").abspath,
-      ]
 
 if GetOption('asan'):
   ccflags = ["-fsanitize=address", "-fno-omit-frame-pointer"]
@@ -197,7 +188,6 @@ env = Environment(
     "#third_party/libyuv/include",
     "#third_party/json11",
     "#third_party/linux/include",
-    "#third_party/snpe/include",
     "#third_party",
     "#msgq",
   ],
@@ -345,12 +335,12 @@ Export('common', 'gpucommon')
 env_swaglog = env.Clone()
 env_swaglog['CXXFLAGS'].append('-DSWAGLOG="\\"common/swaglog.h\\""')
 SConscript(['msgq_repo/SConscript'], exports={'env': env_swaglog})
-SConscript(['opendbc/can/SConscript'], exports={'env': env_swaglog})
+SConscript(['opendbc_repo/SConscript'], exports={'env': env_swaglog})
 
 SConscript(['cereal/SConscript'])
 
 Import('socketmaster', 'msgq')
-messaging = [socketmaster, msgq, 'zmq', 'capnp', 'kj',]
+messaging = [socketmaster, msgq, 'capnp', 'kj',]
 Export('messaging')
 
 

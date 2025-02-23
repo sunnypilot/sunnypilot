@@ -17,6 +17,119 @@ struct Map(Key, Value) {
   }
 }
 
+struct OnroadEvent @0xc4fa6047f024e718 {
+  name @0 :EventName;
+
+  # event types
+  enable @1 :Bool;
+  noEntry @2 :Bool;
+  warning @3 :Bool;   # alerts presented only when  enabled or soft disabling
+  userDisable @4 :Bool;
+  softDisable @5 :Bool;
+  immediateDisable @6 :Bool;
+  preEnable @7 :Bool;
+  permanent @8 :Bool; # alerts presented regardless of openpilot state
+  overrideLateral @10 :Bool;
+  overrideLongitudinal @9 :Bool;
+
+  enum EventName @0x91f1992a1f77fb03 {
+    canError @0;
+    steerUnavailable @1;
+    wrongGear @2;
+    doorOpen @3;
+    seatbeltNotLatched @4;
+    espDisabled @5;
+    wrongCarMode @6;
+    steerTempUnavailable @7;
+    reverseGear @8;
+    buttonCancel @9;
+    buttonEnable @10;
+    pedalPressed @11;  # exits active state
+    preEnableStandstill @12;  # added during pre-enable state with brake
+    gasPressedOverride @13;  # added when user is pressing gas with no disengage on gas
+    steerOverride @14;
+    cruiseDisabled @15;
+    speedTooLow @16;
+    outOfSpace @17;
+    overheat @18;
+    calibrationIncomplete @19;
+    calibrationInvalid @20;
+    calibrationRecalibrating @21;
+    controlsMismatch @22;
+    pcmEnable @23;
+    pcmDisable @24;
+    radarFault @25;
+    brakeHold @26;
+    parkBrake @27;
+    manualRestart @28;
+    joystickDebug @29;
+    longitudinalManeuver @30;
+    steerTempUnavailableSilent @31;
+    resumeRequired @32;
+    preDriverDistracted @33;
+    promptDriverDistracted @34;
+    driverDistracted @35;
+    preDriverUnresponsive @36;
+    promptDriverUnresponsive @37;
+    driverUnresponsive @38;
+    belowSteerSpeed @39;
+    lowBattery @40;
+    accFaulted @41;
+    sensorDataInvalid @42;
+    commIssue @43;
+    commIssueAvgFreq @44;
+    tooDistracted @45;
+    posenetInvalid @46;
+    preLaneChangeLeft @48;
+    preLaneChangeRight @49;
+    laneChange @50;
+    lowMemory @51;
+    stockAeb @52;
+    ldw @53;
+    carUnrecognized @54;
+    invalidLkasSetting @55;
+    speedTooHigh @56;
+    laneChangeBlocked @57;
+    relayMalfunction @58;
+    stockFcw @59;
+    startup @60;
+    startupNoCar @61;
+    startupNoControl @62;
+    startupNoSecOcKey @63;
+    startupMaster @64;
+    fcw @65;
+    steerSaturated @66;
+    belowEngageSpeed @67;
+    noGps @68;
+    wrongCruiseMode @69;
+    modeldLagging @70;
+    deviceFalling @71;
+    fanMalfunction @72;
+    cameraMalfunction @73;
+    cameraFrameRate @74;
+    processNotRunning @75;
+    dashcamMode @76;
+    selfdriveInitializing @77;
+    usbError @78;
+    cruiseMismatch @79;
+    canBusMissing @80;
+    selfdrivedLagging @81;
+    resumeBlocked @82;
+    steerTimeLimit @83;
+    vehicleSensorsInvalid @84;
+    locationdTemporaryError @85;
+    locationdPermanentError @86;
+    paramsdTemporaryError @87;
+    paramsdPermanentError @88;
+    actuatorsApiUnavailable @89;
+    espActive @90;
+    personalityChanged @91;
+    aeb @92;
+
+    soundsUnavailableDEPRECATED @47;
+  }
+}
+
 enum LongitudinalPersonality {
   aggressive @0;
   standard @1;
@@ -296,6 +409,7 @@ struct GpsLocationData {
   speedAccuracy @12 :Float32;
 
   hasFix @13 :Bool;
+  satelliteCount @14 :Int8;
 
   enum SensorSource {
     android @0;
@@ -373,6 +487,9 @@ struct DeviceState @0xa4d8b5af2aa492eb {
   nvmeTempC @35 :List(Float32);
   modemTempC @36 :List(Float32);
   pmicTempC @39 :List(Float32);
+  intakeTempC @46 :Float32;
+  exhaustTempC @47 :Float32;
+  caseTempC @48 :Float32;
   maxTempC @44 :Float32;  # max of other temps, used to control fan
   thermalZones @38 :List(ThermalZone);
   thermalStatus @14 :ThermalStatus;
@@ -731,7 +848,6 @@ struct ControlsState @0x97ff69c53601abf1 {
   lateralPlanMonoTime @50 :UInt64;
 
   longControlState @30 :Car.CarControl.Actuators.LongControlState;
-  vTargetLead @3 :Float32;
   upAccelCmd @4 :Float32;
   uiAccelCmd @5 :Float32;
   ufAccelCmd @33 :Float32;
@@ -740,7 +856,6 @@ struct ControlsState @0x97ff69c53601abf1 {
   forceDecel @51 :Bool;
 
   lateralControlState :union {
-    indiState @52 :LateralINDIState;
     pidState @53 :LateralPIDState;
     angleState @58 :LateralAngleState;
     debugState @59 :LateralDebugState;
@@ -748,6 +863,7 @@ struct ControlsState @0x97ff69c53601abf1 {
 
     curvatureStateDEPRECATED @65 :LateralCurvatureState;
     lqrStateDEPRECATED @55 :LateralLQRState;
+    indiStateDEPRECATED @52 :LateralINDIState;
   }
 
   struct LateralINDIState {
@@ -881,6 +997,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   startMonoTimeDEPRECATED @48 :UInt64;
   cumLagMsDEPRECATED @15 :Float32;
   aTargetDEPRECATED @35 :Float32;
+  vTargetLeadDEPRECATED @3 :Float32;
 }
 
 struct DrivingModelData {
@@ -1157,7 +1274,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   radarValidDEPRECATED @28 :Bool;
   radarCanErrorDEPRECATED @30 :Bool;
   commIssueDEPRECATED @31 :Bool;
-  eventsDEPRECATED @13 :List(Car.OnroadEvent);
+  eventsDEPRECATED @13 :List(Car.OnroadEventDEPRECATED);
   gpsTrajectoryDEPRECATED @12 :GpsTrajectory;
   gpsPlannerActiveDEPRECATED @19 :Bool;
   personalityDEPRECATED @36 :LongitudinalPersonality;
@@ -2072,7 +2189,7 @@ struct DriverStateDEPRECATED @0xb83c6cc593ed0a00 {
 }
 
 struct DriverMonitoringState @0xb83cda094a1da284 {
-  events @0 :List(Car.OnroadEvent);
+  events @18 :List(OnroadEvent);
   faceDetected @1 :Bool;
   isDistracted @2 :Bool;
   distractedType @17 :UInt32;
@@ -2091,6 +2208,7 @@ struct DriverMonitoringState @0xb83cda094a1da284 {
 
   isPreviewDEPRECATED @15 :Bool;
   rhdCheckedDEPRECATED @5 :Bool;
+  eventsDEPRECATED @0 :List(Car.OnroadEventDEPRECATED);
 }
 
 struct Boot {
@@ -2323,6 +2441,14 @@ struct Microphone {
   filteredSoundPressureWeightedDb @2 :Float32;
 }
 
+struct Touch {
+  sec @0 :Int64;
+  usec @1 :Int64;
+  type @2 :UInt8;
+  code @3 :Int32;
+  value @4 :Int32;
+}
+
 struct Event {
   logMonoTime @0 :UInt64;  # nanoseconds
   valid @67 :Bool = true;
@@ -2369,7 +2495,7 @@ struct Event {
     liveTorqueParameters @94 :LiveTorqueParametersData;
     cameraOdometry @63 :CameraOdometry;
     thumbnail @66: Thumbnail;
-    onroadEvents @68: List(Car.OnroadEvent);
+    onroadEvents @134: List(OnroadEvent);
     carParams @69: Car.CarParams;
     driverMonitoringState @71: DriverMonitoringState;
     livePose @129 :LivePose;
@@ -2403,6 +2529,9 @@ struct Event {
     logMessage @18 :Text;
     errorLogMessage @85 :Text;
 
+    # touch frame
+    touch @135 :List(Touch);
+
     # navigation
     navInstruction @82 :NavInstruction;
     navRoute @83 :NavRoute;
@@ -2425,11 +2554,17 @@ struct Event {
     livestreamWideRoadEncodeData @121 :EncodeData;
     livestreamDriverEncodeData @122 :EncodeData;
 
+    # *********** Custom: reserved for forks ***********
+
+    # DO change the name of the field
+    # DON'T change anything after the "@"
     customReservedRawData0 @124 :Data;
     customReservedRawData1 @125 :Data;
     customReservedRawData2 @126 :Data;
 
-    # *********** Custom: reserved for forks ***********
+    # DO change the name of the field and struct
+    # DON'T change the ID (e.g. @107)
+    # DON'T change which struct it points to 
     customReserved0 @107 :Custom.CustomReserved0;
     customReserved1 @108 :Custom.CustomReserved1;
     customReserved2 @109 :Custom.CustomReserved2;
@@ -2440,6 +2575,16 @@ struct Event {
     customReserved7 @114 :Custom.CustomReserved7;
     customReserved8 @115 :Custom.CustomReserved8;
     customReserved9 @116 :Custom.CustomReserved9;
+    customReserved10 @136 :Custom.CustomReserved10;
+    customReserved11 @137 :Custom.CustomReserved11;
+    customReserved12 @138 :Custom.CustomReserved12;
+    customReserved13 @139 :Custom.CustomReserved13;
+    customReserved14 @140 :Custom.CustomReserved14;
+    customReserved15 @141 :Custom.CustomReserved15;
+    customReserved16 @142 :Custom.CustomReserved16;
+    customReserved17 @143 :Custom.CustomReserved17;
+    customReserved18 @144 :Custom.CustomReserved18;
+    customReserved19 @145 :Custom.CustomReserved19;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated
@@ -2484,5 +2629,6 @@ struct Event {
     uiPlanDEPRECATED @106 :UiPlan;
     liveLocationKalmanDEPRECATED @72 :LiveLocationKalman;
     liveTracksDEPRECATED @16 :List(LiveTracksDEPRECATED);
+    onroadEventsDEPRECATED @68: List(Car.OnroadEventDEPRECATED);
   }
 }

@@ -33,16 +33,16 @@ class TestAlerts:
       # Create fake objects for callback
       cls.CS = car.CarState.new_message()
       cls.CP = car.CarParams.new_message()
-      cfg = [c for c in CONFIGS if c.proc_name == 'controlsd'][0]
+      cfg = [c for c in CONFIGS if c.proc_name == 'selfdrived'][0]
       cls.sm = SubMaster(cfg.pubs)
 
   def test_events_defined(self):
     # Ensure all events in capnp schema are defined in events.py
-    events = car.OnroadEvent.EventName.schema.enumerants
+    events = log.OnroadEvent.EventName.schema.enumerants
 
     for name, e in events.items():
       if not name.endswith("DEPRECATED"):
-        fail_msg = "%s @%d not in EVENTS" % (name, e)
+        fail_msg = f"{name} @{e} not in EVENTS"
         assert e in EVENTS.keys(), fail_msg
 
   # ensure alert text doesn't exceed allowed width

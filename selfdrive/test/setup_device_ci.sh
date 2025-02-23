@@ -86,7 +86,7 @@ safe_checkout() {
   rsync -a --delete $SOURCE_DIR $TEST_DIR
 }
 
-unsafe_checkout() {
+unsafe_checkout() {( set -e
   # checkout directly in test dir, leave old build products
 
   cd $TEST_DIR
@@ -97,7 +97,7 @@ unsafe_checkout() {
   git fetch --no-tags --no-recurse-submodules -j8 --verbose --depth 1 origin $GIT_COMMIT
   git checkout --force --no-recurse-submodules $GIT_COMMIT
   git reset --hard $GIT_COMMIT
-  git clean -df
+  git clean -dff
   git submodule sync
   git submodule foreach --recursive "git reset --hard && git clean -df"
   git submodule update --init --recursive
@@ -105,7 +105,7 @@ unsafe_checkout() {
 
   git lfs pull
   (ulimit -n 65535 && git lfs prune)
-}
+)}
 
 export GIT_PACK_THREADS=8
 
@@ -115,8 +115,13 @@ if [ ! -d "$SOURCE_DIR" ]; then
 fi
 
 if [ ! -z "$UNSAFE" ]; then
-  echo "doing unsafe checkout"
+  echo "trying unsafe checkout"
+  set +e
   unsafe_checkout
+  if [[ "$?" -ne 0 ]]; then
+    safe_checkout
+  fi
+  set -e
 else
   echo "doing safe checkout"
   safe_checkout

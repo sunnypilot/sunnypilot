@@ -2,7 +2,7 @@ name: repo maintenance
 
 on:
   schedule:
-    - cron: "0 14 * * 1" # every Monday at 2am UTC (6am PST)
+    - cron: "0 * * * *"  # every hour for COMMA_HACK 5
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
         git add .
     - name: update car docs
       run: |
-        scons -j$(nproc) --minimal opendbc
+        scons -j$(nproc) --minimal opendbc_repo
         PYTHONPATH=. python selfdrive/car/docs.py
         git add docs/CARS.md
     - name: Create Pull Request

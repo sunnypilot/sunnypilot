@@ -14,7 +14,6 @@ N_RUNS = 10
 
 class CarModelTestCase(TestCarModelBase):
   test_route = CarTestRoute(DEMO_ROUTE, None)
-  ci = False
 
 
 if __name__ == '__main__':
@@ -30,7 +29,7 @@ if __name__ == '__main__':
     start_t = time.process_time_ns()
     for msg in msgs:
       can_list = can_capnp_to_list([msg])
-      for cp in tm.CI.can_parsers:
+      for cp in tm.CI.can_parsers.values():
         if cp is not None:
           cp.update_strings(can_list)
     ets.append((time.process_time_ns() - start_t) * 1e-6)

@@ -11,6 +11,9 @@ On the comma three, the serial console is exposed through a UART-to-USB chip, an
 
 On the comma 3X, the serial console is accessible through the [panda](https://github.com/commaai/panda) using the `panda/tests/som_debug.sh` script.
 
+  * Username: `comma`
+  * Password: `comma`
+
 ## SSH
 
 In order to SSH into your device, you'll need a GitHub account with SSH keys. See this [GitHub article](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) for getting your account setup with SSH keys.
@@ -25,6 +28,22 @@ Here's an example command for connecting to your device using its tethered conne
 `ssh comma@192.168.43.1`
 
 For doing development work on device, it's recommended to use [SSH agent forwarding](https://docs.github.com/en/developers/overview/using-ssh-agent-forwarding).
+
+
+## ADB
+
+In order to use ADB on your device, you'll need to enable it in the device's settings.
+
+* Enable ADB in your device's settings
+* Connect to your device
+    * `adb shell` over USB
+    * `adb connect` over WiFi
+    * Here's an example command for connecting to your device using its tethered connection: `adb connect 192.168.43.1:5555`
+
+> [!NOTE]
+> The default port for ADB is 5555 on the comma 3/3X.
+
+For more info on ADB, see the [Android Debug Bridge (ADB) documentation](https://developer.android.com/tools/adb).
 
 ### Notes
 

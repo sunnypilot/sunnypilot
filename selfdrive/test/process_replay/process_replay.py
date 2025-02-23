@@ -5,26 +5,25 @@ import copy
 import json
 import heapq
 import signal
-import platform
 from collections import Counter, OrderedDict
 from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Callable, Iterable
 from tqdm import tqdm
 import capnp
+from openpilot.system.hardware.hw import Paths
 
 import cereal.messaging as messaging
 from cereal import car
 from cereal.services import SERVICE_LIST
 from msgq.visionipc import VisionIpcServer, get_endpoint_name as vipc_get_endpoint_name
-from opendbc.car import structs
 from opendbc.car.car_helpers import get_car, interfaces
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from openpilot.common.params import Params
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.common.timeout import Timeout
 from openpilot.common.realtime import DT_CTRL
-from panda.python import ALTERNATIVE_EXPERIENCE
-from openpilot.selfdrive.car.card import can_comm_callbacks, convert_to_capnp
+from openpilot.selfdrive.car.card import can_comm_callbacks
 from openpilot.system.manager.process_config import managed_processes
 from openpilot.selfdrive.test.process_replay.vision_meta import meta_from_camera_state, available_streams
 from openpilot.selfdrive.test.process_replay.migration import migrate_all
@@ -213,7 +212,7 @@ class ProcessContainer:
     for meta in streams_metas:
       if meta.camera_state in self.cfg.vision_pubs:
         frame_size = (frs[meta.camera_state].w, frs[meta.camera_state].h)
-        vipc_server.create_buffers(meta.stream, 2, False, *frame_size)
+        vipc_server.create_buffers(meta.stream, 2, *frame_size)
     vipc_server.start_listener()
 
     self.vipc_server = vipc_server
@@ -363,14 +362,14 @@ def get_car_params_callback(rc, pm, msgs, fingerprint):
     cached_params = None
     if has_cached_cp:
       with car.CarParams.from_bytes(cached_params_raw) as _cached_params:
-        cached_params = structs.CarParams(carName=_cached_params.carName, carFw=_cached_params.carFw, carVin=_cached_params.carVin)
+        cached_params = _cached_params
 
     CP = get_car(*can_callbacks, lambda obd: None, Params().get_bool("ExperimentalLongitudinalEnabled"), cached_params=cached_params).CP
 
     if not params.get_bool("DisengageOnAccelerator"):
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
-  params.put("CarParams", convert_to_capnp(CP).to_bytes())
+  params.put("CarParams", CP.to_bytes())
 
 
 def selfdrived_rcv_callback(msg, cfg, frame):
@@ -467,7 +466,7 @@ CONFIGS = [
       "longitudinalPlan", "livePose", "liveParameters", "radarState",
       "modelV2", "driverCameraState", "roadCameraState", "wideRoadCameraState", "managerState",
       "liveTorqueParameters", "accelerometer", "gyroscope", "carOutput",
-      "gpsLocationExternal", "gpsLocation", "controlsState", "carControl", "driverAssistance",
+      "gpsLocationExternal", "gpsLocation", "controlsState", "carControl", "driverAssistance", "alertDebug",
     ],
     subs=["selfdriveState", "onroadEvents"],
     ignore=["logMonoTime"],
@@ -509,7 +508,7 @@ CONFIGS = [
   ),
   ProcessConfig(
     proc_name="plannerd",
-    pubs=["modelV2", "carControl", "carState", "controlsState", "radarState", "selfdriveState"],
+    pubs=["modelV2", "carControl", "carState", "controlsState", "liveParameters", "radarState", "selfdriveState"],
     subs=["longitudinalPlan", "driverAssistance"],
     ignore=["logMonoTime", "longitudinalPlan.processingDelay", "longitudinalPlan.solverExecutionTime"],
     init_callback=get_car_params_callback,
@@ -569,7 +568,7 @@ CONFIGS = [
   ),
   ProcessConfig(
     proc_name="modeld",
-    pubs=["deviceState", "roadCameraState", "wideRoadCameraState", "liveCalibration", "driverMonitoringState"],
+    pubs=["deviceState", "roadCameraState", "wideRoadCameraState", "liveCalibration", "driverMonitoringState", "carState"],
     subs=["modelV2", "drivingModelData", "cameraOdometry"],
     ignore=["logMonoTime", "modelV2.frameDropPerc", "modelV2.modelExecutionTime", "drivingModelData.frameDropPerc", "drivingModelData.modelExecutionTime"],
     should_recv_callback=ModeldCameraSyncRcvCallback(),
@@ -781,8 +780,7 @@ def generate_params_config(lr=None, CP=None, fingerprint=None, custom_params=Non
 
 def generate_environ_config(CP=None, fingerprint=None, log_dir=None) -> dict[str, Any]:
   environ_dict = {}
-  if platform.system() != "Darwin":
-    environ_dict["PARAMS_ROOT"] = "/dev/shm/params"
+  environ_dict["PARAMS_ROOT"] = f"{Paths.shm_path()}/params"
   if log_dir is not None:
     environ_dict["LOG_ROOT"] = log_dir
 

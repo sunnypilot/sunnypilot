@@ -67,6 +67,10 @@ Panda *connect(std::string serial="", uint32_t index=0) {
   }
   //panda->enable_deepsleep();
 
+  for (int i = 0; i < PANDA_BUS_CNT; i++) {
+    panda->set_can_fd_auto(i, true);
+  }
+
   if (!panda->up_to_date() && !getenv("BOARDD_SKIP_FW_CHECK")) {
     throw std::runtime_error("Panda firmware out of date. Run pandad.py to update.");
   }
@@ -87,9 +91,6 @@ void can_send_thread(std::vector<Panda *> pandas, bool fake_send) {
   while (!do_exit && check_all_connected(pandas)) {
     std::unique_ptr<Message> msg(subscriber->receive());
     if (!msg) {
-      if (errno == EINTR) {
-        do_exit = true;
-      }
       continue;
     }
 
@@ -306,15 +307,23 @@ void send_peripheral_state(Panda *panda, PubMaster *pm) {
     LOGW("reading hwmon took %lfms", read_time);
   }
 
+  // fall back to panda's voltage and current measurement
+  if (ps.getVoltage() == 0 && ps.getCurrent() == 0) {
+    auto health_opt = panda->get_state();
+    if (health_opt) {
+      health_t health = *health_opt;
+      ps.setVoltage(health.voltage_pkt);
+      ps.setCurrent(health.current_pkt);
+    }
+  }
+
   uint16_t fan_speed_rpm = panda->get_fan_speed();
   ps.setFanSpeedRpm(fan_speed_rpm);
 
   pm->send("peripheralState", msg);
 }
 
-void process_panda_state(std::vector<Panda *> &pandas, PubMaster *pm, bool spoofing_started) {
-  static SubMaster sm({"selfdriveState"});
-
+void process_panda_state(std::vector<Panda *> &pandas, PubMaster *pm, bool engaged, bool spoofing_started) {
   std::vector<std::string> connected_serials;
   for (Panda *p : pandas) {
     connected_serials.push_back(p->hw_serial());
@@ -350,8 +359,6 @@ void process_panda_state(std::vector<Panda *> &pandas, PubMaster *pm, bool spoof
       }
     }
 
-    sm.update(0);
-    const bool engaged = sm.allAliveAndValid({"selfdriveState"}) && sm["selfdriveState"].getSelfdriveState().getEnabled();
     for (const auto &panda : pandas) {
       panda->send_heartbeat(engaged);
     }
@@ -402,6 +409,7 @@ void process_peripheral_state(Panda *panda, PubMaster *pm, bool no_fan_control) 
 
     if (ir_pwr != prev_ir_pwr || sm.frame % 100 == 0 || ir_pwr >= 50.0) {
       panda->set_ir_pwr(ir_pwr);
+      Hardware::set_ir_power(ir_pwr);
       prev_ir_pwr = ir_pwr;
     }
   }
@@ -416,9 +424,11 @@ void pandad_run(std::vector<Panda *> &pandas) {
   std::thread send_thread(can_send_thread, pandas, fake_send);
 
   RateKeeper rk("pandad", 100);
+  SubMaster sm({"selfdriveState"});
   PubMaster pm({"can", "pandaStates", "peripheralState"});
   PandaSafety panda_safety(pandas);
   Panda *peripheral_panda = pandas[0];
+  bool engaged = false;
 
   // Main loop: receive CAN data and process states
   while (!do_exit && check_all_connected(pandas)) {
@@ -431,7 +441,9 @@ void pandad_run(std::vector<Panda *> &pandas) {
 
     // Process panda state at 10 Hz
     if (rk.frame() % 10 == 0) {
-      process_panda_state(pandas, &pm, spoofing_started);
+      sm.update(0);
+      engaged = sm.allAliveAndValid({"selfdriveState"}) && sm["selfdriveState"].getSelfdriveState().getEnabled();
+      process_panda_state(pandas, &pm, engaged, spoofing_started);
       panda_safety.configureSafetyMode();
     }
 
@@ -441,6 +453,16 @@ void pandad_run(std::vector<Panda *> &pandas) {
     }
 
     rk.keepTime();
+  }
+
+  // Close relay on exit to prevent a fault
+  const bool is_onroad = Params().getBool("IsOnroad");
+  if (is_onroad && !engaged) {
+    for (auto &p : pandas) {
+      if (p->connected()) {
+        p->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
+      }
+    }
   }
 
   send_thread.join();
