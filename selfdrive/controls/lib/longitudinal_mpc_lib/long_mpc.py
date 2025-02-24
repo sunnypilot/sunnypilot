@@ -85,33 +85,28 @@ def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
 
 def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3):
-  """
-    v_lead (float or np.ndarray): Velocity of the leading vehicle (m/s).
-    v_ego (float or np.ndarray): Velocity of the ego vehicle (m/s).
-    comfort_brake (float): Comfortable deceleration rate (m/s^2), default 2.5.
-    stop_distance (float): Minimum stopping distance (m), default 6.0.
-    time_to_max_brake (float): Time to reach maximum braking force (s), default 0.3.
-  """
-  if not (np.all(v_lead >= 0) and np.all(v_ego >= 0) and time_to_max_brake > 0):
-    raise ValueError("Velocities must be non-negative and time_to_max_brake must be positive")
-
-  delta_speed = v_lead - v_ego
   v_diff_offset = np.zeros_like(v_lead)
+  delta_speed = v_lead - v_ego
 
-  positive_delta_mask = delta_speed > 0
-  if np.any(positive_delta_mask):
-    base_offset = np.clip(delta_speed[positive_delta_mask], 0, STOP_DISTANCE / 2)
-    scaling_factor = np.maximum((10.0 - np.minimum(v_ego, 10.0)) / 10.0, 0)
-    v_diff_offset[positive_delta_mask] = base_offset * scaling_factor
+  # Smooth offset increase based on relative speed, capped to a fraction of the stop distance
+  if np.any(delta_speed > 0):
+    v_diff_offset = np.clip(delta_speed, 0, STOP_DISTANCE / 2)
 
-    fast_takeoff_mask = (np.minimum(v_ego, 10.0) < 10.0) & (delta_speed > 2.0)
-    v_diff_offset = np.where(fast_takeoff_mask, np.clip(v_diff_offset * 2.5, 0, STOP_DISTANCE / 2), v_diff_offset)
+    # Adaptive scaling factor based on ego vehicle speed
+    scaling_factor = np.maximum((10 - v_ego) / 10, 0)  # Ensures it's never negative
+    v_diff_offset *= scaling_factor
 
-  initial_brake_factor = np.clip(v_ego / 30.0, 0, 1)
+    # If relative speed is high and ego speed is low, increase offset more aggressively
+    fast_takeoff_condition = (v_ego < 10) & (delta_speed > 2)  # Array-wise condition
+    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 2.5, 0, STOP_DISTANCE / 2), v_diff_offset)
+
+  # softer initial braking
+  initial_brake_factor = np.clip(v_ego / 30, 0, 1)  # Soft brake factor for the first 0.3 seconds
   smooth_initial_brake = np.minimum(1, initial_brake_factor / time_to_max_brake)
 
+  # Calculate stopping distance
   distance = (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
-  distance *= smooth_initial_brake
+  distance *= smooth_initial_brake  # Apply initial smooth brake force
 
   return distance
 
