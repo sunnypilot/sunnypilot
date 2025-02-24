@@ -64,9 +64,9 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 1.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.0
+    return 0.5
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 0.2
+    return 0.5
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -98,7 +98,7 @@ def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3
 
     # If relative speed is high and ego speed is low, increase offset more aggressively
     fast_takeoff_condition = (v_ego < 10) & (delta_speed > 2)  # Array-wise condition
-    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 2.0, 0, STOP_DISTANCE / 2), v_diff_offset)
+    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 2.5, 0, STOP_DISTANCE / 2), v_diff_offset)
 
   # softer initial braking
   initial_brake_factor = np.clip(v_ego / 30, 0, 1)  # Soft brake factor for the first 0.3 seconds
