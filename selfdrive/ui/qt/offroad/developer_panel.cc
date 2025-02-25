@@ -1,9 +1,5 @@
-#include <QDebug>
-#include <QProcess>
-
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
-#include "common/util.h"
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
@@ -122,6 +118,7 @@ void DeveloperPanel::updateToggles(bool _offroad) {
     experimentalLongitudinalToggle->setVisible(false);
     hyundaiRadarTracksToggle->setVisible(false);
   }
+  experimentalLongitudinalToggle->refresh();
 
   // Handle specific controls visibility for release branches
   enableGithubRunner->setVisible(!is_release);
