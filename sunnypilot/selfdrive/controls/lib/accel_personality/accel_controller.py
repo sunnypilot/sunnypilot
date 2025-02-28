@@ -70,13 +70,13 @@ class AccelController:
 
     if self._personality == AccelPersonality.eco:
       max_v = _DP_CRUISE_MAX_V_ECO
-      print("eco")
+      #print("eco")
     elif self._personality == AccelPersonality.sport:
       max_v = _DP_CRUISE_MAX_V_SPORT
-      print("sport")
+      #print("sport")
     else:
       max_v = _DP_CRUISE_MAX_V_NORMAL
-      print("normal")
+      #print("normal")
 
     # a_cruise_min = interp(v_ego, _DP_CRUISE_MIN_BP, min_v)
     a_cruise_max = interp(v_ego, _DP_CRUISE_MAX_BP, max_v)
