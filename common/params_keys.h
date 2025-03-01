@@ -117,4 +117,42 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
+
+    // --- sunnypilot params --- //
+    {"ApiCache_DriveStats", PERSISTENT},
+    {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
+    {"CarParamsSPPersistent", PERSISTENT},
+    {"CarPlatformBundle", PERSISTENT},
+    {"EnableGithubRunner", PERSISTENT | BACKUP},
+    {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
+    {"OffroadMode", CLEAR_ON_MANAGER_START},
+    {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
+
+    // MADS params
+    {"Mads", PERSISTENT | BACKUP},
+    {"MadsMainCruiseAllowed", PERSISTENT | BACKUP},
+    {"MadsPauseLateralOnBrake", PERSISTENT | BACKUP},
+    {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
+
+    // Model Manager params
+    {"ModelManager_ActiveBundle", PERSISTENT},
+    {"ModelManager_DownloadIndex", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"ModelManager_LastSyncTime", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
+    {"ModelManager_ModelsCache", PERSISTENT | BACKUP},
+
+    // sunnylink params
+    {"EnableSunnylinkUploader", PERSISTENT | BACKUP},
+    {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
+    {"SunnylinkDongleId", PERSISTENT},
+    {"SunnylinkdPid", PERSISTENT},
+    {"SunnylinkEnabled", PERSISTENT},
+
+    // sunnypilot car specific params
+    {"HyundaiRadarTracks", PERSISTENT},
+    {"HyundaiRadarTracksConfirmed", PERSISTENT},
+    {"HyundaiRadarTracksPersistent", PERSISTENT},
+    {"HyundaiRadarTracksToggle", PERSISTENT},
+
+    {"DynamicExperimentalControl", PERSISTENT},
 };

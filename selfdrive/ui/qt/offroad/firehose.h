@@ -4,8 +4,16 @@
 #include <QVBoxLayout>
 #include <QProgressBar>
 #include <QLabel>
-#include "selfdrive/ui/qt/widgets/controls.h"
 #include "common/params.h"
+
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#else
+#include "selfdrive/ui/qt/widgets/controls.h"
+#include "selfdrive/ui/qt/offroad/settings.h"
+#endif
+
 
 // Forward declarations
 class SettingsWindow;
