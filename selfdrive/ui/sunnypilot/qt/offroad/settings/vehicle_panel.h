@@ -31,18 +31,20 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector *platformSelector = nullptr;
-  ParamControlSP* hkgtuningToggle = nullptr;
+  // Tuning control using ButtonParamControlSP with the buttonToggled signal.
+  ButtonParamControlSP* hkgtuningToggle = nullptr;
   bool offroad;
 
   // State tracking
   Params params;
+  int hkg_state = 0;
 
   // Helper methods
   ToggleState getToggleState(bool hasOpenpilotLong) const;
-  void updateToggleState(ParamControlSP* toggle, bool hasOpenpilotLong);
+  void updateToggleState(AbstractControlSP* toggle, bool hasOpenpilotLong);
 
 private slots:
   void updateCarToggles();
   void updateToggles(bool offroad_transition);
-  void handleToggleAction(ParamControlSP* toggle, bool checked);
+  void handleToggleAction(AbstractControlSP* toggle, bool checked);
 };

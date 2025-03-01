@@ -36,32 +36,30 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
     QTimer::singleShot(100, this, &VehiclePanel::updateCarToggles);
   });
 
-  hkgtuningToggle = new ParamControlSP("HKGtuning",
-                               tr("Chubbs Tune"),
-                               tr("Enable to experience enhanced vehicle performance tuning"),
-                               "../assets/offroad/icon_shell.png",
-                               this);
-  hkgtuningToggle->setObjectName("HKGtuning");
-  list->addItem(hkgtuningToggle);
-  connect(hkgtuningToggle, &ToggleControlSP::toggleFlipped, this, [=](bool checked) {
-    handleToggleAction(hkgtuningToggle, checked);
-  });
-  if (!hkgtuningToggle->layout()) {
-    QHBoxLayout *hlayout = new QHBoxLayout();
-    hlayout->setContentsMargins(0, 0, 0, 0); // adjust margins if needed
-    hkgtuningToggle->setLayout(hlayout);
-  }
-  QPushButton *brakingButton = new QPushButton(tr("Smoother Braking"), hkgtuningToggle);
-  brakingButton->setObjectName("brakingButton");
-  brakingButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
-  hkgtuningToggle->layout()->addWidget(brakingButton);
-  connect(brakingButton, &QPushButton::clicked, this, [=]() {
-    params.putBool("HKGBraking", true);
-    brakingButton->setEnabled(false);
+  std::vector<QString> tuning_buttons { tr("Off"), tr("Chubbs Tune"), tr("Tune + Smoother Braking") };
+  hkgtuningToggle = new ButtonParamControlSP(
+    "HKGtuning",
+    tr("Chubbs Tune"),
+    tr("Select tuning mode. Off means no tuning applied. Chubbs Tune is an adaptive accel/brake tuning. Tune + Smoother Braking is the adaptive tuning with smoother braking applied."),
+    "../assets/offroad/icon_shell.png",
+    tuning_buttons
+  );
+  hkgtuningToggle->showDescription();
+  hkgtuningToggle->setProperty("originalDesc", hkgtuningToggle->getDescription());
+
+  connect(hkgtuningToggle, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
+    hkg_state = index;
+    // Inline update of tuning and braking params
+    params.put("HKGtuning", QString::number(index).toStdString());
+    params.put("HKGBraking", (index == 2) ? "1" : "0");
+    updateCarToggles();
   });
 
+  // Add the tuning toggle to the layout
+  vlayout->addWidget(hkgtuningToggle);
+
+  // Add the vehicle screen to the main layout
   main_layout->addWidget(vehicleScreen);
-  main_layout->setCurrentWidget(vehicleScreen);
 }
 
 void VehiclePanel::showEvent(QShowEvent *event) {
@@ -83,12 +81,12 @@ VehiclePanel::ToggleState VehiclePanel::getToggleState(bool hasOpenpilotLong) co
     return ToggleState::DISABLED_LONGITUDINAL;
   }
   if (!uiState()->scene.started) {
-    return ToggleState::DISABLED_DRIVING;
+    return ToggleState::ENABLED;
   }
-  return ToggleState::ENABLED;
+  return ToggleState::DISABLED_DRIVING;
 }
 
-void VehiclePanel::updateToggleState(ParamControlSP* toggle, bool hasOpenpilotLong) {
+void VehiclePanel::updateToggleState(AbstractControlSP* toggle, bool hasOpenpilotLong) {
   static const QString LONGITUDINAL_MSG = tr("Enable openpilot longitudinal control first.");
   static const QString DRIVING_MSG = tr("Cannot modify while driving. Please go offroad mode first.");
 
@@ -96,8 +94,7 @@ void VehiclePanel::updateToggleState(ParamControlSP* toggle, bool hasOpenpilotLo
 
   switch (state) {
     case ToggleState::ENABLED:
-      // Removed use of getTitle; leave description unchanged.
-      // toggle->setDescription(toggle->getTitle() + ": " + toggle->getDescription());
+      toggle->setDescription(toggle->property("originalDesc").toString());
       break;
     case ToggleState::DISABLED_LONGITUDINAL: {
       QString msg = "<font color='orange'>" + tr("Enable openpilot longitudinal control first to modify this setting.") + "</font>";
@@ -116,32 +113,12 @@ void VehiclePanel::updateToggleState(ParamControlSP* toggle, bool hasOpenpilotLo
   }
 }
 
-void VehiclePanel::handleToggleAction(ParamControlSP* toggle, bool checked) {
+void VehiclePanel::handleToggleAction(AbstractControlSP* toggle, bool checked) {
   bool hasOpenpilotLong = params.getBool("ExperimentalLongitudinalEnabled");
-  // Introduce a tuning key variable
-  const std::string tuningKey = toggle->objectName().toStdString();
-
-  // First check if we're allowed to make changes
-  if (!offroad || !hasOpenpilotLong) {
-    // Revert the toggle state
-    toggle->setEnabled(false);
-    toggle->setValue(QString::number(params.getBool(tuningKey)));
-    if (!offroad) {
-      QString msg = "<font color='orange'>" + tr("Cannot modify while driving. Please go offroad first.") + "</font>";
-      toggle->setDescription(msg);
-    } else if (!hasOpenpilotLong) {
-      QString msg = "<font color='orange'>" + tr("Enable openpilot longitudinal control first.") + "</font>";
-      toggle->setDescription(msg);
-    }
-
-    toggle->showDescription();
-    QTimer::singleShot(5000, toggle, &ParamControlSP::hideDescription);
-    return;
-  }
 
   // Only apply changes if all conditions are met
   toggle->setEnabled(true);
-  params.putBool(tuningKey, checked);
+  params.putBool(toggle->objectName().toStdString(), checked);
   updateToggleState(toggle, hasOpenpilotLong);
   updatePanel(offroad);
 }
@@ -155,22 +132,18 @@ void VehiclePanel::updateCarToggles() {
   QString make = platformSelector->getPlatformBundle("make").toString();
   QString model = platformSelector->getPlatformBundle("model").toString();
 
-  // Default state - no car selected
-  hkgtuningToggle->setVisible(false);
-
   if (brand == "hyundai") {
     hkgtuningToggle->setVisible(true);
-    hkgtuningToggle->setEnabled(offroad && hasOpenpilotLong);
+    hkgtuningToggle->setEnabled(true);
+    QString tuning = QString::fromStdString(params.get("HKGtuning"));
+    QString braking = QString::fromStdString(params.get("HKGBraking"));
+    hkg_state = (tuning == "2") ? 2 : ((tuning == "1") ? ((braking == "1") ? 2 : 1) : 0);
     updateToggleState(hkgtuningToggle, hasOpenpilotLong);
-    QPushButton *brakingButton = hkgtuningToggle->findChild<QPushButton*>("brakingButton");
-    if (brakingButton) {
-      brakingButton->setVisible(params.getBool("HKGtuning"));
-    }
+    hkgtuningToggle->setCheckedButton(hkg_state);
   } else {
-    // Introduce the tuning key variable for clarity
-    const std::string tuningKey = hkgtuningToggle->objectName().toStdString();
-    if (params.getBool(tuningKey)) {
-      params.putBool(tuningKey, false);
-    }
+    // Reset if not Hyundai
+    params.put("HKGtuning", "0");
+    params.put("HKGBraking", "0");
+    hkgtuningToggle->setVisible(false);
   }
 }
