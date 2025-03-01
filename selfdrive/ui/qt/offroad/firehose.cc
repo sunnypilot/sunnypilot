@@ -1,7 +1,4 @@
 #include "selfdrive/ui/qt/offroad/firehose.h"
-#include "selfdrive/ui/ui.h"
-#include "selfdrive/ui/qt/offroad/settings.h"
-
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
