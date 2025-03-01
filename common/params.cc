@@ -8,6 +8,7 @@
 #include <csignal>
 #include <unordered_map>
 
+#include "common/params_keys.h"
 #include "common/queue.h"
 #include "common/swaglog.h"
 #include "common/util.h"
