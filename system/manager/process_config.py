@@ -82,7 +82,7 @@ def is_tinygrad_model(started, params, CP: car.CarParams) -> bool:
 
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
-  return (not is_snpe_model(started, params, CP)) and (not is_tinygrad_model(started, params, CP))
+  return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.stock)
 
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
