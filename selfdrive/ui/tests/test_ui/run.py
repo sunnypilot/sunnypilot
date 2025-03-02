@@ -234,7 +234,7 @@ def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
 
   setup_settings_device(click, pm)
   scroll(-400, 278, 862)
-  click(278, 819)
+  click(278, 770)
   time.sleep(UI_DELAY)
 
 CASES = {
