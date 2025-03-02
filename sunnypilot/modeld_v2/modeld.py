@@ -23,8 +23,8 @@ from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_p
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
-from openpilot.sunnypilot.modeld_v2_v2.meta_helper import load_meta_constants
-from openpilot.sunnypilot.modeld_v2_v2.model_runner import ONNXRunner, TinygradRunner
+from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
+from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
