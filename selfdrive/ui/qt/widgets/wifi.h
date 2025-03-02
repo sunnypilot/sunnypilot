@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QFrame>
-#include <QStackedLayout>
 #include <QWidget>
 
 #ifdef SUNNYPILOT
@@ -19,10 +18,4 @@ public:
 
 signals:
   void openSettings(int index = 0, const QString &param = "");
-
-public slots:
-  void updateState(const UIState &s);
-
-protected:
-  QStackedLayout *stack;
 };
