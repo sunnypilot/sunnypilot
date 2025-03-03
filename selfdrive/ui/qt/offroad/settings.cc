@@ -66,6 +66,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Sunnypilot will link the Acceleration Personality to the car's physical drive mode selector.\nReboot Required."),
       "../assets/offroad/icon_blank.png",
     },
+	{
+      "RainbowMode",
+      tr("Enable Tesla Rainbow Mode"),
+      tr("....."),
+      "../assets/offroad/icon_blank.png",
+    },
     {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
