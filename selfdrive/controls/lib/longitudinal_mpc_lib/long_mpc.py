@@ -93,7 +93,7 @@ def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3
     v_diff_offset = np.clip(delta_speed, 0, STOP_DISTANCE / 2)
 
     # Aggressive scaling factor for low speeds to allow faster takeoff
-    scaling_factor = np.interp(v_ego, [0, 10, 30], [1.5, 1.0, 0.5])  # Increased factor for lower speeds
+    scaling_factor = np.interp(v_ego, [0, 10, 30], [1.0, 0.5, 0.2])  # Increased factor for lower speeds
     v_diff_offset *= scaling_factor
 
     # More aggressive fast takeoff: increase offset by 3x when ego vehicle is moving slowly
