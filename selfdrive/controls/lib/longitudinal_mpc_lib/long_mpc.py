@@ -105,8 +105,8 @@ def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3
   smooth_initial_brake = np.clip(initial_brake_factor / time_to_max_brake, 0, 1)
 
   # Gradual deceleration curve for smoother stopping
-  decel_curve_factor = 1 / (1 + np.exp(-2 * (v_ego / 20 - 0.5)))  # Slower brake as speed drops
-  smooth_initial_brake *= decel_curve_factor  # Apply deceleration curve to braking force
+  #decel_curve_factor = 1 / (1 + np.exp(-2 * (v_ego / 20 - 0.5)))  # Slower brake as speed drops
+  #smooth_initial_brake *= decel_curve_factor  # Apply deceleration curve to braking force
 
   # Calculate stopping distance with smoother braking force
   distance = (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
