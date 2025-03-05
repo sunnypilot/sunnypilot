@@ -93,7 +93,7 @@ def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3
     v_diff_offset = np.clip(delta_speed, 0, STOP_DISTANCE / 2)
 
     # Adaptive scaling factor based on ego vehicle speed (smooth transition)
-    scaling_factor = np.interp(v_ego, [0, 10, 30], [1, 0.5, 0.2])  # More gradual scaling
+    scaling_factor = np.interp(v_ego, [0, 10, 30], [1.3, 0.8, 0.4])  # More gradual scaling
     v_diff_offset *= scaling_factor
 
     # Increase offset more aggressively if the ego vehicle is at low speed and lead speed is high
