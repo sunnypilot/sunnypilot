@@ -84,31 +84,22 @@ def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
 
-def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3):
-  v_diff_offset = np.zeros_like(v_lead)
+def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego):
+  v_diff_offset = 0
+  v_diff_offset_max = 12
+  speed_to_reach_max_v_diff_offset = 26 * CV.KPH_TO_MS  # in m/s
   delta_speed = v_lead - v_ego
 
-  # Fast offset increase based on relative speed, capped to a fraction of the stop distance
   if np.any(delta_speed > 0):
-    v_diff_offset = np.clip(delta_speed, 0, STOP_DISTANCE / 2)
+    # Scale v_diff_offset with a hybrid approach: linear with a smooth transition
+    v_diff_offset = np.clip(delta_speed * 1.5, 0, v_diff_offset_max)
+    scaling_factor = np.clip((speed_to_reach_max_v_diff_offset - v_ego) / speed_to_reach_max_v_diff_offset, 0, 1)
+    # Apply a stronger decay at higher speeds to avoid pulling too close
+    smooth_scaling = scaling_factor ** 3 * (10 - 9 * scaling_factor)
+    v_diff_offset *= smooth_scaling
 
-    # Aggressive scaling factor to ensure fast takeoff when the lead moves
-    scaling_factor = np.interp(v_ego, [0, 10, 30], [1.5, 0.8, 0.4])
-    v_diff_offset *= scaling_factor
-
-    # Strong fast takeoff behavior if ego vehicle is almost stopped and lead moves
-    fast_takeoff_condition = (v_ego < 1) & (delta_speed > 0.5)
-    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 3.0, 0, STOP_DISTANCE / 2), v_diff_offset)
-
-  # Smoother initial braking using a sigmoid function
-  initial_brake_factor = 1 / (1 + np.exp(-5 * (v_ego / 30 - 0.5)))
-  smooth_initial_brake = np.clip(initial_brake_factor / time_to_max_brake, 0, 1)
-
-  # Calculate stopping distance with smoother braking force
-  distance = (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
-  distance *= smooth_initial_brake
-
-  return distance
+  stopping_distance = (v_lead ** 2) / (2 * COMFORT_BRAKE) + v_diff_offset
+  return stopping_distance
 
 
 
