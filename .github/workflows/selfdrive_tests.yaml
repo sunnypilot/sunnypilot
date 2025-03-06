@@ -195,9 +195,10 @@ jobs:
         name: process_replay_diff.txt
         path: selfdrive/test/process_replay/diff.txt
     - name: Upload reference logs
-      if: ${{ failure() && steps.print-diff.outcome == 'success' && github.repository == 'commaai/openpilot' && env.AZURE_TOKEN != '' }}
+      if: ${{ failure() && steps.print-diff.outcome == 'success' }}
       run: |
-        ${{ env.RUN }} "unset PYTHONWARNINGS && AZURE_TOKEN='$AZURE_TOKEN' python3 selfdrive/test/process_replay/test_processes.py -j$(nproc) --upload-only"
+        ${{ env.RUN }} "unset PYTHONWARNINGS && python3 selfdrive/test/process_replay/test_processes.py -j$(nproc) --local --upload-only"
+        git push origin ${{ github.head_ref || github.ref_name }}
     - name: Run regen
       if: false
       timeout-minutes: 4
