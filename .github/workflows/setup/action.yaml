@@ -19,10 +19,10 @@ runs:
     - shell: bash
       name: No retries!
       run: |
-        echo github.event.pull_request.head.repo.fork: ${{ github.event.pull_request.head.repo.fork }}
+        echo github.event.pull_request.head.repo.fork: ${{ !github.event.pull_request.head.repo.fork }}
         echo github.event.pull_request.author_association: ${{ github.event.pull_request.author_association }}
         echo github.run_attempt: ${{ github.run_attempt }}
-        echo github.event.pull_request.head.repo.fork == 'false' && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' : ${{ github.event.pull_request.head.repo.fork == 'false' && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' }}
+        echo github.event.pull_request.head.repo.fork == 'false' && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' : ${{ !github.event.pull_request.head.repo.fork && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' }}
         if [ "${{ github.run_attempt }}" -gt ${{ github.event.pull_request.head.repo.fork == 'false' && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' && 2 || 1}} ]; then
           echo -e "\033[0;31m##################################################"
           echo -e "\033[0;31m    Retries not allowed! Fix the flaky test!      "
