@@ -88,27 +88,28 @@ def get_stopped_equivalence_factor_krkeegen(v_lead, v_ego, time_to_max_brake=0.3
   v_diff_offset = np.zeros_like(v_lead)
   delta_speed = v_lead - v_ego
 
-  # Smooth offset increase based on relative speed, capped to a fraction of the stop distance
+  # Fast offset increase based on relative speed, capped to a fraction of the stop distance
   if np.any(delta_speed > 0):
     v_diff_offset = np.clip(delta_speed, 0, STOP_DISTANCE / 2)
 
-    # Adaptive scaling factor based on ego vehicle speed (smooth transition)
-    scaling_factor = np.interp(v_ego, [0, 10, 30], [1.3, 0.8, 0.4])  # More gradual scaling
+    # Aggressive scaling factor to ensure fast takeoff when the lead moves
+    scaling_factor = np.interp(v_ego, [0, 10, 30], [1.5, 0.8, 0.4])
     v_diff_offset *= scaling_factor
 
-    # Increase offset more aggressively if the ego vehicle is at low speed and lead speed is high
-    fast_takeoff_condition = (v_ego < 10) & (delta_speed > 2)
-    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 2.5, 0, STOP_DISTANCE / 2), v_diff_offset)
+    # Strong fast takeoff behavior if ego vehicle is almost stopped and lead moves
+    fast_takeoff_condition = (v_ego < 1) & (delta_speed > 0.5)
+    v_diff_offset = np.where(fast_takeoff_condition, np.clip(v_diff_offset * 3.0, 0, STOP_DISTANCE / 2), v_diff_offset)
 
   # Smoother initial braking using a sigmoid function
-  initial_brake_factor = 1 / (1 + np.exp(-5 * (v_ego / 30 - 0.5)))  # Soft brake factor
+  initial_brake_factor = 1 / (1 + np.exp(-5 * (v_ego / 30 - 0.5)))
   smooth_initial_brake = np.clip(initial_brake_factor / time_to_max_brake, 0, 1)
 
   # Calculate stopping distance with smoother braking force
   distance = (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
-  distance *= smooth_initial_brake  # Apply smooth brake force
+  distance *= smooth_initial_brake
 
   return distance
+
 
 
 
