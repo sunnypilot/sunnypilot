@@ -116,6 +116,8 @@ jobs:
       - name: Push changes if there are diffs
         id: push-changes  # Add an id so we can reference this step
         run: |
+          GIT_TRACE=2 
+          GIT_CURL_VERBOSE=1 
           TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
 
           # Fetch the latest from remote
