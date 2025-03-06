@@ -2,7 +2,7 @@ import os
 import capnp
 import numpy as np
 from cereal import log
-from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
+from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -122,7 +122,6 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
     temporal_pose.transStd = net_output_data['plan_stds'][0,0,Plan.VELOCITY].tolist()
     temporal_pose.rot = net_output_data['plan'][0,0,Plan.ORIENTATION_RATE].tolist()
     temporal_pose.rotStd = net_output_data['plan_stds'][0,0,Plan.ORIENTATION_RATE].tolist()
-
 
   # poly path
   fill_xyz_poly(driving_model_data.path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
