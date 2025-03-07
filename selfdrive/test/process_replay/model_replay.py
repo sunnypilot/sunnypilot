@@ -8,6 +8,7 @@ from itertools import zip_longest
 
 import matplotlib.pyplot as plt
 import numpy as np
+from tabulate import tabulate
 
 from openpilot.common.git import get_commit
 from openpilot.system.hardware import PC
@@ -18,8 +19,8 @@ from openpilot.tools.lib.framereader import FrameReader, NumpyFrameReader
 from openpilot.tools.lib.logreader import LogReader, save_log
 from openpilot.tools.lib.github_utils import GithubUtils
 
-TEST_ROUTE = "2f4452b03ccb98f0|2022-12-03--13-45-30"
-SEGMENT = 6
+TEST_ROUTE = "8494c69d3c710e81|000001d4--2648a9a404"
+SEGMENT = 4
 MAX_FRAMES = 100 if PC else 400
 
 NO_MODEL = "NO_MODEL" in os.environ
@@ -30,6 +31,11 @@ API_TOKEN = os.getenv("GITHUB_COMMENTS_TOKEN","")
 MODEL_REPLAY_BUCKET="model_replay_master"
 GITHUB = GithubUtils(API_TOKEN, DATA_TOKEN)
 
+EXEC_TIMINGS = [
+  # model, instant max, average max
+  ("modelV2", 0.035, 0.025),
+  ("driverStateV2", 0.02, 0.015),
+]
 
 def get_log_fn(test_route, ref="master"):
   return f"{test_route}_model_tici_{ref}.zst"
@@ -51,21 +57,26 @@ def get_event(logs, event):
 def zl(array, fill):
   return zip_longest(array, [], fillvalue=fill)
 
+def get_idx_if_non_empty(l, idx=None):
+  return l if idx is None else (l[idx] if len(l) > 0 else None)
+
 def generate_report(proposed, master, tmp, commit):
   ModelV2_Plots = zl([
-                     (lambda x: x.velocity.x[0], "velocity.x"),
-                     (lambda x: x.action.desiredCurvature, "desiredCurvature"),
-                     (lambda x: x.leadsV3[0].x[0], "leadsV3.x"),
-                     (lambda x: x.laneLines[1].y[0], "laneLines.y"),
-                     #(lambda x: x.meta.disengagePredictions.gasPressProbs[1], "gasPressProbs")
+                     (lambda x: get_idx_if_non_empty(x.velocity.x, 0), "velocity.x"),
+                     (lambda x: get_idx_if_non_empty(x.action.desiredCurvature), "desiredCurvature"),
+                     (lambda x: get_idx_if_non_empty(x.leadsV3[0].x, 0), "leadsV3.x"),
+                     (lambda x: get_idx_if_non_empty(x.laneLines[1].y, 0), "laneLines.y"),
+                     (lambda x: get_idx_if_non_empty(x.meta.desireState, 3), "desireState.laneChangeLeft"),
+                     (lambda x: get_idx_if_non_empty(x.meta.desireState, 4), "desireState.laneChangeRight"),
+                     (lambda x: get_idx_if_non_empty(x.meta.disengagePredictions.gasPressProbs, 1), "gasPressProbs")
                     ], "modelV2")
   DriverStateV2_Plots = zl([
-                     (lambda x: x.wheelOnRightProb, "wheelOnRightProb"),
-                     (lambda x: x.leftDriverData.faceProb, "leftDriverData.faceProb"),
-                     (lambda x: x.leftDriverData.faceOrientation[0], "leftDriverData.faceOrientation0"),
-                     (lambda x: x.leftDriverData.leftBlinkProb, "leftDriverData.leftBlinkProb"),
-                     (lambda x: x.leftDriverData.notReadyProb[0], "leftDriverData.notReadyProb0"),
-                     (lambda x: x.rightDriverData.faceProb, "rightDriverData.faceProb"),
+                     (lambda x: get_idx_if_non_empty(x.wheelOnRightProb), "wheelOnRightProb"),
+                     (lambda x: get_idx_if_non_empty(x.leftDriverData.faceProb), "leftDriverData.faceProb"),
+                     (lambda x: get_idx_if_non_empty(x.leftDriverData.faceOrientation, 0), "leftDriverData.faceOrientation0"),
+                     (lambda x: get_idx_if_non_empty(x.leftDriverData.leftBlinkProb), "leftDriverData.leftBlinkProb"),
+                     (lambda x: get_idx_if_non_empty(x.leftDriverData.notReadyProb, 0), "leftDriverData.notReadyProb0"),
+                     (lambda x: get_idx_if_non_empty(x.rightDriverData.faceProb), "rightDriverData.faceProb"),
                     ], "driverStateV2")
 
   return [plot(map(v[0], get_event(proposed, event)), \
@@ -134,7 +145,8 @@ def trim_logs_to_max_frames(logs, max_frames, frs_types, include_all_types):
 
 def model_replay(lr, frs):
   # modeld is using frame pairs
-  modeld_logs = trim_logs_to_max_frames(lr, MAX_FRAMES, {"roadCameraState", "wideRoadCameraState"}, {"roadEncodeIdx", "wideRoadEncodeIdx", "carParams"})
+  modeld_logs = trim_logs_to_max_frames(lr, MAX_FRAMES, {"roadCameraState", "wideRoadCameraState"},
+                                                                         {"roadEncodeIdx", "wideRoadEncodeIdx", "carParams", "carState", "carControl"})
   dmodeld_logs = trim_logs_to_max_frames(lr, MAX_FRAMES, {"driverCameraState"}, {"driverEncodeIdx", "carParams"})
 
   if not SEND_EXTRA_INPUTS:
@@ -156,7 +168,33 @@ def model_replay(lr, frs):
     del frs['roadCameraState'].frames
     del frs['wideRoadCameraState'].frames
   dmonitoringmodeld_msgs = replay_process(dmonitoringmodeld, dmodeld_logs, frs)
-  return modeld_msgs + dmonitoringmodeld_msgs
+
+  msgs = modeld_msgs + dmonitoringmodeld_msgs
+
+  header = ['model', 'max instant', 'max instant allowed', 'average', 'max average allowed', 'test result']
+  rows = []
+  timings_ok = True
+  for (s, instant_max, avg_max) in EXEC_TIMINGS:
+    ts = [getattr(m, s).modelExecutionTime for m in msgs if m.which() == s]
+    # TODO some init can happen in first iteration
+    ts = ts[1:]
+
+    errors = []
+    if np.max(ts) > instant_max:
+      errors.append("❌ FAILED MAX TIMING CHECK ❌")
+    if np.mean(ts) > avg_max:
+      errors.append("❌ FAILED AVG TIMING CHECK ❌")
+
+    timings_ok = not errors and timings_ok
+    rows.append([s, np.max(ts), instant_max, np.mean(ts), avg_max, "\n".join(errors) or "✅"])
+
+  print("------------------------------------------------")
+  print("----------------- Model Timing -----------------")
+  print("------------------------------------------------")
+  print(tabulate(rows, header, tablefmt="simple_grid", stralign="center", numalign="center", floatfmt=".4f"))
+  assert timings_ok
+
+  return msgs
 
 
 def get_frames():

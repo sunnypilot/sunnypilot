@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 import os
 from openpilot.system.hardware import TICI
+from tinygrad.tensor import Tensor
+from tinygrad.dtype import dtypes
 if TICI:
-  from tinygrad.tensor import Tensor
-  from tinygrad.dtype import dtypes
   from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
   os.environ['QCOM'] = '1'
 else:
-  from openpilot.selfdrive.modeld.runners.ort_helpers import make_onnx_cpu_runner
-import gc
+  os.environ['LLVM'] = '1'
 import math
 import time
 import pickle
@@ -21,11 +20,12 @@ from cereal import messaging
 from cereal.messaging import PubMaster, SubMaster
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from openpilot.common.swaglog import cloudlog
-from openpilot.common.realtime import set_realtime_priority
+from openpilot.common.realtime import config_realtime_process
 from openpilot.common.transformations.model import dmonitoringmodel_intrinsics, DM_INPUT_SIZE
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import CLContext, MonitoringModelFrame
 from openpilot.selfdrive.modeld.parse_model_outputs import sigmoid
+from openpilot.system import sentry
 
 MODEL_WIDTH, MODEL_HEIGHT = DM_INPUT_SIZE
 CALIB_LEN = 3
@@ -34,8 +34,8 @@ OUTPUT_SIZE = 84 + FEATURE_LEN
 
 PROCESS_NAME = "selfdrive.modeld.dmonitoringmodeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
-MODEL_PATH = Path(__file__).parent / 'models/dmonitoring_model.onnx'
 MODEL_PKL_PATH = Path(__file__).parent / 'models/dmonitoring_model_tinygrad.pkl'
+
 
 class DriverStateResult(ctypes.Structure):
   _fields_ = [
@@ -55,6 +55,7 @@ class DriverStateResult(ctypes.Structure):
     ("ready_prob", ctypes.c_float*4),
     ("not_ready_prob", ctypes.c_float*2)]
 
+
 class DMonitoringModelResult(ctypes.Structure):
   _fields_ = [
     ("driver_state_lhd", DriverStateResult),
@@ -62,6 +63,7 @@ class DMonitoringModelResult(ctypes.Structure):
     ("poor_vision_prob", ctypes.c_float),
     ("wheel_on_right_prob", ctypes.c_float),
     ("features", ctypes.c_float*FEATURE_LEN)]
+
 
 class ModelState:
   inputs: dict[str, np.ndarray]
@@ -75,14 +77,11 @@ class ModelState:
       'calib': np.zeros((1, CALIB_LEN), dtype=np.float32),
     }
 
-    if TICI:
-      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
-      with open(MODEL_PKL_PATH, "rb") as f:
-        self.model_run = pickle.load(f)
-    else:
-      self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
+    self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
+    with open(MODEL_PKL_PATH, "rb") as f:
+      self.model_run = pickle.load(f)
 
-  def run(self, buf:VisionBuf, calib:np.ndarray, transform:np.ndarray) -> tuple[np.ndarray, float]:
+  def run(self, buf: VisionBuf, calib: np.ndarray, transform: np.ndarray) -> tuple[np.ndarray, float]:
     self.numpy_inputs['calib'][0,:] = calib
 
     t1 = time.perf_counter()
@@ -93,12 +92,10 @@ class ModelState:
       if 'input_img' not in self.tensor_inputs:
         self.tensor_inputs['input_img'] = qcom_tensor_from_opencl_address(input_img_cl.mem_address, (1, MODEL_WIDTH*MODEL_HEIGHT), dtype=dtypes.uint8)
     else:
-      self.numpy_inputs['input_img'] = self.frame.buffer_from_cl(input_img_cl).reshape((1, MODEL_WIDTH*MODEL_HEIGHT))
+      self.tensor_inputs['input_img'] = Tensor(self.frame.buffer_from_cl(input_img_cl).reshape((1, MODEL_WIDTH*MODEL_HEIGHT)), dtype=dtypes.uint8).realize()
 
-    if TICI:
-      output = self.model_run(**self.tensor_inputs).numpy().flatten()
-    else:
-      output = self.onnx_cpu_runner.run(None, self.numpy_inputs)[0].flatten()
+
+    output = self.model_run(**self.tensor_inputs).numpy().flatten()
 
     t2 = time.perf_counter()
     return output, t2 - t1
@@ -119,6 +116,7 @@ def fill_driver_state(msg, ds_result: DriverStateResult):
   msg.readyProb = [float(sigmoid(x)) for x in ds_result.ready_prob]
   msg.notReadyProb = [float(sigmoid(x)) for x in ds_result.not_ready_prob]
 
+
 def get_driverstate_packet(model_output: np.ndarray, frame_id: int, location_ts: int, execution_time: float, gpu_execution_time: float):
   model_result = ctypes.cast(model_output.ctypes.data, ctypes.POINTER(DMonitoringModelResult)).contents
   msg = messaging.new_message('driverStateV2', valid=True)
@@ -135,9 +133,11 @@ def get_driverstate_packet(model_output: np.ndarray, frame_id: int, location_ts:
 
 
 def main():
-  gc.disable()
   setproctitle(PROCESS_NAME)
-  set_realtime_priority(1)
+  config_realtime_process([0, 1, 2, 3], 5)
+
+  sentry.set_tag("daemon", PROCESS_NAME)
+  cloudlog.bind(daemon=PROCESS_NAME)
 
   cl_context = CLContext()
   model = ModelState(cl_context)
@@ -177,4 +177,10 @@ def main():
 
 
 if __name__ == "__main__":
-  main()
+  try:
+    main()
+  except KeyboardInterrupt:
+    cloudlog.warning(f"child {PROCESS_NAME} got SIGINT")
+  except Exception:
+    sentry.capture_exception()
+    raise

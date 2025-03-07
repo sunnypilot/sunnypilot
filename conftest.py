@@ -14,7 +14,6 @@ collect_ignore = [
   "selfdrive/ui/tests/test_translations",
   "selfdrive/test/process_replay/test_processes.py",
   "selfdrive/test/process_replay/test_regen.py",
-  "selfdrive/test/test_time_to_onroad.py",
 ]
 collect_ignore_glob = [
   "selfdrive/debug/*.py",
@@ -78,8 +77,10 @@ def openpilot_class_fixture():
 
 
 @pytest.fixture(scope="function")
-def tici_setup_fixture(openpilot_function_fixture):
+def tici_setup_fixture(request, openpilot_function_fixture):
   """Ensure a consistent state for tests on-device. Needs the openpilot function fixture to run first."""
+  if 'skip_tici_setup' in request.keywords:
+    return
   HARDWARE.initialize_hardware()
   HARDWARE.set_power_save(False)
   os.system("pkill -9 -f athena")

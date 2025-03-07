@@ -76,7 +76,7 @@ def sudo_write(val, path):
 
 def sudo_read(path: str) -> str:
   try:
-    return subprocess.check_output(f"sudo cat {path}", shell=True, encoding='utf8')
+    return subprocess.check_output(f"sudo cat {path}", shell=True, encoding='utf8').strip()
   except Exception:
     return ""
 
@@ -205,6 +205,8 @@ class Tici(HardwareBase):
     return str(self.get_modem().Get(MM_MODEM, 'EquipmentIdentifier', dbus_interface=DBUS_PROPS, timeout=TIMEOUT))
 
   def get_network_info(self):
+    if self.get_device_type() == "mici":
+      return None
     try:
       modem = self.get_modem()
       info = modem.Command("AT+QNWINFO", math.ceil(TIMEOUT), dbus_interface=MM_MODEM, timeout=TIMEOUT)
@@ -295,6 +297,8 @@ class Tici(HardwareBase):
       return None
 
   def get_modem_temperatures(self):
+    if self.get_device_type() == "mici":
+      return []
     timeout = 0.2  # Default timeout is too short
     try:
       modem = self.get_modem()
@@ -367,7 +371,7 @@ class Tici(HardwareBase):
 
     # *** CPU config ***
 
-    # offline big cluster, leave core 4 online for pandad
+    # offline big cluster
     for i in range(4, 8):
       val = '0' if powersave_enabled else '1'
       sudo_write(val, f'/sys/devices/system/cpu/cpu{i}/online')
@@ -380,13 +384,13 @@ class Tici(HardwareBase):
 
     # *** IRQ config ***
 
-    # GPU
-    affine_irq(5, "kgsl-3d0")
+    # GPU, modeld core
+    affine_irq(7, "kgsl-3d0")
 
     # camerad core
-    camera_irqs = ("cci", "cpas_camnoc", "cpas-cdm", "csid", "ife", "csid-lite", "ife-lite")
+    camera_irqs = ("a5", "cci", "cpas_camnoc", "cpas-cdm", "csid", "ife", "csid-lite", "ife-lite")
     for n in camera_irqs:
-      affine_irq(5, n)
+      affine_irq(6, n)
 
   def get_gpu_usage_percent(self):
     try:

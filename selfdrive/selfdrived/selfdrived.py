@@ -7,7 +7,7 @@ import cereal.messaging as messaging
 
 from cereal import car, log
 from msgq.visionipc import VisionIpcClient, VisionStreamType
-from panda import ALTERNATIVE_EXPERIENCE
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
 
 
 from openpilot.common.params import Params
@@ -87,7 +87,7 @@ class SelfdriveD:
     self.is_metric = self.params.get_bool("IsMetric")
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
 
-    car_recognized = self.CP.carName != 'mock'
+    car_recognized = self.CP.brand != 'mock'
 
     # cleanup old params
     if not self.CP.experimentalLongitudinalAvailable:
@@ -328,11 +328,11 @@ class SelfdriveD:
     if lac.active and not recent_steer_pressed and not self.CP.notCar:
       clipped_speed = max(CS.vEgo, MIN_LATERAL_CONTROL_SPEED)
       actual_lateral_accel = controlstate.curvature * (clipped_speed**2)
-      desired_lateral_accel = controlstate.desiredCurvature * (clipped_speed**2)
+      desired_lateral_accel = self.sm['modelV2'].action.desiredCurvature * (clipped_speed**2)
       undershooting = abs(desired_lateral_accel) / abs(1e-3 + actual_lateral_accel) > 1.2
       turning = abs(desired_lateral_accel) > 1.0
-      good_speed = CS.vEgo > 5
-      if undershooting and turning and good_speed and lac.saturated:
+      # TODO: lac.saturated includes speed and other checks, should be pulled out
+      if undershooting and turning and lac.saturated:
         self.events.add(EventName.steerSaturated)
 
     # Check for FCW

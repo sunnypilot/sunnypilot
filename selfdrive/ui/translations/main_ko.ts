@@ -121,7 +121,27 @@
     </message>
     <message>
         <source>Longitudinal Maneuver Mode</source>
-        <translation>롱컨 기동 모드</translation>
+        <translation>롱컨 제어 모드</translation>
+    </message>
+    <message>
+        <source>openpilot Longitudinal Control (Alpha)</source>
+        <translation>openpilot 가감속 제어 (알파)</translation>
+    </message>
+    <message>
+        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation>경고: openpilot 가감속 제어 알파 기능으로 차량의 자동긴급제동(AEB)을 비활성화합니다.</translation>
+    </message>
+    <message>
+        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
+        <translation>이 차량은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot의 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파를 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
+    </message>
+    <message>
+        <source>Enable ADB</source>
+        <translation>ADB 사용</translation>
+    </message>
+    <message>
+        <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
+        <translation>ADB (안드로이드 디버그 브릿지) USB 또는 네트워크를 통해 장치에 연결할 수 있습니다. 자세한 내용은 https://docs.comma.ai/how-to/connect-to-comma를 참조하세요.</translation>
     </message>
 </context>
 <context>
@@ -152,7 +172,7 @@
     </message>
     <message>
         <source>Reset Calibration</source>
-        <translation>캘리브레이션 초기화</translation>
+        <translation>캘리브레이션</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -164,7 +184,7 @@
     </message>
     <message>
         <source>Review Training Guide</source>
-        <translation>트레이닝 가이드 다시보기</translation>
+        <translation>트레이닝 가이드</translation>
     </message>
     <message>
         <source>REVIEW</source>
@@ -256,7 +276,7 @@
     </message>
     <message>
         <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>장치를 comma connect (connect.comma.ai)에서 페어링하고 comma prime 무료 이용권을 사용하세요.</translation>
+        <translation>장치를 comma connect (connect.comma.ai)에서 동기화하고 comma prime 무료 이용권을 사용하세요.</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -283,6 +303,39 @@
     <message>
         <source>CHILL MODE ON</source>
         <translation>안정 모드 사용</translation>
+    </message>
+</context>
+<context>
+    <name>FirehosePanel</name>
+    <message>
+        <source>🔥 Firehose Mode 🔥</source>
+        <translation>🔥 파이어호스 모드 🔥</translation>
+    </message>
+    <message>
+        <source>openpilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Firehose Mode: ACTIVE</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;%1 %2&lt;/b&gt; of your driving are in the training dataset so far.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ACTIVE</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to unmetered network</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -457,7 +510,7 @@
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
-        <translation type="unfinished"></translation>
+        <translation>초기 동기화를 완료하려면 Wi-Fi에 연결하세요.</translation>
     </message>
 </context>
 <context>
@@ -617,6 +670,10 @@ This may take up to a minute.</source>
         <source>Developer</source>
         <translation>개발자</translation>
     </message>
+    <message>
+        <source>Firehose</source>
+        <translation>파이어호스</translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
@@ -721,11 +778,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>장치를 comma connect (connect.comma.ai)에서 페어링하고 comma prime 무료 이용권을 사용하세요.</translation>
+        <translation>장치를 comma connect (connect.comma.ai)에서 동기화하고 comma prime 무료 이용권을 사용하세요.</translation>
     </message>
     <message>
         <source>Pair device</source>
-        <translation>장치 페어링</translation>
+        <translation>장치 동기화</translation>
     </message>
 </context>
 <context>
@@ -1010,18 +1067,6 @@ This may take up to a minute.</source>
         <translation>openpilot 가감속 제어는 향후 업데이트에서 지원될 수 있습니다.</translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>openpilot 가감속 제어 (알파)</translation>
-    </message>
-    <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>경고: openpilot 가감속 제어 알파 기능으로 차량의 자동긴급제동(AEB)을 비활성화합니다.</translation>
-    </message>
-    <message>
-        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>이 차량은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot의 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파를 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
-    </message>
-    <message>
         <source>Aggressive</source>
         <translation>공격적</translation>
     </message>
@@ -1104,24 +1149,16 @@ This may take up to a minute.</source>
 <context>
     <name>WiFiPromptWidget</name>
     <message>
-        <source>Setup Wi-Fi</source>
-        <translation>Wi-Fi 설정</translation>
+        <source>Open</source>
+        <translation>열기</translation>
     </message>
     <message>
-        <source>Connect to Wi-Fi to upload driving data and help improve openpilot</source>
-        <translation>Wi-Fi에 연결하여 주행 데이터를 업로드하고 openpilot 개선에 기여하세요</translation>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <translation>훈련 데이터 업로드를 최대화하여 오픈파일럿의 주행 모델을 개선하세요.</translation>
     </message>
     <message>
-        <source>Open Settings</source>
-        <translation>설정 열기</translation>
-    </message>
-    <message>
-        <source>Ready to upload</source>
-        <translation>업로드 준비 완료</translation>
-    </message>
-    <message>
-        <source>Training data will be pulled periodically while your device is on Wi-Fi</source>
-        <translation>기기가 Wi-Fi에 연결되어 있는 동안 트레이닝 데이터를 주기적으로 전송합니다</translation>
+        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
+        <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; 파이어호스 모드 &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
     </message>
 </context>
 <context>
