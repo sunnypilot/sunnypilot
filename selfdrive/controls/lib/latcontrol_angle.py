@@ -7,8 +7,8 @@ from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 STEER_ANGLE_SATURATION_THRESHOLD = 2.5  # Degrees
 
 # Define a speed-based scaling factor similar to low_speed_factor
-LOW_SPEED_X = [0, 10, 20, 30]   # Speed breakpoints
-LOW_SPEED_Y = [0.67, 0.77, 0.91, 1.0]  # Factor reducing influence at low speeds
+LOW_SPEED_X = [0, 3, 6, 10, 20, 30]   # Speed breakpoints
+LOW_SPEED_Y = [0, 0.33, 0.67, 0.77, 0.91, 1.0]  # Factor reducing influence at low speeds
 
 class LatControlAngle(LatControl):
   def __init__(self, CP, CP_SP, CI):
