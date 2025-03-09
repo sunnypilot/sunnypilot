@@ -156,7 +156,6 @@ jobs:
 
   process_replay:
     name: process replay
-    if: github.repository == 'commaai/openpilot' # process_replay blocked for the time being to only comma.
     runs-on:
       - 'ubuntu-24.04'
     steps:
