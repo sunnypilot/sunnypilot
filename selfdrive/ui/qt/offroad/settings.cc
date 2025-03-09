@@ -64,6 +64,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("idk something gas and brake"),
       "../assets/offroad/icon_blank.png",
     },
+	  {
+      "RainbowMode",
+      tr("Enable Tesla Rainbow Mode"),
+      tr("....."),
+      "../assets/offroad/icon_blank.png",
+    },
     {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
