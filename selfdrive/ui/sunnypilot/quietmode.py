@@ -1,5 +1,12 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from openpilot.common.params import Params
 from cereal import car
+
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
 class QuietDriveManager:
@@ -22,8 +29,11 @@ class QuietDriveManager:
     """
     AudibleAlert = car.CarControl.HUDControl.AudibleAlert
     # Define the conditions under which sounds should be played, using valid AudibleAlert values
-    return (self.current_alert == AudibleAlert.warningSoft or self.current_alert == AudibleAlert.warningImmediate or
-            self.current_alert == AudibleAlert.promptDistracted or self.current_alert == AudibleAlert.promptRepeat) or (not self.is_quiet_drive_enabled() and current_alert != AudibleAlert.none)
+    return bool((self.current_alert == AudibleAlert.warningSoft or
+                 self.current_alert == AudibleAlert.warningImmediate or
+                 self.current_alert == AudibleAlert.promptDistracted or
+                 self.current_alert == AudibleAlert.promptRepeat) or
+                (not self.is_quiet_drive_enabled() and current_alert != AudibleAlert.none))
 
 
 
