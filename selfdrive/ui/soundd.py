@@ -13,6 +13,8 @@ from openpilot.common.swaglog import cloudlog
 
 from openpilot.system import micd
 
+from openpilot.selfdrive.ui.sunnypilot.quietmode import QuietDriveManager
+
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
 MAX_VOLUME = 1.0
@@ -62,6 +64,14 @@ class Soundd:
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
 
+    self.quiet_drive_manager = QuietDriveManager()
+
+  def load_param(self):
+    self.quiet_drive_manager.load_param()
+
+  def should_play_sound(self):
+    return self.quiet_drive_manager.should_play_sound(self.current_alert)
+
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
 
@@ -81,7 +91,7 @@ class Soundd:
 
     ret = np.zeros(frames, dtype=np.float32)
 
-    if self.current_alert != AudibleAlert.none:
+    if self.should_play_sound():
       num_loops = sound_list[self.current_alert][1]
       sound_data = self.loaded_sounds[self.current_alert]
       written_frames = 0
