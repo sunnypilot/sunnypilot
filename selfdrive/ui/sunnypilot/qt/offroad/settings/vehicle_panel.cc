@@ -39,7 +39,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   std::vector<QString> tuning_buttons { tr("Off"), tr("Long Tune"), tr("Tune + Even Smoother Braking") };
   hkgtuningToggle = new ButtonParamControlSP(
     "HyundaiLongTune",
-    tr("Chubbs Tune"),
+    tr("HKG Tuning"),
     tr("Select tuning mode. Off means no tuning is currently applied. Long Tune is an dynamic accel/brake tuning tuned to your specific car. "
         "Tune + Smoother Braking is the dynamic tuning but with smoother braking applied."),
     "../assets/offroad/icon_shell.png",
