@@ -50,6 +50,8 @@ def manager_init() -> None:
     ("MadsUnifiedEngagementMode", "1"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", "")
+    ("HyundaiLongTune", "0"),
+    ("HyundaiSmootherBraking", "0"),
   ]
 
   if params.get_bool("RecordFrontLock"):
