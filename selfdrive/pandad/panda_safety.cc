@@ -63,9 +63,11 @@ void PandaSafety::setSafetyMode(const std::string &params_string) {
   AlignedBuffer aligned_buf;
   capnp::FlatArrayMessageReader cmsg(aligned_buf.align(params_string.data(), params_string.size()));
   cereal::CarParams::Reader car_params = cmsg.getRoot<cereal::CarParams>();
+  cereal::CarParamsSP::Reader car_params_sp = cmsg.getRoot<cereal::CarParamsSP>();
 
   auto safety_configs = car_params.getSafetyConfigs();
   uint16_t alternative_experience = car_params.getAlternativeExperience();
+  uint16_t safety_param_sp = car_params_sp.getSafetyParam();
 
   for (int i = 0; i < pandas_.size(); ++i) {
     // Default to SILENT safety model if not specified
@@ -76,8 +78,8 @@ void PandaSafety::setSafetyMode(const std::string &params_string) {
       safety_param = safety_configs[i].getSafetyParam();
     }
 
-    LOGW("Panda %d: setting safety model: %d, param: %d, alternative experience: %d", i, (int)safety_model, safety_param, alternative_experience);
-    pandas_[i]->set_alternative_experience(alternative_experience);
+    LOGW("Panda %d: setting safety model: %d, param: %d, alternative experience: %d, param_sp: %d", i, (int)safety_model, safety_param, alternative_experience, safety_param_sp);
+    pandas_[i]->set_alternative_experience(alternative_experience, safety_param_sp);
     pandas_[i]->set_safety_model(safety_model, safety_param);
   }
 }
