@@ -10,7 +10,8 @@ void PandaSafety::configureSafetyMode() {
 
     auto car_params = fetchCarParams();
     if (!car_params.empty()) {
-      LOGW("got %lu bytes CarParams", car_params.size());
+      LOGW("got %lu bytes CarParams", car_params[0].size());
+      LOGW("got %lu bytes CarParamsSP", car_params[1].size());
       setSafetyMode(car_params);
       safety_configured_ = true;
     }
@@ -43,7 +44,7 @@ void PandaSafety::updateMultiplexingMode() {
   }
 }
 
-std::string PandaSafety::fetchCarParams() {
+std::vector<std::string> PandaSafety::fetchCarParams() {
   if (!params_.getBool("FirmwareQueryDone")) {
     return {};
   }
@@ -56,14 +57,16 @@ std::string PandaSafety::fetchCarParams() {
   if (!params_.getBool("ControlsReady")) {
     return {};
   }
-  return params_.get("CarParams");
+  return {params_.get("CarParams"), params_.get("CarParamsSP")};
 }
 
-void PandaSafety::setSafetyMode(const std::string &params_string) {
+void PandaSafety::setSafetyMode(const std::vector<std::string> &params_string) {
   AlignedBuffer aligned_buf;
-  capnp::FlatArrayMessageReader cmsg(aligned_buf.align(params_string.data(), params_string.size()));
+  capnp::FlatArrayMessageReader cmsg(aligned_buf.align(params_string[0].data(), params_string[0].size()));
   cereal::CarParams::Reader car_params = cmsg.getRoot<cereal::CarParams>();
-  cereal::CarParamsSP::Reader car_params_sp = cmsg.getRoot<cereal::CarParamsSP>();
+
+  capnp::FlatArrayMessageReader cmsg_sp(aligned_buf.align(params_string[1].data(), params_string[1].size()));
+  cereal::CarParamsSP::Reader car_params_sp = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
   auto safety_configs = car_params.getSafetyConfigs();
   uint16_t alternative_experience = car_params.getAlternativeExperience();
