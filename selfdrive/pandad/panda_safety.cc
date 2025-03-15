@@ -44,6 +44,7 @@ void PandaSafety::updateMultiplexingMode() {
   }
 }
 
+// TODO-SP: Use structs instead of vector
 std::vector<std::string> PandaSafety::fetchCarParams() {
   if (!params_.getBool("FirmwareQueryDone")) {
     return {};
@@ -60,6 +61,7 @@ std::vector<std::string> PandaSafety::fetchCarParams() {
   return {params_.get("CarParams"), params_.get("CarParamsSP")};
 }
 
+// TODO-SP: Use structs instead of vector
 void PandaSafety::setSafetyMode(const std::vector<std::string> &params_string) {
   AlignedBuffer aligned_buf;
   capnp::FlatArrayMessageReader cmsg(aligned_buf.align(params_string[0].data(), params_string[0].size()));
