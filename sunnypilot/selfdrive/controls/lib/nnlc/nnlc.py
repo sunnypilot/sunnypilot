@@ -80,10 +80,13 @@ class NeuralNetworkLateralControl:
     self.lac_torque = lac_torque
     self.params = Params()
 
+    self.enabled = CP_SP.neuralNetworkLateralControl.enabled
+
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    self.flux_model = FluxModel(CP_SP.neuralNetworkLateralControl.modelPath)
+    # Only initialize FluxModel if enabled
+    self.flux_model = FluxModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
 
     self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
     self.torque_params = lac_torque.torque_params
@@ -102,8 +105,6 @@ class NeuralNetworkLateralControl:
     self._pid_log = None
 
     # twilsonco's Lateral Neural Network Feedforward
-    self.enabled = CP_SP.neuralNetworkLateralControl.enabled
-
     # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
     # however, we can "look ahead" to the future planned lateral jerk in order to gauge
     # whether the current desired lateral jerk will persist into the future, i.e.

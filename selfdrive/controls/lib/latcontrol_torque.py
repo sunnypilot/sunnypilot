@@ -34,8 +34,7 @@ class LatControlTorque(LatControl):
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
 
-    if CP_SP.neuralNetworkLateralControl.enabled:
-      self.nnlc = NeuralNetworkLateralControl(self, CP, CP_SP)
+    self.nnlc = NeuralNetworkLateralControl(self, CP, CP_SP)
 
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
