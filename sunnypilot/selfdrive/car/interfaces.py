@@ -41,6 +41,7 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
     CarInterfaceBase.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
   CP_SP.neuralNetworkLateralControl.modelPath = os.path.splitext(os.path.basename(nnlc_model_path))[0]
+  print("=========================NNLC_MODEL_PATH=========================: ", CP_SP.neuralNetworkLateralControl.modelPath)
   CP_SP.neuralNetworkLateralControl.modelName = nnlc_model_name
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = fuzzy_fingerprint
 
