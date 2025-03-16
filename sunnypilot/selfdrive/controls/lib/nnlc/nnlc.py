@@ -92,9 +92,9 @@ class NeuralNetworkLateralControl:
     self.lookahead_lateral_jerk: float = 0.0
 
     # twilsonco's Lateral Neural Network Feedforward
-    self.use_nn = self.CI.has_lateral_torque_nn  # FIXME-SP: cereal exists
+    self.enabled = self.CI.CP_SP.neuralNetworkLateralControl.enabled
 
-    if self.use_nn or self.use_lateral_jerk:
+    if self.enabled or self.use_lateral_jerk:
       # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
       # however, we can "look ahead" to the future planned lateral jerk in order to guage
       # whether the current desired lateral jerk will persist into the future, i.e.
@@ -113,7 +113,7 @@ class NeuralNetworkLateralControl:
       # precompute time differences between ModelConstants.T_IDXS
       self.t_diffs = np.diff(ModelConstants.T_IDXS)
       self.desired_lat_jerk_time = self.CP.steerActuatorDelay + 0.3
-    if self.use_nn:
+    if self.enabled:
       self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
       # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
       # of lat accel and roll
@@ -140,18 +140,18 @@ class NeuralNetworkLateralControl:
     self.model_v2 = model_v2
     self.model_valid = self.model_v2 is not None and len(self.model_v2.orientation.x) >= CONTROL_N
 
-  def update_lateral_jerk(self, CS, VM, desired_lateral_accel):
+  def update_calculations(self, CS, VM, desired_lateral_accel):
     self.actual_lateral_jerk = 0.0
     self.lateral_jerk_setpoint = 0.0
     self.lateral_jerk_measurement = 0.0
     self.lookahead_lateral_jerk = 0.0
 
     if self.use_steering_angle:
-      if self.use_nn or self.use_lateral_jerk:
+      if self.enabled or self.use_lateral_jerk:
         actual_curvature_rate = -VM.calc_curvature(math.radians(CS.steeringRateDeg), CS.vEgo, 0.0)
         self.actual_lateral_jerk = actual_curvature_rate * CS.vEgo ** 2
 
-    if self.model_valid and (self.use_nn or self.use_lateral_jerk):
+    if self.model_valid and (self.enabled or self.use_lateral_jerk):
       # prepare "look-ahead" desired lateral jerk
       lookahead = np.interp(CS.vEgo, self.friction_look_ahead_bp, self.friction_look_ahead_v)
       friction_upper_idx = next((i for i, val in enumerate(ModelConstants.T_IDXS) if val > lookahead), 16)
@@ -167,10 +167,10 @@ class NeuralNetworkLateralControl:
       self.lateral_jerk_setpoint = self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
       self.lateral_jerk_measurement = self.lat_jerk_friction_factor * self.actual_lateral_jerk
 
-  def update_neural_network(self, CS, params, pid_log, setpoint, measurement, calibrated_pose,
+  def update_feed_forward(self, CS, params, pid_log, setpoint, measurement, calibrated_pose,
                             desired_lateral_accel, lateral_accel_deadzone):
 
-    if not self.use_nn or self.model_valid:
+    if not self.enabled or self.model_valid:
       return 0.0, pid_log
 
     # update past data
