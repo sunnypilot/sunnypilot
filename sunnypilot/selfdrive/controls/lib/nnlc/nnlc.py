@@ -110,7 +110,7 @@ class NeuralNetworkLateralControl:
     # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
     # however, we can "look ahead" to the future planned lateral jerk in order to gauge
     # whether the current desired lateral jerk will persist into the future, i.e.
-    # whether it's "deliberate" or not. This lets us simply ignore short-lived jerk.
+    # whether it's "deliberate" or not. This allows us to simply ignore short-lived jerk.
     # Note that LAT_PLAN_MIN_IDX is defined above and is used in order to prevent
     # using a "future" value that is actually planned to occur before the "current" desired
     # value, which is offset by the steerActuatorDelay.
