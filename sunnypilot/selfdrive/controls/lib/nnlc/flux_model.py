@@ -27,7 +27,7 @@ Last updated: July 29, 2024
 import numpy as np
 from json import load
 
-from openpilot.sunnypilot.selfdrive.car.nnlc.helpers import ACTIVATION_FUNCTION_NAMES
+from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import ACTIVATION_FUNCTION_NAMES
 
 
 class FluxModel:
