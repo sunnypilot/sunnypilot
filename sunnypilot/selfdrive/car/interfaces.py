@@ -5,8 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import os
-
 from opendbc.car import Bus, structs
 from opendbc.car.can_definitions import CanRecvCallable, CanSendCallable
 from opendbc.car.car_helpers import can_fingerprint
