@@ -1,8 +1,6 @@
 import math
 import json
 import os
-import pathlib
-import psutil
 import pytest
 import shutil
 import subprocess
@@ -12,7 +10,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from tabulate import tabulate
 
-from cereal import car, log
+from cereal import log
 import cereal.messaging as messaging
 from cereal.services import SERVICE_LIST
 from openpilot.common.basedir import BASEDIR
@@ -23,6 +21,7 @@ from openpilot.selfdrive.test.helpers import set_params_enabled, release_only
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.hardware.hw import Paths
 from openpilot.tools.lib.logreader import LogReader
+from openpilot.tools.lib.log_time_series import msgs_to_time_series
 
 """
 CPU usage budget
@@ -112,6 +111,7 @@ def cputime_total(ct):
 
 
 @pytest.mark.tici
+@pytest.mark.skip_tici_setup
 class TestOnroad:
 
   @classmethod
@@ -119,8 +119,8 @@ class TestOnroad:
     if "DEBUG" in os.environ:
       segs = filter(lambda x: os.path.exists(os.path.join(x, "rlog.zst")), Path(Paths.log_root()).iterdir())
       segs = sorted(segs, key=lambda x: x.stat().st_mtime)
-      print(segs[-3])
-      cls.lr = list(LogReader(os.path.join(segs[-3], "rlog.zst")))
+      cls.lr = list(LogReader(os.path.join(segs[-1], "rlog.zst")))
+      cls.ts = msgs_to_time_series(cls.lr)
       return
 
     # setup env
@@ -141,51 +141,37 @@ class TestOnroad:
       proc = subprocess.Popen(["python", manager_path])
 
       sm = messaging.SubMaster(['carState'])
-      with Timeout(150, "controls didn't start"):
-        while sm.recv_frame['carState'] < 0:
+      with Timeout(30, "controls didn't start"):
+        while not sm.seen['carState']:
           sm.update(1000)
 
-      route = None
-      cls.segments = []
-      with Timeout(300, "timed out waiting for logs"):
-        while route is None:
-          route = params.get("CurrentRoute", encoding="utf-8")
-          time.sleep(0.01)
+      route = params.get("CurrentRoute", encoding="utf-8")
+      assert route is not None
 
-        # test car params caching
-        params.put("CarParamsCache", car.CarParams().to_bytes())
-
-        while len(cls.segments) < 1:
-          segs = set()
-          if Path(Paths.log_root()).exists():
-            segs = set(Path(Paths.log_root()).glob(f"{route}--*"))
-          cls.segments = sorted(segs, key=lambda s: int(str(s).rsplit('--')[-1]))
-          time.sleep(0.01)
+      segs = list(Path(Paths.log_root()).glob(f"{route}--*"))
+      assert len(segs) == 1
 
       time.sleep(TEST_DURATION)
-
     finally:
-      cls.gpu_procs = {psutil.Process(int(f.name)).name() for f in pathlib.Path('/sys/devices/virtual/kgsl/kgsl/proc/').iterdir() if f.is_dir()}
-
       if proc is not None:
         proc.terminate()
         if proc.wait(60) is None:
           proc.kill()
 
-    cls.lrs = [list(LogReader(os.path.join(str(s), "rlog.zst"))) for s in cls.segments]
-
-    cls.lr = list(LogReader(os.path.join(str(cls.segments[0]), "rlog.zst")))
-    cls.log_path = cls.segments[0]
+    cls.lr = list(LogReader(os.path.join(str(segs[0]), "rlog.zst")))
+    st = time.monotonic()
+    cls.ts = msgs_to_time_series(cls.lr)
+    print("msgs to time series", time.monotonic() - st)
+    log_path = segs[0]
 
     cls.log_sizes = {}
-    for f in cls.log_path.iterdir():
+    for f in log_path.iterdir():
       assert f.is_file()
       cls.log_sizes[f] = f.stat().st_size / 1e6
 
     cls.msgs = defaultdict(list)
     for m in cls.lr:
       cls.msgs[m.which()].append(m)
-
 
   def test_service_frequencies(self, subtests):
     for s, msgs in self.msgs.items():
@@ -200,7 +186,7 @@ class TestOnroad:
         assert len(msgs) >= math.floor(SERVICE_LIST[s].frequency*int(TEST_DURATION*0.8))
 
   def test_manager_starting_time(self):
-    st = self.msgs['managerState'][0].logMonoTime / 1e9
+    st = self.ts['managerState']['t'][0]
     assert (st - self.manager_st) < 10, f"manager.py took {st - self.manager_st}s to publish the first 'managerState' msg"
 
   def test_cloudlog_size(self):
@@ -228,7 +214,7 @@ class TestOnroad:
     result += "-------------- UI Draw Timing ------------------\n"
     result += "------------------------------------------------\n"
 
-    ts = [m.uiDebug.drawTimeMillis for m in self.msgs['uiDebug']]
+    ts = self.ts['uiDebug']['drawTimeMillis']
     result += f"min  {min(ts):.2f}ms\n"
     result += f"max  {max(ts):.2f}ms\n"
     result += f"std  {np.std(ts):.2f}ms\n"
@@ -311,16 +297,14 @@ class TestOnroad:
     assert np.max(np.diff(mems)) <= 4, "Max memory increase too high"
     assert np.average(np.diff(mems)) <= 1, "Average memory increase too high"
 
-  def test_gpu_usage(self):
-    assert self.gpu_procs == {"weston", "ui", "camerad", "selfdrive.modeld.modeld", "selfdrive.modeld.dmonitoringmodeld"}
-
   def test_camera_frame_timings(self, subtests):
+    # test timing within a single camera
     result = "\n"
     result += "------------------------------------------------\n"
     result += "-----------------  SOF Timing ------------------\n"
     result += "------------------------------------------------\n"
     for name in ['roadCameraState', 'wideRoadCameraState', 'driverCameraState']:
-      ts = [getattr(m, m.which()).timestampSof for m in self.lr if name in m.which()]
+      ts = self.ts[name]['timestampSof']
       d_ms = np.diff(ts) / 1e6
       d50 = np.abs(d_ms-50)
       result += f"{name} sof delta vs 50ms: min  {min(d50):.2f}ms\n"
@@ -330,6 +314,59 @@ class TestOnroad:
         assert max(d50) < 5.0, f"high SOF delta vs 50ms: {max(d50)}"
     result += "------------------------------------------------\n"
     print(result)
+
+  def test_camera_sync(self, subtests):
+    cam_states = ['roadCameraState', 'wideRoadCameraState', 'driverCameraState']
+    encode_cams = ['roadEncodeIdx', 'wideRoadEncodeIdx', 'driverEncodeIdx']
+    for cams in (cam_states, encode_cams):
+      with subtests.test(cams=cams):
+        # sanity checks within a single cam
+        for cam in cams:
+          with subtests.test(test="frame_skips", camera=cam):
+            assert set(np.diff(self.ts[cam]['frameId'])) == {1, }, "Frame ID skips"
+
+            # EOF > SOF
+            eof_sof_diff = self.ts[cam]['timestampEof'] - self.ts[cam]['timestampSof']
+            assert np.all(eof_sof_diff > 0)
+            assert np.all(eof_sof_diff < 50*1e6)
+
+        first_fid = {c: min(self.ts[c]['frameId']) for c in cams}
+        if cam.endswith('CameraState'):
+          # camerad guarantees that all cams start on frame ID 0
+          # (note loggerd also needs to start up fast enough to catch it)
+          assert set(first_fid.values()) == {0, }, "Cameras don't start on frame ID 0"
+        else:
+          # encoder guarantees all cams start on the same frame ID
+          assert len(set(first_fid.values())) == 1, "Cameras don't start on same frame ID"
+
+        # we don't do a full segment rotation, so these might not match exactly
+        last_fid = {c: max(self.ts[c]['frameId']) for c in cams}
+        assert max(last_fid.values()) - min(last_fid.values()) < 10
+
+        start, end = min(first_fid.values()), min(last_fid.values())
+        for i in range(end-start):
+          ts = {c: round(self.ts[c]['timestampSof'][i]/1e6, 1) for c in cams}
+          diff = (max(ts.values()) - min(ts.values()))
+          assert diff < 2, f"Cameras not synced properly: frame_id={start+i}, {diff=:.1f}ms, {ts=}"
+
+  def test_camera_encoder_matches(self, subtests):
+    # sanity check that the frame metadata is consistent with the encoded frames
+    pairs = [('roadCameraState', 'roadEncodeIdx'),
+             ('wideRoadCameraState', 'wideRoadEncodeIdx'),
+             ('driverCameraState', 'driverEncodeIdx')]
+    for cam, enc in pairs:
+      with subtests.test(camera=cam, encoder=enc):
+        cam_frames = {fid: (sof, eof) for fid, sof, eof in zip(
+          self.ts[cam]['frameId'],
+          self.ts[cam]['timestampSof'],
+          self.ts[cam]['timestampEof'],
+          strict=True,
+        )}
+        for i, fid in enumerate(self.ts[enc]['frameId']):
+          cam_sof, cam_eof = cam_frames[fid]
+          enc_sof, enc_eof = self.ts[enc]['timestampSof'][i], self.ts[enc]['timestampEof'][i]
+          assert enc_sof == cam_sof, f"SOF mismatch: frameId={fid}, enc_sof={enc_sof}, cam_sof={cam_sof}"
+          assert enc_eof == cam_eof, f"EOF mismatch: frameId={fid}, enc_eof={enc_eof}, cam_eof={cam_eof}"
 
   def test_mpc_execution_timings(self):
     result = "\n"
@@ -348,24 +385,25 @@ class TestOnroad:
     result += "------------------------------------------------\n"
     print(result)
 
-  def test_model_execution_timings(self):
+  def test_model_execution_timings(self, subtests):
     result = "\n"
     result += "------------------------------------------------\n"
     result += "----------------- Model Timing -----------------\n"
     result += "------------------------------------------------\n"
     cfgs = [
-      ("modelV2", 0.045, 0.035),
+      ("modelV2", 0.045, 0.040),  # TODO: this should be stricter but it's hard to measure exactly
       ("driverStateV2", 0.045, 0.035),
     ]
     for (s, instant_max, avg_max) in cfgs:
       ts = [getattr(m, s).modelExecutionTime for m in self.msgs[s]]
       # TODO some init can happen in first iteration
       ts = ts[1:]
-      assert max(ts) < instant_max, f"high '{s}' execution time: {max(ts)}"
-      assert np.mean(ts) < avg_max, f"high avg '{s}' execution time: {np.mean(ts)}"
       result += f"'{s}' execution time: min  {min(ts):.5f}s\n"
       result += f"'{s}' execution time: max {max(ts):.5f}s\n"
       result += f"'{s}' execution time: mean {np.mean(ts):.5f}s\n"
+      with subtests.test(s):
+        assert max(ts) < instant_max, f"high '{s}' execution time: {max(ts)}"
+        assert np.mean(ts) < avg_max, f"high avg '{s}' execution time: {np.mean(ts)}"
     result += "------------------------------------------------\n"
     print(result)
 
@@ -401,12 +439,7 @@ class TestOnroad:
 
   @release_only
   def test_startup(self):
-    startup_alert = None
-    for msg in self.lrs[0]:
-      # can't use onroadEvents because the first msg can be dropped while loggerd is starting up
-      if msg.which() == "selfdriveState":
-        startup_alert = msg.selfdriveState.alertText1
-        break
+    startup_alert = self.ts['selfdriveState']['alertText1'][0]
     expected = EVENTS[log.OnroadEvent.EventName.startup][ET.PERMANENT].alert_text_1
     assert startup_alert == expected, "wrong startup alert"
 

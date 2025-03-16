@@ -150,7 +150,7 @@ def get_RadarState_from_vision(lead_msg: capnp._DynamicStructReader, v_ego: floa
     "vRel": float(lead_v_rel_pred),
     "vLead": float(v_ego + lead_v_rel_pred),
     "vLeadK": float(v_ego + lead_v_rel_pred),
-    "aLeadK": 0.0,
+    "aLeadK": float(lead_msg.a[0]),
     "aLeadTau": 0.3,
     "fcw": False,
     "modelProb": float(lead_msg.prob),
@@ -211,9 +211,7 @@ class RadarD:
       self.v_ego_hist.append(self.v_ego)
       self.last_v_ego_frame = sm.recv_frame['carState']
 
-    ar_pts = {}
-    for pt in rr.points:
-      ar_pts[pt.trackId] = [pt.dRel, pt.yRel, pt.vRel, pt.measured]
+    ar_pts = {pt.trackId: [pt.dRel, pt.yRel, pt.vRel, pt.measured] for pt in rr.points}
 
     # *** remove missing points from meta data ***
     for ids in list(self.tracks.keys()):
