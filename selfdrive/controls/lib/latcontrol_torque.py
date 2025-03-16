@@ -74,9 +74,9 @@ class LatControlTorque(LatControl):
 
       gravity_adjusted_lateral_accel = desired_lateral_accel - roll_compensation
       torque_from_setpoint = self.torque_from_lateral_accel(LatControlInputs(setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-                                                            self.nnlc.lateral_jerk_setpoint, lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False)
+                                                            self.nnlc.lateral_jerk_setpoint, lateral_accel_deadzone, friction_compensation=self.nnlc.use_lateral_jerk, gravity_adjusted=False)
       torque_from_measurement = self.torque_from_lateral_accel(LatControlInputs(measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-                                                               self.nnlc.lateral_jerk_measurement, lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False)
+                                                               self.nnlc.lateral_jerk_measurement, lateral_accel_deadzone, friction_compensation=self.nnlc.use_lateral_jerk, gravity_adjusted=False)
       pid_log.error = float(torque_from_setpoint - torque_from_measurement)
       error = desired_lateral_accel - actual_lateral_accel
       friction_input = self.nnlc.update_stock_lateral_jerk(error) if self.nnlc.use_lateral_jerk else error
