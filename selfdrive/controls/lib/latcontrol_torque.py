@@ -67,22 +67,20 @@ class LatControlTorque(LatControl):
       low_speed_factor = np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y)**2
       setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
-
-      self.nnlc.update_calculations(CS, VM, desired_lateral_accel)
-      ff, pid_log = self.nnlc.update_feed_forward(CS, params, pid_log, setpoint, measurement, calibrated_pose,
-                                                    desired_lateral_accel, lateral_accel_deadzone)
-
       gravity_adjusted_lateral_accel = desired_lateral_accel - roll_compensation
       torque_from_setpoint = self.torque_from_lateral_accel(LatControlInputs(setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-                                                            self.nnlc.lateral_jerk_setpoint, lateral_accel_deadzone, friction_compensation=self.nnlc.use_lateral_jerk, gravity_adjusted=False)
+                                                            setpoint, lateral_accel_deadzone, friction_compensation=False, gravity_adjusted=False)
       torque_from_measurement = self.torque_from_lateral_accel(LatControlInputs(measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-                                                               self.nnlc.lateral_jerk_measurement, lateral_accel_deadzone, friction_compensation=self.nnlc.use_lateral_jerk, gravity_adjusted=False)
+                                                               measurement, lateral_accel_deadzone, friction_compensation=False, gravity_adjusted=False)
       pid_log.error = float(torque_from_setpoint - torque_from_measurement)
-      error = desired_lateral_accel - actual_lateral_accel
-      friction_input = self.nnlc.update_stock_lateral_jerk(error) if self.nnlc.use_lateral_jerk else error
       ff = self.torque_from_lateral_accel(LatControlInputs(gravity_adjusted_lateral_accel, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-                                          friction_input, lateral_accel_deadzone, friction_compensation=True,
+                                          desired_lateral_accel - actual_lateral_accel, lateral_accel_deadzone, friction_compensation=True,
                                           gravity_adjusted=True)
+
+      # Neural Network Lateral Control updates
+      # Override stock ff and pid_log.error
+      ff, pid_log = self.nnlc.update(CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
+                                     desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel)
 
       freeze_integrator = steer_limited_by_controls or CS.steeringPressed or CS.vEgo < 5
       output_torque = self.pid.update(pid_log.error,

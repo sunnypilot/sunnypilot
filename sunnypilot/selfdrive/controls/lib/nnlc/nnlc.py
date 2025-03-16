@@ -77,6 +77,7 @@ def roll_pitch_adjust(roll, pitch):
 
 class NeuralNetworkLateralControl:
   def __init__(self, lac_torque):
+    self.lac_torque = lac_torque
     self.CI = lac_torque.CI
     self.CP = lac_torque.CP
     self.CP_SP = lac_torque.CI.CP_SP
@@ -99,6 +100,9 @@ class NeuralNetworkLateralControl:
     self.lateral_jerk_setpoint: float = 0.0
     self.lateral_jerk_measurement: float = 0.0
     self.lookahead_lateral_jerk: float = 0.0
+
+    self._ff = 0.0
+    self._pid_log = None
 
     # twilsonco's Lateral Neural Network Feedforward
     self.enabled = self.CI.CP_SP.neuralNetworkLateralControl.enabled
@@ -170,11 +174,11 @@ class NeuralNetworkLateralControl:
       self.lateral_jerk_setpoint = self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
       self.lateral_jerk_measurement = self.lat_jerk_friction_factor * self.actual_lateral_jerk
 
-  def update_feed_forward(self, CS, params, pid_log, setpoint, measurement, calibrated_pose,
+  def update_feed_forward(self, CS, params, setpoint, measurement, calibrated_pose,
                             desired_lateral_accel, lateral_accel_deadzone):
 
     if not self.enabled or not self.model_valid:
-      return 0.0, pid_log
+      return
 
     # update past data
     roll = params.roll
@@ -207,7 +211,7 @@ class NeuralNetworkLateralControl:
                              + past_rolls + future_rolls
     torque_from_setpoint = self.flux_model.evaluate(nnff_setpoint_input)
     torque_from_measurement = self.flux_model.evaluate(nnff_measurement_input)
-    pid_log.error = torque_from_setpoint - torque_from_measurement
+    self._pid_log.error = torque_from_setpoint - torque_from_measurement
 
     # compute feedforward (same as nn setpoint output)
     error = setpoint - measurement
@@ -215,19 +219,46 @@ class NeuralNetworkLateralControl:
     nn_input = [CS.vEgo, desired_lateral_accel, friction_input, roll] \
                + past_lateral_accels_desired + future_planned_lateral_accels \
                + past_rolls + future_rolls
-    ff = self.flux_model.evaluate(nn_input)
+    self._ff = self.flux_model.evaluate(nn_input)
 
     # apply friction override for cars with low NN friction response
     if self.flux_model.friction_override:
-      pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
+      self._pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
                                                       friction_input,
                                                       lateral_accel_deadzone, friction_compensation=True,
                                                       gravity_adjusted=False)
 
-    return ff, pid_log
+  def update_stock_lateral_jerk(self, CS, setpoint, measurement, roll_compensation, desired_lateral_accel, actual_lateral_accel,
+                                lateral_accel_deadzone, gravity_adjusted_lateral_accel):
+    if not self.use_lateral_jerk:
+      return
 
-  def update_stock_lateral_jerk(self, error):
-    accel_error = self.lat_accel_friction_factor * error
-    jerk_error = self.lat_jerk_friction_factor * self.actual_lateral_jerk
+    _error = desired_lateral_accel - actual_lateral_accel
+    friction_input = self.lat_accel_friction_factor * _error + self.lat_jerk_friction_factor * self.actual_lateral_jerk
 
-    return accel_error + jerk_error
+    torque_from_setpoint = self.torque_from_lateral_accel(
+      LatControlInputs(setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
+      self.lateral_jerk_setpoint, lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False
+    )
+    torque_from_measurement = self.torque_from_lateral_accel(
+      LatControlInputs(measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
+      self.lateral_jerk_measurement, lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False
+    )
+    self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)
+    self._ff = self.torque_from_lateral_accel(LatControlInputs(gravity_adjusted_lateral_accel, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
+                                        friction_input, lateral_accel_deadzone, friction_compensation=True,
+                                        gravity_adjusted=True)
+
+  def update(self, CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
+             desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel):
+    self._ff = ff
+    self._pid_log = pid_log
+
+    self.update_calculations(CS, VM, desired_lateral_accel)
+
+    self.update_feed_forward(CS, params, setpoint, measurement, calibrated_pose, desired_lateral_accel, lateral_accel_deadzone)
+
+    self.update_stock_lateral_jerk(CS, setpoint, measurement, roll_compensation, desired_lateral_accel, actual_lateral_accel,
+                                   lateral_accel_deadzone, gravity_adjusted_lateral_accel)
+
+    return self._ff, self._pid_log
