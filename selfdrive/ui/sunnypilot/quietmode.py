@@ -11,17 +11,19 @@ AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
 class QuietDriveManager:
   def __init__(self):
-    self.current_alert = AudibleAlert.none
+    self.current_alert: int = AudibleAlert.none  # Explicitly declare as int
     self.param_s = Params()
-    self.quiet_drive = self.param_s.get_bool("QuietDrive")
+    self.quiet_drive: bool = bool(self.param_s.get_bool("QuietDrive"))
     self._frame = 0
 
-  def load_param(self):
+  def load_param(self) -> None:
     self._frame += 1
     if self._frame == 50:
-      self.quiet_drive = self.param_s.get_bool("QuietDrive")
+      self.quiet_drive = bool(self.param_s.get_bool("QuietDrive"))
+
   def is_quiet_drive_enabled(self) -> bool:
-    return self.quiet_drive
+    return bool(self.quiet_drive)
+
   def should_play_sound(self, current_alert: int) -> bool:
     """
     Check if a sound should be played based on the quiet drive setting
