@@ -117,7 +117,7 @@ class Controls:
       self.LoC.reset()
 
     # Neural Network Lateral Control
-    if self.CP_SP.neuralNetworkLateralControl.enabled and self.CP.steerControlType.which() == 'torque':
+    if self.CP_SP.neuralNetworkLateralControl.enabled:
       self.LaC.nnlc.update_model_v2(model_v2)
 
     # accel PID loop
