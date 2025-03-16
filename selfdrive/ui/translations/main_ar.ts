@@ -981,7 +981,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Firehose</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">خرطوم الحريق</translation>
     </message>
 </context>
 <context>
@@ -1476,6 +1476,22 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Sponsor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>THANKS ♥</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

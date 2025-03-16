@@ -1446,7 +1446,7 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>PAIR</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">ASSOCIER</translation>
     </message>
     <message>
         <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
@@ -1454,6 +1454,22 @@ Cela peut prendre jusqu&apos;à une minute.</translation>
     </message>
     <message>
         <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Sponsor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>THANKS ♥</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

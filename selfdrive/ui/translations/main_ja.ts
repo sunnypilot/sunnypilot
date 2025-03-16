@@ -954,7 +954,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Firehose</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">データ学習</translation>
     </message>
 </context>
 <context>
@@ -1441,7 +1441,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>PAIR</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">OK</translation>
     </message>
     <message>
         <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
@@ -1449,6 +1449,22 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Sponsor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Paired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>THANKS ♥</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
