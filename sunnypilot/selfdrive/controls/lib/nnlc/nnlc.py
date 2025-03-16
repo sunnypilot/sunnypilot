@@ -32,7 +32,6 @@ from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.car.helpers import convert_to_capnp
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.flux_model import FluxModel
 
 LOW_SPEED_Y_NN = [12, 3, 1, 0]
@@ -77,17 +76,14 @@ def roll_pitch_adjust(roll, pitch):
 
 
 class NeuralNetworkLateralControl:
-  def __init__(self, lac_torque, CI, CP):
+  def __init__(self, lac_torque, CP, CP_SP):
     self.lac_torque = lac_torque
-    self.CI = CI
-    self.CP = CP
-    self.CP_SP = convert_to_capnp(CI.CP_SP)
     self.params = Params()
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    self.flux_model = FluxModel(self.CP_SP.neuralNetworkLateralControl.modelPath)
+    self.flux_model = FluxModel(CP_SP.neuralNetworkLateralControl.modelPath)
 
     self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
     self.torque_params = lac_torque.torque_params
@@ -106,7 +102,7 @@ class NeuralNetworkLateralControl:
     self._pid_log = None
 
     # twilsonco's Lateral Neural Network Feedforward
-    self.enabled = self.CI.CP_SP.neuralNetworkLateralControl.enabled
+    self.enabled = CP_SP.neuralNetworkLateralControl.enabled
 
     # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
     # however, we can "look ahead" to the future planned lateral jerk in order to gauge
@@ -125,13 +121,13 @@ class NeuralNetworkLateralControl:
 
     # precompute time differences between ModelConstants.T_IDXS
     self.t_diffs = np.diff(ModelConstants.T_IDXS)
-    self.desired_lat_jerk_time = self.CP.steerActuatorDelay + 0.3
+    self.desired_lat_jerk_time = CP.steerActuatorDelay + 0.3
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
 
     # setup future time offsets
-    self.nn_time_offset = self.CP.steerActuatorDelay + 0.2
+    self.nn_time_offset = CP.steerActuatorDelay + 0.2
     future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
     self.nn_future_times = [i + self.nn_time_offset for i in future_times]
     self.nn_future_times_np = np.array(self.nn_future_times)

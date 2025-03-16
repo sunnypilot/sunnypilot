@@ -25,8 +25,8 @@ LOW_SPEED_Y = [15, 13, 10, 5]
 
 
 class LatControlTorque(LatControl):
-  def __init__(self, CP, CI):
-    super().__init__(CP, CI)
+  def __init__(self, CP, CP_SP, CI):
+    super().__init__(CP, CP_SP, CI)
     self.torque_params = CP.lateralTuning.torque.as_builder()
     self.pid = PIDController(self.torque_params.kp, self.torque_params.ki,
                              k_f=self.torque_params.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
@@ -34,7 +34,7 @@ class LatControlTorque(LatControl):
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
 
-    self.nnlc = NeuralNetworkLateralControl(self, CP, CI)
+    self.nnlc = NeuralNetworkLateralControl(self, CP, CP_SP)
 
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
