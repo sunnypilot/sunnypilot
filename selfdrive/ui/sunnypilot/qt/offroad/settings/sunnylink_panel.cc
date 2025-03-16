@@ -127,6 +127,9 @@ void SunnylinkPanel::stopSunnylink() const {
 
 void SunnylinkPanel::showEvent(QShowEvent *event) {
   updatePanel();
+  if (is_sunnylink_enabled) {
+      startSunnylink();
+  }
 }
 
 void SunnylinkPanel::updatePanel() {
@@ -149,7 +152,7 @@ void SunnylinkPanel::updatePanel() {
   sunnylinkEnabledBtn->setValue(tr("Device ID") + " " + sunnylinkDongleId);
 
   sponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
-  sponsorBtn->setText(is_sub ? tr("THANKS") + " ❤️" : tr("SPONSOR"));
+  sponsorBtn->setText(is_sub ? tr("THANKS ♥")/* + " ♥️"*/ : tr("SPONSOR"));
   sponsorBtn->setValue(is_sub ? tr(role_name.toStdString().c_str()) : tr("Not Sponsor"), role_color);
 
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
