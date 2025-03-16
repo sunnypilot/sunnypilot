@@ -32,7 +32,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import ACTIVATION_
 
 class FluxModel:
   def __init__(self, params_file, zero_bias=False):
-    with open(params_file, "r") as f:
+    with open(params_file) as f:
       params = load(f)
 
     self.input_size = params["input_size"]
@@ -91,7 +91,7 @@ class FluxModel:
     return float(output_array[0, 0])
 
   def validate_layers(self):
-    for W, b, activation in self.layers:
+    for _, _, activation in self.layers:
       if not hasattr(self, activation):
         raise ValueError(f"Unknown activation: {activation}")
 
