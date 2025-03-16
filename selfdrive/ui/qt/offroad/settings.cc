@@ -10,6 +10,9 @@
 #include "common/util.h"
 #include "selfdrive/ui/qt/network/networking.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
+
+#include <common/swaglog.h>
+
 #include "selfdrive/ui/qt/qt_window.h"
 #include "selfdrive/ui/qt/widgets/prime.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
@@ -344,7 +347,11 @@ void SettingsWindow::setCurrentPanel(int index, const QString &param) {
       
       // Find the panel by name
       for (int i = 0; i < nav_btns->buttons().size(); i++) {
-        if (nav_btns->buttons()[i]->text() == tr(panelName.toStdString().c_str())) {
+        bool panel_trimmed = false;
+#ifdef SUNNYPILOT
+        panel_trimmed = nav_btns->buttons()[i]->text().trimmed() == tr(panelName.toStdString().c_str());
+#endif
+        if ((nav_btns->buttons()[i]->text() == tr(panelName.toStdString().c_str())) || panel_trimmed) {
           index = i;
           break;
         }
