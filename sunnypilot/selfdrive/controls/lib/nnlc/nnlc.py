@@ -76,11 +76,11 @@ def roll_pitch_adjust(roll, pitch):
 
 
 class NeuralNetworkLateralControl:
-  def __init__(self, lac_torque):
+  def __init__(self, lac_torque, CI, CP):
     self.lac_torque = lac_torque
-    self.CI = lac_torque.CI
-    self.CP = lac_torque.CP
-    self.CP_SP = lac_torque.CI.CP_SP
+    self.CI = CI
+    self.CP = CP
+    self.CP_SP = CI.CP_SP
     self.params = Params()
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
