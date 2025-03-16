@@ -7,7 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 
 import os
 
-from cereal import custom
 from opendbc.car import Bus, structs
 from opendbc.car.can_definitions import CanRecvCallable, CanSendCallable
 from opendbc.car.car_helpers import can_fingerprint
@@ -28,7 +27,7 @@ def log_fingerprint(CP: structs.CarParams) -> None:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
 
-def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: custom.CarParamsSP, params) -> None:
+def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params) -> None:
   nnlc_model_path, nnlc_model_name, fuzzy_fingerprint = get_nn_model_path(CP)
 
   if nnlc_model_path is None:
