@@ -23,7 +23,7 @@ class TestLatControl:
     CI = CarInterface(CP, CP_SP, CarController, CarState)
     VM = VehicleModel(CP)
 
-    controller = controller(CP.as_reader(), CI)
+    controller = controller(CP.as_reader(), CP_SP.as_reader(), CI)
 
     CS = car.CarState.new_message()
     CS.vEgo = 30
