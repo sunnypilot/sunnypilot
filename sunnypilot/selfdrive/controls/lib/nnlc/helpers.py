@@ -72,6 +72,3 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
 
   fuzzy_fingerprint = max_similarity < 0.99
   return model_path, _model_name, fuzzy_fingerprint
-
-if __name__ == "__main__":
-  print(TORQUE_NN_MODEL_PATH)
