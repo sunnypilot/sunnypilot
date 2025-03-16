@@ -28,6 +28,7 @@ import math
 import numpy as np
 
 from opendbc.car.interfaces import LatControlInputs
+from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
@@ -79,6 +80,7 @@ class NeuralNetworkLateralControl:
     self.CI = lac_torque.CI
     self.CP = lac_torque.CP
     self.CP_SP = lac_torque.CI.CP_SP
+    self.params = Params()
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
@@ -90,7 +92,7 @@ class NeuralNetworkLateralControl:
 
     self.model_v2 = None
     self.model_valid = False
-    self.use_lateral_jerk: bool = False  # TODO: make this a parameter in the UI
+    self.use_lateral_jerk: bool = self.params.get_bool("LateralTorqueControlLateralJerk")
     self.use_steering_angle = lac_torque.use_steering_angle
 
     self.actual_lateral_jerk: float = 0.0
