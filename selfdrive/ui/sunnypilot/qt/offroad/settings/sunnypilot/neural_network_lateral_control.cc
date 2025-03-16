@@ -9,7 +9,7 @@
 
 NeuralNetworkLateralcontrol::NeuralNetworkLateralcontrol(QWidget *parent) {
     toggle = new ParamControl(
-      "NeuralNetworkLateralControlToggle",
+      "NeuralNetworkLateralControl",
       tr("Neural Network Lateral Control (NNLC)"),
       nnff_description,
       "");
