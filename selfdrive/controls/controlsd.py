@@ -116,6 +116,10 @@ class Controls:
     if not CC.longActive:
       self.LoC.reset()
 
+    # Neural Network Lateral Control
+    if self.CP_SP.neuralNetworkLateralControl.enabled and self.CP.steerControlType.which() == 'torque':
+      self.LaC.nnlc.update_model_v2(model_v2)
+
     # accel PID loop
     pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
     actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
