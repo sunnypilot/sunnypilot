@@ -32,6 +32,7 @@ from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.selfdrive.car.helpers import convert_to_capnp
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.flux_model import FluxModel
 
 LOW_SPEED_Y_NN = [12, 3, 1, 0]
@@ -80,7 +81,7 @@ class NeuralNetworkLateralControl:
     self.lac_torque = lac_torque
     self.CI = CI
     self.CP = CP
-    self.CP_SP = CI.CP_SP
+    self.CP_SP = convert_to_capnp(CI.CP_SP)
     self.params = Params()
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
