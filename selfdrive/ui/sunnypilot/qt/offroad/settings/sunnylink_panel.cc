@@ -75,7 +75,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
       description = "<font color='SeaGreen'>"+ tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀")+ "</font>";
     } else {
       description = "<font color='orange'>"+ tr("👋Not going to lie, it's sad to see you disabled sunnylink 😢, but we'll be here when you're ready to come back 🎉.")+ "</font>";
-     
+
     }
     sunnylinkEnabledBtn->showDescription();
     sunnylinkEnabledBtn->setDescription(description);
@@ -136,7 +136,7 @@ void SunnylinkPanel::updatePanel() {
   if (!isVisible()) {
     return;
   }
-  
+
   const auto sunnylinkDongleId = getSunnylinkDongleId().value_or(tr("N/A"));
   sunnylinkEnabledBtn->setEnabled(!is_onroad);
 
@@ -158,7 +158,7 @@ void SunnylinkPanel::updatePanel() {
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
 
-  
+
   if (!is_sunnylink_enabled) {
     sunnylinkEnabledBtn->setValue("");
     sponsorBtn->setValue("");

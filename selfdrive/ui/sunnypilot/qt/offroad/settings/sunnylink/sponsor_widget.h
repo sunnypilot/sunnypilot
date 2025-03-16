@@ -7,13 +7,10 @@
 
 #pragma once
 
+#include <QrCode.hpp>
 #include <QtCore/qjsonobject.h>
 
-#include <QrCode.hpp>
-//#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h"
-
-#include <common/util.h>
-
+#include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
 const QString SUNNYLINK_BASE_URL = util::getenv("SUNNYLINK_API_HOST", "https://stg.api.sunnypilot.ai").c_str();
@@ -34,10 +31,9 @@ private:
 
   bool sponsor_pair = false;
 
-  private slots:
-    void refresh();
+private slots:
+  void refresh();
 };
-
 
 // sponsor popup widget
 class SunnylinkSponsorPopup : public DialogBase {

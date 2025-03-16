@@ -7,15 +7,10 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.h"
 
-
+#include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/api.h"
-
-#include <QtConcurrent>
-
-#include <selfdrive/ui/sunnypilot/ui.h>
-#include <selfdrive/ui/sunnypilot/qt/util.h>
-#include <selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h>
-
+#include "selfdrive/ui/sunnypilot/qt/util.h"
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h"
 
 // Sponsor Upsell
 using qrcodegen::QrCode;
@@ -142,6 +137,6 @@ SunnylinkSponsorPopup::SunnylinkSponsorPopup(bool sponsor_pair, QWidget *parent)
   }
 
   // QR code
-  auto *qr = new SunnylinkSponsorQRWidget(sponsor_pair ? true : false, this);
+  auto *qr = new SunnylinkSponsorQRWidget(sponsor_pair, this);
   hlayout->addWidget(qr, 1);
 }

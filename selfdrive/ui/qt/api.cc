@@ -79,8 +79,7 @@ bool HttpRequest::timeout() const {
   return reply && reply->error() == QNetworkReply::OperationCanceledError;
 }
 
-QNetworkRequest HttpRequest::prepareRequest(const QString &requestURL)
-{
+QNetworkRequest HttpRequest::prepareRequest(const QString &requestURL) {
   QNetworkRequest request;
   QString token;
   if (create_jwt) {

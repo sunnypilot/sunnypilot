@@ -29,7 +29,7 @@ public:
 
 private:
   bool sunnylink;
-    
+
 protected:
   [[nodiscard]] QString GetJwtToken() const override { return SunnylinkApi::create_jwt({}, 3600, sunnylink); }
   [[nodiscard]] QString GetUserAgent() const override { return getUserAgent(sunnylink); }

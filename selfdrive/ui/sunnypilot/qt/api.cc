@@ -36,7 +36,7 @@ namespace SunnylinkApi {
 void HttpRequestSP::sendRequest(const QString& requestURL, Method method, const QByteArray& payload) {
   if (active()) {
     return;
-  }  
+  }
   QNetworkRequest request = prepareRequest(requestURL);
 
   if(!payload.isEmpty() && (method == Method::POST || method == Method::PUT)) {
@@ -44,18 +44,18 @@ void HttpRequestSP::sendRequest(const QString& requestURL, Method method, const 
   }
 
   switch (method) {
-  case Method::GET:
-    reply = nam()->get(request);
-    break;
-  case Method::DELETE:
-    reply = nam()->deleteResource(request);
-    break;
-  case Method::POST:
-    reply = nam()->post(request, payload);
-    break;
-  case Method::PUT:
-    reply = nam()->put(request, payload);
-    break;
+    case Method::GET:
+      reply = nam()->get(request);
+      break;
+    case Method::DELETE:
+      reply = nam()->deleteResource(request);
+      break;
+    case Method::POST:
+      reply = nam()->post(request, payload);
+      break;
+    case Method::PUT:
+      reply = nam()->put(request, payload);
+      break;
   }
 
   networkTimer->start();

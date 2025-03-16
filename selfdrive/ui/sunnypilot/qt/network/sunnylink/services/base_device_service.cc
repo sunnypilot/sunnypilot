@@ -13,7 +13,7 @@
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink_panel.h"
 
-BaseDeviceService::BaseDeviceService(QObject* parent) : QObject(parent), initial_request(nullptr), repeater(nullptr) {
+BaseDeviceService::BaseDeviceService(QObject* parent) : QObject(parent) {
   param_watcher = new ParamWatcher(this);
   connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
     paramsRefresh();

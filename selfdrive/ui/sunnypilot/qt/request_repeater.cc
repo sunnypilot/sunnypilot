@@ -4,9 +4,8 @@
  * This file is part of sunnypilot and is licensed under the MIT License.
  * See the LICENSE.md file in the root directory for more details.
  */
-#include "selfdrive/ui/sunnypilot/qt/request_repeater.h"
 
-#include "common/swaglog.h"
+#include "selfdrive/ui/sunnypilot/qt/request_repeater.h"
 
 RequestRepeaterSP::RequestRepeaterSP(QObject *parent, const QString &requestURL, const QString &cacheKey,
                                  int period, bool whileOnroad, bool sunnylink) : HttpRequestSP(parent, true, 20000, sunnylink) {

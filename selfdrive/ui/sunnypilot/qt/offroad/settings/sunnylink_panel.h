@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h>
+#include "selfdrive/ui/sunnypilot/qt/network/sunnylink/sunnylink_client.h"
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class SunnylinkPanel : public QFrame {

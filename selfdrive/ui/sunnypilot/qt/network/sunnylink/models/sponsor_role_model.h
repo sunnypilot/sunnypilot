@@ -34,21 +34,16 @@ public:
 
   static SponsorTier stringToSponsorTier(const QString &sponsorTierString) {
     const auto sponsorTierStringLower = sponsorTierString.toLower();
-    if (sponsorTierStringLower == "guardian")
-      return SponsorTier::Guardian;
-    if (sponsorTierStringLower == "novice")
-      return SponsorTier::Novice;
-    if (sponsorTierStringLower == "supporter")
-      return SponsorTier::Supporter;
-    if (sponsorTierStringLower == "contributor")
-      return SponsorTier::Contributor;
-    if (sponsorTierStringLower == "benefactor")
-      return SponsorTier::Benefactor;
+    if (sponsorTierStringLower == "guardian")    return SponsorTier::Guardian;
+    if (sponsorTierStringLower == "novice")      return SponsorTier::Novice;
+    if (sponsorTierStringLower == "supporter")   return SponsorTier::Supporter;
+    if (sponsorTierStringLower == "contributor") return SponsorTier::Contributor;
+    if (sponsorTierStringLower == "benefactor")  return SponsorTier::Benefactor;
 
-    // Default to Guardian
+    // Default to Free
     return SponsorTier::Free;
   }
-  
+
   static QString sponsorTierToString(const SponsorTier &sponsorTier) {
     switch (sponsorTier) {
       case SponsorTier::Guardian:
@@ -61,7 +56,7 @@ public:
         return "Contributor";
       case SponsorTier::Benefactor:
         return "Benefactor";
-      
+
       default:  // SponsorTier::Free
         return "Free";
     }

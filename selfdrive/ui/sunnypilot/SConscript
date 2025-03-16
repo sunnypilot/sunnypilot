@@ -6,7 +6,6 @@ widgets_src = [
   "sunnypilot/qt/widgets/prime.cc",
   "sunnypilot/qt/widgets/scrollview.cc",
   "sunnypilot/qt/network/networking.cc",
-  "sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.cc"
 ]
 
 qt_util = [
@@ -24,6 +23,7 @@ qt_src = [
   "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/offroad/settings/software_panel.cc",
   "sunnypilot/qt/offroad/settings/sunnylink_panel.cc",
+  "sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.cc"
   "sunnypilot/qt/offroad/settings/sunnypilot_panel.cc",
   "sunnypilot/qt/offroad/settings/trips_panel.cc",
   "sunnypilot/qt/offroad/settings/vehicle_panel.cc",

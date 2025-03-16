@@ -9,7 +9,8 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <selfdrive/ui/sunnypilot/ui.h>
+
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 UserService::UserService(QObject* parent) : BaseDeviceService(parent) {
   url = "/users";
@@ -24,7 +25,9 @@ void UserService::startPolling() {
 }
 
 void UserService::handleResponse(const QString &response, bool success) {
-  if (!success) return;
+  if (!success) {
+    return;
+  }
 
   QJsonDocument doc = QJsonDocument::fromJson(response.toUtf8());
   QJsonArray jsonArray = doc.array();
