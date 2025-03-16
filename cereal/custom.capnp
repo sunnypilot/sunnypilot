@@ -143,6 +143,9 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
   struct NeuralNetworkLateralControl {
     enabled @0 :Bool;
+    modelPath @1 :Text;
+    modelName @2 :Text;
+    fuzzyFingerprint @3 :Bool;
   }
 }
 
