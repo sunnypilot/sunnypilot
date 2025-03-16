@@ -147,6 +147,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"SunnylinkDongleId", PERSISTENT},
     {"SunnylinkdPid", PERSISTENT},
     {"SunnylinkEnabled", PERSISTENT},
+    {"SunnylinkCache_Users", PERSISTENT},
+    {"SunnylinkCache_Roles", PERSISTENT},
 
     // sunnypilot car specific params
     {"HyundaiRadarTracks", PERSISTENT},
