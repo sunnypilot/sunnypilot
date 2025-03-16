@@ -228,7 +228,7 @@ class NeuralNetworkLateralControl:
 
   def update_stock_lateral_jerk(self, CS, setpoint, measurement, roll_compensation, desired_lateral_accel, actual_lateral_accel,
                                 lateral_accel_deadzone, gravity_adjusted_lateral_accel):
-    if not self.use_lateral_jerk:
+    if (self.enabled and self.model_valid) or not self.use_lateral_jerk:
       return
 
     _error = desired_lateral_accel - actual_lateral_accel

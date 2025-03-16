@@ -77,11 +77,10 @@ class LatControlTorque(LatControl):
                                           desired_lateral_accel - actual_lateral_accel, lateral_accel_deadzone, friction_compensation=True,
                                           gravity_adjusted=True)
 
-      # Neural Network Lateral Control updates
+      # Neural Network Lateral Control and custom stock lateral jerk updates
       # Override stock ff and pid_log.error
-      if self.nnlc.enabled:
-        ff, pid_log = self.nnlc.update(CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
-                                       desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel)
+      ff, pid_log = self.nnlc.update(CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
+                                     desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel)
 
       freeze_integrator = steer_limited_by_controls or CS.steeringPressed or CS.vEgo < 5
       output_torque = self.pid.update(pid_log.error,
