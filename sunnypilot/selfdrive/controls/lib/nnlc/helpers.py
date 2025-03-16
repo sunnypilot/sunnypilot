@@ -32,7 +32,7 @@ from openpilot.common.basedir import BASEDIR
 # dict used to rename activation functions whose names aren't valid python identifiers
 ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
 
-TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, 'lat_models')
+TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, "sunnypilot", "neural_network_data", "neural_network_lateral_control")
 
 
 def similarity(s1: str, s2: str) -> float:
@@ -72,3 +72,6 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
 
   fuzzy_fingerprint = max_similarity < 0.99
   return model_path, _model_name, fuzzy_fingerprint
+
+if __name__ == "__main__":
+  print(TORQUE_NN_MODEL_PATH)
