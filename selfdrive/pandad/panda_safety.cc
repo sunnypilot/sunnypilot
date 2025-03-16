@@ -1,5 +1,3 @@
-#include <arm/param.h>
-
 #include "selfdrive/pandad/pandad.h"
 #include "cereal/messaging/messaging.h"
 #include "common/swaglog.h"
