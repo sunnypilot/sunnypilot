@@ -11,6 +11,7 @@
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/role_model.h"
 #include "selfdrive/ui/sunnypilot/qt/network/sunnylink/models/sponsor_role_model.h"
 #include "selfdrive/ui/ui.h"
+#include <optional>
 
 class UIStateSP : public UIState {
   Q_OBJECT
