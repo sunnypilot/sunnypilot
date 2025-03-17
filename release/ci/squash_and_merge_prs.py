@@ -37,9 +37,9 @@ def sort_prs_by_creation(pr_data):
   )
 
 
-def add_pr_comment(pr_number, comment, target_branch):
+def add_pr_comment(pr_number, comment):
   """Add or update a comment to a PR using gh cli"""
-  title = f"## Squash and Merge `{target_branch}`"
+  title = f"## Squash and Merge"
 
   try:
     result = subprocess.run(
@@ -86,26 +86,26 @@ def validate_pr(pr):
   branch = pr.get('headRefName', '')
 
   if not branch:
-    return False, f"Missing branch name for PR #{pr_number}"
+    return False, f"missing branch name for PR #{pr_number}"
 
   # Check if checks have passed
   commits = pr.get('commits', {}).get('nodes', [])
   if not commits:
-    return False, "No commit data found"
+    return False, "no commit data found"
 
   status = commits[0].get('commit', {}).get('statusCheckRollup', {})
   if not status or status.get('state') != 'SUCCESS':
-    return False, "Not all checks have passed"
+    return False, "not all checks have passed"
 
   # Check for merge conflicts
   merge_status = subprocess.run(['gh', 'pr', 'view', str(pr_number), '--json', 'mergeable,mergeStateStatus'],
                                 capture_output=True, text=True)
   merge_data = json.loads(merge_status.stdout)
   if not merge_data.get('mergeable'):
-    return False, "Merge conflicts detected"
+    return False, "merge conflicts detected"
 
   if (mergeStateStatus := merge_data.get('mergeStateStatus')) == "BEHIND":
-    return False, f"Branch is `{mergeStateStatus}`"
+    return False, f"branch is `{mergeStateStatus}`"
 
   return True, None
 
@@ -129,7 +129,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
 
       if not is_valid:
         print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
-        add_pr_comment(pr_number, target_branch,
+        add_pr_comment(pr_number,
                        f"⚠️ This PR was skipped in the automated `{target_branch}` squash because {skip_reason}.")
         continue
 
@@ -157,7 +157,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         print(f"Command failed with exit code {e.returncode}")
         error_output = getattr(e, 'stderr', 'No error output available')
         print(f"Error output: {error_output}")
-        add_pr_comment(pr_number, target_branch,
+        add_pr_comment(pr_number,
                        f"⚠️ Error during automated {target_branch} squash:\n```\n{error_output}\n```")
         continue
       except Exception as e:
