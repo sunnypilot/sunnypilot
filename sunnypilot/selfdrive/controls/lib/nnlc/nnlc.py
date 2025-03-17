@@ -34,7 +34,6 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.flux_model import FluxModel
 
-LOW_SPEED_Y_NN = [12, 3, 1, 0]
 LAT_PLAN_MIN_IDX = 5
 
 
