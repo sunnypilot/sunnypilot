@@ -62,11 +62,7 @@ class LongControl:
     self.pid.pos_limit = accel_limits[1]
 
     if hasattr(self.CP, '_liveTuner'):
-      original_kp = self.CP.longitudinalTuning.kpV
-      original_ki = self.CP.longitudinalTuning.kiV
-      new_kp, new_ki = self.CP._liveTuner.get_pid_gains(original_kp, original_ki)
-      self.pid._k_p[1] = new_kp
-      self.pid._k_i[1] = new_ki
+      self.pid._k_p[1], self.pid._k_i[1] = self.CP._liveTuner.get_pid_gains(self.CP.longitudinalTuning.kpV, self.CP.longitudinalTuning.kiV)
 
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        should_stop, CS.brakePressed,

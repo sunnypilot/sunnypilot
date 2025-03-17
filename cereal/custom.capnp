@@ -88,6 +88,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
+  longtuningStatus @1 :NNFFLongTuningStatus;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
@@ -99,6 +100,20 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       blended @1;
     }
   }
+  struct NNFFLongTuningStatus {
+    onroadLongitudinalTuningEnabled @0 :Bool;
+    autoTuneLongitudinal @1 :Bool;
+    offroadLongitudinalTuningEnabled @2 :Bool;
+    longitudinalLiveTuneStatus @3 :Text;
+    tuning @4 :TuningSource;
+
+    enum TuningSource {
+      none @0;
+      onroad @1;
+      replay @2;
+    }
+  }
+
 }
 
 struct OnroadEventSP @0xda96579883444c35 {
@@ -137,6 +152,7 @@ struct OnroadEventSP @0xda96579883444c35 {
 
 struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;  # flags for car specific quirks in sunnypilot
+  nnffLongTuning @1 :Text;  # JSON string holding NNFF tuned params
 }
 
 struct CarControlSP @0xa5cd762cd951a455 {
