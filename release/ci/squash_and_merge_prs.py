@@ -37,17 +37,45 @@ def sort_prs_by_creation(pr_data):
   )
 
 
-def add_pr_comment(pr_number, comment):
-  """Add a comment to a PR using gh cli"""
+def add_pr_comment(pr_number, comment, title="## Squash and Merge `master-dev-c3-new`"):
+  """Add or update a comment to a PR using gh cli"""
   try:
-    subprocess.run(
-      ['gh', 'pr', 'comment', str(pr_number), '--body', comment],
+    result = subprocess.run(
+      ['gh', 'pr', 'view', str(pr_number), '--json', 'comments'],
       check=True,
       capture_output=True,
       text=True
     )
+
+    comments_data = json.loads(result.stdout)
+    comment_id = None
+
+    for pr_comment in comments_data['comments']:
+      if pr_comment['body'].startswith(title):
+        comment_id = pr_comment['id']
+        break
+
+    full_comment = f"{title}\n\n{comment}"
+
+    if comment_id:
+      subprocess.run(
+        ['gh', 'pr', 'comment', str(pr_number), '--edit', str(comment_id), '--body', full_comment],
+        check=True,
+        capture_output=True,
+        text=True
+      )
+    else:
+      subprocess.run(
+        ['gh', 'pr', 'comment', str(pr_number), '--body', full_comment],
+        check=True,
+        capture_output=True,
+        text=True
+      )
+
   except subprocess.CalledProcessError as e:
-    print(f"Failed to add comment to PR #{pr_number}: {e.stderr}")
+    print(f"Failed to add/update comment on PR #{pr_number}: {e.stderr}")
+  except json.JSONDecodeError:
+    print(f"Failed to parse comments data for PR #{pr_number}")
 
 
 def validate_pr(pr):
