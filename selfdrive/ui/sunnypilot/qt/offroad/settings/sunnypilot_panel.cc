@@ -10,13 +10,6 @@
 #include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-static void saveTrainingMode(const QString &mode) {
-  // Convert QString to std::string and update persistent Params key.
-  std::string mode_std = mode.toStdString();
-  // The master toggle now stores the enum value from custom.capnp ("none", "onroad", or "replay").
-  Params().put("LongitudinalLiveTuneParams", mode_std);
-}
-
 SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
   ListWidget *list = new ListWidget(this, false);
@@ -48,28 +41,6 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
   list->addItem(madsSettingsButton);
-
-  // Add new button for longitudinal training mode selection
-  PushButtonSP *trainingModeButton = new PushButtonSP(tr("Set Tuning Mode"));
-  trainingModeButton->setObjectName("training_mode_btn");
-  connect(trainingModeButton, &QPushButton::clicked, [=]() {
-    QMenu menu;
-    QAction *noneAction = menu.addAction(tr("None"));
-    QAction *onroadAction = menu.addAction(tr("Onroad"));
-    QAction *offroadAction = menu.addAction(tr("Offroad"));
-    QAction *selected = menu.exec(QCursor::pos());
-    if (selected) {
-      if (selected == noneAction) {
-        saveTrainingMode("none");
-      } else if (selected == onroadAction) {
-        saveTrainingMode("onroad");
-      } else if (selected == offroadAction) {
-        // Note: offroad training is represented by "replay" in our enums.
-        saveTrainingMode("replay");
-      }
-    }
-  });
-  list->addItem(trainingModeButton);
 
   toggleOffroadOnly = {
     madsToggle,
