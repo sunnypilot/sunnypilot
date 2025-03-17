@@ -39,7 +39,7 @@ def sort_prs_by_creation(pr_data):
 
 def add_pr_comment(pr_number, comment):
   """Add or update a comment to a PR using gh cli"""
-  title = f"## Squash and Merge"
+  title = "## Squash and Merge"
 
   try:
     result = subprocess.run(
