@@ -61,7 +61,7 @@ def add_pr_comment(pr_number, comment):
 
     if comment_id:
       subprocess.run(
-        ['gh', 'pr', 'comment', str(pr_number), '--edit', str(comment_id), '--body', full_comment],
+        ['gh', 'pr', 'comment', str(pr_number), '--edit-last', str(comment_id), '--body', full_comment],
         check=True,
         capture_output=True,
         text=True
