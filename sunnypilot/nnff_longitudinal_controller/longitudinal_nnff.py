@@ -1,12 +1,14 @@
-import numpy as np
 import json
 import math
 import time
-from cereal import messaging
 from collections import deque
-from openpilot.common.params import Params
+
+import numpy as np
+
+from cereal import messaging
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.interfaces import CarInterfaceBase
+from openpilot.common.params import Params
 from tinygrad.engine.jit import TinyJit
 from tinygrad.tensor import Tensor
 
@@ -44,6 +46,9 @@ class TinyNeuralNetwork:
     """
     Train the network for a given number of iterations.
     """
+    if iterations <= 0:
+      return self.forward(x)
+
     @TinyJit
     def train_step(x, y):
       out = self.forward(x)
@@ -55,10 +60,12 @@ class TinyNeuralNetwork:
       loss = train_step(x, y)
       # Manually update and reset gradients
       for param in [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]:
-        param.data -= self.lr * param.grad.data
-        param.grad.data.fill(0)
-      self.training_loss_history.append(loss.data.tolist()[0])
-      self.training_iterations += 1
+        grad = param.grad() if callable(param.grad) else param.grad
+        param.data -= self.lr * grad.data
+        grad.data.fill(0)
+
+    self.training_loss_history.append(loss.data.tolist()[0])
+    self.training_iterations += 1
     return self.forward(x)
 
 class LongitudinalLiveTuner:
@@ -87,8 +94,8 @@ class LongitudinalLiveTuner:
   # How many update calls to reach 20 minutes of learning (at 20Hz)
   TARGET_TRAINING_STEPS = 20 * 60 * 20  # 20 minutes * 60 seconds * 20Hz
 
-  def __init__(self, CP, original_kpV=None, original_kiV=None):
-    # If CP.carfingerprint is provided, get default tuning; otherwise, use fallback defaults.
+  def __init__(self, CP: structs.CarParams, original_kpV=None, original_kiV=None):
+    # If CP.carFingerprint is provided, get default tuning; otherwise, use fallback defaults.
     if CP.carFingerprint is not None:
       default_cp = CarInterfaceBase.get_std_params(CP.carFingerprint)
     else:
@@ -421,7 +428,7 @@ class LongitudinalLiveTuner:
         self.is_stopping = False
 
     # Detect starting event (transitioning from standstill)
-    if not self.is_starting and CS.out.cruiseState.enabled and v_ego < 0.1 and actuators.accel > 0.1:
+    if not self.is_starting and CS.out.cruiseState.enabled and v_ego < 0.1 < actuators.accel:
       self.is_starting = True
       self.starting_start_time = time.time()
 
@@ -437,7 +444,7 @@ class LongitudinalLiveTuner:
     self.last_output_accel = current_accel
 
     # Detect deceleration rate for basic tuning
-    if self.prev_speed > v_ego and v_ego > 0.01 and CS.out.cruiseState.enabled:
+    if self.prev_speed > v_ego > 0.01 and CS.out.cruiseState.enabled:
       decel_rate = (self.prev_speed - v_ego) / DT_CTRL
       self.decel_rate_data.append(decel_rate)
 
