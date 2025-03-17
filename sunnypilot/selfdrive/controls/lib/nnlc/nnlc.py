@@ -175,9 +175,7 @@ class NeuralNetworkLateralControl(NeuralNetworkLateralControlBase):
     self._actual_lateral_accel = actual_lateral_accel
 
     self.update_calculations(CS, VM, desired_lateral_accel)
-
     self.update_feed_forward(CS, params, calibrated_pose)
-
     self.update_stock_lateral_jerk(CS, roll_compensation, gravity_adjusted_lateral_accel)
 
     return self._ff, self._pid_log
