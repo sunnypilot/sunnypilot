@@ -131,7 +131,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
       if not is_valid:
         print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
         add_pr_comment(pr_number,
-                       f"⚠️ This PR was skipped in the automated `{target_branch}` squash because {skip_reason} last test weeeeee.")
+                       f"⚠️ This PR was skipped in the automated `{target_branch}` squash because **{skip_reason}**.")
         continue
 
       try:
