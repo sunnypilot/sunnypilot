@@ -31,7 +31,7 @@ from opendbc.car.interfaces import LatControlInputs
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.flux_model import FluxModel
+from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NeuralNetworkFeedForwardModel
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
 
 
@@ -56,8 +56,8 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    # Only initialize FluxModel if enabled
-    self.flux_model = FluxModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
+    # Only initialize NeuralNetworkFeedForwardModel if enabled
+    self.model = NeuralNetworkFeedForwardModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
 
     self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
     self.torque_params = lac_torque.torque_params
@@ -122,8 +122,8 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     nnff_measurement_input = [CS.vEgo, self._measurement, self.lateral_jerk_measurement, roll] \
                              + [self._measurement] * self.past_future_len \
                              + past_rolls + future_rolls
-    torque_from_setpoint = self.flux_model.evaluate(nnff_setpoint_input)
-    torque_from_measurement = self.flux_model.evaluate(nnff_measurement_input)
+    torque_from_setpoint = self.model.evaluate(nnff_setpoint_input)
+    torque_from_measurement = self.model.evaluate(nnff_measurement_input)
     self._pid_log.error = torque_from_setpoint - torque_from_measurement
 
     # compute feedforward (same as nn setpoint output)
@@ -131,10 +131,10 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     nn_input = [CS.vEgo, self._desired_lateral_accel, friction_input, roll] \
                + past_lateral_accels_desired + future_planned_lateral_accels \
                + past_rolls + future_rolls
-    self._ff = self.flux_model.evaluate(nn_input)
+    self._ff = self.model.evaluate(nn_input)
 
     # apply friction override for cars with low NN friction response
-    if self.flux_model.friction_override:
+    if self.model.friction_override:
       self._pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
                                                             friction_input,
                                                             self._lateral_accel_deadzone, friction_compensation=True,

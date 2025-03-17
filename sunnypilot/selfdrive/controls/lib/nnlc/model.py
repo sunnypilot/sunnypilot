@@ -30,7 +30,7 @@ from json import load
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import ACTIVATION_FUNCTION_NAMES
 
 
-class FluxModel:
+class NeuralNetworkFeedForwardModel:
   def __init__(self, params_file, zero_bias=False):
     with open(params_file) as f:
       params = load(f)
