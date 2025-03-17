@@ -180,7 +180,7 @@ class NeuralNetworkLateralControl:
 
     # update past data
     roll = params.roll
-    if len(calibrated_pose.orientation) > 1:
+    if calibrated_pose is not None:
       pitch = self.pitch.update(calibrated_pose.orientation.pitch)
       roll = roll_pitch_adjust(roll, pitch)
       self.pitch_last = pitch
