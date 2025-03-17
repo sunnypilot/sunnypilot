@@ -432,20 +432,23 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>&lt;b&gt;%1 %2&lt;/b&gt; of your driving are in the training dataset so far.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>ACTIVE</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to unmetered network</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message numerus="yes">
+        <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -1424,6 +1427,93 @@ Esto puede tardar un minuto.</translation>
     <message>
         <source>N/A</source>
         <translation type="unfinished">N/A</translation>
+    </message>
+    <message>
+        <source>Sponsor Status</source>
+        <translation type="unfinished">Estado de patrocinio</translation>
+    </message>
+    <message>
+        <source>SPONSOR</source>
+        <translation type="unfinished">PATROCINADOR</translation>
+    </message>
+    <message>
+        <source>Become a sponsor of sunnypilot to get early access to sunnylink features when they become available.</source>
+        <translation type="unfinished">Conviértete en patrocinador de sunnypilot para obtener acceso anticipado a las funciones de sunnylink cuando estén disponibles.</translation>
+    </message>
+    <message>
+        <source>Pair GitHub Account</source>
+        <translation type="unfinished">Emparejar cuenta de GitHub</translation>
+    </message>
+    <message>
+        <source>PAIR</source>
+        <translation type="unfinished">EMPAREJAR</translation>
+    </message>
+    <message>
+        <source>Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink.</source>
+        <translation type="unfinished">Empareja tu cuenta de GitHub para otorgar a tu dispositivo beneficios de patrocinador, incluido acceso a la API en sunnylink.</translation>
+    </message>
+    <message>
+        <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
+        <translation type="unfinished">ID del dongle de sunnylink no encontrado. Esto puede deberse a una conexión débil o a un problema de registro en sunnylink. Por favor, reinicia y vuelve a intentarlo.</translation>
+    </message>
+    <message>
+        <source>THANKS</source>
+        <translation type="obsolete">GRACIAS</translation>
+    </message>
+    <message>
+        <source>Not Sponsor</source>
+        <translation type="unfinished">No patrocinador</translation>
+    </message>
+    <message>
+        <source>Paired</source>
+        <translation type="unfinished">Emparejado</translation>
+    </message>
+    <message>
+        <source>Not Paired</source>
+        <translation type="unfinished">No emparejado</translation>
+    </message>
+    <message>
+        <source>THANKS ♥</source>
+        <translation type="unfinished">GRACIAS ♥</translation>
+    </message>
+</context>
+<context>
+    <name>SunnylinkSponsorPopup</name>
+    <message>
+        <source>Scan the QR code to login to your GitHub account</source>
+        <translation type="unfinished">Escanea el código QR para iniciar sesión en tu cuenta de GitHub</translation>
+    </message>
+    <message>
+        <source>Follow the prompts to complete the pairing process</source>
+        <translation type="unfinished">Sigue las indicaciones para completar el proceso de emparejamiento</translation>
+    </message>
+    <message>
+        <source>Re-enter the &quot;sunnylink&quot; panel to verify sponsorship status</source>
+        <translation type="unfinished">Vuelve a ingresar al panel de &quot;sunnylink&quot; para verificar el estado de patrocinio</translation>
+    </message>
+    <message>
+        <source>If sponsorship status was not updated, please contact a moderator on Discord at https://discord.gg/sunnypilot</source>
+        <translation type="unfinished">Si el estado de patrocinio no se actualizó, por favor contacta a un moderador en Discord en https://discord.gg/sunnypilot</translation>
+    </message>
+    <message>
+        <source>Scan the QR code to visit sunnyhaibin&apos;s GitHub Sponsors page</source>
+        <translation type="unfinished">Escanea el código QR para visitar la página de GitHub Sponsors de sunnyhaibin</translation>
+    </message>
+    <message>
+        <source>Choose your sponsorship tier and confirm your support</source>
+        <translation type="unfinished">Elige tu nivel de patrocinio y confirma tu apoyo</translation>
+    </message>
+    <message>
+        <source>Join our community on Discord at https://discord.gg/sunnypilot and reach out to a moderator to confirm your sponsor status</source>
+        <translation type="unfinished">Únete a nuestra comunidad en Discord en https://discord.gg/sunnypilot y contacta a un moderador para confirmar tu estado de patrocinio</translation>
+    </message>
+    <message>
+        <source>Pair your GitHub account</source>
+        <translation type="unfinished">Empareja tu cuenta de GitHub</translation>
+    </message>
+    <message>
+        <source>Early Access: Become a sunnypilot Sponsor</source>
+        <translation type="unfinished">Acceso temprano: conviértete en patrocinador de sunnypilot</translation>
     </message>
 </context>
 <context>
