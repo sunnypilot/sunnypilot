@@ -401,8 +401,9 @@ class TunerManager:
 
       def __init__(self):
         params = Params()
-        # Enable if either auto-tune is requested or offroad tuning specifically is enabled
-        self.enabled = params.get_bool("AutoTuneLongitudinal") or params.get_bool("OffroadLongitudinalTuningEnabled")
+        mode = params.get("LongitudinalLiveTuneParams", "none")
+        # Enable if tuning mode is set to "onroad" or "replay"
+        self.enabled = mode in ["onroad", "replay"]
 
       def start(self):
         cloudlog.info("Starting longitudinal tuner process")
@@ -424,32 +425,22 @@ class TunerManager:
   def update_ui_status(cls):
     """Update training status for UI display"""
     params = Params()
-
     cls.training_status['is_onroad'] = params.get_bool("IsOnroad")
-
     try:
       pm = messaging.PubMaster(['longitudinalPlanSP'])
       nnfflong = messaging.new_message('longitudinalPlanSP')
-
-      # Populate the NNFFLongTuningStatus fields
       longtuning_status = nnfflong.longitudinalPlanSP.longtuningStatus
 
       # Set the enum based on training status
       if cls.training_status['active']:
-        longtuning_status.tuning = 'replay' if cls.training_status['source'] == 'replay' else 'onroad'
+        if cls.training_status['source'] == 'replay':
+          longtuning_status.tuning = 'replay' if not cls.training_status['is_onroad'] else 'none'
+        elif cls.training_status['source'] == 'onroad':
+          longtuning_status.tuning = 'onroad' if cls.training_status['is_onroad'] else 'none'
+        else:
+          longtuning_status.tuning = 'none'
       else:
         longtuning_status.tuning = 'none'
-
-      # Add the new fields from our enhanced custom.capnp
-      longtuning_status.progress = float(cls.training_status['progress'])
-      longtuning_status.active = bool(cls.training_status['active'])
-      longtuning_status.paused = bool(cls.training_status['paused'])
-      longtuning_status.trainingSteps = int(cls.training_status['training_steps'])
-      longtuning_status.targetSteps = int(cls.training_status['target_steps'])
-      longtuning_status.currentRoute = str(cls.training_status['current_route'])
-      longtuning_status.routesCompleted = int(cls.training_status['routes_completed'])
-      longtuning_status.routesTotal = int(cls.training_status['routes_total'])
-      longtuning_status.isOnroad = bool(cls.training_status['is_onroad'])
 
       pm.send('longitudinalPlanSP', nnfflong)
     except Exception as e:

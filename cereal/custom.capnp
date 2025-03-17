@@ -101,11 +101,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     }
   }
   struct NNFFLongTuningStatus {
-    onroadLongitudinalTuningEnabled @0 :Bool;
-    autoTuneLongitudinal @1 :Bool;
-    offroadLongitudinalTuningEnabled @2 :Bool;
-    longitudinalLiveTuneStatus @3 :Text;
-    tuning @4 :TuningSource;
+    tuning @0 :TuningSource;
 
     enum TuningSource {
       none @0;
