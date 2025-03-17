@@ -32,7 +32,7 @@ from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.flux_model import FluxModel
-from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.nnlc_base import NeuralNetworkLateralControlBase
+from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
 
 
 # At a given roll, if pitch magnitude increases, the
@@ -44,9 +44,9 @@ def roll_pitch_adjust(roll, pitch):
   return roll * math.cos(pitch)
 
 
-class NeuralNetworkLateralControl(NeuralNetworkLateralControlBase):
+class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
-    NeuralNetworkLateralControlBase.__init__(self, lac_torque, CP)
+    LatControlTorqueExtBase.__init__(self, lac_torque, CP)
 
     self.lac_torque = lac_torque
     self.params = Params()
