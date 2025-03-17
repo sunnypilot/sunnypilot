@@ -222,9 +222,9 @@ class NeuralNetworkLateralControl:
     # apply friction override for cars with low NN friction response
     if self.flux_model.friction_override:
       self._pid_log.error += self.torque_from_lateral_accel(LatControlInputs(0.0, 0.0, CS.vEgo, CS.aEgo), self.torque_params,
-                                                      friction_input,
-                                                      lateral_accel_deadzone, friction_compensation=True,
-                                                      gravity_adjusted=False)
+                                                            friction_input,
+                                                            lateral_accel_deadzone, friction_compensation=True,
+                                                            gravity_adjusted=False)
 
   def update_stock_lateral_jerk(self, CS, setpoint, measurement, roll_compensation, desired_lateral_accel, actual_lateral_accel,
                                 lateral_accel_deadzone, gravity_adjusted_lateral_accel):
