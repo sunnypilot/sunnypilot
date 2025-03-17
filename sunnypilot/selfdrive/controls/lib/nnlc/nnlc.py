@@ -103,6 +103,8 @@ class NeuralNetworkLateralControl:
 
     self._ff = 0.0
     self._pid_log = None
+    self._desired_lateral_accel = 0.0
+    self._actual_lateral_accel = 0.0
 
     # twilsonco's Lateral Neural Network Feedforward
     # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,
@@ -146,7 +148,13 @@ class NeuralNetworkLateralControl:
     self.model_v2 = model_v2
     self.model_valid = self.model_v2 is not None and len(self.model_v2.orientation.x) >= CONTROL_N
 
-  def update_calculations(self, CS, VM, desired_lateral_accel):
+  def update_friction_input(self, val_1, val_2):
+    _error = val_1 - val_2
+    _value = self.lat_accel_friction_factor * _error + self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
+
+    return _value
+
+  def update_calculations(self, CS, VM):
     self.actual_lateral_jerk = 0.0
     self.lateral_jerk_setpoint = 0.0
     self.lateral_jerk_measurement = 0.0
@@ -162,7 +170,7 @@ class NeuralNetworkLateralControl:
       friction_upper_idx = next((i for i, val in enumerate(ModelConstants.T_IDXS) if val > lookahead), 16)
       predicted_lateral_jerk = get_predicted_lateral_jerk(self.model_v2.acceleration.y, self.t_diffs)
       desired_lateral_jerk = (np.interp(self.desired_lat_jerk_time, ModelConstants.T_IDXS,
-                                     self.model_v2.acceleration.y) - desired_lateral_accel) / self.desired_lat_jerk_time
+                                     self.model_v2.acceleration.y) - self._desired_lateral_accel) / self.desired_lat_jerk_time
       self.lookahead_lateral_jerk = get_lookahead_value(predicted_lateral_jerk[LAT_PLAN_MIN_IDX:friction_upper_idx],
                                                    desired_lateral_jerk)
       if self.use_steering_angle or self.lookahead_lateral_jerk == 0.0:
@@ -172,8 +180,7 @@ class NeuralNetworkLateralControl:
       self.lateral_jerk_setpoint = self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
       self.lateral_jerk_measurement = self.lat_jerk_friction_factor * self.actual_lateral_jerk
 
-  def update_feed_forward(self, CS, params, setpoint, measurement, calibrated_pose,
-                            desired_lateral_accel, lateral_accel_deadzone):
+  def update_feed_forward(self, CS, params, setpoint, measurement, calibrated_pose, lateral_accel_deadzone):
 
     if not self.enabled or not self.model_valid:
       return
@@ -185,7 +192,7 @@ class NeuralNetworkLateralControl:
       roll = roll_pitch_adjust(roll, pitch)
       self.pitch_last = pitch
     self.roll_deque.append(roll)
-    self.lateral_accel_desired_deque.append(desired_lateral_accel)
+    self.lateral_accel_desired_deque.append(self._desired_lateral_accel)
 
     # prepare past and future values
     # adjust future times to account for longitudinal acceleration
@@ -212,9 +219,8 @@ class NeuralNetworkLateralControl:
     self._pid_log.error = torque_from_setpoint - torque_from_measurement
 
     # compute feedforward (same as nn setpoint output)
-    error = setpoint - measurement
-    friction_input = self.lat_accel_friction_factor * error + self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
-    nn_input = [CS.vEgo, desired_lateral_accel, friction_input, roll] \
+    friction_input = self.update_friction_input(setpoint, measurement)
+    nn_input = [CS.vEgo, self._desired_lateral_accel, friction_input, roll] \
                + past_lateral_accels_desired + future_planned_lateral_accels \
                + past_rolls + future_rolls
     self._ff = self.flux_model.evaluate(nn_input)
@@ -226,13 +232,12 @@ class NeuralNetworkLateralControl:
                                                             lateral_accel_deadzone, friction_compensation=True,
                                                             gravity_adjusted=False)
 
-  def update_stock_lateral_jerk(self, CS, setpoint, measurement, roll_compensation, desired_lateral_accel, actual_lateral_accel,
+  def update_stock_lateral_jerk(self, CS, setpoint, measurement, roll_compensation,
                                 lateral_accel_deadzone, gravity_adjusted_lateral_accel):
     if (self.enabled and self.model_valid) or not self.use_lateral_jerk:
       return
 
-    _error = desired_lateral_accel - actual_lateral_accel
-    friction_input = self.lat_accel_friction_factor * _error + self.lat_jerk_friction_factor * self.actual_lateral_jerk
+    friction_input = self.update_friction_input(self._desired_lateral_accel, self._actual_lateral_accel)
 
     torque_from_setpoint = self.torque_from_lateral_accel(
       LatControlInputs(setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
@@ -251,12 +256,13 @@ class NeuralNetworkLateralControl:
              desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel):
     self._ff = ff
     self._pid_log = pid_log
+    self._desired_lateral_accel = desired_lateral_accel
+    self._actual_lateral_accel = actual_lateral_accel
 
-    self.update_calculations(CS, VM, desired_lateral_accel)
+    self.update_calculations(CS, VM)
 
-    self.update_feed_forward(CS, params, setpoint, measurement, calibrated_pose, desired_lateral_accel, lateral_accel_deadzone)
+    self.update_feed_forward(CS, params, setpoint, measurement, calibrated_pose, lateral_accel_deadzone)
 
-    self.update_stock_lateral_jerk(CS, setpoint, measurement, roll_compensation, desired_lateral_accel, actual_lateral_accel,
-                                   lateral_accel_deadzone, gravity_adjusted_lateral_accel)
+    self.update_stock_lateral_jerk(CS, setpoint, measurement, roll_compensation, lateral_accel_deadzone, gravity_adjusted_lateral_accel)
 
     return self._ff, self._pid_log
