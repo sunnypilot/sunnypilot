@@ -3,7 +3,7 @@ name: Nightly Branch Reset and PR Squash
 env:
   DEFAULT_SOURCE_BRANCH: "master-new"
   DEFAULT_TARGET_BRANCH: "nightly"
-  PR_LABEL: "dev-c3-test"
+  PR_LABEL: "dev-c3"
 
 on:
   workflow_dispatch:
