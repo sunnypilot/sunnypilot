@@ -34,14 +34,14 @@ class TestCarInterfaces:
             phases=(Phase.reuse, Phase.generate, Phase.shrink))
   @given(data=st.data())
   def test_car_interfaces(self, car_name, data):
-    CarInterface, CarController, CarState, RadarInterface = interfaces[car_name]
+    CarInterface = interfaces[car_name]
 
     args = get_fuzzy_car_interface_args(data.draw)
 
     car_params = CarInterface.get_params(car_name, args['fingerprints'], args['car_fw'],
                                          experimental_long=args['experimental_long'], docs=False)
     car_params = car_params.as_reader()
-    car_interface = CarInterface(car_params, CarController, CarState)
+    car_interface = CarInterface(car_params)
     assert car_params
     assert car_interface
 
@@ -80,6 +80,8 @@ class TestCarInterfaces:
 
     CC = car.CarControl.new_message(**cc_msg)
     CC.enabled = True
+    CC.latActive = True
+    CC.longActive = True
     CC = CC.as_reader()
     for _ in range(10):
       car_interface.update([])

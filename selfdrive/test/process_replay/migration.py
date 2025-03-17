@@ -241,14 +241,16 @@ def migrate_gpsLocation(msgs):
 
 @migration(inputs=["deviceState", "initData"])
 def migrate_deviceState(msgs):
+  init_data = next((m.initData for _, m in msgs if m.which() == 'initData'), None)
+  device_state = next((m.deviceState for _, m in msgs if m.which() == 'deviceState'), None)
+  if init_data is None or device_state is None:
+    return [], [], []
+
   ops = []
-  dt = None
   for i, msg in msgs:
-    if msg.which() == 'initData':
-      dt = msg.initData.deviceType
     if msg.which() == 'deviceState':
       n = msg.as_builder()
-      n.deviceState.deviceType = dt
+      n.deviceState.deviceType = init_data.deviceType
       ops.append((i, n.as_reader()))
   return ops, [], []
 
@@ -274,7 +276,7 @@ def migrate_pandaStates(msgs):
     "KIA_EV6": HyundaiSafetyFlags.EV_GAS | HyundaiSafetyFlags.CANFD_LKA_STEERING,
   }
   # TODO: get new Ford route
-  safety_param_migration |= {car: FordSafetyFlags.LONG_CONTROL for car in (set(FORD) - FORD.with_flags(FordFlags.CANFD))}
+  safety_param_migration |= dict.fromkeys((set(FORD) - FORD.with_flags(FordFlags.CANFD)), FordSafetyFlags.LONG_CONTROL)
 
   # Migrate safety param base on carParams
   CP = next((m.carParams for _, m in msgs if m.which() == 'carParams'), None)
@@ -358,6 +360,7 @@ def migrate_cameraStates(msgs):
 
     new_msg = messaging.new_message(msg.which())
     new_camera_state = getattr(new_msg, new_msg.which())
+    new_camera_state.sensor = camera_state.sensor
     new_camera_state.frameId = encode_id
     new_camera_state.encodeId = encode_id
     # timestampSof was added later so it might be missing on some old segments

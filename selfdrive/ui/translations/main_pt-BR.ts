@@ -306,6 +306,44 @@
     </message>
 </context>
 <context>
+    <name>FirehosePanel</name>
+    <message>
+        <source>🔥 Firehose Mode 🔥</source>
+        <translation>🔥 Modo Firehose 🔥</translation>
+    </message>
+    <message>
+        <source>openpilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation>O openpilot aprende a dirigir observando humanos, como você, dirigirem.
+
+O Modo Firehose permite maximizar o envio de dados de treinamento para melhorar os modelos de direção do openpilot. Mais dados significam modelos maiores, o que resulta em um Modo Experimental melhor.</translation>
+    </message>
+    <message>
+        <source>Firehose Mode: ACTIVE</source>
+        <translation>Modo Firehose: ATIVO</translation>
+    </message>
+    <message>
+        <source>ACTIVE</source>
+        <translation>ATIVO</translation>
+    </message>
+    <message>
+        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to unmetered network</source>
+        <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INATIVO&lt;/span&gt;: conecte-se a uma rede sem restrição &lt;br&gt; de dados</translation>
+    </message>
+    <message>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <translation>Para maior eficácia, leve seu dispositivo para dentro de casa e conecte-o a um bom adaptador USB-C e Wi-Fi semanalmente.&lt;br&gt;&lt;br&gt;O Modo Firehose também pode funcionar enquanto você dirige, se estiver conectado a um hotspot ou a um chip SIM com dados ilimitados.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Perguntas Frequentes&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Importa como ou onde eu dirijo?&lt;/i&gt; Não, basta dirigir normalmente.&lt;br&gt;&lt;br&gt;&lt;i&gt;Todos os meus segmentos são enviados no Modo Firehose?&lt;/i&gt; Não, selecionamos apenas um subconjunto dos seus segmentos.&lt;br&gt;&lt;br&gt;&lt;i&gt;Qual é um bom adaptador USB-C?&lt;/i&gt; Qualquer carregador rápido de telefone ou laptop deve ser suficiente.&lt;br&gt;&lt;br&gt;&lt;i&gt;Importa qual software eu uso?&lt;/i&gt; Sim, apenas o openpilot oficial (e alguns forks específicos) podem ser usados para treinamento.</translation>
+    </message>
+    <message numerus="yes">
+        <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
+        <translation>
+            <numerusform>&lt;b&gt;%n segmento&lt;/b&gt; da sua direção está no conjunto de dados de treinamento até agora.</numerusform>
+            <numerusform>&lt;b&gt;%n segmentos&lt;/b&gt; da sua direção estão no conjunto de dados de treinamento até agora.</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>HudRenderer</name>
     <message>
         <source>km/h</source>
@@ -641,6 +679,10 @@ Isso pode levar até um minuto.</translation>
         <source>Developer</source>
         <translation>Desenvdor</translation>
     </message>
+    <message>
+        <source>Firehose</source>
+        <translation>Firehose</translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
@@ -951,20 +993,20 @@ Isso pode levar até um minuto.</translation>
 <context>
     <name>TermsPage</name>
     <message>
-        <source>Terms &amp; Conditions</source>
-        <translation>Termos &amp; Condições</translation>
-    </message>
-    <message>
         <source>Decline</source>
         <translation>Declinar</translation>
     </message>
     <message>
-        <source>Scroll to accept</source>
-        <translation>Role a tela para aceitar</translation>
-    </message>
-    <message>
         <source>Agree</source>
         <translation>Concordo</translation>
+    </message>
+    <message>
+        <source>Welcome to openpilot</source>
+        <translation>Bem vindo ao openpilot</translation>
+    </message>
+    <message>
+        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <translation>Você deve aceitar os Termos e Condições para usar o openpilot. Leia os termos mais recentes em &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; antes de continuar.</translation>
     </message>
 </context>
 <context>
@@ -1077,14 +1119,6 @@ Isso pode levar até um minuto.</translation>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
         <translation>Habilite o monitoramento do motorista mesmo quando o openpilot não estiver acionado.</translation>
     </message>
-    <message>
-        <source>FIREHOSE Mode</source>
-        <translation>Modo FIREHOSE</translation>
-    </message>
-    <message>
-        <source>Enable &lt;b&gt;FIREHOSE Mode&lt;/b&gt; to get your driving data in the training set.&lt;br&gt;&lt;br&gt;Follow these steps to get your device ready:&lt;br&gt;  1. Bring your device inside and connect to a good USB-C adapter&lt;br&gt;  2. Connect to Wi-Fi&lt;br&gt;  3. Enable this toggle&lt;br&gt;  4. Leave it connected for at least 30 minutes&lt;br&gt;&lt;br&gt;This toggle turns off once you restart your device. Repeat once a week for maximum effectiveness.</source>
-        <translation>Habilite o &lt;b&gt;Modo FIREHOSE&lt;/b&gt; para obter seus dados de direção no conjunto de treinamento.&lt;br&gt;&lt;br&gt;Siga estas etapas para preparar seu dispositivo:&lt;br&gt;  1. Leve seu dispositivo para dentro e conecte-o a um bom adaptador USB-C&lt;br&gt;  2. Conecte-se ao Wi-Fi&lt;br&gt;  3. Habilite este toggle&lt;br&gt;  4. Deixe-o conectado por pelo menos 30 minutos.&lt;br&gt;&lt;br&gt;Este botão desativa após reiniciar o dispositivo. Repita uma vez por semana para obter a máxima eficácia.</translation>
-    </message>
 </context>
 <context>
     <name>Updater</name>
@@ -1124,24 +1158,16 @@ Isso pode levar até um minuto.</translation>
 <context>
     <name>WiFiPromptWidget</name>
     <message>
-        <source>Setup Wi-Fi</source>
-        <translation>Configurar Wi-Fi</translation>
+        <source>Open</source>
+        <translation>Abrir</translation>
     </message>
     <message>
-        <source>Connect to Wi-Fi to upload driving data and help improve openpilot</source>
-        <translation>Conecte se ao Wi-Fi para realizar upload de dados de condução e ajudar a melhorar o openpilot</translation>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <translation>Maximize seus envios de dados de treinamento para melhorar os modelos de direção do openpilot.</translation>
     </message>
     <message>
-        <source>Open Settings</source>
-        <translation>Abrir Configurações</translation>
-    </message>
-    <message>
-        <source>Ready to upload</source>
-        <translation>Pronto para upload</translation>
-    </message>
-    <message>
-        <source>Training data will be pulled periodically while your device is on Wi-Fi</source>
-        <translation>Os dados de treinamento serão extraídos periodicamente enquanto o dispositivo estiver no Wi-Fi</translation>
+        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
+        <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Modo Firehose &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
     </message>
 </context>
 <context>

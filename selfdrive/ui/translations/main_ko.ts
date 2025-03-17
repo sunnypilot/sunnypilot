@@ -121,27 +121,27 @@
     </message>
     <message>
         <source>Longitudinal Maneuver Mode</source>
-        <translation>롱컨 기동 모드</translation>
+        <translation>롱컨 제어 모드</translation>
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished">openpilot 가감속 제어 (알파)</translation>
+        <translation>openpilot 가감속 제어 (알파)</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished">경고: openpilot 가감속 제어 알파 기능으로 차량의 자동긴급제동(AEB)을 비활성화합니다.</translation>
+        <translation>경고: openpilot 가감속 제어는 알파 기능으로 차량의 자동긴급제동(AEB)기능이 작동하지 않습니다.</translation>
     </message>
     <message>
         <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished">이 차량은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot의 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파를 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
+        <translation>이 차량에서 openpilot은 openpilot 가감속 제어 대신 기본적으로 차량의 ACC로 가감속을 제어합니다. openpilot 가감속 제어로 전환하려면 이 기능을 활성화하세요. openpilot 가감속 제어 알파 기능을 활성화하는 경우 실험 모드 활성화를 권장합니다.</translation>
     </message>
     <message>
         <source>Enable ADB</source>
-        <translation type="unfinished"></translation>
+        <translation>ADB 사용</translation>
     </message>
     <message>
         <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
-        <translation type="unfinished"></translation>
+        <translation>ADB (안드로이드 디버그 브릿지) USB 또는 네트워크를 통해 장치에 연결할 수 있습니다. 자세한 내용은 https://docs.comma.ai/how-to/connect-to-comma를 참조하세요.</translation>
     </message>
 </context>
 <context>
@@ -306,6 +306,43 @@
     </message>
 </context>
 <context>
+    <name>FirehosePanel</name>
+    <message>
+        <source>🔥 Firehose Mode 🔥</source>
+        <translation>🔥 파이어호스 모드 🔥</translation>
+    </message>
+    <message>
+        <source>openpilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation>오픈파일럿은 여러분과 같은 사람이 운전하는 모습을 보면서 운전하는 법을 배웁니다.
+
+파이어호스 모드를 사용하면 훈련 데이터 업로드를 최대화하여 오픈파일럿의 주행 모델을 개선할 수 있습니다. 더 많은 데이터는 더 큰 모델을 의미하며, 이는 더 나은 실험 모드를 의미합니다.</translation>
+    </message>
+    <message>
+        <source>Firehose Mode: ACTIVE</source>
+        <translation>파이어호스 모드: 활성화</translation>
+    </message>
+    <message>
+        <source>ACTIVE</source>
+        <translation>활성화</translation>
+    </message>
+    <message>
+        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to unmetered network</source>
+        <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;비활성&lt;/span&gt;: 무제한 네트워크에 연결</translation>
+    </message>
+    <message>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <translation>최대한의 효과를 얻으려면 매주 장치를 실내로 가져와 좋은 USB-C 케이블에 연결하고 Wi-Fi에 연결하세요.&lt;br&gt;&lt;br&gt;파이어호스 모드는 핫스팟 또는 무제한 SIM 카드에 연결된 경우에는 운전 중에도 작동할 수 있습니다.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;자주 묻는 질문&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;운전 방법이나 장소가 중요한가요?&lt;/i&gt; 아니요, 평소처럼 운전하시면 됩니다.&lt;br&gt;&lt;br&gt;&lt;i&gt;파이어호스 모드에서 제 모든 구간을 가져오나요?.&lt;br&gt;&lt;br&gt;&lt;i&gt; 아니요, 저희는 여러분의 구간 중 일부를 선별적으로 가져옵니다.&lt;br&gt;&lt;br&gt;&lt;i&gt;좋은 USB-C 케이블은 무엇인가요?&lt;/i&gt; 휴대폰이나 노트북 고속 충전기가 있으면 됩니다.&lt;br&gt;&lt;br&gt;&lt;i&gt;어떤 소프트웨어를 실행하는지가 중요한가요?&lt;/i&gt; 예, 오직 공식 openpilot의 특정 포크만 트레이닝에 사용할 수 있습니다.</translation>
+    </message>
+    <message numerus="yes">
+        <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>HudRenderer</name>
     <message>
         <source>km/h</source>
@@ -408,7 +445,7 @@
     </message>
     <message>
         <source>openpilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
-        <translation>openpilot이 차량을 식별할 수 없었습니다. 지원되지 않는 차량이거나 ECU가 인식되지 않습니다. 해당 차량에 맞는 펌웨어 버전을 추가하려면 PR을 제출하세요. 도움이 필요하시면 discord.comma.ai에 가입하세요.</translation>
+        <translation>openpilot이 차량을 식별할 수 없습니다. 지원되지 않는 차량이거나 ECU가 인식되지 않습니다. 해당 차량에 맞는 펌웨어 버전을 추가하려면 PR을 제출하세요. 도움이 필요하시면 discord.comma.ai에 가입하세요.</translation>
     </message>
     <message>
         <source>openpilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
@@ -416,7 +453,7 @@
     </message>
     <message>
         <source>Device temperature too high. System cooling down before starting. Current internal component temperature: %1</source>
-        <translation>장치 온도가 너무 높습니다. 시작하기 전에 온도를 낮춰주세요. 현재 내부 부품 온도: %1</translation>
+        <translation>장치의 온도가 너무 높습니다. 시작 전에 온도를 낮춰주세요. 현재 내부 구성 요소 온도: %1</translation>
     </message>
 </context>
 <context>
@@ -636,6 +673,10 @@ This may take up to a minute.</source>
     <message>
         <source>Developer</source>
         <translation>개발자</translation>
+    </message>
+    <message>
+        <source>Firehose</source>
+        <translation>파이어호스</translation>
     </message>
 </context>
 <context>
@@ -947,20 +988,20 @@ This may take up to a minute.</source>
 <context>
     <name>TermsPage</name>
     <message>
-        <source>Terms &amp; Conditions</source>
-        <translation>이용약관</translation>
-    </message>
-    <message>
         <source>Decline</source>
         <translation>거절</translation>
     </message>
     <message>
-        <source>Scroll to accept</source>
-        <translation>동의하려면 아래로 스크롤하세요</translation>
-    </message>
-    <message>
         <source>Agree</source>
         <translation>동의</translation>
+    </message>
+    <message>
+        <source>Welcome to openpilot</source>
+        <translation>오픈 파일럿에 오신 것을 환영합니다.</translation>
+    </message>
+    <message>
+        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <translation>오픈파일럿을 사용하려면 이용약관에 동의해야 합니다. 최신 약관은 &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; 에서 최신 약관을 읽은 후 계속하세요.</translation>
     </message>
 </context>
 <context>
@@ -1063,7 +1104,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
-        <translation>운전 시각화는 일부 회전을 더 잘 보여주기 위해 저속에서 도로를 향한 광각 카메라로 전환됩니다. 실험 모드 로고도 우측 상단에 표시됩니다.</translation>
+        <translation>운전 시각화는 일부 회전을 더 잘 보여주기 위해 저속에서 도로를 향한 광각 카메라로 전환됩니다. 우측 상단에 실험 모드 로고가 표시됩니다.</translation>
     </message>
     <message>
         <source>Always-On Driver Monitoring</source>
@@ -1071,15 +1112,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation>Openpilot이 활성화되지 않은 경우에도 드라이버 모니터링을 활성화합니다.</translation>
-    </message>
-    <message>
-        <source>FIREHOSE Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable &lt;b&gt;FIREHOSE Mode&lt;/b&gt; to get your driving data in the training set.&lt;br&gt;&lt;br&gt;Follow these steps to get your device ready:&lt;br&gt;  1. Bring your device inside and connect to a good USB-C adapter&lt;br&gt;  2. Connect to Wi-Fi&lt;br&gt;  3. Enable this toggle&lt;br&gt;  4. Leave it connected for at least 30 minutes&lt;br&gt;&lt;br&gt;This toggle turns off once you restart your device. Repeat once a week for maximum effectiveness.</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot이 활성화되지 않은 경우에도 드라이버 모니터링을 활성화합니다.</translation>
     </message>
 </context>
 <context>
@@ -1120,24 +1153,16 @@ This may take up to a minute.</source>
 <context>
     <name>WiFiPromptWidget</name>
     <message>
-        <source>Setup Wi-Fi</source>
-        <translation>Wi-Fi 설정</translation>
+        <source>Open</source>
+        <translation>열기</translation>
     </message>
     <message>
-        <source>Connect to Wi-Fi to upload driving data and help improve openpilot</source>
-        <translation>Wi-Fi에 연결하여 주행 데이터를 업로드하고 openpilot 개선에 기여하세요</translation>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <translation>훈련 데이터 업로드를 최대화하여 오픈파일럿의 주행 모델을 개선하세요.</translation>
     </message>
     <message>
-        <source>Open Settings</source>
-        <translation>설정 열기</translation>
-    </message>
-    <message>
-        <source>Ready to upload</source>
-        <translation>업로드 준비 완료</translation>
-    </message>
-    <message>
-        <source>Training data will be pulled periodically while your device is on Wi-Fi</source>
-        <translation>기기가 Wi-Fi에 연결되어 있는 동안 트레이닝 데이터를 주기적으로 전송합니다</translation>
+        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
+        <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; 파이어호스 모드 &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
     </message>
 </context>
 <context>
