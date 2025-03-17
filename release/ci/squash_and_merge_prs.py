@@ -37,8 +37,10 @@ def sort_prs_by_creation(pr_data):
   )
 
 
-def add_pr_comment(pr_number, comment, title="## Squash and Merge `master-dev-c3-new`"):
+def add_pr_comment(pr_number, comment, target_branch):
   """Add or update a comment to a PR using gh cli"""
+  title = f"## Squash and Merge `{target_branch}`"
+
   try:
     result = subprocess.run(
       ['gh', 'pr', 'view', str(pr_number), '--json', 'comments'],
@@ -127,7 +129,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
 
       if not is_valid:
         print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
-        add_pr_comment(pr_number,
+        add_pr_comment(pr_number, target_branch,
                        f"⚠️ This PR was skipped in the automated `{target_branch}` squash because {skip_reason}.")
         continue
 
@@ -155,7 +157,8 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         print(f"Command failed with exit code {e.returncode}")
         error_output = getattr(e, 'stderr', 'No error output available')
         print(f"Error output: {error_output}")
-        add_pr_comment(pr_number, f"⚠️ Error during automated {target_branch} squash:\n```\n{error_output}\n```")
+        add_pr_comment(pr_number, target_branch,
+                       f"⚠️ Error during automated {target_branch} squash:\n```\n{error_output}\n```")
         continue
       except Exception as e:
         print(f"Unexpected error processing PR #{pr_number}: {str(e)}")
