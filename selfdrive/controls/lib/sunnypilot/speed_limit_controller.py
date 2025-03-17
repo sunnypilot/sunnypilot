@@ -43,6 +43,7 @@ class SpeedLimitController:
     self._gas_pressed = False
     self._pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
+    self._gas_override_offset = 0.
     self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
     self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
     self._warning_type_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
@@ -104,13 +105,15 @@ class SpeedLimitController:
 
   @property
   def speed_limit_offset(self):
+    base_offset = 0.
     if self._offset_type == OffsetType.default:
-      return interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
+      base_offset = interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
     elif self._offset_type == OffsetType.fixed:
-      return self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+      base_offset = self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
     elif self._offset_type == OffsetType.percentage:
-      return self._offset_value * 0.01 * self._speed_limit
-    return 0.
+      base_offset = self._offset_value * 0.01 * self._speed_limit
+
+    return base_offset + self._gas_override_offset
 
   @property
   def speed_limit_warning_offset(self):
@@ -177,6 +180,13 @@ class SpeedLimitController:
     self._v_cruise_prev_rounded = int(round(self._v_cruise_setpoint_prev * self._ms_to_local))
     self._speed_limit_offsetted_rounded = int(0) if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_offset) * self._ms_to_local))
     self._speed_limit_warning_offsetted_rounded = int(0) if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_warning_offset) * self._ms_to_local))
+
+    if self._gas_pressed and self._v_ego > self.speed_limit_offseted:
+      self._gas_override_offset = clip(self._v_ego - self.speed_limit_offseted, 0, self._v_cruise_setpoint)
+
+    # Reset offset when cruise speed or speed limit changes
+    if self._v_cruise_setpoint_changed or self._speed_limit_changed:
+      self._gas_override_offset = 0.0
 
   def transition_state_from_inactive(self):
     """ Make state transition from inactive state """
