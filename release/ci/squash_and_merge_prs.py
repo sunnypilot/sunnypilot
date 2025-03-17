@@ -50,25 +50,25 @@ def add_pr_comment(pr_number, comment):
     )
 
     comments_data = json.loads(result.stdout)
-    comment_id = None
+    has_existing_comment = False
 
     for pr_comment in comments_data['comments']:
       if pr_comment['body'].startswith(title):
-        comment_id = pr_comment['id']
+        has_existing_comment = True
         break
 
     full_comment = f"{title}\n\n{comment}"
 
-    if comment_id:
+    if has_existing_comment:
       subprocess.run(
-        ['gh', 'pr', 'comment', str(pr_number), '--edit-last', str(comment_id), '--body', full_comment],
+        ['gh', 'pr', 'comment', '--edit-last', f"#{pr_number}", '--body', full_comment],
         check=True,
         capture_output=True,
         text=True
       )
     else:
       subprocess.run(
-        ['gh', 'pr', 'comment', str(pr_number), '--body', full_comment],
+        ['gh', 'pr', 'comment', f"#{pr_number}", '--body', full_comment],
         check=True,
         capture_output=True,
         text=True
@@ -78,6 +78,7 @@ def add_pr_comment(pr_number, comment):
     print(f"Failed to add/update comment on PR #{pr_number}: {e.stderr}")
   except json.JSONDecodeError:
     print(f"Failed to parse comments data for PR #{pr_number}")
+
 
 
 def validate_pr(pr):
