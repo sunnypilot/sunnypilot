@@ -1457,10 +1457,6 @@ Esto puede tardar un minuto.</translation>
         <translation type="unfinished">ID del dongle de sunnylink no encontrado. Esto puede deberse a una conexión débil o a un problema de registro en sunnylink. Por favor, reinicia y vuelve a intentarlo.</translation>
     </message>
     <message>
-        <source>THANKS</source>
-        <translation type="obsolete">GRACIAS</translation>
-    </message>
-    <message>
         <source>Not Sponsor</source>
         <translation type="unfinished">No patrocinador</translation>
     </message>
