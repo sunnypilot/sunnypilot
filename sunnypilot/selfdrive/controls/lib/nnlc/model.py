@@ -7,7 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 from json import load
 import numpy as np
 
-from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import ACTIVATION_FUNCTION_NAMES
+# dict used to rename activation functions whose names aren't valid python identifiers
+ACTIVATION_FUNCTION_NAMES = {'σ': 'sigmoid'}
 
 
 class NNTorqueModel:
