@@ -43,7 +43,7 @@ class ModularAssistiveDrivingSystem:
     # read params on init
     self.enabled_toggle = self.mads_params.read_param("Mads")
     self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
-    self.pause_lateral_on_brake_toggle = self.mads_params.read_param("MadsPauseLateralOnBrake")
+    self.steering_mode = self.mads_params.read_param("MadsSteeringMode")
     self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
 
   def read_params(self):
@@ -85,11 +85,11 @@ class ModularAssistiveDrivingSystem:
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
 
-      if self.pause_lateral_on_brake_toggle:
+      if self.steering_mode == 1:
         if CS.brakePressed:
           transition_paused_state()
 
-      if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
+      if not (self.steering_mode == 1 and CS.brakePressed) and \
          not self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
           self.events_sp.add(EventNameSP.silentLkasEnable)
@@ -124,6 +124,9 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.buttonEnable)
       if self.selfdrive.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
+
+    if CS.brakePressed and not self.selfdrive.CS_prev.brakePressed and self.steering_mode == 0:
+      self.events_sp.add(EventNameSP.lkasDisable)
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)

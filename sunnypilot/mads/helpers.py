@@ -20,13 +20,15 @@ class MadsParams:
 
   def set_alternative_experience(self, CP):
     enabled = self.read_param("Mads")
-    pause_lateral_on_brake = self.read_param("MadsPauseLateralOnBrake")
+    mads_steering_mode = int(self.params.get("MadsSteeringMode"))
 
     if enabled:
       CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
 
-      if pause_lateral_on_brake:
+      if mads_steering_mode == 0:
         CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISENGAGE_LATERAL_ON_BRAKE
+      elif mads_steering_mode == 1:
+        CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.PAUSE_LATERAL_ON_BRAKE
 
   def set_car_specific_params(self, CP, CP_SP):
     if CP.brand == "hyundai":
@@ -40,9 +42,9 @@ class MadsParams:
     # MADS is currently not supported in Tesla due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Tesla, identify consistent signals for MADS toggling
     if CP.brand == "tesla":
-      self.params.remove("Mads")
+      self.params.put("MadsSteeringMode", "0")
 
     # MADS is currently not supported in Rivian due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Rivian, identify consistent signals for MADS toggling
     if CP.brand == "rivian":
-      self.params.remove("Mads")
+      self.params.put("MadsSteeringMode", "0")
