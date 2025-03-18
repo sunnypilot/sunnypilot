@@ -2,7 +2,7 @@ import json
 import math
 import time
 from collections import deque
-from typing import Any, Dict
+from typing import Any, Optional
 
 import numpy as np
 
@@ -158,39 +158,39 @@ class LongitudinalLiveTuner:
 
 
     # Braking behavior tracking
-    self.braking_events: deque[Dict[str, Any]] = deque(maxlen=self.MEMORY_SIZE)
-    self.current_braking_event = None
+    self.braking_events: deque[dict[str, Any]] = deque(maxlen=self.MEMORY_SIZE)
+    self.current_braking_event: Optional[dict[str, Any]] = None
 
     # Neural network for learning
     self.nn = TinyNeuralNetwork(input_size=10, hidden_size=24, output_size=10, lr=self.LEARNING_RATE)
-    self.training_step_count = 0
+    self.training_step_count = 0.0
     self.training_progress = 0.0  # Progress from 0.0 to 1.0
 
     # Training data
-    self.training_data: list[Dict[str, Any]] = []
-    self.validation_data: list[Dict[str, Any]] = []
-    self.last_training_time = time.time()
+    self.training_data: list[dict[str, Any]] = []
+    self.validation_data: list[dict[str, Any]] = []
+    self.last_training_time = int(time.time())
     self.training_interval = 45.0  # seconds between training sessions
 
     # For tracking long control behavior
-    self.last_output_accel = 0
-    self.integral_error = 0
-    self.prev_error = 0
-    self.last_pid_error = 0
-    self.last_lead_distance = 0
+    self.last_output_accel = 0.0
+    self.integral_error = 0.0
+    self.prev_error = 0.0
+    self.last_pid_error = 0.0
+    self.last_lead_distance = 0.0
 
     # Current collection state
     self.is_stopping = False
     self.is_starting = False
-    self.stopping_start_time = 0
-    self.starting_start_time = 0
-    self.prev_speed = 0
-    self.prev_accel = 0
-    self.sample_idx = 0
+    self.stopping_start_time = 0.0
+    self.starting_start_time = 0.0
+    self.prev_speed = 0.0
+    self.prev_accel = 0.0
+    self.sample_idx = 0.0
 
     # Safety validation
-    self.unsafe_stops_count = 0
-    self.total_stops_count = 0
+    self.unsafe_stops_count = 0.0
+    self.total_stops_count = 0.0
     self.safety_validation_window: deque[int] = deque(maxlen=50)
     self.unsafe_param_detected = False
 
@@ -210,7 +210,7 @@ class LongitudinalLiveTuner:
         stored_params = json.loads(params_bytes)
         # Check if stored params are too old
         current_time = time.time()
-        if current_time - stored_params.get('timestamp', 0) < self.MAX_AGE_DAYS * 24 * 3600:
+        if current_time - stored_params.get('timestamp', 0.0) < self.MAX_AGE_DAYS * 24 * 3600:
           self.vego_stopping = stored_params.get('vego_stopping', self.vego_stopping_default)
           self.vego_starting = stored_params.get('vego_starting', self.vego_starting_default)
           self.stopping_decel_rate = stored_params.get('stopping_decel_rate', self.stopping_decel_rate_default)
@@ -331,7 +331,7 @@ class LongitudinalLiveTuner:
       # If decel rate is too gentle but stopping speed is too high, this could cause unsafe stops
       self.vego_stopping = min(self.vego_stopping, 0.25)
 
-  def update(self, CS, actuators):
+  def update(self, CS: structs.CarState, actuators: structs.CarControl.Actuators):
     """Update the live tuner with new data."""
     self.sample_idx += 1
 
@@ -352,7 +352,7 @@ class LongitudinalLiveTuner:
     # Start tracking a new braking event when deceleration begins
     if not self.is_stopping and CS.out.cruiseState.enabled and CS.aEgo < -0.10 and v_ego > 1.0:
       self.is_stopping = True
-      self.stopping_start_time = time.time()
+      self.stopping_start_time = int(time.time())
       # Initialize new braking event
       self.current_braking_event = {
           'initial_speed': v_ego,
@@ -432,7 +432,7 @@ class LongitudinalLiveTuner:
     # Detect starting event (transitioning from standstill)
     if not self.is_starting and CS.out.cruiseState.enabled and v_ego < 0.1 < actuators.accel:
       self.is_starting = True
-      self.starting_start_time = time.time()
+      self.starting_start_time = int(time.time())
 
     # Record starting data
     if self.is_starting:
@@ -468,7 +468,7 @@ class LongitudinalLiveTuner:
       self.training_step_count += 1
       self.training_progress = min(1.0, self.training_step_count / self.TARGET_TRAINING_STEPS)
 
-  def force_update(self, CS, actuators):
+  def force_update(self, CS: structs.CarState, actuators: structs.CarControl.Actuators):
     # Force an immediate data update and training trigger
     self.update(CS, actuators)
 

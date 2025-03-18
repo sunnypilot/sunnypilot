@@ -5,7 +5,6 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from cereal import messaging
 from opendbc.car.interfaces import CarInterfaceBase
@@ -25,7 +24,7 @@ def start():
 
 class TunerManager:
   """Manages longitudinal tuning both on-road and off-road"""
-  tuners: Dict[str, LongitudinalLiveTuner] = {}  # Store tuners by car fingerprint
+  tuners: dict[str, LongitudinalLiveTuner] = {}  # Store tuners by car fingerprint
   training_status = {
     'progress': 0.0,
     'active': False,
@@ -40,8 +39,8 @@ class TunerManager:
     'offroad_enabled': False,  # Default to disable offroad training
   }
 
-  replay_routes: List[str] = []  # List of routes from device
-  training_thread: Optional[threading.Thread] = None
+  replay_routes: list[str] = []  # List of routes from device
+  training_thread: threading.Thread | None = None
   OFFROAD_DAEMON_NAME = 'longitudinalTuner'
 
   @classmethod

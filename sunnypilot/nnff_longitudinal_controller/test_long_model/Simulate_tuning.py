@@ -1,8 +1,11 @@
-import numpy as np
 from types import SimpleNamespace
-from opendbc.sunnypilot.nnff_longitudinal_controller.longitudinal_live_tuner import LongitudinalLiveTuner
 
-# Dummy CP factory. Return a Mock CP with minimal attributes for update.
+import numpy as np
+
+from sunnypilot.nnff_longitudinal_controller.longitudinal_nnff import LongitudinalLiveTuner
+
+
+# Return a test CP with minimal attributes for update.
 def get_dummy_CP():
   longitudinalTuning = SimpleNamespace(
     kf=1.0,
@@ -12,7 +15,7 @@ def get_dummy_CP():
     kiV=[1.0]
   )
   cp = SimpleNamespace(
-    carFingerprint="MOCK",
+    carFingerprint="Sunny",
     longitudinalTuning=longitudinalTuning,
     vEgoStopping=0.5,
     vEgoStarting=0.5,
@@ -24,11 +27,11 @@ def get_dummy_CP():
 def get_dummy_CS():
   # simulate radarState with leadOne available.
   cruiseState = SimpleNamespace(enabled=True, standstill=False)
-  radarState = SimpleNamespace(leadOne=SimpleNamespace(status=True, dRel=7.0))
+  radarState = SimpleNamespace(leadOne=SimpleNamespace(status=True, dRel=15.0))
   out = SimpleNamespace(cruiseState=cruiseState)
   cs = SimpleNamespace(
     vEgo=10.0,
-    aEgo=1.0,
+    aEgo=1.2,
     aTarget=2.0,
     out=out,
     radarState=radarState,
@@ -60,8 +63,8 @@ def test_get_pid_gains():
 def test_default_values():
   cp = get_dummy_CP()
   tuner = LongitudinalLiveTuner(cp)
-  # Check that defaults are taken from dummy cp via CarInterfaceBase.get_std_params()
-  # (Since cp.carFingerprint is "MOCK", defaults fallback to our dummy values.)
+  # Check that defaults are taken from fake_cp via CarInterfaceBase.get_std_params()
+  # (Since cp.carFingerprint is "Sunny", defaults fallback to our dummy values.)
   assert tuner.vego_stopping == cp.vEgoStopping
   assert tuner.vego_starting == cp.vEgoStarting
   assert tuner.stopping_decel_rate == cp.stoppingDecelRate

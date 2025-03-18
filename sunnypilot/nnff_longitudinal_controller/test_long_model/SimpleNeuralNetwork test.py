@@ -1,7 +1,8 @@
 import numpy as np
-from sunnypilot.nnff_longitudinal_controller.longitudinal_nnff import SimpleNeuralNetwork
 
-nn_model = SimpleNeuralNetwork(input_size=3, hidden_size=5, output_size=2)
+from sunnypilot.nnff_longitudinal_controller.longitudinal_nnff import TinyNeuralNetwork
+
+nn_model = TinyNeuralNetwork(input_size=3, hidden_size=5, output_size=2)
 
 # Sample input and a target output
 x = np.array([0.1, 0.2, 0.3])
@@ -13,7 +14,7 @@ print("Initial output:", init_out)
 
 # Train the network for many iterations
 num_iterations = 1000
-for i in range(num_iterations):
+for _i in range(num_iterations):
   nn_model.train(x, target, iterations=1)
 
 # After training, check the output
