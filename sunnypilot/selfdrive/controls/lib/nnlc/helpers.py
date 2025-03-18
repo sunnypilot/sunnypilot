@@ -30,7 +30,7 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
     _max_similarity = -1.0
     for f in os.listdir(TORQUE_NN_MODEL_PATH):
       if f.endswith(".json"):
-        model = f.replace(".json", "").replace(f"{TORQUE_NN_MODEL_PATH}/", "")
+        model = os.path.splitext(f)[0]
         similarity_score = similarity(model, _check_model)
         if similarity_score > _max_similarity:
           _max_similarity = similarity_score
