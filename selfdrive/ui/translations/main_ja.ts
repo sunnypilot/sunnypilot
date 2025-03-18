@@ -1544,14 +1544,6 @@ This may take up to a minute.</source>
 <context>
     <name>TogglesPanel</name>
     <message>
-        <source>Enable openpilot</source>
-        <translation>openpilot を有効化</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>openpilotによるアダプティブクルーズコントロールとレーンキープアシストを利用します。この機能を利用する際は常に前方への注意が必要です。この設定を変更は車の電源が必要です。</translation>
-    </message>
-    <message>
         <source>Enable Lane Departure Warnings</source>
         <translation>車線逸脱警報機能の有効化</translation>
     </message>
@@ -1658,6 +1650,14 @@ This may take up to a minute.</source>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable sunnypilot</source>
+        <translation>sunnypilot を有効化</translation>
+    </message>
+    <message>
+        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation>sunnypilotによるアダプティブクルーズコントロールとレーンキープアシストを利用します。この機能を利用する際は常に前方への注意が必要です。この設定を変更は車の電源が必要です。</translation>
     </message>
 </context>
 <context>

@@ -1549,14 +1549,6 @@ Esto puede tardar un minuto.</translation>
 <context>
     <name>TogglesPanel</name>
     <message>
-        <source>Enable openpilot</source>
-        <translation>Activar openpilot</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>Utilice el sistema openpilot para acceder a un autocrucero adaptativo y asistencia al conductor para mantenerse en el carril. Se requiere su atención en todo momento para utilizar esta función. Cambiar esta configuración solo tendrá efecto con el auto apagado.</translation>
-    </message>
-    <message>
         <source>Experimental Mode</source>
         <translation>Modo Experimental</translation>
     </message>
@@ -1663,6 +1655,14 @@ Esto puede tardar un minuto.</translation>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable sunnypilot</source>
+        <translation>Activar sunnypilot</translation>
+    </message>
+    <message>
+        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation>Utilice el sistema sunnypilot para acceder a un autocrucero adaptativo y asistencia al conductor para mantenerse en el carril. Se requiere su atención en todo momento para utilizar esta función. Cambiar esta configuración solo tendrá efecto con el auto apagado.</translation>
     </message>
 </context>
 <context>

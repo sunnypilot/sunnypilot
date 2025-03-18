@@ -1546,14 +1546,6 @@ This may take up to a minute.</source>
 <context>
     <name>TogglesPanel</name>
     <message>
-        <source>Enable openpilot</source>
-        <translation>openpilot 사용</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>어댑티브 크루즈 컨트롤 및 차로 유지 보조를 위해 openpilot 시스템을 사용할 수 있습니다. 이 기능을 사용할 때에는 언제나 주의를 기울여야 합니다. 설정을 변경하면 차량 시동이 꺼졌을 때 적용됩니다.</translation>
-    </message>
-    <message>
         <source>Enable Lane Departure Warnings</source>
         <translation>차선 이탈 경고 활성화</translation>
     </message>
@@ -1660,6 +1652,14 @@ This may take up to a minute.</source>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable sunnypilot</source>
+        <translation>sunnypilot 사용</translation>
+    </message>
+    <message>
+        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation>어댑티브 크루즈 컨트롤 및 차로 유지 보조를 위해 sunnypilot 시스템을 사용할 수 있습니다. 이 기능을 사용할 때에는 언제나 주의를 기울여야 합니다. 설정을 변경하면 차량 시동이 꺼졌을 때 적용됩니다.</translation>
     </message>
 </context>
 <context>

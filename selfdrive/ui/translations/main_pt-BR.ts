@@ -1551,14 +1551,6 @@ Isso pode levar até um minuto.</translation>
 <context>
     <name>TogglesPanel</name>
     <message>
-        <source>Enable openpilot</source>
-        <translation>Ativar openpilot</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>Use o sistema openpilot para controle de cruzeiro adaptativo e assistência ao motorista de manutenção de faixa. Sua atenção é necessária o tempo todo para usar esse recurso. A alteração desta configuração tem efeito quando o carro é desligado.</translation>
-    </message>
-    <message>
         <source>Enable Lane Departure Warnings</source>
         <translation>Ativar Avisos de Saída de Faixa</translation>
     </message>
@@ -1665,6 +1657,14 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable sunnypilot</source>
+        <translation>Ativar sunnypilot</translation>
+    </message>
+    <message>
+        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation>Use o sistema sunnypilot para controle de cruzeiro adaptativo e assistência ao motorista de manutenção de faixa. Sua atenção é necessária o tempo todo para usar esse recurso. A alteração desta configuração tem efeito quando o carro é desligado.</translation>
     </message>
 </context>
 <context>

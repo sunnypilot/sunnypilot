@@ -1542,14 +1542,6 @@ This may take up to a minute.</source>
 <context>
     <name>TogglesPanel</name>
     <message>
-        <source>Enable openpilot</source>
-        <translation>openpilot&apos;u aktifleştir</translation>
-    </message>
-    <message>
-        <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>Ayarlanabilir hız sabitleyici ve şeritte kalma yardımı için openpilot sistemini kullanın. Bu özelliği kullanırken her zaman dikkatli olmanız gerekiyor. Bu ayarın değiştirilmesi için araç kapatılıp açılması gerekiyor.</translation>
-    </message>
-    <message>
         <source>Enable Lane Departure Warnings</source>
         <translation>Şerit ihlali uyarı alın</translation>
     </message>
@@ -1656,6 +1648,14 @@ This may take up to a minute.</source>
     <message>
         <source>Enable toggle to allow the model to determine when to use sunnypilot ACC or sunnypilot End to End Longitudinal.</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable sunnypilot</source>
+        <translation>sunnypilot&apos;u aktifleştir</translation>
+    </message>
+    <message>
+        <source>Use the sunnypilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
+        <translation>Ayarlanabilir hız sabitleyici ve şeritte kalma yardımı için sunnypilot sistemini kullanın. Bu özelliği kullanırken her zaman dikkatli olmanız gerekiyor. Bu ayarın değiştirilmesi için araç kapatılıp açılması gerekiyor.</translation>
     </message>
 </context>
 <context>
