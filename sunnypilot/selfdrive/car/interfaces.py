@@ -26,11 +26,12 @@ def log_fingerprint(CP: structs.CarParams) -> None:
 
 
 def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params) -> None:
-  nnlc_model_path, nnlc_model_name, fuzzy_fingerprint = get_nn_model_path(CP)
+  nnlc_model_path, nnlc_model_name, exact_match = get_nn_model_path(CP)
 
   if nnlc_model_path is None:
     cloudlog.error({"nnlc event": "car doesn't match any Neural Network model"})
     nnlc_model_path = "MOCK"
+    nnlc_model_name = "MOCK"
 
   if nnlc_model_path != "MOCK" and CP.steerControlType != structs.CarParams.SteerControlType.angle:
     CP_SP.neuralNetworkLateralControl.enabled = params.get_bool("NeuralNetworkLateralControl")
@@ -40,7 +41,7 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
 
   CP_SP.neuralNetworkLateralControl.modelPath = nnlc_model_path
   CP_SP.neuralNetworkLateralControl.modelName = nnlc_model_name
-  CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = fuzzy_fingerprint
+  CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
 def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params):

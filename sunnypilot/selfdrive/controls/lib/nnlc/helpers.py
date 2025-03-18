@@ -21,35 +21,37 @@ def similarity(s1: str, s2: str) -> float:
 
 
 def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
-  _car = CP.carFingerprint
-  _eps_fw = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
-  _model_name = ""
+  exact_match = True
+  car_fingerprint = CP.carFingerprint
+  eps_fw = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
+  model_name = ""
 
-  def check_nn_path(_check_model):
+  def check_nn_path(nn_candidate):
     _model_path = None
     _max_similarity = -1.0
     for f in os.listdir(TORQUE_NN_MODEL_PATH):
       if f.endswith(".json"):
         model = os.path.splitext(f)[0]
-        similarity_score = similarity(model, _check_model)
+        similarity_score = similarity(model, nn_candidate)
         if similarity_score > _max_similarity:
           _max_similarity = similarity_score
           _model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
     return _model_path, _max_similarity
 
-  if len(_eps_fw) > 3:
-    _eps_fw = _eps_fw.replace("\\", "")
-    check_model = f"{_car} {_eps_fw}"
+  if len(eps_fw) > 3:
+    eps_fw = eps_fw.replace("\\", "")
+    nn_candidate = f"{car_fingerprint} {eps_fw}"
   else:
-    check_model = _car
-  model_path, max_similarity = check_nn_path(check_model)
-  if 0.0 <= max_similarity < 0.9:
-    check_model = _car
-    model_path, max_similarity = check_nn_path(check_model)
-    if 0.0 <= max_similarity < 0.9:
+    nn_candidate = car_fingerprint
+  model_path, max_similarity = check_nn_path(nn_candidate)
+  if car_fingerprint not in model_path or 0.0 <= max_similarity < 0.9:
+    nn_candidate = car_fingerprint
+    model_path, max_similarity = check_nn_path(nn_candidate)
+    if car_fingerprint not in model_path or 0.0 <= max_similarity < 0.9:
       model_path = None
 
-  _model_name = os.path.splitext(os.path.basename(model_path))[0] if model_path else "MOCK"
+  if model_path is not None:
+    model_name = os.path.splitext(os.path.basename(model_path))[0]
+    exact_match = max_similarity >= 0.99
 
-  fuzzy_fingerprint = max_similarity < 0.99
-  return model_path, _model_name, fuzzy_fingerprint
+  return model_path, model_name, exact_match
