@@ -2,7 +2,7 @@ import json
 import math
 import time
 from collections import deque
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -159,7 +159,7 @@ class LongitudinalLiveTuner:
 
     # Braking behavior tracking
     self.braking_events: deque[dict[str, Any]] = deque(maxlen=self.MEMORY_SIZE)
-    self.current_braking_event: Optional[dict[str, Any]] = None
+    self.current_braking_event: dict[str, Any] | None = None
 
     # Neural network for learning
     self.nn = TinyNeuralNetwork(input_size=10, hidden_size=24, output_size=10, lr=self.LEARNING_RATE)
@@ -209,7 +209,7 @@ class LongitudinalLiveTuner:
       if params_bytes is not None:
         stored_params = json.loads(params_bytes)
         # Check if stored params are too old
-        current_time = time.time()
+        current_time = int(time.time())
         if current_time - stored_params.get('timestamp', 0.0) < self.MAX_AGE_DAYS * 24 * 3600:
           self.vego_stopping = stored_params.get('vego_stopping', self.vego_stopping_default)
           self.vego_starting = stored_params.get('vego_starting', self.vego_starting_default)
@@ -275,7 +275,7 @@ class LongitudinalLiveTuner:
         'kp_gain_factor': float(self.kp_gain_factor),
         'ki_gain_factor': float(self.ki_gain_factor),
         'braking_profiles': braking_profiles,
-        'timestamp': time.time(),
+        'timestamp': int(time.time()),
         'training_progress': float(self.training_progress),
         'training_step_count': int(self.training_step_count),
         'safety_metrics': safety_metrics,
@@ -364,7 +364,7 @@ class LongitudinalLiveTuner:
           'distance': 0.0,
           'duration': 0.0,
           'final_stopping_distance': 0.0,
-          'timestamp': time.time()
+        'timestamp': int(time.time())
       }
 
     # Record braking event data
@@ -453,7 +453,7 @@ class LongitudinalLiveTuner:
     self.prev_accel = current_accel
 
     # Periodically train the neural network
-    current_time = time.time()
+    current_time = int(time.time())
     if current_time - self.last_training_time > self.training_interval:
       self._train_network()
       self.last_training_time = current_time
