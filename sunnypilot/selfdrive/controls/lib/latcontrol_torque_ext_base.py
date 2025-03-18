@@ -36,7 +36,7 @@ def get_lookahead_value(future_vals, current_val):
 
 
 class LatControlTorqueExtBase:
-  def __init__(self, lac_torque, CP):
+  def __init__(self, lac_torque, CP, CP_SP):
     self.model_v2 = None
     self.model_valid = False
     self.use_steering_angle = lac_torque.use_steering_angle
@@ -45,6 +45,17 @@ class LatControlTorqueExtBase:
     self.lateral_jerk_setpoint: float = 0.0
     self.lateral_jerk_measurement: float = 0.0
     self.lookahead_lateral_jerk: float = 0.0
+
+    self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
+    self.torque_params = lac_torque.torque_params
+
+    self._ff = 0.0
+    self._pid_log = None
+    self._setpoint = 0.0
+    self._measurement = 0.0
+    self._lateral_accel_deadzone = 0.0
+    self._desired_lateral_accel = 0.0
+    self._actual_lateral_accel = 0.0
 
     # twilsonco's Lateral Neural Network Feedforward
     # Instantaneous lateral jerk changes very rapidly, making it not useful on its own,

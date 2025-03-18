@@ -27,7 +27,7 @@ def roll_pitch_adjust(roll, pitch):
 
 class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
-    LatControlTorqueExtBase.__init__(self, lac_torque, CP)
+    super().__init__(lac_torque, CP, CP_SP)
 
     self.lac_torque = lac_torque
     self.params = Params()
@@ -40,18 +40,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     # Only initialize NNTorqueModel if enabled
     self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
 
-    self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
-    self.torque_params = lac_torque.torque_params
-
     self.use_lateral_jerk: bool = self.params.get_bool("LateralTorqueControlLateralJerk")
-
-    self._ff = 0.0
-    self._pid_log = None
-    self._setpoint = 0.0
-    self._measurement = 0.0
-    self._lateral_accel_deadzone = 0.0
-    self._desired_lateral_accel = 0.0
-    self._actual_lateral_accel = 0.0
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
@@ -141,22 +130,3 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self._ff = self.torque_from_lateral_accel(LatControlInputs(gravity_adjusted_lateral_accel, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
                                               friction_input, self._lateral_accel_deadzone, friction_compensation=True,
                                               gravity_adjusted=True)
-
-  def update(self, CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
-             desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel):
-    if not self.enabled:
-      return ff, pid_log
-
-    self._ff = ff
-    self._pid_log = pid_log
-    self._setpoint = setpoint
-    self._measurement = measurement
-    self._lateral_accel_deadzone = lateral_accel_deadzone
-    self._desired_lateral_accel = desired_lateral_accel
-    self._actual_lateral_accel = actual_lateral_accel
-
-    self.update_calculations(CS, VM, desired_lateral_accel)
-    self.update_feed_forward(CS, params, calibrated_pose)
-    self.update_stock_lateral_jerk(CS, roll_compensation, gravity_adjusted_lateral_accel)
-
-    return self._ff, self._pid_log

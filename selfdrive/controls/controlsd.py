@@ -117,8 +117,8 @@ class Controls:
       self.LoC.reset()
 
     # Neural Network Lateral Control
-    if self.CP_SP.neuralNetworkLateralControl.enabled:
-      self.LaC.nnlc.update_model_v2(model_v2)
+    if self.CP_SP.neuralNetworkLateralControl.enabled or self.params.get_bool("LateralTorqueControlLateralJerk"):
+      self.LaC.extension.update_model_v2(model_v2)
 
     # accel PID loop
     pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
