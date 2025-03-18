@@ -59,7 +59,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.error_deque = deque(maxlen=history_check_frames[0])
     self.past_future_len = len(self.past_times) + len(self.nn_future_times)
 
-  def update_feed_forward(self, CS, params, calibrated_pose):
+  def update_neural_network_feedforward(self, CS, params, calibrated_pose):
     if not self.enabled or not self.model_valid:
       return
 
@@ -110,7 +110,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
                                                             self._lateral_accel_deadzone, friction_compensation=True,
                                                             gravity_adjusted=False)
 
-  def update_stock_lateral_jerk(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
+  def update_custom_lateral_accel(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
     if (self.enabled and self.model_valid) or not self.use_lateral_jerk:
       return
 
