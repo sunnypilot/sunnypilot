@@ -13,7 +13,7 @@ from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
-from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NeuralNetworkFeedForwardModel
+from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NNTorqueModel
 
 
 # At a given roll, if pitch magnitude increases, the
@@ -37,8 +37,8 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    # Only initialize NeuralNetworkFeedForwardModel if enabled
-    self.model = NeuralNetworkFeedForwardModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
+    # Only initialize NNTorqueModel if enabled
+    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
 
     self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
     self.torque_params = lac_torque.torque_params
