@@ -5,22 +5,27 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Optional
 
 from cereal import messaging
+from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.test.process_replay.process_replay import get_custom_params_from_lr, replay_process_with_name
-from openpilot.system.manager.process_config import managed_processes, ProcGroup
+from openpilot.system.manager.process_config import managed_processes
 from openpilot.tools.lib.logreader import LogReader
-
-from opendbc.car.interfaces import CarInterfaceBase
 from sunnypilot.nnff_longitudinal_controller.longitudinal_nnff import LongitudinalLiveTuner
+
+
+def start():
+  cloudlog.info("Starting longitudinal tuner process")
+  TunerManager.start_offroad_training()
 
 
 class TunerManager:
   """Manages longitudinal tuning both on-road and off-road"""
-  tuners = {}  # Store tuners by car fingerprint
+  tuners: Dict[str, LongitudinalLiveTuner] = {}  # Store tuners by car fingerprint
   training_status = {
     'progress': 0.0,
     'active': False,
@@ -35,8 +40,8 @@ class TunerManager:
     'offroad_enabled': False,  # Default to disable offroad training
   }
 
-  replay_routes = []
-  training_thread = None
+  replay_routes: List[str] = []  # List of routes from device
+  training_thread: Optional[threading.Thread] = None
   OFFROAD_DAEMON_NAME = 'longitudinalTuner'
 
   @classmethod
@@ -334,16 +339,13 @@ class TunerManager:
             cloudlog.info(f"Processing {len(control_outputs)} control states")
             last_train_idx = 0
             for i, cs in enumerate(control_outputs):
-              # Always collect the data (lightweight operation)
-              tuner.update_data(cs.controlsState.carState, cs.controlsState.actuators)
-
               # Only perform neural network training periodically
               if i - last_train_idx >= 60:  # Train every ~3 seconds (at 20Hz)
                 tuner.force_update(cs.controlsState.carState, cs.controlsState.actuators)
                 last_train_idx = i
                 # Update UI
-                cls.training_status['progress'] = tuner.training_progress
-                cls.update_ui_status()
+                cls.training_status['progress'] = tuner.training_progress  # TODO SP-UI
+                cls.update_ui_status()  # TODO SP-UI
 
             # Save the tuner state after processing segment
             tuner._save_params()
@@ -396,7 +398,6 @@ class TunerManager:
       name = "longitudinalTuner"
       enabled = True
       onroad = False
-      proc_group = ProcGroup.OFFROAD
       nice = 10
 
       def __init__(self):
@@ -405,21 +406,11 @@ class TunerManager:
         # Enable if tuning mode is set to "onroad" or "replay"
         self.enabled = mode in ["onroad", "replay"]
 
-      def start(self):
-        cloudlog.info("Starting longitudinal tuner process")
-        TunerManager.start_offroad_training()
-
     # Register process with the manager
     managed_processes["longitudinal_tuner"] = LongitudinalTunerProcessConfig()
 
     # Initialize/update UI
     TunerManager.update_ui_status()
-
-  @classmethod
-  def update_data(cls, CS, actuators):
-    """Update all tuners with new car state and actuator data"""
-    for tuner in cls.tuners.values():
-      tuner.update_data(CS, actuators)
 
   @classmethod
   def update_ui_status(cls):
@@ -473,10 +464,8 @@ def main():
 
   # Load params
   params = Params()
-
   # Previous onroad state
   prev_onroad = params.get_bool("IsOnroad")
-
   # Create a rate keeper
   rk = Ratekeeper(1, print_delay_threshold=None)
 
@@ -494,8 +483,6 @@ def main():
         TunerManager.start_offroad_training()
 
     TunerManager.update_ui_status()
-
-    # Keep the loop rate consistent
     rk.keep_time()
 
 if __name__ == "__main__":

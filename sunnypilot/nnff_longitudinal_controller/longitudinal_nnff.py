@@ -2,6 +2,7 @@ import json
 import math
 import time
 from collections import deque
+from typing import Any, Dict
 
 import numpy as np
 
@@ -151,12 +152,13 @@ class LongitudinalLiveTuner:
     self.ki_gain_factor = 1.0
 
     # Data collection buffers
-    self.stopping_data = []
-    self.starting_data = []
-    self.decel_rate_data = []
+    self.stopping_data: list[float] = []
+    self.starting_data: list[float] = []
+    self.decel_rate_data: list[float] = []
+
 
     # Braking behavior tracking
-    self.braking_events = deque(maxlen=self.MEMORY_SIZE)
+    self.braking_events: deque[Dict[str, Any]] = deque(maxlen=self.MEMORY_SIZE)
     self.current_braking_event = None
 
     # Neural network for learning
@@ -165,8 +167,8 @@ class LongitudinalLiveTuner:
     self.training_progress = 0.0  # Progress from 0.0 to 1.0
 
     # Training data
-    self.training_data = []
-    self.validation_data = []
+    self.training_data: list[Dict[str, Any]] = []
+    self.validation_data: list[Dict[str, Any]] = []
     self.last_training_time = time.time()
     self.training_interval = 45.0  # seconds between training sessions
 
@@ -189,7 +191,7 @@ class LongitudinalLiveTuner:
     # Safety validation
     self.unsafe_stops_count = 0
     self.total_stops_count = 0
-    self.safety_validation_window = deque(maxlen=50)
+    self.safety_validation_window: deque[int] = deque(maxlen=50)
     self.unsafe_param_detected = False
 
     # Load saved parameters if available
@@ -436,7 +438,6 @@ class LongitudinalLiveTuner:
     if self.is_starting:
       # Check if we've started moving
       if v_ego > self.STARTING_SPEED_THRESHOLD:
-        starting_time = time.time() - self.starting_start_time
         self.starting_data.append(v_ego)
         self.is_starting = False
 
