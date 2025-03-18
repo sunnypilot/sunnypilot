@@ -9,7 +9,6 @@ import math
 import numpy as np
 
 from opendbc.car.interfaces import LatControlInputs
-from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
@@ -28,10 +27,6 @@ def roll_pitch_adjust(roll, pitch):
 class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
     super().__init__(lac_torque, CP, CP_SP)
-
-    self.lac_torque = lac_torque
-    self.params = Params()
-
     self.enabled = CP_SP.neuralNetworkLateralControl.enabled
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
@@ -39,8 +34,6 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     # Past value is computed using previous desired lat accel and observed roll
     # Only initialize NNTorqueModel if enabled
     self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
-
-    self.use_lateral_jerk: bool = self.params.get_bool("LateralTorqueControlLateralJerk")
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
@@ -109,24 +102,3 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
                                                             friction_input,
                                                             self._lateral_accel_deadzone, friction_compensation=True,
                                                             gravity_adjusted=False)
-
-  def update_custom_lateral_accel(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
-    if (self.enabled and self.model_valid) or not self.use_lateral_jerk:
-      return
-
-    friction_input = self.update_friction_input(self._desired_lateral_accel, self._actual_lateral_accel)
-
-    torque_from_setpoint = self.torque_from_lateral_accel(
-      LatControlInputs(self._setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-      self.lateral_jerk_setpoint, self._lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False
-    )
-
-    torque_from_measurement = self.torque_from_lateral_accel(
-      LatControlInputs(self._measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-      self.lateral_jerk_measurement, self._lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False
-    )
-
-    self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)
-    self._ff = self.torque_from_lateral_accel(LatControlInputs(gravity_adjusted_lateral_accel, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-                                              friction_input, self._lateral_accel_deadzone, friction_compensation=True,
-                                              gravity_adjusted=True)
