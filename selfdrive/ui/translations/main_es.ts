@@ -518,14 +518,19 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Steering Mode After Braking</source>
+        <source>Disengage</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Steering Mode on Brake Pedal</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.
 
+Disengage: ALC will be disengaged after the brake pedal is pressed.
 Remain Active: ALC will remain active even after the brake pedal is pressed.
-Pause Steering: ALC will be paused after the brake pedal is manually pressed.</source>
+Pause Steering: ALC will be paused when the brake pedal is manually pressed.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1455,10 +1460,6 @@ Esto puede tardar un minuto.</translation>
     <message>
         <source>sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again.</source>
         <translation type="unfinished">ID del dongle de sunnylink no encontrado. Esto puede deberse a una conexión débil o a un problema de registro en sunnylink. Por favor, reinicia y vuelve a intentarlo.</translation>
-    </message>
-    <message>
-        <source>THANKS</source>
-        <translation type="obsolete">GRACIAS</translation>
     </message>
     <message>
         <source>Not Sponsor</source>
