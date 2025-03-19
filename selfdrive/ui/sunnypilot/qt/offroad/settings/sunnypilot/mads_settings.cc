@@ -39,15 +39,15 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(madsUnifiedEngagementModeToggle);
 
-  // Pause Lateral On Brake
+  // Steering Mode On Brake
   std::vector<QString> lateral_on_brake_texts{tr("Disengage"), tr("Remain Active"), tr("Pause Steering")};
   madsSteeringMode = new ButtonParamControl(
     "MadsSteeringMode",
-    tr("Steering Mode After Braking"),
+    tr("Steering Mode on Brake Pedal"),
     tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\n"
        "Disengage: ALC will be disengaged after the brake pedal is pressed.\n"
        "Remain Active: ALC will remain active even after the brake pedal is pressed.\n"
-       "Pause Steering: ALC will be paused after the brake pedal is manually pressed."),
+       "Pause Steering: ALC will be paused when the brake pedal is manually pressed."),
     "",
     lateral_on_brake_texts,
     500);

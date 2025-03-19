@@ -6,49 +6,56 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from openpilot.common.params import Params
-
+from opendbc.car import structs
 from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP, HyundaiSafetyFlagsSP
 
 
-class MadsParams:
-  def __init__(self):
-    self.params = Params()
+class MadsSteeringModeOnBrake:
+  DISENGAGE = 0
+  REMAIN_ACTIVE = 1
+  PAUSE = 2
 
-  def read_param(self, key: str):
-    return self.params.get_bool(key)
 
-  def set_alternative_experience(self, CP):
-    enabled = self.read_param("Mads")
-    mads_steering_mode = int(self.params.get("MadsSteeringMode"))
+def read_steering_mode_param(params: Params):
+  try:
+    return int(params.get("MadsSteeringMode"))
+  except (ValueError, TypeError):
+    return f"{MadsSteeringModeOnBrake.REMAIN_ACTIVE}"
 
-    if enabled:
-      CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
 
-      if mads_steering_mode == 0:
-        CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISENGAGE_LATERAL_ON_BRAKE
-      elif mads_steering_mode == 1:
-        CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.PAUSE_LATERAL_ON_BRAKE
+def set_alternative_experience(CP: structs.CarParams, params: Params):
+  enabled = params.get_bool("Mads")
+  steering_mode = read_steering_mode_param(params)
 
-  def set_car_specific_params(self, CP, CP_SP):
-    if CP.brand == "hyundai":
-      # TODO-SP: This should be separated from MADS module for future implementations
-      #          Use "HyundaiLongitudinalMainCruiseToggleable" param
-      hyundai_cruise_main_toggleable = True
-      if hyundai_cruise_main_toggleable:
-        CP_SP.flags |= HyundaiFlagsSP.LONGITUDINAL_MAIN_CRUISE_TOGGLEABLE.value
-        CP_SP.safetyParam |= HyundaiSafetyFlagsSP.LONG_MAIN_CRUISE_TOGGLEABLE
+  if enabled:
+    CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
+
+    if steering_mode == MadsSteeringModeOnBrake.DISENGAGE:
+      CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_DISENGAGE_LATERAL_ON_BRAKE
+    elif steering_mode == MadsSteeringModeOnBrake.PAUSE:
+      CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.MADS_PAUSE_LATERAL_ON_BRAKE
+
+
+def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params):
+  if CP.brand == "hyundai":
+    # TODO-SP: This should be separated from MADS module for future implementations
+    #          Use "HyundaiLongitudinalMainCruiseToggleable" param
+    hyundai_cruise_main_toggleable = True
+    if hyundai_cruise_main_toggleable:
+      CP_SP.flags |= HyundaiFlagsSP.LONGITUDINAL_MAIN_CRUISE_TOGGLEABLE.value
+      CP_SP.safetyParam |= HyundaiSafetyFlagsSP.LONG_MAIN_CRUISE_TOGGLEABLE
 
     # MADS is currently not supported in Tesla due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Tesla, identify consistent signals for MADS toggling
     if CP.brand == "tesla":
-      self.params.put("MadsSteeringMode", "0")
-      self.params.put_bool("MadsUnifiedEngagementMode", True)
-      self.params.remove("MadsMainCruiseAllowed")
+      params.put("MadsSteeringMode", "0")
+      params.put_bool("MadsUnifiedEngagementMode", True)
+      params.remove("MadsMainCruiseAllowed")
 
     # MADS is currently not supported in Rivian due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Rivian, identify consistent signals for MADS toggling
     if CP.brand == "rivian":
-      self.params.put("MadsSteeringMode", "0")
-      self.params.put_bool("MadsUnifiedEngagementMode", True)
-      self.params.remove("MadsMainCruiseAllowed")
+      params.put("MadsSteeringMode", "0")
+      params.put_bool("MadsUnifiedEngagementMode", True)
+      params.remove("MadsMainCruiseAllowed")
