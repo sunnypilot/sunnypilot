@@ -422,14 +422,6 @@
         <translation>🔥 訓練資料上傳模式 🔥</translation>
     </message>
     <message>
-        <source>sunnypilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve sunnypilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="vanished">sunnypilot 透過觀察人類駕駛（包括您）來學習如何駕駛。
-
-「訓練資料上傳模式」可讓您最大化上傳訓練數據，以改進 sunnypilot 的駕駛模型。更多數據代表更強大的模型，也就意味著更優秀的「實驗模式」。</translation>
-    </message>
-    <message>
         <source>Firehose Mode: ACTIVE</source>
         <translation>訓練資料上傳模式：啟用中</translation>
     </message>
@@ -1708,10 +1700,6 @@ This may take up to a minute.</source>
     <message>
         <source>Open</source>
         <translation>開啟</translation>
-    </message>
-    <message>
-        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
-        <translation type="vanished">最大化您的訓練數據上傳，以改善 sunnypilot 的駕駛模型。</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>

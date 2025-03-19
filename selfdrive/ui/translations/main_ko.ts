@@ -422,14 +422,6 @@
         <translation>🔥 파이어호스 모드 🔥</translation>
     </message>
     <message>
-        <source>sunnypilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve sunnypilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="vanished">오픈파일럿은 여러분과 같은 사람이 운전하는 모습을 보면서 운전하는 법을 배웁니다.
-
-파이어호스 모드를 사용하면 훈련 데이터 업로드를 최대화하여 오픈파일럿의 주행 모델을 개선할 수 있습니다. 더 많은 데이터는 더 큰 모델을 의미하며, 이는 더 나은 실험 모드를 의미합니다.</translation>
-    </message>
-    <message>
         <source>Firehose Mode: ACTIVE</source>
         <translation>파이어호스 모드: 활성화</translation>
     </message>
@@ -1708,10 +1700,6 @@ This may take up to a minute.</source>
     <message>
         <source>Open</source>
         <translation>열기</translation>
-    </message>
-    <message>
-        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
-        <translation type="vanished">훈련 데이터 업로드를 최대화하여 오픈파일럿의 주행 모델을 개선하세요.</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>

@@ -422,14 +422,6 @@
         <translation>🔥 Modo Firehose 🔥</translation>
     </message>
     <message>
-        <source>sunnypilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve sunnypilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="vanished">O sunnypilot aprende a dirigir observando humanos, como você, dirigirem.
-
-O Modo Firehose permite maximizar o envio de dados de treinamento para melhorar os modelos de direção do sunnypilot. Mais dados significam modelos maiores, o que resulta em um Modo Experimental melhor.</translation>
-    </message>
-    <message>
         <source>Firehose Mode: ACTIVE</source>
         <translation>Modo Firehose: ATIVO</translation>
     </message>
@@ -1713,10 +1705,6 @@ Isso pode levar até um minuto.</translation>
     <message>
         <source>Open</source>
         <translation>Abrir</translation>
-    </message>
-    <message>
-        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
-        <translation type="vanished">Maximize seus envios de dados de treinamento para melhorar os modelos de direção do sunnypilot.</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>

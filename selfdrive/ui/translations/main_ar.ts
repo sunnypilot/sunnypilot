@@ -422,14 +422,6 @@
         <translation>🔥 وضع خرطوم الحريق 🔥</translation>
     </message>
     <message>
-        <source>sunnypilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve sunnypilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="vanished">يتعلم تطبيق sunnypilot كيفية القيادة من خلال مشاهدة البشر، مثلك، أثناء القيادة.
-
-يتيح لك وضع خرطوم الحريق زيادة تحميلات بيانات التدريب لتحسين نماذج القيادة في OpenPilot. كلما زادت البيانات، زادت النماذج، مما يعني وضعًا تجريبيًا أفضل.</translation>
-    </message>
-    <message>
         <source>Firehose Mode: ACTIVE</source>
         <translation>وضع خرطوم الحريق: نشط</translation>
     </message>
@@ -1733,10 +1725,6 @@ This may take up to a minute.</source>
     <message>
         <source>Open</source>
         <translation>انفتح</translation>
-    </message>
-    <message>
-        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
-        <translation type="vanished">قم بزيادة تحميلات بيانات التدريب الخاصة بك لتحسين نماذج القيادة الخاصة بـ sunnypilot.</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
