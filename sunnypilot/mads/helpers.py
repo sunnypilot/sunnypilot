@@ -43,8 +43,12 @@ class MadsParams:
     # TODO-SP: To enable MADS for Tesla, identify consistent signals for MADS toggling
     if CP.brand == "tesla":
       self.params.put("MadsSteeringMode", "0")
+      self.params.put_bool("MadsUnifiedEngagementMode", True)
+      self.params.remove("MadsMainCruiseAllowed")
 
     # MADS is currently not supported in Rivian due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Rivian, identify consistent signals for MADS toggling
     if CP.brand == "rivian":
       self.params.put("MadsSteeringMode", "0")
+      self.params.put_bool("MadsUnifiedEngagementMode", True)
+      self.params.remove("MadsMainCruiseAllowed")

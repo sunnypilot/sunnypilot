@@ -125,8 +125,9 @@ class ModularAssistiveDrivingSystem:
       if self.selfdrive.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
 
-    if CS.brakePressed and not self.selfdrive.CS_prev.brakePressed and self.steering_mode == 0:
-      self.events_sp.add(EventNameSP.lkasDisable)
+    if self.steering_mode == 0:
+      if CS.brakePressed and not self.selfdrive.CS_prev.brakePressed:
+        self.events_sp.add(EventNameSP.lkasDisable)
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
