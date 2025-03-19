@@ -124,7 +124,6 @@ void DeveloperPanel::updateToggles(bool _offroad) {
   enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
   joystickToggle->setVisible(!is_release);
-  longManeuverToggle->setVisible(!is_release);
 
   offroad = _offroad;
 }
