@@ -520,19 +520,14 @@ O Modo Firehose permite maximizar o envio de dados de treinamento para melhorar 
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Disengage</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Steering Mode on Brake Pedal</source>
+        <source>Steering Mode After Braking</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.
 
-Disengage: ALC will be disengaged after the brake pedal is pressed.
 Remain Active: ALC will remain active even after the brake pedal is pressed.
-Pause Steering: ALC will be paused when the brake pedal is manually pressed.</source>
+Pause Steering: ALC will be paused after the brake pedal is manually pressed.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
