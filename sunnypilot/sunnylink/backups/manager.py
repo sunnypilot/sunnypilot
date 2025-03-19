@@ -129,7 +129,7 @@ class BackupManagerSP:
         self.last_error = "Failed to upload backup"
         self._report_status()
 
-      return self.backup_status == custom.BackupManagerSP.Status.completed
+      return bool(self.backup_status == custom.BackupManagerSP.Status.completed)
 
     except Exception as e:
       cloudlog.exception(f"Error creating backup: {str(e)}")

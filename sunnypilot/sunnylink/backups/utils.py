@@ -14,6 +14,7 @@ from pathlib import Path
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from sunnypilot.sunnylink.backups.AESCipher import AESCipher
 from openpilot.system.hardware.hw import Paths
@@ -31,15 +32,21 @@ class KeyDerivation:
     key_plain = rsa_key_pem.decode(errors="ignore")
 
     if "private" in key_plain.lower():
-      key = serialization.load_pem_private_key(rsa_key_pem, password=None, backend=default_backend())
-      der_data = key.private_bytes(
+      private_key = serialization.load_pem_private_key(rsa_key_pem, password=None, backend=default_backend())
+      if not isinstance(private_key, rsa.RSAPrivateKey):
+        raise ValueError("Invalid RSA key format: Unable to determine if key is public or private.")
+
+      der_data = private_key.private_bytes(
         encoding=serialization.Encoding.DER,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
         encryption_algorithm=serialization.NoEncryption()
       )
     elif "public" in key_plain.lower():
-      key = serialization.load_pem_public_key(rsa_key_pem, backend=default_backend())
-      der_data = key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.PKCS1)
+      public_key = serialization.load_pem_public_key(rsa_key_pem, backend=default_backend())
+      if not isinstance(public_key, rsa.RSAPublicKey):
+        raise ValueError("Invalid RSA key format: Unable to determine if key is public or private.")
+
+      der_data = public_key.public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.PKCS1)
     else:
       raise ValueError("Unknown key format: Unable to determine if key is public or private.")
 
