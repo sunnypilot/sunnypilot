@@ -9,7 +9,7 @@ import base64
 import json
 import time
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Any
 
 from openpilot.common.git import get_branch
 from openpilot.common.params import Params, ParamKeyType
@@ -42,7 +42,7 @@ class BackupManagerSP:
 
     # Unified progress & operation type (only one operation runs at a time)
     self.progress = 0.0
-    self.operation: Optional[OperationType] = None
+    self.operation: OperationType | None = None
 
     self.last_error = ""
 
@@ -69,7 +69,7 @@ class BackupManagerSP:
     self.operation = op_type
     self._report_status()
 
-  def _collect_config_data(self) -> Dict[str, Any]:
+  def _collect_config_data(self) -> dict[str, Any]:
     """Collects configuration data to be backed up."""
     config_data = {}
     params_to_backup = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP)]
@@ -138,7 +138,7 @@ class BackupManagerSP:
       self._report_status()
       return False
 
-  async def restore_backup(self, version: Optional[int] = None) -> bool:
+  async def restore_backup(self, version: int | None = None) -> bool:
     """Restores a backup from sunnylink."""
     try:
       self.restore_status = custom.BackupManagerSP.Status.inProgress
@@ -183,10 +183,10 @@ class BackupManagerSP:
       self._report_status()
       return False
 
-  def _apply_config(self, config_data: Dict[str, str], all_values_encoded: bool = False) -> None:
+  def _apply_config(self, config_data: dict[str, str], all_values_encoded: bool = False) -> None:
     """Applies configuration data from a backup, but only for parameters marked as backupable."""
     # Get the current list of parameters that can be backed up
-    backupable_params = set(k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP))
+    backupable_params = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP)]
 
     # Count for logging/reporting
     restored_count = 0
