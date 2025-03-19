@@ -17,9 +17,16 @@ class MadsSteeringModeOnBrake:
   PAUSE = 2
 
 
+def read_steering_mode_param(params: Params):
+  try:
+    return int(params.get("MadsSteeringMode"))
+  except (ValueError, TypeError):
+    return f"{MadsSteeringModeOnBrake.REMAIN_ACTIVE}"
+
+
 def set_alternative_experience(CP: structs.CarParams, params: Params):
   enabled = params.get_bool("Mads")
-  steering_mode = int(params.get("MadsSteeringMode"))
+  steering_mode = read_steering_mode_param(params)
 
   if enabled:
     CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS

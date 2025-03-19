@@ -8,7 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import car, log, custom
 
 from opendbc.car.hyundai.values import HyundaiFlags
-from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake
+from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -42,13 +42,12 @@ class ModularAssistiveDrivingSystem:
     # read params on init
     self.enabled_toggle = self.params.get_bool("Mads")
     self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
-    self.steering_mode_on_brake = self.params.get_bool("MadsSteeringMode")
+    self.steering_mode_on_brake = read_steering_mode_param(self.params)
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def read_params(self):
     self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
-
 
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
