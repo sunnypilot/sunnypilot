@@ -37,9 +37,9 @@ class TinyNeuralNetwork:
   @TinyJit
   def forward(self, x):
     z1 = x.dot(self.W1) + self.b1
-    a1 = z1.leakyrelu(alpha=0.01)
+    a1 = z1.leakyrelu(0.01)
     z2 = a1.dot(self.W2) + self.b2
-    a2 = z2.leakyrelu(alpha=0.01)
+    a2 = z2.leakyrelu(0.01)
     z3 = a2.dot(self.W3) + self.b3
     return z3.sigmoid()
 
@@ -47,10 +47,8 @@ class TinyNeuralNetwork:
     """
     Train the network for a given number of iterations.
     """
-    if iterations <= 0:
-      return self.forward(x)
+    x.requires_grad = True
 
-    @TinyJit
     def train_step(x, y):
       out = self.forward(x)
       loss = ((out - y)**2).mean()
@@ -59,13 +57,22 @@ class TinyNeuralNetwork:
 
     for _ in range(iterations):
       loss = train_step(x, y)
-      # Manually update and reset gradients
+      # Update parameters and reset gradients.
       for param in [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]:
         grad = param.grad() if callable(param.grad) else param.grad
-        param.data -= self.lr * grad.data
-        grad.data.fill(0)
+        if grad is not None:
+          param -= self.lr * grad
+          param.grad = None
 
-    self.training_loss_history.append(loss.data.tolist()[0])
+    # Convert loss data to a scalar float before storing.
+    loss_data = loss.data() if callable(loss.data) else loss.data
+    if isinstance(loss_data, memoryview):
+      scalar_loss = float(np.frombuffer(loss_data, dtype=np.float32)[0])
+    elif isinstance(loss_data, (list, np.ndarray)):
+      scalar_loss = float(np.array(loss_data)[0])
+    else:
+      scalar_loss = float(loss_data)
+    self.training_loss_history.append(scalar_loss)
     self.training_iterations += 1
     return self.forward(x)
 
