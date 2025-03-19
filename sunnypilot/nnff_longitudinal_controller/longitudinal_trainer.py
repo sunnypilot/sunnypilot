@@ -1,5 +1,5 @@
 import json
-import math
+import pickle
 import time
 from collections import deque
 from typing import Any
@@ -10,71 +10,9 @@ from cereal import messaging
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
-from tinygrad.engine.jit import TinyJit
+from sunnypilot.nnff_longitudinal_controller.modeld import TinyNeuralNetwork
 from tinygrad.tensor import Tensor
 
-
-class TinyNeuralNetwork:
-  """Feed-forward neural network using tinygrad for faster training."""
-
-  def __init__(self, input_size=8, hidden_size=24, output_size=5, lr=0.01):
-    # HE initialization scale factor
-    scale1 = math.sqrt(2.0 / input_size)
-    scale2 = math.sqrt(2.0 / hidden_size)
-    # Initialize parameters as tinygrad Tensors
-    self.W1 = Tensor.randn(input_size, hidden_size) * scale1
-    self.b1 = Tensor.zeros(hidden_size)
-    self.W2 = Tensor.randn(hidden_size, hidden_size) * scale2
-    self.b2 = Tensor.zeros(hidden_size)
-    self.W3 = Tensor.randn(hidden_size, output_size) * scale2
-    self.b3 = Tensor.zeros(output_size)
-    self.lr = lr
-
-    # For keeping track of training loss and iterations
-    self.training_loss_history = []
-    self.training_iterations = 0
-
-  @TinyJit
-  def forward(self, x):
-    z1 = x.dot(self.W1) + self.b1
-    a1 = z1.leakyrelu(0.01)
-    z2 = a1.dot(self.W2) + self.b2
-    a2 = z2.leakyrelu(0.01)
-    z3 = a2.dot(self.W3) + self.b3
-    return z3.sigmoid()
-
-  def train(self, x, y, iterations=1):
-    """
-    Train the network for a given number of iterations.
-    """
-    x.requires_grad = True
-
-    def train_step(x, y):
-      out = self.forward(x)
-      loss = ((out - y)**2).mean()
-      loss.backward()
-      return loss
-
-    for _ in range(iterations):
-      loss = train_step(x, y)
-      # Update parameters and reset gradients.
-      for param in [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]:
-        grad = param.grad() if callable(param.grad) else param.grad
-        if grad is not None:
-          param -= self.lr * grad
-          param.grad = None
-
-    # Convert loss data to a scalar float before storing.
-    loss_data = loss.data() if callable(loss.data) else loss.data
-    if isinstance(loss_data, memoryview):
-      scalar_loss = float(np.frombuffer(loss_data, dtype=np.float32)[0])
-    elif isinstance(loss_data, (list, np.ndarray)):
-      scalar_loss = float(np.array(loss_data)[0])
-    else:
-      scalar_loss = float(loss_data)
-    self.training_loss_history.append(scalar_loss)
-    self.training_iterations += 1
-    return self.forward(x)
 
 class LongitudinalLiveTuner:
   """Adaptive tuning system for longitudinal control parameters based on neural network learning.
@@ -169,7 +107,18 @@ class LongitudinalLiveTuner:
     self.current_braking_event: dict[str, Any] | None = None
 
     # Neural network for learning
-    self.nn = TinyNeuralNetwork(input_size=10, hidden_size=24, output_size=10, lr=self.LEARNING_RATE)
+    self.nn = TinyNeuralNetwork(
+      input_size=10,
+      hidden_size=24,
+      output_size=10,
+      lr=self.LEARNING_RATE,
+      optimizer_type='adam',
+      activation='leakyrelu',
+      weight_init='he',
+      dropout_rate=0.1
+    )
+
+    self.best_nn_validation_loss = float('inf')
     self.training_step_count = 0.0
     self.training_progress = 0.0  # Progress from 0.0 to 1.0
 
@@ -177,7 +126,7 @@ class LongitudinalLiveTuner:
     self.training_data: list[dict[str, Any]] = []
     self.validation_data: list[dict[str, Any]] = []
     self.last_training_time = int(time.time())
-    self.training_interval = 45.0  # seconds between training sessions
+    self.training_interval = 60.0  # seconds between training sessions
 
     # For tracking long control behavior
     self.last_output_accel = 0.0
@@ -224,14 +173,14 @@ class LongitudinalLiveTuner:
           self.kp_gain_factor = stored_params.get('kp_gain_factor', self.kp_gain_factor)
           self.ki_gain_factor = stored_params.get('ki_gain_factor', self.ki_gain_factor)
 
-          # Load neural network weights if available
+          # Load neural network weights
           if all(k in stored_params for k in ['nn_w1', 'nn_b1', 'nn_w2', 'nn_b2', 'nn_w3', 'nn_b3']):
-            self.nn.W1 = np.array(stored_params['nn_w1'])
-            self.nn.b1 = np.array(stored_params['nn_b1'])
-            self.nn.W2 = np.array(stored_params['nn_w2'])
-            self.nn.b2 = np.array(stored_params['nn_b2'])
-            self.nn.W3 = np.array(stored_params['nn_w3'])
-            self.nn.b3 = np.array(stored_params['nn_b3'])
+            self.nn.W1 = Tensor(stored_params['nn_w1'])
+            self.nn.b1 = Tensor(stored_params['nn_b1'])
+            self.nn.W2 = Tensor(stored_params['nn_w2'])
+            self.nn.b2 = Tensor(stored_params['nn_b2'])
+            self.nn.W3 = Tensor(stored_params['nn_w3'])
+            self.nn.b3 = Tensor(stored_params['nn_b3'])
 
           # If we have learned braking profiles, load them too
           if 'braking_profiles' in stored_params:
@@ -508,7 +457,7 @@ class LongitudinalLiveTuner:
       feature = np.clip(feature, -10, 10)
       features.append(feature)
 
-      # Target values - normalized between 0 and 1 for sigmoid output
+      # Target values normalized between 0 and 1 for sigmoid output
       target = [
         (self.vego_stopping - self.vego_stopping_default * 0.5) / (self.vego_stopping_default * 0.5),
         (self.vego_starting - self.vego_starting_default * 0.5) / (self.vego_starting_default * 0.5),
@@ -531,34 +480,27 @@ class LongitudinalLiveTuner:
       return
 
     train_size = int(len(features) * 0.8)
-    train_features = np.array(features[:train_size])
-    train_targets = np.array(targets[:train_size])
-    val_features = np.array(features[train_size:])
-    val_targets = np.array(targets[train_size:])
+    train_features = Tensor(np.array(features[:train_size]))
+    train_targets = Tensor(np.array(targets[:train_size]))
+    val_features = Tensor(np.array(features[train_size:]))
+    val_targets = Tensor(np.array(targets[train_size:]))
 
-    # Train the model (multiple mini-batches)
+    # Train the model
     batch_size = min(10, len(train_features))
     for i in range(0, len(train_features), batch_size):
-      batch_x = train_features[i:i+batch_size]
-      batch_y = train_targets[i:i+batch_size]
-
-      for j in range(len(batch_x)):
-        self.nn.train(Tensor(batch_x[j]), Tensor(batch_y[j]), iterations=5)
+      batch_x = Tensor(train_features[i:i + batch_size])
+      batch_y = Tensor(train_targets[i:i + batch_size])
+      self.nn.train(batch_x, batch_y, iterations=400)
 
     # Validate on holdout set
     if len(val_features) > 0:
-      val_predictions = []
-      val_errors = []
-
-      for i in range(len(val_features)):
-        pred = self.nn.forward(Tensor(val_features[i]))
-        # Convert the prediction to numpy and compute error against the target
-        pred_np = pred.numpy()
-        val_predictions.append(pred_np)
-        val_errors.append(np.mean((pred_np - val_targets[i])**2))
-
-      avg_val_error = np.mean(val_errors)
-      print(f"Neural network training: validation error = {avg_val_error:.6f}")
+      val_pred = self.nn.forward(Tensor(val_features))
+      val_loss = ((val_pred - Tensor(val_targets)) ** 2).mean().numpy()
+      print(f"Neural network training: validation error = {val_loss:.6f}")
+      if val_loss < self.best_nn_validation_loss:
+        self.best_nn_validation_loss = val_loss
+        print("Validation loss improved, saving checkpoint.")
+        self._save_model_checkpoint()
     self._save_params()
 
   def _process_data(self):
@@ -759,3 +701,16 @@ class LongitudinalLiveTuner:
   def get_pid_gains(self, original_kp, original_ki):
     """Apply the learned gain adjustments to the original PID values."""
     return original_kp * self.kp_gain_factor, original_ki * self.ki_gain_factor
+
+  def _save_model_checkpoint(self):
+    """Save the neural network weights as loss improves."""
+    nn_weights = {
+      'nn_w1': self.W1.tolist(),
+      'nn_b1': self.b1.tolist(),
+      'nn_w2': self.W2.tolist(),
+      'nn_b2': self.b2.tolist(),
+      'nn_w3': self.W3.tolist(),
+      'nn_b3': self.b3.tolist(),
+    }
+    with open("nn_longitudinal.pkl", "wb") as f:
+      pickle.dump(nn_weights, f)
