@@ -101,8 +101,8 @@
 <context>
     <name>DeclinePage</name>
     <message>
-        <source>You must accept the Terms and Conditions in order to use openpilot.</source>
-        <translation>您必须接受条款和条件以使用openpilot。</translation>
+        <source>You must accept the Terms and Conditions in order to use sunnypilot.</source>
+        <translation>您必须接受条款和条件以使用sunnypilot。</translation>
     </message>
     <message>
         <source>Back</source>
@@ -124,16 +124,16 @@
         <translation>纵向机动模式</translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>openpilot纵向控制（Alpha 版）</translation>
+        <source>sunnypilot Longitudinal Control (Alpha)</source>
+        <translation>sunnypilot纵向控制（Alpha 版）</translation>
     </message>
     <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>警告：此车辆的 openpilot 纵向控制功能目前处于Alpha版本，使用此功能将会停用自动紧急制动（AEB）功能。</translation>
+        <source>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation>警告：此车辆的 sunnypilot 纵向控制功能目前处于Alpha版本，使用此功能将会停用自动紧急制动（AEB）功能。</translation>
     </message>
     <message>
-        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>在这辆车上，openpilot 默认使用车辆内建的主动巡航控制（ACC），而非 openpilot 的纵向控制。启用此项功能可切换至 openpilot 的纵向控制。当启用 openpilot 纵向控制 Alpha 版本时，建议同时启用实验性模式（Experimental mode）。</translation>
+        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of sunnypilot&apos;s longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha.</source>
+        <translation>在这辆车上，sunnypilot 默认使用车辆内建的主动巡航控制（ACC），而非 sunnypilot 的纵向控制。启用此项功能可切换至 sunnypilot 的纵向控制。当启用 sunnypilot 纵向控制 Alpha 版本时，建议同时启用实验性模式（Experimental mode）。</translation>
     </message>
     <message>
         <source>Enable ADB</source>
@@ -207,8 +207,8 @@
         <translation>查看</translation>
     </message>
     <message>
-        <source>Review the rules, features, and limitations of openpilot</source>
-        <translation>查看 openpilot 的使用规则，以及其功能和限制</translation>
+        <source>Review the rules, features, and limitations of sunnypilot</source>
+        <translation>查看 sunnypilot 的使用规则，以及其功能和限制</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
@@ -243,8 +243,8 @@
         <translation>关机</translation>
     </message>
     <message>
-        <source>openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. openpilot is continuously calibrating, resetting is rarely required.</source>
-        <translation>openpilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。一般来说，openpilot会持续更新校准，很少需要重置。</translation>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
+        <translation>sunnypilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。一般来说，sunnypilot会持续更新校准，很少需要重置。</translation>
     </message>
     <message>
         <source> Your device is pointed %1° %2 and %3° %4.</source>
@@ -272,7 +272,7 @@
     </message>
     <message>
         <source>Disengage to Reboot</source>
-        <translation>取消openpilot以重新启动</translation>
+        <translation>取消sunnypilot以重新启动</translation>
     </message>
     <message>
         <source>Are you sure you want to power off?</source>
@@ -280,7 +280,7 @@
     </message>
     <message>
         <source>Disengage to Power Off</source>
-        <translation>取消openpilot以关机</translation>
+        <translation>取消sunnypilot以关机</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -422,12 +422,12 @@
         <translation>🔥 训练数据上传模式 🔥</translation>
     </message>
     <message>
-        <source>openpilot learns to drive by watching humans, like you, drive.
+        <source>sunnypilot learns to drive by watching humans, like you, drive.
 
-Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation>openpilot 通过观察人类驾驶（包括您）来学习如何驾驶。
+Firehose Mode allows you to maximize your training data uploads to improve sunnypilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="vanished">sunnypilot 通过观察人类驾驶（包括您）来学习如何驾驶。
 
-“训练数据上传模式”允许您最大化上传训练数据，以改进 openpilot 的驾驶模型。更多数据意味着更强大的模型，也就意味着更优秀的“实验模式”。</translation>
+“训练数据上传模式”允许您最大化上传训练数据，以改进 sunnypilot 的驾驶模型。更多数据意味着更强大的模型，也就意味着更优秀的“实验模式”。</translation>
     </message>
     <message>
         <source>Firehose Mode: ACTIVE</source>
@@ -442,14 +442,20 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;未激活&lt;/span&gt;：请连接至不限流量的网络</translation>
     </message>
     <message>
-        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
-        <translation>为了达到最佳效果，请每周将您的设备带回室内，并连接到优质的 USB-C 充电器和 Wi-Fi。&lt;br&gt;&lt;br&gt;Firehose 模式在行驶时也能运行，但需连接到移动热点或使用不限流量的 SIM 卡。&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;常见问题&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;我开车的方式或地点有影响吗？&lt;/i&gt;不会，请像平常一样驾驶即可。&lt;br&gt;&lt;br&gt;&lt;i&gt;Firehose 模式会上传所有的驾驶片段吗？&lt;/i&gt;不会，我们会选择性地上传部分片段。&lt;br&gt;&lt;br&gt;&lt;i&gt;什么是好的 USB-C 充电器？&lt;/i&gt;任何快速手机或笔记本电脑充电器都应该适用。&lt;br&gt;&lt;br&gt;&lt;i&gt;我使用的软件版本有影响吗？&lt;/i&gt;有的，只有官方 openpilot（以及特定的分支）可以用于训练。</translation>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream sunnypilot (and particular forks) are able to be used for training.</source>
+        <translation>为了达到最佳效果，请每周将您的设备带回室内，并连接到优质的 USB-C 充电器和 Wi-Fi。&lt;br&gt;&lt;br&gt;Firehose 模式在行驶时也能运行，但需连接到移动热点或使用不限流量的 SIM 卡。&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;常见问题&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;我开车的方式或地点有影响吗？&lt;/i&gt;不会，请像平常一样驾驶即可。&lt;br&gt;&lt;br&gt;&lt;i&gt;Firehose 模式会上传所有的驾驶片段吗？&lt;/i&gt;不会，我们会选择性地上传部分片段。&lt;br&gt;&lt;br&gt;&lt;i&gt;什么是好的 USB-C 充电器？&lt;/i&gt;任何快速手机或笔记本电脑充电器都应该适用。&lt;br&gt;&lt;br&gt;&lt;i&gt;我使用的软件版本有影响吗？&lt;/i&gt;有的，只有官方 sunnypilot（以及特定的分支）可以用于训练。</translation>
     </message>
     <message numerus="yes">
         <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
         <translation>
             <numerusform>&lt;b&gt;目前已有 %n 段&lt;/b&gt; 您的驾驶数据被纳入训练数据集。</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>sunnypilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -573,12 +579,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>OffroadAlert</name>
     <message>
-        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, openpilot won&apos;t engage in %1</source>
-        <translation>请立即连接网络检查更新。如果不连接网络，openpilot 将在 %1 后便无法使用</translation>
+        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, sunnypilot won&apos;t engage in %1</source>
+        <translation>请立即连接网络检查更新。如果不连接网络，sunnypilot 将在 %1 后便无法使用</translation>
     </message>
     <message>
-        <source>Connect to internet to check for updates. openpilot won&apos;t automatically start until it connects to internet to check for updates.</source>
-        <translation>请连接至互联网以检查更新。在连接至互联网并完成更新检查之前，openpilot 将不会自动启动。</translation>
+        <source>Connect to internet to check for updates. sunnypilot won&apos;t automatically start until it connects to internet to check for updates.</source>
+        <translation>请连接至互联网以检查更新。在连接至互联网并完成更新检查之前，sunnypilot 将不会自动启动。</translation>
     </message>
     <message>
         <source>Unable to download updates
@@ -607,12 +613,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>检测到不支持的 NVMe 固态硬盘。您的设备因为使用了不支持的 NVMe 固态硬盘可能会消耗更多电力并更易过热。</translation>
     </message>
     <message>
-        <source>openpilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
-        <translation>openpilot 无法识别您的车辆。您的车辆可能未被支持，或是其电控单元 (ECU) 未被识别。请提交一个 Pull Request 为您的车辆添加正确的固件版本。需要帮助吗？请加入 discord.comma.ai。</translation>
+        <source>sunnypilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
+        <translation>sunnypilot 无法识别您的车辆。您的车辆可能未被支持，或是其电控单元 (ECU) 未被识别。请提交一个 Pull Request 为您的车辆添加正确的固件版本。需要帮助吗？请加入 discord.comma.ai。</translation>
     </message>
     <message>
-        <source>openpilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
-        <translation>openpilot 检测到设备的安装位置发生变化。请确保设备完全安装在支架上，并确保支架牢固地固定在挡风玻璃上。</translation>
+        <source>sunnypilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
+        <translation>sunnypilot 检测到设备的安装位置发生变化。请确保设备完全安装在支架上，并确保支架牢固地固定在挡风玻璃上。</translation>
     </message>
     <message>
         <source>Device temperature too high. System cooling down before starting. Current internal component temperature: %1</source>
@@ -641,8 +647,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>OnroadAlerts</name>
     <message>
-        <source>openpilot Unavailable</source>
-        <translation>无法使用 openpilot</translation>
+        <source>sunnypilot Unavailable</source>
+        <translation>无法使用 sunnypilot</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
@@ -814,8 +820,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>退出</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -940,7 +946,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot</translation>
     </message>
     <message>
         <source>Trips</source>
@@ -1046,8 +1052,8 @@ This may take up to a minute.</source>
         <translation>选择要安装的软件</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message>
         <source>Custom Software</source>
@@ -1516,7 +1522,7 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock openpilot engagement/disengagement.</source>
+        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1535,12 +1541,12 @@ This may take up to a minute.</source>
         <translation>同意</translation>
     </message>
     <message>
-        <source>Welcome to openpilot</source>
-        <translation>欢迎使用 openpilot</translation>
+        <source>Welcome to sunnypilot</source>
+        <translation>欢迎使用 sunnypilot</translation>
     </message>
     <message>
-        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
-        <translation>您必须接受《条款与条件》才能使用 openpilot。在继续之前，请先阅读最新条款：&lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt;。</translation>
+        <source>You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <translation>您必须接受《条款与条件》才能使用 sunnypilot。在继续之前，请先阅读最新条款：&lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt;。</translation>
     </message>
 </context>
 <context>
@@ -1574,20 +1580,20 @@ This may take up to a minute.</source>
         <translation>踩油门时取消控制</translation>
     </message>
     <message>
-        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation>启用后，踩下油门踏板将取消openpilot。</translation>
+        <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
+        <translation>启用后，踩下油门踏板将取消sunnypilot。</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
         <translation>测试模式</translation>
     </message>
     <message>
-        <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>openpilot 默认 &lt;b&gt;轻松模式&lt;/b&gt;驾驶车辆。试验模式启用一些轻松模式之外的 &lt;b&gt;试验性功能&lt;/b&gt;。试验性功能包括：</translation>
+        <source>sunnypilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
+        <translation>sunnypilot 默认 &lt;b&gt;轻松模式&lt;/b&gt;驾驶车辆。试验模式启用一些轻松模式之外的 &lt;b&gt;试验性功能&lt;/b&gt;。试验性功能包括：</translation>
     </message>
     <message>
-        <source>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
-        <translation>允许驾驶模型控制加速和制动，openpilot将模仿人类驾驶车辆，包括在红灯和停车让行标识前停车。鉴于驾驶模型确定行驶车速，所设定的车速仅作为上限。此功能尚处于早期测试状态，有可能会出现操作错误。</translation>
+        <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
+        <translation>允许驾驶模型控制加速和制动，sunnypilot将模仿人类驾驶车辆，包括在红灯和停车让行标识前停车。鉴于驾驶模型确定行驶车速，所设定的车速仅作为上限。此功能尚处于早期测试状态，有可能会出现操作错误。</translation>
     </message>
     <message>
         <source>New Driving Visualization</source>
@@ -1598,8 +1604,8 @@ This may take up to a minute.</source>
         <translation>由于此车辆使用自带的ACC纵向控制，当前无法使用试验模式。</translation>
     </message>
     <message>
-        <source>openpilot longitudinal control may come in a future update.</source>
-        <translation>openpilot纵向控制可能会在未来的更新中提供。</translation>
+        <source>sunnypilot longitudinal control may come in a future update.</source>
+        <translation>sunnypilot纵向控制可能会在未来的更新中提供。</translation>
     </message>
     <message>
         <source>Aggressive</source>
@@ -1618,20 +1624,20 @@ This may take up to a minute.</source>
         <translation>驾驶风格</translation>
     </message>
     <message>
-        <source>An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
-        <translation>在正式（release）版本以外的分支上，可以测试 openpilot 纵向控制的 Alpha 版本以及实验模式。</translation>
+        <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
+        <translation>在正式（release）版本以外的分支上，可以测试 sunnypilot 纵向控制的 Alpha 版本以及实验模式。</translation>
     </message>
     <message>
-        <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
-        <translation>启用 openpilot 纵向控制（alpha）开关以允许实验模式。</translation>
+        <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
+        <translation>启用 sunnypilot 纵向控制（alpha）开关以允许实验模式。</translation>
     </message>
     <message>
         <source>End-to-End Longitudinal Control</source>
         <translation>端到端纵向控制</translation>
     </message>
     <message>
-        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation>推荐使用标准模式。在积极模式下，openpilot 会更靠近前方车辆，并在油门和刹车方面更加激进。在放松模式下，openpilot 会与前方车辆保持更远距离。在支持的车型上，你可以使用方向盘上的距离按钮来循环切换这些驾驶风格。</translation>
+        <source>Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation>推荐使用标准模式。在积极模式下，sunnypilot 会更靠近前方车辆，并在油门和刹车方面更加激进。在放松模式下，sunnypilot 会与前方车辆保持更远距离。在支持的车型上，你可以使用方向盘上的距离按钮来循环切换这些驾驶风格。</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
@@ -1642,8 +1648,8 @@ This may take up to a minute.</source>
         <translation>驾驶员监控常开</translation>
     </message>
     <message>
-        <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation>即使在openpilot未激活时也启用驾驶员监控。</translation>
+        <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
+        <translation>即使在sunnypilot未激活时也启用驾驶员监控。</translation>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>
@@ -1704,12 +1710,16 @@ This may take up to a minute.</source>
         <translation>开启</translation>
     </message>
     <message>
-        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
-        <translation>最大化您的训练数据上传，以改善 openpilot 的驾驶模型。</translation>
+        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
+        <translation type="vanished">最大化您的训练数据上传，以改善 sunnypilot 的驾驶模型。</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
         <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; 训练数据上传模式 &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
+    </message>
+    <message>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

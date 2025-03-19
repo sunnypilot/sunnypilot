@@ -101,8 +101,8 @@
 <context>
     <name>DeclinePage</name>
     <message>
-        <source>You must accept the Terms and Conditions in order to use openpilot.</source>
-        <translation>openpilotを使用するためには利用規約に同意する必要があります</translation>
+        <source>You must accept the Terms and Conditions in order to use sunnypilot.</source>
+        <translation>sunnypilotを使用するためには利用規約に同意する必要があります</translation>
     </message>
     <message>
         <source>Back</source>
@@ -124,16 +124,16 @@
         <translation>アクセル制御マニューバー</translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>openpilotアクセル制御(Alpha)</translation>
+        <source>sunnypilot Longitudinal Control (Alpha)</source>
+        <translation>sunnypilotアクセル制御(Alpha)</translation>
     </message>
     <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>この車ではopenpilotのアクセル制御はアルファ版であり、自動緊急ブレーキ(AEB)が無効化されます。</translation>
+        <source>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation>この車ではsunnypilotのアクセル制御はアルファ版であり、自動緊急ブレーキ(AEB)が無効化されます。</translation>
     </message>
     <message>
-        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>この車では、openpilotは車両内蔵のACC(アダプティブクルーズコントロール)をデフォルトとして使用し、openpilotのアクセル制御は無効化されています。アクセル制御をopenpilotに切り替えるにはこの設定を有効にしてください。また同時にExperimentalモードを推奨します。</translation>
+        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of sunnypilot&apos;s longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha.</source>
+        <translation>この車では、sunnypilotは車両内蔵のACC(アダプティブクルーズコントロール)をデフォルトとして使用し、sunnypilotのアクセル制御は無効化されています。アクセル制御をsunnypilotに切り替えるにはこの設定を有効にしてください。また同時にExperimentalモードを推奨します。</translation>
     </message>
     <message>
         <source>Enable ADB</source>
@@ -207,8 +207,8 @@
         <translation>確認</translation>
     </message>
     <message>
-        <source>Review the rules, features, and limitations of openpilot</source>
-        <translation>openpilotのルール、機能、および制限を確認してください</translation>
+        <source>Review the rules, features, and limitations of sunnypilot</source>
+        <translation>sunnypilotのルール、機能、および制限を確認してください</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
@@ -243,8 +243,8 @@
         <translation>パワーオフ</translation>
     </message>
     <message>
-        <source>openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. openpilot is continuously calibrating, resetting is rarely required.</source>
-        <translation>openpilotの本体は左右4°以内、上5°下9°以内の角度で取付ける必要があります。常にキャリブレーションされておりリセットはほとんど必要ありません。</translation>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
+        <translation>sunnypilotの本体は左右4°以内、上5°下9°以内の角度で取付ける必要があります。常にキャリブレーションされておりリセットはほとんど必要ありません。</translation>
     </message>
     <message>
         <source> Your device is pointed %1° %2 and %3° %4.</source>
@@ -422,12 +422,6 @@
         <translation>🔥 Firehoseモード 🔥</translation>
     </message>
     <message>
-        <source>openpilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Firehose Mode: ACTIVE</source>
         <translation type="unfinished"></translation>
     </message>
@@ -440,7 +434,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream sunnypilot (and particular forks) are able to be used for training.</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
@@ -448,6 +442,12 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished">
             <numerusform></numerusform>
         </translation>
+    </message>
+    <message>
+        <source>sunnypilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -571,12 +571,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>OffroadAlert</name>
     <message>
-        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, openpilot won&apos;t engage in %1</source>
-        <translation>インターネットへ接続してアップデートを確認してください。未接続のままではopenpilotを使用できなくなります。あと[%1]</translation>
+        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, sunnypilot won&apos;t engage in %1</source>
+        <translation>インターネットへ接続してアップデートを確認してください。未接続のままではsunnypilotを使用できなくなります。あと[%1]</translation>
     </message>
     <message>
-        <source>Connect to internet to check for updates. openpilot won&apos;t automatically start until it connects to internet to check for updates.</source>
-        <translation>インターネットに接続してアップデートを確認してください。接続するまでopenpilotは使用できません。</translation>
+        <source>Connect to internet to check for updates. sunnypilot won&apos;t automatically start until it connects to internet to check for updates.</source>
+        <translation>インターネットに接続してアップデートを確認してください。接続するまでsunnypilotは使用できません。</translation>
     </message>
     <message>
         <source>Unable to download updates
@@ -605,12 +605,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>非サポートのSSDドライブ(NVMe)が検出されました。このドライブを使用するとデバイスが多大な電力を消費し過熱する可能性があります。</translation>
     </message>
     <message>
-        <source>openpilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
-        <translation>openpilotが車両を識別できませんでした。車が未対応またはECUが認識されていない可能性があります。該当車両のファームウェアバージョンを追加するためにプルリクエストしてください。サポートが必要な場合は discord.comma.ai に参加することができます。</translation>
+        <source>sunnypilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
+        <translation>sunnypilotが車両を識別できませんでした。車が未対応またはECUが認識されていない可能性があります。該当車両のファームウェアバージョンを追加するためにプルリクエストしてください。サポートが必要な場合は discord.comma.ai に参加することができます。</translation>
     </message>
     <message>
-        <source>openpilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
-        <translation>openpilotがデバイスの取り付け位置にずれを検出しました。デバイスの固定とマウントがフロントガラスにしっかりと取り付けられていることを確認してください。</translation>
+        <source>sunnypilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
+        <translation>sunnypilotがデバイスの取り付け位置にずれを検出しました。デバイスの固定とマウントがフロントガラスにしっかりと取り付けられていることを確認してください。</translation>
     </message>
     <message>
         <source>Device temperature too high. System cooling down before starting. Current internal component temperature: %1</source>
@@ -639,8 +639,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>OnroadAlerts</name>
     <message>
-        <source>openpilot Unavailable</source>
-        <translation>openpilotは使用できません</translation>
+        <source>sunnypilot Unavailable</source>
+        <translation>sunnypilotは使用できません</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
@@ -812,8 +812,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>閉じる</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -938,7 +938,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot</translation>
     </message>
     <message>
         <source>Trips</source>
@@ -1044,8 +1044,8 @@ This may take up to a minute.</source>
         <translation>インストールするソフトウェアを選択してください。</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message>
         <source>Custom Software</source>
@@ -1514,7 +1514,7 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock openpilot engagement/disengagement.</source>
+        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1533,11 +1533,11 @@ This may take up to a minute.</source>
         <translation>同意</translation>
     </message>
     <message>
-        <source>Welcome to openpilot</source>
+        <source>Welcome to sunnypilot</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <source>You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1572,20 +1572,20 @@ This may take up to a minute.</source>
         <translation>アクセルを踏むと運転サポートを中断</translation>
     </message>
     <message>
-        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation>この機能を有効化すると、openpilotを利用中にアクセルを踏むとopenpilotによる運転サポートを中断します。</translation>
+        <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
+        <translation>この機能を有効化すると、sunnypilotを利用中にアクセルを踏むとsunnypilotによる運転サポートを中断します。</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
         <translation>Experimentalモード</translation>
     </message>
     <message>
-        <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>openpilotは標準ではゆっくりとくつろげる運転を提供します。このExperimental(実験)モードを有効にすると、以下のアグレッシブな開発中の機能を利用する事ができます。</translation>
+        <source>sunnypilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
+        <translation>sunnypilotは標準ではゆっくりとくつろげる運転を提供します。このExperimental(実験)モードを有効にすると、以下のアグレッシブな開発中の機能を利用する事ができます。</translation>
     </message>
     <message>
-        <source>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
-        <translation>openpilotにアクセルとブレーキを任せます。openpilotは赤信号や一時停止サインでの停止を含み、人間と同じように考えて運転を行います。openpilotが運転速度を決定するため、あなたが設定する速度は上限速度になります。この機能は実験段階のため、openpilotの運転ミスに常に備えて注意してください。</translation>
+        <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
+        <translation>sunnypilotにアクセルとブレーキを任せます。sunnypilotは赤信号や一時停止サインでの停止を含み、人間と同じように考えて運転を行います。sunnypilotが運転速度を決定するため、あなたが設定する速度は上限速度になります。この機能は実験段階のため、sunnypilotの運転ミスに常に備えて注意してください。</translation>
     </message>
     <message>
         <source>New Driving Visualization</source>
@@ -1616,20 +1616,20 @@ This may take up to a minute.</source>
         <translation>End-to-Endアクセル制御</translation>
     </message>
     <message>
-        <source>openpilot longitudinal control may come in a future update.</source>
-        <translation>openpilotのアクセル制御は将来のアップデートで利用できる可能性があります。</translation>
+        <source>sunnypilot longitudinal control may come in a future update.</source>
+        <translation>sunnypilotのアクセル制御は将来のアップデートで利用できる可能性があります。</translation>
     </message>
     <message>
-        <source>An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
-        <translation>openpilotのアルファ版アクセル制御は、Experimentalモードと共に非リリースのブランチでテストすることができます。</translation>
+        <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
+        <translation>sunnypilotのアルファ版アクセル制御は、Experimentalモードと共に非リリースのブランチでテストすることができます。</translation>
     </message>
     <message>
-        <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
-        <translation>openpilotのアクセル制御機能(アルファ)を有効にして、Experimentalモードを許可してください。</translation>
+        <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
+        <translation>sunnypilotのアクセル制御機能(アルファ)を有効にして、Experimentalモードを許可してください。</translation>
     </message>
     <message>
-        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation>標準モードが推奨されます。アグレッシブモードではopenpilotは先行車に近づいて追従し、アクセルとブレーキがより強気になります。リラックスモードではopenpilotは先行車から距離を取って走行します。サポートされている車両ではステアリングホイールの距離ボタンでこれらのモードを切り替えることができます。</translation>
+        <source>Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation>標準モードが推奨されます。アグレッシブモードではsunnypilotは先行車に近づいて追従し、アクセルとブレーキがより強気になります。リラックスモードではsunnypilotは先行車から距離を取って走行します。サポートされている車両ではステアリングホイールの距離ボタンでこれらのモードを切り替えることができます。</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
@@ -1640,8 +1640,8 @@ This may take up to a minute.</source>
         <translation>運転者の常時モニタリング</translation>
     </message>
     <message>
-        <source>Enable driver monitoring even when openpilot is not engaged.</source>
-        <translation>openpilotが作動していない場合でも運転者モニタリングを有効にする。</translation>
+        <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
+        <translation>sunnypilotが作動していない場合でも運転者モニタリングを有効にする。</translation>
     </message>
     <message>
         <source>Enable Dynamic Experimental Control</source>
@@ -1702,12 +1702,16 @@ This may take up to a minute.</source>
         <translation>開く</translation>
     </message>
     <message>
-        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
-        <translation>openpilotの運転モデルを改善するために、大容量の学習データをアップロードして下さい。</translation>
+        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
+        <translation type="vanished">sunnypilotの運転モデルを改善するために、大容量の学習データをアップロードして下さい。</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
         <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehoseモード &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
+    </message>
+    <message>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

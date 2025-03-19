@@ -101,8 +101,8 @@
 <context>
     <name>DeclinePage</name>
     <message>
-        <source>You must accept the Terms and Conditions in order to use openpilot.</source>
-        <translation>يجب عليك قبول الشروط والأحكام من أجل استخدام openpilot.</translation>
+        <source>You must accept the Terms and Conditions in order to use sunnypilot.</source>
+        <translation>يجب عليك قبول الشروط والأحكام من أجل استخدام sunnypilot.</translation>
     </message>
     <message>
         <source>Back</source>
@@ -124,16 +124,16 @@
         <translation>وضع المناورة الطولية</translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation>التحكم الطولي openpilot (ألفا)</translation>
+        <source>sunnypilot Longitudinal Control (Alpha)</source>
+        <translation>التحكم الطولي sunnypilot (ألفا)</translation>
     </message>
     <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation>تحذير: التحكم الطولي في openpilot في المرحلة ألفا لهذه السيارة، وسيقوم بتعطيل مكابح الطوارئ الآلية (AEB).</translation>
+        <source>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation>تحذير: التحكم الطولي في sunnypilot في المرحلة ألفا لهذه السيارة، وسيقوم بتعطيل مكابح الطوارئ الآلية (AEB).</translation>
     </message>
     <message>
-        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation>في هذه السيارة يعمل openpilot افتراضياً بالشكل المدمج في التحكم التكيفي في السرعة بدلاً من التحكم الطولي. قم بتمكين هذا الخيار من أجل الانتقال إلى التحكم الطولي. يوصى بتمكين الوضع التجريبي عند استخدام وضع التحكم الطولي ألفا من openpilot.</translation>
+        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of sunnypilot&apos;s longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha.</source>
+        <translation>في هذه السيارة يعمل sunnypilot افتراضياً بالشكل المدمج في التحكم التكيفي في السرعة بدلاً من التحكم الطولي. قم بتمكين هذا الخيار من أجل الانتقال إلى التحكم الطولي. يوصى بتمكين الوضع التجريبي عند استخدام وضع التحكم الطولي ألفا من sunnypilot.</translation>
     </message>
     <message>
         <source>Enable ADB</source>
@@ -207,8 +207,8 @@
         <translation>مراجعة</translation>
     </message>
     <message>
-        <source>Review the rules, features, and limitations of openpilot</source>
-        <translation>مراجعة الأدوار والميزات والقيود في openpilot</translation>
+        <source>Review the rules, features, and limitations of sunnypilot</source>
+        <translation>مراجعة الأدوار والميزات والقيود في sunnypilot</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
@@ -243,8 +243,8 @@
         <translation>إيقاف التشغيل</translation>
     </message>
     <message>
-        <source>openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. openpilot is continuously calibrating, resetting is rarely required.</source>
-        <translation>يحتاج openpilot أن يتم ضبط الجهاز ضمن حدود 4 درجات يميناً أو يساراً و5 درجات نحو الأعلى أو 9 نحو الأسفل. يقوم openpilot بالمعايرة باستمرار، ونادراً ما يحتاج إلى عملية إعادة الضبط.</translation>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
+        <translation>يحتاج sunnypilot أن يتم ضبط الجهاز ضمن حدود 4 درجات يميناً أو يساراً و5 درجات نحو الأعلى أو 9 نحو الأسفل. يقوم sunnypilot بالمعايرة باستمرار، ونادراً ما يحتاج إلى عملية إعادة الضبط.</translation>
     </message>
     <message>
         <source> Your device is pointed %1° %2 and %3° %4.</source>
@@ -422,10 +422,10 @@
         <translation>🔥 وضع خرطوم الحريق 🔥</translation>
     </message>
     <message>
-        <source>openpilot learns to drive by watching humans, like you, drive.
+        <source>sunnypilot learns to drive by watching humans, like you, drive.
 
-Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation>يتعلم تطبيق openpilot كيفية القيادة من خلال مشاهدة البشر، مثلك، أثناء القيادة.
+Firehose Mode allows you to maximize your training data uploads to improve sunnypilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="vanished">يتعلم تطبيق sunnypilot كيفية القيادة من خلال مشاهدة البشر، مثلك، أثناء القيادة.
 
 يتيح لك وضع خرطوم الحريق زيادة تحميلات بيانات التدريب لتحسين نماذج القيادة في OpenPilot. كلما زادت البيانات، زادت النماذج، مما يعني وضعًا تجريبيًا أفضل.</translation>
     </message>
@@ -442,8 +442,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;غير نشط&lt;/span&gt;: اتصل بشبكة غير محسوبة</translation>
     </message>
     <message>
-        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
-        <translation>للحصول على أقصى فعالية، أحضر جهازك إلى الداخل واتصل بمحول USB-C جيد وشبكة Wi-Fi أسبوعياً.&lt;br&gt;&lt;br&gt;يمكن أن يعمل وضع خرطوم الحريق أيضاً أثناء القيادة إذا كنت متصلاً بنقطة اتصال أو ببطاقة SIM غير محدودة.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;الأسئلة المتكررة&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;هل يهم كيف أو أين أقود؟&lt;/i&gt; لا، فقط قد كما تفعل عادة.&lt;br&gt;&lt;br&gt;&lt;i&gt;هل يتم سحب كل مقاطع رحلاتي في وضع خرطوم الحريق؟&lt;/i&gt; لا، نقوم بسحب مجموعة مختارة من مقاطع رحلاتك.&lt;br&gt;&lt;br&gt;&lt;i&gt;ما هو محول USB-C الجيد؟&lt;/i&gt; أي شاحن سريع للهاتف أو اللابتوب يجب أن يكون مناسباً.&lt;br&gt;&lt;br&gt;&lt;i&gt;هل يهم أي برنامج أستخدم؟&lt;/i&gt; نعم، فقط النسخة الأصلية من openpilot (وأفرع معينة) يمكن استخدامها للتدريب.</translation>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream sunnypilot (and particular forks) are able to be used for training.</source>
+        <translation>للحصول على أقصى فعالية، أحضر جهازك إلى الداخل واتصل بمحول USB-C جيد وشبكة Wi-Fi أسبوعياً.&lt;br&gt;&lt;br&gt;يمكن أن يعمل وضع خرطوم الحريق أيضاً أثناء القيادة إذا كنت متصلاً بنقطة اتصال أو ببطاقة SIM غير محدودة.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;الأسئلة المتكررة&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;هل يهم كيف أو أين أقود؟&lt;/i&gt; لا، فقط قد كما تفعل عادة.&lt;br&gt;&lt;br&gt;&lt;i&gt;هل يتم سحب كل مقاطع رحلاتي في وضع خرطوم الحريق؟&lt;/i&gt; لا، نقوم بسحب مجموعة مختارة من مقاطع رحلاتك.&lt;br&gt;&lt;br&gt;&lt;i&gt;ما هو محول USB-C الجيد؟&lt;/i&gt; أي شاحن سريع للهاتف أو اللابتوب يجب أن يكون مناسباً.&lt;br&gt;&lt;br&gt;&lt;i&gt;هل يهم أي برنامج أستخدم؟&lt;/i&gt; نعم، فقط النسخة الأصلية من sunnypilot (وأفرع معينة) يمكن استخدامها للتدريب.</translation>
     </message>
     <message numerus="yes">
         <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
@@ -455,6 +455,12 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
             <numerusform>حتى الآن، يوجد &lt;/b&gt;%n مقطع&lt;b&gt;%n من قيادتك في مجموعة بيانات التدريب.</numerusform>
             <numerusform>حتى الآن، يوجد &lt;/b&gt;%n مقطع&lt;b&gt;%n من قيادتك في مجموعة بيانات التدريب.</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>sunnypilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -587,12 +593,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>درجة حرارة الجهاز مرتفعة جداً. يقوم النظام بالتبريد قبل البدء. درجة الحرارة الحالية للمكونات الداخلية: %1</translation>
     </message>
     <message>
-        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, openpilot won&apos;t engage in %1</source>
-        <translation>اتصل فوراً بالإنترنت للتحقق من وجود تحديثات. إذا لم تكم متصلاً بالإنترنت فإن openpilot لن يساهم في %1</translation>
+        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, sunnypilot won&apos;t engage in %1</source>
+        <translation>اتصل فوراً بالإنترنت للتحقق من وجود تحديثات. إذا لم تكم متصلاً بالإنترنت فإن sunnypilot لن يساهم في %1</translation>
     </message>
     <message>
-        <source>Connect to internet to check for updates. openpilot won&apos;t automatically start until it connects to internet to check for updates.</source>
-        <translation>اتصل بالإنترنت للتحقق من وجود تحديثات. لا يعمل openpilot تلقائياً إلا إذا اتصل بالإنترنت من أجل التحقق من التحديثات.</translation>
+        <source>Connect to internet to check for updates. sunnypilot won&apos;t automatically start until it connects to internet to check for updates.</source>
+        <translation>اتصل بالإنترنت للتحقق من وجود تحديثات. لا يعمل sunnypilot تلقائياً إلا إذا اتصل بالإنترنت من أجل التحقق من التحديثات.</translation>
     </message>
     <message>
         <source>Unable to download updates
@@ -621,12 +627,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>تم اكتشاف محرك NVMe غير مدعوم. قد يستهلك الجهاز قدراً أكبر بكثير من الطاقة، وزيادة في ارتفاع درجة الحرارة بسبب وجود NVMe غير مدعوم.</translation>
     </message>
     <message>
-        <source>openpilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
-        <translation>لم يكن openpilot قادراً على تحديد سيارتك. إما أن تكون سيارتك غير مدعومة أو أنه لم يتم التعرف على وحدة التحكم الإلكتروني (ECUs) فيها. يرجى تقديم طلب سحب من أجل إضافة نسخ برمجيات ثابتة إلى السيارة المناسبة. هل تحتاج إلى أي مساعدة؟ لا تتردد في التواصل مع doscord.comma.ai.</translation>
+        <source>sunnypilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
+        <translation>لم يكن sunnypilot قادراً على تحديد سيارتك. إما أن تكون سيارتك غير مدعومة أو أنه لم يتم التعرف على وحدة التحكم الإلكتروني (ECUs) فيها. يرجى تقديم طلب سحب من أجل إضافة نسخ برمجيات ثابتة إلى السيارة المناسبة. هل تحتاج إلى أي مساعدة؟ لا تتردد في التواصل مع doscord.comma.ai.</translation>
     </message>
     <message>
-        <source>openpilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
-        <translation>لقد اكتشف openpilot تغييراً في موقع تركيب الجهاز. تأكد من تثبيت الجهاز بشكل كامل في موقعه وتثبيته بإحكام على الزجاج الأمامي.</translation>
+        <source>sunnypilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
+        <translation>لقد اكتشف sunnypilot تغييراً في موقع تركيب الجهاز. تأكد من تثبيت الجهاز بشكل كامل في موقعه وتثبيته بإحكام على الزجاج الأمامي.</translation>
     </message>
     <message>
         <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
@@ -651,8 +657,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>OnroadAlerts</name>
     <message>
-        <source>openpilot Unavailable</source>
-        <translation>openpilot غير متوفر</translation>
+        <source>sunnypilot Unavailable</source>
+        <translation>sunnypilot غير متوفر</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
@@ -824,8 +830,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>إغلاق</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -965,7 +971,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot</translation>
     </message>
     <message>
         <source>Trips</source>
@@ -1071,8 +1077,8 @@ This may take up to a minute.</source>
         <translation>اختر البرنامج للتثبيت</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message>
         <source>Custom Software</source>
@@ -1541,7 +1547,7 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock openpilot engagement/disengagement.</source>
+        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1560,12 +1566,12 @@ This may take up to a minute.</source>
         <translation>أوافق</translation>
     </message>
     <message>
-        <source>Welcome to openpilot</source>
-        <translation>مرحباً بكم في openpilot</translation>
+        <source>Welcome to sunnypilot</source>
+        <translation>مرحباً بكم في sunnypilot</translation>
     </message>
     <message>
-        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
-        <translation>يجب عليك قبول الشروط والأحكام لاستخدام openpilot. اقرأ أحدث الشروط على &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; قبل الاستمرار.</translation>
+        <source>You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <translation>يجب عليك قبول الشروط والأحكام لاستخدام sunnypilot. اقرأ أحدث الشروط على &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; قبل الاستمرار.</translation>
     </message>
 </context>
 <context>
@@ -1599,8 +1605,8 @@ This may take up to a minute.</source>
         <translation>فك الارتباط عن دواسة الوقود</translation>
     </message>
     <message>
-        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation>عند تمكين هذه الميزة، فإن الضغط على دواسة الوقود سيؤدي إلى فك ارتباط openpilot.</translation>
+        <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
+        <translation>عند تمكين هذه الميزة، فإن الضغط على دواسة الوقود سيؤدي إلى فك ارتباط sunnypilot.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
@@ -1623,16 +1629,16 @@ This may take up to a minute.</source>
         <translation>شخصية القيادة</translation>
     </message>
     <message>
-        <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>يتم وضع openpilot بشكل قياسي في &lt;b&gt;وضعية الراحة&lt;/b&gt;. يمكن الوضع التجريبي &lt;b&gt;ميزات المستوى ألفا&lt;/b&gt; التي لا تكون جاهزة في وضع الراحة:</translation>
+        <source>sunnypilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
+        <translation>يتم وضع sunnypilot بشكل قياسي في &lt;b&gt;وضعية الراحة&lt;/b&gt;. يمكن الوضع التجريبي &lt;b&gt;ميزات المستوى ألفا&lt;/b&gt; التي لا تكون جاهزة في وضع الراحة:</translation>
     </message>
     <message>
         <source>End-to-End Longitudinal Control</source>
         <translation>التحكم الطولي من طرف إلى طرف</translation>
     </message>
     <message>
-        <source>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
-        <translation>دع نظام القيادة يتحكم بالوقود والمكابح. سيقوم openpilot بالقيادة كما لو أنه كائن بشري، بما في ذلك التوقف عند الإشارة الحمراء، وإشارات التوقف. وبما أن نمط القيادة يحدد سرعة القيادة، فإن السرعة المضبوطة تشكل الحد الأقصى فقط. هذه خاصية الجودة ألفا، فيجب توقع حدوث الأخطاء.</translation>
+        <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
+        <translation>دع نظام القيادة يتحكم بالوقود والمكابح. سيقوم sunnypilot بالقيادة كما لو أنه كائن بشري، بما في ذلك التوقف عند الإشارة الحمراء، وإشارات التوقف. وبما أن نمط القيادة يحدد سرعة القيادة، فإن السرعة المضبوطة تشكل الحد الأقصى فقط. هذه خاصية الجودة ألفا، فيجب توقع حدوث الأخطاء.</translation>
     </message>
     <message>
         <source>New Driving Visualization</source>
@@ -1643,20 +1649,20 @@ This may take up to a minute.</source>
         <translation>الوضع التجريبي غير متوفر حالياً في هذه السيارة نظراً لاستخدام رصيد التحكم التكيفي بالسرعة من أجل التحكم الطولي.</translation>
     </message>
     <message>
-        <source>openpilot longitudinal control may come in a future update.</source>
-        <translation>قد يتم الحصول على التحكم الطولي في openpilot في عمليات التحديث المستقبلية.</translation>
+        <source>sunnypilot longitudinal control may come in a future update.</source>
+        <translation>قد يتم الحصول على التحكم الطولي في sunnypilot في عمليات التحديث المستقبلية.</translation>
     </message>
     <message>
-        <source>An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
-        <translation>يمكن اختبار نسخة ألفا من التحكم الطولي من openpilot، مع الوضع التجريبي، لكن على الفروع غير المطلقة.</translation>
+        <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
+        <translation>يمكن اختبار نسخة ألفا من التحكم الطولي من sunnypilot، مع الوضع التجريبي، لكن على الفروع غير المطلقة.</translation>
     </message>
     <message>
-        <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
-        <translation>تمكين التحكم الطولي من openpilot (ألفا) للسماح بالوضع التجريبي.</translation>
+        <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
+        <translation>تمكين التحكم الطولي من sunnypilot (ألفا) للسماح بالوضع التجريبي.</translation>
     </message>
     <message>
-        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation>يوصى بالمعيار. في الوضع العدواني، سيتبع الطيار المفتوح السيارات الرائدة بشكل أقرب ويكون أكثر عدوانية مع البنزين والفرامل. في الوضع المريح، سيبقى openpilot بعيدًا عن السيارات الرائدة. في السيارات المدعومة، يمكنك التنقل بين هذه الشخصيات باستخدام زر مسافة عجلة القيادة.</translation>
+        <source>Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation>يوصى بالمعيار. في الوضع العدواني، سيتبع الطيار المفتوح السيارات الرائدة بشكل أقرب ويكون أكثر عدوانية مع البنزين والفرامل. في الوضع المريح، سيبقى sunnypilot بعيدًا عن السيارات الرائدة. في السيارات المدعومة، يمكنك التنقل بين هذه الشخصيات باستخدام زر مسافة عجلة القيادة.</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
@@ -1667,7 +1673,7 @@ This may take up to a minute.</source>
         <translation>مراقبة السائق المستمرة</translation>
     </message>
     <message>
-        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
         <translation>تمكين مراقبة السائق حتى عندما لا يكون نظام OpenPilot مُفعّلاً.</translation>
     </message>
     <message>
@@ -1729,12 +1735,16 @@ This may take up to a minute.</source>
         <translation>انفتح</translation>
     </message>
     <message>
-        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
-        <translation>قم بزيادة تحميلات بيانات التدريب الخاصة بك لتحسين نماذج القيادة الخاصة بـ openpilot.</translation>
+        <source>Maximize your training data uploads to improve sunnypilot&apos;s driving models.</source>
+        <translation type="vanished">قم بزيادة تحميلات بيانات التدريب الخاصة بك لتحسين نماذج القيادة الخاصة بـ sunnypilot.</translation>
     </message>
     <message>
         <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
         <translation>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; وضع خرطوم الحريق &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</translation>
+    </message>
+    <message>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -101,8 +101,8 @@
 <context>
     <name>DeclinePage</name>
     <message>
-        <source>You must accept the Terms and Conditions in order to use openpilot.</source>
-        <translation>คุณต้องยอมรับเงื่อนไขและข้อตกลง เพื่อใช้งาน openpilot</translation>
+        <source>You must accept the Terms and Conditions in order to use sunnypilot.</source>
+        <translation>คุณต้องยอมรับเงื่อนไขและข้อตกลง เพื่อใช้งาน sunnypilot</translation>
     </message>
     <message>
         <source>Back</source>
@@ -124,16 +124,16 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished">ระบบควบคุมการเร่ง/เบรคโดย openpilot (Alpha)</translation>
+        <source>sunnypilot Longitudinal Control (Alpha)</source>
+        <translation type="unfinished">ระบบควบคุมการเร่ง/เบรคโดย sunnypilot (Alpha)</translation>
     </message>
     <message>
-        <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished">คำเตือน: การควบคุมการเร่ง/เบรคโดย openpilot สำหรับรถคันนี้ยังอยู่ในสถานะ alpha และระบบเบรคฉุกเฉินอัตโนมัติ (AEB) จะถูกปิด</translation>
+        <source>WARNING: sunnypilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
+        <translation type="unfinished">คำเตือน: การควบคุมการเร่ง/เบรคโดย sunnypilot สำหรับรถคันนี้ยังอยู่ในสถานะ alpha และระบบเบรคฉุกเฉินอัตโนมัติ (AEB) จะถูกปิด</translation>
     </message>
     <message>
-        <source>On this car, openpilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished">โดยปกติสำหรับรถคันนี้ openpilot จะควบคุมการเร่ง/เบรคด้วยระบบ ACC จากโรงงาน แทนการควยคุมโดย openpilot เปิดสวิตซ์นี้เพื่อให้ openpilot ควบคุมการเร่ง/เบรค แนะนำให้เปิดโหมดทดลองเมื่อต้องการให้ openpilot ควบคุมการเร่ง/เบรค ซึ่งอยู่ในสถานะ alpha</translation>
+        <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of sunnypilot&apos;s longitudinal control. Enable this to switch to sunnypilot longitudinal control. Enabling Experimental mode is recommended when enabling sunnypilot longitudinal control alpha.</source>
+        <translation type="unfinished">โดยปกติสำหรับรถคันนี้ sunnypilot จะควบคุมการเร่ง/เบรคด้วยระบบ ACC จากโรงงาน แทนการควยคุมโดย sunnypilot เปิดสวิตซ์นี้เพื่อให้ sunnypilot ควบคุมการเร่ง/เบรค แนะนำให้เปิดโหมดทดลองเมื่อต้องการให้ sunnypilot ควบคุมการเร่ง/เบรค ซึ่งอยู่ในสถานะ alpha</translation>
     </message>
     <message>
         <source>Enable ADB</source>
@@ -207,8 +207,8 @@
         <translation>ทบทวน</translation>
     </message>
     <message>
-        <source>Review the rules, features, and limitations of openpilot</source>
-        <translation>ตรวจสอบกฎ คุณสมบัติ และข้อจำกัดของ openpilot</translation>
+        <source>Review the rules, features, and limitations of sunnypilot</source>
+        <translation>ตรวจสอบกฎ คุณสมบัติ และข้อจำกัดของ sunnypilot</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
@@ -243,8 +243,8 @@
         <translation>ปิดเครื่อง</translation>
     </message>
     <message>
-        <source>openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. openpilot is continuously calibrating, resetting is rarely required.</source>
-        <translation>openpilot กำหนดให้ติดตั้งอุปกรณ์ โดยสามารถเอียงด้านซ้ายหรือขวาไม่เกิน 4° และเอียงขึ้นด้านบนไม่เกิน 5° หรือเอียงลงด้านล่างไม่เกิน 9° openpilot ทำการคาลิเบรทอย่างต่อเนื่อง แทบจะไม่จำเป็นต้องทำการรีเซ็ตการคาลิเบรท</translation>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
+        <translation>sunnypilot กำหนดให้ติดตั้งอุปกรณ์ โดยสามารถเอียงด้านซ้ายหรือขวาไม่เกิน 4° และเอียงขึ้นด้านบนไม่เกิน 5° หรือเอียงลงด้านล่างไม่เกิน 9° sunnypilot ทำการคาลิเบรทอย่างต่อเนื่อง แทบจะไม่จำเป็นต้องทำการรีเซ็ตการคาลิเบรท</translation>
     </message>
     <message>
         <source> Your device is pointed %1° %2 and %3° %4.</source>
@@ -422,12 +422,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>openpilot learns to drive by watching humans, like you, drive.
-
-Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Firehose Mode: ACTIVE</source>
         <translation type="unfinished"></translation>
     </message>
@@ -440,7 +434,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream openpilot (and particular forks) are able to be used for training.</source>
+        <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream sunnypilot (and particular forks) are able to be used for training.</source>
         <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
@@ -448,6 +442,12 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished">
             <numerusform></numerusform>
         </translation>
+    </message>
+    <message>
+        <source>sunnypilot learns to drive by watching humans, like you, drive.
+
+Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -575,12 +575,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>อุณหภูมิของอุปกรณ์สูงเกินไป ระบบกำลังทำความเย็นก่อนเริ่ม อุณหภูมิของชิ้นส่วนภายในปัจจุบัน: %1</translation>
     </message>
     <message>
-        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, openpilot won&apos;t engage in %1</source>
-        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดทเดี๋ยวนี้ ถ้าคุณไม่เชื่อมต่ออินเตอร์เน็ต openpilot จะไม่ทำงานในอีก %1</translation>
+        <source>Immediately connect to the internet to check for updates. If you do not connect to the internet, sunnypilot won&apos;t engage in %1</source>
+        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดทเดี๋ยวนี้ ถ้าคุณไม่เชื่อมต่ออินเตอร์เน็ต sunnypilot จะไม่ทำงานในอีก %1</translation>
     </message>
     <message>
-        <source>Connect to internet to check for updates. openpilot won&apos;t automatically start until it connects to internet to check for updates.</source>
-        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดท openpilot จะไม่เริ่มทำงานอัตโนมัติจนกว่าจะได้เชื่อมต่อกับอินเตอร์เน็ตเพื่อตรวจสอบอัปเดท</translation>
+        <source>Connect to internet to check for updates. sunnypilot won&apos;t automatically start until it connects to internet to check for updates.</source>
+        <translation>กรุณาเชื่อมต่ออินเตอร์เน็ตเพื่อตรวจสอบอัปเดท sunnypilot จะไม่เริ่มทำงานอัตโนมัติจนกว่าจะได้เชื่อมต่อกับอินเตอร์เน็ตเพื่อตรวจสอบอัปเดท</translation>
     </message>
     <message>
         <source>Unable to download updates
@@ -609,12 +609,12 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>ตรวจพบไดร์ฟ NVMe ที่ไม่รองรับ อุปกรณ์อาจใช้พลังงานมากขึ้นและร้อนเกินไปเนื่องจากไดร์ฟ NVMe ที่ไม่รองรับ</translation>
     </message>
     <message>
-        <source>openpilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
-        <translation>openpilot ไม่สามารถระบุรถยนต์ของคุณได้ ระบบอาจไม่รองรับรถยนต์ของคุณหรือไม่รู้จัก ECU กรุณาส่ง pull request เพื่อเพิ่มรุ่นของเฟิร์มแวร์ให้กับรถยนต์ที่เหมาะสม หากต้องการความช่วยเหลือให้เข้าร่วม discord.comma.ai</translation>
+        <source>sunnypilot was unable to identify your car. Your car is either unsupported or its ECUs are not recognized. Please submit a pull request to add the firmware versions to the proper vehicle. Need help? Join discord.comma.ai.</source>
+        <translation>sunnypilot ไม่สามารถระบุรถยนต์ของคุณได้ ระบบอาจไม่รองรับรถยนต์ของคุณหรือไม่รู้จัก ECU กรุณาส่ง pull request เพื่อเพิ่มรุ่นของเฟิร์มแวร์ให้กับรถยนต์ที่เหมาะสม หากต้องการความช่วยเหลือให้เข้าร่วม discord.comma.ai</translation>
     </message>
     <message>
-        <source>openpilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
-        <translation>openpilot ตรวจพบการเปลี่ยนแปลงของตำแหน่งที่ติดตั้ง กรุณาตรวจสอบว่าได้เลื่อนอุปกรณ์เข้ากับจุดติดตั้งจนสุดแล้ว และจุดติดตั้งได้ยึดติดกับกระจกหน้าอย่างแน่นหนา</translation>
+        <source>sunnypilot detected a change in the device&apos;s mounting position. Ensure the device is fully seated in the mount and the mount is firmly secured to the windshield.</source>
+        <translation>sunnypilot ตรวจพบการเปลี่ยนแปลงของตำแหน่งที่ติดตั้ง กรุณาตรวจสอบว่าได้เลื่อนอุปกรณ์เข้ากับจุดติดตั้งจนสุดแล้ว และจุดติดตั้งได้ยึดติดกับกระจกหน้าอย่างแน่นหนา</translation>
     </message>
     <message>
         <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
@@ -639,8 +639,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
 <context>
     <name>OnroadAlerts</name>
     <message>
-        <source>openpilot Unavailable</source>
-        <translation>openpilot ไม่สามารถใช้งานได้</translation>
+        <source>sunnypilot Unavailable</source>
+        <translation>sunnypilot ไม่สามารถใช้งานได้</translation>
     </message>
     <message>
         <source>TAKE CONTROL IMMEDIATELY</source>
@@ -812,8 +812,8 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
         <translation>ปิด</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
@@ -938,7 +938,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnypilot</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">sunnypilot</translation>
     </message>
     <message>
         <source>Trips</source>
@@ -1044,8 +1044,8 @@ This may take up to a minute.</source>
         <translation>เลือกซอฟต์แวร์ที่จะติดตั้ง</translation>
     </message>
     <message>
-        <source>openpilot</source>
-        <translation>openpilot</translation>
+        <source>sunnypilot</source>
+        <translation>sunnypilot</translation>
     </message>
     <message>
         <source>Custom Software</source>
@@ -1514,7 +1514,7 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock openpilot engagement/disengagement.</source>
+        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1533,11 +1533,11 @@ This may take up to a minute.</source>
         <translation>ยอมรับ</translation>
     </message>
     <message>
-        <source>Welcome to openpilot</source>
+        <source>Welcome to sunnypilot</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>You must accept the Terms and Conditions to use openpilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
+        <source>You must accept the Terms and Conditions to use sunnypilot. Read the latest terms at &lt;span style=&apos;color: #465BEA;&apos;&gt;https://comma.ai/terms&lt;/span&gt; before continuing.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1572,20 +1572,20 @@ This may take up to a minute.</source>
         <translation>ยกเลิกระบบช่วยขับเมื่อเหยียบคันเร่ง</translation>
     </message>
     <message>
-        <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation>เมื่อเปิดใช้งาน การกดแป้นคันเร่งจะเป็นการยกเลิกระบบช่วยขับโดย openpilot</translation>
+        <source>When enabled, pressing the accelerator pedal will disengage sunnypilot.</source>
+        <translation>เมื่อเปิดใช้งาน การกดแป้นคันเร่งจะเป็นการยกเลิกระบบช่วยขับโดย sunnypilot</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
         <translation>โหมดทดลอง</translation>
     </message>
     <message>
-        <source>openpilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>โดยปกติ openpilot จะขับใน&lt;b&gt;โหมดชิล&lt;/b&gt; เปิดโหมดทดลองเพื่อใช้&lt;b&gt;ความสามารถในขั้นพัฒนา&lt;/b&gt; ซึ่งยังไม่พร้อมสำหรับโหมดชิล ความสามารถในขั้นพัฒนามีดังนี้:</translation>
+        <source>sunnypilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
+        <translation>โดยปกติ sunnypilot จะขับใน&lt;b&gt;โหมดชิล&lt;/b&gt; เปิดโหมดทดลองเพื่อใช้&lt;b&gt;ความสามารถในขั้นพัฒนา&lt;/b&gt; ซึ่งยังไม่พร้อมสำหรับโหมดชิล ความสามารถในขั้นพัฒนามีดังนี้:</translation>
     </message>
     <message>
-        <source>Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
-        <translation>ให้ openpilot ควบคุมการเร่ง/เบรค โดย openpilot จะขับอย่างที่มนุษย์คิด รวมถึงการหยุดที่ไฟแดง และป้ายหยุดรถ เนื่องจาก openpilot จะกำหนดความเร็วในการขับด้วยตัวเอง การตั้งความเร็วจะเป็นเพียงการกำหนดความเร็วสูงสูดเท่านั้น ความสามารถนี้ยังอยู่ในขั้นพัฒนา อาจเกิดข้อผิดพลาดขึ้นได้</translation>
+        <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
+        <translation>ให้ sunnypilot ควบคุมการเร่ง/เบรค โดย sunnypilot จะขับอย่างที่มนุษย์คิด รวมถึงการหยุดที่ไฟแดง และป้ายหยุดรถ เนื่องจาก sunnypilot จะกำหนดความเร็วในการขับด้วยตัวเอง การตั้งความเร็วจะเป็นเพียงการกำหนดความเร็วสูงสูดเท่านั้น ความสามารถนี้ยังอยู่ในขั้นพัฒนา อาจเกิดข้อผิดพลาดขึ้นได้</translation>
     </message>
     <message>
         <source>New Driving Visualization</source>
@@ -1596,8 +1596,8 @@ This may take up to a minute.</source>
         <translation>ขณะนี้โหมดทดลองไม่สามารถใช้งานได้ในรถคันนี้ เนื่องจากเปิดใช้ระบบควบคุมการเร่ง/เบรคของรถที่ติดตั้งจากโรงงานอยู่</translation>
     </message>
     <message>
-        <source>openpilot longitudinal control may come in a future update.</source>
-        <translation>ระบบควบคุมการเร่ง/เบรคโดย openpilot อาจมาในการอัปเดตในอนาคต</translation>
+        <source>sunnypilot longitudinal control may come in a future update.</source>
+        <translation>ระบบควบคุมการเร่ง/เบรคโดย sunnypilot อาจมาในการอัปเดตในอนาคต</translation>
     </message>
     <message>
         <source>Aggressive</source>
@@ -1616,20 +1616,20 @@ This may take up to a minute.</source>
         <translation>บุคลิกการขับขี่</translation>
     </message>
     <message>
-        <source>An alpha version of openpilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
-        <translation>ระบบควบคุมการเร่ง/เบรคโดย openpilot เวอร์ชัน alpha สามารถทดสอบได้พร้อมกับโหมดการทดลอง บน branch ที่กำลังพัฒนา</translation>
+        <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
+        <translation>ระบบควบคุมการเร่ง/เบรคโดย sunnypilot เวอร์ชัน alpha สามารถทดสอบได้พร้อมกับโหมดการทดลอง บน branch ที่กำลังพัฒนา</translation>
     </message>
     <message>
         <source>End-to-End Longitudinal Control</source>
         <translation>ควบคุมเร่ง/เบรคแบบ End-to-End</translation>
     </message>
     <message>
-        <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
-        <translation>เปิดระบบควบคุมการเร่ง/เบรคโดย openpilot (alpha) เพื่อเปิดใช้งานโหมดทดลอง</translation>
+        <source>Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
+        <translation>เปิดระบบควบคุมการเร่ง/เบรคโดย sunnypilot (alpha) เพื่อเปิดใช้งานโหมดทดลอง</translation>
     </message>
     <message>
-        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation>แนะนำให้ใช้แบบมาตรฐาน ในโหมดดุดัน openpilot จะตามรถคันหน้าใกล้ขึ้นและเร่งและเบรคแบบดุดันมากขึ้น ในโหมดผ่อนคลาย openpilot จะอยู่ห่างจากรถคันหน้ามากขึ้น ในรถรุ่นที่รองรับคุณสามารถเปลี่ยนบุคลิกไปแบบต่าง ๆ โดยใช้ปุ่มปรับระยะห่างบนพวงมาลัย</translation>
+        <source>Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation>แนะนำให้ใช้แบบมาตรฐาน ในโหมดดุดัน sunnypilot จะตามรถคันหน้าใกล้ขึ้นและเร่งและเบรคแบบดุดันมากขึ้น ในโหมดผ่อนคลาย sunnypilot จะอยู่ห่างจากรถคันหน้ามากขึ้น ในรถรุ่นที่รองรับคุณสามารถเปลี่ยนบุคลิกไปแบบต่าง ๆ โดยใช้ปุ่มปรับระยะห่างบนพวงมาลัย</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
@@ -1640,7 +1640,7 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <source>Enable driver monitoring even when sunnypilot is not engaged.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1702,11 +1702,11 @@ This may take up to a minute.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
+        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;span style=&apos;font-family: &quot;Noto Color Emoji&quot;;&apos;&gt;🔥&lt;/span&gt; Firehose Mode &lt;span style=&apos;font-family: Noto Color Emoji;&apos;&gt;🔥&lt;/span&gt;</source>
+        <source>Maximize your training data uploads to improve openpilot&apos;s driving models.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
