@@ -12,9 +12,9 @@ from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP, HyundaiSafetyF
 
 
 class MadsSteeringModeOnBrake:
-  DISENGAGE = 0
-  REMAIN_ACTIVE = 1
-  PAUSE = 2
+  REMAIN_ACTIVE = 0
+  PAUSE = 1
+  DISENGAGE = 2
 
 
 def read_steering_mode_param(params: Params):
