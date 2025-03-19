@@ -8,7 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import car, log, custom
 
 from opendbc.car.hyundai.values import HyundaiFlags
-
+from openpilot.common.params import Params
 from openpilot.sunnypilot.mads.helpers import MadsParams
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
@@ -24,12 +24,13 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
-    self.mads_params = MadsParams()
+    self.params = Params()
 
     self.enabled = False
     self.active = False
     self.available = False
     self.allow_always = False
+    self.no_main_cruise = False
     self.selfdrive = selfdrive
     self.selfdrive.enabled_prev = False
     self.state_machine = StateMachine(self)
@@ -40,15 +41,18 @@ class ModularAssistiveDrivingSystem:
       if self.selfdrive.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
 
+    if self.selfdrive.CP.brand == "tesla":
+      self.no_main_cruise = True
+
     # read params on init
-    self.enabled_toggle = self.mads_params.read_param("Mads")
-    self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
-    self.steering_mode = self.mads_params.read_param("MadsSteeringMode")
-    self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
+    self.enabled_toggle = self.params.get_bool("Mads")
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed") and not self.no_main_cruise
+    self.steering_mode = int(self.params.get("MadsSteeringMode"))
+    self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def read_params(self):
-    self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
-    self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed") and not self.no_main_cruise
+    self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
