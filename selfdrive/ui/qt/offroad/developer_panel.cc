@@ -57,7 +57,7 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(hyundaiRadarTracksToggle);
 
-  enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
+  auto enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
   // error log button
@@ -121,10 +121,7 @@ void DeveloperPanel::updateToggles(bool _offroad) {
   experimentalLongitudinalToggle->refresh();
 
   // Handle specific controls visibility for release branches
-  enableGithubRunner->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
-  joystickToggle->setVisible(!is_release);
-  longManeuverToggle->setVisible(!is_release);
 
   offroad = _offroad;
 }
