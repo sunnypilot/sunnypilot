@@ -168,7 +168,7 @@
         <translation type="unfinished">보기</translation>
     </message>
     <message>
-        <source>View the error log for openpilot crashes.</source>
+        <source>View the error log for sunnypilot crashes.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
