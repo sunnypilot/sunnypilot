@@ -182,7 +182,7 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
     createdAt @4 :Text;  # ISO timestamp
     updatedAt @5 :Text;  # ISO timestamp
     sunnypilotVersion @6 :Version;
-    metadata @7 :List(MetadataEntry);
+    backupMetadata @7 :List(MetadataEntry);
   }
 }
 

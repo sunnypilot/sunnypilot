@@ -1,26 +1,23 @@
-"""
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
-
-This file is part of sunnypilot and is licensed under the MIT License.
-See the LICENSE.md file in the root directory for more details.
-"""
-
 import base64
 import json
 import time
-from pathlib import Path
-from typing import Optional, Dict, List, Any
+from enum import Enum
+from typing import Optional, Dict, Any
 
 from openpilot.common.git import get_branch
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
-from openpilot.system.hardware.hw import Paths
 from openpilot.system.version import get_version
 
 from cereal import messaging, custom
 from sunnypilot.sunnylink.api import SunnylinkApi
 from sunnypilot.sunnylink.backups.utils import decrypt_compressed_data, encrypt_compress_data, SnakeCaseEncoder
+
+
+class OperationType(Enum):
+  BACKUP = "backup"
+  RESTORE = "restore"
 
 
 class BackupManagerSP:
@@ -35,94 +32,64 @@ class BackupManagerSP:
     # Status tracking
     self.backup_status = custom.BackupManagerSP.Status.idle
     self.restore_status = custom.BackupManagerSP.Status.idle
-    self.backup_history: List[custom.BackupManagerSP.BackupInfo] = []
-    self.current_backup: Optional[custom.BackupManagerSP.BackupInfo] = None
-    self.backup_progress = 0.0
-    self.restore_progress = 0.0
+
+    # Unified progress & operation type (only one operation runs at a time)
+    self.progress = 0.0
+    self.operation: Optional[OperationType] = None
+
     self.last_error = ""
 
-    # Keys used for encryption/decryption
-    self.key_path = Path(f"{Paths.persist_root()}/comma/id_rsa")
-
   def _report_status(self) -> None:
-    """Reports current backup manager state through messaging system"""
+    """Reports current backup manager state through the messaging system."""
     msg = messaging.new_message('backupManagerSP', valid=True)
     backup_state = msg.backupManagerSP
 
     backup_state.backupStatus = self.backup_status
     backup_state.restoreStatus = self.restore_status
-    backup_state.backupProgress = self.backup_progress
-    backup_state.restoreProgress = self.restore_progress
+    # Both progress fields use the unified progress value
+    backup_state.backupProgress = self.progress
+    backup_state.restoreProgress = self.progress
     backup_state.lastError = self.last_error
 
-    if self.current_backup:
-      backup_state.currentBackup = self.current_backup
-
-    backup_state.backupHistory = self.backup_history
+    # Optionally, add a field for operation type if supported:
+    # backup_state.operationType = self.operation.value if self.operation else "none"
 
     self.pm.send('backupManagerSP', msg)
 
-  def _create_backup_info(self, backup_data: Dict) -> custom.BackupManagerSP.BackupInfo:
-    """Creates a BackupInfo object from API response data"""
-    backup_info = custom.BackupManagerSP.BackupInfo()
-    backup_info.deviceId = backup_data.get("device_id", "")
-    backup_info.version = backup_data.get("version", 0)
-    backup_info.isEncrypted = backup_data.get("is_encrypted", True)
-    backup_info.createdAt = backup_data.get("created_at", "")
-    backup_info.updatedAt = backup_data.get("updated_at", "")
-
-    # Parse sunnypilot version
-    sp_version = backup_data.get("sunnypilot_version", {})
-    backup_info.sunnypilotVersion.major = sp_version.get("major", 0)
-    backup_info.sunnypilotVersion.minor = sp_version.get("minor", 0)
-    backup_info.sunnypilotVersion.patch = sp_version.get("patch", 0)
-    backup_info.sunnypilotVersion.build = sp_version.get("build", 0)
-    backup_info.sunnypilotVersion.branch = sp_version.get("branch", "")
-
-    # Parse metadata
-    metadata_entries = []
-    for entry in backup_data.get("backup_metadata", []):
-      metadata = custom.BackupManagerSP.MetadataEntry.new_message()
-      metadata.key = entry.get("key", "")
-      metadata.value = entry.get("value", "")
-      metadata.tags = entry.get("tags", [])
-      metadata_entries.append(metadata)
-
-    backup_info.metadata = metadata_entries
-    return backup_info
+  def _update_progress(self, progress: float, op_type: OperationType) -> None:
+    """Updates the unified progress and operation type, then reports status."""
+    self.progress = progress
+    self.operation = op_type
+    self._report_status()
 
   def _collect_config_data(self) -> Dict[str, Any]:
-    """Collects configuration data to be backed up"""
-    # This would collect parameters or other data that needs to be backed up
-    # Implementation depends on what specifically needs to be backed up
+    """Collects configuration data to be backed up."""
     config_data = {}
-
     params_to_backup = [k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP)]
     for param in params_to_backup:
       value = self.params.get(param)
       if value is not None:
         config_data[param] = base64.b64encode(value).decode('utf-8')
-
     return config_data
 
+  def _get_metadata_value(self, metadata_list, key, default_value=None):
+    return next((entry.get("value") for entry in metadata_list if entry.get("key") == key), default_value)
+
   async def create_backup(self) -> bool:
-    """Creates and uploads a new backup to sunnylink"""
+    """Creates and uploads a new backup to sunnylink."""
     try:
       self.backup_status = custom.BackupManagerSP.Status.inProgress
-      self.backup_progress = 0.0
-      self._report_status()
+      self._update_progress(0.0, OperationType.BACKUP)
 
       # Collect configuration data
       config_data = self._collect_config_data()
-      self.backup_progress = 25.0
-      self._report_status()
+      self._update_progress(25.0, OperationType.BACKUP)
 
       # Serialize and encrypt config data
       config_json = json.dumps(config_data)
-      encrypted_config = encrypt_compress_data(config_json, self.key_path)
-      self.backup_progress = 50.0
-      self._report_status()
-      
+      encrypted_config = encrypt_compress_data(config_json, use_aes_256=True)
+      self._update_progress(50.0, OperationType.BACKUP)
+
       backup_info = custom.BackupManagerSP.BackupInfo()
       backup_info.deviceId = self.device_id
       backup_info.config = encrypted_config
@@ -130,28 +97,31 @@ class BackupManagerSP:
       backup_info.createdAt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
       backup_info.updatedAt = backup_info.createdAt
       backup_info.sunnypilotVersion = self._get_current_version()
-      backup_info.metadata = [
-          custom.BackupManagerSP.MetadataEntry(key="creator", value="BackupManagerSP"),
-          custom.BackupManagerSP.MetadataEntry(key="all_values_encoded", value="True"),
-          custom.BackupManagerSP.MetadataEntry(key="AES", value="256")
-        ]
+      backup_info.backupMetadata = [
+        custom.BackupManagerSP.MetadataEntry(key="creator", value="BackupManagerSP"),
+        custom.BackupManagerSP.MetadataEntry(key="all_values_encoded", value="True"),
+        custom.BackupManagerSP.MetadataEntry(key="AES", value="256")
+      ]
 
       payload = json.loads(json.dumps(backup_info.to_dict(), cls=SnakeCaseEncoder))
-      self.backup_progress = 75.0
-      self._report_status()
+      self._update_progress(75.0, OperationType.BACKUP)
 
       # Upload to sunnylink
-      result = self.api.api_get(f"backup/{self.device_id}", method='PUT', access_token=self.api.get_token(), json=payload)
+      result = self.api.api_get(
+        f"backup/{self.device_id}",
+        method='PUT',
+        access_token=self.api.get_token(),
+        json=payload
+      )
 
       if result:
-        self.current_backup = self._create_backup_info(result.json())
         self.backup_status = custom.BackupManagerSP.Status.completed
-        self.backup_progress = 100.0
+        self._update_progress(100.0, OperationType.BACKUP)
       else:
         self.backup_status = custom.BackupManagerSP.Status.failed
         self.last_error = "Failed to upload backup"
+        self._report_status()
 
-      self._report_status()
       return self.backup_status == custom.BackupManagerSP.Status.completed
 
     except Exception as e:
@@ -162,47 +132,41 @@ class BackupManagerSP:
       return False
 
   async def restore_backup(self, version: Optional[int] = None) -> bool:
-    """Restores a backup from sunnylink"""
+    """Restores a backup from sunnylink."""
     try:
       self.restore_status = custom.BackupManagerSP.Status.inProgress
-      self.restore_progress = 0.0
-      self._report_status()
+      self._update_progress(0.0, OperationType.RESTORE)
 
-      # Get backup data from API
-      endpoint = f"backup/{self.device_id}"
-      if version is not None:
-        endpoint = f"{endpoint}/{version}"
-
+      # Get backup data from API for the specified version
+      endpoint = f"backup/{self.device_id}" + (f"/{version}" if version is not None else "")
       backup_data = self.api.api_get(endpoint, access_token=self.api.get_token())
       if not backup_data:
         raise Exception(f"No backup found for device {self.device_id}")
 
-      self.restore_progress = 25.0
-      self._report_status()
+      self._update_progress(25.0, OperationType.RESTORE)
 
-      # Get encrypted config
-      encrypted_config = backup_data.json().get("config", "")
+      data = backup_data.json()
+      backup_metadata = data.get("backup_metadata", [])
+      encrypted_config = data.get("config", "")
       if not encrypted_config:
         raise Exception("Empty backup configuration")
+      self._update_progress(50.0, OperationType.RESTORE)
 
-      self.restore_progress = 50.0
-      self._report_status()
+      # Decrypt config and load data
+      use_aes_256 = self._get_metadata_value(backup_metadata, "AES", "128") == "256"
+      config_json = decrypt_compressed_data(encrypted_config, use_aes_256)
+      if not config_json:
+        raise Exception("Failed to decrypt backup configuration")
 
-      # Decrypt config
-      config_json = decrypt_compressed_data(encrypted_config, self.key_path)
       config_data = json.loads(config_json)
-
-      self.restore_progress = 75.0
-      self._report_status()
+      self._update_progress(75.0, OperationType.RESTORE)
 
       # Apply configuration
-      backup_metadata = backup_data.json().get("backup_metadata", [])
-      all_values_encoded = next((entry.get("value") for entry in backup_metadata if entry.get("key") == "all_values_encoded"), None)
+      all_values_encoded = self._get_metadata_value(backup_metadata, "all_values_encoded", "false")
       self._apply_config(config_data, str(all_values_encoded).lower() == "true")
 
       self.restore_status = custom.BackupManagerSP.Status.completed
-      self.restore_progress = 100.0
-      self._report_status()
+      self._update_progress(100.0, OperationType.RESTORE)
       return True
 
     except Exception as e:
@@ -212,34 +176,43 @@ class BackupManagerSP:
       self._report_status()
       return False
 
-  def _apply_config(self, config_data: Dict[str, str], all_values_encoded=False) -> None:
-    """Applies configuration data from a backup"""
-    # Implementation depends on what specifically was backed up
+  def _apply_config(self, config_data: Dict[str, str], all_values_encoded: bool = False) -> None:
+    """Applies configuration data from a backup, but only for parameters marked as backupable."""
+    # Get the current list of parameters that can be backed up
+    backupable_params = set(k.decode('utf-8') for k in self.params.all_keys(ParamKeyType.BACKUP))
+
+    # Count for logging/reporting
+    restored_count = 0
+    skipped_count = 0
+
     for param, encoded_value in config_data.items():
       try:
-        value = encoded_value
-        if all_values_encoded:
-          value = base64.b64decode(encoded_value)
-        self.params.put(param, value)
+        # Only restore parameters that are currently marked as backupable
+        if param in backupable_params:
+          value = base64.b64decode(encoded_value) if all_values_encoded else encoded_value
+          self.params.put(param, value)
+          restored_count += 1
+        else:
+          skipped_count += 1
+          cloudlog.info(f"Skipped restoring param {param}: not marked for backup in current version")
       except Exception as e:
         cloudlog.error(f"Failed to restore param {param}: {str(e)}")
 
+    cloudlog.info(f"Restore complete: {restored_count} params restored, {skipped_count} params skipped")
 
   def _get_current_version(self) -> custom.BackupManagerSP.Version:
-    """Gets current sunnypilot version information"""
-    # This implementation would depend on how version info is stored
-    # Example implementation:
-    version_info = custom.BackupManagerSP.Version()
-    versioning = get_version().split('.')
-    version_info.major = int(versioning[0]) if len(versioning) > 0 else 0
-    version_info.minor = int(versioning[1]) if len(versioning) > 1 else 0
-    version_info.patch = int(versioning[2]) if len(versioning) > 2 else 0
-    version_info.build = int(versioning[3]) if len(versioning) > 3 else 0
-    version_info.branch = get_branch()
-    return version_info
+    """Gets current sunnypilot version information."""
+    version_obj = custom.BackupManagerSP.Version()
+    version_parts = get_version().split('.')
+    version_obj.major = int(version_parts[0]) if len(version_parts) > 0 else 0
+    version_obj.minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+    version_obj.patch = int(version_parts[2]) if len(version_parts) > 2 else 0
+    version_obj.build = int(version_parts[3]) if len(version_parts) > 3 else 0
+    version_obj.branch = get_branch()
+    return version_obj
 
   async def main_thread(self) -> None:
-    """Main thread for backup management"""
+    """Main thread for backup management."""
     rk = Ratekeeper(1, print_delay_threshold=None)
 
     while True:

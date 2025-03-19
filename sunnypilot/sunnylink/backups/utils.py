@@ -10,11 +10,13 @@ import hashlib
 import zlib
 import re
 import json
+from pathlib import Path
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 from sunnypilot.sunnylink.backups.AESCipher import AESCipher
+from system.hardware.hw import Paths
 
 
 class KeyDerivation:
@@ -24,7 +26,7 @@ class KeyDerivation:
       return f.read()
 
   @staticmethod
-  def derive_aes_key_iv_from_rsa(key_path: str, use_256: bool) -> tuple[bytes, bytes]:
+  def derive_aes_key_iv_from_rsa(key_path: str, use_aes_256: bool) -> tuple[bytes, bytes]:
     rsa_key_pem: bytes = KeyDerivation._load_key(key_path)
     key_plain = rsa_key_pem.decode(errors="ignore")
 
@@ -42,7 +44,7 @@ class KeyDerivation:
       raise ValueError("Unknown key format: Unable to determine if key is public or private.")
 
     sha256_hash = hashlib.sha256(der_data).digest()
-    aes_key = sha256_hash[:32] if use_256 else sha256_hash[:16]
+    aes_key = sha256_hash[:32] if use_aes_256 else sha256_hash[:16]
     aes_iv = sha256_hash[16:32]
 
     return aes_key, aes_iv
@@ -76,7 +78,7 @@ def qCompress(data):
   return b"ZLIB" + compressed_data
 
 
-def decrypt_compressed_data(encrypted_base64, key_path=None):
+def decrypt_compressed_data(encrypted_base64, use_aes_256=False):
   """
   Decrypt and decompress data from base64 string.
 
@@ -87,12 +89,13 @@ def decrypt_compressed_data(encrypted_base64, key_path=None):
   Returns:
       str: Decrypted and decompressed string
   """
+  key_path = Path(f"{Paths.persist_root()}/comma/id_rsa") if use_aes_256 else Path(f"{Paths.persist_root()}/comma/id_rsa.pub")
   try:
     # Decode base64
     encrypted_data = base64.b64decode(encrypted_base64)
 
     # Decrypt
-    key, iv = KeyDerivation.derive_aes_key_iv_from_rsa(key_path, use_256=False)
+    key, iv = KeyDerivation.derive_aes_key_iv_from_rsa(str(key_path), use_aes_256)
     cipher = AESCipher(key, iv)
     decrypted_data = cipher.decrypt(encrypted_data)
 
@@ -107,7 +110,7 @@ def decrypt_compressed_data(encrypted_base64, key_path=None):
     return ""
 
 
-def encrypt_compress_data(text, key_path=None):
+def encrypt_compress_data(text, use_aes_256=True):
   """
   Compress and encrypt string data to base64.
 
@@ -118,6 +121,7 @@ def encrypt_compress_data(text, key_path=None):
   Returns:
       str: Base64 encoded encrypted data
   """
+  key_path = Path(f"{Paths.persist_root()}/comma/id_rsa") if use_aes_256 else Path(f"{Paths.persist_root()}/comma/id_rsa.pub")
   try:
     # Encode to UTF-8
     text_bytes = text.encode('utf-8')
@@ -126,7 +130,7 @@ def encrypt_compress_data(text, key_path=None):
     compressed_data = qCompress(text_bytes)
 
     # Encrypt
-    key, iv = KeyDerivation.derive_aes_key_iv_from_rsa(key_path, use_256=False)
+    key, iv = KeyDerivation.derive_aes_key_iv_from_rsa(str(key_path), use_aes_256)
     cipher = AESCipher(key, iv)
     encrypted_data = cipher.encrypt(compressed_data)
 
