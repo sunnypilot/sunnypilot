@@ -16,7 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 from sunnypilot.sunnylink.backups.AESCipher import AESCipher
-from system.hardware.hw import Paths
+from openpilot.system.hardware.hw import Paths
 
 
 class KeyDerivation:
