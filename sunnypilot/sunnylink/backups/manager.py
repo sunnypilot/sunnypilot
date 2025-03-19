@@ -145,7 +145,7 @@ class BackupManagerSP:
       self._update_progress(0.0, OperationType.RESTORE)
 
       # Get backup data from API for the specified version
-      endpoint = f"backup/{self.device_id}" + (f"/{version}" if version is not None else "")
+      endpoint = f"backup/{self.device_id}" + f"/{version or ''}"
       backup_data = self.api.api_get(endpoint, access_token=self.api.get_token())
       if not backup_data:
         raise Exception(f"No backup found for device {self.device_id}")
