@@ -1,6 +1,15 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+
 import base64
 import hashlib
 import zlib
+import re
+import json
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -127,3 +136,22 @@ def encrypt_compress_data(text, key_path=None):
   except Exception as e:
     print(f"Compression and encryption failed: {e}")
     return ""
+
+
+def camel_to_snake(name):
+  """Convert camelCase to snake_case."""
+  name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+  return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+def transform_dict(obj):
+  """Recursively transform dictionary keys from camelCase to snake_case."""
+  if isinstance(obj, dict):
+    return {camel_to_snake(k): transform_dict(v) for k, v in obj.items()}
+  elif isinstance(obj, list):
+    return [transform_dict(item) for item in obj]
+  return obj
+
+class SnakeCaseEncoder(json.JSONEncoder):
+  def encode(self, obj):
+    transformed_obj = transform_dict(obj)
+    return super().encode(transformed_obj)
