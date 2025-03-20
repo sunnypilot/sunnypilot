@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/neural_network_lateral_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.h"
 
 NeuralNetworkLateralcontrol::NeuralNetworkLateralcontrol(QWidget *parent) {
     toggle = new ParamControl(
