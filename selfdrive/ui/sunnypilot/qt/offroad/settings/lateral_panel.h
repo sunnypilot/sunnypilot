@@ -24,8 +24,8 @@ public:
   void showEvent(QShowEvent *event) override;
   void hideEvent(QHideEvent* event) override;
 
-  public slots:
-    void updateToggles(bool _offroad);
+public slots:
+  void updateToggles(bool _offroad);
 
 private:
   QStackedLayout* main_layout = nullptr;
