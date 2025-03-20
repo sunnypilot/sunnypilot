@@ -85,6 +85,8 @@ class Controls:
         self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
 
+      self.LaC.extension.update_model_v2(self.sm['modelV2'])
+
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
 

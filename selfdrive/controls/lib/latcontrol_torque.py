@@ -77,8 +77,8 @@ class LatControlTorque(LatControl):
                                           desired_lateral_accel - actual_lateral_accel, lateral_accel_deadzone, friction_compensation=True,
                                           gravity_adjusted=True)
 
-      # Neural Network Lateral Control and custom stock lateral jerk updates
-      # Override stock ff and pid_log.error
+      # Lateral acceleration torque controller extension updates
+      # Overrides stock ff and pid_log.error
       ff, pid_log = self.extension.update(CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
                                           desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel)
 
