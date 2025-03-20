@@ -44,14 +44,12 @@ def manager_init() -> None:
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
     ("DynamicExperimentalControl", "0"),
-    ("LateralTorqueControlLateralJerk", "0"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("ModelManager_LastSyncTime", "0"),
-    ("ModelManager_ModelsCache", ""),
-    ("NeuralNetworkLateralControl", "0"),
+    ("ModelManager_ModelsCache", "")
   ]
 
   if params.get_bool("RecordFrontLock"):

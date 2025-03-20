@@ -57,11 +57,6 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(hyundaiRadarTracksToggle);
 
-#if SUNNYPILOT
-  neuralNetworkLateralControlToggle = neuralNetworkLateralControl.toggle;
-  addItem(neuralNetworkLateralControlToggle);
-#endif
-
   enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
@@ -124,7 +119,6 @@ void DeveloperPanel::updateToggles(bool _offroad) {
     hyundaiRadarTracksToggle->setVisible(false);
   }
   experimentalLongitudinalToggle->refresh();
-  neuralNetworkLateralControl.refresh();
 
   // Handle specific controls visibility for release branches
   enableGithubRunner->setVisible(!is_release);
