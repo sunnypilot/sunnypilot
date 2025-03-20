@@ -17,9 +17,11 @@ private:
   Params params;
   ParamControl* adbToggle;
   ParamControl* joystickToggle;
+  ButtonControl* errorLogBtn;
   ParamControl* longManeuverToggle;
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* hyundaiRadarTracksToggle;
+  ParamControl* enableGithubRunner;
   ParamControl* neuralNetworkLateralControlToggle;
 #ifdef SUNNYPILOT
   NeuralNetworkLateralcontrol neuralNetworkLateralControl;
