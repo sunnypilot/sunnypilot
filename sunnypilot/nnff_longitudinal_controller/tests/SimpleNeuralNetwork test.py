@@ -1,6 +1,6 @@
 import numpy as np
 
-from sunnypilot.nnff_longitudinal_controller.modeld import TinyNeuralNetwork
+from sunnypilot.nnff_longitudinal_controller.learning_model import TinyNeuralNetwork
 from tinygrad.tensor import Tensor
 
 nn_model = TinyNeuralNetwork(input_size=3, hidden_size=5, output_size=2, lr=0.1, dropout_rate=0.0)

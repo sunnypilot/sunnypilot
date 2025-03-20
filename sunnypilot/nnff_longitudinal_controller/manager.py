@@ -14,7 +14,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.test.process_replay.process_replay import get_custom_params_from_lr, replay_process_with_name
 from openpilot.system.manager.process_config import managed_processes
 from openpilot.tools.lib.logreader import LogReader
-from sunnypilot.nnff_longitudinal_controller.longitudinal_trainer import LongitudinalLiveTuner
+from sunnypilot.nnff_longitudinal_controller.policy_model import LongitudinalLiveTuner
 
 
 def start():

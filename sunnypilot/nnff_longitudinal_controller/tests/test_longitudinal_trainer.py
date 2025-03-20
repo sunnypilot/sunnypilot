@@ -2,29 +2,24 @@ import time
 
 import numpy as np
 
-from sunnypilot.nnff_longitudinal_controller.longitudinal_trainer import LongitudinalLiveTuner
+from sunnypilot.nnff_longitudinal_controller.policy_model import LongitudinalLiveTuner
 
 
 # Dummy classes to simulate dependent structures
 class DummyLongitudinalPlan:
     aTarget = 0.0
 
-
 class DummyLeadOne:
     status = True
     dRel = 15.0  # changed from 5.0 to simulate ideal lead distance
 
-
 class DummyRadarState:
     leadOne = DummyLeadOne()
-
 
 class DummyOut:
     class CruiseState:
         enabled = True
-
     cruiseState = CruiseState()
-
 
 # Minimal dummy struct for CarState
 class DummyCarState:
@@ -33,12 +28,10 @@ class DummyCarState:
         self.aEgo = aEgo
         self.out = DummyOut()
 
-
 # Minimal dummy struct for CarControl.Actuators
 class DummyActuators:
     def __init__(self, accel):
         self.accel = accel
-
 
 # Minimal dummy for CarParams and nested tuning values
 class DummyLongitudinalTuning:
@@ -48,7 +41,6 @@ class DummyLongitudinalTuning:
     kiBP = [0.0]
     kiV = [1.0]
 
-
 class DummyCarParams:
     def __init__(self):
         self.carFingerprint = None
@@ -57,18 +49,14 @@ class DummyCarParams:
         self.vEgoStarting = 0.5
         self.stoppingDecelRate = 0.8
 
-
 # Dummy Params class to bypass persistent storage issues
 class DummyParams:
     def __init__(self):
         self.store = {}
-
     def get(self, key):
         return self.store.get(key)
-
     def put(self, key, value):
         self.store[key] = value
-
 
 def tuner():
     cp = DummyCarParams()
@@ -79,7 +67,6 @@ def tuner():
         'radarState': DummyRadarState()
     }
     return tuner
-
 
 def test_braking_event(tuner):
     initial_speed = 20.0
@@ -101,7 +88,6 @@ def test_braking_event(tuner):
     assert 'stopping_decel_rate' in tuned_params
     print("Tuned parameters after braking event:", tuned_params, flush=True)
 
-
 def test_starting_event(tuner):
     # Initial stopped state
     CS = DummyCarState(vEgo=0.0, aEgo=0.0)
@@ -120,7 +106,6 @@ def test_starting_event(tuner):
     assert len(tuner.starting_data) >= 1
     print("Starting data recorded:", tuner.starting_data, flush=True)
 
-
 def test_force_update(tuner):
     CS = DummyCarState(vEgo=15.0, aEgo=-0.5)
     actuators = DummyActuators(accel=-0.5)
@@ -128,7 +113,6 @@ def test_force_update(tuner):
     tuner.force_update(CS, actuators)
     assert tuner.sample_idx > prev_idx
     print("Force update sample index:", tuner.sample_idx, flush=True)
-
 
 def simulate_multiple_events(tuner):
     import numpy as np
@@ -157,7 +141,6 @@ def simulate_multiple_events(tuner):
         actuators = DummyActuators(accel=0.3)
         tuner.update(CS, actuators)
 
-
 def test_nn_training_directly(tuner):
     import time
     from collections import deque
@@ -178,7 +161,6 @@ def test_nn_training_directly(tuner):
     # Trigger network training directly from longitudinal_trainer
     tuner._train_network()
     print("Neural network training complete. Best validation loss:", tuner.best_nn_validation_loss, flush=True)
-
 
 def main():
     tuner_inst = tuner()
@@ -201,7 +183,6 @@ def main():
 
     print("\nFinal tuner state after NN training:")
     print("tuned parameters:", tuner_inst.get_tuned_params())
-
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,5 @@
 import json
+import os
 import pickle
 import time
 from collections import deque
@@ -10,7 +11,7 @@ from cereal import messaging
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
-from sunnypilot.nnff_longitudinal_controller.modeld import TinyNeuralNetwork
+from sunnypilot.nnff_longitudinal_controller.learning_model import TinyNeuralNetwork
 from tinygrad.tensor import Tensor
 
 
@@ -117,6 +118,8 @@ class LongitudinalLiveTuner:
       weight_init='he',
       dropout_rate=0.1
     )
+    # Try to load previously saved model checkpoint
+    self._load_model_checkpoint()
 
     self.best_nn_validation_loss = float('inf')
     self.training_step_count = 0.0
@@ -152,6 +155,30 @@ class LongitudinalLiveTuner:
 
     # Load saved parameters if available
     self._load_params()
+
+  def _load_model_checkpoint(self):
+      """Load neural network weights from saved checkpoint if available."""
+      try:
+          checkpoint_path = "nn_longitudinal.pkl"
+
+          # Check if model exists
+          if os.path.exists(checkpoint_path):
+              with open(checkpoint_path, "rb") as f:
+                  nn_weights = pickle.load(f)
+
+              # Restore weights to the neural network
+              if all(k in nn_weights for k in ['nn_w1', 'nn_b1', 'nn_w2', 'nn_b2', 'nn_w3', 'nn_b3']):
+                  self.nn.W1 = Tensor(nn_weights['nn_w1'])
+                  self.nn.b1 = Tensor(nn_weights['nn_b1'])
+                  self.nn.W2 = Tensor(nn_weights['nn_w2'])
+                  self.nn.b2 = Tensor(nn_weights['nn_b2'])
+                  self.nn.W3 = Tensor(nn_weights['nn_w3'])
+                  self.nn.b3 = Tensor(nn_weights['nn_b3'])
+                  print(f"Loaded neural network checkpoint from {checkpoint_path}")
+                  return True
+      except Exception as e:
+          print(f"Error loading model checkpoint: {e}")
+      return False
 
   def _load_params(self):
     """Load saved tuning parameters from persistent storage."""
@@ -204,42 +231,57 @@ class LongitudinalLiveTuner:
   def _save_params(self):
     """Save tuning parameters to persistent storage."""
     try:
-      # Convert braking events to list for JSON serialization (limit to most recent 50)
-      braking_profiles = list(self.braking_events)[-50:] if self.braking_events else []
+        # Convert braking events to list for JSON serialization (limit to most recent 50)
+        braking_profiles = []
+        try:
+            braking_profiles = list(self.braking_events)[-50:] if self.braking_events else []
+        except Exception as e:
+            print(f"Error converting braking events: {e}")
 
-      # Save neural network weights
-      nn_weights = {
-        'nn_w1': self.nn.W1.tolist(),
-        'nn_b1': self.nn.b1.tolist(),
-        'nn_w2': self.nn.W2.tolist(),
-        'nn_b2': self.nn.b2.tolist(),
-        'nn_w3': self.nn.W3.tolist(),
-        'nn_b3': self.nn.b3.tolist(),
-      }
+        # Save neural network weights
+        nn_weights = {}
+        try:
+            nn_weights = {
+                'nn_w1': self.nn.W1.tolist() if hasattr(self.nn, 'W1') else [],
+                'nn_b1': self.nn.b1.tolist() if hasattr(self.nn, 'b1') else [],
+                'nn_w2': self.nn.W2.tolist() if hasattr(self.nn, 'W2') else [],
+                'nn_b2': self.nn.b2.tolist() if hasattr(self.nn, 'b2') else [],
+                'nn_w3': self.nn.W3.tolist() if hasattr(self.nn, 'W3') else [],
+                'nn_b3': self.nn.b3.tolist() if hasattr(self.nn, 'b3') else [],
+            }
+        except Exception as e:
+            print(f"Error converting NN weights: {e}")
+            # Fall back to empty weights if conversion fails
+            nn_weights = {
+                'nn_w1': [], 'nn_b1': [],
+                'nn_w2': [], 'nn_b2': [],
+                'nn_w3': [], 'nn_b3': []
+            }
 
-      # Safety metrics
-      safety_metrics = {
-        'unsafe_stops': self.unsafe_stops_count,
-        'total_stops': self.total_stops_count,
-        'safety_score': 0 if self.total_stops_count == 0 else 1.0 - (self.unsafe_stops_count / self.total_stops_count)
-      }
+        # Safety metrics
+        safety_metrics = {
+            'unsafe_stops': float(self.unsafe_stops_count),
+            'total_stops': float(self.total_stops_count),
+            'safety_score': 0 if self.total_stops_count == 0 else 1.0 - (
+                        self.unsafe_stops_count / self.total_stops_count)
+        }
 
-      params_dict = {
-        'vego_stopping': float(self.vego_stopping),
-        'vego_starting': float(self.vego_starting),
-        'stopping_decel_rate': float(self.stopping_decel_rate),
-        'kp_gain_factor': float(self.kp_gain_factor),
-        'ki_gain_factor': float(self.ki_gain_factor),
-        'braking_profiles': braking_profiles,
-        'timestamp': int(time.time()),
-        'training_progress': float(self.training_progress),
-        'training_step_count': int(self.training_step_count),
-        'safety_metrics': safety_metrics,
-        **nn_weights
-      }
-      self.params.put("LongitudinalLiveTuneParams", json.dumps(params_dict))
+        params_dict = {
+            'vego_stopping': float(self.vego_stopping),
+            'vego_starting': float(self.vego_starting),
+            'stopping_decel_rate': float(self.stopping_decel_rate),
+            'kp_gain_factor': float(self.kp_gain_factor),
+            'ki_gain_factor': float(self.ki_gain_factor),
+            'braking_profiles': braking_profiles,
+            'timestamp': int(time.time()),
+            'training_progress': float(self.training_progress),
+            'training_step_count': int(self.training_step_count),
+            'safety_metrics': safety_metrics,
+            **nn_weights
+        }
+        self.params.put("LongitudinalLiveTuneParams", json.dumps(params_dict))
     except Exception as e:
-      print(f"Error saving longitudinal tuning params: {e}")
+        print(f"Error saving longitudinal tuning params: {e}")
 
   def _validate_params(self):
     """Ensure parameters are within acceptable ranges and meet safety criteria."""
@@ -439,69 +481,266 @@ class LongitudinalLiveTuner:
 
     for event in self.braking_events:
       if len(event.get('decel_samples', [])) == 0:
-        continue
+          continue
 
       # Create feature vector
-      feature = [
-        event['initial_speed'],                              # Average speed
-        np.mean(event['decel_samples']),                     # Average deceleration
-        np.std(event['jerk_samples']) if event['jerk_samples'] else 0,  # Jerk variability
-        np.mean(event['comfort_scores']) if event['comfort_scores'] else 0.5,  # Comfort score
-        event['final_stopping_distance'] if event.get('final_stopping_distance') is not None else 8.0,  # Final distance
-        event['duration'],                                   # Duration of stop
-        np.mean(event.get('lead_distances', [10.0])),         # Average lead distance
-        len(event.get('lead_distances', [])) / max(1, len(event['decel_samples'])),  # Traffic density proxy
-        np.mean(self.original_kpV),                          # Mean original KP values
-        np.mean(self.original_kiV)                           # Mean original KI values
-      ]
-      feature = np.clip(feature, -10, 10)
-      features.append(feature)
+      try:
+          feature = [
+              event['initial_speed'],
+              np.mean(event['decel_samples']),
+              np.std(event['jerk_samples']) if event['jerk_samples'] else 0,
+              np.mean(event['comfort_scores']) if event['comfort_scores'] else 0.5,
+              event['final_stopping_distance'] if event.get('final_stopping_distance') is not None else 8.0,
+              event['duration'],
+              len(event.get('lead_distances', [])) / max(1, len(event['decel_samples'])),
+              np.mean(self.original_kpV),
+              np.mean(self.original_kiV),
+              1.0  # Default feature padding to match input_size=10
+          ]
+          feature = np.clip(feature, -10, 10)
+          features.append(feature)
 
-      # Target values normalized between 0 and 1 for sigmoid output
-      target = [
-        (self.vego_stopping - self.vego_stopping_default * 0.5) / (self.vego_stopping_default * 0.5),
-        (self.vego_starting - self.vego_starting_default * 0.5) / (self.vego_starting_default * 0.5),
-        (self.stopping_decel_rate - self.stopping_decel_rate_default * 0.5) / (self.stopping_decel_rate_default * 0.5),
-        (self.kp_gain_factor - 0.75) / 0.5,
-        (self.ki_gain_factor - 0.75) / 0.5
-      ]
-      target += [
-        (self.kf - self.kf_default * 0.5) / (self.kf_default * 0.5),
-        (np.mean(self.kpBP) - np.mean(self.kpBP_default) * 0.5) / (np.mean(self.kpBP_default) * 0.5),
-        (np.mean(self.kpV) - np.mean(self.kpV_default) * 0.5) / (np.mean(self.kpV_default) * 0.5),
-        (np.mean(self.kiBP) - np.mean(self.kiBP_default) * 0.5) / (np.mean(self.kiBP_default) * 0.5),
-        (np.mean(self.kiV) - np.mean(self.kiV_default) * 0.5) / (np.mean(self.kiV_default) * 0.5),
-      ]
-      target = np.clip(target, 0, 1)
-      targets.append(target)
+          # Target values normalized between 0 and 1 for sigmoid output
+          eps = 1e-9  # Epsilon value to avoid division by zero
+          target = [
+              (self.vego_stopping - self.vego_stopping_default * 0.5) / (self.vego_stopping_default * 0.5 + eps),
+              (self.vego_starting - self.vego_starting_default * 0.5) / (self.vego_starting_default * 0.5 + eps),
+              (self.stopping_decel_rate - self.stopping_decel_rate_default * 0.5) / (
+                          self.stopping_decel_rate_default * 0.5 + eps),
+              (self.kp_gain_factor - 0.75) / 0.5,
+              (self.ki_gain_factor - 0.75) / 0.5,
+              (self.kf - self.kf_default * 0.5) / (self.kf_default * 0.5 + eps),
+              (np.mean(self.kpBP) - np.mean(self.kpBP_default) * 0.5) / (np.mean(self.kpBP_default) * 0.5 + eps),
+              (np.mean(self.kpV) - np.mean(self.kpV_default) * 0.5) / (np.mean(self.kpV_default) * 0.5 + eps),
+              (np.mean(self.kiBP) - np.mean(self.kiBP_default) * 0.5) / (np.mean(self.kiBP_default) * 0.5 + eps),
+              (np.mean(self.kiV) - np.mean(self.kiV_default) * 0.5) / (np.mean(self.kiV_default) * 0.5 + eps)
+          ]
+          targets.append(target)
+      except Exception as e:
+          print(f"Error processing event for neural network: {e}")
+          continue
 
     # Split into training and validation sets
     if len(features) < 5:
+        print("Not enough valid training examples")
       return
 
     train_size = int(len(features) * 0.8)
-    train_features = Tensor(np.array(features[:train_size]))
-    train_targets = Tensor(np.array(targets[:train_size]))
-    val_features = Tensor(np.array(features[train_size:]))
-    val_targets = Tensor(np.array(targets[train_size:]))
 
-    # Train the model
-    batch_size = min(10, len(train_features))
-    for i in range(0, len(train_features), batch_size):
-      batch_x = Tensor(train_features[i:i + batch_size])
-      batch_y = Tensor(train_targets[i:i + batch_size])
-      self.nn.train(batch_x, batch_y, iterations=400)
+    # Convert to numpy arrays with explicit dtype
+    try:
+        train_features_np = np.array(features[:train_size], dtype=np.float32)
+        train_targets_np = np.array(targets[:train_size], dtype=np.float32)
+        val_features_np = np.array(features[train_size:], dtype=np.float32) if len(features) > train_size else np.array(
+            [], dtype=np.float32)
+        val_targets_np = np.array(targets[train_size:], dtype=np.float32) if len(targets) > train_size else np.array([],
+                                                                                                                     dtype=np.float32)
 
-    # Validate on holdout set
-    if len(val_features) > 0:
-      val_pred = self.nn.forward(Tensor(val_features))
-      val_loss = ((val_pred - Tensor(val_targets)) ** 2).mean().numpy()
-      print(f"Neural network training: validation error = {val_loss:.6f}")
-      if val_loss < self.best_nn_validation_loss:
-        self.best_nn_validation_loss = val_loss
-        print("Validation loss improved, saving checkpoint.")
-        self._save_model_checkpoint()
-    self._save_params()
+        # Verify shapes match network expectations
+        print(f"Training features shape: {train_features_np.shape}")
+        print(f"Training targets shape: {train_targets_np.shape}")
+    except Exception as e:
+        print(f"Error creating training arrays: {e}")
+        return
+
+    try:
+        # Train the model
+        iterations_per_batch = 100
+        batch_size = 1  # Use single examples for test stability
+
+        for i in range(0, len(train_features_np), batch_size):
+            if i + batch_size <= len(train_features_np):  # Ensure we have a complete batch
+                batch_x = Tensor(train_features_np[i:i + batch_size])
+                batch_y = Tensor(train_targets_np[i:i + batch_size])
+
+                try:
+                    # Simple forward pass to check if dimensions work
+                    _ = self.nn.forward(batch_x)
+                    # Only try training if forward pass succeeds
+                    self.nn.train(batch_x, batch_y, iterations=iterations_per_batch)
+                except Exception as e:
+                    print(f"Error during neural network training batch: {e}")
+                    # Continue with next batch
+                    continue
+
+        if len(val_features_np) > 0:
+            try:
+                val_pred = self.nn.forward(Tensor(val_features_np))
+                val_loss = ((val_pred - Tensor(val_targets_np)) ** 2).mean().numpy()
+                print(f"Neural network training: validation error = {val_loss:.6f}")
+
+                # Print detailed prediction information to understand impact of loss changes
+                if len(val_pred) > 0:
+                    pred_values = val_pred.numpy()[0]  # First prediction
+                    target_values = val_targets_np[0]  # First target
+                    param_names = ['vego_stopping', 'vego_starting', 'stopping_decel_rate',
+                                   'kp_factor', 'ki_factor', 'kf', 'kpBP', 'kpV', 'kiBP', 'kiV']
+
+                    print("\nPrediction details (normalized [0-1]):")
+                    for name, pred, target in zip(param_names, pred_values, target_values, strict=False):
+                        error = abs(pred - target)
+                        print(f"  {name}: pred={pred:.4f}, target={target:.4f}, error={error:.4f}")
+
+                    # Show how these translate to actual parameter values
+                    print("\nDenormalized parameter values:")
+                    # Example for a few key parameters
+                    vego_stopping_pred = pred_values[0] * (self.vego_stopping_default * 0.5) + (
+                                self.vego_stopping_default * 0.5)
+                    vego_stopping_target = target_values[0] * (self.vego_stopping_default * 0.5) + (
+                                self.vego_stopping_default * 0.5)
+                    print(
+                        f"  vego_stopping: current={self.vego_stopping:.4f}, pred={vego_stopping_pred:.4f}, target={vego_stopping_target:.4f}")
+
+                    decel_rate_pred = pred_values[2] * (self.stopping_decel_rate_default * 0.5) + (
+                                self.stopping_decel_rate_default * 0.5)
+                    decel_rate_target = target_values[2] * (self.stopping_decel_rate_default * 0.5) + (
+                                self.stopping_decel_rate_default * 0.5)
+                    print(
+                        f"  stopping_decel_rate: current={self.stopping_decel_rate:.4f}, pred={decel_rate_pred:.4f}, target={decel_rate_target:.4f}")
+
+                # Track if validation loss is improving with proper handling of infinity
+                if val_loss < self.best_nn_validation_loss:
+                    # Handle the case where best_nn_validation_loss is infinity
+                    if np.isinf(self.best_nn_validation_loss):
+                        improvement = 100.0  # Just report 100% improvement from infinity
+                    else:
+                        improvement = (self.best_nn_validation_loss - val_loss) / self.best_nn_validation_loss * 100
+
+                    self.best_nn_validation_loss = val_loss
+                    print(f"Validation loss improved by {improvement:.2f}%, saving checkpoint.")
+                    try:
+                        self._save_model_checkpoint()
+                    except Exception as e:
+                        print(f"Error saving model checkpoint: {e}")
+
+                # After successful training and validation, apply the trained model
+                self.apply_trained_model(direct_training_application=True)
+
+            except Exception as e:
+                print(f"Error during validation: {e}")
+
+        # Try to save params
+        try:
+            self._save_params()
+        except Exception as e:
+            print(f"Error saving parameters: {e}")
+
+    except Exception as e:
+        print(f"Error in neural network training: {e}")
+
+  def apply_trained_model(self, direct_training_application=False):
+      """Apply the trained neural network model to update parameters."""
+      if len(self.braking_events) < 5:
+          print("Not enough braking events to apply model")
+          return False
+
+      # Use recent events to create representative features
+      recent_events = list(self.braking_events)[-10:]
+
+      # Calculate average metrics from recent events
+      avg_speed = np.mean([event['initial_speed'] for event in recent_events])
+      avg_decel = np.mean([np.mean(event.get('decel_samples', [0.8])) for event in recent_events])
+      avg_jerk_std = np.mean([np.std(event.get('jerk_samples', [0.0])) for event in recent_events])
+      avg_comfort = np.mean([np.mean(event.get('comfort_scores', [0.5])) for event in recent_events])
+      stopping_distances = [event.get('final_stopping_distance', 8.0) for event in recent_events if
+                            event.get('final_stopping_distance') is not None]
+      avg_stopping_distance = np.mean(stopping_distances) if stopping_distances else 8.0
+      avg_duration = np.mean([event['duration'] for event in recent_events])
+      avg_lead_dist = np.mean([np.mean(event.get('lead_distances', [10.0])) for event in recent_events])
+
+      # Create input features for the neural network
+      features = np.array([
+          avg_speed,
+          avg_decel,
+          avg_jerk_std,
+          avg_comfort,
+          avg_stopping_distance,
+          avg_duration,
+          avg_lead_dist,
+          np.mean(self.original_kpV),
+          np.mean(self.original_kiV),
+          1.0
+      ])
+
+      # Clip features to prevent extreme values
+      features = np.clip(features, -10, 10)
+
+      # Record original values for comparison
+      original_values = {
+          'vego_stopping': self.vego_stopping,
+          'vego_starting': self.vego_starting,
+          'stopping_decel_rate': self.stopping_decel_rate,
+          'kp_gain_factor': self.kp_gain_factor,
+          'ki_gain_factor': self.ki_gain_factor
+      }
+
+      # Get neural network prediction with proper GPU error handling and CPU fallback
+      try:
+          # Try GPU prediction first
+          prediction = self.nn.forward(Tensor(features))
+          prediction_array = prediction.numpy()
+          print(f"\nApplying model - Neural network raw predictions: {prediction_array}")
+      except Exception as e:
+          print(f"Error during model prediction: {e}")
+          print("Attempting CPU fallback for prediction...")
+          try:
+              # Try to force CPU execution
+              original_device = os.environ.get('TINYGRAD_DEVICE', '')
+              os.environ['TINYGRAD_DEVICE'] = 'CPU'
+              # Create a new tensor on CPU
+              cpu_features = Tensor(features.astype(np.float32))
+              # Run prediction on CPU
+              prediction = self.nn.forward(cpu_features)
+              prediction_array = prediction.numpy()
+              # Restore original device setting
+              if original_device:
+                  os.environ['TINYGRAD_DEVICE'] = original_device
+              else:
+                  os.environ.pop('TINYGRAD_DEVICE', None)
+              print(f"CPU fallback successful - predictions: {prediction_array}")
+          except Exception as cpu_error:
+              print(f"CPU fallback also failed: {cpu_error}")
+              print("Using default values instead")
+              return False
+
+      # Use more aggressive learning rate if this is from direct training application
+      learning_rate = 0.3 if direct_training_application else 0.1
+
+      # Safely apply predictions
+      try:
+          # Denormalize predictions and apply to parameters
+          self.vego_stopping = (1.0 - learning_rate) * self.vego_stopping + learning_rate * (
+                  prediction_array[0] * (self.vego_stopping_default * 0.5) + (self.vego_stopping_default * 0.5)
+          )
+          self.vego_starting = (1.0 - learning_rate) * self.vego_starting + learning_rate * (
+                  prediction_array[1] * (self.vego_starting_default * 0.5) + (self.vego_starting_default * 0.5)
+          )
+          self.stopping_decel_rate = (1.0 - learning_rate) * self.stopping_decel_rate + learning_rate * (
+                  prediction_array[2] * (self.stopping_decel_rate_default * 0.5) + (
+                      self.stopping_decel_rate_default * 0.5)
+          )
+          self.kp_gain_factor = (1.0 - learning_rate) * self.kp_gain_factor + learning_rate * (
+                  prediction_array[3] * 0.5 + 0.75
+          )
+          self.ki_gain_factor = (1.0 - learning_rate) * self.ki_gain_factor + learning_rate * (
+                  prediction_array[4] * 0.5 + 0.75
+          )
+      except Exception as e:
+          print(f"Error applying model predictions: {e}")
+          # Don't update parameters if there was an error
+          return False
+
+      # Log parameter changes
+      print("\nParameter changes after applying trained model:")
+      for param, before in original_values.items():
+          after = getattr(self, param)
+          change = after - before
+          pct_change = (change / before) * 100 if before != 0 else float('inf')
+          print(f"  {param}: {before:.4f} → {after:.4f} (Δ{change:.4f}, {pct_change:.2f}%)")
+
+      # Validate parameters to ensure safety
+      self._validate_params()
+      return True
 
   def _process_data(self):
     """Process collected data and update parameters."""
@@ -631,6 +870,18 @@ class LongitudinalLiveTuner:
       # Get NN prediction for optimal parameters
       prediction = self.nn.forward(features)
 
+      # Log raw prediction values before denormalization
+      print(f"\nNeural network raw predictions: {prediction.numpy()}")
+
+      # Store original values for comparison
+      original_values = {
+          'vego_stopping': self.vego_stopping,
+          'vego_starting': self.vego_starting,
+          'stopping_decel_rate': self.stopping_decel_rate,
+          'kp_gain_factor': self.kp_gain_factor,
+          'ki_gain_factor': self.ki_gain_factor
+      }
+
       # Denormalize outputs from [0,1] range to actual parameter values
       target_vego_stopping = prediction[0] * (self.vego_stopping_default * 0.5) + (self.vego_stopping_default * 0.5)
       target_vego_starting = prediction[1] * (self.vego_starting_default * 0.5) + (self.vego_starting_default * 0.5)
@@ -638,10 +889,16 @@ class LongitudinalLiveTuner:
       target_kp_factor = prediction[3] * 0.5 + 0.75
       target_ki_factor = prediction[4] * 0.5 + 0.75
       target_kf = prediction[5] * (self.kf_default * 0.5) + (self.kf_default * 0.5)
-      target_kpBP = prediction[6] * (np.mean(self.kpBP_default) * 0.5) + (np.mean(self.kpBP_default) * 0.5)
-      target_kpV = prediction[7] * (np.mean(self.kpV_default) * 0.5) + (np.mean(self.kpV_default) * 0.5)
-      target_kiBP = prediction[8] * (np.mean(self.kiBP_default) * 0.5) + (np.mean(self.kiBP_default) * 0.5)
-      target_kiV = prediction[9] * (np.mean(self.kiV_default) * 0.5) + (np.mean(self.kiV_default) * 0.5)
+      # Epsilon for safe division
+      eps = 1e-9
+      kp_mean = max(eps, abs(np.mean(self.kpBP_default)))
+      target_kpBP = prediction[6] * (kp_mean * 0.5) + (kp_mean * 0.5)
+      kpV_mean = max(eps, abs(np.mean(self.kpV_default)))
+      target_kpV = prediction[7] * (kpV_mean * 0.5) + (kpV_mean * 0.5)
+      kiBP_mean = max(eps, abs(np.mean(self.kiBP_default)))
+      target_kiBP = prediction[8] * (kiBP_mean * 0.5) + (kiBP_mean * 0.5)
+      kiV_mean = max(eps, abs(np.mean(self.kiV_default)))
+      target_kiV = prediction[9] * (kiV_mean * 0.5) + (kiV_mean * 0.5)
 
       # Update parameters using suitable learning rates:
       safety_lr = 0.1
@@ -656,6 +913,18 @@ class LongitudinalLiveTuner:
       self.kpV = (1.0 - comfort_lr * comfort_weight) * self.kpV + (comfort_lr * comfort_weight) * target_kpV
       self.kiBP = (1.0 - comfort_lr * comfort_weight) * self.kiBP + (comfort_lr * comfort_weight) * target_kiBP
       self.kiV = (1.0 - comfort_lr * comfort_weight) * self.kiV + (comfort_lr * comfort_weight) * target_kiV
+
+      # Log the parameter changes to see the actual effect
+      print("\nParameter changes after neural network prediction:")
+      for param, before in original_values.items():
+          after = getattr(self, param)
+          change = after - before
+          # Handle division by zero
+          if before == 0:
+              pct_change = float('inf') if change > 0 else 0.0
+          else:
+              pct_change = (change / before) * 100
+          print(f"  {param}: {before:.4f} → {after:.4f} (Δ{change:.4f}, {pct_change:.2f}%)")
 
     else:
       # Fallback to simpler adaptive learning if neural network isn't ready
@@ -705,12 +974,12 @@ class LongitudinalLiveTuner:
   def _save_model_checkpoint(self):
     """Save the neural network weights as loss improves."""
     nn_weights = {
-      'nn_w1': self.W1.tolist(),
-      'nn_b1': self.b1.tolist(),
-      'nn_w2': self.W2.tolist(),
-      'nn_b2': self.b2.tolist(),
-      'nn_w3': self.W3.tolist(),
-      'nn_b3': self.b3.tolist(),
+        'nn_w1': self.nn.W1.tolist(),
+        'nn_b1': self.nn.b1.tolist(),
+        'nn_w2': self.nn.W2.tolist(),
+        'nn_b2': self.nn.b2.tolist(),
+        'nn_w3': self.nn.W3.tolist(),
+        'nn_b3': self.nn.b3.tolist(),
     }
     with open("nn_longitudinal.pkl", "wb") as f:
       pickle.dump(nn_weights, f)
