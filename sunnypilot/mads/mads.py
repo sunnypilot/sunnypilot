@@ -1,34 +1,14 @@
 """
-The MIT License
-
 Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-Last updated: July 29, 2024
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
 """
 
 from cereal import car, log, custom
 
 from opendbc.car.hyundai.values import HyundaiFlags
-
-from openpilot.sunnypilot.mads.helpers import MadsParams
+from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -43,7 +23,7 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
-    self.mads_params = MadsParams()
+    self.params = selfdrive.params
 
     self.enabled = False
     self.active = False
@@ -60,14 +40,14 @@ class ModularAssistiveDrivingSystem:
         self.allow_always = True
 
     # read params on init
-    self.enabled_toggle = self.mads_params.read_param("Mads")
-    self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
-    self.pause_lateral_on_brake_toggle = self.mads_params.read_param("MadsPauseLateralOnBrake")
-    self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
+    self.enabled_toggle = self.params.get_bool("Mads")
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
+    self.steering_mode_on_brake = read_steering_mode_param(self.params)
+    self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def read_params(self):
-    self.main_enabled_toggle = self.mads_params.read_param("MadsMainCruiseAllowed")
-    self.unified_engagement_mode = self.mads_params.read_param("MadsUnifiedEngagementMode")
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
+    self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def update_events(self, CS: car.CarState):
     def update_unified_engagement_mode():
@@ -104,11 +84,11 @@ class ModularAssistiveDrivingSystem:
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
 
-      if self.pause_lateral_on_brake_toggle:
+      if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE:
         if CS.brakePressed:
           transition_paused_state()
 
-      if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
+      if not (self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and CS.brakePressed) and \
          not self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
           self.events_sp.add(EventNameSP.silentLkasEnable)
@@ -142,6 +122,12 @@ class ModularAssistiveDrivingSystem:
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
       if self.selfdrive.CS_prev.cruiseState.available:
+        self.events_sp.add(EventNameSP.lkasDisable)
+
+    if self.steering_mode_on_brake == MadsSteeringModeOnBrake.DISENGAGE:
+      # Disable on rising edge of accelerator or brake. Also disable on brake when speed > 0
+      if (CS.brakePressed and (not self.selfdrive.CS_prev.brakePressed or not CS.standstill)) or \
+         (CS.regenBraking and (not self.selfdrive.CS_prev.regenBraking or not CS.standstill)):
         self.events_sp.add(EventNameSP.lkasDisable)
 
     self.events.remove(EventName.pcmDisable)

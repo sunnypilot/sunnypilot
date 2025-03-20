@@ -132,7 +132,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
     {"MadsMainCruiseAllowed", PERSISTENT | BACKUP},
-    {"MadsPauseLateralOnBrake", PERSISTENT | BACKUP},
+    {"MadsSteeringMode", PERSISTENT | BACKUP},
     {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
 
     // Model Manager params
@@ -144,6 +144,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     // sunnylink params
     {"EnableSunnylinkUploader", PERSISTENT | BACKUP},
     {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
+    {"SunnylinkCache_Roles", PERSISTENT},
+    {"SunnylinkCache_Users", PERSISTENT},
     {"SunnylinkDongleId", PERSISTENT},
     {"SunnylinkdPid", PERSISTENT},
     {"SunnylinkEnabled", PERSISTENT},
