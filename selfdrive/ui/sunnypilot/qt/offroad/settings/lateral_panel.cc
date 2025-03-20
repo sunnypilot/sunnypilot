@@ -8,6 +8,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral_panel.h"
 
 #include "common/util.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
 LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
@@ -41,6 +42,11 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
   list->addItem(madsSettingsButton);
+
+  list->addItem(new NeuralNetworkLateralControl());
+
+  auto latControlTorqueCustomLatAccel = new ParamControl("LateralTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
+  list->addItem(latControlTorqueCustomLatAccel);
 
   toggleOffroadOnly = {
     madsToggle,
