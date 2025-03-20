@@ -141,16 +141,19 @@ class TinyNeuralNetwork:
 
     def train(self, x: Tensor | np.ndarray, y: Tensor | np.ndarray,
               iterations: int = 1, batch_size: int | None = None,
-              validation_data: tuple[Tensor | np.ndarray, Tensor | np.ndarray] | None = None) -> float:
+              validation_data: tuple[Tensor | np.ndarray, Tensor | np.ndarray] | None = None,
+              epochs: int = 1, shuffle: bool = True) -> float:
         """
-        Train the network for a given number of iterations.
+        Train the network for a given number of iterations or epochs.
 
         Args:
             x: Input data (Tensor or numpy array)
             y: Target data (Tensor or numpy array)
-            iterations: Number of training iterations
+            iterations: Number of training iterations per epoch
             batch_size: Batch size for mini-batch training (None for full batch)
             validation_data: Optional tuple of (val_x, val_y) for validation
+            epochs: Number of full passes through the dataset
+            shuffle: Whether to shuffle the data between epochs
 
         Returns:
             Average loss over the training iterations
@@ -161,34 +164,53 @@ class TinyNeuralNetwork:
         if not isinstance(y, Tensor):
             y = Tensor(y)
         avg_loss = 0.0
-
+        total_iterations = 0
         self.optimizer.params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
-
-        # Save the prev. training status
         previous_training_state = Tensor.training
-
-        # Allow tinygrad training
         Tensor.training = True
 
         try:
-            # Train for the specified number of iterations
-            for _i in range(iterations):
-                # Reset JIT compilation so new parameters are used
-                self._forward_compiled = False
-                self._backward_compiled = False
+            # Train for the specified number of epochs
+            for epoch in range(epochs):
+                epoch_loss = 0.0
+                epoch_iterations = 0
+
+                indices = np.arange(x.shape[0])
+                if shuffle:
+                    np.random.shuffle(indices)
+
+                # If batch_size is None or larger than dataset, use full batch
                 if batch_size is None or batch_size >= x.shape[0]:
-                    # Full batch training
-                    loss, _ = self.backward_step(x, y)
-                    self._ensure_all_gradients()
-                    self.optimizer.step()
-                    self.optimizer.zero_grad()
-                    scalar_loss = float(loss.numpy())
+                    # Full batch training for specified iterations
+                    for _i in range(iterations):
+                        # Reset JIT compilation so new parameters are used
+                        self._forward_compiled = False
+                        self._backward_compiled = False
+                        loss, _ = self.backward_step(x, y)
+                        self._ensure_all_gradients()
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+                        scalar_loss = float(loss.numpy())
+                        epoch_loss += scalar_loss
+                        epoch_iterations += 1
+                        self.training_loss_history.append(scalar_loss)
+                        self.training_iterations += 1
+                        total_iterations += 1
                 else:
-                    # Mini-batch training
-                    indices = np.random.permutation(x.shape[0])
-                    scalar_loss = 0.0
-                    for j in range(0, x.shape[0], batch_size):
-                        batch_indices = indices[j:j + batch_size]
+                    # Mini-batch training - process all batches in the dataset
+                    # for one epoch, or for specified iterations, whichever is more
+                    num_batches = max(iterations, int(np.ceil(x.shape[0] / batch_size)))
+
+                    for i in range(num_batches):
+                        # Get batch indices with wrapping for multiple iterations
+                        start_idx = (i * batch_size) % x.shape[0]
+                        # Get sequential indices from our shuffled set
+                        batch_indices = indices[start_idx:start_idx + batch_size]
+                        if len(batch_indices) < batch_size and start_idx + batch_size > x.shape[0]:
+                            # Wrap around to the beginning if needed
+                            remaining = batch_size - len(batch_indices)
+                            batch_indices = np.concatenate([batch_indices, indices[:remaining]])
+
                         batch_x = x[batch_indices]
                         batch_y = y[batch_indices]
 
@@ -197,33 +219,46 @@ class TinyNeuralNetwork:
                         self._backward_compiled = False
 
                         loss, _ = self.backward_step(batch_x, batch_y)
-
-                        # Ensure all parameters have gradients
                         self._ensure_all_gradients()
                         self.optimizer.step()
                         self.optimizer.zero_grad()
-                        scalar_loss += float(loss.numpy()) * len(batch_indices) / x.shape[0]
+                        scalar_loss = float(loss.numpy())
+                        epoch_loss += scalar_loss
+                        epoch_iterations += 1
+                        self.training_loss_history.append(scalar_loss)
+                        self.training_iterations += 1
+                        total_iterations += 1
 
-                avg_loss += scalar_loss / iterations
-                self.training_loss_history.append(scalar_loss)
-                self.training_iterations += 1
+                        # Stop if we've exceeded the requested iterations
+                        if total_iterations >= iterations * epochs:
+                            break
 
-            # Run validation if provided
-            if validation_data is not None:
-                val_x, val_y = validation_data
-                if not isinstance(val_x, Tensor):
-                    val_x = Tensor(val_x)
-                if not isinstance(val_y, Tensor):
-                    val_y = Tensor(val_y)
+                # Calculate average loss for this epoch
+                avg_epoch_loss = epoch_loss / max(1, epoch_iterations)
+                print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_epoch_loss:.6f}")
 
-                with Tensor.no_grad():
-                    val_out = self.forward(val_x)
-                    val_loss = ((val_out - val_y) ** 2).mean().numpy()
-                    self.validation_loss_history.append(float(val_loss))
+                # Run validation after each epoch if provided
+                if validation_data is not None:
+                    val_x, val_y = validation_data
+                    if not isinstance(val_x, Tensor):
+                        val_x = Tensor(val_x)
+                    if not isinstance(val_y, Tensor):
+                        val_y = Tensor(val_y)
 
-                    # Save best model if validation loss improves
-                    if val_loss < self.best_loss:
-                        self.best_loss = val_loss
+                    with Tensor.no_grad():
+                        val_out = self.forward(val_x)
+                        val_loss = ((val_out - val_y) ** 2).mean().numpy()
+                        self.validation_loss_history.append(float(val_loss))
+                        print(f"Validation Loss: {float(val_loss):.6f}")
+
+                        # Save model if validation loss improves
+                        if val_loss < self.best_loss:
+                            self.best_loss = val_loss
+                            print(f"Validation loss improved to {val_loss:.6f}")
+
+            # Calculate overall loss
+            avg_loss = sum(
+                self.training_loss_history[-total_iterations:]) / total_iterations if total_iterations > 0 else 0.0
 
         finally:
             # Restore the previous training state

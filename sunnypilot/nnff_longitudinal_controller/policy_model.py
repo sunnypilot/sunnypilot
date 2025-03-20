@@ -188,9 +188,19 @@ class LongitudinalLiveTuner:
         print("Forced reset of longitudinal live tune parameters")
         self.params.put("LongitudinalLiveTuneReset", "")
         return
+
       params_bytes = self.params.get("LongitudinalLiveTuneParams")
       if params_bytes is not None:
-        stored_params = json.loads(params_bytes)
+          try:
+              # Try to load as pickle first
+              stored_params = pickle.loads(params_bytes)
+              print("Loaded parameters from pickle format")
+          except Exception as e:
+              # Fall back to JSON if pickle fails
+              print(f"Pickle loading failed: {e}, trying JSON")
+              stored_params = json.loads(params_bytes)
+              print("Loaded parameters from JSON format")
+
         # Check if stored params are too old
         current_time = int(time.time())
         if current_time - stored_params.get('timestamp', 0.0) < self.MAX_AGE_DAYS * 24 * 3600:
@@ -231,7 +241,7 @@ class LongitudinalLiveTuner:
   def _save_params(self):
     """Save tuning parameters to persistent storage."""
     try:
-        # Convert braking events to list for JSON serialization (limit to most recent 50)
+        # Convert braking events to list for serialization (limit to most recent 50)
         braking_profiles = []
         try:
             braking_profiles = list(self.braking_events)[-50:] if self.braking_events else []
@@ -279,7 +289,17 @@ class LongitudinalLiveTuner:
             'safety_metrics': safety_metrics,
             **nn_weights
         }
-        self.params.put("LongitudinalLiveTuneParams", json.dumps(params_dict))
+
+        try:
+            pickled_data = pickle.dumps(params_dict)
+            self.params.put("LongitudinalLiveTuneParams", pickled_data)
+            print("Parameters saved to .pkl")
+        except Exception as pickle_err:
+            # Fall back to JSON if pickle fails
+            print(f"Pickle serialization failed: {pickle_err}, falling back to JSON")
+            self.params.put("LongitudinalLiveTuneParams", json.dumps(params_dict))
+            print("Parameters saved to JSON")
+
     except Exception as e:
         print(f"Error saving longitudinal tuning params: {e}")
 
