@@ -201,40 +201,40 @@ class LongitudinalLiveTuner:
               stored_params = json.loads(params_bytes)
               print("Loaded parameters from JSON format")
 
-        # Check if stored params are too old
-        current_time = int(time.time())
-        if current_time - stored_params.get('timestamp', 0.0) < self.MAX_AGE_DAYS * 24 * 3600:
-          self.vego_stopping = stored_params.get('vego_stopping', self.vego_stopping_default)
-          self.vego_starting = stored_params.get('vego_starting', self.vego_starting_default)
-          self.stopping_decel_rate = stored_params.get('stopping_decel_rate', self.stopping_decel_rate_default)
-          self.kp_gain_factor = stored_params.get('kp_gain_factor', self.kp_gain_factor)
-          self.ki_gain_factor = stored_params.get('ki_gain_factor', self.ki_gain_factor)
+          # Check if stored params are too old
+          current_time = int(time.time())
+          if current_time - stored_params.get('timestamp', 0.0) < self.MAX_AGE_DAYS * 24 * 3600:
+              self.vego_stopping = stored_params.get('vego_stopping', self.vego_stopping_default)
+              self.vego_starting = stored_params.get('vego_starting', self.vego_starting_default)
+              self.stopping_decel_rate = stored_params.get('stopping_decel_rate', self.stopping_decel_rate_default)
+              self.kp_gain_factor = stored_params.get('kp_gain_factor', self.kp_gain_factor)
+              self.ki_gain_factor = stored_params.get('ki_gain_factor', self.ki_gain_factor)
 
-          # Load neural network weights
-          if all(k in stored_params for k in ['nn_w1', 'nn_b1', 'nn_w2', 'nn_b2', 'nn_w3', 'nn_b3']):
-            self.nn.W1 = Tensor(stored_params['nn_w1'])
-            self.nn.b1 = Tensor(stored_params['nn_b1'])
-            self.nn.W2 = Tensor(stored_params['nn_w2'])
-            self.nn.b2 = Tensor(stored_params['nn_b2'])
-            self.nn.W3 = Tensor(stored_params['nn_w3'])
-            self.nn.b3 = Tensor(stored_params['nn_b3'])
+              # Load neural network weights
+              if all(k in stored_params for k in ['nn_w1', 'nn_b1', 'nn_w2', 'nn_b2', 'nn_w3', 'nn_b3']):
+                  self.nn.W1 = Tensor(stored_params['nn_w1'])
+                  self.nn.b1 = Tensor(stored_params['nn_b1'])
+                  self.nn.W2 = Tensor(stored_params['nn_w2'])
+                  self.nn.b2 = Tensor(stored_params['nn_b2'])
+                  self.nn.W3 = Tensor(stored_params['nn_w3'])
+                  self.nn.b3 = Tensor(stored_params['nn_b3'])
 
-          # If we have learned braking profiles, load them too
-          if 'braking_profiles' in stored_params:
-            self.braking_events = deque(stored_params['braking_profiles'], maxlen=self.MEMORY_SIZE)
+              # If we have learned braking profiles, load them too
+              if 'braking_profiles' in stored_params:
+                  self.braking_events = deque(stored_params['braking_profiles'], maxlen=self.MEMORY_SIZE)
 
-          # Training metrics
-          if 'training_progress' in stored_params:
-            self.training_progress = stored_params.get('training_progress', 0.0)
-            self.training_step_count = stored_params.get('training_step_count', 0)
+              # Training metrics
+              if 'training_progress' in stored_params:
+                  self.training_progress = stored_params.get('training_progress', 0.0)
+                  self.training_step_count = stored_params.get('training_step_count', 0)
 
-          # Safety metrics
-          if 'safety_metrics' in stored_params:
-            safety = stored_params['safety_metrics']
-            self.unsafe_stops_count = safety.get('unsafe_stops', 0)
-            self.total_stops_count = safety.get('total_stops', 0)
+              # Safety metrics
+              if 'safety_metrics' in stored_params:
+                  safety = stored_params['safety_metrics']
+                  self.unsafe_stops_count = safety.get('unsafe_stops', 0)
+                  self.total_stops_count = safety.get('total_stops', 0)
 
-          self._validate_params()
+              self._validate_params()
     except Exception as e:
       print(f"Error loading longitudinal tuning params: {e}")
 
