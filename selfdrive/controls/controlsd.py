@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import math
 from typing import SupportsFloat
+import time
+import threading
 
 from cereal import car, log, custom
 import cereal.messaging as messaging
@@ -227,13 +229,25 @@ class Controls:
     cc_sp_send.carControlSP = CC_SP
     self.pm.send('carControlSP', cc_sp_send)
 
+  def params_thread(self, evt):
+    while not evt.is_set():
+      self.LaC.extension.read_params()
+      time.sleep(0.1)
+
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
-    while True:
-      self.update()
-      CC, CC_SP, lac_log = self.state_control()
-      self.publish(CC, CC_SP, lac_log)
-      rk.monitor_time()
+    e = threading.Event()
+    t = threading.Thread(target=self.params_thread, args=(e, ))
+    try:
+      t.start()
+      while True:
+        self.update()
+        CC, CC_SP, lac_log = self.state_control()
+        self.publish(CC, CC_SP, lac_log)
+        rk.monitor_time()
+    finally:
+      e.set()
+      t.join()
 
 
 def main():
