@@ -60,6 +60,8 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
 #if SUNNYPILOT
   neuralNetworkLateralControlToggle = neuralNetworkLateralControl.toggle;
   addItem(neuralNetworkLateralControlToggle);
+  auto latControlTorqueCustomLatAccel = new ParamControl("LateralTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
+  addItem(latControlTorqueCustomLatAccel);
 #endif
 
   enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");

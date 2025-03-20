@@ -10,11 +10,11 @@ from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
 
 
-class LatControlTorqueCustomLateralAccel(LatControlTorqueExtBase):
+class LatControlTorqueEnhancedLateralAccel(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
     super().__init__(lac_torque, CP, CP_SP)
     self.params = Params()  # TODO-SP: unused after moving the param to cereal
-    self.use_lateral_jerk: bool = self.params.get_bool("LateralTorqueControlLateralJerk")  # TODO-SP: move this to cereal
+    self.use_lateral_jerk: bool = self.params.get_bool("LateralTorqueControlEnhancedLateralAccel")  # TODO-SP: move this to cereal
 
   def update_custom_lateral_acceleration(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
     if not self.use_lateral_jerk:
