@@ -523,7 +523,7 @@ class LongitudinalLiveTuner:
     # Split into training and validation sets
     if len(features) < 5:
         print("Not enough valid training examples")
-      return
+        return
 
     train_size = int(len(features) * 0.8)
 
