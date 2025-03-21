@@ -23,9 +23,9 @@ void NeuralNetworkLateralControl::updateToggle() {
       tr(
         "Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: ")
       + "<font color='white'><b>#tuning-nnlc</b></font>";
-  QString nnff_status_init = "<font color='yellow'>⚠️ " + tr("Start the car to check car compatibility") + "</font>";
-  QString nnff_not_loaded = "<font color='yellow'>⚠️ " + tr("NNLC Not Loaded") + "</font>";
-  QString nnff_loaded = "<font color=#00ff00>✅ " + tr("NNLC Loaded") + "</font>";
+  QString nnff_status_init = "<font color='yellow'>" + tr("Start the car to check car compatibility") + "</font>";
+  QString nnff_not_loaded = "<font color='yellow'>" + tr("NNLC Not Loaded") + "</font>";
+  QString nnff_loaded = "<font color=#00ff00>" + tr("NNLC Loaded") + "</font>";
 
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
@@ -70,9 +70,3 @@ void NeuralNetworkLateralControl::updateToggle() {
     setDescription(isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
   }
 }
-
-
-// ParamControlSP *NeuralNetworkLateralControl::configure_settings_interaction(ListWidgetSP *list) {
-//     list->addItem(neuralNetworkLateralControlToggle);
-//     return neuralNetworkLateralControlToggle;
-// }

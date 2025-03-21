@@ -12,7 +12,6 @@
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class NeuralNetworkLateralControl : public ParamControl {
   Q_OBJECT
@@ -23,8 +22,6 @@ public:
 
 public slots:
   void updateToggle();
-
-  // ParamControlSP *configure_settings_interaction(ListWidgetSP *list);
 
 private:
   Params params;
