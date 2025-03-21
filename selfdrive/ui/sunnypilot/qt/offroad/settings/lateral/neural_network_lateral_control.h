@@ -28,19 +28,37 @@ private:
 
   void refresh();
 
-  QString nnffDescriptionBuilder(const QString &custom_description) {
-    QString description = "<b>" +
-                          custom_description +
-                          "</b><br><br>" +
-                          nnff_description;
-    return description;
+  // Status messages
+  const QString STATUS_NOT_AVAILABLE = tr("NNLC is currently not available on this platform.");
+  const QString STATUS_CHECK_COMPATIBILITY = tr("Start the car to check car compatibility");
+  const QString STATUS_NOT_LOADED = tr("NNLC Not Loaded");
+  const QString STATUS_LOADED = tr("NNLC Loaded");
+  const QString STATUS_MATCH = tr("Match");
+  const QString STATUS_MATCH_EXACT = tr("Exact");
+  const QString STATUS_MATCH_FUZZY = tr("Fuzzy");
+
+  // Explanations
+  const QString EXPLANATION_MATCH = tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too.");
+  const QString EXPLANATION_FEATURE = tr("Formerly known as <b>\"NNFF\"</b>, this replaces the lateral <b>\"torque\"</b> controller, "
+                                            "with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy.");
+
+  // Support information
+  const QString SUPPORT_CHANNEL = "<font color='white'><b>#tuning-nnlc</b></font>";
+  const QString SUPPORT_REACH_OUT = tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server");
+  const QString SUPPORT_FEEDBACK = tr("with feedback, or to provide log data for your car if your car is currently unsupported:");
+  const QString SUPPORT_ISSUES = tr("if there are any issues:");
+  const QString SUPPORT_DONATE_LOGS = tr("and donate logs to get NNLC loaded for your car:");
+
+  // Description builders
+  QString buildSupportText(const QString& context) const {
+    return SUPPORT_REACH_OUT + " " + context + " " + SUPPORT_CHANNEL;
   }
 
-  const QString nnff_description = QString("%1<br><br>"
-                                           "%2")
-                                   .arg(tr("Formerly known as <b>\"NNFF\"</b>, this replaces the lateral <b>\"torque\"</b> controller, "
-                                           "with one using a neural network trained on each car's (actually, each separate EPS firmware) driving data for increased controls accuracy."))
-                                   .arg(tr("Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server with feedback, "
-                                           "or to provide log data for your car if your car is currently unsupported: ") +
-                                           "<font color='white'><b>#tuning-nnlc</b></font>");
+  QString nnffDescriptionBuilder(const QString &custom_description) const {
+    return "<b>" + custom_description + "</b><br><br>" + getBaseDescription();
+  }
+
+  QString getBaseDescription() const {
+    return EXPLANATION_FEATURE + "<br><br>" + buildSupportText(SUPPORT_FEEDBACK);
+  }
 };

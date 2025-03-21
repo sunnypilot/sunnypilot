@@ -18,13 +18,9 @@ void NeuralNetworkLateralControl::showEvent(QShowEvent *event) {
 }
 
 void NeuralNetworkLateralControl::updateToggle() {
-  QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
-  QString nnff_fuzzy_desc =
-    tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues:")
-    + " <font color='white'><b>#tuning-nnlc</b></font>";
-  QString nnff_status_init = "<font color='yellow'>" + tr("Start the car to check car compatibility") + "</font>";
-  QString nnff_not_loaded = "<font color='yellow'>" + tr("NNLC Not Loaded") + "</font>";
-  QString nnff_loaded = "<font color=#00ff00>" + tr("NNLC Loaded") + "</font>";
+  QString statusInitText = "<font color='yellow'>" + STATUS_CHECK_COMPATIBILITY + "</font>";
+  QString notLoadedText = "<font color='yellow'>" + STATUS_NOT_LOADED + "</font>";
+  QString loadedText = "<font color=#00ff00>" + STATUS_LOADED + "</font>";
 
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
@@ -36,34 +32,32 @@ void NeuralNetworkLateralControl::updateToggle() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
     cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
-    /*** NNLC ***/
-    {
-      if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
-        params.remove("NeuralNetworkLateralControl");
+    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+      params.remove("NeuralNetworkLateralControl");
+      setDescription(nnffDescriptionBuilder(STATUS_NOT_AVAILABLE));
+      setEnabled(false);
+    } else {
+      QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
+      QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ?
+                         STATUS_MATCH_FUZZY : STATUS_MATCH_EXACT;
 
-        setDescription(nnffDescriptionBuilder(nnff_available_desc));
-        setEnabled(false);
-      } else {
-        QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
-        QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ? tr("Fuzzy") : tr("Exact");
-
+      if (nn_model_name.isEmpty()) {
+        setDescription(nnffDescriptionBuilder(statusInitText));
+      } else if (nn_model_name == "MOCK") {
         setDescription(nnffDescriptionBuilder(
-          (nn_model_name == "")
-            ? nnff_status_init
-            : (nn_model_name == "MOCK")
-                ? (nnff_not_loaded + "<br>" + tr(
-                     "Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ")
-                   + "<font color='white'><b>#tuning-nnlc</b></font>")
-                : (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + nn_model_name + "<br><br>" +
-                   nnff_fuzzy_desc)
+          notLoadedText + "<br>" + buildSupportText(SUPPORT_DONATE_LOGS)
         ));
+      } else {
+        QString statusText = loadedText + " | " + STATUS_MATCH + " = " + nn_fuzzy + " | " + nn_model_name;
+        QString explanationText = EXPLANATION_MATCH + " " + buildSupportText(SUPPORT_ISSUES);
+        setDescription(nnffDescriptionBuilder(statusText + "<br><br>" + explanationText));
       }
     }
   } else {
-    setDescription(nnffDescriptionBuilder(nnff_status_init));
+    setDescription(nnffDescriptionBuilder(statusInitText));
   }
 
-  if (getDescription() != nnff_description) {
+  if (getDescription() != getBaseDescription()) {
     showDescription();
   }
 }
