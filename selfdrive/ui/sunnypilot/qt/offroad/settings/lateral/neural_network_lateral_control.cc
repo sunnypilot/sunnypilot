@@ -43,30 +43,24 @@ void NeuralNetworkLateralControl::updateToggle() {
 
         setDescription(nnffDescriptionBuilder(nnff_available_desc));
         setEnabled(false);
-      } else if (isToggled()) {
-        if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
-          QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
-          QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ? tr("Fuzzy") : tr("Exact");
-
-          setDescription(nnffDescriptionBuilder(
-            (nn_model_name == "")
-              ? nnff_status_init
-              : (nn_model_name == "MOCK")
-                  ? (nnff_not_loaded + "<br>" + tr(
-                       "Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ")
-                     + "<font color='white'><b>#tuning-nnlc</b></font>")
-                  : (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + nn_model_name + "<br><br>" +
-                     nnff_fuzzy_desc)
-          ));
-        } else {
-          setDescription(nnffDescriptionBuilder(nnff_status_init));
-        }
       } else {
-        setDescription(nnff_description);
+        QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
+        QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ? tr("Fuzzy") : tr("Exact");
+
+        setDescription(nnffDescriptionBuilder(
+          (nn_model_name == "")
+            ? nnff_status_init
+            : (nn_model_name == "MOCK")
+                ? (nnff_not_loaded + "<br>" + tr(
+                     "Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ")
+                   + "<font color='white'><b>#tuning-nnlc</b></font>")
+                : (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + nn_model_name + "<br><br>" +
+                   nnff_fuzzy_desc)
+        ));
       }
     }
   } else {
-    setDescription(isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
+    setDescription(nnffDescriptionBuilder(nnff_status_init));
   }
 
   if (getDescription() != nnff_description) {
