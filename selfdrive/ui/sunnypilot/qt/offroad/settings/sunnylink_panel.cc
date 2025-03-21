@@ -7,8 +7,10 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink_panel.h"
 
+#include "common/watchdog.h"
 #include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include <QtConcurrent>
 
 SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
@@ -88,27 +90,21 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   backupSettings = new PushButtonSP(tr("Backup Settings"), 730, this);
   backupSettings->setObjectName("backup_btn");
   connect(backupSettings, &QPushButton::clicked, [=]() {
-    is_backup = true;
     if (ConfirmationDialog::confirm(tr("Are you sure you want to backup sunnypilot settings?"), tr("Back Up"), this)) {
       params.putBool("BackupManager_CreateBackup", true);
       backupSettings->setEnabled(false);
     }
-    is_backup = false;
   });
-  // connect(backup_settings, &BackupSettings::updateLabels, this, &SunnylinkPanel::updateLabels);
 
   // Restore Settings
   restoreSettings = new PushButtonSP(tr("Restore Settings"), 730, this);
   restoreSettings->setObjectName("restore_btn");
   connect(restoreSettings, &QPushButton::clicked, [=]() {
-    is_restore = true;
     if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
       params.put("BackupManager_RestoreVersion", "latest");
       restoreSettings->setEnabled(false);
     }
-    is_restore = false;
   });
-  // connect(backup_settings, &BackupSettings::updateLabels, this, &SunnylinkPanel::updateLabels);
   // Settings Restore and Settings Backup in the same horizontal space
   auto settings_layout = new QHBoxLayout;
   settings_layout->setContentsMargins(0, 0, 0, 30);
@@ -158,15 +154,28 @@ void SunnylinkPanel::handleBackupProgress() {
 
   switch (restore_status) {
     case cereal::BackupManagerSP::Status::IN_PROGRESS:
+      is_restoring = true;
       restoreSettings->setText(QString(tr("Restore in progress %1%").arg(restore_progress)));
-      break;
+    break;
     case cereal::BackupManagerSP::Status::FAILED:
       restoreSettings->setText(tr("Restore Failed"));
-      break;
+      ConfirmationDialog::alert(tr("Unable to restore the settings, try again later."), this);
+      is_restoring = false;
+    break;
     case cereal::BackupManagerSP::Status::COMPLETED:
-    default:
-      restoreSettings->setText(tr("Restore Settings"));
       break;
+    default:
+      if (is_restoring) {
+        is_restoring = false;
+        restoreSettings->setText(tr("Restore Completed"));
+        if (ConfirmationDialog::alert(tr("Settings restored. Confirm to restart the interface."), this)) {
+          qApp->exit(18);
+          watchdog_kick(0);
+        }
+      } else {
+        restoreSettings->setText(tr("Restore Settings"));
+      }
+    break;
   }
   restoreSettings->setEnabled(!is_onroad && restore_status != cereal::BackupManagerSP::Status::IN_PROGRESS);
 }

@@ -145,7 +145,7 @@ class BackupManagerSP:
       self._update_progress(0.0, OperationType.RESTORE)
 
       # Get backup data from API for the specified version
-      endpoint = f"backup/{self.device_id}" + f"/{version or ''}"
+      endpoint = f"backup/{self.device_id}" + f"/{version or ''}" + "?api-version=1"
       backup_data = self.api.api_get(endpoint, access_token=self.api.get_token())
       if not backup_data:
         raise Exception(f"No backup found for device {self.device_id}")
@@ -221,13 +221,21 @@ class BackupManagerSP:
   async def main_thread(self) -> None:
     """Main thread for backup management."""
     rk = Ratekeeper(1, print_delay_threshold=None)
+    reset_progress = False
 
     while True:
       try:
+        if reset_progress:
+          self.progress = 100.0
+          self.operation = None
+          self.restore_status = custom.BackupManagerSP.Status.idle
+          self.backup_status = custom.BackupManagerSP.Status.idle
+
         # Check for backup command
         if self.params.get_bool("BackupManager_CreateBackup"):
           try:
             await self.create_backup()
+            reset_progress = True
           finally:
             self.params.remove("BackupManager_CreateBackup")
 
@@ -237,6 +245,7 @@ class BackupManagerSP:
           try:
             version = int(restore_version) if restore_version.isdigit() else None
             await self.restore_backup(version)
+            reset_progress = True
           finally:
             self.params.remove("BackupManager_RestoreVersion")
 

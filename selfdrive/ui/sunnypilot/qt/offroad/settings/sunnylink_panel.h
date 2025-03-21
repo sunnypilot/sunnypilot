@@ -43,9 +43,8 @@ private:
 
   ParamControl *sunnylinkEnabledBtn;
   bool is_onroad = false;
-  bool is_backup = false;
-  bool is_restore = false;
   bool is_sunnylink_enabled = false;
+  bool is_restoring = false;
   ParamWatcher *param_watcher;
   QString sunnylinkBtnDescription;
   PushButtonSP *restoreSettings;
