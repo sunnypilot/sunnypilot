@@ -20,9 +20,8 @@ void NeuralNetworkLateralControl::showEvent(QShowEvent *event) {
 void NeuralNetworkLateralControl::updateToggle() {
   QString nnff_available_desc = tr("NNLC is currently not available on this platform.");
   QString nnff_fuzzy_desc =
-      tr(
-        "Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues: ")
-      + "<font color='white'><b>#tuning-nnlc</b></font>";
+    tr("Match: \"Exact\" is ideal, but \"Fuzzy\" is fine too. Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server if there are any issues:")
+    + " <font color='white'><b>#tuning-nnlc</b></font>";
   QString nnff_status_init = "<font color='yellow'>" + tr("Start the car to check car compatibility") + "</font>";
   QString nnff_not_loaded = "<font color='yellow'>" + tr("NNLC Not Loaded") + "</font>";
   QString nnff_loaded = "<font color=#00ff00>" + tr("NNLC Loaded") + "</font>";
@@ -68,5 +67,9 @@ void NeuralNetworkLateralControl::updateToggle() {
     }
   } else {
     setDescription(isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
+  }
+
+  if (getDescription() != nnff_description) {
+    showDescription();
   }
 }

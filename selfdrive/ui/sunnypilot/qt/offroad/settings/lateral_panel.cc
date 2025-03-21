@@ -52,8 +52,9 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     } else {
       nnlcToggle->hideDescription();
     }
-    state ? nnlcToggle->showDescription() : nnlcToggle->hideDescription();
     latControlTorqueCustomLatAccel->setEnabled(!state);
+
+    nnlcToggle->updateToggle();
   });
 
   latControlTorqueCustomLatAccel = new ParamControl("LatTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
