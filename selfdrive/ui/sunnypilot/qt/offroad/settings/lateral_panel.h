@@ -29,7 +29,6 @@ public slots:
   void updateToggles(bool _offroad);
 
 private:
-  Params params;
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   ScrollViewSP *sunnypilotScroller = nullptr;
@@ -40,5 +39,4 @@ private:
   PushButtonSP *madsSettingsButton;
   MadsSettings *madsWidget = nullptr;
   NeuralNetworkLateralControl *nnlcToggle = nullptr;
-  ParamControl *latControlTorqueCustomLatAccel = nullptr;
 };
