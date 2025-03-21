@@ -32,8 +32,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   vlayout->setContentsMargins(50, 20, 50, 20);
 
   auto *list = new ListWidget(this, false);
-  QString sunnylinkEnabledBtnDesc = tr(
-    "This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
+  QString sunnylinkEnabledBtnDesc = tr("This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that.");
   sunnylinkEnabledBtn = new ParamControl(
     "SunnylinkEnabled",
     tr("Enable sunnylink"),
@@ -58,10 +57,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   list->addItem(pairSponsorBtn);
   connect(pairSponsorBtn, &ButtonControlSP::clicked, [=]() {
     if (getSunnylinkDongleId().value_or(tr("N/A")) == "N/A") {
-      ConfirmationDialog::alert(
-        tr(
-          "sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again."),
-        this);
+      ConfirmationDialog::alert(tr("sunnylink Dongle ID not found. This may be due to weak internet connection or sunnylink registration issue. Please reboot and try again."), this);
     } else {
       pair_popup->exec();
     }
