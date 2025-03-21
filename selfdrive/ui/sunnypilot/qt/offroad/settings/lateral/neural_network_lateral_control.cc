@@ -11,6 +11,14 @@ NeuralNetworkLateralControl::NeuralNetworkLateralControl() :
   ParamControl("NeuralNetworkLateralControl", tr("Neural Network Lateral Control (NNLC)"),  "", "") {
   setConfirmation(true, false);
 
+  QObject::connect(this, &ParamControl::toggleFlipped, [=](bool state) {
+    if (state) {
+      showDescription();
+    } else {
+      hideDescription();
+    }
+  });
+
   updateToggle();
 }
 
@@ -27,7 +35,6 @@ void NeuralNetworkLateralControl::updateToggle() {
   QString nnff_status_init = "<font color='yellow'>⚠️ " + tr("Start the car to check car compatibility") + "</font>";
   QString nnff_not_loaded = "<font color='yellow'>⚠️ " + tr("NNLC Not Loaded") + "</font>";
   QString nnff_loaded = "<font color=#00ff00>✅ " + tr("NNLC Loaded") + "</font>";
-  auto _car_model = QString::fromStdString(params.get("NNFFCarModel"));
 
   auto cp_bytes = params.get("CarParamsPersistent");
   auto cp_sp_bytes = params.get("CarParamsSPPersistent");
@@ -39,34 +46,37 @@ void NeuralNetworkLateralControl::updateToggle() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
     cereal::CarParamsSP::Reader CP_SP = cmsg_sp.getRoot<cereal::CarParamsSP>();
 
-    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
-      params.remove("EnforceTorqueLateral");
+    /*** NNLC ***/
+    {
+      if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+        params.remove("NeuralNetworkLateralControl");
 
-      setDescription(nnffDescriptionBuilder(nnff_available_desc));
-      setEnabled(false);
-      params.remove("NNFF");
-    } else if (isToggled()) {
-      if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
-        QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
-        QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ? tr("Fuzzy") : tr("Exact");
+        setDescription(nnffDescriptionBuilder(nnff_available_desc));
+        setEnabled(false);
+      } else if (isToggled()) {
+        if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
+          QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
+          QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ? tr("Fuzzy") : tr("Exact");
 
-        setDescription(nnffDescriptionBuilder(
-          (nn_model_name == "")
-            ? nnff_status_init
-            : (nn_model_name == "mock")
-                ? (nnff_not_loaded + "<br>" + tr(
-                     "Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ")
-                   + "<font color='white'><b>#tuning-nnlc</b></font>")
-                : (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + _car_model + "<br><br>" +
-                   nnff_fuzzy_desc)));
+          setDescription(nnffDescriptionBuilder(
+            (nn_model_name == "")
+              ? nnff_status_init
+              : (nn_model_name == "MOCK")
+                  ? (nnff_not_loaded + "<br>" + tr(
+                       "Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server and donate logs to get NNLC loaded for your car: ")
+                     + "<font color='white'><b>#tuning-nnlc</b></font>")
+                  : (nnff_loaded + " | " + tr("Match") + " = " + nn_fuzzy + " | " + nn_model_name + "<br><br>" +
+                     nnff_fuzzy_desc)
+          ));
+        } else {
+          setDescription(nnffDescriptionBuilder(nnff_status_init));
+        }
       } else {
-        setDescription(nnffDescriptionBuilder(nnff_status_init));
+        setDescription(nnff_description);
       }
-    } else {
-      setDescription(nnff_description);
     }
   } else {
-    setDescription(nnff_description);
+    setDescription(isToggled() ? nnffDescriptionBuilder(nnff_status_init) : nnff_description);
   }
 }
 
