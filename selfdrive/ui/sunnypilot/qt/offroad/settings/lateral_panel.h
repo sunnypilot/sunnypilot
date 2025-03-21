@@ -37,4 +37,5 @@ private:
   ParamControl *madsToggle;
   PushButtonSP *madsSettingsButton;
   MadsSettings *madsWidget = nullptr;
+  ParamControl *latControlTorqueCustomLatAccel = nullptr;
 };

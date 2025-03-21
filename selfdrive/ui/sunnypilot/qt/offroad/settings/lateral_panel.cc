@@ -42,8 +42,11 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
+  latControlTorqueCustomLatAccel = new ParamControl("LatTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
+  list->addItem(latControlTorqueCustomLatAccel);
+
   toggleOffroadOnly = {
-    madsToggle,
+    madsToggle, latControlTorqueCustomLatAccel,
   };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
