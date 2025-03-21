@@ -68,7 +68,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   });
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, [=]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings? This cannot be undone."), tr("Reset"), this)) {
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings to default ? This cannot be undone."), tr("Reset"), this)) {
       int rm = std::system("sudo rm -rf /data/params/d/*");
       if (rm == 0) {
         Hardware::reboot();
