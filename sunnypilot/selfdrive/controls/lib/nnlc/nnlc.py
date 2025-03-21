@@ -35,7 +35,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
     # Only initialize NNTorqueModel if enabled
-    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.modelPath) if self.enabled else None
+    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.model.path) if self.enabled else None
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0

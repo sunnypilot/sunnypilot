@@ -39,8 +39,8 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
   if enabled:
     CarInterfaceBase.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
-  CP_SP.neuralNetworkLateralControl.modelPath = nnlc_model_path
-  CP_SP.neuralNetworkLateralControl.modelName = nnlc_model_name
+  CP_SP.neuralNetworkLateralControl.model.path = nnlc_model_path
+  CP_SP.neuralNetworkLateralControl.model.name = nnlc_model_name
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
