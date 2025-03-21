@@ -45,11 +45,29 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
 
-  auto latControlTorqueCustomLatAccel = new ParamControl("LatTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
+  QObject::connect(nnlcToggle, &ParamControl::toggleFlipped, [=](bool state) {
+    if (state) {
+      nnlcToggle->showDescription();
+      params.remove("LatTorqueControlEnhancedLateralAccel");
+    } else {
+      nnlcToggle->hideDescription();
+    }
+    state ? nnlcToggle->showDescription() : nnlcToggle->hideDescription();
+    latControlTorqueCustomLatAccel->setEnabled(!state);
+  });
+
+  latControlTorqueCustomLatAccel = new ParamControl("LatTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
   list->addItem(latControlTorqueCustomLatAccel);
 
+  QObject::connect(latControlTorqueCustomLatAccel, &ParamControl::toggleFlipped, [=](bool state) {
+    if (state) {
+      params.remove("NeuralNetworkLateralControl");
+    }
+    nnlcToggle->setEnabled(!state);
+  });
+
   toggleOffroadOnly = {
-    madsToggle, nnlcToggle,
+    madsToggle, nnlcToggle, latControlTorqueCustomLatAccel,
   };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 

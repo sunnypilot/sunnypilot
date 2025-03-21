@@ -10,15 +10,6 @@
 NeuralNetworkLateralControl::NeuralNetworkLateralControl() :
   ParamControl("NeuralNetworkLateralControl", tr("Neural Network Lateral Control (NNLC)"),  "", "") {
   setConfirmation(true, false);
-
-  QObject::connect(this, &ParamControl::toggleFlipped, [=](bool state) {
-    if (state) {
-      showDescription();
-    } else {
-      hideDescription();
-    }
-  });
-
   updateToggle();
 }
 

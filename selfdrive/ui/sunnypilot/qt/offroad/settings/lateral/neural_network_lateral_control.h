@@ -21,6 +21,9 @@ public:
   NeuralNetworkLateralControl();
   void showEvent(QShowEvent *event) override;
 
+public slots:
+  void updateToggle();
+
   // ParamControlSP *configure_settings_interaction(ListWidgetSP *list);
 
 private:
@@ -41,7 +44,4 @@ private:
     QString description = "<b>" + custom_description + "</b><br><br>" + nnff_description;
     return description;
   }
-
-private slots:
-  void updateToggle();
 };
