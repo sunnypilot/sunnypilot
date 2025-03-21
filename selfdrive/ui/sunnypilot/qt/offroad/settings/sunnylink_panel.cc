@@ -103,6 +103,7 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
     if (ConfirmationDialog::confirm(tr("Are you sure you want to restore the last backed up sunnypilot settings?"), tr("Restore"), this)) {
       params.put("BackupManager_RestoreVersion", "latest");
       restoreSettings->setEnabled(false);
+      is_restoring = true;
     }
   });
   // Settings Restore and Settings Backup in the same horizontal space
@@ -150,7 +151,7 @@ void SunnylinkPanel::handleBackupProgress() {
       backupSettings->setText(tr("Backup Settings"));
       break;
   }
-  backupSettings->setEnabled(!is_onroad && backup_status != cereal::BackupManagerSP::Status::IN_PROGRESS);
+  backupSettings->setEnabled(!is_onroad && !is_restoring && backup_status != cereal::BackupManagerSP::Status::IN_PROGRESS);
 
   switch (restore_status) {
     case cereal::BackupManagerSP::Status::IN_PROGRESS:
