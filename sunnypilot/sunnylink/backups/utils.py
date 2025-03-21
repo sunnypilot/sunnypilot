@@ -154,6 +154,7 @@ def camel_to_snake(name):
   name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
   return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
+
 def transform_dict(obj):
   """Recursively transform dictionary keys from camelCase to snake_case."""
   if isinstance(obj, dict):
@@ -161,6 +162,7 @@ def transform_dict(obj):
   elif isinstance(obj, list):
     return [transform_dict(item) for item in obj]
   return obj
+
 
 class SnakeCaseEncoder(json.JSONEncoder):
   def encode(self, obj):

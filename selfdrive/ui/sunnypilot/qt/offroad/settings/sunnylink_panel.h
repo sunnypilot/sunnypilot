@@ -24,7 +24,7 @@ public:
   void handleBackupProgress();
 
   void showEvent(QShowEvent *event) override;
-  void paramsRefresh(const QString&param_name, const QString&param_value);
+  void paramsRefresh(const QString &param_name, const QString &param_value);
 
 public slots:
   void updatePanel();
@@ -36,9 +36,9 @@ private:
   ScrollViewSP *sunnylinkScroller = nullptr;
   SunnylinkSponsorPopup *status_popup;
   SunnylinkSponsorPopup *pair_popup;
-  ButtonControlSP* sponsorBtn;
-  ButtonControlSP* pairSponsorBtn;
-  SunnylinkClient* sunnylink_client;
+  ButtonControlSP *sponsorBtn;
+  ButtonControlSP *pairSponsorBtn;
+  SunnylinkClient *sunnylink_client;
   cereal::BackupManagerSP::Reader backup_manager;
 
   ParamControl *sunnylinkEnabledBtn;
@@ -49,7 +49,7 @@ private:
   ParamWatcher *param_watcher;
   QString sunnylinkBtnDescription;
   PushButtonSP *restoreSettings;
-  PushButtonSP * backupSettings;
+  PushButtonSP *backupSettings;
 
   void stopSunnylink() const;
   void startSunnylink() const;
