@@ -129,7 +129,7 @@ class Car:
     # mads
     set_alternative_experience(self.CP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
-    set_hyundai_long_tune_flag(self.CP_SP)
+    set_hyundai_long_tune_flag(self.CP)
 
     # Dynamic Experimental Control
     self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")

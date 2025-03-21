@@ -10,9 +10,9 @@ class HyundaiLongTuneParams:
         return val in [b"1", b"2"]
 
 
-def set_hyundai_long_tune_flag(CP_SP: structs.CarParamsSP):
+def set_hyundai_long_tune_flag(CP: structs.CarParams):
     params = Params()
     if HyundaiLongTuneParams.param(params, "HyundaiLongTune"):
-        CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
+        CP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
     if params.get_bool("HyundaiSmootherBraking"):
-        CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
+        CP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
