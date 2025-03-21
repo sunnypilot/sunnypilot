@@ -142,40 +142,46 @@ void SunnylinkPanel::handleBackupProgress() {
   switch (backup_status) {
     case cereal::BackupManagerSP::Status::IN_PROGRESS:
       backupSettings->setText(QString(tr("Backup in progress %1%").arg(backup_progress)));
-      break;
+    break;
     case cereal::BackupManagerSP::Status::FAILED:
       backupSettings->setText(tr("Backup Failed"));
-      break;
+    break;
     case cereal::BackupManagerSP::Status::COMPLETED:
-    default:
-      backupSettings->setText(tr("Backup Settings"));
-      backupSettings->setEnabled(!is_onroad);
-      break;
+      default:
+        backupSettings->setText(tr("Backup Settings"));
+    backupSettings->setEnabled(!is_onroad);
+    break;
   }
 
   switch (restore_status) {
     case cereal::BackupManagerSP::Status::IN_PROGRESS:
       restore_request_pending = false;
+      restore_request_started = true;
       restoreSettings->setEnabled(false);
       restoreSettings->setText(QString(tr("Restore in progress %1%").arg(restore_progress)));
-    break;
+      break;
     case cereal::BackupManagerSP::Status::FAILED:
       restoreSettings->setText(tr("Restore Failed"));
       ConfirmationDialog::alert(tr("Unable to restore the settings, try again later."), this);
       restore_request_pending = false;
-    break;
+      restore_request_started = false;
+      break;
     case cereal::BackupManagerSP::Status::COMPLETED:
       restore_request_pending = false;
-      restoreSettings->setText(tr("Restore Completed"));
-      if (ConfirmationDialog::alert(tr("Settings restored. Confirm to restart the interface."), this)) {
-        qApp->exit(18);
-        watchdog_kick(0);
-      }
       break;
     default:
-      restoreSettings->setText(tr("Restore Settings"));
-      restoreSettings->setEnabled(!is_onroad && !restore_request_pending);
-    break;
+      if (!restore_request_pending && restore_request_started) {
+        restore_request_started = false;
+        restoreSettings->setText(tr("Restore Completed"));
+        if (ConfirmationDialog::alert(tr("Settings restored. Confirm to restart the interface."), this)) {
+          qApp->exit(18);
+          watchdog_kick(0);
+        }
+      } else {
+        restoreSettings->setText(tr("Restore Settings"));
+        restoreSettings->setEnabled(!is_onroad && !restore_request_pending);
+      }
+      break;
   }
 }
 
