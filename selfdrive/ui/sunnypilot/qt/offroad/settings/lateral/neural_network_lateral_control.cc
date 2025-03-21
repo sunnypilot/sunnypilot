@@ -47,7 +47,7 @@ void NeuralNetworkLateralControl::updateToggle() {
       params.remove("NNFF");
     } else if (isToggled()) {
       if (CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::TORQUE) {
-        QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModelName());
+        QString nn_model_name = QString::fromStdString(CP_SP.getNeuralNetworkLateralControl().getModel().getName());
         QString nn_fuzzy = CP_SP.getNeuralNetworkLateralControl().getFuzzyFingerprint() ? tr("Fuzzy") : tr("Exact");
 
         setDescription(nnffDescriptionBuilder(

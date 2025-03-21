@@ -13,23 +13,23 @@ from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base impo
 class LatControlTorqueEnhancedLateralAccel(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
     super().__init__(lac_torque, CP, CP_SP)
-    self.params = Params()  # TODO-SP: unused after moving the param to cereal
-    self.use_lateral_jerk: bool = self.params.get_bool("LateralTorqueControlEnhancedLateralAccel")  # TODO-SP: move this to cereal
+    self.params = Params()
+    self.enabled = self.params.get_bool("LatTorqueControlEnhancedLateralAccel")
 
   def update_custom_lateral_acceleration(self, CS, roll_compensation, gravity_adjusted_lateral_accel):
-    if not self.use_lateral_jerk:
+    if not self.enabled:
       return
 
     friction_input = self.update_friction_input(self._desired_lateral_accel, self._actual_lateral_accel)
 
     torque_from_setpoint = self.torque_from_lateral_accel(
       LatControlInputs(self._setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-      self.lateral_jerk_setpoint, self._lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False
+      self.lateral_jerk_setpoint, self._lateral_accel_deadzone, friction_compensation=self.enabled, gravity_adjusted=False
     )
 
     torque_from_measurement = self.torque_from_lateral_accel(
       LatControlInputs(self._measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
-      self.lateral_jerk_measurement, self._lateral_accel_deadzone, friction_compensation=self.use_lateral_jerk, gravity_adjusted=False
+      self.lateral_jerk_measurement, self._lateral_accel_deadzone, friction_compensation=self.enabled, gravity_adjusted=False
     )
 
     self._pid_log.error = float(torque_from_setpoint - torque_from_measurement)

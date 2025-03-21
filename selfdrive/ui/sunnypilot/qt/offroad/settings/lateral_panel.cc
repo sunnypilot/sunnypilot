@@ -45,7 +45,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   list->addItem(new NeuralNetworkLateralControl());
 
-  auto latControlTorqueCustomLatAccel = new ParamControl("LateralTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
+  auto latControlTorqueCustomLatAccel = new ParamControl("LatTorqueControlEnhancedLateralAccel", tr("Enhanced Lateral Acceleration"), "", "");
   list->addItem(latControlTorqueCustomLatAccel);
 
   toggleOffroadOnly = {

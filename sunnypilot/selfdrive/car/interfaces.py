@@ -25,7 +25,7 @@ def log_fingerprint(CP: structs.CarParams) -> None:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
 
-def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params) -> None:
+def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params, enabled: bool = False) -> None:
   nnlc_model_path, nnlc_model_name, exact_match = get_nn_model_path(CP)
 
   if nnlc_model_path is None:
@@ -34,9 +34,9 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
     nnlc_model_name = "MOCK"
 
   if nnlc_model_path != "MOCK" and CP.steerControlType != structs.CarParams.SteerControlType.angle:
-    CP_SP.neuralNetworkLateralControl.enabled = params.get_bool("NeuralNetworkLateralControl")
+    enabled = params.get_bool("NeuralNetworkLateralControl")
 
-  if CP_SP.neuralNetworkLateralControl.enabled:
+  if enabled:
     CarInterfaceBase.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
   CP_SP.neuralNetworkLateralControl.modelPath = nnlc_model_path

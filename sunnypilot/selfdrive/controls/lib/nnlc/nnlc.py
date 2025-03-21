@@ -10,6 +10,7 @@ import numpy as np
 
 from opendbc.car.interfaces import LatControlInputs
 from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.common.params import Params
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NNTorqueModel
@@ -27,7 +28,8 @@ def roll_pitch_adjust(roll, pitch):
 class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
     super().__init__(lac_torque, CP, CP_SP)
-    self.enabled = CP_SP.neuralNetworkLateralControl.enabled
+    self.params = Params()
+    self.enabled = self.params.get_bool("NeuralNetworkLateralControl")
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll

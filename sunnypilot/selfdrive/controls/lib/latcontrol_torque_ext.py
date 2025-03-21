@@ -13,9 +13,6 @@ class LatControlTorqueExt(NeuralNetworkLateralControl, LatControlTorqueEnhancedL
   def __init__(self, lac_torque, CP, CP_SP):
     super().__init__(lac_torque, CP, CP_SP)
 
-  def read_params(self, params):
-    pass
-
   def update(self, CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
              desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel):
     self._ff = ff
