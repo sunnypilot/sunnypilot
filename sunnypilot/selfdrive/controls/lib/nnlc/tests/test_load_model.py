@@ -1,7 +1,9 @@
+from numpy.ma.testutils import assert_equal
 from parameterized import parameterized
 
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.honda.values import CAR as HONDA
+from opendbc.car.hyundai.values import CAR as HYUNDAI
 from opendbc.car.toyota.values import CAR as TOYOTA
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.helpers import convert_to_capnp
@@ -11,8 +13,8 @@ from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfac
 
 class TestNNTorqueModel:
 
-  @parameterized.expand([HONDA.HONDA_CIVIC, TOYOTA.TOYOTA_RAV4, TOYOTA.TOYOTA_ALPHARD_TSS2])
-  def test_load_model(self, car_name):
+  @parameterized.expand([(HONDA.HONDA_CIVIC, True), (TOYOTA.TOYOTA_RAV4, True), (HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN, False)])
+  def test_load_model(self, car_name, should_load_model):
     Params().put_bool("NeuralNetworkLateralControl", True)
 
     CarInterface = interfaces[car_name]
@@ -26,4 +28,4 @@ class TestNNTorqueModel:
 
     controller = LatControlTorque(CP.as_reader(), CP_SP.as_reader(), CI)
 
-    assert controller.extension.model is not None
+    assert_equal(should_load_model, controller.extension.has_nn_model)
