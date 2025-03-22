@@ -23,13 +23,13 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
   eps_fw = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
   model_name = ""
 
-  def check_nn_path(nn_candidate):
+  def check_nn_path(_nn_candidate):
     _model_path = None
     _max_similarity = -1.0
     for f in os.listdir(TORQUE_NN_MODEL_PATH):
       if f.endswith(".json"):
         model = os.path.splitext(f)[0]
-        similarity_score = similarity(model, nn_candidate)
+        similarity_score = similarity(model, _nn_candidate)
         if similarity_score > _max_similarity:
           _max_similarity = similarity_score
           _model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
@@ -47,9 +47,6 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
 
   nn_candidate = car_fingerprint
   model_path, max_similarity = check_nn_path(nn_candidate)
-
-  if model_path is None or car_fingerprint not in model_path or max_similarity < 0.9:
-    model_path = None
 
   if model_path is not None:
     model_name = os.path.splitext(os.path.basename(model_path))[0]

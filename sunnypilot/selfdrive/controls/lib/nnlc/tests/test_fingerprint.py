@@ -1,0 +1,42 @@
+import unittest
+
+from parameterized import parameterized
+
+from opendbc.car.car_helpers import interfaces
+from opendbc.car.honda.values import CAR as HONDA
+from opendbc.car.hyundai.values import CAR as HYUNDAI
+from opendbc.car.toyota.values import CAR as TOYOTA
+from openpilot.common.params import Params
+from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
+
+
+FINGERPRINT_EXACT_MATCH = [HONDA.HONDA_CIVIC_BOSCH, TOYOTA.TOYOTA_RAV4_TSS2_2022, HYUNDAI.HYUNDAI_IONIQ_5]
+FINGERPRINT_FUZZY_MATCH = [HONDA.HONDA_CIVIC_BOSCH_DIESEL, TOYOTA.TOYOTA_RAV4_PRIME, HYUNDAI.HYUNDAI_IONIQ_6]
+
+
+class TestNNLCFingerprintBase(unittest.TestCase):
+
+  @staticmethod
+  def _setup_platform(car_name):
+    CarInterface = interfaces[car_name]
+    CP = CarInterface.get_non_essential_params(car_name)
+    CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
+    CI = CarInterface(CP, CP_SP)
+
+    sunnypilot_interfaces.setup_car_interface_sp(CP, CP_SP, Params())
+
+    return CI
+
+  @parameterized.expand(FINGERPRINT_EXACT_MATCH)
+  def test_exact_fingerprint(self, car_name):
+    CI = self._setup_platform(car_name)
+    assert CI.CP_SP.neuralNetworkLateralControl.model.path != "MOCK" and not CI.CP_SP.neuralNetworkLateralControl.fuzzyFingerprint
+
+  @parameterized.expand(FINGERPRINT_FUZZY_MATCH)
+  def test_fuzzy_fingerprint(self, car_name):
+    CI = self._setup_platform(car_name)
+    assert CI.CP_SP.neuralNetworkLateralControl.model.path != "MOCK" and CI.CP_SP.neuralNetworkLateralControl.fuzzyFingerprint
+
+
+if __name__ == "__main__":
+  unittest.main()
