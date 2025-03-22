@@ -38,15 +38,16 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
   if len(eps_fw) > 3:
     eps_fw = eps_fw.replace("\\", "")
     nn_candidate = f"{car_fingerprint} {eps_fw}"
-    model_path, max_similarity = check_nn_path(nn_candidate)
+  else:
+    nn_candidate = car_fingerprint
 
-    if model_path is not None and car_fingerprint in model_path and max_similarity >= 0.9:
-      model_name = os.path.splitext(os.path.basename(model_path))[0]
-      exact_match = max_similarity >= 0.99
-      return model_path, model_name, exact_match
-
-  nn_candidate = car_fingerprint
   model_path, max_similarity = check_nn_path(nn_candidate)
+
+  if car_fingerprint not in model_path or 0.0 <= max_similarity < 0.8:
+    nn_candidate = car_fingerprint
+    model_path, max_similarity = check_nn_path(nn_candidate)
+    if 0.0 <= max_similarity < 0.8:
+      model_path = None
 
   if model_path is not None:
     model_name = os.path.splitext(os.path.basename(model_path))[0]
