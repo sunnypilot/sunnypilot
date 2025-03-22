@@ -148,6 +148,7 @@ void SunnylinkPanel::handleBackupProgress() {
     break;
     case cereal::BackupManagerSP::Status::COMPLETED:
     default:
+      ConfirmationDialog::alert(tr("Settings backup completed."), this);
       backupSettings->setEnabled(!is_onroad);
       backupSettings->setText(tr("Backup Settings"));
     break;
