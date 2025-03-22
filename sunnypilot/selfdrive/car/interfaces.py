@@ -26,8 +26,11 @@ def log_fingerprint(CP: structs.CarParams) -> None:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
 
-def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = Params(),
+def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
                                               enabled: bool = False) -> None:
+  if params is None:
+    params = Params()
+
   nnlc_model_path, nnlc_model_name, exact_match = get_nn_model_path(CP)
 
   if nnlc_model_name == "MOCK":
@@ -44,7 +47,10 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
-def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = Params()):
+def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
+  if params is None:
+    params = Params()
+
   if CP.brand == 'hyundai':
     if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
       # Having this automatic without a toggle causes a weird process replay diff because
