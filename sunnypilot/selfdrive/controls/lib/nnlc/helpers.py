@@ -21,6 +21,7 @@ def similarity(s1: str, s2: str) -> float:
 
 
 def get_nn_model_path(CP: structs.CarParams) -> tuple[str, str, bool]:
+  exact_match = True
   car_fingerprint = CP.carFingerprint
   eps_fw = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
 
@@ -55,10 +56,11 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str, str, bool]:
       for candidate in [car_fingerprint, sub_candidate]:
         model_path, max_similarity = check_nn_path(candidate)
 
+      exact_match = False
+
   if CP.steerControlType == structs.CarParams.SteerControlType.angle:
     model_path = MOCK_MODEL_PATH
 
   model_name = os.path.splitext(os.path.basename(model_path))[0]
-  exact_match = max_similarity >= 0.99
 
   return model_path, model_name, exact_match
