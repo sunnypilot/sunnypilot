@@ -41,6 +41,8 @@ private:
   ParamControl *sunnylinkEnabledBtn;
   bool is_onroad = false;
   bool is_sunnylink_enabled = false;
+  bool backup_request_pending = false;
+  bool backup_request_started = false;
   bool restore_request_pending = false;
   bool restore_request_started = false;
   ParamWatcher *param_watcher;
