@@ -18,13 +18,10 @@ class SunnylinkPanel : public QFrame {
 
 public:
   explicit SunnylinkPanel(QWidget *parent = nullptr);
-
-  void updateBackupManagerState();
-
-  void handleBackupProgress();
-
   void showEvent(QShowEvent *event) override;
   void paramsRefresh(const QString &param_name, const QString &param_value);
+  void updateBackupManagerState();
+  void handleBackupProgress();
 
 public slots:
   void updatePanel();
