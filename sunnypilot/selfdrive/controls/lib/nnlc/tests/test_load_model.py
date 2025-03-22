@@ -1,4 +1,3 @@
-from numpy.ma.testutils import assert_equal
 from parameterized import parameterized
 
 from opendbc.car.car_helpers import interfaces
