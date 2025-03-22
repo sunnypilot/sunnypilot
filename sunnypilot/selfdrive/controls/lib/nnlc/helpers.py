@@ -5,12 +5,14 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import os
+import tomllib
 from difflib import SequenceMatcher
 
 from opendbc.car import structs
 from openpilot.common.basedir import BASEDIR
 
 TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, "sunnypilot", "neural_network_data", "neural_network_lateral_control")
+TORQUE_NN_MODEL_SUBSTITUTE_PATH = os.path.join(BASEDIR, "opendbc", "car", "torque_data/substitute.toml")
 MOCK_MODEL_PATH = os.path.join(TORQUE_NN_MODEL_PATH, "MOCK.json")
 
 
@@ -46,7 +48,12 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str, str, bool]:
     nn_candidate = car_fingerprint
     model_path, max_similarity = check_nn_path(nn_candidate)
     if 0.0 <= max_similarity < 0.8:
-      model_path = MOCK_MODEL_PATH
+      with open(TORQUE_NN_MODEL_SUBSTITUTE_PATH, 'rb') as f:
+        sub = tomllib.load(f)
+      sub_candidate = sub.get(car_fingerprint, car_fingerprint)
+
+      for candidate in [car_fingerprint, sub_candidate]:
+        model_path, max_similarity = check_nn_path(candidate)
 
   if CP.steerControlType == structs.CarParams.SteerControlType.angle:
     model_path = MOCK_MODEL_PATH
