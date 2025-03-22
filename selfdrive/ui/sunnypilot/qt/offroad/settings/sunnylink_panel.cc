@@ -157,15 +157,11 @@ void SunnylinkPanel::handleBackupProgress() {
     default:
       if (!backup_request_pending && backup_request_started) {
         backup_request_started = false;
-        backupSettings->setText(tr("Backup Completed"));
-        if (ConfirmationDialog::alert(tr("Settings backed up. Confirm to restart the interface."), this)) {
-          qApp->exit(18);
-          watchdog_kick(0);
-        }
+        ConfirmationDialog::alert(tr("Settings backup completed."), this);
       } else {
         backupSettings->setEnabled(!is_onroad && !backup_request_pending && is_sunnylink_enabled);
-        backupSettings->setText(tr("Backup Settings"));
       }
+      backupSettings->setText(tr("Backup Settings"));
     break;
   }
 
@@ -189,15 +185,14 @@ void SunnylinkPanel::handleBackupProgress() {
     default:
       if (!restore_request_pending && restore_request_started) {
         restore_request_started = false;
-        restoreSettings->setText(tr("Restore Completed"));
         if (ConfirmationDialog::alert(tr("Settings restored. Confirm to restart the interface."), this)) {
           qApp->exit(18);
           watchdog_kick(0);
         }
       } else {
         restoreSettings->setEnabled(!is_onroad && !restore_request_pending && is_sunnylink_enabled);
-        restoreSettings->setText(tr("Restore Settings"));
       }
+      restoreSettings->setText(tr("Restore Settings"));
     break;
   }
 }
