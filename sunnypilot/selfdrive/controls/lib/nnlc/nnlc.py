@@ -55,7 +55,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.error_deque = deque(maxlen=history_check_frames[0])
     self.past_future_len = len(self.past_times) + len(self.nn_future_times)
 
-  def update_neural_network_feedforward(self, CS, params, calibrated_pose):
+  def update_neural_network_feedforward(self, CS, params, calibrated_pose) -> None:
     if not self.enabled or not self.model_valid or not self.has_nn_model:
       return
 
