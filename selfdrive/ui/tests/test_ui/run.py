@@ -11,7 +11,7 @@ import pickle
 import time
 from collections import namedtuple
 
-from cereal import car, log
+from cereal import car, log, custom
 from msgq.visionipc import VisionIpcServer, VisionStreamType
 from cereal.messaging import PubMaster, log_from_bytes, sub_sock
 from openpilot.common.basedir import BASEDIR
@@ -213,6 +213,13 @@ def setup_settings_sunnylink_sponsor_button(click, pm: PubMaster, scroll=None):
   time.sleep(UI_DELAY)
 
 def setup_settings_steering(click, pm: PubMaster, scroll=None):
+  CP = car.CarParams()
+  CP.carFingerprint = "HONDA_CIVIC"
+  CP_SP = custom.CarParamsSP()
+  CP_SP.neuralNetworkLateralControl.model.name = CP.carFingerprint
+  Params().put("CarParamsPersistent", CP.to_bytes())
+  Params().put("CarParamsSPPersistent", CP_SP.to_bytes())
+
   setup_settings_device(click, pm)
   click(278, 852)
   time.sleep(UI_DELAY)
