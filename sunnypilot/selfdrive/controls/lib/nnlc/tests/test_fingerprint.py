@@ -1,5 +1,3 @@
-import unittest
-
 from parameterized import parameterized
 
 from opendbc.car.car_helpers import interfaces
@@ -17,7 +15,7 @@ FINGERPRINT_FUZZY_MATCH = [HONDA.HONDA_CIVIC_BOSCH_DIESEL, HYUNDAI.GENESIS_G70_2
 FINGERPRINT_ANGLE_NO_MATCH = [TOYOTA.TOYOTA_RAV4_TSS2_2023, NISSAN.NISSAN_LEAF, TESLA.TESLA_MODEL_3]
 
 
-class TestNNLCFingerprintBase(unittest.TestCase):
+class TestNNLCFingerprintBase:
 
   @staticmethod
   def _setup_platform(car_name):
@@ -44,7 +42,3 @@ class TestNNLCFingerprintBase(unittest.TestCase):
   def test_no_fingerprint(self, car_name):
     CI = self._setup_platform(car_name)
     assert CI.CP_SP.neuralNetworkLateralControl.model.name == "MOCK"
-
-
-if __name__ == "__main__":
-  unittest.main()
