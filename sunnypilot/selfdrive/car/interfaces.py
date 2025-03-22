@@ -33,6 +33,20 @@ def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, pa
           CP.radarUnavailable = False
 
 
+def set_hyundai_long_tune_flag(CP_SP: structs.CarParamsSP, params):
+  val = params.get("HyundaiLongTune")
+  if isinstance(val, bytes):
+    val = val.decode("utf-8")
+  if isinstance(val, str) and ',' in val:
+    val_list = [v.strip() for v in val.split(',')]
+  else:
+    val_list = [val]
+
+  if any(item in ["1", "2"] for item in val_list):
+    CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
+  if params.get_bool("HyundaiSmootherBraking"):
+    CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
+
 def initialize_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params, can_recv: CanRecvCallable,
                                 can_send: CanSendCallable):
   if CP.brand == 'hyundai':

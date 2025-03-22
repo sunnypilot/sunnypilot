@@ -26,7 +26,6 @@ from openpilot.selfdrive.car.helpers import convert_carControlSP, convert_to_cap
 
 from openpilot.sunnypilot.mads.helpers import set_alternative_experience, set_car_specific_params
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
-from openpilot.sunnypilot.selfdrive.car.hkg_specific_params import set_hyundai_long_tune_flag
 
 REPLAY = "REPLAY" in os.environ
 
@@ -110,10 +109,10 @@ class Car:
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), experimental_long_allowed, num_pandas, cached_params, fixed_fingerprint)
       sunnypilot_interfaces.setup_car_interface_sp(self.CI.CP, self.CI.CP_SP, self.params)
+      sunnypilot_interfaces.set_hyundai_long_tune_flag(self.CI.CP_SP, self.params)
       self.RI = interfaces[self.CI.CP.carFingerprint].RadarInterface(self.CI.CP, self.CI.CP_SP)
       self.CP = self.CI.CP
       self.CP_SP = self.CI.CP_SP
-      set_hyundai_long_tune_flag(self.CP)
 
       # continue onto next fingerprinting step in pandad
       self.params.put_bool("FirmwareQueryDone", True)
@@ -130,7 +129,6 @@ class Car:
     # mads
     set_alternative_experience(self.CP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
-    set_hyundai_long_tune_flag(self.CP)
 
     # Dynamic Experimental Control
     self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
