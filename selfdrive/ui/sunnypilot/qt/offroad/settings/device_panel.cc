@@ -139,8 +139,7 @@ void DevicePanelSP::resetSettings() {
     std::vector<std::string> keys = params.allKeys();
 
     for (const auto& key : keys) {
-      ParamKeyType type = params.getKeyType(key);
-      if (!(type & EXCLUDE_FROM_RESET)) {
+      if (!(params.getKeyType(key) & EXCLUDE_FROM_RESET)) {
         params.remove(key);
       }
     }
