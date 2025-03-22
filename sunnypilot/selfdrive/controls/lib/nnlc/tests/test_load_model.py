@@ -15,14 +15,12 @@ class TestNNTorqueModel:
 
   @parameterized.expand([(HONDA.HONDA_CIVIC, True), (TOYOTA.TOYOTA_RAV4, True), (HYUNDAI.HYUNDAI_SANTA_CRUZ_1ST_GEN, False)])
   def test_load_model(self, car_name, should_load_model):
-    Params().put_bool("NeuralNetworkLateralControl", True)
-
     CarInterface = interfaces[car_name]
     CP = CarInterface.get_non_essential_params(car_name)
     CP_SP = CarInterface.get_non_essential_params_sp(CP, car_name)
     CI = CarInterface(CP, CP_SP)
 
-    sunnypilot_interfaces.initialize_neural_network_lateral_control(CP, CP_SP, Params())
+    sunnypilot_interfaces.setup_car_interface_sp(CP, CP_SP)
 
     CP_SP = convert_to_capnp(CP_SP)
 
