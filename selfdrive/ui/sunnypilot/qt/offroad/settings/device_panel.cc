@@ -67,14 +67,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     }
   });
 
-  connect(buttons["resetParams"], &PushButtonSP::clicked, [=]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings to default ? This cannot be undone."), tr("Reset"), this)) {
-      params.clearAll(static_cast<ParamKeyType>(~EXCLUDE_FROM_RESET));
-      if (ConfirmationDialog::alert(tr("sunnypilot settings reset to default. Confirm to restart the device."), this)) {
-        Hardware::reboot();
-      }
-    }
-  });
+  connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
 
   addItem(device_grid_layout);
 
@@ -139,6 +132,15 @@ void DevicePanelSP::setOffroadMode() {
   }
 
   updateState();
+}
+
+void DevicePanelSP::resetSettings() {
+  if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings to default ? This cannot be undone."), tr("Reset"), this)) {
+    params.clearAll(static_cast<ParamKeyType>(~EXCLUDE_FROM_RESET));
+    if (ConfirmationDialog::alert(tr("sunnypilot settings reset to default. Confirm to restart the device."), this)) {
+      Hardware::reboot();
+    }
+  }
 }
 
 void DevicePanelSP::showEvent(QShowEvent *event) {
