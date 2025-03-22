@@ -74,11 +74,9 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   connect(sunnylinkEnabledBtn, &ParamControl::toggleFlipped, [=](bool enabled) {
     QString description;
     if (enabled) {
-      description = "<font color='SeaGreen'>" + tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀") + "</font>";
+      description = "<font color='SeaGreen'>"+ tr("🎉Welcome back! We're excited to see you've enabled sunnylink again! 🚀")+ "</font>";
     } else {
-      description = "<font color='orange'>" + tr(
-                      "👋Not going to lie, it's sad to see you disabled sunnylink 😢, but we'll be here when you're ready to come back 🎉.")
-                    + "</font>";
+      description = "<font color='orange'>"+ tr("👋Not going to lie, it's sad to see you disabled sunnylink 😢, but we'll be here when you're ready to come back 🎉.")+ "</font>";
     }
     sunnylinkEnabledBtn->showDescription();
     sunnylinkEnabledBtn->setDescription(description);
