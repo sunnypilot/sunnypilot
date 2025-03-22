@@ -38,6 +38,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_blank.png",
     },
     {
+      "QuietDrive",
+      tr("Quiet Drive 🤫"),
+      tr("sunnypilot will display alerts but only play the most important warning sounds. This feature can be toggled while the car is on."),
+      "../assets/offroad/icon_blank.png",
+    },
+    {
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
