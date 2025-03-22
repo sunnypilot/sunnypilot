@@ -18,11 +18,9 @@ def similarity(s1: str, s2: str) -> float:
   return SequenceMatcher(None, s1, s2).ratio()
 
 
-def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
-  exact_match = True
+def get_nn_model_path(CP: structs.CarParams) -> tuple[str, str, bool]:
   car_fingerprint = CP.carFingerprint
   eps_fw = str(next((fw.fwVersion for fw in CP.carFw if fw.ecu == "eps"), ""))
-  model_name = ""
 
   def check_nn_path(_nn_candidate):
     _model_path = None
