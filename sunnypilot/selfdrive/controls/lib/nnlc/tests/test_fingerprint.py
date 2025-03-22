@@ -33,17 +33,17 @@ class TestNNLCFingerprintBase(unittest.TestCase):
   @parameterized.expand(FINGERPRINT_EXACT_MATCH)
   def test_exact_fingerprint(self, car_name):
     CI = self._setup_platform(car_name)
-    assert CI.CP_SP.neuralNetworkLateralControl.model.path != "MOCK" and not CI.CP_SP.neuralNetworkLateralControl.fuzzyFingerprint
+    assert CI.CP_SP.neuralNetworkLateralControl.model.name != "MOCK" and not CI.CP_SP.neuralNetworkLateralControl.fuzzyFingerprint
 
   @parameterized.expand(FINGERPRINT_FUZZY_MATCH)
   def test_fuzzy_fingerprint(self, car_name):
     CI = self._setup_platform(car_name)
-    assert CI.CP_SP.neuralNetworkLateralControl.model.path != "MOCK" and CI.CP_SP.neuralNetworkLateralControl.fuzzyFingerprint
+    assert CI.CP_SP.neuralNetworkLateralControl.model.name != "MOCK" and CI.CP_SP.neuralNetworkLateralControl.fuzzyFingerprint
 
   @parameterized.expand(FINGERPRINT_ANGLE_NO_MATCH)
   def test_no_fingerprint(self, car_name):
     CI = self._setup_platform(car_name)
-    assert CI.CP_SP.neuralNetworkLateralControl.model.path == "MOCK"
+    assert CI.CP_SP.neuralNetworkLateralControl.model.name == "MOCK"
 
 
 if __name__ == "__main__":

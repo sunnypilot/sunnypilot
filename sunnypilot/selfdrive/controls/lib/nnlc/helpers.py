@@ -11,6 +11,7 @@ from opendbc.car import structs
 from openpilot.common.basedir import BASEDIR
 
 TORQUE_NN_MODEL_PATH = os.path.join(BASEDIR, "sunnypilot", "neural_network_data", "neural_network_lateral_control")
+MOCK_MODEL_PATH = os.path.join(TORQUE_NN_MODEL_PATH, "MOCK.json")
 
 
 def similarity(s1: str, s2: str) -> float:
@@ -47,10 +48,12 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str | None, str, bool]:
     nn_candidate = car_fingerprint
     model_path, max_similarity = check_nn_path(nn_candidate)
     if 0.0 <= max_similarity < 0.8:
-      model_path = None
+      model_path = MOCK_MODEL_PATH
 
-  if model_path is not None:
-    model_name = os.path.splitext(os.path.basename(model_path))[0]
-    exact_match = max_similarity >= 0.99
+  if CP.steerControlType == structs.CarParams.SteerControlType.angle:
+    model_path = MOCK_MODEL_PATH
+
+  model_name = os.path.splitext(os.path.basename(model_path))[0]
+  exact_match = max_similarity >= 0.99
 
   return model_path, model_name, exact_match

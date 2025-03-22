@@ -13,6 +13,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
+from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import MOCK_MODEL_PATH
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NNTorqueModel
 
 
@@ -30,13 +31,12 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     super().__init__(lac_torque, CP, CP_SP)
     self.params = Params()
     self.enabled = self.params.get_bool("NeuralNetworkLateralControl")
+    self.has_nn_model = CP_SP.neuralNetworkLateralControl.model.path != MOCK_MODEL_PATH
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    # Only initialize NNTorqueModel if enabled
-    has_nn_model = CP_SP.neuralNetworkLateralControl.model.path is not None and CP_SP.neuralNetworkLateralControl.model.path != "MOCK"
-    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.model.path) if self.enabled and has_nn_model else None
+    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.model.path)
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
@@ -56,7 +56,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.past_future_len = len(self.past_times) + len(self.nn_future_times)
 
   def update_neural_network_feedforward(self, CS, params, calibrated_pose):
-    if not self.enabled or not self.model_valid or self.model is None:
+    if not self.enabled or not self.model_valid or not self.has_nn_model:
       return
 
     # update past data
