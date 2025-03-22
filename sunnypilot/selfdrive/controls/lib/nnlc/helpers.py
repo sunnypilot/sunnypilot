@@ -55,8 +55,6 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str, str, bool]:
 
       for candidate in [car_fingerprint, sub_candidate]:
         model_path, max_similarity = check_nn_path(candidate)
-        if max_similarity >= 0.8:
-          break
 
       exact_match = False
 
