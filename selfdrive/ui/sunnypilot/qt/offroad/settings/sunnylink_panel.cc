@@ -163,7 +163,7 @@ void SunnylinkPanel::handleBackupProgress() {
           watchdog_kick(0);
         }
       } else {
-        backupSettings->setEnabled(!is_onroad && !backup_request_pending);
+        backupSettings->setEnabled(!is_onroad && !backup_request_pending && is_sunnylink_enabled);
         backupSettings->setText(tr("Backup Settings"));
       }
     break;
@@ -195,7 +195,7 @@ void SunnylinkPanel::handleBackupProgress() {
           watchdog_kick(0);
         }
       } else {
-        restoreSettings->setEnabled(!is_onroad && !restore_request_pending);
+        restoreSettings->setEnabled(!is_onroad && !restore_request_pending && is_sunnylink_enabled);
         restoreSettings->setText(tr("Restore Settings"));
       }
     break;
@@ -266,7 +266,6 @@ void SunnylinkPanel::updatePanel() {
 
   pairSponsorBtn->setEnabled(!is_onroad && is_sunnylink_enabled);
   pairSponsorBtn->setValue(is_paired ? tr("Paired") : tr("Not Paired"));
-
 
   if (!is_sunnylink_enabled) {
     sunnylinkEnabledBtn->setValue("");
