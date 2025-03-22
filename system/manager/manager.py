@@ -51,6 +51,8 @@ def manager_init() -> None:
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
+    ("AutoLaneChangeTimer", "0"),
+    ("AutoLaneChangeBsmDelay", "0"),
   ]
 
   if params.get_bool("RecordFrontLock"):
