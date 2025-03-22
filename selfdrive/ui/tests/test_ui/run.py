@@ -217,6 +217,7 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
   CP.carFingerprint = "HONDA_CIVIC"
   CP_SP = custom.CarParamsSP()
   CP_SP.neuralNetworkLateralControl.model.name = CP.carFingerprint
+  CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = True
   Params().put("CarParamsPersistent", CP.to_bytes())
   Params().put("CarParamsSPPersistent", CP_SP.to_bytes())
 
