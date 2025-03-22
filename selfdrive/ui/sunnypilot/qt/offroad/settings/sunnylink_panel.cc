@@ -139,15 +139,17 @@ void SunnylinkPanel::handleBackupProgress() {
 
   switch (backup_status) {
     case cereal::BackupManagerSP::Status::IN_PROGRESS:
+      backupSettings->setEnabled(false);
       backupSettings->setText(QString(tr("Backup in progress %1%").arg(backup_progress)));
     break;
     case cereal::BackupManagerSP::Status::FAILED:
+      backupSettings->setEnabled(!is_onroad);
       backupSettings->setText(tr("Backup Failed"));
     break;
     case cereal::BackupManagerSP::Status::COMPLETED:
-      default:
-        backupSettings->setText(tr("Backup Settings"));
-    backupSettings->setEnabled(!is_onroad);
+    default:
+      backupSettings->setEnabled(!is_onroad);
+      backupSettings->setText(tr("Backup Settings"));
     break;
   }
 
@@ -163,6 +165,7 @@ void SunnylinkPanel::handleBackupProgress() {
       ConfirmationDialog::alert(tr("Unable to restore the settings, try again later."), this);
       restore_request_pending = false;
       restore_request_started = false;
+      restoreSettings->setEnabled(!is_onroad);
       break;
     case cereal::BackupManagerSP::Status::COMPLETED:
       restore_request_pending = false;
