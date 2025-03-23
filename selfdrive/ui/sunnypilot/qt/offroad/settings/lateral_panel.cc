@@ -42,6 +42,24 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
+  // Lane Change Settings
+  laneChangeSettingsButton = new PushButtonSP(tr("Customize Lane Change"));
+  laneChangeSettingsButton->setObjectName("lane_change_btn");
+  connect(laneChangeSettingsButton, &QPushButton::clicked, [=]() {
+    sunnypilotScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(lane_change_settings);
+  });
+
+  lane_change_settings = new LaneChangeSettings(this);
+  connect(lane_change_settings, &LaneChangeSettings::backPress, [=]() {
+    sunnypilotScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+  list->addItem(laneChangeSettingsButton);
+
+
+
+  // nnlc
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
 
@@ -65,6 +83,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
+  main_layout->addWidget(lane_change_settings);
 
   setStyleSheet(R"(
     #back_btn {
