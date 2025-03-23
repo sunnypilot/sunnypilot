@@ -4,38 +4,41 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from openpilot.common.params import Params
 from cereal import car
+
+from openpilot.common.params import Params
 
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
+ALERTS_ALWAYS_PLAY = {
+  AudibleAlert.warningSoft,
+  AudibleAlert.warningImmediate,
+  AudibleAlert.promptDistracted,
+  AudibleAlert.promptRepeat,
+}
+
 class QuietDriveManager:
   def __init__(self):
-    self.current_alert: int = AudibleAlert.none  # Explicitly declare as int
-    self.param_s = Params()
-    self.quiet_drive: bool = bool(self.param_s.get_bool("QuietDrive"))
+    self.current_alert: int = car.CarControl.HUDControl.AudibleAlert.none
+    self.params = Params()
+    self.quiet_drive: bool = bool(self.params.get_bool("QuietDrive"))
     self._frame = 0
 
   def load_param(self) -> None:
     self._frame += 1
-    if self._frame == 50:
-      self.quiet_drive = bool(self.param_s.get_bool("QuietDrive"))
-
-  def is_quiet_drive_enabled(self) -> bool:
-    return bool(self.quiet_drive)
+    if self._frame % 50 == 0:  # 2.5 seconds
+      self.quiet_drive = bool(self.params.get_bool("QuietDrive"))
 
   def should_play_sound(self, current_alert: int) -> bool:
     """
     Check if a sound should be played based on the quiet drive setting
     and the current alert.
     """
-    AudibleAlert = car.CarControl.HUDControl.AudibleAlert
-    # Define the conditions under which sounds should be played, using valid AudibleAlert values
-    return bool((self.current_alert == AudibleAlert.warningSoft or
-                 self.current_alert == AudibleAlert.warningImmediate or
-                 self.current_alert == AudibleAlert.promptDistracted or
-                 self.current_alert == AudibleAlert.promptRepeat) or
-                (not self.is_quiet_drive_enabled() and current_alert != AudibleAlert.none))
-
-
-
+    ALERTS_ALWAYS_PLAY = {
+      car.CarControl.HUDControl.AudibleAlert.warningSoft,
+      car.CarControl.HUDControl.AudibleAlert.warningImmediate,
+      car.CarControl.HUDControl.AudibleAlert.promptDistracted,
+      car.CarControl.HUDControl.AudibleAlert.promptRepeat,
+    }
+    should_play = current_alert in ALERTS_ALWAYS_PLAY or (not self.quiet_drive and current_alert != car.CarControl.HUDControl.AudibleAlert.none)
+    return should_play

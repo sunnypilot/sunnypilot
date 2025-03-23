@@ -52,8 +52,10 @@ def check_selfdrive_timeout_alert(sm):
   return False
 
 
-class Soundd:
+class Soundd(QuietDriveManager):
   def __init__(self):
+    super().__init__()
+
     self.load_sounds()
 
     self.current_alert = AudibleAlert.none
@@ -63,14 +65,6 @@ class Soundd:
     self.selfdrive_timeout_alert = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
-
-    self.quiet_drive_manager = QuietDriveManager()
-
-  def load_param(self):
-    self.quiet_drive_manager.load_param()
-
-  def should_play_sound(self):
-    return self.quiet_drive_manager.should_play_sound(self.current_alert)
 
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
@@ -91,7 +85,7 @@ class Soundd:
 
     ret = np.zeros(frames, dtype=np.float32)
 
-    if self.should_play_sound():
+    if self.should_play_sound(self.current_alert):
       num_loops = sound_list[self.current_alert][1]
       sound_data = self.loaded_sounds[self.current_alert]
       written_frames = 0
