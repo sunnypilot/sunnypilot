@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
+from cereal import log
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
 
@@ -18,19 +18,21 @@ AUTO_LANE_CHANGE_TIMER = {
 }
 
 class AutoLaneChangeController:
-  def __init__(self):
+  def __init__(self, desire_helper):
+    self.desire_helper = desire_helper
     self.param_s = Params()
     self.lane_change_wait_timer = 0.0
     self.param_read_counter = 0
     self.lane_change_set_timer = 2.0
     self.lane_change_bsm_delay = False
+    self.prev_brake_pressed = False
     self.read_param()
 
   def read_param(self):
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
 
-  def update(self, blindspot_detected: bool):
+  def update(self, blindspot_detected: bool, brake_pressed: bool):
     if self.param_read_counter % 50 == 0:
       self.read_param()
     self.param_read_counter += 1
@@ -45,8 +47,24 @@ class AutoLaneChangeController:
       else:
         self.lane_change_wait_timer = lane_change_auto_timer - 1
 
-    auto_lane_change_allowed = lane_change_auto_timer and self.lane_change_wait_timer > lane_change_auto_timer
+    # Don't allow auto lane change if brake was previously pressed
+    auto_lane_change_allowed = (lane_change_auto_timer and
+                                self.lane_change_wait_timer > lane_change_auto_timer and
+                                not self.prev_brake_pressed)
+
+    # Update previous brake state
+    self.prev_brake_pressed = brake_pressed
+
+    # Auto reset if parent state indicates we should
+    if (hasattr(self.desire_helper, 'lane_change_state') and
+          hasattr(self.desire_helper, 'lane_change_direction')):
+
+      if (self.desire_helper.lane_change_state == log.LaneChangeState.off and
+            self.desire_helper.lane_change_direction == log.LaneChangeDirection.none):
+        self.reset()
+
     return auto_lane_change_allowed
 
   def reset(self):
     self.lane_change_wait_timer = 0.0
+    self.prev_brake_pressed = False
