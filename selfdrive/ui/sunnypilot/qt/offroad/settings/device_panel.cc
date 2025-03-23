@@ -135,16 +135,13 @@ void DevicePanelSP::setOffroadMode() {
 }
 
 void DevicePanelSP::resetSettings() {
-  if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings to default ? This cannot be undone."), tr("Reset"), this)) {
-    std::vector<std::string> keys = params.allKeys();
-
-    for (const auto& key : keys) {
-      if (!(params.getKeyType(key) & EXCLUDE_FROM_RESET)) {
+  if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all sunnypilot settings to default ? Once the settings are reset, there is no going back. Please be certain."), tr("Reset"), this)) {
+    if (ConfirmationDialog::confirm(tr("The reset cannot be undone. You have been warned."), tr("Confirm"), this)) {
+      const std::vector<std::string> keys = params.allKeys();
+      for (const auto& key : keys) {
         params.remove(key);
       }
-    }
 
-    if (ConfirmationDialog::alert(tr("sunnypilot settings reset to default. Confirm to restart the device."), this)) {
       Hardware::reboot();
     }
   }
