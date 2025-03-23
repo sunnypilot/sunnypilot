@@ -8,7 +8,7 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/lane_change_settings.h"
-
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 #include <map>
 #include <string>
 #include <tuple>
@@ -27,28 +27,12 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   ListWidgetSP *list = new ListWidgetSP(this, false);
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
-      /***
-    {
-      "BelowSpeedPause",
-      tr("Pause Lateral Below Speed with Blinker"),
-      tr("Enable this toggle to pause lateral actuation with blinker when traveling below the desired speed selected below."),
-      "../assets/offroad/icon_blank.png",
-    },
-    ***/
     {
       "AutoLaneChangeBsmDelay",
       tr("Auto Lane Change: Delay with Blind Spot"),
       tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
       "../assets/offroad/icon_blank.png",
     },
-      /***
-    {
-      "RoadEdge",
-      tr("Block Lane Change: Road Edge Detection"),
-      tr("Enable this toggle to block lane change when road edge is detected on the stalk actuated side."),
-      "../assets/offroad/icon_blank.png",
-    }
-    ***/
   };
 
   // Controls: Auto Lane Change Timer
@@ -59,32 +43,13 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   connect(auto_lane_change_timer, &AutoLaneChangeTimer::updateOtherToggles, this, &LaneChangeSettings::updateToggles);
   list->addItem(auto_lane_change_timer);
 
-  // Pause Lateral Below Speed w/ Blinker
-  /***
-  pause_lateral_speed = new PauseLateralSpeed();
-  pause_lateral_speed->showDescription();
-  connect(pause_lateral_speed, &OptionControlSP::updateLabels, pause_lateral_speed, &PauseLateralSpeed::refresh);
-
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControlSP(param, title, desc, icon, this);
-
     list->addItem(toggle);
     toggles[param.toStdString()] = toggle;
-
-    if (param == "BelowSpeedPause") {
-      list->addItem(pause_lateral_speed);
-    }
   }
 
-  connect(toggles["BelowSpeedPause"], &ToggleControlSP::toggleFlipped, [=](bool state) {
-    pause_lateral_speed->setEnabled(state);
-    pause_lateral_speed->setVisible(state);
-  });
-  pause_lateral_speed->setEnabled(toggles["BelowSpeedPause"]->isToggled());
-  pause_lateral_speed->setVisible(toggles["BelowSpeedPause"]->isToggled());
-
   main_layout->addWidget(new ScrollViewSP(list, this));
-  ***/
 }
 
 void LaneChangeSettings::showEvent(QShowEvent *event) {
@@ -109,7 +74,6 @@ void LaneChangeSettings::updateToggles() {
       params.remove("AutoLaneChangeBsmDelay");
     }
     auto_lane_change_bsm_delay_toggle->setEnabled(CP.getEnableBsm() && (auto_lane_change_timer_param > 0));
-
     auto_lane_change_bsm_delay_toggle->refresh();
   } else {
     auto_lane_change_bsm_delay_toggle->setEnabled(false);
@@ -148,26 +112,3 @@ void AutoLaneChangeTimer::refresh() {
     setLabel("2 " + second);
   }
 }
-/***
-PauseLateralSpeed::PauseLateralSpeed() : OptionControlSP(
-  "PauseLateralSpeed",
-  "",
-  tr("Pause lateral actuation with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h."),
-  "../assets/offroad/icon_blank.png",
-  {0, 255},
-  5) {
-
-  refresh();
-}
-
-void PauseLateralSpeed::refresh() {
-  QString option = QString:: fromStdString(params.get("PauseLateralSpeed"));
-  bool is_metric = params.getBool("IsMetric");
-
-  if (option == "0") {
-    setLabel(tr("Default"));
-  } else {
-    setLabel(option + " " + (is_metric ? tr("km/h") : tr("mph")));
-  }
-}
-***/

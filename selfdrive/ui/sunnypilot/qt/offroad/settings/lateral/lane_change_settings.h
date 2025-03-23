@@ -29,22 +29,6 @@ private:
   Params params;
 };
 
-/***
-class PauseLateralSpeed : public OptionControlSP {
-  Q_OBJECT
-
-public:
-  PauseLateralSpeed();
-
-  void refresh();
-
-  signals:
-    void ToggleUpdated();
-
-private:
-  Params params;
-};
-***/
 
 class LaneChangeSettings : public QWidget {
   Q_OBJECT
@@ -64,5 +48,4 @@ private:
   std::map<std::string, ParamControlSP*> toggles;
 
   AutoLaneChangeTimer *auto_lane_change_timer;
-  //PauseLateralSpeed *pause_lateral_speed;
 };
