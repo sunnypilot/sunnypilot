@@ -19,26 +19,21 @@ ALERTS_ALWAYS_PLAY = {
 
 class QuietDriveManager:
   def __init__(self):
-    self.current_alert: int = car.CarControl.HUDControl.AudibleAlert.none
     self.params = Params()
-    self.quiet_drive: bool = bool(self.params.get_bool("QuietDrive"))
+    self.enabled: bool = self.params.get_bool("QuietDrive")
     self._frame = 0
 
   def load_param(self) -> None:
     self._frame += 1
     if self._frame % 50 == 0:  # 2.5 seconds
-      self.quiet_drive = bool(self.params.get_bool("QuietDrive"))
+      self.enabled = self.params.get_bool("QuietDrive")
 
   def should_play_sound(self, current_alert: int) -> bool:
     """
     Check if a sound should be played based on the quiet drive setting
     and the current alert.
     """
-    ALERTS_ALWAYS_PLAY = {
-      car.CarControl.HUDControl.AudibleAlert.warningSoft,
-      car.CarControl.HUDControl.AudibleAlert.warningImmediate,
-      car.CarControl.HUDControl.AudibleAlert.promptDistracted,
-      car.CarControl.HUDControl.AudibleAlert.promptRepeat,
-    }
-    should_play = current_alert in ALERTS_ALWAYS_PLAY or (not self.quiet_drive and current_alert != car.CarControl.HUDControl.AudibleAlert.none)
-    return should_play
+    if not self.enabled:
+      return current_alert != AudibleAlert.none
+
+    return current_alert in ALERTS_ALWAYS_PLAY
