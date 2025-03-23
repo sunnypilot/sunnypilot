@@ -39,10 +39,11 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   std::vector<QString> tuning_buttons { tr("Off"), tr("Long Tune"), tr("Tune + Even Smoother Braking") };
   hkgtuningToggle = new ButtonParamControlSP(
     "HyundaiLongTune",
-    tr("HKG Tuning"),
-    tr("Select tuning mode. Off means no tuning is currently applied. Long Tune is an dynamic accel/brake tuning tuned to your specific car. "
-        "Tune + Smoother Braking is the dynamic tuning but with smoother braking applied."),
-    "../assets/offroad/icon_shell.png",
+    tr("HKG Custom Longitudinal Tuning"),
+    tr("Select a tuning mode. 'Off' means there is no custom tuning is currently applied. "
+       "'Long Tune' is a dynamic acceleration/brake tune individualized to your specific car. "
+       "'Tune + Smoother Braking' is the dynamic tuning but with even smoother braking applied."),
+       "../assets/offroad/icon_shell.png",
     tuning_buttons
   );
   hkgtuningToggle->showDescription();
@@ -101,14 +102,12 @@ void VehiclePanel::updateToggleState(AbstractControlSP* toggle, bool hasOpenpilo
       QString msg = "<font color='orange'>" + tr("Enable openpilot longitudinal control first to modify this setting.") + "</font>";
       toggle->setDescription(msg);
       toggle->showDescription();
-      QTimer::singleShot(5000, toggle, &ParamControlSP::hideDescription);
       break;
     }
     case ToggleState::DISABLED_DRIVING: {
       QString msg = "<font color='orange'>" + tr("Cannot modify while driving. Please go offroad mode first.") + "</font>";
       toggle->setDescription(msg);
       toggle->showDescription();
-      QTimer::singleShot(5000, toggle, &ParamControlSP::hideDescription);
       break;
     }
   }
