@@ -13,7 +13,7 @@ from openpilot.common.swaglog import cloudlog
 
 from openpilot.system import micd
 
-from openpilot.selfdrive.ui.sunnypilot.quietmode import QuietDriveManager
+from openpilot.selfdrive.ui.sunnypilot.quiet_mode import QuietMode
 
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
@@ -52,7 +52,7 @@ def check_selfdrive_timeout_alert(sm):
   return False
 
 
-class Soundd(QuietDriveManager):
+class Soundd(QuietMode):
   def __init__(self):
     super().__init__()
 

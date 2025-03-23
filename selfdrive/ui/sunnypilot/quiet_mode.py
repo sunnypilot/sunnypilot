@@ -17,7 +17,7 @@ ALERTS_ALWAYS_PLAY = {
   AudibleAlert.promptRepeat,
 }
 
-class QuietDriveManager:
+class QuietMode:
   def __init__(self):
     self.params = Params()
     self.enabled: bool = self.params.get_bool("QuietDrive")
