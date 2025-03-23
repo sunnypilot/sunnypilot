@@ -5,6 +5,10 @@
 With joystick_control, you can connect your laptop to your comma device over the network and debug controls using a joystick or keyboard.
 joystick_control uses [inputs](https://pypi.org/project/inputs) which supports many common gamepads and joysticks.
 
+## Note
+You might need to install [xow](https://github.com/medusalix/xow) to use the Xbox One controller on comma device. 
+Even though **xone** is recommended on the xow page, **xow** is the one that works with the comma device.
+
 ## Usage
 
 The car must be off, and openpilot must be offroad before starting `joystick_control`.
