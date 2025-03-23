@@ -52,7 +52,7 @@ def check_selfdrive_timeout_alert(sm):
   return False
 
 
-class Soundd:
+class Soundd(QuietMode):
   def __init__(self):
     super().__init__()
 
@@ -65,8 +65,6 @@ class Soundd:
     self.selfdrive_timeout_alert = False
 
     self.spl_filter_weighted = FirstOrderFilter(0, 2.5, FILTER_DT, initialized=False)
-
-    self.quiet_drive_manager = QuietMode()
 
   def load_sounds(self):
     self.loaded_sounds: dict[int, np.ndarray] = {}
@@ -83,17 +81,11 @@ class Soundd:
         length = wavefile.getnframes()
         self.loaded_sounds[sound] = np.frombuffer(wavefile.readframes(length), dtype=np.int16).astype(np.float32) / (2**16/2)
 
-  def should_play_sound(self):
-    # Update the quiet mode setting first to ensure we use the latest value
-    self.quiet_drive_manager.load_param()
-
-    # Check if a sound should be played based on the current alert and quiet mode
-    return self.quiet_drive_manager.should_play_sound(self.current_alert)
-
   def get_sound_data(self, frames): # get "frames" worth of data from the current alert sound, looping when required
+
     ret = np.zeros(frames, dtype=np.float32)
 
-    if self.should_play_sound():
+    if self.should_play_sound(self.current_alert):
       num_loops = sound_list[self.current_alert][1]
       sound_data = self.loaded_sounds[self.current_alert]
       written_frames = 0
@@ -156,9 +148,6 @@ class Soundd:
       while True:
         sm.update(0)
 
-        # Update the quiet mode periodically
-        self.quiet_drive_manager.load_param()
-
         if sm.updated['microphone'] and self.current_alert == AudibleAlert.none: # only update volume filter when not playing alert
           self.spl_filter_weighted.update(sm["microphone"].soundPressureWeightedDb)
           self.current_volume = self.calculate_volume(float(self.spl_filter_weighted.x))
@@ -168,7 +157,6 @@ class Soundd:
         rk.keep_time()
 
         assert stream.active
-
 
 
 def main():
