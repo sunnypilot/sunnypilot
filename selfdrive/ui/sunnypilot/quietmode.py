@@ -20,7 +20,7 @@ ALERTS_ALWAYS_PLAY = {
 class QuietDriveManager:
   def __init__(self):
     self.params = Params()
-    self.enabled: bool = bool(self.params.get_bool("QuietDrive"))
+    self.enabled: bool = self.params.get_bool("QuietDrive")
     self._frame = 0
 
   def load_param(self) -> None:
