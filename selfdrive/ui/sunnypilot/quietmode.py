@@ -34,6 +34,6 @@ class QuietDriveManager:
     and the current alert.
     """
     if not self.enabled:
-      return current_alert != AudibleAlert.none
+      return bool(current_alert != AudibleAlert.none)
 
     return current_alert in ALERTS_ALWAYS_PLAY
