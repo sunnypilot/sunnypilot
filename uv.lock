@@ -694,15 +694,6 @@ wheels = [
 ]
 
 [[package]]
-name = "inputs"
-version = "0.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d1/cd/5f434220920f76eb73d19bb7aab8d857445f40aa642718e6e51e850cd663/inputs-0.5.tar.gz", hash = "sha256:a31d5b96a3525f1232f326be9e7ce8ccaf873c6b1fb84d9f3c9bc3d79b23eae4", size = 33393 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/94/040a0d9c81f018c39bd887b7b825013b024deb0a6c795f9524797e2cd41b/inputs-0.5-py2.py3-none-any.whl", hash = "sha256:13f894564e52134cf1e3862b1811da034875eb1f2b62e6021e3776e9669a96ec", size = 33630 },
-]
-
-[[package]]
 name = "isodate"
 version = "0.7.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1251,7 +1242,6 @@ dependencies = [
     { name = "crcmod" },
     { name = "cython" },
     { name = "future-fstrings" },
-    { name = "inputs" },
     { name = "json-rpc" },
     { name = "libusb1" },
     { name = "llvmlite" },
@@ -1261,6 +1251,7 @@ dependencies = [
     { name = "pyaudio" },
     { name = "pycapnp" },
     { name = "pycryptodome" },
+    { name = "pygame" },
     { name = "pyjwt" },
     { name = "pyopenssl" },
     { name = "pyserial" },
@@ -1290,7 +1281,6 @@ dev = [
     { name = "matplotlib" },
     { name = "parameterized" },
     { name = "pyautogui" },
-    { name = "pygame" },
     { name = "pyopencl", marker = "platform_machine != 'aarch64'" },
     { name = "pyprof2calltree" },
     { name = "pytools", marker = "platform_machine != 'aarch64'" },
@@ -1345,7 +1335,6 @@ requires-dist = [
     { name = "dictdiffer", marker = "extra == 'dev'" },
     { name = "future-fstrings" },
     { name = "hypothesis", marker = "extra == 'testing'", specifier = "==6.47.*" },
-    { name = "inputs" },
     { name = "jinja2", marker = "extra == 'docs'" },
     { name = "json-rpc" },
     { name = "libusb1" },
@@ -1365,7 +1354,7 @@ requires-dist = [
     { name = "pyautogui", marker = "extra == 'dev'" },
     { name = "pycapnp" },
     { name = "pycryptodome" },
-    { name = "pygame", marker = "extra == 'dev'" },
+    { name = "pygame" },
     { name = "pyjwt" },
     { name = "pyopencl", marker = "platform_machine != 'aarch64' and extra == 'dev'" },
     { name = "pyopenssl", specifier = "<24.3.0" },
