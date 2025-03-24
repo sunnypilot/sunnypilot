@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from typing import cast
 
 from tinygrad.nn.optim import SGD, Adam
 from tinygrad.tensor import Tensor
@@ -74,17 +75,17 @@ class TinyNeuralNetwork:
     self._backward_compiled = False
 
   def activation(self, x: Tensor) -> Tensor:
-    """Apply the selected activation function."""
     if self.activation_name == 'relu':
-      return x.relu()
+      return cast(Tensor, x.relu())
     elif self.activation_name == 'leakyrelu':
-      return x.leakyrelu(0.01)
+      return cast(Tensor, x.leakyrelu(0.01))
     elif self.activation_name == 'sigmoid':
-      return x.sigmoid()
+      return cast(Tensor, x.sigmoid())
     elif self.activation_name == 'tanh':
-      return x.tanh()
+      return cast(Tensor, x.tanh())
     else:
-      return x.leakyrelu(0.01)  # Default to leaky ReLU
+      return cast(Tensor, x.leakyrelu(0.01))  # Default to leaky ReLU
+
 
   def dropout(self, x: Tensor, training: bool = True) -> Tensor:
     """Apply dropout regularization if rate > 0 and in training mode."""
@@ -141,7 +142,7 @@ class TinyNeuralNetwork:
   def train(self, x: Tensor | np.ndarray, y: Tensor | np.ndarray,
             iterations: int = 1, batch_size: int | None = None,
             validation_data: tuple[Tensor | np.ndarray, Tensor | np.ndarray] | None = None,
-            epochs: int = 1, shuffle: bool = True) -> float:
+            epochs: int = 1, shuffle: bool = True) -> float | None:
     """
     Train the network for a given number of iterations or epochs.
 
