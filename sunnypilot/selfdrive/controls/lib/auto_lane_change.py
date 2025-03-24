@@ -61,21 +61,25 @@ class AutoLaneChangeController:
       self.read_params()
     self.param_read_counter += 1
 
-    lane_change_auto_timer = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer,
-                                                        AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS])
+    lane_change_delay = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer,
+                                                   AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS])
 
     self.lane_change_wait_timer += DT_MDL
 
-    if self.lane_change_bsm_delay and blindspot_detected and lane_change_auto_timer:
-      if lane_change_auto_timer == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]:
+    if self.lane_change_bsm_delay and blindspot_detected and lane_change_delay:
+      if lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]:
         self.lane_change_wait_timer = TIMER_DISABLED
       else:
-        self.lane_change_wait_timer = lane_change_auto_timer - 1
+        self.lane_change_wait_timer = lane_change_delay - 1
 
-    # Don't allow auto lane change if brake was previously pressed
-    auto_lane_change_allowed = (lane_change_auto_timer and
-                                self.lane_change_wait_timer > lane_change_auto_timer and
-                                not self.prev_brake_pressed)
+
+    # Auto lane change allowed if:
+    # 1. A valid delay is set (non-zero)
+    # 2. We've waited long enough
+    # 3. Brake wasn't previously pressed
+    auto_lane_change_allowed = lane_change_delay and \
+                               self.lane_change_wait_timer > lane_change_delay and \
+                               not self.prev_brake_pressed
 
     # Update previous brake state
     self.prev_brake_pressed = brake_pressed
