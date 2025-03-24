@@ -82,13 +82,16 @@ class AutoLaneChangeController:
   def update_allowed(self) -> bool:
     # Auto lane change allowed if:
     # 1. A valid delay is set (non-zero)
-    # 2. We've waited long enough
-    # 3. Brake wasn't previously pressed
+    # 2. Brake wasn't previously pressed
+    # 3. We've waited long enough
 
     if self.lane_change_set_timer in (AutoLaneChangeState.OFF, AutoLaneChangeState.NUDGE):
       return False
 
-    return self.lane_change_wait_timer > self.lane_change_delay and not self.prev_brake_pressed
+    if self.prev_brake_pressed:
+      return False
+
+    return self.lane_change_wait_timer > self.lane_change_delay
 
   def update(self, blindspot_detected: bool, brake_pressed: bool) -> None:
     self._blindspot_detected = blindspot_detected
