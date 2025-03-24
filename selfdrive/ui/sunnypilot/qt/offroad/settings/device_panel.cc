@@ -17,7 +17,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   device_grid_layout->setVerticalSpacing(25);
 
   std::vector<std::tuple<QString, QString, QString>> device_btns = {
-    {"quietModeBtn", tr("Quiet Mode"), "QuietDrive"},
+    {"quietModeBtn", tr("Quiet Mode"), "QuietMode"},
     {"dcamBtn", tr("Driver Camera Preview"), ""},
     {"retrainingBtn", tr("Training Guide"), ""},
     {"regulatoryBtn", tr("Regulatory"), ""},

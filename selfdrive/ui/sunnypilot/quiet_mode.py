@@ -20,17 +20,17 @@ ALERTS_ALWAYS_PLAY = {
 class QuietMode:
   def __init__(self):
     self.params = Params()
-    self.enabled: bool = self.params.get_bool("QuietDrive")
+    self.enabled: bool = self.params.get_bool("QuietMode")
     self._frame = 0
 
   def load_param(self) -> None:
     self._frame += 1
     if self._frame % 50 == 0:  # 2.5 seconds
-      self.enabled = self.params.get_bool("QuietDrive")
+      self.enabled = self.params.get_bool("QuietMode")
 
   def should_play_sound(self, current_alert: int) -> bool:
     """
-    Check if a sound should be played based on the quiet drive setting
+    Check if a sound should be played based on the Quiet Mode setting
     and the current alert.
     """
     if not self.enabled:
