@@ -36,7 +36,7 @@ TIMER_DISABLED = -1
 
 class AutoLaneChangeController:
   def __init__(self, desire_helper):
-    self.desire_helper = desire_helper
+    self.DH = desire_helper
     self.params = Params()
     self.lane_change_wait_timer = 0.0
     self.param_read_counter = 0
@@ -85,8 +85,8 @@ class AutoLaneChangeController:
     self.prev_brake_pressed = brake_pressed
 
     # Auto reset if parent state indicates we should
-    if self.desire_helper.lane_change_state == log.LaneChangeState.off and \
-       self.desire_helper.lane_change_direction == log.LaneChangeDirection.none:
+    if self.DH.lane_change_state == log.LaneChangeState.off and \
+       self.DH.lane_change_direction == log.LaneChangeDirection.none:
       self.reset()
 
     return auto_lane_change_allowed
