@@ -39,11 +39,7 @@ private:
   ParamControl *madsToggle;
   PushButtonSP *madsSettingsButton;
   MadsSettings *madsWidget = nullptr;
-
   PushButtonSP *laneChangeSettingsButton;
-  LaneChangeSettings *lane_change_settings = nullptr;
-
-
-
+  LaneChangeSettings *laneChangeWidget = nullptr;
   NeuralNetworkLateralControl *nnlcToggle = nullptr;
 };

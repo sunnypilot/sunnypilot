@@ -36,12 +36,12 @@ LaneChangeSettings::LaneChangeSettings(QWidget* parent) : QWidget(parent) {
   };
 
   // Controls: Auto Lane Change Timer
-  auto_lane_change_timer = new AutoLaneChangeTimer();
-  auto_lane_change_timer->setUpdateOtherToggles(true);
-  auto_lane_change_timer->showDescription();
-  connect(auto_lane_change_timer, &OptionControlSP::updateLabels, auto_lane_change_timer, &AutoLaneChangeTimer::refresh);
-  connect(auto_lane_change_timer, &AutoLaneChangeTimer::updateOtherToggles, this, &LaneChangeSettings::updateToggles);
-  list->addItem(auto_lane_change_timer);
+  autoLaneChangeTimer = new AutoLaneChangeTimer();
+  autoLaneChangeTimer->setUpdateOtherToggles(true);
+  autoLaneChangeTimer->showDescription();
+  connect(autoLaneChangeTimer, &OptionControlSP::updateLabels, autoLaneChangeTimer, &AutoLaneChangeTimer::refresh);
+  connect(autoLaneChangeTimer, &AutoLaneChangeTimer::updateOtherToggles, this, &LaneChangeSettings::updateToggles);
+  list->addItem(autoLaneChangeTimer);
 
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControlSP(param, title, desc, icon, this);
@@ -62,7 +62,7 @@ void LaneChangeSettings::updateToggles() {
   }
 
   auto auto_lane_change_bsm_delay_toggle = toggles["AutoLaneChangeBsmDelay"];
-  auto auto_lane_change_timer_param = std::atoi(params.get("AutoLaneChangeTimer").c_str());
+  auto autoLaneChangeTimer_param = std::atoi(params.get("AutoLaneChangeTimer").c_str());
 
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
@@ -73,7 +73,7 @@ void LaneChangeSettings::updateToggles() {
     if (!CP.getEnableBsm()) {
       params.remove("AutoLaneChangeBsmDelay");
     }
-    auto_lane_change_bsm_delay_toggle->setEnabled(CP.getEnableBsm() && (auto_lane_change_timer_param > 0));
+    auto_lane_change_bsm_delay_toggle->setEnabled(CP.getEnableBsm() && (autoLaneChangeTimer_param > 0));
     auto_lane_change_bsm_delay_toggle->refresh();
   } else {
     auto_lane_change_bsm_delay_toggle->setEnabled(false);

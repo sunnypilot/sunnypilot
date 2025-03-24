@@ -47,5 +47,5 @@ private:
   Params params;
   std::map<std::string, ParamControlSP*> toggles;
 
-  AutoLaneChangeTimer *auto_lane_change_timer;
+  AutoLaneChangeTimer *autoLaneChangeTimer;
 };
