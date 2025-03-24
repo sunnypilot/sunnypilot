@@ -17,29 +17,32 @@ AUTO_LANE_CHANGE_TIMER = {
   4: 1.5,
 }
 
+
 class AutoLaneChangeController:
   def __init__(self, desire_helper):
     self.desire_helper = desire_helper
     self.param_s = Params()
     self.lane_change_wait_timer = 0.0
     self.param_read_counter = 0
-    self.lane_change_set_timer = 2.0
+    self.lane_change_set_timer = 1
     self.lane_change_bsm_delay = False
     self.prev_brake_pressed = False
-    self.read_param()
+    self.read_params()
 
   def reset(self):
     self.lane_change_wait_timer = 0.0
     self.prev_brake_pressed = False
 
-
-  def read_param(self):
-    self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
+  def read_params(self):
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
+    try:
+      self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
+    except (ValueError, TypeError):
+      self.lane_change_set_timer = 1
 
   def update(self, blindspot_detected: bool, brake_pressed: bool):
     if self.param_read_counter % 50 == 0:
-      self.read_param()
+      self.read_params()
     self.param_read_counter += 1
 
     lane_change_auto_timer = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer, 2.0)
