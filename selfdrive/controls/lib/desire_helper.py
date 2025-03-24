@@ -116,3 +116,5 @@ class DesireHelper:
         self.keep_pulse_timer = 0.0
       elif self.desire in (log.Desire.keepLeft, log.Desire.keepRight):
         self.desire = log.Desire.none
+
+    self.alc.reset()

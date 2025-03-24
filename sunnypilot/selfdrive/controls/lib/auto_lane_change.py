@@ -46,8 +46,11 @@ class AutoLaneChangeController:
     self.read_params()
 
   def reset(self):
-    self.lane_change_wait_timer = 0.0
-    self.prev_brake_pressed = False
+    # Auto reset if parent state indicates we should
+    if self.DH.lane_change_state == log.LaneChangeState.off and \
+       self.DH.lane_change_direction == log.LaneChangeDirection.none:
+      self.lane_change_wait_timer = 0.0
+      self.prev_brake_pressed = False
 
   def read_params(self):
     self.lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
@@ -72,7 +75,6 @@ class AutoLaneChangeController:
       else:
         self.lane_change_wait_timer = lane_change_delay - 1
 
-
     # Auto lane change allowed if:
     # 1. A valid delay is set (non-zero)
     # 2. We've waited long enough
@@ -83,10 +85,5 @@ class AutoLaneChangeController:
 
     # Update previous brake state
     self.prev_brake_pressed = brake_pressed
-
-    # Auto reset if parent state indicates we should
-    if self.DH.lane_change_state == log.LaneChangeState.off and \
-       self.DH.lane_change_direction == log.LaneChangeDirection.none:
-      self.reset()
 
     return auto_lane_change_allowed
