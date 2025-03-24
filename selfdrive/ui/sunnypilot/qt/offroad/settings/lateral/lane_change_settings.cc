@@ -94,6 +94,18 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : OptionControlSP(
 }
 
 void AutoLaneChangeTimer::refresh() {
+  const QString second = tr("s");
+  static const QMap<QString, QString> options = {
+    {"-1", tr("Off")},
+    {"0", tr("Nudge")},
+    {"1", tr("Nudgeless")},
+    {"2", "0.5 " + tr("s")},
+    {"3", "1 " + tr("s")},
+    {"4", "1.5 " + tr("s")},
+    {"5", "2 " + tr("s")},
+    {"6", "3 " + tr("s")}
+  };
+
   QString option = QString::fromStdString(params.get("AutoLaneChangeTimer"));
   QString second = tr("s");
   if (option == "-1") {
