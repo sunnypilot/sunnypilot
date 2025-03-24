@@ -1,7 +1,7 @@
 from cereal import log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot.selfdrive.controls.lib.alc import AutoLaneChangeController
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController
 
 
 LaneChangeState = log.LaneChangeState
@@ -41,7 +41,7 @@ class DesireHelper:
     self.keep_pulse_timer = 0.0
     self.prev_one_blinker = False
     self.desire = log.Desire.none
-    self.lane_change_controller = AutoLaneChangeController(self)
+    self.alc = AutoLaneChangeController(self)
 
   def update(self, carstate, lateral_active, lane_change_prob):
     v_ego = carstate.vEgo
@@ -70,7 +70,7 @@ class DesireHelper:
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
-        auto_lane_change_allowed = self.lane_change_controller.update(blindspot_detected, carstate.brakePressed)
+        auto_lane_change_allowed = self.alc.update(blindspot_detected, carstate.brakePressed)
 
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off

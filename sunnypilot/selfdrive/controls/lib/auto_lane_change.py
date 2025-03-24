@@ -28,6 +28,11 @@ class AutoLaneChangeController:
     self.prev_brake_pressed = False
     self.read_param()
 
+  def reset(self):
+    self.lane_change_wait_timer = 0.0
+    self.prev_brake_pressed = False
+
+
   def read_param(self):
     self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
     self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
@@ -56,15 +61,8 @@ class AutoLaneChangeController:
     self.prev_brake_pressed = brake_pressed
 
     # Auto reset if parent state indicates we should
-    if (hasattr(self.desire_helper, 'lane_change_state') and
-          hasattr(self.desire_helper, 'lane_change_direction')):
-
-      if (self.desire_helper.lane_change_state == log.LaneChangeState.off and
-            self.desire_helper.lane_change_direction == log.LaneChangeDirection.none):
-        self.reset()
+    if (self.desire_helper.lane_change_state == log.LaneChangeState.off and
+          self.desire_helper.lane_change_direction == log.LaneChangeDirection.none):
+      self.reset()
 
     return auto_lane_change_allowed
-
-  def reset(self):
-    self.lane_change_wait_timer = 0.0
-    self.prev_brake_pressed = False
