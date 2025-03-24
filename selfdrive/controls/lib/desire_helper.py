@@ -43,6 +43,7 @@ class DesireHelper:
     self.alc = AutoLaneChangeController(self)
 
   def update(self, carstate, lateral_active, lane_change_prob):
+    self.alc.update_params()
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN

@@ -42,7 +42,7 @@ class AutoLaneChangeController:
     self.lane_change_set_timer = AutoLaneChangeState.NUDGE
     self.lane_change_bsm_delay = False
     self.prev_brake_pressed = False
-    self.lane_change_delay = 0
+    self.lane_change_delay = 0.0
     self._blindspot_detected = False
     self._brake_pressed = False
     self.auto_lane_change_allowed = False
@@ -56,13 +56,16 @@ class AutoLaneChangeController:
       self.prev_brake_pressed = False
 
   def read_params(self) -> None:
-    self.param_read_counter += 1
+    self.lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
+    try:
+      self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
+    except (ValueError, TypeError):
+      self.lane_change_set_timer = AutoLaneChangeState.NUDGE
+
+  def update_params(self) -> None:
     if self.param_read_counter % 50 == 0:
-      self.lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
-      try:
-        self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
-      except (ValueError, TypeError):
-        self.lane_change_set_timer = AutoLaneChangeState.NUDGE
+      self.read_params()
+    self.param_read_counter += 1
 
   def update_lane_change_timers(self) -> None:
     self.lane_change_delay = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer,
@@ -89,7 +92,6 @@ class AutoLaneChangeController:
     self._blindspot_detected = blindspot_detected
     self._brake_pressed = brake_pressed
 
-    self.read_params()
     self.update_lane_change_timers()
     self.update_allowed()
 
