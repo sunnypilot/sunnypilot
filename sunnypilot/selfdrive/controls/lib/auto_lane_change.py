@@ -18,7 +18,8 @@ class AutoLaneChangeState(IntEnum):
   HALF_SECOND = 2
   ONE_SECOND = 3
   ONE_POINT_FIVE_SECOND = 4
-  TWO_SECONDS = 5  # default
+  TWO_SECONDS = 5
+  THREE_SECONDS = 6  # default
 
 
 AUTO_LANE_CHANGE_TIMER = {
@@ -27,8 +28,8 @@ AUTO_LANE_CHANGE_TIMER = {
   AutoLaneChangeState.NUDGELESS: 0.1,              # Nudgeless
   AutoLaneChangeState.HALF_SECOND: 0.5,            # 0.5-second delay
   AutoLaneChangeState.ONE_SECOND: 1.0,             # 1-second delay
-  AutoLaneChangeState.ONE_POINT_FIVE_SECOND: 1.5,  # 1.5-second delay
-  AutoLaneChangeState.TWO_SECONDS: 2.0,            # 2 second delay default
+  AutoLaneChangeState.TWO_SECONDS: 2.0,            # 2-second delay
+  AutoLaneChangeState.THREE_SECONDS: 3.0,          # 3-second delay
 }
 
 TIMER_DISABLED = -1
@@ -67,7 +68,7 @@ class AutoLaneChangeController:
 
   def update_lane_change_timers(self):
     self.lane_change_delay = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer,
-                                                   AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS])
+                                                        AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.THREE_SECONDS])
 
     self.lane_change_wait_timer += DT_MDL
 
