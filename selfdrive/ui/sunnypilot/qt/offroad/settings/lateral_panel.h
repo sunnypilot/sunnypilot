@@ -29,7 +29,6 @@ public slots:
   void updateToggles(bool _offroad);
 
 private:
-  Params params;
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   ScrollViewSP *sunnypilotScroller = nullptr;

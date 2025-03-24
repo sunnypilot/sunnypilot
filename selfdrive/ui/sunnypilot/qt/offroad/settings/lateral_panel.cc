@@ -42,13 +42,6 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
-  auto testBtn = new PushButtonSP(tr("Test Button State"), 800, this, "NeuralNetworkLateralControl");
-  QObject::connect(testBtn, &QPushButton::clicked, [=]() {
-    params.putBool("NeuralNetworkLateralControl", !params.getBool("NeuralNetworkLateralControl"));
-    testBtn->refresh();
-  });
-  list->addItem(testBtn);
-
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
 
