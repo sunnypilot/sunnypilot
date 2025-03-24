@@ -94,33 +94,18 @@ AutoLaneChangeTimer::AutoLaneChangeTimer() : OptionControlSP(
 }
 
 void AutoLaneChangeTimer::refresh() {
+  QString option = QString::fromStdString(params.get("AutoLaneChangeTimer"));
   const QString second = tr("s");
+
   static const QMap<QString, QString> options = {
     {"-1", tr("Off")},
-    {"0", tr("Nudge")},
-    {"1", tr("Nudgeless")},
-    {"2", "0.5 " + tr("s")},
-    {"3", "1 " + tr("s")},
-    {"4", "1.5 " + tr("s")},
-    {"5", "2 " + tr("s")},
-    {"6", "3 " + tr("s")}
+    {"0",  tr("Nudge")},
+    {"1",  tr("Nudgeless")},
+    {"2",  "0.5 " + second},
+    {"3",  "1 "   + second},
+    {"4",  "2 "   + second},
+    {"5",  "3 "   + second},
   };
 
-  QString option = QString::fromStdString(params.get("AutoLaneChangeTimer"));
-  QString second = tr("s");
-  if (option == "-1") {
-    setLabel(tr("Off"));
-  } else if (option == "0") {
-    setLabel(tr("Nudge"));
-  } else if (option == "1") {
-    setLabel(tr("Nudgeless"));
-  } else if (option == "2") {
-    setLabel("0.5 " + second);
-  } else if (option == "3") {
-    setLabel("1 " + second);
-  } else if (option == "4") {
-    setLabel("1.5 " + second);
-  } else {
-    setLabel("2 " + second);
-  }
+  setLabel(options.value(option, tr("Nudge")));
 }
