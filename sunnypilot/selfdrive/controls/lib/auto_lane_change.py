@@ -37,7 +37,7 @@ TIMER_DISABLED = -1
 class AutoLaneChangeController:
   def __init__(self, desire_helper):
     self.desire_helper = desire_helper
-    self.param_s = Params()
+    self.params = Params()
     self.lane_change_wait_timer = 0.0
     self.param_read_counter = 0
     self.lane_change_set_timer = AutoLaneChangeState.NUDGE
@@ -50,9 +50,9 @@ class AutoLaneChangeController:
     self.prev_brake_pressed = False
 
   def read_params(self):
-    self.lane_change_bsm_delay = self.param_s.get_bool("AutoLaneChangeBsmDelay")
+    self.lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
     try:
-      self.lane_change_set_timer = int(self.param_s.get("AutoLaneChangeTimer", encoding="utf8"))
+      self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     except (ValueError, TypeError):
       self.lane_change_set_timer = AutoLaneChangeState.NUDGE
 
