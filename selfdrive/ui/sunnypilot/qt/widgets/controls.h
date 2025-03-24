@@ -586,6 +586,16 @@ public:
     }
   }
 
+protected:
+  // Override mouse release event to handle style updates smoothly
+  void mouseReleaseEvent(QMouseEvent *event) override {
+    if (!key.empty()) {
+      bool next_state = !params.getBool(key);
+      updateStyle(next_state);
+    }
+    QPushButton::mouseReleaseEvent(event);
+  }
+
 private:
   std::string key = "";
   Params params;
