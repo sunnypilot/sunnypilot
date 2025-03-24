@@ -84,7 +84,7 @@ class AutoLaneChangeController:
     # 1. A valid delay is set (non-zero)
     # 2. We've waited long enough
     # 3. Brake wasn't previously pressed
-    self.auto_lane_change_allowed = self.lane_change_delay and \
+    self.auto_lane_change_allowed = self.lane_change_set_timer not in (AutoLaneChangeState.OFF, AutoLaneChangeState.NUDGE) and \
                                     self.lane_change_wait_timer >= self.lane_change_delay and \
                                     not self.prev_brake_pressed
 
