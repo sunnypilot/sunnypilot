@@ -42,6 +42,10 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
+  list->addItem(vertical_space());
+  list->addItem(horizontal_line());
+  list->addItem(vertical_space());
+
   // Lane Change Settings
   laneChangeSettingsButton = new PushButtonSP(tr("Customize Lane Change"));
   laneChangeSettingsButton->setObjectName("lane_change_btn");
@@ -56,6 +60,9 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     main_layout->setCurrentWidget(sunnypilotScreen);
   });
   list->addItem(laneChangeSettingsButton);
+
+  list->addItem(vertical_space(0));
+  list->addItem(horizontal_line());
 
   // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
