@@ -61,8 +61,8 @@ class AutoLaneChangeController:
     self.prev_brake_pressed = brake_pressed
 
     # Auto reset if parent state indicates we should
-    if (self.desire_helper.lane_change_state == log.LaneChangeState.off and
-          self.desire_helper.lane_change_direction == log.LaneChangeDirection.none):
+    if self.desire_helper.lane_change_state == log.LaneChangeState.off and \
+       self.desire_helper.lane_change_direction == log.LaneChangeDirection.none:
       self.reset()
 
     return auto_lane_change_allowed
