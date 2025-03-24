@@ -586,6 +586,13 @@ public:
     }
   }
 
+  void updateButton() {
+    if (!key.empty()) {
+      params.putBool(key, !is_enabled);
+      refresh();
+    }
+  }
+
 protected:
   // Override mouse release event to handle style updates smoothly
   void mouseReleaseEvent(QMouseEvent *event) override {
