@@ -98,7 +98,7 @@ class AutoLaneChangeController:
     if self.prev_lane_change:
       return False
 
-    return self.lane_change_wait_timer > self.lane_change_delay
+    return bool(self.lane_change_wait_timer > self.lane_change_delay)
 
   def update_lane_change(self, blindspot_detected: bool, brake_pressed: bool) -> None:
     if brake_pressed and not self.prev_brake_pressed:
