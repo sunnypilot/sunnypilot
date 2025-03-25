@@ -8,7 +8,6 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/platform_selector.h"
 
 class VehiclePanel : public QFrame {
@@ -17,12 +16,6 @@ class VehiclePanel : public QFrame {
 public:
   explicit VehiclePanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
-  // Toggle states
-  enum class ToggleState {
-    ENABLED,
-    DISABLED_LONGITUDINAL,
-    DISABLED_DRIVING
-  };
 public slots:
   void updatePanel(bool _offroad);
 
@@ -31,7 +24,6 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector *platformSelector = nullptr;
-  // Tuning control using ButtonParamControlSP with the buttonToggled signal.
   ButtonParamControlSP* hkgtuningToggle = nullptr;
   bool offroad;
 
@@ -39,12 +31,7 @@ private:
   Params params;
   int hkg_state = 0;
 
-  // Helper methods
-  ToggleState getToggleState(bool hasOpenpilotLong) const;
-  void updateToggleState(AbstractControlSP* toggle, bool hasOpenpilotLong);
-
 private slots:
+  void updateUI();
   void updateCarToggles();
-  void updateToggles(bool offroad_transition);
-  void handleToggleAction(AbstractControlSP* toggle, bool checked);
 };

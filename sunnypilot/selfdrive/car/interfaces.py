@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
+from enum import Enum
 from opendbc.car import Bus, structs
 from opendbc.car.can_definitions import CanRecvCallable, CanSendCallable
 from opendbc.car.car_helpers import can_fingerprint
@@ -17,6 +17,11 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
 
 import openpilot.system.sentry as sentry
+
+
+class HyundaiLongTuneOption(Enum):
+  LONG_TUNING = "1"
+  LONG_TUNING_ALT = "2"
 
 
 def log_fingerprint(CP: structs.CarParams) -> None:
@@ -52,6 +57,17 @@ def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, pa
     params = Params()
 
   if CP.brand == 'hyundai':
+    tuning_option_str = params.get("HyundaiLongTune")
+    try:
+      tuning_option = HyundaiLongTuneOption(tuning_option_str)
+    except ValueError:
+      tuning_option = None
+    if tuning_option is not None:
+      CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
+    if params.get_bool("HyundaiSmootherBraking"):
+      CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
+
+  if CP.brand == 'hyundai':
     if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
       # Having this automatic without a toggle causes a weird process replay diff because
       # somehow it sees fewer logs than intended
@@ -62,20 +78,6 @@ def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, pa
 
   initialize_neural_network_lateral_control(CP, CP_SP, params)
 
-
-def set_hyundai_long_tune_flag(CP_SP: structs.CarParamsSP, params):
-  val = params.get("HyundaiLongTune")
-  if isinstance(val, bytes):
-    val = val.decode("utf-8")
-  if isinstance(val, str) and ',' in val:
-    val_list = [v.strip() for v in val.split(',')]
-  else:
-    val_list = [val]
-
-  if any(item in ["1", "2"] for item in val_list):
-    CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
-  if params.get_bool("HyundaiSmootherBraking"):
-    CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
 
 def initialize_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params, can_recv: CanRecvCallable,
                                 can_send: CanSendCallable):
