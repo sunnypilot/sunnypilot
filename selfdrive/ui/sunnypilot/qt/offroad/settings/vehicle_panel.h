@@ -33,6 +33,5 @@ private:
   int hkg_state = 0;
 
 private slots:
-  void updateUI();
   void updateCarToggles();
 };

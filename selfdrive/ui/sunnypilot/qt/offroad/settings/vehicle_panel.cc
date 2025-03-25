@@ -30,10 +30,10 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   platformSelector = new PlatformSelector();
   list->addItem(platformSelector);
 
-  // Use updateUI() on offroad transition.
   QObject::connect(uiState(), &UIState::offroadTransition, this, [=](bool offroad_transition) {
     offroad = offroad_transition;
-    updateUI();
+    updatePanel(offroad);
+    updateCarToggles();
   });
 
   ScrollViewSP *scroller = new ScrollViewSP(list, this);
@@ -70,14 +70,10 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   main_layout->addWidget(vehicleScreen);
 }
 
-void VehiclePanel::updateUI() {
-  updatePanel(offroad);
-  updateCarToggles();
-}
-
 void VehiclePanel::showEvent(QShowEvent *event) {
   QFrame::showEvent(event);
-  updateUI();
+  updatePanel(offroad);
+  updateCarToggles();
 }
 
 void VehiclePanel::updatePanel(bool _offroad) {
