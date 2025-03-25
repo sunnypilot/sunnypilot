@@ -45,6 +45,7 @@ class AutoLaneChangeController:
     self.lane_change_delay = 0.0
     self._blindspot_detected = False
     self.auto_lane_change_allowed = False
+    self.prev_lane_change = False
     self.read_params()
 
   def reset(self) -> None:
@@ -53,6 +54,7 @@ class AutoLaneChangeController:
        self.DH.lane_change_direction == log.LaneChangeDirection.none:
       self.lane_change_wait_timer = 0.0
       self.prev_brake_pressed = False
+      self.prev_lane_change = False
 
   def read_params(self) -> None:
     self.lane_change_bsm_delay = self.params.get_bool("AutoLaneChangeBsmDelay")
@@ -90,9 +92,12 @@ class AutoLaneChangeController:
     if self.prev_brake_pressed:
       return False
 
+    if self.prev_lane_change:
+      return False
+
     return self.lane_change_wait_timer > self.lane_change_delay
 
-  def update(self, blindspot_detected: bool, brake_pressed: bool) -> None:
+  def update_lane_change(self, blindspot_detected: bool, brake_pressed: bool) -> None:
     self._blindspot_detected = blindspot_detected
 
     if brake_pressed and not self.prev_brake_pressed:
@@ -102,3 +107,9 @@ class AutoLaneChangeController:
     alc_allowed = self.update_allowed()
 
     self.auto_lane_change_allowed = alc_allowed
+
+  def update_state(self):
+    if self.DH.lane_change_state == log.LaneChangeState.laneChangeStarting:
+      self.prev_lane_change = True
+
+    self.reset()

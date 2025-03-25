@@ -31,7 +31,7 @@ class TestAutoLaneChangeController:
 
     # Update controller
     for _ in range(100):  # Run for 5 seconds
-      self.alc.update(blindspot_detected=False, brake_pressed=False)
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
     # Check behavior for NUDGE mode
     assert self.alc.lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGE]
@@ -46,14 +46,14 @@ class TestAutoLaneChangeController:
     self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGELESS
 
     # Update controller once to read params
-    self.alc.update(blindspot_detected=False, brake_pressed=False)
+    self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
     # Check the delay is set correctly for NUDGELESS
     assert self.alc.lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]
 
     # Update multiple times to exceed the timer threshold
     for _ in range(1):  # Should exceed 0.1s with multiple DT_MDL updates
-      self.alc.update(blindspot_detected=False, brake_pressed=False)
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
     # Now lane change should be allowed
     assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
@@ -69,7 +69,7 @@ class TestAutoLaneChangeController:
       self.alc.lane_change_set_timer = timer_state
 
       # Update controller once to read params
-      self.alc.update(blindspot_detected=False, brake_pressed=False)
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
       # Check the delay is set correctly for TWO_SECONDS
       assert self.alc.lane_change_delay == timer_delay
@@ -81,7 +81,7 @@ class TestAutoLaneChangeController:
       # Update enough times to exceed the threshold (seconds / DT_MDL)
       num_updates = int(timer_delay / DT_MDL) + 1  # Add one extra updates to ensure we exceed the threshold
       for _ in range(num_updates):
-        self.alc.update(blindspot_detected=False, brake_pressed=False)
+        self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
       # Now lane change should be allowed
       assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
@@ -97,7 +97,7 @@ class TestAutoLaneChangeController:
     # Update with brake pressed for 1 second
     num_updates = int(1.0 / DT_MDL)
     for _ in range(num_updates):
-      self.alc.update(blindspot_detected=False, brake_pressed=True)
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=True)
 
     # Even though NUDGELESS mode, lane change should be disallowed due to brake pressed prior initiating lane change
     assert not self.alc.auto_lane_change_allowed
@@ -108,7 +108,7 @@ class TestAutoLaneChangeController:
     # Even releasing brake shouldn't allow auto lane change
     num_updates = int(1.0 / DT_MDL)
     for _ in range(num_updates):
-      self.alc.update(blindspot_detected=False, brake_pressed=False)
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
     assert not self.alc.auto_lane_change_allowed
 
@@ -120,7 +120,7 @@ class TestAutoLaneChangeController:
     self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGELESS
 
     # Update with blindspot detected
-    self.alc.update(blindspot_detected=True, brake_pressed=False)
+    self.alc.update_lane_change(blindspot_detected=True, brake_pressed=False)
 
     # For NUDGELESS with blindspot, timer should be disabled
     assert self.alc.lane_change_wait_timer == TIMER_DISABLED
@@ -131,7 +131,7 @@ class TestAutoLaneChangeController:
     self.alc.reset()  # Reset timer
 
     # Update with blindspot detected
-    self.alc.update(blindspot_detected=True, brake_pressed=False)
+    self.alc.update_lane_change(blindspot_detected=True, brake_pressed=False)
 
     # For TWO_SECONDS with blindspot, timer should be set to delay-1
     assert self.alc.lane_change_wait_timer == 1.0  # 2.0 - 1

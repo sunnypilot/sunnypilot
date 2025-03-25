@@ -70,7 +70,7 @@ class DesireHelper:
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
-        self.alc.update(blindspot_detected, carstate.brakePressed)
+        self.alc.update_lane_change(blindspot_detected, carstate.brakePressed)
 
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
@@ -118,4 +118,4 @@ class DesireHelper:
       elif self.desire in (log.Desire.keepLeft, log.Desire.keepRight):
         self.desire = log.Desire.none
 
-    self.alc.reset()
+    self.alc.update_state()
