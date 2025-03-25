@@ -50,15 +50,15 @@ def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, pa
   if params is None:
     params = Params()
 
-  tuning_option_str = params.get("HyundaiLongTune")
-  if tuning_option_str is not None:
-    tuning_option_str = tuning_option_str.strip()
-    if tuning_option_str != "0":
-      CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
-  if params.get_bool("HyundaiSmootherBraking"):
+  if CP.brand == 'hyundai':
+    tuning_option_str = params.get("HyundaiLongTune")
+    if tuning_option_str is not None:
+      tuning_option_str = tuning_option_str.strip()
+      if tuning_option_str != "0":
+        CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
+    if params.get_bool("HyundaiSmootherBraking"):
       CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
 
-  if CP.brand == 'hyundai':
     if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
       # Having this automatic without a toggle causes a weird process replay diff because
       # somehow it sees fewer logs than intended
