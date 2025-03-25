@@ -2,15 +2,15 @@ from parameterized import parameterized
 
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
-from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeState, \
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeMode, \
   AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
 
 AUTO_LANE_CHANGE_TIMER_COMBOS = [
-  (AutoLaneChangeState.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]),
-  (AutoLaneChangeState.HALF_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.HALF_SECOND]),
-  (AutoLaneChangeState.ONE_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.ONE_SECOND]),
-  (AutoLaneChangeState.TWO_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS]),
-  (AutoLaneChangeState.THREE_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.THREE_SECONDS])
+  (AutoLaneChangeMode.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGELESS]),
+  (AutoLaneChangeMode.HALF_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.HALF_SECOND]),
+  (AutoLaneChangeMode.ONE_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.ONE_SECOND]),
+  (AutoLaneChangeMode.TWO_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.TWO_SECONDS]),
+  (AutoLaneChangeMode.THREE_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.THREE_SECONDS])
 ]
 
 
@@ -21,7 +21,7 @@ class TestAutoLaneChangeController:
 
   def _reset_states(self):
     self.alc.lane_change_bsm_delay = False
-    self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGE
+    self.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
     self.lane_change_wait_timer = 0.0
     self.prev_brake_pressed = False
     self.prev_lane_change = False
@@ -44,8 +44,8 @@ class TestAutoLaneChangeController:
     assert not self.alc.prev_brake_pressed
 
   @parameterized.expand([
-    (AutoLaneChangeState.OFF, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.OFF]),
-    (AutoLaneChangeState.NUDGE, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGE]),
+    (AutoLaneChangeMode.OFF, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.OFF]),
+    (AutoLaneChangeMode.NUDGE, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGE]),
   ])
   def test_off_and_nudge_mode(self, timer_state, timer_delay):
     """Test the default OFF and NUDGE mode behavior."""
@@ -67,7 +67,7 @@ class TestAutoLaneChangeController:
     self._reset_states()
     # Setup NUDGELESS mode
     self.alc.lane_change_bsm_delay = False  # BSM delay off
-    self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGELESS
+    self.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
 
     # Update controller once to read params
     self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
@@ -106,7 +106,7 @@ class TestAutoLaneChangeController:
     self._reset_states()
     # Setup NUDGELESS mode (which normally allows auto lane change)
     self.alc.lane_change_bsm_delay = False
-    self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGELESS
+    self.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
     num_updates = int(1.0 / DT_MDL)
 
     # Update with brake pressed for 1 second

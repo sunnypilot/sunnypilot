@@ -10,7 +10,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 
 
-class AutoLaneChangeState:
+class AutoLaneChangeMode:
   OFF = -1
   NUDGE = 0  # default
   NUDGELESS = 1
@@ -21,13 +21,13 @@ class AutoLaneChangeState:
 
 
 AUTO_LANE_CHANGE_TIMER = {
-  AutoLaneChangeState.OFF: 0.0,            # Off
-  AutoLaneChangeState.NUDGE: 0.0,          # Nudge
-  AutoLaneChangeState.NUDGELESS: 0.05,      # Nudgeless
-  AutoLaneChangeState.HALF_SECOND: 0.5,    # 0.5-second delay
-  AutoLaneChangeState.ONE_SECOND: 1.0,     # 1-second delay
-  AutoLaneChangeState.TWO_SECONDS: 2.0,    # 2-second delay
-  AutoLaneChangeState.THREE_SECONDS: 3.0,  # 3-second delay
+  AutoLaneChangeMode.OFF: 0.0,            # Off
+  AutoLaneChangeMode.NUDGE: 0.0,          # Nudge
+  AutoLaneChangeMode.NUDGELESS: 0.05,     # Nudgeless
+  AutoLaneChangeMode.HALF_SECOND: 0.5,    # 0.5-second delay
+  AutoLaneChangeMode.ONE_SECOND: 1.0,     # 1-second delay
+  AutoLaneChangeMode.TWO_SECONDS: 2.0,    # 2-second delay
+  AutoLaneChangeMode.THREE_SECONDS: 3.0,  # 3-second delay
 }
 
 ONE_SECOND_DELAY = -1
@@ -39,7 +39,7 @@ class AutoLaneChangeController:
     self.params = Params()
     self.lane_change_wait_timer = 0.0
     self.param_read_counter = 0
-    self.lane_change_set_timer = AutoLaneChangeState.NUDGE
+    self.lane_change_set_timer = AutoLaneChangeMode.NUDGE
     self.lane_change_bsm_delay = False
     self.prev_brake_pressed = False
     self.lane_change_delay = 0.0
@@ -60,7 +60,7 @@ class AutoLaneChangeController:
     try:
       self.lane_change_set_timer = int(self.params.get("AutoLaneChangeTimer", encoding="utf8"))
     except (ValueError, TypeError):
-      self.lane_change_set_timer = AutoLaneChangeState.NUDGE
+      self.lane_change_set_timer = AutoLaneChangeMode.NUDGE
 
   def update_params(self) -> None:
     if self.param_read_counter % 50 == 0:
@@ -69,12 +69,12 @@ class AutoLaneChangeController:
 
   def update_lane_change_timers(self, blindspot_detected: bool) -> None:
     self.lane_change_delay = AUTO_LANE_CHANGE_TIMER.get(self.lane_change_set_timer,
-                                                        AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGE])
+                                                        AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGE])
 
     self.lane_change_wait_timer += DT_MDL
 
     if self.lane_change_bsm_delay and blindspot_detected and self.lane_change_delay > 0:
-      if self.lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]:
+      if self.lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGELESS]:
         self.lane_change_wait_timer = ONE_SECOND_DELAY
       else:
         self.lane_change_wait_timer = self.lane_change_delay + ONE_SECOND_DELAY
@@ -85,7 +85,7 @@ class AutoLaneChangeController:
     # 2. Brake wasn't previously pressed
     # 3. We've waited long enough
 
-    if self.lane_change_set_timer in (AutoLaneChangeState.OFF, AutoLaneChangeState.NUDGE):
+    if self.lane_change_set_timer in (AutoLaneChangeMode.OFF, AutoLaneChangeMode.NUDGE):
       return False
 
     if self.prev_brake_pressed:
