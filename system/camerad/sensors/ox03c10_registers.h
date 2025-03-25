@@ -65,7 +65,7 @@ const struct i2c_random_wr_payload init_array_ox03c10[] = {
   {0x3008, 0x80}, // io_pad_sel
 
   // FSIN (frame sync) with external pulses
-  {0x3822, 0x33},  // wait for pulse before first frame
+  //{0x3822, 0x33},  // wait for pulse before first frame 
   {0x3009, 0x2},
   {0x3015, 0x2},
   {0x383E, 0x80},
