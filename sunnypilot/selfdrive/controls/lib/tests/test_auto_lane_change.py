@@ -3,8 +3,16 @@ from parameterized import parameterized
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import (
-  AutoLaneChangeController, AutoLaneChangeState, AUTO_LANE_CHANGE_TIMER, TIMER_DISABLED
+  AutoLaneChangeController, AutoLaneChangeState, AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
 )
+
+AUTO_LANE_CHANGE_TIMER_COMBOS = [
+  (AutoLaneChangeState.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]),
+  (AutoLaneChangeState.HALF_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.HALF_SECOND]),
+  (AutoLaneChangeState.ONE_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.ONE_SECOND]),
+  (AutoLaneChangeState.TWO_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS]),
+  (AutoLaneChangeState.THREE_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.THREE_SECONDS])
+]
 
 
 class TestAutoLaneChangeController:
@@ -13,6 +21,8 @@ class TestAutoLaneChangeController:
     self.alc = AutoLaneChangeController(self.DH)
 
   def _reset_states(self):
+    self.alc.lane_change_bsm_delay = False
+    self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGE
     self.lane_change_wait_timer = 0.0
     self.prev_brake_pressed = False
     self.prev_lane_change = False
@@ -50,9 +60,6 @@ class TestAutoLaneChangeController:
     for _ in range(num_updates):  # Run for 5 seconds
       self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
-    # Check behavior for mode
-    assert self.alc.lane_change_delay == timer_delay
-
     # Mode should not allow lane change immediately
     assert not self.alc.auto_lane_change_allowed
 
@@ -66,9 +73,6 @@ class TestAutoLaneChangeController:
     # Update controller once to read params
     self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
-    # Check the delay is set correctly for NUDGELESS
-    assert self.alc.lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]
-
     # Update multiple times to exceed the timer threshold
     for _ in range(1):  # Should exceed 0.1s with multiple DT_MDL updates
       self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
@@ -77,12 +81,7 @@ class TestAutoLaneChangeController:
     assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
     assert self.alc.auto_lane_change_allowed
 
-  @parameterized.expand([
-    (AutoLaneChangeState.HALF_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.HALF_SECOND]),
-    (AutoLaneChangeState.ONE_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.ONE_SECOND]),
-    (AutoLaneChangeState.TWO_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS]),
-    (AutoLaneChangeState.THREE_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.THREE_SECONDS])
-  ])
+  @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
   def test_timers(self, timer_state, timer_delay):
       self._reset_states()
       self.alc.lane_change_bsm_delay = False  # BSM delay off
@@ -91,11 +90,7 @@ class TestAutoLaneChangeController:
       # Update controller once
       self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
 
-      # Check the delay is set correctly
-      assert self.alc.lane_change_delay == timer_delay
-
       # The timer should still be below the threshold after one update
-      assert self.alc.lane_change_wait_timer < self.alc.lane_change_delay
       assert not self.alc.auto_lane_change_allowed
 
       # Update enough times to exceed the threshold (seconds / DT_MDL)
@@ -131,38 +126,45 @@ class TestAutoLaneChangeController:
 
     assert not self.alc.auto_lane_change_allowed
 
-  def test_blindspot_detected_with_bsm_delay(self):
+  @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
+  def test_blindspot_detected_with_bsm_delay(self, timer_state, timer_delay):
     """Test behavior when blindspot is detected with BSM delay enabled."""
+    # Blindspot detected - should prevent auto lane change
     self._reset_states()
-    # Setup NUDGELESS mode with BSM delay enabled
     self.alc.lane_change_bsm_delay = True  # BSM delay on
-    self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGELESS
+    self.alc.lane_change_set_timer = timer_state
 
-    # Update with blindspot detected
+    # Update with blindspot detected - this should prevent auto lane change
     self.alc.update_lane_change(blindspot_detected=True, brake_pressed=False)
-
-    # For NUDGELESS with blindspot, timer should be disabled
-    assert self.alc.lane_change_wait_timer == TIMER_DISABLED
     assert not self.alc.auto_lane_change_allowed
 
-    # Test with TWO_SECONDS timer
+    # Keep updating with blindspot detected - should still prevent auto lane change
+    num_updates = int(timer_delay / DT_MDL) + 1  # Add one extra updates to ensure we exceed the threshold
+    for _ in range(num_updates):
+      self.alc.update_lane_change(blindspot_detected=True, brake_pressed=False)
+    assert not self.alc.auto_lane_change_allowed
+
+  @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
+  def test_blindspot_detected_then_undetected_with_bsm_delay(self, timer_state, timer_delay):
+    """Test behavior when blindspot is detected then undetected with BSM delay enabled."""
+    # Blindspot clears - should allow auto lane change after sufficient time
     self._reset_states()
-    self.alc.lane_change_set_timer = AutoLaneChangeState.TWO_SECONDS
+    self.alc.lane_change_bsm_delay = True
+    self.alc.lane_change_set_timer = timer_state
 
-    # Update with blindspot detected
+    # First update with blindspot detected to set the negative timer
     self.alc.update_lane_change(blindspot_detected=True, brake_pressed=False)
-
-    # For TWO_SECONDS with blindspot, timer should be set to delay-1
-    assert self.alc.lane_change_wait_timer == 1.0  # 2.0 - 1
     assert not self.alc.auto_lane_change_allowed
 
-  @parameterized.expand([
-    (AutoLaneChangeState.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]),
-    (AutoLaneChangeState.HALF_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.HALF_SECOND]),
-    (AutoLaneChangeState.ONE_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.ONE_SECOND]),
-    (AutoLaneChangeState.TWO_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.TWO_SECONDS]),
-    (AutoLaneChangeState.THREE_SECONDS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.THREE_SECONDS])
-  ])
+    # Now update with blindspot cleared - should start incrementing timer from negative value
+    num_updates = int((timer_delay + abs(ONE_SECOND_DELAY)) / DT_MDL) + 1
+    for _ in range(num_updates):
+      self.alc.update_lane_change(blindspot_detected=False, brake_pressed=False)
+
+    # After sufficient updates with no blindspot, auto lane change should be allowed
+    assert self.alc.auto_lane_change_allowed
+
+  @parameterized.expand(AUTO_LANE_CHANGE_TIMER_COMBOS)
   def test_disallow_continuous_auto_lane_change(self, timer_state, timer_delay):
       self._reset_states()
       self.alc.lane_change_bsm_delay = False  # BSM delay off

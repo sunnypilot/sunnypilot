@@ -30,7 +30,7 @@ AUTO_LANE_CHANGE_TIMER = {
   AutoLaneChangeState.THREE_SECONDS: 3.0,  # 3-second delay
 }
 
-TIMER_DISABLED = -1
+ONE_SECOND_DELAY = -1
 
 
 class AutoLaneChangeController:
@@ -75,9 +75,9 @@ class AutoLaneChangeController:
 
     if self.lane_change_bsm_delay and blindspot_detected and self.lane_change_delay > 0:
       if self.lane_change_delay == AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]:
-        self.lane_change_wait_timer = TIMER_DISABLED
+        self.lane_change_wait_timer = ONE_SECOND_DELAY
       else:
-        self.lane_change_wait_timer = self.lane_change_delay - 1
+        self.lane_change_wait_timer = self.lane_change_delay + ONE_SECOND_DELAY
 
   def update_allowed(self) -> bool:
     # Auto lane change allowed if:
