@@ -2,9 +2,8 @@ from parameterized import parameterized
 
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
-from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import (
-  AutoLaneChangeController, AutoLaneChangeState, AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
-)
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeState, \
+  AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
 
 AUTO_LANE_CHANGE_TIMER_COMBOS = [
   (AutoLaneChangeState.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeState.NUDGELESS]),
