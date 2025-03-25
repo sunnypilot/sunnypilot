@@ -43,14 +43,11 @@ class TestAutoLaneChangeController:
     assert self.alc.lane_change_wait_timer == 0.0
     assert not self.alc.prev_brake_pressed
 
-  @parameterized.expand([
-    (AutoLaneChangeMode.OFF, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.OFF]),
-    (AutoLaneChangeMode.NUDGE, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGE]),
-  ])
-  def test_off_and_nudge_mode(self, timer_state, timer_delay):
+  @parameterized.expand([(AutoLaneChangeMode.OFF, ), (AutoLaneChangeMode.NUDGE, )])
+  def test_off_and_nudge_mode(self, timer_state):
     """Test the default OFF and NUDGE mode behavior."""
     self._reset_states()
-    # Setup NUDGE mode
+    # Setup mode
     self.alc.lane_change_bsm_delay = False  # BSM delay off
     self.alc.lane_change_set_timer = timer_state
 
