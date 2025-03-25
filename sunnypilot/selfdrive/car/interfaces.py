@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from enum import Enum
 from opendbc.car import Bus, structs
 from opendbc.car.can_definitions import CanRecvCallable, CanSendCallable
 from opendbc.car.car_helpers import can_fingerprint
@@ -17,11 +16,6 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
 
 import openpilot.system.sentry as sentry
-
-
-class HyundaiLongTuneOption(Enum):
-  LONG_TUNING = "1"
-  LONG_TUNING_ALT = "2"
 
 
 def log_fingerprint(CP: structs.CarParams) -> None:
@@ -57,12 +51,8 @@ def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, pa
     params = Params()
 
   if CP.brand == 'hyundai':
-    tuning_option_str = params.get("HyundaiLongTune")
-    try:
-      tuning_option = HyundaiLongTuneOption(tuning_option_str)
-    except ValueError:
-      tuning_option = None
-    if tuning_option is not None:
+    tuning_option_str = params.get("HyundaiLongTune").strip()
+    if tuning_option_str != "0":
       CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
     if params.get_bool("HyundaiSmootherBraking"):
       CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
