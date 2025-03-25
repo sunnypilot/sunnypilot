@@ -18,6 +18,8 @@
 #include "common/swaglog.h"
 #include "system/camerad/cameras/ife.h"
 #include "system/camerad/cameras/spectra.h"
+
+#include "common/params.h"
 #include "system/camerad/cameras/bps_blobs.h"
 #include "third_party/linux/include/msm_media_info.h"
 
@@ -998,9 +1000,11 @@ bool SpectraCamera::openSensor() {
     return (sensors_init() == 0);
   };
 
+  auto useLegacy = Params().getBool("UseLegacyCameraSensor");
+
   // Figure out which sensor we have
   if (!init_sensor_lambda(new AR0231) &&
-      !init_sensor_lambda(new OX03C10) &&
+      !init_sensor_lambda(useLegacy ? new OX03C10_LEGACY : new OX03C10) &&
       !init_sensor_lambda(new OS04C10)) {
     LOGE("** sensor %d FAILED bringup, disabling", cc.camera_num);
     enabled = false;

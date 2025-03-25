@@ -57,8 +57,19 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(hyundaiRadarTracksToggle);
 
-  enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
-  addItem(enableGithubRunner);
+  useLegacyCameraSensorToggle = new ParamControl(
+  "UseLegacyCameraSensor",
+  tr("Use legacy camera sensor (EXPERIMENTAL)"),
+  QString("<b>%1</b><br><br>%2")
+    .arg(tr("WARNING: this setting is usually never needed!."))
+    .arg(tr("On some HWs, the camera might fail to start, if that were to happen, toggling this setting on might help.")),
+  ""
+  );
+  useLegacyCameraSensorToggle->setConfirmation(true, false);
+  QObject::connect(useLegacyCameraSensorToggle, &ParamControl::toggleFlipped, [=]() {
+    updateToggles(offroad);
+  });
+  addItem(useLegacyCameraSensorToggle);
 
   // error log button
   errorLogBtn = new ButtonControl(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
@@ -67,6 +78,9 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
     ConfirmationDialog::rich(QString::fromStdString(txt), this);
   });
   addItem(errorLogBtn);
+
+  enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
+  addItem(enableGithubRunner);
 
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");

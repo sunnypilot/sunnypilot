@@ -12,6 +12,7 @@
 #include "cereal/gen/cpp/log.capnp.h"
 #include "system/camerad/sensors/ar0231_registers.h"
 #include "system/camerad/sensors/ox03c10_registers.h"
+#include "system/camerad/sensors/ox03c10_legacy_registers.h"
 #include "system/camerad/sensors/os04c10_registers.h"
 
 #define ANALOG_GAIN_MAX_CNT 55
@@ -104,6 +105,13 @@ public:
   std::vector<i2c_random_wr_payload> getExposureRegisters(int exposure_time, int new_exp_g, bool dc_gain_enabled) const override;
   float getExposureScore(float desired_ev, int exp_t, int exp_g_idx, float exp_gain, int gain_idx) const override;
   int getSlaveAddress(int port) const override;
+};
+
+class OX03C10_LEGACY : public OX03C10 {
+public:
+  explicit OX03C10_LEGACY() : OX03C10() {
+    init_reg_array.assign(std::begin(init_array_ox03c10_legacy), std::end(init_array_ox03c10_legacy));
+  }
 };
 
 class OS04C10 : public SensorInfo {

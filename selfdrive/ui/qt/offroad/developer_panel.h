@@ -21,6 +21,7 @@ private:
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* hyundaiRadarTracksToggle;
   ParamControl* enableGithubRunner;
+  ParamControl* useLegacyCameraSensorToggle;
   bool is_release;
   bool offroad = false;
 
