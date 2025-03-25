@@ -1,7 +1,10 @@
+from cereal import log
+
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
-from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeState, \
-  AUTO_LANE_CHANGE_TIMER, TIMER_DISABLED
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import (
+  AutoLaneChangeController, AutoLaneChangeState, AUTO_LANE_CHANGE_TIMER, TIMER_DISABLED
+)
 
 
 class TestAutoLaneChangeController:
@@ -14,6 +17,10 @@ class TestAutoLaneChangeController:
     # Set some non-default values
     self.alc.lane_change_wait_timer = 2.0
     self.alc.prev_brake_pressed = True
+
+    # Set the DesireHelper to trigger a reset
+    self.DH.lane_change_state = LaneChangeState.off
+    self.DH.lane_change_direction = LaneChangeDirection.none
 
     # Call reset
     self.alc.reset()
