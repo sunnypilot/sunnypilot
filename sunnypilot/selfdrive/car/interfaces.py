@@ -24,6 +24,34 @@ def log_fingerprint(CP: structs.CarParams) -> None:
   else:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
+def initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  # Hyundai Custom Longitudinal Tuning
+  if CP.brand == 'hyundai':
+    tuning_option_str = params.get("HyundaiLongTune")
+    if tuning_option_str is not None:
+      tuning_option_str = tuning_option_str.strip()
+      if tuning_option_str != "0":
+        CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
+    if params.get_bool("HyundaiSmootherBraking"):
+      CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
+
+
+def initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
+  if params is None:
+    params = Params()
+
+  if CP.brand == 'hyundai':
+    if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
+      # Having this automatic without a toggle causes a weird process replay diff because
+      # somehow it sees fewer logs than intended
+      if params.get_bool("HyundaiRadarTracksToggle"):
+        CP_SP.flags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
+        if params.get_bool("HyundaiRadarTracks"):
+          CP.radarUnavailable = False
+
 
 def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
                                               enabled: bool = False) -> None:
@@ -47,26 +75,9 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
 
 
 def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
-  if params is None:
-    params = Params()
-
   if CP.brand == 'hyundai':
-    tuning_option_str = params.get("HyundaiLongTune")
-    if tuning_option_str is not None:
-      tuning_option_str = tuning_option_str.strip()
-      if tuning_option_str != "0":
-        CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
-    if params.get_bool("HyundaiSmootherBraking"):
-      CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
-
-    if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
-      # Having this automatic without a toggle causes a weird process replay diff because
-      # somehow it sees fewer logs than intended
-      if params.get_bool("HyundaiRadarTracksToggle"):
-        CP_SP.flags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
-        if params.get_bool("HyundaiRadarTracks"):
-          CP.radarUnavailable = False
-
+    initialize_radar_tracks(CP, CP_SP, params)
+  initialize_custom_longitudinal_tuning(CP, CP_SP, params)
   initialize_neural_network_lateral_control(CP, CP_SP, params)
 
 
