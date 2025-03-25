@@ -16,6 +16,7 @@ class VehiclePanel : public QFrame {
 public:
   explicit VehiclePanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
+
 public slots:
   void updatePanel(bool _offroad);
 
@@ -23,11 +24,11 @@ private:
   // UI elements
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
-  PlatformSelector *platformSelector = nullptr;
+  PlatformSelector* platformSelector = nullptr;
   ButtonParamControlSP* hkgtuningToggle = nullptr;
-  bool offroad;
 
   // State tracking
+  bool offroad = false;
   Params params;
   int hkg_state = 0;
 
