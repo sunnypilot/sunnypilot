@@ -101,9 +101,8 @@ class AutoLaneChangeController:
       self.prev_brake_pressed = brake_pressed
 
     self.update_lane_change_timers(blindspot_detected)
-    alc_allowed = self.update_allowed()
 
-    self.auto_lane_change_allowed = alc_allowed
+    self.auto_lane_change_allowed = self.update_allowed()
 
   def update_state(self):
     if self.DH.lane_change_state == log.LaneChangeState.laneChangeStarting:
