@@ -183,6 +183,7 @@ class TestAutoLaneChangeController:
 
       # Simulate lane change is completed, and one_blinker stays on
       self.DH.lane_change_state = LaneChangeState.preLaneChange
+      self.alc.update_state()
 
       # Update enough times to exceed the threshold (seconds / DT_MDL)
       for _ in range(num_updates):
