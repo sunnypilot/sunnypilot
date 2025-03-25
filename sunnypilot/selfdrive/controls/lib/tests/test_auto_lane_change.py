@@ -94,6 +94,31 @@ class TestAutoLaneChangeController:
       assert self.alc.lane_change_wait_timer > self.alc.lane_change_delay
       assert self.alc.auto_lane_change_allowed
 
+  def test_brake_pressed_disables_auto_lane_change(self):
+    """Test that pressing the brake disables auto lane change."""
+    self.alc.reset()
+    # Setup NUDGELESS mode (which normally allows auto lane change)
+    self.alc.lane_change_bsm_delay = False
+    self.alc.lane_change_set_timer = AutoLaneChangeState.NUDGELESS
+
+    # Update with brake pressed for 1 second
+    num_updates = int(1.0 / DT_MDL)
+    for _ in range(num_updates):
+      self.alc.update(blindspot_detected=False, brake_pressed=True)
+
+    # Even though NUDGELESS mode, lane change should be disallowed due to brake pressed prior initiating lane change
+    assert not self.alc.auto_lane_change_allowed
+
+    # Check that prev_brake_pressed is saved
+    assert self.alc.prev_brake_pressed
+
+    # Even releasing brake shouldn't allow auto lane change
+    num_updates = int(1.0 / DT_MDL)
+    for _ in range(num_updates):
+      self.alc.update(blindspot_detected=False, brake_pressed=False)
+
+    assert not self.alc.auto_lane_change_allowed
+
   def test_blindspot_detected_with_bsm_delay(self):
     """Test behavior when blindspot is detected with BSM delay enabled."""
     self.alc.reset()

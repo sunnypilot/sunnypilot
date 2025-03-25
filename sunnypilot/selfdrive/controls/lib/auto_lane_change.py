@@ -44,7 +44,6 @@ class AutoLaneChangeController:
     self.prev_brake_pressed = False
     self.lane_change_delay = 0.0
     self._blindspot_detected = False
-    self._brake_pressed = False
     self.auto_lane_change_allowed = False
     self.read_params()
 
@@ -95,10 +94,11 @@ class AutoLaneChangeController:
 
   def update(self, blindspot_detected: bool, brake_pressed: bool) -> None:
     self._blindspot_detected = blindspot_detected
-    self._brake_pressed = brake_pressed
+
+    if brake_pressed and not self.prev_brake_pressed:
+      self.prev_brake_pressed = brake_pressed
 
     self.update_lane_change_timers()
     alc_allowed = self.update_allowed()
 
     self.auto_lane_change_allowed = alc_allowed
-    self.prev_brake_pressed = self._brake_pressed
