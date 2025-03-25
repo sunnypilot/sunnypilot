@@ -37,14 +37,18 @@ class AutoLaneChangeController:
   def __init__(self, desire_helper):
     self.DH = desire_helper
     self.params = Params()
+
     self.lane_change_wait_timer = 0.0
     self.param_read_counter = 0
+    self.lane_change_delay = 0.0
+
     self.lane_change_set_timer = AutoLaneChangeMode.NUDGE
     self.lane_change_bsm_delay = False
+
     self.prev_brake_pressed = False
-    self.lane_change_delay = 0.0
     self.auto_lane_change_allowed = False
     self.prev_lane_change = False
+
     self.read_params()
 
   def reset(self) -> None:
