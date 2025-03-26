@@ -34,9 +34,9 @@ def initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs.
     if tuning_option_str is not None:
       tuning_option_str = tuning_option_str.strip()
       if tuning_option_str != "0":
-        CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING.value
+        CP_SP.flags |= HyundaiFlagsSP.LONGTUNING.value
     if params.get_bool("HyundaiSmootherBraking"):
-      CP_SP.flags |= HyundaiFlagsSP.HKGLONGTUNING_BRAKING.value
+      CP_SP.flags |= HyundaiFlagsSP.LONGTUNING_BRAKING.value
 
 
 def initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
@@ -75,8 +75,7 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
 
 
 def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
-  if CP.brand == 'hyundai':
-    initialize_radar_tracks(CP, CP_SP, params)
+  initialize_radar_tracks(CP, CP_SP, params)
   initialize_custom_longitudinal_tuning(CP, CP_SP, params)
   initialize_neural_network_lateral_control(CP, CP_SP, params)
 

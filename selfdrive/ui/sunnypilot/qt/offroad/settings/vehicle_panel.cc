@@ -71,7 +71,6 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
 }
 
 void VehiclePanel::showEvent(QShowEvent *event) {
-  QFrame::showEvent(event);
   updatePanel(offroad);
   updateCarToggles();
 }
