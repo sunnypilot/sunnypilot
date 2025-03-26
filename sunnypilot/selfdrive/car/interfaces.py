@@ -75,8 +75,8 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
 
 
 def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
-  initialize_radar_tracks(CP, CP_SP, params)
   initialize_custom_longitudinal_tuning(CP, CP_SP, params)
+  initialize_radar_tracks(CP, CP_SP, params)
   initialize_neural_network_lateral_control(CP, CP_SP, params)
 
 
