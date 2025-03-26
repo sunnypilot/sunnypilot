@@ -39,20 +39,6 @@ def initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs.
       CP_SP.flags |= HyundaiFlagsSP.LONGTUNING_BRAKING.value
 
 
-def initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
-  if params is None:
-    params = Params()
-
-  if CP.brand == 'hyundai':
-    if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
-      # Having this automatic without a toggle causes a weird process replay diff because
-      # somehow it sees fewer logs than intended
-      if params.get_bool("HyundaiRadarTracksToggle"):
-        CP_SP.flags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
-        if params.get_bool("HyundaiRadarTracks"):
-          CP.radarUnavailable = False
-
-
 def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
                                               enabled: bool = False) -> None:
   if params is None:
@@ -74,10 +60,24 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
+def initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
+  if params is None:
+    params = Params()
+
+  if CP.brand == 'hyundai':
+    if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
+      # Having this automatic without a toggle causes a weird process replay diff because
+      # somehow it sees fewer logs than intended
+      if params.get_bool("HyundaiRadarTracksToggle"):
+        CP_SP.flags |= HyundaiFlagsSP.ENABLE_RADAR_TRACKS.value
+        if params.get_bool("HyundaiRadarTracks"):
+          CP.radarUnavailable = False
+
+
 def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
   initialize_custom_longitudinal_tuning(CP, CP_SP, params)
-  initialize_radar_tracks(CP, CP_SP, params)
   initialize_neural_network_lateral_control(CP, CP_SP, params)
+  initialize_radar_tracks(CP, CP_SP, params)
 
 
 def initialize_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params, can_recv: CanRecvCallable,
