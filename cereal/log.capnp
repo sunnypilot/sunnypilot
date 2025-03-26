@@ -2576,7 +2576,7 @@ struct Event {
     # DO change the name of the field and struct
     # DON'T change the ID (e.g. @107)
     # DON'T change which struct it points to
-     selfdriveStateSP @107 :Custom.SelfdriveStateSP;
+    selfdriveStateSP @107 :Custom.SelfdriveStateSP;
     modelManagerSP @108 :Custom.ModelManagerSP;
     longitudinalPlanSP @109 :Custom.LongitudinalPlanSP;
     onroadEventsSP @110 :Custom.OnroadEventSP;
