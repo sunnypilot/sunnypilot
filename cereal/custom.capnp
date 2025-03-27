@@ -101,7 +101,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   }
 }
 
-struct OnroadEventSP @0xda96579883444c35 {
+struct OnroadEventsSP @0xda96579883444c35 {
     events @0 :List(Event);
 
     struct Event {

@@ -15,7 +15,7 @@ from openpilot.selfdrive.selfdrived.events import ET, NormalPermanentAlert, Even
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP, EVENTS_SP
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
-EventNameSP = custom.OnroadEventSP.EventName
+EventNameSP = custom.OnroadEventsSP.EventName
 
 # The event types that maintain the current state
 MAINTAIN_STATES = {State.enabled: (None,), State.disabled: (None,), State.softDisabling: (ET.SOFT_DISABLE,),

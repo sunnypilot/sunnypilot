@@ -10,7 +10,7 @@ from opendbc.car import structs
 
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
-EventNameSP = custom.OnroadEventSP.EventName
+EventNameSP = custom.OnroadEventsSP.EventName
 
 
 class CarSpecificEventsSP:
