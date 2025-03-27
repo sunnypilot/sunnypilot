@@ -67,10 +67,7 @@ def setup_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, pa
 
 
 def enable_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable,
-                        params: Params = None) -> None:
-  if params is None:
-    params = Params()
-
+                        params: Params) -> None:
   if CP.brand == 'hyundai':
     if CP_SP.flags & HyundaiFlagsSP.ENABLE_RADAR_TRACKS:
       can_recv()
@@ -87,6 +84,6 @@ def enable_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_r
         params.put_bool_nonblocking("HyundaiRadarTracksPersistent", True)
 
 
-def initialize_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params, can_recv: CanRecvCallable,
-                                can_send: CanSendCallable):
+def initialize_car_interface_sp(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params,
+                                can_recv: CanRecvCallable, can_send: CanSendCallable):
   enable_radar_tracks(CP, CP_SP, can_recv, params)
