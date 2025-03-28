@@ -47,9 +47,6 @@ class DummyCarParams:
   def __init__(self):
     self.carFingerprint = CAR.KIA_NIRO_EV
     self.longitudinalTuning = DummyLongitudinalTuning()
-    self.vEgoStopping = 0.5
-    self.vEgoStarting = 0.1         #let's start lower to test some cars tuning
-    self.stoppingDecelRate = 0.4    #let's start lower to test some cars tuning
 
 # Dummy Params class to bypass persistent storage issues
 class DummyParams:
@@ -72,7 +69,7 @@ def tuner():
 
 def test_braking_event(tuner):
   initial_speed = 20.0
-  speeds = np.linspace(initial_speed, 0.0, num=15)
+  speeds = np.linspace(initial_speed, 5.0, num=15)
   accel = -1.0
 
   # First update to trigger braking event
@@ -119,7 +116,7 @@ def test_force_update(tuner):
 def simulate_multiple_events(tuner):
   # Simulate multiple braking events to collect data for training
   for _ in range(10):
-    speeds = np.linspace(20.0, 0.0, num=15)
+    speeds = np.linspace(20.0, 0.0, num=75)
     accel = -1.0
     CS = DummyCarState(vEgo=speeds[0], aEgo=0.0)
     actuators = DummyActuators(accel=accel)
@@ -128,7 +125,7 @@ def simulate_multiple_events(tuner):
       CS = DummyCarState(vEgo=v, aEgo=accel)
       tuner.update(CS, actuators)
   # Simulate multiple starting events
-  for _ in range(10):
+  for _ in range(100):
     # Initial stopped state
     CS = DummyCarState(vEgo=0.0, aEgo=0.0)
     actuators = DummyActuators(accel=0.0)

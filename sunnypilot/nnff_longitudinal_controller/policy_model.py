@@ -1,4 +1,5 @@
 import base64
+import gzip
 import json
 import numpy as np
 import os
@@ -28,17 +29,17 @@ class LongitudinalLiveTuner:
   MIN_BLOCKS_NEEDED = 10  # Minimum blocks needed for valid calibration
   TUNE_LIMIT_PERCENT = 0.50  # Maximum percent change allowed from base value
   SMOOTH_FACTOR = 0.1  # How fast to adapt (0.1 = 10% of new value each update)
-  MAX_AGE_DAYS = 90  # TODO: change this to resetting to first learned params/ else, if calibration reset pressed, reset to default
+  MAX_AGE_DAYS = 120  # TODO: change this to resetting to first learned params/ else, if calibration reset pressed, reset to default
   STOPPING_SPEED_THRESHOLD = 0.2  # m/s
   STARTING_SPEED_THRESHOLD = 0.5  # m/s
 
   # Safety parameters
-  MIN_SAFE_LEAD_DISTANCE = 5.0  # Minimum safe distance from lead car (meters)
+  MIN_SAFE_LEAD_DISTANCE = 4.0  # Minimum safe distance from lead car (meters)
   IDEAL_LEAD_DISTANCE = 6.0     # Ideal distance when stopped behind lead car
 
   # Neural network hyperparameters
   MEMORY_SIZE = 250  # Store up to 250 braking events
-  LEARNING_RATE = 0.05  # How quickly to adapt to new brake profiles
+  LEARNING_RATE = 0.1  # How quickly to adapt to new brake profiles
 
   # How many update calls to reach 20 minutes of learning (at 20Hz)
   TARGET_TRAINING_STEPS = 20 * 60 * 20  # 20 minutes * 60 seconds * 20Hz
@@ -65,7 +66,6 @@ class LongitudinalLiveTuner:
       default_cp.longitudinalTuning.kpV = [0.]
       default_cp.longitudinalTuning.kiBP = [0.]
       default_cp.longitudinalTuning.kiV = [0.]
-      # Also assign default stopping parameters
       default_cp.vEgoStopping = 0.5
       default_cp.vEgoStarting = 0.5
       default_cp.stoppingDecelRate = 0.8
@@ -129,7 +129,7 @@ class LongitudinalLiveTuner:
       weight_init='he',
       dropout_rate=0.1
     )
-    # Try to load previously saved model checkpoint
+    # Try to load previously saved model checkpoint from pkl
     self._load_model_checkpoint()
 
     self.best_nn_validation_loss = float('inf')
@@ -215,9 +215,10 @@ class LongitudinalLiveTuner:
 
       if params_bytes is not None:
         try:
-          # Parse the JSON containing car configurations
-          all_cars_data = json.loads(params_bytes)
-
+          # Decompress the stored string
+          compressed = base64.b64decode(params_bytes)
+          json_str = gzip.decompress(compressed).decode('utf-8')
+          all_cars_data = json.loads(json_str)
           # Check if our car fingerprint exists in the stored data
           if 'cars' in all_cars_data and self.car_fingerprint in all_cars_data['cars']:
             # Get this car's data
@@ -337,14 +338,17 @@ class LongitudinalLiveTuner:
           # If the existing data isn't valid JSON, start fresh with a new structure
           pass
 
-      # Update or add the current car data
+      # Update/add the current car data
       all_cars_data['cars'][self.car_fingerprint] = {
         'pickled_data': base64.b64encode(pickled_data).decode('ascii'),
         'timestamp': int(time.time())
       }
 
-      # Save back the combined data
-      self.params.put("LongitudinalLiveTuneParams", json.dumps(all_cars_data))
+      # Serialize, compress and encode before saving
+      json_data = json.dumps(all_cars_data)
+      compressed = gzip.compress(json_data.encode('utf-8'))
+      compressed_str = base64.b64encode(compressed).decode('ascii')
+      self.params.put("LongitudinalLiveTuneParams", compressed_str)
       print(f"Saved parameters for car {self.car_fingerprint} (total cars: {len(all_cars_data['cars'])})")
 
     except Exception as e:
@@ -375,6 +379,9 @@ class LongitudinalLiveTuner:
                                       self.stopping_decel_rate_default * upper_limit)
     kp_gain_factor_val = np.clip(kp_gain_factor_val, 0.75, 1.25)
     ki_gain_factor_val = np.clip(ki_gain_factor_val, 0.75, 1.25)
+
+    vego_stopping_val = min(vego_stopping_val, 0.5)
+    stopping_decel_rate_val = min(stopping_decel_rate_val, 0.8)
 
     # Additional safety check: balance between stopping speed and decel rate
     if stopping_decel_rate_val < 0.2 and vego_stopping_val > 0.3:
@@ -457,7 +464,7 @@ class LongitudinalLiveTuner:
           # Calculate final metrics
           self.current_braking_event['final_speed'] = v_ego
 
-          # Record final stopping distance (how far from target)
+          # Determine lead distance when stopping
           self.current_braking_event['final_stopping_distance'] = lead_dist if lead_dist is not None else 0.0
 
           # Safety check: track if this was an unsafe stop (too close to lead)
@@ -615,7 +622,7 @@ class LongitudinalLiveTuner:
     try:
       # Train the model
       iterations_per_batch = 100    # Number of times data from epoch is cycled through the Neural Network
-      batch_size = 1                # Use only one full dataset for GPU/CPU stability
+      batch_size = 1                # Use only one full dataset for stability
 
       for i in range(0, len(train_features_np), batch_size):
         if i + batch_size <= len(train_features_np):  # Make sure we have a complete batch
@@ -623,7 +630,7 @@ class LongitudinalLiveTuner:
           batch_y = Tensor(train_targets_np[i:i + batch_size])
 
           try:
-            # Simple forward pass to check if dimensions work
+            # Forward pass to check dimensions
             _ = self.nn.forward(batch_x)
             # Only try training if forward pass succeeds
             self.nn.train(batch_x, batch_y, iterations=iterations_per_batch)
@@ -667,11 +674,11 @@ class LongitudinalLiveTuner:
             print(
               f"  stopping_decel_rate: current={self.stopping_decel_rate:.4f}, pred={decel_rate_pred:.4f}, target={decel_rate_target:.4f}")
 
-          # Track if validation loss is improving with proper handling of infinity
+          # Track if validation loss is improving
           if val_loss < self.best_nn_validation_loss:
-            # Handle the case where best_nn_validation_loss is infinity
+            # Handle the case where loss is infinity
             if np.isinf(self.best_nn_validation_loss):
-              improvement = 100.0  # Just report 100% improvement from infinity
+              improvement = 100.0
             else:
               improvement = (self.best_nn_validation_loss - val_loss) / self.best_nn_validation_loss * 100
 
@@ -759,7 +766,7 @@ class LongitudinalLiveTuner:
             print(f"\nApplying model - Metal GPU predictions: {prediction_array}")
           except Exception as metal_error:
             print(f"Metal GPU execution failed: {metal_error}")
-            # Fall back to CPU on macOS
+            # Fall back to CPU on macOS if Metal fails
             os.environ['TINYGRAD_DEVICE'] = 'CPU'
             features_tensor = Tensor(features.astype(np.float32))
             prediction = self.nn.forward(features_tensor)
@@ -800,7 +807,7 @@ class LongitudinalLiveTuner:
           return False
 
       # Use more aggressive learning rate if this is from direct training application
-      learning_rate = 0.3 if direct_training_application else 0.1
+      learning_rate = 0.4 if direct_training_application else 0.1
 
       # Safely apply predictions
       try:
@@ -914,18 +921,18 @@ class LongitudinalLiveTuner:
       return
 
     # Safety check for stopping distance
-    if stopping_distances and np.mean(stopping_distances) < self.MIN_SAFE_LEAD_DISTANCE:
+    if stopping_distances and np.mean(stopping_distances) < self.MIN_SAFE_LEAD_DISTANCE * 0.8:
       # If we're consistently stopping too close, make immediate corrections
-      self.vego_stopping = min(self.vego_stopping * 1.05, self.vego_stopping_default * 1.2)  # Increase stopping threshold
-      self.stopping_decel_rate = max(self.stopping_decel_rate * 1.1, self.stopping_decel_rate_default * 0.9)  # More aggressive braking
-      print(f"Safety correction: Adjusting parameters due to unsafe stopping distance < {self.MIN_SAFE_LEAD_DISTANCE}m")
+      self.vego_stopping = max(self.vego_stopping * 0.9, self.vego_stopping_default * 0.9)  # Gently lower stopping threshold
+      self.stopping_decel_rate = min(self.stopping_decel_rate * 0.95, self.stopping_decel_rate_default)  # Milder braking
+      print(f"Safety correction: Mean stopping distance {np.mean(stopping_distances):.2f}m is too low; applying correction.")
       self._validate_params()
       self._save_params()
       return
 
     # Calculate optimal decel rate based on comfort and accuracy
     # More weight to comfort for regular stops, more weight to accuracy for emergency stops
-    comfort_weight = 0.6
+    comfort_weight = 0.75
     accuracy_weight = 0.4
 
     if stopping_accuracies:
@@ -1000,8 +1007,8 @@ class LongitudinalLiveTuner:
       target_kiV = prediction[9] * (kiV_mean * 0.5) + (kiV_mean * 0.5)
 
       # Update parameters using suitable learning rates:
-      safety_lr = 0.1
-      comfort_lr = 0.05
+      safety_lr = 0.2
+      comfort_lr = 0.1
       self.vego_stopping = (1.0 - safety_lr * accuracy_weight) * self.vego_stopping + (safety_lr * accuracy_weight) * target_vego_stopping
       self.stopping_decel_rate = (1.0 - safety_lr * accuracy_weight) * self.stopping_decel_rate + (safety_lr * accuracy_weight) * target_decel_rate
       self.vego_starting = (1.0 - comfort_lr * comfort_weight) * self.vego_starting + (comfort_lr * comfort_weight) * target_vego_starting
