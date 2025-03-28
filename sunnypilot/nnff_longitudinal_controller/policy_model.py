@@ -25,50 +25,44 @@ class LongitudinalLiveTuner:
   longitudinal control parameters to the specific vehicle and driver preferences.
   """
 
-  BLOCK_SIZE = 50  # Number of samples to gather before updating
-  MIN_BLOCKS_NEEDED = 10  # Minimum blocks needed for valid calibration
-  TUNE_LIMIT_PERCENT = 0.50  # Maximum percent change allowed from base value
-  SMOOTH_FACTOR = 0.1  # How fast to adapt (0.1 = 10% of new value each update)
-  MAX_AGE_DAYS = 120  # TODO: change this to resetting to first learned params/ else, if calibration reset pressed, reset to default
+  BLOCK_SIZE = 50                 # Number of samples to gather before updating
+  MIN_BLOCKS_NEEDED = 10          # Minimum blocks needed for valid calibration
+  TUNE_LIMIT_PERCENT = 0.50       # Maximum percent change allowed from base value
+  SMOOTH_FACTOR = 0.1             # How fast to adapt (0.1 = 10% of new value each update)
+  MAX_AGE_DAYS = 120              # TODO: Don't fully reset calibration
   STOPPING_SPEED_THRESHOLD = 0.2  # m/s
   STARTING_SPEED_THRESHOLD = 0.5  # m/s
 
   # Safety parameters
   MIN_SAFE_LEAD_DISTANCE = 4.0  # Minimum safe distance from lead car (meters)
   IDEAL_LEAD_DISTANCE = 6.0     # Ideal distance when stopped behind lead car
+  ISO_DECEL_RATE_MIN = 0.3      # ISO 15622/ISO 26262 lower limit
+  ISO_DECEL_RATE_MAX = 1.2      # Upper limit per (Horn et al., 2024)
+  COMFORT_JERK = 0.6            # Average comfortable jerk per (Horn et al., 2024)
 
   # Neural network hyperparameters
-  MEMORY_SIZE = 250  # Store up to 250 braking events
-  LEARNING_RATE = 0.1  # How quickly to adapt to new brake profiles
+  MEMORY_SIZE = 250     # Store up to 250 braking events
+  LEARNING_RATE = 0.1   # How quickly to adapt to new brake profiles
 
   # How many update calls to reach 20 minutes of learning (at 20Hz)
   TARGET_TRAINING_STEPS = 20 * 60 * 20  # 20 minutes * 60 seconds * 20Hz
 
   def __init__(self, CP: structs.CarParams, original_kpV=None, original_kiV=None):
     # Store car fingerprint for our .pkl output
-    self.car_fingerprint = CP.carFingerprint if CP and hasattr(CP, 'carFingerprint') else "UNKNOWN_CAR"
+    self.car_fingerprint = CP.carFingerprint if CP and hasattr(CP, 'carFingerprint') else "MOCK"
 
-    # If car_fingerprint is None, set a default so NoneType error isn't raised
+    # If car_fingerprint is None, use MOCK
     if self.car_fingerprint is None:
-      self.car_fingerprint = "UNKNOWN_CAR"
+      self.car_fingerprint = "MOCK"
 
     # Create a safe version of the car fingerprint for file reference
     self.safe_fingerprint = ''.join(c if c.isalnum() else '_' for c in self.car_fingerprint)
 
-    # If CP.carFingerprint is provided, get default tuning; otherwise, use fallback defaults.
+    # Use the car-specific params if CP.carFingerprint exists.
     if CP.carFingerprint is not None:
       default_cp = CarInterfaceBase.get_std_params(CP.carFingerprint)
     else:
-      default_cp = structs.CarParams()
-      # Set our fallback defaults from interfaces.py
-      default_cp.longitudinalTuning.kf = 1.
-      default_cp.longitudinalTuning.kpBP = [0.]
-      default_cp.longitudinalTuning.kpV = [0.]
-      default_cp.longitudinalTuning.kiBP = [0.]
-      default_cp.longitudinalTuning.kiV = [0.]
-      default_cp.vEgoStopping = 0.5
-      default_cp.vEgoStarting = 0.5
-      default_cp.stoppingDecelRate = 0.8
+      default_cp = CarInterfaceBase.get_std_params("MOCK")
 
     self.vego_stopping_default = default_cp.vEgoStopping
     self.vego_starting_default = default_cp.vEgoStarting
@@ -78,18 +72,6 @@ class LongitudinalLiveTuner:
     self.kpV_default = np.array(default_cp.longitudinalTuning.kpV)
     self.kiBP_default = np.array(default_cp.longitudinalTuning.kiBP)
     self.kiV_default = np.array(default_cp.longitudinalTuning.kiV)
-
-    # If the retrieved defaults do not include the longitudinal tuning values:
-    if not hasattr(default_cp.longitudinalTuning, 'kf'):
-      default_cp.longitudinalTuning.kf = 1.
-    if not getattr(default_cp.longitudinalTuning, 'kpBP', None):
-      default_cp.longitudinalTuning.kpBP = [0.]
-    if not getattr(default_cp.longitudinalTuning, 'kpV', None):
-      default_cp.longitudinalTuning.kpV = [0.]
-    if not getattr(default_cp.longitudinalTuning, 'kiBP', None):
-      default_cp.longitudinalTuning.kiBP = [0.]
-    if not getattr(default_cp.longitudinalTuning, 'kiV', None):
-      default_cp.longitudinalTuning.kiV = [0.]
 
     self.original_kpV = original_kpV if original_kpV is not None else np.array(default_cp.longitudinalTuning.kpV)
     self.original_kiV = original_kiV if original_kiV is not None else np.array(default_cp.longitudinalTuning.kiV)
@@ -204,12 +186,6 @@ class LongitudinalLiveTuner:
   def _load_params(self):
     """Load saved tuning parameters from persistent storage."""
     try:
-      # Check for forced reset flag
-      if self.params.get("LongitudinalLiveTuneReset"):
-        print("Forced reset of longitudinal live tune parameters")
-        self.params.put("LongitudinalLiveTuneReset", "")
-        return
-
       # Load from the single parameter that contains all car fingerprint data
       params_bytes = self.params.get("LongitudinalLiveTuneParams")
 
@@ -223,7 +199,7 @@ class LongitudinalLiveTuner:
           if 'cars' in all_cars_data and self.car_fingerprint in all_cars_data['cars']:
             # Get this car's data
             car_data = all_cars_data['cars'][self.car_fingerprint]
-            # Decode and unpickle the data
+            # Decode and unpickle that pickle
             pickle_bytes = base64.b64decode(car_data['pickled_data'])
             stored_params = pickle.loads(pickle_bytes)
             print(f"Loaded parameters for {self.car_fingerprint}")
@@ -272,10 +248,10 @@ class LongitudinalLiveTuner:
   def _save_params(self):
     """Save tuning parameters to persistent storage while preserving other car data."""
     try:
-      # Convert braking events to list for serialization (limit to most recent 50)
+      # Convert braking events to list for serialization (limit to most recent 75)
       braking_profiles = []
       try:
-        braking_profiles = list(self.braking_events)[-50:] if self.braking_events else []
+        braking_profiles = list(self.braking_events)[-75:] if self.braking_events else []
       except Exception as e:
         print(f"Error converting braking events: {e}")
 
@@ -375,8 +351,7 @@ class LongitudinalLiveTuner:
                                 self.vego_stopping_default * upper_limit)
     vego_starting_val = np.clip(vego_starting_val, self.vego_starting_default * lower_limit,
                                 self.vego_starting_default * upper_limit)
-    stopping_decel_rate_val = np.clip(stopping_decel_rate_val, self.stopping_decel_rate_default * lower_limit,
-                                      self.stopping_decel_rate_default * upper_limit)
+    stopping_decel_rate_val = np.clip(stopping_decel_rate_val, self.ISO_DECEL_RATE_MIN,self.ISO_DECEL_RATE_MAX)
     kp_gain_factor_val = np.clip(kp_gain_factor_val, 0.75, 1.25)
     ki_gain_factor_val = np.clip(ki_gain_factor_val, 0.75, 1.25)
 
@@ -440,9 +415,16 @@ class LongitudinalLiveTuner:
       decel_rate = (self.prev_speed - v_ego) / DT_CTRL if self.prev_speed > v_ego else 0.0
       jerk = (current_accel - self.last_output_accel) / DT_CTRL
 
+      # If jerk exceeds comfortable limits, reduce influence on deceleration update
+      if abs(jerk) > self.COMFORT_JERK:
+        # Reduce effective deceleration by half to smooth transitions
+        decel_rate_effective = ((self.prev_speed - CS.vEgo) / DT_CTRL) * 0.5
+      else:
+        decel_rate_effective = (self.prev_speed - CS.vEgo) / DT_CTRL
+
       # Update braking event data
       if self.current_braking_event is not None:
-        self.current_braking_event['decel_samples'].append(decel_rate)
+        self.current_braking_event['decel_samples'].append(decel_rate_effective)
         self.current_braking_event['jerk_samples'].append(jerk)
         self.current_braking_event['distance'] += v_ego * DT_CTRL
         self.current_braking_event['duration'] += DT_CTRL
@@ -616,28 +598,12 @@ class LongitudinalLiveTuner:
       print(f"Training features shape: {train_features_np.shape}")
       print(f"Training targets shape: {train_targets_np.shape}")
     except Exception as e:
-      print(f"Error creating training arrays: {e}")
-      return
+     print(f"Error creating training arrays: {e}")
+     return
 
     try:
       # Train the model
-      iterations_per_batch = 100    # Number of times data from epoch is cycled through the Neural Network
-      batch_size = 1                # Use only one full dataset for stability
-
-      for i in range(0, len(train_features_np), batch_size):
-        if i + batch_size <= len(train_features_np):  # Make sure we have a complete batch
-          batch_x = Tensor(train_features_np[i:i + batch_size])
-          batch_y = Tensor(train_targets_np[i:i + batch_size])
-
-          try:
-            # Forward pass to check dimensions
-            _ = self.nn.forward(batch_x)
-            # Only try training if forward pass succeeds
-            self.nn.train(batch_x, batch_y, iterations=iterations_per_batch)
-          except Exception as e:
-            print(f"Error during neural network training batch: {e}")
-            # Continue with next batch
-            continue
+      self.nn.train(Tensor(train_features_np), Tensor(train_targets_np), iterations=100, epochs=10)
 
       if len(val_features_np) > 0:
         try:
@@ -950,6 +916,14 @@ class LongitudinalLiveTuner:
     # Comfort score affects decel rate (higher comfort = gentler deceleration)
     comfort_factor = np.clip(avg_comfort, 0.5, 1.0)
 
+    # Incorporate average jerk analysis:
+    avg_jerk = np.mean([np.mean(event.get('jerk_samples', [0.0])) for event in recent_events])
+    # If average jerk is too high, reduce deceleration aggressiveness.
+    if abs(avg_jerk) > self.COMFORT_JERK:
+      comfort_adjustment = 0.8
+    else:
+      comfort_adjustment = 1.0
+
     # Use the neural network if we have enough data for accurate prediction
     if len(recent_events) >= 10 and hasattr(self, 'nn'):
       # Prepare input features that represent the current driving situation
@@ -1034,7 +1008,7 @@ class LongitudinalLiveTuner:
     else:
       # Fallback to simpler adaptive learning if neural network isn't ready
       # Adjust deceleration rate based on comfort factor
-      target_decel_rate = avg_decel * (0.85 + 0.3 * (1.0 - comfort_factor))
+      target_decel_rate = avg_decel * comfort_adjustment * (0.85 + 0.3 * (1.0 - comfort_factor))
 
       # Apply learning rate to the adjustment
       self.stopping_decel_rate = (1.0 - self.LEARNING_RATE) * self.stopping_decel_rate + self.LEARNING_RATE * target_decel_rate

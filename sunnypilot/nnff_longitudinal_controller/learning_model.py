@@ -139,10 +139,17 @@ class TinyNeuralNetwork:
 
     return loss, out
 
+  def _clip_gradients(self, threshold: float = 1.0) -> None:
+    params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+    for param in params:
+      if param.grad is not None:
+        # Clip gradients
+        param.grad = Tensor(np.clip(param.grad.numpy(), -threshold, threshold))
+
   def train(self, x: Tensor | np.ndarray, y: Tensor | np.ndarray,
-            iterations: int = 1, batch_size: int | None = None,
+            iterations: int = 1000, batch_size: int | None = None,
             validation_data: tuple[Tensor | np.ndarray, Tensor | np.ndarray] | None = None,
-            epochs: int = 1, shuffle: bool = True) -> float | None:
+            epochs: int = 50, shuffle: bool = True) -> float | None:
     """
     Train the network for a given number of iterations or epochs.
 
@@ -188,6 +195,7 @@ class TinyNeuralNetwork:
             self._backward_compiled = False
             loss, _ = self.backward_step(x, y)
             self._ensure_all_gradients()
+            self._clip_gradients()
             self.optimizer.step()
             self.optimizer.zero_grad()
             scalar_loss = float(loss.numpy())
@@ -220,6 +228,7 @@ class TinyNeuralNetwork:
 
             loss, _ = self.backward_step(batch_x, batch_y)
             self._ensure_all_gradients()
+            self._clip_gradients()
             self.optimizer.step()
             self.optimizer.zero_grad()
             scalar_loss = float(loss.numpy())
