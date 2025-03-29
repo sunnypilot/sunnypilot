@@ -1,8 +1,7 @@
 import math
 import numpy as np
-from typing import cast
 
-from tinygrad.nn.optim import SGD, Adam
+from tinygrad.nn.optim import Adam
 from tinygrad.tensor import Tensor
 
 
@@ -15,10 +14,10 @@ class TinyNeuralNetwork:
     hidden_size: int = 24,
     output_size: int = 5,
     lr: float = 0.01,
-    optimizer_type: str = 'adam',
     activation: str = 'leakyrelu',
     weight_init: str = 'he',
-    dropout_rate: float = 0.0
+    dropout_rate: float = 0.0,
+    d3qn: bool = False
   ):
     """
     Initialize the neural network with the given parameters.
@@ -28,10 +27,10 @@ class TinyNeuralNetwork:
       hidden_size: Size of the hidden layers
       output_size: Number of output features
       lr: Learning rate
-      optimizer_type: Type of optimizer ('sgd', 'adam')
-      activation: Activation function ('relu', 'leakyrelu', 'sigmoid', 'tanh')
+      activation: Activation function ('leakyrelu')
       weight_init: Weight initialization method ('he', 'xavier', 'normal')
       dropout_rate: Dropout rate (0.0 to 1.0) for regularization
+      d3qn: Whether to use D3QN (dueling) architecture. This algorithm will create two streams for value and advantage.
     """
     self.input_size = input_size
     self.hidden_size = hidden_size
@@ -39,6 +38,7 @@ class TinyNeuralNetwork:
     self.lr = lr
     self.dropout_rate = dropout_rate
     self.activation_name = activation
+    self.d3qn = d3qn
 
     # Initialize weights based on selected method
     if weight_init == 'he':
@@ -55,14 +55,21 @@ class TinyNeuralNetwork:
     self.b1 = Tensor.zeros(hidden_size)
     self.W2 = Tensor.randn(hidden_size, hidden_size) * scale2
     self.b2 = Tensor.zeros(hidden_size)
-    self.W3 = Tensor.randn(hidden_size, output_size) * scale2
-    self.b3 = Tensor.zeros(output_size)
 
-    # Set up optimizer
-    if optimizer_type == 'adam':
-      self.optimizer = Adam([self.W1, self.b1, self.W2, self.b2, self.W3, self.b3], lr=self.lr)
+    if self.d3qn:
+      # Instead of standard output layer, create dueling streams
+      self.W_value = Tensor.randn(hidden_size, 1) * scale2
+      self.b_value = Tensor.zeros(1)
+      self.W_adv = Tensor.randn(hidden_size, output_size) * scale2
+      self.b_adv = Tensor.zeros(output_size)
+      # Set up optimizer
+      self.optimizer = Adam([self.W1, self.b1, self.W2, self.b2,
+                             self.W_value, self.b_value, self.W_adv, self.b_adv], lr=self.lr)
     else:
-      self.optimizer = SGD([self.W1, self.b1, self.W2, self.b2, self.W3, self.b3], lr=self.lr)
+      # Standard output layer
+      self.W3 = Tensor.randn(hidden_size, output_size) * scale2
+      self.b3 = Tensor.zeros(output_size)
+      self.optimizer = Adam([self.W1, self.b1, self.W2, self.b2, self.W3, self.b3], lr=self.lr)
 
     # For tracking training metrics
     self.training_loss_history: list[float] = []
@@ -75,16 +82,8 @@ class TinyNeuralNetwork:
     self._backward_compiled = False
 
   def activation(self, x: Tensor) -> Tensor:
-    if self.activation_name == 'relu':
-      return cast(Tensor, x.relu())
-    elif self.activation_name == 'leakyrelu':
-      return cast(Tensor, x.leakyrelu(0.01))
-    elif self.activation_name == 'sigmoid':
-      return cast(Tensor, x.sigmoid())
-    elif self.activation_name == 'tanh':
-      return cast(Tensor, x.tanh())
-    else:
-      return cast(Tensor, x.leakyrelu(0.01))  # Default to leaky ReLU
+    if self.activation_name == 'leakyrelu':
+      return x.leakyrelu(0.01)
 
 
   def dropout(self, x: Tensor, training: bool = True) -> Tensor:
@@ -114,9 +113,19 @@ class TinyNeuralNetwork:
     a2 = self.activation(z2)
     a2 = self.dropout(a2, training)
 
-    # Output layer: linear + sigmoid activation
-    z3 = a2.dot(self.W3) + self.b3
-    return z3.sigmoid()
+    if self.d3qn:
+      # Dueling streams: value and advantage
+      value = a2.dot(self.W_value) + self.b_value       # (batch, 1)
+      advantage = a2.dot(self.W_adv) + self.b_adv         # ideally (batch, output_size)
+      # Ensure advantage is 2D
+      if len(advantage.shape) == 1:
+          advantage = advantage.reshape(1, advantage.shape[0])
+      adv_mean = advantage.mean(axis=1).reshape(-1, 1)
+      q = value + (advantage - adv_mean)
+      return q
+    else:
+      z3 = a2.dot(self.W3) + self.b3
+      return z3.sigmoid()
 
   def backward_step(self, x: Tensor, y: Tensor) -> tuple[Tensor, Tensor]:
     """Perform backward propagation.
@@ -140,10 +149,12 @@ class TinyNeuralNetwork:
     return loss, out
 
   def _clip_gradients(self, threshold: float = 1.0) -> None:
-    params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+    if self.d3qn:
+      params = [self.W1, self.b1, self.W2, self.b2, self.W_value, self.b_value, self.W_adv, self.b_adv]
+    else:
+      params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
     for param in params:
       if param.grad is not None:
-        # Clip gradients
         param.grad = Tensor(np.clip(param.grad.numpy(), -threshold, threshold))
 
   def train(self, x: Tensor | np.ndarray, y: Tensor | np.ndarray,
@@ -172,7 +183,11 @@ class TinyNeuralNetwork:
       y = Tensor(y)
     avg_loss = 0.0
     total_iterations = 0
-    self.optimizer.params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+    # Select parameter list based on architecture
+    if self.d3qn:
+        self.optimizer.params = [self.W1, self.b1, self.W2, self.b2, self.W_value, self.b_value, self.W_adv, self.b_adv]
+    else:
+        self.optimizer.params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
     previous_training_state = Tensor.training
     Tensor.training = True
 
@@ -277,7 +292,10 @@ class TinyNeuralNetwork:
 
   def _ensure_all_gradients(self) -> None:
     """Initialize gradients if they are None or not yet realized."""
-    params = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+    if self.d3qn:
+        params = [self.W1, self.b1, self.W2, self.b2, self.W_value, self.b_value, self.W_adv, self.b_adv]
+    else:
+        params = [self.W1, self.b1, self.W2, self.b3, self.W3, self.b3]
     for param in params:
       if param.grad is None or callable(param.grad):
         param.grad = Tensor(np.zeros(param.numpy().shape, dtype=param.numpy().dtype))

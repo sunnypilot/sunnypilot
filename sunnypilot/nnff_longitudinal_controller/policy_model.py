@@ -106,10 +106,10 @@ class LongitudinalLiveTuner:
       hidden_size=24,
       output_size=10,
       lr=self.LEARNING_RATE,
-      optimizer_type='adam',
       activation='leakyrelu',
       weight_init='he',
-      dropout_rate=0.1
+      dropout_rate=0.1,
+      d3qn=True
     )
     # Try to load previously saved model checkpoint from pkl
     self._load_model_checkpoint()
@@ -171,7 +171,7 @@ class LongitudinalLiveTuner:
               print(f"Neural network loaded checkpoint for {self.car_fingerprint}")
               return True
           else:
-            print(f"Fingerprint mismatch in checkpoint file: found {nn_weights.get('car_fingerprint', 'UNKNOWN')} vs current {self.car_fingerprint}")
+            print(f"Fingerprint mismatch in checkpoint file: found {nn_weights.get('car_fingerprint', 'MOCK')} vs current {self.car_fingerprint}")
             print("Creating new neural network for this vehicle")
       else:
         print(f"No existing model checkpoint for {self.car_fingerprint}, will create one")
@@ -330,6 +330,12 @@ class LongitudinalLiveTuner:
     except Exception as e:
       print(f"Error saving longitudinal tuning params: {e}")
 
+  def _limit_precision(self, value, decimals=4):
+    """Limit the decimal precision of values to prevent extreme values injected to pid controller."""
+    if isinstance(value, np.ndarray):
+      return np.round(value, decimals)
+    return round(float(value), decimals)
+
   def _validate_params(self):
     """Ensure parameters are within acceptable ranges and meet safety criteria."""
     lower_limit = 1.0 - self.TUNE_LIMIT_PERCENT
@@ -362,16 +368,26 @@ class LongitudinalLiveTuner:
     if stopping_decel_rate_val < 0.2 and vego_stopping_val > 0.3:
       vego_stopping_val = min(vego_stopping_val, 0.25)
 
-    # Update parameters with the computed float values
-    self.vego_stopping = vego_stopping_val
-    self.vego_starting = vego_starting_val
-    self.stopping_decel_rate = stopping_decel_rate_val
-    self.kp_gain_factor = kp_gain_factor_val
-    self.ki_gain_factor = ki_gain_factor_val
+    # Update parameters with the computed float values and limit precision
+    self.vego_stopping = self._limit_precision(vego_stopping_val)
+    self.vego_starting = self._limit_precision(vego_starting_val)
+    self.stopping_decel_rate = self._limit_precision(stopping_decel_rate_val)
+    self.kp_gain_factor = self._limit_precision(kp_gain_factor_val)
+    self.ki_gain_factor = self._limit_precision(ki_gain_factor_val)
+
+    # Also limit precision of other parameters when they exist
+    if hasattr(self, 'kf'):
+      self.kf = self._limit_precision(self.kf)
+    if hasattr(self, 'kpBP') and self.kpBP is not None:
+      self.kpBP = self._limit_precision(self.kpBP)
+    if hasattr(self, 'kpV') and self.kpV is not None:
+      self.kpV = self._limit_precision(self.kpV)
+    if hasattr(self, 'kiBP') and self.kiBP is not None:
+      self.kiBP = self._limit_precision(self.kiBP)
+    if hasattr(self, 'kiV') and self.kiV is not None:
+      self.kiV = self._limit_precision(self.kiV)
 
   def update(self, CS: structs.CarState, actuators: structs.CarControl.Actuators):
-    """Update the live tuner with new data."""
-    self.sample_idx += 1
 
     v_ego = CS.vEgo
     current_accel = actuators.accel
@@ -507,6 +523,9 @@ class LongitudinalLiveTuner:
       self._train_network()
       self.last_training_time = current_time
 
+    # Increment sample index for processing
+    self.sample_idx += 1
+
     # Process data if we have enough samples
     if self.sample_idx >= self.BLOCK_SIZE:
       self._process_data()
@@ -520,6 +539,8 @@ class LongitudinalLiveTuner:
   def force_update(self, CS: structs.CarState, actuators: structs.CarControl.Actuators):
     # Force an immediate data update and training trigger
     self.update(CS, actuators)
+    # Ensure sample_idx is incremented even if update didn't do so
+    self.sample_idx += 1
 
   def _train_network(self):
     """Train the neural network on collected data."""
@@ -671,145 +692,162 @@ class LongitudinalLiveTuner:
       print(f"Error in neural network training: {e}")
 
   def apply_trained_model(self, direct_training_application=False):
-      """Apply the trained neural network model to update parameters."""
-      if len(self.braking_events) < 5:
-        print("Not enough braking events to apply model")
-        return False
+    """Apply the trained neural network model to update parameters."""
+    if len(self.braking_events) < 5:
+      print("Not enough braking events to apply model")
+      return False
 
-      # Use recent events to create representative features
-      recent_events = list(self.braking_events)[-10:]
+    # Use recent events to create representative features
+    recent_events = list(self.braking_events)[-10:]
 
-      # Calculate average metrics from recent events
-      avg_speed = np.mean([event['initial_speed'] for event in recent_events])
-      avg_decel = np.mean([np.mean(event.get('decel_samples', [0.8])) for event in recent_events])
-      avg_jerk_std = np.mean([np.std(event.get('jerk_samples', [0.0])) for event in recent_events])
-      avg_comfort = np.mean([np.mean(event.get('comfort_scores', [0.5])) for event in recent_events])
-      stopping_distances = [event.get('final_stopping_distance', 8.0) for event in recent_events if
-                            event.get('final_stopping_distance') is not None]
-      avg_stopping_distance = np.mean(stopping_distances) if stopping_distances else 8.0
-      avg_duration = np.mean([event['duration'] for event in recent_events])
-      avg_lead_dist = np.mean([np.mean(event.get('lead_distances', [10.0])) for event in recent_events])
+    # Calculate average metrics from recent events
+    avg_speed = np.mean([event['initial_speed'] for event in recent_events])
+    avg_decel = np.mean([np.mean(event.get('decel_samples', [0.8])) for event in recent_events])
+    avg_jerk_std = np.mean([np.std(event.get('jerk_samples', [0.0])) for event in recent_events])
+    avg_comfort = np.mean([np.mean(event.get('comfort_scores', [0.5])) for event in recent_events])
+    stopping_distances = [event.get('final_stopping_distance', 8.0) for event in recent_events if
+                          event.get('final_stopping_distance') is not None]
+    avg_stopping_distance = np.mean(stopping_distances) if stopping_distances else 8.0
+    avg_duration = np.mean([event['duration'] for event in recent_events])
+    avg_lead_dist = np.mean([np.mean(event.get('lead_distances', [10.0])) for event in recent_events])
 
-      # Create input features for the neural network
-      features = np.array([
-        avg_speed,
-        avg_decel,
-        avg_jerk_std,
-        avg_comfort,
-        avg_stopping_distance,
-        avg_duration,
-        avg_lead_dist,
-        np.mean(self.original_kpV),
-        np.mean(self.original_kiV),
-        1.0
-      ])
+    # Create input features for the neural network
+    features = np.array([
+      avg_speed,
+      avg_decel,
+      avg_jerk_std,
+      avg_comfort,
+      avg_stopping_distance,
+      avg_duration,
+      avg_lead_dist,
+      np.mean(self.original_kpV),
+      np.mean(self.original_kiV),
+      1.0
+    ])
 
-      # Clip features to prevent extreme values
-      features = np.clip(features, -10, 10)
+    # Clip features to prevent extreme values
+    features = np.clip(features, -10, 10)
 
-      # Record original values for comparison
-      original_values = {
-        'vego_stopping': self.vego_stopping,
-        'vego_starting': self.vego_starting,
-        'stopping_decel_rate': self.stopping_decel_rate,
-        'kp_gain_factor': self.kp_gain_factor,
-        'ki_gain_factor': self.ki_gain_factor
-      }
+    # Record original values for comparison
+    original_values = {
+      'vego_stopping': self.vego_stopping,
+      'vego_starting': self.vego_starting,
+      'stopping_decel_rate': self.stopping_decel_rate,
+      'kp_gain_factor': self.kp_gain_factor,
+      'ki_gain_factor': self.ki_gain_factor
+    }
 
-      # Get neural network prediction with proper GPU error handling and CPU fallback
-      try:
-        is_macos = platform.system() == 'Darwin'
+    # Get neural network prediction with proper GPU error handling and CPU fallback
+    try:
+      is_macos = platform.system() == 'Darwin'
 
-        if is_macos:
-          # Try to explicitly use Metal on macOS
-          original_device = os.environ.get('TINYGRAD_DEVICE', '')
-          os.environ['TINYGRAD_DEVICE'] = 'METAL'
-          try:
-            # Add float32 conversion for Metal compatibility
-            features_tensor = Tensor(features.astype(np.float32))
-            prediction = self.nn.forward(features_tensor)
-            prediction_array = prediction.numpy()
-            print(f"\nApplying model - Metal GPU predictions: {prediction_array}")
-          except Exception as metal_error:
-            print(f"Metal GPU execution failed: {metal_error}")
-            # Fall back to CPU on macOS if Metal fails
-            os.environ['TINYGRAD_DEVICE'] = 'CPU'
-            features_tensor = Tensor(features.astype(np.float32))
-            prediction = self.nn.forward(features_tensor)
-            prediction_array = prediction.numpy()
-            print(f"macOS CPU fallback successful - predictions: {prediction_array}")
-          finally:
-            # Restore original device setting
-            if original_device:
-              os.environ['TINYGRAD_DEVICE'] = original_device
-            else:
-              os.environ.pop('TINYGRAD_DEVICE', None)
-        else:
-          # Standard GPU path for non-macOS systems
-          prediction = self.nn.forward(Tensor(features))
-          prediction_array = prediction.numpy()
-          print(f"\nApplying model - GPU predictions: {prediction_array}")
-      except Exception as e:
-        print(f"Error during model prediction: {e}")
-        print("Attempting CPU fallback for prediction...")
+      if is_macos:
+        # Try to explicitly use Metal on macOS
+        original_device = os.environ.get('TINYGRAD_DEVICE', '')
+        os.environ['TINYGRAD_DEVICE'] = 'METAL'
         try:
-          # Try to force CPU execution
-          original_device = os.environ.get('TINYGRAD_DEVICE', '')
+          # Add float32 conversion for Metal compatibility
+          features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
+          prediction = self.nn.forward(features_tensor)
+          prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+          print(f"\nApplying model - Metal GPU predictions: {prediction_array}")
+        except Exception as metal_error:
+          print(f"Metal GPU execution failed: {metal_error}")
+          # Fall back to CPU on macOS if Metal fails
           os.environ['TINYGRAD_DEVICE'] = 'CPU'
-          # Create a new tensor on CPU
-          cpu_features = Tensor(features.astype(np.float32))
-          # Run prediction on CPU
-          prediction = self.nn.forward(cpu_features)
-          prediction_array = prediction.numpy()
+          features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
+          prediction = self.nn.forward(features_tensor)
+          prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+          print(f"macOS CPU fallback successful - predictions: {prediction_array}")
+        finally:
           # Restore original device setting
           if original_device:
             os.environ['TINYGRAD_DEVICE'] = original_device
           else:
             os.environ.pop('TINYGRAD_DEVICE', None)
-          print(f"CPU fallback successful - predictions: {prediction_array}")
-        except Exception as cpu_error:
-          print(f"CPU fallback also failed: {cpu_error}")
-          print("Using default values instead")
-          return False
-
-      # Use more aggressive learning rate if this is from direct training application
-      learning_rate = 0.4 if direct_training_application else 0.1
-
-      # Safely apply predictions
+      else:
+        # Standard GPU path for non-macOS systems
+        features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
+        prediction = self.nn.forward(features_tensor)
+        prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+        print(f"\nApplying model - GPU predictions: {prediction_array}")
+    except Exception as e:
+      print(f"Error during model prediction: {e}")
+      print("Attempting CPU fallback for prediction...")
       try:
-        # Denormalize predictions and apply to parameters
-        self.vego_stopping = (1.0 - learning_rate) * self.vego_stopping + learning_rate * (
-                              prediction_array[0] * (self.vego_stopping_default * 0.5) + (self.vego_stopping_default * 0.5)
-        )
-        self.vego_starting = (1.0 - learning_rate) * self.vego_starting + learning_rate * (
-                              prediction_array[1] * (self.vego_starting_default * 0.5) + (self.vego_starting_default * 0.5)
-        )
-        self.stopping_decel_rate = (1.0 - learning_rate) * self.stopping_decel_rate + learning_rate * (
-                                    prediction_array[2] * (self.stopping_decel_rate_default * 0.5) + (
-                                    self.stopping_decel_rate_default * 0.5)
-        )
-        self.kp_gain_factor = (1.0 - learning_rate) * self.kp_gain_factor + learning_rate * (
-                                prediction_array[3] * 0.5 + 0.75
-        )
-        self.ki_gain_factor = (1.0 - learning_rate) * self.ki_gain_factor + learning_rate * (
-                                prediction_array[4] * 0.5 + 0.75
-        )
-      except Exception as e:
-        print(f"Error applying model predictions: {e}")
-        # Don't update parameters if there was an error
+        # Try to force CPU execution
+        original_device = os.environ.get('TINYGRAD_DEVICE', '')
+        os.environ['TINYGRAD_DEVICE'] = 'CPU'
+        # Create a new tensor on CPU
+        features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
+        # Run prediction on CPU
+        prediction = self.nn.forward(features_tensor)
+        prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+        # Restore original device setting
+        if original_device:
+          os.environ['TINYGRAD_DEVICE'] = original_device
+        else:
+          os.environ.pop('TINYGRAD_DEVICE', None)
+        print(f"CPU fallback successful - predictions: {prediction_array}")
+      except Exception as cpu_error:
+        print(f"CPU fallback also failed: {cpu_error}")
+        print("Using default values instead")
         return False
 
-      # Log parameter changes
-      print("\nParameter changes after applying trained model:")
-      for param, before in original_values.items():
-        after = getattr(self, param)
-        change = after - before
-        pct_change = (change / before) * 100 if before != 0 else float('inf')
-        print(f"  {param}: {before:.4f} → {after:.4f} (Δ{change:.4f}, {pct_change:.2f}%)")
+    # Clip predictions to the expected normalized range [0, 1]
+    prediction_array = np.clip(prediction_array, 0, 1)
 
-      # Validate parameters to ensure safety
-      self._validate_params()
-      return True
+    print(f"\nNeural network raw predictions (clipped): {prediction_array}")
+
+    # Denormalize outputs with modified scaling for deceleration rate
+    target_vego_stopping = prediction_array[0] * (self.vego_stopping_default * 0.5) + (self.vego_stopping_default * 0.5)
+    target_vego_starting = prediction_array[1] * (self.vego_starting_default * 0.5) + (self.vego_starting_default * 0.5)
+
+    # Inverse mapping: higher prediction -> lower deceleration rate
+    # This will map predictions of 1.0 to 0.1 and 0.0 to default value
+    target_decel_rate = self.stopping_decel_rate_default * (1.0 - prediction_array[2] * 0.875)
+
+    target_kp_factor = prediction_array[3] * 0.5 + 0.75
+    target_ki_factor = prediction_array[4] * 0.5 + 0.75
+
+    # Use more aggressive learning rate if this is from direct training application
+    learning_rate = 0.4 if direct_training_application else 0.1
+    # Higher factor for decel rate (2.5x)
+    decel_rate_factor = 2.5
+
+    # Safely apply predictions
+    try:
+      # Denormalize predictions and apply to parameters
+      self.vego_stopping = (1.0 - learning_rate) * self.vego_stopping + learning_rate * target_vego_stopping
+      self.vego_starting = (1.0 - learning_rate) * self.vego_starting + learning_rate * target_vego_starting
+      # Use more aggressive learning rate for deceleration rate
+      self.stopping_decel_rate = (1.0 - learning_rate * decel_rate_factor) * self.stopping_decel_rate + learning_rate * decel_rate_factor * target_decel_rate
+      self.kp_gain_factor = (1.0 - learning_rate) * self.kp_gain_factor + learning_rate * target_kp_factor
+      self.ki_gain_factor = (1.0 - learning_rate) * self.ki_gain_factor + learning_rate * target_ki_factor
+
+      # Limit precision of all parameters
+      self.vego_stopping = self._limit_precision(self.vego_stopping)
+      self.vego_starting = self._limit_precision(self.vego_starting)
+      self.stopping_decel_rate = self._limit_precision(self.stopping_decel_rate)
+      self.kp_gain_factor = self._limit_precision(self.kp_gain_factor)
+      self.ki_gain_factor = self._limit_precision(self.ki_gain_factor)
+
+    except Exception as e:
+      print(f"Error applying model predictions: {e}")
+      # Don't update parameters if there was an error
+      return False
+
+    # Log parameter changes
+    print("\nParameter changes after applying trained model:")
+    for param, before in original_values.items():
+      after = getattr(self, param)
+      change = after - before
+      pct_change = (change / before) * 100 if before != 0 else float('inf')
+      print(f"  {param}: {before:.4f} → {after:.4f} (Δ{change:.4f}, {pct_change:.2f}%)")
+
+    # Validate parameters to ensure safety
+    self._validate_params()
+    return True
 
   def _process_data(self):
     """Process collected data and update parameters."""
@@ -819,6 +857,7 @@ class LongitudinalLiveTuner:
 
       # Apply smoothing
       self.vego_stopping = (1.0 - self.SMOOTH_FACTOR) * self.vego_stopping + self.SMOOTH_FACTOR * new_vego_stopping
+      self.vego_stopping = self._limit_precision(self.vego_stopping)
       self.stopping_data = []  # Clear buffer
 
     # Process starting speed data
@@ -827,6 +866,7 @@ class LongitudinalLiveTuner:
 
       # Apply smoothing
       self.vego_starting = (1.0 - self.SMOOTH_FACTOR) * self.vego_starting + self.SMOOTH_FACTOR * new_vego_starting
+      self.vego_starting = self._limit_precision(self.vego_starting)
       self.starting_data = []  # Clear buffer
 
     # Process deceleration rate data
@@ -837,6 +877,7 @@ class LongitudinalLiveTuner:
 
       # Apply smoothing
       self.stopping_decel_rate = (1.0 - self.SMOOTH_FACTOR) * self.stopping_decel_rate + self.SMOOTH_FACTOR * new_stopping_decel_rate
+      self.stopping_decel_rate = self._limit_precision(self.stopping_decel_rate)
       self.decel_rate_data = []  # Clear buffer
 
     # Validate and save parameters
@@ -947,11 +988,30 @@ class LongitudinalLiveTuner:
       features = np.clip(features, -10, 10)
 
       # Get NN prediction for optimal parameters
-      features_tensor = Tensor(features.astype(np.float32))
+      features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
       prediction = self.nn.forward(features_tensor)
 
-      # Log raw prediction values before denormalization
-      print(f"\nNeural network raw predictions: {prediction.numpy()}")
+      # Convert prediction to numpy and extract first row:
+      pred_array = prediction.numpy()[0]
+      print(f"\nNeural network raw predictions: {pred_array}")
+
+      # Denormalize outputs using pred_array instead of directly indexing prediction
+      target_vego_stopping = pred_array[0] * (self.vego_stopping_default * 0.5) + (self.vego_stopping_default * 0.5)
+      target_vego_starting = pred_array[1] * (self.vego_starting_default * 0.5) + (self.vego_starting_default * 0.5)
+      target_decel_rate = pred_array[2] * self.stopping_decel_rate_default
+      target_kp_factor = pred_array[3] * 0.5 + 0.75
+      target_ki_factor = pred_array[4] * 0.5 + 0.75
+      target_kf = pred_array[5] * (self.kf_default * 0.5) + (self.kf_default * 0.5)
+      # Epsilon for safe division
+      eps = 1e-9
+      kp_mean = max(eps, abs(np.mean(self.kpBP_default)))
+      target_kpBP = pred_array[6] * (kp_mean * 0.5) + (kp_mean * 0.5)
+      kpV_mean = max(eps, abs(np.mean(self.kpV_default)))
+      target_kpV = pred_array[7] * (kpV_mean * 0.5) + (kpV_mean * 0.5)
+      kiBP_mean = max(eps, abs(np.mean(self.kiBP_default)))
+      target_kiBP = pred_array[8] * (kiBP_mean * 0.5) + (kiBP_mean * 0.5)
+      kiV_mean = max(eps, abs(np.mean(self.kiV_default)))
+      target_kiV = pred_array[9] * (kiV_mean * 0.5) + (kiV_mean * 0.5)
 
       # Store original values for comparison
       original_values = {
@@ -962,37 +1022,45 @@ class LongitudinalLiveTuner:
         'ki_gain_factor': self.ki_gain_factor
       }
 
-      # Denormalize outputs from [0,1] range to actual parameter values
-      target_vego_stopping = prediction[0] * (self.vego_stopping_default * 0.5) + (self.vego_stopping_default * 0.5)
-      target_vego_starting = prediction[1] * (self.vego_starting_default * 0.5) + (self.vego_starting_default * 0.5)
-      target_decel_rate = prediction[2] * (self.stopping_decel_rate_default * 0.5) + (self.stopping_decel_rate_default * 0.5)
-      target_kp_factor = prediction[3] * 0.5 + 0.75
-      target_ki_factor = prediction[4] * 0.5 + 0.75
-      target_kf = prediction[5] * (self.kf_default * 0.5) + (self.kf_default * 0.5)
-      # Epsilon for safe division
-      eps = 1e-9
-      kp_mean = max(eps, abs(np.mean(self.kpBP_default)))
-      target_kpBP = prediction[6] * (kp_mean * 0.5) + (kp_mean * 0.5)
-      kpV_mean = max(eps, abs(np.mean(self.kpV_default)))
-      target_kpV = prediction[7] * (kpV_mean * 0.5) + (kpV_mean * 0.5)
-      kiBP_mean = max(eps, abs(np.mean(self.kiBP_default)))
-      target_kiBP = prediction[8] * (kiBP_mean * 0.5) + (kiBP_mean * 0.5)
-      kiV_mean = max(eps, abs(np.mean(self.kiV_default)))
-      target_kiV = prediction[9] * (kiV_mean * 0.5) + (kiV_mean * 0.5)
-
       # Update parameters using suitable learning rates:
       safety_lr = 0.2
       comfort_lr = 0.1
+      decel_lr = safety_lr * 1.5
+
+      # Update core parameters with standard approach
       self.vego_stopping = (1.0 - safety_lr * accuracy_weight) * self.vego_stopping + (safety_lr * accuracy_weight) * target_vego_stopping
-      self.stopping_decel_rate = (1.0 - safety_lr * accuracy_weight) * self.stopping_decel_rate + (safety_lr * accuracy_weight) * target_decel_rate
+      self.stopping_decel_rate = (1.0 - decel_lr * accuracy_weight) * self.stopping_decel_rate + (decel_lr * accuracy_weight) * target_decel_rate
       self.vego_starting = (1.0 - comfort_lr * comfort_weight) * self.vego_starting + (comfort_lr * comfort_weight) * target_vego_starting
       self.kp_gain_factor = (1.0 - comfort_lr * comfort_weight) * self.kp_gain_factor + (comfort_lr * comfort_weight) * target_kp_factor
       self.ki_gain_factor = (1.0 - comfort_lr * comfort_weight) * self.ki_gain_factor + (comfort_lr * comfort_weight) * target_ki_factor
-      self.kf = (1.0 - safety_lr * accuracy_weight) * self.kf + (safety_lr * accuracy_weight) * target_kf
-      self.kpBP = (1.0 - comfort_lr * comfort_weight) * self.kpBP + (comfort_lr * comfort_weight) * target_kpBP
-      self.kpV = (1.0 - comfort_lr * comfort_weight) * self.kpV + (comfort_lr * comfort_weight) * target_kpV
-      self.kiBP = (1.0 - comfort_lr * comfort_weight) * self.kiBP + (comfort_lr * comfort_weight) * target_kiBP
-      self.kiV = (1.0 - comfort_lr * comfort_weight) * self.kiV + (comfort_lr * comfort_weight) * target_kiV
+
+      # Apply precision limiting to 4 decimal places
+      self.vego_stopping = self._limit_precision(self.vego_stopping)
+      self.vego_starting = self._limit_precision(self.vego_starting)
+      self.stopping_decel_rate = self._limit_precision(self.stopping_decel_rate)
+      self.kp_gain_factor = self._limit_precision(self.kp_gain_factor)
+      self.ki_gain_factor = self._limit_precision(self.ki_gain_factor)
+
+      # Update kf with precision limiter
+      kf_updated = (1.0 - safety_lr * accuracy_weight) * self.kf + (safety_lr * accuracy_weight) * target_kf
+      self.kf = self._limit_precision(kf_updated)
+
+      # For arrays, update each element
+      for i in range(len(self.kpBP)):
+        update = (1.0 - comfort_lr * comfort_weight) * self.kpBP[i]
+        self.kpBP[i] = self._limit_precision(update)
+
+      for i in range(len(self.kpV)):
+        update = (1.0 - comfort_lr * comfort_weight) * self.kpV[i]
+        self.kpV[i] = self._limit_precision(update)
+
+      for i in range(len(self.kiBP)):
+        update = (1.0 - comfort_lr * comfort_weight) * self.kiBP[i]
+        self.kiBP[i] = self._limit_precision(update)
+
+      for i in range(len(self.kiV)):
+        update = (1.0 - comfort_lr * comfort_weight) * self.kiV[i]
+        self.kiV[i] = self._limit_precision(update)
 
       # Log the parameter changes to see the actual effect
       print("\nParameter changes after neural network prediction:")
@@ -1052,16 +1120,28 @@ class LongitudinalLiveTuner:
 
   def _save_model_checkpoint(self):
     """Save the neural network weights as loss improves."""
-    nn_weights = {
-      'car_fingerprint': self.car_fingerprint,
-      'nn_w1': self.nn.W1.tolist(),
-      'nn_b1': self.nn.b1.tolist(),
-      'nn_w2': self.nn.W2.tolist(),
-      'nn_b2': self.nn.b2.tolist(),
-      'nn_w3': self.nn.W3.tolist(),
-      'nn_b3': self.nn.b3.tolist(),
-    }
-    # Save car-specific model
+    nn_weights = {'car_fingerprint': self.car_fingerprint}
+    if hasattr(self.nn, 'W3'):
+        nn_weights.update({
+          'nn_w1': self.nn.W1.tolist(),
+          'nn_b1': self.nn.b1.tolist(),
+          'nn_w2': self.nn.W2.tolist(),
+          'nn_b2': self.nn.b2.tolist(),
+          'nn_w3': self.nn.W3.tolist(),
+          'nn_b3': self.nn.b3.tolist(),
+        })
+    else:
+        # D3QN architecture: save dueling network parameters
+        nn_weights.update({
+          'nn_w1': self.nn.W1.tolist(),
+          'nn_b1': self.nn.b1.tolist(),
+          'nn_w2': self.nn.W2.tolist(),
+          'nn_b2': self.nn.b2.tolist(),
+          'nn_w_value': self.nn.W_value.tolist(),
+          'nn_b_value': self.nn.b_value.tolist(),
+          'nn_w_adv': self.nn.W_adv.tolist(),
+          'nn_b_adv': self.nn.b_adv.tolist(),
+        })
     car_specific_path = f"{self.safe_fingerprint}_nn_longitudinal.pkl"
     with open(car_specific_path, "wb") as f:
       pickle.dump(nn_weights, f)
