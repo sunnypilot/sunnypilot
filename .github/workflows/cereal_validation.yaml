@@ -6,6 +6,8 @@ on:
       - master
       - master-new
   pull_request:
+    paths:
+      - 'cereal/**'
   workflow_dispatch:
   workflow_call:
     inputs:
