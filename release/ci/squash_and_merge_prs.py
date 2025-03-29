@@ -143,30 +143,30 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         subprocess.run(['git', 'branch', branch, f'origin/{branch}'], check=True)
 
         # Run squash script
-        subprocess.run([
+        result = subprocess.run([
           squash_script_path,
           '--target', target_branch,
           '--base', source_branch,
           '--title', f"{title} (PR-{pr_number})",
           branch,
-        ], check=True, capture_output=True, text=True)
+        ], capture_output=True, text=True)
+        
+        print(result.stdout)
+        if(result.returncode == 0):
+          print(f"Successfully processed PR #{pr_number}")
+          success_count += 1
+          return success_count
 
-        print(f"Successfully processed PR #{pr_number}")
-        success_count += 1
-
-      except subprocess.CalledProcessError as e:
         print(f"Error processing PR #{pr_number}:")
-        print(f"Command failed with exit code {e.returncode}")
-        stderr_output = getattr(e, 'stderr', None)
-        stdout_output = getattr(e, 'stdout', None)
-        output = stdout_output or stderr_output
-        print(f"Error output: {stderr_output}")
-        add_pr_comment(pr_number,
-                       f"⚠️ Error during automated `{target_branch}` squash:\n```\n{output}\n```")
+        print(f"Command failed with exit code {result.returncode}")
+        output = result.stdout
+        print(f"Error output: {output}")
+        add_pr_comment(pr_number,f"⚠️ Error during automated `{target_branch}` squash:\n```\n{output}\n```")
         subprocess.run(['git', 'reset', '--hard'], check=True)
         continue
       except Exception as e:
         print(f"Unexpected error processing PR #{pr_number}: {str(e)}")
+        subprocess.run(['git', 'reset', '--hard'], check=True)
         continue
 
     return success_count
