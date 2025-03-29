@@ -10,7 +10,7 @@ from opendbc.car import structs
 from openpilot.common.params import Params
 
 ButtonType = car.CarState.ButtonEvent.Type
-EventNameSP = custom.OnroadEventsSP.EventName
+EventNameSP = custom.OnroadEventSP.EventName
 
 DISTANCE_LONG_PRESS = 50
 

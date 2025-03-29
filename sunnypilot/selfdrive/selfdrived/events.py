@@ -7,7 +7,7 @@ AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
-EventNameSP = custom.OnroadEventsSP.EventName
+EventNameSP = custom.OnroadEventSP.EventName
 
 
 # get event name from enum
@@ -26,7 +26,7 @@ class EventsSP(EventsBase):
     return EVENT_NAME_SP[event]
 
   def get_event_msg_type(self):
-    return custom.OnroadEventsSP.Event
+    return custom.OnroadEventSP.Event
 
 
 EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {

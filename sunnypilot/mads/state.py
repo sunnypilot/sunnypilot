@@ -12,7 +12,7 @@ from openpilot.common.realtime import DT_CTRL
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventName = log.OnroadEvent.EventName
-EventNameSP = custom.OnroadEventsSP.EventName
+EventNameSP = custom.OnroadEventSP.EventName
 
 ACTIVE_STATES = (State.enabled, State.softDisabling, State.overriding)
 ENABLED_STATES = (State.paused, *ACTIVE_STATES)

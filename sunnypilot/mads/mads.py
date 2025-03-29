@@ -14,7 +14,7 @@ from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SIL
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = log.OnroadEvent.EventName
-EventNameSP = custom.OnroadEventsSP.EventName
+EventNameSP = custom.OnroadEventSP.EventName
 SafetyModel = car.CarParams.SafetyModel
 
 SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise)
