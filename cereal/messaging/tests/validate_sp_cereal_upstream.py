@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-import capnp
 from typing import Any, List, Tuple
 
 DEBUG = False
