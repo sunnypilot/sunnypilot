@@ -13,7 +13,7 @@ class LatControlAngle(LatControl):
     # Initialize the filtered curvature to zero (or an appropriate initial value)
     self.filtered_curvature = 0.0
     # Filter coefficient: adjust between 0 (very smooth) and 1 (no filtering)
-    self.filter_speed_matrox = [0, 2.5, 8.3, 13.8, 22.22]
+    self.filter_speed_matrox = [0, 8.5, 11, 13.8, 22.22]
     self.filter_alpha_matrix = [0.05, 0.1, 0.3, 0.6, 1]
 
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
