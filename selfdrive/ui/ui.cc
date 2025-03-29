@@ -10,7 +10,7 @@
 #include "common/util.h"
 #include "common/watchdog.h"
 #include "qt/util.h"
-#include "system/hardware/hw.h"
+#include "system/hardware/hw.h"  // test
 
 #define BACKLIGHT_DT 0.05
 #define BACKLIGHT_TS 10.00
