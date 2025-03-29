@@ -11,8 +11,8 @@ def run_git_command(command, check=True):
   print(f"Running: {' '.join(command)}")
   result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
   if check and result.returncode != 0:
-    print(f"Stdout: {result.stdout.strip()}")
-    print(f"Error: {result.stderr.strip()}")
+    print(result.stdout.strip())
+    print(result.stderr.strip())
     sys.exit(result.returncode)
   return result.stdout.strip()
 
