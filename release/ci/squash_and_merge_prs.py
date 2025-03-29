@@ -155,7 +155,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         if(result.returncode == 0):
           print(f"Successfully processed PR #{pr_number}")
           success_count += 1
-          return success_count
+          continue
 
         print(f"Error processing PR #{pr_number}:")
         print(f"Command failed with exit code {result.returncode}")
