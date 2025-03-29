@@ -145,8 +145,8 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         # Run squash script
         subprocess.run([
           squash_script_path,
-          '--base', target_branch,
-          '--source', branch,
+          '--target', target_branch,
+          '--base', branch,
           '--title', f"{title} (PR-{pr_number})",
         ], check=True)
 
