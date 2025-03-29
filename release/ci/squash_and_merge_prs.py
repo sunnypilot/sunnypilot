@@ -161,6 +161,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         print(f"Error output: {error_output}")
         add_pr_comment(pr_number,
                        f"⚠️ Error during automated `{target_branch}` squash:\n```\n{error_output}\n```")
+        subprocess.run(['git', 'reset', '--hard'], check=True)
         continue
       except Exception as e:
         print(f"Unexpected error processing PR #{pr_number}: {str(e)}")
