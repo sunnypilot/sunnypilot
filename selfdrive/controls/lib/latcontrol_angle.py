@@ -12,7 +12,7 @@ class LatControlAngle(LatControl):
     # Initialize the filtered curvature to zero (or an appropriate initial value)
     self.filtered_curvature = 0.0
     # Filter coefficient: adjust between 0 (very smooth) and 1 (no filtering)
-    self.filter_alpha = 0.5
+    self.filter_alpha = 0.1
 
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
     angle_log = log.ControlsState.LateralAngleState.new_message()
