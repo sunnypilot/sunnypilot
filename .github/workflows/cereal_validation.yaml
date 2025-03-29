@@ -1,4 +1,4 @@
-name: selfdrive
+name: cereal validation
 
 on:
   push:
