@@ -9,7 +9,7 @@ def run_git_command(command, check=True):
   Exits the script if the command fails.
   """
   print(f"Running: {' '.join(command)}")
-  result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+  result = subprocess.run(command, capture_output=True, text=True)
   if check and result.returncode != 0:
     print(result.stdout.strip())
     print(result.stderr.strip())
@@ -21,7 +21,7 @@ def main():
   parser.add_argument("--base", required=True, help="The base branch name from which the target branch will be created.")
   parser.add_argument("--target", required=True, help="The target branch name to merge into.")
   parser.add_argument("--title", required=False, help="Title for the commit")
-  
+
   parser.add_argument("branches", nargs="+", help="List of branch names to merge into the target branch.")
   args = parser.parse_args()
 

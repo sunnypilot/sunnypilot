@@ -150,7 +150,7 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
           '--title', f"{title} (PR-{pr_number})",
           branch,
         ], capture_output=True, text=True)
-        
+
         print(result.stdout)
         if(result.returncode == 0):
           print(f"Successfully processed PR #{pr_number}")
