@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 from cereal import log
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
@@ -12,7 +13,8 @@ class LatControlAngle(LatControl):
     # Initialize the filtered curvature to zero (or an appropriate initial value)
     self.filtered_curvature = 0.0
     # Filter coefficient: adjust between 0 (very smooth) and 1 (no filtering)
-    self.filter_alpha = 0.1
+    self.filter_speed_matrox = [0, 2.5, 8.3, 13.8, 22.22]
+    self.filter_alpha_matrix = [0.05, 0.1, 0.3, 0.6, 1]
 
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
     angle_log = log.ControlsState.LateralAngleState.new_message()
@@ -23,7 +25,8 @@ class LatControlAngle(LatControl):
     else:
       angle_log.active = True
       # Apply exponential smoothing to the curvature
-      self.filtered_curvature = (self.filter_alpha * desired_curvature + (1 - self.filter_alpha) * self.filtered_curvature)
+      adjusted_alpha = float(np.interp(CS.vEgo, self.filter_speed_matrox, self.filter_alpha_matrix))
+      self.filtered_curvature = (adjusted_alpha * desired_curvature + (1 - adjusted_alpha) * self.filtered_curvature)
       # Convert the smoothed curvature to a steering angle
       angle_steers_des = math.degrees(VM.get_steer_from_curvature(-self.filtered_curvature, CS.vEgo, params.roll))
       angle_steers_des += params.angleOffsetDeg
