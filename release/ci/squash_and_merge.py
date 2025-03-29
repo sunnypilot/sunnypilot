@@ -3,6 +3,7 @@ import subprocess
 import sys
 import argparse
 
+
 def run_git_command(command, check=True):
   """
   Runs a git command and returns the trimmed stdout output.
@@ -15,6 +16,7 @@ def run_git_command(command, check=True):
     print(result.stderr.strip())
     sys.exit(result.returncode)
   return result.stdout.strip()
+
 
 def main():
   parser = argparse.ArgumentParser(description="Merge multiple branches with squash merges.")
@@ -47,6 +49,6 @@ def main():
 
   print(f"All branches have been merged with squashed commits into '{args.target}'.")
 
+
 if __name__ == "__main__":
   main()
-
