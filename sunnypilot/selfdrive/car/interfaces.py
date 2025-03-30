@@ -34,7 +34,7 @@ def _initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs
     if tuning_option_str is not None:
       tuning_option_str = tuning_option_str.strip()
       if tuning_option_str != "0":
-        CP_SP.flags |= HyundaiFlagsSP.LONGTUNING.value
+        CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING.value
     if params.get_bool("HyundaiSmootherBraking"):
       CP_SP.flags |= HyundaiFlagsSP.LONGTUNING_BRAKING.value
 
