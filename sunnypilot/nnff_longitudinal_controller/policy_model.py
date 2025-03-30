@@ -47,6 +47,7 @@ class LongitudinalLiveTuner:
   # How many update calls to reach 20 minutes of learning (at 20Hz)
   TARGET_TRAINING_STEPS = 20 * 60 * 20  # 20 minutes * 60 seconds * 20Hz
 
+
   def __init__(self, CP: structs.CarParams, original_kpV=None, original_kiV=None):
     # Store car fingerprint for our .pkl output
     self.car_fingerprint = CP.carFingerprint if CP and hasattr(CP, 'carFingerprint') else "MOCK"
@@ -341,25 +342,25 @@ class LongitudinalLiveTuner:
     lower_limit = 1.0 - self.TUNE_LIMIT_PERCENT
     upper_limit = 1.0 + self.TUNE_LIMIT_PERCENT
 
-    # Convert tensor values to plain floats for comparison.
-    vego_stopping_val = float(self.vego_stopping.numpy()) if hasattr(self.vego_stopping, 'numpy') else float(self.vego_stopping)
-    vego_starting_val = float(self.vego_starting.numpy()) if hasattr(self.vego_starting, 'numpy') else float(self.vego_starting)
-    stopping_decel_rate_val = float(self.stopping_decel_rate.numpy()) if hasattr(self.stopping_decel_rate, 'numpy') else float(self.stopping_decel_rate)
-    kp_gain_factor_val = float(self.kp_gain_factor.numpy()) if hasattr(self.kp_gain_factor, 'numpy') else float(self.kp_gain_factor)
-    ki_gain_factor_val = float(self.ki_gain_factor.numpy()) if hasattr(self.ki_gain_factor, 'numpy') else float(self.ki_gain_factor)
+    # Convert values to float
+    vego_stopping_val = float(self.vego_stopping)
+    vego_starting_val = float(self.vego_starting)
+    stopping_decel_rate_val = float(self.stopping_decel_rate)
+    kp_gain_factor_val = float(self.kp_gain_factor)
+    ki_gain_factor_val = float(self.ki_gain_factor)
 
     # Safety check for stopping speed
     if vego_stopping_val < 0.1:
-      vego_stopping_val = 0.1
+      vego_stopping_val = 0.2
 
-    vego_stopping_val = max(vego_stopping_val, self.vego_stopping_default * lower_limit)
+    # Apply limits to all values
     vego_stopping_val = np.clip(vego_stopping_val, self.vego_stopping_default * lower_limit,
                                 self.vego_stopping_default * upper_limit)
     vego_starting_val = np.clip(vego_starting_val, self.vego_starting_default * lower_limit,
-                                self.vego_starting_default * upper_limit)
-    stopping_decel_rate_val = np.clip(stopping_decel_rate_val, self.ISO_DECEL_RATE_MIN,self.ISO_DECEL_RATE_MAX)
-    kp_gain_factor_val = np.clip(kp_gain_factor_val, 0.75, 1.25)
-    ki_gain_factor_val = np.clip(ki_gain_factor_val, 0.75, 1.25)
+                               self.vego_starting_default * upper_limit)
+    stopping_decel_rate_val = np.clip(stopping_decel_rate_val, self.ISO_DECEL_RATE_MIN, self.ISO_DECEL_RATE_MAX)
+    kp_gain_factor_val = np.clip(kp_gain_factor_val, lower_limit, upper_limit)
+    ki_gain_factor_val = np.clip(ki_gain_factor_val, lower_limit, upper_limit)
 
     vego_stopping_val = min(vego_stopping_val, 0.5)
     stopping_decel_rate_val = min(stopping_decel_rate_val, 0.8)
@@ -375,17 +376,39 @@ class LongitudinalLiveTuner:
     self.kp_gain_factor = self._limit_precision(kp_gain_factor_val)
     self.ki_gain_factor = self._limit_precision(ki_gain_factor_val)
 
-    # Also limit precision of other parameters when they exist
-    if hasattr(self, 'kf'):
-      self.kf = self._limit_precision(self.kf)
+    # Limit arrays element by element when they exist.. Not all cars have these values set
+    if hasattr(self, 'kf') and self.kf is not None:
+      kf_val = float(self.kf)
+      kf_val = np.clip(kf_val, self.kf_default * lower_limit, self.kf_default * upper_limit)
+      self.kf = self._limit_precision(kf_val)
+
     if hasattr(self, 'kpBP') and self.kpBP is not None:
-      self.kpBP = self._limit_precision(self.kpBP)
+      for i in range(len(self.kpBP)):
+        val = float(self.kpBP[i])
+        default_val = float(self.kpBP_default[i]) if i < len(self.kpBP_default) else float(self.kpBP_default[-1])
+        val = np.clip(val, default_val * lower_limit, default_val * upper_limit)
+        self.kpBP[i] = self._limit_precision(val)
+
     if hasattr(self, 'kpV') and self.kpV is not None:
-      self.kpV = self._limit_precision(self.kpV)
+      for i in range(len(self.kpV)):
+        val = float(self.kpV[i])
+        default_val = float(self.kpV_default[i]) if i < len(self.kpV_default) else float(self.kpV_default[-1])
+        val = np.clip(val, default_val * lower_limit, default_val * upper_limit)
+        self.kpV[i] = self._limit_precision(val)
+
     if hasattr(self, 'kiBP') and self.kiBP is not None:
-      self.kiBP = self._limit_precision(self.kiBP)
+      for i in range(len(self.kiBP)):
+        val = float(self.kiBP[i])
+        default_val = float(self.kiBP_default[i]) if i < len(self.kiBP_default) else float(self.kiBP_default[-1])
+        val = np.clip(val, default_val * lower_limit, default_val * upper_limit)
+        self.kiBP[i] = self._limit_precision(val)
+
     if hasattr(self, 'kiV') and self.kiV is not None:
-      self.kiV = self._limit_precision(self.kiV)
+      for i in range(len(self.kiV)):
+        val = float(self.kiV[i])
+        default_val = float(self.kiV_default[i]) if i < len(self.kiV_default) else float(self.kiV_default[-1])
+        val = np.clip(val, default_val * lower_limit, default_val * upper_limit)
+        self.kiV[i] = self._limit_precision(val)
 
   def update(self, CS: structs.CarState, actuators: structs.CarControl.Actuators):
 
@@ -624,7 +647,7 @@ class LongitudinalLiveTuner:
 
     try:
       # Train the model
-      self.nn.train(Tensor(train_features_np), Tensor(train_targets_np), iterations=100, epochs=10)
+      self.nn.train(Tensor(train_features_np), Tensor(train_targets_np), iterations=250, epochs=10)
 
       if len(val_features_np) > 0:
         try:
@@ -749,7 +772,7 @@ class LongitudinalLiveTuner:
           # Add float32 conversion for Metal compatibility
           features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
           prediction = self.nn.forward(features_tensor)
-          prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+          prediction_array = prediction.numpy().flatten()
           print(f"\nApplying model - Metal GPU predictions: {prediction_array}")
         except Exception as metal_error:
           print(f"Metal GPU execution failed: {metal_error}")
@@ -757,7 +780,7 @@ class LongitudinalLiveTuner:
           os.environ['TINYGRAD_DEVICE'] = 'CPU'
           features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
           prediction = self.nn.forward(features_tensor)
-          prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+          prediction_array = prediction.numpy().flatten()
           print(f"macOS CPU fallback successful - predictions: {prediction_array}")
         finally:
           # Restore original device setting
@@ -769,7 +792,7 @@ class LongitudinalLiveTuner:
         # Standard GPU path for non-macOS systems
         features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
         prediction = self.nn.forward(features_tensor)
-        prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+        prediction_array = prediction.numpy().flatten()
         print(f"\nApplying model - GPU predictions: {prediction_array}")
     except Exception as e:
       print(f"Error during model prediction: {e}")
@@ -782,7 +805,7 @@ class LongitudinalLiveTuner:
         features_tensor = Tensor(features.astype(np.float32).reshape(1, -1))
         # Run prediction on CPU
         prediction = self.nn.forward(features_tensor)
-        prediction_array = prediction.numpy()[0]  # extract the first (and only) prediction
+        prediction_array = prediction.numpy().flatten()
         # Restore original device setting
         if original_device:
           os.environ['TINYGRAD_DEVICE'] = original_device
