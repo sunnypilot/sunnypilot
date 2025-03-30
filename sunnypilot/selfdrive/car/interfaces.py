@@ -26,7 +26,7 @@ def log_fingerprint(CP: structs.CarParams) -> None:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
 
-def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
+def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
                                               enabled: bool = False) -> None:
   if params is None:
     params = Params()
@@ -47,7 +47,7 @@ def initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: stru
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
-def initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
   if params is None:
     params = Params()
 
@@ -62,11 +62,11 @@ def initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
 
 
 def setup_interfaces(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
-  initialize_neural_network_lateral_control(CP, CP_SP, params)
-  initialize_radar_tracks(CP, CP_SP, params)
+  _initialize_neural_network_lateral_control(CP, CP_SP, params)
+  _initialize_radar_tracks(CP, CP_SP, params)
 
 
-def enable_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable,
+def _enable_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable,
                         params: Params) -> None:
   if CP.brand == 'hyundai':
     if CP_SP.flags & HyundaiFlagsSP.ENABLE_RADAR_TRACKS:
@@ -86,4 +86,4 @@ def enable_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_r
 
 def init_interfaces(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params,
                                 can_recv: CanRecvCallable, can_send: CanSendCallable):
-  enable_radar_tracks(CP, CP_SP, can_recv, params)
+  _enable_radar_tracks(CP, CP_SP, can_recv, params)
