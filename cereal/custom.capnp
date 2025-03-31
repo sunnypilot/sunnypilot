@@ -10,6 +10,13 @@ $Cxx.namespace("cereal");
 # DO rename the structs
 # DON'T change the identifier (e.g. @0x81c2f05a394cf4af)
 
+enum LongitudinalPersonalitySP {
+  aggressive @0;
+  standard @1;
+  relaxed @2;
+  overtake @3;
+}
+
 struct ModularAssistiveDrivingSystem {
   state @0 :ModularAssistiveDrivingSystemState;
   enabled @1 :Bool;
@@ -27,6 +34,7 @@ struct ModularAssistiveDrivingSystem {
 
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
+  personality @1 :LongitudinalPersonalitySP;
 }
 
 struct ModelManagerSP @0xaedffd8f31e7b55d {
@@ -88,6 +96,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
+
+  personalityDEPRECATED @2 :LongitudinalPersonalitySP;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;

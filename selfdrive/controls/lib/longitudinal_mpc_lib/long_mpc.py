@@ -2,7 +2,7 @@
 import os
 import time
 import numpy as np
-from cereal import log
+from cereal import log, custom
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.swaglog import cloudlog
@@ -58,23 +58,23 @@ STOP_DISTANCE = 6.0
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
 
-def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
-  if personality==log.LongitudinalPersonality.relaxed:
+def get_jerk_factor(personality=custom.LongitudinalPersonalitySP.standard):
+  if personality==custom.LongitudinalPersonalitySP.relaxed:
     return 1.0
-  elif personality==log.LongitudinalPersonality.standard:
+  elif personality==custom.LongitudinalPersonalitySP.standard:
     return 1.0
-  elif personality==log.LongitudinalPersonality.aggressive:
+  elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 0.5
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
 
-def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
-  if personality==log.LongitudinalPersonality.relaxed:
+def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
+  if personality==custom.LongitudinalPersonalitySP.relaxed:
     return 1.75
-  elif personality==log.LongitudinalPersonality.standard:
+  elif personality==custom.LongitudinalPersonalitySP.standard:
     return 1.45
-  elif personality==log.LongitudinalPersonality.aggressive:
+  elif personality==custom.LongitudinalPersonalitySP.aggressive:
     return 1.25
   else:
     raise NotImplementedError("Longitudinal personality not supported")
@@ -274,7 +274,7 @@ class LongitudinalMpc:
     for i in range(N):
       self.solver.cost_set(i, 'Zl', Zl)
 
-  def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard):
+  def set_weights(self, prev_accel_constraint=True, personality=custom.LongitudinalPersonalitySP.standard):
     jerk_factor = get_jerk_factor(personality)
     if self.mode == 'acc':
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
@@ -327,7 +327,7 @@ class LongitudinalMpc:
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
+  def update(self, radarstate, v_cruise, x, v, a, j, personality=custom.LongitudinalPersonalitySP.standard):
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status

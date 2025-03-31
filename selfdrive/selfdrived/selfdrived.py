@@ -32,7 +32,7 @@ REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
 TESTING_CLOSET = "TESTING_CLOSET" in os.environ
 IGNORE_PROCESSES = {"loggerd", "encoderd", "statsd"}
-LONGITUDINAL_PERSONALITY_MAP = {v: k for k, v in log.LongitudinalPersonality.schema.enumerants.items()}
+LONGITUDINAL_PERSONALITY_MAP = {v: k for k, v in custom.LongitudinalPersonalitySP.schema.enumerants.items()}
 
 ThermalStatus = log.DeviceState.ThermalStatus
 State = log.SelfdriveState.OpenpilotState
@@ -475,7 +475,6 @@ class SelfdriveD(CruiseHelper):
     ss.state = self.state_machine.state
     ss.engageable = not self.events.contains(ET.NO_ENTRY)
     ss.experimentalMode = self.experimental_mode
-    ss.personality = self.personality
 
     ss.alertText1 = self.AM.current_alert.alert_text_1
     ss.alertText2 = self.AM.current_alert.alert_text_2
@@ -504,6 +503,7 @@ class SelfdriveD(CruiseHelper):
     mads.enabled = self.mads.enabled
     mads.active = self.mads.active
     mads.available = self.mads.enabled_toggle
+    ss_sp.personality = self.personality
 
     self.pm.send('selfdriveStateSP', ss_sp_msg)
 
@@ -532,7 +532,7 @@ class SelfdriveD(CruiseHelper):
     try:
       return int(self.params.get('LongitudinalPersonality'))
     except (ValueError, TypeError):
-      return log.LongitudinalPersonality.standard
+      return custom.LongitudinalPersonality.standard
 
   def params_thread(self, evt):
     while not evt.is_set():
