@@ -18,8 +18,10 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
 
-## Installation
+## Documentation
+https://docs.sunnypilot.ai/ is your stop shop for everything from features to installation to FAQ about the sunnypilot
 
+## Installation
 Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
 
 * sunnypilot not installed or you installed a version before 0.8.17?
