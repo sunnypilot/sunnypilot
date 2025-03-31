@@ -2,7 +2,7 @@
 import math
 import os
 
-from cereal import log, car, custom
+from cereal import log, car
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.git import get_short_branch
