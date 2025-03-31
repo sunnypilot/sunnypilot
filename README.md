@@ -9,6 +9,9 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 
   ![](https://dcbadge.vercel.app/api/server/wRW3meAgtx?style=flat) ![Discord Shield](https://discordapp.com/api/guilds/880416502577266699/widget.png?style=shield)
 
+## Documentation
+https://docs.sunnypilot.ai/ is your one stop shop for everything from features to installation to FAQ about the sunnypilot
+
 ## 🚘 Running on a dedicated device in a car
 * A supported device to run this software
     * a [comma three](https://comma.ai/shop/products/three) or a [C3X](https://comma.ai/shop/comma-3x)
@@ -17,9 +20,6 @@ Join the official sunnypilot Discord server to stay up to date with all the late
 * A [car harness](https://comma.ai/shop/products/car-harness) to connect to your car
 
 Detailed instructions for [how to mount the device in a car](https://comma.ai/setup).
-
-## Documentation
-https://docs.sunnypilot.ai/ is your stop shop for everything from features to installation to FAQ about the sunnypilot
 
 ## Installation
 Please refer to [Recommended Branches](#-recommended-branches) to find your preferred/supported branch. This guide will assume you want to install the latest `release-c3` branch.
