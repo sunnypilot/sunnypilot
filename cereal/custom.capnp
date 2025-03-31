@@ -97,7 +97,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
 
-  personalityDEPRECATED @2 :LongitudinalPersonalitySP;
+  personalityDEPRECATED @1 :LongitudinalPersonalitySP;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
