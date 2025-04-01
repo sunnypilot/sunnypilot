@@ -2,7 +2,7 @@
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 
 #ifdef SUNNYPILOT
-#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"  // test
 #else
 #include "selfdrive/ui/qt/widgets/controls.h"
 #endif
