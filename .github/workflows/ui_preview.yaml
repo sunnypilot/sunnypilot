@@ -9,6 +9,7 @@ on:
     branches:
       - 'master'
       - 'master-new'
+      - 'sync-20250331'
     paths:
       - 'selfdrive/ui/**'
   workflow_dispatch:
