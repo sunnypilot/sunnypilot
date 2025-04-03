@@ -21,10 +21,10 @@ class LatControlAngle(LatControl):
     self.smoothing_factor_incr = 0.
 
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
-    self.count += 1
-    if self.count % 25 == 0 and (smoothingFactorParam := self.params.get("HkgTuningAngleSmoothingFactor")):
-      self.count = 0
-      self.smoothing_factor_incr = float(smoothingFactorParam) / 10.0
+    # self.count += 1
+    # if self.count % 25 == 0 and (smoothingFactorParam := self.params.get("HkgTuningAngleSmoothingFactor")):
+    #   self.count = 0
+    #   self.smoothing_factor_incr = float(smoothingFactorParam) / 10.0
 
     angle_log = log.ControlsState.LateralAngleState.new_message()
 
