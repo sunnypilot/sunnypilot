@@ -170,4 +170,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiRadarTracksToggle", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
+
+    // Tuning keys
+    {"HkgTuningAngleSmoothingFactor", PERSISTENT | BACKUP}
 };
