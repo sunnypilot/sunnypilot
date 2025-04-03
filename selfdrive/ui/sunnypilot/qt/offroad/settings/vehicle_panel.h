@@ -8,6 +8,7 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/platform_selector.h"
 
 class VehiclePanel : public QFrame {
