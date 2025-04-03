@@ -20,6 +20,10 @@ private:
   ParamControl* longManeuverToggle;
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* enableGithubRunner;
+#ifdef SUNNYPILOT
+  OptionControlSP* hkgAngleSmoothingFactor;
+#endif
+  
   bool is_release;
   bool offroad = false;
 

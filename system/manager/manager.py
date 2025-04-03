@@ -55,6 +55,7 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
+    ("HkgTuningAngleSmoothingFactor", "6")
   ]
 
   if params.get_bool("RecordFrontLock"):
