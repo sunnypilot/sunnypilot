@@ -13,7 +13,7 @@ class DummyLongitudinalPlan:
 
 class DummyLeadOne:
   status = True
-  dRel = 15.0
+  dRel = 1.0
 
 class DummyRadarState:
   leadOne = DummyLeadOne()
@@ -47,6 +47,8 @@ class DummyCarParams:
   def __init__(self):
     self.carFingerprint = CAR.KIA_NIRO_EV
     self.longitudinalTuning = DummyLongitudinalTuning()
+    self.vEgoStarting = 0.1
+
 
 # Dummy Params class to bypass persistent storage issues
 class DummyParams:
@@ -70,7 +72,7 @@ def tuner():
 def test_braking_event(tuner):
   initial_speed = 20.0
   speeds = np.linspace(initial_speed, 5.0, num=15)
-  accel = -1.0
+  accel = -2.0
 
   # First update to trigger braking event
   CS = DummyCarState(vEgo=speeds[0], aEgo=0.0)
@@ -80,7 +82,7 @@ def test_braking_event(tuner):
   for v in speeds[1:]:
     CS = DummyCarState(vEgo=v, aEgo=accel)
     tuner.update(CS, actuators)
-    time.sleep(0.01)        # try to mimic generic actuator delay
+    time.sleep(0.125)        # try to mimic generic 50hz delay
 
   tuned_params = tuner.get_tuned_params()
   assert 'vego_stopping' in tuned_params
@@ -125,7 +127,7 @@ def simulate_multiple_events(tuner):
       CS = DummyCarState(vEgo=v, aEgo=accel)
       tuner.update(CS, actuators)
   # Simulate multiple starting events
-  for _ in range(100):
+  for _ in range(200):
     # Initial stopped state
     CS = DummyCarState(vEgo=0.0, aEgo=0.0)
     actuators = DummyActuators(accel=0.0)
@@ -146,9 +148,9 @@ def test_nn_training_directly(tuner):
     'decel_samples': [1.0, 0.9, 1.1],
     'jerk_samples': [0.2, 0.3, 0.2],
     'comfort_scores': [0.8, 0.85, 0.9],
-    'final_stopping_distance': 6.0,
+    'final_stopping_distance': 5.0,
     'duration': 10.0,
-    'lead_distances': [7.0, 6.5, 6.0],
+    'lead_distances': [7.0, 6.5, 5.0],
     'pid_errors': [0.1, -0.05, 0.0],
     'timestamp': int(time.time())
   }

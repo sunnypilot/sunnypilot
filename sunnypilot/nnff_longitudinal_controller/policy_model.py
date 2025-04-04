@@ -1,3 +1,10 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+
 import base64
 import gzip
 import json
@@ -12,6 +19,7 @@ from typing import Any
 
 from cereal import messaging
 from opendbc.car import DT_CTRL, structs
+from opendbc.car.fingerprints import MIGRATION
 from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
 from sunnypilot.nnff_longitudinal_controller.learning_model import TinyNeuralNetwork
@@ -25,23 +33,23 @@ class LongitudinalLiveTuner:
   longitudinal control parameters to the specific vehicle and driver preferences.
   """
 
-  BLOCK_SIZE = 50                 # Number of samples to gather before updating
-  MIN_BLOCKS_NEEDED = 10          # Minimum blocks needed for valid calibration
-  TUNE_LIMIT_PERCENT = 0.50       # Maximum percent change allowed from base value
-  SMOOTH_FACTOR = 0.1             # How fast to adapt (0.1 = 10% of new value each update)
-  MAX_AGE_DAYS = 120              # TODO: Don't fully reset calibration
+  BLOCK_SIZE = 50   # Number of samples to gather before updating
+  MIN_BLOCKS_NEEDED = 10    # Minimum blocks needed for valid calibration
+  TUNE_LIMIT_PERCENT = 0.50   # Maximum percent change allowed from base value
+  SMOOTH_FACTOR = 0.1   # How fast to adapt (0.1 = 10% of new value each update)
+  MAX_AGE_DAYS = 120    # TODO: Don't fully reset calibration
   STOPPING_SPEED_THRESHOLD = 0.2  # m/s
   STARTING_SPEED_THRESHOLD = 0.5  # m/s
 
   # Safety parameters
-  MIN_SAFE_LEAD_DISTANCE = 4.0  # Minimum safe distance from lead car (meters)
-  IDEAL_LEAD_DISTANCE = 6.0     # Ideal distance when stopped behind lead car
-  ISO_DECEL_RATE_MIN = 0.3      # ISO 15622/ISO 26262 lower limit
-  ISO_DECEL_RATE_MAX = 1.2      # Upper limit per (Horn et al., 2024)
-  COMFORT_JERK = 0.6            # Average comfortable jerk per (Horn et al., 2024)
+  MIN_SAFE_LEAD_DISTANCE = 4.0    # Minimum safe distance from lead car (meters)
+  IDEAL_LEAD_DISTANCE = 6.0   # Ideal distance when stopped behind lead car
+  ISO_DECEL_RATE_MIN = 0.3    # Safety limit for deceleration rate (m/s^2)
+  ISO_DECEL_RATE_MAX = 2.0    # Upper limit per (Horn et al., 2024), and GM interface.py
+  COMFORT_JERK = 0.53   # Average comfortable jerk per (Horn et al., 2024)
 
   # Neural network hyperparameters
-  MEMORY_SIZE = 250     # Store up to 250 braking events
+  MEMORY_SIZE = 250   # Store up to 250 braking events
   LEARNING_RATE = 0.1   # How quickly to adapt to new brake profiles
 
   # How many update calls to reach 20 minutes of learning (at 20Hz)
@@ -50,7 +58,7 @@ class LongitudinalLiveTuner:
 
   def __init__(self, CP: structs.CarParams, original_kpV=None, original_kiV=None):
     # Store car fingerprint for our .pkl output
-    self.car_fingerprint = CP.carFingerprint if CP and hasattr(CP, 'carFingerprint') else "MOCK"
+    self.car_fingerprint = MIGRATION.get(CP.carFingerprint, CP.carFingerprint) if CP and hasattr(CP, 'carFingerprint') else "MOCK"
 
     # If car_fingerprint is None, use MOCK
     if self.car_fingerprint is None:
@@ -59,23 +67,23 @@ class LongitudinalLiveTuner:
     # Create a safe version of the car fingerprint for file reference
     self.safe_fingerprint = ''.join(c if c.isalnum() else '_' for c in self.car_fingerprint)
 
-    # Use the car-specific params if CP.carFingerprint exists.
-    if CP.carFingerprint is not None:
-      default_cp = CarInterfaceBase.get_std_params(CP.carFingerprint)
-    else:
-      default_cp = CarInterfaceBase.get_std_params("MOCK")
+    # Setup Default CarParams.
+    std_params = CarInterfaceBase.get_std_params(self.car_fingerprint)
 
-    self.vego_stopping_default = default_cp.vEgoStopping
-    self.vego_starting_default = default_cp.vEgoStarting
-    self.stopping_decel_rate_default = default_cp.stoppingDecelRate
-    self.kf_default = default_cp.longitudinalTuning.kf
-    self.kpBP_default = np.array(default_cp.longitudinalTuning.kpBP)
-    self.kpV_default = np.array(default_cp.longitudinalTuning.kpV)
-    self.kiBP_default = np.array(default_cp.longitudinalTuning.kiBP)
-    self.kiV_default = np.array(default_cp.longitudinalTuning.kiV)
+    # Use CP values if they exist, otherwise fall back to std_params
+    self.vego_stopping_default = getattr(CP, 'vEgoStopping', std_params.vEgoStopping)
+    self.vego_starting_default = getattr(CP, 'vEgoStarting', std_params.vEgoStarting)
+    self.stopping_decel_rate_default = getattr(CP, 'stoppingDecelRate', std_params.stoppingDecelRate)
 
-    self.original_kpV = original_kpV if original_kpV is not None else np.array(default_cp.longitudinalTuning.kpV)
-    self.original_kiV = original_kiV if original_kiV is not None else np.array(default_cp.longitudinalTuning.kiV)
+    long_tune = getattr(CP, 'longitudinalTuning', std_params.longitudinalTuning)
+    self.kf_default = getattr(long_tune, 'kf', std_params.longitudinalTuning.kf)
+    self.kpBP_default = np.array(getattr(long_tune, 'kpBP', std_params.longitudinalTuning.kpBP))
+    self.kpV_default = np.array(getattr(long_tune, 'kpV', std_params.longitudinalTuning.kpV))
+    self.kiBP_default = np.array(getattr(long_tune, 'kiBP', std_params.longitudinalTuning.kiBP))
+    self.kiV_default = np.array(getattr(long_tune, 'kiV', std_params.longitudinalTuning.kiV))
+
+    self.original_kpV = original_kpV if original_kpV is not None else np.array(std_params.longitudinalTuning.kpV)
+    self.original_kiV = original_kiV if original_kiV is not None else np.array(std_params.longitudinalTuning.kiV)
 
     self.params = Params()
     self.sm = messaging.SubMaster(['longitudinalPlan', 'radarState'])
@@ -647,7 +655,7 @@ class LongitudinalLiveTuner:
 
     try:
       # Train the model
-      self.nn.train(Tensor(train_features_np), Tensor(train_targets_np), iterations=250, epochs=10)
+      self.nn.train(Tensor(train_features_np), Tensor(train_targets_np), iterations=200, epochs=10)
 
       if len(val_features_np) > 0:
         try:
@@ -951,10 +959,10 @@ class LongitudinalLiveTuner:
       return
 
     # Safety check for stopping distance
-    if stopping_distances and np.mean(stopping_distances) < self.MIN_SAFE_LEAD_DISTANCE * 0.8:
+    if stopping_distances and np.mean(stopping_distances) < self.MIN_SAFE_LEAD_DISTANCE:
       # If we're consistently stopping too close, make immediate corrections
-      self.vego_stopping = max(self.vego_stopping * 0.9, self.vego_stopping_default * 0.9)  # Gently lower stopping threshold
-      self.stopping_decel_rate = min(self.stopping_decel_rate * 0.95, self.stopping_decel_rate_default)  # Milder braking
+      self.vego_stopping = max(self.vego_stopping * 0.7, self.vego_stopping_default * 0.65)
+      self.stopping_decel_rate = min(self.stopping_decel_rate * 0.7, self.stopping_decel_rate_default * 0.65)
       print(f"Safety correction: Mean stopping distance {np.mean(stopping_distances):.2f}m is too low; applying correction.")
       self._validate_params()
       self._save_params()
