@@ -27,7 +27,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 * sunnypilot not installed or you installed a version before 0.8.17?
   1. [Factory reset/uninstall](https://github.com/commaai/openpilot/wiki/FAQ#how-can-i-reset-the-device) the previous software if you have another software/fork installed.
   2. After factory reset/uninstall and upon reboot, select `Custom Software` when given the option.
-  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```release-c3.sunnypilot.ai``` [^4] (note: `https://` is not requirement on the comma three)
+  3. Input the installation URL per [Recommended Branches](#-recommended-branches). Example: ```release-c3.sunnypilot.ai```.
   4. Complete the rest of the installation following the onscreen instructions.
 
 * sunnypilot already installed and you installed a version after 0.8.17?
@@ -71,17 +71,11 @@ NO WARRANTY EXPRESSED OR IMPLIED.**
 
 
 ## 💰 Support sunnypilot
-If you find any of the features useful, consider becoming a [patron on Patreon](https://www.patreon.com/sunnyhaibin) or a [sponsor on GitHub](https://github.com/sponsors/sunnyhaibin) to support future feature development and improvements.
+If you find any of the features useful, consider becoming a [sponsor on GitHub](https://github.com/sponsors/sunnyhaibin) to support future feature development and improvements.
 
 
-By becoming a patron/sponsor, you will gain access to exclusive content, early access to new features, and the opportunity to directly influence the project's development.
+By becoming a sponsor, you will gain access to exclusive content, early access to new features, and the opportunity to directly influence the project's development.
 
-<h3>Patreon</h3>
-
-<a href="https://www.patreon.com/sunnyhaibin">
-  <img src="https://user-images.githubusercontent.com/47793918/244128051-bc7e913e-a196-4455-926e-23aec9a4bd3b.png" alt="Become a Patron" width="300" style="max-width: 100%; height: auto;">
-</a>
-<br>
 
 <h3>GitHub Sponsor</h3>
 
