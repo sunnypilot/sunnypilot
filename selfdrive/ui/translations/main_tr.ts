@@ -88,6 +88,34 @@
     </message>
 </context>
 <context>
+    <name>AutoLaneChangeTimer</name>
+    <message>
+        <source>Auto Lane Change by Blinker</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
+Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>s</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nudge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Nudgeless</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ConfirmationDialog</name>
     <message>
         <source>Ok</source>
@@ -381,6 +409,26 @@
         <source>Always Offroad</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Quiet Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to reset all sunnypilot settings to default? Once the settings are reset, there is no going back.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The reset cannot be undone. You have been warned.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DriveStats</name>
@@ -442,10 +490,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to unmetered network</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>For maximum effectiveness, bring your device inside and connect to a good USB-C adapter and Wi-Fi weekly.&lt;br&gt;&lt;br&gt;Firehose Mode can also work while you&apos;re driving if connected to a hotspot or unlimited SIM card.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Frequently Asked Questions&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter how or where I drive?&lt;/i&gt; Nope, just drive as you normally would.&lt;br&gt;&lt;br&gt;&lt;i&gt;Do all of my segments get pulled in Firehose Mode?&lt;/i&gt; No, we selectively pull a subset of your segments.&lt;br&gt;&lt;br&gt;&lt;i&gt;What&apos;s a good USB-C adapter?&lt;/i&gt; Any fast phone or laptop charger should be fine.&lt;br&gt;&lt;br&gt;&lt;i&gt;Does it matter which software I run?&lt;/i&gt; Yes, only upstream sunnypilot (and particular forks) are able to be used for training.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -459,6 +503,10 @@
         <source>sunnypilot learns to drive by watching humans, like you, drive.
 
 Firehose Mode allows you to maximize your training data uploads to improve openpilot&apos;s driving models. More data means bigger models, which means better Experimental Mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;span stylesheet=&apos;font-size: 60px; font-weight: bold; color: #e74c3c;&apos;&gt;INACTIVE&lt;/span&gt;: connect to an unmetered network</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -498,6 +546,40 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
 </context>
 <context>
+    <name>LaneChangeSettings</name>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Auto Lane Change: Delay with Blind Spot</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>LateralPanel</name>
+    <message>
+        <source>Modular Assistive Driving System (MADS)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Customize MADS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Customize Lane Change</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MadsSettings</name>
     <message>
         <source>Toggle with Main Cruise</source>
@@ -528,14 +610,18 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Steering Mode After Braking</source>
+        <source>Disengage</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Steering Mode on Brake Pedal</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.
 
 Remain Active: ALC will remain active even after the brake pedal is pressed.
-Pause Steering: ALC will be paused after the brake pedal is manually pressed.</source>
+Pause Steering: ALC will be paused when the brake pedal is manually pressed.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -577,6 +663,65 @@ Pause Steering: ALC will be paused after the brake pedal is manually pressed.</s
     </message>
     <message>
         <source>Scanning...</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>NeuralNetworkLateralControl</name>
+    <message>
+        <source>Neural Network Lateral Control (NNLC)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>NNLC is currently not available on this platform.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start the car to check car compatibility</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>NNLC Not Loaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>NNLC Loaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Match</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Exact</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fuzzy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Match: &quot;Exact&quot; is ideal, but &quot;Fuzzy&quot; is fine too.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Formerly known as &lt;b&gt;&quot;NNFF&quot;&lt;/b&gt;, this replaces the lateral &lt;b&gt;&quot;torque&quot;&lt;/b&gt; controller, with one using a neural network trained on each car&apos;s (actually, each separate EPS firmware) driving data for increased controls accuracy.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reach out to the sunnypilot team in the following channel at the sunnypilot Discord server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>with feedback, or to provide log data for your car if your car is currently unsupported:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>if there are any issues:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>and donate logs to get NNLC loaded for your car:</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -947,10 +1092,6 @@ This may take up to a minute.</source>
         <translation type="unfinished">Yazılım</translation>
     </message>
     <message>
-        <source>sunnypilot</source>
-        <translation type="unfinished">sunnypilot</translation>
-    </message>
-    <message>
         <source>Trips</source>
         <translation type="unfinished"></translation>
     </message>
@@ -964,6 +1105,10 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Firehose</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Steering</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1477,6 +1622,58 @@ This may take up to a minute.</source>
         <source>THANKS ♥</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Backup Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to backup sunnypilot settings?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Back Up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restore Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to restore the last backed up sunnypilot settings?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Backup in progress %1%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Backup Failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Settings backup completed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restore in progress %1%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restore Failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unable to restore the settings, try again later.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Settings restored. Confirm to restart the interface.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SunnylinkSponsorPopup</name>
@@ -1514,21 +1711,6 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Early Access: Become a sunnypilot Sponsor</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>SunnypilotPanel</name>
-    <message>
-        <source>Modular Assistive Driving System (MADS)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Customize MADS</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
