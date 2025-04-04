@@ -62,7 +62,7 @@ class ModularAssistiveDrivingSystem:
 
     def replace_event(old_event: int, new_event: int):
       self.events.remove(old_event)
-      self.events_sp.add(new_event)
+      self.events_sp.add(new_event)  # test
 
     if not self.selfdrive.enabled and self.enabled:
       if self.events.has(EventName.doorOpen):
