@@ -332,13 +332,21 @@ jobs:
         with:
           submodules: true
       - uses: ./.github/workflows/setup-with-retry
+      - name: caching frames
+        id: frames-cache
+        uses: actions/cache@v4
+        with:
+          path: .ci_cache/comma_download_cache
+          key: ui_screenshots_test_${{ hashFiles('selfdrive/ui/tests/test_ui/run.py') }}
       - name: Build openpilot
         run: ${{ env.RUN }} "scons -j$(nproc)"
       - name: Create Test Report
+        timeout-minutes: ${{ ((steps.frames-cache.outputs.cache-hit == 'true') && 2 || 4) }}
         run: >
             ${{ env.RUN }} "PYTHONWARNINGS=ignore &&
                             source selfdrive/test/setup_xvfb.sh &&
-                            python3 selfdrive/ui/tests/test_ui/run.py"
+                            CACHE_ROOT=/tmp/comma_download_cache python3 selfdrive/ui/tests/test_ui/run.py &&
+                            chmod -R 777 /tmp/comma_download_cache"
       - name: Upload Test Report
         uses: actions/upload-artifact@v4
         with:
