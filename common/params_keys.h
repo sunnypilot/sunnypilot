@@ -120,6 +120,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // --- sunnypilot params --- //
     {"ApiCache_DriveStats", PERSISTENT},
+    {"AutoLaneChangeBsmDelay", PERSISTENT},
+    {"AutoLaneChangeTimer", PERSISTENT},
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
@@ -128,6 +130,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
     {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
+    {"QuietMode", PERSISTENT | BACKUP},
 
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
@@ -141,6 +144,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ModelManager_LastSyncTime", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"ModelManager_ModelsCache", PERSISTENT | BACKUP},
 
+    // Neural Network Lateral Control
+    {"NeuralNetworkLateralControl", PERSISTENT | BACKUP},
+
     // sunnylink params
     {"EnableSunnylinkUploader", PERSISTENT | BACKUP},
     {"LastSunnylinkPingTime", CLEAR_ON_MANAGER_START},
@@ -149,6 +155,10 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"SunnylinkDongleId", PERSISTENT},
     {"SunnylinkdPid", PERSISTENT},
     {"SunnylinkEnabled", PERSISTENT},
+
+    // Backup Manager params
+    {"BackupManager_CreateBackup", PERSISTENT},
+    {"BackupManager_RestoreVersion", PERSISTENT},
 
     // sunnypilot car specific params
     {"HyundaiRadarTracks", PERSISTENT},

@@ -3,11 +3,9 @@ from abc import abstractmethod, ABC
 
 from openpilot.common.realtime import DT_CTRL
 
-MIN_LATERAL_CONTROL_SPEED = 0.3  # m/s
-
 
 class LatControl(ABC):
-  def __init__(self, CP, CI):
+  def __init__(self, CP, CP_SP, CI):
     self.sat_count_rate = 1.0 * DT_CTRL
     self.sat_limit = CP.steerLimitTimer
     self.sat_count = 0.

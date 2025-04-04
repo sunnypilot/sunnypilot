@@ -1586,6 +1586,10 @@ struct UbloxGnss {
       svId @0 :UInt8;
       gnssId @1 :UInt8;
       flagsBitfield @2 :UInt32;
+      cno @3 :UInt8;
+      elevationDeg @4 :Int8;
+      azimuthDeg @5 :Int16;
+      pseudorangeResidual @6 :Float32;
     }
   }
 
@@ -2274,6 +2278,21 @@ struct LiveTorqueParametersData {
   useParams @12 :Bool;
 }
 
+struct LiveDelayData {
+  lateralDelay @0 :Float32;
+  validBlocks @1 :Int32;
+  status @2 :Status;
+
+  lateralDelayEstimate @3 :Float32;
+  points @4 :List(Float32);
+
+  enum Status {
+    unestimated @0;
+    estimated @1;
+    invalid @2;
+  }
+}
+
 struct LiveMapDataDEPRECATED {
   speedLimitValid @0 :Bool;
   speedLimit @1 :Float32;
@@ -2504,6 +2523,7 @@ struct Event {
     gnssMeasurements @91 :GnssMeasurements;
     liveParameters @61 :LiveParametersData;
     liveTorqueParameters @94 :LiveTorqueParametersData;
+    liveDelay @146 : LiveDelayData;
     cameraOdometry @63 :CameraOdometry;
     thumbnail @66: Thumbnail;
     onroadEvents @134: List(OnroadEvent);
@@ -2579,10 +2599,10 @@ struct Event {
     selfdriveStateSP @107 :Custom.SelfdriveStateSP;
     modelManagerSP @108 :Custom.ModelManagerSP;
     longitudinalPlanSP @109 :Custom.LongitudinalPlanSP;
-    onroadEventsSP @110 :List(Custom.OnroadEventSP);
+    onroadEventsSP @110 :Custom.OnroadEventSP;
     carParamsSP @111 :Custom.CarParamsSP;
     carControlSP @112 :Custom.CarControlSP;
-    customReserved6 @113 :Custom.CustomReserved6;
+    backupManagerSP @113 :Custom.BackupManagerSP;
     customReserved7 @114 :Custom.CustomReserved7;
     customReserved8 @115 :Custom.CustomReserved8;
     customReserved9 @116 :Custom.CustomReserved9;

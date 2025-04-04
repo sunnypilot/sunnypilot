@@ -5,12 +5,12 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral_panel.h"
 
 #include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
+LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
   ListWidget *list = new ListWidget(this, false);
 
@@ -42,16 +42,53 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
+  list->addItem(vertical_space());
+  list->addItem(horizontal_line());
+  list->addItem(vertical_space());
+
+  // Lane Change Settings
+  laneChangeSettingsButton = new PushButtonSP(tr("Customize Lane Change"));
+  laneChangeSettingsButton->setObjectName("lane_change_btn");
+  connect(laneChangeSettingsButton, &QPushButton::clicked, [=]() {
+    sunnypilotScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(laneChangeWidget);
+  });
+
+  laneChangeWidget = new LaneChangeSettings(this);
+  connect(laneChangeWidget, &LaneChangeSettings::backPress, [=]() {
+    sunnypilotScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+  list->addItem(laneChangeSettingsButton);
+
+  list->addItem(vertical_space(0));
+  list->addItem(horizontal_line());
+
+  // Neural Network Lateral Control
+  nnlcToggle = new NeuralNetworkLateralControl();
+  list->addItem(nnlcToggle);
+
+  QObject::connect(nnlcToggle, &ParamControl::toggleFlipped, [=](bool state) {
+    if (state) {
+      nnlcToggle->showDescription();
+    } else {
+      nnlcToggle->hideDescription();
+    }
+
+    nnlcToggle->updateToggle();
+  });
+
   toggleOffroadOnly = {
-    madsToggle,
+    madsToggle, nnlcToggle,
   };
-  QObject::connect(uiState(), &UIState::offroadTransition, this, &SunnypilotPanel::updateToggles);
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
 
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
+  main_layout->addWidget(laneChangeWidget);
 
   setStyleSheet(R"(
     #back_btn {
@@ -71,15 +108,16 @@ SunnypilotPanel::SunnypilotPanel(SettingsWindowSP *parent) : QFrame(parent) {
   main_layout->setCurrentWidget(sunnypilotScreen);
 }
 
-void SunnypilotPanel::showEvent(QShowEvent *event) {
+void LateralPanel::showEvent(QShowEvent *event) {
+  nnlcToggle->updateToggle();
   updateToggles(offroad);
 }
 
-void SunnypilotPanel::hideEvent(QHideEvent *event) {
+void LateralPanel::hideEvent(QHideEvent *event) {
   main_layout->setCurrentWidget(sunnypilotScreen);
 }
 
-void SunnypilotPanel::updateToggles(bool _offroad) {
+void LateralPanel::updateToggles(bool _offroad) {
   for (auto *toggle : toggleOffroadOnly) {
     toggle->setEnabled(_offroad);
   }

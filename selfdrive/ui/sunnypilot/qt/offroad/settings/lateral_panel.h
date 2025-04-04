@@ -11,16 +11,18 @@
 #include <string>
 
 #include "selfdrive/ui/sunnypilot/ui.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnypilot/mads_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/mads_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/lane_change_settings.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
-class SunnypilotPanel : public QFrame {
+class LateralPanel : public QFrame {
   Q_OBJECT
 
 public:
-  explicit SunnypilotPanel(SettingsWindowSP *parent = nullptr);
+  explicit LateralPanel(SettingsWindowSP *parent = nullptr);
   void showEvent(QShowEvent *event) override;
   void hideEvent(QHideEvent* event) override;
 
@@ -37,4 +39,7 @@ private:
   ParamControl *madsToggle;
   PushButtonSP *madsSettingsButton;
   MadsSettings *madsWidget = nullptr;
+  PushButtonSP *laneChangeSettingsButton;
+  LaneChangeSettings *laneChangeWidget = nullptr;
+  NeuralNetworkLateralControl *nnlcToggle = nullptr;
 };
