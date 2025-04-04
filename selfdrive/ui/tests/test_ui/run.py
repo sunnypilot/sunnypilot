@@ -10,6 +10,7 @@ import pyautogui
 import pickle
 import time
 from collections import namedtuple
+import numpy as np
 
 from cereal import car, log, custom
 from msgq.visionipc import VisionIpcServer, VisionStreamType
