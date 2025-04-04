@@ -34,7 +34,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
   1. On the comma three, go to `Settings` ▶️ `Software`.
   2. At the `Download` option, press `CHECK`. This will fetch the list of latest branches from sunnypilot.
   3. At the `Target Branch` option, press `SELECT` to open the Target Branch selector.
-  4. Scroll to select the desired branch per [Recommended Branches](#-recommended-branches). Example: `release-c3`
+  4. Scroll to select the desired branch per  Recommended Branches (see below). Example: `release-c3`
 
 |    Branch    |         Installation URL         |
 |:------------:|:--------------------------------:|
