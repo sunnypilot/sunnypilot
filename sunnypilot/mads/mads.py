@@ -72,7 +72,7 @@ class ModularAssistiveDrivingSystem:
         replace_event(EventName.seatbeltNotLatched, EventNameSP.silentSeatbeltNotLatched)
         transition_paused_state()
       if self.events.has(EventName.wrongGear) and CS.standstill:
-        replace_event(EventName.wrongGear, EventNameSP.silentWrongGear)
+        replace_event(EventName.wrongGear, EventNameSP.silentWrongGear) # test
         transition_paused_state()
       if self.events.has(EventName.reverseGear):
         replace_event(EventName.reverseGear, EventNameSP.silentReverseGear)
