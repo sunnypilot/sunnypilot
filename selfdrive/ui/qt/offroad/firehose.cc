@@ -13,7 +13,7 @@
 #include <QTimer>
 
 #ifdef SUNNYPILOT
-#define UIState UIStateSP
+#define UIState UIStateSP  // trigger
 #endif
 
 FirehosePanel::FirehosePanel(SettingsWindow *parent) : QWidget((QWidget*)parent) {
