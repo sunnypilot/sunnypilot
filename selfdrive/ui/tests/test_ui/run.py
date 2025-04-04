@@ -368,6 +368,7 @@ def create_screenshots():
       driver_img = frames[2]
   else:
     with open(frames_cache, 'wb') as f:
+      print(f"cam: {route.camera_paths()[segnum]}")
       road_img = FrameReader(route.camera_paths()[segnum]).get(0, pix_fmt="nv12")[0]
       wide_road_img = FrameReader(route.ecamera_paths()[segnum]).get(0, pix_fmt="nv12")[0]
       driver_img = FrameReader(route.dcamera_paths()[segnum]).get(0, pix_fmt="nv12")[0]
