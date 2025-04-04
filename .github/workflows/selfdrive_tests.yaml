@@ -116,6 +116,12 @@ jobs:
           scons-${{ runner.arch }}-macos
     - name: Building openpilot
       run: . .venv/bin/activate && scons -j$(nproc)
+    - name: Save scons cache
+      if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new')
+      uses: actions/cache/save@v4
+      with:
+        path: /tmp/scons_cache
+        key: scons-${{ runner.arch }}-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
 
   static_analysis:
     name: static analysis
