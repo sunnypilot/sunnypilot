@@ -120,6 +120,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // --- sunnypilot params --- //
     {"ApiCache_DriveStats", PERSISTENT},
+    {"AutoLaneChangeBsmDelay", PERSISTENT},
+    {"AutoLaneChangeTimer", PERSISTENT},
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
@@ -133,7 +135,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
     {"MadsMainCruiseAllowed", PERSISTENT | BACKUP},
-    {"MadsSteeringMode", PERSISTENT | BACKUP},
+    {"MadsPauseLateralOnBrake", PERSISTENT | BACKUP},
     {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
 
     // Model Manager params

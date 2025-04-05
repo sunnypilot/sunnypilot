@@ -43,10 +43,12 @@ def manager_init() -> None:
   ]
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
+    ("AutoLaneChangeTimer", "0"),
+    ("AutoLaneChangeBsmDelay", "0"),
     ("DynamicExperimentalControl", "0"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
-    ("MadsSteeringMode", "0"),
+    ("MadsPauseLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),

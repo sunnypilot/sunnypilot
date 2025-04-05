@@ -7,30 +7,45 @@
 
 #pragma once
 
-#include "selfdrive/ui/qt/util.h"
+#include <map>
+#include <string>
+
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-class MadsSettings : public QWidget {
+class AutoLaneChangeTimer : public OptionControlSP {
   Q_OBJECT
 
 public:
-  explicit MadsSettings(QWidget *parent = nullptr);
+  AutoLaneChangeTimer();
 
+  void refresh();
+
+signals:
+  void toggleUpdated();
+
+private:
+  Params params;
+};
+
+
+class LaneChangeSettings : public QWidget {
+  Q_OBJECT
+
+public:
+  explicit LaneChangeSettings(QWidget* parent = nullptr);
   void showEvent(QShowEvent *event) override;
 
 signals:
   void backPress();
 
 public slots:
-  void updateToggles(bool _offroad);
+  void updateToggles();
 
 private:
   Params params;
-  bool offroad;
+  std::map<std::string, ParamControlSP*> toggles;
 
-  ParamControl *madsMainCruiseToggle;
-  ParamControl *madsUnifiedEngagementModeToggle;
-  ButtonParamControl *madsPauseLateralOnBrake;
+  AutoLaneChangeTimer *autoLaneChangeTimer;
 };

@@ -22,7 +22,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   madsToggle = new ParamControl(
     "Mads",
     tr("Modular Assistive Driving System (MADS)"),
-    tr("Enable the beloved MADS feature. Disable toggle to revert back to stock openpilot engagement/disengagement."),
+    tr("Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement."),
     "");
   madsToggle->setConfirmation(true, false);
   list->addItem(madsToggle);
@@ -42,6 +42,29 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   });
   list->addItem(madsSettingsButton);
 
+  list->addItem(vertical_space());
+  list->addItem(horizontal_line());
+  list->addItem(vertical_space());
+
+  // Lane Change Settings
+  laneChangeSettingsButton = new PushButtonSP(tr("Customize Lane Change"));
+  laneChangeSettingsButton->setObjectName("lane_change_btn");
+  connect(laneChangeSettingsButton, &QPushButton::clicked, [=]() {
+    sunnypilotScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(laneChangeWidget);
+  });
+
+  laneChangeWidget = new LaneChangeSettings(this);
+  connect(laneChangeWidget, &LaneChangeSettings::backPress, [=]() {
+    sunnypilotScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(sunnypilotScreen);
+  });
+  list->addItem(laneChangeSettingsButton);
+
+  list->addItem(vertical_space(0));
+  list->addItem(horizontal_line());
+
+  // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
 
@@ -65,6 +88,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
 
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
+  main_layout->addWidget(laneChangeWidget);
 
   setStyleSheet(R"(
     #back_btn {
