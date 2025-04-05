@@ -105,6 +105,12 @@ jobs:
       env:
         # package install has DeprecationWarnings
         PYTHONWARNINGS: default
+    - name: Save Homebrew cache
+      uses: actions/cache/save@v4
+      if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/master-new' || github.head_ref == 'feature/ci-macos-cache')
+      with:
+        path: ~/Library/Caches/Homebrew
+        key: brew-macos-${{ env.CACHE_COMMIT_DATE }}-${{ github.sha }}
     - run: git lfs pull
     - name: Getting scons cache
       uses: ./.github/workflows/auto-cache
