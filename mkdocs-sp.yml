@@ -1,0 +1,150 @@
+site_name: sunnypilot docs
+repo_name: sunnypilot/sunnypilot
+repo_url: https://github.com/sunnypilot/sunnypilot/
+site_description: sunnypilot Documentation
+site_url: https://docs.sunnypilot.ai
+edit_uri: blob/new-docs/docs_sp
+
+exclude_docs: README.md
+
+strict: true
+docs_dir: docs_sp
+site_dir: docs_sp_site/
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/file-edit-outline
+    view: material/file-eye-outline
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - content.code.select
+    #- navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+  font:
+    text: Roboto
+    code: Roboto Mono
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off
+        name: Switch to system preference
+  navigation_depth: 3
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: sunnypilot
+      repo: sunnypilot
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+      clickable_checkbox: true
+  - toc:
+      permalink: true
+
+plugins:
+  - git-authors
+  - git-committers:
+      repository: sunnypilot/sunnypilot
+      branch: master
+      enabled: !ENV [CI, false]
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - search
+
+extra:
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+
+nav:
+  - Getting Started:
+    - index.md
+    - What is sunnypilot?: getting-started/what-is-sunnypilot.md
+    - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
+    - Develop sunnypilot: getting-started/develop-sunnypilot.md
+    - Setup:
+      - 🚨 Read before installing 🚨: setup/read-before-installing.md
+      - Installation:
+        - URL Method: setup/url-method.md
+        - SSH Method: setup/ssh-method.md
+    - Changelogs:
+      - setup/changelogs/index.md
+  - Features:
+    - features/index.md
+  - Community:
+    - Contributing: community/CONTRIBUTING.md
+    - Reporting a bug: community/reporting-a-bug.md
+    - Reporting a docs issue: community/reporting-a-docs-issue.md
+    - Asking a question: https://discord.sunnypilot.ai
+  - Safety Information:
+    - Safety: SAFETY.md
+    - Prohibited safety modifications: safety-information/prohibited-safety-modifications.md
+  - How To:
+    - Enabling Mapbox navigation: how-to/enabling-mapbox-navigation.md
+    - Turn the speed blue: how-to/turn-the-speed-blue.md
+    - Hyundai:
+      - Enabling Radar Tracks: how-to/hyundai/enabling-radar-tracks.md
+  - References:
+    - Branches:
+      - Definitions: branches/definitions.md
+      - Recommended Branches: branches/recommended-branches.md
