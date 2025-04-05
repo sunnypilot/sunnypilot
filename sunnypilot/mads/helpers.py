@@ -49,13 +49,13 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
     # MADS is currently not supported in Tesla due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Tesla, identify consistent signals for MADS toggling
     if CP.brand == "tesla":
-      params.put("MadsSteeringMode", "0")
+      params.put("MadsSteeringMode", "2")
       params.put_bool("MadsUnifiedEngagementMode", True)
       params.remove("MadsMainCruiseAllowed")
 
     # MADS is currently not supported in Rivian due to lack of consistent states to engage controls
     # TODO-SP: To enable MADS for Rivian, identify consistent signals for MADS toggling
     if CP.brand == "rivian":
-      params.put("MadsSteeringMode", "0")
+      params.put("MadsSteeringMode", "2")
       params.put_bool("MadsUnifiedEngagementMode", True)
       params.remove("MadsMainCruiseAllowed")
