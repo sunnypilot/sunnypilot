@@ -33,4 +33,5 @@ private:
   OptionControlSP* hkgAngleSmoothingFactor;
   OptionControlSP* hkgAngleMinTorque;
   OptionControlSP* hkgAngleMaxTorque;
+  OptionControlSP* hkgTuningOverridingCycles;
 };
