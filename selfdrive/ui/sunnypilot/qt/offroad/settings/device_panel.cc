@@ -74,6 +74,11 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
 
+  // Max Time Offroad
+  auto max_time_offroad = new MaxTimeOffroad();
+  connect(max_time_offroad, &OptionControlSP::updateLabels, max_time_offroad, &MaxTimeOffroad::refresh);
+  addItem(max_time_offroad);
+
   addItem(device_grid_layout);
 
   // offroad mode and power buttons
@@ -113,6 +118,37 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
       }
     }
   });
+}
+
+// Max Time Offroad
+MaxTimeOffroad::MaxTimeOffroad() : OptionControlSP(
+  "MaxTimeOffroad",
+  tr("Max Time Offroad"),
+  tr("Device will automatically shutdown after set time once the engine is turned off."),
+  "../assets/offroad/icon_blank.png",
+  {0, 10}, 1, true) {
+
+  refresh();
+}
+
+void MaxTimeOffroad::refresh() {
+  QString option = QString::fromStdString(params.get("MaxTimeOffroad"));
+
+  static const QMap<QString, QVector<QString>> offroadTimeOpts = {
+    {"0", {"0", tr("Always On")}},
+    {"1", {"300", "5 m"}},
+    {"2", {"600", "10 m"}},
+    {"3", {"900", "15 m"}},
+    {"4", {"1800", "30 m"}},
+    {"5", {"3600", "1 h"}},
+    {"6", {"7200", "2 h"}},
+    {"7", {"10800", "3 h"}},
+    {"8", {"18000", "5 h"}},
+    {"9", {"43200", "12 h"}},
+    {"10", {"86400", "24 h"}}
+  };
+
+  setLabel(offroadTimeOpts.value(option)[1]);
 }
 
 void DevicePanelSP::setOffroadMode() {

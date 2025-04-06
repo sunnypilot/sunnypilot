@@ -84,3 +84,14 @@ private:
     }
   )";
 };
+
+class MaxTimeOffroad : public OptionControlSP {
+  Q_OBJECT
+
+public:
+  MaxTimeOffroad();
+  void refresh();
+
+private:
+  Params params;
+};

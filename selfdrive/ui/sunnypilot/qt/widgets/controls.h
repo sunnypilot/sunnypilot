@@ -96,8 +96,11 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
   Q_OBJECT
 
 protected:
-  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, const bool inline_layout = false);
   void hideEvent(QHideEvent *e) override;
+
+  QHBoxLayout *innerLayout;
+  bool isInlineLayout;
 
 private:
   QSpacerItem *spacingItem = nullptr;
@@ -424,7 +427,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -448,7 +451,7 @@ public:
     label.setFixedWidth(300);
     label.setAlignment(Qt::AlignCenter);
 
-    const std::vector<QString> button_texts{"－", "＋"};
+    const std::vector<QString> button_texts{"-", "+"};
 
     key = param.toStdString();
     value = atoi(params.get(key).c_str());
@@ -459,9 +462,9 @@ public:
       QPushButton *button = new QPushButton(button_texts[i], this);
       button->setStyleSheet(style + ((i == 0) ? "QPushButton { text-align: left; }" :
                                                 "QPushButton { text-align: right; }"));
-      hlayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
+      innerLayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
       if (i == 0) {
-        hlayout->addWidget(&label, 0, Qt::AlignCenter);
+        innerLayout->addWidget(&label, 0, Qt::AlignCenter);
       }
       button_group->addButton(button, i);
 
@@ -484,7 +487,16 @@ public:
       });
     }
 
-    hlayout->setAlignment(Qt::AlignLeft);
+    innerLayout->setAlignment(Qt::AlignLeft);
+    if (isInlineLayout) {
+      QFrame *container = new QFrame;
+      container->setLayout(innerLayout);
+      container->setStyleSheet("background-color: #393939; border-radius: 20px;");
+      hlayout->addWidget(container);
+     } else {
+       hlayout->addLayout(innerLayout);
+    }
+
   }
 
   void setUpdateOtherToggles(bool _update) {
@@ -506,29 +518,31 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
-    QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
+    if (!isInlineLayout) {
+      QPainter p(this);
+      p.setRenderHint(QPainter::Antialiasing);
 
-    // Calculate the total width and height for the background rectangle
-    int w = 0;
-    int h = 150;
+      // Calculate the total width and height for the background rectangle
+      int w = 0;
+      int h = 150;
 
-    for (int i = 0; i < hlayout->count(); ++i) {
-      QWidget *widget = qobject_cast<QWidget *>(hlayout->itemAt(i)->widget());
-      if (widget) {
-        w += widget->width();
+      for (int i = 0; i < innerLayout->count(); ++i) {
+        QWidget *widget = qobject_cast<QWidget *>(innerLayout->itemAt(i)->widget());
+        if (widget) {
+          w += widget->width();
+        }
       }
-    }
 
-    // Draw the rectangle
-#ifdef __APPLE__
-    QRect rect(0, !_title.isEmpty() ? (h - 16) : 20, w, h);
-#else
-    QRect rect(0, !_title.isEmpty() ? (h - 24) : 20, w, h);
-#endif
-    p.setBrush(QColor(button_enabled ? "#b24a4a4a" : "#121212")); // Background color
-    p.setPen(QPen(Qt::NoPen));
-    p.drawRoundedRect(rect, 20, 20);
+      // Draw the rectangle
+  #ifdef __APPLE__
+      QRect rect(0, !_title.isEmpty() ? (h - 16) : 20, w, h);
+  #else
+      QRect rect(0, !_title.isEmpty() ? (h - 24) : 20, w, h);
+  #endif
+      p.setBrush(QColor(button_enabled ? "#b24a4a4a" : "#121212")); // Background color
+      p.setPen(QPen(Qt::NoPen));
+      p.drawRoundedRect(rect, 20, 20);
+    }
   }
 
 signals:

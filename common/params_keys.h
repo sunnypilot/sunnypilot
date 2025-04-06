@@ -131,6 +131,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"OffroadMode", CLEAR_ON_MANAGER_START},
     {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
     {"QuietMode", PERSISTENT | BACKUP},
+    {"MaxTimeOffroad", PERSISTENT | BACKUP},
 
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
