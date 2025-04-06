@@ -21,9 +21,6 @@ private:
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* hyundaiRadarTracksToggle;
   ParamControl* enableGithubRunner;
-#ifdef SUNNYPILOT
-  OptionControlSP* hkgAngleSmoothingFactor;
-#endif
   
   bool is_release;
   bool offroad = false;
