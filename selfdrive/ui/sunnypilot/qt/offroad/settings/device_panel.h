@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/max_time_offroad.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
@@ -23,6 +24,7 @@ public:
 private:
   std::map<QString, PushButtonSP*> buttons;
   PushButtonSP *offroadBtn;
+  MaxTimeOffroad *maxTimeOffroad;
 
   const QString alwaysOffroadStyle = R"(
     PushButtonSP {
@@ -83,15 +85,4 @@ private:
       background-color: #FF2424;
     }
   )";
-};
-
-class MaxTimeOffroad : public OptionControlSP {
-  Q_OBJECT
-
-public:
-  MaxTimeOffroad();
-  void refresh();
-
-private:
-  Params params;
 };
