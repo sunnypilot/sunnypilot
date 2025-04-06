@@ -1,0 +1,65 @@
+/**
+ * Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+ *
+ * This file is part of sunnypilot and is licensed under the MIT License.
+ * See the LICENSE.md file in the root directory for more details.
+ */
+
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/angle_tuning_settings.h"
+
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+
+AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
+  QVBoxLayout *main_layout = new QVBoxLayout(this);
+  main_layout->setContentsMargins(50, 20, 50, 20);
+  main_layout->setSpacing(20);
+
+  // Back button
+  PanelBackButton *back = new PanelBackButton();
+  connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
+  main_layout->addWidget(back, 0, Qt::AlignLeft);
+
+  auto *list = new ListWidget(this, false);
+
+  hkgAngleSmoothingFactor = new OptionControlSP("HkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering.<br/>A value closer to 1 means no smoothing.<br/>A value closer to 0 means very smooth (and thus likely too 'soft' steering)."), "../assets/offroad/icon_blank.png", {0, 10}, 1);
+  connect(hkgAngleSmoothingFactor, &OptionControlSP::updateLabels, hkgAngleSmoothingFactor, [=]() {
+    this->updateToggles(offroad);
+  });
+  list->addItem(hkgAngleSmoothingFactor);
+
+
+  auto hlayout = new QHBoxLayout();
+  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorque", tr("HKG Angle Min Torque"), tr("Minimum torque to apply to the steering wheel.<br/>Must be smaller than max."), "../assets/offroad/icon_blank.png", {0, 250}, 5);
+  connect(hkgAngleMinTorque, &OptionControlSP::updateLabels, hkgAngleMinTorque, [=]() {
+    this->updateToggles(offroad);
+  });
+  hlayout->addWidget(hkgAngleMinTorque);
+
+  hkgAngleMaxTorque = new OptionControlSP("HkgTuningAngleMaxTorque", tr("HKG Angle Max Torque"), tr("Maximum torque to apply to the steering wheel.<br/>Must be bigger than min."), "../assets/offroad/icon_blank.png", {25, 250}, 5);
+  connect(hkgAngleMaxTorque, &OptionControlSP::updateLabels, hkgAngleMaxTorque, [=]() {
+    this->updateToggles(offroad);
+  });
+  hlayout->addWidget(hkgAngleMaxTorque);
+  list->addItem(hlayout);
+  
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &AngleTunningSettings::updateToggles);
+
+  main_layout->addWidget(new ScrollViewSP(list, this));
+}
+
+void AngleTunningSettings::showEvent(QShowEvent *event) {
+  updateToggles(offroad);
+}
+
+void AngleTunningSettings::updateToggles(bool _offroad) {
+  auto HkgAngleSmoothingFactorValue = QString::fromStdString(params.get("HkgTuningAngleSmoothingFactor")).toDouble();
+  hkgAngleSmoothingFactor->setLabel(QString::number(HkgAngleSmoothingFactorValue / 10, 'f', 1));
+
+  auto HkgAngleMinTorqueValue = QString::fromStdString(params.get("HkgTuningAngleMinTorque")).toInt();
+  hkgAngleMinTorque->setLabel(QString::number(HkgAngleMinTorqueValue));
+
+  auto HkgAngleMaxTorqueValue = QString::fromStdString(params.get("HkgTuningAngleMaxTorque")).toInt();
+  hkgAngleMaxTorque->setLabel(QString::number(HkgAngleMaxTorqueValue));
+
+  offroad = _offroad;
+}
