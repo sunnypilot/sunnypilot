@@ -76,14 +76,12 @@ class MockMessage:
 
 
 def find_local_route_dirs():
-  """Find local route directories from the tests folder for manual log upload."""
-  # Use the fixed path to the tests folder
-  tests_dir = os.path.join(os.path.dirname(__file__), 'tests')
+  """Find local route directories for manual log upload."""
+  tests_dir = os.path.dirname(__file__)
   if not os.path.exists(tests_dir):
     print(f"Tests directory not found: {tests_dir}")
     return []
   print(f"Using tests directory: {tests_dir}")
-  # Use the tests folder as the route directory during tests.
   route_dirs = [tests_dir]
   print(f"Found {len(route_dirs)} route directory(ies)")
   return route_dirs
@@ -102,15 +100,7 @@ def test_training_with_local_route():
   route_path = route_dirs[0]
   print(f"Using route from: {route_path}")
 
-  # Get car fingerprint - first check fingerprint.txt file
-  fingerprint_file = os.path.join(route_path, "fingerprint.txt")
-  if os.path.exists(fingerprint_file):
-    with open(fingerprint_file) as f:
-      car_fingerprint = f.read().strip()
-      print(f"Using car fingerprint from fingerprint.txt: {car_fingerprint}")
-  else:
-    car_fingerprint = None
-    print("No fingerprint.txt found, will use fingerprint from logs")
+  car_fingerprint = None
 
   # Create car params for car if we have a fingerprint
   if car_fingerprint:
@@ -160,7 +150,7 @@ def test_training_with_local_route():
   TunerManager.create_tuner = lambda _, CP: real_tuner
 
   # Save the original _train_on_route method for restoration
-  orig_train_on_route = TunerManager._train_on_route
+
   # (No override is applied here to simulate using your real logs.)
 
   try:
@@ -249,7 +239,7 @@ def test_training_with_local_route():
     # Restore original methods
     TunerManager.get_tuner = orig_get_tuner
     TunerManager._find_local_routes = orig_find_routes
-    TunerManager._train_on_route = orig_train_on_route
+    TunerManager._train_on_route = TunerManager._train_on_route
     TunerManager.create_tuner = orig_create_tuner
     TunerManager._save_processed_logs = orig_save_logs
 

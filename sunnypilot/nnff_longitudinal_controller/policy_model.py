@@ -195,25 +195,24 @@ class LongitudinalLiveTuner:
   def _load_params(self):
     """Load saved tuning parameters from persistent storage."""
     try:
-      # Load from the single parameter that contains all car fingerprint data
       params_bytes = self.params.get("LongitudinalLiveTuneParams")
+      print(f"_load_params: raw params value type: {type(params_bytes)}")
 
-      if params_bytes is not None:
+      # If the value is bytes, decode it to string
+      if isinstance(params_bytes, bytes):
+        params_bytes = params_bytes.decode('utf-8')
+        print("Decoded params from bytes to string.")
+
+      if params_bytes is not None and params_bytes != "":
         try:
-          # Decompress the stored string
           compressed = base64.b64decode(params_bytes)
           json_str = gzip.decompress(compressed).decode('utf-8')
           all_cars_data = json.loads(json_str)
-          # Check if our car fingerprint exists in the stored data
           if 'cars' in all_cars_data and self.car_fingerprint in all_cars_data['cars']:
-            # Get this car's data
             car_data = all_cars_data['cars'][self.car_fingerprint]
-            # Decode and unpickle that pickle
             pickle_bytes = base64.b64decode(car_data['pickled_data'])
             stored_params = pickle.loads(pickle_bytes)
             print(f"Loaded parameters for {self.car_fingerprint}")
-
-            # Check if stored params are too old
             current_time = int(time.time())
             if current_time - stored_params.get('timestamp', 0) < self.MAX_AGE_DAYS * 24 * 3600:
               self.vego_stopping = stored_params.get('vego_stopping', self.vego_stopping_default)
@@ -221,8 +220,6 @@ class LongitudinalLiveTuner:
               self.stopping_decel_rate = stored_params.get('stopping_decel_rate', self.stopping_decel_rate_default)
               self.kp_gain_factor = stored_params.get('kp_gain_factor', self.kp_gain_factor)
               self.ki_gain_factor = stored_params.get('ki_gain_factor', self.ki_gain_factor)
-
-              # Load neural network weights
               if all(k in stored_params for k in ['nn_w1', 'nn_b1', 'nn_w2', 'nn_b2', 'nn_w3', 'nn_b3']):
                 self.nn.W1 = Tensor(stored_params['nn_w1'])
                 self.nn.b1 = Tensor(stored_params['nn_b1'])
@@ -230,31 +227,27 @@ class LongitudinalLiveTuner:
                 self.nn.b2 = Tensor(stored_params['nn_b2'])
                 self.nn.W3 = Tensor(stored_params['nn_w3'])
                 self.nn.b3 = Tensor(stored_params['nn_b3'])
-
-              # If we have learned braking profiles, load them too
               if 'braking_profiles' in stored_params:
                 self.braking_events = deque(stored_params['braking_profiles'], maxlen=self.MEMORY_SIZE)
-
-              # Training metrics
               if 'training_progress' in stored_params:
                 self.training_progress = stored_params.get('training_progress', 0.0)
                 self.training_step_count = stored_params.get('training_step_count', 0)
-
-              # Safety metrics
               if 'safety_metrics' in stored_params:
                 safety = stored_params['safety_metrics']
                 self.unsafe_stops_count = safety.get('unsafe_stops', 0)
                 self.total_stops_count = safety.get('total_stops', 0)
-
               self._validate_params()
+              return True
           else:
             print(f"No data for {self.car_fingerprint} in parameter store")
         except Exception as e:
           print(f"Error loading parameters: {e}")
+      else:
+        print("No parameter value found for LongitudinalLiveTuneParams")
     except Exception as e:
       print(f"Error in _load_params: {e}")
 
-  def _save_params(self):
+  def save_params(self):
     """Save tuning parameters to persistent storage while preserving other car data."""
     try:
       # Convert braking events to list for serialization (limit to most recent 75)
@@ -715,7 +708,7 @@ class LongitudinalLiveTuner:
 
       # Try to save params
       try:
-        self._save_params()
+        self.save_params()
       except Exception as e:
         print(f"Error saving parameters: {e}")
 
@@ -913,7 +906,7 @@ class LongitudinalLiveTuner:
 
     # Validate and save parameters
     self._validate_params()
-    self._save_params()
+    self.save_params()
 
   def _analyze_braking_behavior(self):
     """Analyze collected braking events to optimize parameters using neural-network."""
@@ -965,7 +958,7 @@ class LongitudinalLiveTuner:
       self.stopping_decel_rate = min(self.stopping_decel_rate * 0.7, self.stopping_decel_rate_default * 0.65)
       print(f"Safety correction: Mean stopping distance {np.mean(stopping_distances):.2f}m is too low; applying correction.")
       self._validate_params()
-      self._save_params()
+      self.save_params()
       return
 
     # Calculate optimal decel rate based on comfort and accuracy
@@ -1128,7 +1121,7 @@ class LongitudinalLiveTuner:
     self._validate_params()
 
     # Save more frequently when we're actively learning
-    self._save_params()
+    self.save_params()
 
   def get_tuned_params(self):
     """Return current tuned parameters."""
