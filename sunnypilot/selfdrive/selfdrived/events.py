@@ -131,7 +131,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventNameSP.wrongCarModeNoEntry: {
-    ET.NO_ENTRY: wrong_car_mode_alert,
+    ET.WARNING: wrong_car_mode_alert,
   },
 
 }
