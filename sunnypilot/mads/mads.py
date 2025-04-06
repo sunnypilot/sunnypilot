@@ -128,7 +128,8 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
     if any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
-      replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
+      if self.events.has(EventName.wrongCarMode):
+        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
     else:
       self.events.remove(EventName.wrongCarMode)
 
