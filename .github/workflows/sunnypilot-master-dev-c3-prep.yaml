@@ -4,6 +4,8 @@ env:
   DEFAULT_SOURCE_BRANCH: "master-new"
   DEFAULT_TARGET_BRANCH: "nightly"
   PR_LABEL: "dev-c3"
+  LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
+  LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
 on:
   workflow_dispatch:
@@ -35,6 +37,15 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add GitLab public keys
+        run: |
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -52,10 +63,10 @@ jobs:
             echo "Source branch ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }} does not exist!"
             exit 1
           fi
-          
+
           # Make sure we have the latest source branch
           git fetch origin ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}
-          
+
           # Check if target branch exists
           if ! git ls-remote --heads origin ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} | grep -q "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"; then
             echo "Target branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} does not exist, creating it from ${{ inputs.source_branch || env.DEFAULT_SOURCE_BRANCH }}"
@@ -99,19 +110,28 @@ jobs:
                 }
               }
             }' -F label="is:pr is:open label:${PR_LABEL} sort:created-asc")
-          
+
           echo "PR_LIST=${PR_LIST}" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Process PRs
         run: |
+          cp ${{ github.workspace }}/release/ci/squash_and_merge.py /tmp/squash_and_merge.py && \
+          chmod +x /tmp/squash_and_merge.py && \
           python3 ${{ github.workspace }}/release/ci/squash_and_merge_prs.py \
             --pr-data '${{ steps.get-prs.outputs.PR_LIST }}' \
             --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
-            --squash-script-path '${{ github.workspace }}/release/ci/squash_and_merge.py'
+            --squash-script-path '/tmp/squash_and_merge.py'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update LFS Config
+        run: |
+          echo '[lfs]' > .lfsconfig
+          echo '    url = ${{ env.LFS_URL }}' >> .lfsconfig
+          echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
+          echo '    locksverify = false' >> .lfsconfig
 
       - name: Push changes if there are diffs
         id: push-changes  # Add an id so we can reference this step
