@@ -117,19 +117,23 @@ class PowerMonitoring:
     # For now, same values also need to be added in max_time_offroad.cc till we find a better way
 
     offRdOpts = {
-      0:0,
-      1:300,
-      2:600,
-      3:900,
-      4:1800,
-      5:3600,
-      6:7200,
-      7:10800,
-      8:18000,
-      9:43200,
-      10:86400
+      "0":0,
+      "1":300,
+      "2":600,
+      "3":900,
+      "4":1800,
+      "5":3600,
+      "6":7200,
+      "7":10800,
+      "8":18000,
+      "9":43200,
+      "10":86400
     }
-    MAX_TIME_OFFROAD_S = offRdOpts[(int(self.params.get("MaxTimeOffroad", encoding="utf8")))]
+
+    try:
+      MAX_TIME_OFFROAD_S = offRdOpts[self.params.get("MaxTimeOffroad", encoding="utf8")]
+    except Exception:
+      MAX_TIME_OFFROAD_S = 30*3600
 
     now = time.monotonic()
     should_shutdown = False
