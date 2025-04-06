@@ -43,7 +43,13 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 |   `dev-c3`   | https://dev-c3.sunnypilot.ai     |
 
 ### If you want to use our newest branches (our rewrite)
-You can see the rewrite state on our [rewrite project board](https://github.com/orgs/sunnypilot/projects/2), and to install the new branches, you can use the following links
+> [!TIP]
+>You can see the rewrite state on our [rewrite project board](https://github.com/orgs/sunnypilot/projects/2), and to install the new branches, you can use the following links
+
+
+> [!IMPORTANT]
+> Is is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
+> You can still restore the latest sunnylink backup made on the old branches.
 
 |      Branch      |                 Installation URL              |
 |:----------------:|:---------------------------------------------:|
@@ -52,11 +58,8 @@ You can see the rewrite state on our [rewrite project board](https://github.com/
 | `custom-branch`  | `https://install.sunnypilot.ai/{branch_name}` |
 | `release-c3-new` |            **Not yet available**.             |
 
-> [!IMPORTANT]
-> Is is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
-> You can still restore the latest sunnylink backup made on the old branches.
-
-Requires further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
+> [!TIP]
+> Do you require further assistance with software installation? Join the [sunnypilot Discord server](https://discord.sunnypilot.com) and message us in the `#installation-help` channel.
 
 ## 🎆 Pull Requests
 We welcome both pull requests and issues on GitHub. Bug fixes are encouraged.
