@@ -82,8 +82,6 @@ class ModularAssistiveDrivingSystem:
       if self.events.has(EventName.parkBrake):
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
-      if self.events.has(EventName.wrongCarMode):
-        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
 
       if self.pause_lateral_on_brake_toggle:
         if CS.brakePressed:
@@ -129,7 +127,9 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
-    if not any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
+    if any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
+      replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
+    else:
       self.events.remove(EventName.wrongCarMode)
 
   def update(self, CS: car.CarState):
