@@ -48,7 +48,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 
 
 > [!IMPORTANT]
-> Is is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
+> It is recommended to [re-flash AGNOS](https://flash.comma.ai/) if you intend to downgrade from the new branches.
 > You can still restore the latest sunnylink backup made on the old branches.
 
 |      Branch      |                 Installation URL              |
