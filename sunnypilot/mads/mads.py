@@ -82,6 +82,8 @@ class ModularAssistiveDrivingSystem:
       if self.events.has(EventName.parkBrake):
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
+      if self.events.has(EventName.wrongCarMode):
+        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeNoEntry)
 
       if self.pause_lateral_on_brake_toggle:
         if CS.brakePressed:
