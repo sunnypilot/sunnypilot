@@ -46,8 +46,10 @@ class TunerManager:
     'onroad_enabled': True,
     'offroad_enabled': False,
   }
-  replay_routes: list[str] = []
+  # For onroad training, we continue to use a thread.
   training_thread: threading.Thread | None = None
+  # For offroad training, use a separate process.
+  training_process: multiprocessing.Process | None = None
   OFFROAD_DAEMON_NAME = 'longitudinalTuner'
 
   @classmethod
@@ -109,12 +111,13 @@ class TunerManager:
 
   @classmethod
   def start_offroad_training(cls):
-    if cls.training_thread and cls.training_thread.is_alive():
+    # Use process instead of thread for offroad training.
+    if cls.training_process is not None and cls.training_process.is_alive():
       return
     cls.training_status['active'] = True
     cls.training_status['source'] = 'replay'
-    cls.training_thread = threading.Thread(target=cls._offroad_training_loop, daemon=True)
-    cls.training_thread.start()
+    cls.training_process = multiprocessing.Process(target=cls._offroad_training_loop, daemon=True)
+    cls.training_process.start()
     cloudlog.info("Offroad training started")
 
   @classmethod
