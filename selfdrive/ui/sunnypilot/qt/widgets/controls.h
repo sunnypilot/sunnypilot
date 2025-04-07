@@ -533,16 +533,15 @@ protected:
         }
       }
 
-      // Draw the rectangle
-  #ifdef __APPLE__
-      QRect rect(0, !_title.isEmpty() ? (h - 16) : 20, w, h);
-  #else
-      QRect rect(0, !_title.isEmpty() ? (h - 24) : 20, w, h);
-  #endif
-      p.setBrush(QColor(button_enabled ? "#b24a4a4a" : "#121212")); // Background color
-      p.setPen(QPen(Qt::NoPen));
-      p.drawRoundedRect(rect, 20, 20);
-    }
+    // Draw the rectangle
+#ifdef __APPLE__
+    QRect rect(0, !_title.isEmpty() ? (h - 16) : 20, w, h);
+#else
+    QRect rect(0, !_title.isEmpty() ? (h - 24) : 20, w, h);
+#endif
+    p.setBrush(QColor(button_enabled ? "#b24a4a4a" : "#121212")); // Background color
+    p.setPen(QPen(Qt::NoPen));
+    p.drawRoundedRect(rect, 20, 20);
   }
 
 signals:
