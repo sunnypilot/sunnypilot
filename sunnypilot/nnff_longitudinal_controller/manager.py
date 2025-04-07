@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import json
 import os
+import random
 import sys
 import threading
 import time
@@ -91,9 +92,14 @@ class TunerManager:
     params = Params()
     is_onroad = params.get_bool("IsOnroad")
     mode = params.get("LongitudinalLiveTuneParams", "none")
-    if is_onroad and mode != "onroad" and cls.training_status['active'] and cls.training_status['source'] == 'replay':
-      cloudlog.info("Onroad: pausing replay training")
-      cls.training_status['paused'] = True
+    if is_onroad:
+      if mode == "onroad":
+        if not cls.training_status['active']:
+          cloudlog.info("Onroad training mode detected; starting onroad training")
+          cls.start_onroad_training()
+      elif mode != "onroad" and cls.training_status['active'] and cls.training_status['source'] == 'replay':
+        cloudlog.info("Onroad: pausing replay training")
+        cls.training_status['paused'] = True
     elif not is_onroad and mode == "replay":
       if cls.training_status['paused']:
         cloudlog.info("Offroad: resuming paused training")
@@ -110,6 +116,30 @@ class TunerManager:
     cls.training_thread = threading.Thread(target=cls._offroad_training_loop, daemon=True)
     cls.training_thread.start()
     cloudlog.info("Offroad training started")
+
+  @classmethod
+  def start_onroad_training(cls):
+    if cls.training_thread and cls.training_thread.is_alive():
+      return
+    cls.training_status['active'] = True
+    cls.training_status['source'] = 'onroad'
+    cls.training_thread = threading.Thread(target=cls._onroad_training_loop, daemon=True)
+    cls.training_thread.start()
+    cloudlog.info("Onroad training started")
+
+  @classmethod
+  def _onroad_training_loop(cls):
+    cloudlog.info("Entering onroad training loop")
+    sm = messaging.SubMaster(['carState', 'carControl'])
+    while True:
+      sm.update()
+      if sm.updated['carState'] and sm.updated['carControl']:
+        car_state = sm['carState']
+        actuators = sm['carControl'].actuators
+        for tuner in cls.tuners.values():
+          tuner.force_update(car_state, actuators)
+        cloudlog.info("Onroad training update processed")
+      time.sleep(0.05)
 
   @classmethod
   def _offroad_training_loop(cls):
@@ -145,7 +175,8 @@ class TunerManager:
   def _find_local_routes(cls):
     routes = []
     processed_logs = cls._load_processed_logs()
-    for route_dir in ['/data/media/0/realdata/']:
+    # Check default realdata path and tests directory without explicitly targeting a route
+    for route_dir in ['/data/media/0/realdata/', '/Users/james/CLionProjects/sunnypilot/openpilot/sunnypilot/nnff_longitudinal_controller/tests/']:
       if not os.path.exists(route_dir):
         continue
       for route_path in Path(route_dir).glob("*"):
@@ -154,7 +185,7 @@ class TunerManager:
           if processed_logs["routes"].get(route_id, {}).get("fully_processed", False):
             continue
           routes.append(str(route_path))
-    routes.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+    random.shuffle(routes)
     return routes[:10]
 
   @classmethod
@@ -164,7 +195,7 @@ class TunerManager:
   @classmethod
   def _load_processed_logs(cls):
     processed_logs_file = cls._get_processed_logs_file()
-    if os.path.exists(processed_logs_file):
+    if (os.path.exists(processed_logs_file)):
       try:
         with open(processed_logs_file) as f:
           return json.load(f)
@@ -221,11 +252,11 @@ class TunerManager:
       if segment_id in processed_logs.get("segments", {}) and processed_logs["segments"][segment_id].get("processed", False):
         segment_index += 1
         continue
-      for log_format in ['rlog', 'rlog.bz2', 'raw_log.bz2', 'rlog.zst', 'qlog', 'qlog.bz2', 'qlog.zst', "fcamera.hevc"]:
+      for log_format in ['rlog.bz2', 'rlog.zst', 'qlog.bz2', 'qlog.zst']:
         log_path = os.path.join(segment_path, log_format)
         if os.path.exists(log_path):
           try:
-            lr = LogReader(log_path)
+            lr = LogReader(log_path)  # let LogReader to the heavy work
             car_params_msgs = [m for m in lr if m.which() == 'carParams']
             if not car_params_msgs:
               continue

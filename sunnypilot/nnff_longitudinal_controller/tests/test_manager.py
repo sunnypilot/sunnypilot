@@ -1,7 +1,5 @@
 import os
-import shutil
 import sys
-import tempfile
 import time
 
 from opendbc.car.interfaces import CarInterfaceBase
@@ -141,7 +139,7 @@ def test_training_with_local_route():
 
   # Override only the route finding and tuner retrieval
   orig_get_tuner = TunerManager.get_tuner
-  TunerManager.get_tuner = lambda _, car_fp: real_tuner if car_fp == car_fingerprint else real_tuner
+  TunerManager.get_tuner = classmethod(lambda cls, car_fp: real_tuner)
 
   orig_find_routes = TunerManager._find_local_routes
   TunerManager._find_local_routes = lambda *args: [route_path]

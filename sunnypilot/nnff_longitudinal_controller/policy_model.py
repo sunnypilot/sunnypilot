@@ -1145,27 +1145,16 @@ class LongitudinalLiveTuner:
   def _save_model_checkpoint(self):
     """Save the neural network weights as loss improves."""
     nn_weights = {'car_fingerprint': self.car_fingerprint}
-    if hasattr(self.nn, 'W3'):
-        nn_weights.update({
-          'nn_w1': self.nn.W1.tolist(),
-          'nn_b1': self.nn.b1.tolist(),
-          'nn_w2': self.nn.W2.tolist(),
-          'nn_b2': self.nn.b2.tolist(),
-          'nn_w3': self.nn.W3.tolist(),
-          'nn_b3': self.nn.b3.tolist(),
-        })
-    else:
-        # D3QN architecture: save dueling network parameters
-        nn_weights.update({
-          'nn_w1': self.nn.W1.tolist(),
-          'nn_b1': self.nn.b1.tolist(),
-          'nn_w2': self.nn.W2.tolist(),
-          'nn_b2': self.nn.b2.tolist(),
-          'nn_w_value': self.nn.W_value.tolist(),
-          'nn_b_value': self.nn.b_value.tolist(),
-          'nn_w_adv': self.nn.W_adv.tolist(),
-          'nn_b_adv': self.nn.b_adv.tolist(),
-        })
+    nn_weights.update({
+      'nn_w1': self.nn.W1.tolist(),
+      'nn_b1': self.nn.b1.tolist(),
+      'nn_w2': self.nn.W2.tolist(),
+      'nn_b2': self.nn.b2.tolist(),
+      'nn_w_value': self.nn.W_value.tolist(),
+      'nn_b_value': self.nn.b_value.tolist(),
+      'nn_w_adv': self.nn.W_adv.tolist(),
+      'nn_b_adv': self.nn.b_adv.tolist(),
+    })
     car_specific_path = f"{self.safe_fingerprint}_nn_longitudinal.pkl"
     with open(car_specific_path, "wb") as f:
       pickle.dump(nn_weights, f)
