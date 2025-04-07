@@ -301,13 +301,13 @@ class TunerManager:
     try:
       pm = messaging.PubMaster(['custom.CarControlSP'])
       msg = messaging.new_message('custom.CarControlSP')
-      # Only set nnffLongTuning if it exists in the message schema
+      # Bypass setting nnffLongTuning if it doesn't exist in the schema
       if hasattr(msg.custom.CarControlSP, 'nnffLongTuning'):
         msg.custom.CarControlSP.nnffLongTuning = json.dumps(cls.training_status)
       else:
         cloudlog.warning("nnffLongTuning field not present in CarControlSP schema; skipping update")
       pm.send('custom.CarControlSP', msg)
-      cloudlog.info(f"Published NNFF training status using custom field: {cls.training_status}")
+      cloudlog.info(f"Published NNFF training status: {cls.training_status}")
     except Exception as e:
       cloudlog.exception(f"Error publishing NNFF status: {e}")
 
