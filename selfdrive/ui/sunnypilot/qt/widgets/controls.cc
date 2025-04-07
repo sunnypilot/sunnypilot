@@ -144,9 +144,9 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
           main_layout->removeItem(spacingItem);
           delete spacingItem;
           spacingItem = nullptr;
-         } else if (!isVisible && spacingItem == nullptr && !isInlineLayout) {
-           spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
-           main_layout->insertItem(main_layout->indexOf(description), spacingItem);
+        } else if (!isVisible && spacingItem == nullptr && !isInlineLayout) {
+          spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
+          main_layout->insertItem(main_layout->indexOf(description), spacingItem);
         }
       }
     });
