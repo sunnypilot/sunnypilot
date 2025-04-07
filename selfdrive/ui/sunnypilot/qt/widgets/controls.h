@@ -451,7 +451,7 @@ public:
     label.setFixedWidth(300);
     label.setAlignment(Qt::AlignCenter);
 
-    const std::vector<QString> button_texts{"-", "+"};
+    const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
     value = atoi(params.get(key).c_str());
