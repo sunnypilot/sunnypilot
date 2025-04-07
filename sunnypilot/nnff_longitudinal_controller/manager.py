@@ -297,21 +297,6 @@ class TunerManager:
       cls._save_processed_logs(processed_logs)
 
   @classmethod
-  def publish_nnff_status(cls):
-    try:
-      pm = messaging.PubMaster(['custom.CarControlSP'])
-      msg = messaging.new_message('custom.CarControlSP')
-      # Bypass setting nnffLongTuning if it doesn't exist in the schema
-      if hasattr(msg.custom.CarControlSP, 'nnffLongTuning'):
-        msg.custom.CarControlSP.nnffLongTuning = json.dumps(cls.training_status)
-      else:
-        cloudlog.warning("nnffLongTuning field not present in CarControlSP schema; skipping update")
-      pm.send('custom.CarControlSP', msg)
-      cloudlog.info(f"Published NNFF training status: {cls.training_status}")
-    except Exception as e:
-      cloudlog.exception(f"Error publishing NNFF status: {e}")
-
-  @classmethod
   def register_process(cls):
     @dataclass
     class LongitudinalTunerProcessConfig:
@@ -350,7 +335,6 @@ def main():
       prev_onroad = is_onroad
     if not is_onroad and TunerManager.should_run_offroad() and not TunerManager.training_status['active']:
       TunerManager.start_offroad_training()
-    TunerManager.publish_nnff_status()
     rk.keep_time()
 
 
