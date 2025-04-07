@@ -493,10 +493,9 @@ public:
       container->setLayout(innerLayout);
       container->setStyleSheet("background-color: #393939; border-radius: 20px;");
       hlayout->addWidget(container);
-     } else {
-       hlayout->addLayout(innerLayout);
+    } else {
+      hlayout->addLayout(innerLayout);
     }
-
   }
 
   void setUpdateOtherToggles(bool _update) {
