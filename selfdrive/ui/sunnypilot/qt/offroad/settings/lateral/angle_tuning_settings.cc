@@ -22,7 +22,7 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   auto *list = new ListWidget(this, false);
 
   auto first_row = new QHBoxLayout();
-  hkgAngleSmoothingFactor = new OptionControlSP("HkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering.<br/>A value closer to 1 means no smoothing.<br/>A value closer to 0 means very smooth (and thus likely too 'soft' steering)."), "../assets/offroad/icon_blank.png", {0, 10}, 1);
+  hkgAngleSmoothingFactor = new OptionControlSP("HkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering.<br/>A value closer to 1 means no smoothing.<br/>A value closer to 0 means very smooth (and thus likely too 'soft' steering).<br/>After 50mph/80km/h this setting is virtually always 1."), "../assets/offroad/icon_blank.png", {0, 10}, 1);
   connect(hkgAngleSmoothingFactor, &OptionControlSP::updateLabels, hkgAngleSmoothingFactor, [=]() {
     this->updateToggles(offroad);
   });
