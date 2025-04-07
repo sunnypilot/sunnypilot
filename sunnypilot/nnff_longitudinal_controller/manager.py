@@ -62,16 +62,15 @@ class TunerManager:
       CP.vEgoStarting = tuned_params['vego_starting']
       CP.stoppingDecelRate = tuned_params['stopping_decel_rate']
       if hasattr(CP, 'longitudinalTuning'):
-        if hasattr(CP.longitudinalTuning, 'kf'):
-          CP.longitudinalTuning.kf = tuned_params['kf']
-        if len(CP.longitudinalTuning.kpBP) == len(tuned_params['kpBP']):
-          CP.longitudinalTuning.kpBP = tuned_params['kpBP']
-        if len(CP.longitudinalTuning.kpV) == len(tuned_params['kpV']):
-          CP.longitudinalTuning.kpV = tuned_params['kpV']
-        if len(CP.longitudinalTuning.kiBP) == len(tuned_params['kiBP']):
-          CP.longitudinalTuning.kiBP = tuned_params['kiBP']
-        if len(CP.longitudinalTuning.kiV) == len(tuned_params['kiV']):
-          CP.longitudinalTuning.kiV = tuned_params['kiV']
+        CP.longitudinalTuning.kf = tuned_params.get('kf', CP.longitudinalTuning.kf)
+        if len(CP.longitudinalTuning.kpBP) == len(tuned_params.get('kpBP', CP.longitudinalTuning.kpBP)):
+          CP.longitudinalTuning.kpBP = tuned_params.get('kpBP', CP.longitudinalTuning.kpBP)
+        if len(CP.longitudinalTuning.kpV) == len(tuned_params.get('kpV', CP.longitudinalTuning.kpV)):
+          CP.longitudinalTuning.kpV = tuned_params.get('kpV', CP.longitudinalTuning.kpV)
+        if len(CP.longitudinalTuning.kiBP) == len(tuned_params.get('kiBP', CP.longitudinalTuning.kiBP)):
+          CP.longitudinalTuning.kiBP = tuned_params.get('kiBP', CP.longitudinalTuning.kiBP)
+        if len(CP.longitudinalTuning.kiV) == len(tuned_params.get('kiV', CP.longitudinalTuning.kiV)):
+          CP.longitudinalTuning.kiV = tuned_params.get('kiV', CP.longitudinalTuning.kiV)
 
   @classmethod
   def create_tuner(cls, CP):
