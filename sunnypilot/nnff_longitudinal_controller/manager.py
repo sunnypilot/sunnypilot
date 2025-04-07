@@ -229,87 +229,79 @@ class TunerManager:
     return False
 
   @classmethod
-  def _replay_worker(cls, log_reader_path, params):
-    """Worker function to run replay in a separate process"""
-    lr_worker = LogReader(log_reader_path)
-    return replay_process_with_name(['controlsd', 'plannerd', 'radard'], lr_worker, custom_params=params)
-
-
-  @classmethod
   def _train_on_route(cls, route):
     cloudlog.info(f"Training on route: {route}")
     processed_logs = cls._load_processed_logs()
     route_id = os.path.basename(route)
     if processed_logs["routes"].get(route_id, {}).get("fully_processed", False):
-      cloudlog.info(f"Route {route_id} already processed")
-      return
+        cloudlog.info(f"Route {route_id} already processed")
+        return
     segment_paths = sorted(Path(route).glob("*"))
     processed_any_segment = False
     if route_id not in processed_logs["routes"]:
-      processed_logs["routes"][route_id] = {"path": route, "first_seen": time.time(), "fully_processed": False, "segment_count": len(segment_paths)}
+        processed_logs["routes"][route_id] = {"path": route, "first_seen": time.time(), "fully_processed": False, "segment_count": len(segment_paths)}
     segment_index = 0
     while segment_index < len(segment_paths):
-      if cls.training_status.get('paused', False):
-        if processed_any_segment:
-            cls._save_processed_logs(processed_logs)
-        time.sleep(1)
-        continue
-      segment_path = segment_paths[segment_index]
-      segment_id = os.path.basename(str(segment_path))
-      if segment_id in processed_logs.get("segments", {}) and processed_logs["segments"][segment_id].get("processed", False):
-        segment_index += 1
-        continue
-      for log_format in ['rlog.bz2', 'rlog.zst', 'qlog.bz2', 'qlog.zst']:
-        log_path = os.path.join(segment_path, log_format)
-        if os.path.exists(log_path):
-          try:
-            # Load and process route data
-            lr = LogReader(log_path)
-            car_params_msgs = [m for m in lr if m.which() == 'carParams']
-            if not car_params_msgs:
-              continue
-            car_fingerprint = car_params_msgs[0].carParams.carFingerprint
-            custom_params = get_custom_params_from_lr(lr)
-            tuner = cls.get_tuner(car_fingerprint)
-            if not tuner:
-              CP = CarInterfaceBase.get_std_params(car_fingerprint)
-              tuner = cls.create_tuner(CP)
-            cloudlog.info(f"Replaying data for {car_fingerprint}")
-            # Use process pool to run the replay
-            pool = multiprocessing.Pool(1)
-            output_logs = pool.apply(cls._replay_worker, (log_path, custom_params))
-            pool.close()
-            pool.join()
+        if cls.training_status.get('paused', False):
+            if processed_any_segment:
+                cls._save_processed_logs(processed_logs)
+            time.sleep(1)
+            continue
+        segment_path = segment_paths[segment_index]
+        segment_id = os.path.basename(str(segment_path))
+        if segment_id in processed_logs.get("segments", {}) and processed_logs["segments"][segment_id].get("processed", False):
+            segment_index += 1
+            continue
+        for log_format in ['rlog.bz2', 'rlog.zst', 'qlog.bz2', 'qlog.zst']:
+            log_path = os.path.join(segment_path, log_format)
+            if os.path.exists(log_path):
+                try:
+                    # Load and process route data
+                    lr = LogReader(log_path)
+                    car_params_msgs = [m for m in lr if m.which() == 'carParams']
+                    if not car_params_msgs:
+                        continue
+                    car_fingerprint = car_params_msgs[0].carParams.carFingerprint
+                    custom_params = get_custom_params_from_lr(lr)
+                    tuner = cls.get_tuner(car_fingerprint)
+                    if not tuner:
+                        CP = CarInterfaceBase.get_std_params(car_fingerprint)
+                        tuner = cls.create_tuner(CP)
+                    cloudlog.info(f"Replaying data for {car_fingerprint}")
 
-            # Continue processing as before
-            control_outputs = [m for m in output_logs if m.which() == 'controlsState']
-            last_train_idx = 0
-            for i, cs in enumerate(control_outputs):
-              if i - last_train_idx >= 60:
-                tuner.force_update(cs.controlsState.carState, cs.controlsState.actuators)
-                last_train_idx = i
-                cls.training_status['progress'] = tuner.training_progress
-            tuner.save_params()
-            processed_logs["segments"][segment_id] = {
-              "processed": True,
-              "car_fingerprint": car_fingerprint,
-              "route_id": route_id,
-              "processed_time": time.time(),
-              "log_format": log_format,
-            }
-            processed_any_segment = True
-          except Exception as e:
-            cloudlog.exception(f"Error on segment {segment_path}: {e}")
-            processed_logs["segments"][segment_id] = {"processed": False, "error": str(e), "error_time": time.time()}
-          cls._save_processed_logs(processed_logs)
-          break
-      segment_index += 1
-      segments_in_route = [s for s in processed_logs["segments"].values() if s.get("route_id") == route_id and s.get("processed", False)]
-      if len(segments_in_route) == len(segment_paths):
-        processed_logs["routes"][route_id]["fully_processed"] = True
-        cloudlog.info(f"Route {route_id} fully processed")
+                    # Run replay directly in the current thread instead of using a process pool
+                    lr_worker = LogReader(log_path)
+                    output_logs = replay_process_with_name(['controlsd', 'plannerd', 'radard'], lr_worker, custom_params=custom_params)
+
+                    # Continue processing as before
+                    control_outputs = [m for m in output_logs if m.which() == 'controlsState']
+                    last_train_idx = 0
+                    for i, cs in enumerate(control_outputs):
+                        if i - last_train_idx >= 60:
+                            tuner.force_update(cs.controlsState.carState, cs.controlsState.actuators)
+                            last_train_idx = i
+                            cls.training_status['progress'] = tuner.training_progress
+                    tuner.save_params()
+                    processed_logs["segments"][segment_id] = {
+                        "processed": True,
+                        "car_fingerprint": car_fingerprint,
+                        "route_id": route_id,
+                        "processed_time": time.time(),
+                        "log_format": log_format,
+                    }
+                    processed_any_segment = True
+                except Exception as e:
+                    cloudlog.exception(f"Error on segment {segment_path}: {e}")
+                    processed_logs["segments"][segment_id] = {"processed": False, "error": str(e), "error_time": time.time()}
+                cls._save_processed_logs(processed_logs)
+                break
+        segment_index += 1
+        segments_in_route = [s for s in processed_logs["segments"].values() if s.get("route_id") == route_id and s.get("processed", False)]
+        if len(segments_in_route) == len(segment_paths):
+            processed_logs["routes"][route_id]["fully_processed"] = True
+            cloudlog.info(f"Route {route_id} fully processed")
     if processed_any_segment:
-      cls._save_processed_logs(processed_logs)
+        cls._save_processed_logs(processed_logs)
 
   @classmethod
   def register_process(cls):
