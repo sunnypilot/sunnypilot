@@ -1,0 +1,37 @@
+name: Sync Dev and Patch
+on:
+  schedule:
+    - cron:  '0 7 * * *'
+  workflow_dispatch:  # click the button on Github repo!
+
+permissions:
+    contents: write
+
+jobs:
+  sync_with_upstream:
+    runs-on: ubuntu-latest
+    name: Sync main with upstream latest
+
+    steps:
+    # Step 1: run a standard checkout action, provided by github
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+        ref: dev-c3-new
+        fetch-depth: 0
+    - name: Merge & Modify
+      run: |
+        git remote add upstream https://github.com/sunnypilot/sunnypilot.git
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/happyGamer1/openpilot.git
+        git fetch upstream
+        git config user.name 'github-actions[bot]'
+        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git reset --hard upstream/dev-c3-new
+        git pull upstream dev-c3-new --rebase --allow-unrelated-histories -X theirs
+        sed -i 's/MAX_TIME_OFFROAD_S =.*/MAX_TIME_OFFROAD_S = 300/g' system/hardware/power_monitoring.py
+        sed -i 's/VBATT_PAUSE_CHARGING =.*/VBATT_PAUSE_CHARGING = 12.0/g' system/hardware/power_monitoring.py
+        sed -i 's/MIN_ON_TIME_S =.*/MIN_ON_TIME_S = 300/g' system/hardware/power_monitoring.py
+        
+        git commit -am "Sync & Update Offroad Time"
+        git push -f --no-verify origin dev-c3-new
