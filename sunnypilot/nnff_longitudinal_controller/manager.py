@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import json
+import multiprocessing
 import os
 import random
 import sys
@@ -228,6 +229,13 @@ class TunerManager:
     return False
 
   @classmethod
+  def _replay_worker(cls, log_reader_path, params):
+    """Worker function to run replay in a separate process"""
+    lr_worker = LogReader(log_reader_path)
+    return replay_process_with_name(['controlsd', 'plannerd', 'radard'], lr_worker, custom_params=params)
+
+
+  @classmethod
   def _train_on_route(cls, route):
     cloudlog.info(f"Training on route: {route}")
     processed_logs = cls._load_processed_logs()
@@ -267,18 +275,9 @@ class TunerManager:
               CP = CarInterfaceBase.get_std_params(car_fingerprint)
               tuner = cls.create_tuner(CP)
             cloudlog.info(f"Replaying data for {car_fingerprint}")
-
-            # Use multiprocessing to run replay_process_with_name in a separate process
-            import multiprocessing
-
-            def replay_worker(log_reader_path, params):
-              """Worker function to run replay in a separate process"""
-              lr_worker = LogReader(log_reader_path)
-              return replay_process_with_name(['controlsd', 'plannerd', 'radard'], lr_worker, custom_params=params)
-
             # Use process pool to run the replay
             pool = multiprocessing.Pool(1)
-            output_logs = pool.apply(replay_worker, (log_path, custom_params))
+            output_logs = pool.apply(cls._replay_worker, (log_path, custom_params))
             pool.close()
             pool.join()
 
