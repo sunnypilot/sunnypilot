@@ -518,19 +518,22 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
-    if (!isInlineLayout) {
-      QPainter p(this);
-      p.setRenderHint(QPainter::Antialiasing);
+    if (isInlineLayout) {
+      return;
+    }
+    
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
 
-      // Calculate the total width and height for the background rectangle
-      int w = 0;
-      int h = 150;
+    // Calculate the total width and height for the background rectangle
+    int w = 0;
+    int h = 150;
 
-      for (int i = 0; i < innerLayout->count(); ++i) {
-        QWidget *widget = qobject_cast<QWidget *>(innerLayout->itemAt(i)->widget());
-        if (widget) {
-          w += widget->width();
-        }
+    for (int i = 0; i < innerLayout->count(); ++i) {
+      QWidget *widget = qobject_cast<QWidget *>(innerLayout->itemAt(i)->widget());
+      if (widget) {
+        w += widget->width();
+      }
       }
 
     // Draw the rectangle
