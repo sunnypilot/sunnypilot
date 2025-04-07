@@ -301,10 +301,12 @@ class TunerManager:
     try:
       pm = messaging.PubMaster(['custom.CarControlSP'])
       msg = messaging.new_message('custom.CarControlSP')
-      msg.custom.CarControlSP.nnffLongTuning = cls.training_status
+      # Publish training status into the custom capnp field nnffLongTuning
+      msg.custom.CarControlSP.nnffLongTuning = json.dumps(cls.training_status)
       pm.send('custom.CarControlSP', msg)
+      cloudlog.info(f"Published NNFF training status using custom field: {cls.training_status}")
     except Exception as e:
-      cloudlog.exception(f"Error publishing nnff status: {e}")
+      cloudlog.exception(f"Error publishing NNFF status: {e}")
 
   @classmethod
   def register_process(cls):
