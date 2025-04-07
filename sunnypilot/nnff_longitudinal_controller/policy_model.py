@@ -1159,3 +1159,20 @@ class LongitudinalLiveTuner:
     with open(car_specific_path, "wb") as f:
       pickle.dump(nn_weights, f)
     print(f"Saved car-specific neural network checkpoint to {car_specific_path}")
+
+  def update_fingerprint(self, new_fingerprint: str, CP: structs.CarParams):
+    if new_fingerprint and new_fingerprint != "MOCK" and new_fingerprint != self.car_fingerprint:
+      self.car_fingerprint = new_fingerprint
+      self.safe_fingerprint = ''.join(c if c.isalnum() else '_' for c in new_fingerprint)
+      # Update default longitudinal parameters from CP:
+      self.vego_stopping_default = getattr(CP, 'vEgoStopping', self.vego_stopping_default)
+      self.vego_starting_default = getattr(CP, 'vEgoStarting', self.vego_starting_default)
+      self.stopping_decel_rate_default = getattr(CP, 'stoppingDecelRate', self.stopping_decel_rate_default)
+      long_tune = getattr(CP, 'longitudinalTuning', None)
+      if long_tune:
+        self.kf_default = getattr(long_tune, 'kf', self.kf_default)
+        self.kpBP_default = np.array(getattr(long_tune, 'kpBP', self.kpBP_default.tolist()))
+        self.kpV_default = np.array(getattr(long_tune, 'kpV', self.kpV_default.tolist()))
+        self.kiBP_default = np.array(getattr(long_tune, 'kiBP', self.kiBP_default.tolist()))
+        self.kiV_default = np.array(getattr(long_tune, 'kiV', self.kiV_default.tolist()))
+      print(f"Updated tuner fingerprint to {new_fingerprint} with updated CP defaults")

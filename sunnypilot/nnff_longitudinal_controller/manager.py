@@ -80,14 +80,23 @@ class TunerManager:
     params = Params()
     if params.get("LongitudinalLiveTuneParams", "none") == "none":
       return None
-    if CP.carFingerprint not in cls.tuners:
-      tuner = LongitudinalLiveTuner(CP, CP.longitudinalTuning.kpV, CP.longitudinalTuning.kiV)
-      cls.tuners[CP.carFingerprint] = tuner
-      CP._liveTuner = tuner
+    # If a tuner already exists for this fingerprint or for MOCK, use it
+    existing_tuner = cls.tuners.get(CP.carFingerprint)
+    if existing_tuner is None:
+      # Check if there's a tuner created under MOCK that we can update
+      mock_tuner = cls.tuners.get("MOCK")
+      if mock_tuner and CP.carFingerprint != "MOCK":
+        mock_tuner.update_fingerprint(CP.carFingerprint, CP)
+        cls.tuners[CP.carFingerprint] = mock_tuner
+        CP._liveTuner = mock_tuner
+      else:
+        tuner = LongitudinalLiveTuner(CP, CP.longitudinalTuning.kpV, CP.longitudinalTuning.kiV)
+        cls.tuners[CP.carFingerprint] = tuner
+        CP._liveTuner = tuner
     else:
-      CP._liveTuner = cls.tuners[CP.carFingerprint]
+      CP._liveTuner = existing_tuner
     cls.apply_tuned_params_to_cp(CP)
-    return cls.tuners[CP.carFingerprint]
+    return CP._liveTuner
 
   @classmethod
   def check_training_status(cls):
@@ -116,7 +125,7 @@ class TunerManager:
       return
     cls.training_status['active'] = True
     cls.training_status['source'] = 'replay'
-    cls.training_process = multiprocessing.Process(target=cls._offroad_training_loop, daemon=True)
+    cls.training_process = multiprocessing.Process(target=cls._offroad_training_loop)
     cls.training_process.start()
     cloudlog.info("Offroad training started")
 
@@ -136,7 +145,7 @@ class TunerManager:
     sm = messaging.SubMaster(['carState', 'carControl'])
     while True:
       sm.update()
-      if sm.updated['carState'] and sm.updated['carControl']:
+      if (sm.updated['carState'] and sm.updated['carControl']):
         car_state = sm['carState']
         actuators = sm['carControl'].actuators
         for tuner in cls.tuners.values():
@@ -164,15 +173,10 @@ class TunerManager:
       cloudlog.info(f"Training on: {routes[route_index]}")
       cls._train_on_route(routes[route_index])
       route_index += 1
-    # For tests, keep training active so the test sees an active thread
-    if any("nnff_longitudinal_controller/tests" in r for r in routes):
-      cloudlog.info("Test route detected, keeping training active")
-      while True:
-        time.sleep(2)
-    else:
-      cls.training_status['active'] = False
-      cls.training_status['routes_completed'] = len(routes)
-      cloudlog.info("Offroad training completed")
+    # Remove infinite loop for test routes; mark training complete regardless
+    cls.training_status['active'] = False
+    cls.training_status['routes_completed'] = len(routes)
+    cloudlog.info("Offroad training completed")
 
   @classmethod
   def _find_local_routes(cls):
