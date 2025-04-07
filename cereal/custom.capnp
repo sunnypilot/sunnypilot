@@ -154,6 +154,7 @@ struct CarParamsSP @0x80ae746ee2596b11 {
   flags @0 :UInt32;        # flags for car specific quirks in sunnypilot
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
+  nnffLongTuning @3 :Text;  # JSON string holding NNFF tuned params
 
   struct NeuralNetworkLateralControl {
     model @0 :Model;
@@ -168,7 +169,6 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
-  nnffLongTuning @1 :Text;  # JSON string holding NNFF tuned params
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {
