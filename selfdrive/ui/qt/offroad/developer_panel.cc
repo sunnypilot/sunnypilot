@@ -57,6 +57,13 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(hyundaiRadarTracksToggle);
 
+  auto teslaTorqueBlendingToggle = new ParamControl(
+    "TeslaTorqueBlendingToggle",
+    "Tesla: Torque Blending",
+    "",
+    "");
+  addItem(teslaTorqueBlendingToggle);
+
   enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
