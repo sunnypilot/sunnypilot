@@ -112,26 +112,8 @@ class PowerMonitoring:
       return False
 
     # Max Time Offroad
-
-    # Map to define the available options for Max Time Offroad
-    # For now, same values also need to be added in max_time_offroad.cc till we find a better way
-
-    offRdOpts = {
-      "0":0,
-      "1":300,
-      "2":600,
-      "3":900,
-      "4":1800,
-      "5":3600,
-      "6":7200,
-      "7":10800,
-      "8":18000,
-      "9":43200,
-      "10":86400
-    }
-
     try:
-      MAX_TIME_OFFROAD_SP = offRdOpts[self.params.get("MaxTimeOffroad", encoding="utf8")]
+      MAX_TIME_OFFROAD_SP = int(self.params.get("MaxTimeOffroad", encoding="utf8")) * 60
     except Exception:
       MAX_TIME_OFFROAD_SP = MAX_TIME_OFFROAD_S
 

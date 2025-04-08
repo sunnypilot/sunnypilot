@@ -7,37 +7,33 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/max_time_offroad.h"
 
+// Map of Max Offroad Time Options (Mins)
+const QMap<QString, QString> MaxTimeOffroad::offroad_time_options = {
+  {"0", "0"},
+  {"1", "5"},
+  {"2", "10"},
+  {"3", "15"},
+  {"4", "30"},
+  {"5", "60"},
+  {"6", "120"},
+  {"7", "180"},
+  {"8", "300"},
+  {"9", "600"},
+  {"10", "1440"}
+};
 
 MaxTimeOffroad::MaxTimeOffroad() : OptionControlSP(
   "MaxTimeOffroad",
   tr("Max Time Offroad"),
   tr("Device will automatically shutdown after set time once the engine is turned off."),
   "../assets/offroad/icon_blank.png",
-  {0, 10}, 1, true) {
+  {0, 10}, 1, true, &offroad_time_options) {
 
   refresh();
 }
 
 void MaxTimeOffroad::refresh() {
-  /*
-   * Map to define the available options for Max Time Offroad
-   * For now, same values also need to be added in power_monitoring.py till we find a better way
-   */
-  static const QMap<QString, QString> offroadTimeOpts = {
-    {"0", "0"},
-    {"1", "300"},
-    {"2", "600"},
-    {"3", "900"},
-    {"4", "1800"},
-    {"5", "3600"},
-    {"6", "7200"},
-    {"7", "10800"},
-    {"8", "18000"},
-    {"9", "43200"},
-    {"10", "86400"}
-  };
-
-  int intOpt = offroadTimeOpts.value(QString::fromStdString(params.get("MaxTimeOffroad"))).toInt();
-  QString strLabel = intOpt==0 ? "Always On" : intOpt<3600 ? QString::number(intOpt/60) + " m" : QString::number(intOpt/3600) + " h";
+  int intOpt = QString::fromStdString(params.get("MaxTimeOffroad")).toInt();
+  QString strLabel = intOpt==0 ? "Always On" : intOpt<60 ? QString::number(intOpt) + " m" : QString::number(intOpt/60) + " h";
   setLabel(strLabel);
 }

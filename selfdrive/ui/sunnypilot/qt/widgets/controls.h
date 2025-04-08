@@ -427,7 +427,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = NULL) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -448,13 +448,18 @@ public:
     )";
 
     label.setStyleSheet(label_enabled_style);
-    label.setFixedWidth(300);
+    label.setFixedWidth(350);
     label.setAlignment(Qt::AlignCenter);
 
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-    value = atoi(params.get(key).c_str());
+
+    if(valMap) {
+      value = valMap->key(QString::fromStdString(params.get(key))).toInt();
+    } else {
+      value = atoi(params.get(key).c_str());
+    }
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -470,11 +475,13 @@ public:
 
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
-        key = param.toStdString();
-        value = atoi(params.get(key).c_str());
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
-        params.put(key, QString::number(value).toStdString());
+        if(valMap) {
+          params.put(key, valMap->value(QString::number(value)).toStdString());
+        } else {
+          params.put(key, QString::number(value).toStdString());
+        }
 
         button_group->button(0)->setEnabled(!(value <= range.min_value));
         button_group->button(1)->setEnabled(!(value >= range.max_value));
@@ -520,7 +527,7 @@ protected:
     if (isInlineLayout) {
       return;
     }
-    
+
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 

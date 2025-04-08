@@ -15,6 +15,8 @@ class MaxTimeOffroad : public OptionControlSP {
   Q_OBJECT
 
 public:
+  static const QMap<QString, QString> offroad_time_options;
+
   MaxTimeOffroad();
   void refresh();
 
