@@ -96,8 +96,11 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
   Q_OBJECT
 
 protected:
-  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
+  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, const bool inline_layout = false);
   void hideEvent(QHideEvent *e) override;
+
+  QHBoxLayout *innerLayout;
+  bool isInlineLayout;
 
 private:
   QSpacerItem *spacingItem = nullptr;
@@ -424,7 +427,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = NULL) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -445,13 +448,18 @@ public:
     )";
 
     label.setStyleSheet(label_enabled_style);
-    label.setFixedWidth(300);
+    label.setFixedWidth(350);
     label.setAlignment(Qt::AlignCenter);
 
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-    value = atoi(params.get(key).c_str());
+
+    if(valMap) {
+      value = valMap->key(QString::fromStdString(params.get(key))).toInt();
+    } else {
+      value = atoi(params.get(key).c_str());
+    }
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -459,19 +467,21 @@ public:
       QPushButton *button = new QPushButton(button_texts[i], this);
       button->setStyleSheet(style + ((i == 0) ? "QPushButton { text-align: left; }" :
                                                 "QPushButton { text-align: right; }"));
-      hlayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
+      innerLayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
       if (i == 0) {
-        hlayout->addWidget(&label, 0, Qt::AlignCenter);
+        innerLayout->addWidget(&label, 0, Qt::AlignCenter);
       }
       button_group->addButton(button, i);
 
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
-        key = param.toStdString();
-        value = atoi(params.get(key).c_str());
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
-        params.put(key, QString::number(value).toStdString());
+        if(valMap) {
+          params.put(key, valMap->value(QString::number(value)).toStdString());
+        } else {
+          params.put(key, QString::number(value).toStdString());
+        }
 
         button_group->button(0)->setEnabled(!(value <= range.min_value));
         button_group->button(1)->setEnabled(!(value >= range.max_value));
@@ -484,7 +494,15 @@ public:
       });
     }
 
-    hlayout->setAlignment(Qt::AlignLeft);
+    innerLayout->setAlignment(Qt::AlignLeft);
+    if (isInlineLayout) {
+      QFrame *container = new QFrame;
+      container->setLayout(innerLayout);
+      container->setStyleSheet("background-color: #393939; border-radius: 20px;");
+      hlayout->addWidget(container);
+    } else {
+      hlayout->addLayout(innerLayout);
+    }
   }
 
   void setUpdateOtherToggles(bool _update) {
@@ -506,6 +524,10 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
+    if (isInlineLayout) {
+      return;
+    }
+
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
@@ -513,12 +535,12 @@ protected:
     int w = 0;
     int h = 150;
 
-    for (int i = 0; i < hlayout->count(); ++i) {
-      QWidget *widget = qobject_cast<QWidget *>(hlayout->itemAt(i)->widget());
+    for (int i = 0; i < innerLayout->count(); ++i) {
+      QWidget *widget = qobject_cast<QWidget *>(innerLayout->itemAt(i)->widget());
       if (widget) {
         w += widget->width();
       }
-    }
+      }
 
     // Draw the rectangle
 #ifdef __APPLE__
