@@ -8,7 +8,6 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import car, log, custom
 
 from opendbc.car.hyundai.values import HyundaiFlags
-from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -46,7 +45,7 @@ class ModularAssistiveDrivingSystem:
     # read params on init
     self.enabled_toggle = self.params.get_bool("Mads")
     self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed") and not self.no_main_cruise
-    self.steering_mode_on_brake = read_steering_mode_param(self.params)
+    self.pause_lateral_on_brake_toggle = self.params.get_bool("MadsPauseLateralOnBrake")
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def read_params(self):
@@ -88,11 +87,11 @@ class ModularAssistiveDrivingSystem:
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
 
-      if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE:
+      if self.pause_lateral_on_brake_toggle:
         if CS.brakePressed:
           transition_paused_state()
 
-      if not (self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and CS.brakePressed) and \
+      if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
          not self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
         if self.state_machine.state == State.paused:
           self.events_sp.add(EventNameSP.silentLkasEnable)
@@ -128,17 +127,14 @@ class ModularAssistiveDrivingSystem:
       if self.selfdrive.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
 
-    if self.steering_mode_on_brake == MadsSteeringModeOnBrake.DISENGAGE:
-      # Disable on rising edge of accelerator or brake. Also disable on brake when speed > 0
-      if (CS.brakePressed and (not self.selfdrive.CS_prev.brakePressed or not CS.standstill)) or \
-         (CS.regenBraking and (not self.selfdrive.CS_prev.regenBraking or not CS.standstill)):
-        self.events_sp.add(EventNameSP.lkasDisable)
-
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
-    if not any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
+    if any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
+      if self.events.has(EventName.wrongCarMode):
+        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
+    else:
       self.events.remove(EventName.wrongCarMode)
 
   def update(self, CS: car.CarState):
