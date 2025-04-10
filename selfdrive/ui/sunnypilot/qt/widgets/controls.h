@@ -98,8 +98,6 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
 protected:
   AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, const bool inline_layout = false);
   void hideEvent(QHideEvent *e) override;
-
-  QHBoxLayout *innerLayout;
   bool isInlineLayout;
 
 private:
@@ -420,6 +418,8 @@ class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 private:
+  QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
+  
   struct MinMaxValue {
     int min_value;
     int max_value;
@@ -459,6 +459,11 @@ public:
       }
     )";
 
+    if (inline_layout) {
+      optionSelectorLayout->setMargin(0);
+      optionSelectorLayout->setSpacing(0);
+    }
+
     label.setStyleSheet(label_enabled_style);
     label.setFixedWidth(inline_layout ? 350 : 300);
     label.setAlignment(Qt::AlignCenter);
@@ -474,9 +479,9 @@ public:
       QPushButton *button = new QPushButton(button_texts[i], this);
       button->setStyleSheet(style + ((i == 0) ? "QPushButton { text-align: left; }" :
                                                 "QPushButton { text-align: right; }"));
-      innerLayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
+      optionSelectorLayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
       if (i == 0) {
-        innerLayout->addWidget(&label, 0, Qt::AlignCenter);
+        optionSelectorLayout->addWidget(&label, 0, Qt::AlignCenter);
       }
       button_group->addButton(button, i);
 
@@ -498,14 +503,12 @@ public:
       });
     }
 
-    innerLayout->setAlignment(Qt::AlignLeft);
+    optionSelectorLayout->setAlignment(Qt::AlignLeft);
     if (isInlineLayout) {
       QFrame *container = new QFrame;
-      container->setLayout(innerLayout);
+      container->setLayout(optionSelectorLayout);
       container->setStyleSheet("background-color: #393939; border-radius: 20px;");
       hlayout->addWidget(container);
-    } else {
-      hlayout->addLayout(innerLayout);
     }
   }
 
@@ -539,8 +542,8 @@ protected:
     int w = 0;
     int h = 150;
 
-    for (int i = 0; i < innerLayout->count(); ++i) {
-      QWidget *widget = qobject_cast<QWidget *>(innerLayout->itemAt(i)->widget());
+    for (int i = 0; i < optionSelectorLayout->count(); ++i) {
+      QWidget *widget = qobject_cast<QWidget *>(optionSelectorLayout->itemAt(i)->widget());
       if (widget) {
         w += widget->width();
       }

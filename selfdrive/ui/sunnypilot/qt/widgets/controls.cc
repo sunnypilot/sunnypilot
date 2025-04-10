@@ -83,7 +83,7 @@ void AbstractControlSP::hideEvent(QHideEvent *e) {
 }
 
 AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent, const bool inline_layout)
-    : AbstractControlSP(title, desc, icon, parent) {
+    : AbstractControlSP(title, desc, icon, parent), isInlineLayout(inline_layout) {
 
   if (title_label != nullptr) {
     delete title_label;
@@ -113,11 +113,6 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   hlayout = new QHBoxLayout;
   hlayout->setMargin(0);
   hlayout->setSpacing(0);
-
-  innerLayout = new QHBoxLayout;
-  innerLayout->setMargin(0);
-  innerLayout->setSpacing(0);
-  isInlineLayout = inline_layout;
 
   // title
   if (!title.isEmpty()) {
