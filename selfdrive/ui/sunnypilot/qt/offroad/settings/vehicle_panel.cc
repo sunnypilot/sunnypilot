@@ -48,8 +48,8 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
     "HyundaiLongTune",
     tr("HKG Custom Longitudinal Tuning"),
     tr("Select a tuning mode. 'Off' means no custom tuning is applied. "
-       "'Long Tune' is a dynamic acceleration/brake tune individualized to your car. "
-       "'Tune + Smoother Braking' is the dynamic tuning with even smoother braking."),
+       "'Long Tune' is a dynamic acceleration/brake tune to smoothen out braking. "
+       "'Tune + Smoother Braking' is the tuning, but with even smoother braking thanks to dynamic jerk."),
        "../assets/offroad/icon_shell.png",
     tuning_buttons
   );
