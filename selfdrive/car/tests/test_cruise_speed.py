@@ -86,7 +86,7 @@ class TestVCruiseHelper:
       for pressed in (True, False):
         CS = car.CarState(cruiseState={"available": True})
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=pressed)]
-        
+
         prev = self.v_cruise_helper.v_cruise_kph
         self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False, reverse_acc=True)
         assert pressed == (self.v_cruise_helper.v_cruise_kph == self.v_cruise_helper.v_cruise_kph_last)
