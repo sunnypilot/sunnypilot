@@ -135,7 +135,7 @@ class VCruiseHelper:
   def adjust_cruise_speed(self, button_type, long_press, reverse_acc, is_metric):
     """
     Adjust cruise control speed based on button inputs.
-    
+
     Parameters:
     - button_type: Type of button pressed (affects direction and rounding)
     - long_press: Whether button is being held down
