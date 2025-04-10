@@ -32,6 +32,8 @@ def _initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs
   if CP.brand == 'hyundai':
     tuning_option_str = params.get("HyundaiLongTune")
     if tuning_option_str is not None:
+      if isinstance(tuning_option_str, bytes):
+        tuning_option_str = tuning_option_str.decode('utf-8')
       tuning_option_str = tuning_option_str.strip()
       if tuning_option_str != "0":
         CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING.value
