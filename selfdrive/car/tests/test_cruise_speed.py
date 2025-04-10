@@ -90,11 +90,11 @@ class TestVCruiseHelper:
         # Press button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
         prev = self.v_cruise_helper.v_cruise_kph
-        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False, reverse_acc=reverse_acc)
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True, reverse_acc=reverse_acc)
 
         # Release button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False, reverse_acc=reverse_acc)
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True, reverse_acc=reverse_acc)
 
         # Check the difference based on reverse_acc setting
         diff = abs(self.v_cruise_helper.v_cruise_kph - prev)
