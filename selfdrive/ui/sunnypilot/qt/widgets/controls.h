@@ -425,9 +425,10 @@ private:
     int max_value;
   };
   
-  QString getParamValue() {
-    auto param_value = QString::fromStdString(params.get(key));
-    return valueMap != nullptr ? valueMap->key(param_value) : param_value;
+  int getParamValue() {
+    const auto param_value = QString::fromStdString(params.get(key));
+    const auto result = valueMap != nullptr ? valueMap->key(param_value) : param_value;
+    return result.toInt();
   }
 
   // Although the method is not static, and thus has access to the value property, I prefer to be explicit about the value.
@@ -465,7 +466,7 @@ public:
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-    value = getParamValue().toInt();
+    value = getParamValue();
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -481,6 +482,7 @@ public:
 
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
+        value = getParamValue(); // in case it changed externally, we need to get the latest value.
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
         setParamValue(value);
