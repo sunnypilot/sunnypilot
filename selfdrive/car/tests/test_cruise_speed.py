@@ -76,6 +76,22 @@ class TestVCruiseHelper:
         self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False)
         assert pressed == (self.v_cruise_helper.v_cruise_kph == self.v_cruise_helper.v_cruise_kph_last)
 
+  def test_adjust_speed_reverse_acc(self):
+    """
+    Asserts speed changes on falling edges of buttons.
+    """
+    self.enable(V_CRUISE_INITIAL * CV.KPH_TO_MS, False, False)
+
+    for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
+      for pressed in (True, False):
+        CS = car.CarState(cruiseState={"available": True})
+        CS.buttonEvents = [ButtonEvent(type=btn, pressed=pressed)]
+        
+        prev = self.v_cruise_helper.v_cruise_kph
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False, reverse_acc=True)
+        assert pressed == (self.v_cruise_helper.v_cruise_kph == self.v_cruise_helper.v_cruise_kph_last)
+        assert abs(self.v_cruise_helper.v_cruise_kph - prev) not in (0,1)
+
   def test_rising_edge_enable(self):
     """
     Some car interfaces may enable on rising edge of a button,
