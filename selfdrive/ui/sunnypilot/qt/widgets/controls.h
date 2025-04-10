@@ -96,9 +96,8 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
   Q_OBJECT
 
 protected:
-  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, const bool inline_layout = false);
+  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
   void hideEvent(QHideEvent *e) override;
-  bool isInlineLayout;
 
 private:
   QSpacerItem *spacingItem = nullptr;
@@ -418,6 +417,7 @@ class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 private:
+  bool isInlineLayout;
   QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
   
   struct MinMaxValue {
@@ -439,7 +439,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : valueMap(valMap), _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), isInlineLayout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -462,6 +462,10 @@ public:
     if (inline_layout) {
       optionSelectorLayout->setMargin(0);
       optionSelectorLayout->setSpacing(0);
+      if (!title.isEmpty()) {
+        main_layout->removeWidget(title_label);
+        hlayout->addWidget(title_label, 1);
+      }
     }
 
     label.setStyleSheet(label_enabled_style);

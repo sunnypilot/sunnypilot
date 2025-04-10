@@ -82,8 +82,8 @@ void AbstractControlSP::hideEvent(QHideEvent *e) {
   }
 }
 
-AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent, const bool inline_layout)
-    : AbstractControlSP(title, desc, icon, parent), isInlineLayout(inline_layout) {
+AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
+    : AbstractControlSP(title, desc, icon, parent) {
 
   if (title_label != nullptr) {
     delete title_label;
@@ -119,12 +119,7 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
     title_label = new QPushButton(title);
     title_label->setFixedHeight(120);
     title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none; padding: 20 0 0 0");
-    if (isInlineLayout) {
-      hlayout->addWidget(title_label, 1);
-    } else {
-      main_layout->addWidget(title_label, 1);
-    }
-
+    main_layout->addWidget(title_label, 1);
 
     connect(title_label, &QPushButton::clicked, [=]() {
       if (!description->isVisible()) {
@@ -139,7 +134,7 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
           main_layout->removeItem(spacingItem);
           delete spacingItem;
           spacingItem = nullptr;
-        } else if (!isVisible && spacingItem == nullptr && !isInlineLayout) {
+        } else if (!isVisible && spacingItem == nullptr) {
           spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
           main_layout->insertItem(main_layout->indexOf(description), spacingItem);
         }
@@ -150,7 +145,7 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   }
 
   main_layout->addLayout(hlayout);
-  if (!desc.isEmpty() && spacingItem == nullptr && !isInlineLayout) {
+  if (!desc.isEmpty() && spacingItem == nullptr) {
     spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
     main_layout->insertItem(main_layout->count(), spacingItem);
   }
@@ -171,7 +166,7 @@ void AbstractControlSP_SELECTOR::hideEvent(QHideEvent *e) {
     description->hide();
   }
 
-  if (spacingItem == nullptr && !isInlineLayout) {
+  if (spacingItem == nullptr) {
     spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
     main_layout->insertItem(main_layout->indexOf(description), spacingItem);
   }
