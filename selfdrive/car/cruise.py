@@ -41,13 +41,13 @@ class VCruiseHelper:
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric):
+  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc = False):
     self.v_cruise_kph_last = self.v_cruise_kph
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
         # if stock cruise is completely disabled, then we can use our own set speed logic
-        self._update_v_cruise_non_pcm(CS, enabled, is_metric)
+        self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
         self.v_cruise_cluster_kph = self.v_cruise_kph
         self.update_button_timers(CS, enabled)
       else:
@@ -63,7 +63,7 @@ class VCruiseHelper:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
 
-  def _update_v_cruise_non_pcm(self, CS, enabled, is_metric):
+  def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_acc = False):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
     # would have the effect of both enabling and changing speed is checked after the state transition
     if not enabled:
@@ -71,8 +71,6 @@ class VCruiseHelper:
 
     long_press = False
     button_type = None
-
-    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
 
     for b in CS.buttonEvents:
       if b.type.raw in self.button_timers and not b.pressed:
@@ -99,11 +97,7 @@ class VCruiseHelper:
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
-    if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
-      self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
-    else:
-      self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press, reverse_acc, is_metric)
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
@@ -137,3 +131,34 @@ class VCruiseHelper:
       self.v_cruise_kph = int(round(np.clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
+
+  def adjust_cruise_speed(self, button_type, long_press, reverse_acc, is_metric):
+    """
+    Adjust cruise control speed based on button inputs.
+    
+    Parameters:
+    - button_type: Type of button pressed (affects direction and rounding)
+    - long_press: Whether button is being held down
+    - reverse_acc: Flag to reverse acceleration logic
+    - is_metric: Check if the system is using metric units
+    """
+    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
+    v_cruise_delta_mltplr = 10 if is_metric else 5
+
+    use_multiplier = long_press != reverse_acc  # True when only one of them is True
+    multiplier = v_cruise_delta_mltplr if use_multiplier else 1
+
+    # Calculate the actual delta to apply
+    adjusted_delta = v_cruise_delta * multiplier
+
+    # Check if we need to align to interval boundaries
+    if use_multiplier and self.v_cruise_kph % adjusted_delta != 0:
+      # Round to nearest interval when not already aligned
+      rounded_value = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / adjusted_delta)
+      self.v_cruise_kph = rounded_value * adjusted_delta
+    else:
+      # Simply increment/decrement by the adjusted delta
+      direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
+      self.v_cruise_kph += adjusted_delta * direction
+
+    return self.v_cruise_kph

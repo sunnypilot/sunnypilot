@@ -23,6 +23,7 @@ private:
   ParamControl* enableGithubRunner;
   bool is_release;
   bool offroad = false;
+  ParamControl* reverseAccChangeToggle;
 
 private slots:
   void updateToggles(bool _offroad);
