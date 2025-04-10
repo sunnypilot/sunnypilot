@@ -96,11 +96,10 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
   Q_OBJECT
 
 protected:
+  QSpacerItem *spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
   AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
   void hideEvent(QHideEvent *e) override;
 
-private:
-  QSpacerItem *spacingItem = nullptr;
 };
 
 // widget to display a value
@@ -465,6 +464,10 @@ public:
       if (!title.isEmpty()) {
         main_layout->removeWidget(title_label);
         hlayout->addWidget(title_label, 1);
+      }
+      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
+        main_layout->removeItem(spacingItem);
+        spacingItem = nullptr;
       }
     }
 
