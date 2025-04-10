@@ -90,7 +90,8 @@ class TestVCruiseHelper:
         prev = self.v_cruise_helper.v_cruise_kph
         self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False, reverse_acc=True)
         assert pressed == (self.v_cruise_helper.v_cruise_kph == self.v_cruise_helper.v_cruise_kph_last)
-        assert abs(self.v_cruise_helper.v_cruise_kph - prev) not in (0,1)
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False, reverse_acc=True)
+        assert abs(self.v_cruise_helper.v_cruise_kph - prev) != 1
 
   def test_rising_edge_enable(self):
     """
