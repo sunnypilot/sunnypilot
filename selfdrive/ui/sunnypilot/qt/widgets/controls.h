@@ -424,10 +424,21 @@ private:
     int min_value;
     int max_value;
   };
+  
+  QString getParamValue() {
+    auto param_value = QString::fromStdString(params.get(key));
+    return valueMap != nullptr ? valueMap->key(param_value) : param_value;
+  }
+
+  // Although the method is not static, and thus has access to the value property, I prefer to be explicit about the value.
+  void setParamValue(const int new_value) {
+    const auto value_str = valueMap != nullptr ? valueMap->value(QString::number(new_value)) : QString::number(new_value);
+    params.put(key, value_str.toStdString());
+  }
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = NULL) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : valueMap(valMap), _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -454,12 +465,7 @@ public:
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-
-    if(valMap) {
-      value = valMap->key(QString::fromStdString(params.get(key))).toInt();
-    } else {
-      value = atoi(params.get(key).c_str());
-    }
+    value = getParamValue().toInt();
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -477,11 +483,7 @@ public:
         int change_value = (i == 0) ? -per_value_change : per_value_change;
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
-        if(valMap) {
-          params.put(key, valMap->value(QString::number(value)).toStdString());
-        } else {
-          params.put(key, QString::number(value).toStdString());
-        }
+        setParamValue(value);
 
         button_group->button(0)->setEnabled(!(value <= range.min_value));
         button_group->button(1)->setEnabled(!(value >= range.max_value));
@@ -566,6 +568,7 @@ private:
   std::map<QString, QString> option_label = {};
   bool request_update = false;
   QString _title = "";
+  const QMap<QString, QString> *valueMap;
 
   const QString label_enabled_style = "font-size: 50px; font-weight: 450; color: #FFFFFF;";
   const QString label_disabled_style = "font-size: 50px; font-weight: 450; color: #5C5C5C;";
