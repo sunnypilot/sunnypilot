@@ -448,7 +448,7 @@ public:
     )";
 
     label.setStyleSheet(label_enabled_style);
-    label.setFixedWidth(350);
+    label.setFixedWidth(inline_layout ? 350 : 300);
     label.setAlignment(Qt::AlignCenter);
 
     const std::vector<QString> button_texts{"－", "＋"};
@@ -540,7 +540,7 @@ protected:
       if (widget) {
         w += widget->width();
       }
-      }
+    }
 
     // Draw the rectangle
 #ifdef __APPLE__
