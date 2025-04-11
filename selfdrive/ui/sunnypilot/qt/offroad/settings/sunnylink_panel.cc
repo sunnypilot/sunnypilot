@@ -108,10 +108,9 @@ SunnylinkPanel::SunnylinkPanel(QWidget *parent) : QFrame(parent) {
   // Settings Restore and Settings Backup in the same horizontal space
   auto settings_layout = new QHBoxLayout;
   settings_layout->setContentsMargins(0, 0, 0, 30);
-  settings_layout->addWidget(backupSettings);
+  settings_layout->addWidget(backupSettings, 0, Qt::AlignLeft);
   settings_layout->addSpacing(10);
-  settings_layout->addWidget(restoreSettings);
-  settings_layout->setAlignment(Qt::AlignLeft);
+  settings_layout->addWidget(restoreSettings, 0, Qt::AlignRight);
   list->addItem(settings_layout);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &SunnylinkPanel::updatePanel);
