@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-from cereal import car, log, custom
+from cereal import log, custom
 
 from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
@@ -135,7 +135,7 @@ class ModularAssistiveDrivingSystem:
     else:
       self.events.remove(EventName.wrongCarMode)
 
-  def update(self, CS: car.CarState):
+  def update(self, CS: structs.CarState):
     if not self.enabled_toggle:
       return
 
