@@ -121,7 +121,13 @@ class Car:
       self.CI, self.CP, self.CP_SP = CI, CI.CP, CI.CP_SP
       self.RI = RI
 
+    # set alternative experiences from parameters
+    sp_toyota_auto_brake_hold = self.params.get_bool("ToyotaAutoHold")
     self.CP.alternativeExperience = 0
+    if sp_toyota_auto_brake_hold:
+      self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ALLOW_AEB
+
+
     # mads
     set_alternative_experience(self.CP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)

@@ -68,6 +68,9 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
+    ("ToyotaAutoHold", "0"),
+    ("ToyotaEnhancedBsm", "0"),
+    ("ToyotaTSS2Long", "0"),
   ]
 
   # device boot mode
