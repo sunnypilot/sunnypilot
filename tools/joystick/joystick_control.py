@@ -34,7 +34,7 @@ class Keyboard:
     key = self.kb.getch().lower()
     self.cancel = False
     if key == 'r':
-      self.axes_values = {ax: 0. for ax in self.axes_values}
+      self.axes_values = dict.fromkeys(self.axes_values, 0.)
     elif key == 'c':
       self.cancel = True
     elif key in self.axes_map:
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     print('Buttons')
     print('- `R`: Resets axes')
     print('- `C`: Cancel cruise control')
-    joystick = Keyboard()
+    joystick_control_thread(Keyboard())
   else:
     print('Using pygame joystick')
     print('Standard controller mapping:')
@@ -213,6 +213,4 @@ if __name__ == '__main__':
     print('- Right trigger (R2): Gas')
     print('- Left trigger (L2): Brake')
     print('- Triangle/Y button: Cancel')
-    joystick = PyGameJoystick()
-
-  joystick_control_thread(joystick)
+    joystick_control_thread(PyGameJoystick())
