@@ -87,8 +87,8 @@ def validate_pr(pr):
   if not merge_data.get('mergeable'):
     return False, "merge conflicts detected"
 
-  if (mergeStateStatus := merge_data.get('mergeStateStatus')) == "BEHIND":
-    return False, f"branch is `{mergeStateStatus}`"
+  # if (mergeStateStatus := merge_data.get('mergeStateStatus')) == "BEHIND":
+  #   return False, f"branch is `{mergeStateStatus}`"
 
   return True, None
 
