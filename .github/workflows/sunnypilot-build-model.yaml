@@ -132,8 +132,8 @@ jobs:
             --output-dir "${{ env.OUTPUT_DIR }}" \
             --custom-name "${{ inputs.custom_name || inputs.upstream_branch }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
-            --file-name "${{ inputs.file_name || 'default' }}" \
-            ${{ inputs.is_20hz && '--is-20hz' }}
+            --file-name "${{ inputs.file_name || 'default' }}" ${{ inputs.is_20hz && '--is-20hz' || '' }}
+            
           
 
       - name: Upload Build Artifacts
