@@ -80,7 +80,7 @@ if __name__ == "__main__":
     sys.exit(1)
 
   output_dir = Path(args.output_dir)
-  args.output_dir.mkdir(exist_ok=True, parents=True)
+  output_dir.mkdir(exist_ok=True, parents=True)
   models = []
 
   for model_path in model_paths:
