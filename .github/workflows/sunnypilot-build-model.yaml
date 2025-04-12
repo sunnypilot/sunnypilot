@@ -128,7 +128,7 @@ jobs:
           
             echo "Compiling: $onnx_file -> $output_file"
             QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
-            QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file"
+            QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
           done
 
       - name: Prepare Output
