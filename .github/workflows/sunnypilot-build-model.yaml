@@ -127,13 +127,13 @@ jobs:
             ${{ env.MODELS_DIR }}/ ${OUTPUT_DIR}/
           
           # Rename files if file_name is provided
-          python3 ${{ github.workspace }}/release/ci/model_generator.py \
-            --model-dir ${{ env.MODELS_DIR }} \
-            --output-dir ${{ env.OUTPUT_DIR }} \
-            --custom-name ${{ inputs.custom_name || inputs.upstream_branch }} \
-            --upstream-branch ${{ inputs.upstream_branch }} \
-            --file-name ${{ inputs.file_name || 'default' }} \
-            --is-20hz ${{ inputs.is_20hz || false }}
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "${{ env.MODELS_DIR }}" \
+            --output-dir "${{ env.OUTPUT_DIR }}" \
+            --custom-name "${{ inputs.custom_name || inputs.upstream_branch }}" \
+            --upstream-branch "${{ inputs.upstream_branch }}" \
+            --file-name "${{ inputs.file_name || 'default' }}" \
+            --is-20hz "${{ inputs.is_20hz || false }}"
           
 
       - name: Upload Build Artifacts
