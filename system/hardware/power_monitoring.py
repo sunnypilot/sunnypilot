@@ -115,11 +115,11 @@ class PowerMonitoring:
     """
     try:
       param = self.params.get("MaxTimeOffroad", encoding="utf8")
-      sp_max_time_val = int(param) if param is not None and int(param) >= 0 else MAX_TIME_OFFROAD_S
+      sp_max_time_val_s = int(param) * 60 if param is not None and int(param) >= 0 else MAX_TIME_OFFROAD_S
     except:
-      sp_max_time_val = MAX_TIME_OFFROAD_S
+      sp_max_time_val_s = MAX_TIME_OFFROAD_S
 
-    return sp_max_time_val > 0 and offroad_time > sp_max_time_val * 60
+    return sp_max_time_val_s > 0 and offroad_time >= sp_max_time_val_s
 
 
 # See if we need to shutdown
@@ -132,6 +132,7 @@ class PowerMonitoring:
     offroad_time = (now - offroad_timestamp)
     low_voltage_shutdown = (self.car_voltage_mV < (VBATT_PAUSE_CHARGING * 1e3) and
                             offroad_time > VOLTAGE_SHUTDOWN_MIN_OFFROAD_TIME_S)
+    should_shutdown |= offroad_time > MAX_TIME_OFFROAD_S
     should_shutdown |= self.max_time_offroad_exceeded(offroad_time)
     should_shutdown |= low_voltage_shutdown
     should_shutdown |= (self.car_battery_capacity_uWh <= 0)
