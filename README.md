@@ -54,7 +54,7 @@ Please refer to [Recommended Branches](#-recommended-branches) to find your pref
 |      Branch      |                 Installation URL              |
 |:----------------:|:---------------------------------------------:|
 | `staging-c3-new` | `https://smiskol.com/fork/sp/staging-c3-new`  |
-|   `dev-c3-new`   | `ttps://smiskol.com/fork/sp/dev-c3-new`       |
+|   `dev-c3-new`   | `https://smiskol.com/fork/sp/dev-c3-new`       |
 | `custom-branch`  | `https://install.sunnypilot.ai/{branch_name}` |
 | `release-c3-new` |            **Not yet available**.             |
 
