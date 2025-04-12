@@ -133,7 +133,7 @@ jobs:
             --custom-name "${{ inputs.custom_name || inputs.upstream_branch }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
             --file-name "${{ inputs.file_name || 'default' }}" \
-            --is-20hz "${{ inputs.is_20hz || false }}"
+            ${{ inputs.is_20hz && '--is-20hz' }}
           
 
       - name: Upload Build Artifacts
