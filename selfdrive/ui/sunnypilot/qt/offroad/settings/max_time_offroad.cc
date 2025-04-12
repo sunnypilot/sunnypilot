@@ -9,7 +9,7 @@
 
 // Map of Max Offroad Time Options (Minutes)
 const QMap<QString, QString> MaxTimeOffroad::offroad_time_options = {
-  {"0", "0"}, //Always On - Default
+  {"0", "0"}, // Always On
   {"1", "5"},
   {"2", "10"},
   {"3", "15"},
