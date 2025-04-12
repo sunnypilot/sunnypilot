@@ -5,6 +5,7 @@ env:
   OUTPUT_DIR: ${{ github.workspace }}/output
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   UPSTREAM_REPO: "commaai/openpilot"
+  TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
 
 on:
   workflow_dispatch:
@@ -96,7 +97,18 @@ jobs:
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          scons -j$(nproc) cache_dir=${{ env.SCONS_CACHE_DIR }} ${{ github.workspace }}/selfdrive/modeld
+          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
+          export MODEL_DIR=${{ github.workspace }}/selfdrive/modeld/models
+          
+          # Loop through all .onnx files
+          find "$MODEL_DIR" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
+            base_name=$(basename "$onnx_file" .onnx)
+            output_file="${MODEL_DIR}/${base_name}_tinygrad.pkl"
+          
+            echo "Compiling: $onnx_file -> $output_file"
+            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
+          done
+
 
       - name: Prepare Output
         run: |
