@@ -133,8 +133,8 @@ jobs:
 
       - name: Prepare Output
         run: |
-          sudo rm -rf ${OUTPUT_DIR}
-          mkdir -p ${OUTPUT_DIR}
+          sudo rm -rf ${{ env.OUTPUT_DIR }}
+          mkdir -p ${{ env.OUTPUT_DIR }}
           
           # Copy the model files
           rsync -avm \
@@ -145,7 +145,7 @@ jobs:
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
-            ${{ env.MODELS_DIR }}/ ${OUTPUT_DIR}/
+            ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
           
           # Rename files if file_name is provided
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
