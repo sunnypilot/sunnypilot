@@ -107,7 +107,7 @@ jobs:
             printenv
           fi
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
-          rm rf ${{ env.MODELS_DIR }}/*.onnx
+          rm -rf ${{ env.MODELS_DIR }}/*.onnx
       
       - name: Download model artifacts
         uses: actions/download-artifact@v4
