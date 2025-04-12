@@ -86,6 +86,8 @@ jobs:
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
           echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
+          echo "-------"
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
       
       - name: Download model artifacts
         uses: actions/download-artifact@v4
@@ -141,3 +143,8 @@ jobs:
         with:
           name: model-${{ github.event.inputs.custom_name || github.event.inputs.upstream_branch }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
