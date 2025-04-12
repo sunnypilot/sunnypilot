@@ -27,7 +27,6 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
 
   // branch selector
   targetBranchBtn = new ButtonControlSP(tr("Target Branch"), tr("SELECT"));
-  params.put("UpdaterAvailableBranches", "totally-real-branch,test-branch-1,random-2,dev-c3-new,master-dev-c3-new,master-new,hkg-long");
   connect(targetBranchBtn, &ButtonControlSP::clicked, [=]() {
 
     QString query = InputDialog::getText(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);

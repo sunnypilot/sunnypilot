@@ -1,6 +1,11 @@
 name: selfdrive
 
 on:
+  push:
+    branches:
+      - master
+      - master-new
+  pull_request:
   workflow_dispatch:
   workflow_call:
     inputs:
