@@ -5,8 +5,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-
-def generate_metadata(model_path: str, output_dir: Path):
+def generate_metadata(model_path: str, output_dir: Path, file_name: str = None):
   model_path = Path(model_path)
   output_path = output_dir
   base = model_path.stem
@@ -25,10 +24,15 @@ def generate_metadata(model_path: str, output_dir: Path):
 
   with open(metadata_file, 'rb') as f:
     metadata_hash = hashlib.sha256(f.read()).hexdigest()
+    
+  # Rename the files if a custom file name is provided
+  if file_name:
+    tinygrad_file.rename(output_path / f"{base}_{file_name}_tinygrad.pkl")
+    metadata_file.rename(output_path / f"{base}_{file_name}_metadata.pkl")
 
   # Build the metadata structure
   model_metadata = {
-    "name": base,
+    "name": file_name or base,
     "drive_model": {
       "file_name": tinygrad_file.name,
       "sha256": tinygrad_hash
@@ -84,7 +88,7 @@ if __name__ == "__main__":
   models = []
 
   for model_path in model_paths:
-    model_metadata = generate_metadata(model_path, output_dir)
+    model_metadata = generate_metadata(model_path, output_dir, args.file_name)
     if model_metadata:
       models.append(model_metadata)
 
