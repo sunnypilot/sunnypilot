@@ -101,13 +101,27 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
       pr_number = pr.get('number', 'UNKNOWN')
       branch = pr.get('headRefName', '')
       title = pr.get('title', '')
-      headRepository = pr.get('headRepository', {})
+      head_repository = pr.get('headRepository', {})
+      pr_labels = pr.get('labels', {}).get('nodes', [])
+      is_fork = head_repository.get('isFork', False)
+      trust_fork = any(label.get('name') == 'trust-fork' for label in pr_labels)
       is_valid, skip_reason = validate_pr(pr)
-      origin = "origin" if not headRepository.get('isFork', False) else headRepository.get('nameWithOwner', 'origin')
+      origin = "origin" if not head_repository.get('isFork', False) else head_repository.get('nameWithOwner', 'origin')
 
-      if origin != "origin":
+      if is_fork and trust_fork:
+        print(f"Removing label `trust-fork` from PR #{pr_number} as it is being processed")
+        subprocess.run(['gh', 'pr', 'edit', str(pr_number), '--remove-label', 'trust-fork'], check=True)
+        add_pr_comment(pr_number, "ℹ️️ This PR is from a fork. The `trust-fork` label was removed as it is being processed right now.")
         print(f"Adding remote {origin} for PR #{pr_number}")
-        subprocess.run(['git', 'remote', 'add', origin, headRepository.get('url')], check=True)
+        subprocess.run(['git', 'remote', 'add', origin, head_repository.get('url')], check=True)
+
+      if is_fork and not trust_fork:
+        add_pr_comment(
+          pr_number,
+          "⚠️ This PR is from a fork. Please add the `trust-fork` label to include it in the squash." +
+          "\n**Note**: The label is removed after the squash is done and must be added again for the next execution for security reasons."
+        )
+        continue
 
       if not is_valid:
         print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
