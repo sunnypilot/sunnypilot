@@ -38,7 +38,7 @@ def sort_prs_by_creation(pr_data):
   )
 
 
-def add_pr_comments(pr_number, comments: [str]):
+def add_pr_comments(pr_number, comments: list[str]):
   """Adds or updates a comment with multiple comments to a PR using gh cli"""
   comment = "\n___\n".join(comments)
   _add_pr_comment(pr_number, comment)
