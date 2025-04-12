@@ -9,6 +9,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - run: gh repo sync nayan8teen/openpilot -b dev-c3-new
+      - run: gh repo sync nayan8teen/openpilot -b dev-c3-new --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
