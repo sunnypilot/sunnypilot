@@ -5,11 +5,11 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/max_time_offroad.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/max_time_offroad.h"
 
-// Map of Max Offroad Time Options (Mins)
+// Map of Max Offroad Time Options (Minutes)
 const QMap<QString, QString> MaxTimeOffroad::offroad_time_options = {
-  {"0", "0"},
+  {"0", "0"}, //Always On - Default
   {"1", "5"},
   {"2", "10"},
   {"3", "15"},

@@ -82,7 +82,7 @@ void AbstractControlSP::hideEvent(QHideEvent *e) {
   }
 }
 
-AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent, const bool inline_layout)
+AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : AbstractControlSP(title, desc, icon, parent) {
 
   if (title_label != nullptr) {
@@ -114,22 +114,12 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   hlayout->setMargin(0);
   hlayout->setSpacing(0);
 
-  innerLayout = new QHBoxLayout;
-  innerLayout->setMargin(0);
-  innerLayout->setSpacing(0);
-  isInlineLayout = inline_layout;
-
   // title
   if (!title.isEmpty()) {
     title_label = new QPushButton(title);
     title_label->setFixedHeight(120);
     title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none; padding: 20 0 0 0");
-    if (isInlineLayout) {
-      hlayout->addWidget(title_label, 1);
-    } else {
-      main_layout->addWidget(title_label, 1);
-    }
-
+    main_layout->addWidget(title_label, 1);
 
     connect(title_label, &QPushButton::clicked, [=]() {
       if (!description->isVisible()) {

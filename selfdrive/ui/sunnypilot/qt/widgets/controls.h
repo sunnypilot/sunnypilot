@@ -554,7 +554,7 @@ protected:
       if (widget) {
         w += widget->width();
       }
-      }
+    }
 
     // Draw the rectangle
 #ifdef __APPLE__
