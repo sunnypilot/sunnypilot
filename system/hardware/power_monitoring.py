@@ -114,12 +114,15 @@ class PowerMonitoring:
     :return: True if the max time offroad has been exceeded, False otherwise
     """
     try:
-      sp_max_time_val = max(int(self.params.get("MaxTimeOffroad", encoding="utf8")) or MAX_TIME_OFFROAD_S, 0)
-      return sp_max_time_val > 0 and offroad_time > sp_max_time_val * 60
-    except Exception:
-      return offroad_time > MAX_TIME_OFFROAD_S
+      param = self.params.get("MaxTimeOffroad", encoding="utf8")
+      sp_max_time_val = int(param) if param is not None and int(param) >= 0 else MAX_TIME_OFFROAD_S
+    except:
+      sp_max_time_val = MAX_TIME_OFFROAD_S
 
-  # See if we need to shutdown
+    return sp_max_time_val > 0 and offroad_time > sp_max_time_val * 60
+
+
+# See if we need to shutdown
   def should_shutdown(self, ignition: bool, in_car: bool, offroad_timestamp: float | None, started_seen: bool):
     if offroad_timestamp is None:
       return False
