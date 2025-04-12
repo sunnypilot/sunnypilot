@@ -79,7 +79,7 @@ if __name__ == "__main__":
     print(f"No ONNX files found in {args.model_dir}", file=sys.stderr)
     sys.exit(1)
 
-  # output_dir = Path(args.output_dir)
+  output_dir = Path(args.output_dir)
   args.output_dir.mkdir(exist_ok=True, parents=True)
   models = []
 
