@@ -24,6 +24,17 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SoftwarePanelSP::updateLabels);
   AddWidgetAt(0, currentModelLblBtn);
+
+  // branch selector
+  targetBranchBtn = new ButtonControlSP(tr("Target Branch"), tr("SELECT"));
+  params.put("UpdaterAvailableBranches", "totally-real-branch,test-branch-1,random-2,dev-c3-new,master-dev-c3-new,master-new,hkg-long");
+  connect(targetBranchBtn, &ButtonControlSP::clicked, [=]() {
+
+    QString query = InputDialog::getText(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
+    searchBranches(query);
+
+  });
+  AddWidgetAt(getWidgetIndex(installBtn)+1, targetBranchBtn);
 }
 
 /**
@@ -203,5 +214,35 @@ void SoftwarePanelSP::showResetParamsDialog() {
   if (showConfirmationDialog(content, button_text, false)) {
     params.remove("CalibrationParams");
     params.remove("LiveTorqueParameters");
+  }
+}
+
+/**
+ * @brief Searches for available branches based on a query string, presents the results in a dialog,
+ * and updates the target branch if a selection is made.
+ *
+ * This function filters the list of branches based on the provided query, and displays the filtered branches in a selection dialog.
+ * If a branch is selected, the "UpdaterTargetBranch" parameter is updated and a check for updates is triggered.
+ * If no branches are found matching the query, an alert dialog is displayed.
+ *
+ * @param query The search query string.
+ */
+void SoftwarePanelSP::searchBranches(const QString &query) {
+
+  QStringList branches = QString::fromStdString(params.get("UpdaterAvailableBranches")).split(",");
+  QStringList results = searchFromList(query, branches);
+  results.sort();
+
+  if (results.isEmpty()) {
+    ConfirmationDialog::alert(tr("No branches found for keywords: %1").arg(query), this);
+    return;
+  }
+
+  QString selected_branch = MultiOptionDialog::getSelection(tr("Select a branch"), results, "", this);
+
+  if (!selected_branch.isEmpty()) {
+    params.put("UpdaterTargetBranch", selected_branch.toStdString());
+    targetBranchBtn->setValue(selected_branch);
+    checkForUpdates();
   }
 }
