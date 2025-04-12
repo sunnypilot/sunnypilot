@@ -97,6 +97,11 @@ jobs:
                     headRefName
                     title
                     createdAt
+                    headRepository {
+                      name
+                      nameWithOwner
+                      url
+                    }
                     commits(last: 1) {
                       nodes {
                         commit {
