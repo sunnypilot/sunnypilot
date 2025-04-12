@@ -19,21 +19,35 @@ const QMap<QString, QString> MaxTimeOffroad::offroad_time_options = {
   {"7", "180"},
   {"8", "300"},
   {"9", "600"},
-  {"10", "1440"}
+  {"10", "1440"},
+  {"11", "1800"}
 };
 
 MaxTimeOffroad::MaxTimeOffroad() : OptionControlSP(
   "MaxTimeOffroad",
   tr("Max Time Offroad"),
-  tr("Device will automatically shutdown after set time once the engine is turned off."),
+  tr("Device will automatically shutdown after set time once the engine is turned off.<br/>(30h is the default)"),
   "../assets/offroad/icon_blank.png",
-  {0, 10}, 1, true, &offroad_time_options) {
+  {0, 11}, 1, true, &offroad_time_options) {
 
   refresh();
 }
 
 void MaxTimeOffroad::refresh() {
-  int intOpt = QString::fromStdString(params.get("MaxTimeOffroad")).toInt();
-  QString strLabel = intOpt==0 ? "Always On" : intOpt<60 ? QString::number(intOpt) + " m" : QString::number(intOpt/60) + " h";
-  setLabel(strLabel);
+  const int maxOffroadInMinutes = QString::fromStdString(params.get("MaxTimeOffroad")).toInt();
+  const bool useHours = maxOffroadInMinutes >= 60;
+  
+  QString label;
+  if (maxOffroadInMinutes == 0) {
+    label = tr("Always On");
+  } else {
+    const int value = useHours ? maxOffroadInMinutes / 60 : maxOffroadInMinutes;
+    label = QString("%1%2").arg(value).arg(useHours ? tr("h") : tr("m"));
+  }
+  
+  if (maxOffroadInMinutes == 1800) {
+    label += tr(" (default)");
+  }
+  
+  setLabel(label);
 }

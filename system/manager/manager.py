@@ -50,7 +50,7 @@ def manager_init() -> None:
     ("MadsMainCruiseAllowed", "1"),
     ("MadsPauseLateralOnBrake", "0"),
     ("MadsUnifiedEngagementMode", "1"),
-    ("MaxTimeOffroad", "1440"), # Set Max Time Ofroad as 24hr by default. OP default is 30hr.
+    ("MaxTimeOffroad", "1800"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
