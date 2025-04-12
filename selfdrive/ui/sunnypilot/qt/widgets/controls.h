@@ -96,14 +96,10 @@ class AbstractControlSP_SELECTOR : public AbstractControlSP {
   Q_OBJECT
 
 protected:
-  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, const bool inline_layout = false);
+  QSpacerItem *spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
+  AbstractControlSP_SELECTOR(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr);
   void hideEvent(QHideEvent *e) override;
 
-  QHBoxLayout *innerLayout;
-  bool isInlineLayout;
-
-private:
-  QSpacerItem *spacingItem = nullptr;
 };
 
 // widget to display a value
@@ -420,14 +416,29 @@ class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 private:
+  bool isInlineLayout;
+  QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
+  
   struct MinMaxValue {
     int min_value;
     int max_value;
   };
+  
+  int getParamValue() {
+    const auto param_value = QString::fromStdString(params.get(key));
+    const auto result = valueMap != nullptr ? valueMap->key(param_value) : param_value;
+    return result.toInt();
+  }
+
+  // Although the method is not static, and thus has access to the value property, I prefer to be explicit about the value.
+  void setParamValue(const int new_value) {
+    const auto value_str = valueMap != nullptr ? valueMap->value(QString::number(new_value)) : QString::number(new_value);
+    params.put(key, value_str.toStdString());
+  }
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = NULL) : _title(title), AbstractControlSP_SELECTOR(title, desc, icon, nullptr, inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), isInlineLayout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -447,19 +458,27 @@ public:
       }
     )";
 
+    if (inline_layout) {
+      optionSelectorLayout->setMargin(0);
+      optionSelectorLayout->setSpacing(0);
+      if (!title.isEmpty()) {
+        main_layout->removeWidget(title_label);
+        hlayout->addWidget(title_label, 1);
+      }
+      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
+        main_layout->removeItem(spacingItem);
+        spacingItem = nullptr;
+      }
+    }
+
     label.setStyleSheet(label_enabled_style);
-    label.setFixedWidth(350);
+    label.setFixedWidth(inline_layout ? 350 : 300);
     label.setAlignment(Qt::AlignCenter);
 
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-
-    if(valMap) {
-      value = valMap->key(QString::fromStdString(params.get(key))).toInt();
-    } else {
-      value = atoi(params.get(key).c_str());
-    }
+    value = getParamValue();
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -467,21 +486,18 @@ public:
       QPushButton *button = new QPushButton(button_texts[i], this);
       button->setStyleSheet(style + ((i == 0) ? "QPushButton { text-align: left; }" :
                                                 "QPushButton { text-align: right; }"));
-      innerLayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
+      optionSelectorLayout->addWidget(button, 0, ((i == 0) ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
       if (i == 0) {
-        innerLayout->addWidget(&label, 0, Qt::AlignCenter);
+        optionSelectorLayout->addWidget(&label, 0, Qt::AlignCenter);
       }
       button_group->addButton(button, i);
 
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
+        value = getParamValue(); // in case it changed externally, we need to get the latest value.
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
-        if(valMap) {
-          params.put(key, valMap->value(QString::number(value)).toStdString());
-        } else {
-          params.put(key, QString::number(value).toStdString());
-        }
+        setParamValue(value);
 
         button_group->button(0)->setEnabled(!(value <= range.min_value));
         button_group->button(1)->setEnabled(!(value >= range.max_value));
@@ -494,14 +510,12 @@ public:
       });
     }
 
-    innerLayout->setAlignment(Qt::AlignLeft);
+    optionSelectorLayout->setAlignment(Qt::AlignLeft);
     if (isInlineLayout) {
       QFrame *container = new QFrame;
-      container->setLayout(innerLayout);
+      container->setLayout(optionSelectorLayout);
       container->setStyleSheet("background-color: #393939; border-radius: 20px;");
       hlayout->addWidget(container);
-    } else {
-      hlayout->addLayout(innerLayout);
     }
   }
 
@@ -535,8 +549,8 @@ protected:
     int w = 0;
     int h = 150;
 
-    for (int i = 0; i < innerLayout->count(); ++i) {
-      QWidget *widget = qobject_cast<QWidget *>(innerLayout->itemAt(i)->widget());
+    for (int i = 0; i < optionSelectorLayout->count(); ++i) {
+      QWidget *widget = qobject_cast<QWidget *>(optionSelectorLayout->itemAt(i)->widget());
       if (widget) {
         w += widget->width();
       }
@@ -566,6 +580,7 @@ private:
   std::map<QString, QString> option_label = {};
   bool request_update = false;
   QString _title = "";
+  const QMap<QString, QString> *valueMap;
 
   const QString label_enabled_style = "font-size: 50px; font-weight: 450; color: #FFFFFF;";
   const QString label_disabled_style = "font-size: 50px; font-weight: 450; color: #5C5C5C;";
