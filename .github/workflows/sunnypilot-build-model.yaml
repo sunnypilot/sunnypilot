@@ -147,6 +147,9 @@ jobs:
             --chown=comma:comma \
             ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
           
+          ls -la ${{ env.MODELS_DIR }}
+          ls -la ${{ env.OUTPUT_DIR }}/
+          
           # Rename files if file_name is provided
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
             --model-dir "${{ env.MODELS_DIR }}" \

@@ -16,7 +16,7 @@ def generate_metadata(model_path: str, output_dir: Path):
   metadata_file = output_path / f"{base}_metadata.pkl"
 
   if not tinygrad_file.exists() or not metadata_file.exists():
-    print(f"Error: Missing files for model {base}", file=sys.stderr)
+    print(f"Error: Missing files for model {base} ({tinygrad_file} or {metadata_file})", file=sys.stderr)
     return
 
   # Calculate the sha256 hashes
