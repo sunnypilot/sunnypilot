@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-def generate_metadata(model_path: str, output_dir: str):
+def generate_metadata(model_path: str, output_dir: Path):
   model_path = Path(model_path)
   output_path = output_dir
   base = model_path.stem
@@ -84,11 +84,11 @@ if __name__ == "__main__":
   models = []
 
   for model_path in model_paths:
-    model_metadata = generate_metadata(model_path, args.output_dir)
+    model_metadata = generate_metadata(model_path, output_dir)
     if model_metadata:
       models.append(model_metadata)
 
   if models:
-    create_metadata_json(models, args.output_dir, args.custom_name, args.file_name, args.is_20hz, args.upstream_branch)
+    create_metadata_json(models, output_dir, args.custom_name, args.file_name, args.is_20hz, args.upstream_branch)
   else:
     print("No models processed.", file=sys.stderr)
