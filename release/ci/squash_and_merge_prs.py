@@ -101,7 +101,13 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
       pr_number = pr.get('number', 'UNKNOWN')
       branch = pr.get('headRefName', '')
       title = pr.get('title', '')
+      headRepository = pr.get('headRepository', {})
       is_valid, skip_reason = validate_pr(pr)
+      origin = "origin" if not headRepository.get('isFork', False) else headRepository.get('nameWithOwner', 'origin')
+
+      if origin != "origin":
+        print(f"Adding remote {origin} for PR #{pr_number}")
+        subprocess.run(['git', 'remote', 'add', origin, headRepository.get('url')], check=True)
 
       if not is_valid:
         print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
@@ -111,11 +117,11 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
 
       try:
         # Fetch PR branch
-        subprocess.run(['git', 'fetch', 'origin', branch], check=True)
+        subprocess.run(['git', 'fetch', origin, branch], check=True)
         # Delete branch if it exists (ignore errors if it doesn't)
         subprocess.run(['git', 'branch', '-D', branch], check=False)
         # Create new branch pointing to origin's branch
-        subprocess.run(['git', 'branch', branch, f'origin/{branch}'], check=True)
+        subprocess.run(['git', 'branch', branch, f'{origin}/{branch}'], check=True)
 
         # Run squash script
         result = subprocess.run([
