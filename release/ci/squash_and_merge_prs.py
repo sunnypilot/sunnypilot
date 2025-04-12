@@ -42,37 +42,13 @@ def add_pr_comment(pr_number, comment):
   title = "## Squash and Merge"
 
   try:
-    result = subprocess.run(
-      ['gh', 'pr', 'view', str(pr_number), '--json', 'comments'],
+    full_comment = f"{title}\n\n{comment}"
+    subprocess.run(
+      ['gh', 'pr', 'comment', '--edit-last', '--create-if-none', f"#{pr_number}", '--body', full_comment],
       check=True,
       capture_output=True,
       text=True
     )
-
-    comments_data = json.loads(result.stdout)
-    has_existing_comment = False
-
-    for pr_comment in comments_data['comments']:
-      if pr_comment['body'].startswith(title):
-        has_existing_comment = True
-        break
-
-    full_comment = f"{title}\n\n{comment}"
-
-    if has_existing_comment:
-      subprocess.run(
-        ['gh', 'pr', 'comment', '--edit-last', f"#{pr_number}", '--body', full_comment],
-        check=True,
-        capture_output=True,
-        text=True
-      )
-    else:
-      subprocess.run(
-        ['gh', 'pr', 'comment', f"#{pr_number}", '--body', full_comment],
-        check=True,
-        capture_output=True,
-        text=True
-      )
 
   except subprocess.CalledProcessError as e:
     print(f"Failed to add/update comment on PR #{pr_number}: {e.stderr}")
