@@ -40,4 +40,6 @@ private:
   QPointF lead_vertices[2] = {};
   Eigen::Matrix3f car_space_transform = Eigen::Matrix3f::Zero();
   QRectF clip_region;
+  QPolygonF left_blindspot_vertices;
+  QPolygonF right_blindspot_vertices;
 };
