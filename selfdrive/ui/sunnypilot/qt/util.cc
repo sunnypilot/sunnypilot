@@ -96,7 +96,7 @@ QStringList searchFromList(const QString &query, const QStringList &list) {
   }
 
   QStringList search_terms = query.simplified().toLower().split(" ", QString::SkipEmptyParts);
-  QSet<QString> search_results;
+  QStringList search_results;
 
   for (const QString &element : list) {
     if (std::all_of(search_terms.begin(), search_terms.end(), [&](const QString &term) {
@@ -105,8 +105,8 @@ QStringList searchFromList(const QString &query, const QStringList &list) {
           QString normalized_element = element.normalized(QString::NormalizationForm_KD).toLower();
           return normalized_element.contains(normalized_term, Qt::CaseInsensitive);
         })) {
-      search_results.insert(element);
+      search_results << element;
     }
   }
-  return search_results.toList();
+  return search_results;
 }
