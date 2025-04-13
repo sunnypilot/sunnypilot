@@ -210,11 +210,19 @@ class BackupManagerSP:
   def _get_current_version(self) -> custom.BackupManagerSP.Version:
     """Gets current sunnypilot version information."""
     version_obj = custom.BackupManagerSP.Version()
-    version_parts = get_version().split('.')
+
+    build = None
+    if (version_split := get_version().split('-')) and len(version_split) > 1:
+      build = int(version_split[1]) if version_split[1].isdigit() else 0
+
+    version_parts = version_split[0].split('.')
+    if build is None:
+      build = int(version_parts[3]) if len(version_parts) > 3 and version_parts[3].isdigit() else 0
+
     version_obj.major = int(version_parts[0]) if len(version_parts) > 0 else 0
     version_obj.minor = int(version_parts[1]) if len(version_parts) > 1 else 0
     version_obj.patch = int(version_parts[2]) if len(version_parts) > 2 else 0
-    version_obj.build = int(version_parts[3]) if len(version_parts) > 3 else 0
+    version_obj.build = build or 0
     version_obj.branch = get_branch()
     return version_obj
 
