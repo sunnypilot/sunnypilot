@@ -24,7 +24,7 @@ def generate_metadata(model_path: str, output_dir: Path, file_name: str = None):
 
   with open(metadata_file, 'rb') as f:
     metadata_hash = hashlib.sha256(f.read()).hexdigest()
-    
+
   # Rename the files if a custom file name is provided
   if file_name:
     tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{file_name}_tinygrad.pkl")
