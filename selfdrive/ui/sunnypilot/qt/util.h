@@ -12,6 +12,7 @@
 
 #include <QMap>
 #include <QPainter>
+#include <QRegularExpression>
 #include <QWidget>
 
 QString getUserAgent(bool sunnylink = false);
