@@ -6,7 +6,6 @@ env:
   PR_LABEL: "dev-c3"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
-  FORCE_RUN: true # TODO: Remove before merging
 
 on:
   pull_request:
@@ -31,7 +30,7 @@ jobs:
     name: Manage PR Labels
     runs-on: ubuntu-latest
     # Only run this job when a PR is synchronized (new commits pushed)
-    if: github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || env.FORCE_RUN)
+    if: github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.fork) # TODO: Remove the negation when we are ready to merge
     steps:
       - name: Check if PR has dev-c3 label
         id: check-labels
@@ -79,7 +78,6 @@ jobs:
               issue_number: prNumber,
               body: `The \`${process.env.TRUST_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
             });
-
 
   reset-and-squash:
     runs-on: ubuntu-latest
