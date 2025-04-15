@@ -110,6 +110,11 @@ def manager_init() -> None:
                        dirty=build_metadata.openpilot.is_dirty,
                        device=HARDWARE.get_device_type())
 
+  # Clear last crash log after logging is initialized
+  error_log_path = os.path.join(sentry.CRASHES_DIR, "error.log")
+  if os.path.isfile(error_log_path):
+    os.remove(error_log_path)
+
   # preimport all processes
   for p in managed_processes.values():
     p.prepare()
