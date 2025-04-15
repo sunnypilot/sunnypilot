@@ -25,6 +25,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NNTorqueModel
 def roll_pitch_adjust(roll, pitch):
   return roll * math.cos(pitch)
 
+LOW_SPEED_X = [0, 10, 20, 30]
+LOW_SPEED_Y = [12, 3, 1, 0]
 
 class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def __init__(self, lac_torque, CP, CP_SP):
@@ -58,6 +60,10 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
   def update_neural_network_feedforward(self, CS, params, calibrated_pose) -> None:
     if not self.enabled or not self.model_valid or not self.has_nn_model:
       return
+
+    low_speed_factor = np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y)**2
+    self._setpoint = self._desired_lateral_accel + low_speed_factor * self._desired_curvature
+    self._measurement = self._actual_lateral_accel + low_speed_factor * self._actual_curvature
 
     # update past data
     roll = params.roll
