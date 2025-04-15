@@ -104,6 +104,12 @@ class AutoLaneChangeController:
     if brake_pressed and not self.prev_brake_pressed:
       self.prev_brake_pressed = brake_pressed
 
+    # If AutoLaneChangeMode is OFF, skip all lane change logic
+    if self.lane_change_set_timer == AutoLaneChangeMode.OFF:
+      self.auto_lane_change_allowed = False
+      self.lane_change_wait_timer = 0.0  # Reset wait timer
+      return
+
     self.update_lane_change_timers(blindspot_detected)
 
     self.auto_lane_change_allowed = self.update_allowed()

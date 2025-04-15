@@ -1,7 +1,7 @@
 from cereal import log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController
+from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeMode
 
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
@@ -73,6 +73,10 @@ class DesireHelper:
         self.alc.update_lane_change(blindspot_detected, carstate.brakePressed)
 
         if not one_blinker or below_lane_change_speed:
+          self.lane_change_state = LaneChangeState.off
+          self.lane_change_direction = LaneChangeDirection.none
+        elif self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF:
+          # Prevent any lane changes when mode is OFF, regardless of torque
           self.lane_change_state = LaneChangeState.off
           self.lane_change_direction = LaneChangeDirection.none
         elif (torque_applied or self.alc.auto_lane_change_allowed) and not blindspot_detected:
