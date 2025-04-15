@@ -4,6 +4,7 @@ env:
   DEFAULT_SOURCE_BRANCH: "master-new"
   DEFAULT_TARGET_BRANCH: "nightly"
   PR_LABEL: "dev-c3"
+  TRUST_FORK_PR_LABEL: "trust-fork-pr"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
@@ -46,10 +47,10 @@ jobs:
             });
             
             const hasDevC3Label = labels.some(label => label.name === process.env.PR_LABEL);
-            const hasTrustLabel = labels.some(label => label.name === process.env.TRUST_LABEL);
+            const hasTrustLabel = labels.some(label => label.name === process.env.TRUST_FORK_PR_LABEL);
             
-            console.log(`PR #${prNumber} has dev-c3 label: ${hasDevC3Label}`);
-            console.log(`PR #${prNumber} has trust-fork-pr label: ${hasTrustLabel}`);
+            console.log(`PR #${prNumber} has ${process.env.PR_LABEL} label: ${hasDevC3Label}`);
+            console.log(`PR #${prNumber} has ${process.env.TRUST_FORK_PR_LABEL} label: ${hasTrustLabel}`);
             
             core.setOutput('has-dev-c3', hasDevC3Label ? 'true' : 'false');
             core.setOutput('has-trust', hasTrustLabel ? 'true' : 'false');
@@ -66,17 +67,17 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              name: process.env.TRUST_LABEL
+              name: process.env.TRUST_FORK_PR_LABEL
             });
             
-            console.log(`Removed '${process.env.TRUST_LABEL}' label from PR #${prNumber} as it received new commits`);
+            console.log(`Removed '${process.env.TRUST_FORK_PR_LABEL}' label from PR #${prNumber} as it received new commits`);
             
             // Add a comment to the PR
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: `The \`${process.env.TRUST_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
+              body: `The \`${process.env.TRUST_FORK_PR_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
             });
 
   reset-and-squash:
