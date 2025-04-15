@@ -9,6 +9,8 @@ env:
   FORCE_RUN: true # TODO: Remove before merging
 
 on:
+  pull_request:
+    types: [ synchronize ]
   workflow_dispatch:
     inputs:
       source_branch:
