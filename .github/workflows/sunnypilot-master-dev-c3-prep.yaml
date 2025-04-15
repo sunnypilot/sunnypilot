@@ -80,6 +80,7 @@ jobs:
               body: `The \`${process.env.TRUST_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
             });
 
+
   reset-and-squash:
     runs-on: ubuntu-latest
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
