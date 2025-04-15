@@ -100,7 +100,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     # error as the input to the NNLC model. This is not ideal, and potentially degrades the NNLC
     # accuracy for cars that don't have this issue, but it's necessary until a better NNLC model
     # structure is used that doesn't create this issue when high-magnitude data is missing.
-    error_blend_factor = np.interp(abs(self._desired_lateral_accel), [1.0, 2.0], [0.0, 1.0])
+    error_blend_factor = float(np.interp(abs(self._desired_lateral_accel), [1.0, 2.0], [0.0, 1.0]))
     if error_blend_factor > 0.0:  # blend in stronger error response when in high lat accel
       # NNFF inputs 5+ are optional, and if left out are replaced with 0.0 inside the NNFF class
       nnff_error_input = [CS.vEgo, self._setpoint - self._measurement, self.lateral_jerk_setpoint - self.lateral_jerk_measurement, 0.0]
