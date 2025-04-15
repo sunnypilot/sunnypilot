@@ -25,7 +25,7 @@ void ExperimentalButtonSP::changeMode() {
     bool experimental_mode_new;
     bool dynamic_experimental_control_new;
 
-    if (!experimental_mode && dynamic_experimental_control) {
+    if (!experimental_mode && !dynamic_experimental_control) {
       experimental_mode_new = true;
       dynamic_experimental_control_new = false;
     } else if (experimental_mode && !dynamic_experimental_control) {
