@@ -7,8 +7,6 @@ class WMACConstants:
 
   SLOW_DOWN_BP = [0., 10., 20., 30., 40., 50., 55., 60.]
   SLOW_DOWN_DIST = [25., 38., 55., 75., 95., 115., 130., 150.]
-  #SLOW_DOWN_DIST = [30., 45., 60., 80., 100., 120., 135., 150.]
-  #SLOW_DOWN_DIST = [35., 50., 65., 85., 105., 125., 140., 155.]
 
   SLOWNESS_WINDOW_SIZE = 12
   SLOWNESS_PROB = 0.5
