@@ -1,6 +1,7 @@
 from cereal import log, car, custom
+import cereal.messaging as messaging
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
-  NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
+  NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackTypeSP, wrong_car_mode_alert
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -19,7 +20,7 @@ class EventsSP(EventsBase):
     super().__init__()
     self.event_counters = dict.fromkeys(EVENTS_SP.keys(), 0)
 
-  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType]]:
+  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackTypeSP]]:
     return EVENTS_SP
 
   def get_event_name(self, event: int):
@@ -29,7 +30,14 @@ class EventsSP(EventsBase):
     return custom.OnroadEventSP.Event
 
 
-EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
+def experimental_mode_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool,
+                                    soft_disable_time: int, personality, experimental_mode, dynamic_experimental_control) -> Alert:
+  exp_mode_str = "ON" if experimental_mode else "OFF"
+  dec_str = "ON" if dynamic_experimental_control else "OFF"
+  return NormalPermanentAlert(f"Experimental Mode: {exp_mode_str}\nDynamic Experimental Control: {dec_str}", duration=1.5)
+
+
+EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackTypeSP]] = {
   # sunnypilot
   EventNameSP.lkasEnable: {
     ET.ENABLE: EngagementAlert(AudibleAlert.engage),
@@ -127,7 +135,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventNameSP.experimentalModeSwitched: {
-    ET.WARNING: NormalPermanentAlert("Experimental Mode Switched", duration=1.5)
+    ET.WARNING: experimental_mode_changed_alert,
   },
 
   EventNameSP.wrongCarModeAlertOnly: {

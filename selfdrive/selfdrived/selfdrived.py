@@ -462,9 +462,11 @@ class SelfdriveD(CruiseHelper):
     pers = LONGITUDINAL_PERSONALITY_MAP[self.personality]
     callback_args = [self.CP, CS, self.sm, self.is_metric,
                      self.state_machine.soft_disable_timer, pers]
+    callback_args_sp = [self.CP, CS, self.sm, self.is_metric,
+                        self.state_machine.soft_disable_timer, pers, self.experimental_mode, self.dynamic_experimental_control]
 
     alerts = self.events.create_alerts(self.state_machine.current_alert_types, callback_args)
-    alerts_sp = self.events_sp.create_alerts(self.state_machine.current_alert_types, callback_args)
+    alerts_sp = self.events_sp.create_alerts(self.state_machine.current_alert_types, callback_args_sp)
 
     self.AM.add_many(self.sm.frame, alerts + alerts_sp)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
