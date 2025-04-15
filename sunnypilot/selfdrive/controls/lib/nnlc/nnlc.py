@@ -61,7 +61,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     if not self.enabled or not self.model_valid or not self.has_nn_model:
       return
 
-    low_speed_factor = np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y)**2
+    low_speed_factor = float(np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y))**2
     self._setpoint = self._desired_lateral_accel + low_speed_factor * self._desired_curvature
     self._measurement = self._actual_lateral_accel + low_speed_factor * self._actual_curvature
 
