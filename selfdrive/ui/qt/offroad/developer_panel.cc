@@ -63,7 +63,9 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   // error log button
   errorLogBtn = new ButtonControl(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
   connect(errorLogBtn, &ButtonControl::clicked, [=]() {
-    std::string txt = util::read_file("/data/community/crashes/error.log");
+    std::string content = util::read_file("/data/community/crashes/error.log");
+    params.put("ErrorLog", content);
+    std::string txt = params.get("ErrorLog");
     ConfirmationDialog::rich(QString::fromStdString(txt), this);
   });
   addItem(errorLogBtn);
