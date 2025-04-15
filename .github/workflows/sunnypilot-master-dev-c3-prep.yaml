@@ -37,7 +37,7 @@ on:
         type: string
 
 jobs:
-  manage pr labels:
+  manage-pr-labels:
     name: Remove trust-fork-pr label if present
     runs-on: ubuntu-latest
     if: (((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.action == 'synchronize') && !(github.event.pull_request.head.repo.fork)) # TODO: Remove the negation when we are ready to merge
@@ -89,7 +89,7 @@ jobs:
               body: `The \`${process.env.TRUST_FORK_PR_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
             });
 
-  wait for tests:
+  wait-for-tests:
     if: (
           (github.event_name == 'push')
           || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
@@ -110,7 +110,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  reset and squash all:
+  reset-and-squash-all:
     runs-on: ubuntu-latest
     # Remove the first 2 conditions when we are ready to merge. We have them for testing purposes
     if: (
