@@ -35,7 +35,7 @@ jobs:
   manage-pr-labels:
     name: Remove trust-fork-pr label if present
     runs-on: ubuntu-latest
-    if: (github.event.pull_request.head.repo.fork && ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.action == 'synchronize'))
+    if: (github.event.pull_request.head.repo.fork && (github.event_name == 'pull_request_target' && github.event.action == 'synchronize'))
     steps:
       - name: Check if PR has dev-c3 label
         id: check-labels
@@ -89,7 +89,7 @@ jobs:
     if: (
             (github.event_name == 'workflow_dispatch')
             || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-            || ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+            || (github.event_name == 'pull_request_target' && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
         )
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +101,7 @@ jobs:
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
         if: (
                 (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-                || ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+                || (github.event_name == 'pull_request_target' && ((github.event.action == 'labeled' && (github.event.label.name == 'dev-c3' || github.event.label.name == 'trust-fork-pr') && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
             )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
