@@ -21,7 +21,9 @@ ExperimentalButton::ExperimentalButton(QWidget *parent) : experimental_mode(fals
 
   engage_img = loadPixmap("../assets/img_chffr_wheel.png", {img_size, img_size});
   experimental_img = loadPixmap("../assets/img_experimental.svg", {img_size, img_size});
+#ifndef SUNNYPILOT
   QObject::connect(this, &QPushButton::clicked, this, &ExperimentalButton::changeMode);
+#endif
 }
 
 void ExperimentalButton::changeMode() {
