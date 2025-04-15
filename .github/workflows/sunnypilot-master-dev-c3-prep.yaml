@@ -2,15 +2,27 @@ name: Nightly Branch Reset and PR Squash
 
 env:
   DEFAULT_SOURCE_BRANCH: "master-new"
-  DEFAULT_TARGET_BRANCH: "nightly"
+  DEFAULT_TARGET_BRANCH: "master-dev-c3-new"
   PR_LABEL: "dev-c3"
   TRUST_FORK_PR_LABEL: "trust-fork-pr"
   LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
   LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
 
 on:
-  pull_request:
-    types: [ synchronize ]
+  push:
+    branches:
+      - master
+      - master-new
+  pull_request:             # Must be removed before merging, otherwise label operations will fail!.
+    types: [ synchronize, opened, labeled ]  # Must be removed before merging, otherwise label operations will fail!.
+    branches:               # Must be removed before merging, otherwise label operations will fail!.  
+      - 'master'            # Must be removed before merging, otherwise label operations will fail!.
+      - 'master-new'        # Must be removed before merging, otherwise label operations will fail!.    
+#  pull_request_target:      # Must be uncommented before merging. This ensures that the code run is the code on master, and NOT the code coming from the PR
+#    types: [ synchronize, opened, labeled ]  # Must be uncommented before merging. This ensures that the code run is the code on master, and NOT the code coming from the PR  
+#    branches:               # Must be uncommented before merging. This ensures that the code run is the code on master, and NOT the code coming from the PR    
+#      - 'master'            # Must be uncommented before merging. This ensures that the code run is the code on master, and NOT the code coming from the PR        
+#      - 'master-new'        # Must be uncommented before merging. This ensures that the code run is the code on master, and NOT the code coming from the PR            
   workflow_dispatch:
     inputs:
       source_branch:
@@ -23,15 +35,12 @@ on:
         required: true
         default: 'master-dev-c3-new'
         type: string
-#  schedule:
-#     - cron: '0 0 * * *'  # Run at midnight UTC for nightly
 
 jobs:
-  manage-pr-labels:
-    name: Manage PR Labels
+  manage pr labels:
+    name: Remove trust-fork-pr label if present
     runs-on: ubuntu-latest
-    # Only run this job when a PR is synchronized (new commits pushed)
-    if: github.event_name == 'pull_request' && !(github.event.pull_request.head.repo.fork) # TODO: Remove the negation when we are ready to merge
+    if: (((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.action == 'synchronize') && !(github.event.pull_request.head.repo.fork)) # TODO: Remove the negation when we are ready to merge
     steps:
       - name: Check if PR has dev-c3 label
         id: check-labels
@@ -80,9 +89,35 @@ jobs:
               body: `The \`${process.env.TRUST_FORK_PR_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
             });
 
-  reset-and-squash:
+  wait for tests:
+    if: (
+          (github.event_name == 'push')
+          || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+        )
     runs-on: ubuntu-latest
-    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Wait for tests to start
+        if: (((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'dev-c3')))))
+        run: |
+          echo "Sleeping for 30 to give some time for the action to start and then we'll wait"
+          sleep 30
+          
+      - name: Wait for tests to finish
+        run: |
+          RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ github.head_ref || github.ref_name }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+          echo "Watching run ID: $RUN_ID"
+          gh run watch "$RUN_ID"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  reset and squash all:
+    runs-on: ubuntu-latest
+    # Remove the first 2 conditions when we are ready to merge. We have them for testing purposes
+    if: (
+            (!(github.event_name == 'pull_request' || github.event_name == 'pull_request_target'))
+            || (github.event_name == 'push')
+            || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+        )
     steps:
       - uses: actions/checkout@v4
         with:
@@ -183,16 +218,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Process PRs
-        run: |
-          cp ${{ github.workspace }}/release/ci/squash_and_merge.py /tmp/squash_and_merge.py && \
-          chmod +x /tmp/squash_and_merge.py && \
-          python3 ${{ github.workspace }}/release/ci/squash_and_merge_prs.py \
-            --pr-data '${{ steps.get-prs.outputs.PR_LIST }}' \
-            --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
-            --squash-script-path '/tmp/squash_and_merge.py'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Process PRs
+#        run: |
+#          cp ${{ github.workspace }}/release/ci/squash_and_merge.py /tmp/squash_and_merge.py && \
+#          chmod +x /tmp/squash_and_merge.py && \
+#          python3 ${{ github.workspace }}/release/ci/squash_and_merge_prs.py \
+#            --pr-data '${{ steps.get-prs.outputs.PR_LIST }}' \
+#            --target-branch ${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }} \
+#            --squash-script-path '/tmp/squash_and_merge.py'
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update LFS Config
         run: |
@@ -201,50 +236,50 @@ jobs:
           echo '    pushurl = ${{ env.LFS_PUSH_URL }}' >> .lfsconfig
           echo '    locksverify = false' >> .lfsconfig
 
-      - name: Push changes if there are diffs
-        id: push-changes  # Add an id so we can reference this step
-        run: |
-          TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
-
-          # Fetch the latest from remote
-          git fetch origin $TARGET_BRANCH
-
-          # Check for diffs between local and remote
-          if git diff $TARGET_BRANCH origin/$TARGET_BRANCH --quiet; then
-            echo "No changes to push - local and remote branches are identical"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # If we get here, there are diffs, so push
-          if ! git push origin $TARGET_BRANCH --force; then
-            echo "Failed to push changes to $TARGET_BRANCH"
-            exit 1
-          fi
-
-          echo "Branch $TARGET_BRANCH has been reset and updated with squashed PRs"
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-
-      - name: Trigger and wait for selfdrive tests
-        if: steps.push-changes.outputs.has_changes == 'true'
-        run: |
-          echo "Triggering selfdrive tests..."
-          gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
-
-          echo "Sleeping for 120s to give plenty of time for the action to start and then we wait"
-          sleep 120
-
-          echo "Getting latest run ID..."
-          RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
-
-          echo "Watching run ID: $RUN_ID"
-          gh run watch "$RUN_ID"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Trigger prebuilt workflow
-        if: success() && steps.push-changes.outputs.has_changes == 'true'
-        run: |
-          gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Push changes if there are diffs
+#        id: push-changes  # Add an id so we can reference this step
+#        run: |
+#          TARGET_BRANCH="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+#
+#          # Fetch the latest from remote
+#          git fetch origin $TARGET_BRANCH
+#
+#          # Check for diffs between local and remote
+#          if git diff $TARGET_BRANCH origin/$TARGET_BRANCH --quiet; then
+#            echo "No changes to push - local and remote branches are identical"
+#            echo "has_changes=false" >> $GITHUB_OUTPUT
+#            exit 0
+#          fi
+#
+#          # If we get here, there are diffs, so push
+#          if ! git push origin $TARGET_BRANCH --force; then
+#            echo "Failed to push changes to $TARGET_BRANCH"
+#            exit 1
+#          fi
+#
+#          echo "Branch $TARGET_BRANCH has been reset and updated with squashed PRs"
+#          echo "has_changes=true" >> $GITHUB_OUTPUT
+#
+#      - name: Trigger and wait for selfdrive tests
+#        if: steps.push-changes.outputs.has_changes == 'true'
+#        run: |
+#          echo "Triggering selfdrive tests..."
+#          gh workflow run selfdrive_tests.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+#
+#          echo "Sleeping for 120s to give plenty of time for the action to start and then we wait"
+#          sleep 120
+#
+#          echo "Getting latest run ID..."
+#          RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}" --limit=1 --json databaseId --jq '.[0].databaseId')
+#
+#          echo "Watching run ID: $RUN_ID"
+#          gh run watch "$RUN_ID"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Trigger prebuilt workflow
+#        if: success() && steps.push-changes.outputs.has_changes == 'true'
+#        run: |
+#          gh workflow run sunnypilot-build-prebuilt.yaml --ref "${{ inputs.target_branch || env.DEFAULT_TARGET_BRANCH }}"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
