@@ -155,7 +155,7 @@ class SelfdriveD(CruiseHelper):
 
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.params)
 
-    CruiseHelper.__init__(self, self.CP)
+    CruiseHelper.__init__(self, self.CP, self)
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
