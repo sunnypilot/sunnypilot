@@ -9,9 +9,34 @@
 
 #include <QPainter>
 
+#include "selfdrive/ui/qt/util.h"
+
 ExperimentalButtonSP::ExperimentalButtonSP(QWidget *parent) : ExperimentalButton(parent) {
   QObject::disconnect(uiState(), &UIState::uiUpdate, this, &ExperimentalButton::updateState);
   QObject::connect(uiState(), &UIState::uiUpdate, this, &ExperimentalButtonSP::updateState);
+}
+
+void ExperimentalButtonSP::changeMode() {
+  const auto cp = (*uiState()->sm)["carParams"].getCarParams();
+  bool can_change = hasLongitudinalControl(cp) && params.getBool("ExperimentalModeConfirmed");
+  if (can_change) {
+    bool experimental_mode_new;
+    bool dynamic_experimental_control_new;
+
+    if (!experimental_mode && dynamic_experimental_control) {
+      experimental_mode_new = true;
+      dynamic_experimental_control_new = false;
+    } else if (experimental_mode && !dynamic_experimental_control) {
+      experimental_mode_new = true;
+      dynamic_experimental_control_new = true;
+    } else {
+      experimental_mode_new = false;
+      dynamic_experimental_control_new = false;
+    }
+
+    params.putBool("ExperimentalMode", experimental_mode_new);
+    params.putBool("DynamicExperimentalControl", dynamic_experimental_control_new);
+  }
 }
 
 void ExperimentalButtonSP::updateState(const UIState &s) {

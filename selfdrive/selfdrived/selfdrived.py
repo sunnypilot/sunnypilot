@@ -546,6 +546,7 @@ class SelfdriveD(CruiseHelper):
 
       self.mads.read_params()
       self.car_events_sp.read_params()
+      CruiseHelper.read_params(self)
       time.sleep(0.1)
 
   def run(self):
