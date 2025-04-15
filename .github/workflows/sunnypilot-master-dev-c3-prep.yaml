@@ -13,6 +13,7 @@ on:
     branches:
       - master
       - master-new
+      - unleash-nightly-squash # must be removed
   pull_request:             # Must be removed before merging, otherwise label operations will fail!.
     types: [ synchronize, opened, labeled ]  # Must be removed before merging, otherwise label operations will fail!.
     branches:               # Must be removed before merging, otherwise label operations will fail!.  
