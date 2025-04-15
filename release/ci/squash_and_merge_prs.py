@@ -121,13 +121,6 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
           print(f"Adding remote {origin} for PR #{pr_number}")
           subprocess.run(['git', 'remote', 'add', origin, head_repository.get('url')], check=False)
 
-        if is_fork and not trust_fork:
-          pr_comments.append(
-            f"⚠️ This PR is from a fork. Please add the `{TRUST_FORK_LABEL}` label to include it in the squash." +
-            "\n**Note**: The label is removed after a new commit is done and must be added again for the next execution for security reasons."
-          )
-          continue
-
         if not is_valid:
           print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
           pr_comments.append(f"⚠️ This PR was skipped in the automated `{target_branch}` squash because **{skip_reason}**.")
