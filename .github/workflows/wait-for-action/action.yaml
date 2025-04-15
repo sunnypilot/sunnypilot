@@ -24,9 +24,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-#    - name: Check out code
-#      uses: actions/checkout@v4
-
     - name: Wait for tests to start
       if: inputs.should-wait-for-start == 'true'
       shell: bash
