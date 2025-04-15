@@ -14,6 +14,8 @@
 ExperimentalButtonSP::ExperimentalButtonSP(QWidget *parent) : ExperimentalButton(parent) {
   QObject::disconnect(uiState(), &UIState::uiUpdate, this, &ExperimentalButton::updateState);
   QObject::connect(uiState(), &UIState::uiUpdate, this, &ExperimentalButtonSP::updateState);
+
+  QObject::connect(this, &QPushButton::clicked, this, &ExperimentalButtonSP::changeMode);
 }
 
 void ExperimentalButtonSP::changeMode() {
