@@ -116,6 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   reset-and-squash-all:
+    needs: [wait-for-tests]
     runs-on: ubuntu-latest
     # Remove the first 2 conditions when we are ready to merge. We have them for testing purposes
     if: (
