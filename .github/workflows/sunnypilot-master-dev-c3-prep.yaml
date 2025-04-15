@@ -90,37 +90,13 @@ jobs:
               body: `The \`${process.env.TRUST_FORK_PR_LABEL}\` label has been automatically removed because new commits were pushed to this PR. This PR will need to be re-reviewed before the label can be applied again.`
             });
 
-#  wait-for-tests:
-#    if: (
-#          !(github.event_name == 'push')
-#          || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-#        )
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Wait for tests to start
-#        if: (((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'dev-c3')))))
-#        run: |
-#          echo "Sleeping for 30 to give some time for the action to start and then we'll wait"
-#          sleep 30
-#          
-#      - name: Wait for tests to finish
-#        run: |
-#          RUN_ID=$(gh run list --workflow=selfdrive_tests.yaml --branch="${{ github.head_ref || github.ref_name }}" --limit=1 --json databaseId --jq '.[0].databaseId')
-#          echo "Watching run ID: $RUN_ID"
-#          gh run watch "$RUN_ID"
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   reset-and-squash-all:
     runs-on: ubuntu-latest
     # Remove the first 2 conditions when we are ready to merge. We have them for testing purposes
     if: (
             (!(github.event_name == 'pull_request' || github.event_name == 'pull_request_target'))
             || (github.event_name == 'push')
+            || (github.event_name == 'workflow_dispatch')
             || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
         )
     steps:
@@ -131,10 +107,16 @@ jobs:
 
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
+        if: (
+                (github.event_name == 'push')
+                || (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+                || ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))
+            )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          should-wait-for-start: ${{ ((github.event_name == 'push') || ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))) }}
+          #likely no need to wait because we already waited during checkout
+          #should-wait-for-start: ${{ ((github.event_name == 'push') || ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && ((github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'dev-c3'))))) }}
 
       - name: Configure Git
         run: |
