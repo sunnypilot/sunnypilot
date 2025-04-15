@@ -1,7 +1,7 @@
 from cereal import log, car, custom
 import cereal.messaging as messaging
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
-  NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackTypeSP, wrong_car_mode_alert
+  NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, AlertCallbackTypeSP, wrong_car_mode_alert
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -20,7 +20,7 @@ class EventsSP(EventsBase):
     super().__init__()
     self.event_counters = dict.fromkeys(EVENTS_SP.keys(), 0)
 
-  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackTypeSP]]:
+  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType | AlertCallbackTypeSP]]:
     return EVENTS_SP
 
   def get_event_name(self, event: int):
@@ -37,7 +37,7 @@ def experimental_mode_changed_alert(CP: car.CarParams, CS: car.CarState, sm: mes
   return NormalPermanentAlert(f"Experimental Mode: {exp_mode_str}\nDynamic Experimental Control: {dec_str}", duration=1.5)
 
 
-EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackTypeSP]] = {
+EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType | AlertCallbackTypeSP]] = {
   # sunnypilot
   EventNameSP.lkasEnable: {
     ET.ENABLE: EngagementAlert(AudibleAlert.engage),
