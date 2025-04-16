@@ -43,9 +43,9 @@ class VCruiseHelper:
     try:
       short_inc = int(self.params.get("CustomAccShortPressIncrement"))
       long_inc = int(self.params.get("CustomAccLongPressIncrement"))
-      self.custom_acc_short_increment = (short_inc if self.custom_acc_increments_enabled and short_inc > 0 and short_inc <= 10
+      self.custom_acc_short_increment = (short_inc if self.custom_acc_increments_enabled and 0 < short_inc <= 10
                                          else 1)
-      self.custom_acc_long_increment = (long_inc if self.custom_acc_increments_enabled and long_inc > 0 and long_inc <= 10
+      self.custom_acc_long_increment = (long_inc if self.custom_acc_increments_enabled and 0 < long_inc <= 10
                                          else 5)
     except Exception:
       self.custom_acc_short_increment = 1
