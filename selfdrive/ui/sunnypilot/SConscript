@@ -1,5 +1,6 @@
 widgets_src = [
   "sunnypilot/qt/request_repeater.cc",
+  "sunnypilot/qt/widgets/expandable_row.cc",
   "sunnypilot/qt/widgets/toggle.cc",
   "sunnypilot/qt/widgets/controls.cc",
   "sunnypilot/qt/widgets/drive_stats.cc",
@@ -19,6 +20,7 @@ qt_src = [
   "sunnypilot/qt/window.cc",
   "sunnypilot/qt/home.cc",
   "sunnypilot/qt/offroad/offroad_home.cc",
+  "sunnypilot/qt/offroad/settings/developer_panel.cc",
   "sunnypilot/qt/offroad/settings/device_panel.cc",
   "sunnypilot/qt/offroad/settings/lateral_panel.cc",
   "sunnypilot/qt/offroad/settings/max_time_offroad.cc",
@@ -33,6 +35,10 @@ qt_src = [
   "sunnypilot/qt/onroad/hud.cc",
   "sunnypilot/qt/onroad/model.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
+]
+
+developer_panel_qt_src = [
+  "sunnypilot/qt/developer/custom_acc_increment.cc",
 ]
 
 lateral_panel_qt_src = [
@@ -53,7 +59,7 @@ vehicle_panel_qt_src = [
 ]
 
 sp_widgets_src = widgets_src + network_src
-sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src
+sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + developer_panel_qt_src
 sp_qt_util = qt_util
 
 Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")

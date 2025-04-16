@@ -3,6 +3,7 @@ import numpy as np
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
 
 
 # WARNING: this value was determined based on the model's training distribution,
@@ -31,23 +32,36 @@ CRUISE_INTERVAL_SIGN = {
 class VCruiseHelper:
   def __init__(self, CP):
     self.CP = CP
+    self.params = Params()
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
+    self.custom_acc_increments_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
+
+    try:
+      short_inc = int(self.params.get("CustomAccShortPressIncrement"))
+      long_inc = int(self.params.get("CustomAccLongPressIncrement"))
+      self.custom_acc_short_increment = (short_inc if self.custom_acc_increments_enabled and short_inc > 0 and short_inc <= 10
+                                         else 1)
+      self.custom_acc_long_increment = (long_inc if self.custom_acc_increments_enabled and long_inc > 0 and long_inc <= 10
+                                         else 5)
+    except Exception:
+      self.custom_acc_short_increment = 1
+      self.custom_acc_long_increment = 5
 
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric, reverse_acc = False):
+  def update_v_cruise(self, CS, enabled, is_metric):
     self.v_cruise_kph_last = self.v_cruise_kph
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
         # if stock cruise is completely disabled, then we can use our own set speed logic
-        self._update_v_cruise_non_pcm(CS, enabled, is_metric, reverse_acc)
+        self._update_v_cruise_non_pcm(CS, enabled, is_metric)
         self.v_cruise_cluster_kph = self.v_cruise_kph
         self.update_button_timers(CS, enabled)
       else:
@@ -63,7 +77,7 @@ class VCruiseHelper:
       self.v_cruise_kph = V_CRUISE_UNSET
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
 
-  def _update_v_cruise_non_pcm(self, CS, enabled, is_metric, reverse_acc = False):
+  def _update_v_cruise_non_pcm(self, CS, enabled, is_metric):
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
     # would have the effect of both enabling and changing speed is checked after the state transition
     if not enabled:
@@ -97,7 +111,7 @@ class VCruiseHelper:
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press, reverse_acc, is_metric)
+    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press)
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
@@ -132,27 +146,24 @@ class VCruiseHelper:
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
 
-  def adjust_cruise_speed(self, button_type, long_press, reverse_acc, is_metric):
+  def adjust_cruise_speed(self, button_type, long_press):
     """
     Adjust cruise control speed based on button inputs.
 
     Parameters:
     - button_type: Type of button pressed (affects direction and rounding)
     - long_press: Whether button is being held down
-    - reverse_acc: Flag to reverse acceleration logic
+    - custom_acc_increments_enabled: Flag to allow custom ACC speed increments
     - is_metric: Check if the system is using metric units
     """
-    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
-    v_cruise_delta_mltplr = 10 if is_metric else 5
-
-    use_multiplier = long_press != reverse_acc  # True when only one of them is True
-    multiplier = v_cruise_delta_mltplr if use_multiplier else 1
+    v_cruise_delta = 1.
+    multiplier = self.custom_acc_long_increment if long_press else self.custom_acc_short_increment
 
     # Calculate the actual delta to apply
     adjusted_delta = v_cruise_delta * multiplier
 
     # Check if we need to align to interval boundaries
-    if use_multiplier and self.v_cruise_kph % adjusted_delta != 0:
+    if self.v_cruise_kph % adjusted_delta != 0:
       # Round to nearest interval when not already aligned
       rounded_value = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / adjusted_delta)
       self.v_cruise_kph = rounded_value * adjusted_delta

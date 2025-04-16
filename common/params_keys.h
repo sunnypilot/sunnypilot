@@ -126,6 +126,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
     {"CarPlatformBundle", PERSISTENT},
+    {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
+    {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
+    {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
@@ -168,5 +171,4 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiRadarTracksToggle", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
-    {"ReverseAccChange", PERSISTENT | BACKUP},
 };
