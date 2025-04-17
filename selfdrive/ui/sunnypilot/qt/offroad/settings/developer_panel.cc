@@ -9,7 +9,7 @@
 
 DeveloperPanelSP::DeveloperPanelSP(SettingsWindowSP *parent) : DeveloperPanel(parent) {
 
-  customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", "Custom ACC Speed Increments", "Some description here", "", this);
+  customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", "Custom ACC Speed Increments", "Enable custom Short & Long press increments for cruise speed increase/decrease.", "", this);
   AddWidgetAt(3, customAccIncrement);
 
 }

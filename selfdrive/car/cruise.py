@@ -38,18 +38,6 @@ class VCruiseHelper:
     self.v_cruise_kph_last = 0
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
-    self.custom_acc_increments_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-
-    try:
-      short_inc = int(self.params.get("CustomAccShortPressIncrement"))
-      long_inc = int(self.params.get("CustomAccLongPressIncrement"))
-      self.custom_acc_short_increment = (short_inc if self.custom_acc_increments_enabled and 0 < short_inc <= 10
-                                         else 1)
-      self.custom_acc_long_increment = (long_inc if self.custom_acc_increments_enabled and 0 < long_inc <= 10
-                                         else 5)
-    except Exception:
-      self.custom_acc_short_increment = 1
-      self.custom_acc_long_increment = 5
 
   @property
   def v_cruise_initialized(self):
@@ -111,7 +99,7 @@ class VCruiseHelper:
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press)
+    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press, is_metric)
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
@@ -146,16 +134,30 @@ class VCruiseHelper:
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
 
-  def adjust_cruise_speed(self, button_type, long_press):
+  def adjust_cruise_speed(self, button_type, long_press, is_metric):
     """
     Adjust cruise control speed based on button inputs.
 
     Parameters:
     - button_type: Type of button pressed (affects direction and rounding)
     - long_press: Whether button is being held down
+    - is_metric: Check if the system is using metric units
     """
-    v_cruise_delta = 1.
-    multiplier = self.custom_acc_long_increment if long_press else self.custom_acc_short_increment
+    custom_acc_increments_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
+
+    try:
+      short_inc = int(self.params.get("CustomAccShortPressIncrement"))
+      long_inc = int(self.params.get("CustomAccLongPressIncrement"))
+      custom_acc_short_increment = (short_inc if custom_acc_increments_enabled and 0 < short_inc <= 10
+                                         else 1)
+      custom_acc_long_increment = (long_inc if custom_acc_increments_enabled and 0 < long_inc <= 10
+                                         else 5)
+    except Exception:
+      custom_acc_short_increment = 1
+      custom_acc_long_increment = 5
+
+    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
+    multiplier = custom_acc_long_increment if long_press else custom_acc_short_increment
 
     # Calculate the actual delta to apply
     adjusted_delta = v_cruise_delta * multiplier

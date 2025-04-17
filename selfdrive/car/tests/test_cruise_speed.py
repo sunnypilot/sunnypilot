@@ -1,6 +1,7 @@
 import pytest
 import itertools
 import numpy as np
+from time import sleep
 
 from parameterized import parameterized_class
 from cereal import log
@@ -8,6 +9,7 @@ from openpilot.selfdrive.car.cruise import VCruiseHelper, V_CRUISE_MIN, V_CRUISE
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.test.longitudinal_maneuvers.maneuver import Maneuver
+from openpilot.common.params import Params
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
@@ -76,35 +78,42 @@ class TestVCruiseHelper:
         self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=False)
         assert pressed == (self.v_cruise_helper.v_cruise_kph == self.v_cruise_helper.v_cruise_kph_last)
 
-  def test_adjust_speed_reverse_acc(self):
+
+  @pytest.mark.parametrize("custom_acc_increments_enabled, short_inc, long_inc, long_press",
+                           itertools.product([True, False], [1, 5], [5, 10], [False, False]))
+  def test_adjust_custom_acc_increments(self, custom_acc_increments_enabled, short_inc, long_inc, long_press):
     """
-    Asserts speed changes behavior with reverse_acc enabled vs disabled.
+    Asserts speed changes behavior with custom increments
     """
     self.enable(V_CRUISE_INITIAL * CV.KPH_TO_MS, False, False)
 
-    for reverse_acc in (False, True):
-      for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
+    # Set custom increment parameters
+    Params().put_bool("CustomAccIncrementsEnabled", custom_acc_increments_enabled)
+    Params().put("CustomAccShortPressIncrement", str(short_inc))
+    Params().put("CustomAccLongPressIncrement", str(long_inc))
+
+    # Determine expected increment based on parameters
+    expected_increment = long_inc if custom_acc_increments_enabled and long_press else short_inc if custom_acc_increments_enabled else 5 if long_press else 1
+
+    for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
         # Test button press and release cycle
         CS = car.CarState(cruiseState={"available": True})
 
         # Press button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
         prev = self.v_cruise_helper.v_cruise_kph
-        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True, reverse_acc=reverse_acc)
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
+
+        #TODO: Add test for long_press
 
         # Release button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True, reverse_acc=reverse_acc)
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
 
         # Check the difference based on reverse_acc setting
         diff = abs(self.v_cruise_helper.v_cruise_kph - prev)
 
-        if reverse_acc:
-          # When reverse_acc is True, diff should be greater than 1
-          assert diff > 1, f"With reverse_acc=True, expected diff > 1, got {diff}"
-        else:
-          # When reverse_acc is False, diff should be exactly 1
-          assert diff == 1, f"With reverse_acc=False, expected diff = 1, got {diff}"
+        assert diff == expected_increment, f"expected {expected_increment}, got {diff}"
 
   def test_rising_edge_enable(self):
     """
