@@ -1,7 +1,6 @@
 import pytest
 import itertools
 import numpy as np
-from time import sleep
 
 from parameterized import parameterized_class
 from cereal import log
