@@ -7,11 +7,11 @@
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
-ExpandableRow::ExpandableRow(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
+ExpandableToggleRow::ExpandableToggleRow(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ToggleControlSP(title, desc, icon, false, parent) {
 
   key = param.toStdString();
-  QObject::connect(this, &ExpandableRow::toggleFlipped, this, &ExpandableRow::toggleClicked);
+  QObject::connect(this, &ExpandableToggleRow::toggleFlipped, this, &ExpandableToggleRow::toggleClicked);
 
   collapsibleWidget = new QFrame(this);
   collapsibleWidget->setContentsMargins(0, 0, 0, 0);
@@ -26,7 +26,7 @@ ExpandableRow::ExpandableRow(const QString &param, const QString &title, const Q
 
 }
 
-void ExpandableRow::toggleClicked(bool state) {
+void ExpandableToggleRow::toggleClicked(bool state) {
   params.putBool(key, state);
   collapsibleWidget->setVisible(state);
 }

@@ -9,11 +9,12 @@
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
- class ExpandableRow : public ToggleControlSP {
+ class ExpandableToggleRow : public ToggleControlSP {
   Q_OBJECT
 
 public:
-  ExpandableRow(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+  ExpandableToggleRow(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+
   void addItem(QWidget *widget) {
     list->addItem(widget);
   }

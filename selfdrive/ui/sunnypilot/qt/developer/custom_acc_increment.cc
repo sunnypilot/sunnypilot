@@ -8,7 +8,7 @@
 #include "selfdrive/ui/sunnypilot/qt/developer/custom_acc_increment.h"
 
 CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
-    : ExpandableRow(param, title, desc, icon, parent) {
+    : ExpandableToggleRow(param, title, desc, icon, parent) {
 
   QFrame *accFrame = new QFrame(this);
   QGridLayout *accFrameLayout = new QGridLayout(this);

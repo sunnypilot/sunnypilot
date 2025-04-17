@@ -24,8 +24,6 @@ private:
   ParamControl* enableGithubRunner;
   bool is_release;
   bool offroad = false;
-  ParamControl* reverseAccChangeToggle;
-  ExpandableRow *expandTest = nullptr;
 
 private slots:
   void updateToggles(bool _offroad);

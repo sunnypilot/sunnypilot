@@ -12,7 +12,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
-class CustomAccIncrement : public ExpandableRow {
+class CustomAccIncrement : public ExpandableToggleRow {
   Q_OBJECT
 
 public:

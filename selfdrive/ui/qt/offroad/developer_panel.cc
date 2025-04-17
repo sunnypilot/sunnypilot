@@ -30,13 +30,6 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(longManeuverToggle);
 
-  // reverseAccChangeToggle = new ParamControl("ReverseAccChange", tr("Reverse ACC Change"), tr("Enable this to change swap the ACC long press and short press behavior."), "");
-  // QObject::connect(reverseAccChangeToggle, &ParamControl::toggleFlipped, [=](bool state) {
-  //   updateToggles(offroad);
-  // });
-  // addItem(reverseAccChangeToggle);
-
-
   experimentalLongitudinalToggle = new ParamControl(
     "ExperimentalLongitudinalEnabled",
     tr("sunnypilot Longitudinal Control (Alpha)"),
