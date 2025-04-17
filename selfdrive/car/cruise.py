@@ -153,8 +153,6 @@ class VCruiseHelper:
     Parameters:
     - button_type: Type of button pressed (affects direction and rounding)
     - long_press: Whether button is being held down
-    - custom_acc_increments_enabled: Flag to allow custom ACC speed increments
-    - is_metric: Check if the system is using metric units
     """
     v_cruise_delta = 1.
     multiplier = self.custom_acc_long_increment if long_press else self.custom_acc_short_increment
