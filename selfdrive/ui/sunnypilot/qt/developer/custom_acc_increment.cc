@@ -43,9 +43,9 @@ AccIncrementOptionControl::AccIncrementOptionControl(const QString &param) : Opt
 
 void AccIncrementOptionControl::refresh() {
   std::string val = params.get(param_name);
-  std::string label = "<span style='font-size: 35px; font-weight: 450; color: #FFFFFF;'>";
+  std::string label = "<span style='font-size: 45px; font-weight: 450; color: #FFFFFF;'>";
   label += param_name == "CustomAccShortPressIncrement" ? "Short Press" : "Long Press";
-  label += " <br><span style='font-size: 35px; font-weight: 450; color: #FFFFFF;'>" + val;
+  label += " <br><span style='font-size: 40px; font-weight: 450; color:rgb(174, 255, 195);'>" + val;
   label += param_name == "CustomAccShortPressIncrement" ? (val == "1" ? " (Default)" : "") : (val == "5" ? " (Default)" : "");
   label += "</span></span>";
   setLabel(QString::fromStdString(label));
