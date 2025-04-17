@@ -79,13 +79,13 @@ class TestVCruiseHelper:
         assert pressed == (self.v_cruise_helper.v_cruise_kph == self.v_cruise_helper.v_cruise_kph_last)
 
 
-  @pytest.mark.parametrize("custom_acc_increments_enabled, short_inc, long_inc, long_press",
-                           itertools.product([True, False], [1, 5], [5, 10], [False, False]))
-  def test_adjust_custom_acc_increments(self, custom_acc_increments_enabled, short_inc, long_inc, long_press):
+  @pytest.mark.parametrize(("custom_acc_increments_enabled, short_inc, long_inc, long_press, metric, init_kph_or_mph"),
+                       itertools.product([True, False], [1, 5, 10], [1, 5, 10], [False], [False, True], [40, 35, 50, 25]))
+  def test_adjust_custom_acc_increments(self, custom_acc_increments_enabled, short_inc, long_inc, long_press, metric, init_kph_or_mph):
     """
     Asserts speed changes behavior with custom increments
     """
-    self.enable(V_CRUISE_INITIAL * CV.KPH_TO_MS, False, False)
+    self.enable((init_kph_or_mph if metric else init_kph_or_mph * IMPERIAL_INCREMENT) * CV.KPH_TO_MS, False, False)
 
     # Set custom increment parameters
     Params().put_bool("CustomAccIncrementsEnabled", custom_acc_increments_enabled)
@@ -96,22 +96,41 @@ class TestVCruiseHelper:
     expected_increment = long_inc if custom_acc_increments_enabled and long_press else short_inc if custom_acc_increments_enabled else 5 if long_press else 1
 
     for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
+
+        expected_increment *= -1 if btn==ButtonType.decelCruise else 1
+
         # Test button press and release cycle
         CS = car.CarState(cruiseState={"available": True})
 
         # Press button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
-        prev = self.v_cruise_helper.v_cruise_kph
-        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
+        prev_kph = self.v_cruise_helper.v_cruise_kph
+        prev_mph = round(prev_kph / IMPERIAL_INCREMENT)
+        prev_normalized = prev_kph if metric else prev_mph
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=metric)
 
-        #TODO: Add test for long_press
+        # TODO: Add test for long_press
 
         # Release button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
+        self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=metric)
 
         # Check the difference based on reverse_acc setting
-        diff = abs(self.v_cruise_helper.v_cruise_kph - prev)
+        new_kph = self.v_cruise_helper.v_cruise_kph
+        new_mph = round(new_kph / IMPERIAL_INCREMENT)
+        new_normalized = new_kph if metric else new_mph
+
+        diff = new_normalized - prev_normalized
+
+        print("Testing..\nbutton:", btn,
+               "\ncustom:",custom_acc_increments_enabled,
+                "\nis_metric:",metric,
+                 "\nshort_inc:",short_inc, "\nlong_inc:",long_inc)
+        if metric:
+          print("\nprev_kph:",prev_kph, "\nnew_kph:",new_kph)
+        else:
+          print("\nprev_mph:", prev_mph, "\nnew_mph:", new_mph)
+        print("\n--------------")
 
         assert diff == expected_increment, f"expected {expected_increment}, got {diff}"
 

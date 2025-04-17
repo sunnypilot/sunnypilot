@@ -13,19 +13,18 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
   QFrame *accFrame = new QFrame(this);
   QGridLayout *accFrameLayout = new QGridLayout(this);
   accFrame->setLayout(accFrameLayout);
-  accFrameLayout->setSpacing(75);
+  accFrameLayout->setSpacing(0);
 
   AccIncrementOptionControl *op1 = new AccIncrementOptionControl(QString::fromStdString("CustomAccShortPressIncrement"));
   QObject::connect(op1, &OptionControlSP::updateLabels, op1, &AccIncrementOptionControl::refresh);
+
   AccIncrementOptionControl *op2 = new AccIncrementOptionControl(QString::fromStdString("CustomAccLongPressIncrement"));
   QObject::connect(op2, &OptionControlSP::updateLabels, op2, &AccIncrementOptionControl::refresh);
 
-  op1->setFixedWidth(200);
-  op2->setFixedWidth(200);
-  accFrameLayout->addWidget(new QLabel("Short Press Increment"), 0, 0, Qt::AlignCenter);
-  accFrameLayout->addWidget(new QLabel("Long Press Increment"), 0, 1, Qt::AlignCenter);
-  accFrameLayout->addWidget(op1, 1, 0, Qt::AlignCenter);
-  accFrameLayout->addWidget(op2, 1, 1, Qt::AlignCenter);
+  op1->setFixedWidth(330);
+  op2->setFixedWidth(330);
+  accFrameLayout->addWidget(op1, 0, 0, Qt::AlignLeft);
+  accFrameLayout->addWidget(op2, 0, 1, Qt::AlignRight);
 
   addItem(accFrame);
 
@@ -43,5 +42,11 @@ AccIncrementOptionControl::AccIncrementOptionControl(const QString &param) : Opt
 }
 
 void AccIncrementOptionControl::refresh() {
-  setLabel(QString::fromStdString(params.get(param_name)));
+  std::string val = params.get(param_name);
+  std::string label = "<span style='font-size: 35px; font-weight: 450; color: #FFFFFF;'>";
+  label += param_name == "CustomAccShortPressIncrement" ? "Short Press" : "Long Press";
+  label += " <br><span style='font-size: 35px; font-weight: 450; color: #FFFFFF;'>" + val;
+  label += param_name == "CustomAccShortPressIncrement" ? (val == "1" ? " (Default)" : "") : (val == "5" ? " (Default)" : "");
+  label += "</span></span>";
+  setLabel(QString::fromStdString(label));
 }

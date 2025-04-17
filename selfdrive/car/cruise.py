@@ -139,11 +139,14 @@ class VCruiseHelper:
     Adjust cruise control speed based on button inputs.
 
     Parameters:
-    - button_type: Type of button pressed (affects direction and rounding)
+    - button_type: Type of button pressed (affects increment direction)
     - long_press: Whether button is being held down
     - is_metric: Check if the system is using metric units
     """
     custom_acc_increments_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
+
+    # Take a rounded normalized v_cruise based on is_metric
+    prev_normalized_v_cruise = round(self.v_cruise_kph if is_metric else self.v_cruise_kph/IMPERIAL_INCREMENT)
 
     try:
       short_inc = int(self.params.get("CustomAccShortPressIncrement"))
@@ -156,20 +159,18 @@ class VCruiseHelper:
       custom_acc_short_increment = 1
       custom_acc_long_increment = 5
 
-    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
+    v_cruise_delta = 1.
     multiplier = custom_acc_long_increment if long_press else custom_acc_short_increment
 
     # Calculate the actual delta to apply
     adjusted_delta = v_cruise_delta * multiplier
+    direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
+    adjusted_delta *= direction
 
-    # Check if we need to align to interval boundaries
-    if self.v_cruise_kph % adjusted_delta != 0:
-      # Round to nearest interval when not already aligned
-      rounded_value = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / adjusted_delta)
-      self.v_cruise_kph = rounded_value * adjusted_delta
-    else:
-      # Simply increment/decrement by the adjusted delta
-      direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
-      self.v_cruise_kph += adjusted_delta * direction
+    # Calculate the new normalized v_cruise value
+    normalized_v_cruise = prev_normalized_v_cruise + adjusted_delta
+
+    # Set v_cruise_kph from normalized_v_cruise based on is_metric
+    self.v_cruise_kph = normalized_v_cruise if is_metric else normalized_v_cruise * IMPERIAL_INCREMENT
 
     return self.v_cruise_kph

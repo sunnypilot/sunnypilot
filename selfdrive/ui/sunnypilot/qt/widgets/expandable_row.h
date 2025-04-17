@@ -38,10 +38,6 @@ public:
     refresh();
   }
 
-public slots:
-  void showContent() {
-    contentWidget->setVisible(true);
-  }
 
 private:
   void toggleClicked(bool state);
@@ -49,6 +45,5 @@ private:
   Params params;
 
   ListWidgetSP *list;
-  QWidget *contentWidget = nullptr;
   QFrame *collapsibleWidget = nullptr;
 };
