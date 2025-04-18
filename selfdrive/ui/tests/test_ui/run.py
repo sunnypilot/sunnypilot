@@ -74,7 +74,7 @@ def setup_settings_developer(click, pm: PubMaster, scroll=None):
   click(278, 970)
   time.sleep(UI_DELAY)
 
-def setup_settings_developer_reverse_acc(click, pm: PubMaster, scroll=None):
+def setup_settings_developer_custom_acc(click, pm: PubMaster, scroll=None):
   setup_settings_developer(click, pm, scroll)
 
 def setup_onroad(click, pm: PubMaster, scroll=None):
@@ -296,7 +296,7 @@ CASES.update({
   "settings_steering_alc": setup_settings_steering_alc,
   "settings_trips": setup_settings_trips,
   "settings_vehicle": setup_settings_vehicle,
-  "settings_developer_reverse_acc": setup_settings_developer_reverse_acc,
+  "settings_developer_custom_acc": setup_settings_developer_custom_acc,
 })
 
 TEST_DIR = pathlib.Path(__file__).parent
@@ -392,7 +392,7 @@ def create_screenshots():
         params.put('PrimeType', '1')
       elif name == 'pair_device':
         params.put('ApiCache_Device', '{"is_paired":0, "prime_type":-1}')
-      elif name == 'settings_developer_reverse_acc':
+      elif name == 'settings_developer_custom_acc':
         params.put_bool('CustomAccIncrementsEnabled', True)
         params.put('CustomAccLongPressIncrement', "5")
         params.put('CustomAccShortPressIncrement', "1")
