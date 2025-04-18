@@ -147,7 +147,7 @@ class VCruiseHelper:
     - is_metric: Check if the system is using metric units
     """
     # Base increment value based on unit system
-    base_increment = 1. if not is_metric else IMPERIAL_INCREMENT
+    base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
     # Apply the user-specified multipliers to the base increment
     short_increment = base_increment * self.custom_acc_short_increment
