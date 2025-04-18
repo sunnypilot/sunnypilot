@@ -156,12 +156,14 @@ class VCruiseHelper:
     prev_normalized_v_cruise = round(self.v_cruise_kph if is_metric else self.v_cruise_kph/IMPERIAL_INCREMENT)
 
     # Use custom values if enabled
-    if self.custom_acc_increments_enabled:
-      short_increment_value = (self.custom_acc_short_increment if self.custom_acc_increments_enabled and 0 < self.custom_acc_short_increment <= 10
+    try:
+      short_int = int(self.custom_acc_short_increment)
+      long_int = int(self.custom_acc_long_increment)
+      short_increment_value = (short_int if self.custom_acc_increments_enabled and 0 < short_int <= 10
                                          else 1)
-      long_increment_value = (self.custom_acc_long_increment if self.custom_acc_increments_enabled and 0 < self.custom_acc_long_increment <= 10
+      long_increment_value = (long_int if self.custom_acc_increments_enabled and 0 < long_int <= 10
                                          else 5)
-    else:
+    except Exception:
       short_increment_value = 1
       long_increment_value = 5
 
