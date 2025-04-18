@@ -10,16 +10,16 @@
 CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ExpandableToggleRow(param, title, desc, icon, parent) {
 
-  QFrame *accFrame = new QFrame(this);
-  QGridLayout *accFrameLayout = new QGridLayout(this);
+  auto *accFrame = new QFrame(this);
+  auto *accFrameLayout = new QGridLayout(this);
   accFrame->setLayout(accFrameLayout);
   accFrameLayout->setSpacing(0);
 
-  AccIncrementOptionControl *op1 = new AccIncrementOptionControl(QString::fromStdString("CustomAccShortPressIncrement"));
-  QObject::connect(op1, &OptionControlSP::updateLabels, op1, &AccIncrementOptionControl::refresh);
+  auto *op1 = new AccIncrementOptionControl("CustomAccShortPressIncrement", {1, 10}, 1);
+  connect(op1, &OptionControlSP::updateLabels, op1, &AccIncrementOptionControl::refresh);
 
-  AccIncrementOptionControl *op2 = new AccIncrementOptionControl(QString::fromStdString("CustomAccLongPressIncrement"));
-  QObject::connect(op2, &OptionControlSP::updateLabels, op2, &AccIncrementOptionControl::refresh);
+  auto *op2 = new AccIncrementOptionControl("CustomAccLongPressIncrement", {5, 10}, 5);
+  connect(op2, &OptionControlSP::updateLabels, op2, &AccIncrementOptionControl::refresh);
 
   op1->setFixedWidth(330);
   op2->setFixedWidth(330);
@@ -30,12 +30,12 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
 
 }
 
-AccIncrementOptionControl::AccIncrementOptionControl(const QString &param) : OptionControlSP(
+AccIncrementOptionControl::AccIncrementOptionControl(const QString &param, const MinMaxValue &range, const int per_value_change) : OptionControlSP(
   param,
   "",
   "",
   "",
-  {1,10}, 1, true) {
+  range, per_value_change, true) {
 
     param_name = param.toStdString();
     refresh();

@@ -26,7 +26,7 @@ class AccIncrementOptionControl : public OptionControlSP {
 
 public:
 
-  AccIncrementOptionControl(const QString &param);
+  AccIncrementOptionControl(const QString &param, const MinMaxValue &range, int per_value_change);
   void refresh();
 
 protected:

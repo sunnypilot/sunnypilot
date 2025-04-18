@@ -415,14 +415,15 @@ public:
 class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
-private:
-  bool isInlineLayout;
-  QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
-
+protected:
   struct MinMaxValue {
     int min_value;
     int max_value;
   };
+
+private:
+  bool isInlineLayout;
+  QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
 
   int getParamValue() {
     const auto param_value = QString::fromStdString(params.get(key));
