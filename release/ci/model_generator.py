@@ -5,8 +5,9 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-def generate_metadata(model_path: str, output_dir: Path, file_name: str = None):
-  model_path = Path(model_path)
+
+def generate_metadata(model_path: Path, output_dir: Path, file_name: str = None):
+  model_path = model_path
   output_path = output_dir
   base = model_path.stem
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
   models = []
 
   for model_path in model_paths:
-    model_metadata = generate_metadata(model_path, output_dir, args.file_name)
+    model_metadata = generate_metadata(Path(model_path), output_dir, args.file_name)
     if model_metadata:
       models.append(model_metadata)
 
