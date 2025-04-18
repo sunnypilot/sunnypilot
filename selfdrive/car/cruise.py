@@ -43,8 +43,16 @@ class VCruiseHelper:
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric):
+  def update_v_cruise(self, CS, enabled, is_metric,
+                      custom_acc_increments_enabled = False,
+                      custom_acc_short_increment = 1,
+                      custom_acc_long_increment = 5):
+
     self.v_cruise_kph_last = self.v_cruise_kph
+
+    self.custom_acc_increments_enabled = custom_acc_increments_enabled
+    self.custom_acc_short_increment = custom_acc_short_increment
+    self.custom_acc_long_increment = custom_acc_long_increment
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
@@ -143,24 +151,22 @@ class VCruiseHelper:
     - long_press: Whether button is being held down
     - is_metric: Check if the system is using metric units
     """
-    custom_acc_increments_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
 
     # Take a rounded normalized v_cruise based on is_metric
     prev_normalized_v_cruise = round(self.v_cruise_kph if is_metric else self.v_cruise_kph/IMPERIAL_INCREMENT)
 
-    try:
-      short_inc = int(self.params.get("CustomAccShortPressIncrement"))
-      long_inc = int(self.params.get("CustomAccLongPressIncrement"))
-      custom_acc_short_increment = (short_inc if custom_acc_increments_enabled and 0 < short_inc <= 10
+    # Use custom values if enabled
+    if self.custom_acc_increments_enabled:
+      short_increment_value = (self.custom_acc_short_increment if self.custom_acc_increments_enabled and 0 < self.custom_acc_short_increment <= 10
                                          else 1)
-      custom_acc_long_increment = (long_inc if custom_acc_increments_enabled and 0 < long_inc <= 10
+      long_increment_value = (self.custom_acc_long_increment if self.custom_acc_increments_enabled and 0 < self.custom_acc_long_increment <= 10
                                          else 5)
-    except Exception:
-      custom_acc_short_increment = 1
-      custom_acc_long_increment = 5
+    else:
+      short_increment_value = 1
+      long_increment_value = 5
 
     v_cruise_delta = 1.
-    multiplier = custom_acc_long_increment if long_press else custom_acc_short_increment
+    multiplier = long_increment_value if long_press else short_increment_value
 
     # Calculate the actual delta to apply
     adjusted_delta = v_cruise_delta * multiplier
