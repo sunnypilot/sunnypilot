@@ -55,7 +55,7 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
-    ("HkgTuningAngleSmoothingFactor", "6"),
+    ("HkgTuningAngleSmoothingFactor", "0"),
     ("HkgTuningAngleMinTorque", "25"),
     ("HkgTuningAngleMaxTorque", "250"),
     ("HkgTuningOverridingCycles", "17"),
