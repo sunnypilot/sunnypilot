@@ -8,7 +8,6 @@ from openpilot.selfdrive.car.cruise import VCruiseHelper, V_CRUISE_MIN, V_CRUISE
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.test.longitudinal_maneuvers.maneuver import Maneuver
-from openpilot.common.params import Params
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
@@ -85,11 +84,6 @@ class TestVCruiseHelper:
     Asserts speed changes behavior with custom increments
     """
     self.enable((init_kph_or_mph if metric else init_kph_or_mph * IMPERIAL_INCREMENT) * CV.KPH_TO_MS, False, False)
-
-    # Set custom increment parameters
-    Params().put_bool("CustomAccIncrementsEnabled", custom_acc_increments_enabled)
-    Params().put("CustomAccShortPressIncrement", str(short_inc))
-    Params().put("CustomAccLongPressIncrement", str(long_inc))
 
     # Determine expected increment based on parameters
     expected_increment = long_inc if custom_acc_increments_enabled and long_press else short_inc if custom_acc_increments_enabled else 5 if long_press else 1
