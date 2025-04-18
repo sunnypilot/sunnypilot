@@ -150,18 +150,20 @@ class VCruiseHelper:
     base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
     # Apply the user-specified multipliers to the base increment
-    short_increment = base_increment * self.custom_acc_short_increment
-    long_increment = base_increment * self.custom_acc_long_increment
+    short_increment = self.custom_acc_short_increment
+    long_increment = self.custom_acc_long_increment
 
     # Determine which increment to use based on press type
     adjusted_delta = long_increment if long_press else short_increment
+    v_cruise = self.v_cruise_kph / base_increment
 
     # Check if we need to align to interval boundaries
-    if long_press and self.v_cruise_kph % adjusted_delta != 0:
-      rounded_value = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / adjusted_delta)
-      self.v_cruise_kph = rounded_value * adjusted_delta
+    if long_press and v_cruise % adjusted_delta != 0:
+      rounded_value = CRUISE_NEAREST_FUNC[button_type](v_cruise / adjusted_delta)
+      v_cruise = rounded_value * adjusted_delta
     else:
       direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
-      self.v_cruise_kph += adjusted_delta * direction
+      v_cruise += adjusted_delta * direction
 
+    self.v_cruise_kph = v_cruise * base_increment
     return self.v_cruise_kph
