@@ -32,6 +32,7 @@ private:
   bool offroad = false;
   Params params;
   int hkg_state = 0;
+  QString toggleDisableMsg(bool openpilotLong) const;
 
 private slots:
   void updateCarToggles();
