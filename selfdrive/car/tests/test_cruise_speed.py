@@ -106,13 +106,14 @@ class TestVCruiseHelper:
         prev_kph = self.v_cruise_helper.v_cruise_kph
         prev_mph = round(prev_kph / IMPERIAL_INCREMENT)
         prev_normalized = prev_kph if metric else prev_mph
-        self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_acc_increments_enabled, short_inc, long_inc)
+        custom_acc_increment = {} if not custom_acc_increments_enabled else {"short_press": short_inc, "long_press": long_inc}
+        self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_acc_increment)
 
         # TODO: Add test for long_press
 
         # Release button
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_acc_increments_enabled, short_inc, long_inc)
+        self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_acc_increment)
 
         # Check the difference based on reverse_acc setting
         new_kph = self.v_cruise_helper.v_cruise_kph

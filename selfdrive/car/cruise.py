@@ -32,27 +32,23 @@ CRUISE_INTERVAL_SIGN = {
 class VCruiseHelper:
   def __init__(self, CP):
     self.CP = CP
-    self.params = Params()
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
+    self.custom_acc_short_increment = 1
+    self.custom_acc_long_increment = 5
 
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric,
-                      custom_acc_increments_enabled = False,
-                      custom_acc_short_increment = 1,
-                      custom_acc_long_increment = 5):
-
+  def update_v_cruise(self, CS, enabled, is_metric, custom_acc_increment_config: dict[str, int] = None):
     self.v_cruise_kph_last = self.v_cruise_kph
 
-    self.custom_acc_increments_enabled = custom_acc_increments_enabled
-    self.custom_acc_short_increment = custom_acc_short_increment
-    self.custom_acc_long_increment = custom_acc_long_increment
+    self.custom_acc_short_increment = custom_acc_increment_config.get("short_press", 1)
+    self.custom_acc_long_increment = custom_acc_increment_config.get("long_press", 10 if is_metric else 5)
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
@@ -144,41 +140,28 @@ class VCruiseHelper:
 
   def adjust_cruise_speed(self, button_type, long_press, is_metric):
     """
-    Adjust cruise control speed based on button inputs.
-
+    Adjust cruise control speed based on button inputs with customizable increments.
     Parameters:
-    - button_type: Type of button pressed (affects increment direction)
+    - button_type: Type of button pressed (affects direction and rounding)
     - long_press: Whether button is being held down
     - is_metric: Check if the system is using metric units
     """
+    # Base increment value based on unit system
+    base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
-    # Take a rounded normalized v_cruise based on is_metric
-    prev_normalized_v_cruise = round(self.v_cruise_kph if is_metric else self.v_cruise_kph/IMPERIAL_INCREMENT)
+    # Apply the user-specified multipliers to the base increment
+    short_increment = base_increment * self.custom_acc_short_increment
+    long_increment = base_increment * self.custom_acc_long_increment
 
-    # Use custom values if enabled
-    try:
-      short_int = int(self.custom_acc_short_increment)
-      long_int = int(self.custom_acc_long_increment)
-      short_increment_value = (short_int if self.custom_acc_increments_enabled and 0 < short_int <= 10
-                                         else 1)
-      long_increment_value = (long_int if self.custom_acc_increments_enabled and 0 < long_int <= 10
-                                         else 5)
-    except Exception:
-      short_increment_value = 1
-      long_increment_value = 5
+    # Determine which increment to use based on press type
+    adjusted_delta = long_increment if long_press else short_increment
 
-    v_cruise_delta = 1.
-    multiplier = long_increment_value if long_press else short_increment_value
-
-    # Calculate the actual delta to apply
-    adjusted_delta = v_cruise_delta * multiplier
-    direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
-    adjusted_delta *= direction
-
-    # Calculate the new normalized v_cruise value
-    normalized_v_cruise = prev_normalized_v_cruise + adjusted_delta
-
-    # Set v_cruise_kph from normalized_v_cruise based on is_metric
-    self.v_cruise_kph = normalized_v_cruise if is_metric else normalized_v_cruise * IMPERIAL_INCREMENT
+    # Check if we need to align to interval boundaries
+    if long_press and self.v_cruise_kph % adjusted_delta != 0:
+      rounded_value = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / adjusted_delta)
+      self.v_cruise_kph = rounded_value * adjusted_delta
+    else:
+      direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
+      self.v_cruise_kph += adjusted_delta * direction
 
     return self.v_cruise_kph
