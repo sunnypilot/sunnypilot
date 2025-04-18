@@ -85,7 +85,7 @@ QString VehiclePanel::toggleDisableMsg(bool openpilotLong) const {
     return tr("Enable 'Always Offroad' in device panel, or turn vehicle off to activate this toggle");
   }
   if (!openpilotLong) {
-    return tr("Enable openpilot longitudinal control first.");
+    return tr("Enable sunnypilot longitudinal control first.");
   }
   return QString();
 }
