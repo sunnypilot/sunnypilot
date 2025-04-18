@@ -30,13 +30,8 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
 
 }
 
-AccIncrementOptionControl::AccIncrementOptionControl(const QString &param, const MinMaxValue &range, const int per_value_change) : OptionControlSP(
-  param,
-  "",
-  "",
-  "",
-  range, per_value_change, true) {
-
+AccIncrementOptionControl::AccIncrementOptionControl(const QString &param, const MinMaxValue &range, const int per_value_change)
+    : OptionControlSP(param, "", "", "", range, per_value_change, true) {
     param_name = param.toStdString();
     refresh();
 }
