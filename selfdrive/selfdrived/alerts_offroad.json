@@ -48,5 +48,9 @@
   "OffroadMode_Status": {
     "text": "sunnypilot is now in Always Offroad mode. sunnypilot won't start until Always Offroad mode is disabled. Go to \"Settings\" -> \"Device\" to exit Always Offroad mode.",
     "severity": 1
+  },
+  "Offroad_OSMUpdateRequired": {
+    "text": "OpenStreetMap database is out of date. New maps must be downloaded if you wish to continue using OpenStreetMap data for Enhanced Speed Control and road name display.\n\n%1",
+    "severity": 0
   }
 }

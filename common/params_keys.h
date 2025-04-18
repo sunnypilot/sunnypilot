@@ -170,4 +170,24 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiRadarTracksToggle", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
+
+    // mapd
+    {"MapdVersion", PERSISTENT},
+    {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
+    {"MapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"NextMapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"OSMDownloadBounds", PERSISTENT},
+    {"OSMDownloadLocations", PERSISTENT},
+    {"OsmDownloadedDate", PERSISTENT},
+    {"OsmStateTitle", PERSISTENT},
+    {"OsmStateName", PERSISTENT},
+    {"OSMDownloadProgress", CLEAR_ON_MANAGER_START},
+    {"OsmDbUpdatesCheck", CLEAR_ON_MANAGER_START},  // mapd database update happens with device ON, reset on boot
+    {"OsmLocal", PERSISTENT},
+    {"OsmLocationName", PERSISTENT},
+    {"OsmLocationTitle", PERSISTENT},
+    {"OsmLocationUrl", PERSISTENT},
+    {"OsmWayTest", PERSISTENT},
+    {"Offroad_OSMUpdateRequired", CLEAR_ON_MANAGER_START},
 };

@@ -6,6 +6,8 @@ from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
 
+from openpilot.selfdrive.mapd_manager import MAPD_PATH, COMMON_DIR
+
 from sunnypilot.models.helpers import get_active_model_runner
 from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, use_sunnylink_uploader
 
@@ -156,6 +158,10 @@ procs += [
 
   # Backup
   PythonProcess("backup_manager", "sunnypilot.sunnylink.backups.manager", and_(only_offroad, sunnylink_ready_shim)),
+
+  # mapd
+  NativeProcess("mapd", COMMON_DIR, [MAPD_PATH], always_run),
+  PythonProcess("mapd_manager", "selfdrive.mapd_manager", always_run),
 ]
 
 if os.path.exists("./github_runner.sh"):
