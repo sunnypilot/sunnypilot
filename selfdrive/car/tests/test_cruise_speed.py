@@ -32,9 +32,9 @@ def run_cruise_simulation(cruise, e2e, personality, t_end=20.):
 
 
 @parameterized_class(("e2e", "personality", "speed"), itertools.product(
-                      [True, False], # e2e
-                      log.LongitudinalPersonality.schema.enumerants, # personality
-                      [5,35])) # speed
+  [True, False],  # e2e
+  log.LongitudinalPersonality.schema.enumerants,  # personality
+  [5, 35]))  # speed
 class TestCruiseSpeed:
   def test_cruise_speed(self):
     print(f'Testing {self.speed} m/s')
@@ -202,7 +202,7 @@ class TestAdjustCustomAccIncrements:
         exp *= -1
 
       assert diff == exp, (
-        f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: "
+        f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
         f"expected {exp}, got {diff}"
       )
 
@@ -244,6 +244,6 @@ class TestAdjustCustomAccIncrements:
         exp = long_inc if btn == ButtonType.accelCruise else -long_inc
 
       assert diff == exp, (
-        f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: "
+        f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
         f"expected {exp}, got {diff} (prev: {prev}, curr: {curr})"
       )
