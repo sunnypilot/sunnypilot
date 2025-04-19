@@ -23,12 +23,18 @@ def generate_modelV2():
   speed = 30
   position.x = [float(x) for x in (speed + 0.5) * np.array(ModelConstants.T_IDXS)]
   model.modelV2.position = position
+  orientation = log.XYZTData.new_message()
+  curvature = 0.05
+  orientation.x = [float(curvature) for _ in ModelConstants.T_IDXS]
+  orientation.y = [0.0 for _ in ModelConstants.T_IDXS]
+  model.modelV2.orientation = orientation
   velocity = log.XYZTData.new_message()
   velocity.x = [float(x) for x in (speed + 0.5) * np.ones_like(ModelConstants.T_IDXS)]
   velocity.x[0] = float(speed)  # always start at current speed
   model.modelV2.velocity = velocity
   acceleration = log.XYZTData.new_message()
   acceleration.x = [float(x) for x in np.zeros_like(ModelConstants.T_IDXS)]
+  acceleration.y = [float(y) for y in np.zeros_like(ModelConstants.T_IDXS)]
   model.modelV2.acceleration = acceleration
 
   return model
@@ -40,9 +46,6 @@ class TestNeuralNetworkLateralControl:
   def test_saturation(self, car_name):
     params = Params()
     params.put_bool("NeuralNetworkLateralControl", True)
-
-    sm = messaging.SubMaster(['modelV2'])
-    managed_processes['modeld'].start()
 
     CarInterface = interfaces[car_name]
     CP = CarInterface.get_non_essential_params(car_name)
@@ -65,20 +68,23 @@ class TestNeuralNetworkLateralControl:
     lp = generate_livePose()
     pose = Pose.from_live_pose(lp.livePose)
 
-    mdl = sm['modelV2']
+    mdl = generate_modelV2()
+    sm = {'modelV2': mdl.modelV2}
+    model_v2 = sm['modelV2']
+    controller.extension.model_v2 = model_v2
 
     # Saturate for curvature limited and controller limited
     for _ in range(1000):
-      controller.extension.update_model_v2(mdl)
+      controller.extension.update_model_v2(model_v2)
       _, _, lac_log = controller.update(True, CS, VM, params, False, 0, pose, True)
     assert lac_log.saturated
 
     for _ in range(1000):
-      controller.extension.update_model_v2(mdl)
+      controller.extension.update_model_v2(model_v2)
       _, _, lac_log = controller.update(True, CS, VM, params, False, 0, pose, False)
     assert not lac_log.saturated
 
     for _ in range(1000):
-      controller.extension.update_model_v2(mdl)
+      controller.extension.update_model_v2(model_v2)
       _, _, lac_log = controller.update(True, CS, VM, params, False, 1, pose, False)
     assert lac_log.saturated
