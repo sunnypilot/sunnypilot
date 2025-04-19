@@ -13,7 +13,6 @@ from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLan
   AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
 
 AUTO_LANE_CHANGE_TIMER_COMBOS = [
-  #(AutoLaneChangeMode.OFF, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.OFF]),
   (AutoLaneChangeMode.NUDGELESS, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.NUDGELESS]),
   (AutoLaneChangeMode.HALF_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.HALF_SECOND]),
   (AutoLaneChangeMode.ONE_SECOND, AUTO_LANE_CHANGE_TIMER[AutoLaneChangeMode.ONE_SECOND]),
