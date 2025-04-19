@@ -13,7 +13,6 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.locationd.helpers import Pose
 from openpilot.common.mock.generators import generate_livePose
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
-from openpilot.system.manager.process_config import managed_processes
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 
