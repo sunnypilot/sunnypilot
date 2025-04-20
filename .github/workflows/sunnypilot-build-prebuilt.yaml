@@ -21,6 +21,8 @@ on:
   push:
     branches: [ master, master-new, master-dev-c3-new ]
     tags: [ '*' ]
+  pull_request:
+    types: [ synchronize, opened, labeled ]
   workflow_dispatch:
     inputs:
       extra_version:
@@ -39,6 +41,8 @@ jobs:
       version: ${{ steps.set-env.outputs.version }}
       extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
+    # If the workflow is not triggered by a pull request, or if the pull request is labeled with 'prebuilt', run the build
+    if: (!contains('pull_request', github.event_name) || ((github.event.action == 'labeled' && github.event.label.name == 'prebuilt')))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -194,10 +198,10 @@ jobs:
     concurrency:
       group: publish-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
-    if: ${{ github.event_name != 'pull_request' || github.event_name == 'pull_request' && github.event.pull_request.draft }} 
+    if: ${{ !contains('pull_request', github.event_name) || (github.event.action == 'labeled' && github.event.label.name == 'prebuilt') }}
     needs: build
     runs-on: ubuntu-24.04
-    environment: ${{ contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) && 'auto-deploy' || 'feature-branch' }}
+    environment: ${{ (contains(fromJSON(vars.AUTO_DEPLOY_PREBUILT_BRANCHES), github.head_ref || github.ref_name) || contains(github.event.pull_request.labels.*.name, 'prebuilt')) && 'auto-deploy' || 'feature-branch' }}
     steps:
       - uses: actions/checkout@v4
 
