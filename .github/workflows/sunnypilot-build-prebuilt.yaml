@@ -21,8 +21,8 @@ on:
   push:
     branches: [ master, master-new, master-dev-c3-new ]
     tags: [ '*' ]
-  pull_request:
-    types: [ synchronize, opened, labeled ]
+  pull_request_target:
+    types: [ labeled ]
   workflow_dispatch:
     inputs:
       wait_for_tests:
