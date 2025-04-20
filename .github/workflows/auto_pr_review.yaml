@@ -12,50 +12,37 @@ jobs:
       issues: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: false
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
 
-      # Label PRs
-      - uses: actions/labeler@v5.0.0
-        with:
-          dot: true
-          configuration-path: .github/labeler.yaml
+    # Label PRs
+    - uses: actions/labeler@v5.0.0
+      with:
+        dot: true
+        configuration-path: .github/labeler.yaml
 
-      # Check PR target branch
-      - name: check branch
-        uses: Vankka/pr-target-branch-action@def32ec9d93514138d6ac0132ee62e120a72aed5
-        if: github.repository == 'sunnypilot/sunnypilot'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          target: /^(?!master-new$).*/
-          exclude: /sunnypilot:.*/
-          change-to: ${{ github.base_ref }}
-          already-exists-action: close_this
-          already-exists-comment: "Your PR should be made against the `master-new` branch"
+    # Check PR target branch
+    - name: check branch
+      uses: Vankka/pr-target-branch-action@def32ec9d93514138d6ac0132ee62e120a72aed5
+      if: github.repository == 'sunnypilot/sunnypilot'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        target: /^(?!master-new$).*/
+        exclude: /sunnypilot:.*/
+        change-to: ${{ github.base_ref }}
+        already-exists-action: close_this
+        already-exists-comment: "Your PR should be made against the `master-new` branch"
 
   update-pr-labels:
     name: Update fork's PR Labels
     runs-on: ubuntu-latest
+    if: (github.event.pull_request.head.repo.fork && (contains(github.event_name, 'pull_request') && github.event.action == 'synchronize'))
     env:
       PR_LABEL: 'dev-c3'
       TRUST_FORK_PR_LABEL: 'trust-fork-pr'
     steps:
-      - name: debug
-        run: |
-          echo ${{ (github.event.pull_request.head.repo.fork && (contains('pull_request', github.event_name) && github.event.action == 'synchronize')) }}
-          echo ${{ github.event.pull_request.head.repo.fork }}
-          echo ${{ github.event_name }}
-          echo ${{ github.event.action }}
-          echo ${{ github.event.pull_request.head.repo.full_name }}
-          echo ${{ contains('pull_request', github.event_name) }}
-          echo ${{ contains(github.event_name, 'pull_request') }}
-
-          echo ${{ contains('pull_request', 'pull_request') }}
-
-          echo ${{ contains('pull_request_target', 'pull_request') }}
-
       - name: Check if PR has dev-c3 label
         id: check-labels
         uses: actions/github-script@v7
