@@ -31,6 +31,25 @@ on:
         default: ''
 
 jobs:
+  validate_when_labeled:
+    runs-on: ubuntu-24.04
+    # If the workflow is not triggered by a pull request, or if the pull request is labeled with 'prebuilt', run the build
+    if: (contains('pull_request', github.event_name) || ((github.event.action == 'labeled' && github.event.label.name == 'prebuilt')))
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Wait for Tests
+        uses: ./.github/workflows/wait-for-action # Path to where you place the action
+        if: (
+          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || (contains('pull_request', github.event_name) && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+          )
+        with:
+          workflow: selfdrive_tests.yaml # The workflow file to monitor
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
@@ -41,23 +60,11 @@ jobs:
       version: ${{ steps.set-env.outputs.version }}
       extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
-    # If the workflow is not triggered by a pull request, or if the pull request is labeled with 'prebuilt', run the build
-    if: (!contains('pull_request', github.event_name) || ((github.event.action == 'labeled' && github.event.label.name == 'prebuilt')))
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - run: git lfs pull
-        
-      - name: Wait for Tests
-        uses: ./.github/workflows/wait-for-action # Path to where you place the action
-        if: (
-          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || (contains('pull_request', github.event_name) && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
-          )
-        with:
-          workflow: selfdrive_tests.yaml # The workflow file to monitor
-          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache SCons
         uses: actions/cache@v4
