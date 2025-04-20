@@ -285,3 +285,26 @@ jobs:
           echo "2. Current value: ${{ vars.DEV_FEEDBACK_NOTIFICATION_BRANCHES }}"
           echo "3. Update as needed (JSON array with no spaces)"
         shell: alpine.sh {0}
+  
+  manage-pr-labels:
+    name: Remove prebuilt label after build
+    runs-on: ubuntu-latest
+    if: (always() && contains('pull_request', github.event_name) && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+    env:
+      LABEL: prebuilt
+    steps:
+      - name: Remove trust-fork-pr label if present
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              name: process.env.LABEL
+            });
+
+            console.log(`Removed '${process.env.LABEL}' label from PR #${prNumber}`);
