@@ -135,7 +135,7 @@ class Car:
     set_alternative_experience(self.CP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
 
-    # sunnypilot Params. We must define "None" because python likes to make you suffer and duplicate lines of code.
+    # sunnypilot Params. We must define "None" because python likes to make you suffer and duplicate lines of code
     self.dynamic_experimental_control = None
     self.custom_acc_increments_enabled = None
     self.custom_acc_short_increment = None
