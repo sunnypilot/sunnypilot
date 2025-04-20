@@ -35,7 +35,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
 
   update_model(model, lead_one);
   drawLaneLines(painter);
-  drawPath(painter, model, surface_rect.height());
+  drawPath(painter, model, surface_rect.height(), surface_rect.width());
 
   if (longitudinal_control && sm.alive("radarState")) {
     update_leads(radar_state, model.getPosition());
@@ -111,7 +111,7 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
   }
 }
 
-void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height) {
+void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height, int width) {
   QLinearGradient bg(0, height, 0, 0);
   auto *s = uiState();
   auto &sm = *(s->sm);
