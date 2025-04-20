@@ -18,10 +18,12 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event);
+  bool eventFilter(QObject *obj, QEvent *event) override;
   OnroadAlerts *alerts;
   AnnotatedCameraWidget *nvg;
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QHBoxLayout* split;
+  QWidget *fadeOverlay;
 
 protected slots:
   virtual void offroadTransition(bool offroad);
