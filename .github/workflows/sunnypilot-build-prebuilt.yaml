@@ -25,10 +25,6 @@ on:
     types: [ synchronize, opened, labeled ]
   workflow_dispatch:
     inputs:
-      extra_version:
-        description: 'Extra version identifier'
-        required: false
-        default: ''
       wait_for_tests:
         description: 'Wait for selfdrive_tests to finish'
         required: false
