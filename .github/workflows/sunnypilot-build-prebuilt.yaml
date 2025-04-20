@@ -29,29 +29,26 @@ on:
         description: 'Extra version identifier'
         required: false
         default: ''
+      wait_for_tests:
+        description: 'Will wait for selfdrive_tests to finish if true'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  validate_when_labeled:
+  validate_tests:
     runs-on: ubuntu-24.04
-    # If the workflow is not triggered by a pull request, or if the pull request is labeled with 'prebuilt', run the build
+    if: ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) || contains('pull_request', github.event_name) && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
     steps:
       - uses: actions/checkout@v4
-        if: (!((contains('pull_request', github.event_name) || ((github.event.action == 'labeled' && github.event.label.name == 'prebuilt')))))
-        with:
-          submodules: recursive
-
       - name: Wait for Tests
         uses: ./.github/workflows/wait-for-action # Path to where you place the action
-        if: (
-          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-          || (!(contains('pull_request', github.event_name) && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt')))
-          )
         with:
           workflow: selfdrive_tests.yaml # The workflow file to monitor
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
-    needs: [ validate_when_labeled ]
+    needs: [ validate_tests ]
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
@@ -61,6 +58,7 @@ jobs:
       version: ${{ steps.set-env.outputs.version }}
       extra_version_identifier: ${{ steps.set-env.outputs.extra_version_identifier }}
       commit_sha: ${{ steps.set-env.outputs.commit_sha }}
+    if: always() && !failure() && !cancelled()
     steps:
       - uses: actions/checkout@v4
         with:
