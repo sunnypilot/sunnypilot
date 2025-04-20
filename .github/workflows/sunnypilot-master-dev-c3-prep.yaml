@@ -14,7 +14,7 @@ on:
       - master
       - master-new    
   pull_request:
-    types: [ synchronize, opened, labeled ]  
+    types: [ synchronize, labeled ]  
     branches:    
       - 'master'        
       - 'master-new'            
