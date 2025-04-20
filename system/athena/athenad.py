@@ -857,10 +857,6 @@ def ws_manage(ws: WebSocket, end_event: threading.Event) -> None:
 def backoff(retries: int) -> int:
   return random.randrange(0, min(128, int(2 ** retries)))
 
-def create_ws_connection(ws_uri: str, cookie: str, enable_multithread: bool = True, timeout: float = 30.0) -> WebSocket:
-  return create_connection(ws_uri, cookie=cookie, enable_multithread=enable_multithread, timeout=timeout)
-    ws = create_connection(remote_ws_uri, cookie="jwt=" + identity_token, enable_multithread=True)
-
 
 def main(exit_event: threading.Event = None):
   try:
