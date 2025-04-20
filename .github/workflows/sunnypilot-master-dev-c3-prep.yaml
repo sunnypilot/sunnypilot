@@ -31,6 +31,10 @@ on:
         default: 'master-dev-c3-new'
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: ${{ github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && true || false }}
+
 jobs:
   manage-pr-labels:
     name: Remove trust-fork-pr label if present
@@ -85,9 +89,6 @@ jobs:
             });
 
   reset-and-squash:
-    concurrency:
-      group: reset-and-squash
-      cancel-in-progress: ${{ github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-latest
     if: (
             (github.event_name == 'workflow_dispatch')
