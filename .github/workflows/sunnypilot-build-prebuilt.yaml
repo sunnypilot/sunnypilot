@@ -30,7 +30,7 @@ on:
         required: false
         default: ''
       wait_for_tests:
-        description: 'Will wait for selfdrive_tests to finish if true'
+        description: 'Wait for selfdrive_tests to finish'
         required: false
         type: boolean
         default: false
