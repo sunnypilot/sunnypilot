@@ -48,6 +48,16 @@ jobs:
         with:
           submodules: recursive
       - run: git lfs pull
+        
+      - name: Wait for Tests
+        uses: ./.github/workflows/wait-for-action # Path to where you place the action
+        if: (
+          (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+          || (contains('pull_request', github.event_name) && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
+          )
+        with:
+          workflow: selfdrive_tests.yaml # The workflow file to monitor
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache SCons
         uses: actions/cache@v4
