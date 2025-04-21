@@ -4,15 +4,15 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from cereal import custom
-from openpilot.sunnypilot.modeld_v2 import MODEL_PATH, MODEL_PKL_PATH, METADATA_PATH
+from openpilot.sunnypilot.modeld_v2 import MODEL_PATH, METADATA_PATH
+from openpilot.sunnypilot.modeld.runners.run_helpers_new import get_model_path
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLMem
 from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
-from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+from openpilot.sunnypilot.modeld.runners import ModelRunner as V1Runner
 from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from tinygrad.tensor import Tensor
 
 if TICI:
   os.environ['QCOM'] = '1'
@@ -66,50 +66,28 @@ class ModelRunner(ABC):
     return parsed_outputs
 
 
-class TinygradRunner(ModelRunner):
-  """Tinygrad implementation of model runner for TICI hardware."""
-
+class SNPERunner(ModelRunner):
+  """Use v1 Thneed/SNPE backends via run_helpers."""
   def __init__(self):
     super().__init__()
-
-    model_pkl_path = MODEL_PKL_PATH
-    if self._drive_model:
-      model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self._drive_model.fileName}"
-      assert model_pkl_path.endswith('_tinygrad.pkl'), f"Invalid model file: {model_pkl_path} for TinygradRunner"
-
-    # Load Tinygrad model
-    with open(model_pkl_path, "rb") as f:
-      try:
-        self.model_run = pickle.load(f)
-      except FileNotFoundError as e:
-        assert "/dev/kgsl-3d0" not in str(e), "Model was built on C3 or C3X, but is being loaded on PC"
-        raise
-
-    self.input_to_dtype = {}
-    self.input_to_device = {}
-
-    for idx, name in enumerate(self.model_run.captured.expected_names):
-      self.input_to_dtype[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][2]  # 2 is the dtype
-      self.input_to_device[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][3]  # 3 is the device
+    paths = get_model_path()
+    self.runner = V1Runner(paths)
+    # infer dtypes if needed (v1 runner handles its own casts)
+    # inputs will be numpy arrays
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
-    # Initialize image tensors if not already done
-    for key in imgs_cl:
-      if TICI and key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
-      elif not TICI:
-        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
-        self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
-
-    # Update numpy inputs
-    for key, value in numpy_inputs.items():
-      if key not in imgs_cl:
-        self.inputs[key] = Tensor(value, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
-
+    # merge numpy_inputs + image buffers
+    inputs = dict(numpy_inputs)
+    for key, cl in imgs_cl.items():
+      arr = frames[key].buffer_from_cl(cl).reshape(self.input_shapes[key]).astype(np.float32)
+      inputs[key] = arr
+    self.inputs = inputs
     return self.inputs
 
   def run_model(self):
-    return self.model_run(**self.inputs).numpy().flatten()
+    # v1 SNPEModel/ThneedModel exposes run(…) similar to ONNXSession
+    outputs = self.runner.run(None, self.inputs)
+    return outputs[0].flatten()
 
 
 class ONNXRunner(ModelRunner):
