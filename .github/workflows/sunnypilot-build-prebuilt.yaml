@@ -32,6 +32,14 @@ on:
         default: false
 
 jobs:
+  debug:
+    runs-on:  ubuntu-24.04
+    if: always()
+    steps:
+      - run: |
+          echo github.event_name ${{github.event_name}}
+          echo github.event.action ${{github.event.action}}
+          echo github.event.label.name ${{github.event.label.name}}
   validate_tests:
     runs-on: ubuntu-24.04
     if: ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) || contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
