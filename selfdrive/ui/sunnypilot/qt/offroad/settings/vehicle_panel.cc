@@ -43,13 +43,13 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
     QTimer::singleShot(100, this, &VehiclePanel::updateCarToggles);
   });
 
-  std::vector<QString> tuning_buttons { tr("Off"), tr("Long Tune"), tr("Tune + Even Smoother Braking") };
+  std::vector<QString> tuning_buttons { tr("Off"), tr("Dynamic"), tr("Future Lookahead") };
   hkgtuningToggle = new ButtonParamControlSP(
     "HyundaiLongTune",
-    tr("HKG Custom Longitudinal Tuning"),
+    tr("Custom Longitudinal Tuning"),
     tr("Select a tuning mode. 'Off' means no custom tuning is applied. "
-       "'Long Tune' is a dynamic acceleration/brake tune to smoothen out braking. "
-       "'Tune + Smoother Braking' is the tuning, but with even smoother braking thanks to dynamic jerk."),
+       "'Dynamic' Emphasizes on-the-spot adjustments using dynamic calculations. "
+       "'Future Lookahead' Focuses on predicting and adjusting based on anticipated jerk."),
        "../assets/offroad/icon_shell.png",
     tuning_buttons
   );
