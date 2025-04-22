@@ -144,76 +144,78 @@ jobs:
             cat $GITHUB_OUTPUT
           fi
 
-      - name: Setup build environment
-        run: |
-          mkdir -p "${BUILD_DIR}/"
-          sudo find $BUILD_DIR/ -mindepth 1 -delete
-          echo "Starting build stage..."
-          echo "BUILD_DIR: ${BUILD_DIR}"
-          echo "CI_DIR: ${CI_DIR}"
-          echo "VERSION: ${{ steps.set-env.outputs.version }}"
-          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
-          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
-          echo "-------"
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            printenv
-          fi
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
-
-      - name: Build Main Project
-        run: |
-          export PYTHONPATH="$BUILD_DIR"
-          ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
-          cd $BUILD_DIR
-          sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
-          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
-          touch ${BUILD_DIR}/prebuilt
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            ls -la ${BUILD_DIR}
-          fi
-
-      - name: Prepare Output
-        run: |
-          sudo rm -rf ${OUTPUT_DIR}
-          mkdir -p ${OUTPUT_DIR}
-          rsync -am${RUNNER_DEBUG:+v} \
-            --include='**/panda/board/' \
-            --include='**/panda/board/obj' \
-            --include='**/panda/board/obj/panda.bin.signed' \
-            --include='**/panda/board/obj/panda_h7.bin.signed' \
-            --include='**/panda/board/obj/bootstub.panda.bin' \
-            --include='**/panda/board/obj/bootstub.panda_h7.bin' \
-            --exclude='.sconsign.dblite' \
-            --exclude='*.a' \
-            --exclude='*.o' \
-            --exclude='*.os' \
-            --exclude='*.pyc' \
-            --exclude='moc_*' \
-            --exclude='*.cc' \
-            --exclude='Jenkinsfile' \
-            --exclude='supercombo.onnx' \
-            --exclude='**/panda/board/*' \
-            --exclude='**/panda/board/obj/**' \
-            --exclude='**/panda/certs/' \
-            --exclude='**/panda/crypto/' \
-            --exclude='**/release/' \
-            --exclude='**/.github/' \
-            --exclude='**/selfdrive/ui/replay/' \
-            --exclude='**/__pycache__/' \
-            --exclude='**/selfdrive/ui/*.h' \
-            --exclude='**/selfdrive/ui/**/*.h' \
-            --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/' \
-            --exclude='${{env.SCONS_CACHE_DIR}}' \
-            --exclude='**/.git/' \
-            --exclude='**/SConstruct' \
-            --exclude='**/SConscript' \
-            --exclude='**/.venv/' \
-            --delete-excluded \
-            --chown=comma:comma \
-            ${BUILD_DIR}/ ${OUTPUT_DIR}/
+#      - name: Setup build environment
+#        run: |
+#          mkdir -p "${BUILD_DIR}/"
+#          sudo find $BUILD_DIR/ -mindepth 1 -delete
+#          echo "Starting build stage..."
+#          echo "BUILD_DIR: ${BUILD_DIR}"
+#          echo "CI_DIR: ${CI_DIR}"
+#          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+#          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
+#          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
+#          echo "-------"
+#          if [[ "${{ runner.debug }}" == "1" ]]; then
+#            printenv
+#          fi
+#          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+#
+#      - name: Build Main Project
+#        run: |
+#          export PYTHONPATH="$BUILD_DIR"
+#          ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
+#          cd $BUILD_DIR
+#          sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
+#          scons -j$(nproc) cache_dir=${{env.SCONS_CACHE_DIR}} --minimal
+#          touch ${BUILD_DIR}/prebuilt
+#          if [[ "${{ runner.debug }}" == "1" ]]; then
+#            ls -la ${BUILD_DIR}
+#          fi
+#
+#      - name: Prepare Output
+#        run: |
+#          sudo rm -rf ${OUTPUT_DIR}
+#          mkdir -p ${OUTPUT_DIR}
+#          rsync -am${RUNNER_DEBUG:+v} \
+#            --include='**/panda/board/' \
+#            --include='**/panda/board/obj' \
+#            --include='**/panda/board/obj/panda.bin.signed' \
+#            --include='**/panda/board/obj/panda_h7.bin.signed' \
+#            --include='**/panda/board/obj/bootstub.panda.bin' \
+#            --include='**/panda/board/obj/bootstub.panda_h7.bin' \
+#            --exclude='.sconsign.dblite' \
+#            --exclude='*.a' \
+#            --exclude='*.o' \
+#            --exclude='*.os' \
+#            --exclude='*.pyc' \
+#            --exclude='moc_*' \
+#            --exclude='*.cc' \
+#            --exclude='Jenkinsfile' \
+#            --exclude='supercombo.onnx' \
+#            --exclude='**/panda/board/*' \
+#            --exclude='**/panda/board/obj/**' \
+#            --exclude='**/panda/certs/' \
+#            --exclude='**/panda/crypto/' \
+#            --exclude='**/release/' \
+#            --exclude='**/.github/' \
+#            --exclude='**/selfdrive/ui/replay/' \
+#            --exclude='**/__pycache__/' \
+#            --exclude='**/selfdrive/ui/*.h' \
+#            --exclude='**/selfdrive/ui/**/*.h' \
+#            --exclude='**/selfdrive/ui/qt/offroad/sunnypilot/' \
+#            --exclude='${{env.SCONS_CACHE_DIR}}' \
+#            --exclude='**/.git/' \
+#            --exclude='**/SConstruct' \
+#            --exclude='**/SConscript' \
+#            --exclude='**/.venv/' \
+#            --delete-excluded \
+#            --chown=comma:comma \
+#            ${BUILD_DIR}/ ${OUTPUT_DIR}/
 
       - name: 'Tar.gz files'
         run: |
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          echo "test" > ${{ env.OUTPUT_DIR }}/test.txt
           tar czf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }} .
           ls -la prebuilt.tar.gz
 
