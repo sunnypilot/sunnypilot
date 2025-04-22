@@ -214,6 +214,8 @@ jobs:
 
       - name: 'Tar.gz files'
         run: |
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          echo "test" > ${{ env.OUTPUT_DIR }}/test.txt
           tar czf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }} .
           ls -la prebuilt.tar.gz
 
