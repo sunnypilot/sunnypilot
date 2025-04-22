@@ -17,16 +17,19 @@ class MadsSteeringModeOnBrake:
   DISENGAGE = 2
 
 
-def read_steering_mode_param(params: Params):
+def read_steering_mode_param(CP: structs.CarParams, params: Params):
+  if CP.brand in ("rivian", "tesla"):
+    return MadsSteeringModeOnBrake.DISENGAGE
+
   try:
     return int(params.get("MadsSteeringMode"))
   except (ValueError, TypeError):
-    return f"{MadsSteeringModeOnBrake.REMAIN_ACTIVE}"
+    return MadsSteeringModeOnBrake.REMAIN_ACTIVE
 
 
 def set_alternative_experience(CP: structs.CarParams, params: Params):
   enabled = params.get_bool("Mads")
-  steering_mode = read_steering_mode_param(params)
+  steering_mode = read_steering_mode_param(CP, params)
 
   if enabled:
     CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.ENABLE_MADS
