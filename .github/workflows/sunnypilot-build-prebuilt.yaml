@@ -32,23 +32,35 @@ on:
         default: false
 
 jobs:
+  debug:
+    runs-on:  ubuntu-24.04
+    if: always()
+    steps:
+      - run: |
+          echo github.event_name ${{github.event_name}}
+          echo github.event.action ${{github.event.action}}
+          echo github.event.label.name ${{github.event.label.name}}
+          echo github.event.pull_request.head.repo.fork ${{github.event.pull_request.head.repo.fork}}
+          echo github.head_ref ${{github.head_ref}}
+          echo github.ref_name ${{github.ref_name}}
+          
   validate_tests:
     runs-on: ubuntu-24.04
     if: ((github.event_name == 'workflow_dispatch' && inputs.wait_for_tests) || contains(github.event_name, 'pull_request') && (github.event.action == 'labeled' && github.event.label.name == 'prebuilt'))
     steps:
       - uses: actions/checkout@v4
-      - name: Wait for Tests
-        uses: ./.github/workflows/wait-for-action # Path to where you place the action
-        with:
-          workflow: selfdrive_tests.yaml # The workflow file to monitor
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Wait for Tests
+#        uses: ./.github/workflows/wait-for-action # Path to where you place the action
+#        with:
+#          workflow: selfdrive_tests.yaml # The workflow file to monitor
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     needs: [ validate_tests ]
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
-    runs-on: self-hosted
+    runs-on: ubuntu-24.04 #self-hosted
     outputs:
       new_branch: ${{ steps.set-env.outputs.new_branch }}
       version: ${{ steps.set-env.outputs.version }}
