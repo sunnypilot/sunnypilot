@@ -12,7 +12,7 @@ If you are looking to install sunnypilot via SSH, run the following commands in 
     !!! example ""
         `release-c3` branch is used in this step as an example.
     ```sh
-    git clone release-c3 --recurse-submodules https://github.com/sunnyhaibin/openpilot.git 
+    git clone -b release-c3 --recurse-submodules https://github.com/sunnyhaibin/openpilot.git 
     ```
 
 3. Git LFS
