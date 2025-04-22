@@ -225,10 +225,10 @@ jobs:
           name: prebuilt
           path: prebuilt.tar.gz
 
-      - name: Re-enable powersave
-        if: always()
-        run: |
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+#      - name: Re-enable powersave
+#        if: always()
+#        run: |
+#          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
 
   publish:
