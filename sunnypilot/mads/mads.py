@@ -40,7 +40,7 @@ class ModularAssistiveDrivingSystem:
       if self.selfdrive.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
 
-    if self.selfdrive.CP.brand == "tesla":
+    if self.selfdrive.CP.brand in ("rivian", "tesla"):
       self.no_main_cruise = True
 
     # read params on init
