@@ -52,8 +52,8 @@ class ModularAssistiveDrivingSystem:
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def read_params(self):
-    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
-    self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode") and not self.no_main_cruise
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed") and not self.no_main_cruise
+    self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def update_events(self, CS: structs.CarState):
     def update_unified_engagement_mode():
