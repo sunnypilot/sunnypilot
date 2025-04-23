@@ -40,14 +40,14 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
     QTimer::singleShot(100, this, &VehiclePanel::updateCarToggles);
   });
 
-  std::vector<QString> tuning_buttons { tr("Off"), tr("Dynamic"), tr("Future Lookahead") };
+  std::vector<QString> tuning_buttons { tr("Off"), tr("Dynamic"), tr("Predictive") };
   hkgtuningToggle = new ButtonParamControlSP(
     "HyundaiLongTune",
     tr("Custom Longitudinal Tuning"),
     tr("Select a tuning mode.\n"
-       "'Off' means no custom tuning is applied. \n"
-       "'Dynamic' Emphasizes on-the-spot adjustments using dynamic calculations. \n"
-       "'Future Lookahead' Focuses on predicting and adjusting based on anticipated jerk."),
+       "Off: no custom tuning applied.\n"
+       "Dynamic: on-the-spot adjustments using dynamic calculations.\n"
+       "Predictive: adjusts based on anticipated ACC variation."),
        "../assets/offroad/icon_shell.png",
     tuning_buttons
   );
