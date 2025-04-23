@@ -6,12 +6,9 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include "common/util.h"
-
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+#include <QPushButton>
+#include <QSizePolicy>
 
 enum HyundaiLongTuneOption {
   Off = 0,
@@ -47,14 +44,19 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   hkgtuningToggle = new ButtonParamControlSP(
     "HyundaiLongTune",
     tr("Custom Longitudinal Tuning"),
-    tr("Select a tuning mode. 'Off' means no custom tuning is applied. "
-       "'Dynamic' Emphasizes on-the-spot adjustments using dynamic calculations. "
+    tr("Select a tuning mode.\n"
+       "'Off' means no custom tuning is applied. \n"
+       "'Dynamic' Emphasizes on-the-spot adjustments using dynamic calculations. \n"
        "'Future Lookahead' Focuses on predicting and adjusting based on anticipated jerk."),
        "../assets/offroad/icon_shell.png",
     tuning_buttons
   );
   hkgtuningToggle->showDescription();
   hkgtuningToggle->setProperty("originalDesc", hkgtuningToggle->getDescription());
+
+  for (auto btn : hkgtuningToggle->findChildren<QPushButton*>()) {
+    btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  }
 
   connect(hkgtuningToggle, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
     hkg_state = index;
@@ -65,6 +67,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
 
   // Add the tuning toggle to the layout
   vlayout->addWidget(hkgtuningToggle);
+
 
   // Add the vehicle screen to the main layout
   main_layout->addWidget(vehicleScreen);
