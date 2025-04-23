@@ -64,10 +64,8 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
     params.putBool("HyundaiSmootherBraking", index == EvenSmootherBraking);
     updateCarToggles();
   });
-
   // Add the tuning toggle to the layout
   vlayout->addWidget(hkgtuningToggle);
-
 
   // Add the vehicle screen to the main layout
   main_layout->addWidget(vehicleScreen);
