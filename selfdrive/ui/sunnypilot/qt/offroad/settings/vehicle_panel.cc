@@ -94,7 +94,7 @@ QString VehiclePanel::toggleDisableMsg(bool openpilotLong) const {
 }
 
 void VehiclePanel::updateCarToggles() {
-  bool openpilotLong = params.getBool("ExperimentalLongitudinalEnabled");
+  bool openpilotLong = params.getBool("AlphaLongitudinalEnabled");
   QString brand = platformSelector->getPlatformBundle("brand").toString();
 
   if (brand == "hyundai") {
