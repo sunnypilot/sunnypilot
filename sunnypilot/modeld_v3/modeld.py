@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os
 from openpilot.system.hardware import TICI
-from tinygrad.tensor import Tensor
-from tinygrad.dtype import dtypes
+from tinygrad.sunnypilot.modeld_v3.tensor import Tensor
+from tinygrad.sunnypilot.modeld_v3.dtype import dtypes
 if TICI:
   from openpilot.sunnypilot.modeld_v3.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
   os.environ['QCOM'] = '1'
@@ -29,7 +29,7 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.sunnypilot.modeld_v3.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v3.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld_v3.constants import ModelConstants
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
+from openpilot.sunnypilot.modeld_v3.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"

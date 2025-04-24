@@ -6,8 +6,8 @@ from openpilot.common.basedir import BASEDIR
 
 DEFAULT_MODEL_NAME_PATH = os.path.join(BASEDIR, "common", "model.h")
 MODEL_HASH_PATH = os.path.join(BASEDIR, "sunnypilot", "models", "tests", "model_hash")
-VISION_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_vision.onnx")
-POLICY_ONNX_PATH = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "driving_policy.onnx")
+VISION_ONNX_PATH = os.path.join(BASEDIR, "sunnypilot", "modeld_v3", "models", "driving_vision.onnx")
+POLICY_ONNX_PATH = os.path.join(BASEDIR, "sunnypilot", "modeld_v3", "models", "driving_policy.onnx")
 
 
 def get_file_hash(path: str) -> str:
