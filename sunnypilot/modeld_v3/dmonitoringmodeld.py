@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import os
 from openpilot.system.hardware import TICI
+from tinygrad.tensor import Tensor
+from tinygrad.dtype import dtypes
 if TICI:
-  from tinygrad.modeld_v2.tensor import Tensor
-  from tinygrad.modeld_v2.dtype import dtypes
-  from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+  from openpilot.sunnypilot.modeld_v3.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
   os.environ['QCOM'] = '1'
 else:
-  from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner
+  os.environ['LLVM'] = '1'
 import math
 import time
 import pickle
@@ -23,8 +23,8 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.common.realtime import config_realtime_process
 from openpilot.common.transformations.model import dmonitoringmodel_intrinsics, DM_INPUT_SIZE
 from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
-from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import CLContext, MonitoringModelFrame
-from openpilot.sunnypilot.modeld_v2.parse_model_outputs import sigmoid
+from openpilot.sunnypilot.modeld_v3.models.commonmodel_pyx import CLContext, MonitoringModelFrame
+from openpilot.sunnypilot.modeld_v3.parse_model_outputs import sigmoid
 from openpilot.system import sentry
 
 MODEL_WIDTH, MODEL_HEIGHT = DM_INPUT_SIZE
@@ -34,7 +34,6 @@ OUTPUT_SIZE = 84 + FEATURE_LEN
 
 PROCESS_NAME = "selfdrive.modeld.dmonitoringmodeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
-MODEL_PATH = Path(__file__).parent / 'models/dmonitoring_model.onnx'
 MODEL_PKL_PATH = Path(__file__).parent / 'models/dmonitoring_model_tinygrad.pkl'
 
 
@@ -78,12 +77,9 @@ class ModelState:
       'calib': np.zeros((1, CALIB_LEN), dtype=np.float32),
     }
 
-    if TICI:
-      self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
-      with open(MODEL_PKL_PATH, "rb") as f:
-        self.model_run = pickle.load(f)
-    else:
-      self.onnx_cpu_runner = make_onnx_cpu_runner(MODEL_PATH)
+    self.tensor_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
+    with open(MODEL_PKL_PATH, "rb") as f:
+      self.model_run = pickle.load(f)
 
   def run(self, buf: VisionBuf, calib: np.ndarray, transform: np.ndarray) -> tuple[np.ndarray, float]:
     self.numpy_inputs['calib'][0,:] = calib
@@ -96,12 +92,10 @@ class ModelState:
       if 'input_img' not in self.tensor_inputs:
         self.tensor_inputs['input_img'] = qcom_tensor_from_opencl_address(input_img_cl.mem_address, (1, MODEL_WIDTH*MODEL_HEIGHT), dtype=dtypes.uint8)
     else:
-      self.numpy_inputs['input_img'] = self.frame.buffer_from_cl(input_img_cl).reshape((1, MODEL_WIDTH*MODEL_HEIGHT))
+      self.tensor_inputs['input_img'] = Tensor(self.frame.buffer_from_cl(input_img_cl).reshape((1, MODEL_WIDTH*MODEL_HEIGHT)), dtype=dtypes.uint8).realize()
 
-    if TICI:
-      output = self.model_run(**self.tensor_inputs).numpy().flatten()
-    else:
-      output = self.onnx_cpu_runner.run(None, self.numpy_inputs)[0].flatten()
+
+    output = self.model_run(**self.tensor_inputs).numpy().flatten()
 
     t2 = time.perf_counter()
     return output, t2 - t1
@@ -140,7 +134,7 @@ def get_driverstate_packet(model_output: np.ndarray, frame_id: int, location_ts:
 
 def main():
   setproctitle(PROCESS_NAME)
-  config_realtime_process([0, 1, 2, 3], 5)
+  config_realtime_process(7, 5)
 
   sentry.set_tag("daemon", PROCESS_NAME)
   cloudlog.bind(daemon=PROCESS_NAME)
@@ -178,6 +172,9 @@ def main():
     t1 = time.perf_counter()
     model_output, gpu_execution_time = model.run(buf, calib, model_transform)
     t2 = time.perf_counter()
+
+    # run one more time, just for the load
+    model.run(buf, calib, model_transform)
 
     pm.send("driverStateV2", get_driverstate_packet(model_output, vipc_client.frame_id, vipc_client.timestamp_sof, t2 - t1, gpu_execution_time))
 
