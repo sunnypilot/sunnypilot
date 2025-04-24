@@ -24,9 +24,9 @@ from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
-from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, SNPERunner
+from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
 
-PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
+PROCESS_NAME = "selfdrive.modeld.modeld"
 
 
 class FrameMeta:
@@ -46,7 +46,7 @@ class ModelState:
 
   def __init__(self, context: CLContext):
     try:
-      self.model_runner = SNPERunner() if TICI else ONNXRunner()
+      self.model_runner = TinygradRunner() if TICI else ONNXRunner()
     except Exception as e:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
 
