@@ -208,7 +208,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
     remote_ws_uri,
     header={"Authorization": f"Bearer {sunnylink_api.get_token()}"},
     enable_multithread=True,
-    sslopt={"cert_reqs": ssl.CERT_NONE if "localhost" in remote_ws_uri else ssl.CERT_REQUIRED}
+    sslopt={"cert_reqs": ssl.CERT_NONE}
   )
 
   return start_local_proxy_shim(global_end_event, local_port, ws)
