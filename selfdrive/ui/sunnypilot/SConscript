@@ -38,7 +38,7 @@ qt_src = [
 ]
 
 developer_panel_qt_src = [
-  "sunnypilot/qt/developer/custom_acc_increment.cc",
+  "sunnypilot/qt/offroad/settings/developer/custom_acc_increment.cc",
 ]
 
 lateral_panel_qt_src = [

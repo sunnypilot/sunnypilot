@@ -5,7 +5,13 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/developer/custom_acc_increment.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer/custom_acc_increment.h"
+
+const QMap<QString, QString> CustomAccIncrement::customLongValues = {
+  {"1", "1"},
+  {"2", "5"}, // Default
+  {"3", "10"}
+};
 
 CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ExpandableToggleRow(param, title, desc, icon, parent) {
@@ -15,23 +21,23 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
   accFrame->setLayout(accFrameLayout);
   accFrameLayout->setSpacing(0);
 
-  auto *op1 = new AccIncrementOptionControl("CustomAccShortPressIncrement", {1, 10}, 1);
-  connect(op1, &OptionControlSP::updateLabels, op1, &AccIncrementOptionControl::refresh);
+  auto *shortPressControl = new AccIncrementOptionControl("CustomAccShortPressIncrement", {1, 10}, 1);
+  connect(shortPressControl, &OptionControlSP::updateLabels, shortPressControl, &AccIncrementOptionControl::refresh);
 
-  auto *op2 = new AccIncrementOptionControl("CustomAccLongPressIncrement", {5, 10}, 5);
-  connect(op2, &OptionControlSP::updateLabels, op2, &AccIncrementOptionControl::refresh);
+  auto *longPressControl = new AccIncrementOptionControl("CustomAccLongPressIncrement", {1, 3}, 1, &customLongValues);
+  connect(longPressControl, &OptionControlSP::updateLabels, longPressControl, &AccIncrementOptionControl::refresh);
 
-  op1->setFixedWidth(330);
-  op2->setFixedWidth(330);
-  accFrameLayout->addWidget(op1, 0, 0, Qt::AlignLeft);
-  accFrameLayout->addWidget(op2, 0, 1, Qt::AlignRight);
+  shortPressControl->setFixedWidth(330);
+  longPressControl->setFixedWidth(330);
+  accFrameLayout->addWidget(shortPressControl, 0, 0, Qt::AlignLeft);
+  accFrameLayout->addWidget(longPressControl, 0, 1, Qt::AlignRight);
 
   addItem(accFrame);
 
 }
 
-AccIncrementOptionControl::AccIncrementOptionControl(const QString &param, const MinMaxValue &range, const int per_value_change)
-    : OptionControlSP(param, "", "", "", range, per_value_change, true) {
+AccIncrementOptionControl::AccIncrementOptionControl(const QString &param, const MinMaxValue &range, const int per_value_change, const QMap<QString, QString> *valMap)
+    : OptionControlSP(param, "", "", "", range, per_value_change, true, valMap) {
     param_name = param.toStdString();
     refresh();
 }

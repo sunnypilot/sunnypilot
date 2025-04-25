@@ -9,7 +9,7 @@
 
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
-#include "selfdrive/ui/sunnypilot/qt/developer/custom_acc_increment.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer/custom_acc_increment.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 

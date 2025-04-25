@@ -17,6 +17,7 @@ class CustomAccIncrement : public ExpandableToggleRow {
 
 public:
   CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
+  static const QMap<QString, QString> customLongValues;
 
 };
 
@@ -26,7 +27,7 @@ class AccIncrementOptionControl : public OptionControlSP {
 
 public:
 
-  AccIncrementOptionControl(const QString &param, const MinMaxValue &range, int per_value_change);
+  AccIncrementOptionControl(const QString &param, const MinMaxValue &range, int per_value_change, const QMap<QString, QString> *valMap = nullptr);
   void refresh();
 
 protected:
