@@ -1,6 +1,6 @@
 
-from tinygrad.sunnypilot.modeld_v3.tensor import Tensor
-from tinygrad.sunnypilot.modeld_v3.helpers import to_mv
+from tinygrad.sunnypilot.modeld_v2.tensor import Tensor
+from tinygrad.sunnypilot.modeld_v2.helpers import to_mv
 
 def qcom_tensor_from_opencl_address(opencl_address, shape, dtype):
   cl_buf_desc_ptr = to_mv(opencl_address, 8).cast('Q')[0]
