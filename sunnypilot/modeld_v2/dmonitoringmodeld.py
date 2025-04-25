@@ -2,8 +2,8 @@
 import os
 from openpilot.system.hardware import TICI
 if TICI:
-  from tinygrad.sunnypilot.modeld_v3.tensor import Tensor
-  from tinygrad.sunnypilot.modeld_v3.dtype import dtypes
+  from tinygrad.sunnypilot.modeld_v2.tensor import Tensor
+  from tinygrad.sunnypilot.modeld_v2.dtype import dtypes
   from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
   os.environ['QCOM'] = '1'
 else:
