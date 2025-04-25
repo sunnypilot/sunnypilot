@@ -12,8 +12,7 @@ from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from tinygrad.sunnypilot.modeld_v2.tensor import Tensor
-from tinygrad.sunnypilot.modeld_v2.dtype import to_dtype
+from tinygrad.sunnypilot.modeld_v3.tensor import Tensor
 
 if TICI:
   os.environ['QCOM'] = '1'
@@ -92,11 +91,6 @@ class TinygradRunner(ModelRunner):
     for idx, name in enumerate(self.model_run.captured.expected_names):
       self.input_to_dtype[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][2]  # 2 is the dtype
       self.input_to_device[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][3]  # 3 is the device
-
-    # Normalize all dtypes to the canonical DType class
-    for k, v in self.input_to_dtype.items():
-      self.input_to_dtype[k] = to_dtype(v)
-
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
     # Initialize image tensors if not already done
