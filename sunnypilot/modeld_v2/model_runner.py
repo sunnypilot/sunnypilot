@@ -13,7 +13,7 @@ from openpilot.system.hardware.hw import Paths
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from tinygrad.sunnypilot.modeld_v2.tensor import Tensor
-from tinygrad.sunnypilot.modeld_v2.dtype import dtypes
+from tinygrad.dtype import dtypes
 
 if TICI:
   os.environ['QCOM'] = '1'

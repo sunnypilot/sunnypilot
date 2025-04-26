@@ -1,6 +1,6 @@
 from tinygrad.sunnypilot.modeld_v2.tensor import Tensor
 from tinygrad.sunnypilot.modeld_v2.helpers import to_mv
-from tinygrad.sunnypilot.modeld_v2.dtype import PtrDType, DType, to_dtype
+from tinygrad.dtype import PtrDType, DType, to_dtype
 
 def qcom_tensor_from_opencl_address(opencl_address, shape, dtype):
   original_dtype = dtype
