@@ -71,6 +71,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     snpe @0;
     tinygrad @1;
     stock @2;
+    modeldv3 @3;
   }
 
   struct ModelBundle {

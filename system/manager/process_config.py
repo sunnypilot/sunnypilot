@@ -80,6 +80,10 @@ def is_tinygrad_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is SNPE."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.tinygrad)
 
+def is_modeld_v3(started, params, CP: car.CarParams) -> bool:
+  """Check if the active model runner is modeld_v3."""
+  return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.modeldv3)
+
 def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.stock)
@@ -153,6 +157,7 @@ procs += [
   PythonProcess("models_manager", "sunnypilot.models.manager", only_offroad),
   NativeProcess("modeld_snpe", "sunnypilot/modeld", ["./modeld"], and_(only_onroad, is_snpe_model)),
   NativeProcess("modeld_tinygrad", "sunnypilot/modeld_v2", ["./modeld"], and_(only_onroad, is_tinygrad_model)),
+  NativeProcess("modeld_v3", "sunnypilot/modeld_v3", ["./modeld"], and_(only_onroad, is_modeld_v3)),
 
   # Backup
   PythonProcess("backup_manager", "sunnypilot.sunnylink.backups.manager", and_(only_offroad, sunnylink_ready_shim)),
