@@ -158,7 +158,7 @@ class VCruiseHelper:
     v_cruise = self.v_cruise_kph / base_increment
 
     # Check if we need to align to interval boundaries
-    if long_press and long_increment > 1 and v_cruise % adjusted_delta != 0:
+    if adjusted_delta in [5, 10] and v_cruise % adjusted_delta != 0:
       rounded_value = CRUISE_NEAREST_FUNC[button_type](v_cruise / adjusted_delta)
       v_cruise = rounded_value * adjusted_delta
     else:
