@@ -169,7 +169,7 @@ class TestAdjustCustomAccIncrements:
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "short_inc", "metric", "init_norm"),
-    itertools.product([True, False], [1, 4, 5, 10], [False, True], [40, 35, 50, 25])
+    itertools.product([True, False], [1, 4, 7, 5, 10], [False, True], [40, 35, 50, 25])
   )
   def test_short_press_only(self, custom_acc_enabled, short_inc, metric, init_norm):
     """
@@ -197,9 +197,16 @@ class TestAdjustCustomAccIncrements:
 
       curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
       diff = curr - prev
-      exp = short_inc if custom_acc_enabled else 1
-      if btn == ButtonType.decelCruise:
-        exp *= -1
+
+      if (short_inc in [5,10]):
+        remainder = prev % short_inc
+        exp = (short_inc - remainder) if btn == ButtonType.accelCruise else -remainder
+        if remainder == 0:
+          exp = short_inc if btn == ButtonType.accelCruise else -short_inc
+      else:
+        exp = short_inc if custom_acc_enabled else 1
+        if btn == ButtonType.decelCruise:
+          exp *= -1
 
       assert diff == exp, (
         f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
@@ -208,7 +215,7 @@ class TestAdjustCustomAccIncrements:
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "long_inc", "metric", "init_norm"),
-    itertools.product([True, False], [1, 4, 5, 10], [False, True], [40, 35, 50, 25])
+    itertools.product([True, False], [1, 5, 10], [False, True], [40, 35, 50, 25])
   )
   def test_long_press_only(self, custom_acc_enabled, long_inc, metric, init_norm):
     """
