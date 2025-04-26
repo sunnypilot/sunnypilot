@@ -23,9 +23,5 @@
     "system/**",
     "third_party/**",
     "tools/**",
-  ],
-  "files.associations": {
-    "*.capnp": "cython",
-    "cmath": "cpp"
-  }
+  ]
 }
