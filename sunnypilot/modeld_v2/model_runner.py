@@ -13,9 +13,12 @@ from openpilot.system.hardware.hw import Paths
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from tinygrad.sunnypilot.modeld_v2.tensor import Tensor
+from tinygrad.sunnypilot.modeld_v2.dtype import dtypes
 
 if TICI:
   os.environ['QCOM'] = '1'
+else:
+  os.environ['LLVM'] = '1'
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 CUSTOM_MODEL_PATH = Paths.model_root()
@@ -94,12 +97,14 @@ class TinygradRunner(ModelRunner):
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
     # Initialize image tensors if not already done
-    for key in imgs_cl:
-      if TICI and key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
-      elif not TICI:
-        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
-        self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
+    if TICI:
+      for key in imgs_cl:
+        if TICI and key not in self.inputs:
+          self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.vision_input_shapes[key], dtype=dtypes.uint8)
+    else:
+      for key in imgs_cl:
+        frame_input = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.vision_input_shapes[key])
+        self.inputs[key] = Tensor(frame_input, dtype=dtypes.uint8).realize()
 
     # Update numpy inputs
     for key, value in numpy_inputs.items():
