@@ -6,7 +6,6 @@ from opendbc.car.interfaces import MAX_CTRL_SPEED
 from opendbc.car.volkswagen.values import CarControllerParams as VWCarControllerParams
 from opendbc.car.hyundai.interface import ENABLE_BUTTONS as HYUNDAI_ENABLE_BUTTONS
 from opendbc.car.hyundai.carstate import PREV_BUTTON_SAMPLES as HYUNDAI_PREV_BUTTON_SAMPLES
-from opendbc.car.chrysler.values import RAM_DT
 
 from openpilot.selfdrive.selfdrived.events import Events
 
@@ -55,17 +54,11 @@ class CarSpecificEvents:
     elif self.CP.brand == 'chrysler':
       events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.low])
 
-        # Low speed steer alert hysteresis logic
-      if self.CP.carFingerprint in RAM_DT:
-        if CS.vEgo >= self.CP.minEnableSpeed:
-          self.low_speed_alert = False
-        if (self.CP.minEnableSpeed >= 14.5) and (CS.gearShifter != GearShifter.drive):
-          self.low_speed_alert = True
-      else:
-        if self.CP.minSteerSpeed > 0. and CS.vEgo < (self.CP.minSteerSpeed + 0.5):
-          self.low_speed_alert = True
-        elif CS.vEgo > (self.CP.minSteerSpeed + 1.):
-          self.low_speed_alert = False
+      # Low speed steer alert hysteresis logic
+      if self.CP.minSteerSpeed > 0. and CS.vEgo < (self.CP.minSteerSpeed + 0.5):
+        self.low_speed_alert = True
+      elif CS.vEgo > (self.CP.minSteerSpeed + 1.):
+        self.low_speed_alert = False
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
 
