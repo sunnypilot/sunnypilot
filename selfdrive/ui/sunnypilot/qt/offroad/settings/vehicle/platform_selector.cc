@@ -8,7 +8,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/platform_selector.h"
 
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QMap>
 
