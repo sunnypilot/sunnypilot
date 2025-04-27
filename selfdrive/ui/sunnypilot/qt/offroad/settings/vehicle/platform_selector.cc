@@ -14,17 +14,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/util.h"
 
-QVariant PlatformSelector::getPlatformBundle(const QString &key) {
-  QString platform_bundle = QString::fromStdString(params.get("CarPlatformBundle"));
-  if (!platform_bundle.isEmpty()) {
-    QJsonDocument json = QJsonDocument::fromJson(platform_bundle.toUtf8());
-    if (!json.isNull() && json.isObject()) {
-      return json.object().value(key).toVariant();
-    }
-  }
-  return {};
-}
-
 PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
   platforms = loadPlatformList();
 

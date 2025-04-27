@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <QJsonDocument>
+
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class PlatformSelector : public ButtonControl {
@@ -14,7 +16,16 @@ class PlatformSelector : public ButtonControl {
 
 public:
   PlatformSelector();
-  QVariant getPlatformBundle(const QString &key);
+  static QVariant getPlatformBundle(const QString &key) {
+    QString platform_bundle = QString::fromStdString(Params().get("CarPlatformBundle"));
+    if (!platform_bundle.isEmpty()) {
+      QJsonDocument json = QJsonDocument::fromJson(platform_bundle.toUtf8());
+      if (!json.isNull() && json.isObject()) {
+        return json.object().value(key).toVariant();
+      }
+    }
+    return {};
+}
 
 public slots:
   void refresh(bool _offroad);

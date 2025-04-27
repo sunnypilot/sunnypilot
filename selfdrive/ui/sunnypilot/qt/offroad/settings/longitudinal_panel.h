@@ -14,4 +14,10 @@ class LongitudinalPanel : public QWidget {
 
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+  void updateState();
+
+private:
+  QStackedLayout* main_layout = nullptr;
+  ParamControlSP *toyotaFlipACC;
 };
