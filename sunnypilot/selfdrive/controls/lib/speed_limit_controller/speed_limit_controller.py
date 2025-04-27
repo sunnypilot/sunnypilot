@@ -1,14 +1,15 @@
+import numpy as np
 import time
+
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.params import Params
-from openpilot.selfdrive.controls.lib.sunnypilot import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
-  PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, EventName, SpeedLimitControlState
-from openpilot.selfdrive.controls.lib.drive_helpers import LIMIT_SPEED_OFFSET_TH, CONTROL_N
-from openpilot.selfdrive.controls.lib.events import Events, ET
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Source, Policy, Engage, OffsetType
-from openpilot.selfdrive.controls.lib.sunnypilot.helpers import description_for_state, debug
-from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_resolver import SpeedLimitResolver
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
+  PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, LIMIT_SPEED_OFFSET_TH, EventName, SpeedLimitControlState
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
+from openpilot.selfdrive.selfdrived.events import Events, ET
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy, Engage, OffsetType
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import description_for_state, debug
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 ACTIVE_STATES = (SpeedLimitControlState.active, SpeedLimitControlState.adapting)
@@ -48,7 +49,7 @@ class SpeedLimitController:
     self._warning_type_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
     self._warning_offset_type = int(self._params.get("SpeedLimitWarningOffsetType", encoding='utf8'))
     self._warning_offset_value = float(self._params.get("SpeedLimitWarningValueOffset", encoding='utf8'))
-    self._engage_type = clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
+    self._engage_type = np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
     self._brake_pressed = False
     self._brake_pressed_prev = False
     self._current_time = 0.
@@ -105,7 +106,7 @@ class SpeedLimitController:
   @property
   def speed_limit_offset(self):
     if self._offset_type == OffsetType.default:
-      return interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
+      return np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
     elif self._offset_type == OffsetType.fixed:
       return self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
     elif self._offset_type == OffsetType.percentage:
@@ -115,7 +116,7 @@ class SpeedLimitController:
   @property
   def speed_limit_warning_offset(self):
     if self._warning_offset_type == OffsetType.default:
-      return interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
+      return np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit
     elif self._warning_offset_type == OffsetType.fixed:
       return self._warning_offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
     elif self._warning_offset_type == OffsetType.percentage:
@@ -149,7 +150,7 @@ class SpeedLimitController:
       self._is_metric = self._params.get_bool("IsMetric")
       self._ms_to_local = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
-      self._engage_type = Engage.auto if self._pcm_cruise_op_long else clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
+      self._engage_type = Engage.auto if self._pcm_cruise_op_long else np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
       debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_type}')
       self._last_params_update = self._current_time
 

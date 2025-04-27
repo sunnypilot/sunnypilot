@@ -5,10 +5,10 @@ import platform
 import numpy as np
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.common.params_pyx import Params
-from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
+from openpilot.common.params import Params
+from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.selfdrive.navd.helpers import Coordinate
-from openpilot.selfdrive.sunnypilot.live_map_data import QUERY_RADIUS
+from openpilot.sunnypilot.live_map_data import QUERY_RADIUS
 from openpilot.common.realtime import Ratekeeper, set_core_affinity
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
@@ -16,8 +16,8 @@ import os
 import glob
 import shutil
 
-from openpilot.selfdrive.sunnypilot.live_map_data.osm_map_data import OsmMapData
-from openpilot.selfdrive.sunnypilot.live_map_data import R
+from openpilot.sunnypilot.live_map_data.osm_map_data import OsmMapData
+from openpilot.sunnypilot.live_map_data import R
 
 # PFEIFER - MAPD {{
 params = Params()

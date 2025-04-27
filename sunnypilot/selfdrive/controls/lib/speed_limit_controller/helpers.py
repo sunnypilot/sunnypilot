@@ -1,4 +1,4 @@
-from openpilot.selfdrive.controls.lib.sunnypilot import DEBUG, SpeedLimitControlState
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import DEBUG, SpeedLimitControlState
 from openpilot.common.swaglog import cloudlog
 
 

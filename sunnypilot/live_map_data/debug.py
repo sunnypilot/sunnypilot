@@ -8,9 +8,9 @@ import traceback
 
 from cereal import messaging
 from openpilot.common.realtime import set_core_affinity
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Policy
-from openpilot.selfdrive.controls.lib.sunnypilot.speed_limit_resolver import SpeedLimitResolver
-from openpilot.selfdrive.sunnypilot.live_map_data import get_debug
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
+from openpilot.sunnypilot.live_map_data import get_debug
 from openpilot.common.swaglog import cloudlog
 
 

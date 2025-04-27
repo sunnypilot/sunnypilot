@@ -1,9 +1,9 @@
 import time
 import numpy as np
 
-from openpilot.selfdrive.controls.lib.drive_helpers import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Source, Policy
-from openpilot.selfdrive.controls.lib.sunnypilot.helpers import debug
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import debug
 
 
 class SpeedLimitResolver:

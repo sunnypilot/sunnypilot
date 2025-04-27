@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 
 from cereal import custom, messaging
 from openpilot.selfdrive.navd.helpers import Coordinate
-from openpilot.selfdrive.sunnypilot.live_map_data import get_debug
+from openpilot.sunnypilot.live_map_data import get_debug
 
 
 class BaseMapData(ABC):
