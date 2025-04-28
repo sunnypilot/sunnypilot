@@ -145,16 +145,16 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
   },
 
-  EventNameSP.belowSteerSpeed: {
-    ET.WARNING: below_steer_speed_alert,
-  },
-
   EventNameSP.experimentalModeSwitched: {
     ET.WARNING: NormalPermanentAlert("Experimental Mode Switched", duration=1.5)
   },
 
   EventNameSP.wrongCarModeAlertOnly: {
     ET.WARNING: wrong_car_mode_alert,
+  },
+
+    EventNameSP.belowSteerSpeed: {
+    ET.WARNING: below_steer_speed_alert,
   },
 
 }
