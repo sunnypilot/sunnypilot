@@ -1,4 +1,6 @@
 from cereal import log, car, custom
+import cereal.messaging as messaging
+from openpilot.common.conversions import Conversions as CV
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, AlertCallbackType, wrong_car_mode_alert
 
@@ -28,6 +30,23 @@ class EventsSP(EventsBase):
   def get_event_msg_type(self):
     return custom.OnroadEventSP.Event
 
+
+# ********** helper functions **********
+def get_display_speed(speed_ms: float, metric: bool) -> str:
+  speed = int(round(speed_ms * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH)))
+  unit = 'km/h' if metric else 'mph'
+  return f"{speed} {unit}"
+
+
+# ********** alert callback functions **********
+
+
+def below_steer_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+  return Alert(
+    f"Steer Unavailable Below {get_display_speed(CP.minSteerSpeed, metric)}",
+    "",
+    AlertStatus.userPrompt, AlertSize.small,
+    Priority.LOW, VisualAlert.steerRequired, AudibleAlert.prompt, 0.4)
 
 EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # sunnypilot
@@ -124,6 +143,10 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.hyundaiRadarTracksConfirmed: {
     ET.PERMANENT: NormalPermanentAlert("Radar tracks available. Restart the car to initialize")
+  },
+
+  EventNameSP.belowSteerSpeed: {
+    ET.WARNING: below_steer_speed_alert,
   },
 
   EventNameSP.experimentalModeSwitched: {
