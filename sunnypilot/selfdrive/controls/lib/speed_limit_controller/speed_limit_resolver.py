@@ -120,13 +120,13 @@ class SpeedLimitResolver:
       # They are ordered in the order of preference, so we pick the first that's non zero
       for source in sources_for_policy:
         if self._limit_solutions[source] > 0.:
-          return source
+          return Source(source)
 
     limits = np.array([self._limit_solutions[source] for source in sources_for_policy], dtype=float)
     sources = np.array([source.value for source in sources_for_policy], dtype=int)
 
     if len(limits) > 0:
       min_idx = np.argmin(limits)
-      return sources[min_idx]
+      return Source(sources[min_idx])
 
     return None

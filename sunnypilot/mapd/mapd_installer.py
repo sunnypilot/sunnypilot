@@ -9,8 +9,8 @@ from pathlib import Path
 from urllib.request import urlopen
 import openpilot.system.sentry as sentry
 from cereal import messaging
-from common.spinner import Spinner
-from common.params import Params
+from openpilot.common.spinner import Spinner
+from openpilot.common.params import Params
 from openpilot.system.mapd_manager import COMMON_DIR, MAPD_PATH, MAPD_BIN_DIR
 from openpilot.system.version import is_prebuilt
 
@@ -100,7 +100,7 @@ class MapdInstallManager:
     metered = sm['deviceState'].networkMetered
 
     if metered:
-      self._spinner.update(f"Can't proceed with mapd install since network is metered!")
+      self._spinner.update("Can't proceed with mapd install since network is metered!")
       time.sleep(5)
       return False
 
@@ -119,8 +119,8 @@ class MapdInstallManager:
 
     except Exception:
       for i in range(6):
-        self._spinner.update(f"Failed to download OSM maps won't work until properly downloaded!"
-                             f"Try again manually rebooting. "
+        self._spinner.update("Failed to download OSM maps won't work until properly downloaded!" +
+                             "Try again manually rebooting. " +
                              f"Boot will continue in {5 - i}s...")
         time.sleep(1)
 

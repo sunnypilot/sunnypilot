@@ -23,7 +23,7 @@ class BaseMapData(ABC):
     pass
 
   @abstractmethod
-  def get_next_speed_limit_and_distance(self) -> (float, float):
+  def get_next_speed_limit_and_distance(self) -> tuple[float, float]:
     pass
 
   @abstractmethod
@@ -33,7 +33,7 @@ class BaseMapData(ABC):
   def _is_gps_data_valid(self) -> bool:
     all_sock_alive = self._sub_master.all_alive(service_list=[self._gps_sock])
     all_sock_valid = self._sub_master.all_valid(service_list=[self._gps_sock])
-    return all_sock_alive and all_sock_valid
+    return bool(all_sock_alive and all_sock_valid)
 
   def get_current_location(self) -> Coordinate | None:
     self._gps_sock = "liveLocationKalman"
@@ -47,7 +47,7 @@ class BaseMapData(ABC):
 
     kalman_bearing_deg = math.degrees(_last_gps.calibratedOrientationNED.value[2])
     kalman_speed = _last_gps.velocityCalibrated.value[2]
-    kalman_latitude = _last_gps.positionGeodetic.value[0];
+    kalman_latitude = _last_gps.positionGeodetic.value[0]
     kalman_longitude = _last_gps.positionGeodetic.value[1]
 
     result = Coordinate(kalman_latitude, kalman_longitude)
@@ -97,7 +97,9 @@ class BaseMapData(ABC):
     )
 
     self._pub_master.send('liveMapDataSP', live_map_data_sp)
-    get_debug(f"SRC: [{self.__class__.__name__}] | SLC: [{speed_limit}] | NSL: [{next_speed_limit}] | NSLD: [{next_speed_limit_distance}] | CRN: [{current_road_name}] | GPS: [{self._last_gps}] Annotations: [{', '.join(f'{key}: {value}' for key, value in self._last_gps.annotations.items()) if self._last_gps else []}]")
+    get_debug(f"SRC: [{self.__class__.__name__}] | SLC: [{speed_limit}] | NSL: [{next_speed_limit}] | " +
+              f"NSLD: [{next_speed_limit_distance}] | CRN: [{current_road_name}] | GPS: [{self._last_gps}] " +
+              f"Annotations: [{', '.join(f'{key}: {value}' for key, value in self._last_gps.annotations.items()) if self._last_gps else []}]")
 
   def tick(self):
     self._sub_master.update()

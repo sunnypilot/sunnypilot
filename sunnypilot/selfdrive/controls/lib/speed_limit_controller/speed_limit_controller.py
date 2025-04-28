@@ -6,7 +6,7 @@ from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
   PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, LIMIT_SPEED_OFFSET_TH, EventName, SpeedLimitControlState
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
-from openpilot.selfdrive.selfdrived.events import Events, ET
+from openpilot.selfdrive.selfdrived.events import ET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy, Engage, OffsetType
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import description_for_state, debug
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
@@ -150,7 +150,8 @@ class SpeedLimitController:
       self._is_metric = self._params.get_bool("IsMetric")
       self._ms_to_local = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
-      self._engage_type = Engage.auto if self._pcm_cruise_op_long else np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
+      self._engage_type = Engage.auto if self._pcm_cruise_op_long else \
+                          np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
       debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_type}')
       self._last_params_update = self._current_time
 
@@ -176,8 +177,9 @@ class SpeedLimitController:
 
     self._v_cruise_rounded = int(round(self._v_cruise_setpoint * self._ms_to_local))
     self._v_cruise_prev_rounded = int(round(self._v_cruise_setpoint_prev * self._ms_to_local))
-    self._speed_limit_offsetted_rounded = int(0) if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_offset) * self._ms_to_local))
-    self._speed_limit_warning_offsetted_rounded = int(0) if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_warning_offset) * self._ms_to_local))
+    self._speed_limit_offsetted_rounded = 0 if self._speed_limit == 0 else int(round((self._speed_limit + self.speed_limit_offset) * self._ms_to_local))
+    self._speed_limit_warning_offsetted_rounded = 0 if self._speed_limit == 0 else \
+                                                  int(round((self._speed_limit + self.speed_limit_warning_offset) * self._ms_to_local))
 
   def transition_state_from_inactive(self):
     """ Make state transition from inactive state """
@@ -294,7 +296,7 @@ class SpeedLimitController:
         elif self._speed_limit_changed != 0:
           events.add(EventName.speedLimitValueChange)
 
-  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events=Events()):
+  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events):
     _car_state = sm['carState']
     self._op_enabled = enabled and sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
                        not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \

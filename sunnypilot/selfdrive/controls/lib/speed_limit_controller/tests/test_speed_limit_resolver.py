@@ -2,36 +2,35 @@ import random
 import time
 
 import pytest
-from unittest.mock import MagicMock
+from pytest_mock import MockerFixture
 
-from openpilot.selfdrive.controls.lib.drive_helpers import LIMIT_MAX_MAP_DATA_AGE
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE
 
 # from selfdrive.controls.lib.speed_limit_controller_tbd import SpeedLimitResolver as OriginalSpeedLimitResolver
-from selfdrive.controls.lib.sunnypilot.speed_limit_resolver import SpeedLimitResolver as RefactoredSpeedLimitResolver
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Source
-from openpilot.selfdrive.controls.lib.sunnypilot.common import Policy
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver as RefactoredSpeedLimitResolver
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy
 
 
-def create_mock(properties):
-  mock = MagicMock()
-  for property, value in properties.items():
-    setattr(mock, property, value)
+def create_mock(properties, mocker: MockerFixture):
+  mock = mocker.MagicMock()
+  for _property, value in properties.items():
+    setattr(mock, _property, value)
   return mock
 
 
-def setup_sm_mock():
+def setup_sm_mock(mocker: MockerFixture):
   cruise_speed_limit = random.uniform(0, 120)
   nav_instruction_limit = random.uniform(0, 120)
   live_map_data_limit = random.uniform(0, 120)
 
-  cruise_state = create_mock({'speedLimit': cruise_speed_limit})
+  cruise_state = create_mock({'speedLimit': cruise_speed_limit}, mocker)
   car_state = create_mock({
     'cruiseState': cruise_state,
     'gasPressed': False,
     'brakePressed': False,
     'standstill': False,
-  })
-  nav_instruction = create_mock({'speedLimit': nav_instruction_limit})
+  }, mocker)
+  nav_instruction = create_mock({'speedLimit': nav_instruction_limit}, mocker)
   live_map_data = create_mock({
     'speedLimit': live_map_data_limit,
     'speedLimitValid': True,
@@ -39,8 +38,8 @@ def setup_sm_mock():
     'speedLimitAheadValid': 0.,
     'speedLimitAheadDistance': 0.,
     'lastGpsTimestamp': time.time() * 1e3,
-  })
-  sm_mock = MagicMock()
+  }, mocker)
+  sm_mock = mocker.MagicMock()
   sm_mock.__getitem__.side_effect = lambda key: {
     'carState': car_state,
     'navInstruction': nav_instruction,
@@ -74,9 +73,9 @@ class TestSpeedLimitResolverValidation:
         assert resolver._distance_solutions[source] == 0.
 
   @parametrized_policies
-  def test_resolver(self, resolver_class, policy, sm_key, function_key):
+  def test_resolver(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
     resolver = resolver_class(policy)
-    sm_mock = setup_sm_mock()
+    sm_mock = setup_sm_mock(mocker)
     source_speed_limit = sm_mock[sm_key].cruiseState.speedLimit if sm_key == 'carState' else sm_mock[sm_key].speedLimit
 
     # Assert the resolver
@@ -84,9 +83,9 @@ class TestSpeedLimitResolverValidation:
     assert speed_limit == source_speed_limit
     assert source == Source[function_key]
 
-  def test_resolver_combined(self, resolver_class):
+  def test_resolver_combined(self, resolver_class, mocker: MockerFixture):
     resolver = resolver_class(Policy.combined)
-    sm_mock = setup_sm_mock()
+    sm_mock = setup_sm_mock(mocker)
     socket_to_source = {'carState': Source.car_state, 'liveMapDataSP': Source.map_data, 'navInstruction': Source.nav}
     minimum_key, minimum_speed_limit = min(
       ((key, sm_mock[key].cruiseState.speedLimit) if key == 'carState' else (key, sm_mock[key].speedLimit) for key in
@@ -98,9 +97,9 @@ class TestSpeedLimitResolverValidation:
     assert source == socket_to_source[minimum_key]
 
   @parametrized_policies
-  def test_parser(self, resolver_class, policy, sm_key, function_key):
+  def test_parser(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
     resolver = resolver_class(policy)
-    sm_mock = setup_sm_mock()
+    sm_mock = setup_sm_mock(mocker)
     source_speed_limit = sm_mock[sm_key].cruiseState.speedLimit if sm_key == 'carState' else sm_mock[sm_key].speedLimit
 
     # Assert the parsing
@@ -109,11 +108,11 @@ class TestSpeedLimitResolverValidation:
     assert resolver._distance_solutions[Source[function_key]] == 0.
 
   @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
-  def test_resolve_interaction_in_update(self, resolver_class, policy):
+  def test_resolve_interaction_in_update(self, resolver_class, policy, mocker: MockerFixture):
     v_ego = 50
     resolver = resolver_class(policy)
 
-    sm_mock = setup_sm_mock()
+    sm_mock = setup_sm_mock(mocker)
     _speed_limit, _distance, _source = resolver.resolve(v_ego, 0, sm_mock)
 
     # After resolution
@@ -122,9 +121,9 @@ class TestSpeedLimitResolverValidation:
     assert _source is not None
 
   @pytest.mark.parametrize("policy", list(Policy), ids=lambda policy: policy.name)
-  def test_old_map_data_ignored(self, resolver_class, policy):
+  def test_old_map_data_ignored(self, resolver_class, policy, mocker: MockerFixture):
     resolver = resolver_class(policy)
-    sm_mock = MagicMock()
+    sm_mock = mocker.MagicMock()
     sm_mock['liveMapDataSP'].lastGpsTimestamp = (time.time() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
     resolver._sm = sm_mock
     resolver._get_from_map_data()
