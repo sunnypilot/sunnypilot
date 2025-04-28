@@ -11,7 +11,7 @@ import openpilot.system.sentry as sentry
 from cereal import messaging
 from openpilot.common.spinner import Spinner
 from openpilot.common.params import Params
-from openpilot.system.mapd_manager import COMMON_DIR, MAPD_PATH, MAPD_BIN_DIR
+from openpilot.sunnypilot.mapd.mapd_manager import COMMON_DIR, MAPD_PATH, MAPD_BIN_DIR
 from openpilot.system.version import is_prebuilt
 
 VERSION = 'v1.9.0'
