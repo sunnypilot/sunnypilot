@@ -2,7 +2,7 @@ import math
 from abc import abstractmethod, ABC
 
 from cereal import custom, messaging
-from openpilot.selfdrive.navd.helpers import Coordinate
+from openpilot.sunnypilot.navd.helpers import Coordinate
 from openpilot.sunnypilot.mapd.live_map_data import get_debug
 
 

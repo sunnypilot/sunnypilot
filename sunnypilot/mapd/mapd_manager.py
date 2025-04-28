@@ -7,7 +7,7 @@ import numpy as np
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
-from openpilot.selfdrive.navd.helpers import Coordinate
+from openpilot.sunnypilot.navd.helpers import Coordinate
 from openpilot.sunnypilot.mapd.live_map_data import QUERY_RADIUS
 from openpilot.common.realtime import Ratekeeper, set_core_affinity
 from openpilot.common.swaglog import cloudlog
