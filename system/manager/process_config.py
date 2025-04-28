@@ -6,7 +6,7 @@ from openpilot.common.params import Params
 from openpilot.system.hardware import PC, TICI
 from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
 
-from openpilot.selfdrive.mapd_manager import MAPD_PATH, COMMON_DIR
+from openpilot.sunnypilot.mapd.mapd_manager import MAPD_PATH, COMMON_DIR
 
 from sunnypilot.models.helpers import get_active_model_runner
 from sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, use_sunnylink_uploader

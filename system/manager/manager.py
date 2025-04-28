@@ -19,7 +19,7 @@ from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import get_build_metadata, terms_version, training_version
 from openpilot.system.hardware.hw import Paths
 
-from openpilot.system.manager.mapd_installer import VERSION
+from openpilot.sunnypilot.mapd.mapd_installer import VERSION
 
 
 def manager_init() -> None:
