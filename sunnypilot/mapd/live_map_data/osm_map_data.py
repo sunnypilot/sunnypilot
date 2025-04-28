@@ -3,8 +3,8 @@ import platform
 
 from openpilot.common.params_pyx import Params
 from openpilot.selfdrive.navd.helpers import Coordinate
-from openpilot.selfdrive.sunnypilot.live_map_data import DataType
-from openpilot.selfdrive.sunnypilot.live_map_data.base_map_data import BaseMapData
+from openpilot.selfdrive.sunnypilot.mapd.live_map_data import DataType
+from openpilot.selfdrive.sunnypilot.mapd.live_map_data.base_map_data import BaseMapData
 
 
 class OsmMapData(BaseMapData):
