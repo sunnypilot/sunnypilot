@@ -113,7 +113,14 @@ def manager_init() -> None:
   # Clear last crash log after logging is initialized
   error_log_path = os.path.join(sentry.CRASHES_DIR, "error.log")
   if os.path.isfile(error_log_path):
-    os.remove(error_log_path)
+    try:
+      mod_time = os.path.getmtime(error_log_path)
+      if (datetime.datetime.now() - datetime.datetime.fromtimestamp(mod_time)) > datetime.timedelta(hours=12):
+        os.remove(error_log_path)
+        cloudlog.info(f"Removed old error log: {error_log_path}")
+    except OSError as e:
+      cloudlog.error(f"Failed to check or remove error log: {e}")
+
 
   # preimport all processes
   for p in managed_processes.values():
