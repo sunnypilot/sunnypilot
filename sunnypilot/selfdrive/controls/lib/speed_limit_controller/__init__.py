@@ -1,4 +1,4 @@
-from cereal import custom, car
+from cereal import custom
 
 DEBUG = False
 PARAMS_UPDATE_PERIOD = 2.  # secs. Time between parameter updates.
