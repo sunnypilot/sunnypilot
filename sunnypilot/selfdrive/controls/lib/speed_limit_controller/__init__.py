@@ -17,4 +17,3 @@ LIMIT_SPEED_OFFSET_TH = -1.  # m/s Maximum offset between speed limit and curren
 LIMIT_MAX_MAP_DATA_AGE = 10.  # s Maximum time to hold to map data, then consider it invalid inside limits controllers.
 
 SpeedLimitControlState = custom.LongitudinalPlanSP.SpeedLimitControlState
-EventName = car.CarEvent.EventName

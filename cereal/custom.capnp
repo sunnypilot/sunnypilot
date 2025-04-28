@@ -145,6 +145,10 @@ struct OnroadEventSP @0xda96579883444c35 {
     hyundaiRadarTracksConfirmed @13;
     experimentalModeSwitched @14;
     wrongCarModeAlertOnly @15;
+    speedLimitPreActive @16;
+    speedLimitActive @17;
+    speedLimitConfirmed @18;
+    speedLimitValueChange @19;
   }
 }
 

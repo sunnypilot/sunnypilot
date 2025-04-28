@@ -1,16 +1,20 @@
 import numpy as np
 import time
 
+from cereal import custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V, \
-  PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, LIMIT_SPEED_OFFSET_TH, EventName, SpeedLimitControlState
+  PARAMS_UPDATE_PERIOD, TEMP_INACTIVE_GUARD_PERIOD, LIMIT_SPEED_OFFSET_TH, SpeedLimitControlState
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.selfdrived.events import ET
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy, Engage, OffsetType
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import description_for_state, debug
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.selfdrive.modeld.constants import ModelConstants
+
+EventNameSP = custom.OnroadEventSP.EventName
 
 ACTIVE_STATES = (SpeedLimitControlState.active, SpeedLimitControlState.adapting)
 
@@ -279,22 +283,22 @@ class SpeedLimitController:
   def _update_events(self, events):
     if self._speed_limit > 0 and self._warning_type_type == 2 and \
       self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
-      events.add(EventName.speedLimitPreActive)
+      events.add(EventNameSP.speedLimitPreActive)
 
     if not self.is_active:
       if self._state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive and \
         self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
-          events.add(EventName.speedLimitPreActive)
+          events.add(EventNameSP.speedLimitPreActive)
     else:
       if self._engage_type == Engage.user_confirm:
         if self._state_prev == SpeedLimitControlState.preActive:
-          events.add(EventName.speedLimitConfirmed)
-          events.add(EventName.speedLimitActive)
+          events.add(EventNameSP.speedLimitConfirmed)
+          events.add(EventNameSP.speedLimitActive)
       elif self._engage_type == Engage.auto:
         if self._state_prev not in ACTIVE_STATES:
-          events.add(EventName.speedLimitActive)
+          events.add(EventNameSP.speedLimitActive)
         elif self._speed_limit_changed != 0:
-          events.add(EventName.speedLimitValueChange)
+          events.add(EventNameSP.speedLimitValueChange)
 
   def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events):
     _car_state = sm['carState']
