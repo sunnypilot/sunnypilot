@@ -76,9 +76,36 @@ def validate_pr(pr):
   if not commits:
     return False, "no commit data found"
 
+  # First check if we have the rollup status
   status = commits[0].get('commit', {}).get('statusCheckRollup', {})
+
+  # If status is not SUCCESS, we need to check individual check runs
   if not status or status.get('state') != 'SUCCESS':
-    return False, "not all checks have passed"
+    # Get detailed check runs for this PR
+    checks_output = subprocess.run(
+      ['gh', 'pr', 'checks', str(pr_number), '--json', 'name,state'],
+      capture_output=True, text=True
+    )
+
+    try:
+      checks_data = json.loads(checks_output.stdout)
+
+      # Check if all checks are successful except for our reset-and-squash check
+      for check in checks_data:
+        check_name = check.get('name', '')
+        check_state = check.get('state', '')
+
+        # Skip our own check and any skipped checks
+        if check_name == 'reset-and-squash' or check_state == 'SKIPPED':
+          continue
+
+        # If any other check is not successful, the PR is not valid
+        if check_state != 'SUCCESS':
+          return False, f"check '{check_name}' has state '{check_state}'"
+
+    except json.JSONDecodeError:
+      # If we can't parse the JSON, fall back to the original check
+      return False, "unable to verify check status"
 
   # Check for merge conflicts
   merge_status = subprocess.run(['gh', 'pr', 'view', str(pr_number), '--json', 'mergeable,mergeStateStatus'],
@@ -86,9 +113,6 @@ def validate_pr(pr):
   merge_data = json.loads(merge_status.stdout)
   if not merge_data.get('mergeable'):
     return False, "merge conflicts detected"
-
-  # if (mergeStateStatus := merge_data.get('mergeStateStatus')) == "BEHIND":
-  #   return False, f"branch is `{mergeStateStatus}`"
 
   return True, None
 
@@ -118,18 +142,8 @@ def process_pr(pr_data, source_branch, target_branch, squash_script_path):
         origin = "origin" if not head_repository.get('isFork', False) else head_repository.get('nameWithOwner', 'origin')
 
         if is_fork and trust_fork:
-          print(f"Removing label `{TRUST_FORK_LABEL}` from PR #{pr_number} as it is being processed")
-          subprocess.run(['gh', 'pr', 'edit', str(pr_number), '--remove-label', TRUST_FORK_LABEL], check=True)
-          pr_comments.append(f"ℹ️️ This PR is from a fork. The `{TRUST_FORK_LABEL}` label was removed as it is being processed right now.")
           print(f"Adding remote {origin} for PR #{pr_number}")
           subprocess.run(['git', 'remote', 'add', origin, head_repository.get('url')], check=False)
-
-        if is_fork and not trust_fork:
-          pr_comments.append(
-            f"⚠️ This PR is from a fork. Please add the `{TRUST_FORK_LABEL}` label to include it in the squash." +
-            "\n**Note**: The label is removed after the squash is done and must be added again for the next execution for security reasons."
-          )
-          continue
 
         if not is_valid:
           print(f"Warning: {skip_reason} for PR #{pr_number}, skipping")
