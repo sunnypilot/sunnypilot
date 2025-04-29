@@ -159,8 +159,6 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
-  leadDistance @1 :Float32;
-  leadRelSpeed @2 :Float32;
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {
