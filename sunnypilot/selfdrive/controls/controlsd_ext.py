@@ -30,7 +30,7 @@ class ControlsdExt:
       ss_sp = self.sm_sp['selfdriveStateSP']
       if ss_sp.mads.available:
         # If MADS is available, return its state
-        return ss_sp.mads.active
+        return bool(ss_sp.mads.active)
     # If MADS is not available, return the fallback lateral active state passed from line 105 controlsd.py
     return fallback_lat_active
 
