@@ -31,22 +31,22 @@ class EventsSP(EventsBase):
     return custom.OnroadEventSP.Event
 
 
-# ********** helper functions **********
-def get_display_speed(speed_ms: float, metric: bool) -> str:
-  speed = int(round(speed_ms * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH)))
-  unit = 'km/h' if metric else 'mph'
-  return f"{speed} {unit}"
+  # ********** helper functions **********
+  def get_display_speed(speed_ms: float, metric: bool) -> str:
+    speed = int(round(speed_ms * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH)))
+    unit = 'km/h' if metric else 'mph'
+    return f"{speed} {unit}"
 
 
-# ********** alert callback functions **********
+  # ********** alert callback functions **********
 
 
-def below_steer_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  return Alert(
-    f"Steer Unavailable Below {get_display_speed(CP.minSteerSpeed, metric)}",
-    "",
-    AlertStatus.userPrompt, AlertSize.small,
-    Priority.LOW, VisualAlert.steerRequired, AudibleAlert.prompt, 0.4)
+  def below_steer_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+    return Alert(
+      f"Steer Unavailable Below {get_display_speed(CP.minSteerSpeed, metric)}",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.prompt, 0.4)
 
 EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # sunnypilot
