@@ -65,7 +65,6 @@ class Controls:
   def update(self):
     self.sm.update(15)
     self.ext.update_state() # Update SP state
-    self.ext.update_cc_sp()
     if self.sm.updated["liveCalibration"]:
       self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
     if self.sm.updated["livePose"]:
