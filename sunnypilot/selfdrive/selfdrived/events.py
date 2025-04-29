@@ -153,7 +153,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: wrong_car_mode_alert,
   },
 
-    EventNameSP.belowSteerSpeed: {
+  EventNameSP.belowSteerSpeed: {
     ET.WARNING: below_steer_speed_alert,
   },
 
