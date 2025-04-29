@@ -19,7 +19,7 @@ class ControlsdExt:
     cloudlog.info("controlsd_ext got CarParamsSP")
 
     # SP SubMaster
-    self.sm_sp = messaging.SubMaster(['selfdriveStateSP', 'radarState'])
+    self.sm_sp = messaging.SubMaster(['selfdriveStateSP'])
 
     # SP PubMaster
     self.pm_sp = messaging.PubMaster(['carControlSP'])
@@ -44,14 +44,6 @@ class ControlsdExt:
 
     # MADS state
     CC_SP.mads = self.sm_sp['selfdriveStateSP'].mads
-
-    # Custom LeadVehicle state
-    CC_SP.leadDistance = 0.0
-    CC_SP.leadRelSpeed = 0.0
-    if self.sm_sp.valid['radarState']:
-      leadOne = self.sm_sp['radarState'].leadOne
-      CC_SP.leadDistance = leadOne.dRel if leadOne.status else 0.0
-      CC_SP.leadRelSpeed = leadOne.vRel if leadOne.status else 0.0
 
     return CC_SP
 
