@@ -57,6 +57,10 @@ def manager_init() -> None:
     ("QuietMode", "0"),
   ]
 
+  # start offroad
+  if params.get_bool("BootAlwaysOffroad"):
+    params.put_bool("OffroadMode", True)
+
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
 
