@@ -226,7 +226,7 @@ class Controls:
     self.pm.send('carControl', cc_send)
 
     # Publish CarControlSP
-    self.ext.publish_sp(CS.canValid)
+    self.ext.publish_sp(CC_SP, CS.canValid)
 
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
