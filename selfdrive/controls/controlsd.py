@@ -65,6 +65,7 @@ class Controls:
   def update(self):
     self.sm.update(15)
     self.ext.update_state() # Update SP state
+    self.ext.update_cc_sp()
     if self.sm.updated["liveCalibration"]:
       self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
     if self.sm.updated["livePose"]:
@@ -226,7 +227,7 @@ class Controls:
     self.pm.send('carControl', cc_send)
 
     # Publish CarControlSP
-    self.ext.publish_sp(CC_SP, CS.canValid)
+    self.ext.publish_sp(CS.canValid)
 
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)

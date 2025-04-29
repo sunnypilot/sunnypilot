@@ -39,12 +39,11 @@ class ControlsdExt:
     self.sm_sp.update(0)
 
   def create_cc_sp(self) -> custom.CarControlSP:
-    # Create CarControlSP message
+    # Create and return a new CarControlSP message instance
     CC_SP = custom.CarControlSP.new_message()
 
     # MADS state
-    if self.sm_sp.valid['selfdriveStateSP']:
-      CC_SP.mads = self.sm_sp['selfdriveStateSP'].mads
+    CC_SP.mads = self.sm_sp['selfdriveStateSP'].mads
 
     # Custom LeadVehicle state
     CC_SP.leadDistance = 0.0
