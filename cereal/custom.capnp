@@ -72,7 +72,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     tinygrad @1;
     stock @2;
     modeldv3 @3;
-    modeldv4 @3;
+    modeldv4 @4;
   }
 
   struct ModelBundle {
