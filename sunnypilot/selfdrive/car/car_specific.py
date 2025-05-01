@@ -44,7 +44,7 @@ class CarSpecificEventsSP:
         if (self.CP.minEnableSpeed >= 14.5) and (CS.gearShifter != GearShifter.drive):
           self.low_speed_alert = True
       if self.low_speed_alert:
-        events.add(EventNameSP.belowSteerSpeed)
+        events.add(EventName.belowSteerSpeed)
 
     if self.CP.brand == 'hyundai':
       if self.hyundai_radar_tracks and not self.hyundai_radar_tracks_confirmed:
