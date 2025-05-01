@@ -29,26 +29,21 @@ CRUISE_INTERVAL_SIGN = {
 
 
 class VCruiseHelper:
-  def __init__(self, CP):
+  def __init__(self, CP, CP_SP):
     self.CP = CP
+    self.CP_SP = CP_SP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
-    self.custom_acc_short_increment = None
-    self.custom_acc_long_increment = None
 
   @property
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric, custom_acc_increment_config: dict[str, int] = None):
+  def update_v_cruise(self, CS, enabled, is_metric):
     self.v_cruise_kph_last = self.v_cruise_kph
-
-    custom_acc_increment_config = custom_acc_increment_config or {}
-    self.custom_acc_short_increment = custom_acc_increment_config.get("short_press", 1)
-    self.custom_acc_long_increment = custom_acc_increment_config.get("long_press", 10 if is_metric else 5)
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
@@ -150,8 +145,8 @@ class VCruiseHelper:
     base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
     # Apply the user-specified multipliers to the base increment
-    short_increment = self.custom_acc_short_increment
-    long_increment = self.custom_acc_long_increment
+    short_increment = self.CP_SP.customAccControl.increments.shortIncrement
+    long_increment = self.CP_SP.customAccControl.increments.longIncrement
 
     # Determine which increment to use based on press type
     adjusted_delta = long_increment if long_press else short_increment

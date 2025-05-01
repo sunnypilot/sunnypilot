@@ -145,6 +145,7 @@ struct CarParamsSP @0x80ae746ee2596b11 {
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
+  customAccControl @3 :CustomAccControl;
 
   struct NeuralNetworkLateralControl {
     model @0 :Model;
@@ -153,6 +154,17 @@ struct CarParamsSP @0x80ae746ee2596b11 {
     struct Model {
       path @0 :Text;
       name @1 :Text;
+    }
+  }
+
+  struct CustomAccControl {
+    enabled @0 :Bool;
+    reverseEnabled @1 :Bool;
+    increments @2 :CustomAccIncrements;
+
+    struct CustomAccIncrements {
+      shortIncrement @0 :UInt16;
+      longIncrement @1 :UInt16;
     }
   }
 }
@@ -169,14 +181,14 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
   lastError @4 :Text;
   currentBackup @5 :BackupInfo;
   backupHistory @6 :List(BackupInfo);
-  
+
   enum Status {
     idle @0;
     inProgress @1;
     completed @2;
     failed @3;
   }
-  
+
   struct Version {
     major @0 :UInt16;
     minor @1 :UInt16;
@@ -184,13 +196,13 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
     build @3 :UInt16;
     branch @4 :Text;
   }
-  
+
   struct MetadataEntry {
     key @0 :Text;
     value @1 :Text;
     tags @2 :List(Text);
   }
-  
+
   struct BackupInfo {
     deviceId @0 :Text;
     version @1 :UInt32;
