@@ -8,14 +8,13 @@ env:
   PUBLIC_REPO_URL: "https://github.com/sunnypilot/sunnypilot"
   
   # Branch configurations
-  MASTER_BRANCH: "master"
-  MASTER_NEW_BRANCH: "master-new"
-  DEV_C3_SOURCE_BRANCH: "master-dev-c3-new"
+  STAGING_C3_SOURCE_BRANCH: ${{ vars.STAGING_C3_SOURCE_BRANCH || 'master-new' }} # vars are set on repo settings.
+  DEV_C3_SOURCE_BRANCH: ${{ vars.DEV_C3_SOURCE_BRANCH || 'master-dev-c3-new' }} # vars are set on repo settings.
   
   # Target branch configurations
-  STAGING_TARGET_BRANCH: "staging-c3-new"
-  DEV_TARGET_BRANCH: "dev-c3-new"
-  RELEASE_TARGET_BRANCH: "release-c3-new"
+  STAGING_TARGET_BRANCH: ${{ vars.STAGING_TARGET_BRANCH || 'staging-c3-new' }} # vars are set on repo settings.
+  DEV_TARGET_BRANCH: ${{ vars.DEV_TARGET_BRANCH || 'dev-c3-new' }} # vars are set on repo settings.
+  RELEASE_TARGET_BRANCH: ${{ vars.RELEASE_TARGET_BRANCH || 'release-c3-new' }} # vars are set on repo settings.
   
   # Runtime configuration
   SOURCE_BRANCH: "${{ github.head_ref || github.ref_name }}"
@@ -75,15 +74,14 @@ jobs:
           #   for security. Only caches from the default branch are shared across all builds. This is by design and cannot be overridden.
           restore-keys: |
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.SOURCE_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_NEW_BRANCH }}
-            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
+            scons-${{ runner.os }}-${{ runner.arch }}-${{ env.STAGING_C3_SOURCE_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
       - name: Set Feature Branch Prebuilt Configuration
         id: set_feature_configuration
         if: (
               !(env.SOURCE_BRANCH == env.DEV_C3_SOURCE_BRANCH) &&
-              !(env.SOURCE_BRANCH == env.MASTER_BRANCH || env.SOURCE_BRANCH == env.MASTER_NEW_BRANCH) &&
+              !(env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH) &&
               !(startsWith(github.ref, 'refs/tags/'))
             )
         run: |
@@ -107,7 +105,7 @@ jobs:
                 steps.set_feature_configuration.outcome == 'skipped' &&
                 !contains(github.event_name, 'pull_request') &&
                 steps.set_dev_configuration.outcome == 'skipped' && 
-                (env.SOURCE_BRANCH == env.MASTER_BRANCH || env.SOURCE_BRANCH == env.MASTER_NEW_BRANCH)
+                (env.SOURCE_BRANCH == env.STAGING_C3_SOURCE_BRANCH)
             )
         run: |
           echo "NEW_BRANCH=${{ env.STAGING_TARGET_BRANCH }}" >> $GITHUB_ENV
