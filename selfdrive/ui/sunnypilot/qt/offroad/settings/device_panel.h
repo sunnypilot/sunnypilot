@@ -25,6 +25,7 @@ private:
   std::map<QString, PushButtonSP*> buttons;
   PushButtonSP *offroadBtn;
   MaxTimeOffroad *maxTimeOffroad;
+  ButtonParamControlSP *toggleDeviceBootMode;
 
   const QString alwaysOffroadStyle = R"(
     PushButtonSP {

@@ -80,8 +80,21 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
   addItem(maxTimeOffroad);
 
-  ButtonParamControlSP *toggleBootAlwaysOffroad = new ButtonParamControlSP("BootAlwaysOffroad", "Start in Always Offroad", "Stay in Always Offroad mode after the device boots. sunnypilot will not engage till you exit Always Offroad after each boot.", "", {"No", "Yes"}, 375, true);
-  addItem(toggleBootAlwaysOffroad);
+  toggleDeviceBootMode = new ButtonParamControlSP(
+    "DeviceBootMode",
+    tr("Device Boot Mode"),
+    tr("Controls post-boot state of the device.\n\n"
+      "⁍ Default: Device will boot normally & will be ready to engage.\n"
+      "⁍ Offroad: Device will boot in Always Offroad mode and will not engage till Always Offroad is manually disabled."),
+    "",
+    {"Default", "Offroad"},
+    375,
+    true);
+  addItem(toggleDeviceBootMode);
+
+  connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
+    params.put("DeviceBootMode", QString::number(index).toStdString());
+  });
 
   addItem(device_grid_layout);
 
