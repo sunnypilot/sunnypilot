@@ -1,0 +1,24 @@
+#pragma once
+
+#include <QLabel>
+#include <QPushButton>
+
+#include "common/params.h"
+
+class ExitOffroadButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit ExitOffroadButton(QWidget* parent = 0);
+
+  Params params;
+  bool offroad_mode;
+  int img_width = 100;
+  int horizontal_padding = 30;
+  QPixmap pixmap;
+  QLabel *mode_label;
+  QLabel *mode_icon;
+
+protected:
+  void paintEvent(QPaintEvent *event) override;
+};

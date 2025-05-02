@@ -40,10 +40,11 @@ public:
 protected:
   QHBoxLayout *home_layout;
 
-private:
   void showEvent(QShowEvent *event) override;
-  void hideEvent(QHideEvent *event) override;
   void refresh();
+
+private:
+  void hideEvent(QHideEvent *event) override;
 
   Params params;
 
