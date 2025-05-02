@@ -1,12 +1,18 @@
-Version 0.9.9 (2025-04-XX)
+Version 0.9.9 (2025-05-15)
 ========================
+* New driving model
+  * New training architecture supervised by MLSIM
+* Steering actuator delay is now learned online
 * Tesla Model 3 and Y support thanks to lukasloetkolben!
+* Coming soon
+  * New Honda models
+  * Bigger vision model
 
 Version 0.9.8 (2025-02-28)
 ========================
 * New driving model
   * Model now gates applying positive acceleration in Chill mode
-* New driving monitoring model
+* New driver monitoring model
   * Reduced false positives related to passengers
 * Image processing pipeline moved to the ISP
   * More GPU time for bigger driving models
