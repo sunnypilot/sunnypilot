@@ -35,8 +35,8 @@ class ModelRunner(ABC):
 
     if bundle := get_active_bundle():
       bundle_models = {model.type.raw: model for model in bundle.models}
-      self._drive_model = bundle_models.get(ModelManager.Type.drive)
-      self._metadata_model = bundle_models.get(ModelManager.Type.metadata)
+      self._drive_model = bundle_models.get(ModelManager.Model.Type.supercombo)
+      self._metadata_model = self._drive_model.metadata
       self.is_20hz = bundle.is20hz
 
     # Override the metadata path if a metadata model is found in the active bundle
