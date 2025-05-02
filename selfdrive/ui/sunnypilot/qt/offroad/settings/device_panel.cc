@@ -75,8 +75,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(buttons["resetParams"], &PushButtonSP::clicked, this, &DevicePanelSP::resetSettings);
 
-  addItem(device_grid_layout);
-
   // Max Time Offroad
   maxTimeOffroad = new MaxTimeOffroad();
   connect(maxTimeOffroad, &OptionControlSP::updateLabels, maxTimeOffroad, &MaxTimeOffroad::refresh);
@@ -84,6 +82,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   ButtonParamControlSP *toggleBootAlwaysOffroad = new ButtonParamControlSP("BootAlwaysOffroad", "Start in Always Offroad", "Stay in Always Offroad mode after the device boots. sunnypilot will not engage till you exit Always Offroad after each boot.", "", {"No", "Yes"}, 375, true);
   addItem(toggleBootAlwaysOffroad);
+
+  addItem(device_grid_layout);
 
   // offroad mode and power buttons
 
