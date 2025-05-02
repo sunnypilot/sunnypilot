@@ -20,27 +20,27 @@ class ModelParser:
   """Handles parsing of model data into cereal objects"""
 
   @staticmethod
-  def _parse_download_uri(**kwargs) -> custom.ModelManagerSP.DownloadUri:
+  def _parse_download_uri(download_uri_data) -> custom.ModelManagerSP.DownloadUri:
     download_uri = custom.ModelManagerSP.DownloadUri()
-    download_uri.uri = kwargs.get("url")
-    download_uri.sha256 = kwargs.get("sha256")
+    download_uri.uri = download_uri_data.get("url")
+    download_uri.sha256 = download_uri_data.get("sha256")
     return download_uri
 
   @staticmethod
-  def _parse_artifact(**kwargs) -> custom.ModelManagerSP.Artifact:
+  def _parse_artifact(artifact_data) -> custom.ModelManagerSP.Artifact:
     artifact = custom.ModelManagerSP.Artifact()
-    artifact.fileName = kwargs.get("file_name")
-    artifact.downloadUri = ModelParser._parse_download_uri(**kwargs.get("download_uri", {}))
+    artifact.fileName = artifact_data.get("file_name")
+    artifact.downloadUri = ModelParser._parse_download_uri(artifact_data.get("download_uri", {}))
     return artifact
 
   @staticmethod
-  def _parse_model(**kwargs) -> custom.ModelManagerSP.Model:
+  def _parse_model(model_data) -> custom.ModelManagerSP.Model:
     model = custom.ModelManagerSP.Model()
 
-    model.type = kwargs.get("type")
-    model.artifact = ModelParser._parse_artifact(**kwargs.get("artifact", {}))
-    if metadata := kwargs.get("metadata"):
-      model.metadata = ModelParser._parse_artifact(**metadata)
+    model.type = model_data.get("type")
+    model.artifact = ModelParser._parse_artifact(model_data.get("artifact", {}))
+    if metadata := model_data.get("metadata"):
+      model.metadata = ModelParser._parse_artifact(metadata)
     return model
 
   @staticmethod
@@ -49,7 +49,7 @@ class ModelParser:
     model_bundle.index = int(bundle["index"])
     model_bundle.internalName = bundle["short_name"]
     model_bundle.displayName = bundle["display_name"]
-    model_bundle.models = [ModelParser._parse_model(**model) for model in bundle.get("models",[])]
+    model_bundle.models = [ModelParser._parse_model(model) for model in bundle.get("models",[])]
     model_bundle.status = 0
     model_bundle.generation = int(bundle["generation"])
     model_bundle.environment = bundle["environment"]
