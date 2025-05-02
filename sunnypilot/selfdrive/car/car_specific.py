@@ -39,6 +39,8 @@ class CarSpecificEventsSP:
         if events.has(EventName.belowSteerSpeed):
           events.remove(EventName.belowSteerSpeed)
 
+        # TODO-SP: use if/elif to have the gear shifter condition takes precedence over the speed condition
+        # TODO-SP: add 1 m/s hysteresis
         if CS.vEgo >= self.CP.minEnableSpeed:
           self.low_speed_alert = False
         if CS.gearShifter != GearShifter.drive:
