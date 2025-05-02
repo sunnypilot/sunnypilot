@@ -23,31 +23,55 @@ CUSTOM_MODEL_PATH = Paths.model_root()
 ModelManager = custom.ModelManagerSP
 
 
-class ModelRunner(ABC):
-  """Abstract base class for model runners that defines the interface for running ML models."""
+class ModelData:
+  def __init__(self, model=None):
+    self.model = model
+    self.metadata = model.metadata if model else None
+    self.input_shapes = {}
+    self.output_slices = {}
 
+    if self.metadata:
+      self._load_metadata()
+
+  def _load_metadata(self):
+    metadata_path = f"{CUSTOM_MODEL_PATH}/{self.metadata.fileName}"
+    with open(metadata_path, 'rb') as f:
+      model_metadata = pickle.load(f)
+    self.input_shapes = model_metadata.get('input_shapes', {})
+    self.output_slices = model_metadata.get('output_slices', {})
+
+
+class ModelRunner:
   def __init__(self):
     """Initialize the model runner with paths to model and metadata files."""
-    metadata_path = METADATA_PATH
     self.is_20hz = None
-    self._drive_model = None
-    self._metadata_model = None
+    self.models: list[ModelData] = []
+    bundle = get_active_bundle()
 
-    if bundle := get_active_bundle():
+    if bundle:
       bundle_models = {model.type.raw: model for model in bundle.models}
-      self._drive_model = bundle_models.get(ModelManager.Model.Type.supercombo)
-      self._metadata_model = self._drive_model.metadata
+
+      drive_model = bundle_models.get(ModelManager.Model.Type.supercombo)
+      policy_model = bundle_models.get(ModelManager.Model.Type.policy)
+      vision_model = bundle_models.get(ModelManager.Model.Type.vision)
+
+      if drive_model:
+        self.models.append(ModelData(model=drive_model))
+      elif policy_model and vision_model:
+        self.models.append(ModelData(model=policy_model))
+        self.models.append(ModelData(model=vision_model))
+
       self.is_20hz = bundle.is20hz
 
-    # Override the metadata path if a metadata model is found in the active bundle
-    if self._metadata_model:
-      metadata_path = f"{CUSTOM_MODEL_PATH}/{self._metadata_model.fileName}"
+    # Fallback to default metadata if no model metadata was found
+    if not self.models:
+      with open(METADATA_PATH, 'rb') as f:
+        model_metadata = pickle.load(f)
+      fallback_model = ModelData()
+      fallback_model.input_shapes = model_metadata['input_shapes']
+      fallback_model.output_slices = model_metadata['output_slices']
+      self.models.append(fallback_model)
 
-    with open(metadata_path, 'rb') as f:
-      self.model_metadata = pickle.load(f)
-
-    self.input_shapes = self.model_metadata['input_shapes']
-    self.output_slices = self.model_metadata['output_slices']
     self.inputs: dict = {}
     self.parser = Parser()
 
@@ -67,11 +91,6 @@ class ModelRunner(ABC):
     if SEND_RAW_PRED:
       parsed_outputs['raw_pred'] = model_outputs.copy()
     return parsed_outputs
-
-  def run_model(self) -> dict[str, np.ndarray]:
-    """Run model inference with prepared inputs and parse outputs."""
-    result: dict[str, np.ndarray] = self.parser.parse_outputs(self._slice_outputs(self._run_model()))
-    return result
 
   def run_model(self) -> dict[str, np.ndarray]:
     """Run model inference with prepared inputs and parse outputs."""
@@ -102,8 +121,8 @@ class TinygradRunner(ModelRunner):
     self.input_to_device = {}
 
     for idx, name in enumerate(self.model_run.captured.expected_names):
-      self.input_to_dtype[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][2]  # 2 is the dtype
-      self.input_to_device[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][3]  # 3 is the device
+      self.input_to_dtype[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][2]  # dtype
+      self.input_to_device[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][3]  # device
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
     # Initialize image tensors if not already done
