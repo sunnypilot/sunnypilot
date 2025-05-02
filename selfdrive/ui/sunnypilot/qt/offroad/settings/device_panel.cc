@@ -83,7 +83,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   toggleDeviceBootMode = new ButtonParamControlSP(
     "DeviceBootMode",
     tr("Device Boot Mode"),
-    tr("Controls post-boot state of the device.\n\n"
+    tr("Controls state of the device after boot.\n\n"
       "⁍ Default: Device will boot normally & will be ready to engage.\n"
       "⁍ Offroad: Device will boot in Always Offroad mode and will not engage till Always Offroad is manually disabled."),
     "",
