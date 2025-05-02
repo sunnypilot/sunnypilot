@@ -77,7 +77,7 @@ class ModelManagerSP:
   async def _process_artifact(self, artifact, destination_path: str) -> None:
     """Processes a single model download including verification"""
     if not artifact.downloadUri.uri:
-      return 
+      return None
 
     url = artifact.downloadUri.uri
     expected_hash = artifact.downloadUri.sha256
@@ -117,8 +117,8 @@ class ModelManagerSP:
   async def _process_model(self, model, destination_path: str) -> None:
     """Processes a single model download including verification"""
     model_artifact = model.artifact
-    metadata_artifact = model.metadata 
-    
+    metadata_artifact = model.metadata
+
     await self._process_artifact(metadata_artifact, destination_path)
     await self._process_artifact(model_artifact, destination_path)
 

@@ -8,7 +8,7 @@ See the LICENSE.md file in the root directory for more details.
 import hashlib
 import os
 from openpilot.common.params import Params
-from cereal import custom, messaging
+from cereal import custom
 import json
 
 CURRENT_SELECTOR_VERSION = 2

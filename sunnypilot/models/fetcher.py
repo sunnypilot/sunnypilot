@@ -36,7 +36,7 @@ class ModelParser:
   @staticmethod
   def _parse_model(**kwargs) -> custom.ModelManagerSP.Model:
     model = custom.ModelManagerSP.Model()
-    
+
     model.type = kwargs.get("type")
     model.artifact = ModelParser._parse_artifact(**kwargs.get("artifact", {}))
     if metadata := kwargs.get("metadata"):
@@ -61,7 +61,7 @@ class ModelParser:
 
   @staticmethod
   def parse_models(json_data: dict) -> list[custom.ModelManagerSP.ModelBundle]:
-    found_bundles = [ModelParser._parse_bundle(bundle) for bundle in json_data.get("bundles", [])] 
+    found_bundles = [ModelParser._parse_bundle(bundle) for bundle in json_data.get("bundles", [])]
     return [bundle for bundle in found_bundles if is_bundle_version_compatible(bundle.to_dict())]
 
 
