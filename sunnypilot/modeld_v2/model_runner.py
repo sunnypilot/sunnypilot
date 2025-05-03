@@ -92,7 +92,7 @@ class ModelRunner:
     if SEND_RAW_PRED:
       sliced_outputs['raw_pred'] = model_outputs.copy()
     return sliced_outputs
-  
+
   @abstractmethod
   def _parse_outputs(self, model_outputs: dict[str, np.ndarray]) -> dict:
     """Parse model outputs into a dictionary."""
@@ -100,8 +100,8 @@ class ModelRunner:
 
   def run_model(self) -> dict[str, np.ndarray]:
     """Run model inference with prepared inputs and parse outputs."""
-    result: dict[str, np.ndarray] = self._parse_outputs(self._slice_outputs(self._run_model()))
-    return result
+    parsed_result: dict[str, np.ndarray] = self._parse_outputs(self._run_model())
+    return parsed_result
 
 
 class TinygradRunner(ModelRunner):
