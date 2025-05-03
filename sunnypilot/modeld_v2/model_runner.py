@@ -45,7 +45,7 @@ class ModelRunner:
   def __init__(self):
     """Initialize the model runner with paths to model and metadata files."""
     self.is_20hz = None
-    self.models: list[ModelData] = []
+    self.models = {}
     bundle = get_active_bundle()
 
     if bundle:
@@ -56,10 +56,10 @@ class ModelRunner:
       vision_model = bundle_models.get(ModelManager.Model.Type.vision)
 
       if drive_model:
-        self.models.append(ModelData(model=drive_model))
+        self.models[ModelManager.Model.Type.supercombo] = ModelData(model=drive_model)
       elif policy_model and vision_model:
-        self.models.append(ModelData(model=policy_model))
-        self.models.append(ModelData(model=vision_model))
+        self.models[ModelManager.Model.Type.policy] = ModelData(model=policy_model)
+        self.models[ModelManager.Model.Type.vision] = ModelData(model=vision_model)
 
       self.is_20hz = bundle.is20hz
 
@@ -85,6 +85,7 @@ class ModelRunner:
     """Run model inference with prepared inputs."""
     raise NotImplementedError("This method should be implemented in subclasses.")
 
+  @abstractmethod
   def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
     parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
@@ -104,10 +105,11 @@ class TinygradRunner(ModelRunner):
   def __init__(self):
     super().__init__()
 
-    model_pkl_path = MODEL_PKL_PATH
-    if self._drive_model:
-      model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self._drive_model.artifact.fileName}"
-      assert model_pkl_path.endswith('_tinygrad.pkl'), f"Invalid model file: {model_pkl_path} for TinygradRunner"
+    assert len(self.models) == 1, "TinygradRunner expects a single combined model (e.g., supercombo)"
+    self.supercombo = self.models.get(ModelManager.Model.Type.supercombo)
+    assert self.supercombo.model.fileName.endswith('_tinygrad.pkl'), f"Invalid model file: {self.supercombo.model.fileName} for TinygradRunner"
+
+    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.supercombo.model.fileName}"
 
     # Load Tinygrad model
     with open(model_pkl_path, "rb") as f:
@@ -128,9 +130,9 @@ class TinygradRunner(ModelRunner):
     # Initialize image tensors if not already done
     for key in imgs_cl:
       if TICI and key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.input_shapes[key], dtype=self.input_to_dtype[key])
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.supercombo.input_shapes[key], dtype=self.input_to_dtype[key])
       elif not TICI:
-        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key])
+        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.supercombo.input_shapes[key])
         self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
     # Update numpy inputs
