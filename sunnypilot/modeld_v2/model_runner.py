@@ -82,7 +82,7 @@ class TinygradRunner(ModelRunner):
 
     model_pkl_path = MODEL_PKL_PATH
     if self._drive_model:
-      model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self._drive_model.fileName}"
+      model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self._drive_model.artifact.fileName}"
       assert model_pkl_path.endswith('_tinygrad.pkl'), f"Invalid model file: {model_pkl_path} for TinygradRunner"
 
     # Load Tinygrad model
