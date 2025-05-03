@@ -61,16 +61,16 @@ class ModelRunner(ABC):
     """Run model inference with prepared inputs."""
     raise NotImplementedError("This method should be implemented in subclasses.")
 
-  def run_model(self):
-    """Run model inference with prepared inputs and parse outputs."""
-    return self.parser.parse_outputs(self._slice_outputs(self._run_model()))
-
   def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
     parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
     if SEND_RAW_PRED:
       parsed_outputs['raw_pred'] = model_outputs.copy()
     return parsed_outputs
+  
+  def run_model(self):
+    """Run model inference with prepared inputs and parse outputs."""
+    return self.parser.parse_outputs(self._slice_outputs(self._run_model()))
 
 
 class TinygradRunner(ModelRunner):
