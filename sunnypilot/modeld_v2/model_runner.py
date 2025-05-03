@@ -1,6 +1,6 @@
 import os
 import pickle
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import numpy as np
 
 from cereal import custom
@@ -42,7 +42,7 @@ class ModelData:
     self.output_slices = model_metadata.get('output_slices', {})
 
 
-class ModelRunner:
+class ModelRunner(ABC):
   def __init__(self):
     """Initialize the model runner with paths to model and metadata files."""
     self.is_20hz = None
@@ -93,18 +93,13 @@ class ModelRunner:
       sliced_outputs['raw_pred'] = model_outputs.copy()
     return sliced_outputs
 
-  @abstractmethod
-  def _parse_outputs(self, model_outputs: np.ndarray) -> dict:
-    """Parse model outputs into a dictionary."""
-    raise NotImplementedError("This method should be implemented in subclasses.")
-
   def run_model(self) -> dict[str, np.ndarray]:
     """Run model inference with prepared inputs and parse outputs."""
-    parsed_result: dict[str, np.ndarray] = self._parse_outputs(self._run_model())
+    parsed_result: dict[str, np.ndarray] = self._run_model()
     return parsed_result
 
 
-class TinygradRunner(ModelRunner):
+class TinygradRunner(ModelRunner, ABC):
   """Tinygrad implementation of model runner for TICI hardware."""
 
   def __init__(self, model_type: ModelManager.Model.Type = ModelManager.Model.Type.supercombo):
@@ -152,12 +147,17 @@ class TinygradRunner(ModelRunner):
     return self.inputs
 
   def _run_model(self):
-    return self.model_run(**self.inputs).numpy().flatten()
-  
+    outputs = self.model_run(**self.inputs).numpy().flatten()
+    return self._parse_outputs(outputs)
+
   @abstractmethod
   def _parse_outputs(self, model_outputs: np.ndarray) -> dict:
     """Parse model outputs into a dictionary."""
     return self.parser.parse_outputs(self._slice_outputs(model_outputs))
+
+  @property
+  def input_shapes(self) -> dict[str, tuple[int]]:
+    return self._model_data.input_shapes
 
 
 class TinygradVisionRunner(TinygradRunner):
