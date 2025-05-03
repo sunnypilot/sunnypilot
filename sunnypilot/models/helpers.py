@@ -52,9 +52,12 @@ def get_active_bundle(params: Params = None) -> custom.ModelManagerSP.ModelBundl
   """Gets the active model bundle from cache"""
   if params is None:
     params = Params()
-
-  if (active_bundle := json.loads(params.get("ModelManager_ActiveBundle") or "{}")) and is_bundle_version_compatible(active_bundle):
-    return custom.ModelManagerSP.ModelBundle(**active_bundle)
+  
+  try:    
+    if (active_bundle := json.loads(params.get("ModelManager_ActiveBundle") or "{}")) and is_bundle_version_compatible(active_bundle):
+      return custom.ModelManagerSP.ModelBundle(**active_bundle)
+  except:
+    pass
 
   return None
 
