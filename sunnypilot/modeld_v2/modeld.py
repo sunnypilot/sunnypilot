@@ -53,7 +53,8 @@ class ModelState:
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     if self.model_runner.is_20hz:
-      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
+      # TODO-SP: for full features 20Hz, setting +1 to bugger len makes it work only for FoF. Will fail any other model
+      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
