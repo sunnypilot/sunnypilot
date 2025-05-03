@@ -19,7 +19,4 @@ class DeveloperPanelSP : public DeveloperPanel {
 public:
   explicit DeveloperPanelSP(SettingsWindowSP *parent = 0);
 
-private:
-  CustomAccIncrement *customAccIncrement = nullptr;
-
 };
