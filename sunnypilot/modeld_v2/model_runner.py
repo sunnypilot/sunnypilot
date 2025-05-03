@@ -46,6 +46,7 @@ class ModelRunner:
     """Initialize the model runner with paths to model and metadata files."""
     self.is_20hz = None
     self.models = {}
+    self.model_data = None
     bundle = get_active_bundle()
 
     if bundle:
@@ -63,15 +64,6 @@ class ModelRunner:
 
       self.is_20hz = bundle.is20hz
 
-    # Fallback to default metadata if no model metadata was found
-    if not self.models:
-      with open(METADATA_PATH, 'rb') as f:
-        model_metadata = pickle.load(f)
-      fallback_model = ModelData()
-      fallback_model.input_shapes = model_metadata['input_shapes']
-      fallback_model.output_slices = model_metadata['output_slices']
-      self.models.append(fallback_model)
-
     self.inputs: dict = {}
     self.parser = Parser()
 
@@ -85,10 +77,12 @@ class ModelRunner:
     """Run model inference with prepared inputs."""
     raise NotImplementedError("This method should be implemented in subclasses.")
 
-  @abstractmethod
   def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
-    parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
+    if not self.model_data:
+      raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
+
+    parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.model_data.output_slices.items()}
     if SEND_RAW_PRED:
       parsed_outputs['raw_pred'] = model_outputs.copy()
     return parsed_outputs
@@ -172,7 +166,7 @@ class TinygradSplitRunner(ModelRunner):
   def _run_model(self):
     policy_output = self.policy_runner.run_model()
     vision_output = self.vision_runner.run_model()
-    return
+    return { **policy_output, **vision_output }
 
   def __init__(self):
     super().__init__()
@@ -204,3 +198,17 @@ class ONNXRunner(ModelRunner):
 
   def _run_model(self):
     return self.runner.run(None, self.inputs)[0].flatten()
+
+def get_model_runner() -> ModelRunner:
+  """Get the appropriate model runner based on the hardware and model types."""
+  if not TICI:
+    return ONNXRunner()
+
+  bundle = get_active_bundle()
+  if bundle and bundle.models:
+    types = {m.type for m in bundle.models}
+    if ModelManager.Model.Type.vision in types or ModelManager.Model.Type.policy in types:
+      return TinygradSplitRunner()
+    return TinygradRunner(bundle.models[0].type)
+
+  return TinygradRunner()
