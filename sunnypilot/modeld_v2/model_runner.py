@@ -55,10 +55,15 @@ class ModelRunner(ABC):
     raise NotImplementedError
 
   @abstractmethod
+  def _run_model(self):
+    """Run model inference with prepared inputs."""
+    raise NotImplementedError("This method should be implemented in subclasses.")
+
   def run_model(self):
     """Run model inference with prepared inputs."""
+    return self._slice_outputs(self._run_model())
 
-  def slice_outputs(self, model_outputs: np.ndarray) -> dict:
+  def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
     parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
     if SEND_RAW_PRED:
@@ -108,7 +113,7 @@ class TinygradRunner(ModelRunner):
 
     return self.inputs
 
-  def run_model(self):
+  def _run_model(self):
     return self.model_run(**self.inputs).numpy().flatten()
 
 
@@ -130,5 +135,5 @@ class ONNXRunner(ModelRunner):
       self.inputs[key] = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.input_shapes[key]).astype(dtype=self.input_to_nptype[key])
     return self.inputs
 
-  def run_model(self):
+  def _run_model(self):
     return self.runner.run(None, self.inputs)[0].flatten()
