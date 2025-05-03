@@ -99,7 +99,7 @@ class ModelRunner(ABC):
     return parsed_result
 
 
-class TinygradRunner(ModelRunner, ABC):
+class TinygradRunner(ModelRunner):
   """Tinygrad implementation of model runner for TICI hardware."""
 
   def __init__(self, model_type: ModelManager.Model.Type = ModelManager.Model.Type.supercombo):
@@ -140,7 +140,6 @@ class TinygradRunner(ModelRunner, ABC):
 
     return self.inputs
 
-  @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
     self.prepare_vision_inputs(imgs_cl, frames)
     self.prepare_policy_inputs(imgs_cl, numpy_inputs)
@@ -150,7 +149,6 @@ class TinygradRunner(ModelRunner, ABC):
     outputs = self.model_run(**self.inputs).numpy().flatten()
     return self._parse_outputs(outputs)
 
-  @abstractmethod
   def _parse_outputs(self, model_outputs: np.ndarray) -> dict:
     """Parse model outputs into a dictionary."""
     return self.parser.parse_outputs(self._slice_outputs(model_outputs))
@@ -167,9 +165,6 @@ class TinygradVisionRunner(TinygradRunner):
     super().__init__(ModelManager.Model.Type.vision)
     self.parser = SplitParser()
 
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
-    raise NotImplementedError("TinygradVisionRunner does not implement prepare_inputs method. you must call prepare_vision_inputs instead.")
-
   def _parse_outputs(self, model_outputs: np.ndarray) -> dict:
     """Parse model outputs into a dictionary."""
     return self.parser.parse_vision_outputs(self._slice_outputs(model_outputs))
@@ -180,9 +175,6 @@ class TinygradPolicyRunner(TinygradRunner):
   def __init__(self):
     super().__init__(ModelManager.Model.Type.policy)
     self.parser = SplitParser()
-
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
-    raise NotImplementedError("TinygradPolicyRunner does not implement prepare_inputs method. you must call prepare_policy_inputs instead.")
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> dict:
     """Parse model outputs into a dictionary."""
