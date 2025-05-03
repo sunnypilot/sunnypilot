@@ -18,7 +18,6 @@ from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
-from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
@@ -63,8 +62,6 @@ class ModelState:
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
-    self.parser = Parser()
-
     if self.model_runner.is_20hz:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
@@ -101,7 +98,7 @@ class ModelState:
       return None
 
     # Run model inference
-    outputs = self.parser.parse_outputs(self.model_runner.run_model())
+    outputs = self.model_runner.run_model()
 
     if self.model_runner.is_20hz:
       self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]

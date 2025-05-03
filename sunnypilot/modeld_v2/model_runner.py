@@ -8,6 +8,7 @@ from openpilot.sunnypilot.modeld_v2 import MODEL_PATH, MODEL_PKL_PATH, METADATA_
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLMem
 from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
 
@@ -48,6 +49,7 @@ class ModelRunner(ABC):
     self.input_shapes = self.model_metadata['input_shapes']
     self.output_slices = self.model_metadata['output_slices']
     self.inputs: dict = {}
+    self.parser = Parser()
 
   @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
@@ -60,8 +62,8 @@ class ModelRunner(ABC):
     raise NotImplementedError("This method should be implemented in subclasses.")
 
   def run_model(self):
-    """Run model inference with prepared inputs."""
-    return self._slice_outputs(self._run_model())
+    """Run model inference with prepared inputs and parse outputs."""
+    return self.parser.parse_outputs(self._slice_outputs(self._run_model()))
 
   def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
