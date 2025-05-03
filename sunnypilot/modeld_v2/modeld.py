@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from openpilot.system.hardware import TICI
 
 #
 import time
@@ -46,7 +45,6 @@ class ModelState:
   def __init__(self, context: CLContext):
     try:
       self.model_runner = get_model_runner()
-        
     except Exception as e:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise

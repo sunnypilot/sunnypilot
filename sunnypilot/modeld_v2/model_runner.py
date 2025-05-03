@@ -1,10 +1,10 @@
 import os
 import pickle
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import numpy as np
 
 from cereal import custom
-from openpilot.sunnypilot.modeld_v2 import MODEL_PATH, MODEL_PKL_PATH, METADATA_PATH
+from openpilot.sunnypilot.modeld_v2 import MODEL_PATH
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLMem
 from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
@@ -100,7 +100,7 @@ class TinygradRunner(ModelRunner):
     super().__init__()
 
     self.model_data = self.models.get(model_type)
-    assert self.model_data.model.artifact.fileName.endswith('_tinygrad.pkl'), f"Invalid model file: {self.model_data.model.artifact.fileName} for TinygradRunner"
+    assert self.model_data.model.artifact.fileName.endswith('_tinygrad.pkl'), f"Invalid model file {self.model_data.model.artifact.fileName} for TinygradRunner"
 
     model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.model_data.model.artifact.fileName}"
 
