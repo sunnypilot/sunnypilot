@@ -68,9 +68,10 @@ class ModelRunner(ABC):
       parsed_outputs['raw_pred'] = model_outputs.copy()
     return parsed_outputs
 
-  def run_model(self):
+  def run_model(self) -> dict[str, np.ndarray]:
     """Run model inference with prepared inputs and parse outputs."""
-    return self.parser.parse_outputs(self._slice_outputs(self._run_model()))
+    result: dict[str, np.ndarray] = self.parser.parse_outputs(self._slice_outputs(self._run_model()))
+    return result
 
 
 class TinygradRunner(ModelRunner):
