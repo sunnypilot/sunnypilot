@@ -47,7 +47,7 @@ class ModelRunner:
     """Initialize the model runner with paths to model and metadata files."""
     self.is_20hz = None
     self.models = {}
-    self.model_data = None
+    self._model_data = None
     bundle = get_active_bundle()
 
     if bundle:
@@ -71,7 +71,7 @@ class ModelRunner:
   @property
   @abstractmethod
   def input_shapes(self) -> dict[str, tuple[int]]:
-    return self.model_data.input_shapes
+    return self._model_data.input_shapes
 
   @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
@@ -85,10 +85,10 @@ class ModelRunner:
 
   def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
-    if not self.model_data:
+    if not self._model_data:
       raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
 
-    sliced_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.model_data.output_slices.items()}
+    sliced_outputs = {k: model_outputs[np.newaxis, v] for k, v in self._model_data.output_slices.items()}
     if SEND_RAW_PRED:
       sliced_outputs['raw_pred'] = model_outputs.copy()
     return sliced_outputs
@@ -110,10 +110,11 @@ class TinygradRunner(ModelRunner):
   def __init__(self, model_type: ModelManager.Model.Type = ModelManager.Model.Type.supercombo):
     super().__init__()
 
-    self.model_data = self.models.get(model_type)
-    assert self.model_data.model.artifact.fileName.endswith('_tinygrad.pkl'), f"Invalid model file {self.model_data.model.artifact.fileName} for TinygradRunner"
+    self._model_data = self.models.get(model_type)
+    print(model_type)
+    assert self._model_data.model.artifact.fileName.endswith('_tinygrad.pkl'), f"Invalid model file {self._model_data.model.artifact.fileName} for TinygradRunner"
 
-    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.model_data.model.artifact.fileName}"
+    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self._model_data.model.artifact.fileName}"
 
     # Load Tinygrad model
     with open(model_pkl_path, "rb") as f:
@@ -133,9 +134,9 @@ class TinygradRunner(ModelRunner):
   def prepare_vision_inputs(self, imgs_cl: dict[str, CLMem], frames: dict[str, DrivingModelFrame]) -> dict:
     for key in imgs_cl:
       if TICI and key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.model_data.input_shapes[key], dtype=self.input_to_dtype[key])
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self._model_data.input_shapes[key], dtype=self.input_to_dtype[key])
       elif not TICI:
-        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.model_data.input_shapes[key])
+        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self._model_data.input_shapes[key])
         self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
   def prepare_policy_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
@@ -239,7 +240,7 @@ def get_model_runner() -> ModelRunner:
 
   bundle = get_active_bundle()
   if bundle and bundle.models:
-    types = {m.type for m in bundle.models}
+    types = {m.type.raw for m in bundle.models}
     if ModelManager.Model.Type.vision in types or ModelManager.Model.Type.policy in types:
       return TinygradSplitRunner()
     return TinygradRunner(bundle.models[0].type.raw)
