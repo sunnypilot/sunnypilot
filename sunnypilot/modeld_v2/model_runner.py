@@ -67,6 +67,10 @@ class ModelRunner(ABC):
     if SEND_RAW_PRED:
       parsed_outputs['raw_pred'] = model_outputs.copy()
     return parsed_outputs
+  
+  def run_model(self):
+    """Run model inference with prepared inputs and parse outputs."""
+    return self.parser.parse_outputs(self._slice_outputs(self._run_model()))
 
   def run_model(self) -> dict[str, np.ndarray]:
     """Run model inference with prepared inputs and parse outputs."""
