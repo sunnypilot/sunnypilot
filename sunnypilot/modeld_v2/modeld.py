@@ -61,7 +61,7 @@ class ModelState:
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
 
-    for key, shape in self.model_runner.input_shapes.items():
+    for key, shape in self.model_runner.model_data.input_shapes.items():
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 

@@ -100,9 +100,9 @@ class TinygradRunner(ModelRunner):
     super().__init__()
 
     self.model_data = self.models.get(model_type)
-    assert self.model_data.model.fileName.endswith('_tinygrad.pkl'), f"Invalid model file: {self.model_data.model.fileName} for TinygradRunner"
+    assert self.model_data.model.artifact.fileName.endswith('_tinygrad.pkl'), f"Invalid model file: {self.model_data.model.artifact.fileName} for TinygradRunner"
 
-    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.model_data.model.fileName}"
+    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.model_data.model.artifact.fileName}"
 
     # Load Tinygrad model
     with open(model_pkl_path, "rb") as f:
@@ -209,6 +209,6 @@ def get_model_runner() -> ModelRunner:
     types = {m.type for m in bundle.models}
     if ModelManager.Model.Type.vision in types or ModelManager.Model.Type.policy in types:
       return TinygradSplitRunner()
-    return TinygradRunner(bundle.models[0].type)
+    return TinygradRunner(bundle.models[0].type.raw)
 
   return TinygradRunner()
