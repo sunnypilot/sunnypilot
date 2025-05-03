@@ -61,6 +61,10 @@ class ModelRunner(ABC):
     """Run model inference with prepared inputs."""
     raise NotImplementedError("This method should be implemented in subclasses.")
 
+  def _run_model(self):
+    """Run model inference with prepared inputs."""
+    raise NotImplementedError("This method should be implemented in subclasses.")
+
   def _slice_outputs(self, model_outputs: np.ndarray) -> dict:
     """Slice model outputs according to metadata configuration."""
     parsed_outputs = {k: model_outputs[np.newaxis, v] for k, v in self.output_slices.items()}
