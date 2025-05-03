@@ -68,6 +68,11 @@ class ModelRunner:
     self.inputs: dict = {}
     self.parser = Parser()
 
+  @property
+  @abstractmethod
+  def input_shapes(self) -> dict[str, tuple[int]]:
+    return self.model_data.input_shapes
+
   @abstractmethod
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
     """Prepare inputs for model inference."""
@@ -195,6 +200,11 @@ class TinygradSplitRunner(ModelRunner):
     super().__init__()
     self.policy_runner = TinygradPolicyRunner()
     self.vision_runner = TinygradVisionRunner()
+  
+  @property
+  def input_shapes(self) -> dict[str, tuple[int]]:
+    """Get the input shapes for the model."""
+    return { **self.policy_runner.input_shapes, **self.vision_runner.input_shapes }
 
   def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
     self.policy_runner.prepare_policy_inputs(imgs_cl, numpy_inputs)
