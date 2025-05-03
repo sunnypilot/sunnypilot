@@ -111,7 +111,6 @@ class TinygradRunner(ModelRunner):
     super().__init__()
 
     self._model_data = self.models.get(model_type)
-    print(model_type)
     assert self._model_data.model.artifact.fileName.endswith('_tinygrad.pkl'), f"Invalid model file {self._model_data.model.artifact.fileName} for TinygradRunner"
 
     model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self._model_data.model.artifact.fileName}"
