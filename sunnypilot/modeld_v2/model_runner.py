@@ -102,14 +102,13 @@ class ModelRunner:
 class TinygradRunner(ModelRunner):
   """Tinygrad implementation of model runner for TICI hardware."""
 
-  def __init__(self):
+  def __init__(self, model_type: ModelManager.Model.Type = ModelManager.Model.Type.supercombo):
     super().__init__()
 
-    assert len(self.models) == 1, "TinygradRunner expects a single combined model (e.g., supercombo)"
-    self.supercombo = self.models.get(ModelManager.Model.Type.supercombo)
-    assert self.supercombo.model.fileName.endswith('_tinygrad.pkl'), f"Invalid model file: {self.supercombo.model.fileName} for TinygradRunner"
+    self.model_data = self.models.get(model_type)
+    assert self.model_data.model.fileName.endswith('_tinygrad.pkl'), f"Invalid model file: {self.model_data.model.fileName} for TinygradRunner"
 
-    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.supercombo.model.fileName}"
+    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{self.model_data.model.fileName}"
 
     # Load Tinygrad model
     with open(model_pkl_path, "rb") as f:
@@ -126,25 +125,64 @@ class TinygradRunner(ModelRunner):
       self.input_to_dtype[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][2]  # dtype
       self.input_to_device[name] = self.model_run.captured.expected_st_vars_dtype_device[idx][3]  # device
 
-  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
-    # Initialize image tensors if not already done
+  def prepare_vision_inputs(self, imgs_cl: dict[str, CLMem], frames: dict[str, DrivingModelFrame]) -> dict:
     for key in imgs_cl:
       if TICI and key not in self.inputs:
-        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.supercombo.input_shapes[key], dtype=self.input_to_dtype[key])
+        self.inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.model_data.input_shapes[key], dtype=self.input_to_dtype[key])
       elif not TICI:
-        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.supercombo.input_shapes[key])
+        shape = frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.model_data.input_shapes[key])
         self.inputs[key] = Tensor(shape, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
 
-    # Update numpy inputs
+  def prepare_policy_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray]) -> dict:
     for key, value in numpy_inputs.items():
       if key not in imgs_cl:
         self.inputs[key] = Tensor(value, device=self.input_to_device[key], dtype=self.input_to_dtype[key]).realize()
+
+    return self.inputs
+  @abstractmethod
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
+    self.prepare_vision_inputs(imgs_cl, frames)
+    self.prepare_policy_inputs(imgs_cl, numpy_inputs)
 
     return self.inputs
 
   def _run_model(self):
     return self.model_run(**self.inputs).numpy().flatten()
 
+class TinygradVisionRunner(TinygradRunner):
+  """Tinygrad implementation of model runner for TICI hardware."""
+
+  def __init__(self):
+    super().__init__(ModelManager.Model.Type.vision)
+
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
+    raise NotImplementedError("TinygradVisionRunner does not implement prepare_inputs method. you must call prepare_vision_inputs instead.")
+
+class TinygradPolicyRunner(TinygradRunner):
+  """Tinygrad implementation of model runner for TICI hardware."""
+
+  def __init__(self):
+    super().__init__(ModelManager.Model.Type.policy)
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
+    raise NotImplementedError("TinygradPolicyRunner does not implement prepare_inputs method. you must call prepare_policy_inputs instead.")
+
+class TinygradSplitRunner(ModelRunner):
+  """Tinygrad implementation of model runner for TICI hardware."""
+
+  def _run_model(self):
+    policy_output = self.policy_runner.run_model()
+    vision_output = self.vision_runner.run_model()
+    return
+
+  def __init__(self):
+    super().__init__()
+    self.policy_runner = TinygradPolicyRunner()
+    self.vision_runner = TinygradVisionRunner()
+
+  def prepare_inputs(self, imgs_cl: dict[str, CLMem], numpy_inputs: dict[str, np.ndarray], frames: dict[str, DrivingModelFrame]) -> dict:
+    self.policy_runner.prepare_policy_inputs(imgs_cl, numpy_inputs)
+    self.vision_runner.prepare_vision_inputs(imgs_cl, frames)
+    return { **self.policy_runner.inputs, **self.vision_runner.inputs }
 
 class ONNXRunner(ModelRunner):
   """ONNX implementation of model runner for non-TICI hardware."""

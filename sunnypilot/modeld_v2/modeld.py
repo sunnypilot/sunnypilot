@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
-from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
+from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner, TinygradVisionRunner, TinygradPolicyRunner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 LAT_SMOOTH_SECONDS = 0.0
@@ -45,25 +45,32 @@ class ModelState:
 
   def __init__(self, context: CLContext):
     try:
-      self.model_runner = TinygradRunner() if TICI else ONNXRunner()
+      if not TICI:
+        self.model_runners = ONNXRunner()
+      else:
+        self.model_runners = TinygradRunner()
+        self.policy_runner = TinygradPolicyRunner()
+        self.vision_runner = TinygradVisionRunner()
+        
     except Exception as e:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
+      raise
 
-    buffer_length = 5 if self.model_runner.is_20hz else 2
+    buffer_length = 5 if self.model_runners.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    if self.model_runner.is_20hz:
+    if self.model_runners.is_20hz:
       self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
 
-    for key, shape in self.model_runner.input_shapes.items():
+    for key, shape in self.model_runners.input_shapes.items():
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
-    if self.model_runner.is_20hz:
+    if self.model_runners.is_20hz:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
       self.full_features_buffer_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
@@ -76,7 +83,7 @@ class ModelState:
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    if self.model_runner.is_20hz:
+    if self.model_runners.is_20hz:
       self.full_desire[:-1] = self.full_desire[1:]
       self.full_desire[-1] = new_desire
       self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
@@ -93,15 +100,15 @@ class ModelState:
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
     # Prepare inputs using the model runner
-    self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
+    self.model_runners.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
 
     if prepare_only:
       return None
 
     # Run model inference
-    outputs = self.model_runner.run_model()
+    outputs = self.model_runners.run_model()
 
-    if self.model_runner.is_20hz:
+    if self.model_runners.is_20hz:
       self.full_features_buffer[:-1] = self.full_features_buffer[1:]
       self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
       self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.full_features_buffer_idxs]
