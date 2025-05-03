@@ -94,7 +94,7 @@ class ModelRunner:
     return sliced_outputs
 
   @abstractmethod
-  def _parse_outputs(self, model_outputs: dict[str, np.ndarray]) -> dict:
+  def _parse_outputs(self, model_outputs: np.ndarray) -> dict:
     """Parse model outputs into a dictionary."""
     raise NotImplementedError("This method should be implemented in subclasses.")
 
