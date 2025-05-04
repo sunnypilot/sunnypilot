@@ -1,40 +1,9 @@
-import os
-import pickle
-from abc import abstractmethod, ABC
 import numpy as np
 
-from cereal import custom
-from openpilot.sunnypilot.modeld_v2 import MODEL_PATH
-from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLMem
-from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
-from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
-from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
-from openpilot.system.hardware import TICI
-from openpilot.system.hardware.hw import Paths
-
-from openpilot.sunnypilot.models.helpers import get_active_bundle
-
-from sunnypilot.modeld_v2.model_runner import VisionTinygrad
-from sunnypilot.models.runners.modular_runner import ModularRunner
-from sunnypilot.models.runners.split_runner import PolicyTinygrad
-from sunnypilot.models.runners.supercombo_runner import SupercomboTinygrad
-from tinygrad.tensor import Tensor
-
-# Set QCOM environment variable for TICI devices, potentially enabling hardware acceleration
-if TICI:
-  os.environ['QCOM'] = '1'
-
-SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
-CUSTOM_MODEL_PATH = Paths.model_root()
-ModelType = custom.ModelManagerSP.Model.Type
-
-# Type definitions for clarity
-NumpyDict = dict[str, np.ndarray]
-ShapeDict = dict[str, tuple[int, ...]]
-SliceDict = dict[str, slice]
-CLMemDict = dict[str, CLMem]
-FrameDict = dict[str, DrivingModelFrame]
+from sunnypilot.modeld_v2 import MODEL_PATH
+from sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
+from sunnypilot.models.runners.constants import ModelType, ShapeDict, CLMemDict, NumpyDict, FrameDict
+from sunnypilot.models.runners.model_runner import ModelRunner
 
 
 class ONNXRunner(ModelRunner):
