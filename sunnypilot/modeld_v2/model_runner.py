@@ -56,7 +56,22 @@ class ModelData:
     self.input_shapes = model_metadata.get('input_shapes', {})
     self.output_slices = model_metadata.get('output_slices', {})
 
-class ModelRunner:
+class ModularRunner(ABC):
+  @property
+  @abstractmethod
+  def parser_method_dict(self) -> dict:
+    pass
+  
+  @parser_method_dict.setter
+  @abstractmethod
+  def parser_method_dict(self, value: dict) -> None:
+    pass
+  
+  @abstractmethod
+  def _slice_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
+    pass
+
+class ModelRunner(ModularRunner):
   """
   Abstract base class for managing and executing machine learning models.
 
@@ -70,10 +85,20 @@ class ModelRunner:
     self.is_20hz: bool | None = None
     self.models: dict[int, ModelData] = {}
     self._model_data: ModelData | None = None # Active model data for current operation
+    self._parser_method_dict: dict = {}
     self.inputs: dict = {}
-    self.parser_method_dict: dict = {}
     self._parser = None
     self._load_models()
+    
+  @property
+  def parser_method_dict(self) -> dict:
+    """Returns the dictionary mapping model types to their respective parsing methods."""
+    return self._parser_method_dict
+  
+  @parser_method_dict.setter
+  def parser_method_dict(self, value: dict) -> None:
+    """Sets the dictionary mapping model types to their respective parsing methods."""
+    self._parser_method_dict = value
 
   def _load_models(self) -> None:
     """Loads the active model bundle configuration and sets up ModelData."""
@@ -134,7 +159,7 @@ class ModelRunner:
     """
     return self._run_model() # Parsing is handled within specific runner implementations
 
-class SupercomboTinygrad:
+class SupercomboTinygrad(ModularRunner, ABC):
   """
   A TinygradRunner specialized for vision-only models.
 
@@ -149,7 +174,7 @@ class SupercomboTinygrad:
     result: NumpyDict = self._supercombo_parser.parse_outputs(self._slice_outputs(model_outputs))
     return result
 
-class PolicyTinygrad:
+class PolicyTinygrad(ModularRunner, ABC):
   """
   A TinygradRunner specialized for policy-only models.
 
@@ -164,7 +189,7 @@ class PolicyTinygrad:
     result: NumpyDict = self._policy_parser.parse_policy_outputs(self._slice_outputs(model_outputs))
     return result
 
-class VisionTinygrad:
+class VisionTinygrad(ModularRunner, ABC):
   """
   A TinygradRunner specialized for vision-only models.
 
