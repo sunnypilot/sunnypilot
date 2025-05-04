@@ -53,7 +53,7 @@ class ModelState:
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     if self.model_runner.is_20hz:
-      # TODO-SP: for full features 20Hz, setting +1 to bugger len makes it work only for FoF. Will fail any other model
+      # TODO-SP: for full features 20Hz, setting +1 to bugger len makes it work only for Filet o Fish. Will fail any other model
       self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
