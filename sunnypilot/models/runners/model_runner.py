@@ -83,6 +83,7 @@ class ModelRunner(ModularRunner):
   def __init__(self):
     """Initializes the model runner, loading the active model bundle."""
     self.is_20hz: bool | None = None
+    self.is_20hz_3d: bool | None = None
     self.models: dict[int, ModelData] = {}
     self._model_data: ModelData | None = None  # Active model data for current operation
     self._parser_method_dict: dict = {}
@@ -108,6 +109,7 @@ class ModelRunner(ModularRunner):
 
     self.models = {model.type.raw: ModelData(model) for model in bundle.models}
     self.is_20hz = bundle.is20hz
+    self.is_20hz_3d = False
 
   @property
   def input_shapes(self) -> ShapeDict:

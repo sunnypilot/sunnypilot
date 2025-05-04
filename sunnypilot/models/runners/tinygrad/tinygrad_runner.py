@@ -94,6 +94,7 @@ class TinygradSplitRunner(ModelRunner):
   """
   def __init__(self):
     super().__init__()
+    self.is_20hz_3d = True
     self.vision_runner = TinygradRunner(ModelType.vision)
     self.policy_runner = TinygradRunner(ModelType.policy)
 
