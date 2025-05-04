@@ -26,6 +26,12 @@ OffroadHomeSP::OffroadHomeSP(QWidget *parent) : OffroadHome(parent) {
   left_widget->setStyleSheet("border-radius: 10px;");
 
   home_layout->insertWidget(0, left_widget);
+
+  offroad_notif = new QPushButton(tr("ALWAYS OFFROAD ACTIVE"));
+  offroad_notif->setVisible(false);
+  offroad_notif->setStyleSheet("background-color: #E22C2C;");
+  header_layout->insertWidget(0, offroad_notif, 0, Qt::AlignHCenter | Qt::AlignLeft);
+
 }
 
 void OffroadHomeSP::showEvent(QShowEvent *event) {
@@ -34,6 +40,8 @@ void OffroadHomeSP::showEvent(QShowEvent *event) {
 }
 
 void OffroadHomeSP::refreshOffroadStatus() {
-  btn_exit_offroad->setVisible(params.getBool("OffroadMode"));
+  bool is_offroad = params.getBool("OffroadMode");
+  btn_exit_offroad->setVisible(is_offroad);
+  offroad_notif->setVisible(is_offroad);
   OffroadHome::refresh();
 }

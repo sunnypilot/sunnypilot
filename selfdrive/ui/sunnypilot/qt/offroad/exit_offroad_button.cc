@@ -16,7 +16,6 @@ ExitOffroadButton::ExitOffroadButton(QWidget *parent) : QPushButton(parent) {
   connect(this, &QPushButton::clicked, [=]() {
     if (ConfirmationDialog::confirm(tr("Are you sure you want to exit Always Offroad mode?"), tr("Confirm"), this)) {
       params.remove("OffroadMode");
-      params.remove("OffroadMode_Status"); // to ensure offroad alert gets removed without timer delay
     }
   });
 
@@ -60,9 +59,9 @@ void ExitOffroadButton::paintEvent(QPaintEvent *event) {
   // gradient
   bool pressed = isDown();
   QLinearGradient gradient(rect().left(), 0, rect().right(), 0);
-  gradient.setColorAt(0, QColor(226, 44, 44, pressed ? 0xcc : 0xff));
-  gradient.setColorAt(0.3, QColor(226, 44, 44, pressed ? 0xcc : 0xff));
-  gradient.setColorAt(1, QColor(255, 155, 63, pressed ? 0xcc : 0xff));
+  gradient.setColorAt(0, QColor(35, 149, 255, pressed ? 0xcc : 0xff));
+  gradient.setColorAt(0.3, QColor(35, 149, 255, pressed ? 0xcc : 0xff));
+  gradient.setColorAt(1, QColor(20, 255, 171, pressed ? 0xcc : 0xff));
   p.fillPath(path, gradient);
 
   // vertical line

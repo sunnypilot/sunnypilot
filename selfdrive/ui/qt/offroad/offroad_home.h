@@ -39,6 +39,7 @@ public:
 
 protected:
   QHBoxLayout *home_layout;
+  QHBoxLayout *header_layout;
 
   void showEvent(QShowEvent *event) override;
   void refresh();

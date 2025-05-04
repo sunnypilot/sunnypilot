@@ -18,6 +18,7 @@ public:
 
 private:
   ExitOffroadButton *btn_exit_offroad;
+  QPushButton *offroad_notif;
   Params params;
 
   void showEvent(QShowEvent *event) override;
