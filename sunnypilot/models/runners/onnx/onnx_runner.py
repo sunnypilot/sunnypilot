@@ -49,7 +49,7 @@ class ONNXRunner(ModelRunner):
     # Use slicing if metadata is available, otherwise pass raw outputs
     if self._model_data is None:
       raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
-    
+
     outputs_to_parse = self._slice_outputs(model_outputs) if self._model_data else {'raw_pred': model_outputs}
     result: NumpyDict = self.parser_method_dict[self._model_data.model.type.raw](outputs_to_parse)
     return result

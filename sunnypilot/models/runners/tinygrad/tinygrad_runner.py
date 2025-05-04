@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH
-from openpilot.sunnypilot.models.runners.model_runner import ModelRunner, ModelData
+from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
 from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad
 from openpilot.system.hardware import TICI
 
