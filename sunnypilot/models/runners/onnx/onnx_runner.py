@@ -1,9 +1,9 @@
 import numpy as np
 
-from sunnypilot.modeld_v2 import MODEL_PATH
-from sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
-from sunnypilot.models.runners.constants import ModelType, ShapeDict, CLMemDict, NumpyDict, FrameDict
-from sunnypilot.models.runners.model_runner import ModelRunner
+from openpilot.sunnypilot.modeld_v2 import MODEL_PATH
+from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
+from openpilot.sunnypilot.models.runners.constants import ModelType, ShapeDict, CLMemDict, NumpyDict, FrameDict
+from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
 
 
 class ONNXRunner(ModelRunner):
@@ -47,8 +47,11 @@ class ONNXRunner(ModelRunner):
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
     """Parses the raw ONNX model outputs using the standard Parser."""
     # Use slicing if metadata is available, otherwise pass raw outputs
+    if self._model_data is None:
+      raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
+    
     outputs_to_parse = self._slice_outputs(model_outputs) if self._model_data else {'raw_pred': model_outputs}
-    result: NumpyDict = self.parser.parse_outputs(outputs_to_parse)
+    result: NumpyDict = self.parser_method_dict[self._model_data.model.type.raw](outputs_to_parse)
     return result
 
   def _run_model(self) -> NumpyDict:

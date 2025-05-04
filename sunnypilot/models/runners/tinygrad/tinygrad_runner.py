@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH
-from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
+from openpilot.sunnypilot.models.runners.model_runner import ModelRunner, ModelData
 from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad
 from openpilot.system.hardware import TICI
 
@@ -80,6 +80,9 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
     """Parses the raw model outputs using the standard Parser."""
+    if self._model_data is None:
+      raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
+
     result: NumpyDict = self.parser_method_dict[self._model_data.model.type.raw](model_outputs)
     return result
 
