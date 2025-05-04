@@ -56,8 +56,7 @@ class ModelData:
     self.input_shapes = model_metadata.get('input_shapes', {})
     self.output_slices = model_metadata.get('output_slices', {})
 
-
-class ModelRunner(ABC):
+class ModelRunner:
   """
   Abstract base class for managing and executing machine learning models.
 
@@ -72,7 +71,8 @@ class ModelRunner(ABC):
     self.models: dict[int, ModelData] = {}
     self._model_data: ModelData | None = None # Active model data for current operation
     self.inputs: dict = {}
-    self.parser = CombinedParser()
+    self.parser_method_dict: dict = {}
+    self._parser = None
     self._load_models()
 
   def _load_models(self) -> None:
@@ -134,7 +134,52 @@ class ModelRunner(ABC):
     """
     return self._run_model() # Parsing is handled within specific runner implementations
 
-class TinygradRunner(ModelRunner):
+class SupercomboTinygrad:
+  """
+  A TinygradRunner specialized for vision-only models.
+
+  Uses a SplitParser to handle outputs specific to the vision part of a split model setup.
+  """
+  def __init__(self):
+    self._supercombo_parser = CombinedParser()
+    self.parser_method_dict[ModelType.supercombo] = self._parse_supercombo_outputs
+
+  def _parse_supercombo_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
+    """Parses vision model outputs using SplitParser."""
+    result: NumpyDict = self._supercombo_parser.parse_outputs(self._slice_outputs(model_outputs))
+    return result
+
+class PolicyTinygrad:
+  """
+  A TinygradRunner specialized for policy-only models.
+
+  Uses a SplitParser to handle outputs specific to the policy part of a split model setup.
+  """
+  def __init__(self):
+    self._policy_parser = SplitParser()
+    self.parser_method_dict[ModelType.policy] = self._parse_policy_outputs
+
+  def _parse_policy_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
+    """Parses policy model outputs using SplitParser."""
+    result: NumpyDict = self._policy_parser.parse_policy_outputs(self._slice_outputs(model_outputs))
+    return result
+
+class VisionTinygrad:
+  """
+  A TinygradRunner specialized for vision-only models.
+
+  Uses a SplitParser to handle outputs specific to the vision part of a split model setup.
+  """
+  def __init__(self):
+    self._vision_parser = SplitParser()
+    self.parser_method_dict[ModelType.vision] = self._parse_vision_outputs
+
+  def _parse_vision_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
+    """Parses vision model outputs using SplitParser."""
+    result: NumpyDict = self._vision_parser.parse_vision_outputs(self._slice_outputs(model_outputs))
+    return result
+
+class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTinygrad):
   """
   A ModelRunner implementation for executing Tinygrad models.
 
@@ -145,7 +190,10 @@ class TinygradRunner(ModelRunner):
   :param model_type: The type of model (e.g., supercombo) to load and run.
   """
   def __init__(self, model_type: int = ModelType.supercombo):
-    super().__init__()
+    ModelRunner.__init__(self)
+    SupercomboTinygrad.__init__(self)
+    PolicyTinygrad.__init__(self)
+    VisionTinygrad.__init__(self)
     self._model_data = self.models.get(model_type)
     if not self._model_data or not self._model_data.model:
       raise ValueError(f"Model data for type {model_type} not available.")
@@ -201,37 +249,7 @@ class TinygradRunner(ModelRunner):
 
   def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
     """Parses the raw model outputs using the standard Parser."""
-    result: NumpyDict = self.parser.parse_outputs(self._slice_outputs(model_outputs))
-    return result
-
-class TinygradVisionRunner(TinygradRunner):
-  """
-  A TinygradRunner specialized for vision-only models.
-
-  Uses a SplitParser to handle outputs specific to the vision part of a split model setup.
-  """
-  def __init__(self):
-    super().__init__(ModelType.vision)
-    self.parser = SplitParser() # Use SplitParser for vision-specific outputs
-
-  def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
-    """Parses vision model outputs using SplitParser."""
-    result: NumpyDict = self.parser.parse_vision_outputs(self._slice_outputs(model_outputs))
-    return result
-
-class TinygradPolicyRunner(TinygradRunner):
-  """
-  A TinygradRunner specialized for policy-only models.
-
-  Uses a SplitParser to handle outputs specific to the policy part of a split model setup.
-  """
-  def __init__(self):
-    super().__init__(ModelType.policy)
-    self.parser = SplitParser() # Use SplitParser for policy-specific outputs
-
-  def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
-    """Parses policy model outputs using SplitParser."""
-    result: NumpyDict = self.parser.parse_policy_outputs(self._slice_outputs(model_outputs))
+    result: NumpyDict = self.parser_method_dict[self._model_data.model.type.raw](model_outputs)
     return result
 
 class TinygradSplitRunner(ModelRunner):
@@ -242,8 +260,8 @@ class TinygradSplitRunner(ModelRunner):
   """
   def __init__(self):
     super().__init__()
-    self.vision_runner = TinygradVisionRunner()
-    self.policy_runner = TinygradPolicyRunner()
+    self.vision_runner = TinygradRunner(ModelType.vision)
+    self.policy_runner = TinygradRunner(ModelType.policy)
 
   def _run_model(self) -> NumpyDict:
     """Runs both vision and policy models and merges their parsed outputs."""
@@ -342,3 +360,4 @@ def get_model_runner() -> ModelRunner:
 
   # Default fallback to TinygradRunner with the supercombo type if bundle info is missing/incomplete
   return TinygradRunner(ModelType.supercombo)
+
