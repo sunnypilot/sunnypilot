@@ -22,7 +22,8 @@ from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
-from openpilot.sunnypilot.modeld_v2.model_runner import get_model_runner
+
+from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 LAT_SMOOTH_SECONDS = 0.0
