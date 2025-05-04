@@ -8,7 +8,7 @@ from openpilot.sunnypilot.modeld_v2 import MODEL_PATH
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLMem
 from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
+from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser as CombinedParser
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs_split import Parser as SplitParser
 from openpilot.system.hardware import TICI
 from openpilot.system.hardware.hw import Paths
@@ -72,7 +72,7 @@ class ModelRunner(ABC):
     self.models: dict[int, ModelData] = {}
     self._model_data: ModelData | None = None # Active model data for current operation
     self.inputs: dict = {}
-    self.parser = Parser()
+    self.parser = CombinedParser()
     self._load_models()
 
   def _load_models(self) -> None:
