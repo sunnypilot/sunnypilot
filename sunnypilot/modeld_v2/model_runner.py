@@ -32,7 +32,25 @@ FrameDict = dict[str, DrivingModelFrame]
 
 
 class ModelData:
-  """Container for model metadata and inference configuration."""
+  """
+  Represents data associated with a machine learning model.
+
+  This class is designed to store and manage metadata, input shapes, and output
+  slices for a given machine learning model. It's capable of loading metadata 
+  from a pickle file based on the provided model's metadata file name.
+
+  The purpose of this class is to simplify and centralize the handling of model-related
+  data, especially when working with custom models that require specific configurations.
+
+  :ivar model: The machine learning model instance, if provided.
+  :type model: Optional[object]
+  :ivar metadata: Metadata object associated with the model, if available.
+  :type metadata: Optional[object]
+  :ivar input_shapes: A dictionary containing input shapes for the model.
+  :type input_shapes: ShapeDict
+  :ivar output_slices: A dictionary containing output slices for the model.
+  :type output_slices: SliceDict
+  """
 
   def __init__(self, model = None):
     self.model = model
@@ -53,7 +71,27 @@ class ModelData:
 
 
 class ModelRunner(ABC):
-  """Abstract base class for model runners."""
+  """
+  Abstract base class for managing and running machine learning models.
+
+  This class provides the foundational structure for loading, organizing,
+  and preparing data for model inference while maintaining flexibility for
+  specific implementations. It includes functionality to load active model
+  bundles, slice model outputs based on configurations, and manage input
+  shapes. Derived classes are expected to implement methods for preparing
+  inputs and executing model inference.
+
+  :ivar is_20hz: Indicates whether the model operates at 20Hz frequency.
+  :type is_20hz: bool | None
+  :ivar models: Dictionary mapping model types to their respective model data objects.
+  :type models: dict[int, ModelData]
+  :ivar _model_data: Active model data object used for operations.
+  :type _model_data: ModelData | None
+  :ivar inputs: Dictionary to store input data for model inference.
+  :type inputs: dict
+  :ivar parser: Instance of the Parser class used for data parsing.
+  :type parser: Parser
+  """
 
   def __init__(self):
     """Initialize the model runner."""
@@ -121,8 +159,22 @@ class ModelRunner(ABC):
 
 
 class TinygradRunner(ModelRunner):
-  """Tinygrad implementation of model runner for TICI hardware."""
+  """
+  Provides functionality for managing and running Tinygrad models within the context of
+  model inference tasks.
 
+  This class is specifically designed to handle the integration, preparation of inputs,
+  execution of inference, and parsing of outputs for Tinygrad-based models. It ensures the
+  correct mapping of input names to appropriate data types and devices while validating 
+  model artifacts during initialization.
+
+  :ivar _model_data: Contains metadata and reference to the model being managed.
+  :ivar input_to_dtype: Maps model input names to their corresponding data types, as
+      derived from the model's expected input specifications.
+  :ivar input_to_device: Maps model input names to their devices for computation, as
+      derived from the model's expected input specifications.
+  :ivar model_run: The loaded Tinygrad model artifact ready for inference tasks.
+  """
   def __init__(self, model_type: int = ModelType.supercombo):
     super().__init__()
 
@@ -182,7 +234,18 @@ class TinygradRunner(ModelRunner):
 
 
 class TinygradVisionRunner(TinygradRunner):
-  """Tinygrad runner for vision model."""
+  """
+  Represents a runner for handling vision models utilizing Tinygrad.
+
+  The TinygradVisionRunner class extends the TinygradRunner to provide specific
+  functionalities tailored for vision-based models. It utilizes a SplitParser
+  to interpret and process model outputs, enabling streamlined handling of
+  vision tasks.
+
+  :ivar parser: An instance of SplitParser used for processing and 
+                parsing vision model outputs.
+  :type parser: SplitParser
+  """
 
   def __init__(self):
     super().__init__(ModelType.vision)
@@ -195,7 +258,18 @@ class TinygradVisionRunner(TinygradRunner):
 
 
 class TinygradPolicyRunner(TinygradRunner):
-  """Tinygrad runner for policy model."""
+  """
+  Encapsulates the functionality to run and manage a Tinygrad policy model.
+
+  This class is designed to handle the outputs from a Tinygrad policy model 
+  by parsing and processing them using a specific parser. It extends the 
+  general TinygradRunner class to focus specifically on policy models. This 
+  includes initializing the appropriate model type and setting up the parser 
+  used for handling policy-related outputs.
+
+  :ivar parser: Parser instance to process policy outputs.
+  :type parser: SplitParser
+  """
 
   def __init__(self):
     super().__init__(ModelType.policy)
@@ -208,7 +282,20 @@ class TinygradPolicyRunner(TinygradRunner):
 
 
 class TinygradSplitRunner(ModelRunner):
-  """Combined runner for split vision and policy models."""
+  """
+  TinygradSplitRunner is a specialized model runner class.
+
+  The class is designed to handle running and managing both vision and
+  policy models within a single structure. It combines the outputs of these 
+  models and facilitates preparation and management of their inputs. 
+  It serves as a higher-level abstraction for coordinating tasks involving
+  both models.
+
+  :ivar vision_runner: Instance responsible for running the vision model.
+  :type vision_runner: TinygradVisionRunner
+  :ivar policy_runner: Instance responsible for running the policy model.
+  :type policy_runner: TinygradPolicyRunner
+  """
 
   def __init__(self):
     super().__init__()
@@ -234,7 +321,19 @@ class TinygradSplitRunner(ModelRunner):
 
 
 class ONNXRunner(ModelRunner):
-  """ONNX implementation of model runner for non-TICI hardware."""
+  """
+  Handles running ONNX models and preparing inputs and outputs for inference.
+
+  This class provides functionality to process inputs for ONNX models, 
+  run model inference, and parse the outputs. It uses an ONNX CPU runner 
+  to execute the model and provides a convenient interface for working 
+  with OpenCL memory buffers and numpy-based inputs.
+
+  :ivar runner: The ONNX model runner instance.
+  :type runner: Any
+  :ivar input_to_nptype: A mapping of input names to their corresponding numpy data types.
+  :type input_to_nptype: dict
+  """
 
   def __init__(self):
     super().__init__()
@@ -272,7 +371,17 @@ class ONNXRunner(ModelRunner):
 
 
 def get_model_runner() -> ModelRunner:
-  """Get the appropriate model runner based on the hardware and available models."""
+  """
+  Determines and returns the appropriate model runner for the current platform
+  and available models. The function selects a model runner based on the 
+  available models, hardware capabilities, and platform-specific requirements. 
+  If the platform is not TICI, it defaults to using an ONNXRunner. On TICI 
+  platforms, it analyzes the active bundle configuration, checking for model 
+  types to decide between various runner implementations.
+
+  :return: The selected model runner instance.
+  :rtype: ModelRunner
+  """
   # Use ONNX runner for non-TICI platforms
   if not TICI:
     return ONNXRunner()
