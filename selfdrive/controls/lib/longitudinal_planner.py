@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import math
 import numpy as np
-
+from openpilot.common.params import Params
 import cereal.messaging as messaging
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.conversions import Conversions as CV
@@ -71,6 +71,20 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
+
+    self.params = Params()
+    self.param_read_counter = 0
+    self.read_param()
+
+    self.dynamic_personality = False
+
+
+  def read_param(self):
+    try:
+      self.dynamic_personality = self.params.get_bool("DynamicPersonality")
+    except AttributeError:
+      pass
+
 
   @staticmethod
   def parse_model(model_msg, model_error):
@@ -149,7 +163,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality)
+    self.mpc.update(sm['radarState'], v_cruise, x, v, a, j, personality=sm['selfdriveState'].personality, dynamic_personality = self.dynamic_personality)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)
