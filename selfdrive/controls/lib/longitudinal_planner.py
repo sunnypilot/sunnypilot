@@ -170,7 +170,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
                                                                         action_t=action_t, vEgoStopping=self.CP.vEgoStopping)
 
     # To support legacy supercombo models. Will return unchanged values back for everything else
-    output_a_target, self.output_should_stop = LongitudinalPlannerSP.get_supercombo_accel_from_plan(self, output_a_target, self.output_should_stop,
+    output_a_target, self.output_should_stop = LongitudinalPlannerSP.override_accel_for_snpe_models(self, output_a_target, self.output_should_stop,
                                                                                                     self.v_desired_trajectory, self.a_desired_trajectory,
                                                                                                     CONTROL_N_T_IDX, action_t, self.CP.vEgoStopping)
 
