@@ -60,6 +60,9 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
+    dynamicpersonality = new ParamControl("DynamicPersonality", tr("Enable Dynamic Personality"), tr("Adjust follow distance dynamically "), "");
+  addItem(dynamicpersonality);
+
   // error log button
   errorLogBtn = new ButtonControl(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
   connect(errorLogBtn, &ButtonControl::clicked, [=]() {
@@ -84,7 +87,7 @@ void DeveloperPanel::updateToggles(bool _offroad) {
      * - visible, and
      * - during onroad & offroad states
      */
-    if (btn != experimentalLongitudinalToggle) {
+    if (btn != experimentalLongitudinalToggle && btn != dynamicpersonality) {
       btn->setEnabled(_offroad);
     }
   }
@@ -122,6 +125,7 @@ void DeveloperPanel::updateToggles(bool _offroad) {
 
   // Handle specific controls visibility for release branches
   enableGithubRunner->setVisible(!is_release);
+  dynamicpersonality->setVisible(!is_release);
   errorLogBtn->setVisible(!is_release);
   joystickToggle->setVisible(!is_release);
 
