@@ -43,7 +43,11 @@ class LongitudinalPlannerSP:
     pm.send('longitudinalPlanSP', plan_sp_send)
 
   def get_supercombo_accel_from_plan(self, sm: messaging.SubMaster, output_a_target, output_should_stop, speeds, accels, t_idxs, action_t, vEgoStopping):
-    is_supercombo = sm['modelManagerSP'].activeBundle.runner == custom.ModelManagerSP.Runner.snpe
+
+    try:
+      is_supercombo = sm['modelManagerSP'].activeBundle.runner == custom.ModelManagerSP.Runner.snpe
+    except Exception:
+      is_supercombo = False
 
     if (is_supercombo): # get accel for legacy models
       return get_accel_from_plan(speeds, accels, t_idxs, action_t, vEgoStopping)
