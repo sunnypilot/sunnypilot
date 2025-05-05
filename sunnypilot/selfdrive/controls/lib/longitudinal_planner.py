@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-
+import numpy as np
 from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan
@@ -42,7 +42,9 @@ class LongitudinalPlannerSP:
 
     pm.send('longitudinalPlanSP', plan_sp_send)
 
-  def override_accel_for_snpe_models(self, output_a_target, output_should_stop, speeds, accels, t_idxs, action_t, vEgoStopping):
+  @staticmethod
+  def override_accel_for_snpe_models(output_a_target: float, output_should_stop: bool, speeds: np.ndarray,
+                                     accels: np.ndarray, t_idxs: np.ndarray, action_t: float, vEgoStopping: float) -> tuple[float, bool]:
     """ Overrides the calculated acceleration target only if the active model is SNPE/thneed.
         Otherwise, it returns the provided targets unchanged. """
     is_snpe = get_active_model_runner() == custom.ModelManagerSP.Runner.snpe
