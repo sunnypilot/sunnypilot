@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 from cereal import messaging, custom
 from opendbc.car import structs
+from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
@@ -15,6 +16,7 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
+    self.mm_sp = custom.ModelManagerSP()
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
@@ -39,3 +41,11 @@ class LongitudinalPlannerSP:
     dec.active = self.dec.active()
 
     pm.send('longitudinalPlanSP', plan_sp_send)
+
+  def get_supercombo_accel_from_plan(self, sm: messaging.SubMaster, output_a_target, output_should_stop, speeds, accels, t_idxs, action_t, vEgoStopping):
+    is_supercombo = sm['modelManagerSP'].activeBundle.runner == custom.ModelManagerSP.Runner.snpe
+
+    if (is_supercombo): # get accel for legacy models
+      return get_accel_from_plan(speeds, accels, t_idxs, action_t, vEgoStopping)
+    else: # return original values for new models
+      return output_a_target, output_should_stop
