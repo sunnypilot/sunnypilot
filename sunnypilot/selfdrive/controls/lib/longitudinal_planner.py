@@ -4,7 +4,10 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+
 import numpy as np
+from typing import cast
+
 from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan
@@ -50,6 +53,6 @@ class LongitudinalPlannerSP:
     is_snpe = get_active_model_runner() == custom.ModelManagerSP.Runner.snpe
 
     if is_snpe: # SNPE models use only the get_accel_from_plan calculation
-      return get_accel_from_plan(speeds, accels, t_idxs, action_t, vEgoStopping)
+      return cast(tuple[float, bool], get_accel_from_plan(speeds, accels, t_idxs, action_t, vEgoStopping))
     else: # For non-SNPE models, return the already calculated values from the main planner
       return output_a_target, output_should_stop
