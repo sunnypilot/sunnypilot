@@ -17,7 +17,6 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
-    self.mm_sp = custom.ModelManagerSP()
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
