@@ -38,20 +38,26 @@ class ControlsdExt:
     # Update SP SubMaster messages
     self.sm_sp.update(0)
 
+  def _set_custom_lead_vehicle_state(self, CC_SP: custom.CarControlSP):
+    """ Update the custom LeadVehicle state in CarControlSP. """
+    CC_SP.leadDistance = 0.0
+    CC_SP.leadRelSpeed = 0.0
+
+    if self.sm_sp.valid["radarState"]:
+      leadOne = self.sm_sp["radarState"].leadOne
+      # Set leadDistance and leadRelSpeed if the lead vehicle is detected
+      CC_SP.leadDistance = leadOne.dRel if leadOne.status else 0.0
+      CC_SP.leadRelSpeed = leadOne.vRel if leadOne.status else 0.0
+
   def create_cc_sp(self) -> custom.CarControlSP:
-    # Create and return a new CarControlSP message instance
+    # Create a new CarControlSP message instance
     CC_SP = custom.CarControlSP.new_message()
 
     # MADS state
     CC_SP.mads = self.sm_sp['selfdriveStateSP'].mads
 
     # Custom LeadVehicle state
-    CC_SP.leadDistance = 0.0
-    CC_SP.leadRelSpeed = 0.0
-    if self.sm_sp.valid['radarState']:
-      leadOne = self.sm_sp['radarState'].leadOne
-      CC_SP.leadDistance = leadOne.dRel if leadOne.status else 0.0
-      CC_SP.leadRelSpeed = leadOne.vRel if leadOne.status else 0.0
+    self._set_custom_lead_vehicle_state(CC_SP)
 
     return CC_SP
 
