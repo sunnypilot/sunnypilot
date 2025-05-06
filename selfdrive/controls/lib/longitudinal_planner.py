@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import math
 import numpy as np
-from openpilot.common.params import Params
 import cereal.messaging as messaging
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.conversions import Conversions as CV
@@ -71,20 +70,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.a_desired_trajectory = np.zeros(CONTROL_N)
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
-
-    self.params = Params()
-    self.param_read_counter = 0
-    self.read_param()
-
-    self.dynamic_personality = False
-
-
-  def read_param(self):
-    try:
-      self.dynamic_personality = self.params.get_bool("DynamicPersonality")
-    except AttributeError:
-      pass
-
 
   @staticmethod
   def parse_model(model_msg, model_error):
