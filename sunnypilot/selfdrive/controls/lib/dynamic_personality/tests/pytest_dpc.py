@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 from cereal import log
-from unittest.mock import patch, MagicMock
 
 from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_personality.dynamic_personality_controller import DynamicPersonalityController
 
