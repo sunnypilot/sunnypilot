@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from cereal import log
 import numpy as np
 
