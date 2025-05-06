@@ -19,7 +19,7 @@ class ControlsdExt:
     cloudlog.info("controlsd_ext got CarParamsSP")
 
     # SP SubMaster
-    self.sm_sp = messaging.SubMaster(['selfdriveStateSP', 'radarState'])
+    self.sm_sp = messaging.SubMaster(['longitudinalPlan', 'selfdriveStateSP', 'radarState'])
 
     # SP PubMaster
     self.pm_sp = messaging.PubMaster(['carControlSP'])
@@ -58,6 +58,7 @@ class ControlsdExt:
 
     # Custom LeadVehicle state
     self._set_custom_lead_vehicle_state(CC_SP)
+    CC_SP.leadVisible = self.sm_sp['longitudinalPlan'].hasLead
 
     return CC_SP
 

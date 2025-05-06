@@ -63,7 +63,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     type @0 :Type;
     artifact @1 :Artifact;  # Main artifact
     metadata @2 :Artifact;  # Metadata artifact
-    
+
     enum Type {
       supercombo @0;
       navigation @1;
@@ -168,6 +168,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
   leadDistance @1 :Float32;
   leadRelSpeed @2 :Float32;
+  leadVisible @3 :Bool;
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {
