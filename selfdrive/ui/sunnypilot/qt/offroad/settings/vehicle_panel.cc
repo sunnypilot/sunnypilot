@@ -35,7 +35,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   });
 
   std::vector<QString> tuning_buttons { tr("Off"), tr("Dynamic"), tr("Predictive") };
-  hkgtuningToggle = new ButtonParamControlSP(
+  hyundaiLongitudinalTuningToggle = new ButtonParamControlSP(
     "HyundaiLongTune",
     tr("Custom Longitudinal Tuning"),
     tr("Select a tuning mode.\n"
@@ -45,20 +45,20 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
        "../assets/offroad/icon_shell.png",
     tuning_buttons
   );
-  hkgtuningToggle->showDescription();
-  hkgtuningToggle->setProperty("originalDesc", hkgtuningToggle->getDescription());
+  hyundaiLongitudinalTuningToggle->showDescription();
+  hyundaiLongitudinalTuningToggle->setProperty("originalDesc", hyundaiLongitudinalTuningToggle->getDescription());
 
-  for (auto btn : hkgtuningToggle->findChildren<QPushButton*>()) {
+  for (auto btn : hyundaiLongitudinalTuningToggle->findChildren<QPushButton*>()) {
     btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   }
 
-  connect(hkgtuningToggle, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
+  connect(hyundaiLongitudinalTuningToggle, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
     hkg_state = index;
     params.put("HyundaiLongTune", QString::number(index).toStdString());
     updateCarToggles();
   });
   // Add the tuning toggle to the layout
-  vlayout->addWidget(hkgtuningToggle);
+  vlayout->addWidget(hyundaiLongitudinalTuningToggle);
 
   // Add the vehicle screen to the main layout
   main_layout->addWidget(vehicleScreen);
@@ -89,24 +89,24 @@ void VehiclePanel::updateCarToggles() {
   QString brand = platformSelector->getPlatformBundle("brand").toString();
 
   if (brand == "hyundai") {
-    hkgtuningToggle->setVisible(true);
+    hyundaiLongitudinalTuningToggle->setVisible(true);
     QString msg = toggleDisableMsg(openpilotLong);
     if (!msg.isEmpty()) {
-      hkgtuningToggle->setEnabled(false);
-      hkgtuningToggle->setDescription(msg);
-      hkgtuningToggle->showDescription();
+      hyundaiLongitudinalTuningToggle->setEnabled(false);
+      hyundaiLongitudinalTuningToggle->setDescription(msg);
+      hyundaiLongitudinalTuningToggle->showDescription();
       return;
     }
-    hkgtuningToggle->setEnabled(true);
-    hkgtuningToggle->setDescription(hkgtuningToggle->property("originalDesc").toString());
+    hyundaiLongitudinalTuningToggle->setEnabled(true);
+    hyundaiLongitudinalTuningToggle->setDescription(hyundaiLongitudinalTuningToggle->property("originalDesc").toString());
 
     int tuningOption = QString::fromStdString(params.get("HyundaiLongTune")).toInt();
     hkg_state = tuningOption;
-    hkgtuningToggle->setCheckedButton(hkg_state);
-    hkgtuningToggle->showDescription();
+    hyundaiLongitudinalTuningToggle->setCheckedButton(hkg_state);
+    hyundaiLongitudinalTuningToggle->showDescription();
   } else {
     // Hide toggle if not hyundai.
     params.put("HyundaiLongTune", "0");
-    hkgtuningToggle->setVisible(false);
+    hyundaiLongitudinalTuningToggle->setVisible(false);
   }
 }

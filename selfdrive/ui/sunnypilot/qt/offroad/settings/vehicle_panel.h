@@ -26,7 +26,7 @@ private:
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector* platformSelector = nullptr;
-  ButtonParamControlSP* hkgtuningToggle = nullptr;
+  ButtonParamControlSP* hyundaiLongitudinalTuningToggle = nullptr;
 
   // State tracking
   bool offroad = false;
