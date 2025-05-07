@@ -169,7 +169,6 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiRadarTracksPersistent", PERSISTENT},
     {"HyundaiRadarTracksToggle", PERSISTENT},
     {"HyundaiLongTune", PERSISTENT},
-    {"HyundaiSmootherBraking", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
 };

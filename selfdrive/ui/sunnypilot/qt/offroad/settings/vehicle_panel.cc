@@ -10,12 +10,6 @@
 #include <QPushButton>
 #include <QSizePolicy>
 
-enum HyundaiLongTuneOption {
-  Off = 0,
-  LongTune = 1,
-  EvenSmootherBraking = 2,
-};
-
 VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
   ListWidget *list = new ListWidget(this);
@@ -61,7 +55,6 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   connect(hkgtuningToggle, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
     hkg_state = index;
     params.put("HyundaiLongTune", QString::number(index).toStdString());
-    params.putBool("HyundaiSmootherBraking", index == EvenSmootherBraking);
     updateCarToggles();
   });
   // Add the tuning toggle to the layout
@@ -114,7 +107,6 @@ void VehiclePanel::updateCarToggles() {
   } else {
     // Hide toggle if not hyundai.
     params.put("HyundaiLongTune", "0");
-    params.putBool("HyundaiSmootherBraking", false);
     hkgtuningToggle->setVisible(false);
   }
 }

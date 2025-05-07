@@ -10,6 +10,7 @@ from opendbc.car.car_helpers import can_fingerprint
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.hyundai.radar_interface import RADAR_START_ADDR
 from opendbc.car.hyundai.values import HyundaiFlags, DBC as HYUNDAI_DBC
+from opendbc.sunnypilot.car.hyundai.longitudinal.helpers import LongitudinalTuningType
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
@@ -30,15 +31,11 @@ def _initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs
 
   # Hyundai Custom Longitudinal Tuning
   if CP.brand == 'hyundai':
-    tuning_option_str = params.get("HyundaiLongTune")
-    if tuning_option_str is not None:
-      if isinstance(tuning_option_str, bytes):
-        tuning_option_str = tuning_option_str.decode('utf-8')
-      tuning_option_str = tuning_option_str.strip()
-      if tuning_option_str != "0":
-        CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING.value
-    if params.get_bool("HyundaiSmootherBraking"):
-      CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_BRAKING.value
+    hyundai_longitudinal_tuning = int(params.get("HyundaiLongTune", encoding="utf8") or 0)
+    if hyundai_longitudinal_tuning == LongitudinalTuningType.DYNAMIC:
+      CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_DYNAMIC.value
+    if hyundai_longitudinal_tuning == LongitudinalTuningType.PREDICTIVE:
+      CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_PREDICTIVE.value
 
 
 def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
