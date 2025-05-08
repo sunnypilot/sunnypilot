@@ -6,3 +6,27 @@
  */
 
 #pragma once
+
+#include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+
+class HyundaiSettings : public QWidget {
+  Q_OBJECT
+
+public:
+  explicit HyundaiSettings(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+
+public slots:
+  void updateSettings(bool _offroad);
+
+private:
+  Params params;
+  bool offroad;
+  bool has_longitudinal_control;
+
+  ButtonParamControlSP *longitudinalTuningToggle = nullptr;
+  QString toggleDisableMsg() const;
+};
