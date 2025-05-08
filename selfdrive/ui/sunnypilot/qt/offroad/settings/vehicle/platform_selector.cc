@@ -58,7 +58,17 @@ void PlatformSelector::refresh(bool _offroad) {
       AlignedBuffer aligned_buf;
       capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
       cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
-      setValue(QString::fromStdString(CP.getCarFingerprint().cStr()));
+
+      QString platform = QString::fromStdString(CP.getCarFingerprint().cStr());
+
+      for (auto it = platforms.constBegin(); it != platforms.constEnd(); ++it) {
+        if (it.value()["platform"].toString() == platform) {
+          platform = it.key();
+          break;
+        }
+      }
+
+      setValue(platform);
     }
   }
   setEnabled(true);
