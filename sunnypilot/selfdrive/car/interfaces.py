@@ -26,7 +26,8 @@ def log_fingerprint(CP: structs.CarParams) -> None:
   else:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
-def _initialize_custom_longitudinal_tuning(CI, CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _initialize_custom_longitudinal_tuning(CI: CarInterfaceBase, CP: structs.CarParams, CP_SP: structs.CarParamsSP,
+                                           params: Params = None) -> None:
   if params is None:
     params = Params()
 
@@ -41,8 +42,8 @@ def _initialize_custom_longitudinal_tuning(CI, CP: structs.CarParams, CP_SP: str
   CP_SP = CI.get_longitudinal_tuning_sp(CP, CP_SP)  # noqa: F841
 
 
-def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
-                                              enabled: bool = False) -> None:
+def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs.CarParams, CP_SP: structs.CarParamsSP,
+                                               params: Params = None, enabled: bool = False) -> None:
   if params is None:
     params = Params()
 
@@ -55,7 +56,7 @@ def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: str
     enabled = params.get_bool("NeuralNetworkLateralControl")
 
   if enabled:
-    CarInterfaceBase.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
+    CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
   CP_SP.neuralNetworkLateralControl.model.path = nnlc_model_path
   CP_SP.neuralNetworkLateralControl.model.name = nnlc_model_name
@@ -76,7 +77,7 @@ def _initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, 
           CP.radarUnavailable = False
 
 
-def setup_interfaces(CI, params: Params = None):
+def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
 
