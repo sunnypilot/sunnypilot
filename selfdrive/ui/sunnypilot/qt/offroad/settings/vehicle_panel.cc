@@ -48,6 +48,10 @@ void VehiclePanel::updatePanel(bool _offroad) {
 }
 
 void VehiclePanel::updateBrandSettings() {
+  if (!isVisible()) {
+    return;
+  }
+
   QString brand = platformSelector->getPlatformBundle("brand").toString();
 
   resetBrandSettings();
