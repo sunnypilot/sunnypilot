@@ -52,10 +52,9 @@ void VehiclePanel::updateBrandSettings() {
     return;
   }
 
-  QString brand = platformSelector->getPlatformBundle("brand").toString();
-
   resetBrandSettings();
 
+  QString brand = platformSelector->getPlatformBundle("brand").toString();
   if (brand == "hyundai") {
     hyundaiSettings->setVisible(true);
   }
