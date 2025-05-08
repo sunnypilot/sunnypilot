@@ -49,17 +49,20 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 void PlatformSelector::refresh(bool _offroad) {
   QString name = getPlatformBundle("name").toString();
   if (!name.isEmpty()) {
-    setValue(name);
+    setValue(name, "orange");
     setText(tr("REMOVE"));
   } else {
     setText(tr("SEARCH"));
+    QString platform = unrecognized_str;
+    QString platform_color = "yellow";
+
     auto cp_bytes = params.get("CarParamsPersistent");
     if (!cp_bytes.empty()) {
       AlignedBuffer aligned_buf;
       capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
       cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-      QString platform = QString::fromStdString(CP.getCarFingerprint().cStr());
+      platform = QString::fromStdString(CP.getCarFingerprint().cStr());
 
       for (auto it = platforms.constBegin(); it != platforms.constEnd(); ++it) {
         if (it.value()["platform"].toString() == platform) {
@@ -68,8 +71,14 @@ void PlatformSelector::refresh(bool _offroad) {
         }
       }
 
-      setValue(platform);
+      if (platform == "MOCK") {
+        platform = unrecognized_str;
+      } else {
+        platform_color = "#58E858";
+      }
     }
+
+    setValue(platform, platform_color);
   }
   setEnabled(true);
 

@@ -26,4 +26,6 @@ private:
 
   Params params;
   bool offroad;
+
+  QString unrecognized_str = tr("Unrecognized Vehicle");
 };
