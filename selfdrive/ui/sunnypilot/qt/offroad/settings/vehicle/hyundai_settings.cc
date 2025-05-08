@@ -57,7 +57,6 @@ void HyundaiSettings::updateSettings(bool _offroad) {
   }
 
   auto cp_bytes = params.get("CarParamsPersistent");
-  auto cp_sp_bytes = params.get("CarParamsSPPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
