@@ -217,9 +217,13 @@ private:
 class ButtonParamControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
+private:
+bool isInlineLayout;
+QHBoxLayout *buttonParamLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
+
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                       const std::vector<QString> &button_texts, const int minimum_button_width = 300) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts) {
+                       const std::vector<QString> &button_texts, const int minimum_button_width = 300, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), isInlineLayout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -246,6 +250,19 @@ public:
     key = param.toStdString();
     int value = atoi(params.get(key).c_str());
 
+    if (inline_layout) {
+      buttonParamLayout->setMargin(0);
+      buttonParamLayout->setSpacing(0);
+      if (!title.isEmpty()) {
+        main_layout->removeWidget(title_label);
+        hlayout->addWidget(title_label, 1);
+      }
+      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
+        main_layout->removeItem(spacingItem);
+        spacingItem = nullptr;
+      }
+    }
+
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
     for (int i = 0; i < button_texts.size(); i++) {
@@ -254,12 +271,18 @@ public:
       button->setChecked(i == value);
       button->setStyleSheet(style);
       button->setMinimumWidth(minimum_button_width);
-      if (i == 0) hlayout->addSpacing(2);
-      hlayout->addWidget(button);
+      if (i == 0) buttonParamLayout->addSpacing(2);
+      buttonParamLayout->addWidget(button);
       button_group->addButton(button, i);
     }
 
-    hlayout->setAlignment(Qt::AlignLeft);
+    buttonParamLayout->setAlignment(Qt::AlignLeft);
+    if (isInlineLayout) {
+      QFrame *container = new QFrame;
+      container->setLayout(buttonParamLayout);
+      container->setStyleSheet("background-color: #393939; border-radius: 20px;");
+      hlayout->addWidget(container);
+    }
 
     QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), [=](int id) {
       params.put(key, std::to_string(id));
@@ -314,6 +337,11 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
+
+    if (isInlineLayout) {
+      return;
+    }
+
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
