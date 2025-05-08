@@ -7,8 +7,8 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
-#include "vehicle/hyundai_settings.h"
 
 VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   main_layout = new QStackedLayout(this);
