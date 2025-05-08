@@ -6,6 +6,7 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
+
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 #include <QPushButton>
 #include <QSizePolicy>
