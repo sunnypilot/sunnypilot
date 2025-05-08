@@ -34,6 +34,8 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : QWidget(parent) {
     btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   }
 
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &HyundaiSettings::updateSettings);
+
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
