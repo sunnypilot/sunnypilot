@@ -32,6 +32,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   QObject::connect(uiState(), &UIState::offroadTransition, this, &VehiclePanel::updatePanel);
 
   main_layout->addWidget(vehicleScreen);
+  main_layout->setCurrentWidget(vehicleScreen);
 }
 
 void VehiclePanel::showEvent(QShowEvent *event) {
