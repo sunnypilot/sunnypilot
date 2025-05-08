@@ -24,15 +24,12 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : QWidget(parent) {
        "Dynamic: on-the-spot adjustments using dynamic calculations.\n"
        "Predictive: adjusts based on anticipated ACC variation."),
     "",
-    tuning_texts
+    tuning_texts,
+    500
   );
   longitudinalTuningToggle->showDescription();
   longitudinalTuningToggle->setProperty("originalDesc", longitudinalTuningToggle->getDescription());
   list->addItem(longitudinalTuningToggle);
-
-  for (auto btn : longitudinalTuningToggle->findChildren<QPushButton*>()) {
-    btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  }
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &HyundaiSettings::updateSettings);
 
