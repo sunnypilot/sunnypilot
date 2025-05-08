@@ -36,7 +36,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
 
   std::vector<QString> tuning_buttons { tr("Off"), tr("Dynamic"), tr("Predictive") };
   hyundaiLongitudinalTuningToggle = new ButtonParamControlSP(
-    "HyundaiLongTune",
+    "HyundaiLongitudinalTuning",
     tr("Custom Longitudinal Tuning"),
     tr("Select a tuning mode.\n"
        "Off: no custom tuning applied.\n"
@@ -54,7 +54,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
 
   connect(hyundaiLongitudinalTuningToggle, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
     hkg_state = index;
-    params.put("HyundaiLongTune", QString::number(index).toStdString());
+    params.put("HyundaiLongitudinalTuning", QString::number(index).toStdString());
     updateCarToggles();
   });
   // Add the tuning toggle to the layout
@@ -100,13 +100,13 @@ void VehiclePanel::updateCarToggles() {
     hyundaiLongitudinalTuningToggle->setEnabled(true);
     hyundaiLongitudinalTuningToggle->setDescription(hyundaiLongitudinalTuningToggle->property("originalDesc").toString());
 
-    int tuningOption = QString::fromStdString(params.get("HyundaiLongTune")).toInt();
+    int tuningOption = QString::fromStdString(params.get("HyundaiLongitudinalTuning")).toInt();
     hkg_state = tuningOption;
     hyundaiLongitudinalTuningToggle->setCheckedButton(hkg_state);
     hyundaiLongitudinalTuningToggle->showDescription();
   } else {
     // Hide toggle if not hyundai.
-    params.put("HyundaiLongTune", "0");
+    params.put("HyundaiLongitudinalTuning", "0");
     hyundaiLongitudinalTuningToggle->setVisible(false);
   }
 }
