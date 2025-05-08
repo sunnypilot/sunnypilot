@@ -24,8 +24,8 @@ public slots:
 
 private:
   Params params;
-  bool offroad;
-  bool has_longitudinal_control;
+  bool offroad = false;
+  bool has_longitudinal_control = false;
 
   ButtonParamControlSP *longitudinalTuningToggle = nullptr;
   QString toggleDisableMsg() const;

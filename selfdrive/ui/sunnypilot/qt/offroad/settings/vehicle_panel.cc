@@ -36,11 +36,12 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
 
 void VehiclePanel::showEvent(QShowEvent *event) {
   updatePanel(offroad);
-  updateBrandSettings();
 }
 
 void VehiclePanel::updatePanel(bool _offroad) {
   platformSelector->refresh(_offroad);
+
+  updateBrandSettings();
 
   offroad = _offroad;
 }

@@ -23,17 +23,16 @@ public slots:
   void updatePanel(bool _offroad);
 
 private:
+  void resetBrandSettings();
+
   QStackedLayout* main_layout = nullptr;
   QWidget* vehicleScreen = nullptr;
   PlatformSelector* platformSelector = nullptr;
 
+  // brand panels
   HyundaiSettings* hyundaiSettings = nullptr;
 
-  // State tracking
   bool offroad = false;
-  Params params;
-
-  void resetBrandSettings();
 
 private slots:
   void updateBrandSettings();

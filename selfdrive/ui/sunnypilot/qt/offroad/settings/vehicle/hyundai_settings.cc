@@ -38,12 +38,14 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : QWidget(parent) {
 }
 
 QString HyundaiSettings::toggleDisableMsg() const {
-  if (!offroad) {
-    return tr("Enable 'Always Offroad' in device panel, or turn vehicle off to activate this toggle");
-  }
   if (!has_longitudinal_control) {
-    return tr("Enable openpilot longitudinal control first.");
+    return tr("This feature can only be used with openpilot longitudinal control enabled.");
   }
+
+  if (!offroad) {
+    return tr("Enable \"Always Offroad\" in Device panel, or turn vehicle off to select an option.");
+  }
+
   return QString();
 }
 
@@ -64,10 +66,10 @@ void HyundaiSettings::updateSettings(bool _offroad) {
 
     has_longitudinal_control = hasLongitudinalControl(CP);
 
-    QString disabled_msg = toggleDisableMsg();
-    if (!disabled_msg.isEmpty()) {
+    QString longitudinal_tuning_disabled_msg = toggleDisableMsg();
+    if (!longitudinal_tuning_disabled_msg.isEmpty()) {
       longitudinalTuningToggle->setEnabled(false);
-      longitudinalTuningToggle->setDescription(disabled_msg);
+      longitudinalTuningToggle->setDescription(longitudinal_tuning_disabled_msg);
     } else {
       longitudinalTuningToggle->setEnabled(true);
       longitudinalTuningToggle->setDescription(longitudinalTuningToggle->property("originalDesc").toString());
