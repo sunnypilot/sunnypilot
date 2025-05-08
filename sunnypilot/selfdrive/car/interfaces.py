@@ -82,7 +82,7 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP_SP = CI.CP_SP
 
   _initialize_custom_longitudinal_tuning(CI, CP, CP_SP, params)
-  _initialize_neural_network_lateral_control(CP, CP_SP, params)
+  _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
   _initialize_radar_tracks(CP, CP_SP, params)
 
 
