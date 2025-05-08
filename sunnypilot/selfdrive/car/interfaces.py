@@ -26,7 +26,7 @@ def log_fingerprint(CP: structs.CarParams) -> None:
   else:
     sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
 
-def _initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _initialize_custom_longitudinal_tuning(CI, CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
   if params is None:
     params = Params()
 
@@ -37,6 +37,8 @@ def _initialize_custom_longitudinal_tuning(CP: structs.CarParams, CP_SP: structs
       CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_DYNAMIC.value
     if hyundai_longitudinal_tuning == LongitudinalTuningType.PREDICTIVE:
       CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_PREDICTIVE.value
+
+  CP_SP = CI.get_longitudinal_tuning_sp(CP, CP_SP)  # noqa: F841
 
 
 def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None,
@@ -74,8 +76,11 @@ def _initialize_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, 
           CP.radarUnavailable = False
 
 
-def setup_interfaces(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None):
-  _initialize_custom_longitudinal_tuning(CP, CP_SP, params)
+def setup_interfaces(CI, params: Params = None):
+  CP = CI.CP
+  CP_SP = CI.CP_SP
+
+  _initialize_custom_longitudinal_tuning(CI, CP, CP_SP, params)
   _initialize_neural_network_lateral_control(CP, CP_SP, params)
   _initialize_radar_tracks(CP, CP_SP, params)
 
