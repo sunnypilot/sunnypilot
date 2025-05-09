@@ -39,7 +39,7 @@ def _initialize_custom_longitudinal_tuning(CI: CarInterfaceBase, CP: structs.Car
     if hyundai_longitudinal_tuning == LongitudinalTuningType.PREDICTIVE:
       CP_SP.flags |= HyundaiFlagsSP.LONG_TUNING_PREDICTIVE.value
 
-  CP_SP = CI.get_longitudinal_tuning_sp(CP, CP_SP)  # noqa: F841
+  CP_SP = CI.get_longitudinal_tuning_sp(CP, CP_SP)
 
 
 def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs.CarParams, CP_SP: structs.CarParamsSP,
