@@ -42,19 +42,19 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
       refresh(offroad);
     }
   });
-
+  main_layout->addStretch(0);
   refresh(offroad);
 }
 
 void PlatformSelector::refresh(bool _offroad) {
   QString name = getPlatformBundle("name").toString();
   if (!name.isEmpty()) {
-    setValue(name, "orange");
+    setValue(name, "#ffcc32"); //yellow
     setText(tr("REMOVE"));
   } else {
     setText(tr("SEARCH"));
     QString platform = unrecognized_str;
-    QString platform_color = "yellow";
+    QString platform_color = "#ff9800"; //orange
 
     auto cp_bytes = params.get("CarParamsPersistent");
     if (!cp_bytes.empty()) {
@@ -74,7 +74,7 @@ void PlatformSelector::refresh(bool _offroad) {
       if (platform == "MOCK") {
         platform = unrecognized_str;
       } else {
-        platform_color = "#58E858";
+        platform_color = "#7cb342"; //green
       }
     }
 

@@ -33,9 +33,10 @@ private:
   QString unrecognized_str = tr("Unrecognized Vehicle");
 
   static QString platformDescription() {
-    return QString("%1<br>%2<br>%3")
-             .arg("<font color='#58E858'>" + tr("[Green] Fingerprinted automatically") + "</font>")
-             .arg("<font color='orange'>" + tr("[Orange] Manually selected") + "</font>")
-             .arg("<font color='yellow'>" + tr("[Yellow] Not fingerprinted") + "</font>");
+    return QString(tr("Select vehicle to force fingerprint manually.\n"
+                          "Colors represent fingerprint status:\n\n"
+                          "🟢 - Fingerprinted automatically\n"     //green
+                          "🟡 - Manually selected\n"               //yellow
+                          "🟠 - Not fingerprinted"));
   }
 };
