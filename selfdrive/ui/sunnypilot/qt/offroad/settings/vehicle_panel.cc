@@ -7,7 +7,8 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/brand_settings_factory.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/brands.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
@@ -25,9 +26,7 @@ VehiclePanel::VehiclePanel(QWidget *parent) : QFrame(parent) {
   ScrollViewSP *scroller = new ScrollViewSP(list, this);
   vlayout->addWidget(scroller);
 
-  hyundaiSettings = new HyundaiSettings(this);
-  vlayout->addWidget(hyundaiSettings);
-  hyundaiSettings->setVisible(false);
+  currentBrandSettings = nullptr;
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &VehiclePanel::updatePanel);
 
@@ -41,9 +40,7 @@ void VehiclePanel::showEvent(QShowEvent *event) {
 
 void VehiclePanel::updatePanel(bool _offroad) {
   platformSelector->refresh(_offroad);
-
   updateBrandSettings();
-
   offroad = _offroad;
 }
 
@@ -52,14 +49,17 @@ void VehiclePanel::updateBrandSettings() {
     return;
   }
 
-  resetBrandSettings();
-
-  if (platformSelector->brand == "hyundai") {
-    hyundaiSettings->setVisible(true);
-    hyundaiSettings->updatePanel(offroad);
+  if (currentBrandSettings) {
+    vehicleScreen->layout()->removeWidget(currentBrandSettings);
+    delete currentBrandSettings;
+    currentBrandSettings = nullptr;
   }
-}
 
-void VehiclePanel::resetBrandSettings() {
-  hyundaiSettings->setVisible(false);
+  if (BrandSettingsFactory::isBrandSupported(platformSelector->brand)) {
+    currentBrandSettings = BrandSettingsFactory::createBrandSettings(platformSelector->brand, this);
+    if (currentBrandSettings) {
+      vehicleScreen->layout()->addWidget(currentBrandSettings);
+      currentBrandSettings->updatePanel(offroad);
+    }
+  }
 }

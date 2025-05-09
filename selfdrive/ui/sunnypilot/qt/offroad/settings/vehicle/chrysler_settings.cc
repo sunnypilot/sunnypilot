@@ -5,11 +5,11 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/chrysler_settings.h"
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
-HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(parent) {
+ChryslerSettings::ChryslerSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
 
@@ -18,13 +18,13 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void HyundaiSettings::updatePanel(bool _offroad) {
+void ChryslerSettings::updatePanel(bool _offroad) {
   updateSettings();
 
   offroad = _offroad;
 }
 
-void HyundaiSettings::updateSettings() {
+void ChryslerSettings::updateSettings() {
   if (!isVisible()) {
     return;
   }
