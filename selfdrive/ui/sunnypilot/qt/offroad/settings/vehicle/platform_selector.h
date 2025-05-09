@@ -16,6 +16,9 @@ public:
   PlatformSelector();
   QVariant getPlatformBundle(const QString &key);
 
+  QString platform;
+  QString brand;
+
 public slots:
   void refresh(bool _offroad);
 
@@ -29,4 +32,6 @@ private:
 
   Params params;
   bool offroad;
+
+  QString unrecognized_str = tr("Unrecognized Vehicle");
 };
