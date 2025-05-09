@@ -24,7 +24,7 @@ public slots:
 
 private:
   Params params;
-  bool offroad = true;
+  bool offroad = false;
   bool has_longitudinal_control = false;
 
   ButtonParamControlSP *longitudinalTuningToggle = nullptr;

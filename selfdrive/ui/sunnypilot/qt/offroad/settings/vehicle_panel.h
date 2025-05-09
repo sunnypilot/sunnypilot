@@ -32,7 +32,7 @@ private:
   // brand panels
   HyundaiSettings* hyundaiSettings = nullptr;
 
-  bool offroad = true;
+  bool offroad = false;
 
 private slots:
   void updateBrandSettings();
