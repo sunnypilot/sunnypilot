@@ -20,6 +20,7 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
     self.dec = DynamicExperimentalController(CP, mpc)
+    self.is_stock = get_active_model_runner() == custom.ModelManagerSP.Runner.stock
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
@@ -44,15 +45,3 @@ class LongitudinalPlannerSP:
     dec.active = self.dec.active()
 
     pm.send('longitudinalPlanSP', plan_sp_send)
-
-  @staticmethod
-  def override_accel_for_snpe_models(output_a_target: float, output_should_stop: bool, speeds: np.ndarray,
-                                     accels: np.ndarray, t_idxs: np.ndarray, action_t: float, vEgoStopping: float) -> tuple[float, bool]:
-    """ Overrides the calculated acceleration target only if the active model is SNPE/thneed.
-        Otherwise, it returns the provided targets unchanged. """
-    is_snpe = get_active_model_runner() == custom.ModelManagerSP.Runner.snpe
-
-    if is_snpe: # SNPE models use only the get_accel_from_plan calculation
-      return cast(tuple[float, bool], get_accel_from_plan(speeds, accels, t_idxs, action_t, vEgoStopping))
-    else: # For non-SNPE models, return the already calculated values from the main planner
-      return output_a_target, output_should_stop
