@@ -5,6 +5,7 @@ import pyray as rl
 from enum import IntEnum
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.swaglog import cloudlog
+from openpilot.system.hardware import HARDWARE
 
 DEFAULT_FPS = 60
 FPS_LOG_INTERVAL = 5  # Seconds between logging FPS drops
@@ -43,8 +44,11 @@ class GuiApplication:
   def request_close(self):
     self._window_close_requested = True
 
-  def init_window(self, title: str, fps: int=DEFAULT_FPS):
+  def init_window(self, title: str, fps: int = DEFAULT_FPS):
     atexit.register(self.close)  # Automatically call close() on exit
+
+    HARDWARE.set_display_power(True)
+    HARDWARE.set_screen_brightness(65)
 
     rl.set_config_flags(rl.ConfigFlags.FLAG_MSAA_4X_HINT | rl.ConfigFlags.FLAG_VSYNC_HINT)
     rl.init_window(self._width, self._height, title)

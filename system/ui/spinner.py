@@ -2,9 +2,11 @@
 import pyray as rl
 import os
 import threading
+import time
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.window import BaseWindow
 from openpilot.system.ui.text import wrap_text
 
 # Constants
@@ -13,8 +15,8 @@ PROGRESS_BAR_HEIGHT = 20
 DEGREES_PER_SECOND = 360.0  # one full rotation per second
 MARGIN_H = 100
 TEXTURE_SIZE = 360
-FONT_SIZE = 88
-LINE_HEIGHT = 96
+FONT_SIZE = 96
+LINE_HEIGHT = 104
 DARKGRAY = (55, 55, 55, 255)
 
 
@@ -22,7 +24,7 @@ def clamp(value, min_value, max_value):
   return max(min(value, max_value), min_value)
 
 
-class Spinner:
+class SpinnerRenderer:
   def __init__(self):
     self._comma_texture = gui_app.load_texture_from_image(os.path.join(BASEDIR, "selfdrive/assets/img_spinner_comma.png"), TEXTURE_SIZE, TEXTURE_SIZE)
     self._spinner_texture = gui_app.load_texture_from_image(os.path.join(BASEDIR, "selfdrive/assets/img_spinner_track.png"), TEXTURE_SIZE, TEXTURE_SIZE,
@@ -70,7 +72,7 @@ class Spinner:
                         spinner_origin, self._rotation, rl.WHITE)
     rl.draw_texture_v(self._comma_texture, comma_position, rl.WHITE)
 
-    # Display progress bar or text based on user input
+    # Display the progress bar or text based on user input
     if progress is not None:
       bar = rl.Rectangle(center.x - PROGRESS_BAR_WIDTH / 2.0, y_pos, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT)
       rl.draw_rectangle_rounded(bar, 1, 10, DARKGRAY)
@@ -84,9 +86,22 @@ class Spinner:
                         FONT_SIZE, 0.0, rl.WHITE)
 
 
+class Spinner(BaseWindow[SpinnerRenderer]):
+  def __init__(self):
+    super().__init__("Spinner")
+
+  def _create_renderer(self):
+    return SpinnerRenderer()
+
+  def update(self, spinner_text: str):
+    if self._renderer is not None:
+      self._renderer.set_text(spinner_text)
+
+  def update_progress(self, cur: float, total: float):
+    self.update(str(round(100 * cur / total)))
+
+
 if __name__ == "__main__":
-  gui_app.init_window("Spinner")
-  spinner = Spinner()
-  spinner.set_text("Spinner text")
-  for _ in gui_app.render():
-    spinner.render()
+  with Spinner() as s:
+    s.update("Spinner text")
+    time.sleep(5)

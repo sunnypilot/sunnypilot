@@ -21,6 +21,7 @@ qt_src = [
   "sunnypilot/qt/offroad/offroad_home.cc",
   "sunnypilot/qt/offroad/settings/device_panel.cc",
   "sunnypilot/qt/offroad/settings/lateral_panel.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal_panel.cc",
   "sunnypilot/qt/offroad/settings/max_time_offroad.cc",
   "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/offroad/settings/software_panel.cc",
@@ -49,6 +50,7 @@ network_src = [
 ]
 
 vehicle_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/platform_selector.cc",
 ]
 

@@ -93,8 +93,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     return x, v, a, j, throttle_prob
 
   def update(self, sm):
-    LongitudinalPlannerSP.update(self, sm)
     self.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
+    LongitudinalPlannerSP.update(self, sm)
     if dec_mpc_mode := self.get_mpc_mode():
       self.mode = dec_mpc_mode
 
