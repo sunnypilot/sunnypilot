@@ -12,3 +12,4 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/gm_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/honda_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/mazda_settings.h"

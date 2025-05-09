@@ -12,7 +12,9 @@ static const QStringList supportedBrands = {
   "chrysler",
   "ford",
   "gm",
+  "honda",
   "hyundai",
+  "mazda",
 };
 
 BrandSettingsInterface* BrandSettingsFactory::createBrandSettings(const QString& brand, QWidget* parent) {
@@ -26,6 +28,8 @@ BrandSettingsInterface* BrandSettingsFactory::createBrandSettings(const QString&
     return new HondaSettings(parent);
   if (brand == "hyundai")
     return new HyundaiSettings(parent);
+  if (brand == "mazda")
+    return new MazdaSettings(parent);
 
   // Default empty settings if brand not supported
   return nullptr;
