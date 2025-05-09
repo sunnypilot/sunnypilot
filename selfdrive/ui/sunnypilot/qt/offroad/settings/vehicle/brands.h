@@ -14,3 +14,4 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/mazda_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/nissan_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/rivian_settings.h"
