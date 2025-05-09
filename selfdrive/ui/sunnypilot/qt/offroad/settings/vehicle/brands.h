@@ -18,3 +18,4 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/subaru_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/tesla_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/toyota_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/volkswagen_settings.h"

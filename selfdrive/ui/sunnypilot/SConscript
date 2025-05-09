@@ -67,6 +67,7 @@ brand_settings_qt_src = [
   "sunnypilot/qt/offroad/settings/vehicle/subaru_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/tesla_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/toyota_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/volkswagen_settings.cc",
 ]
 
 sp_widgets_src = widgets_src + network_src
