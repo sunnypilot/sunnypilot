@@ -121,7 +121,7 @@ class ModelState:
       self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.temporal_idxs]
     elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d: # is_20hz and is_20hz_3d
       self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
-      self.full_features_buffer[0, -1] = outputs['hidden_state'][0, self.temporal_idxs]
+      self.full_features_buffer[0, -1] = outputs['hidden_state'][0, :]
       self.numpy_inputs['features_buffer'][0, :] = self.full_features_buffer[0, self.temporal_idxs]
     elif not self.model_runner.is_20hz: # not 20hz
       feature_len = outputs['hidden_state'].shape[1]
