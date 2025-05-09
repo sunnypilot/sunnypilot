@@ -20,7 +20,6 @@ private:
   ParamControl* longManeuverToggle;
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* enableGithubRunner;
-  
   bool is_release;
   bool offroad = false;
 
