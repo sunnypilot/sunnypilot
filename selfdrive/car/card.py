@@ -71,12 +71,6 @@ class Car:
   CP_SP: structs.CarParamsSP
   CP_SP_capnp: custom.CarParamsSP
 
-  def load_sunnypilot_params(self):
-    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
-    self.custom_acc_increments_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-    self.custom_acc_short_increment = self.params.get("CustomAccShortPressIncrement")
-    self.custom_acc_long_increment = self.params.get("CustomAccLongPressIncrement")
-
   def __init__(self, CI=None, RI=None) -> None:
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'] + ['carControlSP'])
@@ -135,12 +129,8 @@ class Car:
     set_alternative_experience(self.CP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
 
-    # sunnypilot Params. We must define "None" because python likes to make you suffer and duplicate lines of code
-    self.dynamic_experimental_control = None
-    self.custom_acc_increments_enabled = None
-    self.custom_acc_short_increment = None
-    self.custom_acc_long_increment = None
-    self.load_sunnypilot_params()
+    # Dynamic Experimental Control
+    self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
 
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
 
@@ -193,7 +183,7 @@ class Car:
     self.params.put_nonblocking("CarParamsSPPersistent", cp_sp_bytes)
 
     self.mock_carstate = MockCarState()
-    self.v_cruise_helper = VCruiseHelper(self.CP)
+    self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
 
     self.is_metric = self.params.get_bool("IsMetric")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
@@ -318,8 +308,9 @@ class Car:
       self.is_metric = self.params.get_bool("IsMetric")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
 
-      # sunnypilot params
-      self.load_sunnypilot_params()
+      # sunnypilot
+      self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+      sunnypilot_interfaces._custom_acc_controls(self.CP_SP, self.params)
 
       time.sleep(0.1)
 

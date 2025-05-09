@@ -29,8 +29,9 @@ CRUISE_INTERVAL_SIGN = {
 
 
 class VCruiseHelper:
-  def __init__(self, CP):
+  def __init__(self, CP, CP_SP):
     self.CP = CP
+    self.CP_SP = CP_SP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
@@ -150,8 +151,8 @@ class VCruiseHelper:
     base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
     # Apply the user-specified multipliers to the base increment
-    short_increment = self.custom_acc_short_increment
-    long_increment = self.custom_acc_long_increment
+    short_increment = self.CP_SP.customAccControl.increments.shortIncrement
+    long_increment = self.CP_SP.customAccControl.increments.longIncrement
 
     # Determine which increment to use based on press type
     adjusted_delta = long_increment if long_press else short_increment
