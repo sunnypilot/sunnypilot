@@ -48,11 +48,14 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 
 void PlatformSelector::refresh(bool _offroad) {
   QString name = getPlatformBundle("name").toString();
-  if (!name.isEmpty()) {
-    setValue(name);
-    setText(tr("REMOVE"));
+  platform = unrecognized_str;
+  QString platform_color = YELLOW_PLATFORM;
 
+  if (!name.isEmpty()) {
+    platform = name;
+    platform_color = BLUE_PLATFORM;
     brand = getPlatformBundle("brand").toString();
+    setText(tr("REMOVE"));
   } else {
     setText(tr("SEARCH"));
 
@@ -76,13 +79,28 @@ void PlatformSelector::refresh(bool _offroad) {
 
       if (platform == "MOCK") {
         platform = unrecognized_str;
+      } else {
+        platform_color = GREEN_PLATFORM;
       }
     }
-    setValue(platform);
   }
+  setValue(platform, platform_color);
   setEnabled(true);
   emit refreshPanel();
+
   offroad = _offroad;
+
+  FingerprintStatus cur_status;
+  if (platform_color == GREEN_PLATFORM) {
+    cur_status = FingerprintStatus::AUTO_FINGERPRINT;
+  } else if (platform_color == BLUE_PLATFORM) {
+    cur_status = FingerprintStatus::MANUAL_FINGERPRINT;
+  } else {
+    cur_status = FingerprintStatus::UNRECOGNIZED;
+  }
+
+  setDescription(platformDescription(cur_status));
+  showDescription();
 }
 
 void PlatformSelector::setPlatform(const QString &_platform) {
