@@ -54,7 +54,6 @@ class TestVCruiseHelper:
     self.CP_SP = custom.CarParamsSP()
     self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
     self.reset_cruise_speed_state()
-    self.CP_SP.customAccControl.mode = self.CP_SP.CustomAccControl.Mode.disabled
     self.CP_SP.customAccControl.increments.shortIncrement = 1
     self.CP_SP.customAccControl.increments.longIncrement = 5
 
@@ -191,8 +190,11 @@ class TestAdjustCustomAccIncrements:
     self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
     self.params.put("CustomAccShortPressIncrement", str(short_inc))
     self.params.put("CustomAccLongPressIncrement", "10" if metric else "5")
+    self.params.put_bool("IsMetric", metric)
 
     sunnypilot_interfaces._custom_acc_controls(self.CP_SP, self.params)
+
+    short_inc = short_inc if custom_acc_enabled and 1 <= short_inc <= 10 else 1
 
     for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
       CS = car.CarState(cruiseState={"available": True})
@@ -238,8 +240,11 @@ class TestAdjustCustomAccIncrements:
     self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
     self.params.put("CustomAccShortPressIncrement", "1")
     self.params.put("CustomAccLongPressIncrement", str(long_inc))
+    self.params.put_bool("IsMetric", metric)
 
     sunnypilot_interfaces._custom_acc_controls(self.CP_SP, self.params)
+
+    long_inc = long_inc if custom_acc_enabled and 1 <= long_inc <= 10 else 10 if metric else 5
 
     for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
       CS = car.CarState(cruiseState={"available": True})
