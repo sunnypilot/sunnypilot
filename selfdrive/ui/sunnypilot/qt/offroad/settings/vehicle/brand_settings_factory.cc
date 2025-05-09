@@ -6,32 +6,35 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/brand_settings_factory.h"
-
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/brands.h"
 
+static const QStringList supportedBrands = {
+  "chrysler",
+  "ford",
+  "gm",
+  "hyundai",
+};
+
 BrandSettingsInterface* BrandSettingsFactory::createBrandSettings(const QString& brand, QWidget* parent) {
-  if (brand == "hyundai") {
+  if (brand == "chrysler")
+    return new ChryslerSettings(parent);
+  if (brand == "ford")
+    return new FordSettings(parent);
+  if (brand == "gm")
+    return new GMSettings(parent);
+  if (brand == "honda")
+    return new HondaSettings(parent);
+  if (brand == "hyundai")
     return new HyundaiSettings(parent);
-  }
-  // Add other brands here
 
   // Default empty settings if brand not supported
   return nullptr;
 }
 
 bool BrandSettingsFactory::isBrandSupported(const QString& brand) {
-  static const QStringList supportedBrands = {
-    "chrysler",
-    "hyundai",
-  };
-
   return supportedBrands.contains(brand);
 }
 
 QStringList BrandSettingsFactory::getSupportedBrands() {
-  static const QStringList supportedBrands = {
-    "hyundai",
-  };
-
   return supportedBrands;
 }

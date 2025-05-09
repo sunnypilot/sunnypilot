@@ -5,5 +5,10 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
+#pragma once
+
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/chrysler_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/ford_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/gm_settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/honda_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
