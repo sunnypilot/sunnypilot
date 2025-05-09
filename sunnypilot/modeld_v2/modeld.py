@@ -24,7 +24,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-from openpilot.sunnypilot.models.SplitModelConstants import ModelConstants as SplitModelConstants
+from openpilot.sunnypilot.models.SplitModelConstants import ModelConstants as SplitModelConstants 
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 LAT_SMOOTH_SECONDS = 0.0
@@ -54,18 +54,16 @@ class ModelState:
     buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-
-    # Handle different model configurations
-    if self.model_runner.is_20hz_3d:
-      # Split model case
-      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
-    elif self.model_runner.is_20hz:
-      # 20Hz model case (non-3D)
-      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    
+    match (self.model_runner.is_20hz, self.model_runner.is_20hz_3d):
+      case (True, False):
+        self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
+        self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+      case (True, True):
+        self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
+        self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
+        self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
+        self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -74,38 +72,35 @@ class ModelState:
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
-    # Setup temporal indices based on model type
-    if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      num_elements = self.numpy_inputs['features_buffer'].shape[1]
-      step_size = int(-100 / num_elements)
-      self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-
+    match (self.model_runner.is_20hz, self.model_runner.is_20hz_3d):
+      case (True, False):
+        num_elements = self.numpy_inputs['features_buffer'].shape[1]
+        step_size = int(-100 / num_elements)
+        self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+    
     if self.model_runner.is_20hz:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    # Handle desire input based on model type
-    if self.model_runner.is_20hz_3d:
-      # Split model case
-      self.full_desire[0, :-1] = self.full_desire[0, 1:]
-      self.full_desire[0, -1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1, SplitModelConstants.INPUT_HISTORY_BUFFER_LEN, SplitModelConstants.TEMPORAL_SKIP, -1)).max(axis=2)
-    elif self.model_runner.is_20hz:
-      # 20Hz model case (non-split)
-      self.full_desire[:-1] = self.full_desire[1:]
-      self.full_desire[-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
-    else:
-      # Standard model case
-      length = inputs['desire'].shape[0]
-      self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
-      self.numpy_inputs['desire'][0, -1, :length] = new_desire[:length]
+    match (self.model_runner.is_20hz, self.model_runner.is_20hz_3d):
+      case (True, False):
+        self.full_desire[:-1] = self.full_desire[1:]
+        self.full_desire[-1] = new_desire
+        self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
+      case (True, True):
+        self.full_desire[0,:-1] = self.full_desire[0,1:]
+        self.full_desire[0,-1] = new_desire
+        self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
+      case (False, False):
+        length = inputs['desire'].shape[0]
+        self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
+        self.numpy_inputs['desire'][0, -1, :length] = new_desire[:length]
 
     for key in self.numpy_inputs:
       if key in inputs and key not in ['desire']:
@@ -114,44 +109,25 @@ class ModelState:
     imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
                'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
+    # Prepare inputs using the model runner
+    self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
+
     if prepare_only:
       return None
 
-    # For split models, we need to run in two stages
-    if self.model_runner.is_20hz_3d:
-      # Store original inputs to prepare for stage 1
-      stage1_inputs = {k: v.copy() if isinstance(v, np.ndarray) else v
-                       for k, v in self.numpy_inputs.items()}
+    # Run model inference
+    outputs = self.model_runner.run_model()
 
-      # Stage 1: Prepare inputs for the first model
-      self.model_runner.prepare_inputs(imgs_cl, stage1_inputs, self.frames)
-
-      # Run first stage inference
-      stage1_outputs = self.model_runner.run_model()
-
-      # Update inputs for second stage with outputs from first stage
-      self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
-      self.full_features_buffer[0, -1] = stage1_outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][0, :] = self.full_features_buffer[0, self.temporal_idxs]
-
-      # Stage 2: Prepare inputs for the second model with updated features
-      self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
-
-      # Run second stage inference
-      outputs = self.model_runner.run_model()
-    else:
-      # Regular (non-split) model execution
-      self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
-      outputs = self.model_runner.run_model()
-
-      # Update feature buffer based on model type
-      if self.model_runner.is_20hz:
-        # 20Hz model case (non-split)
+    match (self.model_runner.is_20hz, self.model_runner.is_20hz_3d):
+      case (True, False):
         self.full_features_buffer[:-1] = self.full_features_buffer[1:]
         self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
         self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.temporal_idxs]
-      else:
-        # Standard model case
+      case (True, True):
+        self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
+        self.full_features_buffer[0, -1] = outputs['hidden_state'][0, self.temporal_idxs]
+        self.numpy_inputs['features_buffer'][0, :] = self.full_features_buffer[0, self.temporal_idxs]
+      case (False, False):
         feature_len = outputs['hidden_state'].shape[1]
         self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
         self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
