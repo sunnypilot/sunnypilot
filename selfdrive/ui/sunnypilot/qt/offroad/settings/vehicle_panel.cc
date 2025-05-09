@@ -57,6 +57,7 @@ void VehiclePanel::updateBrandSettings() {
   QString brand = platformSelector->getPlatformBundle("brand").toString();
   if (brand == "hyundai") {
     hyundaiSettings->setVisible(true);
+    hyundaiSettings->updatePanel(offroad);
   }
 }
 

@@ -17,10 +17,10 @@ class HyundaiSettings : public QWidget {
 
 public:
   explicit HyundaiSettings(QWidget *parent = nullptr);
-  void showEvent(QShowEvent *event) override;
 
 public slots:
-  void updateSettings(bool _offroad);
+  void updatePanel(bool _offroad);
+  void updateSettings();
 
 private:
   Params params;
