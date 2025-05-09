@@ -31,8 +31,6 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : QWidget(parent) {
   longitudinalTuningToggle->setProperty("originalDesc", longitudinalTuningToggle->getDescription());
   list->addItem(longitudinalTuningToggle);
 
-  QObject::connect(uiState(), &UIState::offroadTransition, this, &HyundaiSettings::updateSettings);
-
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
@@ -48,11 +46,13 @@ QString HyundaiSettings::toggleDisableMsg() const {
   return QString();
 }
 
-void HyundaiSettings::showEvent(QShowEvent *event) {
-  updateSettings(offroad);
+void HyundaiSettings::updatePanel(bool _offroad) {
+  updateSettings();
+
+  offroad = _offroad;
 }
 
-void HyundaiSettings::updateSettings(bool _offroad) {
+void HyundaiSettings::updateSettings() {
   if (!isVisible()) {
     return;
   }
@@ -73,12 +73,10 @@ void HyundaiSettings::updateSettings(bool _offroad) {
       longitudinalTuningToggle->setEnabled(true);
       longitudinalTuningToggle->setDescription(longitudinalTuningToggle->property("originalDesc").toString());
     }
-
-    longitudinalTuningToggle->showDescription();
   } else {
     has_longitudinal_control = false;
     longitudinalTuningToggle->setEnabled(false);
   }
 
-  offroad = _offroad;
+  longitudinalTuningToggle->showDescription();
 }
