@@ -5,9 +5,11 @@ import numpy as np
 from parameterized import parameterized_class
 from cereal import log
 from openpilot.selfdrive.car.cruise import VCruiseHelper, V_CRUISE_MIN, V_CRUISE_MAX, V_CRUISE_INITIAL, IMPERIAL_INCREMENT
-from cereal import car
+from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.test.longitudinal_maneuvers.maneuver import Maneuver
+from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
+from openpilot.common.params import Params
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
@@ -49,8 +51,12 @@ class TestCruiseSpeed:
 class TestVCruiseHelper:
   def setup_method(self):
     self.CP = car.CarParams(pcmCruise=self.pcm_cruise)
-    self.v_cruise_helper = VCruiseHelper(self.CP)
+    self.CP_SP = custom.CarParamsSP()
+    self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
     self.reset_cruise_speed_state()
+    self.CP_SP.customAccControl.mode = self.CP_SP.CustomAccControl.Mode.disabled
+    self.CP_SP.customAccControl.increments.shortIncrement = 1
+    self.CP_SP.customAccControl.increments.longIncrement = 5
 
   def reset_cruise_speed_state(self):
     # Two resets previous cruise speed
@@ -155,7 +161,9 @@ class TestVCruiseHelper:
 class TestAdjustCustomAccIncrements:
   def setup_method(self):
     self.CP = car.CarParams()
-    self.v_cruise_helper = VCruiseHelper(self.CP)
+    self.CP_SP = custom.CarParamsSP()
+    self.params = Params()
+    self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
     self.reset_cruise_speed_state()
 
   def reset_cruise_speed_state(self):
@@ -169,7 +177,7 @@ class TestAdjustCustomAccIncrements:
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "short_inc", "metric", "init_norm"),
-    itertools.product([True, False], [1, 4, 7, 5, 10], [False, True], [40, 35, 50, 25])
+    itertools.product([True, False], [-1, 1, 4, 7, 5, 10, 99], [False, True], [40, 35, 50, 25])
   )
   def test_short_press_only(self, custom_acc_enabled, short_inc, metric, init_norm):
     """
@@ -180,10 +188,11 @@ class TestAdjustCustomAccIncrements:
     base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
     self.enable(base * CV.KPH_TO_MS, False, False)
 
-    if not custom_acc_enabled:
-      short_inc = 1
+    self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
+    self.params.put("CustomAccShortPressIncrement", str(short_inc))
+    self.params.put("CustomAccLongPressIncrement", "10" if metric else "5")
 
-    custom_map = {"short_press": short_inc, "long_press": 5} if custom_acc_enabled else {}
+    sunnypilot_interfaces._custom_acc_controls(self.CP_SP, self.params)
 
     for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
       CS = car.CarState(cruiseState={"available": True})
@@ -191,9 +200,9 @@ class TestAdjustCustomAccIncrements:
 
       # simulate short-press
       CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
-      self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_map)
+      self.v_cruise_helper.update_v_cruise(CS, True, metric)
       CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-      self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_map)
+      self.v_cruise_helper.update_v_cruise(CS, True, metric)
 
       curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
       diff = curr - prev
@@ -209,13 +218,13 @@ class TestAdjustCustomAccIncrements:
           exp *= -1
 
       assert diff == exp, (
-        f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
-        f"expected {exp}, got {diff}"
+              f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
+              f"expected {exp}, got {diff}"
       )
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "long_inc", "metric", "init_norm"),
-    itertools.product([True, False], [1, 4, 7, 5, 10], [False, True], [40, 35, 50, 25])
+    itertools.product([True, False], [-1, 1, 4, 7, 5, 10, 99], [False, True], [40, 35, 50, 25])
   )
   def test_long_press_only(self, custom_acc_enabled, long_inc, metric, init_norm):
     """
@@ -226,10 +235,11 @@ class TestAdjustCustomAccIncrements:
     base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
     self.enable(base * CV.KPH_TO_MS, False, False)
 
-    if not custom_acc_enabled:
-      long_inc = 10 if metric else 5
+    self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
+    self.params.put("CustomAccShortPressIncrement", "1")
+    self.params.put("CustomAccLongPressIncrement", str(long_inc))
 
-    custom_map = {"short_press": 1, "long_press": long_inc} if custom_acc_enabled else {}
+    sunnypilot_interfaces._custom_acc_controls(self.CP_SP, self.params)
 
     for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
       CS = car.CarState(cruiseState={"available": True})
@@ -237,10 +247,10 @@ class TestAdjustCustomAccIncrements:
 
       for i in range(51):
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)] if i == 0 else []
-        self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_map)
+        self.v_cruise_helper.update_v_cruise(CS, True, metric)
 
       CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-      self.v_cruise_helper.update_v_cruise(CS, True, metric, custom_map)
+      self.v_cruise_helper.update_v_cruise(CS, True, metric)
 
       curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
       diff = curr - prev
@@ -256,6 +266,6 @@ class TestAdjustCustomAccIncrements:
           exp *= -1
 
       assert diff == exp, (
-        f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
-        f"expected {exp}, got {diff} (prev: {prev}, curr: {curr})"
+              f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
+              f"expected {exp}, got {diff} (prev: {prev}, curr: {curr})"
       )

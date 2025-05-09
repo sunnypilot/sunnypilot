@@ -44,12 +44,8 @@ class VCruiseHelper:
   def v_cruise_initialized(self):
     return self.v_cruise_kph != V_CRUISE_UNSET
 
-  def update_v_cruise(self, CS, enabled, is_metric, custom_acc_increment_config: dict[str, int] = None):
+  def update_v_cruise(self, CS, enabled, is_metric):
     self.v_cruise_kph_last = self.v_cruise_kph
-
-    custom_acc_increment_config = custom_acc_increment_config or {}
-    self.custom_acc_short_increment = custom_acc_increment_config.get("short_press", 1)
-    self.custom_acc_long_increment = custom_acc_increment_config.get("long_press", 10 if is_metric else 5)
 
     if CS.cruiseState.available:
       if not self.CP.pcmCruise:
