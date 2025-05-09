@@ -5,12 +5,8 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import numpy as np
-from typing import cast
-
 from cereal import messaging, custom
 from opendbc.car import structs
-from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan
 from openpilot.sunnypilot.models.helpers import get_active_model_runner
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 
