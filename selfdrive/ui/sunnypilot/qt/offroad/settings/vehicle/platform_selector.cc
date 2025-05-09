@@ -49,12 +49,12 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 void PlatformSelector::refresh(bool _offroad) {
   QString name = getPlatformBundle("name").toString();
   if (!name.isEmpty()) {
-    setValue(name, "#ffcc32"); //yellow
+    setValue(name, "#1976d2"); //blue
     setText(tr("REMOVE"));
   } else {
     setText(tr("SEARCH"));
     QString platform = unrecognized_str;
-    QString platform_color = "#ff9800"; //orange
+    QString platform_color = "#ffcc32"; //yellow
 
     auto cp_bytes = params.get("CarParamsPersistent");
     if (!cp_bytes.empty()) {

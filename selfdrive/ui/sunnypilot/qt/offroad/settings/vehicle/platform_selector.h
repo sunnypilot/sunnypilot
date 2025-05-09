@@ -36,7 +36,7 @@ private:
     return QString(tr("Select vehicle to force fingerprint manually.\n"
                           "Colors represent fingerprint status:\n\n"
                           "🟢 - Fingerprinted automatically\n"     //green
-                          "🟡 - Manually selected\n"               //yellow
-                          "🟠 - Not fingerprinted"));
+                          "🔵 - Manually selected\n"               //blue
+                          "🟡 - Not fingerprinted"));             //yellow
   }
 };
