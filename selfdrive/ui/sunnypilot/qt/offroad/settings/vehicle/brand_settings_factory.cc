@@ -19,6 +19,7 @@ static const QStringList supportedBrands = {
   "rivian",
   "subaru"
   "tesla",
+  "toyota",
 };
 
 BrandSettingsInterface* BrandSettingsFactory::createBrandSettings(const QString& brand, QWidget* parent) {
@@ -42,6 +43,8 @@ BrandSettingsInterface* BrandSettingsFactory::createBrandSettings(const QString&
     return new SubaruSettings(parent);
   if (brand == "tesla")
     return new TeslaSettings(parent);
+  if (brand == "toyota")
+    return new ToyotaSettings(parent);
 
   // Default empty settings if brand not supported
   return nullptr;
