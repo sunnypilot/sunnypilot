@@ -21,7 +21,6 @@ private:
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* hyundaiRadarTracksToggle;
   ParamControl* enableGithubRunner;
-  
   bool is_release;
   bool offroad = false;
 
