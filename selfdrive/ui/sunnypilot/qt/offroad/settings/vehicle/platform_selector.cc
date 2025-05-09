@@ -80,6 +80,8 @@ void PlatformSelector::refresh(bool _offroad) {
 
     setValue(platform, platform_color);
   }
+  setDescription(platformDescription());
+  showDescription();
   setEnabled(true);
   emit refreshPanel();
 

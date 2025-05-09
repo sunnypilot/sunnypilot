@@ -31,4 +31,11 @@ private:
   bool offroad;
 
   QString unrecognized_str = tr("Unrecognized Vehicle");
+
+  static QString platformDescription() {
+    return QString("%1<br>%2<br>%3")
+             .arg("<font color='#58E858'>" + tr("[Green] Fingerprinted automatically") + "</font>")
+             .arg("<font color='orange'>" + tr("[Orange] Manually selected") + "</font>")
+             .arg("<font color='yellow'>" + tr("[Yellow] Not fingerprinted") + "</font>");
+  }
 };
