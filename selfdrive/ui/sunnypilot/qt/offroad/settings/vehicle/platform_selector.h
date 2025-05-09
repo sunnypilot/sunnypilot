@@ -9,6 +9,10 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
+static const QString GREEN_PLATFORM = "#00F100";
+static const QString BLUE_PLATFORM = "#0086E9";
+static const QString YELLOW_PLATFORM = "#FFD500";
+
 class PlatformSelector : public ButtonControl {
   Q_OBJECT
 
@@ -33,10 +37,11 @@ private:
   QString unrecognized_str = tr("Unrecognized Vehicle");
 
   static QString platformDescription() {
-    return QString(tr("Select vehicle to force fingerprint manually.\n"
-                          "Colors represent fingerprint status:\n\n"
-                          "🟢 - Fingerprinted automatically\n"     //green
-                          "🔵 - Manually selected\n"               //blue
-                          "🟡 - Not fingerprinted"));             //yellow
+    return QString("%1<br>%2<br><br>%3<br>%4<br>%5")
+             .arg(tr("Select vehicle to force fingerprint manually."))
+             .arg(tr("Colors represent fingerprint status:"))
+             .arg("🟢 - " + tr("Fingerprinted automatically"))
+             .arg("🔵 - " + tr("Manually selected"))
+             .arg("🟡 - " + tr("Not fingerprinted or manually selected"));
   }
 };
