@@ -43,6 +43,7 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
     }
   });
 
+  main_layout->addStretch(0);
   refresh(offroad);
 }
 
