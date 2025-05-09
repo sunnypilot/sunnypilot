@@ -49,16 +49,19 @@ PlatformSelector::PlatformSelector() : ButtonControl(tr("Vehicle"), "", "") {
 
 void PlatformSelector::refresh(bool _offroad) {
   QString name = getPlatformBundle("name").toString();
-  QString platform = unrecognized_str;
+  platform = unrecognized_str;
   QString platform_color = YELLOW_PLATFORM;
 
   if (!name.isEmpty()) {
     platform = name;
     platform_color = BLUE_PLATFORM;
+    brand = getPlatformBundle("brand").toString();
     setText(tr("REMOVE"));
   } else {
     setText(tr("SEARCH"));
 
+    platform = unrecognized_str;
+    brand = "";
     auto cp_bytes = params.get("CarParamsPersistent");
     if (!cp_bytes.empty()) {
       AlignedBuffer aligned_buf;
@@ -70,6 +73,7 @@ void PlatformSelector::refresh(bool _offroad) {
       for (auto it = platforms.constBegin(); it != platforms.constEnd(); ++it) {
         if (it.value()["platform"].toString() == platform) {
           platform = it.key();
+          brand = it.value()["brand"].toString();
           break;
         }
       }
@@ -100,13 +104,13 @@ void PlatformSelector::refresh(bool _offroad) {
   showDescription();
 }
 
-void PlatformSelector::setPlatform(const QString &platform) {
-  QVariantMap platform_data = platforms[platform];
+void PlatformSelector::setPlatform(const QString &_platform) {
+  QVariantMap platform_data = platforms[_platform];
 
   const QString offroad_msg = offroad ? tr("This setting will take effect immediately.") :
                                         tr("This setting will take effect once the device enters offroad state.");
   const QString msg = QString("<b>%1</b><br><br>%2")
-                      .arg(platform, offroad_msg);
+                      .arg(_platform, offroad_msg);
 
   QString content("<body><h2 style=\"text-align: center;\">" + tr("Vehicle Selector") + "</h2><br>"
                   "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + msg + "</p></body>");
@@ -114,7 +118,7 @@ void PlatformSelector::setPlatform(const QString &platform) {
   if (ConfirmationDialog(content, tr("Confirm"), tr("Cancel"), true, this).exec()) {
     QJsonObject json_bundle;
     json_bundle["platform"] = platform_data["platform"].toString();
-    json_bundle["name"] = platform;
+    json_bundle["name"] = _platform;
     json_bundle["make"] = platform_data["make"].toString();
     json_bundle["brand"] = platform_data["brand"].toString();
     json_bundle["model"] = platform_data["model"].toString();

@@ -26,6 +26,9 @@ public:
   PlatformSelector();
   QVariant getPlatformBundle(const QString &key);
 
+  QString platform;
+  QString brand;
+
 public slots:
   void refresh(bool _offroad);
 
