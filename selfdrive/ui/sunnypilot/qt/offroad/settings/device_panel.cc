@@ -112,9 +112,18 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   addItem(power_group_layout);
 
+  std::vector always_enabled_btns = {
+    rebootBtn,
+    poweroffBtn,
+    offroadBtn,
+    buttons["quietModeBtn"],
+  };
+
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<PushButtonSP*>()) {
-      if (btn != rebootBtn && btn != poweroffBtn && btn != offroadBtn) {
+      bool always_enabled = std::find(always_enabled_btns.begin(), always_enabled_btns.end(), btn) != always_enabled_btns.end();
+
+      if (!always_enabled) {
         btn->setEnabled(offroad);
       }
     }
