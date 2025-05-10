@@ -7,18 +7,21 @@
 
 #pragma once
 
-#include <QWidget>
+#include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
 class BrandSettingsInterface : public QWidget {
   Q_OBJECT
 
 public:
-  explicit BrandSettingsInterface(QWidget *parent = nullptr) : QWidget(parent) {}
+  explicit BrandSettingsInterface(QWidget *parent = nullptr);
   virtual ~BrandSettingsInterface() = default;
 
   void updatePanel(bool _offroad);
   virtual void updateSettings() = 0;
 
 protected:
+  ListWidget *list = nullptr;
   bool offroad = false;
 };
