@@ -7,25 +7,20 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
 
-#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
-
 HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
 
   ListWidget *list = new ListWidget(this, false);
 
-  main_layout->addWidget(new ScrollViewSP(list, this));
+  main_layout->addWidget(list);
 }
 
 void HyundaiSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
   offroad = _offroad;
+
+  updateSettings();
 }
 
 void HyundaiSettings::updateSettings() {
-  if (!isVisible()) {
-    return;
-  }
 }

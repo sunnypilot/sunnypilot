@@ -6,3 +6,9 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/brand_settings_interface.h"
+
+void BrandSettingsInterface::updatePanel(bool _offroad) {
+  offroad = _offroad;
+
+  updateSettings();
+}
