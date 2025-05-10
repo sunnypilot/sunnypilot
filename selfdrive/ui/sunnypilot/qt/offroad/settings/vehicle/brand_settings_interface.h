@@ -16,7 +16,7 @@ public:
   explicit BrandSettingsInterface(QWidget *parent = nullptr) : QWidget(parent) {}
   virtual ~BrandSettingsInterface() = default;
 
-  virtual void updatePanel(bool _offroad) = 0;
+  void updatePanel(bool _offroad);
   virtual void updateSettings() = 0;
 
 protected:

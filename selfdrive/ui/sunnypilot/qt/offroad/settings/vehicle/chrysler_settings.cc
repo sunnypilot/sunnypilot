@@ -18,12 +18,6 @@ ChryslerSettings::ChryslerSettings(QWidget *parent) : BrandSettingsInterface(par
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void ChryslerSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void ChryslerSettings::updateSettings() {
   if (!isVisible()) {
     return;

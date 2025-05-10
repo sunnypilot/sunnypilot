@@ -18,12 +18,6 @@ ToyotaSettings::ToyotaSettings(QWidget *parent) : BrandSettingsInterface(parent)
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void ToyotaSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void ToyotaSettings::updateSettings() {
   if (!isVisible()) {
     return;

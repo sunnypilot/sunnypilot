@@ -29,12 +29,6 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   main_layout->addWidget(list);
 }
 
-void HyundaiSettings::updatePanel(bool _offroad) {
-  offroad = _offroad;
-
-  updateSettings();
-}
-
 void HyundaiSettings::updateSettings() {
   auto longitudinal_tuning_param = std::atoi(params.get("HyundaiLongitudinalTuning").c_str());
 

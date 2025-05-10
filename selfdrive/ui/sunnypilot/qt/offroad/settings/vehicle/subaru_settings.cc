@@ -18,12 +18,6 @@ SubaruSettings::SubaruSettings(QWidget *parent) : BrandSettingsInterface(parent)
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void SubaruSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void SubaruSettings::updateSettings() {
   if (!isVisible()) {
     return;

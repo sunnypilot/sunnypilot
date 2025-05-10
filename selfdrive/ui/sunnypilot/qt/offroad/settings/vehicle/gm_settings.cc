@@ -18,12 +18,6 @@ GMSettings::GMSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void GMSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void GMSettings::updateSettings() {
   if (!isVisible()) {
     return;

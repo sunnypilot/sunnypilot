@@ -18,12 +18,6 @@ NissanSettings::NissanSettings(QWidget *parent) : BrandSettingsInterface(parent)
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void NissanSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void NissanSettings::updateSettings() {
   if (!isVisible()) {
     return;
