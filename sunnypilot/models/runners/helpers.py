@@ -1,10 +1,11 @@
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
-from openpilot.sunnypilot.models.runners.onnx.onnx_runner import ONNXRunner
 from openpilot.sunnypilot.models.runners.tinygrad.tinygrad_runner import TinygradRunner, TinygradSplitRunner
 from openpilot.sunnypilot.models.runners.constants import ModelType
 from openpilot.system.hardware import TICI
 
+if not TICI:
+  from openpilot.sunnypilot.models.runners.onnx.onnx_runner import ONNXRunner
 
 def get_model_runner() -> ModelRunner:
   """

@@ -80,15 +80,6 @@ class ModelState:
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
 
-    if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
-    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
-
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
 
@@ -97,11 +88,19 @@ class ModelState:
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
+      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
+      self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
+      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
+      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
+      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
+      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+    elif not self.model_runner.is_20hz:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
       self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
 
-    if self.model_runner.is_20hz:
+    if self.model_runner.is_20hz or self.model_runner.is_20hz_3d:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
