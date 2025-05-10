@@ -83,7 +83,7 @@ class ModelState:
     if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
-    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d: # is_20hz and is_20hz_3d
+    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
       self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
@@ -144,11 +144,11 @@ class ModelState:
       self.full_features_buffer[:-1] = self.full_features_buffer[1:]
       self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
       self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.temporal_idxs]
-    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d: # is_20hz and is_20hz_3d
+    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
       self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
       self.full_features_buffer[0, -1] = outputs['hidden_state'][0, :]
       self.numpy_inputs['features_buffer'][0, :] = self.full_features_buffer[0, self.temporal_idxs]
-    elif not self.model_runner.is_20hz: # not 20hz
+    elif not self.model_runner.is_20hz:
       feature_len = outputs['hidden_state'].shape[1]
       self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
       self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
