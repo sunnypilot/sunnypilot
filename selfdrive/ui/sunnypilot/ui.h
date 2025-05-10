@@ -79,6 +79,12 @@ class DeviceSP : public Device {
 
 public:
   DeviceSP(QObject *parent = 0);
+
+private:
+  Params params;
+
+private slots:
+  void handleDisplayPowerChanged(bool on);
 };
 
 DeviceSP *deviceSP();
