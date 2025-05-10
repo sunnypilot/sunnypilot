@@ -26,6 +26,7 @@ from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.model_runner import ONNXRunner, TinygradRunner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
+LAT_SMOOTH_SECONDS = 0.0
 
 
 class FrameMeta:
@@ -52,8 +53,8 @@ class ModelState:
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     if self.model_runner.is_20hz:
-      self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.desire_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
+      self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -65,7 +66,7 @@ class ModelState:
     if self.model_runner.is_20hz:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
-      self.full_features_20Hz_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+      self.full_features_buffer_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
@@ -76,9 +77,9 @@ class ModelState:
     self.prev_desire[:] = inputs['desire']
 
     if self.model_runner.is_20hz:
-      self.desire_20Hz[:-1] = self.desire_20Hz[1:]
-      self.desire_20Hz[-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.desire_20Hz.reshape(self.desire_reshape_dims).max(axis=2)
+      self.full_desire[:-1] = self.full_desire[1:]
+      self.full_desire[-1] = new_desire
+      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
     else:
       length = inputs['desire'].shape[0]
       self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
@@ -101,9 +102,9 @@ class ModelState:
     outputs = self.model_runner.run_model()
 
     if self.model_runner.is_20hz:
-      self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
-      self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][:] = self.full_features_20Hz[self.full_features_20Hz_idxs]
+      self.full_features_buffer[:-1] = self.full_features_buffer[1:]
+      self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
+      self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.full_features_buffer_idxs]
     else:
       feature_len = outputs['hidden_state'].shape[1]
       self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
@@ -163,7 +164,7 @@ def main(demo=False):
 
   # messaging
   pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
-  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"])
+  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
   params = Params()
@@ -188,8 +189,8 @@ def main(demo=False):
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
-  # TODO this needs more thought, use .2s extra for now to estimate other delays
-  steer_delay = CP.steerActuatorDelay + .2
+  # Enable lagd support for modeld_v2
+  steer_delay = sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
 
   DH = DesireHelper()
 
