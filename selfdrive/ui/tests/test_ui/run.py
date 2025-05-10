@@ -37,7 +37,7 @@ DATA: dict[str, capnp.lib.capnp._DynamicStructBuilder] = dict.fromkeys(
   "driverStateV2", "roadCameraState", "wideRoadCameraState", "driverCameraState"], None)
 
 def setup_homescreen(click, pm: PubMaster, scroll=None):
-  pass
+  time.sleep(UI_DELAY)
 
 def setup_settings_device(click, pm: PubMaster, scroll=None):
   click(100, 100)
