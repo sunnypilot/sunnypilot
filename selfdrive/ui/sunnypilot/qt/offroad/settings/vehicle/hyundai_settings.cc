@@ -9,7 +9,7 @@
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
-HyundaiSettings::HyundaiSettings(QWidget *parent) : QWidget(parent) {
+HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
 
