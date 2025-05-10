@@ -87,18 +87,22 @@ class ModelState:
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
+    default_shape = np.zeros((0, 0, 0), dtype=np.float32)
+    desire_batch_size, desire_sequence_len, desire_feature_len = self.numpy_inputs["desire"].shape
+    buffer_batch_size, buffer_sequence_len, buffer_feature_len = self.numpy_inputs["features_buffer"].shape
+    prev_desired_curv_batch_size, prev_desired_curv_sequence_len, prev_desired_curv_feature_len = self.numpy_inputs.get("prev_desired_curv", default_shape).shape
+    full_history_buffer_len = 100
+
     if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+      self.full_features_buffer = np.zeros((full_history_buffer_len, buffer_feature_len), dtype=np.float32)
+      self.full_desire = np.zeros((full_history_buffer_len + 1, desire_feature_len), dtype=np.float32)
+      step_size = int(-100 / buffer_sequence_len)
+      self.temporal_idxs = np.arange(step_size, step_size * (buffer_sequence_len + 1), step_size)[::-1]
     elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
+      self.full_features_buffer = np.zeros((1, full_history_buffer_len, buffer_feature_len), dtype=np.float32)
+      self.full_desire = np.zeros((1, full_history_buffer_len, desire_feature_len), dtype=np.float32)
+      self.full_prev_desired_curv = np.zeros((1, full_history_buffer_len, prev_desired_curv_feature_len), dtype=np.float32)
       self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
-    elif not self.model_runner.is_20hz:
-      num_elements = self.numpy_inputs['features_buffer'].shape[1]
-      step_size = int(-100 / num_elements)
-      self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
 
     if self.model_runner.is_20hz or self.model_runner.is_20hz_3d:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
@@ -115,9 +119,9 @@ class ModelState:
       self.full_desire[-1] = new_desire
       self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
     elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
-      self.full_desire[0,:-1] = self.full_desire[0,1:]
-      self.full_desire[0,-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
+      self.full_desire[0, :-1] = self.full_desire[0, 1:]
+      self.full_desire[0, -1] = new_desire
+      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
     elif not self.model_runner.is_20hz:
       length = inputs['desire'].shape[0]
       self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
@@ -161,10 +165,18 @@ class ModelState:
         input_name_prev = 'prev_desired_curv'
 
       if input_name_prev is not None:
-        length = outputs['desired_curvature'][0].size
-        self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
-        self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
+        self.process_desired_curvature(outputs, input_name_prev)
     return outputs
+
+  def process_desired_curvature(self, outputs, input_name_prev):
+    if self.model_runner.is_20hz_3d:
+      self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
+      self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
+      self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+    else:
+      length = outputs['desired_curvature'][0].size
+      self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
+      self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
 
 
 def main(demo=False):
