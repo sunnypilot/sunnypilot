@@ -19,31 +19,15 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   longitudinalTuningToggle = new ButtonParamControlSP(
     "HyundaiLongitudinalTuning",
     tr("Custom Longitudinal Tuning"),
-    tr("Select a tuning mode.\n"
-       "Off: no custom tuning applied.\n"
-       "Dynamic: on-the-spot adjustments using dynamic calculations.\n"
-       "Predictive: adjusts based on anticipated ACC variation."),
+    longitudinalTuningDescription(),
     "",
     tuning_texts,
     500
   );
-  longitudinalTuningToggle->showDescription();
-  longitudinalTuningToggle->setProperty("originalDesc", longitudinalTuningToggle->getDescription());
   list->addItem(longitudinalTuningToggle);
+  longitudinalTuningToggle->showDescription();
 
   main_layout->addWidget(new ScrollViewSP(list, this));
-}
-
-QString HyundaiSettings::toggleDisableMsg() const {
-  if (!has_longitudinal_control) {
-    return tr("This feature can only be used with openpilot longitudinal control enabled.");
-  }
-
-  if (!offroad) {
-    return tr("Enable \"Always Offroad\" in Device panel, or turn vehicle off to select an option.");
-  }
-
-  return QString();
 }
 
 void HyundaiSettings::updatePanel(bool _offroad) {
@@ -57,6 +41,9 @@ void HyundaiSettings::updateSettings() {
     return;
   }
 
+  bool longitudinal_tuning_disabled = !offroad || !has_longitudinal_control;
+  auto longitudinal_tuning_param = std::atoi(params.get("HyundaiLongitudinalTuning").c_str());
+
   auto cp_bytes = params.get("CarParamsPersistent");
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
@@ -64,19 +51,26 @@ void HyundaiSettings::updateSettings() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
     has_longitudinal_control = hasLongitudinalControl(CP);
-
-    QString longitudinal_tuning_disabled_msg = toggleDisableMsg();
-    if (!longitudinal_tuning_disabled_msg.isEmpty()) {
-      longitudinalTuningToggle->setEnabled(false);
-      longitudinalTuningToggle->setDescription(longitudinal_tuning_disabled_msg);
-    } else {
-      longitudinalTuningToggle->setEnabled(true);
-      longitudinalTuningToggle->setDescription(longitudinalTuningToggle->property("originalDesc").toString());
-    }
+    longitudinalTuningToggle->setEnabled(!longitudinal_tuning_disabled);
   } else {
     has_longitudinal_control = false;
     longitudinalTuningToggle->setEnabled(false);
   }
 
+  LongitudinalTuningOption longitudinal_tuning_option;
+  if (longitudinal_tuning_param == int(LongitudinalTuningOption::PREDICTIVE)) {
+    longitudinal_tuning_option = LongitudinalTuningOption::PREDICTIVE;
+  } else if (longitudinal_tuning_param == int(LongitudinalTuningOption::DYNAMIC)) {
+    longitudinal_tuning_option = LongitudinalTuningOption::DYNAMIC;
+  } else {
+    longitudinal_tuning_option = LongitudinalTuningOption::OFF;
+  }
+
+  QString longitudinal_tuning_description = longitudinalTuningDescription(longitudinal_tuning_option);
+  if (longitudinal_tuning_disabled) {
+    longitudinal_tuning_description = toggleDisableMsg(offroad, has_longitudinal_control);
+  }
+
+  longitudinalTuningToggle->setDescription(longitudinal_tuning_description);
   longitudinalTuningToggle->showDescription();
 }
