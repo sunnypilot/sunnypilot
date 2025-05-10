@@ -25,7 +25,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
-from openpilot.sunnypilot.models.SplitModelConstants import ModelConstants as SplitModelConstants
+from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 MODEL_RUNNER = get_model_runner()
