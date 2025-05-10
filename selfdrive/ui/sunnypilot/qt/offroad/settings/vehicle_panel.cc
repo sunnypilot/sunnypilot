@@ -40,9 +40,9 @@ void VehiclePanel::showEvent(QShowEvent *event) {
 }
 
 void VehiclePanel::updatePanel(bool _offroad) {
+  offroad = _offroad;
   platformSelector->refresh(_offroad);
   updateBrandSettings();
-  offroad = _offroad;
 }
 
 void VehiclePanel::updateBrandSettings() {
