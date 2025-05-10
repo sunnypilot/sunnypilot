@@ -28,32 +28,6 @@ from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
-MODEL_RUNNER = get_model_runner()
-LAT_SMOOTH_SECONDS = 0.3 if MODEL_RUNNER.is_20hz_3d else 0.0
-LONG_SMOOTH_SECONDS = 0.3 if MODEL_RUNNER.is_20hz_3d else 0.0
-MIN_LAT_CONTROL_SPEED = 0.3
-
-
-def get_action_from_model(model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
-                          lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
-  plan = model_output['plan'][0]
-  desired_accel, should_stop = get_accel_from_plan(plan[:,Plan.VELOCITY][:,0],
-                                                   plan[:,Plan.ACCELERATION][:,0],
-                                                   ModelConstants.T_IDXS,
-                                                   action_t=long_action_t)
-  desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, LONG_SMOOTH_SECONDS)
-  desired_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2],
-                                              plan[:, Plan.ORIENTATION_RATE][:, 2],
-                                              ModelConstants.T_IDXS, v_ego, lat_action_t)
-  if v_ego > MIN_LAT_CONTROL_SPEED:
-    desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, LAT_SMOOTH_SECONDS)
-  else:
-    desired_curvature = prev_action.desiredCurvature
-
-  return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),
-                                desiredAcceleration=float(desired_accel),
-                                shouldStop=bool(should_stop))
-
 
 class FrameMeta:
   frame_id: int = 0
@@ -75,6 +49,10 @@ class ModelState:
     except Exception as e:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise
+
+    self.LAT_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.0
+    self.LONG_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.0
+    self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
@@ -178,6 +156,21 @@ class ModelState:
       self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
       self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
 
+  def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
+                            lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
+    plan = model_output['plan'][0]
+    desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
+                                                     action_t=long_action_t)
+    desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
+    desired_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2], ModelConstants.T_IDXS, v_ego,
+                                                lat_action_t)
+    if v_ego > self.MIN_LAT_CONTROL_SPEED:
+      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
+    else:
+      desired_curvature = prev_action.desiredCurvature
+
+    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature), desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
+
 
 def main(demo=False):
   cloudlog.warning("modeld init")
@@ -244,10 +237,10 @@ def main(demo=False):
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
   # Enable lagd support for modeld_v2
-  steer_delay = sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
+  steer_delay = sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
 
   # TODO Move smooth seconds to action function
-  long_delay = CP.longitudinalActuatorDelay + LONG_SMOOTH_SECONDS
+  long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
@@ -335,7 +328,7 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
 
-      action = get_action_from_model(model_output, prev_action, steer_delay + DT_MDL, long_delay + DT_MDL, v_ego)
+      action = model.get_action_from_model(model_output, prev_action, steer_delay + DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
