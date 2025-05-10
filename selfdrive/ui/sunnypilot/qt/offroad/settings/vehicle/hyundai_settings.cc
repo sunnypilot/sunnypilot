@@ -8,11 +8,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.h"
 
 HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(parent) {
-  QVBoxLayout *main_layout = new QVBoxLayout(this);
-  main_layout->setContentsMargins(0, 0, 0, 0);
-
-  ListWidget *list = new ListWidget(this, false);
-
   std::vector<QString> tuning_texts{ tr("Off"), tr("Dynamic"), tr("Predictive") };
   longitudinalTuningToggle = new ButtonParamControl(
     "HyundaiLongitudinalTuning",
@@ -25,8 +20,6 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   QObject::connect(longitudinalTuningToggle, &ButtonParamControlSP::buttonToggled, this, &HyundaiSettings::updateSettings);
   list->addItem(longitudinalTuningToggle);
   longitudinalTuningToggle->showDescription();
-
-  main_layout->addWidget(list);
 }
 
 void HyundaiSettings::updateSettings() {
