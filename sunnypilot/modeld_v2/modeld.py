@@ -29,7 +29,7 @@ from openpilot.sunnypilot.models.SplitModelConstants import ModelConstants as Sp
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 MODEL_RUNNER = get_model_runner()
-LAT_SMOOTH_SECONDS = 0.1 if MODEL_RUNNER.is_20hz_3d else 0.0
+LAT_SMOOTH_SECONDS = 0.3 if MODEL_RUNNER.is_20hz_3d else 0.0
 LONG_SMOOTH_SECONDS = 0.3 if MODEL_RUNNER.is_20hz_3d else 0.0
 MIN_LAT_CONTROL_SPEED = 0.3
 
