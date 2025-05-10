@@ -34,7 +34,7 @@ private:
   Params params;
   bool has_longitudinal_control = false;
 
-  ButtonParamControlSP *longitudinalTuningToggle = nullptr;
+  ButtonParamControl *longitudinalTuningToggle = nullptr;
 
   static QString toggleDisableMsg(bool _offroad, bool _has_longitudinal_control) {
     if (!_has_longitudinal_control) {

@@ -14,14 +14,15 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   ListWidget *list = new ListWidget(this, false);
 
   std::vector<QString> tuning_texts{ tr("Off"), tr("Dynamic"), tr("Predictive") };
-  longitudinalTuningToggle = new ButtonParamControlSP(
+  longitudinalTuningToggle = new ButtonParamControl(
     "HyundaiLongitudinalTuning",
     tr("Custom Longitudinal Tuning"),
-    longitudinalTuningDescription(),
+    "",
     "",
     tuning_texts,
     500
   );
+  QObject::connect(longitudinalTuningToggle, &ButtonParamControlSP::buttonToggled, this, &HyundaiSettings::updateSettings);
   list->addItem(longitudinalTuningToggle);
   longitudinalTuningToggle->showDescription();
 
@@ -35,7 +36,6 @@ void HyundaiSettings::updatePanel(bool _offroad) {
 }
 
 void HyundaiSettings::updateSettings() {
-  bool longitudinal_tuning_disabled = !offroad || !has_longitudinal_control;
   auto longitudinal_tuning_param = std::atoi(params.get("HyundaiLongitudinalTuning").c_str());
 
   auto cp_bytes = params.get("CarParamsPersistent");
@@ -45,10 +45,8 @@ void HyundaiSettings::updateSettings() {
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
     has_longitudinal_control = hasLongitudinalControl(CP);
-    longitudinalTuningToggle->setEnabled(!longitudinal_tuning_disabled);
   } else {
     has_longitudinal_control = false;
-    longitudinalTuningToggle->setEnabled(false);
   }
 
   LongitudinalTuningOption longitudinal_tuning_option;
@@ -60,11 +58,13 @@ void HyundaiSettings::updateSettings() {
     longitudinal_tuning_option = LongitudinalTuningOption::OFF;
   }
 
+  bool longitudinal_tuning_disabled = !offroad || !has_longitudinal_control;
   QString longitudinal_tuning_description = longitudinalTuningDescription(longitudinal_tuning_option);
   if (longitudinal_tuning_disabled) {
     longitudinal_tuning_description = toggleDisableMsg(offroad, has_longitudinal_control);
   }
 
+  longitudinalTuningToggle->setEnabled(!longitudinal_tuning_disabled);
   longitudinalTuningToggle->setDescription(longitudinal_tuning_description);
   longitudinalTuningToggle->showDescription();
 }
