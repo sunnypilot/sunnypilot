@@ -42,8 +42,7 @@ class Controls(ControlsExt):
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
-                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'],
-                                  poll='selfdriveState')
+                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'], poll='selfdriveState')
     self.pm = messaging.PubMaster(['carControl', 'controlsState'])
 
     self.steer_limited_by_controls = False
@@ -65,7 +64,6 @@ class Controls(ControlsExt):
 
   def update(self):
     self.sm.update(15)
-    self.update_ext() # Update SP state
     if self.sm.updated["liveCalibration"]:
       self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
     if self.sm.updated["livePose"]:
@@ -102,8 +100,8 @@ class Controls(ControlsExt):
     # Check which actuators can be enabled
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
 
-    # Use ControlsExt to determine lat active state
-    _lat_active = self.get_lat_active(self.sm['selfdriveState'].active)
+    # Get which state to use for active lateral control
+    _lat_active = self.get_lat_active(self.sm['selfdriveState'])
 
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
@@ -147,12 +145,9 @@ class Controls(ControlsExt):
         cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
         setattr(actuators, p, 0.0)
 
-    # Create CarControlSP
-    CC_SP = self.get_carControlSP()
+    return CC, lac_log
 
-    return CC, CC_SP, lac_log
-
-  def publish(self, CC, CC_SP, lac_log):
+  def publish(self, CC, lac_log):
     CS = self.sm['carState']
 
     # Orientation and angle rates can be useful for carcontroller
@@ -226,15 +221,15 @@ class Controls(ControlsExt):
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
-    # Publish CarControlSP
-    self.publish_ext(CC_SP, CS.canValid)
-
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
     while True:
       self.update()
-      CC, CC_SP, lac_log = self.state_control()
-      self.publish(CC, CC_SP, lac_log)
+      self.update_ext()
+      CC, lac_log = self.state_control()
+      CC_SP = self.state_control_ext()
+      self.publish(CC, lac_log)
+      self.publish_ext(CC_SP, self.sm['carState'])
       rk.monitor_time()
 
 

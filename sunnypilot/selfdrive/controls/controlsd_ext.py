@@ -6,8 +6,9 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import cereal.messaging as messaging
-from cereal import custom
+from cereal import log, custom
 
+from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
@@ -18,38 +19,32 @@ class ControlsExt:
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    # SP SubMaster
-    self.sm_sp = messaging.SubMaster(['selfdriveStateSP'])
+    self.sm_ext = messaging.SubMaster(['selfdriveStateSP'])
+    self.pm_ext = messaging.PubMaster(['carControlSP'])
 
-    # SP PubMaster
-    self.pm_sp = messaging.PubMaster(['carControlSP'])
+  def get_lat_active(self, selfdriveState: log.SelfdriveState) -> bool:
+    ss_sp = self.sm_ext['selfdriveStateSP']
 
-  def get_lat_active(self, fallback_lat_active: bool) -> bool:
-    # Determine lat active state based on MADS availability and state
-    if self.sm_sp.valid['selfdriveStateSP']:
-      ss_sp = self.sm_sp['selfdriveStateSP']
-      if ss_sp.mads.available:
-        # If MADS is available, return its state
-        return bool(ss_sp.mads.active)
-    # If MADS is not available, return the fallback lateral active state passed from line 105 controlsd.py
-    return fallback_lat_active
+    if ss_sp.mads.available:
+      return bool(ss_sp.mads.active)
+
+    # MADS not available, use stock state to engage
+    return selfdriveState.active
 
   def update_ext(self):
-    # Update SP SubMaster messages
-    self.sm_sp.update(0)
+    self.sm_ext.update(15)
 
-  def get_carControlSP(self) -> custom.CarControlSP:
-    # Create and return a new CarControlSP message instance
+  def state_control_ext(self) -> custom.CarControlSP:
     CC_SP = custom.CarControlSP.new_message()
 
     # MADS state
-    CC_SP.mads = self.sm_sp['selfdriveStateSP'].mads
+    CC_SP.mads = self.sm_ext['selfdriveStateSP'].mads
 
     return CC_SP
 
-  def publish_ext(self, CC_SP: custom.CarControlSP, can_valid: bool):
-    # Publish CarControlSP
+  def publish_ext(self, CC_SP: custom.CarControlSP, CS: structs.CarState) -> None:
     cc_sp_send = messaging.new_message('carControlSP')
-    cc_sp_send.valid = can_valid
+    cc_sp_send.valid = CS.canValid
     cc_sp_send.carControlSP = CC_SP
-    self.pm_sp.send('carControlSP', cc_sp_send)
+
+    self.pm_ext.send('carControlSP', cc_sp_send)
