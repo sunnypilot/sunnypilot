@@ -10,4 +10,4 @@ class LatControlAngleTorque(LatControlTorque, LatControlAngle):
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
     torque, _, _ = LatControlTorque.update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited)
     _, angle_steers_des, angle_log = LatControlAngle.update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited)
-    return torque, float(angle_steers_des), angle_log
+    return torque, angle_steers_des, angle_log
