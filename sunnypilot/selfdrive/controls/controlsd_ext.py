@@ -31,7 +31,7 @@ class ControlsExt:
     # MADS not available, use stock state to engage
     return bool(selfdriveState.active)
 
-  def update_ext(self):
+  def update_ext(self) -> None:
     self.sm_ext.update(15)
 
   def state_control_ext(self) -> custom.CarControlSP:
