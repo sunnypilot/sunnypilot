@@ -93,16 +93,16 @@ class ModelState:
     prev_desired_curv_batch_size, prev_desired_curv_sequence_len, prev_desired_curv_feature_len = self.numpy_inputs.get("prev_desired_curv", default_shape).shape
     full_history_buffer_len = 100
 
-    if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((full_history_buffer_len, buffer_feature_len), dtype=np.float32)
-      self.full_desire = np.zeros((full_history_buffer_len, desire_feature_len), dtype=np.float32)
-      step_size = int(-100 / buffer_sequence_len)
-      self.temporal_idxs = np.arange(step_size, step_size * (buffer_sequence_len + 1), step_size)[::-1]
-    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
+    if self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((1, full_history_buffer_len, buffer_feature_len), dtype=np.float32)
       self.full_desire = np.zeros((1, full_history_buffer_len, desire_feature_len), dtype=np.float32)
       self.full_prev_desired_curv = np.zeros((1, full_history_buffer_len, prev_desired_curv_feature_len), dtype=np.float32)
       self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+    elif self.model_runner.is_20hz:
+      self.full_features_buffer = np.zeros((full_history_buffer_len, buffer_feature_len), dtype=np.float32)
+      self.full_desire = np.zeros((full_history_buffer_len, desire_feature_len), dtype=np.float32)
+      step_size = int(-100 / buffer_sequence_len)
+      self.temporal_idxs = np.arange(step_size, step_size * (buffer_sequence_len + 1), step_size)[::-1]
 
     if self.model_runner.is_20hz:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
