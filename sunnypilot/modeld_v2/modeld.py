@@ -106,8 +106,6 @@ class ModelState:
 
     if self.model_runner.is_20hz:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
-    elif self.model_runner.is_20hz_3d:
-      self.desire_reshape_dims = (1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN, SplitModelConstants.TEMPORAL_SKIP,-1)
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
