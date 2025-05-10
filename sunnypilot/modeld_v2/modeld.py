@@ -95,7 +95,7 @@ class ModelState:
 
     if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((full_history_buffer_len, buffer_feature_len), dtype=np.float32)
-      self.full_desire = np.zeros((full_history_buffer_len + 1, desire_feature_len), dtype=np.float32)
+      self.full_desire = np.zeros((full_history_buffer_len, desire_feature_len), dtype=np.float32)
       step_size = int(-100 / buffer_sequence_len)
       self.temporal_idxs = np.arange(step_size, step_size * (buffer_sequence_len + 1), step_size)[::-1]
     elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
