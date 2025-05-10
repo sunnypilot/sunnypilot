@@ -118,6 +118,13 @@ class ModelRunner(ModularRunner):
       return self._model_data.input_shapes
     raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
 
+  @property
+  def output_slices(self) -> SliceDict:
+    """Returns the output slices for the currently active model."""
+    if self._model_data:
+      return self._model_data.output_slices
+    raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
+
   @abstractmethod
   def prepare_inputs(self, imgs_cl: CLMemDict, numpy_inputs: NumpyDict, frames: FrameDict) -> dict:
     """

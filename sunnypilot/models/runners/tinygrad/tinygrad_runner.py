@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 from openpilot.sunnypilot.modeld_v2.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
-from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH
+from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH, SliceDict
 from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
 from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad
 from openpilot.system.hardware import TICI
@@ -108,6 +108,11 @@ class TinygradSplitRunner(ModelRunner):
   def input_shapes(self) -> ShapeDict:
     """Returns the combined input shapes from both vision and policy models."""
     return {**self.policy_runner.input_shapes, **self.vision_runner.input_shapes}
+
+  @property
+  def output_slices(self) -> SliceDict:
+    """Returns the combined output slices from both vision and policy models."""
+    return {**self.policy_runner.output_slices, **self.vision_runner.output_slices}
 
   def prepare_inputs(self, imgs_cl: CLMemDict, numpy_inputs: NumpyDict, frames: FrameDict) -> dict:
     """Prepares inputs for both vision and policy models."""
