@@ -29,7 +29,7 @@ class ControlsExt:
       return bool(ss_sp.mads.active)
 
     # MADS not available, use stock state to engage
-    return selfdriveState.active
+    return bool(selfdriveState.active)
 
   def update_ext(self):
     self.sm_ext.update(15)
