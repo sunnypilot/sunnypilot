@@ -6,14 +6,14 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import cereal.messaging as messaging
-from cereal import car, custom
+from cereal import custom
+
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
 
 class ControlsExt:
-  def __init__(self, CP: car.CarParams, params: Params):
-    self.CP = CP
+  def __init__(self, params: Params):
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
@@ -34,11 +34,11 @@ class ControlsExt:
     # If MADS is not available, return the fallback lateral active state passed from line 105 controlsd.py
     return fallback_lat_active
 
-  def update_state(self):
+  def update_ext(self):
     # Update SP SubMaster messages
     self.sm_sp.update(0)
 
-  def create_cc_sp(self) -> custom.CarControlSP:
+  def get_carControlSP(self) -> custom.CarControlSP:
     # Create and return a new CarControlSP message instance
     CC_SP = custom.CarControlSP.new_message()
 
@@ -47,7 +47,7 @@ class ControlsExt:
 
     return CC_SP
 
-  def publish_sp(self, CC_SP: custom.CarControlSP, can_valid: bool):
+  def publish_ext(self, CC_SP: custom.CarControlSP, can_valid: bool):
     # Publish CarControlSP
     cc_sp_send = messaging.new_message('carControlSP')
     cc_sp_send.valid = can_valid

@@ -28,7 +28,7 @@ LaneChangeDirection = log.LaneChangeDirection
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 
-class Controls:
+class Controls(ControlsExt):
   def __init__(self) -> None:
     self.params = Params()
     cloudlog.info("controlsd is waiting for CarParams")
@@ -36,9 +36,9 @@ class Controls:
     cloudlog.info("controlsd got CarParams")
 
     # Initialize sunnypilot controlsd extension
-    self.extension = ControlsExt(self.CP, self.params)
+    ControlsExt.__init__(self, self.params)
 
-    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.extension.CP_SP)
+    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
@@ -57,15 +57,15 @@ class Controls:
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
-      self.LaC = LatControlAngle(self.CP, self.extension.CP_SP, self.CI)
+      self.LaC = LatControlAngle(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'pid':
-      self.LaC = LatControlPID(self.CP, self.extension.CP_SP, self.CI)
+      self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
-      self.LaC = LatControlTorque(self.CP, self.extension.CP_SP, self.CI)
+      self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
 
   def update(self):
     self.sm.update(15)
-    self.extension.update_state() # Update SP state
+    self.update_ext() # Update SP state
     if self.sm.updated["liveCalibration"]:
       self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
     if self.sm.updated["livePose"]:
@@ -103,7 +103,7 @@ class Controls:
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
 
     # Use ControlsExt to determine lat active state
-    _lat_active = self.extension.get_lat_active(self.sm['selfdriveState'].active)
+    _lat_active = self.get_lat_active(self.sm['selfdriveState'].active)
 
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
@@ -148,7 +148,7 @@ class Controls:
         setattr(actuators, p, 0.0)
 
     # Create CarControlSP
-    CC_SP = self.extension.create_cc_sp()
+    CC_SP = self.get_carControlSP()
 
     return CC, CC_SP, lac_log
 
@@ -227,7 +227,7 @@ class Controls:
     self.pm.send('carControl', cc_send)
 
     # Publish CarControlSP
-    self.extension.publish_sp(CC_SP, CS.canValid)
+    self.publish_ext(CC_SP, CS.canValid)
 
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
