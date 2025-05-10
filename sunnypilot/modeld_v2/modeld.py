@@ -104,8 +104,10 @@ class ModelState:
       self.full_prev_desired_curv = np.zeros((1, full_history_buffer_len, prev_desired_curv_feature_len), dtype=np.float32)
       self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
 
-    if self.model_runner.is_20hz or self.model_runner.is_20hz_3d:
+    if self.model_runner.is_20hz:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+    elif self.model_runner.is_20hz_3d:
+      self.desire_reshape_dims = (1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN, SplitModelConstants.TEMPORAL_SKIP,-1)
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
