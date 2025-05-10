@@ -18,12 +18,6 @@ VolkswagenSettings::VolkswagenSettings(QWidget *parent) : BrandSettingsInterface
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void VolkswagenSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void VolkswagenSettings::updateSettings() {
   if (!isVisible()) {
     return;

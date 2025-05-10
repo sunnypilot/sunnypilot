@@ -16,11 +16,5 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   main_layout->addWidget(list);
 }
 
-void HyundaiSettings::updatePanel(bool _offroad) {
-  offroad = _offroad;
-
-  updateSettings();
-}
-
 void HyundaiSettings::updateSettings() {
 }

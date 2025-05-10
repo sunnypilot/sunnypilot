@@ -18,12 +18,6 @@ RivianSettings::RivianSettings(QWidget *parent) : BrandSettingsInterface(parent)
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void RivianSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void RivianSettings::updateSettings() {
   if (!isVisible()) {
     return;

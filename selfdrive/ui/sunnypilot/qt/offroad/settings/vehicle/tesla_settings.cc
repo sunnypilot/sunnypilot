@@ -18,12 +18,6 @@ TeslaSettings::TeslaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void TeslaSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void TeslaSettings::updateSettings() {
   if (!isVisible()) {
     return;

@@ -18,12 +18,6 @@ MazdaSettings::MazdaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void MazdaSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void MazdaSettings::updateSettings() {
   if (!isVisible()) {
     return;

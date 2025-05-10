@@ -18,12 +18,6 @@ HondaSettings::HondaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
   main_layout->addWidget(new ScrollViewSP(list, this));
 }
 
-void HondaSettings::updatePanel(bool _offroad) {
-  updateSettings();
-
-  offroad = _offroad;
-}
-
 void HondaSettings::updateSettings() {
   if (!isVisible()) {
     return;
