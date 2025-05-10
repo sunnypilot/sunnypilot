@@ -23,5 +23,6 @@ public:
 
 protected:
   ListWidget *list = nullptr;
+  Params params;
   bool offroad = false;
 };
