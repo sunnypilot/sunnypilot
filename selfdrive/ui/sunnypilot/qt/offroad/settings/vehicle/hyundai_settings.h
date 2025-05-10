@@ -28,7 +28,6 @@ public:
   void updateSettings() override;
 
 private:
-  Params params;
   bool has_longitudinal_control = false;
 
   ButtonParamControl *longitudinalTuningToggle = nullptr;
