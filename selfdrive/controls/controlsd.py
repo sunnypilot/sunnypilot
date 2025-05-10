@@ -18,7 +18,8 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
-from sunnypilot.selfdrive.controls.controlsd_ext import ControlsdExt
+
+from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 State = log.SelfdriveState.OpenpilotState
 LaneChangeState = log.LaneChangeState
@@ -34,10 +35,10 @@ class Controls:
     self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
     cloudlog.info("controlsd got CarParams")
 
-    # Initialize SP controlsd extension
-    self.ext = ControlsdExt(self.CP, self.params)
+    # Initialize sunnypilot controlsd extension
+    self.extension = ControlsExt(self.CP, self.params)
 
-    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.ext.CP_SP)
+    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.extension.CP_SP)
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
@@ -56,15 +57,15 @@ class Controls:
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
-      self.LaC = LatControlAngle(self.CP, self.ext.CP_SP, self.CI)
+      self.LaC = LatControlAngle(self.CP, self.extension.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'pid':
-      self.LaC = LatControlPID(self.CP, self.ext.CP_SP, self.CI)
+      self.LaC = LatControlPID(self.CP, self.extension.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
-      self.LaC = LatControlTorque(self.CP, self.ext.CP_SP, self.CI)
+      self.LaC = LatControlTorque(self.CP, self.extension.CP_SP, self.CI)
 
   def update(self):
     self.sm.update(15)
-    self.ext.update_state() # Update SP state
+    self.extension.update_state() # Update SP state
     if self.sm.updated["liveCalibration"]:
       self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
     if self.sm.updated["livePose"]:
@@ -101,8 +102,8 @@ class Controls:
     # Check which actuators can be enabled
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
 
-    # Use ControlsdExt to determine lat active state
-    _lat_active = self.ext.get_lat_active(self.sm['selfdriveState'].active)
+    # Use ControlsExt to determine lat active state
+    _lat_active = self.extension.get_lat_active(self.sm['selfdriveState'].active)
 
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
@@ -147,7 +148,7 @@ class Controls:
         setattr(actuators, p, 0.0)
 
     # Create CarControlSP
-    CC_SP = self.ext.create_cc_sp()
+    CC_SP = self.extension.create_cc_sp()
 
     return CC, CC_SP, lac_log
 
@@ -226,7 +227,7 @@ class Controls:
     self.pm.send('carControl', cc_send)
 
     # Publish CarControlSP
-    self.ext.publish_sp(CC_SP, CS.canValid)
+    self.extension.publish_sp(CC_SP, CS.canValid)
 
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)

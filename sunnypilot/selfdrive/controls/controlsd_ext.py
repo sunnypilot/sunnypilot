@@ -11,7 +11,7 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
 
-class ControlsdExt:
+class ControlsExt:
   def __init__(self, CP: car.CarParams, params: Params):
     self.CP = CP
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
