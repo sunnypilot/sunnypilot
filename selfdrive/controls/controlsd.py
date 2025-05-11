@@ -98,7 +98,7 @@ class Controls:
     CC.enabled = self.sm['selfdriveState'].enabled
 
     # Check which actuators can be enabled
-    standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
+    standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, -5) or CS.standstill
 
     ss_sp = self.sm['selfdriveStateSP']
     if ss_sp.mads.available:
