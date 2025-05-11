@@ -217,13 +217,9 @@ private:
 class ButtonParamControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
-private:
-bool isInlineLayout;
-QHBoxLayout *buttonParamLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
-
 public:
   ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                       const std::vector<QString> &button_texts, const int minimum_button_width = 300, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), isInlineLayout(inline_layout) {
+                       const std::vector<QString> &button_texts, const int minimum_button_width = 300, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), is_inline_layout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -251,8 +247,8 @@ public:
     int value = atoi(params.get(key).c_str());
 
     if (inline_layout) {
-      buttonParamLayout->setMargin(0);
-      buttonParamLayout->setSpacing(0);
+      button_param_layout->setMargin(0);
+      button_param_layout->setSpacing(0);
       if (!title.isEmpty()) {
         main_layout->removeWidget(title_label);
         hlayout->addWidget(title_label, 1);
@@ -271,15 +267,15 @@ public:
       button->setChecked(i == value);
       button->setStyleSheet(style);
       button->setMinimumWidth(minimum_button_width);
-      if (i == 0) buttonParamLayout->addSpacing(2);
-      buttonParamLayout->addWidget(button);
+      if (i == 0) button_param_layout->addSpacing(2);
+      button_param_layout->addWidget(button);
       button_group->addButton(button, i);
     }
 
-    buttonParamLayout->setAlignment(Qt::AlignLeft);
-    if (isInlineLayout) {
+    button_param_layout->setAlignment(Qt::AlignLeft);
+    if (is_inline_layout) {
       QFrame *container = new QFrame;
-      container->setLayout(buttonParamLayout);
+      container->setLayout(button_param_layout);
       container->setStyleSheet("background-color: #393939; border-radius: 20px;");
       hlayout->addWidget(container);
     }
@@ -337,8 +333,7 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
-
-    if (isInlineLayout) {
+    if (is_inline_layout) {
       return;
     }
 
@@ -376,6 +371,8 @@ private:
   std::vector<QString> button_texts;
 
   bool button_group_enabled = true;
+  bool is_inline_layout;
+  QHBoxLayout *button_param_layout = is_inline_layout ? new QHBoxLayout() : hlayout;
 };
 
 class ListWidgetSP : public QWidget {
@@ -388,7 +385,7 @@ public:
     outer_layout.addLayout(&inner_layout);
     inner_layout.setMargin(0);
     inner_layout.setSpacing(25); // default spacing is 25
-    outer_layout.addStretch();
+    outer_layout.addStretch(1);
   }
   inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
   inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
@@ -444,8 +441,8 @@ class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 private:
-  bool isInlineLayout;
-  QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
+  bool is_inline_layout;
+  QHBoxLayout *optionSelectorLayout = is_inline_layout ? new QHBoxLayout() : hlayout;
 
   struct MinMaxValue {
     int min_value;
@@ -466,7 +463,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), isInlineLayout(inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), is_inline_layout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -541,7 +538,7 @@ public:
     }
 
     optionSelectorLayout->setAlignment(Qt::AlignLeft);
-    if (isInlineLayout) {
+    if (is_inline_layout) {
       QFrame *container = new QFrame;
       container->setLayout(optionSelectorLayout);
       container->setStyleSheet("background-color: #393939; border-radius: 20px;");
@@ -568,7 +565,7 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
-    if (isInlineLayout) {
+    if (is_inline_layout) {
       return;
     }
 
@@ -661,16 +658,6 @@ public:
     }
   }
 
-protected:
-  // Override mouse release event to handle style updates smoothly
-  void mouseReleaseEvent(QMouseEvent *event) override {
-    if (!key.empty()) {
-      bool next_state = !params.getBool(key);
-      updateStyle(next_state);
-    }
-    QPushButton::mouseReleaseEvent(event);
-  }
-
 private:
   std::string key = "";
   Params params;
@@ -679,13 +666,14 @@ private:
 
   QString btn_enabled_off_style = "QPushButton:enabled { background-color: #393939; }";
   QString btn_enabled_on_style = "QPushButton:enabled { background-color: #1e79e8; }";
-  QString btn_pressed_style = "QPushButton:pressed { background-color: #4A4A4A; }";
-  QString btn_disabled_stype = "QPushButton:disabled { background-color: #121212; color: #5C5C5C; }";
+  QString btn_off_pressed_style = "QPushButton:pressed { background-color: #4A4A4A; }";
+  QString btn_on_pressed_style = "QPushButton:pressed { background-color: #1E8FFF; }";
+  QString btn_disabled_style = "QPushButton:disabled { background-color: #121212; color: #5C5C5C; }";
 
   void updateStyle(bool enabled) {
     QString enabled_style = enabled ? btn_enabled_on_style : btn_enabled_off_style;
-
-    setStyleSheet(buttonStyle + enabled_style + btn_pressed_style + btn_disabled_stype);
+    QString pressed_style = enabled ? btn_on_pressed_style : btn_off_pressed_style;
+    setStyleSheet(buttonStyle + enabled_style + pressed_style + btn_disabled_style);
   }
 };
 
