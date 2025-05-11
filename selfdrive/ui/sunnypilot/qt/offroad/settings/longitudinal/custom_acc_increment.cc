@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer/custom_acc_increment.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
 
 const QMap<QString, QString> CustomAccIncrement::customLongValues = {
   {"1", "1"},
