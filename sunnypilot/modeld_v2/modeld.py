@@ -59,31 +59,31 @@ class ModelState:
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
 
     # img buffers are managed in openCL transform code
-    self.numpy_inputs = {}
+    self.numpy_inputs = {key: np.zeros(shape, dtype=np.float32) for key, shape in self.model_runner.input_shapes.items() if key not in self.frames}
 
-    for key, shape in self.model_runner.input_shapes.items():
-      if key not in self.frames: # Managed by opencl
-        self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
-
-    default_shape = np.zeros((0, 0, 0), dtype=np.float32)
-    desire_batch_size, desire_sequence_len, desire_feature_len = self.numpy_inputs["desire"].shape
-    buffer_batch_size, buffer_sequence_len, buffer_feature_len = self.numpy_inputs["features_buffer"].shape
-    prev_desired_curv_batch_size, prev_desired_curv_sequence_len, prev_desired_curv_feature_len = self.numpy_inputs.get("prev_desired_curv", default_shape).shape
-    full_history_buffer_len = 100
-
-    if self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((1, full_history_buffer_len, buffer_feature_len), dtype=np.float32)
-      self.full_desire = np.zeros((1, full_history_buffer_len, desire_feature_len), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, full_history_buffer_len, prev_desired_curv_feature_len), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
-    elif self.model_runner.is_20hz:
-      self.full_features_buffer = np.zeros((full_history_buffer_len, buffer_feature_len), dtype=np.float32)
-      self.full_desire = np.zeros((full_history_buffer_len, desire_feature_len), dtype=np.float32)
-      step_size = int(-100 / buffer_sequence_len)
-      self.temporal_idxs = np.arange(step_size, step_size * (buffer_sequence_len + 1), step_size)[::-1]
-
+    # 20hz models
     if self.model_runner.is_20hz:
-      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+      full_history_buffer_len = 100
+      shape_prefix = (1,) if self.model_runner.is_20hz_3d else ()
+      self.full_features_buffer = np.zeros(shape_prefix + (full_history_buffer_len, self.numpy_inputs["features_buffer"].shape[2]), dtype=np.float32)
+      self.full_desire = np.zeros(shape_prefix + (full_history_buffer_len, self.numpy_inputs["desire"].shape[2]), dtype=np.float32)
+      self.desire_reshape_dims = (*self.numpy_inputs['desire'].shape[:2], -1, self.numpy_inputs['desire'].shape[2])
+
+      if self.model_runner.is_20hz_3d:
+        if "prev_desired_curv" in self.numpy_inputs:
+          self.full_prev_desired_curv = np.zeros(shape_prefix + (full_history_buffer_len, self.numpy_inputs["prev_desired_curv"].shape[2]), dtype=np.float32)
+        self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+      else:
+        buffer_seq_len = self.numpy_inputs["features_buffer"].shape[1]
+        if buffer_seq_len > 0:
+          step_size = int(-100 / buffer_seq_len)
+          self.temporal_idxs = np.arange(step_size, step_size * (buffer_seq_len + 1), step_size)[::-1]
+        else:
+          self.temporal_idxs = np.array([], dtype=int)
+
+      # Pre-compute indices for 20hz models
+      self.buffer_index = (0,) if self.model_runner.is_20hz_3d else ()
+      self.output_index = (0,) if self.model_runner.is_20hz_3d else slice(None)
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -92,15 +92,12 @@ class ModelState:
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_desire[:-1] = self.full_desire[1:]
-      self.full_desire[-1] = new_desire
+    # Update desire buffer based on model type
+    if self.model_runner.is_20hz:
+      buffer = self.full_desire[self.buffer_index]
+      buffer[:-1], buffer[-1] = buffer[1:], new_desire
       self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
-    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
-      self.full_desire[0, :-1] = self.full_desire[0, 1:]
-      self.full_desire[0, -1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
-    elif not self.model_runner.is_20hz:
+    else:
       length = inputs['desire'].shape[0]
       self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
       self.numpy_inputs['desire'][0, -1, :length] = new_desire[:length]
@@ -114,43 +111,34 @@ class ModelState:
 
     # Prepare inputs using the model runner
     self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
-
     if prepare_only:
       return None
 
-    # Run model inference
+    # Run model and process outputs
     outputs = self.model_runner.run_model()
+    hidden_state = outputs['hidden_state'][0]
 
-    if self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_features_buffer[:-1] = self.full_features_buffer[1:]
-      self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[self.temporal_idxs]
-    elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d:
-      self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
-      self.full_features_buffer[0, -1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][0, :] = self.full_features_buffer[0, self.temporal_idxs]
-    elif not self.model_runner.is_20hz:
+    # Update features buffer based on model type
+    if self.model_runner.is_20hz:
+      buffer = self.full_features_buffer[self.buffer_index]
+      buffer[:-1], buffer[-1] = buffer[1:], hidden_state
+      self.numpy_inputs['features_buffer'][self.output_index] = self.full_features_buffer[self.buffer_index][self.temporal_idxs]
+    else:
       feature_len = outputs['hidden_state'].shape[1]
       self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
       self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
     if "desired_curvature" in outputs:
-      input_name_prev = None
-
-      if "prev_desired_curvs" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curvs'
-      elif "prev_desired_curv" in self.numpy_inputs.keys():
-        input_name_prev = 'prev_desired_curv'
-
-      if input_name_prev is not None:
-        self.process_desired_curvature(outputs, input_name_prev)
+      prev_key = next((k for k in ('prev_desired_curvs', 'prev_desired_curv') if k in self.numpy_inputs), None)
+      if prev_key:
+        self.process_desired_curvature(outputs, prev_key)
     return outputs
 
   def process_desired_curvature(self, outputs, input_name_prev):
-    if self.model_runner.is_20hz_3d:
-      self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
-      self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
-      self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+    if self.model_runner.is_20hz_3d and hasattr(self, 'full_prev_desired_curv'):
+      buffer = self.full_prev_desired_curv[0]
+      buffer[:-1], buffer[-1] = buffer[1:], outputs['desired_curvature'][0]
+      self.numpy_inputs['prev_desired_curv'][:] = 0 * self.full_prev_desired_curv[0, self.temporal_idxs]
     else:
       length = outputs['desired_curvature'][0].size
       self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
