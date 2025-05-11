@@ -17,7 +17,7 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
     : ExpandableToggleRow(param, title, desc, icon, parent) {
 
   auto *accFrame = new QFrame(this);
-  auto *accFrameLayout = new QGridLayout(this);
+  auto *accFrameLayout = new QGridLayout();
   accFrame->setLayout(accFrameLayout);
   accFrameLayout->setSpacing(0);
 
