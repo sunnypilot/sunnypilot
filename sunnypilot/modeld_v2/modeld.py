@@ -42,6 +42,7 @@ class ModelState:
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
+  temporal_idxs: slice | np.ndarray
 
   def __init__(self, context: CLContext):
     try:
@@ -72,7 +73,8 @@ class ModelState:
       if self.model_runner.is_20hz_3d:
         if "prev_desired_curv" in self.numpy_inputs:
           self.full_prev_desired_curv = np.zeros(shape_prefix + (full_history_buffer_len, self.numpy_inputs["prev_desired_curv"].shape[2]), dtype=np.float32)
-        self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+        self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None,
+                                  SplitModelConstants.TEMPORAL_SKIP)
       else:
         buffer_seq_len = self.numpy_inputs["features_buffer"].shape[1]
         if buffer_seq_len > 0:

@@ -95,8 +95,10 @@ class Parser:
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     self.parse_mdn('plan', outs, in_N=SplitModelConstants.PLAN_MHP_N, out_N=SplitModelConstants.PLAN_MHP_SELECTION,
                    out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
-    self.parse_mdn('lane_lines', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
-    self.parse_mdn('road_edges', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+    self.parse_mdn('lane_lines', outs, in_N=0, out_N=0,
+                   out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+    self.parse_mdn('road_edges', outs, in_N=0, out_N=0,
+                   out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
     self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
     self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
                    out_shape=(SplitModelConstants.LEAD_TRAJ_LEN,SplitModelConstants.LEAD_WIDTH))
