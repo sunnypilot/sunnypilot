@@ -18,13 +18,13 @@ from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value, get_curvature_from_plan
+
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
-
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
-from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
+from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -50,7 +50,7 @@ class ModelState:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise
 
-    self.LAT_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.0
+    self.LAT_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.2
     self.LONG_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.0
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
