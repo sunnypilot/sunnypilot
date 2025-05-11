@@ -70,6 +70,13 @@ void PlatformSelector::refresh(bool _offroad) {
 
       platform = QString::fromStdString(CP.getCarFingerprint().cStr());
 
+      for (auto it = platforms.constBegin(); it != platforms.constEnd(); ++it) {
+        if (it.value()["platform"].toString() == platform) {
+          brand = it.value()["brand"].toString();
+          break;
+        }
+      }
+
       if (platform == "MOCK") {
         platform = unrecognized_str;
       } else {
