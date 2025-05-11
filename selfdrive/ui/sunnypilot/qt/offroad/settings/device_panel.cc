@@ -82,10 +82,8 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   toggleDeviceBootMode = new ButtonParamControlSP(
     "DeviceBootMode",
-    tr("Device Boot Mode"),
-    tr("Controls state of the device after boot.\n\n"
-      "⁍ Default: Device will boot normally & will be ready to engage.\n"
-      "⁍ Offroad: Device will boot in Always Offroad mode and will not engage till Always Offroad is manually disabled."),
+    tr("Wake-Up Behavior"),
+    "",
     "",
     {"Default", "Offroad"},
     375,
@@ -94,6 +92,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
 
   connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
     params.put("DeviceBootMode", QString::number(index).toStdString());
+    updateState();
   });
 
   addItem(device_grid_layout);
@@ -195,4 +194,10 @@ void DevicePanelSP::updateState() {
   bool offroad_mode_param = params.getBool("OffroadMode");
   offroadBtn->setText(offroad_mode_param ? tr("Exit Always Offroad") : tr("Always Offroad"));
   offroadBtn->setStyleSheet(offroad_mode_param ? alwaysOffroadStyle : autoOffroadStyle);
+
+  DeviceSleepModeStatus currStatus = DeviceSleepModeStatus::DEFAULT;
+  if (params.get("DeviceBootMode") == "1") {
+    currStatus = DeviceSleepModeStatus::OFFROAD;
+  }
+  toggleDeviceBootMode->setDescription(deviceSleepModeDescription(currStatus));
 }
