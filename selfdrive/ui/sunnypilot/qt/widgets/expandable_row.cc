@@ -16,7 +16,7 @@ ExpandableToggleRow::ExpandableToggleRow(const QString &param, const QString &ti
   collapsibleWidget = new QFrame(this);
   collapsibleWidget->setContentsMargins(0, 0, 0, 0);
   collapsibleWidget->setVisible(false);
-  QVBoxLayout *collapsible_layout = new QVBoxLayout(this);
+  QVBoxLayout *collapsible_layout = new QVBoxLayout();
   collapsibleWidget->setLayout(collapsible_layout);
 
   list = new ListWidgetSP(this, false);
