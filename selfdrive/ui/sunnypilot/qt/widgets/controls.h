@@ -551,6 +551,10 @@ public:
     request_update = _update;
   }
 
+  void setFixedWidth(int width) {
+    label.setFixedWidth(width);
+  }
+
   inline void setLabel(const QString &text) { label.setText(text); }
 
   void setEnabled(bool enabled) {
