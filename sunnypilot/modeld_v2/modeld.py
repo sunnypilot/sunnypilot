@@ -42,6 +42,7 @@ class ModelState:
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
+  temporal_idxs: slice | np.ndarray
 
   def __init__(self, context: CLContext):
     try:
@@ -68,14 +69,15 @@ class ModelState:
     default_shape = np.zeros((0, 0, 0), dtype=np.float32)
     desire_batch_size, desire_sequence_len, desire_feature_len = self.numpy_inputs["desire"].shape
     buffer_batch_size, buffer_sequence_len, buffer_feature_len = self.numpy_inputs["features_buffer"].shape
-    prev_desired_curv_batch_size, prev_desired_curv_sequence_len, prev_desired_curv_feature_len = self.numpy_inputs.get("prev_desired_curv", default_shape).shape
+    prev_desired_curv_batch_size, prev_desired_curv_sequence_len, prev_desired_curv_feature_len = self.numpy_inputs.get("prev_desired_curv", default_shape).shape # noqa: E501
     full_history_buffer_len = 100
 
     if self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((1, full_history_buffer_len, buffer_feature_len), dtype=np.float32)
       self.full_desire = np.zeros((1, full_history_buffer_len, desire_feature_len), dtype=np.float32)
       self.full_prev_desired_curv = np.zeros((1, full_history_buffer_len, prev_desired_curv_feature_len), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)),
+                                 None, SplitModelConstants.TEMPORAL_SKIP)
     elif self.model_runner.is_20hz:
       self.full_features_buffer = np.zeros((full_history_buffer_len, buffer_feature_len), dtype=np.float32)
       self.full_desire = np.zeros((full_history_buffer_len, desire_feature_len), dtype=np.float32)
