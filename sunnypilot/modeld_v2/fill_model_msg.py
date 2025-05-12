@@ -3,10 +3,29 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
+from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
+
+def curv_from_psis(psi_target, psi_rate, vego, action_t):
+  vego = np.clip(vego, MIN_SPEED, np.inf)
+  curv_from_psi = psi_target / (vego * action_t)  # epsilon to prevent divide-by-zero
+  return 2 * curv_from_psi - psi_rate / vego
+
+
+def get_curvature_from_plan(plan, vego, action_t):
+  psi_target = np.interp(action_t, ModelConstants.T_IDXS, plan[:, Plan.T_FROM_CURRENT_EULER][:, 2])
+  psi_rate = plan[:, Plan.ORIENTATION_RATE][0, 2]
+  return curv_from_psis(psi_target, psi_rate, vego, action_t)
+
+
+def get_curvature_from_output(output, vego, action_t):
+  if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
+    return float(desired_curv[0, 0])
+
+  return float(get_curvature_from_plan(output['plan'][0], vego, action_t))
 
 
 class PublishState:
