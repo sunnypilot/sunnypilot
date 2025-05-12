@@ -29,13 +29,16 @@ CRUISE_INTERVAL_SIGN = {
 
 
 class VCruiseHelper:
-  def __init__(self, CP):
+  def __init__(self, CP, CP_SP):
     self.CP = CP
+    self.CP_SP = CP_SP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
     self.button_timers = {ButtonType.decelCruise: 0, ButtonType.accelCruise: 0}
     self.button_change_states = {btn: {"standstill": False, "enabled": False} for btn in self.button_timers}
+    self.custom_acc_short_increment = None
+    self.custom_acc_long_increment = None
 
   @property
   def v_cruise_initialized(self):
@@ -72,8 +75,6 @@ class VCruiseHelper:
     long_press = False
     button_type = None
 
-    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
-
     for b in CS.buttonEvents:
       if b.type.raw in self.button_timers and not b.pressed:
         if self.button_timers[b.type.raw] > CRUISE_LONG_PRESS:
@@ -99,11 +100,7 @@ class VCruiseHelper:
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
-    if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
-      self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
-    else:
-      self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press, is_metric)
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
@@ -137,3 +134,33 @@ class VCruiseHelper:
       self.v_cruise_kph = int(round(np.clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
 
     self.v_cruise_cluster_kph = self.v_cruise_kph
+
+  def adjust_cruise_speed(self, button_type, long_press, is_metric):
+    """
+    Adjust cruise control speed based on button inputs with customizable increments.
+    Parameters:
+    - button_type: Type of button pressed (affects direction and rounding)
+    - long_press: Whether button is being held down
+    - is_metric: Check if the system is using metric units
+    """
+    # Base increment value based on unit system
+    base_increment = 1. if is_metric else IMPERIAL_INCREMENT
+
+    # Apply the user-specified multipliers to the base increment
+    short_increment = self.CP_SP.customAccControl.increments.shortIncrement
+    long_increment = self.CP_SP.customAccControl.increments.longIncrement
+
+    # Determine which increment to use based on press type
+    adjusted_delta = long_increment if long_press else short_increment
+    v_cruise = self.v_cruise_kph / base_increment
+
+    # Check if we need to align to interval boundaries
+    if adjusted_delta in [5, 10] and v_cruise % adjusted_delta != 0:
+      rounded_value = CRUISE_NEAREST_FUNC[button_type](v_cruise / adjusted_delta)
+      v_cruise = rounded_value * adjusted_delta
+    else:
+      direction = CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on button type
+      v_cruise += adjusted_delta * direction
+
+    self.v_cruise_kph = v_cruise * base_increment
+    return self.v_cruise_kph

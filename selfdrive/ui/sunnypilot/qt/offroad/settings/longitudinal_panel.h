@@ -7,11 +7,17 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+
 
 class LongitudinalPanel : public QWidget {
   Q_OBJECT
 
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
+
+private:
+  CustomAccIncrement *customAccIncrement = nullptr;
+  ListWidgetSP *listWidget = nullptr;
 };

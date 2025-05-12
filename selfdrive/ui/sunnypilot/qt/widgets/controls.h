@@ -440,14 +440,15 @@ public:
 class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
-private:
-  bool is_inline_layout;
-  QHBoxLayout *optionSelectorLayout = is_inline_layout ? new QHBoxLayout() : hlayout;
-
+protected:
   struct MinMaxValue {
     int min_value;
     int max_value;
   };
+
+private:
+  bool is_inline_layout;
+  QHBoxLayout *optionSelectorLayout = is_inline_layout ? new QHBoxLayout() : hlayout;
 
   int getParamValue() {
     const auto param_value = QString::fromStdString(params.get(key));
@@ -483,7 +484,7 @@ public:
       }
     )";
 
-    if (inline_layout) {
+    if (is_inline_layout) {
       optionSelectorLayout->setMargin(0);
       optionSelectorLayout->setSpacing(0);
       if (!title.isEmpty()) {
@@ -497,7 +498,7 @@ public:
     }
 
     label.setStyleSheet(label_enabled_style);
-    label.setFixedWidth(inline_layout ? 350 : 300);
+    label.setFixedWidth(is_inline_layout ? 350 : 300);
     label.setAlignment(Qt::AlignCenter);
 
     const std::vector<QString> button_texts{"－", "＋"};
@@ -548,6 +549,10 @@ public:
 
   void setUpdateOtherToggles(bool _update) {
     request_update = _update;
+  }
+
+  void setFixedWidth(int width) {
+    label.setFixedWidth(width);
   }
 
   inline void setLabel(const QString &text) { label.setText(text); }

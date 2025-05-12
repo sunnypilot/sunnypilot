@@ -183,7 +183,7 @@ class Car:
     self.params.put_nonblocking("CarParamsSPPersistent", cp_sp_bytes)
 
     self.mock_carstate = MockCarState()
-    self.v_cruise_helper = VCruiseHelper(self.CP)
+    self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
 
     self.is_metric = self.params.get_bool("IsMetric")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
@@ -306,6 +306,7 @@ class Car:
 
       # sunnypilot
       self.dynamic_experimental_control = self.params.get_bool("DynamicExperimentalControl")
+      sunnypilot_interfaces._custom_acc_controls(self.CP_SP, self.params)
 
       time.sleep(0.1)
 
