@@ -128,15 +128,16 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
     {"CarPlatformBundle", PERSISTENT},
-    {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
-    {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
-    {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
     {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
     {"QuietMode", PERSISTENT | BACKUP},
+        // TODO - Sort these. Moving down temporarily to resolve CI merge conflict
+    {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
+    {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
+    {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
 
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
