@@ -12,4 +12,11 @@
 class ModelRendererSP : public ModelRenderer {
 public:
   ModelRendererSP() {}
+  void draw(QPainter &painter, const QRect &surface_rect);
+
+
+private:
+  void update_leads(const cereal::RadarState::Reader &radar_state, const cereal::XYZTData::Reader &line);
+  void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead);
+  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height);
 };
