@@ -94,6 +94,7 @@ class DynamicExperimentalController:
     self._active: bool = False
     self._mode: str = 'acc'
     self._frame: int = 0
+    self.sm = None
 
     # Use weighted moving average for filtering leads
     self._lead_gmac = WeightedMovingAverageCalculator(window_size=WMACConstants.LEAD_WINDOW_SIZE)
@@ -328,7 +329,10 @@ class DynamicExperimentalController:
 
     # If there is a filtered lead, the vehicle is not in standstill, and the lead vehicle's yRel meets the condition,
     if self._has_lead_filtered and not self._has_standstill:
-      self._set_mode('acc')
+      if self.sm and self.sm['radarState'].leadOne.dRel < 15:
+        self._set_mode('blended')
+      else:
+        self._set_mode('acc')
       return
 
     # when blinker is on and speed is driving below V_ACC_MIN: blended
@@ -351,7 +355,10 @@ class DynamicExperimentalController:
 
     # car driving at speed lower than set speed: acc
     if self._has_slowness:
-      self._set_mode('acc')
+      if self.sm and self.sm['radarState'].leadOne.dRel < 30:
+        self._set_mode('blended')
+      else:
+        self._set_mode('acc')
       return
 
     # Nav enabled and distance to upcoming turning is 300 or below
@@ -375,6 +382,7 @@ class DynamicExperimentalController:
 
   def update(self, sm: messaging.SubMaster) -> None:
     self._read_params()
+    self.sm = sm
 
     self.set_mpc_fcw_crash_cnt()
 
