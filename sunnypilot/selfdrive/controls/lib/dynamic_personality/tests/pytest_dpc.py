@@ -3,6 +3,7 @@ import numpy as np
 from cereal import log
 
 from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_personality.dynamic_personality_controller import DynamicPersonalityController
+from openpilot.sunnypilot.common.utils import compute_symmetric_slopes, hermite_interpolate
 
 class TestDynamicPersonalityController:
 
@@ -25,7 +26,7 @@ class TestDynamicPersonalityController:
     expected_slopes[2] = ((y[3] - y[2]) / (x[3] - x[2]) + (y[2] - y[1]) / (x[2] - x[1])) / 2  # (3.0 + 2.0) / 2 = 2.5
     expected_slopes[3] = (y[3] - y[2]) / (x[3] - x[2])  # 3.0
 
-    computed_slopes = self.controller.compute_symmetric_slopes(x, y)
+    computed_slopes = compute_symmetric_slopes(x, y)
 
     np.testing.assert_allclose(computed_slopes, expected_slopes, rtol=1e-5)
 
@@ -36,13 +37,13 @@ class TestDynamicPersonalityController:
     slopes = np.array([1.0, 0.0, -1.0])
 
     # Test at data points
-    assert self.controller.hermite_interpolate(0.0, xp, yp, slopes) == pytest.approx(5.0)
-    assert self.controller.hermite_interpolate(10.0, xp, yp, slopes) == pytest.approx(15.0)
-    assert self.controller.hermite_interpolate(20.0, xp, yp, slopes) == pytest.approx(10.0)
+    assert hermite_interpolate(0.0, xp, yp, slopes) == pytest.approx(5.0)
+    assert hermite_interpolate(10.0, xp, yp, slopes) == pytest.approx(15.0)
+    assert hermite_interpolate(20.0, xp, yp, slopes) == pytest.approx(10.0)
 
     # Test interpolation
-    assert self.controller.hermite_interpolate(5.0, xp, yp, slopes) == pytest.approx(11.25)
-    assert self.controller.hermite_interpolate(15.0, xp, yp, slopes) == pytest.approx(13.75)
+    assert hermite_interpolate(5.0, xp, yp, slopes) == pytest.approx(11.25)
+    assert hermite_interpolate(15.0, xp, yp, slopes) == pytest.approx(13.75)
 
   def test_hermite_interpolate_clipping(self):
     """Test that hermite interpolation properly clips values outside the range"""
@@ -51,10 +52,10 @@ class TestDynamicPersonalityController:
     slopes = np.array([1.0, 0.0, -1.0])
 
     # Test clipping below minimum
-    assert self.controller.hermite_interpolate(-5.0, xp, yp, slopes) == pytest.approx(5.0)
+    assert hermite_interpolate(-5.0, xp, yp, slopes) == pytest.approx(5.0)
 
     # Test clipping above maximum
-    assert self.controller.hermite_interpolate(25.0, xp, yp, slopes) == pytest.approx(10.0)
+    assert hermite_interpolate(25.0, xp, yp, slopes) == pytest.approx(10.0)
 
   def test_get_dynamic_follow_distance_relaxed(self):
     """Test follow distance calculation for relaxed personality"""
