@@ -329,7 +329,7 @@ class DynamicExperimentalController:
 
     # If there is a filtered lead, the vehicle is not in standstill, and the lead vehicle's yRel meets the condition,
     if self._has_lead_filtered and not self._has_standstill:
-      if self.sm is not None and (self.sm['radarState'].leadOne.dRel < 15.0):
+      if self.sm is not None and (self.sm['radarState'].leadOne.vRel < 0):
         self._set_mode('blended')
       else:
         self._set_mode('acc')
@@ -355,7 +355,7 @@ class DynamicExperimentalController:
 
     # car driving at speed lower than set speed: acc
     if self._has_slowness:
-      if self.sm is not None and (self.sm['radarState'].leadOne.dRel < 30.0):
+      if self.sm is not None and (self.sm['radarState'].leadOne.dRel < 15.0):
         self._set_mode('blended')
       else:
         self._set_mode('acc')
