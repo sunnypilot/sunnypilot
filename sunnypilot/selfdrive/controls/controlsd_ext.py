@@ -49,7 +49,7 @@ class ControlsExt:
 
     # MADS state
     CC_SP.mads = sm['selfdriveStateSP'].mads
-    CC_SP.leadDistance, CC_SP.leadRelSpeed = _set_custom_lead_vehicle_state(CC_SP, sm)
+    ControlsExt._set_custom_lead_vehicle_state(CC_SP, sm)
     CC_SP.leadVisible = sm['longitudinalPlan'].hasLead
     return CC_SP
 
