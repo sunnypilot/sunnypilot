@@ -14,4 +14,7 @@ class VisualsPanel : public QWidget {
 
 public:
  explicit VisualsPanel(QWidget *parent = nullptr);
+
+private:
+ ListWidgetSP *listWidget = nullptr;
 };
