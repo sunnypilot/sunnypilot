@@ -82,8 +82,6 @@ public:
 
 private:
   Params params;
-
-private slots:
   void handleDisplayPowerChanged(bool on);
 };
 
