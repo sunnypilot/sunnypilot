@@ -6,9 +6,8 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import cereal.messaging as messaging
-from cereal import log, custom
+from cereal import custom
 
-from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
@@ -19,32 +18,36 @@ class ControlsExt:
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_ext = messaging.SubMaster(['selfdriveStateSP'])
-    self.pm_ext = messaging.PubMaster(['carControlSP'])
+    self.sm_services_ext = ['selfdriveStateSP']
+    self.pm_services_ext = ['carControlSP']
 
-  def get_lat_active(self, selfdriveState: log.SelfdriveState) -> bool:
-    ss_sp = self.sm_ext['selfdriveStateSP']
+  @staticmethod
+  def get_lat_active(sm: messaging.SubMaster) -> bool:
+    ss_sp = sm['selfdriveStateSP']
 
     if ss_sp.mads.available:
       return bool(ss_sp.mads.active)
 
     # MADS not available, use stock state to engage
-    return bool(selfdriveState.active)
+    return bool(sm['selfdriveState'].active)
 
-  def update_ext(self) -> None:
-    self.sm_ext.update(15)
-
-  def state_control_ext(self) -> custom.CarControlSP:
+  @staticmethod
+  def state_control_ext(sm: messaging.SubMaster) -> custom.CarControlSP:
     CC_SP = custom.CarControlSP.new_message()
 
     # MADS state
-    CC_SP.mads = self.sm_ext['selfdriveStateSP'].mads
+    CC_SP.mads = sm['selfdriveStateSP'].mads
 
     return CC_SP
 
-  def publish_ext(self, CC_SP: custom.CarControlSP, CS: structs.CarState) -> None:
+  @staticmethod
+  def publish_ext(CC_SP: custom.CarControlSP, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     cc_sp_send = messaging.new_message('carControlSP')
-    cc_sp_send.valid = CS.canValid
+    cc_sp_send.valid = sm['carState'].canValid
     cc_sp_send.carControlSP = CC_SP
 
-    self.pm_ext.send('carControlSP', cc_sp_send)
+    pm.send('carControlSP', cc_sp_send)
+
+  def run_ext(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
+    CC_SP = self.state_control_ext(sm)
+    self.publish_ext(CC_SP, sm, pm)

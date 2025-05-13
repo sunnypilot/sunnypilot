@@ -42,8 +42,9 @@ class Controls(ControlsExt):
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
-                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'], poll='selfdriveState')
-    self.pm = messaging.PubMaster(['carControl', 'controlsState'])
+                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'] + self.sm_services_ext,
+                                  poll='selfdriveState')
+    self.pm = messaging.PubMaster(['carControl', 'controlsState'] + self.pm_services_ext)
 
     self.steer_limited_by_controls = False
     self.curvature = 0.0
@@ -101,7 +102,7 @@ class Controls(ControlsExt):
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
 
     # Get which state to use for active lateral control
-    _lat_active = self.get_lat_active(self.sm['selfdriveState'])
+    _lat_active = self.get_lat_active(self.sm)
 
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
@@ -225,11 +226,9 @@ class Controls(ControlsExt):
     rk = Ratekeeper(100, print_delay_threshold=None)
     while True:
       self.update()
-      self.update_ext()
       CC, lac_log = self.state_control()
-      CC_SP = self.state_control_ext()
       self.publish(CC, lac_log)
-      self.publish_ext(CC_SP, self.sm['carState'])
+      self.run_ext(self.sm, self.pm)
       rk.monitor_time()
 
 
