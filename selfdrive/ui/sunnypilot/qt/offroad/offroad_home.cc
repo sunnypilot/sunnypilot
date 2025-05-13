@@ -32,6 +32,8 @@ OffroadHomeSP::OffroadHomeSP(QWidget *parent) : OffroadHome(parent) {
   offroad_notif->setStyleSheet("background-color: #E22C2C;");
   header_layout->insertWidget(0, offroad_notif, 0, Qt::AlignHCenter | Qt::AlignLeft);
 
+  QObject::connect(deviceSP(), &DeviceSP::displayPowerChanged, this, &OffroadHomeSP::refreshOffroadStatus);
+
 }
 
 void OffroadHomeSP::showEvent(QShowEvent *event) {
