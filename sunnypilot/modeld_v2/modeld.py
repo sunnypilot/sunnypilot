@@ -96,7 +96,7 @@ class ModelState:
     elif self.model_runner.is_20hz and self.model_runner.is_20hz_3d: # is_20hz and is_20hz_3d
       self.full_desire[0,:-1] = self.full_desire[0,1:]
       self.full_desire[0,-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2) # noqa: E501
+      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
     elif not self.model_runner.is_20hz: # not 20hz
       length = inputs['desire'].shape[0]
       self.numpy_inputs['desire'][0, :-1] = self.numpy_inputs['desire'][0, 1:]
