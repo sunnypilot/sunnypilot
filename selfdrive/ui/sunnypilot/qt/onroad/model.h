@@ -12,4 +12,13 @@
 class ModelRendererSP : public ModelRenderer {
 public:
   ModelRendererSP() = default;
+
+private:
+  void update_leads(const cereal::RadarState::Reader &radar_state, const cereal::XYZTData::Reader &line) override;
+  void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) override;
+
+  void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &rect) override;
+
+  QPolygonF left_blindspot_vertices;
+  QPolygonF right_blindspot_vertices;
 };
