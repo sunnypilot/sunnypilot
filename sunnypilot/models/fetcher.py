@@ -44,6 +44,13 @@ class ModelParser:
     return model
 
   @staticmethod
+  def _parse_overrides(overrides_data) -> custom.ModelManagerSP.Overrides:
+    overrides = custom.ModelManagerSP.Overrides()
+    overrides.lat = float(overrides_data["lat"])
+    overrides.long = float(overrides_data["long"])
+    return overrides
+
+  @staticmethod
   def _parse_bundle(bundle) -> custom.ModelManagerSP.ModelBundle:
     model_bundle = custom.ModelManagerSP.ModelBundle()
     model_bundle.index = int(bundle["index"])
@@ -56,6 +63,7 @@ class ModelParser:
     model_bundle.runner = bundle.get("runner", custom.ModelManagerSP.Runner.snpe)
     model_bundle.is20hz = bundle.get("is_20hz", False)
     model_bundle.minimumSelectorVersion = int(bundle["minimum_selector_version"])
+    model_bundle.overrides = ModelParser._parse_overrides(bundle["overrides"])
 
     return model_bundle
 

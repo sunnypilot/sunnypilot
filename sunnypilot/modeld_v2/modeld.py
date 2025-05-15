@@ -23,6 +23,7 @@ from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
+from openpilot.sunnypilot.models.helpers import  get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
 
@@ -50,8 +51,10 @@ class ModelState:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise
 
-    self.LAT_SMOOTH_SECONDS = 0.2
-    self.LONG_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.0
+    bundle = get_active_bundle()
+    overrides = bundle.overrides
+    self.LAT_SMOOTH_SECONDS = overrides.lat
+    self.LONG_SMOOTH_SECONDS = overrides.long
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2

@@ -26,7 +26,7 @@ from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
-from openpilot.sunnypilot.models.helpers import get_model_path, load_metadata, prepare_inputs, load_meta_constants
+from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -37,8 +37,6 @@ MODEL_PATHS = {
 
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
 
-LAT_SMOOTH_SECONDS = 0.2
-LONG_SMOOTH_SECONDS = 0.0
 
 class FrameMeta:
   frame_id: int = 0
@@ -61,6 +59,10 @@ class ModelState:
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    bundle = get_active_bundle()
+    overrides = bundle.overrides
+    self.LAT_SMOOTH_SECONDS = overrides.lat
+    self.LONG_SMOOTH_SECONDS = overrides.long
 
     model_paths = get_model_path()
     self.model_metadata = load_metadata()
@@ -129,7 +131,7 @@ class ModelState:
     plan = model_output['plan'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
                                                      action_t=long_action_t)
-    desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, LONG_SMOOTH_SECONDS)
+    desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
     return log.ModelDataV2.Action(desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
@@ -200,8 +202,8 @@ def main(demo=False):
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
   # Enable lagd support for sunnypilot modeld
-  steer_delay = sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
-  long_delay = CP.longitudinalActuatorDelay + LONG_SMOOTH_SECONDS
+  steer_delay = sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
+  long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
