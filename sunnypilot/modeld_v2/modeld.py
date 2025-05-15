@@ -50,7 +50,7 @@ class ModelState:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise
 
-    self.LAT_SMOOTH_SECONDS = 0.0 if self.model_runner.is_20hz_3d else 0.2
+    self.LAT_SMOOTH_SECONDS = 0.2
     self.LONG_SMOOTH_SECONDS = 0.3 if self.model_runner.is_20hz_3d else 0.0
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
