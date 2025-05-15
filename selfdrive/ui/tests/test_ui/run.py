@@ -37,7 +37,7 @@ DATA: dict[str, capnp.lib.capnp._DynamicStructBuilder] = dict.fromkeys(
   "driverStateV2", "roadCameraState", "wideRoadCameraState", "driverCameraState"], None)
 
 def setup_homescreen(click, pm: PubMaster, scroll=None):
-  pass
+  time.sleep(UI_DELAY)
 
 def setup_settings_device(click, pm: PubMaster, scroll=None):
   click(100, 100)
@@ -61,6 +61,7 @@ def setup_settings_software(click, pm: PubMaster, scroll=None):
   time.sleep(UI_DELAY)
 
 def setup_settings_firehose(click, pm: PubMaster, scroll=None):
+  setup_settings_device(click, pm)
   scroll(-400, 278, 962)
   click(278, 862)
 
@@ -151,7 +152,7 @@ def setup_keyboard_uppercase(click, pm: PubMaster, scroll=None):
 
 def setup_driver_camera(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  click(1720, 620)
+  click(1720, 825)
   DATA['deviceState'].deviceState.started = False
   setup_onroad(click, pm)
   DATA['deviceState'].deviceState.started = True
@@ -239,9 +240,15 @@ def setup_settings_steering_alc(click, pm: PubMaster, scroll=None):
   click(970, 534)
   time.sleep(UI_DELAY)
 
-def setup_settings_trips(click, pm: PubMaster, scroll=None):
+def setup_settings_driving(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   click(278, 962)
+  time.sleep(UI_DELAY)
+
+def setup_settings_trips(click, pm: PubMaster, scroll=None):
+  setup_settings_device(click, pm)
+  scroll(-400, 278, 962)
+  click(278, 646)
   time.sleep(UI_DELAY)
 
 def setup_settings_vehicle(click, pm: PubMaster, scroll=None):
@@ -291,6 +298,7 @@ CASES.update({
   "settings_steering": setup_settings_steering,
   "settings_steering_mads": setup_settings_steering_mads,
   "settings_steering_alc": setup_settings_steering_alc,
+  "settings_driving": setup_settings_driving,
   "settings_trips": setup_settings_trips,
   "settings_vehicle": setup_settings_vehicle,
 })
