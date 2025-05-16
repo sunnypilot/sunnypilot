@@ -72,7 +72,8 @@ class ModelState:
       self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
       self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
       self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
-      self.desire_reshape_dims = (self.full_desire.shape[0], self.numpy_inputs['desire'].shape[1], max(1, self.full_desire.shape[1] // self.numpy_inputs['desire'].shape[1]), -1)
+      self.desire_reshape_dims = (self.full_desire.shape[0], self.numpy_inputs['desire'].shape[1],
+                                  max(1, self.full_desire.shape[1] // self.numpy_inputs['desire'].shape[1]), -1)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
