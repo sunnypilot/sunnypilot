@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E501
 import time
 import numpy as np
 import cereal.messaging as messaging
