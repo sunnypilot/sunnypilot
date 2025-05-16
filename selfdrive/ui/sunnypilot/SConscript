@@ -81,4 +81,4 @@ sp_widgets_src = widgets_src + network_src
 sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src
 sp_qt_util = qt_util
 
-Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util", "sp_assets_src")
+Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")

@@ -15,10 +15,9 @@ if arch == "Darwin":
 sp_widgets_src = []
 sp_qt_src = []
 sp_qt_util = []
-sp_assets_src = []
 if not GetOption('stock_ui'):
   SConscript(['sunnypilot/SConscript'])
-  Import('sp_widgets_src', 'sp_qt_src', 'sp_qt_util', 'sp_assets_src')
+  Import('sp_widgets_src', 'sp_qt_src', 'sp_qt_util')
 
 # FIXME: remove this once we're on 5.15 (24.04)
 qt_env['CXXFLAGS'] += ["-Wno-deprecated-declarations"]
@@ -61,7 +60,7 @@ with open(File(translations_assets_src).abspath, 'w') as f:
 
 # build assets
 assets = "#selfdrive/assets/assets.cc"
-assets_src = ["#selfdrive/assets/assets.qrc",] +  sp_assets_src
+assets_src = "#selfdrive/assets/assets.qrc"
 qt_env.Command(assets, [assets_src, translations_assets_src], f"rcc $SOURCES -o $TARGET")
 qt_env.Depends(assets, Glob('#selfdrive/assets/*', exclude=[assets, assets_src, translations_assets_src, "#selfdrive/assets/assets.o"]) + [lrelease])
 asset_obj = qt_env.Object("assets", assets)

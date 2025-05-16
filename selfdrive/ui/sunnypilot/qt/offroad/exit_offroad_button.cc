@@ -10,7 +10,7 @@
 
 
 ExitOffroadButton::ExitOffroadButton(QWidget *parent) : QPushButton(parent) {
-  pixmap = QPixmap(":/icons/icon_exit_offroad.png").scaledToWidth(img_width, Qt::SmoothTransformation);
+  pixmap = QPixmap("../assets/icons/icon_exit_offroad.png").scaledToWidth(img_width, Qt::SmoothTransformation);
 
   // go to toggles and expand experimental mode description
   connect(this, &QPushButton::clicked, [=]() {
