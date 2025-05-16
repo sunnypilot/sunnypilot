@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# ruff: noqa: E501
 import time
 import numpy as np
 import cereal.messaging as messaging
@@ -69,10 +68,14 @@ class ModelState:
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     if self.model_runner.is_20hz_3d:  # split models
-      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN),
+                                           dtype=np.float32)
+      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN),
+                                  dtype=np.float32)
+      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN),
+                                             dtype=np.float32)
+      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)),
+                                 None, SplitModelConstants.TEMPORAL_SKIP)
       self.desire_reshape_dims = (self.full_desire.shape[0], self.numpy_inputs['desire'].shape[1],
                                   max(1, self.full_desire.shape[1] // self.numpy_inputs['desire'].shape[1]), -1)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
@@ -81,7 +84,8 @@ class ModelState:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
       self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
+                                  self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -165,7 +169,8 @@ class ModelState:
     else:
       desired_curvature = prev_action.desiredCurvature
 
-    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature), desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
+    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel),
+                                  shouldStop=bool(should_stop))
 
 
 def main(demo=False):
@@ -267,7 +272,7 @@ def main(demo=False):
 
       if abs(meta_main.timestamp_sof - meta_extra.timestamp_sof) > 10000000:
         cloudlog.error(f"frames out of sync! main: {meta_main.frame_id} ({meta_main.timestamp_sof / 1e9:.5f}),\
-                         extra: {meta_extra.frame_id} ({meta_extra.timestamp_sof / 1e9:.5f})")
+                       extra: {meta_extra.frame_id} ({meta_extra.timestamp_sof / 1e9:.5f})")
 
     else:
       # Use single camera
@@ -282,7 +287,8 @@ def main(demo=False):
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
-      model_transform_main = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics, False).astype(np.float32)
+      model_transform_main = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics,
+                                             False).astype(np.float32)
       model_transform_extra = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics, True).astype(np.float32)
       live_calib_seen = True
 
