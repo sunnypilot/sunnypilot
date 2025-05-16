@@ -63,7 +63,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     type @0 :Type;
     artifact @1 :Artifact;  # Main artifact
     metadata @2 :Artifact;  # Metadata artifact
-    
+
     enum Type {
       supercombo @0;
       navigation @1;
