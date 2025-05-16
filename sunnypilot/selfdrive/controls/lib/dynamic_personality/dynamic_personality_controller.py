@@ -1,3 +1,4 @@
+
 from cereal import log
 import numpy as np
 
@@ -12,6 +13,9 @@ class DynamicPersonalityController:
 
   def compute_symmetric_slopes(self, x, y):
     n = len(x)
+    if n < 2:
+      raise ValueError("At least two points are required to compute slopes.")
+
     m = np.zeros(n)
     for i in range(n):
       if i == 0:
@@ -51,14 +55,14 @@ class DynamicPersonalityController:
         float: The calculated follow distance factor
     """
     if personality == log.LongitudinalPersonality.relaxed:
-      x_vel =  [0., 2.5,  6.,   19.7,   22.2, 40.]
-      y_dist = [0.92, 1.05, 1.2, 1.2, 1.45, 1.95]
+      x_vel =  [0.,  11.1, 13., 19.7, 22.2, 22.7, 40.]
+      y_dist = [1.10, 1.10, 1.250, 1.30, 1.60, 1.75, 1.75]
     elif personality == log.LongitudinalPersonality.standard:
-      x_vel =  [0., 2.5,  5.,   19.7,   22.2, 40.]
-      y_dist = [1.20, 1.20, 1.275, 1.275, 1.50, 1.50]
+      x_vel =  [0.,   6.,   7.,   14.,  14.5, 19.7, 20.2, 25.0, 40.]
+      y_dist = [1.10, 1.10, 1.15, 1.15, 1.30, 1.30, 1.45, 1.45, 1.50]
     elif personality == log.LongitudinalPersonality.aggressive:
-      x_vel =  [0., 2.5,  6.,   19.7,   22.2, 40.]
-      y_dist = [0.92, 0.9, 1.25, 1.25, 1.30, 1.30]
+      x_vel =  [0.,   6.,   7.,   14.,  14.5, 19.7, 20.2, 25.0, 40.]
+      y_dist = [1.05, 1.05, 1.15, 1.15, 1.20, 1.20, 1.25, 1.25, 1.35]
     else:
       raise NotImplementedError("Dynamic personality not supported")
 
