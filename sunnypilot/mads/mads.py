@@ -9,6 +9,7 @@ from cereal import log, custom
 
 from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -37,6 +38,7 @@ class ModularAssistiveDrivingSystem:
     self.state_machine = StateMachine(self)
     self.events = self.selfdrive.events
     self.events_sp = self.selfdrive.events_sp
+    self.disengage_on_accelerator = not self.CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
     if self.CP.brand == "hyundai":
       if self.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
@@ -52,6 +54,21 @@ class ModularAssistiveDrivingSystem:
     self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
+  def pedal_pressed_non_gas_pressed(self, CS: structs.CarState) -> bool:
+    if self.events.has(EventName.pedalPressed) and not (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator):
+      return True
+
+    return False
+
+  def should_silent_lkas_enable(self, CS: structs.CarState) -> bool:
+    if self.pause_lateral_on_brake_toggle and self.pedal_pressed_non_gas_pressed(CS):
+      return False
+
+    if self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
+      return False
+
+    return True
+
   def update_events(self, CS: structs.CarState):
     def update_unified_engagement_mode():
       uem_blocked = self.enabled or (self.selfdrive.enabled and self.selfdrive.enabled_prev)
@@ -62,6 +79,8 @@ class ModularAssistiveDrivingSystem:
     def transition_paused_state():
       if self.state_machine.state != State.paused:
         self.events_sp.add(EventNameSP.silentLkasDisable)
+      else:
+        self.events_sp.add(EventNameSP.silentLkasEnable)
 
     def replace_event(old_event: int, new_event: int):
       self.events.remove(old_event)
@@ -87,9 +106,8 @@ class ModularAssistiveDrivingSystem:
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
 
-      if self.pause_lateral_on_brake_toggle:
-        if CS.brakePressed:
-          transition_paused_state()
+      if self.pause_lateral_on_brake_toggle and self.pedal_pressed_non_gas_pressed(CS):
+        transition_paused_state()
 
       self.events.remove(EventName.preEnableStandstill)
       self.events.remove(EventName.belowEngageSpeed)
@@ -122,10 +140,8 @@ class ModularAssistiveDrivingSystem:
       if self.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
 
-    if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
-       not self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
-      if self.state_machine.state == State.paused:
-        self.events_sp.add(EventNameSP.silentLkasEnable)
+    if self.should_silent_lkas_enable(CS):
+      transition_paused_state()
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
