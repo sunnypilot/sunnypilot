@@ -59,4 +59,7 @@ protected:
   QPointF lead_vertices[2] = {};
   Eigen::Matrix3f car_space_transform = Eigen::Matrix3f::Zero();
   QRectF clip_region;
+
+  float hysteretic_x = 0.0f;
+  const float hysteresis_factor = 0.15f;
 };
