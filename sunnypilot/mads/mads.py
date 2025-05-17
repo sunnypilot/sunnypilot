@@ -9,6 +9,7 @@ from cereal import log, custom
 
 from opendbc.car import structs
 from opendbc.car.hyundai.values import HyundaiFlags
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, read_steering_mode_param
 from openpilot.sunnypilot.mads.state import StateMachine, GEARS_ALLOW_PAUSED_SILENT
 
@@ -25,6 +26,8 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
+    self.CP = selfdrive.CP
+    self.CS_prev = selfdrive.CS_prev
     self.params = selfdrive.params
 
     self.enabled = False
@@ -36,9 +39,10 @@ class ModularAssistiveDrivingSystem:
     self.state_machine = StateMachine(self)
     self.events = self.selfdrive.events
     self.events_sp = self.selfdrive.events_sp
+    self.disengage_on_accelerator = not self.CP.alternativeExperience & ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
 
-    if self.selfdrive.CP.brand == "hyundai":
-      if self.selfdrive.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
+    if self.CP.brand == "hyundai":
+      if self.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
 
     # read params on init
@@ -51,13 +55,35 @@ class ModularAssistiveDrivingSystem:
     self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
-  def update_events(self, CS: structs.CarState):
-    def update_unified_engagement_mode():
-      uem_blocked = self.enabled or (self.selfdrive.enabled and self.selfdrive.enabled_prev)
-      if (self.unified_engagement_mode and uem_blocked) or not self.unified_engagement_mode:
-        self.events.remove(EventName.pcmEnable)
-        self.events.remove(EventName.buttonEnable)
+  def pedal_pressed_non_gas_pressed(self, CS: structs.CarState) -> bool:
+    if self.events.has(EventName.pedalPressed) and not (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator):
+      return True
 
+    return False
+
+  def should_silent_lkas_enable(self, CS: structs.CarState) -> bool:
+    if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and self.pedal_pressed_non_gas_pressed(CS):
+      return False
+
+    if self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
+      return False
+
+    return True
+
+  def block_unified_engagement_mode(self) -> bool:
+    # UEM disabled
+    if not self.unified_engagement_mode:
+      return True
+
+    if self.enabled:
+      return True
+
+    if self.selfdrive.enabled and self.selfdrive.enabled_prev:
+      return True
+
+    return False
+
+  def update_events(self, CS: structs.CarState):
     def transition_paused_state():
       if self.state_machine.state != State.paused:
         self.events_sp.add(EventNameSP.silentLkasDisable)
@@ -87,7 +113,7 @@ class ModularAssistiveDrivingSystem:
         transition_paused_state()
 
       if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE:
-        if CS.brakePressed:
+        if self.pedal_pressed_non_gas_pressed(CS):
           transition_paused_state()
 
       self.events.remove(EventName.preEnableStandstill)
@@ -97,10 +123,12 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.manualRestart)
 
     if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
-      update_unified_engagement_mode()
+      if self.block_unified_engagement_mode():
+        self.events.remove(EventName.pcmEnable)
+        self.events.remove(EventName.buttonEnable)
     else:
       if self.main_enabled_toggle:
-        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
+        if CS.cruiseState.available and not self.CS_prev.cruiseState.available:
           self.events_sp.add(EventNameSP.lkasEnable)
 
     for be in CS.buttonEvents:
@@ -118,17 +146,14 @@ class ModularAssistiveDrivingSystem:
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
-      if self.selfdrive.CS_prev.cruiseState.available:
+      if self.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
 
     if self.steering_mode_on_brake == MadsSteeringModeOnBrake.DISENGAGE:
-      # Disable on rising edge of accelerator or brake. Also disable on brake when speed > 0
-      if (CS.brakePressed and (not self.selfdrive.CS_prev.brakePressed or not CS.standstill)) or \
-         (CS.regenBraking and (not self.selfdrive.CS_prev.regenBraking or not CS.standstill)):
+      if self.pedal_pressed_non_gas_pressed(CS):
         self.events_sp.add(EventNameSP.lkasDisable)
 
-    if not (self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE and CS.brakePressed) and \
-       not self.events_sp.contains_in_list(GEARS_ALLOW_PAUSED_SILENT):
+    if self.should_silent_lkas_enable(CS):
       if self.state_machine.state == State.paused:
         self.events_sp.add(EventNameSP.silentLkasEnable)
 
@@ -148,7 +173,7 @@ class ModularAssistiveDrivingSystem:
 
     self.update_events(CS)
 
-    if not self.selfdrive.CP.passive and self.selfdrive.initialized:
+    if not self.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update()
 
     # Copy of previous SelfdriveD states for MADS events handling
