@@ -24,6 +24,8 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
+    self.CP = selfdrive.CP
+    self.CS_prev = selfdrive.CS_prev
     self.params = selfdrive.params
 
     self.enabled = False
@@ -36,8 +38,8 @@ class ModularAssistiveDrivingSystem:
     self.events = self.selfdrive.events
     self.events_sp = self.selfdrive.events_sp
 
-    if self.selfdrive.CP.brand == "hyundai":
-      if self.selfdrive.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
+    if self.CP.brand == "hyundai":
+      if self.CP.flags & (HyundaiFlags.HAS_LDA_BUTTON | HyundaiFlags.CANFD):
         self.allow_always = True
 
     # read params on init
@@ -99,7 +101,7 @@ class ModularAssistiveDrivingSystem:
       update_unified_engagement_mode()
     else:
       if self.main_enabled_toggle:
-        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
+        if CS.cruiseState.available and not self.CS_prev.cruiseState.available:
           self.events_sp.add(EventNameSP.lkasEnable)
 
     for be in CS.buttonEvents:
@@ -117,7 +119,7 @@ class ModularAssistiveDrivingSystem:
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
-      if self.selfdrive.CS_prev.cruiseState.available:
+      if self.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
 
     if not (self.pause_lateral_on_brake_toggle and CS.brakePressed) and \
@@ -141,7 +143,7 @@ class ModularAssistiveDrivingSystem:
 
     self.update_events(CS)
 
-    if not self.selfdrive.CP.passive and self.selfdrive.initialized:
+    if not self.CP.passive and self.selfdrive.initialized:
       self.enabled, self.active = self.state_machine.update()
 
     # Copy of previous SelfdriveD states for MADS events handling
