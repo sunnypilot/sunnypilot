@@ -164,7 +164,7 @@ jobs:
                         QT_QPA_PLATFORM=offscreen ./selfdrive/ui/tests/test_translations && \
                         chmod -R 777 /tmp/comma_download_cache"
     - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v4
       with:
         name: ${{ github.job }}
       env:
@@ -217,7 +217,7 @@ jobs:
         ${{ env.RUN }} "ONNXCPU=1 $PYTEST selfdrive/test/process_replay/test_regen.py && \
                         chmod -R 777 /tmp/comma_download_cache"
     - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v4
       with:
         name: ${{ github.job }}
       env:
@@ -253,7 +253,7 @@ jobs:
         NUM_JOBS: 4
         JOB_ID: ${{ matrix.job }}
     - name: "Upload coverage to Codecov"
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v4
       with:
         name: ${{ github.job }}-${{ matrix.job }}
       env:
