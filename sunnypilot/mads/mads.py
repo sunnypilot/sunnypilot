@@ -79,8 +79,6 @@ class ModularAssistiveDrivingSystem:
     def transition_paused_state():
       if self.state_machine.state != State.paused:
         self.events_sp.add(EventNameSP.silentLkasDisable)
-      else:
-        self.events_sp.add(EventNameSP.silentLkasEnable)
 
     def replace_event(old_event: int, new_event: int):
       self.events.remove(old_event)
@@ -106,8 +104,9 @@ class ModularAssistiveDrivingSystem:
         replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
         transition_paused_state()
 
-      if self.pause_lateral_on_brake_toggle and self.pedal_pressed_non_gas_pressed(CS):
-        transition_paused_state()
+      if self.pause_lateral_on_brake_toggle:
+        if self.pedal_pressed_non_gas_pressed(CS):
+          transition_paused_state()
 
       self.events.remove(EventName.preEnableStandstill)
       self.events.remove(EventName.belowEngageSpeed)
@@ -141,7 +140,8 @@ class ModularAssistiveDrivingSystem:
         self.events_sp.add(EventNameSP.lkasDisable)
 
     if self.should_silent_lkas_enable(CS):
-      transition_paused_state()
+      if self.state_machine.state == State.paused:
+        self.events_sp.add(EventNameSP.silentLkasEnable)
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
