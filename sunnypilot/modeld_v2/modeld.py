@@ -135,7 +135,22 @@ class ModelState:
       self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
       self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
-    if "desired_curvature" in outputs:
+    if self.model_runner.is_20hz_3d:
+      input_name_prev = None
+
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curvs'
+      elif "prev_desired_curv" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curv'
+
+      if input_name_prev is not None and "desired_curvature" in outputs:
+        self.process_desired_curvature(outputs, input_name_prev)
+      elif input_name_prev is not None and "desired_curvature" not in outputs:
+        self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
+        self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
+        self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+
+    if "desired_curvature" in outputs and not self.model_runner.is_20hz_3d:
       input_name_prev = None
 
       if "prev_desired_curvs" in self.numpy_inputs.keys():
@@ -151,26 +166,20 @@ class ModelState:
     if self.model_runner.is_20hz_3d:  # split models
       self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
       self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
-      self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+      self.numpy_inputs['prev_desired_curv'][:] = self.full_prev_desired_curv[0, self.temporal_idxs]
     else:
       length = outputs['desired_curvature'][0].size
       self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
       self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
-                            lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
+                            long_action_t: float) -> log.ModelDataV2.Action:
     plan = model_output['plan'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t)
-    if v_ego > self.MIN_LAT_CONTROL_SPEED:
-      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
-    else:
-      desired_curvature = prev_action.desiredCurvature
 
-    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel),
-                                  shouldStop=bool(should_stop))
+    return log.ModelDataV2.Action(desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
 
 def main(demo=False):
@@ -330,11 +339,12 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
 
-      action = model.get_action_from_model(model_output, prev_action, steer_delay + DT_MDL, long_delay + DT_MDL, v_ego)
+      action = model.get_action_from_model(model_output, prev_action, long_delay + DT_MDL)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
-                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, load_meta_constants())
+                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen,
+                     v_ego, steer_delay, load_meta_constants())
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
