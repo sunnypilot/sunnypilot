@@ -155,7 +155,7 @@ class ModularAssistiveDrivingSystem:
 
     if self.should_silent_lkas_enable(CS):
       if self.state_machine.state == State.paused:
-        self.events_sp.add(EventNameSP.silentLkasEnable)
+        self.events_sp.add(EventNameSP.silentLkasEnable)  # test
 
     self.events.remove(EventName.pcmDisable)
     self.events.remove(EventName.buttonCancel)
