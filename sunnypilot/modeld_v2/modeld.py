@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# ruff: noqa: E501
 import time
 import numpy as np
 import cereal.messaging as messaging
@@ -69,10 +68,14 @@ class ModelState:
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     if self.model_runner.is_20hz_3d:  # split models
-      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN), dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, SplitModelConstants.TEMPORAL_SKIP)
+      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN),
+                                           dtype=np.float32)
+      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN),
+                                  dtype=np.float32)
+      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN),
+                                             dtype=np.float32)
+      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)),
+                                 None, SplitModelConstants.TEMPORAL_SKIP)
       self.desire_reshape_dims = (self.full_desire.shape[0], self.numpy_inputs['desire'].shape[1],
                                   max(1, self.full_desire.shape[1] // self.numpy_inputs['desire'].shape[1]), -1)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
@@ -81,7 +84,8 @@ class ModelState:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
       self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
-      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1, self.numpy_inputs['desire'].shape[2])
+      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
+                                  self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -131,7 +135,22 @@ class ModelState:
       self.numpy_inputs['features_buffer'][0, :-1] = self.numpy_inputs['features_buffer'][0, 1:]
       self.numpy_inputs['features_buffer'][0, -1, :feature_len] = outputs['hidden_state'][0, :feature_len]
 
-    if "desired_curvature" in outputs:
+    if self.model_runner.is_20hz_3d:
+      input_name_prev = None
+
+      if "prev_desired_curvs" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curvs'
+      elif "prev_desired_curv" in self.numpy_inputs.keys():
+        input_name_prev = 'prev_desired_curv'
+
+      if input_name_prev is not None and "desired_curvature" in outputs:
+        self.process_desired_curvature(outputs, input_name_prev)
+      elif input_name_prev is not None and "desired_curvature" not in outputs:
+        self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
+        self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
+        self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+
+    if "desired_curvature" in outputs and not self.model_runner.is_20hz_3d:
       input_name_prev = None
 
       if "prev_desired_curvs" in self.numpy_inputs.keys():
@@ -154,18 +173,13 @@ class ModelState:
       self.numpy_inputs[input_name_prev][0, -length:, 0] = outputs['desired_curvature'][0]
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
-                            lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
+                            long_action_t: float) -> log.ModelDataV2.Action:
     plan = model_output['plan'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t)
-    if v_ego > self.MIN_LAT_CONTROL_SPEED:
-      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
-    else:
-      desired_curvature = prev_action.desiredCurvature
 
-    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature), desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
+    return log.ModelDataV2.Action(desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
 
 def main(demo=False):
@@ -267,7 +281,7 @@ def main(demo=False):
 
       if abs(meta_main.timestamp_sof - meta_extra.timestamp_sof) > 10000000:
         cloudlog.error(f"frames out of sync! main: {meta_main.frame_id} ({meta_main.timestamp_sof / 1e9:.5f}),\
-                         extra: {meta_extra.frame_id} ({meta_extra.timestamp_sof / 1e9:.5f})")
+                       extra: {meta_extra.frame_id} ({meta_extra.timestamp_sof / 1e9:.5f})")
 
     else:
       # Use single camera
@@ -282,7 +296,8 @@ def main(demo=False):
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
-      model_transform_main = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics, False).astype(np.float32)
+      model_transform_main = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics,
+                                             False).astype(np.float32)
       model_transform_extra = get_warp_matrix(device_from_calib_euler, dc.ecam.intrinsics, True).astype(np.float32)
       live_calib_seen = True
 
@@ -324,11 +339,12 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
 
-      action = model.get_action_from_model(model_output, prev_action, steer_delay + DT_MDL, long_delay + DT_MDL, v_ego)
+      action = model.get_action_from_model(model_output, prev_action, long_delay + DT_MDL)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
-                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, load_meta_constants())
+                     frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen,
+                     v_ego, steer_delay, load_meta_constants())
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
