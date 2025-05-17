@@ -98,4 +98,8 @@ protected:
   inline static const QColor LOW_INDICATOR_COLOR = QColor(23, 241, 66, 200);
   inline static const QColor MODERATE_INDICATOR_COLOR = QColor(255, 166, 0, 200);
   inline static const QColor HIGH_INDICATOR_COLOR = QColor(245, 0, 0, 200);
+
+  //chevron
+  float hysteretic_x = 0.0f;
+  const float hysteresis_factor = 0.15f;
 };
