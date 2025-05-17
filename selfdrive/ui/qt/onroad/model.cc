@@ -1,3 +1,4 @@
+#include <QPainterPath>
 #include "selfdrive/ui/qt/onroad/model.h"
 
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
@@ -582,20 +583,53 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   }
 
   float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
-  float x = std::clamp<float>(vd.x(), 0.f, surface_rect.width() - sz / 2);
+  float raw_x = std::clamp<float>(vd.x(), 0.f, surface_rect.width() - sz / 2);
   float y = std::min<float>(vd.y(), surface_rect.height() - sz * 0.6);
 
-  float g_xo = sz / 5;
-  float g_yo = sz / 10;
+// Check if the change in position is large
+  float position_delta = std::abs(raw_x - hysteretic_x);
+  float threshold = 100.0f;  // Adjust this value to tune when smoothing kicks in
 
-  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
-  painter.setBrush(QColor(218, 202, 37, 255));
-  painter.drawPolygon(glow, std::size(glow));
+  if (position_delta > threshold) {
+    // For large changes, immediately update position
+    hysteretic_x = raw_x;
+  } else {
+    // For small changes, apply smoothing
+    hysteretic_x = (hysteresis_factor * raw_x) + ((1.0f - hysteresis_factor) * hysteretic_x);
+  }
 
-  // chevron
-  QPointF chevron[] = {{x + (sz * 1.25), y + sz}, {x, y}, {x - (sz * 1.25), y + sz}};
-  painter.setBrush(QColor(201, 34, 49, fillAlpha));
-  painter.drawPolygon(chevron, std::size(chevron));
+  float x = hysteretic_x;  // Use smoothed x value instead of raw_x
+
+
+
+  // Set up the pen for drawing
+  QPen pen;
+  pen.setCapStyle(Qt::RoundCap);  // Round ends of the line
+  pen.setJoinStyle(Qt::RoundJoin);  // Round corners
+
+  // Disable fill
+  painter.setBrush(Qt::NoBrush);
+
+
+  // Draw the outer glow effect
+  pen.setColor(QColor(218, 202, 37, 255));  // Yellow glow color
+  pen.setWidth(10);  // Thicker width for glow
+  painter.setPen(pen);
+
+  // Create path for the line
+  QPainterPath path;
+  path.moveTo(x + (sz * 1.35), y + sz);   // right point
+  path.lineTo(x, y); // top point
+  path.lineTo(x - (sz * 1.35), y + sz);  // left point
+
+  painter.drawPath(path);  // Draw the glow
+
+  // Draw the main line
+  pen.setColor(QColor(201, 34, 49, fillAlpha));  // Red color with calculated opacity
+  pen.setWidth(7);  // Slightly thinner than the glow
+  painter.setPen(pen);
+  painter.drawPath(path);  // Draw the main line
+
 }
 
 // Projects a point in car to space to the corresponding point in full frame image space.
