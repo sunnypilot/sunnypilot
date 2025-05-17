@@ -19,7 +19,6 @@ EventNameSP = custom.OnroadEventSP.EventName
 GearShifter = structs.CarState.GearShifter
 SafetyModel = structs.CarParams.SafetyModel
 
-SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise)
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
@@ -125,10 +124,15 @@ class ModularAssistiveDrivingSystem:
       if self.block_unified_engagement_mode():
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)
+
+      if self.events.has(EventName.wrongCarMode):
+        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
     else:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.CS_prev.cruiseState.available:
           self.events_sp.add(EventNameSP.lkasEnable)
+
+      self.events.remove(EventName.wrongCarMode)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
@@ -156,11 +160,6 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
-    if any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
-      if self.events.has(EventName.wrongCarMode):
-        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
-    else:
-      self.events.remove(EventName.wrongCarMode)
 
   def update(self, CS: structs.CarState):
     if not self.enabled_toggle:
