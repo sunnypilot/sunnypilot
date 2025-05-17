@@ -69,13 +69,20 @@ class ModularAssistiveDrivingSystem:
 
     return True
 
-  def update_events(self, CS: structs.CarState):
-    def update_unified_engagement_mode():
-      uem_blocked = self.enabled or (self.selfdrive.enabled and self.selfdrive.enabled_prev)
-      if (self.unified_engagement_mode and uem_blocked) or not self.unified_engagement_mode:
-        self.events.remove(EventName.pcmEnable)
-        self.events.remove(EventName.buttonEnable)
+  def block_unified_engagement_mode(self) -> bool:
+    # UEM disabled
+    if not self.unified_engagement_mode:
+      return True
 
+    if self.enabled:
+      return True
+
+    if self.selfdrive.enabled and self.selfdrive.enabled_prev:
+      return True
+
+    return False
+
+  def update_events(self, CS: structs.CarState):
     def transition_paused_state():
       if self.state_machine.state != State.paused:
         self.events_sp.add(EventNameSP.silentLkasDisable)
@@ -115,7 +122,9 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.manualRestart)
 
     if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
-      update_unified_engagement_mode()
+      if self.block_unified_engagement_mode():
+        self.events.remove(EventName.pcmEnable)
+        self.events.remove(EventName.buttonEnable)
     else:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.CS_prev.cruiseState.available:
