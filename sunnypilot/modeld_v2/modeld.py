@@ -17,7 +17,7 @@ from openpilot.system import sentry
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 
-from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
+from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_plan
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
@@ -50,8 +50,10 @@ class ModelState:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise
 
-    bundle = get_active_bundle()
-    overrides = bundle.overrides
+    model_bundle = get_active_bundle()
+    self.generation = model_bundle.generation
+    overrides = model_bundle.overrides
+
     self.LAT_SMOOTH_SECONDS = overrides.lat
     self.LONG_SMOOTH_SECONDS = overrides.long
     self.MIN_LAT_CONTROL_SPEED = 0.3
@@ -151,7 +153,9 @@ class ModelState:
     if self.model_runner.is_20hz_3d:  # split models
       self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
       self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
-      self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+      self.numpy_inputs['prev_desired_curv'][:] = self.full_prev_desired_curv[0, self.temporal_idxs]
+      if self.generation == 11:
+        self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
     else:
       length = outputs['desired_curvature'][0].size
       self.numpy_inputs[input_name_prev][0, :-length, 0] = self.numpy_inputs[input_name_prev][0, length:, 0]
@@ -163,7 +167,13 @@ class ModelState:
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t)
+    desired_curvature = model_output['desired_curvature'][0, 0]
+    if self.generation == 11:
+      desired_curvature = get_curvature_from_plan(plan[:,Plan.T_FROM_CURRENT_EULER][:,2],
+                                                  plan[:,Plan.ORIENTATION_RATE][:,2],
+                                                  ModelConstants.T_IDXS,
+                                                  v_ego,
+                                                  lat_action_t)
     if v_ego > self.MIN_LAT_CONTROL_SPEED:
       desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
     else:
