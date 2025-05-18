@@ -4,6 +4,7 @@ import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
+from openpilot.sunnypilot.models.helpers import  get_active_bundle
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -15,10 +16,21 @@ def curv_from_psis(psi_target, psi_rate, vego, lat_action_t):
   return 2 * curv_from_psi - psi_rate / vego
 
 
-def get_curvature_from_plan(yaws, yaw_rates, t_idxs, vego, action_t):
-  psi_target = np.interp(action_t, t_idxs, yaws)
-  psi_rate = yaw_rates[0]
-  return curv_from_psis(psi_target, psi_rate, vego, action_t)
+def get_curvature_from_plan(plan, vego, lat_action_t):
+  psi_target = np.interp(lat_action_t, ModelConstants.T_IDXS, plan[:, Plan.T_FROM_CURRENT_EULER][:,2])
+  psi_rate = plan[:, Plan.ORIENTATION_RATE][:,2]
+  return curv_from_psis(psi_target, psi_rate, vego, lat_action_t)
+
+def get_curvature_from_output(output, vego, lat_action_t):
+  model_bundle = get_active_bundle()
+  current_generation = model_bundle.generation
+
+  if current_generation != 11:
+    if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
+      return float(desired_curv[0, 0])
+
+  return float(get_curvature_from_plan(output['plan'][0], vego, lat_action_t))
+
 
 
 class PublishState:
