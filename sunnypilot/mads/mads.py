@@ -26,7 +26,6 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
     self.CP = selfdrive.CP
-    self.CS_prev = selfdrive.CS_prev
     self.params = selfdrive.params
 
     self.enabled = False
