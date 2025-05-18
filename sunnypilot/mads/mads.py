@@ -166,7 +166,13 @@ class ModularAssistiveDrivingSystem:
 
     if self.steering_mode_on_brake == MadsSteeringModeOnBrake.DISENGAGE:
       if self.pedal_pressed_non_gas_pressed(CS):
-        self.events_sp.add(EventNameSP.lkasDisable)
+        if self.enabled:
+          self.events_sp.add(EventNameSP.lkasDisable)
+        else:
+          # block lkasEnable if being sent, then send pedalPressedAlertOnly event
+          if self.events_sp.contains(EventNameSP.lkasEnable):
+            self.events_sp.remove(EventNameSP.lkasEnable)
+            self.events_sp.add(EventNameSP.pedalPressedAlertOnly)
 
     if self.should_silent_lkas_enable(CS):
       if self.state_machine.state == State.paused:
