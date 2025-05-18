@@ -163,12 +163,15 @@ class ModelState:
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
+    outputs = self.model_runner.run_model()
     plan = model_output['plan'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
-    desired_curvature = model_output['desired_curvature'][0, 0]
-    if self.generation == 11:
+
+    if "desired_curvature" in outputs and not (self.generation == 11):
+      desired_curvature = model_output['desired_curvature'][0, 0]
+    else:
       desired_curvature = get_curvature_from_plan(plan[:,Plan.T_FROM_CURRENT_EULER][:,2],
                                                   plan[:,Plan.ORIENTATION_RATE][:,2],
                                                   ModelConstants.T_IDXS,
