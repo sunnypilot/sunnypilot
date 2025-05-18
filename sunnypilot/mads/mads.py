@@ -81,7 +81,7 @@ class ModularAssistiveDrivingSystem:
 
     return False
 
-  def get_wrong_car_mode(self, alert_only) -> None:
+  def get_wrong_car_mode(self, alert_only: bool) -> None:
     if alert_only:
       if self.events.has(EventName.wrongCarMode):
         self.replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
