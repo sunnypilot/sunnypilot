@@ -110,3 +110,4 @@ Pipfile
 !.idea/customTargets.xml
 !.idea/tools/*
 !.run/*
+scripts/lint/lint.sh

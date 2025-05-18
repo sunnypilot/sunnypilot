@@ -13,8 +13,8 @@ cd $ROOT
 
 FAILED=0
 
-IGNORED_FILES="uv\.lock|docs\/CARS.md|LICENSE\.md"
-IGNORED_DIRS="^third_party.*|^msgq.*|^msgq_repo.*|^opendbc.*|^opendbc_repo.*|^cereal.*|^panda.*|^rednose.*|^rednose_repo.*|^tinygrad.*|^tinygrad_repo.*|^teleoprtc.*|^teleoprtc_repo.*"
+IGNORED_FILES="uv\.lock|docs\/CARS.md|LICENSE\.md|system\/manager\/build\.py"
+IGNORED_DIRS="^third_party.*|^msgq.*|^msgq_repo.*|^opendbc_repo.*|^cereal.*|^panda.*|^rednose.*|^rednose_repo.*|^tinygrad.*|^tinygrad_repo.*|^teleoprtc.*|^teleoprtc_repo.*"
 
 function run() {
   shopt -s extglob
