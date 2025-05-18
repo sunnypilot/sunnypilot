@@ -81,6 +81,13 @@ class ModularAssistiveDrivingSystem:
 
     return False
 
+  def get_wrong_car_mode(self, alert_only: bool) -> None:
+    if alert_only:
+      if self.events.has(EventName.wrongCarMode):
+        self.replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
+    else:
+      self.events.remove(EventName.wrongCarMode)
+
   def transition_paused_state(self):
     if self.state_machine.state != State.paused:
       self.events_sp.add(EventNameSP.silentLkasDisable)
@@ -121,11 +128,12 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.manualRestart)
 
     selfdrive_enable_events = self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable)
+    set_speed_btns_enable = any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents)
+
+    # wrongCarMode alert only or actively block control
+    self.get_wrong_car_mode(selfdrive_enable_events or set_speed_btns_enable)
 
     if selfdrive_enable_events:
-      if self.pedal_pressed_non_gas_pressed(CS):
-        self.events_sp.add(EventNameSP.pedalPressedAlertOnly)
-
       if self.block_unified_engagement_mode():
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)
@@ -160,11 +168,6 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.buttonCancel)
     self.events.remove(EventName.pedalPressed)
     self.events.remove(EventName.wrongCruiseMode)
-    if any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
-      if self.events.has(EventName.wrongCarMode):
-        self.replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
-    else:
-      self.events.remove(EventName.wrongCarMode)
 
   def update(self, CS: structs.CarState):
     if not self.enabled_toggle:
