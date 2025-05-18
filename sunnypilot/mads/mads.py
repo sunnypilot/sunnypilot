@@ -120,7 +120,12 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.cruiseDisabled)
       self.events.remove(EventName.manualRestart)
 
-    if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
+    selfdrive_enable_events = self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable)
+
+    if selfdrive_enable_events:
+      if self.pedal_pressed_non_gas_pressed(CS):
+        self.events_sp.add(EventNameSP.pedalPressedAlertOnly)
+
       if self.block_unified_engagement_mode():
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)
