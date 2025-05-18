@@ -26,7 +26,6 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 class ModularAssistiveDrivingSystem:
   def __init__(self, selfdrive):
     self.CP = selfdrive.CP
-    self.CS_prev = selfdrive.CS_prev
     self.params = selfdrive.params
 
     self.enabled = False
@@ -55,7 +54,7 @@ class ModularAssistiveDrivingSystem:
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def pedal_pressed_non_gas_pressed(self, CS: structs.CarState) -> bool:
-    if self.events.has(EventName.pedalPressed) and not (CS.gasPressed and not self.CS_prev.gasPressed and self.disengage_on_accelerator):
+    if self.events.has(EventName.pedalPressed) and not (CS.gasPressed and not self.selfdrive.CS_prev.gasPressed and self.disengage_on_accelerator):
       return True
 
     return False
@@ -82,38 +81,38 @@ class ModularAssistiveDrivingSystem:
 
     return False
 
+  def transition_paused_state(self):
+    if self.state_machine.state != State.paused:
+      self.events_sp.add(EventNameSP.silentLkasDisable)
+
+  def replace_event(self, old_event: int, new_event: int):
+    self.events.remove(old_event)
+    self.events_sp.add(new_event)
+
   def update_events(self, CS: structs.CarState):
-    def transition_paused_state():
-      if self.state_machine.state != State.paused:
-        self.events_sp.add(EventNameSP.silentLkasDisable)
-
-    def replace_event(old_event: int, new_event: int):
-      self.events.remove(old_event)
-      self.events_sp.add(new_event)
-
     if not self.selfdrive.enabled and self.enabled:
       if self.events.has(EventName.doorOpen):
-        replace_event(EventName.doorOpen, EventNameSP.silentDoorOpen)
-        transition_paused_state()
+        self.replace_event(EventName.doorOpen, EventNameSP.silentDoorOpen)
+        self.transition_paused_state()
       if self.events.has(EventName.seatbeltNotLatched):
-        replace_event(EventName.seatbeltNotLatched, EventNameSP.silentSeatbeltNotLatched)
-        transition_paused_state()
+        self.replace_event(EventName.seatbeltNotLatched, EventNameSP.silentSeatbeltNotLatched)
+        self.transition_paused_state()
       if self.events.has(EventName.wrongGear) and (CS.vEgo < 2.5 or CS.gearShifter == GearShifter.reverse):
-        replace_event(EventName.wrongGear, EventNameSP.silentWrongGear)
-        transition_paused_state()
+        self.replace_event(EventName.wrongGear, EventNameSP.silentWrongGear)
+        self.transition_paused_state()
       if self.events.has(EventName.reverseGear):
-        replace_event(EventName.reverseGear, EventNameSP.silentReverseGear)
-        transition_paused_state()
+        self.replace_event(EventName.reverseGear, EventNameSP.silentReverseGear)
+        self.transition_paused_state()
       if self.events.has(EventName.brakeHold):
-        replace_event(EventName.brakeHold, EventNameSP.silentBrakeHold)
-        transition_paused_state()
+        self.replace_event(EventName.brakeHold, EventNameSP.silentBrakeHold)
+        self.transition_paused_state()
       if self.events.has(EventName.parkBrake):
-        replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
-        transition_paused_state()
+        self.replace_event(EventName.parkBrake, EventNameSP.silentParkBrake)
+        self.transition_paused_state()
 
       if self.pause_lateral_on_brake_toggle:
         if self.pedal_pressed_non_gas_pressed(CS):
-          transition_paused_state()
+          self.transition_paused_state()
 
       self.events.remove(EventName.preEnableStandstill)
       self.events.remove(EventName.belowEngageSpeed)
@@ -127,7 +126,7 @@ class ModularAssistiveDrivingSystem:
         self.events.remove(EventName.buttonEnable)
     else:
       if self.main_enabled_toggle:
-        if CS.cruiseState.available and not self.CS_prev.cruiseState.available:
+        if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
           self.events_sp.add(EventNameSP.lkasEnable)
 
     for be in CS.buttonEvents:
@@ -145,7 +144,7 @@ class ModularAssistiveDrivingSystem:
 
     if not CS.cruiseState.available:
       self.events.remove(EventName.buttonEnable)
-      if self.CS_prev.cruiseState.available:
+      if self.selfdrive.CS_prev.cruiseState.available:
         self.events_sp.add(EventNameSP.lkasDisable)
 
     if self.should_silent_lkas_enable(CS):
@@ -158,7 +157,7 @@ class ModularAssistiveDrivingSystem:
     self.events.remove(EventName.wrongCruiseMode)
     if any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents):
       if self.events.has(EventName.wrongCarMode):
-        replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
+        self.replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
     else:
       self.events.remove(EventName.wrongCarMode)
 
