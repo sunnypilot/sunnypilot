@@ -13,9 +13,15 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
 enum class MadsSteeringMode {
-  REMAIN_ACTIVE,
-  PAUSE_STEERING,
-  DISENGAGE,
+  REMAIN_ACTIVE = 0,
+  PAUSE_STEERING = 1,
+  DISENGAGE = 2,
+};
+
+struct MadsSteeringModeOption {
+  MadsSteeringMode mode;
+  QString display_text;
+  QString description;
 };
 
 class MadsSettings : public QWidget {
@@ -40,23 +46,35 @@ private:
   ParamControl *madsUnifiedEngagementModeToggle;
   ButtonParamControl *madsSteeringMode;
 
-  static QString madsSteeringModeDescription(MadsSteeringMode mode) {
-    QString remain_active_str = tr("Remain Active: ALC will remain active when the brake pedal is pressed.");
-    QString pause_steering_str = tr("Pause Steering: ALC will pause steering when the brake pedal is pressed.");
-    QString disengage_str = tr("Disengage: ALC will disengage when the brake pedal is pressed.");
+  static const std::vector<MadsSteeringModeOption> &madsSteeringModeOptions() {
+    static const std::vector<MadsSteeringModeOption> options = {
+      {MadsSteeringMode::REMAIN_ACTIVE,  tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
+      {MadsSteeringMode::PAUSE_STEERING, tr("Pause"),         tr("Pause: ALC will pause steering when the brake pedal is pressed.")},
+      {MadsSteeringMode::DISENGAGE,      tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
+    };
+    return options;
+  }
 
-    if (mode == MadsSteeringMode::REMAIN_ACTIVE) {
-      remain_active_str = "<font color='white'><b>" + remain_active_str + "</b></font>";
-    } else if (mode == MadsSteeringMode::PAUSE_STEERING) {
-      pause_steering_str = "<font color='white'><b>" + pause_steering_str + "</b></font>";
-    } else if (mode == MadsSteeringMode::DISENGAGE) {
-      disengage_str = "<font color='white'><b>" + disengage_str + "</b></font>";
+  static std::vector<QString> madsSteeringModeTexts() {
+    std::vector<QString> texts;
+    for (const auto& option : madsSteeringModeOptions()) {
+      texts.push_back(option.display_text);
+    }
+    return texts;
+  }
+
+  static QString madsSteeringModeDescription(const MadsSteeringMode mode) {
+    QString base_desc = tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.");
+    QString result = base_desc + "<br><br>";
+
+    for (const auto& option : madsSteeringModeOptions()) {
+      QString desc = option.description;
+      if (option.mode == mode) {
+        desc = "<font color='white'><b>" + desc + "</b></font>";
+      }
+      result += desc + "<br>";
     }
 
-    return QString("%1<br><br>%2<br>%3<br>%4")
-             .arg(tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot."))
-             .arg(remain_active_str)
-             .arg(pause_steering_str)
-             .arg(disengage_str);
+    return result;
   }
 };

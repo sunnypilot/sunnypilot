@@ -40,13 +40,12 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
   list->addItem(madsUnifiedEngagementModeToggle);
 
   // Steering Mode On Brake
-  std::vector<QString> lateral_on_brake_texts{tr("Remain Active"), tr("Pause Steering"), tr("Disengage")};
   madsSteeringMode = new ButtonParamControl(
     "MadsSteeringMode",
     tr("Steering Mode on Brake Pedal"),
     "",
     "",
-    lateral_on_brake_texts,
+    madsSteeringModeTexts(),
     500);
   QObject::connect(madsSteeringMode, &ButtonParamControl::buttonToggled, [=] {
     updateToggles(offroad);
@@ -67,9 +66,9 @@ void MadsSettings::updateToggles(bool _offroad) {
   auto mads_steering_mode_param = std::atoi(params.get("MadsSteeringMode").c_str());
 
   MadsSteeringMode steering_mode;
-  if (mads_steering_mode_param == int(MadsSteeringMode::REMAIN_ACTIVE)) {
+  if (mads_steering_mode_param == static_cast<int>(MadsSteeringMode::REMAIN_ACTIVE)) {
     steering_mode = MadsSteeringMode::REMAIN_ACTIVE;
-  } else if (mads_steering_mode_param == int(MadsSteeringMode::PAUSE_STEERING)) {
+  } else if (mads_steering_mode_param == static_cast<int>(MadsSteeringMode::PAUSE_STEERING)) {
     steering_mode = MadsSteeringMode::PAUSE_STEERING;
   } else {
     steering_mode = MadsSteeringMode::DISENGAGE;
