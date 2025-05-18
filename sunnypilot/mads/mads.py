@@ -128,10 +128,10 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.manualRestart)
 
     selfdrive_enable_events = self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable)
-    set_button_enable = any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents)
+    set_speed_btns_enable = any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents)
 
     # wrongCarMode alert only or actively block control
-    self.get_wrong_car_mode(selfdrive_enable_events or set_button_enable)
+    self.get_wrong_car_mode(selfdrive_enable_events or set_speed_btns_enable)
 
     if selfdrive_enable_events:
       if self.block_unified_engagement_mode():
