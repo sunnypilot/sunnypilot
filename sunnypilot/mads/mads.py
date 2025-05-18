@@ -19,6 +19,7 @@ EventNameSP = custom.OnroadEventSP.EventName
 GearShifter = structs.CarState.GearShifter
 SafetyModel = structs.CarParams.SafetyModel
 
+SET_SPEED_BUTTONS = (ButtonType.accelCruise, ButtonType.resumeCruise, ButtonType.decelCruise, ButtonType.setCruise)
 IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
@@ -80,6 +81,13 @@ class ModularAssistiveDrivingSystem:
 
     return False
 
+  def get_wrong_car_mode(self, alert_only) -> None:
+    if alert_only:
+      if self.events.has(EventName.wrongCarMode):
+        self.replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
+    else:
+      self.events.remove(EventName.wrongCarMode)
+
   def transition_paused_state(self):
     if self.state_machine.state != State.paused:
       self.events_sp.add(EventNameSP.silentLkasDisable)
@@ -119,22 +127,23 @@ class ModularAssistiveDrivingSystem:
       self.events.remove(EventName.cruiseDisabled)
       self.events.remove(EventName.manualRestart)
 
-    if self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable):
+    selfdrive_enable_events = self.events.has(EventName.pcmEnable) or self.events.has(EventName.buttonEnable)
+    set_button_enable = any(be.type in SET_SPEED_BUTTONS for be in CS.buttonEvents)
+
+    # wrongCarMode alert only or actively block control
+    self.get_wrong_car_mode(selfdrive_enable_events or set_button_enable)
+
+    if selfdrive_enable_events:
       if self.pedal_pressed_non_gas_pressed(CS):
         self.events_sp.add(EventNameSP.pedalPressedAlertOnly)
 
       if self.block_unified_engagement_mode():
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)
-
-      if self.events.has(EventName.wrongCarMode):
-        self.replace_event(EventName.wrongCarMode, EventNameSP.wrongCarModeAlertOnly)
     else:
       if self.main_enabled_toggle:
         if CS.cruiseState.available and not self.selfdrive.CS_prev.cruiseState.available:
           self.events_sp.add(EventNameSP.lkasEnable)
-
-      self.events.remove(EventName.wrongCarMode)
 
     for be in CS.buttonEvents:
       if be.type == ButtonType.cancel:
