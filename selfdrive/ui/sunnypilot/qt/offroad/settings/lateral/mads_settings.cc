@@ -68,8 +68,8 @@ void MadsSettings::updateToggles(bool _offroad) {
   MadsSteeringMode steering_mode;
   if (mads_steering_mode_param == static_cast<int>(MadsSteeringMode::REMAIN_ACTIVE)) {
     steering_mode = MadsSteeringMode::REMAIN_ACTIVE;
-  } else if (mads_steering_mode_param == static_cast<int>(MadsSteeringMode::PAUSE_STEERING)) {
-    steering_mode = MadsSteeringMode::PAUSE_STEERING;
+  } else if (mads_steering_mode_param == static_cast<int>(MadsSteeringMode::PAUSE)) {
+    steering_mode = MadsSteeringMode::PAUSE;
   } else {
     steering_mode = MadsSteeringMode::DISENGAGE;
   }
