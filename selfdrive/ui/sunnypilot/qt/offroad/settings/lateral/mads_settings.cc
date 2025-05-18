@@ -74,8 +74,24 @@ void MadsSettings::updateToggles(bool _offroad) {
     steering_mode = MadsSteeringMode::DISENGAGE;
   }
 
-  madsSteeringMode->setEnabled(_offroad);
-  madsSteeringMode->setDescription(madsSteeringModeDescription(steering_mode));
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    if (CP.getBrand() == "rivian" || CP.getBrand() == "tesla" || CP.getBrand() == "subaru") {
+      params.put("MadsSteeringMode", std::to_string(static_cast<int>(MadsSteeringMode::DISENGAGE)));
+      madsSteeringModeValues = convertMadsSteeringModeValues({MadsSteeringMode::DISENGAGE});
+      madsSteeringMode->setDescription(madsSteeringModeDescriptionBuilder(STATUS_DISENGAGE_ONLY, madsSteeringModeDescription(steering_mode)));
+    } else {
+      madsSteeringMode->setDescription(madsSteeringModeDescription(steering_mode));
+    }
+  } else {
+    madsSteeringMode->setDescription(madsSteeringModeDescriptionBuilder(STATUS_CHECK_COMPATIBILITY, madsSteeringModeDescription(steering_mode)));
+  }
+
+  madsSteeringMode->setEnableSelectedButtons(_offroad, madsSteeringModeValues);
   madsSteeringMode->showDescription();
 
   offroad = _offroad;

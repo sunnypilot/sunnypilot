@@ -46,13 +46,34 @@ private:
   ParamControl *madsUnifiedEngagementModeToggle;
   ButtonParamControl *madsSteeringMode;
 
+  std::vector<int> madsSteeringModeValues = getMadsSteeringModeValues();
+
+  const QString STATUS_CHECK_COMPATIBILITY = tr("Start the car to check car compatibility");
+  const QString STATUS_DISENGAGE_ONLY = tr("This platform only supports Disengage mode due to car limitations.");
+
   static const std::vector<MadsSteeringModeOption> &madsSteeringModeOptions() {
     static const std::vector<MadsSteeringModeOption> options = {
       {MadsSteeringMode::REMAIN_ACTIVE,  tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
-      {MadsSteeringMode::PAUSE, tr("Pause"),         tr("Pause: ALC will pause steering when the brake pedal is pressed.")},
+      {MadsSteeringMode::PAUSE,          tr("Pause"),         tr("Pause: ALC will pause steering when the brake pedal is pressed.")},
       {MadsSteeringMode::DISENGAGE,      tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
     };
     return options;
+  }
+
+  static std::vector<int> getMadsSteeringModeValues() {
+    std::vector<int> values;
+    for (const auto& option : madsSteeringModeOptions()) {
+      values.push_back(static_cast<int>(option.mode));
+    }
+    return values;
+  }
+
+  static std::vector<int> convertMadsSteeringModeValues(const std::vector<MadsSteeringMode> &modes) {
+    std::vector<int> values;
+    for (const auto& mode : modes) {
+      values.push_back(static_cast<int>(mode));
+    }
+    return values;
   }
 
   static std::vector<QString> madsSteeringModeTexts() {
@@ -63,7 +84,7 @@ private:
     return texts;
   }
 
-  static QString madsSteeringModeDescription(const MadsSteeringMode mode) {
+  static QString madsSteeringModeDescription(const MadsSteeringMode mode = MadsSteeringMode::REMAIN_ACTIVE) {
     QString base_desc = tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.");
     QString result = base_desc + "<br><br>";
 
@@ -76,5 +97,9 @@ private:
     }
 
     return result;
+  }
+
+  static QString madsSteeringModeDescriptionBuilder(const QString &custom_description, const QString &madsSteeringModeDescription) {
+    return "<font color='white'><b>" + custom_description + "</b></font><br><br>" + madsSteeringModeDescription;
   }
 };
