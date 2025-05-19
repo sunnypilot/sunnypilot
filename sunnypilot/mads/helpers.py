@@ -46,12 +46,17 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
       CP_SP.flags |= HyundaiFlagsSP.LONGITUDINAL_MAIN_CRUISE_TOGGLEABLE.value
       CP_SP.safetyParam |= HyundaiSafetyFlagsSP.LONG_MAIN_CRUISE_TOGGLEABLE
 
-  # MADS is currently not supported in Tesla due to lack of consistent states to engage controls
-  # TODO-SP: To enable MADS for Tesla, identify consistent signals for MADS toggling
-  if CP.brand == "tesla":
-    params.remove("Mads")
+  # MADS Partial Support
+  # MADS is currently partially supported for these platforms due to lack of consistent states to engage controls
+  # Only MadsSteeringModeOnBrake.DISENGAGE is supported for these platforms
+  mads_partial_support = False
+  if mads_partial_support:
+    params.put("MadsSteeringMode", "2")
+    params.put_bool("MadsUnifiedEngagementMode", True)
+    params.remove("MadsMainCruiseAllowed")
 
-  # MADS is currently not supported in Rivian due to lack of consistent states to engage controls
-  # TODO-SP: To enable MADS for Rivian, identify consistent signals for MADS toggling
-  if CP.brand == "rivian":
+  # MADS Disabled - No Support
+  # MADS is currently not supported for these platforms due to lack of consistent states to engage controls
+  # TODO-SP: To enable MADS full support for Rivian/Tesla, identify consistent signals for MADS toggling
+  if CP.brand in ("rivian", "tesla"):
     params.remove("Mads")
