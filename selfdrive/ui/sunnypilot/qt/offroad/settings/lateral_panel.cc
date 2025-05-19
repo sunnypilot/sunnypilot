@@ -128,7 +128,7 @@ void LateralPanel::updateToggles(bool _offroad) {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-    if (CP.getBrand() == "rivian" || CP.getBrand() == "tesla") {
+    if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_LIMITED_COMPATIBILITY, MADS_BASE_DESC));
     } else {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_FULL_COMPATIBILITY, MADS_BASE_DESC));
