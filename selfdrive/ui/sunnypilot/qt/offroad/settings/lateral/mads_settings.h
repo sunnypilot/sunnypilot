@@ -48,9 +48,9 @@ private:
 
   static const std::vector<MadsSteeringModeOption> &madsSteeringModeOptions() {
     static const std::vector<MadsSteeringModeOption> options = {
-      {MadsSteeringMode::REMAIN_ACTIVE,  tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
-      {MadsSteeringMode::PAUSE, tr("Pause"),         tr("Pause: ALC will pause steering when the brake pedal is pressed.")},
-      {MadsSteeringMode::DISENGAGE,      tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
+      {MadsSteeringMode::REMAIN_ACTIVE, tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
+      {MadsSteeringMode::PAUSE,         tr("Pause"),         tr("Pause: ALC will pause steering when the brake pedal is pressed.")},
+      {MadsSteeringMode::DISENGAGE,     tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
     };
     return options;
   }
