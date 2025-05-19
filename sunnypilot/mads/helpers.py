@@ -17,8 +17,12 @@ class MadsSteeringModeOnBrake:
   DISENGAGE = 2
 
 
+def get_mads_limited_brands(CP: structs.CarParams) -> bool:
+  return CP.brand in ("rivian", )
+
+
 def read_steering_mode_param(CP: structs.CarParams, params: Params):
-  if CP.brand in ("rivian", ):
+  if get_mads_limited_brands(CP):
     return MadsSteeringModeOnBrake.DISENGAGE
 
   try:
@@ -53,7 +57,7 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
   # MADS is currently partially supported for these platforms due to lack of consistent states to engage controls
   # Only MadsSteeringModeOnBrake.DISENGAGE is supported for these platforms
   # TODO-SP: To enable MADS full support for Rivian, identify consistent signals for MADS toggling
-  mads_partial_support = CP.brand in ("rivian", )
+  mads_partial_support = get_mads_limited_brands(CP)
   if mads_partial_support:
     params.put("MadsSteeringMode", "2")
     params.put_bool("MadsUnifiedEngagementMode", True)
