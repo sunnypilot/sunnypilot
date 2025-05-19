@@ -51,7 +51,7 @@ void MadsSettings::updateToggles(bool _offroad) {
     std::clamp(mads_steering_mode_param, static_cast<int>(MadsSteeringMode::REMAIN_ACTIVE), static_cast<int>(MadsSteeringMode::DISENGAGE))
   );
 
-  auto cp_bytes = params.get("CarParamsPersistent");
+  auto cp_bytes = params.get("CarParamsPersistent");  // no change
   if (!cp_bytes.empty()) {
     AlignedBuffer aligned_buf;
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
