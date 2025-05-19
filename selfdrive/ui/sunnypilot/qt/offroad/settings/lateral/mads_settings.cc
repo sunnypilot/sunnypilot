@@ -21,22 +21,11 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
 
   ListWidget *list = new ListWidget(this, false);
   // Main cruise
-  madsMainCruiseToggle = new ParamControl(
-    "MadsMainCruiseAllowed",
-    tr("Toggle with Main Cruise"),
-    tr("Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement."),
-    "");
+  madsMainCruiseToggle = new ParamControl("MadsMainCruiseAllowed", tr("Toggle with Main Cruise"), "", "");
   list->addItem(madsMainCruiseToggle);
 
   // Unified Engagement Mode
-  madsUnifiedEngagementModeToggle = new ParamControl(
-    "MadsUnifiedEngagementMode",
-    tr("Unified Engagement Mode (UEM)"),
-    QString("%1<br>"
-            "<h4>%2</h4>")
-    .arg(tr("Engage lateral and longitudinal control with cruise control engagement."))
-    .arg(tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.")),
-    "");
+  madsUnifiedEngagementModeToggle = new ParamControl("MadsUnifiedEngagementMode", tr("Unified Engagement Mode (UEM)"), "", "");
   list->addItem(madsUnifiedEngagementModeToggle);
 
   // Steering Mode On Brake
@@ -62,8 +51,51 @@ void MadsSettings::updateToggles(bool _offroad) {
     std::clamp(mads_steering_mode_param, static_cast<int>(MadsSteeringMode::REMAIN_ACTIVE), static_cast<int>(MadsSteeringMode::DISENGAGE))
   );
 
-  madsSteeringMode->setEnabled(_offroad);
-  madsSteeringMode->setDescription(madsSteeringModeDescription(steering_mode));
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {
+      params.remove("MadsMainCruiseAllowed");
+      params.putBool("MadsUnifiedEngagementMode", true);
+      params.put("MadsSteeringMode", std::to_string(static_cast<int>(MadsSteeringMode::DISENGAGE)));
+
+      madsMainCruiseToggle->setEnabled(false);
+      madsMainCruiseToggle->setDescription(madsDescriptionBuilder(DEFAULT_TO_OFF, MADS_MAIN_CRUISE_BASE_DESC));
+      madsMainCruiseToggle->showDescription();
+
+      madsUnifiedEngagementModeToggle->setEnabled(false);
+      madsUnifiedEngagementModeToggle->setDescription(madsDescriptionBuilder(DEFAULT_TO_ON, MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC));
+      madsUnifiedEngagementModeToggle->showDescription();
+
+      madsSteeringModeValues = convertMadsSteeringModeValues({MadsSteeringMode::DISENGAGE});
+      madsSteeringMode->setDescription(madsDescriptionBuilder(STATUS_DISENGAGE_ONLY, madsSteeringModeDescription(steering_mode)));
+    } else {
+      madsMainCruiseToggle->setEnabled(true);
+      madsMainCruiseToggle->setDescription(MADS_MAIN_CRUISE_BASE_DESC);
+
+      madsUnifiedEngagementModeToggle->setEnabled(true);
+      madsUnifiedEngagementModeToggle->setDescription(MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC);
+
+      madsSteeringModeValues = convertMadsSteeringModeValues(getMadsSteeringModeValues());
+      madsSteeringMode->setDescription(madsSteeringModeDescription(steering_mode));
+    }
+  } else {
+    madsMainCruiseToggle->setEnabled(false);
+    madsMainCruiseToggle->setDescription(madsDescriptionBuilder(STATUS_CHECK_COMPATIBILITY, MADS_MAIN_CRUISE_BASE_DESC));
+    madsMainCruiseToggle->showDescription();
+
+    madsUnifiedEngagementModeToggle->setEnabled(false);
+    madsUnifiedEngagementModeToggle->setDescription(madsDescriptionBuilder(STATUS_CHECK_COMPATIBILITY, MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC));
+    madsUnifiedEngagementModeToggle->showDescription();
+
+    madsSteeringModeValues = {};
+    madsSteeringMode->setDescription(madsDescriptionBuilder(STATUS_CHECK_COMPATIBILITY, madsSteeringModeDescription(steering_mode)));
+  }
+
+  madsSteeringMode->setEnableSelectedButtons(_offroad, madsSteeringModeValues);
   madsSteeringMode->showDescription();
 
   offroad = _offroad;
