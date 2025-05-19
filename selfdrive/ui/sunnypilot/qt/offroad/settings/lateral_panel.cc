@@ -138,7 +138,6 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
-  madsToggle->showDescription();
 
   offroad = _offroad;
 }
