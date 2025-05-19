@@ -12,6 +12,18 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
+enum class MadsSteeringMode {
+  REMAIN_ACTIVE = 0,
+  PAUSE = 1,
+  DISENGAGE = 2,
+};
+
+struct MadsSteeringModeOption {
+  MadsSteeringMode mode;
+  QString display_text;
+  QString description;
+};
+
 class MadsSettings : public QWidget {
   Q_OBJECT
 
@@ -32,5 +44,37 @@ private:
 
   ParamControl *madsMainCruiseToggle;
   ParamControl *madsUnifiedEngagementModeToggle;
-  ButtonParamControl *madsPauseLateralOnBrake;
+  ButtonParamControl *madsSteeringMode;
+
+  static const std::vector<MadsSteeringModeOption> &madsSteeringModeOptions() {
+    static const std::vector<MadsSteeringModeOption> options = {
+      {MadsSteeringMode::REMAIN_ACTIVE, tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
+      {MadsSteeringMode::PAUSE,         tr("Pause"),         tr("Pause: ALC will pause when the brake pedal is pressed.")},
+      {MadsSteeringMode::DISENGAGE,     tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
+    };
+    return options;
+  }
+
+  static std::vector<QString> madsSteeringModeTexts() {
+    std::vector<QString> texts;
+    for (const auto& option : madsSteeringModeOptions()) {
+      texts.push_back(option.display_text);
+    }
+    return texts;
+  }
+
+  static QString madsSteeringModeDescription(const MadsSteeringMode mode) {
+    QString base_desc = tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.");
+    QString result = base_desc + "<br><br>";
+
+    for (const auto& option : madsSteeringModeOptions()) {
+      QString desc = option.description;
+      if (option.mode == mode) {
+        desc = "<font color='white'><b>" + desc + "</b></font>";
+      }
+      result += desc + "<br>";
+    }
+
+    return result;
+  }
 };

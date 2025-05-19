@@ -39,17 +39,12 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
     "");
   list->addItem(madsUnifiedEngagementModeToggle);
 
-  // Pause Lateral On Brake
-  std::vector<QString> lateral_on_brake_texts{tr("Remain Active"), tr("Pause Steering")};
-  madsPauseLateralOnBrake = new ButtonParamControl(
-    "MadsPauseLateralOnBrake",
-    tr("Steering Mode After Braking"),
-    tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.\n\n"
-       "Remain Active: ALC will remain active even after the brake pedal is pressed.\nPause Steering: ALC will be paused after the brake pedal is manually pressed."),
-    "",
-    lateral_on_brake_texts,
-    500);
-  list->addItem(madsPauseLateralOnBrake);
+  // Steering Mode On Brake
+  madsSteeringMode = new ButtonParamControl("MadsSteeringMode", tr("Steering Mode on Brake Pedal"), "", "", madsSteeringModeTexts(), 500);
+  QObject::connect(madsSteeringMode, &ButtonParamControl::buttonToggled, [=] {
+    updateToggles(offroad);
+  });
+  list->addItem(madsSteeringMode);
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &MadsSettings::updateToggles);
 
@@ -61,7 +56,15 @@ void MadsSettings::showEvent(QShowEvent *event) {
 }
 
 void MadsSettings::updateToggles(bool _offroad) {
-  madsPauseLateralOnBrake->setEnabled(_offroad);
+  auto mads_steering_mode_param = std::atoi(params.get("MadsSteeringMode").c_str());
+
+  auto steering_mode = static_cast<MadsSteeringMode>(
+    std::clamp(mads_steering_mode_param, static_cast<int>(MadsSteeringMode::REMAIN_ACTIVE), static_cast<int>(MadsSteeringMode::DISENGAGE))
+  );
+
+  madsSteeringMode->setEnabled(_offroad);
+  madsSteeringMode->setDescription(madsSteeringModeDescription(steering_mode));
+  madsSteeringMode->showDescription();
 
   offroad = _offroad;
 }
