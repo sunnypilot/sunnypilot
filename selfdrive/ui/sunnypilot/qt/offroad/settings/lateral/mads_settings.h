@@ -48,13 +48,13 @@ private:
 
   std::vector<int> madsSteeringModeValues = getMadsSteeringModeValues();
 
-  const QString STATUS_CHECK_COMPATIBILITY = tr("Start the car to check car compatibility");
+  const QString STATUS_CHECK_COMPATIBILITY = tr("Start the car to check car compatibility.");
   const QString STATUS_DISENGAGE_ONLY = tr("This platform only supports Disengage mode due to car limitations.");
 
   static const std::vector<MadsSteeringModeOption> &madsSteeringModeOptions() {
     static const std::vector<MadsSteeringModeOption> options = {
       {MadsSteeringMode::REMAIN_ACTIVE,  tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
-      {MadsSteeringMode::PAUSE,          tr("Pause"),         tr("Pause: ALC will pause steering when the brake pedal is pressed.")},
+      {MadsSteeringMode::PAUSE,          tr("Pause"),         tr("Pause: ALC will pause when the brake pedal is pressed.")},
       {MadsSteeringMode::DISENGAGE,      tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
     };
     return options;

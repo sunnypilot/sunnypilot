@@ -45,6 +45,7 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
     updateToggles(offroad);
   });
   list->addItem(madsSteeringMode);
+  madsSteeringMode->showDescription();
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &MadsSettings::updateToggles);
 
