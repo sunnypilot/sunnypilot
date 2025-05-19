@@ -134,6 +134,9 @@ class ModularAssistiveDrivingSystem:
     self.get_wrong_car_mode(selfdrive_enable_events or set_speed_btns_enable)
 
     if selfdrive_enable_events:
+      if self.pedal_pressed_non_gas_pressed(CS):
+        self.events_sp.add(EventNameSP.pedalPressedAlertOnly)
+
       if self.block_unified_engagement_mode():
         self.events.remove(EventName.pcmEnable)
         self.events.remove(EventName.buttonEnable)

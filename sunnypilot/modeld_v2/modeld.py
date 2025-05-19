@@ -78,8 +78,6 @@ class ModelState:
                                              dtype=np.float32)
       self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)),
                                  None, SplitModelConstants.TEMPORAL_SKIP)
-      self.desire_reshape_dims = (self.full_desire.shape[0], self.numpy_inputs['desire'].shape[1],
-                                  max(1, self.full_desire.shape[1] // self.numpy_inputs['desire'].shape[1]), -1)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
       self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
       self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
@@ -99,7 +97,8 @@ class ModelState:
     if self.model_runner.is_20hz_3d:  # split models
       self.full_desire[0,:-1] = self.full_desire[0,1:]
       self.full_desire[0,-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
+      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,
+                                                                 SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:  # 20hz supercombo
       self.full_desire[:-1] = self.full_desire[1:]
       self.full_desire[-1] = new_desire
@@ -127,7 +126,7 @@ class ModelState:
     if self.model_runner.is_20hz_3d: # split models
       self.full_features_buffer[0, :-1] = self.full_features_buffer[0, 1:]
       self.full_features_buffer[0, -1] = outputs['hidden_state'][0, :]
-      self.numpy_inputs['features_buffer'][0, :] = self.full_features_buffer[0, self.temporal_idxs]
+      self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[0, self.temporal_idxs]
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:  # 20hz supercombo
       self.full_features_buffer[:-1] = self.full_features_buffer[1:]
       self.full_features_buffer[-1] = outputs['hidden_state'][0, :]
@@ -242,8 +241,6 @@ def main(demo=False):
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
-  # Enable lagd support for modeld_v2
-  steer_delay = sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
@@ -289,6 +286,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
+    steer_delay = sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
