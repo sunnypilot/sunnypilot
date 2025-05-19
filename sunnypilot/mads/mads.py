@@ -50,12 +50,12 @@ class ModularAssistiveDrivingSystem:
 
     # read params on init
     self.enabled_toggle = self.params.get_bool("Mads")
-    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed") and not self.no_main_cruise
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
     self.steering_mode_on_brake = read_steering_mode_param(self.CP, self.params)
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def read_params(self):
-    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed") and not self.no_main_cruise
+    self.main_enabled_toggle = self.params.get_bool("MadsMainCruiseAllowed")
     self.unified_engagement_mode = self.params.get_bool("MadsUnifiedEngagementMode")
 
   def pedal_pressed_non_gas_pressed(self, CS: structs.CarState) -> bool:
