@@ -78,3 +78,7 @@ QMap<QString, QVariantMap> loadPlatformList() {
 
   return _platforms;
 }
+
+bool isBrandInList(const std::string &brand, const std::vector<std::string> &list) {
+  return std::find(list.begin(), list.end(), brand) != list.end();
+}
