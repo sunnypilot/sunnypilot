@@ -18,4 +18,3 @@ QString getUserAgent(bool sunnylink = false);
 std::optional<QString> getSunnylinkDongleId();
 std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value);
 QMap<QString, QVariantMap> loadPlatformList();
-bool isBrandInList(const std::string &brand, const std::vector<std::string> &list);
