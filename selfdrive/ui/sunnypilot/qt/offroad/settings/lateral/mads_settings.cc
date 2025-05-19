@@ -57,7 +57,7 @@ void MadsSettings::updateToggles(bool _offroad) {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-    if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {  // trigger UI preview, remove
+    if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {
       params.remove("MadsMainCruiseAllowed");
       params.putBool("MadsUnifiedEngagementMode", true);
       params.put("MadsSteeringMode", std::to_string(static_cast<int>(MadsSteeringMode::DISENGAGE)));
