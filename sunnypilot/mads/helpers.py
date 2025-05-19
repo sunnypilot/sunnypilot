@@ -17,8 +17,12 @@ class MadsSteeringModeOnBrake:
   DISENGAGE = 2
 
 
+def get_mads_limited_brands(CP: structs.CarParams) -> bool:
+  return CP.brand in ("rivian", "tesla")
+
+
 def read_steering_mode_param(CP: structs.CarParams, params: Params):
-  if CP.brand in ("rivian", "tesla"):
+  if get_mads_limited_brands(CP):
     return MadsSteeringModeOnBrake.DISENGAGE
 
   try:
@@ -49,9 +53,12 @@ def set_car_specific_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, p
       CP_SP.flags |= HyundaiFlagsSP.LONGITUDINAL_MAIN_CRUISE_TOGGLEABLE.value
       CP_SP.safetyParam |= HyundaiSafetyFlagsSP.LONG_MAIN_CRUISE_TOGGLEABLE
 
-  # MADS is currently not supported in Rivian/Tesla due to lack of consistent states to engage controls
-  # TODO-SP: To enable MADS for Rivian/Tesla, identify consistent signals for MADS toggling
-  if CP.brand in ("rivian", "tesla"):
+  # MADS Partial Support
+  # MADS is currently partially supported for these platforms due to lack of consistent states to engage controls
+  # Only MadsSteeringModeOnBrake.DISENGAGE is supported for these platforms
+  # TODO-SP: To enable MADS full support for Rivian/Tesla, identify consistent signals for MADS toggling
+  mads_partial_support = get_mads_limited_brands(CP)
+  if mads_partial_support:
     params.put("MadsSteeringMode", "2")
     params.put_bool("MadsUnifiedEngagementMode", True)
     params.remove("MadsMainCruiseAllowed")
