@@ -51,9 +51,10 @@ private:
   std::vector<int> madsSteeringModeValues = {};
 
   const QString MADS_MAIN_CRUISE_BASE_DESC = tr("Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.");
-  const QString MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = QString("%1<br>""<h4>%2</h4>")
-    .arg(tr("Engage lateral and longitudinal control with cruise control engagement."))
-    .arg(tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off."));
+  const QString MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = QString("%1<br>"
+                                                                 "<h4>%2</h4>")
+                                                         .arg(tr("Engage lateral and longitudinal control with cruise control engagement."))
+                                                         .arg(tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off."));
 
   const QString STATUS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibility.");
   const QString DEFAULT_TO_OFF = tr("This feature defaults to OFF, and does not allow selection due to vehicle limitations.");
