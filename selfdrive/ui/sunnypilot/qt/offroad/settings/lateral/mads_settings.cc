@@ -68,7 +68,7 @@ void MadsSettings::updateToggles(bool _offroad) {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-    if (CP.getBrand() == "rivian" || CP.getBrand() == "tesla" || CP.getBrand() == "subaru") {
+    if (CP.getBrand() == "rivian" || CP.getBrand() == "tesla") {
       params.put("MadsSteeringMode", std::to_string(static_cast<int>(MadsSteeringMode::DISENGAGE)));
       madsSteeringModeValues = convertMadsSteeringModeValues({MadsSteeringMode::DISENGAGE});
       madsSteeringMode->setDescription(madsSteeringModeDescriptionBuilder(STATUS_DISENGAGE_ONLY, madsSteeringModeDescription(steering_mode)));
