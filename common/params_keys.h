@@ -34,7 +34,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"DoReboot", CLEAR_ON_MANAGER_START},
     {"DoShutdown", CLEAR_ON_MANAGER_START},
     {"DoUninstall", CLEAR_ON_MANAGER_START},
-    {"ExperimentalLongitudinalEnabled", PERSISTENT | DEVELOPMENT_ONLY | BACKUP},
+    {"AlphaLongitudinalEnabled", PERSISTENT | DEVELOPMENT_ONLY | BACKUP},
     {"ExperimentalMode", PERSISTENT | BACKUP},
     {"ExperimentalModeConfirmed", PERSISTENT | BACKUP},
     {"FirmwareQueryDone", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
@@ -71,7 +71,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"LastPowerDropDetected", CLEAR_ON_MANAGER_START},
     {"LastUpdateException", CLEAR_ON_MANAGER_START},
     {"LastUpdateTime", PERSISTENT},
+    {"LiveDelay", PERSISTENT},
     {"LiveParameters", PERSISTENT},
+    {"LiveParametersV2", PERSISTENT},
     {"LiveTorqueParameters", PERSISTENT | DONT_LOG},
     {"LocationFilterInitialState", PERSISTENT},
     {"LongitudinalManeuverMode", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
@@ -127,6 +129,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CarParamsSPPersistent", PERSISTENT},
     {"CarPlatformBundle", PERSISTENT},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
+    {"MaxTimeOffroad", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
     {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
@@ -135,7 +138,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
     {"MadsMainCruiseAllowed", PERSISTENT | BACKUP},
-    {"MadsPauseLateralOnBrake", PERSISTENT | BACKUP},
+    {"MadsSteeringMode", PERSISTENT | BACKUP},
     {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
 
     // Model Manager params
@@ -161,6 +164,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"BackupManager_RestoreVersion", PERSISTENT},
 
     // sunnypilot car specific params
+    {"HyundaiLongitudinalTuning", PERSISTENT},
     {"HyundaiRadarTracks", PERSISTENT},
     {"HyundaiRadarTracksConfirmed", PERSISTENT},
     {"HyundaiRadarTracksPersistent", PERSISTENT},

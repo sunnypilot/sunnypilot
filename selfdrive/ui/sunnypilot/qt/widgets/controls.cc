@@ -118,7 +118,7 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   if (!title.isEmpty()) {
     title_label = new QPushButton(title);
     title_label->setFixedHeight(120);
-    title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none; padding: 20 0 0 0");
+    title_label->setStyleSheet("font-size: 50px; font-weight: 450; text-align: left; border: none; padding: 0 0 0 0");
     main_layout->addWidget(title_label, 1);
 
     connect(title_label, &QPushButton::clicked, [=]() {
@@ -132,10 +132,7 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
 
         if (isVisible && spacingItem) {
           main_layout->removeItem(spacingItem);
-          delete spacingItem;
-          spacingItem = nullptr;
-        } else if (!isVisible && spacingItem == nullptr) {
-          spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
+        } else if (!isVisible && spacingItem != nullptr && main_layout->indexOf(spacingItem) == -1) {
           main_layout->insertItem(main_layout->indexOf(description), spacingItem);
         }
       }
@@ -145,14 +142,13 @@ AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, con
   }
 
   main_layout->addLayout(hlayout);
-  if (!desc.isEmpty() && spacingItem == nullptr) {
-    spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
+  if (!desc.isEmpty() && spacingItem != nullptr && main_layout->indexOf(spacingItem) == -1) {
     main_layout->insertItem(main_layout->count(), spacingItem);
   }
 
   // description
   description = new QLabel(desc);
-  description->setContentsMargins(0, 20, 40, 20);
+  description->setContentsMargins(40, 20, 40, 20);
   description->setStyleSheet("font-size: 40px; color: grey");
   description->setWordWrap(true);
   description->setVisible(false);
@@ -166,8 +162,7 @@ void AbstractControlSP_SELECTOR::hideEvent(QHideEvent *e) {
     description->hide();
   }
 
-  if (spacingItem == nullptr) {
-    spacingItem = new QSpacerItem(44, 44, QSizePolicy::Minimum, QSizePolicy::Fixed);
+  if (spacingItem != nullptr && main_layout->indexOf(spacingItem) == -1) {
     main_layout->insertItem(main_layout->indexOf(description), spacingItem);
   }
 }
