@@ -12,6 +12,10 @@
 
 #include "selfdrive/ui/qt/offroad/settings.h"
 
+inline bool isBrandInList(const std::string &brand, const std::vector<std::string> &list) {
+  return std::find(list.begin(), list.end(), brand) != list.end();
+}
+
 class SettingsWindowSP : public SettingsWindow {
   Q_OBJECT
 
