@@ -61,8 +61,6 @@ class ModelState:
     buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
-                                self.numpy_inputs['desire'].shape[2])
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -70,6 +68,9 @@ class ModelState:
     for key, shape in self.model_runner.input_shapes.items():
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
+
+    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
+                                self.numpy_inputs['desire'].shape[2])
 
     if self.model_runner.is_20hz_3d:  # split models
       self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN),
