@@ -69,9 +69,6 @@ class ModelState:
       if key not in self.frames: # Managed by opencl
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
-    self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
-                                self.numpy_inputs['desire'].shape[2])
-
     if self.model_runner.is_20hz_3d:  # split models
       self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN),
                                            dtype=np.float32)
@@ -87,9 +84,11 @@ class ModelState:
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
       self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
+      self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
+                                  self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
@@ -98,7 +97,8 @@ class ModelState:
     if self.model_runner.is_20hz_3d:  # split models
       self.full_desire[0,:-1] = self.full_desire[0,1:]
       self.full_desire[0,-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape(self.desire_reshape_dims).max(axis=2)
+      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,
+                                                                 SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:  # 20hz supercombo
       self.full_desire[:-1] = self.full_desire[1:]
       self.full_desire[-1] = new_desire
