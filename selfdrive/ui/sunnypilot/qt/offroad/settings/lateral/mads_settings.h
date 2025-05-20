@@ -12,7 +12,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-const std::vector<std::string> mads_limited_settings_brands = {"rivian"};
+const std::vector<std::string> mads_limited_settings_brands = {"rivian", "tesla"};
 
 enum class MadsSteeringMode {
   REMAIN_ACTIVE = 0,
