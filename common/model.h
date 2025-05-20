@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Vikander (DTR new) (Default)"
+#define DEFAULT_MODEL "Experimental Model Weights (Default)"
