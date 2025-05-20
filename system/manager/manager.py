@@ -50,7 +50,7 @@ def manager_init() -> None:
     ("DynamicPersonality", "0"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
-    ("MadsPauseLateralOnBrake", "0"),
+    ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("MaxTimeOffroad", "1800"),
     ("ModelManager_LastSyncTime", "0"),
