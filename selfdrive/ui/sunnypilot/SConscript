@@ -35,12 +35,14 @@ qt_src = [
   "sunnypilot/qt/onroad/hud.cc",
   "sunnypilot/qt/onroad/model.cc",
   "sunnypilot/qt/onroad/onroad_home.cc",
+  "sunnypilot/qt/onroad/debug_overlay.cc",
 ]
 
 lateral_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/lateral/lane_change_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/mads_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.cc",
+  "sunnypilot/qt/offroad/settings/lateral/dab_settings.cc",
 ]
 
 longitudinal_panel_qt_src = [

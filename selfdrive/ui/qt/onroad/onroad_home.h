@@ -6,6 +6,7 @@
 #include "selfdrive/ui/sunnypilot/qt/onroad/annotated_camera.h"
 #define UIState UIStateSP
 #define AnnotatedCameraWidget AnnotatedCameraWidgetSP
+#include "selfdrive/ui/sunnypilot/qt/onroad/debug_overlay.h"
 #else
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 #endif
@@ -22,6 +23,9 @@ protected:
   AnnotatedCameraWidget *nvg;
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QHBoxLayout* split;
+#ifdef SUNNYPILOT
+  DebugOverlay *debug_overlay;
+#endif
 
 protected slots:
   virtual void offroadTransition(bool offroad);

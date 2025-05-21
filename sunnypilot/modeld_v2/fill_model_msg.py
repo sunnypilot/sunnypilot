@@ -4,13 +4,17 @@ import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.selfdrive.controls.lib.drive_helpers import get_curvature_from_plan
+from openpilot.sunnypilot.models.helpers import  get_active_bundle
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
 
 
-def get_curvature_from_output(output, vego, lat_action_t, current_generation=None):
+def get_curvature_from_output(output, vego, lat_action_t):
+  model_bundle = get_active_bundle()
+  current_generation = model_bundle.generation
+
   if current_generation != 11:
     if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
       return float(desired_curv[0, 0])

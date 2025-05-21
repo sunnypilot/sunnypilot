@@ -21,6 +21,7 @@ private:
   ParamControl* longManeuverToggle;
   ParamControl* experimentalLongitudinalToggle;
   ParamControl* hyundaiRadarTracksToggle;
+  ParamControl* debugOverlayToggle;
   ParamControl* enableGithubRunner;
   ParamControl* dynamicpersonality;
   bool is_release;

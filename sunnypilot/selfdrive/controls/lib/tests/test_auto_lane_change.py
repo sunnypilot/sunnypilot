@@ -8,7 +8,9 @@ See the LICENSE.md file in the root directory for more details.
 from parameterized import parameterized
 
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
+from openpilot.selfdrive.controls.lib.desire_helper import (
+  DesireHelper, LaneChangeState, LaneChangeDirection, LANE_CHANGE_SPEED_MIN,
+)
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeController, AutoLaneChangeMode, \
   AUTO_LANE_CHANGE_TIMER, ONE_SECOND_DELAY
 
@@ -211,3 +213,33 @@ class TestAutoLaneChangeController:
 
     # Lane change should never be allowed
     assert not self.alc.auto_lane_change_allowed
+
+  def test_pre_lane_change_requires_lane_exists(self):
+    """ALC should not start if no lane line detected in the desired direction."""
+    dh = DesireHelper()
+    # Setup car state with left blinker and steering torque applied
+    from types import SimpleNamespace
+    carstate = SimpleNamespace(
+      vEgo=LANE_CHANGE_SPEED_MIN + 1.0,
+      leftBlinker=True,
+      rightBlinker=False,
+      leftBlindspot=False,
+      rightBlindspot=False,
+      steeringPressed=True,
+      steeringTorque=1.0,
+      brakePressed=False,
+    )
+
+    # First update arms the controller and enters preLaneChange
+    lane_lines = [0.0, 0.5, 0.5]
+    dh.update(carstate, True, 1.0, lane_lines)
+    assert dh.lane_change_state == LaneChangeState.preLaneChange
+
+    # Lane not detected in desired direction -> remain in preLaneChange
+    dh.update(carstate, True, 1.0, lane_lines)
+    assert dh.lane_change_state == LaneChangeState.preLaneChange
+
+    # With a clear lane line the lane change should start
+    lane_lines = [0.0, 0.8, 0.5]
+    dh.update(carstate, True, 1.0, lane_lines)
+    assert dh.lane_change_state == LaneChangeState.laneChangeStarting

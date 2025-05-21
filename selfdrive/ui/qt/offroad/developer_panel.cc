@@ -57,10 +57,22 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(hyundaiRadarTracksToggle);
 
+  debugOverlayToggle = new ParamControl("ShowDABInspector", tr("Show Debug Overlay"), "", "");
+  addItem(debugOverlayToggle);
+
   enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
+  // --- Auto Lane Change toggle -------------------------------------------
+  // Auto Lane Change (Slow Lead) toggle
+  auto autoLaneChangeSlowLeadToggle = new ParamControl(
+    "AutoLaneChangeSlowLead",
+    tr("Enable Auto Lane Change (Slow Lead)"),
+    tr("Automatically change lanes when cruising above 55 mph and approaching a slower vehicle in distance."),
+    "");
+  addItem(autoLaneChangeSlowLeadToggle);
 
-    dynamicpersonality = new ParamControl("DynamicPersonality", tr("Enable Dynamic Personality"), tr("Adjust follow distance dynamically "), "");
+  // --- Dynamic Personality toggle ---------------------------------------
+  dynamicpersonality = new ParamControl("DynamicPersonality", tr("Enable Dynamic Personality"), tr("Adjust follow distance dynamically"), "");
   addItem(dynamicpersonality);
 
   // error log button

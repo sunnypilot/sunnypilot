@@ -102,6 +102,16 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
   accelPersonality @1 :AccelerationPersonality;
+  dabClearRoad @2 :Float32;
+  dabAccelBoost @3 :Float32;
+  dabWeight @4 :Float32;
+  dabCurviness @5 :Float32;
+  dabLeadCarGate @6 :Float32;
+  dabTtsGate @7 :Float32;
+  dabCurvGate @8 :Float32;
+  dabPhantomBrakeGate @9 :Float32;
+  dabSlowRadarGate @10 :Float32;
+  dabHelperAccel @11: Float32;
 
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;

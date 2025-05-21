@@ -42,26 +42,59 @@ class DesireHelper:
     self.desire = log.Desire.none
     self.alc = AutoLaneChangeController(self)
 
-  def update(self, carstate, lateral_active, lane_change_prob):
+  def update(self, carstate, lateral_active, lane_change_prob, lane_line_probs=None, sm=None):
+    # Update Auto-Lane-Change parameters each tick so hot-reloaded params take effect immediately
     self.alc.update_params()
+    if lane_line_probs is not None and len(lane_line_probs) >= 3:
+      self.alc.update_lane_lines(lane_line_probs[1], lane_line_probs[2])
+
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF:
+    # Blind-spot detection helper usable in multiple states/branches
+    blindspot_detected = ((carstate.leftBlindspot and carstate.leftBlinker) or
+                          (carstate.rightBlindspot and carstate.rightBlinker))
+
+    # Reset if lateral disabled, timed out, or ALC controller finished/aborted
+    # (When the feature is disabled via params the controller is never armed,
+    #  so it remains in OFF and will be effectively ignored.)
+    if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or \
+       self.alc.mode in (AutoLaneChangeMode.DONE, AutoLaneChangeMode.ABORTED):
+      # Reset desire helper state and AutoLaneChangeController on completion or abort
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
+      # Reinitialize ALC controller after finishing or aborting to allow subsequent lane changes
+      if self.alc.mode in (AutoLaneChangeMode.DONE, AutoLaneChangeMode.ABORTED):
+        self.alc.reset()
     else:
       # LaneChangeState.off
       if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
+        # New lane-change request – reset and arm the Auto-LC controller so its
+        # internal state machine can progress beyond OFF.
+        self.alc.reset()
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
+
+      elif self.lane_change_state == LaneChangeState.off and sm is not None and not below_lane_change_speed:
+        # Attempt to arm automatically if conditions are met
+        if self.alc.should_arm(sm):
+          direction = LaneChangeDirection.right if getattr(sm["driverMonitoringState"], "isRHD", False) else LaneChangeDirection.left
+          self.alc.reset()
+          self.alc.arm(direction, trigger="auto")
+          self.lane_change_state = LaneChangeState.preLaneChange
+          self.lane_change_direction = direction
+          self.lane_change_ll_prob = 1.0
 
       # LaneChangeState.preLaneChange
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         # Set lane change direction
         self.lane_change_direction = LaneChangeDirection.left if \
           carstate.leftBlinker else LaneChangeDirection.right
+
+        # Ensure ALC controller is armed in the correct direction exactly once
+        if self.alc.mode == AutoLaneChangeMode.OFF:
+          self.alc.arm(self.lane_change_direction)
 
         torque_applied = carstate.steeringPressed and \
                          ((carstate.steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
@@ -70,12 +103,14 @@ class DesireHelper:
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
-        self.alc.update_lane_change(blindspot_detected, carstate.brakePressed)
+# ALC state update will be performed once per cycle at the end of the method
 
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
           self.lane_change_direction = LaneChangeDirection.none
-        elif (torque_applied or self.alc.auto_lane_change_allowed) and not blindspot_detected:
+        elif (torque_applied or self.alc.auto_lane_change_allowed) \
+             and not blindspot_detected \
+             and self.alc.lane_exists:
           self.lane_change_state = LaneChangeState.laneChangeStarting
 
       # LaneChangeState.laneChangeStarting
@@ -118,4 +153,8 @@ class DesireHelper:
       elif self.desire in (log.Desire.keepLeft, log.Desire.keepRight):
         self.desire = log.Desire.none
 
-    self.alc.update_state()
+    # Removed obsolete update_state call (auto lane change logic handled in update_lane_change)
+
+    # Keep the Auto Lane Change controller updated each cycle so that it can
+    # handle abort/timeout logic even outside the preLaneChange branch.
+    self.alc.update(blindspot_detected, carstate.brakePressed, DT_MDL)

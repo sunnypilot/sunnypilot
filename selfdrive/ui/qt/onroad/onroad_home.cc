@@ -4,8 +4,14 @@
 #include <QStackedLayout>
 
 #include "selfdrive/ui/qt/util.h"
+#ifdef SUNNYPILOT
+#include "selfdrive/ui/sunnypilot/qt/onroad/debug_overlay.h"
+#endif
 
 OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
+#ifdef SUNNYPILOT
+  debug_overlay = nullptr;
+#endif
   QVBoxLayout *main_layout  = new QVBoxLayout(this);
   main_layout->setMargin(UI_BORDER_SIZE);
   QStackedLayout *stacked_layout = new QStackedLayout;
@@ -30,9 +36,16 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   alerts = new OnroadAlerts(this);
   alerts->setAttribute(Qt::WA_TransparentForMouseEvents, true);
   stacked_layout->addWidget(alerts);
+#ifdef SUNNYPILOT
+  debug_overlay = new DebugOverlay(this);
+  stacked_layout->addWidget(debug_overlay);
+#endif
 
-  // setup stacking order
+  // setup stacking order (alerts and debug should be on top)
   alerts->raise();
+#ifdef SUNNYPILOT
+  debug_overlay->raise();
+#endif
 
   setAttribute(Qt::WA_OpaquePaintEvent);
 
@@ -44,6 +57,9 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
 }
 
 void OnroadWindow::updateState(const UIState &s) {
+#ifdef SUNNYPILOT
+  debug_overlay->updateState(s);
+#endif
   if (!s.scene.started) {
     return;
   }

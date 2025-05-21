@@ -6,7 +6,7 @@ from cereal import car, log
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
+from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper, DT_CTRL
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
@@ -21,12 +21,18 @@ from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
 from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
+# Auto Lane Change enums
 State = log.SelfdriveState.OpenpilotState
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
-ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
+# Duration to apply additional curvature at lane-change start
+# Keep the manual steering "nudge" brief so the model takes over quicker
+# Lengthen the curvature override for a more gradual lane entry
+ALC_CURVATURE_TIME = 2.0  # s
+# Auto Lane Change enums
 
+ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 class Controls(ControlsExt):
   def __init__(self) -> None:
@@ -44,11 +50,13 @@ class Controls(ControlsExt):
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
                                    'driverMonitoringState', 'onroadEvents', 'driverAssistance'] + self.sm_services_ext,
                                   poll='selfdriveState')
+    # Publish carControl, controlsState, and auto lane change debug
     self.pm = messaging.PubMaster(['carControl', 'controlsState'] + self.pm_services_ext)
 
     self.steer_limited_by_controls = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
+    self.alc_curv_timer = 0.0
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -62,6 +70,10 @@ class Controls(ControlsExt):
       self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
       self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
+    # Auto Lane Change curvature override will be driven directly from the
+    # lane-change meta data published by *modeld* (DesireHelper).  The older
+    # extra ALC controller instantiated here caused duplicated state and UI
+    # desynchronisation, so it has been removed.
 
   def update(self):
     self.sm.update(15)
@@ -73,6 +85,10 @@ class Controls(ControlsExt):
 
   def state_control(self):
     CS = self.sm['carState']
+
+    # Update lane-change curvature timer
+    if self.alc_curv_timer > 0.0:
+      self.alc_curv_timer = max(0.0, self.alc_curv_timer - DT_CTRL)
 
     # Update VehicleModel
     lp = self.sm['liveParameters']
@@ -116,6 +132,12 @@ class Controls(ControlsExt):
       CC.leftBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.left
       CC.rightBlinker = model_v2.meta.laneChangeDirection == LaneChangeDirection.right
 
+    # Track how long the ALC curvature override has been active
+    if model_v2.meta.laneChangeState == LaneChangeState.laneChangeStarting:
+      self.alc_curv_timer += DT_CTRL
+    else:
+      self.alc_curv_timer = 0.0
+
     if not CC.latActive:
       self.LaC.reset()
     if not CC.longActive:
@@ -125,9 +147,38 @@ class Controls(ControlsExt):
     pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
     actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
 
+    # -----------------------------------------------------------
     # Steering PID loop and lateral MPC
-    # Reset desired curvature to current to avoid violating the limits on engage
-    new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
+    # -----------------------------------------------------------
+    # Use model-predicted desired curvature unless Auto-Lane-Change is
+    # actively requesting a lane shift.  In that case we override the model
+    # with a small constant curvature towards the target lane so the lateral
+    # controller commands a smooth lane-change trajectory.
+
+    # Reduce curvature offset for auto lane change to tame steering aggressiveness
+    # Apply the offset using a ramped profile rather than a constant value
+    # Smaller offset keeps steering changes subtle
+    base_offset = 0.0008  # rad/m – brief nudge toward target lane
+
+    # Apply a gentle constant curvature towards the adjacent lane while the
+    # lane-change is *starting*.  This mimics the original sunnypilot ALC
+    # behaviour without maintaining an extra controller instance inside
+    # controlsd.
+
+    if CC.latActive and model_v2.meta.laneChangeState == LaneChangeState.laneChangeStarting:
+      # Start timer at lane-change initiation
+      self.alc_curv_timer = ALC_CURVATURE_TIME
+
+    if self.alc_curv_timer > 0.0:
+      # Compute a smooth ramp down of the offset as the timer expires
+      sign = -1.0 if model_v2.meta.laneChangeDirection == LaneChangeDirection.left else 1.0
+      ramp = math.sin((self.alc_curv_timer / ALC_CURVATURE_TIME) * (math.pi / 2.0))
+      scale = 1.0 / (1.0 + abs(model_v2.action.desiredCurvature))
+      curvature_offset = base_offset * (ramp ** 2) * scale * sign
+      new_desired_curvature = model_v2.action.desiredCurvature + curvature_offset
+    else:
+      # Reset desired curvature to model prediction when no offset is applied
+      new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
     self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
 
     actuators.curvature = self.desired_curvature
@@ -217,6 +268,7 @@ class Controls(ControlsExt):
     self.pm.send('controlsState', dat)
 
     # carControl
+    # Send car control first
     cc_send = messaging.new_message('carControl')
     cc_send.valid = CS.canValid
     cc_send.carControl = CC

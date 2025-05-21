@@ -167,7 +167,7 @@ class ModelState:
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.generation)
+    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t)
     if v_ego > self.MIN_LAT_CONTROL_SPEED:
       desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
     else:
@@ -343,7 +343,7 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
+      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, sm=sm)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state

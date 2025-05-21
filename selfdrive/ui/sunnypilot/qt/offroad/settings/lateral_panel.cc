@@ -78,6 +78,24 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     nnlcToggle->updateToggle();
   });
 
+  // DAB
+  // dabToggle = new ParamControl(
+  //   "DynamicAcceleration",
+  //   tr("Enable Dynamic Acceleration Boost"),
+  //   tr("Enable Dynamic Acceleration Boost"),
+  //   "");
+  // dabToggle->setConfirmation(true, false);
+  // list->addItem(dabToggle);
+
+  // dabSettingsButton = new PushButtonSP(tr("Customize DAB"));
+  // dabSettingsButton->setObjectName("dab_btn");
+  // connect(dabSettingsButton, &QPushButton::clicked, [=]() {
+  //   sunnypilotScroller->setLastScrollPosition();
+  //   main_layout->setCurrentWidget(dabWidget);
+  // });
+  // QObject::connect(dabToggle, &ToggleControl::toggleFlipped, dabSettingsButton, &PushButtonSP::setEnabled);
+  // list->addItem(dabSettingsButton);
+
   toggleOffroadOnly = {
     madsToggle, nnlcToggle,
   };
@@ -86,9 +104,18 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
 
+  // --- FIX: Construct dabWidget before adding to layout ---
+  // dabWidget = new DabSettings(this);
+  // connect(dabWidget, &DabSettings::backPress, [=]() {
+  //   sunnypilotScroller->restoreScrollPosition();
+  //   main_layout->setCurrentWidget(sunnypilotScreen);
+  // });
+  // --- END FIX ---
+
   main_layout->addWidget(sunnypilotScreen);
   main_layout->addWidget(madsWidget);
   main_layout->addWidget(laneChangeWidget);
+  // main_layout->addWidget(dabWidget);
 
   setStyleSheet(R"(
     #back_btn {
@@ -138,6 +165,7 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+  // Remove dabSettingsButton logic
 
   offroad = _offroad;
 }

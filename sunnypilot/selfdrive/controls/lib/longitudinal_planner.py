@@ -31,7 +31,6 @@ class LongitudinalPlannerSP:
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
       return None
-
     return self.dec.mode()
 
   def update(self, sm: messaging.SubMaster) -> None:
@@ -43,9 +42,7 @@ class LongitudinalPlannerSP:
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
-
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
-
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
 
     # Dynamic Experimental Control
@@ -53,5 +50,19 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
+
+    longitudinalPlanSP.accelPersonality = self.accel_controller.personality
+
+    # DAB debug values
+    longitudinalPlanSP.dabClearRoad = float(getattr(self, 'helper_clear_road', 0.0))
+    longitudinalPlanSP.dabAccelBoost = float(getattr(self, 'helper_accel_boost', 0.0))
+    longitudinalPlanSP.dabWeight = float(getattr(self, 'helper_weight', 0.0))
+    longitudinalPlanSP.dabCurviness = float(getattr(self, 'helper_curviness', 0.0))
+    longitudinalPlanSP.dabLeadCarGate = float(getattr(self, 'helper_lead_car_gate', 0.0))
+    longitudinalPlanSP.dabTtsGate = float(getattr(self, 'helper_tts_gate', 0.0))
+    longitudinalPlanSP.dabCurvGate = float(getattr(self, 'helper_curv_gate', 0.0))
+    longitudinalPlanSP.dabPhantomBrakeGate = float(getattr(self, 'helper_phantom_brake_gate', 0.0))
+    longitudinalPlanSP.dabSlowRadarGate = float(getattr(self, 'helper_slow_radar_gate', 0.0))
+    longitudinalPlanSP.dabHelperAccel = float(getattr(self, 'helper_helper_accel', 0.0))
 
     pm.send('longitudinalPlanSP', plan_sp_send)

@@ -13,6 +13,7 @@
 OnroadWindowSP::OnroadWindowSP(QWidget *parent) : OnroadWindow(parent) {
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &OnroadWindowSP::updateState);
   QObject::connect(uiStateSP(), &UIStateSP::offroadTransition, this, &OnroadWindowSP::offroadTransition);
+  if (debug_overlay) debug_overlay->raise();
 }
 
 void OnroadWindowSP::updateState(const UIStateSP &s) {

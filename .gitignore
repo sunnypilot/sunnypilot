@@ -110,4 +110,7 @@ Pipfile
 !.idea/customTargets.xml
 !.idea/tools/*
 !.run/*
-scripts/lint/lint.sh
+
+.scons_cache/*
+pytest_cache/*
+pytest-of-root/*
