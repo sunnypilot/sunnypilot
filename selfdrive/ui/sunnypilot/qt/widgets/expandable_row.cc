@@ -8,7 +8,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
 ExpandableToggleRow::ExpandableToggleRow(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
-    : ToggleControlSP(title, desc, icon, false, parent) {
+  : ToggleControlSP(title, desc, icon, false, parent) {
 
   key = param.toStdString();
   QObject::connect(this, &ExpandableToggleRow::toggleFlipped, this, &ExpandableToggleRow::toggleClicked);
@@ -23,7 +23,6 @@ ExpandableToggleRow::ExpandableToggleRow(const QString &param, const QString &ti
 
   main_layout->addWidget(collapsibleWidget);
   collapsible_layout->addWidget(list);
-
 }
 
 void ExpandableToggleRow::toggleClicked(bool state) {
