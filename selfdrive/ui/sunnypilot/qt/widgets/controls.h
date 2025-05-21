@@ -324,10 +324,11 @@ public:
     }
   }
 
-  void setDisabledSelectedButton(std::string val) {
-    int value = atoi(val.c_str());
+  void setEnableSelectedButtons(bool enable, const std::vector<int>& enabled_btns = {}) const {
     for (int i = 0; i < button_group->buttons().size(); i++) {
-      button_group->buttons()[i]->setEnabled(i != value);
+      // Enable the button if its index is in the enabled list
+      bool should_enable = std::find(enabled_btns.begin(), enabled_btns.end(), i) != enabled_btns.end();
+      button_group->buttons()[i]->setEnabled(enable && should_enable);
     }
   }
 
