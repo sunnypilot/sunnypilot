@@ -77,7 +77,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventNameSP.silentBrakeHold: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
+    ET.WARNING: EngagementAlert(AudibleAlert.none),
     ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
   },
 
@@ -145,6 +145,10 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventNameSP.wrongCarModeAlertOnly: {
     ET.WARNING: wrong_car_mode_alert,
+  },
+
+  EventNameSP.pedalPressedAlertOnly: {
+    ET.WARNING: NoEntryAlert("Pedal Pressed")
   },
 
   EventNameSP.speedLimitPreActive: {
