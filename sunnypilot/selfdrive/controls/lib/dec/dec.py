@@ -358,7 +358,7 @@ class DynamicExperimentalController:
       if self._has_lead:
         if self.sm is not None and (self.sm['radarState'].leadOne.vRel < 0):
           self._set_mode('blended')
-      elif self._v_ego_kph < 40.0:
+      elif self._v_ego_kph < 30:
         self._set_mode('blended')
       else:
         self._set_mode('acc')
