@@ -30,6 +30,7 @@ public slots:
   void updateToggles(bool _offroad);
 
 private:
+  Params params;
   QStackedLayout* main_layout = nullptr;
   QWidget* sunnypilotScreen = nullptr;
   ScrollViewSP *sunnypilotScroller = nullptr;
@@ -42,4 +43,14 @@ private:
   PushButtonSP *laneChangeSettingsButton;
   LaneChangeSettings *laneChangeWidget = nullptr;
   NeuralNetworkLateralControl *nnlcToggle = nullptr;
+
+  const QString MADS_BASE_DESC = tr("Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).");
+
+  const QString STATUS_MADS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibility.");
+  const QString STATUS_MADS_SETTINGS_FULL_COMPATIBILITY = tr("This platform supports all MADS settings.");
+  const QString STATUS_MADS_SETTINGS_LIMITED_COMPATIBILITY = tr("This platform supports limited MADS settings.");
+
+  static QString descriptionBuilder(const QString &custom_description, const QString &base_description) {
+    return "<font color='white'><b>" + custom_description + "</b></font><br><br>" + base_description;
+  }
 };

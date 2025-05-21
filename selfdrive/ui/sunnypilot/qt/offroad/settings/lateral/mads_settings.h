@@ -12,6 +12,8 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
+const std::vector<std::string> mads_limited_settings_brands = {"rivian", "tesla"};
+
 enum class MadsSteeringMode {
   REMAIN_ACTIVE = 0,
   PAUSE = 1,
@@ -46,13 +48,42 @@ private:
   ParamControl *madsUnifiedEngagementModeToggle;
   ButtonParamControl *madsSteeringMode;
 
+  std::vector<int> madsSteeringModeValues = {};
+
+  const QString MADS_MAIN_CRUISE_BASE_DESC = tr("Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.");
+  const QString MADS_UNIFIED_ENGAGEMENT_MODE_BASE_DESC = QString("%1<br>"
+                                                                 "<h4>%2</h4>")
+                                                         .arg(tr("Engage lateral and longitudinal control with cruise control engagement."))
+                                                         .arg(tr("Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off."));
+
+  const QString STATUS_CHECK_COMPATIBILITY = tr("Start the vehicle to check vehicle compatibility.");
+  const QString DEFAULT_TO_OFF = tr("This feature defaults to OFF, and does not allow selection due to vehicle limitations.");
+  const QString DEFAULT_TO_ON = tr("This feature defaults to ON, and does not allow selection due to vehicle limitations.");
+  const QString STATUS_DISENGAGE_ONLY = tr("This platform only supports Disengage mode due to vehicle limitations.");
+
   static const std::vector<MadsSteeringModeOption> &madsSteeringModeOptions() {
     static const std::vector<MadsSteeringModeOption> options = {
-      {MadsSteeringMode::REMAIN_ACTIVE, tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
-      {MadsSteeringMode::PAUSE,         tr("Pause"),         tr("Pause: ALC will pause when the brake pedal is pressed.")},
-      {MadsSteeringMode::DISENGAGE,     tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
+      {MadsSteeringMode::REMAIN_ACTIVE,  tr("Remain Active"), tr("Remain Active: ALC will remain active when the brake pedal is pressed.")},
+      {MadsSteeringMode::PAUSE,          tr("Pause"),         tr("Pause: ALC will pause when the brake pedal is pressed.")},
+      {MadsSteeringMode::DISENGAGE,      tr("Disengage"),     tr("Disengage: ALC will disengage when the brake pedal is pressed.")},
     };
     return options;
+  }
+
+  static std::vector<MadsSteeringMode> getMadsSteeringModeValues() {
+    std::vector<MadsSteeringMode> values;
+    for (const auto& option : madsSteeringModeOptions()) {
+      values.push_back(option.mode);
+    }
+    return values;
+  }
+
+  static std::vector<int> convertMadsSteeringModeValues(const std::vector<MadsSteeringMode> &modes) {
+    std::vector<int> values;
+    for (const auto& mode : modes) {
+      values.push_back(static_cast<int>(mode));
+    }
+    return values;
   }
 
   static std::vector<QString> madsSteeringModeTexts() {
@@ -63,7 +94,7 @@ private:
     return texts;
   }
 
-  static QString madsSteeringModeDescription(const MadsSteeringMode mode) {
+  static QString madsSteeringModeDescription(const MadsSteeringMode mode = MadsSteeringMode::REMAIN_ACTIVE) {
     QString base_desc = tr("Choose how Automatic Lane Centering (ALC) behaves after the brake pedal is manually pressed in sunnypilot.");
     QString result = base_desc + "<br><br>";
 
@@ -76,5 +107,9 @@ private:
     }
 
     return result;
+  }
+
+  static QString madsDescriptionBuilder(const QString &custom_description, const QString &base_description) {
+    return "<font color='white'><b>" + custom_description + "</b></font><br><br>" + base_description;
   }
 };
