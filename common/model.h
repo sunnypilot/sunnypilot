@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Experimental Model Weights (Default)"
+#define DEFAULT_MODEL "SGO eGPU Model (Default)"
