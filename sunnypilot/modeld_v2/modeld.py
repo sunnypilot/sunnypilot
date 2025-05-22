@@ -24,7 +24,7 @@ from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
-from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
+from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 
@@ -237,7 +237,6 @@ def main(demo=False):
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
-
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS

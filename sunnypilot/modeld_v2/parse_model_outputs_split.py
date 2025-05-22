@@ -1,12 +1,15 @@
 import numpy as np
-from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
+from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
+
 
 def safe_exp(x, out=None):
   # -11 is around 10**14, more causes float16 overflow
   return np.exp(np.clip(x, -np.inf, 11), out=out)
 
+
 def sigmoid(x):
   return 1. / (1. + safe_exp(-x))
+
 
 def softmax(x, axis=-1):
   x -= np.max(x, axis=axis, keepdims=True)
@@ -16,6 +19,7 @@ def softmax(x, axis=-1):
     x = safe_exp(x)
   x /= np.sum(x, axis=axis, keepdims=True)
   return x
+
 
 class Parser:
   def __init__(self, ignore_missing=False):
