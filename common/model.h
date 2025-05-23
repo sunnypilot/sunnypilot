@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "SGO eGPU Model (Default)"
+#define DEFAULT_MODEL "External Contributor: SGO Reshaped (Default)"
