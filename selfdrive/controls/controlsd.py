@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import math
+import threading
+import time
 from typing import SupportsFloat
 
 from cereal import car, log
@@ -222,14 +224,27 @@ class Controls(ControlsExt):
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
+  def params_thread(self, evt):
+    while not evt.is_set():
+      self.get_params_sp()
+
+      time.sleep(0.1)
+
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
-    while True:
-      self.update()
-      CC, lac_log = self.state_control()
-      self.publish(CC, lac_log)
-      self.run_ext(self.sm, self.pm)
-      rk.monitor_time()
+    e = threading.Event()
+    t = threading.Thread(target=self.params_thread, args=(e,))
+    try:
+      t.start()
+      while True:
+        self.update()
+        CC, lac_log = self.state_control()
+        self.publish(CC, lac_log)
+        self.run_ext(self.sm, self.pm)
+        rk.monitor_time()
+    finally:
+      e.set()
+      t.join()
 
 
 def main():

@@ -10,6 +10,14 @@ $Cxx.namespace("cereal");
 # DO rename the structs
 # DON'T change the identifier (e.g. @0x81c2f05a394cf4af)
 
+struct MapSP(Key, Value) {
+  entries @0 :List(Entry);
+  struct Entry {
+    key @0 :Key;
+    value @1 :Value;
+  }
+}
+
 struct ModularAssistiveDrivingSystem {
   state @0 :ModularAssistiveDrivingSystemState;
   enabled @1 :Bool;
@@ -167,6 +175,7 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
+  params @1 :MapSP(Text, Text);
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {

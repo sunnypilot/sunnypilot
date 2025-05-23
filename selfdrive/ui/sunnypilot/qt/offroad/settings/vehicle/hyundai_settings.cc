@@ -45,7 +45,7 @@ void HyundaiSettings::updateSettings() {
     longitudinal_tuning_option = LongitudinalTuningOption::OFF;
   }
 
-  bool longitudinal_tuning_disabled = !offroad || !has_longitudinal_control;
+  bool longitudinal_tuning_disabled = !has_longitudinal_control;
   QString longitudinal_tuning_description = longitudinalTuningDescription(longitudinal_tuning_option);
   if (longitudinal_tuning_disabled) {
     longitudinal_tuning_description = toggleDisableMsg(offroad, has_longitudinal_control);
