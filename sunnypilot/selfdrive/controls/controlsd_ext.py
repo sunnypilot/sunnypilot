@@ -35,11 +35,11 @@ class ControlsExt:
     for k in self.params_keys:
       self.params_vals[k] = self.params.get(k, encoding='utf8')
 
-  def publish_params(self) -> [structs.CarControlSP.params.Entry]:
+  def publish_params(self) -> [structs.MapSP.Entry]:
     entries = []
 
     for k in self.params_keys:
-      entry = structs.CarControlSP.params.Entry(key=k, value=self.params_vals[k])
+      entry = structs.MapSP.Entry(key=k, value=self.params_vals[k])
       entries.append(entry)
 
     return entries
