@@ -284,16 +284,16 @@ class DynamicExperimentalController:
 
     # when blinker is on and speed is driving below V_ACC_MIN: blended
     # we don't want it to switch mode at higher speed, blended may trigger hard brake
-    if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
-     self._set_mode('blended')
-     return
+    # if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
+    #  self._set_mode('blended')
+    #  return
 
     # when at highway cruise and SNG: blended
     # ensuring blended mode is used because acc is bad at catching SNG lead car
     # especially those who accel very fast and then brake very hard.
-    if self._sng_state == SNG_State.going and self._v_cruise_kph >= V_ACC_MIN:
-     self._set_mode('blended')
-     return
+    # if self._sng_state == SNG_State.going and self._v_cruise_kph >= V_ACC_MIN:
+    #  self._set_mode('blended')
+    #  return
 
     # when standstill: blended
     # in case of lead car suddenly move away under traffic light, acc mode won't brake at traffic light.
@@ -335,8 +335,8 @@ class DynamicExperimentalController:
     # when blinker is on and speed is driving below V_ACC_MIN: blended
     # we don't want it to switch mode at higher speed, blended may trigger hard brake
     if self._has_blinkers and self._v_ego_kph < V_ACC_MIN:
-     self._set_mode('blended')
-     return
+      self._set_mode('blended')
+      return
 
     # when standstill: blended
     # in case of lead car suddenly move away under traffic light, acc mode won't brake at traffic light.
@@ -353,7 +353,7 @@ class DynamicExperimentalController:
     # car driving at speed lower than set speed: acc
     if self._has_slowness:
       if self._has_lead:
-        if self.sm is not None and (self.sm['radarState'].leadOne.vRel < -0.3):
+        if self.sm is not None and (self.sm['radarState'].leadOne.vRel < -1.0):
           self._set_mode('blended')
       else:
         self._set_mode('acc')
