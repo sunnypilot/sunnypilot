@@ -55,5 +55,6 @@ def convert_carControlSP(struct: capnp.lib.capnp._DynamicStructReader) -> struct
   struct_dataclass = structs.CarControlSP(**remove_deprecated({k: v for k, v in struct_dict.items() if not isinstance(k, dict)}))
 
   struct_dataclass.mads = structs.ModularAssistiveDrivingSystem(**remove_deprecated(struct_dict.get('mads', {})))
+  struct_dataclass.params = [structs.CarControlSP.Param(**remove_deprecated(p)) for p in struct_dict.get('params', [])]
 
   return struct_dataclass
