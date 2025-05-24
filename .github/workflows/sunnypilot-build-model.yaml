@@ -36,23 +36,19 @@ run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from
 jobs:
   get_model:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ github.event.inputs.upstream_branch }}
           submodules: recursive
-
       - run: git lfs pull
-        
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: models
           path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
 
-      
   build_model:
     runs-on: self-hosted
     needs: get_model
@@ -61,9 +57,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
       - run: git lfs pull
-
       - name: Cache SCons
         uses: actions/cache@v4
         with:
@@ -108,7 +102,7 @@ jobs:
           fi
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
           rm -rf ${{ env.MODELS_DIR }}/*.onnx
-      
+
       - name: Download model artifacts
         uses: actions/download-artifact@v4
         with:
@@ -121,12 +115,12 @@ jobs:
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
-          
+
           # Loop through all .onnx files
           find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
             base_name=$(basename "$onnx_file" .onnx)
             output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
-          
+
             echo "Compiling: $onnx_file -> $output_file"
             QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
             QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
@@ -136,7 +130,7 @@ jobs:
         run: |
           sudo rm -rf ${{ env.OUTPUT_DIR }}
           mkdir -p ${{ env.OUTPUT_DIR }}
-          
+
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
@@ -154,7 +148,7 @@ jobs:
             --output-dir "${{ env.OUTPUT_DIR }}" \
             --custom-name "${{ inputs.custom_name || inputs.upstream_branch }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
-            --file-name "${{ inputs.file_name || 'default' }}" ${{ inputs.is_20hz && '--is-20hz' || '' }} 
+            --file-name "${{ inputs.file_name || 'default' }}" ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4

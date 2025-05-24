@@ -48,21 +48,21 @@ def generate_metadata(model_path: Path, output_dir: Path, file_name: str = None)
   return model_metadata
 
 
-def create_metadata_json(models, output_dir, custom_name=None, file_name=None, is_20hz=False, upstream_branch="unknown"):
+def create_metadata_json(_models, _output_dir, custom_name=None, file_name=None, is_20hz=False, upstream_branch="unknown"):
   metadata_json = {
     "display_name": custom_name or upstream_branch,
     "full_name": file_name or "default",
     "is_20hz": is_20hz,
     "ref": upstream_branch,
     "build_time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "models": models
+    "models": _models
   }
 
   # Write metadata to output_dir
-  with open(output_dir / "metadata.json", "w") as f:
+  with open(_output_dir / "metadata.json", "w") as f:
     json.dump(metadata_json, f, indent=2)
 
-  print(f"Generated metadata.json with {len(models)} models.")
+  print(f"Generated metadata.json with {len(_models)} models.")
 
 
 if __name__ == "__main__":
