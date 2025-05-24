@@ -4,13 +4,14 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import capnp
 
 import cereal.messaging as messaging
 from cereal import custom
 
-from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.car.helpers import convert_to_capnp
 
 
 class ControlsExt:
@@ -28,21 +29,20 @@ class ControlsExt:
       "HyundaiLongitudinalTuning",
     ]
 
-    self.params_vals = {name: None for name in self.params_keys}
+    self.params_vals = {name: "0" for name in self.params_keys}
     self.get_params_sp()
 
   def get_params_sp(self) -> None:
     for k in self.params_keys:
       self.params_vals[k] = self.params.get(k, encoding='utf8')
 
-  def publish_params(self) -> [structs.MapSP.Entry]:
-    entries = []
+  def publish_params(self) -> list[capnp.lib.capnp._DynamicStructBuilder]:
+    params: list[capnp.lib.capnp._DynamicStructBuilder] = []
 
     for k in self.params_keys:
-      entry = structs.MapSP.Entry(key=k, value=self.params_vals[k])
-      entries.append(entry)
+      params.append(custom.CarControlSP.Param(key=k, value=self.params_vals[k]))
 
-    return entries
+    return params
 
   @staticmethod
   def get_lat_active(sm: messaging.SubMaster) -> bool:
