@@ -11,7 +11,6 @@ from cereal import custom
 
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.car.helpers import convert_to_capnp
 
 
 class ControlsExt:
