@@ -20,11 +20,6 @@ class ParamStore:
     universal_params: list[str] = []
     brand_params: list[str] = []
 
-    if CP.brand == "hyundai":
-      brand_params = [
-        "HyundaiLongitudinalTuning",
-      ]
-
     self.keys = universal_params + brand_params
     self.values = {}
 
