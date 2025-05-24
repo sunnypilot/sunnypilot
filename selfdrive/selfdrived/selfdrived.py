@@ -155,7 +155,7 @@ class SelfdriveD(CruiseHelper):
 
     self.car_events_sp = CarSpecificEventsSP(self.CP, self.params)
 
-    CruiseHelper.__init__(self, self.CP)
+    CruiseHelper.__init__(self, self.CP, self)
 
   def update_events(self, CS):
     """Compute onroadEvents from carState"""
@@ -394,7 +394,7 @@ class SelfdriveD(CruiseHelper):
     if CS.gearShifter == car.CarState.GearShifter.park and self.mads.enabled:
       self.events.remove(EventName.canBusMissing)
 
-    CruiseHelper.update(self, CS, self.events_sp, self.experimental_mode)
+    CruiseHelper.update(self, CS)
 
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
@@ -462,9 +462,11 @@ class SelfdriveD(CruiseHelper):
     pers = LONGITUDINAL_PERSONALITY_MAP[self.personality]
     callback_args = [self.CP, CS, self.sm, self.is_metric,
                      self.state_machine.soft_disable_timer, pers]
+    callback_args_sp = [self.CP, CS, self.sm, self.is_metric,
+                        self.state_machine.soft_disable_timer, pers, self.experimental_mode, self.dynamic_experimental_control]
 
     alerts = self.events.create_alerts(self.state_machine.current_alert_types, callback_args)
-    alerts_sp = self.events_sp.create_alerts(self.state_machine.current_alert_types, callback_args)
+    alerts_sp = self.events_sp.create_alerts(self.state_machine.current_alert_types, callback_args_sp)
 
     self.AM.add_many(self.sm.frame, alerts + alerts_sp)
     self.AM.process_alerts(self.sm.frame, clear_event_types)
@@ -546,6 +548,7 @@ class SelfdriveD(CruiseHelper):
 
       self.mads.read_params()
       self.car_events_sp.read_params()
+      CruiseHelper.read_params(self)
       time.sleep(0.1)
 
   def run(self):

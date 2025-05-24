@@ -18,6 +18,7 @@ public:
 
 private:
   void drawButton(QPainter &p) override;
+  void changeMode() override;
 
   bool dynamic_experimental_control;
   int dec_mpc_mode;

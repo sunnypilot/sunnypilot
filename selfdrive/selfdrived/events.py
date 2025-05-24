@@ -11,7 +11,7 @@ from openpilot.selfdrive.locationd.calibrationd import MIN_SPEED_FILTER
 
 from openpilot.sunnypilot.selfdrive.selfdrived.events_base import EventsBase, Priority, ET, Alert, \
   NoEntryAlert, SoftDisableAlert, UserSoftDisableAlert, ImmediateDisableAlert, EngagementAlert, NormalPermanentAlert, \
-  StartupAlert, AlertCallbackType, wrong_car_mode_alert
+  StartupAlert, AlertCallbackType, AlertCallbackTypeSP, wrong_car_mode_alert
 
 
 AlertSize = log.SelfdriveState.AlertSize
@@ -30,7 +30,7 @@ class Events(EventsBase):
     super().__init__()
     self.event_counters = dict.fromkeys(EVENTS.keys(), 0)
 
-  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType]]:
+  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType | AlertCallbackTypeSP]]:
     return EVENTS
 
   def get_event_name(self, event: int):
@@ -193,7 +193,7 @@ def personality_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging
 
 
 
-EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
+EVENTS: dict[int, dict[str, Alert | AlertCallbackType | AlertCallbackTypeSP]] = {
   # ********** events with no alerts **********
 
   EventName.stockFcw: {},
@@ -833,7 +833,7 @@ if __name__ == '__main__':
   for i, alerts in EVENTS.items():
     for et, alert in alerts.items():
       if callable(alert):
-        alert = alert(CP, CS, sm, False, 1, log.LongitudinalPersonality.standard)
+        alert = alert(CP, CS, sm, False, 1, log.LongitudinalPersonality.standard)  # type: ignore[call-arg]
       alerts_by_type[et][alert.priority].append(event_names[i])
 
   all_alerts: dict[str, list[tuple[Priority, list[str]]]] = {}

@@ -81,6 +81,8 @@ class AlertBase(Alert):
 
 
 AlertCallbackType = Callable[[car.CarParams, car.CarState, messaging.SubMaster, bool, int, log.ControlsState], Alert]
+AlertCallbackTypeSP = Callable[[car.CarParams, car.CarState, messaging.SubMaster, bool, int, log.ControlsState,
+                                bool, bool], Alert]
 
 
 # ********** alert callback functions **********
@@ -166,7 +168,7 @@ class EventsBase:
       self.events.remove(event_name)
 
   @abstractmethod
-  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType]]:
+  def get_events_mapping(self) -> dict[int, dict[str, Alert | AlertCallbackType | AlertCallbackTypeSP]]:
     raise NotImplementedError
 
   @abstractmethod
