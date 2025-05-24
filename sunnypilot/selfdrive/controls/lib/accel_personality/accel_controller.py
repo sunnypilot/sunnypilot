@@ -5,21 +5,16 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from cereal import custom
-from numpy import interp
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
 
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_profiles import (
-  MAX_ACCEL_ECO, MAX_ACCEL_NORMAL, MAX_ACCEL_SPORT,
-  MIN_ACCEL_ECO, MIN_ACCEL_NORMAL, MIN_ACCEL_SPORT, MIN_ACCEL_STOCK,
-  MAX_ACCEL_BREAKPOINTS, MIN_ACCEL_BREAKPOINTS
+  get_max_accel_hermite,
+  get_min_accel_hermite
 )
 
 
 AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
-
-def clamp(val: float, lower: float, upper: float) -> float:
-  return max(lower, min(val, upper))
 
 class AccelController:
   def __init__(self):
@@ -38,34 +33,28 @@ class AccelController:
   def _get_max_accel_for_speed(self, v_ego: float) -> float:
     self._update_personality_from_param()
 
-    # Clamp v_ego to valid interpolation range
-    v_ego = clamp(v_ego, MAX_ACCEL_BREAKPOINTS[0], MAX_ACCEL_BREAKPOINTS[-1])
-
     if self.personality == AccelPersonality.eco:
-      accel_profile = MAX_ACCEL_ECO
+      mode = "eco"
     elif self.personality == AccelPersonality.sport:
-      accel_profile = MAX_ACCEL_SPORT
+      mode = "sport"
     else:
-      accel_profile = MAX_ACCEL_NORMAL
+      mode = "normal"
 
-    return float(interp(v_ego, MAX_ACCEL_BREAKPOINTS, accel_profile))
+    return get_max_accel_hermite(v_ego, mode)
 
   def _get_min_accel_for_speed(self, v_ego: float) -> float:
     self._update_personality_from_param()
 
-    # Clamp v_ego to valid interpolation range
-    v_ego = clamp(v_ego, MIN_ACCEL_BREAKPOINTS[0], MIN_ACCEL_BREAKPOINTS[-1])
-
     if self.personality == AccelPersonality.eco:
-      accel_profile = MIN_ACCEL_ECO
+      mode = "eco"
     elif self.personality == AccelPersonality.sport:
-      accel_profile = MIN_ACCEL_SPORT
+      mode = "sport"
     elif self.personality == AccelPersonality.normal:
-      accel_profile = MIN_ACCEL_NORMAL
+      mode = "normal"
     else:
-      accel_profile = MIN_ACCEL_STOCK
+      mode = "stock"
 
-    return float(interp(v_ego, MIN_ACCEL_BREAKPOINTS, accel_profile))
+    return get_min_accel_hermite(v_ego, mode)
 
   def get_accel_limits(self, v_ego: float, accel_limits: list[float]) -> tuple[float, float]:
     self._update_personality_from_param()
@@ -74,7 +63,8 @@ class AccelController:
       return (accel_limits[0], accel_limits[1])
     else:
       max_accel = self._get_max_accel_for_speed(v_ego)
-      return (accel_limits[0], max_accel)
+      min_accel = self._get_min_accel_for_speed(v_ego)
+      return (min_accel, max_accel)
 
   def is_personality_enabled(self, accel_personality: int = AccelPersonality.stock) -> bool:
     self.personality = accel_personality
