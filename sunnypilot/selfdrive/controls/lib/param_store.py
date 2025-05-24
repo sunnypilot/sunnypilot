@@ -23,7 +23,7 @@ class ParamStore:
     self.keys = universal_params + brand_params
     self.values = {}
 
-  def update(self, params: Params()) -> None:
+  def update(self, params: Params) -> None:
     self.values = {k: params.get(k, encoding='utf8') or "0" for k in self.keys}
 
   def publish(self) -> list[capnp.lib.capnp._DynamicStructBuilder]:

@@ -38,7 +38,7 @@ class Controls(ControlsExt):
     cloudlog.info("controlsd got CarParams")
 
     # Initialize sunnypilot controlsd extension
-    ControlsExt.__init__(self, self.params)
+    ControlsExt.__init__(self, self.CP, self.params)
 
     self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
