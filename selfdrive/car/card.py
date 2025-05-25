@@ -108,7 +108,7 @@ class Car:
       fixed_fingerprint = json.loads(self.params.get("CarPlatformBundle", encoding='utf-8') or "{}").get("platform", None)
 
       self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, num_pandas, cached_params, fixed_fingerprint)
-      sunnypilot_interfaces.setup_interfaces(self.CI, self.params)
+      sunnypilot_interfaces.setup_interfaces(self.CI, self.params, *self.can_callbacks)
       self.RI = interfaces[self.CI.CP.carFingerprint].RadarInterface(self.CI.CP, self.CI.CP_SP)
       self.CP = self.CI.CP
       self.CP_SP = self.CI.CP_SP
@@ -274,7 +274,6 @@ class Car:
       # Initialize CarInterface, once controls are ready
       # TODO: this can make us miss at least a few cycles when doing an ECU knockout
       self.CI.init(self.CP, self.CP_SP, *self.can_callbacks)
-      sunnypilot_interfaces.init_interfaces(self.CP, self.CP_SP, self.params, *self.can_callbacks)
       # signal pandad to switch to car safety mode
       self.params.put_bool_nonblocking("ControlsReady", True)
 
