@@ -56,7 +56,7 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
 
 def _enable_radar_tracks(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable,
                          params: Params) -> None:
-  if CP.brand == 'hyundai':
+  if CP.brand != 'hyundai':
     if CP_SP.flags & HyundaiFlagsSP.ENABLE_RADAR_TRACKS:
       can_recv()
       _, fingerprint = can_fingerprint(can_recv)
