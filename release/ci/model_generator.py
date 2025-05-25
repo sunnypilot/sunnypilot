@@ -46,7 +46,7 @@ def create_short_name(full_name):
   return result[:8]
 
 
-def generate_metadata(model_path: Path, output_dir: Path, escaped_name: str):
+def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
   model_path = model_path
   output_path = output_dir
   base = model_path.stem
@@ -67,9 +67,9 @@ def generate_metadata(model_path: Path, output_dir: Path, escaped_name: str):
     metadata_hash = hashlib.sha256(f.read()).hexdigest()
 
   # Rename the files if a custom file name is provided
-  if escaped_name:
-    tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{escaped_name}_tinygrad.pkl")
-    metadata_file = metadata_file.rename(output_path / f"{base}_{escaped_name}_metadata.pkl")
+  if short_name:
+    tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{short_name}_tinygrad.pkl")
+    metadata_file = metadata_file.rename(output_path / f"{base}_{short_name}_metadata.pkl")
 
   # Build the metadata structure
   model_metadata = {
@@ -94,9 +94,9 @@ def generate_metadata(model_path: Path, output_dir: Path, escaped_name: str):
   return model_metadata
 
 
-def create_metadata_json(_models, _output_dir, custom_name=None, escaped_name=None, is_20hz=False, upstream_branch="unknown"):
+def create_metadata_json(_models, _output_dir, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown"):
   metadata_json = {
-    "short_name": escaped_name,
+    "short_name": short_name,
     "display_name": custom_name or upstream_branch,
     "is_20hz": is_20hz,
     "ref": upstream_branch,
