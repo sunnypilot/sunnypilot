@@ -3,7 +3,7 @@ import sys
 import hashlib
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def create_short_name(full_name):
@@ -81,7 +81,7 @@ def create_metadata_json(_models, _output_dir, custom_name=None, short_name=None
     "full_name": short_name or "default",
     "is_20hz": is_20hz,
     "ref": upstream_branch,
-    "build_time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "models": _models
   }
 
