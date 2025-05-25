@@ -49,8 +49,8 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
 
   # Rename the files if a custom file name is provided
   if short_name:
-    tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{short_name}_tinygrad.pkl")
-    metadata_file = metadata_file.rename(output_path / f"{base}_{short_name}_metadata.pkl")
+    tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{short_name.lower()}_tinygrad.pkl")
+    metadata_file = metadata_file.rename(output_path / f"{base}_{short_name.lower()}_metadata.pkl")
 
   # Build the metadata structure
   model_metadata = {
