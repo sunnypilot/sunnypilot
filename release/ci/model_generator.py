@@ -8,38 +8,19 @@ from datetime import datetime, timezone
 
 
 def create_short_name(full_name):
-  """
-  Generate a short identifier (max 8 characters) from a given full name.
-
-  Processing steps:
-  - Removes content inside parentheses.
-  - Extracts alphanumeric words.
-  - Handles name-version pairs (e.g., "Word A1" becomes "WordA1").
-  - In the general case, constructs a string by taking the first letter
-   and any trailing digits from each word.
-
-  Examples:
-  - "Tomb Raider" -> "TR"
-  - "Filet o Fish" -> "FoF"
-  - "MLSIM v2" -> "MLSIMv2"
-  - "Tomb Raider v2" -> "TRv2"
-
-  :param full_name: Input string representing the full name.
-  :type full_name: Str
-  :return: Shortened identifier string (max length: 8 characters).
-  :rtype: Str
-  """
   # Remove parentheses and extract alphanumeric words
   clean_name = re.sub(r'\([^)]*\)', '', full_name)
   words = [re.sub(r'[^a-zA-Z0-9]', '', word) for word in clean_name.split() if re.sub(r'[^a-zA-Z0-9]', '', word)]
 
   if len(words) == 1:
-    # If there's only one word, return it as is, truncated to 8 characters
-    return words[0][:8]
+    # If there's only one word, return it as is, lowercased, truncated to 8 characters
+    truncated = words[0][:8]
+    return truncated.lower() if truncated.isupper() else truncated
 
   # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1")
   if len(words) == 2 and re.match(r'^[A-Za-z]\d+$', words[1]):
-    return (words[0] + words[1])[:8]
+    first_word = words[0].lower() if words[0].isupper() else words[0]
+    return (first_word + words[1])[:8]
 
   # Normal case: first letter and trailing numbers from each word
   result = ''.join(word if word.isdigit() else word[0] + (re.search(r'\d+$', word) or [''])[0] for word in words)
@@ -102,12 +83,12 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "ref": upstream_branch,
     "environment": "development",
     "runner": "tinygrad",
+    "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "models": models,
+    "overrides": {},
     "index": -1,
     "minimum_selector_version": "-1",
     "generation": "-1",
-    "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "overrides": {},
-    "models": models
   }
 
   # Write metadata to output_dir
