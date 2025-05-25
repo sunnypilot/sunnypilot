@@ -94,7 +94,7 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
   return model_metadata
 
 
-def create_metadata_json(_models, _output_dir, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown"):
+def create_metadata_json(models: list, output_dir: Path, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown"):
   metadata_json = {
     "short_name": short_name,
     "display_name": custom_name or upstream_branch,
@@ -107,14 +107,14 @@ def create_metadata_json(_models, _output_dir, custom_name=None, short_name=None
     "generation": "-1",
     "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "overrides": {},
-    "models": _models
+    "models": models
   }
 
   # Write metadata to output_dir
-  with open(_output_dir / "metadata.json", "w") as f:
+  with open(output_dir / "metadata.json", "w") as f:
     json.dump(metadata_json, f, indent=2)
 
-  print(f"Generated metadata.json with {len(_models)} models.")
+  print(f"Generated metadata.json with {len(models)} models.")
 
 
 if __name__ == "__main__":
@@ -135,16 +135,16 @@ if __name__ == "__main__":
     print(f"No ONNX files found in {args.model_dir}", file=sys.stderr)
     sys.exit(1)
 
-  output_dir = Path(args.output_dir)
-  output_dir.mkdir(exist_ok=True, parents=True)
-  models = []
+  _output_dir = Path(args.output_dir)
+  _output_dir.mkdir(exist_ok=True, parents=True)
+  _models = []
 
-  for model_path in model_paths:
-    model_metadata = generate_metadata(Path(model_path), output_dir, create_short_name(args.custom_name))
-    if model_metadata:
-      models.append(model_metadata)
+  for _model_path in model_paths:
+    _model_metadata = generate_metadata(Path(_model_path), _output_dir, create_short_name(args.custom_name))
+    if _model_metadata:
+      _models.append(_model_metadata)
 
-  if models:
-    create_metadata_json(models, output_dir, args.custom_name, create_short_name(args.custom_name), args.is_20hz, args.upstream_branch)
+  if _models:
+    create_metadata_json(_models, _output_dir, args.custom_name, create_short_name(args.custom_name), args.is_20hz, args.upstream_branch)
   else:
     print("No models processed.", file=sys.stderr)
