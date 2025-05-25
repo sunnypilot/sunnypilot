@@ -54,10 +54,10 @@ class ModelState:
 
     model_bundle = get_active_bundle()
     self.generation = model_bundle.generation
-    overrides = model_bundle.overrides
+    overrides = {override.key: override.value for override in model_bundle.overrides}
 
-    self.LAT_SMOOTH_SECONDS = overrides.lat
-    self.LONG_SMOOTH_SECONDS = overrides.long
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2

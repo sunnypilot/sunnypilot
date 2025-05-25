@@ -60,9 +60,9 @@ class ModelState:
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     bundle = get_active_bundle()
-    overrides = bundle.overrides
-    self.LAT_SMOOTH_SECONDS = overrides.lat
-    self.LONG_SMOOTH_SECONDS = overrides.long
+    overrides = {override.key: override.value for override in bundle.overrides}
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
 
     model_paths = get_model_path()
     self.model_metadata = load_metadata()

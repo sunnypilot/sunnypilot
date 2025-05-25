@@ -78,9 +78,9 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     stock @2;
   }
 
-  struct Overrides {
-    lat @0 :Float32;
-    long @1 :Float32;
+  struct Override {
+    key @0 :Text;
+    value @1 :Text;
   }
 
   struct ModelBundle {
@@ -95,7 +95,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     is20hz @8 :Bool;
     ref @9 :Text;
     minimumSelectorVersion @10 :UInt32;
-    overrides @11 :Overrides;
+    overrides @11 :List(Override);
   }
 }
 
