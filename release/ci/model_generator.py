@@ -2,38 +2,51 @@ import os
 import sys
 import hashlib
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 
 
 def create_short_name(full_name):
   """
-  Create a short name from the base name by taking first letters of each word and any numbers.
-  For example "Tomb Raider 2" -> "TR2"
+  Generate a short identifier (max 8 characters) from a given full name.
+
+  Processing steps:
+  - Removes content inside parentheses.
+  - Extracts alphanumeric words.
+  - Handles name-version pairs (e.g., "Word A1" becomes "WordA1").
+  - In the general case, constructs a string by taking the first letter
+   and any trailing digits from each word.
+
+  Examples:
+  - "Tomb Raider" -> "TR"
+  - "Filet o Fish" -> "FoF"
+  - "MLSIM v2" -> "MLSIMv2"
+  - "Tomb Raider v2" -> "TRv2"
+
+  :param full_name: Input string representing the full name.
+  :type full_name: str
+  :return: Shortened identifier string (max length: 8 characters).
+  :rtype: str
   """
-  short_name = ""
-  for word in full_name.split():
-    if word[0].isdigit():
-      # If the word starts with a number, include the whole number
-      num_part = ""
-      for char in word:
-        if char.isdigit():
-          num_part += char
-        else:
-          break
-      short_name += num_part
-    elif word[0].isalpha():
-      # For words starting with letters, take the first letter
-      short_name += word[0]
+  # Remove parentheses and extract alphanumeric words
+  clean_name = re.sub(r'\([^)]*\)', '', full_name)
+  words = [re.sub(r'[^a-zA-Z0-9]', '', word) for word in clean_name.split() if re.sub(r'[^a-zA-Z0-9]', '', word)]
 
-    # Skip parentheses parts for the short name
-    if word.startswith("("):
-      break
+  if len(words) == 1:
+    # If there's only one word, return it as is, truncated to 8 characters
+    return words[0][:8]
 
-  return short_name
+  # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1")
+  if len(words) == 2 and re.match(r'^[A-Za-z]\d+$', words[1]):
+    return (words[0] + words[1])[:8]
+
+  # Normal case: first letter + trailing numbers from each word
+  result = ''.join(word if word.isdigit() else word[0] + (re.search(r'\d+$', word) or [''])[0] for word in words)
+  return result[:8]
 
 
-def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
+def generate_metadata(model_path: Path, output_dir: Path, escaped_name: str):
   model_path = model_path
   output_path = output_dir
   base = model_path.stem
@@ -54,13 +67,13 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
     metadata_hash = hashlib.sha256(f.read()).hexdigest()
 
   # Rename the files if a custom file name is provided
-  if short_name:
-    tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{short_name}_tinygrad.pkl")
-    metadata_file = metadata_file.rename(output_path / f"{base}_{short_name}_metadata.pkl")
+  if escaped_name:
+    tinygrad_file = tinygrad_file.rename(output_path / f"{base}_{escaped_name}_tinygrad.pkl")
+    metadata_file = metadata_file.rename(output_path / f"{base}_{escaped_name}_metadata.pkl")
 
   # Build the metadata structure
   model_metadata = {
-    "name": short_name,
+    "name": escaped_name,
     "drive_model": {
       "file_name": tinygrad_file.name,
       "sha256": tinygrad_hash
@@ -75,10 +88,10 @@ def generate_metadata(model_path: Path, output_dir: Path, short_name: str):
   return model_metadata
 
 
-def create_metadata_json(_models, _output_dir, custom_name=None, short_name=None, is_20hz=False, upstream_branch="unknown"):
+def create_metadata_json(_models, _output_dir, custom_name=None, escaped_name=None, is_20hz=False, upstream_branch="unknown"):
   metadata_json = {
     "display_name": custom_name or upstream_branch,
-    "full_name": short_name or "default",
+    "full_name": escaped_name or "default",
     "is_20hz": is_20hz,
     "ref": upstream_branch,
     "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
