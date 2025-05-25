@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 
 def create_short_name(full_name):
@@ -83,7 +83,7 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "ref": upstream_branch,
     "environment": "development",
     "runner": "tinygrad",
-    "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "models": models,
     "overrides": {},
     "index": -1,
