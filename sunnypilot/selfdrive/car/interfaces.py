@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from opendbc.car import structs
-from opendbc.car.can_definitions import CanRecvCallable, CanSendCallable
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.sunnypilot.car.hyundai.longitudinal.helpers import LongitudinalTuningType
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
