@@ -44,7 +44,7 @@ jobs:
         id: commit-date
         run: |
           # Get the commit date in YYYY-MM-DD format
-          commit_date=$(git log -1 --format=%cd --date=format:'%Y-%m-%d')
+          commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
           echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
       - run: git lfs pull
       - name: 'Upload Artifact'
