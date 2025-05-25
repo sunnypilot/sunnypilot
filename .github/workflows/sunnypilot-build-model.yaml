@@ -17,18 +17,14 @@ on:
         default: 'master'
         type: string
       custom_name:
-        description: 'Custom name for the model'
-        required: false
-        type: string
-      file_name:
-        description: 'File name prefix for the model files'
+        description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
         type: boolean
-        default: false
+        default: true
 
 
 run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
@@ -36,12 +32,20 @@ run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from
 jobs:
   get_model:
     runs-on: ubuntu-latest
+    outputs:
+      commit_date: ${{ steps.commit-date.outputs.model_date }}
     steps:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ github.event.inputs.upstream_branch }}
           submodules: recursive
+      - name: Get commit date
+        id: commit-date
+        run: |
+          # Get the commit date in YYYY-MM-DD format
+          commit_date=$(git log -1 --format=%cd --date=format:'%Y-%m-%d')
+          echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
       - run: git lfs pull
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
@@ -52,11 +56,14 @@ jobs:
   build_model:
     runs-on: self-hosted
     needs: get_model
+    env:
+      MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - run: git lfs pull
       - name: Cache SCons
         uses: actions/cache@v4
@@ -142,18 +149,17 @@ jobs:
             --chown=comma:comma \
             ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
 
-          # Rename files if file_name is provided
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
             --model-dir "${{ env.MODELS_DIR }}" \
             --output-dir "${{ env.OUTPUT_DIR }}" \
-            --custom-name "${{ inputs.custom_name || inputs.upstream_branch }}" \
+            --custom-name "${{ env.MODEL_NAME }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
-            --file-name "${{ inputs.file_name || 'default' }}" ${{ inputs.is_20hz && '--is-20hz' || '' }}
+            --file-name "${{ inputs.custom_name || inputs.upstream_branch || 'unnamed' }}" ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ github.event.inputs.custom_name || github.event.inputs.upstream_branch }}-${{ github.run_number }}
+          name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
 
       - name: Re-enable powersave
