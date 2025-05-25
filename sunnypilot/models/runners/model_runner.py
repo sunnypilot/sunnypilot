@@ -15,6 +15,7 @@ CUSTOM_MODEL_PATH = Paths.model_root()
 if TICI:
   os.environ['QCOM'] = '1'
 
+
 class ModelData:
   """
   Stores metadata and configuration for a specific machine learning model.
@@ -39,6 +40,7 @@ class ModelData:
       model_metadata = pickle.load(f)
     self.input_shapes = model_metadata.get('input_shapes', {})
     self.output_slices = model_metadata.get('output_slices', {})
+
 
 class ModularRunner(ABC):
   """
@@ -90,6 +92,11 @@ class ModelRunner(ModularRunner):
     self.inputs: dict = {}
     self._parser = None
     self._load_models()
+    self._constants = None
+
+  @property
+  def constants(self):
+    return self._constants
 
   @property
   def parser_method_dict(self) -> dict:

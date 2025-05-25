@@ -4,6 +4,7 @@ from openpilot.sunnypilot.modeld_v2 import MODEL_PATH
 from openpilot.sunnypilot.modeld_v2.runners.ort_helpers import make_onnx_cpu_runner, ORT_TYPES_TO_NP_TYPES
 from openpilot.sunnypilot.models.runners.constants import ModelType, ShapeDict, CLMemDict, NumpyDict, FrameDict
 from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
+from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
 
 class ONNXRunner(ModelRunner):
@@ -26,7 +27,7 @@ class ONNXRunner(ModelRunner):
     # However, we might still need output_slices if custom models define them.
     # We assume supercombo type for potentially loading output_slices metadata if available.
     self._model_data = self.models.get(ModelType.supercombo)
-
+    self._constants = ModelConstants  # Constants for ONNX models, if needed
 
   @property
   def input_shapes(self) -> ShapeDict:
