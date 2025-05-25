@@ -155,7 +155,7 @@ jobs:
             --output-dir "${{ env.OUTPUT_DIR }}" \
             --custom-name "${{ env.MODEL_NAME }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
-            --file-name "${{ inputs.custom_name || inputs.upstream_branch || 'unnamed' }}" ${{ inputs.is_20hz && '--is-20hz' || '' }}
+            ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
