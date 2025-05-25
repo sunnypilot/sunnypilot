@@ -33,7 +33,7 @@ jobs:
   get_model:
     runs-on: ubuntu-latest
     outputs:
-      commit_date: ${{ steps.commit-date.outputs.model_date }}
+      model_date: ${{ steps.commit-date.outputs.model_date }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +46,7 @@ jobs:
           # Get the commit date in YYYY-MM-DD format
           commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
           echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
       - run: git lfs pull
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
