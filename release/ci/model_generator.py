@@ -25,9 +25,9 @@ def create_short_name(full_name):
   - "Tomb Raider v2" -> "TRv2"
 
   :param full_name: Input string representing the full name.
-  :type full_name: str
+  :type full_name: Str
   :return: Shortened identifier string (max length: 8 characters).
-  :rtype: str
+  :rtype: Str
   """
   # Remove parentheses and extract alphanumeric words
   clean_name = re.sub(r'\([^)]*\)', '', full_name)
@@ -41,7 +41,7 @@ def create_short_name(full_name):
   if len(words) == 2 and re.match(r'^[A-Za-z]\d+$', words[1]):
     return (words[0] + words[1])[:8]
 
-  # Normal case: first letter + trailing numbers from each word
+  # Normal case: first letter and trailing numbers from each word
   result = ''.join(word if word.isdigit() else word[0] + (re.search(r'\d+$', word) or [''])[0] for word in words)
   return result[:8]
 
