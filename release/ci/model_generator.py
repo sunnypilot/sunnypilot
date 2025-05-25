@@ -73,14 +73,20 @@ def generate_metadata(model_path: Path, output_dir: Path, escaped_name: str):
 
   # Build the metadata structure
   model_metadata = {
-    "name": escaped_name,
-    "drive_model": {
+    "type": base.split("_")[-1] if "dmonitoring" not in base else "dmonitoring",
+    "artifact": {
       "file_name": tinygrad_file.name,
-      "sha256": tinygrad_hash
+      "download_uri": {
+        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/<FILLME>",
+        "sha256": tinygrad_hash
+      }
     },
     "metadata": {
       "file_name": metadata_file.name,
-      "sha256": metadata_hash
+      "download_uri": {
+        "url": "https://gitlab.com/sunnypilot/public/docs.sunnypilot.ai/-/raw/main/<FILLME>",
+        "sha256": metadata_hash
+      }
     }
   }
 
@@ -90,11 +96,17 @@ def generate_metadata(model_path: Path, output_dir: Path, escaped_name: str):
 
 def create_metadata_json(_models, _output_dir, custom_name=None, escaped_name=None, is_20hz=False, upstream_branch="unknown"):
   metadata_json = {
+    "short_name": escaped_name,
     "display_name": custom_name or upstream_branch,
-    "full_name": escaped_name or "default",
     "is_20hz": is_20hz,
     "ref": upstream_branch,
+    "environment": "development",
+    "runner": "tinygrad",
+    "index": -1,
+    "minimum_selector_version": "-1",
+    "generation": "-1",
     "build_time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "overrides": {},
     "models": _models
   }
 
