@@ -8,8 +8,6 @@ See the LICENSE.md file in the root directory for more details.
 from opendbc.car import structs
 from opendbc.car.can_definitions import CanRecvCallable, CanSendCallable
 from opendbc.car.interfaces import CarInterfaceBase
-from opendbc.car.hyundai.values import HyundaiFlags
-from opendbc.sunnypilot.car.hyundai.enable_radar_tracks import enable_radar_tracks as hyundai_enable_radar_tracks
 from opendbc.sunnypilot.car.hyundai.longitudinal.helpers import LongitudinalTuningType
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 from openpilot.common.params import Params
@@ -63,17 +61,9 @@ def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
-def _initialize_radar_tracks(CP: structs.CarParams, can_recv: CanRecvCallable = None, can_send: CanSendCallable = None) -> None:
-  if CP.brand == 'hyundai':
-    if CP.flags & HyundaiFlags.MANDO_RADAR and CP.radarUnavailable:
-      tracks_enabled = hyundai_enable_radar_tracks(can_recv, can_send, bus=0, addr=0x7d0)
-      CP.radarUnavailable = not tracks_enabled
-
-
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None, can_recv: CanRecvCallable = None, can_send: CanSendCallable = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
 
   _initialize_custom_longitudinal_tuning(CI, CP, CP_SP, params)
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
-  _initialize_radar_tracks(CP, can_recv, can_send)
