@@ -90,3 +90,10 @@ def _custom_acc_controls(CP_SP: structs.CarParamsSP, params: Params = None) -> N
   CP_SP.customAccControl.mode = structs.CarParamsSP.CustomAccControl.Mode.custom if custom_enabled else structs.CarParamsSP.CustomAccControl.Mode.disabled
   CP_SP.customAccControl.increments.shortIncrement = short_inc
   CP_SP.customAccControl.increments.longIncrement = long_inc
+
+def get_init_params(params) -> list[dict[str, str]]:
+  keys: list = [
+    "HyundaiLongitudinalTuning",
+  ]
+
+  return [{k: params.get(k, encoding='utf8') or "0"} for k in keys]
