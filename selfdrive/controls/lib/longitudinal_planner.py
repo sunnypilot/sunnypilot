@@ -126,6 +126,16 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     else:
       accel_clip = [ACCEL_MIN, ACCEL_MAX]
 
+    # Override accel using Accel Controller if enabled
+    if self.accel_controller.is_personality_enabled:
+      max_limit = self.accel_controller._get_max_accel_for_speed(v_ego)
+      if self.mpc.mode == 'acc':
+        # Use the accel controller limits directly
+        accel_clip = [ACCEL_MIN, max_limit]
+        # Recalculate limit turn according to the new max limit
+        steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
+        accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
+
     if reset_state:
       self.v_desired_filter.x = v_ego
       # Clip aEgo to cruise limits to prevent large accelerations when becoming active
