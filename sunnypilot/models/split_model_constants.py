@@ -1,10 +1,11 @@
 import numpy as np
 
+
 def index_function(idx, max_val=192, max_idx=32):
   return max_val * ((idx/max_idx)**2)
 
 
-class ModelConstants:
+class SplitModelConstants:
   # time and distance indices
   IDX_N = 33
   T_IDXS = [index_function(idx, max_val=10.0) for idx in range(IDX_N)]
@@ -15,12 +16,16 @@ class ModelConstants:
 
   # model inputs constants
   MODEL_FREQ = 20
+  HISTORY_FREQ = 5
+  HISTORY_LEN_SECONDS = 5
+  TEMPORAL_SKIP = MODEL_FREQ // HISTORY_FREQ
+  FULL_HISTORY_BUFFER_LEN = MODEL_FREQ * HISTORY_LEN_SECONDS
+  INPUT_HISTORY_BUFFER_LEN = HISTORY_FREQ * HISTORY_LEN_SECONDS
+
   FEATURE_LEN = 512
-  HISTORY_BUFFER_LEN = 99
+
   DESIRE_LEN = 8
   TRAFFIC_CONVENTION_LEN = 2
-  NAV_FEATURE_LEN = 256
-  NAV_INSTRUCTION_LEN = 150
   LAT_PLANNER_STATE_LEN = 4
   LATERAL_CONTROL_PARAMS_LEN = 2
   PREV_DESIRED_CURV_LEN = 1
@@ -34,7 +39,6 @@ class ModelConstants:
   DISENGAGE_WIDTH = 5
   POSE_WIDTH = 6
   WIDE_FROM_DEVICE_WIDTH = 3
-  SIM_POSE_WIDTH = 6
   LEAD_WIDTH = 4
   LANE_LINES_WIDTH = 2
   ROAD_EDGES_WIDTH = 2
@@ -88,34 +92,3 @@ class Meta:
   BRAKE_PRESS = slice(32, 55, 4)
   LEFT_BLINKER = slice(33, 55, 4)
   RIGHT_BLINKER = slice(34, 55, 4)
-
-
-class MetaTombRaider:
-  ENGAGED = slice(0, 1)
-  # next 2, 4, 6, 8, 10 seconds
-  GAS_DISENGAGE = slice(1, 41, 8)
-  BRAKE_DISENGAGE = slice(2, 41, 8)
-  STEER_OVERRIDE = slice(3, 41, 8)
-  HARD_BRAKE_3 = slice(4, 41, 8)
-  HARD_BRAKE_4 = slice(5, 41, 8)
-  HARD_BRAKE_5 = slice(6, 41, 8)
-  GAS_PRESS = slice(7, 41, 8)
-  BRAKE_PRESS = slice(8, 41, 8)
-  # next 0, 2, 4, 6, 8, 10 seconds
-  LEFT_BLINKER = slice(41, 53, 2)
-  RIGHT_BLINKER = slice(42, 53, 2)
-
-
-class MetaSimPose:
-  ENGAGED = slice(0, 1)
-  # next 2, 4, 6, 8, 10 seconds
-  GAS_DISENGAGE = slice(1, 36, 7)
-  BRAKE_DISENGAGE = slice(2, 36, 7)
-  STEER_OVERRIDE = slice(3, 36, 7)
-  HARD_BRAKE_3 = slice(4, 36, 7)
-  HARD_BRAKE_4 = slice(5, 36, 7)
-  HARD_BRAKE_5 = slice(6, 36, 7)
-  GAS_PRESS = slice(7, 36, 7)
-  # next 0, 2, 4, 6, 8, 10 seconds
-  LEFT_BLINKER = slice(36, 48, 2)
-  RIGHT_BLINKER = slice(37, 48, 2)

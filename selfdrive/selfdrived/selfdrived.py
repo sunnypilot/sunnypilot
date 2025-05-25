@@ -545,7 +545,6 @@ class SelfdriveD(CruiseHelper):
       self.personality = self.read_personality_param()
 
       self.mads.read_params()
-      self.car_events_sp.read_params()
       time.sleep(0.1)
 
   def run(self):

@@ -5,6 +5,8 @@ env:
   OUTPUT_DIR: ${{ github.workspace }}/output
   SCONS_CACHE_DIR: ${{ github.workspace }}/release/ci/scons_cache
   UPSTREAM_REPO: "commaai/openpilot"
+  TINYGRAD_PATH: ${{ github.workspace }}/tinygrad_repo
+  MODELS_DIR: ${{ github.workspace }}/selfdrive/modeld/models
 
 on:
   workflow_dispatch:
@@ -15,35 +17,55 @@ on:
         default: 'master'
         type: string
       custom_name:
-        description: 'Custom name for the model'
-        required: false
-        type: string
-      file_name:
-        description: 'File name prefix for the model files'
+        description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
         type: boolean
-        default: false
+        default: true
 
 
 run-name: Build model [${{ inputs.custom_name || inputs.upstream_branch }}] from ref [${{ inputs.upstream_branch }}]
 
 jobs:
-  build_model:
-    runs-on: self-hosted
-
+  get_model:
+    runs-on: ubuntu-latest
+    outputs:
+      model_date: ${{ steps.commit-date.outputs.model_date }}
     steps:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ github.event.inputs.upstream_branch }}
           submodules: recursive
+      - name: Get commit date
+        id: commit-date
+        run: |
+          # Get the commit date in YYYY-MM-DD format
+          commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
+          echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+      - run: git lfs pull
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: models
+          path: ${{ github.workspace }}/selfdrive/modeld/models/*.onnx
+
+  build_model:
+    runs-on: self-hosted
+    needs: get_model
+    env:
+      MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - run: git lfs pull
-
       - name: Cache SCons
         uses: actions/cache@v4
         with:
@@ -60,31 +82,63 @@ jobs:
             scons-${{ runner.os }}-${{ runner.arch }}-${{ env.MASTER_BRANCH }}
             scons-${{ runner.os }}-${{ runner.arch }}
 
+      - name: Set environment variables
+        id: set-env
+        run: |
+          # Set up common environment
+          source /etc/profile;
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          printenv >> $GITHUB_ENV
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            cat $GITHUB_OUTPUT
+          fi
+
       - name: Setup build environment
         run: |
           mkdir -p "${BUILD_DIR}/"
           sudo find $BUILD_DIR/ -mindepth 1 -delete
           echo "Starting build stage..."
-          echo "Building from: ${{ env.UPSTREAM_REPO }} branch: ${{ github.event.inputs.upstream_branch }}"
-      
-      - name: Patch SConstruct to pass arbitrary cache
-        run: |
-          sed -i.bak 's#cache_dir =#default_cache_dir =#' ${{ github.workspace }}/SConstruct
-          printf '/default_cache_dir/a\\\ncache_dir = ARGUMENTS.get("cache_dir", default_cache_dir)\n' | sed -i.bak -f - ${{ github.workspace }}/SConstruct
-          cat ${{ github.workspace }}/SConstruct
+          echo "BUILD_DIR: ${BUILD_DIR}"
+          echo "CI_DIR: ${CI_DIR}"
+          echo "VERSION: ${{ steps.set-env.outputs.version }}"
+          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
+          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
+          echo "-------"
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            printenv
+          fi
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+          rm -rf ${{ env.MODELS_DIR }}/*.onnx
+
+      - name: Download model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: models
+          path: ${{ github.workspace }}/selfdrive/modeld/models
 
       - name: Build Model
         run: |
           source /etc/profile
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          scons -j$(nproc) cache_dir=${{ env.SCONS_CACHE_DIR }} ${{ github.workspace }}/selfdrive/modeld
+          export PYTHONPATH="${PYTHONPATH}:${{ env.TINYGRAD_PATH }}"
+
+          # Loop through all .onnx files
+          find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
+            base_name=$(basename "$onnx_file" .onnx)
+            output_file="${{ env.MODELS_DIR }}/${base_name}_tinygrad.pkl"
+
+            echo "Compiling: $onnx_file -> $output_file"
+            QCOM=1 python3 "${{ env.TINYGRAD_PATH }}/examples/openpilot/compile3.py" "$onnx_file" "$output_file"
+            QCOM=1 python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
+          done
 
       - name: Prepare Output
         run: |
-          sudo rm -rf ${OUTPUT_DIR}
-          mkdir -p ${OUTPUT_DIR}
-          
+          sudo rm -rf ${{ env.OUTPUT_DIR }}
+          mkdir -p ${{ env.OUTPUT_DIR }}
+
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
@@ -94,40 +148,22 @@ jobs:
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
-            ./selfdrive/modeld/models/ ${OUTPUT_DIR}/
-          
-          # Rename files if file_name is provided
-          if [ ! -z "${{ inputs.file_name }}" ]; then
-            mv ${OUTPUT_DIR}/supercombo.thneed ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}.thneed
-            mv ${OUTPUT_DIR}/supercombo_metadata.pkl ${OUTPUT_DIR}/supercombo-${{ inputs.file_name }}_metadata.pkl
-          fi
-          
-          # Calculate SHA256 hashes
-          HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*.thneed | cut -d' ' -f1)
-          METADATA_HASH=$(sha256sum ${OUTPUT_DIR}/supercombo*_metadata.pkl | cut -d' ' -f1)
-          
-          # Create metadata.json
-          cat > ${OUTPUT_DIR}/metadata.json << EOF
-          {
-            "display_name": "${{ inputs.custom_name || inputs.upstream_branch }}",
-            "full_name": "${{ inputs.file_name || 'default' }}",
-            "is_20hz": ${{ inputs.is_20hz || false }},
-            "files": {
-              "drive_model": {
-                "file_name": "$(basename ${OUTPUT_DIR}/supercombo*.thneed)",
-                "sha256": "${HASH}"
-              },
-              "metadata": {
-                "file_name": "$(basename ${OUTPUT_DIR}/supercombo*_metadata.pkl)",
-                "sha256": "${METADATA_HASH}"
-              }
-            },
-            "ref": "${{ inputs.upstream_branch }}",
-            "build_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }     
+            ${{ env.MODELS_DIR }}/ ${{ env.OUTPUT_DIR }}/
+
+          python3 "${{ github.workspace }}/release/ci/model_generator.py" \
+            --model-dir "${{ env.MODELS_DIR }}" \
+            --output-dir "${{ env.OUTPUT_DIR }}" \
+            --custom-name "${{ env.MODEL_NAME }}" \
+            --upstream-branch "${{ inputs.upstream_branch }}" \
+            ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: model-${{ github.event.inputs.custom_name || github.event.inputs.upstream_branch }}-${{ github.run_number }}
+          name: model-${{ env.MODEL_NAME }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable

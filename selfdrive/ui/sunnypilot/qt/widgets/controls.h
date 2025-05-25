@@ -441,14 +441,15 @@ public:
 class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
-private:
-  bool is_inline_layout;
-  QHBoxLayout *optionSelectorLayout = is_inline_layout ? new QHBoxLayout() : hlayout;
-
+protected:
   struct MinMaxValue {
     int min_value;
     int max_value;
   };
+
+private:
+  bool is_inline_layout;
+  QHBoxLayout *optionSelectorLayout = is_inline_layout ? new QHBoxLayout() : hlayout;
 
   int getParamValue() {
     const auto param_value = QString::fromStdString(params.get(key));
@@ -549,6 +550,10 @@ public:
 
   void setUpdateOtherToggles(bool _update) {
     request_update = _update;
+  }
+
+  void setFixedWidth(int width) {
+    label.setFixedWidth(width);
   }
 
   inline void setLabel(const QString &text) { label.setText(text); }
