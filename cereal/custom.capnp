@@ -173,6 +173,12 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
+  params @1 :List(Param);
+
+  struct Param {
+    key @0 :Text;
+    value @1 :Text;
+  }
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {
