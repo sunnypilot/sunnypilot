@@ -61,7 +61,7 @@ def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
-def setup_interfaces(CI: CarInterfaceBase, params: Params = None, can_recv: CanRecvCallable = None, can_send: CanSendCallable = None) -> None:
+def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
 
