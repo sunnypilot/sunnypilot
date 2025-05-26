@@ -45,9 +45,8 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.pitch_last = 0.0
 
     # setup future time offsets
-    self.nn_time_offset = CP.steerActuatorDelay + 0.2
-    future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
-    self.nn_future_times = [i + self.nn_time_offset for i in future_times]
+    self.future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
+    self.nn_future_times = [i + self.desired_lat_jerk_time for i in self.future_times]
 
     # setup past time offsets
     self.past_times = [-0.3, -0.2, -0.1]
@@ -57,6 +56,10 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.roll_deque = deque(maxlen=history_check_frames[0])
     self.error_deque = deque(maxlen=history_check_frames[0])
     self.past_future_len = len(self.past_times) + len(self.nn_future_times)
+
+  def update_lateral_lag(self, lag):
+    super().update_lateral_lag(lag)
+    self.nn_future_times = [t + self.desired_lat_jerk_time for t in self.future_times]
 
   def update_neural_network_feedforward(self, CS, params, calibrated_pose) -> None:
     if not self.enabled or not self.model_valid or not self.has_nn_model:
