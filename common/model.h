@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Tomb Raider 7 (Default)"
+#define DEFAULT_MODEL "Vegan Filet O Fish (Default)"

@@ -11,6 +11,7 @@
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 #define ButtonControl ButtonControlSP
+#define MultiButtonControl MultiButtonControlSP
 #define ElidedLabel ElidedLabelSP
 #define LabelControl LabelControlSP
 #define ListWidget ListWidgetSP
@@ -76,7 +77,8 @@ private:
   ToggleControl* roamingToggle;
   ButtonControl* editApnButton;
   ButtonControl* hiddenNetworkButton;
-  ToggleControl* meteredToggle;
+  ToggleControl* cellularMeteredToggle;
+  MultiButtonControl* wifiMeteredToggle;
   WifiManager* wifi = nullptr;
   Params params;
 
