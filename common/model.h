@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "External Contributor: SGO Reshaped (Default)"
+#define DEFAULT_MODEL "Vegan Filet O Fish (Default)"

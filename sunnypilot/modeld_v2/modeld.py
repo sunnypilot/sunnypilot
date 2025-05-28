@@ -57,7 +57,7 @@ class ModelState:
     overrides = {override.key: override.value for override in model_bundle.overrides}
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
-    self.LONG_SMOOTH_SECONDS = 0.3 if (self.generation == 10) else float(overrides.get('long', ".0"))
+    self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
@@ -86,7 +86,7 @@ class ModelState:
                                   self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
