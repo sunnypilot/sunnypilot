@@ -214,12 +214,12 @@ private:
   bool store_confirm = false;
 };
 
-class ButtonParamControlSP : public AbstractControlSP_SELECTOR {
+class MultiButtonControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 public:
-  ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                       const std::vector<QString> &button_texts, const int minimum_button_width = 300, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), is_inline_layout(inline_layout) {
+  MultiButtonControlSP(const QString &title, const QString &desc, const QString &icon,
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), is_inline_layout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -243,8 +243,6 @@ public:
         color: #33FFFFFF;
       }
     )";
-    key = param.toStdString();
-    int value = atoi(params.get(key).c_str());
 
     if (inline_layout) {
       button_param_layout->setMargin(0);
@@ -264,7 +262,6 @@ public:
     for (int i = 0; i < button_texts.size(); i++) {
       QPushButton *button = new QPushButton(button_texts[i], this);
       button->setCheckable(true);
-      button->setChecked(i == value);
       button->setStyleSheet(style);
       button->setMinimumWidth(minimum_button_width);
       if (i == 0) button_param_layout->addSpacing(2);
@@ -280,10 +277,7 @@ public:
       hlayout->addWidget(container);
     }
 
-    QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), [=](int id) {
-      params.put(key, std::to_string(id));
-      emit buttonToggled(id);
-    });
+    QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), this, &MultiButtonControlSP::buttonClicked);
   }
 
   void setEnabled(bool enable) {
@@ -333,6 +327,7 @@ public:
   }
 
 protected:
+  QButtonGroup *button_group;
   void paintEvent(QPaintEvent *event) override {
     if (is_inline_layout) {
       return;
@@ -363,17 +358,48 @@ protected:
   }
 
 signals:
-  void buttonToggled(int btn_id);
+  void buttonClicked(int id);
 
 private:
   std::string key;
   Params params;
-  QButtonGroup *button_group;
   std::vector<QString> button_texts;
 
   bool button_group_enabled = true;
   bool is_inline_layout;
   QHBoxLayout *button_param_layout = is_inline_layout ? new QHBoxLayout() : hlayout;
+};
+
+class ButtonParamControlSP : public MultiButtonControlSP {
+  Q_OBJECT
+public:
+  ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false) : MultiButtonControlSP(title, desc, icon,
+                                                                                                                          button_texts, minimum_button_width, inline_layout) {
+    key = param.toStdString();
+    int value = atoi(params.get(key).c_str());
+
+    if (value > 0 && value < button_group->buttons().size()) {
+      button_group->button(value)->setChecked(true);
+    }
+
+    QObject::connect(this, QOverload<int>::of(&MultiButtonControlSP::buttonClicked), [=](int id) {
+      params.put(key, std::to_string(id));
+    });
+  }
+
+  void refresh() {
+    int value = atoi(params.get(key).c_str());
+    button_group->button(value)->setChecked(true);
+  }
+
+  void showEvent(QShowEvent *event) override {
+    refresh();
+  }
+
+private:
+  std::string key;
+  Params params;
 };
 
 class ListWidgetSP : public QWidget {
