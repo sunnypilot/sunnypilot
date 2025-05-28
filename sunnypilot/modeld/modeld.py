@@ -18,12 +18,15 @@ from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
+from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
+
 from openpilot.sunnypilot.modeld.runners import ModelRunner, Runtime
 from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
-from openpilot.sunnypilot.modeld.constants import ModelConstants
+from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
+from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
-from openpilot.sunnypilot.models.helpers import get_model_path, load_metadata, prepare_inputs, load_meta_constants
+
 
 PROCESS_NAME = "selfdrive.modeld.modeld_snpe"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -33,6 +36,7 @@ MODEL_PATHS = {
   ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
 
 METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
+
 
 class FrameMeta:
   frame_id: int = 0
@@ -55,6 +59,10 @@ class ModelState:
     self.frame = ModelFrame(context)
     self.wide_frame = ModelFrame(context)
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    bundle = get_active_bundle()
+    overrides = {override.key: override.value for override in bundle.overrides}
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
 
     model_paths = get_model_path()
     self.model_metadata = load_metadata()
@@ -118,6 +126,15 @@ class ModelState:
         self.inputs['prev_desired_curv'][-1:] = outputs['desired_curvature'][0, :]
     return outputs
 
+  def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
+                            long_action_t: float) -> log.ModelDataV2.Action:
+    plan = model_output['plan'][0]
+    desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
+                                                     action_t=long_action_t)
+    desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
+
+    return log.ModelDataV2.Action(desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
+
 
 def main(demo=False):
   cloudlog.warning("modeld init")
@@ -158,7 +175,7 @@ def main(demo=False):
 
   # messaging
   pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
-  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"])
+  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
   params = Params()
@@ -184,8 +201,10 @@ def main(demo=False):
 
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
-  # TODO this needs more thought, use .2s extra for now to estimate other delays
-  steer_delay = CP.steerActuatorDelay + .2
+  # Enable lagd support for sunnypilot modeld
+  steer_delay = sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
+  long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
+  prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
 
@@ -280,7 +299,8 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
-      fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
+      action = model.get_action_from_model(model_output, prev_action, long_delay + DT_MDL)
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, action, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen,
                      v_ego, steer_delay, model.meta)
 

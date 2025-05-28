@@ -15,8 +15,8 @@ constexpr int toggles_settings_index = 2;
 #endif
 
 ExperimentalModeButton::ExperimentalModeButton(QWidget *parent) : QPushButton(parent) {
-  chill_pixmap = QPixmap("../assets/img_couch.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
-  experimental_pixmap = QPixmap("../assets/img_experimental_grey.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
+  chill_pixmap = QPixmap("../assets/icons/couch.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
+  experimental_pixmap = QPixmap("../assets/icons/experimental_grey.svg").scaledToWidth(img_width, Qt::SmoothTransformation);
 
   // go to toggles and expand experimental mode description
   connect(this, &QPushButton::clicked, [=]() { emit openSettings(toggles_settings_index, "ExperimentalMode"); });
