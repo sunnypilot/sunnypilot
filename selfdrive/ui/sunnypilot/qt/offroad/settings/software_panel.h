@@ -9,6 +9,7 @@
 
 #include <QJsonObject>
 #include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
 
 class SoftwarePanelSP final : public SoftwarePanel {
@@ -20,6 +21,7 @@ public:
 private:
   QString GetActiveModelName();
   void updateModelManagerState();
+  void searchBranches(const QString &query);
 
   bool isDownloading() const {
     if (!model_manager.hasSelectedBundle()) {
