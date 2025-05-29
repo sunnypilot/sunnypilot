@@ -1,7 +1,8 @@
 import numpy as np
 
 def index_function(idx, max_val=192, max_idx=32):
-  return (max_val) * ((idx/max_idx)**2)
+  return max_val * ((idx/max_idx)**2)
+
 
 class ModelConstants:
   # time and distance indices
@@ -63,6 +64,7 @@ class ModelConstants:
 
   POLY_PATH_DEGREE = 4
 
+
 # model outputs slices
 class Plan:
   POSITION = slice(0, 3)
@@ -70,6 +72,7 @@ class Plan:
   ACCELERATION = slice(6, 9)
   T_FROM_CURRENT_EULER = slice(9, 12)
   ORIENTATION_RATE = slice(12, 15)
+
 
 class Meta:
   ENGAGED = slice(0, 1)

@@ -6,16 +6,19 @@ import codecs
 import pickle
 from typing import Any
 
+
 def get_name_and_shape(value_info:onnx.ValueInfoProto) -> tuple[str, tuple[int,...]]:
   shape = tuple([int(dim.dim_value) for dim in value_info.type.tensor_type.shape.dim])
   name = value_info.name
   return name, shape
+
 
 def get_metadata_value_by_name(model:onnx.ModelProto, name:str) -> str | Any:
   for prop in model.metadata_props:
     if prop.key == name:
       return prop.value
   return None
+
 
 if __name__ == "__main__":
   model_path = pathlib.Path(sys.argv[1])

@@ -18,15 +18,15 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
-from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
+from openpilot.sunnypilot.modeld_v2.constants import Plan
 from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
-from openpilot.sunnypilot.models.helpers import  get_active_bundle
+from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
-from openpilot.sunnypilot.models.SplitModelConstants import SplitModelConstants
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
+
 
 class FrameMeta:
   frame_id: int = 0
@@ -37,6 +37,7 @@ class FrameMeta:
     if vipc is not None:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
+
 class ModelState:
   frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
@@ -46,21 +47,22 @@ class ModelState:
   def __init__(self, context: CLContext):
     try:
       self.model_runner = get_model_runner()
+      self.constants = self.model_runner.constants
     except Exception as e:
       cloudlog.exception(f"Failed to initialize model runner: {str(e)}")
       raise
 
     model_bundle = get_active_bundle()
     self.generation = model_bundle.generation
-    overrides = model_bundle.overrides
+    overrides = {override.key: override.value for override in model_bundle.overrides}
 
-    self.LAT_SMOOTH_SECONDS = overrides.lat
-    self.LONG_SMOOTH_SECONDS = overrides.long
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
     self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
-    self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
+    self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
     # img buffers are managed in openCL transform code
     self.numpy_inputs = {}
@@ -70,17 +72,13 @@ class ModelState:
         self.numpy_inputs[key] = np.zeros(shape, dtype=np.float32)
 
     if self.model_runner.is_20hz_3d:  # split models
-      self.full_features_buffer = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN,  SplitModelConstants.FEATURE_LEN),
-                                           dtype=np.float32)
-      self.full_desire = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.DESIRE_LEN),
-                                  dtype=np.float32)
-      self.full_prev_desired_curv = np.zeros((1, SplitModelConstants.FULL_HISTORY_BUFFER_LEN, SplitModelConstants.PREV_DESIRED_CURV_LEN),
-                                             dtype=np.float32)
-      self.temporal_idxs = slice(-1-(SplitModelConstants.TEMPORAL_SKIP*(SplitModelConstants.INPUT_HISTORY_BUFFER_LEN-1)),
-                                 None, SplitModelConstants.TEMPORAL_SKIP)
+      self.full_features_buffer = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN,  self.constants.FEATURE_LEN), dtype=np.float32)
+      self.full_desire = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.DESIRE_LEN), dtype=np.float32)
+      self.full_prev_desired_curv = np.zeros((1, self.constants.FULL_HISTORY_BUFFER_LEN, self.constants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
+      self.temporal_idxs = slice(-1-(self.constants.TEMPORAL_SKIP*(self.constants.INPUT_HISTORY_BUFFER_LEN-1)), None, self.constants.TEMPORAL_SKIP)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:
-      self.full_features_buffer = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1 , ModelConstants.FEATURE_LEN), dtype=np.float32)
-      self.full_desire = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
+      self.full_features_buffer = np.zeros((self.constants.FULL_HISTORY_BUFFER_LEN + 1, self.constants.FEATURE_LEN), dtype=np.float32)
+      self.full_desire = np.zeros((self.constants.FULL_HISTORY_BUFFER_LEN + 1, self.constants.DESIRE_LEN), dtype=np.float32)
       num_elements = self.numpy_inputs['features_buffer'].shape[1]
       step_size = int(-100 / num_elements)
       self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
@@ -88,7 +86,7 @@ class ModelState:
                                   self.numpy_inputs['desire'].shape[2])
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
-          inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
+                inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
@@ -97,8 +95,7 @@ class ModelState:
     if self.model_runner.is_20hz_3d:  # split models
       self.full_desire[0,:-1] = self.full_desire[0,1:]
       self.full_desire[0,-1] = new_desire
-      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,SplitModelConstants.INPUT_HISTORY_BUFFER_LEN,
-                                                                 SplitModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
+      self.numpy_inputs['desire'][:] = self.full_desire.reshape((1, self.constants.INPUT_HISTORY_BUFFER_LEN, self.constants.TEMPORAL_SKIP, -1)).max(axis=2)
     elif self.model_runner.is_20hz and not self.model_runner.is_20hz_3d:  # 20hz supercombo
       self.full_desire[:-1] = self.full_desire[1:]
       self.full_desire[-1] = new_desire
@@ -117,6 +114,7 @@ class ModelState:
 
     # Prepare inputs using the model runner
     self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
+
     if prepare_only:
       return None
 
@@ -163,7 +161,7 @@ class ModelState:
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
     plan = model_output['plan'][0]
-    desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], ModelConstants.T_IDXS,
+    desired_accel, should_stop = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
@@ -173,8 +171,7 @@ class ModelState:
     else:
       desired_curvature = prev_action.desiredCurvature
 
-    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel),
-                                  shouldStop=bool(should_stop))
+    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
 
 def main(demo=False):
@@ -222,7 +219,7 @@ def main(demo=False):
   params = Params()
 
   # setup filter to track dropped frames
-  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / ModelConstants.MODEL_FREQ)
+  frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
   frame_id = 0
   last_vipc_frame_id = 0
   run_count = 0
@@ -240,7 +237,6 @@ def main(demo=False):
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
-
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
@@ -298,8 +294,8 @@ def main(demo=False):
     traffic_convention = np.zeros(2)
     traffic_convention[int(is_rhd)] = 1
 
-    vec_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    if desire >= 0 and desire < ModelConstants.DESIRE_LEN:
+    vec_desire = np.zeros(model.constants.DESIRE_LEN, dtype=np.float32)
+    if desire >= 0 and desire < model.constants.DESIRE_LEN:
       vec_desire[desire] = 1
 
     # tracked dropped frames

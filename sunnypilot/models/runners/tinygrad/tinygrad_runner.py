@@ -6,6 +6,8 @@ from openpilot.sunnypilot.models.runners.constants import CLMemDict, FrameDict, 
 from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
 from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad
 from openpilot.system.hardware import TICI
+from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
+from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
 from tinygrad.tensor import Tensor
 
@@ -25,6 +27,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     SupercomboTinygrad.__init__(self)
     PolicyTinygrad.__init__(self)
     VisionTinygrad.__init__(self)
+    self._constants = ModelConstants
     self._model_data = self.models.get(model_type)
     if not self._model_data or not self._model_data.model:
       raise ValueError(f"Model data for type {model_type} not available.")
@@ -86,6 +89,7 @@ class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTiny
     result: NumpyDict = self.parser_method_dict[self._model_data.model.type.raw](model_outputs)
     return result
 
+
 class TinygradSplitRunner(ModelRunner):
   """
   A ModelRunner that coordinates separate TinygradVisionRunner and TinygradPolicyRunner instances.
@@ -97,6 +101,7 @@ class TinygradSplitRunner(ModelRunner):
     self.is_20hz_3d = True
     self.vision_runner = TinygradRunner(ModelType.vision)
     self.policy_runner = TinygradRunner(ModelType.policy)
+    self._constants = SplitModelConstants
 
   def _run_model(self) -> NumpyDict:
     """Runs both vision and policy models and merges their parsed outputs."""
