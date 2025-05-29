@@ -37,7 +37,7 @@ private:
     }
 
     if (!_offroad) {
-      return tr("Enable \"Always Offroad\" in Device panel, or turn vehicle off to select an option.");
+      return tr("Enable \"Always Offroad\" in Device panel, or turn vehicle off to select all available options.");
     }
 
     return QString();
