@@ -165,10 +165,6 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", PERSISTENT},
-    {"HyundaiRadarTracks", PERSISTENT},
-    {"HyundaiRadarTracksConfirmed", PERSISTENT},
-    {"HyundaiRadarTracksPersistent", PERSISTENT},
-    {"HyundaiRadarTracksToggle", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
 };
