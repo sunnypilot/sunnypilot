@@ -248,7 +248,7 @@ def setup_settings_steering_alc(click, pm: PubMaster, scroll=None):
 
 def setup_settings_driving(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  scroll(-40, 278, 962)
+  scroll(-1, 278, 962)
   click(278, 962)
   time.sleep(UI_DELAY)
 
