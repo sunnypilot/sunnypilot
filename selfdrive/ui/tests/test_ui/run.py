@@ -26,7 +26,7 @@ from openpilot.tools.lib.framereader import FrameReader
 from openpilot.tools.lib.route import Route
 from openpilot.tools.lib.cache import DEFAULT_CACHE_DIR
 
-UI_DELAY = 0.1 # may be slower on CI?
+UI_DELAY = 0.2 # may be slower on CI?
 TEST_ROUTE = "a2a0ccea32023010|2023-07-27--13-01-19"
 
 STREAMS: list[tuple[VisionStreamType, CameraConfig, bytes]] = []
@@ -248,7 +248,7 @@ def setup_settings_driving(click, pm: PubMaster, scroll=None):
 def setup_settings_visuals(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   scroll(-400, 278, 962)
-  click(278, 536)
+  click(278, 560)
   time.sleep(UI_DELAY)
 
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
