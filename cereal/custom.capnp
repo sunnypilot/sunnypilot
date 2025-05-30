@@ -63,7 +63,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     type @0 :Type;
     artifact @1 :Artifact;  # Main artifact
     metadata @2 :Artifact;  # Metadata artifact
-    
+
     enum Type {
       supercombo @0;
       navigation @1;
@@ -78,6 +78,11 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     stock @2;
   }
 
+  struct Override {
+    key @0 :Text;
+    value @1 :Text;
+  }
+
   struct ModelBundle {
     index @0 :UInt32;
     internalName @1 :Text;
@@ -88,8 +93,9 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     environment @6 :Text;
     runner @7 :Runner;
     is20hz @8 :Bool;
-    ref @9 :Text;  # New field
+    ref @9 :Text;
     minimumSelectorVersion @10 :UInt32;
+    overrides @11 :List(Override);
   }
 }
 
@@ -144,6 +150,7 @@ struct OnroadEventSP @0xda96579883444c35 {
     hyundaiRadarTracksConfirmed @13;
     experimentalModeSwitched @14;
     wrongCarModeAlertOnly @15;
+    pedalPressedAlertOnly @16;
   }
 }
 
@@ -166,6 +173,12 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
+  params @1 :List(Param);
+
+  struct Param {
+    key @0 :Text;
+    value @1 :Text;
+  }
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {
@@ -176,14 +189,14 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
   lastError @4 :Text;
   currentBackup @5 :BackupInfo;
   backupHistory @6 :List(BackupInfo);
-  
+
   enum Status {
     idle @0;
     inProgress @1;
     completed @2;
     failed @3;
   }
-  
+
   struct Version {
     major @0 :UInt16;
     minor @1 :UInt16;
@@ -191,13 +204,13 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
     build @3 :UInt16;
     branch @4 :Text;
   }
-  
+
   struct MetadataEntry {
     key @0 :Text;
     value @1 :Text;
     tags @2 :List(Text);
   }
-  
+
   struct BackupInfo {
     deviceId @0 :Text;
     version @1 :UInt32;
