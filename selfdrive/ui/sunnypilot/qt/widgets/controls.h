@@ -214,12 +214,12 @@ private:
   bool store_confirm = false;
 };
 
-class ButtonParamControlSP : public AbstractControlSP_SELECTOR {
+class MultiButtonControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
 public:
-  ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                       const std::vector<QString> &button_texts, const int minimum_button_width = 300) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts) {
+  MultiButtonControlSP(const QString &title, const QString &desc, const QString &icon,
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false) : AbstractControlSP_SELECTOR(title, desc, icon), button_texts(button_texts), is_inline_layout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -243,28 +243,41 @@ public:
         color: #33FFFFFF;
       }
     )";
-    key = param.toStdString();
-    int value = atoi(params.get(key).c_str());
+
+    if (inline_layout) {
+      button_param_layout->setMargin(0);
+      button_param_layout->setSpacing(0);
+      if (!title.isEmpty()) {
+        main_layout->removeWidget(title_label);
+        hlayout->addWidget(title_label, 1);
+      }
+      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
+        main_layout->removeItem(spacingItem);
+        spacingItem = nullptr;
+      }
+    }
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
     for (int i = 0; i < button_texts.size(); i++) {
       QPushButton *button = new QPushButton(button_texts[i], this);
       button->setCheckable(true);
-      button->setChecked(i == value);
       button->setStyleSheet(style);
       button->setMinimumWidth(minimum_button_width);
-      if (i == 0) hlayout->addSpacing(2);
-      hlayout->addWidget(button);
+      if (i == 0) button_param_layout->addSpacing(2);
+      button_param_layout->addWidget(button);
       button_group->addButton(button, i);
     }
 
-    hlayout->setAlignment(Qt::AlignLeft);
+    button_param_layout->setAlignment(Qt::AlignLeft);
+    if (is_inline_layout) {
+      QFrame *container = new QFrame;
+      container->setLayout(button_param_layout);
+      container->setStyleSheet("background-color: #393939; border-radius: 20px;");
+      hlayout->addWidget(container);
+    }
 
-    QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), [=](int id) {
-      params.put(key, std::to_string(id));
-      emit buttonToggled(id);
-    });
+    QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), this, &MultiButtonControlSP::buttonClicked);
   }
 
   void setEnabled(bool enable) {
@@ -305,15 +318,21 @@ public:
     }
   }
 
-  void setDisabledSelectedButton(std::string val) {
-    int value = atoi(val.c_str());
+  void setEnableSelectedButtons(bool enable, const std::vector<int>& enabled_btns = {}) const {
     for (int i = 0; i < button_group->buttons().size(); i++) {
-      button_group->buttons()[i]->setEnabled(i != value);
+      // Enable the button if its index is in the enabled list
+      bool should_enable = std::find(enabled_btns.begin(), enabled_btns.end(), i) != enabled_btns.end();
+      button_group->buttons()[i]->setEnabled(enable && should_enable);
     }
   }
 
 protected:
+  QButtonGroup *button_group;
   void paintEvent(QPaintEvent *event) override {
+    if (is_inline_layout) {
+      return;
+    }
+
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
@@ -339,15 +358,48 @@ protected:
   }
 
 signals:
-  void buttonToggled(int btn_id);
+  void buttonClicked(int id);
 
 private:
   std::string key;
   Params params;
-  QButtonGroup *button_group;
   std::vector<QString> button_texts;
 
   bool button_group_enabled = true;
+  bool is_inline_layout;
+  QHBoxLayout *button_param_layout = is_inline_layout ? new QHBoxLayout() : hlayout;
+};
+
+class ButtonParamControlSP : public MultiButtonControlSP {
+  Q_OBJECT
+public:
+  ButtonParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
+                     const std::vector<QString> &button_texts, const int minimum_button_width = 225, const bool inline_layout = false) : MultiButtonControlSP(title, desc, icon,
+                                                                                                                          button_texts, minimum_button_width, inline_layout) {
+    key = param.toStdString();
+    int value = atoi(params.get(key).c_str());
+
+    if (value > 0 && value < button_group->buttons().size()) {
+      button_group->button(value)->setChecked(true);
+    }
+
+    QObject::connect(this, QOverload<int>::of(&MultiButtonControlSP::buttonClicked), [=](int id) {
+      params.put(key, std::to_string(id));
+    });
+  }
+
+  void refresh() {
+    int value = atoi(params.get(key).c_str());
+    button_group->button(value)->setChecked(true);
+  }
+
+  void showEvent(QShowEvent *event) override {
+    refresh();
+  }
+
+private:
+  std::string key;
+  Params params;
 };
 
 class ListWidgetSP : public QWidget {
@@ -360,7 +412,7 @@ public:
     outer_layout.addLayout(&inner_layout);
     inner_layout.setMargin(0);
     inner_layout.setSpacing(25); // default spacing is 25
-    outer_layout.addStretch();
+    outer_layout.addStretch(1);
   }
   inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
   inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
@@ -419,14 +471,15 @@ public:
 class OptionControlSP : public AbstractControlSP_SELECTOR {
   Q_OBJECT
 
-private:
-  bool isInlineLayout;
-  QHBoxLayout *optionSelectorLayout = isInlineLayout ? new QHBoxLayout() : hlayout;
-
+protected:
   struct MinMaxValue {
     int min_value;
     int max_value;
   };
+
+private:
+  bool is_inline_layout;
+  QHBoxLayout *optionSelectorLayout = is_inline_layout ? new QHBoxLayout() : hlayout;
 
   int getParamValue() {
     const auto param_value = QString::fromStdString(params.get(key));
@@ -442,7 +495,7 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), isInlineLayout(inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), is_inline_layout(inline_layout) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -517,7 +570,7 @@ public:
     }
 
     optionSelectorLayout->setAlignment(Qt::AlignLeft);
-    if (isInlineLayout) {
+    if (is_inline_layout) {
       QFrame *container = new QFrame;
       container->setLayout(optionSelectorLayout);
       container->setStyleSheet("background-color: #393939; border-radius: 20px;");
@@ -527,6 +580,10 @@ public:
 
   void setUpdateOtherToggles(bool _update) {
     request_update = _update;
+  }
+
+  void setFixedWidth(int width) {
+    label.setFixedWidth(width);
   }
 
   inline void setLabel(const QString &text) { label.setText(text); }
@@ -544,7 +601,7 @@ public:
 
 protected:
   void paintEvent(QPaintEvent *event) override {
-    if (isInlineLayout) {
+    if (is_inline_layout) {
       return;
     }
 
@@ -637,16 +694,6 @@ public:
     }
   }
 
-protected:
-  // Override mouse release event to handle style updates smoothly
-  void mouseReleaseEvent(QMouseEvent *event) override {
-    if (!key.empty()) {
-      bool next_state = !params.getBool(key);
-      updateStyle(next_state);
-    }
-    QPushButton::mouseReleaseEvent(event);
-  }
-
 private:
   std::string key = "";
   Params params;
@@ -655,13 +702,14 @@ private:
 
   QString btn_enabled_off_style = "QPushButton:enabled { background-color: #393939; }";
   QString btn_enabled_on_style = "QPushButton:enabled { background-color: #1e79e8; }";
-  QString btn_pressed_style = "QPushButton:pressed { background-color: #4A4A4A; }";
-  QString btn_disabled_stype = "QPushButton:disabled { background-color: #121212; color: #5C5C5C; }";
+  QString btn_off_pressed_style = "QPushButton:pressed { background-color: #4A4A4A; }";
+  QString btn_on_pressed_style = "QPushButton:pressed { background-color: #1E8FFF; }";
+  QString btn_disabled_style = "QPushButton:disabled { background-color: #121212; color: #5C5C5C; }";
 
   void updateStyle(bool enabled) {
     QString enabled_style = enabled ? btn_enabled_on_style : btn_enabled_off_style;
-
-    setStyleSheet(buttonStyle + enabled_style + btn_pressed_style + btn_disabled_stype);
+    QString pressed_style = enabled ? btn_on_pressed_style : btn_off_pressed_style;
+    setStyleSheet(buttonStyle + enabled_style + pressed_style + btn_disabled_style);
   }
 };
 
