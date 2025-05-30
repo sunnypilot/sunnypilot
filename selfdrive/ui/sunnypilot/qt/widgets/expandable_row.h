@@ -5,11 +5,11 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
- #pragma once
+#pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
- class ExpandableToggleRow : public ToggleControlSP {
+class ExpandableToggleRow : public ToggleControlSP {
   Q_OBJECT
 
 public:
@@ -19,7 +19,7 @@ public:
     list->addItem(widget);
   }
 
-  ListWidgetSP* innerList() {
+  ListWidgetSP *innerList() {
     return list;
   }
 
@@ -39,9 +39,9 @@ public:
     refresh();
   }
 
-
 private:
   void toggleClicked(bool state);
+
   std::string key;
   Params params;
 

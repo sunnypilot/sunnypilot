@@ -20,7 +20,6 @@ private:
   ButtonControl* errorLogBtn;
   ParamControl* longManeuverToggle;
   ParamControl* experimentalLongitudinalToggle;
-  ParamControl* hyundaiRadarTracksToggle;
   ParamControl* enableGithubRunner;
   bool is_release;
   bool offroad = false;
