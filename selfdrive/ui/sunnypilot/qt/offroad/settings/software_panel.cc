@@ -17,15 +17,8 @@
  * @param parent Parent widget
  */
 SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
-  const auto current_model = GetActiveModelName();
-  currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
-  currentModelLblBtn->setValue(current_model);
 
-  connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
-  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SoftwarePanelSP::updateLabels);
-  AddWidgetAt(0, currentModelLblBtn);
-
-  // branch selector
+// branch selector
   QObject::disconnect(targetBranchBtn, nullptr, nullptr, nullptr);
   connect(targetBranchBtn, &ButtonControlSP::clicked, [=]() {
     InputDialog d(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
@@ -36,6 +29,14 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
       }
 
   });
+
+  const auto current_model = GetActiveModelName();
+  currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
+  currentModelLblBtn->setValue(current_model);
+
+  connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &SoftwarePanelSP::handleCurrentModelLblBtnClicked);
+  QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &SoftwarePanelSP::updateLabels);
+  AddWidgetAt(0, currentModelLblBtn);
 }
 
 /**
