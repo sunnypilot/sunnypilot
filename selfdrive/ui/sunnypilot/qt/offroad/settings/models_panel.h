@@ -10,9 +10,8 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class ModelsPanel : public QWidget {
-    Q_OBJECT
+  Q_OBJECT
 
-   public:
-    explicit ModelsPanel(QWidget *parent = nullptr);
-
+public:
+  explicit ModelsPanel(QWidget *parent = nullptr);
 };
