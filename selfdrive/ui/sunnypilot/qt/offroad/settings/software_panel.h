@@ -19,9 +19,11 @@ public:
   explicit SoftwarePanelSP(QWidget *parent = nullptr);
 
 private:
+  void searchBranches(const QString &query);
+
+private:
   QString GetActiveModelName();
   void updateModelManagerState();
-  void searchBranches(const QString &query);
 
   bool isDownloading() const {
     if (!model_manager.hasSelectedBundle()) {
