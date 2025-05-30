@@ -73,9 +73,6 @@ brand_settings_qt_src = [
   "sunnypilot/qt/offroad/settings/vehicle/volkswagen_settings.cc",
 ]
 
-sp_assets_src = [
-  "#selfdrive/ui/sunnypilot/assets/assets.qrc",
-]
 
 sp_widgets_src = widgets_src + network_src
 sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src
