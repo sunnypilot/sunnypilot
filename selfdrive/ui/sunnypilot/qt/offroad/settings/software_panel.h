@@ -9,6 +9,7 @@
 
 #include <QJsonObject>
 #include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/qt/offroad/settings.h"
 
 class SoftwarePanelSP final : public SoftwarePanel {
@@ -16,6 +17,9 @@ class SoftwarePanelSP final : public SoftwarePanel {
 
 public:
   explicit SoftwarePanelSP(QWidget *parent = nullptr);
+
+private:
+  void searchBranches(const QString &query);
 
 private:
   QString GetActiveModelName();

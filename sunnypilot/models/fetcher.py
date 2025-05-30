@@ -44,6 +44,16 @@ class ModelParser:
     return model
 
   @staticmethod
+  def _parse_overrides(overrides_data: dict[str, str]) -> list[custom.ModelManagerSP.Override]:
+    overrides = []
+    for key, value in overrides_data.items():
+      override = custom.ModelManagerSP.Override()
+      override.key = key
+      override.value = value
+      overrides.append(override)
+    return overrides
+
+  @staticmethod
   def _parse_bundle(bundle) -> custom.ModelManagerSP.ModelBundle:
     model_bundle = custom.ModelManagerSP.ModelBundle()
     model_bundle.index = int(bundle["index"])
@@ -56,6 +66,7 @@ class ModelParser:
     model_bundle.runner = bundle.get("runner", custom.ModelManagerSP.Runner.snpe)
     model_bundle.is20hz = bundle.get("is_20hz", False)
     model_bundle.minimumSelectorVersion = int(bundle["minimum_selector_version"])
+    model_bundle.overrides = ModelParser._parse_overrides(bundle.get("overrides", {}))
 
     return model_bundle
 
@@ -104,7 +115,7 @@ class ModelCache:
 
 class ModelFetcher:
   """Handles fetching and caching of model data from remote source"""
-  MODEL_URL = "https://docs.sunnypilot.ai/driving_models_v3.json"
+  MODEL_URL = "https://docs.sunnypilot.ai/driving_models_v4.json"
 
   def __init__(self, params: Params):
     self.params = params
@@ -149,8 +160,9 @@ if __name__ == "__main__":
   bundles = model_fetcher.get_available_bundles()
   for bundle in bundles:
     for model in bundle.models:
+      model_overrides = {override.key: override.value for override in bundle.overrides}
       # Print model details
-      print(f"Bundle: {bundle.internalName}, Type: {model.type}, Status: {bundle.status}")
+      print(f"Bundle: {bundle.internalName}, Type: {model.type}, Status: {bundle.status}, Overrides: {model_overrides}")
       # Print artifact details
       print(f"Artifact: {model.artifact.fileName}, Download URI: {model.artifact.downloadUri.uri}")
       # Print metadata details

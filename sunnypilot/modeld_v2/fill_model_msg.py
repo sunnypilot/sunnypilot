@@ -3,30 +3,21 @@ import capnp
 import numpy as np
 from cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
-from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
+from openpilot.selfdrive.controls.lib.drive_helpers import get_curvature_from_plan
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 ConfidenceClass = log.ModelDataV2.ConfidenceClass
 
 
-def curv_from_psis(psi_target, psi_rate, vego, delay):
-  vego = np.clip(vego, MIN_SPEED, np.inf)
-  curv_from_psi = psi_target / (vego * delay)  # epsilon to prevent divide-by-zero
-  return 2 * curv_from_psi - psi_rate / vego
+def get_curvature_from_output(output, vego, lat_action_t, current_generation=None):
+  if current_generation != 11:
+    if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
+      return float(desired_curv[0, 0])
 
-
-def get_curvature_from_plan(plan, vego, delay):
-  psi_target = np.interp(delay, ModelConstants.T_IDXS, plan[:, Plan.T_FROM_CURRENT_EULER][:, 2])
-  psi_rate = plan[:, Plan.ORIENTATION_RATE][0, 2]
-  return curv_from_psis(psi_target, psi_rate, vego, delay)
-
-
-def get_curvature_from_output(output, vego, delay):
-  if desired_curv := output.get('desired_curvature'):  # If the model outputs the desired curvature, use that directly
-    return float(desired_curv[0, 0])
-
-  return float(get_curvature_from_plan(output['plan'][0], vego, delay))
+  plan_output = output['plan'][0]
+  return float(get_curvature_from_plan(plan_output[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan_output[:, Plan.ORIENTATION_RATE][:, 2],
+                                       ModelConstants.T_IDXS, vego, lat_action_t))
 
 
 class PublishState:
@@ -76,7 +67,7 @@ def fill_lane_line_meta(builder, lane_lines, lane_line_probs):
   builder.rightProb = lane_line_probs[2]
 
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
-                   net_output_data: dict[str, np.ndarray], v_ego: float, delay: float,
+                   net_output_data: dict[str, np.ndarray], action: log.ModelDataV2.Action,
                    publish_state: PublishState, vipc_frame_id: int, vipc_frame_id_extra: int,
                    frame_id: int, frame_drop: float, timestamp_eof: int, model_execution_time: float,
                    valid: bool, model_meta) -> None:
@@ -85,15 +76,13 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   extended_msg.valid = valid
   base_msg.valid = valid
 
-  desired_curvature = float(get_curvature_from_output(net_output_data, v_ego, delay))
-
   driving_model_data = base_msg.drivingModelData
 
   driving_model_data.frameId = vipc_frame_id
   driving_model_data.frameIdExtra = vipc_frame_id_extra
   driving_model_data.frameDropPerc = frame_drop_perc
   driving_model_data.modelExecutionTime = model_execution_time
-  driving_model_data.action.desiredCurvature = desired_curvature
+  driving_model_data.action = action
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -126,8 +115,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   # poly path
   fill_xyz_poly(driving_model_data.path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
-  # lateral planning
-  modelV2.action.desiredCurvature = desired_curvature
+  # action (includes lateral planning now)
+  modelV2.action = action
 
   # times at X_IDXS according to model plan
   PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N
