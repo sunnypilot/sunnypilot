@@ -106,7 +106,7 @@ QStringList searchFromList(const QString &query, const QStringList &list) {
           return normalized_element.contains(normalized_term, Qt::CaseInsensitive);
         })) {
       search_results << element;
-        }
+    }
   }
   return search_results;
 }
