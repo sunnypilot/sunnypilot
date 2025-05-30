@@ -8,7 +8,6 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/util.h"
 
 static const QString GREEN_PLATFORM = "#00F100";
 static const QString BLUE_PLATFORM = "#0086E9";
