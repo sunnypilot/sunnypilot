@@ -24,7 +24,17 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
-  connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &ModelsPanel::handleCurrentModelLblBtnClicked);
+  connect(currentModelLblBtn, &ButtonControlSP::clicked, [=]() {
+
+      InputDialog d(tr("Search Model"), this, tr("Enter search keywords, or leave blank to list all models."), false);
+      d.setMinLength(0);
+      const int ret = d.exec();
+      if (ret) {
+        handleCurrentModelLblBtnClicked(d.text());
+      }
+
+    });
+
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
       is_onroad = !offroad;
       updateLabels();
@@ -127,7 +137,7 @@ void ModelsPanel::updateModelManagerState() {
  * @brief Handles the model bundle selection button click
  * Displays available bundles, allows selection, and initiates download
  */
-void ModelsPanel::handleCurrentModelLblBtnClicked() {
+void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
@@ -149,10 +159,17 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
     bundleNames.append(index_to_bundle[index]);
   }
 
+  QStringList filteredBundleNames = searchFromList(query, bundleNames);
+
   currentModelLblBtn->setValue(GetActiveModelName());
 
+  if (filteredBundleNames.isEmpty()) {
+    ConfirmationDialog::alert(tr("No model found for keywords: %1").arg(query), this);
+    return;
+  }
+
   const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model"), bundleNames, GetActiveModelName(), this);
+    tr("Select a Model"), filteredBundleNames, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
