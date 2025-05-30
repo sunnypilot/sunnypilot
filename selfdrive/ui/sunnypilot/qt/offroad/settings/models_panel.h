@@ -14,8 +14,6 @@ class ModelsPanel : public QWidget {
 
 public:
   explicit ModelsPanel(QWidget *parent = nullptr);
-public:
-  explicit ModelsPanel(QWidget *parent = nullptr);
 
 private:
   QString GetActiveModelName();
