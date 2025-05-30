@@ -26,14 +26,16 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
   AddWidgetAt(0, currentModelLblBtn);
 
   // branch selector
-  targetBranchBtn = new ButtonControlSP(tr("Target Branch"), tr("SELECT"));
+  QObject::disconnect(targetBranchBtn, nullptr, nullptr, nullptr);
   connect(targetBranchBtn, &ButtonControlSP::clicked, [=]() {
-
-    QString query = InputDialog::getText(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
-    searchBranches(query);
+    InputDialog d(tr("Search Branch"), this, tr("Enter search keywords, or leave blank to list all branches."), false);
+      d.setMinLength(0);
+      const int ret = d.exec();
+      if (ret) {
+        searchBranches(d.text());
+      }
 
   });
-  AddWidgetAt(getWidgetIndex(installBtn)+1, targetBranchBtn);
 }
 
 /**
