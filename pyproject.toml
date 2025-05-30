@@ -59,7 +59,7 @@ dependencies = [
   "future-fstrings",
 
   # joystickd
-  "inputs",
+  "pygame",
 
   # these should be removed
   "psutil",
@@ -106,7 +106,6 @@ dev = [
   "matplotlib",
   "parameterized >=0.8, <0.9",
   "pyautogui",
-  "pygame",
   "pyopencl; platform_machine != 'aarch64'", # broken on arm64
   "pytools < 2024.1.11; platform_machine != 'aarch64'", # pyopencl use a broken version
   "pywinctl",
