@@ -72,6 +72,7 @@ class SpeedLimitController:
       SpeedLimitControlState.preActive: self.transition_state_from_pre_active,
     }
 
+    # FIXME-SP: unused?
     # Solution functions mapped to respective states
     self.acceleration_solutions = {
       # Solution functions for each state
