@@ -128,9 +128,9 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   enum SpeedLimitControlState {
     inactive @0; # No speed limit set or not enabled by parameter.
     tempInactive @1; # User wants to ignore speed limit until it changes.
-    adapting @2; # Reducing speed to match new speed limit.
-    active @3; # Cruising at speed limit.
-    preActive @4;
+    preActive @2;
+    adapting @3; # Reducing speed to match new speed limit.
+    active @4; # Cruising at speed limit.
   }
 }
 
@@ -175,6 +175,9 @@ struct OnroadEventSP @0xda96579883444c35 {
     speedLimitActive @18;
     speedLimitConfirmed @19;
     speedLimitValueChange @20;
+    speedLimitInactive @21;
+    speedLimitTempInactive @22;
+    speedLimitAdapting @23;
   }
 }
 

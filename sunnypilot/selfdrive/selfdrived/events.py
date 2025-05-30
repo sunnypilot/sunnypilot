@@ -175,4 +175,16 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.WARNING: speed_limit_adjust_alert,
   },
 
+  EventNameSP.speedLimitInactive: {
+    ET.WARNING: EngagementAlert(AudibleAlert.none),
+  },
+
+  EventNameSP.speedLimitTempInactive: {
+    ET.WARNING: EngagementAlert(AudibleAlert.none),
+  },
+
+  EventNameSP.speedLimitAdapting: {
+    ET.WARNING: EngagementAlert(AudibleAlert.none),
+  },
+
 }
