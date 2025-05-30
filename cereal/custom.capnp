@@ -102,6 +102,9 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
 
+  events @1 :List(OnroadEventSP.Event);
+  slc @2 :SpeedLimitControl;
+
   struct DynamicExperimentalControl {
     state @0 :DynamicExperimentalControlState;
     enabled @1 :Bool;
@@ -111,6 +114,15 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       acc @0;
       blended @1;
     }
+  }
+
+  struct SpeedLimitControl {
+    state @0 :SpeedLimitControlState;
+    enabled @1 :Bool;
+    active @2 :Bool;
+    speedLimit @3 :Float32;
+    speedLimitOffset @4 :Float32;
+    distToSpeedLimit @5 :Float32;
   }
 
   enum SpeedLimitControlState {
