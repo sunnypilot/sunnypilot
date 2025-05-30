@@ -8,6 +8,11 @@
 class ExitOffroadButton : public QPushButton {
   Q_OBJECT
 
+private:
+  QTimer *glowTimer;
+  int glowAlpha = 100;  // Current alpha of glow
+  int glowDelta = 10;    // Change per tick
+  
 public:
   explicit ExitOffroadButton(QWidget* parent = 0);
 

@@ -9,7 +9,20 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/exit_offroad_button.h"
 
 
-ExitOffroadButton::ExitOffroadButton(QWidget *parent) : QPushButton(parent) {
+ExitOffroadButton::ExitOffroadButton(QWidget *parent) : QPushButton(parent), glowTimer(new QTimer(this)) {
+  setMouseTracking(true);
+
+  connect(glowTimer, &QTimer::timeout, this, [this]() {
+    // Pulse alpha up and down
+    glowAlpha += glowDelta;
+    if (glowAlpha > 220 || glowAlpha < 10) {
+      glowDelta *= -1;
+    }
+    update(); // trigger repaint
+  });
+
+  glowTimer->start(45);
+  
   pixmap = QPixmap("../assets/icons/icon_exit_offroad.png").scaledToWidth(img_width, Qt::SmoothTransformation);
 
   // go to toggles and expand experimental mode description
@@ -48,9 +61,23 @@ ExitOffroadButton::ExitOffroadButton(QWidget *parent) : QPushButton(parent) {
   )");
 }
 
+void drawPulsingGlowOverlay(QPainter &p, QPainterPath path, int glowAlpha) {
+  // Draw pulsing glow effect clipped to button area
+  p.save();
+  p.setClipPath(path);
+  p.setCompositionMode(QPainter::CompositionMode_HardLight);
+
+  const QColor animatedGlowColor(255, 255, 255, std::min(255, glowAlpha));
+  QPen glowPen(animatedGlowColor, 8);
+  glowPen.setJoinStyle(Qt::RoundJoin);
+  p.setPen(glowPen);
+  p.drawPath(path);
+  
+  p.restore();
+}
+
 void ExitOffroadButton::paintEvent(QPaintEvent *event) {
   QPainter p(this);
-  p.setPen(Qt::NoPen);
   p.setRenderHint(QPainter::Antialiasing);
 
   QPainterPath path;
@@ -63,6 +90,8 @@ void ExitOffroadButton::paintEvent(QPaintEvent *event) {
   gradient.setColorAt(0.3, QColor(35, 149, 255, pressed ? 0xcc : 0xff));
   gradient.setColorAt(1, QColor(20, 255, 171, pressed ? 0xcc : 0xff));
   p.fillPath(path, gradient);
+
+  drawPulsingGlowOverlay(p, path, glowAlpha);
 
   // vertical line
   p.setPen(QPen(QColor(0, 0, 0, 0x4d), 3, Qt::SolidLine));
