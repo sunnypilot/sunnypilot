@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-from cereal import custom
+from cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
@@ -11,6 +11,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common i
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import debug
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.state import StateMachine
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 
 EventNameSP = custom.OnroadEventSP.EventName
 State = custom.LongitudinalPlanSP.SpeedLimitControlState
@@ -123,10 +124,12 @@ class SpeedLimitController:
       debug(f'Updated Speed limit params. enabled: {self._enabled_toggle}, with offset: {self._offset_type}')
       self._last_params_update = self._current_time
 
-  def _generate_events(self, events_sp) -> None:
+  def _generate_events(self, events_sp: EventsSP) -> None:
     """Generate events based on current conditions"""
-    if not self._op_enabled or not self._enabled_toggle or self._speed_limit == 0 or \
-            (self._gas_pressed and self._disengage_on_accelerator):
+    if not self._op_enabled or \
+       not self._enabled_toggle or \
+       self._speed_limit == 0 or \
+       (self._gas_pressed and self._disengage_on_accelerator):
       return
 
     # Track selfdrived enabled time
@@ -168,7 +171,7 @@ class SpeedLimitController:
       if speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
         events_sp.add(EventNameSP.speedLimitPreActive)
 
-  def _generate_auto_engage_events(self, events_sp, v_cruise_changed) -> None:
+  def _generate_auto_engage_events(self, events_sp: EventsSP, v_cruise_changed: bool) -> None:
     # In auto mode, activate immediately when conditions are met
     if not self._enabled:
       if self._v_offset < LIMIT_SPEED_OFFSET_TH:
@@ -180,9 +183,9 @@ class SpeedLimitController:
     if v_cruise_changed and self._current_time > (self._last_op_enabled_time + TEMP_INACTIVE_GUARD_PERIOD):
       events_sp.add(EventNameSP.speedLimitUserCancel)
 
-  def _generate_user_confirm_events(self, events_sp, v_cruise_changed, speed_limit_changed,
-                                    v_cruise_rounded, v_cruise_prev_rounded,
-                                    speed_limit_offsetted_rounded) -> None:
+  def _generate_user_confirm_events(self, events_sp: EventsSP, v_cruise_changed: bool, speed_limit_changed: bool,
+                                    v_cruise_rounded: float, v_cruise_prev_rounded: float,
+                                    speed_limit_offsetted_rounded: float) -> None:
     # Check if we're in the confirmation window (2-7 seconds after op enabled)
     in_confirm_window = (self._last_op_enabled_time + 7.) >= self._current_time >= (self._last_op_enabled_time + 2.)
 
@@ -220,7 +223,7 @@ class SpeedLimitController:
         self._last_op_enabled_time = self._current_time - 2.
         events_sp.add(EventNameSP.speedLimitEnable)
 
-  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events_sp) -> None:
+  def update(self, enabled: bool, v_ego: float, a_ego: float, sm: messaging.SubMaster, v_cruise_setpoint: float, events_sp: EventsSP) -> None:
     _car_state = sm['carState']
     self._op_enabled = enabled and \
                        not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
