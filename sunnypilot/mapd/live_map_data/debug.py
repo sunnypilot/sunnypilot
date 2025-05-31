@@ -7,6 +7,8 @@ import threading
 import traceback
 
 from cereal import messaging
+from openpilot.common.gps import get_gps_location_service
+from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
@@ -25,12 +27,15 @@ def live_map_data_sp_thread():
   except Exception:
     cloudlog.exception("mapd: failed to set core affinity")
 
+  params = Params()
+  gps_location_service = get_gps_location_service(params)
+
   while True:
-    live_map_data_sp_thread_debug()
+    live_map_data_sp_thread_debug(gps_location_service)
 
 
-def live_map_data_sp_thread_debug():
-  _sub_master = messaging.SubMaster(['carState', 'navInstruction', 'liveLocationKalman', 'liveMapDataSP', 'longitudinalPlanSP'])
+def live_map_data_sp_thread_debug(gps_location_service):
+  _sub_master = messaging.SubMaster(['carState', 'navInstruction', 'livePose', 'liveMapDataSP', 'longitudinalPlanSP', gps_location_service])
   _sub_master.update()
 
   v_ego = _sub_master['carState'].vEgo

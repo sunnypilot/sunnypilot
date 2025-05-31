@@ -1,18 +1,22 @@
-import math
+import time
 from abc import abstractmethod, ABC
 
 from cereal import custom, messaging
+from openpilot.common.gps import get_gps_location_service
+from openpilot.common.params import Params
 from openpilot.sunnypilot.navd.helpers import Coordinate
 from openpilot.sunnypilot.mapd.live_map_data import get_debug
 
 
 class BaseMapData(ABC):
   def __init__(self):
+    self.params = Params()
     self._last_gps: Coordinate | None = None
-    self._gps_sock = None
+    self._gps_location_service = get_gps_location_service(self.params)
+    self._gps_packets = [self._gps_location_service]
     self._data_type = custom.LiveMapDataSP.DataType.default
-    self._sub_master = messaging.SubMaster(['liveLocationKalman', 'carControl'])
-    self._pub_master = messaging.PubMaster(['liveMapDataSP'])
+    self._sm = messaging.SubMaster(['livePose', 'carControl'] + self._gps_packets)
+    self._pm = messaging.PubMaster(['liveMapDataSP'])
 
   @abstractmethod
   def update_location(self, current_location: Coordinate):
@@ -31,31 +35,27 @@ class BaseMapData(ABC):
     pass
 
   def _is_gps_data_valid(self) -> bool:
-    all_sock_alive = self._sub_master.all_alive(service_list=[self._gps_sock])
-    all_sock_valid = self._sub_master.all_valid(service_list=[self._gps_sock])
+    all_sock_alive = self._sm.all_alive(service_list=[self._gps_location_service])
+    all_sock_valid = self._sm.all_valid(service_list=[self._gps_location_service])
     return bool(all_sock_alive and all_sock_valid)
 
   def get_current_location(self) -> Coordinate | None:
-    self._gps_sock = "liveLocationKalman"
-    if not self._sub_master.updated[self._gps_sock] or not self._sub_master.valid[self._gps_sock]:
+    if not self._sm.updated[self._gps_location_service] or not self._sm.valid[self._gps_location_service]:
       return None
 
-    _last_gps = self._sub_master[self._gps_sock]
+    _last_gps = self._sm[self._gps_location_service]
+
     # ignore the message if the fix is invalid
-    if not _last_gps.positionGeodetic.valid:
+    gps_ok = self._sm.updated[self._gps_location_service] or (time.monotonic() - self._sm.logMonoTime[self._gps_location_service] / 1e9) > 2.0
+    if not gps_ok and self._sm['livePose'].inputsOK:
       return None
 
-    kalman_bearing_deg = math.degrees(_last_gps.calibratedOrientationNED.value[2])
-    kalman_speed = _last_gps.velocityCalibrated.value[2]
-    kalman_latitude = _last_gps.positionGeodetic.value[0]
-    kalman_longitude = _last_gps.positionGeodetic.value[1]
-
-    result = Coordinate(kalman_latitude, kalman_longitude)
+    result = Coordinate(_last_gps.latitude, _last_gps.longitude)
     result.annotations['unixTimestampMillis'] = _last_gps.unixTimestampMillis
-    result.annotations['speed'] = kalman_speed
-    result.annotations['bearingDeg'] = kalman_bearing_deg
-    result.annotations['accuracy'] = 1  # Hardcoded since liveLocationKalman does not report this.
-    result.annotations['bearingAccuracyDeg'] = 1.  # you'll need to assign this if available
+    result.annotations['speed'] = _last_gps.speed
+    result.annotations['bearingDeg'] = _last_gps.bearingDeg
+    result.annotations['accuracy'] = 1  # Hardcoded for now
+    result.annotations['bearingAccuracyDeg'] = _last_gps.bearingAccuracyDeg
 
     return result
 
@@ -96,13 +96,13 @@ class BaseMapData(ABC):
       current_road_name
     )
 
-    self._pub_master.send('liveMapDataSP', live_map_data_sp)
+    self._pm.send('liveMapDataSP', live_map_data_sp)
     get_debug(f"SRC: [{self.__class__.__name__}] | SLC: [{speed_limit}] | NSL: [{next_speed_limit}] | " +
               f"NSLD: [{next_speed_limit_distance}] | CRN: [{current_road_name}] | GPS: [{self._last_gps}] " +
               f"Annotations: [{', '.join(f'{key}: {value}' for key, value in self._last_gps.annotations.items()) if self._last_gps else []}]")
 
   def tick(self):
-    self._sub_master.update()
+    self._sm.update()
     self._last_gps = self.get_current_location()
     self.update_location(self._last_gps)
     self.publish()
