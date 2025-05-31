@@ -161,7 +161,7 @@ procs += [
 
   # mapd
   NativeProcess("mapd", COMMON_DIR, [MAPD_PATH], always_run),
-  PythonProcess("mapd_manager", "selfdrive.mapd_manager", always_run),
+  PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 ]
 
 if os.path.exists("./github_runner.sh"):
