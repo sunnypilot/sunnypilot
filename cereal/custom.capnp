@@ -78,6 +78,11 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     stock @2;
   }
 
+  struct Override {
+    key @0 :Text;
+    value @1 :Text;
+  }
+
   struct ModelBundle {
     index @0 :UInt32;
     internalName @1 :Text;
@@ -88,8 +93,9 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     environment @6 :Text;
     runner @7 :Runner;
     is20hz @8 :Bool;
-    ref @9 :Text;  # New field
+    ref @9 :Text;
     minimumSelectorVersion @10 :UInt32;
+    overrides @11 :List(Override);
   }
 }
 
@@ -144,6 +150,7 @@ struct OnroadEventSP @0xda96579883444c35 {
     hyundaiRadarTracksConfirmed @13;
     experimentalModeSwitched @14;
     wrongCarModeAlertOnly @15;
+    pedalPressedAlertOnly @16;
   }
 }
 
@@ -169,6 +176,12 @@ struct CarControlSP @0xa5cd762cd951a455 {
   leadDistance @1 :Float32;
   leadRelSpeed @2 :Float32;
   leadVisible @3 :Bool;
+  params @4 :List(Param);
+
+  struct Param {
+    key @0 :Text;
+    value @1 :Text;
+  }
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {

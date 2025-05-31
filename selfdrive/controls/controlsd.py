@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import math
+import threading
+import time
 from typing import SupportsFloat
 
 from cereal import car, log
@@ -18,7 +20,8 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
-from sunnypilot.selfdrive.controls.controlsd_ext import ControlsdExt
+
+from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
 
 State = log.SelfdriveState.OpenpilotState
 LaneChangeState = log.LaneChangeState
@@ -27,23 +30,23 @@ LaneChangeDirection = log.LaneChangeDirection
 ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 
-class Controls:
+class Controls(ControlsExt):
   def __init__(self) -> None:
     self.params = Params()
     cloudlog.info("controlsd is waiting for CarParams")
     self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
     cloudlog.info("controlsd got CarParams")
 
-    # Initialize SP controlsd extension
-    self.ext = ControlsdExt(self.CP, self.params)
+    # Initialize sunnypilot controlsd extension
+    ControlsExt.__init__(self, self.CP, self.params)
 
-    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.ext.CP_SP)
+    self.CI = interfaces[self.CP.carFingerprint](self.CP, self.CP_SP)
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
-                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'],
+                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'] + self.sm_services_ext,
                                   poll='selfdriveState')
-    self.pm = messaging.PubMaster(['carControl', 'controlsState'])
+    self.pm = messaging.PubMaster(['carControl', 'controlsState'] + self.pm_services_ext)
 
     self.steer_limited_by_controls = False
     self.curvature = 0.0
@@ -56,15 +59,14 @@ class Controls:
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
-      self.LaC = LatControlAngle(self.CP, self.ext.CP_SP, self.CI)
+      self.LaC = LatControlAngle(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'pid':
-      self.LaC = LatControlPID(self.CP, self.ext.CP_SP, self.CI)
+      self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
-      self.LaC = LatControlTorque(self.CP, self.ext.CP_SP, self.CI)
+      self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
 
   def update(self):
     self.sm.update(15)
-    self.ext.update_state() # Update SP state
     if self.sm.updated["liveCalibration"]:
       self.pose_calibrator.feed_live_calib(self.sm['liveCalibration'])
     if self.sm.updated["livePose"]:
@@ -101,8 +103,8 @@ class Controls:
     # Check which actuators can be enabled
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
 
-    # Use ControlsdExt to determine lat active state
-    _lat_active = self.ext.get_lat_active(self.sm['selfdriveState'].active)
+    # Get which state to use for active lateral control
+    _lat_active = self.get_lat_active(self.sm)
 
     CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
@@ -146,12 +148,9 @@ class Controls:
         cloudlog.error(f"actuators.{p} not finite {actuators.to_dict()}")
         setattr(actuators, p, 0.0)
 
-    # Create CarControlSP
-    CC_SP = self.ext.create_cc_sp()
+    return CC, lac_log
 
-    return CC, CC_SP, lac_log
-
-  def publish(self, CC, CC_SP, lac_log):
+  def publish(self, CC, lac_log):
     CS = self.sm['carState']
 
     # Orientation and angle rates can be useful for carcontroller
@@ -186,7 +185,7 @@ class Controls:
       CO = self.sm['carOutput']
       if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
         self.steer_limited_by_controls = abs(CC.actuators.steeringAngleDeg - CO.actuatorsOutput.steeringAngleDeg) > \
-                                              STEER_ANGLE_SATURATION_THRESHOLD
+                                         STEER_ANGLE_SATURATION_THRESHOLD
       else:
         self.steer_limited_by_controls = abs(CC.actuators.torque - CO.actuatorsOutput.torque) > 1e-2
 
@@ -225,16 +224,27 @@ class Controls:
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
 
-    # Publish CarControlSP
-    self.ext.publish_sp(CC_SP, CS.canValid)
+  def params_thread(self, evt):
+    while not evt.is_set():
+      self.get_params_sp()
+
+      time.sleep(0.1)
 
   def run(self):
     rk = Ratekeeper(100, print_delay_threshold=None)
-    while True:
-      self.update()
-      CC, CC_SP, lac_log = self.state_control()
-      self.publish(CC, CC_SP, lac_log)
-      rk.monitor_time()
+    e = threading.Event()
+    t = threading.Thread(target=self.params_thread, args=(e,))
+    try:
+      t.start()
+      while True:
+        self.update()
+        CC, lac_log = self.state_control()
+        self.publish(CC, lac_log)
+        self.run_ext(self.sm, self.pm)
+        rk.monitor_time()
+    finally:
+      e.set()
+      t.join()
 
 
 def main():
