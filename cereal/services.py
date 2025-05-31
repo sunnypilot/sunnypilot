@@ -83,6 +83,7 @@ _services: dict[str, tuple] = {
   "onroadEventsSP": (True, 1., 1),
   "carParamsSP": (True, 0.02, 1),
   "carControlSP": (True, 100., 10),
+  "liveMapDataSP": (True, 1.),
 
   # debug
   "uiDebug": (True, 0., 1),
