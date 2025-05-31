@@ -246,3 +246,6 @@ class SpeedLimitController:
     self._speed_limit_prev = self._speed_limit
     self._op_enabled_prev = self._op_enabled
     self._brake_pressed_prev = self._brake_pressed
+
+    debug(f'Speed limit controller state: enabled: {self._enabled}, active: {self._active}, '
+          f'speed limit: {self._speed_limit}, source: {self._source}, distance: {self._distance}')
