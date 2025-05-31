@@ -139,7 +139,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
     {"MadsMainCruiseAllowed", PERSISTENT | BACKUP},
-    {"MadsPauseLateralOnBrake", PERSISTENT | BACKUP},
+    {"MadsSteeringMode", PERSISTENT | BACKUP},
     {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
 
     // Model Manager params
@@ -166,10 +166,6 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", PERSISTENT},
-    {"HyundaiRadarTracks", PERSISTENT},
-    {"HyundaiRadarTracksConfirmed", PERSISTENT},
-    {"HyundaiRadarTracksPersistent", PERSISTENT},
-    {"HyundaiRadarTracksToggle", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
 };
