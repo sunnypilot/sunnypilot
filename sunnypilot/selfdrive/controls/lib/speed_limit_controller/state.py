@@ -16,7 +16,7 @@ ENABLED_STATES = (State.preActive, State.tempInactive, *ACTIVE_STATES)
 
 class StateMachine:
   def __init__(self):
-    self.state = State.off
+    self.state = State.inactive
 
   def update(self, events_sp: EventsSP) -> tuple[bool, bool]:
     # TEMP INACTIVE, ADAPTING, ACTIVE, PRE ACTIVE
