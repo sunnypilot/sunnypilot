@@ -1,6 +1,6 @@
 from cereal import custom
 
-DEBUG = False
+DEBUG = True
 PARAMS_UPDATE_PERIOD = 2.  # secs. Time between parameter updates.
 TEMP_INACTIVE_GUARD_PERIOD = 1.  # secs. Time to wait after activation before considering temp deactivation signal.
 
