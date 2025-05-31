@@ -48,6 +48,7 @@ class LongitudinalPlannerSP:
     plan_sp_send.valid = sm.all_checks(service_list=['carState', 'controlsState'])
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
+    longitudinalPlanSP.events = self.events_sp.to_msg()
 
     # Dynamic Experimental Control
     dec = longitudinalPlanSP.dec
@@ -63,6 +64,5 @@ class LongitudinalPlannerSP:
     slc.speedLimit = float(self.slc.speed_limit)
     slc.speedLimitOffset = float(self.slc.speed_limit_offset)
     slc.distToSpeedLimit = float(self.slc.distance)
-    slc.events = self.events_sp.to_msg()
 
     pm.send('longitudinalPlanSP', plan_sp_send)
