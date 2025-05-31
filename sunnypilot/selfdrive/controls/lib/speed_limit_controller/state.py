@@ -19,51 +19,58 @@ class StateMachine:
     self.state = State.inactive
 
   def update(self, events_sp: EventsSP) -> tuple[bool, bool]:
-    # TEMP INACTIVE, ADAPTING, ACTIVE, PRE ACTIVE
-    if self.state != State.inactive:
-      if events_sp.has(EventNameSP.speedLimitInactive):
-        self.state = State.inactive
-
-      elif events_sp.has(EventNameSP.speedLimitTempInactive):
-        self.state = State.tempInactive
-
-      else:
-        # ACTIVE
-        if self.state == State.active:
-          if events_sp.has(EventNameSP.speedLimitTempInactive):
-            self.state = State.tempInactive
-          elif events_sp.has(EventNameSP.speedLimitPreActive):
-            self.state = State.preActive
-          elif events_sp.has(EventNameSP.speedLimitAdapting):
-            self.state = State.adapting
-
-        # PRE ACTIVE
-        elif self.state == State.preActive:
-          if events_sp.has(EventNameSP.speedLimitInactive):
-            self.state = State.inactive
-          elif events_sp.has(EventNameSP.speedLimitActive):
-            self.state = State.active
-
-        # ADAPTING
-        elif self.state == State.adapting:
-          if events_sp.has(EventNameSP.speedLimitActive):
-            self.state = State.active
-
-        # TEMP INACTIVE
-        elif self.state == State.tempInactive:
-          if events_sp.has(EventNameSP.speedLimitPreActive):
-            self.state = State.preActive
-          elif events_sp.has(EventNameSP.speedLimitInactive):
-            self.state = State.inactive
-
     # INACTIVE
-    elif self.state == State.inactive:
-      if events_sp.has(EventNameSP.speedLimitPreActive):
+    if self.state == State.inactive:
+      if events_sp.has(EventNameSP.speedLimitEnable):
         self.state = State.preActive
       elif events_sp.has(EventNameSP.speedLimitAdapting):
         self.state = State.adapting
       elif events_sp.has(EventNameSP.speedLimitActive):
         self.state = State.active
+
+    # PRE ACTIVE
+    elif self.state == State.preActive:
+      if events_sp.has(EventNameSP.speedLimitDisable):
+        self.state = State.inactive
+      elif events_sp.has(EventNameSP.speedLimitUserCancel):
+        self.state = State.inactive
+      elif events_sp.has(EventNameSP.speedLimitUserConfirm):
+        self.state = State.active
+      elif events_sp.has(EventNameSP.speedLimitActive):
+        self.state = State.active
+
+    # ACTIVE
+    elif self.state == State.active:
+      if events_sp.has(EventNameSP.speedLimitDisable):
+        self.state = State.inactive
+      elif events_sp.has(EventNameSP.speedLimitUserCancel):
+        self.state = State.tempInactive
+      elif events_sp.has(EventNameSP.speedLimitAdapting):
+        self.state = State.adapting
+      elif events_sp.has(EventNameSP.speedLimitValueChange):
+        # For user confirm mode, transition to preActive on speed limit change
+        if events_sp.has(EventNameSP.speedLimitEnable):
+          self.state = State.preActive
+
+    # ADAPTING
+    elif self.state == State.adapting:
+      if events_sp.has(EventNameSP.speedLimitDisable):
+        self.state = State.inactive
+      elif events_sp.has(EventNameSP.speedLimitUserCancel):
+        self.state = State.tempInactive
+      elif events_sp.has(EventNameSP.speedLimitReached):
+        self.state = State.active
+
+    # TEMP INACTIVE
+    elif self.state == State.tempInactive:
+      if events_sp.has(EventNameSP.speedLimitDisable):
+        self.state = State.inactive
+      elif events_sp.has(EventNameSP.speedLimitValueChange):
+        # When speed limit changes, reactivate
+        if events_sp.has(EventNameSP.speedLimitEnable):
+          self.state = State.preActive
+        else:
+          self.state = State.inactive
 
     enabled = self.state in ENABLED_STATES
     active = self.state in ACTIVE_STATES

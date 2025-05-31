@@ -17,6 +17,8 @@ DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimen
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, mpc):
+    self.events_sp = EventsSP()
+
     self.dec = DynamicExperimentalController(CP, mpc)
     self.slc = SpeedLimitController(CP)
 
@@ -27,9 +29,9 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def update_v_cruise(self, sm: messaging.SubMaster, long_enabled: bool, v_ego: float, a_ego: float, v_cruise: float) -> float:
-    events_sp = EventsSP()
+    self.events_sp.clear()
 
-    self.slc.update(long_enabled, v_ego, a_ego, sm, v_cruise, events_sp)
+    self.slc.update(long_enabled, v_ego, a_ego, sm, v_cruise, self.events_sp)
 
     v_cruise_slc = self.slc.speed_limit_offseted if self.slc.is_active else V_CRUISE_UNSET
 
@@ -56,10 +58,11 @@ class LongitudinalPlannerSP:
     # Speed Limit Control
     slc = longitudinalPlanSP.slc
     slc.state = self.slc.state
-    slc.enabled = self.slc._is_enabled
+    slc.enabled = self.slc.is_enabled
     slc.active = self.slc.is_active
     slc.speedLimit = float(self.slc.speed_limit)
     slc.speedLimitOffset = float(self.slc.speed_limit_offset)
     slc.distToSpeedLimit = float(self.slc.distance)
+    slc.events = self.events_sp.to_msg()
 
     pm.send('longitudinalPlanSP', plan_sp_send)
