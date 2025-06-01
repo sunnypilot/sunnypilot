@@ -252,7 +252,11 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
   }
 }
 
-struct LiveMapDataSP @0xb86e6369214c01c8 {
+struct CarStateSP @0xb86e6369214c01c8 {
+  speedLimit @0 :Float32;  # m/s
+}
+
+struct LiveMapDataSP @0xf416ec09499d9d19 {
   speedLimitValid @0 :Bool;
   speedLimit @1 :Float32;
   speedLimitAheadValid @2 :Bool;
@@ -280,9 +284,6 @@ struct LiveMapDataSP @0xb86e6369214c01c8 {
     offline @1;
     online @2;
   }
-}
-
-struct CustomReserved8 @0xf416ec09499d9d19 {
 }
 
 struct CustomReserved9 @0xa1680744031fdb2d {
