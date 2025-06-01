@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.common.params import Params
+from openpilot.common.swaglog import cloudlog
 
 
 class ModeldLagd:
@@ -13,5 +14,12 @@ class ModeldLagd:
 
   def lagd_main(self, CP, sm, model):
     if self.params.get_bool("LagdToggle"):
-      return sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
-    return CP.steerActuatorDelay + 0.2
+      lateral_delay = sm["liveDelay"].lateralDelay
+      lat_smooth = model.LAT_SMOOTH_SECONDS
+      result = lateral_delay + lat_smooth
+      cloudlog.error(f"LAGD USING LIVE DELAY: {lateral_delay:.3f} + {lat_smooth:.3f} = {result:.3f}")
+      return result
+    steer_actuator_delay = CP.steerActuatorDelay
+    result = steer_actuator_delay + 0.2
+    cloudlog.error(f"LAGD USING STEER ACTUATOR: {steer_actuator_delay:.3f} + 0.2 = {result:.3f}")
+    return result
