@@ -31,6 +31,18 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
     });
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
+
+  // GasGating toggle
+  list->addItem(new ParamControlSP("GasGating",
+                                   tr("Model Predictive Coasting"),
+                                   tr("Coined gasgating: when 'on' this feature allows the model to coast in situations it wants too, such as cut ins"),
+                                   "../assets/offroad/icon_shell.png"));
+
+  // LiveDelay toggle
+  list->addItem(new ParamControlSP("LagdToggle",
+                                   tr("Live Learning Steer Delay"),
+                                   tr("This toggle allows for disabling liveDelay in the model to use the old static steer actuator delay"),
+                                   "../assets/offroad/icon_shell.png"));
 }
 
 
