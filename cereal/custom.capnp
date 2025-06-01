@@ -223,7 +223,8 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
   }
 }
 
-struct CustomReserved7 @0xb86e6369214c01c8 {
+struct CarStateSP @0xb86e6369214c01c8 {
+  speedLimit @0 :Float32;  # m/s
 }
 
 struct CustomReserved8 @0xf416ec09499d9d19 {
