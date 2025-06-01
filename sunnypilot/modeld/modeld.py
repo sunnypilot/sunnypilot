@@ -202,10 +202,9 @@ def main(demo=False):
 
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
-  modeld_lagd = ModeldLagd(CP)
+  modeld_lagd = ModeldLagd()
 
   # Enable lagd support for sunnypilot modeld
-  steer_delay = modeld_lagd.lagd_main(sm, model)
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
   prev_action = log.ModelDataV2.Action()
 
@@ -249,6 +248,8 @@ def main(demo=False):
     v_ego = sm["carState"].vEgo
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
+    steer_delay = modeld_lagd.lagd_main(CP, sm, model)
+
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
