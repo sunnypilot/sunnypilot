@@ -1,1 +1,1 @@
-#define DEFAULT_MODEL "Vegan Filet O Fish (Default)"
+#define DEFAULT_MODEL "Filet o Fish (Default)"

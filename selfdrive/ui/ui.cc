@@ -91,6 +91,11 @@ void UIState::updateStatus() {
     }
   }
 
+  if (engaged() != engaged_prev) {
+    engaged_prev = engaged();
+    emit engagedChanged(engaged());
+  }
+
   // Handle onroad/offroad transition
   if (scene.started != started_prev || sm->frame == 1) {
     if (scene.started) {
