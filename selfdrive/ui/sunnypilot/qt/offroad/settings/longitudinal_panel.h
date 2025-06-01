@@ -7,11 +7,33 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_warning.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_source.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class LongitudinalPanel : public QWidget {
   Q_OBJECT
 
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
+  void showEvent(QShowEvent *event) override;
+  void refresh();
+
+private slots:
+  void handleSlcWarningButtonClick();
+  void handleSLCSourceButtonClick();
+  void handleSLCBackButtonClick();
+
+private:
+  Params params;
+  QStackedLayout *main_layout = nullptr;
+  ScrollViewSP *cruisePanelScroller = nullptr;
+  QWidget *cruisePanelScreen = nullptr;
+
+  SpeedLimitControl *slcControl;
+  SpeedLimitControlWarning *slcWarningScreen;
+  SpeedLimitControlSource *slcSourceScreen;
 };
