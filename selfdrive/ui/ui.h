@@ -85,6 +85,7 @@ public:
 signals:
   void uiUpdate(const UIState &s);
   void offroadTransition(bool offroad);
+  void engagedChanged(bool engaged);
 
 protected slots:
   virtual void update();
@@ -94,6 +95,7 @@ protected:
 
 private:
   bool started_prev = false;
+  bool engaged_prev = false;
 };
 
 #ifndef SUNNYPILOT
