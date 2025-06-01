@@ -46,13 +46,12 @@ class SpeedLimitResolver:
     self._get_from_map_data()
 
   def _get_from_car_state(self):
-    if not self._is_sock_updated('carState'):
-      debug('SL: No carState instruction for speed limit')
+    if not self._is_sock_updated('carStateSP'):
+      debug('SL: No carStateSP instruction for speed limit')
       return
 
     self._reset_limit_sources(Source.car_state)
-    # TODO-SP: need CS_SP for speedLimit from the car
-    self._limit_solutions[Source.car_state] = 0.  # self._sm['carState'].cruiseState.speedLimit
+    self._limit_solutions[Source.car_state] = self._sm['carStateSP'].speedLimit
     self._distance_solutions[Source.car_state] = 0.
 
   def _get_from_map_data(self):

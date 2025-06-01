@@ -20,17 +20,16 @@ def create_mock(properties, mocker: MockerFixture):
 
 def setup_sm_mock(mocker: MockerFixture):
   cruise_speed_limit = random.uniform(0, 120)
-  nav_instruction_limit = random.uniform(0, 120)
   live_map_data_limit = random.uniform(0, 120)
 
-  cruise_state = create_mock({'speedLimit': cruise_speed_limit}, mocker)
   car_state = create_mock({
-    'cruiseState': cruise_state,
     'gasPressed': False,
     'brakePressed': False,
     'standstill': False,
   }, mocker)
-  nav_instruction = create_mock({'speedLimit': nav_instruction_limit}, mocker)
+  car_state_sp = create_mock({
+    'speedLimit': cruise_speed_limit,
+  }, mocker)
   live_map_data = create_mock({
     'speedLimit': live_map_data_limit,
     'speedLimitValid': True,
@@ -43,14 +42,15 @@ def setup_sm_mock(mocker: MockerFixture):
   sm_mock.__getitem__.side_effect = lambda key: {
     'carState': car_state,
     'liveMapDataSP': live_map_data,
+    'carStateSP': car_state_sp,
   }[key]
   return sm_mock
 
 
 parametrized_policies = pytest.mark.parametrize(
   "policy, sm_key, function_key", [
-    (Policy.car_state_only, 'carState', 'car_state'),
-    (Policy.car_state_priority, 'carState', 'car_state'),
+    (Policy.car_state_only, 'carStateSP', 'car_state'),
+    (Policy.car_state_priority, 'carStateSP', 'car_state'),
     (Policy.map_data_only, 'liveMapDataSP', 'map_data'),
     (Policy.map_data_priority, 'liveMapDataSP', 'map_data'),
   ],
@@ -73,7 +73,7 @@ class TestSpeedLimitResolverValidation:
   def test_resolver(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
     resolver = resolver_class(policy)
     sm_mock = setup_sm_mock(mocker)
-    source_speed_limit = sm_mock[sm_key].cruiseState.speedLimit if sm_key == 'carState' else sm_mock[sm_key].speedLimit
+    source_speed_limit = sm_mock[sm_key].speedLimit
 
     # Assert the resolver
     speed_limit, _, source = resolver.resolve(source_speed_limit, 0, sm_mock)
@@ -83,9 +83,9 @@ class TestSpeedLimitResolverValidation:
   def test_resolver_combined(self, resolver_class, mocker: MockerFixture):
     resolver = resolver_class(Policy.combined)
     sm_mock = setup_sm_mock(mocker)
-    socket_to_source = {'carState': Source.car_state, 'liveMapDataSP': Source.map_data}
+    socket_to_source = {'carStateSP': Source.car_state, 'liveMapDataSP': Source.map_data}
     minimum_key, minimum_speed_limit = min(
-      ((key, sm_mock[key].cruiseState.speedLimit) if key == 'carState' else (key, sm_mock[key].speedLimit) for key in
+      ((key, sm_mock[key].speedLimit) for key in
        socket_to_source.keys()), key=lambda x: x[1])
 
     # Assert the resolver
@@ -97,7 +97,7 @@ class TestSpeedLimitResolverValidation:
   def test_parser(self, resolver_class, policy, sm_key, function_key, mocker: MockerFixture):
     resolver = resolver_class(policy)
     sm_mock = setup_sm_mock(mocker)
-    source_speed_limit = sm_mock[sm_key].cruiseState.speedLimit if sm_key == 'carState' else sm_mock[sm_key].speedLimit
+    source_speed_limit = sm_mock[sm_key].speedLimit
 
     # Assert the parsing
     speed_limit, _, source = resolver.resolve(source_speed_limit, 0, sm_mock)
