@@ -51,7 +51,8 @@ class SpeedLimitResolver:
       return
 
     self._reset_limit_sources(Source.car_state)
-    self._limit_solutions[Source.car_state] = self._sm['carState'].cruiseState.speedLimit
+    # TODO-SP: need CS_SP for speedLimit from the car
+    self._limit_solutions[Source.car_state] = 0.  # self._sm['carState'].cruiseState.speedLimit
     self._distance_solutions[Source.car_state] = 0.
 
   def _get_from_map_data(self):
