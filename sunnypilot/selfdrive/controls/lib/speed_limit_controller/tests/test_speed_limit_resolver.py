@@ -42,7 +42,6 @@ def setup_sm_mock(mocker: MockerFixture):
   sm_mock = mocker.MagicMock()
   sm_mock.__getitem__.side_effect = lambda key: {
     'carState': car_state,
-    'navInstruction': nav_instruction,
     'liveMapDataSP': live_map_data,
   }[key]
   return sm_mock
@@ -54,8 +53,6 @@ parametrized_policies = pytest.mark.parametrize(
     (Policy.car_state_priority, 'carState', 'car_state'),
     (Policy.map_data_only, 'liveMapDataSP', 'map_data'),
     (Policy.map_data_priority, 'liveMapDataSP', 'map_data'),
-    (Policy.nav_only, 'navInstruction', 'nav'),
-    (Policy.nav_priority, 'navInstruction', 'nav'),
   ],
   ids=lambda val: val.name if hasattr(val, 'name') else str(val)
 )
@@ -86,7 +83,7 @@ class TestSpeedLimitResolverValidation:
   def test_resolver_combined(self, resolver_class, mocker: MockerFixture):
     resolver = resolver_class(Policy.combined)
     sm_mock = setup_sm_mock(mocker)
-    socket_to_source = {'carState': Source.car_state, 'liveMapDataSP': Source.map_data, 'navInstruction': Source.nav}
+    socket_to_source = {'carState': Source.car_state, 'liveMapDataSP': Source.map_data}
     minimum_key, minimum_speed_limit = min(
       ((key, sm_mock[key].cruiseState.speedLimit) if key == 'carState' else (key, sm_mock[key].speedLimit) for key in
        socket_to_source.keys()), key=lambda x: x[1])

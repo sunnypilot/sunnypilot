@@ -7,19 +7,17 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers 
 
 
 class SpeedLimitResolver:
-  def __init__(self, policy=Policy.nav_priority):
+  def __init__(self, policy: Policy):
     self._limit_solutions = {}  # Store for speed limit solutions from different sources
     self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
 
     self._policy = policy
     self._policy_to_sources_map = {
       Policy.car_state_only: [Source.car_state],
-      Policy.car_state_priority: [Source.car_state, Source.nav, Source.map_data],
-      Policy.map_data_priority: [Source.map_data, Source.nav, Source.car_state],
-      Policy.nav_priority: [Source.nav, Source.map_data, Source.car_state],
+      Policy.car_state_priority: [Source.car_state, Source.map_data],
+      Policy.map_data_priority: [Source.map_data, Source.car_state],
       Policy.map_data_only: [Source.map_data],
-      Policy.combined: [Source.car_state, Source.nav, Source.map_data],
-      Policy.nav_only: [Source.nav]
+      Policy.combined: [Source.car_state, Source.map_data],
     }
     for source in Source:
       self._reset_limit_sources(source)
@@ -45,7 +43,6 @@ class SpeedLimitResolver:
   def _resolve_limit_sources(self):
     """Get limit solutions from each data source"""
     self._get_from_car_state()
-    self._get_from_nav()
     self._get_from_map_data()
 
   def _get_from_car_state(self):
@@ -56,16 +53,6 @@ class SpeedLimitResolver:
     self._reset_limit_sources(Source.car_state)
     self._limit_solutions[Source.car_state] = self._sm['carState'].cruiseState.speedLimit
     self._distance_solutions[Source.car_state] = 0.
-
-  def _get_from_nav(self):
-    if not self._is_sock_updated('navInstruction'):
-      debug('SL: No nav instruction for speed limit')
-      return
-
-    # Load limits from nav instruction
-    self._reset_limit_sources(Source.nav)
-    self._limit_solutions[Source.nav] = self._sm['navInstruction'].speedLimit
-    self._distance_solutions[Source.nav] = 0.
 
   def _get_from_map_data(self):
     sock = 'liveMapDataSP'

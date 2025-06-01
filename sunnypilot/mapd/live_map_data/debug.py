@@ -35,7 +35,7 @@ def live_map_data_sp_thread():
 
 
 def live_map_data_sp_thread_debug(gps_location_service):
-  _sub_master = messaging.SubMaster(['carState', 'navInstruction', 'livePose', 'liveMapDataSP', 'longitudinalPlanSP', gps_location_service])
+  _sub_master = messaging.SubMaster(['carState', 'livePose', 'liveMapDataSP', 'longitudinalPlanSP', gps_location_service])
   _sub_master.update()
 
   v_ego = _sub_master['carState'].vEgo
