@@ -176,9 +176,10 @@ struct OnroadEventSP @0xda96579883444c35 {
     speedLimitValueChange @19;
     speedLimitAdapting @20;
     speedLimitEnable @21;
-    speedLimitUserConfirm @22;
-    speedLimitUserCancel @23;
-    speedLimitReached @24;
+    speedLimitDisable @22;
+    speedLimitUserConfirm @23;
+    speedLimitUserCancel @24;
+    speedLimitReached @25;
   }
 }
 
