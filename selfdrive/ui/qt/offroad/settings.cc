@@ -233,9 +233,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
           params.remove("LiveTorqueParameters");
           params.remove("LiveParameters");
           params.remove("LiveParametersV2");
-          if (!params.getBool("LagdBackup")) {
-            params.remove("LiveDelay");
-          }
+          params.remove("LiveDelay");
           params.putBool("OnroadCycleRequested", true);
         }
       }
