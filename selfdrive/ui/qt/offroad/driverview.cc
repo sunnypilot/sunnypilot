@@ -65,8 +65,6 @@ void DriverViewWindow::paintGL() {
     p.drawRoundedRect(fbox_x - box_size / 2, fbox_y - box_size / 2, box_size, box_size, 35.0, 35.0);
   }
 
-  driver_monitor.updateState(*uiState());
-  driver_monitor.draw(p, rect());
 }
 
 mat4 DriverViewWindow::calcFrameMatrix() {
