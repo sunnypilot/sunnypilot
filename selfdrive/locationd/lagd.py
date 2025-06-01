@@ -13,7 +13,6 @@ from openpilot.common.realtime import config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose, fft_next_good_size, parabolic_peak_interp
 
-
 BLOCK_SIZE = 100
 BLOCK_NUM = 50
 BLOCK_NUM_NEEDED = 5
@@ -371,7 +370,6 @@ def main():
   if (initial_lag_params := retrieve_initial_lag(params, CP)) is not None:
     lag, valid_blocks = initial_lag_params
     lag_learner.reset(lag, valid_blocks)
-
 
   while True:
     sm.update()
