@@ -13,6 +13,8 @@ from openpilot.common.realtime import config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose, fft_next_good_size, parabolic_peak_interp
 
+from openpilot.sunnypilot.selfdrive.locationd.lagd_backup import LagdBackup
+
 BLOCK_SIZE = 100
 BLOCK_NUM = 50
 BLOCK_NUM_NEEDED = 5
@@ -334,6 +336,11 @@ class LateralLagEstimator:
 
 
 def retrieve_initial_lag(params: Params, CP: car.CarParams):
+  lag_backup = LagdBackup(CP).get_initial_lag()
+  if lag_backup is not None:
+    lag, valid_blocks = lag_backup
+    return lag, valid_blocks
+
   last_lag_data = params.get("LiveDelay")
   last_carparams_data = params.get("CarParamsPrevRoute")
 
@@ -371,6 +378,8 @@ def main():
     lag, valid_blocks = initial_lag_params
     lag_learner.reset(lag, valid_blocks)
 
+  lagd_backup = LagdBackup(CP)
+
   while True:
     sm.update()
     if sm.all_checks():
@@ -389,3 +398,4 @@ def main():
 
       if sm.frame % 1200 == 0: # cache every 60 seconds
         params.put_nonblocking("LiveDelay", lag_msg_dat)
+        lagd_backup.backup_lagd()

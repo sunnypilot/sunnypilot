@@ -25,6 +25,7 @@ from openpilot.sunnypilot.modeld.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
 from openpilot.sunnypilot.modeld.constants import ModelConstants, Plan
 from openpilot.sunnypilot.models.helpers import get_active_bundle, get_model_path, load_metadata, prepare_inputs, load_meta_constants
+from openpilot.sunnypilot.models.modeld_lagd import ModeldLagd
 from openpilot.sunnypilot.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
 
@@ -201,8 +202,10 @@ def main(demo=False):
 
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
+  modeld_lagd = ModeldLagd(CP)
+
   # Enable lagd support for sunnypilot modeld
-  steer_delay = sm["liveDelay"].lateralDelay + model.LAT_SMOOTH_SECONDS
+  steer_delay = modeld_lagd.lagd_main(sm, model)
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
   prev_action = log.ModelDataV2.Action()
 

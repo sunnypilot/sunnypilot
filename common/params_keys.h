@@ -168,4 +168,10 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiLongitudinalTuning", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
+
+    // model panel params
+    {"GasGating", PERSISTENT | BACKUP},
+    {"LagdBackup", PERSISTENT | BACKUP},
+    {"LagdBackupData", PERSISTENT | BACKUP},
+    {"LagdToggle", PERSISTENT | BACKUP},
 };
