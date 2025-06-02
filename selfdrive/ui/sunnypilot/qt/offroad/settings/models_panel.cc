@@ -141,7 +141,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   // Sort bundles by index in descending order
   QStringList bundleNames;
   // Add "Default" as the first option
-  bundleNames.append(tr("Use Default"));
+  bundleNames.append(DEFAULT_MODEL);
 
   auto indices = index_to_bundle.keys();
   std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
@@ -159,7 +159,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   }
 
   // Handle "Stock" selection differently
-  if (selectedBundleName == tr("Use Default")) {
+  if (selectedBundleName == DEFAULT_MODEL) {
     params.remove("ModelManager_ActiveBundle");
     currentModelLblBtn->setValue(tr("Default"));
     showResetParamsDialog();
