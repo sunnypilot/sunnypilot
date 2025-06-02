@@ -28,7 +28,7 @@ class SpeedLimitController:
     self._last_params_update = 0.0
     self._last_op_enabled_time = 0.0
     self._is_metric = self._params.get_bool("IsMetric")
-    self._is_enabled = self._params.get_bool("EnableSlc")
+    self._is_enabled = self._params.get_bool("SpeedLimitControl")
     self._disengage_on_accelerator = self._params.get_bool("DisengageOnAccelerator")
     self._op_enabled = False
     self._op_enabled_prev = False
@@ -50,7 +50,7 @@ class SpeedLimitController:
 
     self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
     self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
-    self._warning_type_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
+    self._warning_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
     self._warning_offset_type = int(self._params.get("SpeedLimitWarningOffsetType", encoding='utf8'))
     self._warning_offset_value = float(self._params.get("SpeedLimitWarningValueOffset", encoding='utf8'))
     self._engage_type = np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
@@ -149,10 +149,10 @@ class SpeedLimitController:
 
   def _update_params(self):
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
-      self._is_enabled = self._params.get_bool("EnableSlc")
+      self._is_enabled = self._params.get_bool("SpeedLimitControl")
       self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
       self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
-      self._warning_type_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
+      self._warning_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
       self._warning_offset_type = int(self._params.get("SpeedLimitWarningOffsetType", encoding='utf8'))
       self._warning_offset_value = float(self._params.get("SpeedLimitWarningValueOffset", encoding='utf8'))
       self._policy = Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
@@ -285,31 +285,31 @@ class SpeedLimitController:
     """ In active state, aim to keep speed constant around control time horizon """
     return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
 
-  def _update_events(self, events):
-    if self._speed_limit > 0 and self._warning_type_type == 2 and \
+  def _update_events(self, events_sp):
+    if self._speed_limit > 0 and self._warning_type == 2 and \
       self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
-      events.add(EventNameSP.speedLimitPreActive)
+      events_sp.add(EventNameSP.speedLimitPreActive)
 
     if not self.is_active:
       if self._state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive and \
         self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
-          events.add(EventNameSP.speedLimitPreActive)
+          events_sp.add(EventNameSP.speedLimitPreActive)
     else:
       if self._engage_type == Engage.user_confirm:
         if self._state_prev == SpeedLimitControlState.preActive:
-          events.add(EventNameSP.speedLimitConfirmed)
-          events.add(EventNameSP.speedLimitActive)
+          events_sp.add(EventNameSP.speedLimitConfirmed)
+          events_sp.add(EventNameSP.speedLimitActive)
       elif self._engage_type == Engage.auto:
         if self._state_prev not in ACTIVE_STATES:
-          events.add(EventNameSP.speedLimitActive)
+          events_sp.add(EventNameSP.speedLimitActive)
         elif self._speed_limit_changed != 0:
-          events.add(EventNameSP.speedLimitValueChange)
+          events_sp.add(EventNameSP.speedLimitValueChange)
 
-  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events):
+  def update(self, enabled, v_ego, a_ego, sm, v_cruise_setpoint, events_sp):
     _car_state = sm['carState']
-    self._op_enabled = enabled and sm['controlsState'].enabled and _car_state.cruiseState.enabled and \
+    self._op_enabled = enabled and \
                        not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
-                       not (events.contains(ET.OVERRIDE_LONGITUDINAL) and self._disengage_on_accelerator)
+                       not (_car_state.gasPressed and self._disengage_on_accelerator)
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
@@ -322,4 +322,4 @@ class SpeedLimitController:
     self._update_params()
     self._update_calculations()
     self._state_transition()
-    self._update_events(events)
+    self._update_events(events_sp)
