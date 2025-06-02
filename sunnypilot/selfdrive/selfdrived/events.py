@@ -152,7 +152,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleLow, .45),
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .45),  # TODO-SP: AudibleAlert.promptSingleLow
   },
 
   EventNameSP.speedLimitActive: {
@@ -168,7 +168,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleHigh, .45),
+      Priority.MID, VisualAlert.none, AudibleAlert.none, .45),  # TODO-SP: AudibleAlert.promptSingleHigh
   },
 
   EventNameSP.speedLimitValueChange: {
