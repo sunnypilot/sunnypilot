@@ -90,7 +90,7 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     true);
   addItem(toggleDeviceBootMode);
 
-  connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonToggled, this, [=](int index) {
+  connect(toggleDeviceBootMode, &ButtonParamControlSP::buttonClicked, this, [=](int index) {
     params.put("DeviceBootMode", QString::number(index).toStdString());
     updateState();
   });
