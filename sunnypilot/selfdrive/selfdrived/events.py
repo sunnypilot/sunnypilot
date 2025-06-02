@@ -17,7 +17,7 @@ EVENT_NAME_SP = {v: k for k, v in EventNameSP.schema.enumerants.items()}
 
 
 def speed_limit_adjust_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
-  speedLimit = sm['longitudinalPlanSP'].speedLimit
+  speedLimit = sm['longitudinalPlanSP'].slc.speedLimit
   speed = round(speedLimit * (CV.MS_TO_KPH if metric else CV.MS_TO_MPH))
   message = f'Adjusting to {speed} {"km/h" if metric else "mph"} speed limit'
   return Alert(
@@ -152,7 +152,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .45),
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleLow, .45),
   },
 
   EventNameSP.speedLimitActive: {
@@ -163,36 +163,16 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
   },
 
+  EventNameSP.speedLimitConfirmed: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleHigh, .45),
+  },
+
   EventNameSP.speedLimitValueChange: {
     ET.WARNING: speed_limit_adjust_alert,
-  },
-
-  EventNameSP.speedLimitAdapting: {
-    ET.WARNING: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitEnable: {
-    ET.ENABLE: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitDisable: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitUserConfirm: {
-    ET.WARNING: Alert(
-      "Speed Limit Confirmed",
-      "Set speed changed to match posted speed limit",
-      AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.),
-  },
-
-  EventNameSP.speedLimitUserCancel: {
-    ET.WARNING: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitReached: {
-    ET.WARNING: EngagementAlert(AudibleAlert.none),
   },
 
 }
