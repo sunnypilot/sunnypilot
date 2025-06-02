@@ -153,7 +153,7 @@ class TestCarModelBase(unittest.TestCase):
     cls.openpilot_enabled = cls.car_safety_mode_frame is not None
 
     cls.CarInterface = interfaces[cls.platform]
-    cls.CP = cls.CarInterface.get_params(cls.platform, cls.fingerprint, car_fw, alpha_long, docs=False)
+    cls.CP = cls.CarInterface.get_params(cls.platform, cls.fingerprint, car_fw, alpha_long, False, docs=False)
     cls.CP_SP = cls.CarInterface.get_params_sp(cls.CP, cls.platform,  cls.fingerprint, car_fw, alpha_long, docs=False)
     assert cls.CP
     assert cls.CP_SP
@@ -204,7 +204,7 @@ class TestCarModelBase(unittest.TestCase):
     CC_SP = structs.CarControlSP()
 
     for i, msg in enumerate(self.can_msgs):
-      CS = self.CI.update(msg)
+      CS, _ = self.CI.update(msg)
       self.CI.apply(CC, CC_SP, msg[0])
 
       if CS.canValid:
@@ -349,7 +349,7 @@ class TestCarModelBase(unittest.TestCase):
       self.safety.safety_rx_hook(to_send)
 
       can = [(int(time.monotonic() * 1e9), [CanData(address=address, dat=dat, src=bus)])]
-      CS = self.CI.update(can)
+      CS, _ = self.CI.update(can)
 
       if self.safety.get_gas_pressed_prev() != prev_panda_gas:
         self.assertEqual(CS.gasPressed, self.safety.get_gas_pressed_prev())
@@ -409,7 +409,8 @@ class TestCarModelBase(unittest.TestCase):
     checks = defaultdict(int)
     vehicle_speed_seen = self.CP.steerControlType == SteerControlType.angle and not self.CP.notCar
     for idx, can in enumerate(self.can_msgs):
-      CS = self.CI.update(can).as_reader()
+      CS, _ = self.CI.update(can)
+      CS = CS.as_reader()
       for msg in filter(lambda m: m.src < 64, can[1]):
         to_send = libsafety_py.make_CANPacket(msg.address, msg.src % 4, msg.dat)
         ret = self.safety.safety_rx_hook(to_send)
