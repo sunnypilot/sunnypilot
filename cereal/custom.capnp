@@ -173,13 +173,8 @@ struct OnroadEventSP @0xda96579883444c35 {
     pedalPressedAlertOnly @16;
     speedLimitPreActive @17;
     speedLimitActive @18;
-    speedLimitValueChange @19;
-    speedLimitAdapting @20;
-    speedLimitEnable @21;
-    speedLimitDisable @22;
-    speedLimitUserConfirm @23;
-    speedLimitUserCancel @24;
-    speedLimitReached @25;
+    speedLimitConfirmed @19;
+    speedLimitValueChange @20;
   }
 }
 

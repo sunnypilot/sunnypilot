@@ -152,7 +152,7 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "",
       "",
       AlertStatus.normal, AlertSize.none,
-      Priority.MID, VisualAlert.none, AudibleAlert.none, .45),
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleLow, .45),
   },
 
   EventNameSP.speedLimitActive: {
@@ -163,36 +163,16 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 3.),
   },
 
+  EventNameSP.speedLimitConfirmed: {
+    ET.WARNING: Alert(
+      "",
+      "",
+      AlertStatus.normal, AlertSize.none,
+      Priority.MID, VisualAlert.none, AudibleAlert.promptSingleHigh, .45),
+  },
+
   EventNameSP.speedLimitValueChange: {
     ET.WARNING: speed_limit_adjust_alert,
-  },
-
-  EventNameSP.speedLimitAdapting: {
-    ET.WARNING: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitEnable: {
-    ET.ENABLE: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitDisable: {
-    ET.USER_DISABLE: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitUserConfirm: {
-    ET.WARNING: Alert(
-      "Speed Limit Confirmed",
-      "Set speed changed to match posted speed limit",
-      AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.),
-  },
-
-  EventNameSP.speedLimitUserCancel: {
-    ET.WARNING: EngagementAlert(AudibleAlert.none),
-  },
-
-  EventNameSP.speedLimitReached: {
-    ET.WARNING: EngagementAlert(AudibleAlert.none),
   },
 
 }
