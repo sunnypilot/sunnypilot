@@ -23,7 +23,7 @@ ExitOffroadButton::ExitOffroadButton(QWidget *parent) : QPushButton(parent), glo
 
   glowTimer->start(45);
   
-  pixmap = QPixmap("../assets/icons/icon_exit_offroad.png").scaledToWidth(img_width, Qt::SmoothTransformation);
+  pixmap = QPixmap("../../sunnypilot/selfdrive/assets/offroad/icon_exit_offroad.png").scaledToWidth(img_width, Qt::SmoothTransformation);
 
   // go to toggles and expand experimental mode description
   connect(this, &QPushButton::clicked, [=]() {
