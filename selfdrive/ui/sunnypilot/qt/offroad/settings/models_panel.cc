@@ -145,7 +145,8 @@ void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
   QMap<uint32_t, QString> index_to_bundle;
   const auto bundles = model_manager.getAvailableBundles();
   for (const auto &bundle: bundles) {
-    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundle.getDisplayName()));
+    std::string bundleStr = std::string(bundle.getDisplayName()) + " $SNAME$ " + std::string(bundle.getInternalName());
+    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundleStr));
   }
 
   // Sort bundles by index in descending order
@@ -166,6 +167,13 @@ void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
   if (filteredBundleNames.isEmpty()) {
     ConfirmationDialog::alert(tr("No model found for keywords: %1").arg(query), this);
     return;
+  }
+
+  for (const QString &bundleName: filteredBundleNames) {
+    int index = bundleName.indexOf("$SNAME$");
+    if (index != -1) {
+      filteredBundleNames.replace(filteredBundleNames.indexOf(bundleName), bundleName.left(index).trimmed());
+    }
   }
 
   const QString selectedBundleName = MultiOptionDialog::getSelection(
