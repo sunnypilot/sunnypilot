@@ -80,6 +80,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Show Blind Spot Warnings"),
       tr("Display warnings when a vehicle is detected in your blind spot."),
       "../assets/offroad/icon_monitoring.png",
+      false,
     },
   };
 
