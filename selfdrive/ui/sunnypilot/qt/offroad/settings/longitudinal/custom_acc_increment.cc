@@ -27,8 +27,8 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
   auto *longPressControl = new AccIncrementOptionControl("CustomAccLongPressIncrement", {1, 3}, 1, &customLongValues);
   connect(longPressControl, &OptionControlSP::updateLabels, longPressControl, &AccIncrementOptionControl::refresh);
 
-  shortPressControl->setFixedWidth(330);
-  longPressControl->setFixedWidth(330);
+  shortPressControl->setFixedWidth(280);
+  longPressControl->setFixedWidth(280);
   accFrameLayout->addWidget(shortPressControl, 0, 0, Qt::AlignLeft);
   accFrameLayout->addWidget(longPressControl, 0, 1, Qt::AlignRight);
 
