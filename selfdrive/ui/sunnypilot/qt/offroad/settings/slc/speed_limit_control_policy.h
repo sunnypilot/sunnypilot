@@ -14,11 +14,11 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-class SpeedLimitControlSource : public QWidget {
+class SpeedLimitControlPolicy : public QWidget {
   Q_OBJECT
 
 public:
-  explicit SpeedLimitControlSource(QWidget *parent = nullptr);
+  explicit SpeedLimitControlPolicy(QWidget *parent = nullptr);
   void refresh();
   void showEvent(QShowEvent *event) override;
 
@@ -30,11 +30,11 @@ private:
   ButtonParamControlSP *slc_policy;
 
   static QString sourceDescription(SLCSourcePolicy type = SLCSourcePolicy::CAR_ONLY) {
-    QString car_only = tr("⦿ Car Only: ");
-    QString map_only = tr("⦿ Map Only: ");
-    QString car_first = tr("⦿ Car First: ");
-    QString map_first = tr("⦿ Map First: ");
-    QString combined = tr("⦿ Combined: ");
+    QString car_only = tr("⦿ Car Only: Use Speed Limit data only from Car");
+    QString map_only = tr("⦿ Map Only: Use Speed Limit data only from OpenStreetMaps");
+    QString car_first = tr("⦿ Car First: Use Speed Limit data from Car if available, else use from OpenStreetMaps");
+    QString map_first = tr("⦿ Map First: Use Speed Limit data from OpenStreetMaps if available, else use from Car");
+    QString combined = tr("⦿ Combined: Use combined Speed Limit data from Car & OpenStreetMaps");
 
     if (type == SLCSourcePolicy::CAR_ONLY) {
       car_only = "<font color='white'><b>" + car_only + "</b></font>";

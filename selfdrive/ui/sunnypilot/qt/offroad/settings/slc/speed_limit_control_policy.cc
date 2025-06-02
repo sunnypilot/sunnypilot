@@ -5,9 +5,9 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_source.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_policy.h"
 
-SpeedLimitControlSource::SpeedLimitControlSource(QWidget *parent) : QWidget(parent) {
+SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(50, 20, 50, 20);
   main_layout->setSpacing(20);
@@ -33,17 +33,17 @@ SpeedLimitControlSource::SpeedLimitControlSource(QWidget *parent) : QWidget(pare
     slc_policy_texts,
     250);
   list->addItem(slc_policy);
-  connect(slc_policy, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitControlSource::refresh);
+  connect(slc_policy, &ButtonParamControlSP::buttonClicked, this, &SpeedLimitControlPolicy::refresh);
 
   refresh();
   main_layout->addWidget(list);
 };
 
-void SpeedLimitControlSource::refresh() {
+void SpeedLimitControlPolicy::refresh() {
   slc_policy->setDescription(sourceDescription(static_cast<SLCSourcePolicy>(std::stoi(params.get("SpeedLimitControlPolicy")))));
   slc_policy->showDescription();
 }
 
-void SpeedLimitControlSource::showEvent(QShowEvent *event) {
+void SpeedLimitControlPolicy::showEvent(QShowEvent *event) {
   refresh();
 }

@@ -58,7 +58,8 @@ osm_panel_qt_src = [
 
 slc_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/slc/speed_limit_control.cc",
-  "sunnypilot/qt/offroad/settings/slc/speed_limit_control_source.cc",
+  "sunnypilot/qt/offroad/settings/slc/speed_limit_control_policy.cc",
+  "sunnypilot/qt/offroad/settings/slc/speed_limit_control_subpanel.cc",
   "sunnypilot/qt/offroad/settings/slc/speed_limit_control_warning.cc",
 ]
 

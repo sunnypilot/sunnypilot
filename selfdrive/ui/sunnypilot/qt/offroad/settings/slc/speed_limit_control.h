@@ -67,52 +67,11 @@ class SpeedLimitControl : public ExpandableToggleRow {
 
 public:
   SpeedLimitControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
-  void refresh();
-  void showEvent(QShowEvent *event) override;
 
 signals:
-  void slcWarningButtonClicked();
-  void slcSourceButtonClicked();
+  void slcSettingsButtonClicked();
 
 private:
   Params params;
-  PushButtonSP *slcWarningControl;
-  PushButtonSP *slcSourceControl;
-  ButtonParamControlSP *slc_offset_setting;
-  OptionControlSP *slc_offset;
-  ButtonParamControlSP *slc_engage_setting;
-
-  static QString engageModeDescription(SLCEngageType type = SLCEngageType::AUTO) {
-    QString auto_str = tr("⦿ Auto: Automatic speed adjustment based on speed limit data");
-    QString user_str = tr("⦿ User Confirm: Asks driver to confirm speed adjustment based on speed limit data");
-
-    if (type == SLCEngageType::USER_CONFIRM) {
-      user_str = "<font color='white'><b>" + user_str + "</b></font>";
-    } else {
-      auto_str = "<font color='white'><b>" + auto_str + "</b></font>";
-    }
-
-    return QString("%1<br>%2")
-             .arg(auto_str)
-             .arg(user_str);
-  }
-
-  static QString offsetDescription(SLCOffsetType type = SLCOffsetType::NONE) {
-    QString none_str = tr("⦿ None: No Offset");
-    QString fixed_str = tr("⦿ Fixed: Adds a fixed offset [Speed Limit + Offset]");
-    QString percent_str = tr("⦿ Percent: Adds a percent offset [Speed Limit + (Offset % Speed Limit)]");
-
-    if (type == SLCOffsetType::FIXED) {
-      fixed_str = "<font color='white'><b>" + fixed_str + "</b></font>";
-    } else if (type == SLCOffsetType::PERCENT) {
-      percent_str = "<font color='white'><b>" + percent_str + "</b></font>";
-    } else {
-      none_str = "<font color='white'><b>" + none_str + "</b></font>";
-    }
-
-    return QString("%1<br>%2<br>%3")
-             .arg(none_str)
-             .arg(fixed_str)
-             .arg(percent_str);
-  }
+  PushButtonSP *slcSettings;
 };

@@ -6,6 +6,7 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_subpanel.h"
 
 LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     setStyleSheet(R"(
@@ -41,31 +42,20 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "",
     this);
   list->addItem(slcControl);
-  connect(slcControl, &SpeedLimitControl::toggleFlipped, this, &LongitudinalPanel::refresh);
-  connect(slcControl, &SpeedLimitControl::slcWarningButtonClicked, this, &LongitudinalPanel::handleSlcWarningButtonClick);
-  connect(slcControl, &SpeedLimitControl::slcSourceButtonClicked, this, &LongitudinalPanel::handleSLCSourceButtonClick);
 
-  slcWarningScreen = new SpeedLimitControlWarning(this);
-  connect(slcWarningScreen, &SpeedLimitControlWarning::backPress, this, &LongitudinalPanel::handleSLCBackButtonClick);
-  slcSourceScreen = new SpeedLimitControlSource(this);
-  connect(slcSourceScreen, &SpeedLimitControlSource::backPress, this, &LongitudinalPanel::handleSLCBackButtonClick);
+  connect(slcControl, &SpeedLimitControl::slcSettingsButtonClicked, [=]() {
+    cruisePanelScroller->setLastScrollPosition();
+    main_layout->setCurrentWidget(slcScreen);
+  });
 
+  slcScreen = new SpeedLimitControlSubpanel(this);
+  connect(slcScreen, &SpeedLimitControlSubpanel::backPress, [=]() {
+   cruisePanelScroller->restoreScrollPosition();
+   main_layout->setCurrentWidget(cruisePanelScreen);
+ });
 
   main_layout->addWidget(cruisePanelScreen);
-  main_layout->addWidget(slcWarningScreen);
-  main_layout->addWidget(slcSourceScreen);
-  main_layout->setCurrentWidget(cruisePanelScreen);
-}
-
-void LongitudinalPanel::handleSlcWarningButtonClick() {
-  main_layout->setCurrentWidget(slcWarningScreen);
-}
-
-void LongitudinalPanel::handleSLCSourceButtonClick() {
-  main_layout->setCurrentWidget(slcSourceScreen);
-}
-
-void LongitudinalPanel::handleSLCBackButtonClick() {
+  main_layout->addWidget(slcScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
 }
 
@@ -75,5 +65,4 @@ void LongitudinalPanel::showEvent(QShowEvent *event) {
 }
 
 void LongitudinalPanel::refresh() {
-  slcControl->refresh();
 }
