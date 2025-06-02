@@ -183,6 +183,12 @@ void Device::updateBrightness(const UIState &s) {
   }
 
   int brightness = brightness_filter.update(clipped_brightness);
+  
+  int manual_brightness = QString::fromStdString(Params().get("Brightness")).toInt();
+  if (manual_brightness != 0) {
+    brightness = manual_brightness;
+  }
+
   if (!awake) {
     brightness = 0;
   }

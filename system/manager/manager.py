@@ -51,6 +51,7 @@ def manager_init() -> None:
     ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("MaxTimeOffroad", "1800"),
+    ("Brightness", "0"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
