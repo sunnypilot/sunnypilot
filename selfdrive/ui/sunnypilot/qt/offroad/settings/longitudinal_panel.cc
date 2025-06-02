@@ -6,7 +6,6 @@
  */
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_subpanel.h"
 
 LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     setStyleSheet(R"(
