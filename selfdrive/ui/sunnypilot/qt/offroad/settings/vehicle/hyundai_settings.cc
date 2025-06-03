@@ -30,7 +30,7 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
     radar_tuning_texts,
     500
   );
-  QObject::connect(radarToggle, &ButtonParamControlSP::buttonToggled, this, &HyundaiSettings::updateSettings);
+  QObject::connect(radarToggle, &ButtonParamControlSP::buttonClicked, this, &HyundaiSettings::updateSettings);
   list->addItem(radarToggle);
   radarToggle->showDescription();
 }
