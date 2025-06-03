@@ -35,15 +35,15 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   // GasGating toggle
   list->addItem(new ParamControlSP("GasGating",
                                    tr("Model Predictive Coasting"),
-                                   tr("Coined gasgating: when 'on' this feature allows the model to coast in situations it wants too, such as cut ins. "
-                                      "Keep enabled for stock OP behavior"),
+                                   tr("Enable this to allow the car to coast (not accelerate or brake) when it predicts it's safe, like when another car cuts in. "
+                                      "Keeping this on provides the stock openpilot experience."),
                                    "../assets/offroad/icon_shell.png"));
 
   // LiveDelay toggle
   list->addItem(new ParamControlSP("LagdToggle",
                                    tr("Live Learning Steer Delay"),
-                                   tr("This toggle allows for disabling liveDelay in the model to use the old static steer actuator delay. "
-                                      "Keep enabled for stock OP behavior"),
+                                   tr("Enable this for the car to learn and adapt its steering response time. "
+                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
                                    "../assets/offroad/icon_shell.png"));
 }
 

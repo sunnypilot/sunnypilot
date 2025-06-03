@@ -25,9 +25,7 @@ class LongitudinalPlannerSP:
     return self.dec.mode()
 
   def gas_gating(self) -> bool:
-    if self._params.get_bool("GasGating"):
-      return True
-    return False
+    return self._params.get_bool("GasGating")
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)

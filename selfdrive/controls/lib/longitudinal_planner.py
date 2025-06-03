@@ -171,7 +171,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    if self.mode == 'acc' or not self.gas_gating():
+    if (self.mode == 'acc') or (not self.gas_gating()):
       output_a_target = output_a_target_mpc
       self.output_should_stop = output_should_stop_mpc
     else:
