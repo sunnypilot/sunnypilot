@@ -28,7 +28,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   cruisePanelScreen = new QWidget(this);
   QVBoxLayout* vlayout = new QVBoxLayout(cruisePanelScreen);
-  vlayout->setContentsMargins(50, 20, 50, 20);
+  vlayout->setContentsMargins(0, 0, 0, 0);
 
   cruisePanelScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(cruisePanelScroller);

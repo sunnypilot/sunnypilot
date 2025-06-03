@@ -10,13 +10,15 @@
 SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStackedWidget(parent) {
   subPanelFrame = new QFrame();
   QVBoxLayout *subPanelLayout = new QVBoxLayout(subPanelFrame);
-  subPanelLayout->setContentsMargins(50, 20, 50, 20);
-  subPanelLayout->setSpacing(20);
+  subPanelLayout->setContentsMargins(0, 0, 0, 0);
+  subPanelLayout->setSpacing(0);
 
   // Back button
   PanelBackButton* back = new PanelBackButton(tr("Back"));
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   subPanelLayout->addWidget(back, 0, Qt::AlignLeft);
+
+  subPanelLayout->addSpacing(20);
 
   ListWidgetSP *list = new ListWidgetSP(this, true);
 

@@ -9,13 +9,15 @@
 
 SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
-  main_layout->setContentsMargins(50, 20, 50, 20);
-  main_layout->setSpacing(20);
+  main_layout->setContentsMargins(0, 0, 0, 0);
+  main_layout->setSpacing(0);
 
   // Back button
   PanelBackButton* back = new PanelBackButton(tr("Back"));
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
+
+  main_layout->addSpacing(10);
 
   ListWidgetSP *list = new ListWidgetSP(this, true);
 
@@ -41,7 +43,7 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
   slc_warning_offset_settings = new ButtonParamControlSP(
     "SpeedLimitWarningOffsetType",
     tr("Warning Offset"),
-    tr(""),
+    "",
     "",
     slc_warning_offset_texts,
     300);
