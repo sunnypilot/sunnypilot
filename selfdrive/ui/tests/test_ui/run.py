@@ -26,7 +26,7 @@ from openpilot.tools.lib.framereader import FrameReader
 from openpilot.tools.lib.route import Route
 from openpilot.tools.lib.cache import DEFAULT_CACHE_DIR
 
-UI_DELAY = 0.1 # may be slower on CI?
+UI_DELAY = 0.5 # may be slower on CI?
 TEST_ROUTE = "a2a0ccea32023010|2023-07-27--13-01-19"
 
 STREAMS: list[tuple[VisionStreamType, CameraConfig, bytes]] = []
@@ -213,6 +213,12 @@ def setup_settings_sunnylink_sponsor_button(click, pm: PubMaster, scroll=None):
   click(1967, 225)
   time.sleep(UI_DELAY)
 
+def setup_settings_models(click, pm: PubMaster, scroll=None):
+  setup_settings_device(click, pm)
+  click(278, 852)
+  time.sleep(UI_DELAY)
+
+
 def setup_settings_steering(click, pm: PubMaster, scroll=None):
   CP = car.CarParams()
   CP.carFingerprint = "HONDA_CIVIC"
@@ -223,25 +229,26 @@ def setup_settings_steering(click, pm: PubMaster, scroll=None):
   Params().put("CarParamsSPPersistent", CP_SP.to_bytes())
 
   setup_settings_device(click, pm)
-  click(278, 852)
+  click(278, 962)
   time.sleep(UI_DELAY)
 
 def setup_settings_steering_mads(click, pm: PubMaster, scroll=None):
   Params().put_bool("Mads", True)
 
   setup_settings_device(click, pm)
-  click(278, 852)
+  click(278, 962)
   click(970, 250)
   time.sleep(UI_DELAY)
 
 def setup_settings_steering_alc(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
-  click(278, 852)
+  click(278, 962)
   click(970, 534)
   time.sleep(UI_DELAY)
 
 def setup_settings_driving(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
+  scroll(-1, 278, 962)
   click(278, 962)
   time.sleep(UI_DELAY)
 
@@ -295,6 +302,7 @@ CASES = {
 CASES.update({
   "settings_sunnylink": setup_settings_sunnylink,
   "settings_sunnylink_sponsor_button": setup_settings_sunnylink_sponsor_button,
+  "settings_models": setup_settings_models,
   "settings_steering": setup_settings_steering,
   "settings_steering_mads": setup_settings_steering_mads,
   "settings_steering_alc": setup_settings_steering_alc,

@@ -78,6 +78,11 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     stock @2;
   }
 
+  struct Override {
+    key @0 :Text;
+    value @1 :Text;
+  }
+
   struct ModelBundle {
     index @0 :UInt32;
     internalName @1 :Text;
@@ -88,8 +93,9 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     environment @6 :Text;
     runner @7 :Runner;
     is20hz @8 :Bool;
-    ref @9 :Text;  # New field
+    ref @9 :Text;
     minimumSelectorVersion @10 :UInt32;
+    overrides @11 :List(Override);
   }
 }
 
@@ -167,6 +173,12 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
+  params @1 :List(Param);
+
+  struct Param {
+    key @0 :Text;
+    value @1 :Text;
+  }
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {
@@ -211,7 +223,7 @@ struct BackupManagerSP @0xf98d843bfd7004a3 {
   }
 }
 
-struct CustomReserved7 @0xb86e6369214c01c8 {
+struct CarStateSP @0xb86e6369214c01c8 {
 }
 
 struct CustomReserved8 @0xf416ec09499d9d19 {
