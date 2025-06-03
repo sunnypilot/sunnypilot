@@ -11,5 +11,5 @@
 
 class ModelRendererSP : public ModelRenderer {
 public:
-  ModelRendererSP() {}
+  ModelRendererSP() = default;
 };
