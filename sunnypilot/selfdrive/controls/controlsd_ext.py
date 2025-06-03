@@ -8,6 +8,7 @@ import cereal.messaging as messaging
 from cereal import custom
 
 from opendbc.car import structs
+from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.param_store import ParamStore
@@ -20,6 +21,10 @@ class ControlsExt:
     self.param_store = ParamStore(self.CP)
     self.get_params_sp()
 
+    self.is_metric = self.params.get_bool("IsMetric")
+    self.blinker_pause_lateral_control = self.params.get_bool("BlinkerPauseLateralControl")
+    self.blinker_min_lat_control_speed = int(self.params.get("BlinkerMinLateralControlSpeed", encoding='utf8'))
+
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
@@ -30,9 +35,19 @@ class ControlsExt:
   def get_params_sp(self) -> None:
     self.param_store.update(self.params)
 
-  @staticmethod
-  def get_lat_active(sm: messaging.SubMaster) -> bool:
+    self.is_metric = self.params.get_bool("IsMetric")
+    self.blinker_pause_lateral_control = self.params.get_bool("BlinkerPauseLateralControl")
+    self.blinker_min_lat_control_speed = int(self.params.get("BlinkerMinLateralControlSpeed", encoding='utf8'))
+
+  def get_lat_active(self, sm: messaging.SubMaster) -> bool:
     ss_sp = sm['selfdriveStateSP']
+    car_state = sm['carState']
+
+    one_blinker = car_state.leftBlinker != car_state.rightBlinker
+    blinker_min_speed_ms = self.blinker_min_lat_control_speed * (CV.MPH_TO_MS if self.is_metric else CV.KPH_TO_MS)
+
+    if self.blinker_pause_lateral_control and one_blinker and car_state.vEgo < blinker_min_speed_ms:
+      return False
 
     if ss_sp.mads.available:
       return bool(ss_sp.mads.active)
