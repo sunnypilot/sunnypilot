@@ -1,9 +1,13 @@
+import numpy as np
 import pyray as rl
+
 from openpilot.system.hardware import TICI
 from msgq.visionipc import VisionIpcClient, VisionStreamType, VisionBuf
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.egl import init_egl, create_egl_image, destroy_egl_image, bind_egl_image_to_texture, EGLImage
 
+
+CONNECTION_RETRY_INTERVAL = 0.2  # seconds between connection attempts
 
 VERTEX_SHADER = """
 #version 300 es
@@ -53,7 +57,10 @@ else:
 class CameraView:
   def __init__(self, name: str, stream_type: VisionStreamType):
     self.client = VisionIpcClient(name, stream_type, False)
+    self._texture_needs_update = True
+    self.last_connection_attempt: float = 0.0
     self.shader = rl.load_shader_from_memory(VERTEX_SHADER, FRAME_FRAGMENT_SHADER)
+    self._texture1_loc: int = rl.get_shader_location(self.shader, "texture1") if not TICI else -1
 
     self.frame: VisionBuf | None = None
     self.texture_y: rl.Texture | None = None
@@ -85,6 +92,24 @@ class CameraView:
     if self.shader and self.shader.id:
       rl.unload_shader(self.shader)
 
+  def _calc_frame_matrix(self, rect: rl.Rectangle) -> np.ndarray:
+    if not self.frame:
+      return np.eye(3)
+
+    # Calculate aspect ratios
+    widget_aspect_ratio = rect.width / rect.height
+    frame_aspect_ratio = self.frame.width / self.frame.height
+
+    # Calculate scaling factors to maintain aspect ratio
+    zx = min(frame_aspect_ratio / widget_aspect_ratio, 1.0)
+    zy = min(widget_aspect_ratio / frame_aspect_ratio, 1.0)
+
+    return np.array([
+        [zx, 0.0, 0.0],
+        [0.0, zy, 0.0],
+        [0.0, 0.0, 1.0]
+    ])
+
   def render(self, rect: rl.Rectangle):
     if not self._ensure_connection():
       return
@@ -92,17 +117,27 @@ class CameraView:
     # Try to get a new buffer without blocking
     buffer = self.client.recv(timeout_ms=0)
     if buffer:
+      self._texture_needs_update = True
       self.frame = buffer
 
     if not self.frame:
       return
 
-    # Calculate scaling to maintain aspect ratio
-    scale = min(rect.width / self.frame.width, rect.height / self.frame.height)
-    x_offset = rect.x + (rect.width - (self.frame.width * scale)) / 2
-    y_offset = rect.y + (rect.height - (self.frame.height * scale)) / 2
+    transform = self._calc_frame_matrix(rect)
     src_rect = rl.Rectangle(0, 0, float(self.frame.width), float(self.frame.height))
-    dst_rect = rl.Rectangle(x_offset, y_offset, self.frame.width * scale, self.frame.height * scale)
+
+    # Calculate scale
+    scale_x = rect.width * transform[0, 0]  # zx
+    scale_y = rect.height * transform[1, 1]  # zy
+
+    # Calculate base position (centered)
+    x_offset = rect.x + (rect.width - scale_x) / 2
+    y_offset = rect.y + (rect.height - scale_y) / 2
+
+    x_offset += transform[0, 2] * rect.width / 2
+    y_offset += transform[1, 2] * rect.height / 2
+
+    dst_rect = rl.Rectangle(x_offset, y_offset, scale_x, scale_y)
 
     # Render with appropriate method
     if TICI:
@@ -144,21 +179,31 @@ class CameraView:
       return
 
     # Update textures with new frame data
-    y_data = self.frame.data[: self.frame.uv_offset]
-    uv_data = self.frame.data[self.frame.uv_offset :]
+    if self._texture_needs_update:
+      y_data = self.frame.data[: self.frame.uv_offset]
+      uv_data = self.frame.data[self.frame.uv_offset :]
 
-    rl.update_texture(self.texture_y, rl.ffi.cast("void *", y_data.ctypes.data))
-    rl.update_texture(self.texture_uv, rl.ffi.cast("void *", uv_data.ctypes.data))
+      rl.update_texture(self.texture_y, rl.ffi.cast("void *", y_data.ctypes.data))
+      rl.update_texture(self.texture_uv, rl.ffi.cast("void *", uv_data.ctypes.data))
+      self._texture_needs_update = False
 
     # Render with shader
     rl.begin_shader_mode(self.shader)
-    rl.set_shader_value_texture(self.shader, rl.get_shader_location(self.shader, "texture1"), self.texture_uv)
+    rl.set_shader_value_texture(self.shader, self._texture1_loc, self.texture_uv)
     rl.draw_texture_pro(self.texture_y, src_rect, dst_rect, rl.Vector2(0, 0), 0.0, rl.WHITE)
     rl.end_shader_mode()
 
   def _ensure_connection(self) -> bool:
     if not self.client.is_connected():
       self.frame = None
+
+      # Throttle connection attempts
+      current_time = rl.get_time()
+      if current_time - self.last_connection_attempt < CONNECTION_RETRY_INTERVAL:
+        return False
+
+      self.last_connection_attempt = current_time
+
       if not self.client.connect(False) or not self.client.num_buffers:
         return False
 

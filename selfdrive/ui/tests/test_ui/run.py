@@ -26,7 +26,7 @@ from openpilot.tools.lib.framereader import FrameReader
 from openpilot.tools.lib.route import Route
 from openpilot.tools.lib.cache import DEFAULT_CACHE_DIR
 
-UI_DELAY = 0.2 # may be slower on CI?
+UI_DELAY = 0.5 # may be slower on CI?
 TEST_ROUTE = "a2a0ccea32023010|2023-07-27--13-01-19"
 
 STREAMS: list[tuple[VisionStreamType, CameraConfig, bytes]] = []
