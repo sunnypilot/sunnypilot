@@ -35,11 +35,13 @@ def asdictref(obj) -> dict[str, Any]:
   return _asdictref_inner(obj)
 
 
-def convert_to_capnp(struct: structs.CarParamsSP) -> capnp.lib.capnp._DynamicStructBuilder:
+def convert_to_capnp(struct: structs.CarParamsSP | structs.CarStateSP) -> capnp.lib.capnp._DynamicStructBuilder:
   struct_dict = asdictref(struct)
 
   if isinstance(struct, structs.CarParamsSP):
     struct_capnp = custom.CarParamsSP.new_message(**struct_dict)
+  elif isinstance(struct, structs.CarStateSP):
+    struct_capnp = custom.CarStateSP.new_message(**struct_dict)
   else:
     raise ValueError(f"Unsupported struct type: {type(struct)}")
 
