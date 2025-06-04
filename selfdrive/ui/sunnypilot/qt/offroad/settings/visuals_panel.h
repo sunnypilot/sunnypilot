@@ -7,9 +7,12 @@
 
 #pragma once
 
-#include "selfdrive/ui/qt/onroad/model.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
-class ModelRendererSP : public ModelRenderer {
+class VisualsPanel : public QWidget {
+ Q_OBJECT
+
 public:
-  ModelRendererSP() = default;
+ explicit VisualsPanel(QWidget *parent = nullptr);
+
 };
