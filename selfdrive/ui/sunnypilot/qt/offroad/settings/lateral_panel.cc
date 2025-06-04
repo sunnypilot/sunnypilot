@@ -70,7 +70,7 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   blinkerPauseToggle = new ParamControl(
     "BlinkerPauseLateralControl",
     tr("Pause Lateral Control with Blinker"),
-    tr("Pause lateral control with blinker when traveling below the desired speed selected. Default is 20 MPH or 32 km/h."),
+    tr("Pause lateral control with blinker when traveling below the desired speed selected."),
     "");
   QObject::connect(blinkerPauseToggle, &ToggleControl::toggleFlipped, [=](bool state) {
     blinkerPauseSpeed->setEnabled(state);
