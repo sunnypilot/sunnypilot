@@ -26,23 +26,7 @@ class TestBlinkerPauseLateral:
     self.CS.leftBlinker = False
     self.CS.rightBlinker = False
 
-  def _test_should_blinker_pause_lateral(self, left, right) -> bool:
-    self.CS.leftBlinker = left
-    self.CS.rightBlinker = right
-
-    return self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-
-  def test_below_min_speed_blinker(self):
-    self.CS.vEgo = 4.5  # ~10 MPH
-
-    expected_results = {
-      # (leftBlinker, rightBlinker)
-      (False, False): False,
-      (True, False): True,
-      (False, True): True,
-      (True, True): False
-    }
-
+  def _test_should_blinker_pause_lateral(self, expected_results) -> None:
     for left in (True, False):
       for right in (True, False):
         self.CS.leftBlinker = left
@@ -50,6 +34,17 @@ class TestBlinkerPauseLateral:
 
         result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
         assert result == expected_results[(left, right)]
+
+  def test_below_min_speed_blinker(self):
+    self.CS.vEgo = 4.5  # ~10 MPH
+
+    expected_results = {
+      (False, False): False,
+      (True, False): True,
+      (False, True): True,
+      (True, True): False
+    }
+    self._test_should_blinker_pause_lateral(expected_results)
 
   def test_above_min_speed_blinker(self):
     self.CS.vEgo = 13.4  # ~30 MPH
@@ -60,14 +55,7 @@ class TestBlinkerPauseLateral:
       (False, True): False,
       (True, True): False
     }
-
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
+    self._test_should_blinker_pause_lateral(expected_results)
 
   def test_just_below_min_speed(self):
     self.CS.vEgo = (20 * CV.MPH_TO_MS) - 0.01
@@ -78,14 +66,7 @@ class TestBlinkerPauseLateral:
       (False, True): True,
       (True, True): False
     }
-
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
+    self._test_should_blinker_pause_lateral(expected_results)
 
   def test_disabled(self):
     self.blinker_pause_lateral.enabled = False
@@ -97,14 +78,7 @@ class TestBlinkerPauseLateral:
       (False, True): False,
       (True, True): False
     }
-
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
+    self._test_should_blinker_pause_lateral(expected_results)
 
   def test_metric_units_below_min_speed(self):
     self.blinker_pause_lateral.is_metric = True
@@ -116,14 +90,7 @@ class TestBlinkerPauseLateral:
       (False, True): True,
       (True, True): False
     }
-
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
+    self._test_should_blinker_pause_lateral(expected_results)
 
   def test_metric_units_above_threshold(self):
     self.blinker_pause_lateral.is_metric = True
@@ -135,18 +102,12 @@ class TestBlinkerPauseLateral:
       (False, True): False,
       (True, True): False
     }
-
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
+    self._test_should_blinker_pause_lateral(expected_results)
 
   def test_change_min_speed_threshold(self):
     self.blinker_pause_lateral.min_speed = 30  # MPH
 
+    # below min speed
     self.CS.vEgo = 11.2  # ~25 MPH
 
     expected_results = {
@@ -155,15 +116,9 @@ class TestBlinkerPauseLateral:
       (False, True): True,
       (True, True): False
     }
+    self._test_should_blinker_pause_lateral(expected_results)
 
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
-
+    # above min speed
     self.CS.vEgo = 15.6  # ~35 MPH
 
     expected_results = {
@@ -172,11 +127,4 @@ class TestBlinkerPauseLateral:
       (False, True): False,
       (True, True): False
     }
-
-    for left in (True, False):
-      for right in (True, False):
-        self.CS.leftBlinker = left
-        self.CS.rightBlinker = right
-
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
-        assert result == expected_results[(left, right)]
+    self._test_should_blinker_pause_lateral(expected_results)
