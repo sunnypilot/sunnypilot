@@ -31,6 +31,7 @@ class ControlsExt:
 
   def get_params_sp(self) -> None:
     self.param_store.update(self.params)
+    self.blinker_pause_lateral.get_params()
 
   def get_lat_active(self, sm: messaging.SubMaster) -> bool:
     if self.blinker_pause_lateral.should_blinker_pause_lateral(sm['carState']):
