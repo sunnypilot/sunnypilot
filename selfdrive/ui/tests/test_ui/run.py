@@ -45,10 +45,12 @@ def setup_settings_device(click, pm: PubMaster, scroll=None):
 def setup_settings_network(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   click(278, 405)
+  time.sleep(UI_DELAY)
 
 def setup_settings_network_advanced(click, pm: PubMaster, scroll=None):
   setup_settings_network(click, pm)
   click(1913, 90)
+  time.sleep(UI_DELAY)
 
 def setup_settings_toggles(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
@@ -64,6 +66,7 @@ def setup_settings_firehose(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   scroll(-400, 278, 962)
   click(278, 862)
+  time.sleep(UI_DELAY)
 
 def setup_settings_developer(click, pm: PubMaster, scroll=None):
   CP = car.CarParams()
@@ -145,10 +148,12 @@ def setup_keyboard(click, pm: PubMaster, scroll=None):
   scroll(-400, 278, 962)
   click(278, 970)
   click(1930, 390)
+  time.sleep(UI_DELAY)
 
 def setup_keyboard_uppercase(click, pm: PubMaster, scroll=None):
   setup_keyboard(click, pm, scroll)
   click(200, 800)
+  time.sleep(UI_DELAY)
 
 def setup_driver_camera(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
@@ -186,6 +191,7 @@ def setup_offroad_alert(click, pm: PubMaster, scroll=None):
   # Toggle between settings and home to refresh the offroad alert widget
   setup_settings_device(click, pm)
   click(100, 100)
+  time.sleep(UI_DELAY)
 
 def setup_update_available(click, pm: PubMaster, scroll=None):
   Params().put_bool("UpdateAvailable", True)
@@ -196,10 +202,12 @@ def setup_update_available(click, pm: PubMaster, scroll=None):
 
   setup_settings_device(click, pm)
   click(100, 100)
+  time.sleep(UI_DELAY)
 
 def setup_pair_device(click, pm: PubMaster, scroll=None):
   click(1950, 435)
   click(1800, 900)
+  time.sleep(UI_DELAY)
 
 def setup_settings_sunnylink(click, pm: PubMaster, scroll=None):
   Params().put_bool("SunnylinkEnabled", True)
