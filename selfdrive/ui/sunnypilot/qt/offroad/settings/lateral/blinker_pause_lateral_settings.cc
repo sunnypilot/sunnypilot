@@ -8,20 +8,29 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/blinker_pause_lateral_settings.h"
 
-BlinkerPauseLateralSpeed::BlinkerPauseLateralSpeed() : OptionControlSP(
+BlinkerPauseLateralSettings::BlinkerPauseLateralSettings(
+  const QString &param,
+  const QString &title,
+  const QString &description,
+  const QString &icon,
+  QWidget *parent) : ExpandableToggleRow(param, title, description, icon, parent) {
+
+  pauseLateralSpeed = new OptionControlSP(
   "BlinkerMinLateralControlSpeed",
   "",
   "",
   "",
-  {0, 255}, 5) {
+  {0, 255}, 5);
+  addItem(pauseLateralSpeed);
+  connect(pauseLateralSpeed, &OptionControlSP::updateLabels, this, &BlinkerPauseLateralSettings::refresh);
 
   refresh();
 }
 
-void BlinkerPauseLateralSpeed::refresh() {
+void BlinkerPauseLateralSettings::refresh() {
   const QString option = QString::fromStdString(params.get("BlinkerMinLateralControlSpeed"));
   const bool is_metric = params.getBool("IsMetric");
   const QString unit = is_metric ? "km/h" : "mph";
 
-  setLabel(option + " " + unit);
+  pauseLateralSpeed->setLabel(option + " " + unit);
 }

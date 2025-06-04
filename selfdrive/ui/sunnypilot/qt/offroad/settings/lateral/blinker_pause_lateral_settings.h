@@ -10,14 +10,16 @@
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
-class BlinkerPauseLateralSpeed : public OptionControlSP {
+class BlinkerPauseLateralSettings : public ExpandableToggleRow {
   Q_OBJECT
 
 public:
-  BlinkerPauseLateralSpeed();
+  BlinkerPauseLateralSettings(const QString &param, const QString &title, const QString &description, const QString &icon, QWidget *parent = nullptr);
   void refresh();
 
 private:
   Params params;
+  OptionControlSP *pauseLateralSpeed;
 };
