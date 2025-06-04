@@ -252,6 +252,12 @@ def setup_settings_driving(click, pm: PubMaster, scroll=None):
   click(278, 962)
   time.sleep(UI_DELAY)
 
+def setup_settings_visuals(click, pm: PubMaster, scroll=None):
+  setup_settings_device(click, pm)
+  scroll(-400, 278, 962)
+  click(278, 560)
+  time.sleep(UI_DELAY)
+
 def setup_settings_trips(click, pm: PubMaster, scroll=None):
   setup_settings_device(click, pm)
   scroll(-400, 278, 962)
@@ -307,6 +313,7 @@ CASES.update({
   "settings_steering_mads": setup_settings_steering_mads,
   "settings_steering_alc": setup_settings_steering_alc,
   "settings_driving": setup_settings_driving,
+  "settings_visuals": setup_settings_visuals,
   "settings_trips": setup_settings_trips,
   "settings_vehicle": setup_settings_vehicle,
 })
