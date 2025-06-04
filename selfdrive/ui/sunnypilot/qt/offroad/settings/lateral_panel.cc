@@ -159,7 +159,9 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+
   blinkerPauseSpeed->setEnabled(blinkerPauseToggle->isToggled());
+  blinkerPauseSpeed->refresh();
 
   offroad = _offroad;
 }
