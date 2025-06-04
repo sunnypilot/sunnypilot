@@ -32,7 +32,7 @@ class TestBlinkerPauseLateral:
         self.CS.leftBlinker = left
         self.CS.rightBlinker = right
 
-        result = self.blinker_pause_lateral.should_blinker_pause_lateral(self.CS)
+        result = self.blinker_pause_lateral.update(self.CS)
         assert result == expected_results[(left, right)]
 
   def test_below_min_speed_blinker(self):

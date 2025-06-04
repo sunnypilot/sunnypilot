@@ -23,7 +23,7 @@ class BlinkerPauseLateral:
     self.is_metric = self.params.get_bool("IsMetric")
     self.min_speed = int(self.params.get("BlinkerMinLateralControlSpeed", encoding='utf8'))
 
-  def should_blinker_pause_lateral(self, CS: car.CarState) -> bool:
+  def update(self, CS: car.CarState) -> bool:
     if not self.enabled:
       return False
 
