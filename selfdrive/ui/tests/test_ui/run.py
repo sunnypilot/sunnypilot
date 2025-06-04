@@ -161,6 +161,7 @@ def setup_driver_camera(click, pm: PubMaster, scroll=None):
   DATA['deviceState'].deviceState.started = False
   setup_onroad(click, pm)
   DATA['deviceState'].deviceState.started = True
+  time.sleep(UI_DELAY)
 
 def setup_onroad_alert(click, pm: PubMaster, text1, text2, size, status=log.SelfdriveState.AlertStatus.normal):
   print(f'setup onroad alert, size: {size}')
@@ -174,6 +175,7 @@ def setup_onroad_alert(click, pm: PubMaster, text1, text2, size, status=log.Self
   cs.alertType = "test_onroad_alert"
   setup_onroad(click, pm)
   DATA['selfdriveState'] = log_from_bytes(origin_state_bytes).as_builder()
+  time.sleep(UI_DELAY)
 
 def setup_onroad_alert_small(click, pm: PubMaster, scroll=None):
   setup_onroad_alert(click, pm, 'This is a small alert message', '', log.SelfdriveState.AlertSize.small)
