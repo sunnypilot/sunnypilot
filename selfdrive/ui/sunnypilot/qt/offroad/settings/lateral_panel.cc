@@ -7,8 +7,6 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral_panel.h"
 
-#include <catch2/catch.hpp>
-
 #include "common/util.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
