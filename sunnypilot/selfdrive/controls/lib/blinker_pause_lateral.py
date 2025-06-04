@@ -31,4 +31,4 @@ class BlinkerPauseLateral:
     speed_factor = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
     min_speed_ms = self.min_speed * speed_factor
 
-    return one_blinker and CS.vEgo < min_speed_ms
+    return bool(one_blinker and CS.vEgo < min_speed_ms)
