@@ -7,6 +7,8 @@ from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.window import BaseWindow
 from openpilot.system.ui.text import wrap_text
 
+from openpilot.system.ui.sunnypilot.lib.application import gui_app_sp
+
 # Constants
 PROGRESS_BAR_WIDTH = 1000
 PROGRESS_BAR_HEIGHT = 20
@@ -24,7 +26,7 @@ def clamp(value, min_value, max_value):
 
 class SpinnerRenderer:
   def __init__(self):
-    self._comma_texture = gui_app.texture("images/spinner_comma.png", TEXTURE_SIZE, TEXTURE_SIZE)
+    self._comma_texture = gui_app_sp.sp_texture("images/spinner_sunnypilot.png", TEXTURE_SIZE, TEXTURE_SIZE)
     self._spinner_texture = gui_app.texture("images/spinner_track.png", TEXTURE_SIZE, TEXTURE_SIZE, alpha_premultiply=True)
     self._rotation = 0.0
     self._progress: int | None = None
