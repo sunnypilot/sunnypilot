@@ -45,7 +45,7 @@ def manager_init() -> None:
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
-    ("BlinkerPauseLateralControl", "1"),
+    ("BlinkerPauseLateralControl", "0"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("Mads", "1"),
