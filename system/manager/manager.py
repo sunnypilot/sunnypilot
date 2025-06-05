@@ -47,7 +47,6 @@ def manager_init() -> None:
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
     ("DynamicExperimentalControl", "0"),
-    ("GasGating", "1"),
     ("HyundaiLongitudinalTuning", "0"),
     ("LagdToggle", "1"),
     ("Mads", "1"),

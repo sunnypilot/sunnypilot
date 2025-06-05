@@ -172,6 +172,5 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"DynamicExperimentalControl", PERSISTENT},
 
     // model panel params
-    {"GasGating", PERSISTENT | BACKUP},
     {"LagdToggle", PERSISTENT | BACKUP},
 };

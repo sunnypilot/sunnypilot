@@ -32,13 +32,6 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
 
-  // GasGating toggle
-  list->addItem(new ParamControlSP("GasGating",
-                                   tr("Model Predictive Coasting"),
-                                   tr("Enable this to allow the car to coast (not accelerate or brake) when it predicts it's safe, like when another car cuts in. "
-                                      "Keeping this on provides the stock openpilot experience."),
-                                   "../assets/offroad/icon_shell.png"));
-
   // LiveDelay toggle
   list->addItem(new ParamControlSP("LagdToggle",
                                    tr("Live Learning Steer Delay"),
