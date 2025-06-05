@@ -115,15 +115,18 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
 };
 
 void SpeedLimitControlSubpanel::refresh() {
-  slc_engage_setting->setDescription(engageModeDescription(static_cast<SLCEngageType>(std::atoi(params.get("SpeedLimitEngageType").c_str()))));
-  slc_offset->setDescription(offsetDescription(static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()))));
-
+  SLCEngageType engage_type_param = static_cast<SLCEngageType>(std::atoi(params.get("SpeedLimitEngageType").c_str()));
+  SLCOffsetType offset_type_param = static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str()));
   QString offsetLabel = QString::fromStdString(params.get("SpeedLimitValueOffset"));
-  if (static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str())) == SLCOffsetType::PERCENT) {
+
+  slc_engage_setting->setDescription(engageModeDescription(engage_type_param));
+  slc_offset->setDescription(offsetDescription(offset_type_param));
+
+  if (offset_type_param == SLCOffsetType::PERCENT) {
     offsetLabel += "%";
   }
 
-  if (static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str())) == SLCOffsetType::NONE) {
+  if (offset_type_param == SLCOffsetType::NONE) {
     slc_offset->setVisible(false);
   } else {
     slc_offset->setVisible(true);
