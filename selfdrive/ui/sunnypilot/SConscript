@@ -56,11 +56,11 @@ osm_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/osm/models_fetcher.cc",
 ]
 
-slc_panel_qt_src = [
-  "sunnypilot/qt/offroad/settings/slc/speed_limit_control.cc",
-  "sunnypilot/qt/offroad/settings/slc/speed_limit_control_policy.cc",
-  "sunnypilot/qt/offroad/settings/slc/speed_limit_control_subpanel.cc",
-  "sunnypilot/qt/offroad/settings/slc/speed_limit_control_warning.cc",
+longitudinal_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_policy.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_subpanel.cc",
+  "sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_warning.cc",
 ]
 
 vehicle_panel_qt_src = [
@@ -85,7 +85,7 @@ brand_settings_qt_src = [
 ]
 
 sp_widgets_src = widgets_src + network_src
-sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + osm_panel_qt_src + slc_panel_qt_src
+sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + osm_panel_qt_src + longitudinal_panel_qt_src
 sp_qt_util = qt_util
 
 Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")

@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_warning.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_warning.h"
 
 SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);
@@ -23,8 +23,8 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
 
   std::vector<QString> slc_warning_texts{
     SLCWarningTypeText[static_cast<int>(SLCWarningType::OFF)],
-  SLCWarningTypeText[static_cast<int>(SLCWarningType::DISPLAY)],
-  SLCWarningTypeText[static_cast<int>(SLCWarningType::CHIME)]};
+    SLCWarningTypeText[static_cast<int>(SLCWarningType::DISPLAY)],
+    SLCWarningTypeText[static_cast<int>(SLCWarningType::CHIME)]};
   slc_warning_settings = new ButtonParamControlSP(
     "SpeedLimitWarningType", tr("Speed Limit Warning"),
     "",

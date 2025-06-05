@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_subpanel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_subpanel.h"
 
 SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStackedWidget(parent) {
   subPanelFrame = new QFrame();

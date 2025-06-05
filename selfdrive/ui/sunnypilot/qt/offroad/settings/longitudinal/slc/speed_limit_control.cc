@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
 
 SpeedLimitControl::SpeedLimitControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ExpandableToggleRow(param, title, desc, icon, parent) {

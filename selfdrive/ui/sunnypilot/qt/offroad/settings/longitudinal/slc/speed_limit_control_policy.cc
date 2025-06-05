@@ -5,7 +5,7 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_policy.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_policy.h"
 
 SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(parent) {
   QVBoxLayout* main_layout = new QVBoxLayout(this);

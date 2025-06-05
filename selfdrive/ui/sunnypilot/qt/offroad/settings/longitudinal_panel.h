@@ -9,8 +9,8 @@
 
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_subpanel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_subpanel.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
 
 class LongitudinalPanel : public QWidget {

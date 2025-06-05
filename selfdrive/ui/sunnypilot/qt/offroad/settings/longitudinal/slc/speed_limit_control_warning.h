@@ -9,16 +9,15 @@
 
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_policy.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/slc/speed_limit_control_warning.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
-class SpeedLimitControlSubpanel : public QStackedWidget {
-    Q_OBJECT
+class SpeedLimitControlWarning : public QWidget {
+  Q_OBJECT
 
 public:
-  SpeedLimitControlSubpanel(QWidget *parent = nullptr);
+  SpeedLimitControlWarning(QWidget *parent = nullptr);
+
   void refresh();
   void showEvent(QShowEvent *event) override;
 
@@ -27,28 +26,28 @@ signals:
 
 private:
   Params params;
-  QFrame *subPanelFrame;
-  PushButtonSP *slcWarningControl;
-  PushButtonSP *slcSourceControl;
-  ButtonParamControlSP *slc_offset_setting;
-  OptionControlSP *slc_offset;
-  ButtonParamControlSP *slc_engage_setting;
-  SpeedLimitControlWarning *slcWarningScreen;
-  SpeedLimitControlPolicy *slcPolicyScreen;
 
-  static QString engageModeDescription(SLCEngageType type = SLCEngageType::AUTO) {
-    QString auto_str = tr("⦿ Auto: Automatic speed adjustment based on speed limit data");
-    QString user_str = tr("⦿ User Confirm: Asks driver to confirm speed adjustment based on speed limit data");
+  ButtonParamControlSP *slc_warning_settings;
+  ButtonParamControlSP *slc_warning_offset_settings;
+  OptionControlSP *slc_warning_offset;
 
-    if (type == SLCEngageType::USER_CONFIRM) {
-      user_str = "<font color='white'><b>" + user_str + "</b></font>";
+  static QString warningDescription(SLCWarningType type = SLCWarningType::OFF) {
+    QString off_str = tr("⦿ Off: No Warning");
+    QString display_str = tr("⦿ Display: Speed Limit Sign will visually alert");
+    QString chime_str = tr("⦿ Chime: Speed Limit Sign will visually alert along with an audible chime");
+
+    if (type == SLCWarningType::DISPLAY) {
+      display_str = "<font color='white'><b>" + display_str + "</b></font>";
+    } else if (type == SLCWarningType::CHIME) {
+      chime_str = "<font color='white'><b>" + chime_str + "</b></font>";
     } else {
-      auto_str = "<font color='white'><b>" + auto_str + "</b></font>";
+      off_str = "<font color='white'><b>" + off_str + "</b></font>";
     }
 
-    return QString("%1<br>%2")
-             .arg(auto_str)
-             .arg(user_str);
+    return QString("%1<br>%2<br>%3")
+             .arg(off_str)
+             .arg(display_str)
+             .arg(chime_str);
   }
 
   static QString offsetDescription(SLCOffsetType type = SLCOffsetType::NONE) {
