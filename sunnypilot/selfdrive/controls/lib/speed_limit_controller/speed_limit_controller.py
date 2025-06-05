@@ -23,7 +23,7 @@ class SpeedLimitController:
   def __init__(self, CP):
     self._params = Params()
     self._CP = CP
-    self._policy = Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+    self._policy = self._read_policy_param()
     self._resolver = SpeedLimitResolver(self._policy)
     self._last_params_update = 0.0
     self._last_op_enabled_time = 0.0
@@ -155,7 +155,7 @@ class SpeedLimitController:
       self._warning_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
       self._warning_offset_type = int(self._params.get("SpeedLimitWarningOffsetType", encoding='utf8'))
       self._warning_offset_value = float(self._params.get("SpeedLimitWarningValueOffset", encoding='utf8'))
-      self._policy = Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+      self._policy = self._read_policy_param()
       self._is_metric = self._params.get_bool("IsMetric")
       self._ms_to_local = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
@@ -163,6 +163,12 @@ class SpeedLimitController:
                           np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
       debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_type}')
       self._last_params_update = self._current_time
+
+  def _read_policy_param(self) -> Policy:
+    try:
+      return Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
+    except (ValueError, TypeError):
+      return Policy.car_state_priority
 
   def _update_calculations(self) -> None:
     # Update current velocity offset (error)
