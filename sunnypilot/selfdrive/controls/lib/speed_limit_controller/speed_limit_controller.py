@@ -331,9 +331,7 @@ class SpeedLimitController:
 
   def update(self, enabled: bool, v_ego: float, a_ego: float, sm: messaging.SubMaster, v_cruise_setpoint: float, events_sp: EventsSP) -> None:
     _car_state = sm['carState']
-    self._op_enabled = enabled and \
-                       not (_car_state.brakePressed and (not self._brake_pressed_prev or not _car_state.standstill)) and \
-                       not (_car_state.gasPressed and self._disengage_on_accelerator)
+    self._op_enabled = enabled and self._CP.openpilotLongitudinalControl
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
