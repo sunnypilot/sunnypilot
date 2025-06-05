@@ -21,6 +21,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/trips_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/visuals_panel.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindowSP *parent) : TogglesPanel(parent) {
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &TogglesPanelSP::updateState);
@@ -84,6 +85,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
     PanelInfo("   " + tr("Models"), new ModelsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_models.png"),
     PanelInfo("   " + tr("Steering"), new LateralPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png"),
     PanelInfo("   " + tr("Cruise"), new LongitudinalPanel(this), "../assets/icons/speed_limit.png"),
+    PanelInfo("   " + tr("Visuals"), new VisualsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
     PanelInfo("   " + tr("OSM"), new OsmPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
     PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
     PanelInfo("   " + tr("Vehicle"), new VehiclePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
