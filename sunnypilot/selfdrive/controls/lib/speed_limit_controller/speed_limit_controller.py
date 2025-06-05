@@ -309,12 +309,12 @@ class SpeedLimitController:
 
   def _update_events(self, events_sp: EventsSP) -> None:
     if self._speed_limit > 0 and self._warning_type == 2 and \
-        self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
+          self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
       events_sp.add(EventNameSP.speedLimitPreActive)
 
     if not self.is_active:
       if self._state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive and \
-          self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
+            self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
         events_sp.add(EventNameSP.speedLimitPreActive)
     else:
       if self._engage_type == Engage.user_confirm:
