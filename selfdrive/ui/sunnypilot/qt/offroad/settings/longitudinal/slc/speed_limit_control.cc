@@ -21,5 +21,4 @@ SpeedLimitControl::SpeedLimitControl(const QString &param, const QString &title,
     emit slcSettingsButtonClicked();
   });
   addItem(slcFrame);
-
 }

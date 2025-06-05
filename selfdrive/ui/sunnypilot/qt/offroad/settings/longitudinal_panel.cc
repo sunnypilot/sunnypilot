@@ -8,7 +8,7 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
 
 LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
-    setStyleSheet(R"(
+  setStyleSheet(R"(
     #back_btn {
       font-size: 50px;
       margin: 0px;
@@ -27,7 +27,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   ListWidget *list = new ListWidget(this, false);
 
   cruisePanelScreen = new QWidget(this);
-  QVBoxLayout* vlayout = new QVBoxLayout(cruisePanelScreen);
+  QVBoxLayout *vlayout = new QVBoxLayout(cruisePanelScreen);
   vlayout->setContentsMargins(0, 0, 0, 0);
 
   cruisePanelScroller = new ScrollViewSP(list, this);
@@ -49,9 +49,9 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   slcScreen = new SpeedLimitControlSubpanel(this);
   connect(slcScreen, &SpeedLimitControlSubpanel::backPress, [=]() {
-   cruisePanelScroller->restoreScrollPosition();
-   main_layout->setCurrentWidget(cruisePanelScreen);
- });
+    cruisePanelScroller->restoreScrollPosition();
+    main_layout->setCurrentWidget(cruisePanelScreen);
+  });
 
   main_layout->addWidget(cruisePanelScreen);
   main_layout->addWidget(slcScreen);
