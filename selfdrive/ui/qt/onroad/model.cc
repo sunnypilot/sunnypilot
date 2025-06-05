@@ -1,18 +1,5 @@
 #include "selfdrive/ui/qt/onroad/model.h"
 
-constexpr int CLIP_MARGIN = 500;
-constexpr float MIN_DRAW_DISTANCE = 10.0;
-constexpr float MAX_DRAW_DISTANCE = 100.0;
-
-static int get_path_length_idx(const cereal::XYZTData::Reader &line, const float path_height) {
-  const auto &line_x = line.getX();
-  int max_idx = 0;
-  for (int i = 1; i < line_x.size() && line_x[i] <= path_height; ++i) {
-    max_idx = i;
-  }
-  return max_idx;
-}
-
 void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
   auto *s = uiState();
   auto &sm = *(s->sm);
@@ -35,7 +22,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
 
   update_model(model, lead_one);
   drawLaneLines(painter);
-  drawPath(painter, model, surface_rect.height());
+  drawPath(painter, model, surface_rect);
 
   if (longitudinal_control && sm.alive("radarState")) {
     update_leads(radar_state, model.getPosition());
