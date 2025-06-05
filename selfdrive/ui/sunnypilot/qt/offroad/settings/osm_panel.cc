@@ -32,7 +32,7 @@ OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
 
   timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, QOverload<>::of(&OsmPanel::updateLabels));
-  timer->start(FAST_REFRESH_INTERVAL);  // Time specified in milliseconds.
+  timer->start(FAST_REFRESH_INTERVAL); // Time specified in milliseconds.
   updateLabels();
 
   osmScreen = new QWidget(this);
@@ -43,7 +43,7 @@ OsmPanel::OsmPanel(QWidget *parent) : QFrame(parent) {
 }
 
 ButtonControlSP *OsmPanel::setupOsmDeleteMapsButton(QWidget *parent) {
-  osmDeleteMapsBtn = new ButtonControlSP(tr("Downloaded Maps"), tr("DELETE"));  // Updated on updateLabels()
+  osmDeleteMapsBtn = new ButtonControlSP(tr("Downloaded Maps"), tr("DELETE")); // Updated on updateLabels()
   connect(osmDeleteMapsBtn, &ButtonControlSP::clicked, [=]() {
     if (showConfirmationDialog(parent, tr("This will delete ALL downloaded maps\n\nAre you sure you want to delete all the maps?"), tr("Yes, delete all the maps."))) {
       QtConcurrent::run([=]() {
@@ -62,7 +62,7 @@ ButtonControlSP *OsmPanel::setupOsmDeleteMapsButton(QWidget *parent) {
 }
 
 ButtonControlSP *OsmPanel::setupOsmUpdateButton(QWidget *parent) {
-  osmUpdateBtn = new ButtonControlSP(tr("Database Update"), tr("CHECK"));  // Updated on updateLabels()
+  osmUpdateBtn = new ButtonControlSP(tr("Database Update"), tr("CHECK")); // Updated on updateLabels()
   connect(osmUpdateBtn, &ButtonControlSP::clicked, [=]() {
     if (osm_download_in_progress && !download_failed_state) {
       updateLabels();
@@ -80,14 +80,14 @@ ButtonControlSP *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
   connect(osmDownloadBtn, &ButtonControlSP::clicked, [=]() {
     osmDownloadBtn->setEnabled(false);
     osmDownloadBtn->setValue(tr("Fetching Country list..."));
-    const std::vector<std::tuple<QString, QString, QString, QString>> locations = getOsmLocations();
+    const std::vector<std::tuple<QString, QString, QString, QString> > locations = getOsmLocations();
     osmDownloadBtn->setEnabled(true);
     osmDownloadBtn->setValue("");
     const QString initTitle = QString::fromStdString(params.get("OsmLocationTitle"));
     const QString currentTitle = ((initTitle == "== None ==") || (initTitle.length() == 0)) ? "== None ==" : initTitle;
 
     QStringList locationTitles;
-    for (auto &loc : locations) {
+    for (auto &loc: locations) {
       locationTitles.push_back(std::get<0>(loc));
     }
 
@@ -95,7 +95,7 @@ ButtonControlSP *OsmPanel::setupOsmDownloadButton(QWidget *parent) {
     if (!selection.isEmpty()) {
       params.put("OsmLocal", "1");
       params.put("OsmLocationTitle", selection.toStdString());
-      for (auto &loc : locations) {
+      for (auto &loc: locations) {
         if (std::get<0>(loc) == selection) {
           params.put("OsmLocationName", std::get<1>(loc).toStdString());
           break;
@@ -123,21 +123,22 @@ ButtonControlSP *OsmPanel::setupUsStatesButton(QWidget *parent) {
     const std::tuple<QString, QString> allStatesOption = std::make_tuple("All States (~4.8 GB)", "All");
     usStatesBtn->setEnabled(false);
     usStatesBtn->setValue(tr("Fetching State list..."));
-    const std::vector<std::tuple<QString, QString, QString, QString>> locations = getUsStatesLocations(allStatesOption);
+    const std::vector<std::tuple<QString, QString, QString, QString> > locations =
+        getUsStatesLocations(allStatesOption);
     usStatesBtn->setEnabled(true);
     usStatesBtn->setValue("");
     const QString initTitle = QString::fromStdString(params.get("OsmStateTitle"));
     const QString currentTitle = ((initTitle == std::get<0>(allStatesOption)) || (initTitle.length() == 0)) ? tr("All") : initTitle;
 
     QStringList locationTitles;
-    for (auto &loc : locations) {
+    for (auto &loc: locations) {
       locationTitles.push_back(std::get<0>(loc));
     }
 
     const QString selection = MultiOptionDialog::getSelection(tr("State"), locationTitles, currentTitle, this);
     if (!selection.isEmpty()) {
       params.put("OsmStateTitle", selection.toStdString());
-      for (auto &loc : locations) {
+      for (auto &loc: locations) {
         if (std::get<0>(loc) == selection) {
           params.put("OsmStateName", std::get<1>(loc).toStdString());
           break;
@@ -152,12 +153,12 @@ ButtonControlSP *OsmPanel::setupUsStatesButton(QWidget *parent) {
     }
     updateLabels();
   });
-  usStatesBtn->setVisible(false);  // initially hidden
+  usStatesBtn->setVisible(false); // initially hidden
   return usStatesBtn;
 }
 
 void OsmPanel::showEvent(QShowEvent *event) {
-  updateLabels();  // For snappier feeling
+  updateLabels(); // For snappier feeling
   if (!timer->isActive()) {
     timer->start(FAST_REFRESH_INTERVAL);
   }
@@ -185,7 +186,7 @@ void OsmPanel::updateLabels() {
   LOGT("Timer Interval %d", timer->interval());
 
   const std::string osmLastDownloadTimeStr = params.get("OsmDownloadedDate");
-  if (!lastDownloadedTimePoint.has_value() && !osmLastDownloadTimeStr.empty())  {
+  if (!lastDownloadedTimePoint.has_value() && !osmLastDownloadTimeStr.empty()) {
     const double osmLastDownloadTime = std::stod(osmLastDownloadTimeStr);
     lastDownloadedTimePoint = std::chrono::system_clock::from_time_t(static_cast<std::time_t>(osmLastDownloadTime));
   }
@@ -244,11 +245,11 @@ void OsmPanel::updateDownloadProgress() {
   osmDeleteMapsBtn->setValue(formatSize(mapsDirSize));
 }
 
-int OsmPanel::extractIntFromJson(const QJsonObject& json, const QString& key) {
+int OsmPanel::extractIntFromJson(const QJsonObject &json, const QString &key) {
   return (json.contains(key)) ? json[key].toInt() : 0;
 }
 
-QString OsmPanel::processUpdateStatus(bool pending_update, int total_files, int downloaded_files, const QJsonObject& json, bool failed_state) {
+QString OsmPanel::processUpdateStatus(bool pending_update, int total_files, int downloaded_files, const QJsonObject &json, bool failed_state) {
   if (pending_update && !osm_download_in_progress && !total_files) {
     lastDownloadedTimePoint.reset();
     return tr("Download starting...");
