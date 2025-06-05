@@ -1,4 +1,4 @@
-from cereal import car, log
+from cereal import car, log, custom
 import cereal.messaging as messaging
 from opendbc.car import DT_CTRL, structs
 from opendbc.car.interfaces import MAX_CTRL_SPEED
@@ -16,14 +16,14 @@ class MockCarState:
   def __init__(self):
     self.sm = messaging.SubMaster(['gpsLocation', 'gpsLocationExternal'])
 
-  def update(self, CS: car.CarState):
+  def update(self, CS: car.CarState, CS_SP: custom.CarStateSP):
     self.sm.update(0)
     gps_sock = 'gpsLocationExternal' if self.sm.recv_frame['gpsLocationExternal'] > 1 else 'gpsLocation'
 
     CS.vEgo = self.sm[gps_sock].speed
     CS.vEgoRaw = self.sm[gps_sock].speed
 
-    return CS
+    return CS, CS_SP
 
 
 class CarSpecificEvents:
