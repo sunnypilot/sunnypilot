@@ -1,7 +1,9 @@
 import numpy as np
 import pyray as rl
 from dataclasses import dataclass
+from openpilot.selfdrive.ui.ui_state import ui_state, UI_BORDER_SIZE
 from openpilot.system.ui.lib.application import gui_app
+
 
 # Default 3D coordinates for face keypoints as a NumPy array
 DEFAULT_FACE_KPTS_3D = np.array([
@@ -17,7 +19,6 @@ DEFAULT_FACE_KPTS_3D = np.array([
 ], dtype=np.float32)
 
 # UI constants
-UI_BORDER_SIZE = 30
 BTN_SIZE = 192
 IMG_SIZE = 144
 ARC_LENGTH = 133
@@ -26,6 +27,9 @@ ARC_THICKNESS_EXTEND = 12.0
 
 SCALES_POS = np.array([0.9, 0.4, 0.4], dtype=np.float32)
 SCALES_NEG = np.array([0.7, 0.4, 0.4], dtype=np.float32)
+
+ARC_POINT_COUNT = 37  # Number of points in the arc
+ARC_ANGLES = np.linspace(0.0, np.pi, ARC_POINT_COUNT, dtype=np.float32)
 
 @dataclass
 class ArcData:
@@ -57,8 +61,8 @@ class DriverStateRenderer:
 
     # Pre-allocate drawing arrays
     self.face_lines = [rl.Vector2(0, 0) for _ in range(len(DEFAULT_FACE_KPTS_3D))]
-    self.h_arc_lines = [rl.Vector2(0, 0) for _ in range(37)]  # 37 points for horizontal arc
-    self.v_arc_lines = [rl.Vector2(0, 0) for _ in range(37)]  # 37 points for vertical arc
+    self.h_arc_lines = [rl.Vector2(0, 0) for _ in range(ARC_POINT_COUNT)]
+    self.v_arc_lines = [rl.Vector2(0, 0) for _ in range(ARC_POINT_COUNT)]
 
     # Load the driver face icon
     self.dm_img = gui_app.texture("icons/driver_face.png", IMG_SIZE, IMG_SIZE)
@@ -92,8 +96,7 @@ class DriverStateRenderer:
     rl.draw_spline_linear(self.face_lines, len(self.face_lines), 5.2, self.white_color)
 
     # Set arc color based on engaged state
-    engaged = True
-    self.arc_color = self.engaged_color if engaged else self.disengaged_color
+    self.arc_color = self.engaged_color if ui_state.engaged else self.disengaged_color
     self.arc_color.a = int(0.4 * 255 * (1.0 - self.dm_fade_state))  # Fade out when inactive
 
     # Draw arcs
@@ -104,7 +107,7 @@ class DriverStateRenderer:
 
   def _is_visible(self, sm):
     """Check if the visualization should be rendered."""
-    return (sm.seen['driverStateV2'] and
+    return (sm.recv_frame['driverStateV2'] > ui_state.started_frame and
             sm.seen['driverMonitoringState'] and
             sm['selfdriveState'].alertSize == 0)
 
@@ -218,9 +221,7 @@ class DriverStateRenderer:
     )
 
     # Pre-calculate arc points
-    start_rad = np.deg2rad(start_angle)
-    end_rad = np.deg2rad(start_angle + 180)
-    angles = np.linspace(start_rad, end_rad, 37)
+    angles = ARC_ANGLES + np.deg2rad(start_angle)
 
     center_x = x + arc_data.width / 2
     center_y = y + arc_data.height / 2
