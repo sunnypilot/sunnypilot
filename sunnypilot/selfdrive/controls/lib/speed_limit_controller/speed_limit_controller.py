@@ -194,7 +194,7 @@ class SpeedLimitController:
     """ Make state transition from inactive state """
     if self._engage_type == Engage.user_confirm:
       if (((self._last_op_enabled_time + 7.) >= self._current_time >= (self._last_op_enabled_time + 2.)) or
-              self._speed_limit_changed):
+            self._speed_limit_changed):
         if self._speed_limit_changed:
           self._last_op_enabled_time = self._current_time - 2.  # immediately prompt confirmation
         self.state = SpeedLimitControlState.preActive
@@ -253,7 +253,7 @@ class SpeedLimitController:
     # In any case, if op is disabled, or speed limit control is disabled
     # or the reported speed limit is 0 or gas is pressed, deactivate.
     if not self._op_enabled or not self._is_enabled or self._speed_limit == 0 or \
-            (self._gas_pressed and self._disengage_on_accelerator):
+          (self._gas_pressed and self._disengage_on_accelerator):
       self.state = SpeedLimitControlState.inactive
       return
 
@@ -261,7 +261,7 @@ class SpeedLimitController:
     # Ignore if a minimum amount of time has not passed since activation. This is to prevent temp inactivations
     # due to controlsd logic changing cruise setpoint when going active.
     if self._engage_type == Engage.auto and self._v_cruise_setpoint_changed and \
-            self._current_time > (self._last_op_enabled_time + TEMP_INACTIVE_GUARD_PERIOD):
+          self._current_time > (self._last_op_enabled_time + TEMP_INACTIVE_GUARD_PERIOD):
       self.state = SpeedLimitControlState.tempInactive
       return
 
@@ -277,7 +277,7 @@ class SpeedLimitController:
   def get_adapting_state_target_acceleration(self) -> float:
     """ In adapting state, calculate target acceleration based on speed limit and current velocity """
     if self.distance > 0:
-      return (self.speed_limit_offseted**2 - self._v_ego**2) / (2. * self.distance)
+      return (self.speed_limit_offseted ** 2 - self._v_ego ** 2) / (2. * self.distance)
 
     return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
 
@@ -287,13 +287,13 @@ class SpeedLimitController:
 
   def _update_events(self, events_sp: EventsSP) -> None:
     if self._speed_limit > 0 and self._warning_type == 2 and \
-      self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
+        self._speed_limit_warning_offsetted_rounded < int(round(self._v_ego * self._ms_to_local)):
       events_sp.add(EventNameSP.speedLimitPreActive)
 
     if not self.is_active:
       if self._state == SpeedLimitControlState.preActive and self._state_prev != SpeedLimitControlState.preActive and \
-        self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
-          events_sp.add(EventNameSP.speedLimitPreActive)
+          self._v_cruise_rounded != self._speed_limit_offsetted_rounded:
+        events_sp.add(EventNameSP.speedLimitPreActive)
     else:
       if self._engage_type == Engage.user_confirm:
         if self._state_prev == SpeedLimitControlState.preActive:

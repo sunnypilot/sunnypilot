@@ -85,7 +85,7 @@ class SpeedLimitResolver:
 
     if 0. < next_speed_limit < self._v_ego:
       adapt_time = (next_speed_limit - self._v_ego) / LIMIT_ADAPT_ACC
-      adapt_distance = self._v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time**2
+      adapt_distance = self._v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
 
       if distance_to_speed_limit_ahead <= adapt_distance:
         self._limit_solutions[Source.map_data] = next_speed_limit
