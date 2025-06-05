@@ -24,6 +24,9 @@ class SpeedLimitController:
   _speed_limit: float
   _distance: float
   _source: Source
+  _v_ego: float
+  _a_ego: float
+  _v_offset: float
 
   def __init__(self, CP):
     self._params = Params()
@@ -296,18 +299,18 @@ class SpeedLimitController:
 
   def get_current_acceleration_as_target(self) -> float:
     """ When state is inactive or tempInactive, preserve current acceleration """
-    return float(self._a_ego)
+    return self._a_ego
 
   def get_adapting_state_target_acceleration(self) -> float:
     """ In adapting state, calculate target acceleration based on speed limit and current velocity """
     if self.distance > 0:
-      return float((self.speed_limit_offseted ** 2 - self._v_ego ** 2) / (2. * self.distance))
+      return (self.speed_limit_offseted ** 2 - self._v_ego ** 2) / (2. * self.distance)
 
-    return float(self._v_offset / ModelConstants.T_IDXS[CONTROL_N])
+    return self._v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
   def get_active_state_target_acceleration(self) -> float:
     """ In active state, aim to keep speed constant around control time horizon """
-    return float(self._v_offset / ModelConstants.T_IDXS[CONTROL_N])
+    return self._v_offset / float(ModelConstants.T_IDXS[CONTROL_N])
 
   def _update_events(self, events_sp: EventsSP) -> None:
     if self._speed_limit > 0 and self._warning_type == 2 and \
