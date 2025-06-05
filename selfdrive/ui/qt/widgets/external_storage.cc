@@ -93,6 +93,9 @@ void ExternalStorageControl::mountStorage() {
   process.start("sh", QStringList() << "-c" << "sudo mount /mnt/external_realdata");
   process.waitForFinished();
 
+  QProcess::execute("sh", QStringList() << "-c" << "sudo chown -R $(whoami):$(whoami) /mnt/external_realdata");
+  QProcess::execute("sh", QStringList() << "-c" << "sudo chmod -R 775 /mnt/external_realdata");
+
   refresh();
 }
 
