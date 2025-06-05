@@ -124,11 +124,11 @@ void SpeedLimitControlSubpanel::refresh() {
   }
 
   if (static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitOffsetType").c_str())) == SLCOffsetType::NONE) {
-    slc_offset->setDisabled(true);
-    slc_offset->setLabel(tr("N/A"));
+    slc_offset->setVisible(false);
   } else {
-    slc_offset->setDisabled(false);
+    slc_offset->setVisible(true);
     slc_offset->setLabel(offsetLabel);
+    slc_offset->showDescription();
   }
 }
 
