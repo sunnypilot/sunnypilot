@@ -1,14 +1,19 @@
 import time
 import numpy as np
 
+from cereal import messaging, custom
+
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Source, Policy
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers import debug
 
 
 class SpeedLimitResolver:
+  _sm: messaging.SubMaster
   _limit_solutions: dict[Source, float]  # Store for speed limit solutions from different sources
   _distance_solutions: dict[Source, float]  # Store for distance to current speed limit start for different sources
+  _v_ego: float
+  _current_speed_limit: float
 
   def __init__(self, policy: Policy):
     self._limit_solutions = {}
@@ -25,17 +30,17 @@ class SpeedLimitResolver:
     for source in Source:
       self._reset_limit_sources(source)
 
-  def change_policy(self, policy: Policy):
+  def change_policy(self, policy: Policy) -> None:
     self._policy = policy
 
-  def _reset_limit_sources(self, source):
+  def _reset_limit_sources(self, source: Source) -> None:
     self._limit_solutions[source] = 0.
     self._distance_solutions[source] = 0.
 
-  def _is_sock_updated(self, sock):
+  def _is_sock_updated(self, sock: str) -> bool:
     return self._sm.alive[sock] and self._sm.updated[sock]
 
-  def resolve(self, v_ego, current_speed_limit, sm):
+  def resolve(self, v_ego: float, current_speed_limit: float, sm: messaging.SubMaster) -> tuple[float, float, Source]:
     self._v_ego = v_ego
     self._current_speed_limit = current_speed_limit
     self._sm = sm
@@ -43,12 +48,12 @@ class SpeedLimitResolver:
     self._resolve_limit_sources()
     return self._consolidate()
 
-  def _resolve_limit_sources(self):
+  def _resolve_limit_sources(self) -> None:
     """Get limit solutions from each data source"""
     self._get_from_car_state()
     self._get_from_map_data()
 
-  def _get_from_car_state(self):
+  def _get_from_car_state(self) -> None:
     if not self._is_sock_updated('carStateSP'):
       debug('SL: No carStateSP instruction for speed limit')
       return
@@ -57,7 +62,7 @@ class SpeedLimitResolver:
     self._limit_solutions[Source.car_state] = self._sm['carStateSP'].speedLimit
     self._distance_solutions[Source.car_state] = 0.
 
-  def _get_from_map_data(self):
+  def _get_from_map_data(self) -> None:
     sock = 'liveMapDataSP'
 
     if not self._is_sock_updated(sock):
@@ -68,7 +73,7 @@ class SpeedLimitResolver:
     self._reset_limit_sources(Source.map_data)
     self._process_map_data(self._sm[sock])
 
-  def _process_map_data(self, map_data):
+  def _process_map_data(self, map_data: custom.LiveMapDataSP) -> None:
     gps_fix_age = time.time() - map_data.lastGpsTimestamp * 1e-3
     if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
       debug(f'SL: Ignoring map data as is too old. Age: {gps_fix_age}')
@@ -79,7 +84,7 @@ class SpeedLimitResolver:
 
     self._calculate_map_data_limits(speed_limit, next_speed_limit, map_data)
 
-  def _calculate_map_data_limits(self, speed_limit, next_speed_limit, map_data):
+  def _calculate_map_data_limits(self, speed_limit: float, next_speed_limit: float, map_data: custom.LiveMapDataSP) -> None:
     distance_since_fix = self._v_ego * (time.time() - map_data.lastGpsTimestamp * 1e-3)
     distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_fix)
 
@@ -94,7 +99,7 @@ class SpeedLimitResolver:
         self._limit_solutions[Source.map_data] = next_speed_limit
         self._distance_solutions[Source.map_data] = distance_to_speed_limit_ahead
 
-  def _consolidate(self):
+  def _consolidate(self) -> tuple[float, float, Source]:
     source = self._get_source_solution_according_to_policy()
     self.speed_limit = self._limit_solutions[source] if source else 0.
     self.distance = self._distance_solutions[source] if source else 0.
