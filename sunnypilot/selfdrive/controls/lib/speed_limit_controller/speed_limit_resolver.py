@@ -7,9 +7,12 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers 
 
 
 class SpeedLimitResolver:
+  _limit_solutions: dict[Source, float]  # Store for speed limit solutions from different sources
+  _distance_solutions: dict[Source, float]  # Store for distance to current speed limit start for different sources
+
   def __init__(self, policy: Policy):
-    self._limit_solutions = {}  # Store for speed limit solutions from different sources
-    self._distance_solutions = {}  # Store for distance to current speed limit start for different sources
+    self._limit_solutions = {}
+    self._distance_solutions = {}
 
     self._policy = policy
     self._policy_to_sources_map = {

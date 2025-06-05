@@ -110,16 +110,16 @@ class SpeedLimitController:
 
   @property
   def speed_limit_offseted(self) -> float:
-    return self._speed_limit + self.speed_limit_offset
+    return float(self._speed_limit + self.speed_limit_offset)
 
   @property
   def speed_limit_offset(self) -> float:
     if self._offset_type == OffsetType.default:
       return float(np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit)
     elif self._offset_type == OffsetType.fixed:
-      return self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+      return float(self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS))
     elif self._offset_type == OffsetType.percentage:
-      return self._offset_value * 0.01 * self._speed_limit
+      return float(self._offset_value * 0.01 * self._speed_limit)
     return 0.
 
   @property
@@ -127,22 +127,22 @@ class SpeedLimitController:
     if self._warning_offset_type == OffsetType.default:
       return float(np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit)
     elif self._warning_offset_type == OffsetType.fixed:
-      return self._warning_offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
+      return float(self._warning_offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS))
     elif self._warning_offset_type == OffsetType.percentage:
-      return self._warning_offset_value * 0.01 * self._speed_limit
+      return float(self._warning_offset_value * 0.01 * self._speed_limit)
     return 0.
 
   @property
   def speed_limit(self) -> float:
-    return self._speed_limit
+    return float(self._speed_limit)
 
   @property
   def distance(self) -> float:
-    return self._distance
+    return float(self._distance)
 
   @property
   def source(self) -> Source:
-    return self._source
+    return Source(self._source)
 
   def _update_v_cruise_setpoint_prev(self) -> None:
     self._v_cruise_setpoint_prev = self._v_cruise_setpoint
@@ -272,18 +272,18 @@ class SpeedLimitController:
 
   def get_current_acceleration_as_target(self) -> float:
     """ When state is inactive or tempInactive, preserve current acceleration """
-    return self._a_ego
+    return float(self._a_ego)
 
   def get_adapting_state_target_acceleration(self) -> float:
     """ In adapting state, calculate target acceleration based on speed limit and current velocity """
     if self.distance > 0:
-      return (self.speed_limit_offseted ** 2 - self._v_ego ** 2) / (2. * self.distance)
+      return float((self.speed_limit_offseted ** 2 - self._v_ego ** 2) / (2. * self.distance))
 
-    return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
+    return float(self._v_offset / ModelConstants.T_IDXS[CONTROL_N])
 
   def get_active_state_target_acceleration(self) -> float:
     """ In active state, aim to keep speed constant around control time horizon """
-    return self._v_offset / ModelConstants.T_IDXS[CONTROL_N]
+    return float(self._v_offset / ModelConstants.T_IDXS[CONTROL_N])
 
   def _update_events(self, events_sp: EventsSP) -> None:
     if self._speed_limit > 0 and self._warning_type == 2 and \
