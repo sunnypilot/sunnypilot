@@ -71,15 +71,15 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
 };
 
 void SpeedLimitControlWarning::refresh() {
-  slc_warning_settings->setDescription(warningDescription(static_cast<SLCWarningType>(std::stoi(params.get("SpeedLimitWarningType")))));
-  slc_warning_offset->setDescription(offsetDescription(static_cast<SLCOffsetType>(std::stoi(params.get("SpeedLimitWarningOffsetType")))));
+  slc_warning_settings->setDescription(warningDescription(static_cast<SLCWarningType>(std::atoi(params.get("SpeedLimitWarningType").c_str()))));
+  slc_warning_offset->setDescription(offsetDescription(static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitWarningOffsetType").c_str()))));
 
   QString offsetLabel = QString::fromStdString(params.get("SpeedLimitWarningValueOffset"));
-  if (static_cast<SLCOffsetType>(std::stoi(params.get("SpeedLimitWarningOffsetType"))) == SLCOffsetType::PERCENT) {
+  if (static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitWarningOffsetType").c_str())) == SLCOffsetType::PERCENT) {
     offsetLabel += "%";
   }
 
-  if (static_cast<SLCOffsetType>(std::stoi(params.get("SpeedLimitWarningOffsetType"))) == SLCOffsetType::NONE) {
+  if (static_cast<SLCOffsetType>(std::atoi(params.get("SpeedLimitWarningOffsetType").c_str())) == SLCOffsetType::NONE) {
     slc_warning_offset->setDisabled(true);
     slc_warning_offset->setLabel(tr("N/A"));
   } else {
