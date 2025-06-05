@@ -1377,6 +1377,10 @@ Esto puede tardar un minuto.</translation>
         <source>Cruise</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Visuals</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>

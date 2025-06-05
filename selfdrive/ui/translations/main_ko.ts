@@ -1372,6 +1372,10 @@ This may take up to a minute.</source>
         <source>Cruise</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Visuals</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
