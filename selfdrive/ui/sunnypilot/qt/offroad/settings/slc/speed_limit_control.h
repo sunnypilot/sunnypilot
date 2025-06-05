@@ -59,7 +59,7 @@ inline const char *SLCSourcePolicyText[] {
   QT_TR_NOOP("Map\nOnly"),
   QT_TR_NOOP("Car\nFirst"),
   QT_TR_NOOP("Map\nFirst"),
-  QT_TR_NOOP("Combined")
+  QT_TR_NOOP("Combined\nData")
 };
 
 class SpeedLimitControl : public ExpandableToggleRow {

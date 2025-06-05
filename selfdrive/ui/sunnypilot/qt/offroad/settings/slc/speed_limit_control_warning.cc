@@ -38,8 +38,8 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
 
   std::vector<QString> slc_warning_offset_texts{
     SLCOffsetTypeText[static_cast<int>(SLCOffsetType::NONE)],
-  SLCOffsetTypeText[static_cast<int>(SLCOffsetType::FIXED)],
-  SLCOffsetTypeText[static_cast<int>(SLCOffsetType::PERCENT)]};
+    SLCOffsetTypeText[static_cast<int>(SLCOffsetType::FIXED)],
+    SLCOffsetTypeText[static_cast<int>(SLCOffsetType::PERCENT)]};
   slc_warning_offset_settings = new ButtonParamControlSP(
     "SpeedLimitWarningOffsetType",
     tr("Warning Offset"),
@@ -68,7 +68,6 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
 
   refresh();
   main_layout->addWidget(list);
-
 };
 
 void SpeedLimitControlWarning::refresh() {
@@ -87,11 +86,10 @@ void SpeedLimitControlWarning::refresh() {
     slc_warning_offset->setDisabled(false);
     slc_warning_offset->setLabel(offsetLabel);
   }
-
-  slc_warning_settings->showDescription();
-  slc_warning_offset->showDescription();
 }
 
 void SpeedLimitControlWarning::showEvent(QShowEvent *event) {
   refresh();
+  slc_warning_settings->showDescription();
+  slc_warning_offset->showDescription();
 }

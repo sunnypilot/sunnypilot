@@ -43,9 +43,9 @@ SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(pare
 
 void SpeedLimitControlPolicy::refresh() {
   slc_policy->setDescription(sourceDescription(static_cast<SLCSourcePolicy>(std::stoi(params.get("SpeedLimitControlPolicy")))));
-  slc_policy->showDescription();
 }
 
 void SpeedLimitControlPolicy::showEvent(QShowEvent *event) {
   refresh();
+  slc_policy->showDescription();
 }
