@@ -82,7 +82,9 @@ bool ExternalStorageControl::isDriveInitialized() {
 }
 
 void ExternalStorageControl::mountStorage() {
+  QProcess::execute("sh", QStringList() << "-c" << "sudo mount -o remount,rw /");
   QProcess::execute("sh", QStringList() << "-c" << "sudo mkdir -p /mnt/external_realdata");
+  QProcess::execute("sh", QStringList() << "-c" << "sudo mount -o remount,ro /");
   setText(tr("mounting"));
   setEnabled(false);
   QCoreApplication::processEvents();
