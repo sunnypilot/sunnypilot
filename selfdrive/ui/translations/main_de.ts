@@ -1377,6 +1377,10 @@ Dies kann bis zu einer Minute dauern.</translation>
         <source>Developer</source>
         <translation type="unfinished">Entwickler</translation>
     </message>
+    <message>
+        <source>Visuals</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Setup</name>
