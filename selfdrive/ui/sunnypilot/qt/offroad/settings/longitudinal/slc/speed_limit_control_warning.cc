@@ -8,12 +8,12 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_warning.h"
 
 SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(parent) {
-  QVBoxLayout* main_layout = new QVBoxLayout(this);
+  QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
   main_layout->setSpacing(0);
 
   // Back button
-  PanelBackButton* back = new PanelBackButton(tr("Back"));
+  PanelBackButton *back = new PanelBackButton(tr("Back"));
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
@@ -24,7 +24,8 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
   std::vector<QString> slc_warning_texts{
     SLCWarningTypeText[static_cast<int>(SLCWarningType::OFF)],
     SLCWarningTypeText[static_cast<int>(SLCWarningType::DISPLAY)],
-    SLCWarningTypeText[static_cast<int>(SLCWarningType::CHIME)]};
+    SLCWarningTypeText[static_cast<int>(SLCWarningType::CHIME)]
+  };
   slc_warning_settings = new ButtonParamControlSP(
     "SpeedLimitWarningType", tr("Speed Limit Warning"),
     "",
@@ -39,7 +40,8 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
   std::vector<QString> slc_warning_offset_texts{
     SLCOffsetTypeText[static_cast<int>(SLCOffsetType::NONE)],
     SLCOffsetTypeText[static_cast<int>(SLCOffsetType::FIXED)],
-    SLCOffsetTypeText[static_cast<int>(SLCOffsetType::PERCENT)]};
+    SLCOffsetTypeText[static_cast<int>(SLCOffsetType::PERCENT)]
+  };
   slc_warning_offset_settings = new ButtonParamControlSP(
     "SpeedLimitWarningOffsetType",
     tr("Warning Offset"),
@@ -55,7 +57,7 @@ SpeedLimitControlWarning::SpeedLimitControlWarning(QWidget *parent) : QWidget(pa
     "",
     "",
     {-30, 30}
-    );
+  );
   slc_warning_offset->setFixedWidth(100);
   offsetLayout->addWidget(slc_warning_offset);
 

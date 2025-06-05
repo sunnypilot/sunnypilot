@@ -14,7 +14,7 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
   subPanelLayout->setSpacing(0);
 
   // Back button
-  PanelBackButton* back = new PanelBackButton(tr("Back"));
+  PanelBackButton *back = new PanelBackButton(tr("Back"));
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   subPanelLayout->addWidget(back, 0, Qt::AlignLeft);
 
@@ -51,8 +51,8 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
     showEvent(new QShowEvent());
   });
 
-  slcWarningControl->setFixedWidth(700);
-  slcSourceControl->setFixedWidth(700);
+  slcWarningControl->setFixedWidth(720);
+  slcSourceControl->setFixedWidth(720);
   slcBtnFrameLayout->addWidget(slcWarningControl, 0, 0, Qt::AlignLeft);
   slcBtnFrameLayout->addWidget(slcSourceControl, 0, 1, Qt::AlignRight);
   list->addItem(slcBtnFrame);
@@ -60,14 +60,16 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
 
   std::vector<QString> slc_engage_texts{
     SLCEngageTypeText[static_cast<int>(SLCEngageType::AUTO)],
-  SLCEngageTypeText[static_cast<int>(SLCEngageType::USER_CONFIRM)]};
+    SLCEngageTypeText[static_cast<int>(SLCEngageType::USER_CONFIRM)]
+  };
   slc_engage_setting = new ButtonParamControlSP(
     "SpeedLimitEngageType",
     tr("Engage Mode"),
     "",
     "",
     slc_engage_texts,
-    300);
+    500);
+  slc_engage_setting->showDescription();
   list->addItem(slc_engage_setting);
 
   QFrame *offsetFrame = new QFrame(this);
@@ -76,14 +78,16 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
   std::vector<QString> slc_offset_texts{
     SLCOffsetTypeText[static_cast<int>(SLCOffsetType::NONE)],
     SLCOffsetTypeText[static_cast<int>(SLCOffsetType::FIXED)],
-    SLCOffsetTypeText[static_cast<int>(SLCOffsetType::PERCENT)]};
+    SLCOffsetTypeText[static_cast<int>(SLCOffsetType::PERCENT)]
+  };
   slc_offset_setting = new ButtonParamControlSP(
     "SpeedLimitOffsetType",
     tr("Speed Limit Offset"),
     "",
     "",
     slc_offset_texts,
-    300);
+    500);
+
   offsetLayout->addWidget(slc_offset_setting);
 
   slc_offset = new OptionControlSP(

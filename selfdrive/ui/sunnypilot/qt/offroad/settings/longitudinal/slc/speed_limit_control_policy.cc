@@ -8,12 +8,12 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_policy.h"
 
 SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(parent) {
-  QVBoxLayout* main_layout = new QVBoxLayout(this);
+  QVBoxLayout *main_layout = new QVBoxLayout(this);
   main_layout->setContentsMargins(0, 0, 0, 0);
   main_layout->setSpacing(0);
 
   // Back button
-  PanelBackButton* back = new PanelBackButton(tr("Back"));
+  PanelBackButton *back = new PanelBackButton(tr("Back"));
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
@@ -23,10 +23,11 @@ SpeedLimitControlPolicy::SpeedLimitControlPolicy(QWidget *parent) : QWidget(pare
 
   std::vector<QString> slc_policy_texts{
     SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::CAR_ONLY)],
-  SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::MAP_ONLY)],
+    SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::MAP_ONLY)],
     SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::CAR_FIRST)],
     SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::MAP_FIRST)],
-  SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::COMBINED)]};
+    SLCSourcePolicyText[static_cast<int>(SLCSourcePolicy::COMBINED)]
+  };
   slc_policy = new ButtonParamControlSP(
     "SpeedLimitControlPolicy",
     tr("Speed Limit Source"),

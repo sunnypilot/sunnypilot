@@ -47,10 +47,10 @@ private:
     }
 
     return QString("%1<br>%2<br>%3<br>%4<br>%5")
-            .arg(car_only)
-            .arg(map_only)
-            .arg(car_first)
-            .arg(map_first)
-            .arg(combined);
+        .arg(car_only)
+        .arg(map_only)
+        .arg(car_first)
+        .arg(map_first)
+        .arg(combined);
   }
 };

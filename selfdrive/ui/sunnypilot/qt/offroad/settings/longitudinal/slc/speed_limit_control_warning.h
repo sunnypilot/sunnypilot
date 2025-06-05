@@ -45,9 +45,9 @@ private:
     }
 
     return QString("%1<br>%2<br>%3")
-             .arg(off_str)
-             .arg(display_str)
-             .arg(chime_str);
+        .arg(off_str)
+        .arg(display_str)
+        .arg(chime_str);
   }
 
   static QString offsetDescription(SLCOffsetType type = SLCOffsetType::NONE) {
@@ -64,8 +64,8 @@ private:
     }
 
     return QString("%1<br>%2<br>%3")
-             .arg(none_str)
-             .arg(fixed_str)
-             .arg(percent_str);
+        .arg(none_str)
+        .arg(fixed_str)
+        .arg(percent_str);
   }
 };

@@ -15,7 +15,7 @@
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
 class SpeedLimitControlSubpanel : public QStackedWidget {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
   SpeedLimitControlSubpanel(QWidget *parent = nullptr);
@@ -47,8 +47,8 @@ private:
     }
 
     return QString("%1<br>%2")
-             .arg(auto_str)
-             .arg(user_str);
+        .arg(auto_str)
+        .arg(user_str);
   }
 
   static QString offsetDescription(SLCOffsetType type = SLCOffsetType::NONE) {
@@ -65,8 +65,8 @@ private:
     }
 
     return QString("%1<br>%2<br>%3")
-             .arg(none_str)
-             .arg(fixed_str)
-             .arg(percent_str);
+        .arg(none_str)
+        .arg(fixed_str)
+        .arg(percent_str);
   }
 };

@@ -17,7 +17,7 @@ enum class SLCEngageType {
   USER_CONFIRM,
 };
 
-inline const char *SLCEngageTypeText[] {
+inline const char *SLCEngageTypeText[]{
   QT_TR_NOOP("Auto"),
   QT_TR_NOOP("User Confirm")
 };
@@ -28,7 +28,7 @@ enum class SLCOffsetType {
   PERCENT,
 };
 
-inline const char *SLCOffsetTypeText[] {
+inline const char *SLCOffsetTypeText[]{
   QT_TR_NOOP("None"),
   QT_TR_NOOP("Fixed"),
   QT_TR_NOOP("Percent"),
@@ -40,7 +40,7 @@ enum class SLCWarningType {
   CHIME,
 };
 
-inline const char *SLCWarningTypeText[] {
+inline const char *SLCWarningTypeText[]{
   QT_TR_NOOP("Off"),
   QT_TR_NOOP("Display"),
   QT_TR_NOOP("Chime")
@@ -54,7 +54,7 @@ enum class SLCSourcePolicy {
   COMBINED
 };
 
-inline const char *SLCSourcePolicyText[] {
+inline const char *SLCSourcePolicyText[]{
   QT_TR_NOOP("Car\nOnly"),
   QT_TR_NOOP("Map\nOnly"),
   QT_TR_NOOP("Car\nFirst"),
@@ -63,7 +63,7 @@ inline const char *SLCSourcePolicyText[] {
 };
 
 class SpeedLimitControl : public ExpandableToggleRow {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
   SpeedLimitControl(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
