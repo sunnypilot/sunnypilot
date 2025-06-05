@@ -13,9 +13,9 @@ MODIFIABLE_DIRECTIONS = ('left', 'right')
 
 EARTH_MEAN_RADIUS = 6371007.2
 SPEED_CONVERSIONS = {
-    'km/h': Conversions.KPH_TO_MS,
-    'mph': Conversions.MPH_TO_MS,
-  }
+  'km/h': Conversions.KPH_TO_MS,
+  'mph': Conversions.MPH_TO_MS,
+}
 
 
 class Coordinate:
@@ -65,9 +65,9 @@ class Coordinate:
     haversine_dlon *= haversine_dlon
 
     y = haversine_dlat \
-             + math.cos(math.radians(self.latitude)) \
-             * math.cos(math.radians(other.latitude)) \
-             * haversine_dlon
+        + math.cos(math.radians(self.latitude)) \
+        * math.cos(math.radians(other.latitude)) \
+        * haversine_dlon
     x = 2 * math.asin(math.sqrt(y))
     return x * EARTH_MEAN_RADIUS
 

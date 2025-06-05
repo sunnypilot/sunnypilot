@@ -147,6 +147,14 @@ def main_thread(sm=None, pm=None):
   rk = Ratekeeper(1, print_delay_threshold=None)
   live_map_sp = OsmMapData()
 
+  # Create folder needed for OSM
+  try:
+    os.mkdir(COMMON_DIR)
+  except FileExistsError:
+    pass
+  except PermissionError:
+    cloudlog.exception(f"mapd: failed to make {COMMON_DIR}")
+
   while True:
     show_alert = get_files_for_cleanup() and params.get_bool("OsmLocal")
     set_offroad_alert("Offroad_OSMUpdateRequired", show_alert, "This alert will be cleared when new maps are downloaded.")

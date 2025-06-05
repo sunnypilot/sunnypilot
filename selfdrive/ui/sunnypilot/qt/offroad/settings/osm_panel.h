@@ -25,10 +25,11 @@
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "system/hardware/hw.h"
 
-constexpr int FAST_REFRESH_INTERVAL = 1000;  // ms
-constexpr int SLOW_REFRESH_INTERVAL = 5000;  // ms
+constexpr int FAST_REFRESH_INTERVAL = 1000; // ms
+constexpr int SLOW_REFRESH_INTERVAL = 5000; // ms
 
 static const QString MAP_PATH = Hardware::PC() ? QDir::homePath() + "/.comma/media/0/osm/offline/" : "/data/media/0/osm/offline/";
+
 class OsmPanel : public QFrame {
   Q_OBJECT
 
@@ -36,19 +37,20 @@ public:
   explicit OsmPanel(QWidget *parent = nullptr);
 
 private:
-  QStackedLayout* main_layout = nullptr;
-  QWidget* osmScreen = nullptr;
+  QStackedLayout *main_layout = nullptr;
+  QWidget *osmScreen = nullptr;
   Params params;
-  Params mem_params{ Hardware::PC() ? "": "/dev/shm/params"};
-  std::map<std::string, ParamControlSP*> toggles;
-  std::optional<QFuture<quint64>> mapSizeFuture;
+  Params mem_params{Hardware::PC() ? "" : "/dev/shm/params"};
+  std::map<std::string, ParamControlSP *> toggles;
+  std::optional<QFuture<quint64> > mapSizeFuture;
   const SubMaster &sm = *uiStateSP()->sm;
 
 
   bool is_onroad = false;
   std::string mapd_version;
-  bool isWifi() const {return sm["deviceState"].getDeviceState().getNetworkType() == cereal::DeviceState::NetworkType::WIFI; }
-  bool isMetered() const {return sm["deviceState"].getDeviceState().getNetworkMetered(); }
+
+  bool isWifi() const { return sm["deviceState"].getDeviceState().getNetworkType() == cereal::DeviceState::NetworkType::WIFI; }
+  bool isMetered() const { return sm["deviceState"].getDeviceState().getNetworkMetered(); }
   bool osm_download_in_progress = false;
   bool download_failed_state = false;
   quint64 mapsDirSize = 0;
@@ -58,30 +60,32 @@ private:
   ButtonControlSP *osmUpdateBtn;
   ButtonControlSP *usStatesBtn;
   ButtonControlSP *osmDeleteMapsBtn;
+
   ButtonControlSP *setupOsmDeleteMapsButton(QWidget *parent);;
-  ButtonControlSP* setupOsmUpdateButton(QWidget *parent);
-  ButtonControlSP* setupOsmDownloadButton(QWidget *parent);
-  ButtonControlSP* setupUsStatesButton(QWidget *parent);
+  ButtonControlSP *setupOsmUpdateButton(QWidget *parent);
+  ButtonControlSP *setupOsmDownloadButton(QWidget *parent);
+  ButtonControlSP *setupUsStatesButton(QWidget *parent);
+
   QTimer *timer;
   std::string osm_download_locations;
-//  void updateButtonControlSP(ButtonControlSP *btnControl, QWidget *parent, const QString &initTitle, const QString &allStatesOption);
+  //  void updateButtonControlSP(ButtonControlSP *btnControl, QWidget *parent, const QString &initTitle, const QString &allStatesOption);
 
   void showEvent(QShowEvent *event) override;
-  void hideEvent(QHideEvent* event) override;
+  void hideEvent(QHideEvent *event) override;
   void updateLabels();
   void updateDownloadProgress();
-  static int extractIntFromJson(const QJsonObject& json, const QString& key);
-  QString processUpdateStatus(bool pending_update_check, int total_files, int downloaded_files, const QJsonObject& json, bool failed_state);
+  static int extractIntFromJson(const QJsonObject &json, const QString &key);
+  QString processUpdateStatus(bool pending_update_check, int total_files, int downloaded_files, const QJsonObject &json, bool failed_state);
 
-  ConfirmationDialog* confirmationDialog;
+  ConfirmationDialog *confirmationDialog;
   LabelControlSP *mapdVersion;
   LabelControlSP *offlineMapsStatus;
   LabelControlSP *offlineMapsETA;
   LabelControlSP *offlineMapsElapsed;
   std::optional<std::chrono::system_clock::time_point> lastDownloadedTimePoint;
   LocationsFetcher locationsFetcher;
-  void updateMapSize();
 
+  void updateMapSize();
 
   bool showConfirmationDialog(QWidget *parent,
                               const QString &message = QString(),
@@ -89,7 +93,7 @@ private:
     const auto _is_metered = isMetered();
     const QString warning_message = _is_metered ? tr("\n\nWarning: You are on a metered connection!") : QString();
     QString final_message = message.isEmpty() ? tr("This will start the download process and it might take a while to complete.") : message;
-    final_message += warning_message;  // Append the warning message if the connection is metered
+    final_message += warning_message; // Append the warning message if the connection is metered
 
     const QString final_buttonText = confirmButtonText.isEmpty() ? (_is_metered ? tr("Continue on Metered") : tr("Start Download")) : confirmButtonText;
 
@@ -97,10 +101,11 @@ private:
   }
 
   // Refactored methods
-  std::vector<std::tuple<QString, QString, QString, QString>> getOsmLocations(const std::tuple<QString, QString>& customLocation = defaultLocation) const {
+  std::vector<std::tuple<QString, QString, QString, QString> > getOsmLocations(const std::tuple<QString, QString> &customLocation = defaultLocation) const {
     return locationsFetcher.getOsmLocations(customLocation);
   }
-  std::vector<std::tuple<QString, QString, QString, QString>> getUsStatesLocations(const std::tuple<QString, QString>& customLocation = defaultLocation) const {
+
+  std::vector<std::tuple<QString, QString, QString, QString> > getUsStatesLocations(const std::tuple<QString, QString> &customLocation = defaultLocation) const {
     return locationsFetcher.getUsStatesLocations(customLocation);
   }
 
@@ -181,7 +186,6 @@ private:
   }
 
   static QString formatDownloadStatus(const QJsonObject &json) {
-
     if (!json.contains("total_files") || !json.contains("downloaded_files"))
       return "";
 

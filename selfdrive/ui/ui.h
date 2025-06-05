@@ -72,7 +72,7 @@ class UIState : public QObject {
 public:
   UIState(QObject* parent = 0);
   virtual void updateStatus();
-  inline bool engaged() const {
+  virtual inline bool engaged() const {
     return scene.started && (*sm)["selfdriveState"].getSelfdriveState().getEnabled();
   }
 

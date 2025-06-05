@@ -9,11 +9,11 @@
 
 #include <QThread>
 
-ModelsFetcher::ModelsFetcher(QObject* parent) : QObject(parent) {
+ModelsFetcher::ModelsFetcher(QObject *parent) : QObject(parent) {
   manager = new QNetworkAccessManager(this);
 }
 
-QByteArray ModelsFetcher::verifyFileHash(const QString& filePath, const QString& expectedHash, bool& hashMatches) {
+QByteArray ModelsFetcher::verifyFileHash(const QString &filePath, const QString &expectedHash, bool &hashMatches) {
   hashMatches = false; // Default to false
   QByteArray fileData;
 
@@ -38,7 +38,7 @@ QByteArray ModelsFetcher::verifyFileHash(const QString& filePath, const QString&
 }
 
 
-void ModelsFetcher::download(const DownloadInfo& downloadInfo, const QString& filename, const QString& destinationPath) {
+void ModelsFetcher::download(const DownloadInfo &downloadInfo, const QString &filename, const QString &destinationPath) {
   QString fullPath = destinationPath + "/" + filename;
   QFileInfo fileInfo(fullPath);
   bool hashMatches = false;
@@ -54,14 +54,14 @@ void ModelsFetcher::download(const DownloadInfo& downloadInfo, const QString& fi
 
   // Proceed with download if file does not exist or hash verification failed
   QNetworkRequest request(downloadInfo.url);
-  QNetworkReply* reply = manager->get(request);
+  QNetworkReply *reply = manager->get(request);
   connect(reply, &QNetworkReply::downloadProgress, this, &ModelsFetcher::onDownloadProgress);
   connect(reply, &QNetworkReply::finished, this, [this, reply, destinationPath, filename, downloadInfo]() {
     onFinished(reply, destinationPath, filename, downloadInfo.sha256);
   });
 }
 
-QString extractFileName(const QString& contentDisposition) {
+QString extractFileName(const QString &contentDisposition) {
   const QString filenameTag = "filename=";
   const int idx = contentDisposition.indexOf(filenameTag);
   if (idx < 0) {
@@ -76,7 +76,7 @@ QString extractFileName(const QString& contentDisposition) {
   return filename;
 }
 
-void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationPath, const QString& filename, const QString& expectedHash) {
+void ModelsFetcher::onFinished(QNetworkReply *reply, const QString &destinationPath, const QString &filename, const QString &expectedHash) {
   // Handle download error
   if (reply->error()) {
     return; // Possibly emit a signal or log an error as per your error handling policy
@@ -92,25 +92,22 @@ void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationP
   QString finalPath = QDir(destinationPath).filePath(finalFilename);
 
   // Save the downloaded file
-  
-  
   QFile file(finalPath);
   //ensure if the path exists and if not create it 
-  if (!QDir().mkpath(destinationPath))
-  {
+  if (!QDir().mkpath(destinationPath)) {
     LOGE("Unable to create directory: %s", destinationPath.toStdString().c_str());
     emit downloadFailed(filename);
     return; // Stop further processing
   }
-  
+
   //Retry the file open and write 3 times with a little delay between each retry
   for (int i = 0; i < 3; i++) {
     if (file.isOpen()) break;
-    
+
     file.open(QIODevice::WriteOnly);
     if (!file.isOpen()) QThread::msleep(100);
   }
-  
+
   // If the file is still not open, log an error and emit a failure signal
   if (!file.isOpen()) {
     LOGE("Unable to open file for writing: %s", finalPath.toStdString().c_str());
@@ -133,7 +130,6 @@ void ModelsFetcher::onFinished(QNetworkReply* reply, const QString& destinationP
     emit downloadFailed(filename);
     return; // Stop further processing
   }
-  
 
   emit downloadComplete(data, false); // Emit your success signal
 }
@@ -143,7 +139,7 @@ void ModelsFetcher::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal) 
   emit downloadProgress(progress);
 }
 
-std::vector<Model> ModelsFetcher::getModelsFromURL(const QUrl&url) {
+std::vector<Model> ModelsFetcher::getModelsFromURL(const QUrl &url) {
   std::vector<Model> models;
   JsonFetcher fetcher;
   QJsonObject json = fetcher.getJsonFromURL(url.toString());
@@ -153,7 +149,7 @@ std::vector<Model> ModelsFetcher::getModelsFromURL(const QUrl&url) {
   return models;
 }
 
-std::vector<Model> ModelsFetcher::getModelsFromURL(const QString&url) {
+std::vector<Model> ModelsFetcher::getModelsFromURL(const QString &url) {
   return getModelsFromURL(QUrl(url));
 }
 

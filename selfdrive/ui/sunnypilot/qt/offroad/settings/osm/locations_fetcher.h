@@ -18,13 +18,14 @@
 #include "selfdrive/ui/sunnypilot/qt/common/json_fetcher.h"
 
 static const std::tuple<QString, QString> defaultLocation = std::make_tuple("== None ==", "");
+
 // New class LocationsFetcher that handles web requests and JSON parsing
 class LocationsFetcher {
 public:
-  inline std::vector<std::tuple<QString, QString, QString, QString>>
+  inline std::vector<std::tuple<QString, QString, QString, QString> >
   getLocationsFromURL(const QUrl &url, const std::tuple<QString, QString> &customLocation = defaultLocation) const {
     // Initialize an empty vector to hold the locations
-    std::vector<std::tuple<QString, QString, QString, QString>> locations;
+    std::vector<std::tuple<QString, QString, QString, QString> > locations;
 
     JsonFetcher fetcher;
     QJsonObject json = fetcher.getJsonFromURL(url.toString());
@@ -38,25 +39,25 @@ public:
     }
     // Sort locations by full name
     std::sort(locations.begin(), locations.end(), [](const auto &lhs, const auto &rhs) {
-      return std::get < 0 > (lhs) < std::get < 0 > (rhs);  // Compare full names
+      return std::get<0>(lhs) < std::get<0>(rhs); // Compare full names
     });
     // Optionally, you can now add defaultName entry at the beginning
     locations.insert(locations.begin(), std::tuple_cat(customLocation, std::make_tuple("", "")));
     return locations;
   }
 
-  inline std::vector<std::tuple<QString, QString, QString, QString>>
+  inline std::vector<std::tuple<QString, QString, QString, QString> >
   getLocationsFromURL(const QString &url, const std::tuple<QString, QString> &customLocation = defaultLocation) const {
     return getLocationsFromURL(QUrl(url), customLocation);
   }
 
-  inline std::vector<std::tuple<QString, QString, QString, QString>>
+  inline std::vector<std::tuple<QString, QString, QString, QString> >
   getOsmLocations(const std::tuple<QString, QString> &customLocation = defaultLocation) const {
-    return getLocationsFromURL("https://raw.githubusercontent.com/pfeiferj/openpilot-mapd/main/nation_bounding_boxes.json", customLocation);
+    return getLocationsFromURL( "https://raw.githubusercontent.com/pfeiferj/openpilot-mapd/main/nation_bounding_boxes.json", customLocation);
   }
 
-  inline std::vector<std::tuple<QString, QString, QString, QString>>
+  inline std::vector<std::tuple<QString, QString, QString, QString> >
   getUsStatesLocations(const std::tuple<QString, QString> &customLocation = defaultLocation) const {
-    return getLocationsFromURL("https://raw.githubusercontent.com/pfeiferj/openpilot-mapd/main/us_states_bounding_boxes.json", customLocation);
+    return getLocationsFromURL( "https://raw.githubusercontent.com/pfeiferj/openpilot-mapd/main/us_states_bounding_boxes.json", customLocation);
   }
 };

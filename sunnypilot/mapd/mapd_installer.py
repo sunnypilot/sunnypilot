@@ -84,7 +84,7 @@ class MapdInstallManager:
 
   def wait_for_internet_connection(self, return_on_failure=False):
     max_retries = 10
-    for retries in range(max_retries+1):
+    for retries in range(max_retries + 1):
       self._spinner.update(f"Waiting for internet connection... [{retries}/{max_retries}]")
       time.sleep(2)
       try:

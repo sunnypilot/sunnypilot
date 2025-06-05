@@ -121,22 +121,23 @@ class ModelsFetcher : public QObject {
   Q_OBJECT
 
 public:
-  explicit ModelsFetcher(QObject* parent = nullptr);
-  void download(const DownloadInfo&url, const QString& filename = "", const QString&destinationPath = MODELS_PATH);
-  static std::vector<Model> getModelsFromURL(const QUrl&url);
-  static std::vector<Model> getModelsFromURL(const QString&url);
+  explicit ModelsFetcher(QObject *parent = nullptr);
+  void download(const DownloadInfo &url, const QString &filename = "", const QString &destinationPath = MODELS_PATH);
+  static std::vector<Model> getModelsFromURL(const QUrl &url);
+  static std::vector<Model> getModelsFromURL(const QString &url);
   static std::vector<Model> getModelsFromURL();
 
 signals:
   void downloadProgress(double percentage);
-  void downloadComplete(const QByteArray&data, bool fromCache = false);
+  void downloadComplete(const QByteArray &data, bool fromCache = false);
   void downloadFailed(const QString &filename);
 
 private:
-//  static bool verifyFileHash(const QString& filePath, const QString& expectedHash);
-  static QByteArray verifyFileHash(const QString& filePath, const QString& expectedHash, bool& hashMatches);
+  //  static bool verifyFileHash(const QString& filePath, const QString& expectedHash);
+  static QByteArray verifyFileHash(const QString &filePath, const QString &expectedHash, bool &hashMatches);
   void onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-  void onFinished(QNetworkReply* reply, const QString&destinationPath, const QString&filename, const QString& expectedHash);
+  void onFinished(QNetworkReply *reply, const QString &destinationPath, const QString &filename,
+                  const QString &expectedHash);
 
-  QNetworkAccessManager* manager;
+  QNetworkAccessManager *manager;
 };
