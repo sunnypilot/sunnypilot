@@ -51,8 +51,8 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
     showEvent(new QShowEvent());
   });
 
-  slcWarningControl->setFixedWidth(650);
-  slcSourceControl->setFixedWidth(650);
+  slcWarningControl->setFixedWidth(720);
+  slcSourceControl->setFixedWidth(720);
   slcBtnFrameLayout->addWidget(slcWarningControl, 0, 0, Qt::AlignLeft);
   slcBtnFrameLayout->addWidget(slcSourceControl, 0, 1, Qt::AlignRight);
   list->addItem(slcBtnFrame);
@@ -69,6 +69,7 @@ SpeedLimitControlSubpanel::SpeedLimitControlSubpanel(QWidget *parent) : QStacked
     "",
     slc_engage_texts,
     500);
+  slc_engage_setting->showDescription();
   list->addItem(slc_engage_setting);
 
   QFrame *offsetFrame = new QFrame(this);
