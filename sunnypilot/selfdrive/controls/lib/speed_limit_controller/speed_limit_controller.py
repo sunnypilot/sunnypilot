@@ -1,3 +1,4 @@
+from collections.abc import Callable
 import numpy as np
 import time
 
@@ -48,12 +49,12 @@ class SpeedLimitController:
     self._gas_pressed = False
     self._pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
-    self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
-    self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
-    self._warning_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
-    self._warning_offset_type = int(self._params.get("SpeedLimitWarningOffsetType", encoding='utf8'))
-    self._warning_offset_value = float(self._params.get("SpeedLimitWarningValueOffset", encoding='utf8'))
-    self._engage_type = np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
+    self._offset_type = self._read_int_param("SpeedLimitOffsetType")
+    self._offset_value = self._read_int_param("SpeedLimitValueOffset")
+    self._warning_type = self._read_int_param("SpeedLimitWarningType")
+    self._warning_offset_type = self._read_int_param("SpeedLimitWarningOffsetType")
+    self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
+    self._engage_type = self._read_engage_type_param()
     self._brake_pressed = False
     self._brake_pressed_prev = False
     self._current_time = 0.
@@ -150,18 +151,17 @@ class SpeedLimitController:
   def _update_params(self) -> None:
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("SpeedLimitControl")
-      self._offset_type = int(self._params.get("SpeedLimitOffsetType", encoding='utf8'))
-      self._offset_value = float(self._params.get("SpeedLimitValueOffset", encoding='utf8'))
-      self._warning_type = int(self._params.get("SpeedLimitWarningType", encoding='utf8'))
-      self._warning_offset_type = int(self._params.get("SpeedLimitWarningOffsetType", encoding='utf8'))
-      self._warning_offset_value = float(self._params.get("SpeedLimitWarningValueOffset", encoding='utf8'))
+      self._offset_type = self._read_int_param("SpeedLimitOffsetType")
+      self._offset_value = self._read_int_param("SpeedLimitValueOffset")
+      self._warning_type = self._read_int_param("SpeedLimitWarningType")
+      self._warning_offset_type = self._read_int_param("SpeedLimitWarningOffsetType")
+      self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
       self._policy = self._read_policy_param()
       self._is_metric = self._params.get_bool("IsMetric")
       self._ms_to_local = CV.MS_TO_KPH if self._is_metric else CV.MS_TO_MPH
       self._resolver.change_policy(self._policy)
-      self._engage_type = Engage.auto if self._pcm_cruise_op_long else \
-                          np.clip(int(self._params.get("SpeedLimitEngageType", encoding='utf8')), Engage.auto, Engage.user_confirm)
-      debug(f'Updated Speed limit params. enabled: {self._is_enabled}, with offset: {self._offset_type}')
+      self._engage_type = self._read_engage_type_param()
+
       self._last_params_update = self._current_time
 
   def _read_policy_param(self) -> Policy:
@@ -169,6 +169,22 @@ class SpeedLimitController:
       return Policy(int(self._params.get("SpeedLimitControlPolicy", encoding='utf8')))
     except (ValueError, TypeError):
       return Policy.car_state_priority
+
+  def _read_engage_type_param(self) -> Engage:
+    if self._pcm_cruise_op_long:
+      return Engage.auto
+
+    return Engage(self._read_int_param("SpeedLimitEngageType", validator=lambda x: np.clip(x, Engage.auto, Engage.user_confirm)))
+
+  def _read_int_param(self, key: str, default: int = 0, validator: Callable[[int], int] = None) -> int:
+    try:
+      val = int(self._params.get(key, encoding='utf8'))
+
+      if validator is not None:
+        return validator(val)
+      return val
+    except (ValueError, TypeError):
+      return default
 
   def _update_calculations(self) -> None:
     # Update current velocity offset (error)
