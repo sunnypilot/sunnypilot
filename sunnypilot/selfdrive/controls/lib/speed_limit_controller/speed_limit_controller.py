@@ -21,6 +21,10 @@ ENABLED_STATES = (SpeedLimitControlState.preActive, SpeedLimitControlState.tempI
 
 
 class SpeedLimitController:
+  _speed_limit: float
+  _distance: float
+  _source: Source
+
   def __init__(self, CP):
     self._params = Params()
     self._CP = CP
@@ -111,7 +115,7 @@ class SpeedLimitController:
 
   @property
   def speed_limit_offseted(self) -> float:
-    return float(self._speed_limit + self.speed_limit_offset)
+    return self._speed_limit + self.speed_limit_offset
 
   @property
   def speed_limit_offset(self) -> float:
@@ -123,23 +127,23 @@ class SpeedLimitController:
 
   @property
   def speed_limit(self) -> float:
-    return float(self._speed_limit)
+    return self._speed_limit
 
   @property
   def distance(self) -> float:
-    return float(self._distance)
+    return self._distance
 
   @property
   def source(self) -> Source:
-    return Source(self._source)
+    return self._source
 
   def _get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
     if offset_type == OffsetType.default:
       return float(np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit)
     elif offset_type == OffsetType.fixed:
-      return float(offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS))
+      return offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS)
     elif offset_type == OffsetType.percentage:
-      return float(offset_value * 0.01 * self._speed_limit)
+      return offset_value * 0.01 * self._speed_limit
     else:
       raise NotImplementedError("Offset not supported")
 
