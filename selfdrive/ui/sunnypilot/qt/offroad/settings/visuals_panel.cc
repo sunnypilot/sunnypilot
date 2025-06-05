@@ -5,11 +5,8 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 
-#pragma once
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/visuals_panel.h"
 
-#include "selfdrive/ui/qt/onroad/model.h"
+VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
 
-class ModelRendererSP : public ModelRenderer {
-public:
-  ModelRendererSP() = default;
-};
+}
