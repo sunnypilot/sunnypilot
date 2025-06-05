@@ -49,10 +49,10 @@ class SpeedLimitController:
     self._gas_pressed = False
     self._pcm_cruise_op_long = CP.openpilotLongitudinalControl and CP.pcmCruise
 
-    self._offset_type = self._read_int_param("SpeedLimitOffsetType")
+    self._offset_type = OffsetType(self._read_int_param("SpeedLimitOffsetType"))
     self._offset_value = self._read_int_param("SpeedLimitValueOffset")
     self._warning_type = self._read_int_param("SpeedLimitWarningType")
-    self._warning_offset_type = self._read_int_param("SpeedLimitWarningOffsetType")
+    self._warning_offset_type = OffsetType(self._read_int_param("SpeedLimitWarningOffsetType"))
     self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
     self._engage_type = self._read_engage_type_param()
     self._brake_pressed = False
@@ -115,23 +115,11 @@ class SpeedLimitController:
 
   @property
   def speed_limit_offset(self) -> float:
-    if self._offset_type == OffsetType.default:
-      return float(np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit)
-    elif self._offset_type == OffsetType.fixed:
-      return float(self._offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS))
-    elif self._offset_type == OffsetType.percentage:
-      return float(self._offset_value * 0.01 * self._speed_limit)
-    return 0.
+    return self._get_offset(self._offset_type, self._offset_value)
 
   @property
   def speed_limit_warning_offset(self) -> float:
-    if self._warning_offset_type == OffsetType.default:
-      return float(np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit)
-    elif self._warning_offset_type == OffsetType.fixed:
-      return float(self._warning_offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS))
-    elif self._warning_offset_type == OffsetType.percentage:
-      return float(self._warning_offset_value * 0.01 * self._speed_limit)
-    return 0.
+    return self._get_offset(self._warning_offset_type, self._warning_offset_value)
 
   @property
   def speed_limit(self) -> float:
@@ -145,16 +133,26 @@ class SpeedLimitController:
   def source(self) -> Source:
     return Source(self._source)
 
+  def _get_offset(self, offset_type: OffsetType, offset_value: int) -> float:
+    if offset_type == OffsetType.default:
+      return float(np.interp(self._speed_limit, LIMIT_PERC_OFFSET_BP, LIMIT_PERC_OFFSET_V) * self._speed_limit)
+    elif offset_type == OffsetType.fixed:
+      return float(offset_value * (CV.KPH_TO_MS if self._is_metric else CV.MPH_TO_MS))
+    elif offset_type == OffsetType.percentage:
+      return float(offset_value * 0.01 * self._speed_limit)
+    else:
+      raise NotImplementedError("Offset not supported")
+
   def _update_v_cruise_setpoint_prev(self) -> None:
     self._v_cruise_setpoint_prev = self._v_cruise_setpoint
 
   def _update_params(self) -> None:
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
       self._is_enabled = self._params.get_bool("SpeedLimitControl")
-      self._offset_type = self._read_int_param("SpeedLimitOffsetType")
+      self._offset_type = OffsetType(self._read_int_param("SpeedLimitOffsetType"))
       self._offset_value = self._read_int_param("SpeedLimitValueOffset")
       self._warning_type = self._read_int_param("SpeedLimitWarningType")
-      self._warning_offset_type = self._read_int_param("SpeedLimitWarningOffsetType")
+      self._warning_offset_type = OffsetType(self._read_int_param("SpeedLimitWarningOffsetType"))
       self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
       self._policy = self._read_policy_param()
       self._is_metric = self._params.get_bool("IsMetric")
