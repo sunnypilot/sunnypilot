@@ -60,8 +60,4 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
 void LongitudinalPanel::showEvent(QShowEvent *event) {
   main_layout->setCurrentWidget(cruisePanelScreen);
-  refresh();
-}
-
-void LongitudinalPanel::refresh() {
 }
