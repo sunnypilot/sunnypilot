@@ -14,6 +14,7 @@ SpeedLimitControl::SpeedLimitControl(const QString &param, const QString &title,
   auto *slcFrameLayout = new QVBoxLayout();
   slcFrame->setLayout(slcFrameLayout);
   slcFrameLayout->setSpacing(0);
+  slcFrameLayout->setContentsMargins(0, 0, 0, 0);
 
   slcSettings = new PushButtonSP(tr("Customize SLC"));
   slcFrameLayout->addWidget(slcSettings);
