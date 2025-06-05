@@ -9,19 +9,18 @@
 
 // Map of Brightness Options
 const QMap<QString, QString> Brightness::brightness_options = {
-  {"0", "0"},  // Auto
-  {"1", "1"},
-  {"2", "5"},
-  {"3", "10"},
-  {"4", "20"},
-  {"5", "30"},
-  {"6", "40"},
-  {"7", "50"},
-  {"8", "60"},
-  {"9", "70"},
-  {"10", "80"},
-  {"11", "90"},
-  {"12", "100"}
+  {"0", "1"},  // Auto (Dark)
+  {"1", "0"},  // Auto
+  {"2", "10"},
+  {"3", "20"},
+  {"4", "30"},
+  {"5", "40"},
+  {"6", "50"},
+  {"7", "60"},
+  {"8", "70"},
+  {"9", "80"},
+  {"10", "90"},
+  {"11", "100"}
 };
 
 Brightness::Brightness() : OptionControlSP(
@@ -29,7 +28,7 @@ Brightness::Brightness() : OptionControlSP(
   tr("Brightness"),
   tr("Overrides the brightness of the device."),
   "../assets/offroad/icon_blank.png",
-  {0, 12}, 1, true, &brightness_options) {
+  {0, 11}, 1, true, &brightness_options) {
 
   refresh();
 }
@@ -38,7 +37,9 @@ void Brightness::refresh() {
   const int brightness = QString::fromStdString(params.get("Brightness")).toInt();
   
   QString label;
-  if (brightness == 0) {
+  if (brightness == 1) {
+    label = tr("Auto (Dark)");
+  } else if (brightness == 0) {
     label = tr("Auto");
   } else {
     const int value = brightness;

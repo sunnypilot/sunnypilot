@@ -167,6 +167,9 @@ void Device::resetInteractiveTimeout(int timeout) {
 }
 
 void Device::updateBrightness(const UIState &s) {
+  int brightness;
+  int brightness_override = QString::fromStdString(Params().get("Brightness")).toInt();
+
   float clipped_brightness = offroad_brightness;
   if (s.scene.started && s.scene.light_sensor >= 0) {
     clipped_brightness = s.scene.light_sensor;
@@ -178,15 +181,20 @@ void Device::updateBrightness(const UIState &s) {
       clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
     }
 
-    // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+    if (brightness_override == 1) {
+      // Scale back to 1% to 100%
+      clipped_brightness = std::clamp(100.0f * clipped_brightness, 1.0f, 100.0f);
+    } else if (brightness_override == 0) {
+      // Scale back to 10% to 100%
+      clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+    }
+    
   }
 
-  int brightness = brightness_filter.update(clipped_brightness);
-  
-  int manual_brightness = QString::fromStdString(Params().get("Brightness")).toInt();
-  if (manual_brightness != 0) {
-    brightness = manual_brightness;
+  if (brightness_override == 0 || brightness_override == 1) {
+    brightness = brightness_filter.update(clipped_brightness);
+  } else {
+    brightness = brightness_override;
   }
 
   if (!awake) {
