@@ -62,8 +62,6 @@ class SpeedLimitController:
     self._warning_offset_type = OffsetType(self._read_int_param("SpeedLimitWarningOffsetType"))
     self._warning_offset_value = self._read_int_param("SpeedLimitWarningValueOffset")
     self._engage_type = self._read_engage_type_param()
-    self._brake_pressed = False
-    self._brake_pressed_prev = False
     self._current_time = 0.
     self._v_cruise_rounded = 0.
     self._v_cruise_prev_rounded = 0.
@@ -209,7 +207,6 @@ class SpeedLimitController:
     if self._engage_type != Engage.user_confirm:
       self._update_v_cruise_setpoint_prev()
     self._op_engaged_prev = self._op_engaged
-    self._brake_pressed_prev = self._brake_pressed
 
     self._v_cruise_rounded = int(round(self._v_cruise_setpoint * self._speed_factor))
     self._v_cruise_prev_rounded = int(round(self._v_cruise_setpoint_prev * self._speed_factor))
@@ -339,7 +336,6 @@ class SpeedLimitController:
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint
     self._gas_pressed = _car_state.gasPressed
-    self._brake_pressed = _car_state.brakePressed
     self._current_time = time.monotonic()
 
     self._speed_limit, self._distance, self._source = self._resolver.resolve(v_ego, self.speed_limit, sm)
