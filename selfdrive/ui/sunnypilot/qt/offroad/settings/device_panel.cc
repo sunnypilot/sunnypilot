@@ -94,6 +94,11 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     params.put("DeviceBootMode", QString::number(index).toStdString());
     updateState();
   });
+  
+  // Brightness
+  brightness = new Brightness();
+  connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
+  addItem(brightness);
 
   addItem(device_grid_layout);
 

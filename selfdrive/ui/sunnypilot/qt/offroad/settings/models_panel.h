@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "selfdrive/ui/sunnypilot/qt/util.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class ModelsPanel : public QWidget {
@@ -30,7 +31,7 @@ private:
 
   // UI update related methods
   void updateLabels();
-  void handleCurrentModelLblBtnClicked();
+  void handleCurrentModelLblBtnClicked(const QString &query);
   void handleBundleDownloadProgress();
   void showResetParamsDialog();
   cereal::ModelManagerSP::Reader model_manager;
