@@ -46,6 +46,9 @@ def manager_init() -> None:
     ("AutoLaneChangeBsmDelay", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
+    ("CustomAccIncrementsEnabled", "0"),
+    ("CustomAccLongPressIncrement", "5"),
+    ("CustomAccShortPressIncrement", "1"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("Mads", "1"),
@@ -57,9 +60,6 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
-    ("CustomAccIncrementsEnabled", "0"),
-    ("CustomAccLongPressIncrement", "5"),
-    ("CustomAccShortPressIncrement", "1"),
   ]
 
   if params.get_bool("RecordFrontLock"):

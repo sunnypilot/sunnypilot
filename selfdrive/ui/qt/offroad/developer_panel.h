@@ -2,7 +2,6 @@
 
 #ifdef SUNNYPILOT
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
-#include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 #else
 #include "selfdrive/ui/qt/offroad/settings.h"
 #endif
