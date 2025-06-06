@@ -80,8 +80,12 @@ void UIState::updateStatus() {
       status = STATUS_OVERRIDE;
     } else {
       if (mads.getAvailable()) {
-        if (mads.getEnabled()) {
-          status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_LAT_ONLY;
+        if (mads.getEnabled() && ss.getEnabled()) {
+          status = STATUS_ENGAGED;
+        } else if (mads.getEnabled()) {
+          status = STATUS_LAT_ONLY;
+        } else if (ss.getEnabled()) {
+          status = STATUS_LONG_ONLY;
         } else {
           status = STATUS_DISENGAGED;
         }
