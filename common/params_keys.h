@@ -133,6 +133,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CarPlatformBundle", PERSISTENT},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
+    {"Brightness", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
     {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
@@ -170,6 +171,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiLongitudinalTuning", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
+    {"BlindSpot", PERSISTENT | BACKUP},
 
     // model panel params
     {"LagdToggle", PERSISTENT | BACKUP},
