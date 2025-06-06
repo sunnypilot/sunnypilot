@@ -71,7 +71,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"LastPowerDropDetected", CLEAR_ON_MANAGER_START},
     {"LastUpdateException", CLEAR_ON_MANAGER_START},
     {"LastUpdateTime", PERSISTENT},
-    {"LiveDelay", PERSISTENT},
+    {"LiveDelay", PERSISTENT | BACKUP},
     {"LiveParameters", PERSISTENT},
     {"LiveParametersV2", PERSISTENT},
     {"LiveTorqueParameters", PERSISTENT | DONT_LOG},
@@ -125,6 +125,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ApiCache_DriveStats", PERSISTENT},
     {"AutoLaneChangeBsmDelay", PERSISTENT},
     {"AutoLaneChangeTimer", PERSISTENT},
+    {"BlinkerMinLateralControlSpeed", PERSISTENT | BACKUP},
+    {"BlinkerPauseLateralControl", PERSISTENT | BACKUP},
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
@@ -169,4 +171,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     {"DynamicExperimentalControl", PERSISTENT},
     {"BlindSpot", PERSISTENT | BACKUP},
+
+    // model panel params
+    {"LagdToggle", PERSISTENT | BACKUP},
 };
