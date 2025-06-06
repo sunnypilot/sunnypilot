@@ -8,6 +8,7 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/max_time_offroad.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/brightness.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
 
@@ -25,6 +26,7 @@ private:
   std::map<QString, PushButtonSP*> buttons;
   PushButtonSP *offroadBtn;
   MaxTimeOffroad *maxTimeOffroad;
+  Brightness *brightness;
 
   const QString alwaysOffroadStyle = R"(
     PushButtonSP {
