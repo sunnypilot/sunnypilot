@@ -3,7 +3,6 @@ import platform
 
 from openpilot.common.params import Params
 from openpilot.sunnypilot.navd.helpers import Coordinate
-from openpilot.sunnypilot.mapd.live_map_data import DataType
 from openpilot.sunnypilot.mapd.live_map_data.base_map_data import BaseMapData
 
 
@@ -13,7 +12,6 @@ class OsmMapData(BaseMapData):
     self.last_gps = Coordinate(0.0, 0.0)
     self.params = Params()
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
-    self.data_type = DataType.offline
 
   def update_location(self, current_location):
     self.last_gps = current_location

@@ -247,13 +247,6 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
   lastGpsBearingDeg @17 :Float32;
   lastGpsAccuracy @18 :Float32;
   lastGpsBearingAccuracyDeg @19 :Float32;
-  dataType @20 :DataType;
-
-  enum DataType {
-    default @0;
-    offline @1;
-    online @2;
-  }
 }
 
 struct CustomReserved9 @0xa1680744031fdb2d {

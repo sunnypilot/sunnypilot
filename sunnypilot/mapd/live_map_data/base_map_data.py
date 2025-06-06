@@ -14,7 +14,6 @@ class BaseMapData(ABC):
     self._last_gps: Coordinate | None = None
     self._gps_location_service = get_gps_location_service(self.params)
     self._gps_packets = [self._gps_location_service]
-    self._data_type = custom.LiveMapDataSP.DataType.default
     self._sm = messaging.SubMaster(['livePose', 'carControl'] + self._gps_packets)
     self._pm = messaging.PubMaster(['liveMapDataSP'])
 
@@ -80,7 +79,6 @@ class BaseMapData(ABC):
     live_map_data.speedLimitAhead = float(next_speed_limit)
     live_map_data.speedLimitAheadDistance = float(next_speed_limit_distance)
     live_map_data.currentRoadName = str(current_road_name)
-    live_map_data.dataType = self._data_type
 
     return map_data_msg
 
