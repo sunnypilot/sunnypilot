@@ -48,6 +48,7 @@ def manager_init() -> None:
     ("BlinkerPauseLateralControl", "0"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
+    ("LagdToggle", "1"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
