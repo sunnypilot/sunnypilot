@@ -71,7 +71,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"LastPowerDropDetected", CLEAR_ON_MANAGER_START},
     {"LastUpdateException", CLEAR_ON_MANAGER_START},
     {"LastUpdateTime", PERSISTENT},
-    {"LiveDelay", PERSISTENT},
+    {"LiveDelay", PERSISTENT | BACKUP},
     {"LiveParameters", PERSISTENT},
     {"LiveParametersV2", PERSISTENT},
     {"LiveTorqueParameters", PERSISTENT | DONT_LOG},
@@ -170,6 +170,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiLongitudinalTuning", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
+
+    // model panel params
+    {"LagdToggle", PERSISTENT | BACKUP},
 
     // Tuning keys
     {"HkgTuningAngleSmoothingFactor", PERSISTENT | BACKUP},
