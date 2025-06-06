@@ -48,5 +48,5 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
       painter.drawPolygon(right_blindspot_vertices);
     }
   }
-  ModelRenderer::drawPath(painter, model, surface_rect.height());
+  ModelRenderer::drawPath(painter, model, surface_rect.height(), surface_rect.width());
 }

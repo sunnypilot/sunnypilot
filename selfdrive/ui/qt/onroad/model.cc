@@ -92,7 +92,7 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
   }
 }
 
-void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height) {
+void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height, int width) {
   QLinearGradient bg(0, height, 0, 0);
   auto *s = uiState();
   auto &sm = *(s->sm);
@@ -158,6 +158,8 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
 
   painter.setBrush(bg);
   painter.drawPolygon(track_vertices);
+  LongFuel(painter,height, width);
+  LateralFuel(painter, height, width);
 }
 
 
@@ -203,6 +205,155 @@ QColor ModelRenderer::blendColors(const QColor &start, const QColor &end, float 
       (1 - t) * start.greenF() + t * end.greenF(),
       (1 - t) * start.blueF() + t * end.blueF(),
       (1 - t) * start.alphaF() + t * end.alphaF());
+}
+
+void ModelRenderer::LongFuel(QPainter &painter, int height, int width) {
+    qreal rectWidth = static_cast<qreal>(width);
+    qreal rectHeight = static_cast<qreal>(height);
+    UIState *s = uiState();
+
+    float currentAcceleration = (*s->sm)["carControl"].getCarControl().getActuators().getAccel();
+    //float currentAcceleration = (*s->sm)["carState"].getCarState().getAEgo();
+
+    qreal gaugeSize = 140.0;  // Diameter of the semicircle
+    qreal backgroundSize = gaugeSize * 1.4;  // Background is 30% larger than the gague
+    qreal centerX = rectWidth / 17;  // Center the gague horz
+    qreal centerY = rectHeight / 2 + 120;  // Center the gauge vertical offset
+
+    // Draw a dark circular background
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 80));  // Semi-transparent black
+    painter.drawEllipse(QPointF(centerX, centerY), backgroundSize / 2, backgroundSize / 2);
+
+    // Add a subtle border/glow around the background
+    QPen borderPen(QColor(0, 0, 0, 100));
+    borderPen.setWidth(2);
+    painter.setPen(borderPen);
+    painter.drawEllipse(QPointF(centerX, centerY), backgroundSize / 2 + 1, backgroundSize / 2 + 1);
+
+    // Draw the background semicircle
+    QPen semicirclePen(QColor(50, 50, 50));  // Dark gray for the semicircle
+    semicirclePen.setWidth(30);  // Thicker pen for the semicircle
+    semicirclePen.setCapStyle(Qt::RoundCap);
+    painter.setPen(semicirclePen);
+    painter.drawArc(QRectF(centerX - gaugeSize / 2, centerY - gaugeSize / 2, gaugeSize, gaugeSize), 0, 180 * 16);
+
+    // Determine the color based on the magnitude of acceleration
+    QColor indicatorColor;
+    float absoluteAcceleration = std::abs(currentAcceleration);
+    if (absoluteAcceleration < 0.3) {
+        indicatorColor = QColor(23, 241, 66, 200);  // Green for low acceleration
+    } else if (absoluteAcceleration < 0.6) {
+        indicatorColor = QColor(255, 166, 0, 200);  // Yellow for moderate acceleration
+    } else {
+        indicatorColor = QColor(245, 0, 0, 200);    // Red for high acceleration
+    }
+
+    // Calculate the span of the arc based on acceleration
+    int spanAngle = static_cast<int>(90 * absoluteAcceleration * 16);  // Scale for better visibility
+    spanAngle = std::clamp(spanAngle, 0, 90 * 16);  // Ensure the arc does not exceed 90 degrees
+
+    // Starting angle is at the middle of the semicircle (90 degrees)
+    int startAngle = 90 * 16;
+
+    // Draw the acceleration arc if there's significant acceleration
+    if (absoluteAcceleration > 0.01) {
+        semicirclePen.setColor(indicatorColor);
+        painter.setPen(semicirclePen);
+
+        QRectF arcRect(centerX - gaugeSize / 2, centerY - gaugeSize / 2, gaugeSize, gaugeSize);
+
+        // For positive acceleration, draw the arc to the left
+        if (currentAcceleration > 0) {
+            painter.drawArc(arcRect, startAngle, -spanAngle);  // Negative span for left side
+        } else {
+            // For negative acceleration (deceleration), draw the arc to the right
+            painter.drawArc(arcRect, startAngle, spanAngle);  // Positive span for right side
+        }
+    }
+
+    // Draw the text center
+    painter.setPen(Qt::white);
+    QFont font = painter.font();
+    font.setPixelSize(20);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LONG");
+}
+
+
+void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
+    qreal rectWidth = static_cast<qreal>(width);
+    qreal rectHeight = static_cast<qreal>(height);
+    UIState *s = uiState();
+
+    float currentLateral = (*s->sm)["carState"].getCarState().getSteeringAngleDeg();
+
+    qreal gaugeSize = 140.0;  // Diameter of the semicircle
+    qreal backgroundSize = gaugeSize * 1.4;  // Background is 30% larger than the gague
+    qreal centerX = rectWidth / 17;  // Center the gague horz
+    qreal centerY = rectHeight / 2 - 120;  // Center the gague vertical offset
+
+    // Draw a dark circular background
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 80));  // Semi-transparent black
+    painter.drawEllipse(QPointF(centerX, centerY), backgroundSize / 2, backgroundSize / 2);
+
+    // Add a subtle border/glow around the background
+    QPen borderPen(QColor(0, 0, 0, 100));
+    borderPen.setWidth(2);
+    painter.setPen(borderPen);
+    painter.drawEllipse(QPointF(centerX, centerY), backgroundSize / 2 + 1, backgroundSize / 2 + 1);
+
+    // Draw the background semicircle
+    QPen semicirclePen(QColor(50, 50, 50));  // Dark gray for the semicircle
+    semicirclePen.setWidth(30);  // Thicker pen for the semicircle
+    semicirclePen.setCapStyle(Qt::RoundCap);
+    painter.setPen(semicirclePen);
+    painter.drawArc(QRectF(centerX - gaugeSize / 2, centerY - gaugeSize / 2, gaugeSize, gaugeSize), 0, 180 * 16);
+
+    // Determine the color based on the magnitude of lateral force
+    QColor indicatorColor;
+    float absoluteLateral = std::abs(currentLateral); // TODO: its too choppy, something is wrong here
+    if (absoluteLateral < 5.0) {  // Low lateral force
+        indicatorColor = QColor(23, 241, 66, 200);  // Green
+    } else if (absoluteLateral < 15.0) {  // Moderate lateral force
+        indicatorColor = QColor(255, 166, 0, 200);  // Yellow
+    } else {  // High lateral force
+        indicatorColor = QColor(245, 0, 0, 200);    // Red
+    }
+
+    // Calculate the span of the arc based on lateral force
+    int spanAngle = static_cast<int>(90 * (absoluteLateral / 15.0) * 16);  // Scale for better visibility
+    spanAngle = std::clamp(spanAngle, 0, 90 * 16);  // Ensure the arc does not exceed 90 degrees
+
+    // Starting angle is at the middle of the semicircle (90 degrees)
+    int startAngle = 90 * 16;
+
+    // Draw the lateral arc if there's significant lateral force
+    if (absoluteLateral > 0.1) {
+        semicirclePen.setColor(indicatorColor);
+        painter.setPen(semicirclePen);
+
+        QRectF arcRect(centerX - gaugeSize / 2, centerY - gaugeSize / 2, gaugeSize, gaugeSize);
+
+        // For left turn (negative lateral), draw the arc on the left side
+        if (currentLateral < 0) {
+            painter.drawArc(arcRect, startAngle, -spanAngle);  // Negative span for left side
+        }
+        // For right turn (positive lateral), draw the arc on the right side
+        else {
+            painter.drawArc(arcRect, startAngle, spanAngle);  // Positive span for right side
+        }
+    }
+
+    // Draw the text in the center
+    painter.setPen(Qt::white);
+    QFont font = painter.font();
+    font.setPixelSize(20);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LAT");
 }
 
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
