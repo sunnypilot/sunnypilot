@@ -24,7 +24,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     {
       "BlindSpot",
       tr("Show Blind Spot Warnings"),
-      tr("Display warnings when a vehicle is detected in your blind spot."),
+      tr("Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported."),
       "../assets/offroad/icon_monitoring.png",
       false,
     },
