@@ -11,12 +11,14 @@ from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.param_store import ParamStore
+from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 
 
 class ControlsExt:
   def __init__(self, CP: structs.CarParams, params: Params):
     self.CP = CP
     self.params = params
+    self.blinker_pause_lateral = BlinkerPauseLateral()
     self.param_store = ParamStore(self.CP)
     self.get_params_sp()
 
@@ -29,11 +31,13 @@ class ControlsExt:
 
   def get_params_sp(self) -> None:
     self.param_store.update(self.params)
+    self.blinker_pause_lateral.get_params()
 
-  @staticmethod
-  def get_lat_active(sm: messaging.SubMaster) -> bool:
+  def get_lat_active(self, sm: messaging.SubMaster) -> bool:
+    if self.blinker_pause_lateral.update(sm['carState']):
+      return False
+
     ss_sp = sm['selfdriveStateSP']
-
     if ss_sp.mads.available:
       return bool(ss_sp.mads.active)
 

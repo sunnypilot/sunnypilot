@@ -79,7 +79,8 @@ Networking::Networking(QWidget* parent, bool show_advanced) : QFrame(parent) {
 }
 
 void Networking::setPrimeType(PrimeState::Type type) {
-  an->setGsmVisible(type == PrimeState::PRIME_TYPE_NONE || type == PrimeState::PRIME_TYPE_LITE);
+  an->setGsmVisible(type == PrimeState::PRIME_TYPE_NONE || type == PrimeState::PRIME_TYPE_UNKNOWN || \
+                    type == PrimeState::PRIME_TYPE_PURPLE ||  type == PrimeState::PRIME_TYPE_LITE);
   wifi->ipv4_forward = (type == PrimeState::PRIME_TYPE_NONE || type == PrimeState::PRIME_TYPE_LITE);
 }
 
