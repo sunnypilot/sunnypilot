@@ -9,7 +9,9 @@ from cereal import car, custom
 import numpy as np
 from opendbc.car import structs
 from openpilot.common.params import Params
-from openpilot.selfdrive.car.cruise import VCruiseHelper, IMPERIAL_INCREMENT, CRUISE_LONG_PRESS, CRUISE_NEAREST_FUNC, CV, V_CRUISE_MIN, V_CRUISE_MAX, CRUISE_INTERVAL_SIGN
+from openpilot.selfdrive.car.cruise import (VCruiseHelper, IMPERIAL_INCREMENT,
+                                            CRUISE_LONG_PRESS, CRUISE_NEAREST_FUNC, CV,
+                                            V_CRUISE_MIN, V_CRUISE_MAX, CRUISE_INTERVAL_SIGN)
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventNameSP = custom.OnroadEventSP.EventName
@@ -135,4 +137,4 @@ class VCruiseHelperSP(VCruiseHelper):
       v_cruise += adjusted_delta * direction
 
     self.v_cruise_kph = v_cruise * base_increment
-    return self.v_cruise_kph
+    return float(self.v_cruise_kph)

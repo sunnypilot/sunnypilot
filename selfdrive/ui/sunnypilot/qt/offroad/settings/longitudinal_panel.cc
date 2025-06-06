@@ -13,11 +13,12 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   ListWidget *list = new ListWidget(this, false);
 
   cruisePanelScreen = new QWidget(this);
-  QVBoxLayout* vlayout = new QVBoxLayout(cruisePanelScreen);
-  vlayout->setContentsMargins(50, 20, 50, 20);
+  QVBoxLayout *vlayout = new QVBoxLayout(cruisePanelScreen);
+  vlayout->setContentsMargins(0, 0, 0, 0);
 
   cruisePanelScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(cruisePanelScroller);
+
 
   customAccIncrement = new CustomAccIncrement(
     "CustomAccIncrementsEnabled",
@@ -26,6 +27,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "",
     this);
   list->addItem(customAccIncrement);
+
   main_layout->addWidget(cruisePanelScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
   refresh();
