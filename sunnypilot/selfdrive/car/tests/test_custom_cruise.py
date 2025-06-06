@@ -1,7 +1,7 @@
 import pytest
 import itertools
 
-from sunnypilot.selfdrive.car.cruise_helpers import VCruiseHelperSP as VCruiseHelper, IMPERIAL_INCREMENT
+from sunnypilot.selfdrive.car.vcruise_helper import VCruiseHelperSP as VCruiseHelper, IMPERIAL_INCREMENT
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
