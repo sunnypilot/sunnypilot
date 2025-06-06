@@ -74,14 +74,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Display speed in km/h instead of mph."),
       "../assets/icons/metric.png",
       false,
-    },
-    {
-      "BlindSpot",
-      tr("Show Blind Spot Warnings"),
-      tr("Display warnings when a vehicle is detected in your blind spot."),
-      "../assets/offroad/icon_monitoring.png",
-      false,
-    },
+    }
   };
 
 
