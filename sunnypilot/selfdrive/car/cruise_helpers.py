@@ -100,7 +100,7 @@ class VCruiseHelperSP(VCruiseHelper):
 
     self.v_cruise_kph = np.clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
 
-  def adjust_cruise_speed(self, button_type: ButtonType, long_press: bool, is_metric: bool) -> float:
+  def adjust_cruise_speed(self, button_type: car.CarState.ButtonEvent.Type, long_press: bool, is_metric: bool) -> float:
     """
     Adjust cruise control speed based on button inputs with customizable increments.
     Parameters:
