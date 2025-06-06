@@ -41,6 +41,13 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
     });
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
+
+  // LiveDelay toggle
+  list->addItem(new ParamControlSP("LagdToggle",
+                                   tr("Live Learning Steer Delay"),
+                                   tr("Enable this for the car to learn and adapt its steering response time. "
+                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
+                                   "../assets/offroad/icon_shell.png"));
 }
 
 
