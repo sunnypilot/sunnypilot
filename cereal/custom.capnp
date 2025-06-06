@@ -159,7 +159,6 @@ struct CarParamsSP @0x80ae746ee2596b11 {
   safetyParam @1 : Int16;  # flags for sunnypilot's custom safety flags
 
   neuralNetworkLateralControl @2 :NeuralNetworkLateralControl;
-  customAccControl @3 :CustomAccControl;
 
   struct NeuralNetworkLateralControl {
     model @0 :Model;
@@ -168,22 +167,6 @@ struct CarParamsSP @0x80ae746ee2596b11 {
     struct Model {
       path @0 :Text;
       name @1 :Text;
-    }
-  }
-
-  struct CustomAccControl {
-    mode @0 :Mode;
-    increments @1 :Increments;
-
-    enum Mode {
-      disabled @0;
-      custom @1;
-      reverse @2;
-    }
-
-    struct Increments {
-      shortIncrement @0 :UInt16;
-      longIncrement @1 :UInt16;
     }
   }
 }
