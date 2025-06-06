@@ -66,26 +66,3 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
 
   _initialize_custom_longitudinal_tuning(CI, CP, CP_SP, params)
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
-
-def _custom_acc_controls(CP_SP: structs.CarParamsSP, params: Params = None) -> None:
-  if params is None:
-    params = Params()
-
-  is_metric = params.get_bool("IsMetric")
-
-  try:
-    custom_enabled = params.get_bool("CustomAccIncrementsEnabled")
-    short_inc = int(params.get("CustomAccShortPressIncrement"))
-    long_inc = int(params.get("CustomAccLongPressIncrement"))
-
-    short_inc = short_inc if custom_enabled and 1 <= short_inc <= 10 else 1
-    long_inc = long_inc if custom_enabled and 1 <= long_inc <= 10 else 10 if is_metric else 5
-
-  except Exception:
-    custom_enabled = False
-    short_inc = 1
-    long_inc = 10 if is_metric else 5
-
-  CP_SP.customAccControl.mode = structs.CarParamsSP.CustomAccControl.Mode.custom if custom_enabled else structs.CarParamsSP.CustomAccControl.Mode.disabled
-  CP_SP.customAccControl.increments.shortIncrement = short_inc
-  CP_SP.customAccControl.increments.longIncrement = long_inc
