@@ -1,14 +1,14 @@
 import numpy as np
 import pyray as rl
-from enum import Enum
 
-from cereal import messaging, log
+from cereal import log
 from msgq.visionipc import VisionStreamType
-from openpilot.system.ui.onroad.alert_renderer import AlertRenderer
-from openpilot.system.ui.onroad.driver_state import DriverStateRenderer
-from openpilot.system.ui.onroad.hud_renderer import HudRenderer
-from openpilot.system.ui.onroad.model_renderer import ModelRenderer
-from openpilot.system.ui.widgets.cameraview import CameraView
+from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus, UI_BORDER_SIZE
+from openpilot.selfdrive.ui.onroad.alert_renderer import AlertRenderer
+from openpilot.selfdrive.ui.onroad.driver_state import DriverStateRenderer
+from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer
+from openpilot.selfdrive.ui.onroad.model_renderer import ModelRenderer
+from openpilot.selfdrive.ui.onroad.cameraview import CameraView
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.transformations.camera import DEVICE_CAMERAS, DeviceCameraConfig, view_frame_from_device_frame
 from openpilot.common.transformations.orientation import rot_from_euler
@@ -16,22 +16,21 @@ from openpilot.common.transformations.orientation import rot_from_euler
 
 OpState = log.SelfdriveState.OpenpilotState
 CALIBRATED = log.LiveCalibrationData.Status.calibrated
+ROAD_CAM = VisionStreamType.VISION_STREAM_ROAD
+WIDE_CAM = VisionStreamType.VISION_STREAM_WIDE_ROAD
 DEFAULT_DEVICE_CAMERA = DEVICE_CAMERAS["tici", "ar0231"]
-UI_BORDER_SIZE = 30
 
-class BorderStatus(Enum):
-  DISENGAGED = rl.Color(0x17, 0x33, 0x49, 0xc8) # Blue for disengaged state
-  OVERRIDE = rl.Color(0x91, 0x9b, 0x95, 0xf1)   # Gray for override state
-  ENGAGED = rl.Color(0x17, 0x86, 0x44, 0xf1)    # Green for engaged state
+BORDER_COLORS = {
+  UIStatus.DISENGAGED: rl.Color(0x17, 0x33, 0x49, 0xC8),   # Blue for disengaged state
+  UIStatus.OVERRIDE: rl.Color(0x91, 0x9B, 0x95, 0xF1),     # Gray for override state
+  UIStatus.ENGAGED: rl.Color(0x17, 0x86, 0x44, 0xF1),      # Green for engaged state
+}
 
 
 class AugmentedRoadView(CameraView):
-  def __init__(self, sm: messaging.SubMaster, stream_type: VisionStreamType):
+  def __init__(self, stream_type: VisionStreamType = VisionStreamType.VISION_STREAM_ROAD):
     super().__init__("camerad", stream_type)
-
-    self.sm = sm
-    self.stream_type = stream_type
-    self.is_wide_camera = stream_type == VisionStreamType.VISION_STREAM_WIDE_ROAD
+    self._set_placeholder_color(BORDER_COLORS[UIStatus.DISENGAGED])
 
     self.device_camera: DeviceCameraConfig | None = None
     self.view_from_calib = view_frame_from_device_frame.copy()
@@ -39,6 +38,7 @@ class AugmentedRoadView(CameraView):
 
     self._last_calib_time: float = 0
     self._last_rect_dims = (0.0, 0.0)
+    self._last_stream_type = stream_type
     self._cached_matrix: np.ndarray | None = None
     self._content_rect = rl.Rectangle()
 
@@ -48,6 +48,10 @@ class AugmentedRoadView(CameraView):
     self.driver_state_renderer = DriverStateRenderer()
 
   def render(self, rect):
+    # Only render when system is started to avoid invalid data access
+    if not ui_state.started:
+      return
+
     # Update calibration before rendering
     self._update_calibration()
 
@@ -75,10 +79,10 @@ class AugmentedRoadView(CameraView):
     super().render(rect)
 
     # Draw all UI overlays
-    self.model_renderer.draw(self._content_rect, self.sm)
-    self._hud_renderer.draw(self._content_rect, self.sm)
-    self.alert_renderer.draw(self._content_rect, self.sm)
-    self.driver_state_renderer.draw(self._content_rect, self.sm)
+    self.model_renderer.draw(self._content_rect, ui_state.sm)
+    self._hud_renderer.draw(self._content_rect, ui_state.sm)
+    self.alert_renderer.draw(self._content_rect, ui_state.sm)
+    self.driver_state_renderer.draw(self._content_rect, ui_state.sm)
 
     # Custom UI extension point - add custom overlays here
     # Use self._content_rect for positioning within camera bounds
@@ -87,18 +91,12 @@ class AugmentedRoadView(CameraView):
     rl.end_scissor_mode()
 
   def _draw_border(self, rect: rl.Rectangle):
-    state = self.sm["selfdriveState"]
-    if state.state in (OpState.preEnabled, OpState.overriding):
-      status = BorderStatus.OVERRIDE
-    elif state.enabled:
-      status = BorderStatus.ENGAGED
-    else:
-      status = BorderStatus.DISENGAGED
-
-    rl.draw_rectangle_lines_ex(rect, UI_BORDER_SIZE, status.value)
+    border_color = BORDER_COLORS.get(ui_state.status, BORDER_COLORS[UIStatus.DISENGAGED])
+    rl.draw_rectangle_lines_ex(rect, UI_BORDER_SIZE, border_color)
 
   def _update_calibration(self):
     # Update device camera if not already set
+    sm = ui_state.sm
     if not self.device_camera and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       self.device_camera = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
 
@@ -106,7 +104,7 @@ class AugmentedRoadView(CameraView):
     if not (sm.updated["liveCalibration"] and sm.valid['liveCalibration']):
       return
 
-    calib = self.sm['liveCalibration']
+    calib = sm['liveCalibration']
     if len(calib.rpyCalib) != 3 or calib.calStatus != CALIBRATED:
       return
 
@@ -121,18 +119,20 @@ class AugmentedRoadView(CameraView):
 
   def _calc_frame_matrix(self, rect: rl.Rectangle) -> np.ndarray:
     # Check if we can use cached matrix
-    calib_time = self.sm.recv_frame['liveCalibration']
+    calib_time = ui_state.sm.recv_frame['liveCalibration']
     current_dims = (self._content_rect.width, self._content_rect.height)
     if (self._last_calib_time == calib_time and
         self._last_rect_dims == current_dims and
+        self._last_stream_type == self.stream_type and
         self._cached_matrix is not None):
       return self._cached_matrix
 
     # Get camera configuration
     device_camera = self.device_camera or DEFAULT_DEVICE_CAMERA
-    intrinsic = device_camera.ecam.intrinsics if self.is_wide_camera else device_camera.fcam.intrinsics
-    calibration = self.view_from_wide_calib if self.is_wide_camera else self.view_from_calib
-    zoom = 2.0 if self.is_wide_camera else 1.1
+    is_wide_camera = self.stream_type == VisionStreamType.VISION_STREAM_WIDE_ROAD
+    intrinsic = device_camera.ecam.intrinsics if is_wide_camera else device_camera.fcam.intrinsics
+    calibration = self.view_from_wide_calib if is_wide_camera else self.view_from_calib
+    zoom = 2.0 if is_wide_camera else 1.1
 
     # Calculate transforms for vanishing point
     inf_point = np.array([1000.0, 0.0, 0.0])
@@ -159,9 +159,10 @@ class AugmentedRoadView(CameraView):
     except (ZeroDivisionError, OverflowError):
       x_offset, y_offset = 0, 0
 
-    # Update cache values
+    # Cache the computed transformation matrix to avoid recalculations
     self._last_calib_time = calib_time
     self._last_rect_dims = current_dims
+    self._last_stream_type = self.stream_type
     self._cached_matrix = np.array([
       [zoom * 2 * cx / w, 0, -x_offset / w * 2],
       [0, zoom * 2 * cy / h, -y_offset / h * 2],
@@ -180,13 +181,15 @@ class AugmentedRoadView(CameraView):
 
 if __name__ == "__main__":
   gui_app.init_window("OnRoad Camera View")
-  sm = messaging.SubMaster(["modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
-    "pandaStates", "carParams", "driverMonitoringState", "carState", "driverStateV2",
-    "roadCameraState", "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan"])
-  road_camera_view = AugmentedRoadView(sm, VisionStreamType.VISION_STREAM_ROAD)
+  road_camera_view = AugmentedRoadView(ROAD_CAM)
+  print("***press space to switch camera view***")
   try:
     for _ in gui_app.render():
-      sm.update(0)
+      ui_state.update()
+      if rl.is_key_released(rl.KeyboardKey.KEY_SPACE):
+        if WIDE_CAM in road_camera_view.available_streams:
+          stream = ROAD_CAM if road_camera_view.stream_type == WIDE_CAM else WIDE_CAM
+          road_camera_view.switch_stream(stream)
       road_camera_view.render(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
   finally:
     road_camera_view.close()

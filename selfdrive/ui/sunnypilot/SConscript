@@ -31,6 +31,7 @@ qt_src = [
   "sunnypilot/qt/offroad/settings/sunnylink/sponsor_widget.cc",
   "sunnypilot/qt/offroad/settings/trips_panel.cc",
   "sunnypilot/qt/offroad/settings/vehicle_panel.cc",
+  "sunnypilot/qt/offroad/settings/visuals_panel.cc",
   "sunnypilot/qt/onroad/annotated_camera.cc",
   "sunnypilot/qt/onroad/buttons.cc",
   "sunnypilot/qt/onroad/hud.cc",
@@ -39,6 +40,7 @@ qt_src = [
 ]
 
 lateral_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/lateral/blinker_pause_lateral_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/lane_change_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/mads_settings.cc",
   "sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.cc",
