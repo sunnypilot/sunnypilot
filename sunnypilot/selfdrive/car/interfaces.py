@@ -71,9 +71,14 @@ def custom_acc_controls(params: Params = None) -> tuple[bool, int, int]:
   if params is None:
     params = Params()
 
-  custom_enabled = params.get_bool("CustomAccIncrementsEnabled")
-  short_inc = int(params.get("CustomAccShortPressIncrement"))
-  long_inc = int(params.get("CustomAccLongPressIncrement"))
+  try:
+    custom_enabled = params.get_bool("CustomAccIncrementsEnabled")
+    short_inc = int(params.get("CustomAccShortPressIncrement"))
+    long_inc = int(params.get("CustomAccLongPressIncrement"))
+  except Exception:
+    custom_enabled = False
+    short_inc = 0
+    long_inc = 0
 
   return custom_enabled, short_inc, long_inc
 

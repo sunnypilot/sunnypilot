@@ -19,8 +19,8 @@ class VCruiseHelperSP(VCruiseHelper):
     def __init__(self, CP: structs.CarParams) -> None:
         super().__init__(CP)
         self.custom_acc_enabled = False
-        self.short_increment = 1
-        self.long_increment = 5
+        self.short_increment = 0
+        self.long_increment = 0
 
     def update_v_cruise_sp(self, CS, enabled, is_metric, custom_acc: tuple[bool, int, int]) -> None:
         super().update_v_cruise(CS, enabled, is_metric)
