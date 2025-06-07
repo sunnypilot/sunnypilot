@@ -24,13 +24,30 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
-  connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &ModelsPanel::handleCurrentModelLblBtnClicked);
+  connect(currentModelLblBtn, &ButtonControlSP::clicked, [=]() {
+
+      InputDialog d(tr("Search Model"), this, tr("Enter search keywords, or leave blank to list all models."), false);
+      d.setMinLength(0);
+      const int ret = d.exec();
+      if (ret) {
+        handleCurrentModelLblBtnClicked(d.text());
+      }
+
+    });
+
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
       is_onroad = !offroad;
       updateLabels();
     });
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
+
+  // LiveDelay toggle
+  list->addItem(new ParamControlSP("LagdToggle",
+                                   tr("Live Learning Steer Delay"),
+                                   tr("Enable this for the car to learn and adapt its steering response time. "
+                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
+                                   "../assets/offroad/icon_shell.png"));
 }
 
 
@@ -127,7 +144,7 @@ void ModelsPanel::updateModelManagerState() {
  * @brief Handles the model bundle selection button click
  * Displays available bundles, allows selection, and initiates download
  */
-void ModelsPanel::handleCurrentModelLblBtnClicked() {
+void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
@@ -135,13 +152,14 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   QMap<uint32_t, QString> index_to_bundle;
   const auto bundles = model_manager.getAvailableBundles();
   for (const auto &bundle: bundles) {
-    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundle.getDisplayName()));
+    std::string bundleStr = std::string(bundle.getDisplayName()) + " $SNAME$ " + std::string(bundle.getInternalName());
+    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundleStr));
   }
 
   // Sort bundles by index in descending order
   QStringList bundleNames;
   // Add "Default" as the first option
-  bundleNames.append(tr("Use Default"));
+  bundleNames.append(DEFAULT_MODEL);
 
   auto indices = index_to_bundle.keys();
   std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
@@ -149,17 +167,31 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
     bundleNames.append(index_to_bundle[index]);
   }
 
+  QStringList filteredBundleNames = searchFromList(query, bundleNames);
+
   currentModelLblBtn->setValue(GetActiveModelName());
 
+  if (filteredBundleNames.isEmpty()) {
+    ConfirmationDialog::alert(tr("No model found for keywords: %1").arg(query), this);
+    return;
+  }
+
+  for (const QString &bundleName: filteredBundleNames) {
+    int index = bundleName.indexOf("$SNAME$");
+    if (index != -1) {
+      filteredBundleNames.replace(filteredBundleNames.indexOf(bundleName), bundleName.left(index).trimmed());
+    }
+  }
+
   const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model"), bundleNames, GetActiveModelName(), this);
+    tr("Select a Model"), filteredBundleNames, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;
   }
 
   // Handle "Stock" selection differently
-  if (selectedBundleName == tr("Use Default")) {
+  if (selectedBundleName == DEFAULT_MODEL) {
     params.remove("ModelManager_ActiveBundle");
     currentModelLblBtn->setValue(tr("Default"));
     showResetParamsDialog();

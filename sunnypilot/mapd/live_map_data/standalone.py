@@ -6,10 +6,9 @@
 import threading
 import traceback
 
-from openpilot.common.realtime import Ratekeeper, set_core_affinity
+from openpilot.common.realtime import Ratekeeper, config_realtime_process
 from openpilot.sunnypilot.mapd.live_map_data import get_debug
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
-from openpilot.common.swaglog import cloudlog
 
 
 def excepthook(args):
@@ -18,10 +17,7 @@ def excepthook(args):
 
 
 def live_map_data_sp_thread():
-  try:
-    set_core_affinity([0, 1, 2, 3])
-  except Exception:
-    cloudlog.exception("mapd: failed to set core affinity")
+  config_realtime_process([0, 1, 2, 3], 5)
 
   live_map_sp = OsmMapData()
   rk = Ratekeeper(1, print_delay_threshold=None)

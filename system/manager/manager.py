@@ -46,29 +46,23 @@ def manager_init() -> None:
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "0"),
+    ("BlindSpot", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
+    ("LagdToggle", "1"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
     ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "1800"),
+    ("Brightness", "0"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
-
-    ("SpeedLimitControl", "0"),
-    ("SpeedLimitControlPolicy", "3"),
-    ("SpeedLimitEngageType", "0"),
-    ("SpeedLimitOffsetType", "0"),
-    ("SpeedLimitValueOffset", "0"),
-    ("SpeedLimitWarningType", "0"),
-    ("SpeedLimitWarningOffsetType", "0"),
-    ("SpeedLimitWarningValueOffset", "0"),
   ]
 
   if params.get_bool("RecordFrontLock"):
