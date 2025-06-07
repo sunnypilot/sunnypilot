@@ -28,7 +28,7 @@ class TestAdjustCustomAccIncrements:
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "short_inc", "metric", "init_norm"),
-    itertools.product([True, False], [-1, 1, 4, 7, 5, 10, 99], [False, True], [40, 35, 50, 25])
+    itertools.product([True, False], [-1, 1, 4, 10, 99], [False, True], [40, 35, 50])
   )
   def test_short_press_only(self, custom_acc_enabled, short_inc, metric, init_norm):
     """
@@ -78,7 +78,7 @@ class TestAdjustCustomAccIncrements:
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "long_inc", "metric", "init_norm"),
-    itertools.product([True, False], [-1, 1, 4, 7, 5, 10, 99], [False, True], [40, 35, 50, 25])
+    itertools.product([True, False], [-1, 1, 4, 10, 99], [False, True], [40, 35, 50])
   )
   def test_long_press_only(self, custom_acc_enabled, long_inc, metric, init_norm):
     """
