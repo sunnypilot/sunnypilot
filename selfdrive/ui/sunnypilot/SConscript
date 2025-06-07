@@ -26,6 +26,7 @@ qt_src = [
   "sunnypilot/qt/offroad/settings/max_time_offroad.cc",
   "sunnypilot/qt/offroad/settings/brightness.cc",
   "sunnypilot/qt/offroad/settings/models_panel.cc",
+  "sunnypilot/qt/offroad/settings/osm_panel.cc",
   "sunnypilot/qt/offroad/settings/settings.cc",
   "sunnypilot/qt/offroad/settings/software_panel.cc",
   "sunnypilot/qt/offroad/settings/sunnylink_panel.cc",
@@ -54,6 +55,10 @@ network_src = [
   "sunnypilot/qt/network/sunnylink/services/user_service.cc",
 ]
 
+osm_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/osm/models_fetcher.cc",
+]
+
 vehicle_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/vehicle/brand_settings_factory.cc",
   "sunnypilot/qt/offroad/settings/vehicle/brand_settings_interface.cc",
@@ -76,7 +81,7 @@ brand_settings_qt_src = [
 ]
 
 sp_widgets_src = widgets_src + network_src
-sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src
+sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + osm_panel_qt_src
 sp_qt_util = qt_util
 
 Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")
