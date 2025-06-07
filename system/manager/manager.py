@@ -49,6 +49,7 @@ def manager_init() -> None:
     ("BlindSpot", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
+    ("DeviceBootMode", "0"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("LagdToggle", "1"),
@@ -73,6 +74,10 @@ def manager_init() -> None:
     ("SpeedLimitWarningOffsetType", "0"),
     ("SpeedLimitWarningValueOffset", "0"),
   ]
+
+  # device boot mode
+  if params.get("DeviceBootMode") == b"1": # start in always offroad mode
+    params.put_bool("OffroadMode", True)
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
