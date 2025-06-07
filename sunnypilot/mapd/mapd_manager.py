@@ -9,7 +9,7 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.navd.helpers import Coordinate
 from openpilot.sunnypilot.mapd.live_map_data import QUERY_RADIUS
-from openpilot.common.realtime import Ratekeeper, set_core_affinity
+from openpilot.common.realtime import Ratekeeper, config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 import os
@@ -140,10 +140,8 @@ def update_osm_db():
 
 
 def main_thread(sm=None, pm=None):
-  try:
-    set_core_affinity([0, 1, 2, 3])
-  except Exception:
-    cloudlog.exception("mapd: failed to set core affinity")
+  config_realtime_process([0, 1, 2, 3], 5)
+
   rk = Ratekeeper(1, print_delay_threshold=None)
   live_map_sp = OsmMapData()
 
