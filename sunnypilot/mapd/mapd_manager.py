@@ -2,13 +2,9 @@ import json
 import time
 import platform
 
-import numpy as np
-
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
-from openpilot.sunnypilot.navd.helpers import Coordinate
-from openpilot.sunnypilot.mapd.live_map_data import QUERY_RADIUS
 from openpilot.common.realtime import Ratekeeper, config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
@@ -17,7 +13,6 @@ import glob
 import shutil
 
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
-from openpilot.sunnypilot.mapd.live_map_data import R
 
 # PFEIFER - MAPD {{
 params = Params()
@@ -55,29 +50,6 @@ def cleanup_OLD_OSM_data(files_to_remove):
       os.remove(file)
     elif os.path.isdir(file):  # If it's a directory
       shutil.rmtree(file, ignore_errors=False)
-
-
-def _get_current_bounding_box(self, radius: float):
-  self.last_query_radius = radius
-  # Calculate the bounding box coordinates for the bbox containing the circle around location.
-  bbox_angle = float(np.degrees(radius / R))
-
-  lat = float(self.last_gps.latitude)
-  lon = float(self.last_gps.longitude)
-
-  return {
-    "min_lat": lat - bbox_angle,
-    "min_lon": lon - bbox_angle,
-    "max_lat": lat + bbox_angle,
-    "max_lon": lon + bbox_angle,
-  }
-
-
-def _request_refresh_osm_bounds_data(self):
-  self.last_refresh_loc = Coordinate(self.last_gps.latitude, self.last_gps.longitude)
-  self.last_query_radius = QUERY_RADIUS
-  current_bounding_box = self._get_current_bounding_box(self.last_query_radius)
-  mem_params.put("OSMDownloadBounds", json.dumps(current_bounding_box))
 
 
 def request_refresh_osm_location_data(nations: list[str], states: list[str] = None) -> None:
