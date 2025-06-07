@@ -19,10 +19,10 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
-  auto *list = new ListWidget(this, false);
+  auto *list = new ListWidgetSP(this, false);
 
-  hkgAngleLiveTuning = new ParamControlSP("HkgAngleLiveTuning", tr("HKG Angle Live Tuning"), tr("Enable live tuning of the steering wheel angle."), "../assets/offroad/icon_blank.png");
-  list->addItem(hkgAngleLiveTuning);
+  // hkgAngleLiveTuning = new ParamControlSP("HkgAngleLiveTuning", tr("HKG Angle Live Tuning"), tr("Enable live tuning of the steering wheel angle."), "../assets/offroad/icon_blank.png");
+  // list->addItem(hkgAngleLiveTuning);
 
   auto first_row = new QHBoxLayout();
   hkgAngleSmoothingFactor = new OptionControlSP("HkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering.<br/>A value closer to 1 means no smoothing.<br/>A value closer to 0 means very smooth (and thus likely too 'soft' steering).<br/>After 50mph/80km/h this setting is virtually always 1."), "../assets/offroad/icon_blank.png", {0, 10}, 1);
@@ -39,7 +39,7 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   list->addItem(first_row);
 
   auto second_row = new QHBoxLayout();
-  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorque", tr("HKG Angle Min Torque"), tr("Minimum torque to apply to the steering wheel.<br/>Must be smaller than max."), "../assets/offroad/icon_blank.png", {0, 250}, 5);
+  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorque", tr("HKG Angle Min ACTIVE Torque"), tr("Minimum torque to apply to the steering wheel when controls are active (and not being overridden by the user).<br/>Must be smaller than max."), "../assets/offroad/icon_blank.png", {0, 250}, 5);
   connect(hkgAngleMinTorque, &OptionControlSP::updateLabels, hkgAngleMinTorque, [=]() {
     this->updateToggles(offroad);
   });

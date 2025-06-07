@@ -64,6 +64,7 @@ def manager_init() -> None:
     ("HkgTuningAngleMinTorque", "25"),
     ("HkgTuningAngleMaxTorque", "250"),
     ("HkgTuningOverridingCycles", "17"),
+    ("HkgAngleLiveTuning", "0"),
   ]
 
   if params.get_bool("RecordFrontLock"):
