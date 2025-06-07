@@ -134,12 +134,12 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
     {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
     {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
+    {"DeviceBootMode", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
     {"Brightness", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
-    {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
     {"QuietMode", PERSISTENT | BACKUP},
 
     // MADS params
