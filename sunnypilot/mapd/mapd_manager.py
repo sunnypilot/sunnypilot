@@ -19,15 +19,14 @@ params = Params()
 mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else params
 # }} PFEIFER - MAPD
 
-COMMON_DIR = Paths.mapd_root()
 MAPD_BIN_DIR = os.path.join(BASEDIR, 'third_party/mapd_pfeiferj')
 MAPD_PATH = os.path.join(MAPD_BIN_DIR, 'mapd')
 
 
 def get_files_for_cleanup():
   paths = [
-    f"{COMMON_DIR}/db",
-    f"{COMMON_DIR}/v*"
+    f"{Paths.mapd_root()}/db",
+    f"{Paths.mapd_root()}/v*"
   ]
   files_to_remove = []
   for path in paths:
@@ -40,7 +39,7 @@ def get_files_for_cleanup():
   return files_to_remove
 
 
-def cleanup_OLD_OSM_data(files_to_remove):
+def cleanup_old_osm_data(files_to_remove):
   for file in files_to_remove:
     # Remove trailing slash if path is file
     if file.endswith('/') and os.path.isfile(file[:-1]):
@@ -98,7 +97,7 @@ def update_osm_db():
   # last_downloaded_date = float(params.get('OsmDownloadedDate', encoding='utf-8') or 0.0)
   # if params.get_bool("OsmDbUpdatesCheck") or time.time() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
-    cleanup_OLD_OSM_data(get_files_for_cleanup())
+    cleanup_old_osm_data(get_files_for_cleanup())
     country = params.get('OsmLocationName', encoding='utf-8')
     state = params.get('OsmStateName', encoding='utf-8') or "All"
     filtered_nations, filtered_states = filter_nations_and_states([country], [state])
@@ -119,11 +118,11 @@ def main_thread():
 
   # Create folder needed for OSM
   try:
-    os.mkdir(COMMON_DIR)
+    os.mkdir(Paths.mapd_root())
   except FileExistsError:
     pass
   except PermissionError:
-    cloudlog.exception(f"mapd: failed to make {COMMON_DIR}")
+    cloudlog.exception(f"mapd: failed to make {Paths.mapd_root()}")
 
   while True:
     show_alert = get_files_for_cleanup() and params.get_bool("OsmLocal")
