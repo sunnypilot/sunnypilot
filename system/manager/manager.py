@@ -18,6 +18,8 @@ from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import get_build_metadata, terms_version, training_version
 from openpilot.system.hardware.hw import Paths
 
+from openpilot.sunnypilot.mapd.mapd_installer import VERSION
+
 
 def manager_init() -> None:
   save_bootlog()
@@ -54,6 +56,7 @@ def manager_init() -> None:
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
+    ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "1800"),
     ("Brightness", "0"),
     ("ModelManager_LastSyncTime", "0"),

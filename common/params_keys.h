@@ -175,4 +175,24 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // model panel params
     {"LagdToggle", PERSISTENT | BACKUP},
+
+    // mapd
+    {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"MapdVersion", PERSISTENT},
+    {"MapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"NextMapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"Offroad_OSMUpdateRequired", CLEAR_ON_MANAGER_START},
+    {"OsmDbUpdatesCheck", CLEAR_ON_MANAGER_START},  // mapd database update happens with device ON, reset on boot
+    {"OSMDownloadBounds", PERSISTENT},
+    {"OsmDownloadedDate", PERSISTENT},
+    {"OSMDownloadLocations", PERSISTENT},
+    {"OSMDownloadProgress", CLEAR_ON_MANAGER_START},
+    {"OsmLocal", PERSISTENT},
+    {"OsmLocationName", PERSISTENT},
+    {"OsmLocationTitle", PERSISTENT},
+    {"OsmLocationUrl", PERSISTENT},
+    {"OsmStateName", PERSISTENT},
+    {"OsmStateTitle", PERSISTENT},
+    {"OsmWayTest", PERSISTENT},
+    {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
 };
