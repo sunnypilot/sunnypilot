@@ -13,7 +13,7 @@ class OsmMapData(BaseMapData):
     self.params = Params()
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
 
-  def update_location(self, current_location):
+  def update_location(self, current_location: Coordinate | None) -> None:
     self.last_gps = current_location
     if not self.last_gps:
       return
@@ -25,11 +25,11 @@ class OsmMapData(BaseMapData):
     }
     self.mem_params.put("LastGPSPosition", json.dumps(last_gps_position_for_osm))
 
-  def get_current_speed_limit(self):
+  def get_current_speed_limit(self) -> float:
     speed_limit = self.mem_params.get("MapSpeedLimit", encoding='utf8')
     return float(speed_limit) if speed_limit else 0.0
 
-  def get_current_road_name(self):
+  def get_current_road_name(self) -> str:
     current_road_name = self.mem_params.get("RoadName", encoding='utf8')
     return current_road_name if current_road_name else ""
 

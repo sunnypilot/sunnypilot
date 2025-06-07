@@ -1,7 +1,7 @@
 import time
 from abc import abstractmethod, ABC
 
-from cereal import messaging
+from cereal import messaging, custom
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.sunnypilot.navd.helpers import Coordinate
@@ -18,7 +18,7 @@ class BaseMapData(ABC):
     self._pm = messaging.PubMaster(['liveMapDataSP'])
 
   @abstractmethod
-  def update_location(self, current_location: Coordinate):
+  def update_location(self, current_location: Coordinate | None) -> None:
     pass
 
   @abstractmethod
@@ -58,31 +58,32 @@ class BaseMapData(ABC):
 
     return result
 
-  def get_live_map_data_sp(self, speed_limit, next_speed_limit, next_speed_limit_distance, current_road_name):
-    last_gps = self.get_current_location()
+  def get_live_map_data_sp(self, speed_limit: float, next_speed_limit: float, next_speed_limit_distance: float,
+                           current_road_name: str) -> custom.LiveMapDataSP:
+
     map_data_msg = messaging.new_message('liveMapDataSP')
     map_data_msg.valid = self._is_gps_data_valid()
 
     live_map_data = map_data_msg.liveMapDataSP
-    if last_gps:
-      live_map_data.lastGpsTimestamp = last_gps.annotations.get('unixTimestampMillis', 0)
-      live_map_data.lastGpsLatitude = last_gps.latitude
-      live_map_data.lastGpsLongitude = last_gps.longitude
-      live_map_data.lastGpsSpeed = last_gps.annotations.get('speed', 0)
-      live_map_data.lastGpsBearingDeg = last_gps.annotations.get('bearingDeg', 0)
-      live_map_data.lastGpsAccuracy = last_gps.annotations.get('accuracy', 0)
-      live_map_data.lastGpsBearingAccuracyDeg = last_gps.annotations.get('bearingAccuracyDeg', 0)
+    if self._last_gps:
+      live_map_data.lastGpsTimestamp = self._last_gps.annotations.get('unixTimestampMillis', 0)
+      live_map_data.lastGpsLatitude = self._last_gps.latitude
+      live_map_data.lastGpsLongitude = self._last_gps.longitude
+      live_map_data.lastGpsSpeed = self._last_gps.annotations.get('speed', 0)
+      live_map_data.lastGpsBearingDeg = self._last_gps.annotations.get('bearingDeg', 0)
+      live_map_data.lastGpsAccuracy = self._last_gps.annotations.get('accuracy', 0)
+      live_map_data.lastGpsBearingAccuracyDeg = self._last_gps.annotations.get('bearingAccuracyDeg', 0)
 
     live_map_data.speedLimitValid = bool(speed_limit > 0)
     live_map_data.speedLimit = speed_limit
     live_map_data.speedLimitAheadValid = bool(next_speed_limit > 0)
-    live_map_data.speedLimitAhead = float(next_speed_limit)
-    live_map_data.speedLimitAheadDistance = float(next_speed_limit_distance)
-    live_map_data.currentRoadName = str(current_road_name)
+    live_map_data.speedLimitAhead = next_speed_limit
+    live_map_data.speedLimitAheadDistance = next_speed_limit_distance
+    live_map_data.currentRoadName = current_road_name
 
     return map_data_msg
 
-  def publish(self):
+  def publish(self) -> None:
     speed_limit = self.get_current_speed_limit()
     current_road_name = self.get_current_road_name()
     next_speed_limit, next_speed_limit_distance = self.get_next_speed_limit_and_distance()
@@ -99,7 +100,7 @@ class BaseMapData(ABC):
               f"NSLD: [{next_speed_limit_distance}] | CRN: [{current_road_name}] | GPS: [{self._last_gps}] " +
               f"Annotations: [{', '.join(f'{key}: {value}' for key, value in self._last_gps.annotations.items()) if self._last_gps else []}]")
 
-  def tick(self):
+  def tick(self) -> None:
     self._sm.update()
     self._last_gps = self.get_current_location()
     self.update_location(self._last_gps)
