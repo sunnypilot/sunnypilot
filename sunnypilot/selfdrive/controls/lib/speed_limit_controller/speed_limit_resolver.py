@@ -37,9 +37,6 @@ class SpeedLimitResolver:
     self._limit_solutions[source] = 0.
     self._distance_solutions[source] = 0.
 
-  def _is_sock_updated(self, sock: str) -> bool:
-    return self._sm.alive[sock] and self._sm.updated[sock]
-
   def resolve(self, v_ego: float, current_speed_limit: float, sm: messaging.SubMaster) -> tuple[float, float, Source]:
     self._v_ego = v_ego
     self._current_speed_limit = current_speed_limit
@@ -54,22 +51,16 @@ class SpeedLimitResolver:
     self._get_from_map_data()
 
   def _get_from_car_state(self) -> None:
-    if not self._is_sock_updated('carStateSP'):
-      debug('SL: No carStateSP instruction for speed limit')
-      return
-
-    self._reset_limit_sources(Source.car_state)
-    self._limit_solutions[Source.car_state] = self._sm['carStateSP'].speedLimit
-    self._distance_solutions[Source.car_state] = 0.
+    if self._sm.updated['carStateSP']:
+      self._reset_limit_sources(Source.car_state)
+      self._limit_solutions[Source.car_state] = self._sm['carStateSP'].speedLimit
+      self._distance_solutions[Source.car_state] = 0.
 
   def _get_from_map_data(self) -> None:
-    if not self._is_sock_updated("liveMapDataSP"):
-      debug('SL: No map data for speed limit')
-      return
-
     # Load limits from map_data
-    self._reset_limit_sources(Source.map_data)
-    self._process_map_data(self._sm["liveMapDataSP"])
+    if self._sm.updated["liveMapDataSP"]:
+      self._reset_limit_sources(Source.map_data)
+      self._process_map_data(self._sm["liveMapDataSP"])
 
   def _process_map_data(self, map_data: custom.LiveMapDataSP) -> None:
     gps_fix_age = time.time() - map_data.lastGpsTimestamp * 1e-3
