@@ -139,7 +139,7 @@ def update_osm_db():
     mem_params.put("LastGPSPosition", "{}")
 
 
-def main_thread(sm=None, pm=None):
+def main_thread():
   config_realtime_process([0, 1, 2, 3], 5)
 
   rk = Ratekeeper(1, print_delay_threshold=None)
