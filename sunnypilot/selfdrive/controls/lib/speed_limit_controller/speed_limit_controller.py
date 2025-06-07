@@ -332,7 +332,7 @@ class SpeedLimitController:
     self._op_engaged = enabled and self._CP.openpilotLongitudinalControl
     self._v_ego = v_ego
     self._a_ego = a_ego
-    self._v_cruise_setpoint = v_cruise_setpoint
+    self._v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
     self._gas_pressed = _car_state.gasPressed
     self._current_time = time.monotonic()
 

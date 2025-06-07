@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from cereal import messaging, custom
+from cereal import messaging
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
@@ -51,16 +51,13 @@ class SpeedLimitResolver:
     self._get_from_map_data(sm)
 
   def _get_from_car_state(self, sm: messaging.SubMaster) -> None:
-    if sm.updated['carStateSP']:
-      self._reset_limit_sources(Source.car_state)
-      self._limit_solutions[Source.car_state] = sm['carStateSP'].speedLimit
-      self._distance_solutions[Source.car_state] = 0.
+    self._reset_limit_sources(Source.car_state)
+    self._limit_solutions[Source.car_state] = sm['carStateSP'].speedLimit
+    self._distance_solutions[Source.car_state] = 0.
 
   def _get_from_map_data(self, sm: messaging.SubMaster) -> None:
-    # Load limits from map_data
-    if sm.updated['liveMapDataSP']:
-      self._reset_limit_sources(Source.map_data)
-      self._process_map_data(sm)
+    self._reset_limit_sources(Source.map_data)
+    self._process_map_data(sm)
 
   def _process_map_data(self, sm: messaging.SubMaster) -> None:
     gps_data = sm[self._gps_location_service]
