@@ -9,7 +9,6 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.helpers 
 
 
 class SpeedLimitResolver:
-  _sm: messaging.SubMaster
   _limit_solutions: dict[Source, float]  # Store for speed limit solutions from different sources
   _distance_solutions: dict[Source, float]  # Store for distance to current speed limit start for different sources
   _v_ego: float
@@ -40,27 +39,26 @@ class SpeedLimitResolver:
   def resolve(self, v_ego: float, current_speed_limit: float, sm: messaging.SubMaster) -> tuple[float, float, Source]:
     self._v_ego = v_ego
     self._current_speed_limit = current_speed_limit
-    self._sm = sm
 
-    self._resolve_limit_sources()
+    self._resolve_limit_sources(sm)
     return self._consolidate()
 
-  def _resolve_limit_sources(self) -> None:
+  def _resolve_limit_sources(self, sm: messaging.SubMaster) -> None:
     """Get limit solutions from each data source"""
-    self._get_from_car_state()
-    self._get_from_map_data()
+    self._get_from_car_state(sm)
+    self._get_from_map_data(sm)
 
-  def _get_from_car_state(self) -> None:
-    if self._sm.updated['carStateSP']:
+  def _get_from_car_state(self, sm: messaging.SubMaster) -> None:
+    if sm.updated['carStateSP']:
       self._reset_limit_sources(Source.car_state)
-      self._limit_solutions[Source.car_state] = self._sm['carStateSP'].speedLimit
+      self._limit_solutions[Source.car_state] = sm['carStateSP'].speedLimit
       self._distance_solutions[Source.car_state] = 0.
 
-  def _get_from_map_data(self) -> None:
+  def _get_from_map_data(self, sm: messaging.SubMaster) -> None:
     # Load limits from map_data
-    if self._sm.updated["liveMapDataSP"]:
+    if sm.updated['liveMapDataSP']:
       self._reset_limit_sources(Source.map_data)
-      self._process_map_data(self._sm["liveMapDataSP"])
+      self._process_map_data(sm['liveMapDataSP'])
 
   def _process_map_data(self, map_data: custom.LiveMapDataSP) -> None:
     gps_fix_age = time.time() - map_data.lastGpsTimestamp * 1e-3
