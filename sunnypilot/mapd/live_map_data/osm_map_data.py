@@ -1,6 +1,5 @@
 import json
 import platform
-import time
 
 from openpilot.common.params import Params
 from openpilot.sunnypilot.navd.helpers import Coordinate

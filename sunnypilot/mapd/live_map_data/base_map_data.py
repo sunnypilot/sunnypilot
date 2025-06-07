@@ -18,8 +18,6 @@ class BaseMapData(ABC):
     self.last_position = coordinate_from_param("LastGPSPosition", self.params)
     self.last_altitude = None
 
-    self.gps_ok = False
-
   @abstractmethod
   def update_location(self) -> None:
     pass
@@ -40,8 +38,8 @@ class BaseMapData(ABC):
     gps = self.sm[self.gps_location_service]
 
     # ignore the message if the fix is invalid
-    self.gps_ok = self.sm.updated[self.gps_location_service] or (time.monotonic() - self.sm.logMonoTime[self.gps_location_service] / 1e9) > 2.0
-    if not self.gps_ok and self.sm['livePose'].inputsOK:
+    gps_ok = self.sm.updated[self.gps_location_service] or (time.monotonic() - self.sm.logMonoTime[self.gps_location_service] / 1e9) > 2.0
+    if not gps_ok and self.sm['livePose'].inputsOK:
       return None
 
     # livePose has these data, but aren't on cereal
