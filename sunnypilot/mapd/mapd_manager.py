@@ -1,38 +1,31 @@
 import json
 import time
 import platform
-
-import numpy as np
-
-from openpilot.common.basedir import BASEDIR
-from openpilot.common.params import Params
-from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
-from openpilot.sunnypilot.navd.helpers import Coordinate
-from openpilot.sunnypilot.mapd.live_map_data import QUERY_RADIUS
-from openpilot.common.realtime import Ratekeeper, set_core_affinity
-from openpilot.common.swaglog import cloudlog
-from openpilot.system.hardware.hw import Paths
 import os
 import glob
 import shutil
 
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.common.realtime import Ratekeeper, config_realtime_process
+from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
-from openpilot.sunnypilot.mapd.live_map_data import R
+from openpilot.system.hardware.hw import Paths
 
 # PFEIFER - MAPD {{
 params = Params()
 mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else params
 # }} PFEIFER - MAPD
 
-COMMON_DIR = Paths.mapd_root()
 MAPD_BIN_DIR = os.path.join(BASEDIR, 'third_party/mapd_pfeiferj')
 MAPD_PATH = os.path.join(MAPD_BIN_DIR, 'mapd')
 
 
-def get_files_for_cleanup():
+def get_files_for_cleanup() -> list[str]:
   paths = [
-    f"{COMMON_DIR}/db",
-    f"{COMMON_DIR}/v*"
+    f"{Paths.mapd_root()}/db",
+    f"{Paths.mapd_root()}/v*"
   ]
   files_to_remove = []
   for path in paths:
@@ -45,7 +38,7 @@ def get_files_for_cleanup():
   return files_to_remove
 
 
-def cleanup_OLD_OSM_data(files_to_remove):
+def cleanup_old_osm_data(files_to_remove: list[str]) -> None:
   for file in files_to_remove:
     # Remove trailing slash if path is file
     if file.endswith('/') and os.path.isfile(file[:-1]):
@@ -55,29 +48,6 @@ def cleanup_OLD_OSM_data(files_to_remove):
       os.remove(file)
     elif os.path.isdir(file):  # If it's a directory
       shutil.rmtree(file, ignore_errors=False)
-
-
-def _get_current_bounding_box(self, radius: float):
-  self.last_query_radius = radius
-  # Calculate the bounding box coordinates for the bbox containing the circle around location.
-  bbox_angle = float(np.degrees(radius / R))
-
-  lat = float(self.last_gps.latitude)
-  lon = float(self.last_gps.longitude)
-
-  return {
-    "min_lat": lat - bbox_angle,
-    "min_lon": lon - bbox_angle,
-    "max_lat": lat + bbox_angle,
-    "max_lon": lon + bbox_angle,
-  }
-
-
-def _request_refresh_osm_bounds_data(self):
-  self.last_refresh_loc = Coordinate(self.last_gps.latitude, self.last_gps.longitude)
-  self.last_query_radius = QUERY_RADIUS
-  current_bounding_box = self._get_current_bounding_box(self.last_query_radius)
-  mem_params.put("OSMDownloadBounds", json.dumps(current_bounding_box))
 
 
 def request_refresh_osm_location_data(nations: list[str], states: list[str] = None) -> None:
@@ -93,7 +63,7 @@ def request_refresh_osm_location_data(nations: list[str], states: list[str] = No
   mem_params.put("OSMDownloadLocations", osm_download_locations)
 
 
-def filter_nations_and_states(nations: list[str], states: list[str] = None):
+def filter_nations_and_states(nations: list[str], states: list[str] = None) -> tuple[list[str], list[str]]:
   """Filters and prepares nation and state data for OSM map download.
 
   If the nation is 'US' and a specific state is provided, the nation 'US' is removed from the list.
@@ -122,11 +92,11 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None):
   return nations, states or []
 
 
-def update_osm_db():
+def update_osm_db() -> None:
   # last_downloaded_date = float(params.get('OsmDownloadedDate', encoding='utf-8') or 0.0)
   # if params.get_bool("OsmDbUpdatesCheck") or time.time() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
-    cleanup_OLD_OSM_data(get_files_for_cleanup())
+    cleanup_old_osm_data(get_files_for_cleanup())
     country = params.get('OsmLocationName', encoding='utf-8')
     state = params.get('OsmStateName', encoding='utf-8') or "All"
     filtered_nations, filtered_states = filter_nations_and_states([country], [state])
@@ -139,21 +109,19 @@ def update_osm_db():
     mem_params.put("LastGPSPosition", "{}")
 
 
-def main_thread(sm=None, pm=None):
-  try:
-    set_core_affinity([0, 1, 2, 3])
-  except Exception:
-    cloudlog.exception("mapd: failed to set core affinity")
+def main_thread():
+  config_realtime_process([0, 1, 2, 3], 5)
+
   rk = Ratekeeper(1, print_delay_threshold=None)
   live_map_sp = OsmMapData()
 
   # Create folder needed for OSM
   try:
-    os.mkdir(COMMON_DIR)
+    os.mkdir(Paths.mapd_root())
   except FileExistsError:
     pass
   except PermissionError:
-    cloudlog.exception(f"mapd: failed to make {COMMON_DIR}")
+    cloudlog.exception(f"mapd: failed to make {Paths.mapd_root()}")
 
   while True:
     show_alert = get_files_for_cleanup() and params.get_bool("OsmLocal")

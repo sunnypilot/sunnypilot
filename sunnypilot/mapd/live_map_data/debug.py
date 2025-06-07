@@ -9,11 +9,10 @@ import traceback
 from cereal import messaging
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
-from openpilot.common.realtime import set_core_affinity
+from openpilot.common.realtime import config_realtime_process
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.common import Policy
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_resolver import SpeedLimitResolver
 from openpilot.sunnypilot.mapd.live_map_data import get_debug
-from openpilot.common.swaglog import cloudlog
 
 
 def excepthook(args):
@@ -22,10 +21,7 @@ def excepthook(args):
 
 
 def live_map_data_sp_thread():
-  try:
-    set_core_affinity([0, 1, 2, 3])
-  except Exception:
-    cloudlog.exception("mapd: failed to set core affinity")
+  config_realtime_process([0, 1, 2, 3], 5)
 
   params = Params()
   gps_location_service = get_gps_location_service(params)
