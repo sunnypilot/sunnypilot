@@ -54,7 +54,7 @@ class BaseMapData(ABC):
     result.annotations['unixTimestampMillis'] = _last_gps.unixTimestampMillis
     result.annotations['speed'] = _last_gps.speed
     result.annotations['bearingDeg'] = _last_gps.bearingDeg
-    result.annotations['accuracy'] = 1  # Hardcoded for now
+    result.annotations['accuracy'] = _last_gps.horizontalAccuracy
     result.annotations['bearingAccuracyDeg'] = _last_gps.bearingAccuracyDeg
 
     return result
