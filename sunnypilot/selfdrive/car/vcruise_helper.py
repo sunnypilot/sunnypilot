@@ -8,7 +8,6 @@ See the LICENSE.md file in the root directory for more details.
 from cereal import car
 import numpy as np
 from opendbc.car import structs
-from openpilot.common.params import Params
 from openpilot.selfdrive.car.cruise import (VCruiseHelper, IMPERIAL_INCREMENT,
                                             CRUISE_LONG_PRESS, CRUISE_NEAREST_FUNC, CV,
                                             V_CRUISE_MIN, V_CRUISE_MAX, CRUISE_INTERVAL_SIGN)
@@ -17,9 +16,11 @@ ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 class VCruiseHelperSP(VCruiseHelper):
 
-    def __init__(self, CP: structs.CarParams) -> None:
+    def __init__(self, CP: structs.CarParams, custom_acc: tuple[bool, int, int]) -> None:
         super().__init__(CP)
-        self.params = Params()
+        self.custom_acc_enabled = custom_acc[0]
+        self.short_increment = custom_acc[1]
+        self.long_increment = custom_acc[2]
 
     def _update_v_cruise_non_pcm(self, CS: car.CarState, enabled: bool, is_metric: bool) -> None:
         if not enabled:
@@ -72,18 +73,9 @@ class VCruiseHelperSP(VCruiseHelper):
         # Base increment value based on unit system
         base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
-        try:
-            custom_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-            short_increment = int(self.params.get("CustomAccShortPressIncrement"))
-            long_increment = int(self.params.get("CustomAccLongPressIncrement"))
-
-            # Apply the user-specified multipliers to the base increment if custom enabled
-            short_increment = short_increment if custom_enabled and 1 <= short_increment <= 10 else 1
-            long_increment = long_increment if custom_enabled and 1 <= long_increment <= 10 else 10 if is_metric else 5
-
-        except Exception:
-            short_increment = 1
-            long_increment = 10 if is_metric else 5
+        # Apply user-specified multipliers to the base increment if custom enabled
+        short_increment = self.short_increment if self.custom_acc_enabled and 1 <= self.short_increment <= 10 else 1
+        long_increment = self.long_increment if self.custom_acc_enabled and 1 <= self.long_increment <= 10 else 10 if is_metric else 5
 
         # Determine which increment to use based on press type
         adjusted_delta = long_increment if long_press else short_increment

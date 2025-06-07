@@ -5,6 +5,7 @@ from sunnypilot.selfdrive.car.vcruise_helper import VCruiseHelperSP as VCruiseHe
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
+from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
@@ -13,7 +14,7 @@ class TestAdjustCustomAccIncrements:
   def setup_method(self):
     self.CP = car.CarParams()
     self.params = Params()
-    self.v_cruise_helper = VCruiseHelper(self.CP)
+    self.v_cruise_helper = VCruiseHelper(self.CP, (False, 1, 5))
     self.reset_cruise_speed_state()
 
   def reset_cruise_speed_state(self):
@@ -35,13 +36,15 @@ class TestAdjustCustomAccIncrements:
       – uses `short_inc` if custom enabled
       – otherwise defaults to 1
     """
-    base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
-    self.enable(base * CV.KPH_TO_MS, False, False)
 
     self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
     self.params.put("CustomAccShortPressIncrement", str(short_inc))
     self.params.put("CustomAccLongPressIncrement", "10" if metric else "5")
     self.params.put_bool("IsMetric", metric)
+
+    base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
+    self.v_cruise_helper = VCruiseHelper(self.CP, sunnypilot_interfaces.custom_acc_controls(self.params))
+    self.enable(base * CV.KPH_TO_MS, False, False)
 
     short_inc = short_inc if custom_acc_enabled and 1 <= short_inc <= 10 else 1
 
@@ -83,13 +86,16 @@ class TestAdjustCustomAccIncrements:
       – uses `long_inc` if custom enabled
       – otherwise defaults to 10 (metric) or 5 (imperial)
     """
-    base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
-    self.enable(base * CV.KPH_TO_MS, False, False)
 
     self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
     self.params.put("CustomAccShortPressIncrement", "1")
     self.params.put("CustomAccLongPressIncrement", str(long_inc))
     self.params.put_bool("IsMetric", metric)
+
+    base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
+    self.v_cruise_helper = VCruiseHelper(self.CP, sunnypilot_interfaces.custom_acc_controls(self.params))
+    self.enable(base * CV.KPH_TO_MS, False, False)
+
 
     long_inc = long_inc if custom_acc_enabled and 1 <= long_inc <= 10 else 10 if metric else 5
 
