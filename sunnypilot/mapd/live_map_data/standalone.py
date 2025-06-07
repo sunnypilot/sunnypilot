@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 # DISCLAIMER: This code is intended principally for development and debugging purposes.
 # Although it provides a standalone entry point to the program, users should refer
 # to the actual implementations for consumption. Usage outside of development scenarios

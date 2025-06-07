@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 #!/usr/bin/env python3
 import logging
 import os
@@ -81,10 +87,10 @@ class MapdInstallManager:
     Params().put("MapdVersion", version)
 
   @staticmethod
-  def get_installed_version() -> str | None:
-    return Params().get("MapdVersion", encoding="utf-8")
+  def get_installed_version() -> str:
+    return Params().get("MapdVersion", encoding="utf-8") or ""
 
-  def wait_for_internet_connection(self, return_on_failure: bool = False) -> bool | None:
+  def wait_for_internet_connection(self, return_on_failure: bool = False) -> bool:
     max_retries = 10
     for retries in range(max_retries + 1):
       self._spinner.update(f"Waiting for internet connection... [{retries}/{max_retries}]")
@@ -97,21 +103,23 @@ class MapdInstallManager:
         if return_on_failure and retries == max_retries:
           return False
 
-  def non_prebuilt_install(self) -> bool | None:
+    return False
+
+  def non_prebuilt_install(self) -> None:
     sm = messaging.SubMaster(['deviceState'])
     metered = sm['deviceState'].networkMetered
 
     if metered:
       self._spinner.update("Can't proceed with mapd install since network is metered!")
       time.sleep(5)
-      return False
+      return
 
     try:
       self.ensure_directories_exist()
       if not self.download_needed():
         self._spinner.update("Mapd is good!")
         time.sleep(0.1)
-        return True
+        return
 
       if self.wait_for_internet_connection(return_on_failure=True):
         self._spinner.update(f"Downloading pfeiferj's mapd [{install_manager.get_installed_version()}] => [{VERSION}].")
