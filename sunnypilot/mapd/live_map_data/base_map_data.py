@@ -25,7 +25,7 @@ class BaseMapData(ABC):
     pass
 
   @abstractmethod
-  def get_next_speed_limit_and_distance(self) -> tuple[float, float]:
+  def get_next_speed_limit_and_distance(self, current_location: Coordinate | None) -> tuple[float, float]:
     pass
 
   @abstractmethod
@@ -60,7 +60,7 @@ class BaseMapData(ABC):
   def publish(self) -> None:
     speed_limit = self.get_current_speed_limit()
     current_road_name = self.get_current_road_name()
-    next_speed_limit, next_speed_limit_distance = self.get_next_speed_limit_and_distance()
+    next_speed_limit, next_speed_limit_distance = self.get_next_speed_limit_and_distance(self._last_gps)
 
     mapd_sp_send = messaging.new_message('liveMapDataSP')
     mapd_sp_send.valid = self._is_gps_data_valid()
