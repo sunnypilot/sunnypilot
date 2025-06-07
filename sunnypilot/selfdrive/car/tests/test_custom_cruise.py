@@ -14,13 +14,13 @@ class TestAdjustCustomAccIncrements:
   def setup_method(self):
     self.CP = car.CarParams()
     self.params = Params()
-    self.v_cruise_helper = VCruiseHelperSP(self.CP, (False, 1, 5))
+    self.v_cruise_helper = VCruiseHelperSP(self.CP)
     self.reset_cruise_speed_state()
 
   def reset_cruise_speed_state(self):
     # Two resets previous cruise speed
     for _ in range(2):
-      self.v_cruise_helper.update_v_cruise(car.CarState(cruiseState={"available": False}), enabled=False, is_metric=False)
+      self.v_cruise_helper.update_v_cruise(car.CarState(cruiseState={"available": False}), enabled=False, is_metric=False, custom_acc=(False, 1, 5))
 
   def enable(self, v_ego, experimental_mode, dynamic_experimental_control):
     # Simulates user pressing set with a current speed
@@ -38,7 +38,6 @@ class TestAdjustCustomAccIncrements:
     self.params.put_bool("IsMetric", metric)
 
     base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
-    self.v_cruise_helper = VCruiseHelperSP(self.CP, sunnypilot_interfaces.custom_acc_controls(self.params))
     self.enable(base * CV.KPH_TO_MS, False, False)
 
     if long_press:
@@ -50,10 +49,10 @@ class TestAdjustCustomAccIncrements:
 
         for i in range(51):
           CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)] if i == 0 else []
-          self.v_cruise_helper.update_v_cruise(CS, True, metric)
+          self.v_cruise_helper.update_v_cruise(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
 
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric)
+        self.v_cruise_helper.update_v_cruise(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
 
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
@@ -81,9 +80,9 @@ class TestAdjustCustomAccIncrements:
 
         # simulate short-press
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric)
+        self.v_cruise_helper.update_v_cruise(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric)
+        self.v_cruise_helper.update_v_cruise(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
 
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
