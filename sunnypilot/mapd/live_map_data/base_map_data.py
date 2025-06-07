@@ -16,11 +16,6 @@ from openpilot.sunnypilot.navd.helpers import Coordinate, coordinate_from_param
 class BaseMapData(ABC):
   def __init__(self):
     self.params = Params()
-    self._last_gps: Coordinate | None = None
-    self._gps_location_service = get_gps_location_service(self.params)
-    self._gps_packets = [self._gps_location_service]
-    self._sm = messaging.SubMaster(['livePose', 'carControl'] + self._gps_packets)
-    self._pm = messaging.PubMaster(['liveMapDataSP'])
 
     self.gps_location_service = get_gps_location_service(self.params)
     self.sm = messaging.SubMaster(['livePose', 'carControl'] + [self.gps_location_service])
@@ -64,15 +59,6 @@ class BaseMapData(ABC):
     mapd_sp_send = messaging.new_message('liveMapDataSP')
     mapd_sp_send.valid = self.sm.all_checks(service_list=[self.gps_location_service, 'livePose'])
     live_map_data = mapd_sp_send.liveMapDataSP
-
-    if self._last_gps:
-      live_map_data.lastGpsTimestamp = self._last_gps.annotations.get('unixTimestampMillis', 0)
-      live_map_data.lastGpsLatitude = self._last_gps.latitude
-      live_map_data.lastGpsLongitude = self._last_gps.longitude
-      live_map_data.lastGpsSpeed = self._last_gps.annotations.get('speed', 0)
-      live_map_data.lastGpsBearingDeg = self._last_gps.annotations.get('bearingDeg', 0)
-      live_map_data.lastGpsAccuracy = self._last_gps.annotations.get('accuracy', 0)
-      live_map_data.lastGpsBearingAccuracyDeg = self._last_gps.annotations.get('bearingAccuracyDeg', 0)
 
     live_map_data.speedLimitValid = bool(speed_limit > 0)
     live_map_data.speedLimit = speed_limit
