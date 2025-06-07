@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from cereal import messaging, custom
+from cereal import messaging
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
