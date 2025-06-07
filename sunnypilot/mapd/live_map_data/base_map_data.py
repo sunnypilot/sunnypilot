@@ -1,7 +1,7 @@
 import time
 from abc import abstractmethod, ABC
 
-from cereal import custom, messaging
+from cereal import messaging
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.sunnypilot.navd.helpers import Coordinate
