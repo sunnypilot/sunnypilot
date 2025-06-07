@@ -1,11 +1,10 @@
 import time
 from abc import abstractmethod, ABC
 
-from cereal import messaging, custom
+from cereal import messaging
 from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.sunnypilot.navd.helpers import Coordinate
-from openpilot.sunnypilot.mapd.live_map_data import get_debug
 
 
 class BaseMapData(ABC):
@@ -58,13 +57,15 @@ class BaseMapData(ABC):
 
     return result
 
-  def get_live_map_data_sp(self, speed_limit: float, next_speed_limit: float, next_speed_limit_distance: float,
-                           current_road_name: str) -> custom.LiveMapDataSP:
+  def publish(self) -> None:
+    speed_limit = self.get_current_speed_limit()
+    current_road_name = self.get_current_road_name()
+    next_speed_limit, next_speed_limit_distance = self.get_next_speed_limit_and_distance()
 
-    map_data_msg = messaging.new_message('liveMapDataSP')
-    map_data_msg.valid = self._is_gps_data_valid()
+    mapd_sp_send = messaging.new_message('liveMapDataSP')
+    mapd_sp_send.valid = self._is_gps_data_valid()
+    live_map_data = mapd_sp_send.liveMapDataSP
 
-    live_map_data = map_data_msg.liveMapDataSP
     if self._last_gps:
       live_map_data.lastGpsTimestamp = self._last_gps.annotations.get('unixTimestampMillis', 0)
       live_map_data.lastGpsLatitude = self._last_gps.latitude
@@ -81,24 +82,7 @@ class BaseMapData(ABC):
     live_map_data.speedLimitAheadDistance = next_speed_limit_distance
     live_map_data.currentRoadName = current_road_name
 
-    return map_data_msg
-
-  def publish(self) -> None:
-    speed_limit = self.get_current_speed_limit()
-    current_road_name = self.get_current_road_name()
-    next_speed_limit, next_speed_limit_distance = self.get_next_speed_limit_and_distance()
-
-    live_map_data_sp = self.get_live_map_data_sp(
-      speed_limit,
-      next_speed_limit,
-      next_speed_limit_distance,
-      current_road_name
-    )
-
-    self._pm.send('liveMapDataSP', live_map_data_sp)
-    get_debug(f"SRC: [{self.__class__.__name__}] | SLC: [{speed_limit}] | NSL: [{next_speed_limit}] | " +
-              f"NSLD: [{next_speed_limit_distance}] | CRN: [{current_road_name}] | GPS: [{self._last_gps}] " +
-              f"Annotations: [{', '.join(f'{key}: {value}' for key, value in self._last_gps.annotations.items()) if self._last_gps else []}]")
+    self._pm.send('liveMapDataSP', mapd_sp_send)
 
   def tick(self) -> None:
     self._sm.update()
