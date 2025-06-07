@@ -1,18 +1,17 @@
 import json
 import time
 import platform
-
-from openpilot.common.basedir import BASEDIR
-from openpilot.common.params import Params
-from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
-from openpilot.common.realtime import Ratekeeper, config_realtime_process
-from openpilot.common.swaglog import cloudlog
-from openpilot.system.hardware.hw import Paths
 import os
 import glob
 import shutil
 
+from openpilot.common.basedir import BASEDIR
+from openpilot.common.params import Params
+from openpilot.common.realtime import Ratekeeper, config_realtime_process
+from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
+from openpilot.system.hardware.hw import Paths
 
 # PFEIFER - MAPD {{
 params = Params()
@@ -23,7 +22,7 @@ MAPD_BIN_DIR = os.path.join(BASEDIR, 'third_party/mapd_pfeiferj')
 MAPD_PATH = os.path.join(MAPD_BIN_DIR, 'mapd')
 
 
-def get_files_for_cleanup():
+def get_files_for_cleanup() -> list[str]:
   paths = [
     f"{Paths.mapd_root()}/db",
     f"{Paths.mapd_root()}/v*"
@@ -39,7 +38,7 @@ def get_files_for_cleanup():
   return files_to_remove
 
 
-def cleanup_old_osm_data(files_to_remove):
+def cleanup_old_osm_data(files_to_remove: list[str]) -> None:
   for file in files_to_remove:
     # Remove trailing slash if path is file
     if file.endswith('/') and os.path.isfile(file[:-1]):
@@ -64,7 +63,7 @@ def request_refresh_osm_location_data(nations: list[str], states: list[str] = No
   mem_params.put("OSMDownloadLocations", osm_download_locations)
 
 
-def filter_nations_and_states(nations: list[str], states: list[str] = None):
+def filter_nations_and_states(nations: list[str], states: list[str] = None) -> tuple[list[str], list[str]]:
   """Filters and prepares nation and state data for OSM map download.
 
   If the nation is 'US' and a specific state is provided, the nation 'US' is removed from the list.
@@ -93,7 +92,7 @@ def filter_nations_and_states(nations: list[str], states: list[str] = None):
   return nations, states or []
 
 
-def update_osm_db():
+def update_osm_db() -> None:
   # last_downloaded_date = float(params.get('OsmDownloadedDate', encoding='utf-8') or 0.0)
   # if params.get_bool("OsmDbUpdatesCheck") or time.time() - last_downloaded_date >= 604800:  # 7 days * 24 hours/day * 60
   if params.get_bool("OsmDbUpdatesCheck"):
