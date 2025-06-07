@@ -22,7 +22,7 @@ class VCruiseHelperSP(VCruiseHelper):
         self.short_increment = 1
         self.long_increment = 5
 
-    def update_v_cruise(self, CS, enabled, is_metric, custom_acc: tuple[bool, int, int]) -> None:
+    def update_v_cruise_sp(self, CS, enabled, is_metric, custom_acc: tuple[bool, int, int]) -> None:
         super().update_v_cruise(CS, enabled, is_metric)
         self.custom_acc_enabled = custom_acc[0]
         self.short_increment = custom_acc[1]
