@@ -23,7 +23,7 @@ def main():
   longitudinal_planner = LongitudinalPlanner(CP)
   pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'longitudinalPlanSP'])
   sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState',
-                            "liveMapDataSP", "carStateSP", gps_location_service],
+                            'liveMapDataSP', 'carStateSP', gps_location_service],
                            poll='modelV2')
 
   while True:
