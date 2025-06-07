@@ -24,17 +24,7 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   currentModelLblBtn = new ButtonControlSP(tr("Current Model"), tr("SELECT"), current_model);
   currentModelLblBtn->setValue(current_model);
 
-  connect(currentModelLblBtn, &ButtonControlSP::clicked, [=]() {
-
-      InputDialog d(tr("Search Model"), this, tr("Enter search keywords, or leave blank to list all models."), false);
-      d.setMinLength(0);
-      const int ret = d.exec();
-      if (ret) {
-        handleCurrentModelLblBtnClicked(d.text());
-      }
-
-    });
-
+  connect(currentModelLblBtn, &ButtonControlSP::clicked, this, &ModelsPanel::handleCurrentModelLblBtnClicked);
   connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
       is_onroad = !offroad;
       updateLabels();
@@ -144,7 +134,7 @@ void ModelsPanel::updateModelManagerState() {
  * @brief Handles the model bundle selection button click
  * Displays available bundles, allows selection, and initiates download
  */
-void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
+void ModelsPanel::handleCurrentModelLblBtnClicked() {
   currentModelLblBtn->setEnabled(false);
   currentModelLblBtn->setValue(tr("Fetching models..."));
 
@@ -152,8 +142,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
   QMap<uint32_t, QString> index_to_bundle;
   const auto bundles = model_manager.getAvailableBundles();
   for (const auto &bundle: bundles) {
-    std::string bundleStr = std::string(bundle.getDisplayName()) + " $SNAME$ " + std::string(bundle.getInternalName());
-    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundleStr));
+    index_to_bundle.insert(bundle.getIndex(), QString::fromStdString(bundle.getDisplayName()));
   }
 
   // Sort bundles by index in descending order
@@ -167,24 +156,10 @@ void ModelsPanel::handleCurrentModelLblBtnClicked(const QString &query) {
     bundleNames.append(index_to_bundle[index]);
   }
 
-  QStringList filteredBundleNames = searchFromList(query, bundleNames);
-
   currentModelLblBtn->setValue(GetActiveModelName());
 
-  if (filteredBundleNames.isEmpty()) {
-    ConfirmationDialog::alert(tr("No model found for keywords: %1").arg(query), this);
-    return;
-  }
-
-  for (const QString &bundleName: filteredBundleNames) {
-    int index = bundleName.indexOf("$SNAME$");
-    if (index != -1) {
-      filteredBundleNames.replace(filteredBundleNames.indexOf(bundleName), bundleName.left(index).trimmed());
-    }
-  }
-
   const QString selectedBundleName = MultiOptionDialog::getSelection(
-    tr("Select a Model"), filteredBundleNames, GetActiveModelName(), this);
+    tr("Select a Model"), bundleNames, GetActiveModelName(), this);
 
   if (selectedBundleName.isEmpty() || !canContinueOnMeteredDialog()) {
     return;

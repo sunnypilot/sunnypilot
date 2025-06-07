@@ -18,6 +18,8 @@ from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import get_build_metadata, terms_version, training_version
 from openpilot.system.hardware.hw import Paths
 
+from openpilot.sunnypilot.mapd.mapd_installer import VERSION
+
 
 def manager_init() -> None:
   save_bootlog()
@@ -47,6 +49,7 @@ def manager_init() -> None:
     ("BlindSpot", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
+    ("DeviceBootMode", "0"),
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("LagdToggle", "1"),
@@ -54,6 +57,7 @@ def manager_init() -> None:
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
+    ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "1800"),
     ("Brightness", "0"),
     ("ModelManager_LastSyncTime", "0"),
@@ -66,6 +70,10 @@ def manager_init() -> None:
     ("HkgTuningOverridingCycles", "17"),
     ("HkgAngleLiveTuning", "0"),
   ]
+
+  # device boot mode
+  if params.get("DeviceBootMode") == b"1": # start in always offroad mode
+    params.put_bool("OffroadMode", True)
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
