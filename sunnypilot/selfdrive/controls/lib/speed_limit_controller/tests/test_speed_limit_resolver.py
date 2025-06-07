@@ -122,7 +122,6 @@ class TestSpeedLimitResolverValidation:
     resolver = resolver_class(policy)
     sm_mock = mocker.MagicMock()
     sm_mock['liveMapDataSP'].lastGpsTimestamp = (time.time() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
-    resolver._sm = sm_mock
-    resolver._get_from_map_data()
+    resolver._get_from_map_data(sm_mock)
     assert resolver._limit_solutions[Source.map_data] == 0.
     assert resolver._distance_solutions[Source.map_data] == 0.
