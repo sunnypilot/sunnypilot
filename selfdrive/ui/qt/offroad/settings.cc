@@ -45,24 +45,21 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Toyota: Auto Brake Hold"),
       tr("umm auto brake hold?"),
       "../assets/offroad/icon_blank.png",
+      false,
     },
     {
       "ToyotaEnhancedBsm",
       tr("Toyota: Enhanced BSM"),
       tr("like blind spot monitoring but better?"),
       "../assets/offroad/icon_blank.png",
+      false,
     },
     {
       "ToyotaTSS2Long",
       tr("Toyota: custom tune"),
       tr("idk something gas and brake"),
       "../assets/offroad/icon_blank.png",
-    },
-	  {
-      "RainbowMode",
-      tr("Enable Tesla Rainbow Mode"),
-      tr("....."),
-      "../assets/offroad/icon_blank.png",
+      false,
     },
     {
       "DisengageOnAccelerator",
