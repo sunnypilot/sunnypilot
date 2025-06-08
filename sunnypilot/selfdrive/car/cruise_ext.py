@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car
 from openpilot.common.params import Params
-from openpilot.selfdrive.car.cruise import CRUISE_NEAREST_FUNC, CRUISE_INTERVAL_SIGN
+from openpilot.sunnypilot.selfdrive.car import CRUISE_NEAREST_FUNC, CRUISE_INTERVAL_SIGN
 
 ButtonType = car.CarState.ButtonEvent.Type
 
