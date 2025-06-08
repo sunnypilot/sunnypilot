@@ -43,8 +43,8 @@ class VCruiseHelperSP:
     base_increment = 1. if is_metric else IMPERIAL_INCREMENT
 
     # Apply user-specified multipliers to the base increment if custom enabled
-    short_increment = self.short_increment if self.custom_acc_enabled and 1 <= self.short_increment <= 10 else 1
-    long_increment = self.long_increment if self.custom_acc_enabled and 1 <= self.long_increment <= 10 else 10 if is_metric else 5
+    short_increment = self.short_increment if 1 <= self.short_increment <= 10 else 1
+    long_increment = self.long_increment if 1 <= self.long_increment <= 10 else 10 if is_metric else 5
 
     # Determine which increment to use based on the press type
     adjusted_delta = long_increment if long_press else short_increment
