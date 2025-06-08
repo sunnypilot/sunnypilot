@@ -15,7 +15,7 @@ class VCruiseHelperSP:
   def __init__(self) -> None:
     self.params = Params()
 
-    self.custom_acc_enabled = False
+    self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
 
