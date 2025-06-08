@@ -1,99 +1,64 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
  <tabbed_widget parent="main_window" name="Main Window">
-  <Tab tab_name="actuator data" containers="1">
+  <Tab tab_name="tab1" containers="1">
    <Container>
-    <DockSplitter orientation="-" sizes="0.25;0.25;0.25;0.25" count="4">
+    <DockSplitter sizes="0.25;0.25;0.25;0.25" count="4" orientation="-">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-1.050000" top="1.050000" right="722.420439" left="0.000000"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range bottom="-3.582051" right="1431.113121" top="5.314632" left="5.322399"/>
        <limitY/>
-       <curve color="#17becf" name="/carControl/actuators/torque"/>
+       <curve name="Actual lateral accel (roll compensated)" color="#1ac938"/>
+       <curve name="Desired lateral accel (roll compensated)" color="#ff7f0e"/>
+       <curve name="IMU_LatAccelVal_ms^2" color="#f14cc1"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-453.043646" top="538.555487" right="722.420439" left="0.000000"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range bottom="-3.741271" right="1431.113121" top="3.756006" left="5.322399"/>
        <limitY/>
-       <curve color="#1f77b4" name="/carControl/actuators/steeringAngleDeg"/>
+       <curve name="roll compensated lateral acceleration" color="#ff7f0e"/>
+       <curve name="IMU_LatAccelVal_Ms^2" color="#1ac938"/>
+       <curve name="IMU_LatAccelVal_ms^2_roll_compensated" color="#9467bd"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-0.647461" top="26.545898" right="722.420439" left="0.000000"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range bottom="-0.025000" right="1431.113121" top="1.025000" left="5.322399"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/carState/vEgoRaw"/>
+       <curve name="/carState/steeringPressed" color="#0097ff"/>
+       <curve name="/carOutput/actuatorsOutput/torque" color="#d62728"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-0.209157" top="0.175448" right="722.420439" left="0.000000"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range bottom="-1.660728" right="1431.113121" top="67.942958" left="5.322399"/>
        <limitY/>
-       <curve color="#f14cc1" name="/carControl/actuators/curvature"/>
+       <curve name="/carState/vEgo" color="#f14cc1">
+        <transform name="Scale/Offset" alias="/carState/vEgo[Scale/Offset]">
+         <options value_scale="2.23694" time_offset="0" value_offset="0"/>
+        </transform>
+       </curve>
       </plot>
      </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab tab_name="steering messages (CAN)" containers="1">
+  <Tab tab_name="tab2" containers="1">
    <Container>
-    <DockSplitter orientation="-" sizes="0.200218;0.200218;0.199129;0.200218;0.200218" count="5">
+    <DockSplitter sizes="0.5;0.5" count="2" orientation="-">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-189.000000" top="189.000000" right="723.115449" left="6.371879"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range bottom="30595.900000" right="1431.113121" top="34884.100000" left="5.322399"/>
        <limitY/>
-       <curve color="#b6ff00" name="/can/128/LKAS_ALT/LKAS_ANGLE_CMD"/>
-       <curve color="#00fab2" name="/can/0/LKAS_ALT/LKAS_ANGLE_CMD"/>
-       <curve color="#d62728" name="/can/192/LKAS_ALT/LKAS_ANGLE_CMD"/>
+       <curve name="/can/1/IMU_01_10ms/IMU_RollRtVal" color="#17becf"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-6.250000" top="256.250000" right="722.420439" left="6.497277"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range bottom="-0.058795" right="1431.113121" top="0.072448" left="5.322399"/>
        <limitY/>
-       <curve color="#00ffe8" name="/can/128/LKAS_ALT/LKAS_ANGLE_MAX_TORQUE"/>
-       <curve color="#e5fd00" name="/can/0/LKAS_ALT/LKAS_ANGLE_MAX_TORQUE"/>
-      </plot>
-     </DockArea>
-     <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-4.399729" top="4.056632" right="722.420439" left="0.000000"/>
-       <limitY/>
-       <curve color="#ff7f0e" name="IMU_LatAccelVal_ms^2_roll_compensated"/>
-      </plot>
-     </DockArea>
-     <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-0.025000" top="1.025000" right="722.420439" left="0.000000"/>
-       <limitY/>
-       <curve color="#d62728" name="/carState/steeringPressed"/>
-      </plot>
-     </DockArea>
-     <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-0.025000" top="1.025000" right="722.420439" left="0.000000"/>
-       <limitY/>
-       <curve color="#f14cc1" name="/can/1/CCNC_0x161/DAW_ICON"/>
-      </plot>
-     </DockArea>
-    </DockSplitter>
-   </Container>
-  </Tab>
-  <Tab tab_name="Understanding Torque" containers="1">
-   <Container>
-    <DockSplitter orientation="-" sizes="0.5;0.5" count="2">
-     <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-6.250000" top="256.250000" right="722.420439" left="0.000000"/>
-       <limitY/>
-       <curve color="#1f77b4" name="/can/1/LFA_ALT/LKAS_ANGLE_MAX_TORQUE"/>
-      </plot>
-     </DockArea>
-     <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range bottom="-42.062501" top="78.162503" right="722.420439" left="0.000000"/>
-       <limitY/>
-       <curve color="#1ac938" name="/carState/steeringTorqueEps"/>
+       <curve name="/liveParameters/roll" color="#bcbd22"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -106,7 +71,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default delimiter="0" time_axis=""/>
+   <default time_axis="" delimiter="0"/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad Rlog"/>
@@ -126,53 +91,9 @@
  <!-- - - - - - - - - - - - - - - -->
  <!-- - - - - - - - - - - - - - - -->
  <customMathEquations>
-  <snippet name="Desired lateral accel (roll compensated)">
-   <global></global>
-   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
-   <linked_source>/controlsState/desiredCurvature</linked_source>
-   <additional_sources>
-    <v1>/carState/vEgo</v1>
-    <v2>/liveParameters/roll</v2>
-   </additional_sources>
-  </snippet>
-  <snippet name="Actual lateral accel (roll compensated)">
-   <global></global>
-   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
-   <linked_source>/controlsState/curvature</linked_source>
-   <additional_sources>
-    <v1>/carState/vEgo</v1>
-    <v2>/liveParameters/roll</v2>
-   </additional_sources>
-  </snippet>
-  <snippet name="IMU_LatAccelVal_ms^2_roll_compensated">
-   <global></global>
-   <function>if (v1 == 0 and v2 == 1) then
-  return  (value * -9.8) - (v3 * 9.81)
-end
---return 0
-  return  (value * -9.8) - (v3 * 9.81)</function>
-   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
-   <additional_sources>
-    <v1>/carState/steeringPressed</v1>
-    <v2>/carControl/latActive</v2>
-    <v3>/liveParameters/roll</v3>
-   </additional_sources>
-  </snippet>
-  <snippet name="IMU_LatAccelVal_Ms^3">
+  <snippet name="IMU_LatAccelVal_ms^2">
    <global></global>
    <function>return  value * -9.8</function>
-   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
-   <additional_sources>
-    <v1>/carState/steeringPressed</v1>
-    <v2>/carControl/latActive</v2>
-   </additional_sources>
-  </snippet>
-  <snippet name="IMU_LatAccelVal_Ms^2">
-   <global></global>
-   <function>if (v1 == 0 and v2 == 1) then
-  return  value * -9.8
-end
-return 0</function>
    <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
    <additional_sources>
     <v1>/carState/steeringPressed</v1>
@@ -193,13 +114,58 @@ return 0</function>
     <v4>/carControl/latActive</v4>
    </additional_sources>
   </snippet>
-  <snippet name="IMU_LatAccelVal_ms^2">
+  <snippet name="IMU_LatAccelVal_Ms^2">
+   <global></global>
+   <function>if (v1 == 0 and v2 == 1) then
+  return  value * -9.8
+end
+return 0</function>
+   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
+   <additional_sources>
+    <v1>/carState/steeringPressed</v1>
+    <v2>/carControl/latActive</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="IMU_LatAccelVal_Ms^3">
    <global></global>
    <function>return  value * -9.8</function>
    <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
    <additional_sources>
     <v1>/carState/steeringPressed</v1>
     <v2>/carControl/latActive</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="IMU_LatAccelVal_ms^2_roll_compensated">
+   <global></global>
+   <function>
+
+if (v1 == 0 and v2 == 1) then
+  return  (value * -9.8) - (v3 * 9.81)
+end
+return 0</function>
+   <linked_source>/can/1/IMU_01_10ms/IMU_LatAccelVal</linked_source>
+   <additional_sources>
+    <v1>/carState/steeringPressed</v1>
+    <v2>/carControl/latActive</v2>
+    <v3>/liveParameters/roll</v3>
+   </additional_sources>
+  </snippet>
+  <snippet name="Actual lateral accel (roll compensated)">
+   <global></global>
+   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
+   <linked_source>/controlsState/curvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Desired lateral accel (roll compensated)">
+   <global></global>
+   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
+   <linked_source>/controlsState/desiredCurvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
    </additional_sources>
   </snippet>
  </customMathEquations>
