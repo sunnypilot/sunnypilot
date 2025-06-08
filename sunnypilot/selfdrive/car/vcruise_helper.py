@@ -4,22 +4,27 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import numpy as np
-
+import math
 from cereal import car
+from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from opendbc.car import structs
-from openpilot.selfdrive.car.cruise import VCruiseHelper, IMPERIAL_INCREMENT, CRUISE_LONG_PRESS, CRUISE_NEAREST_FUNC, CV, \
-                                            V_CRUISE_MIN, V_CRUISE_MAX, CRUISE_INTERVAL_SIGN
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
+IMPERIAL_INCREMENT = round(CV.MPH_TO_KPH, 1)
+CRUISE_NEAREST_FUNC = {
+    ButtonType.accelCruise: math.ceil,
+    ButtonType.decelCruise: math.floor,
+}
+CRUISE_INTERVAL_SIGN = {
+    ButtonType.accelCruise: +1,
+    ButtonType.decelCruise: -1,
+}
 
-class VCruiseHelperSP(VCruiseHelper):
+class VCruiseHelperSP():
 
-  def __init__(self, CP: structs.CarParams) -> None:
-    super().__init__(CP)
+  def __init__(self) -> None:
     self.params = Params()
 
     self.custom_acc_enabled = False
@@ -36,49 +41,6 @@ class VCruiseHelperSP(VCruiseHelper):
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
-
-  def update_v_cruise_sp(self, CS, enabled, is_metric, custom_acc: tuple[bool, int, int]) -> None:
-    super().update_v_cruise(CS, enabled, is_metric)
-
-  def _update_v_cruise_non_pcm(self, CS: car.CarState, enabled: bool, is_metric: bool) -> None:
-    if not enabled:
-      return
-
-    long_press = False
-    button_type = None
-
-    for b in CS.buttonEvents:
-      if b.type.raw in self.button_timers and not b.pressed:
-        if self.button_timers[b.type.raw] > CRUISE_LONG_PRESS:
-          return  # end long press
-        button_type = b.type.raw
-        break
-    else:
-      for k, timer in self.button_timers.items():
-        if timer and timer % CRUISE_LONG_PRESS == 0:
-          button_type = k
-          long_press = True
-          break
-
-    if button_type is None:
-      return
-
-    # Don't adjust speed when pressing resume to exit standstill
-    cruise_standstill = self.button_change_states[button_type]["standstill"] or CS.cruiseState.standstill
-    if button_type == ButtonType.accelCruise and cruise_standstill:
-      return
-
-    # Don't adjust speed if we've enabled since the button was depressed (some ports enable on rising edge)
-    if not self.button_change_states[button_type]["enabled"]:
-      return
-
-    self.v_cruise_kph = self.adjust_cruise_speed(button_type, long_press, is_metric)
-
-    # If set is pressed while overriding, clip cruise speed to minimum of vEgo
-    if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
-      self.v_cruise_kph = max(self.v_cruise_kph, CS.vEgo * CV.MS_TO_KPH)
-
-    self.v_cruise_kph = np.clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
 
   def adjust_cruise_speed(self, button_type: car.CarState.ButtonEvent.Type, long_press: bool, is_metric: bool) -> float:
     """
