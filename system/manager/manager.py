@@ -86,6 +86,14 @@ def manager_init() -> None:
   except PermissionError:
     print(f"WARNING: failed to make {Paths.shm_path()}")
 
+  # Create folders needed for mapd
+  try:
+    os.mkdir(Paths.mapd_root())
+  except FileExistsError:
+    pass
+  except PermissionError:
+    print(f"WARNING: failed to make {Paths.mapd_root()}")
+
   # set params
   serial = HARDWARE.get_serial()
   params.put("Version", build_metadata.openpilot.version)
