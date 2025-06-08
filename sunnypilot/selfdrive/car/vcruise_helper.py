@@ -12,6 +12,7 @@ from openpilot.common.params import Params
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
+V_CRUISE_UNSET = 255
 IMPERIAL_INCREMENT = round(CV.MPH_TO_KPH, 1)
 CRUISE_NEAREST_FUNC = {
     ButtonType.accelCruise: math.ceil,
@@ -22,11 +23,11 @@ CRUISE_INTERVAL_SIGN = {
     ButtonType.decelCruise: -1,
 }
 
-class VCruiseHelperSP():
+class VCruiseHelperSP:
 
   def __init__(self) -> None:
     self.params = Params()
-
+    self.v_cruise_kph: float = V_CRUISE_UNSET
     self.custom_acc_enabled = False
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement")

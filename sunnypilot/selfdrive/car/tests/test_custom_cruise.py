@@ -28,7 +28,7 @@ class TestAdjustCustomAccIncrements:
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "long_press", "acc_inc", "metric", "init_norm"),
-    itertools.product([True, False], [True, False], [1, 4, 10, 99], [False, True], [40, 35])
+    itertools.product([True, False], [True, False], [1, 4, 10, 99], [False, True], [40, 35, 50])
   )
   def test_acc_changes(self, custom_acc_enabled, long_press, acc_inc, metric, init_norm):
 
