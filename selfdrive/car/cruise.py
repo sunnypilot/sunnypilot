@@ -3,6 +3,7 @@ import numpy as np
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
+from openpilot.sunnypilot.selfdrive.car.vcruise_helper import VCruiseHelperSP
 
 
 # WARNING: this value was determined based on the model's training distribution,
@@ -28,8 +29,10 @@ CRUISE_INTERVAL_SIGN = {
 }
 
 
-class VCruiseHelper:
+class VCruiseHelper(VCruiseHelperSP):
   def __init__(self, CP):
+    VCruiseHelper.__init__(self, CP)
+    VCruiseHelperSP.__init__(self, CP)
     self.CP = CP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
@@ -99,11 +102,14 @@ class VCruiseHelper:
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
-    if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
-      self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
+    if self.custom_acc_enabled:
+      self.v_cruise_kph = self.adjust_cruise_speed(self.v_cruise_kph, button_type, long_press, is_metric)
     else:
-      self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+      v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+      if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
+        self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
+      else:
+        self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):

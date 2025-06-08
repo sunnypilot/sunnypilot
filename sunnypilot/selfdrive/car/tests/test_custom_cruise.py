@@ -5,7 +5,6 @@ from sunnypilot.selfdrive.car.vcruise_helper import VCruiseHelperSP, IMPERIAL_IN
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
