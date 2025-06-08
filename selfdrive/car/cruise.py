@@ -5,8 +5,6 @@ from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.sunnypilot.selfdrive.car.cruise_ext import VCruiseHelperSP
 
-from openpilot.sunnypilot.selfdrive.car.vcruise_helper import VCruiseHelperSP
-
 
 # WARNING: this value was determined based on the model's training distribution,
 #          model predictions above this speed can be unpredictable
@@ -75,6 +73,8 @@ class VCruiseHelper(VCruiseHelperSP):
 
     long_press = False
     button_type = None
+
+    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
 
     for b in CS.buttonEvents:
       if b.type.raw in self.button_timers and not b.pressed:
