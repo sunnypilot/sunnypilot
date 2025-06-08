@@ -20,8 +20,11 @@ class TestAdjustCustomAccIncrements:
 
   def reset_cruise_speed_state(self):
     # Two resets previous cruise speed
+    self.v_cruise_helper.custom_acc_enabled = False
+    self.v_cruise_helper.short_increment = 1
+    self.v_cruise_helper.long_increment = 5
     for _ in range(2):
-      self.v_cruise_helper.update_v_cruise_sp(car.CarState(cruiseState={"available": False}), enabled=False, is_metric=False, custom_acc=(False, 1, 5))
+      self.v_cruise_helper.update_v_cruise_sp(car.CarState(cruiseState={"available": False}), enabled=False, is_metric=False)
 
   def enable(self, v_ego, experimental_mode, dynamic_experimental_control):
     # Simulates user pressing set with a current speed
@@ -50,10 +53,10 @@ class TestAdjustCustomAccIncrements:
 
         for i in range(51):
           CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)] if i == 0 else []
-          self.v_cruise_helper.update_v_cruise_sp(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
+          self.v_cruise_helper.update_v_cruise_sp(CS, True, metric)
 
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise_sp(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
+        self.v_cruise_helper.update_v_cruise_sp(CS, True, metric)
 
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
@@ -81,9 +84,9 @@ class TestAdjustCustomAccIncrements:
 
         # simulate short-press
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
-        self.v_cruise_helper.update_v_cruise_sp(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
+        self.v_cruise_helper.update_v_cruise_sp(CS, True, metric)
         CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise_sp(CS, True, metric, sunnypilot_interfaces.custom_acc_controls(self.params))
+        self.v_cruise_helper.update_v_cruise_sp(CS, True, metric)
 
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev

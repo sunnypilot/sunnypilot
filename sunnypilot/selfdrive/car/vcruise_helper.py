@@ -37,7 +37,7 @@ class VCruiseHelperSP(VCruiseHelper):
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
 
-  def update_v_cruise_sp(self, CS, enabled, is_metric, custom_acc: tuple[bool, int, int]) -> None:
+  def update_v_cruise_sp(self, CS, enabled, is_metric) -> None:
     super().update_v_cruise(CS, enabled, is_metric)
 
   def _update_v_cruise_non_pcm(self, CS: car.CarState, enabled: bool, is_metric: bool) -> None:
