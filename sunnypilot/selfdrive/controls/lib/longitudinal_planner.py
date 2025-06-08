@@ -28,10 +28,10 @@ class LongitudinalPlannerSP:
 
     return self.dec.mode()
 
-  def update_v_cruise(self, sm: messaging.SubMaster, long_enabled: bool, v_ego: float, a_ego: float, v_cruise: float) -> float:
+  def update_v_cruise(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> float:
     self.events_sp.clear()
 
-    self.slc.update(long_enabled, v_ego, a_ego, sm, v_cruise, self.events_sp)
+    self.slc.update(sm, v_ego, a_ego, v_cruise, self.events_sp)
 
     v_cruise_slc = self.slc.speed_limit_offseted if self.slc.is_active else V_CRUISE_UNSET
 

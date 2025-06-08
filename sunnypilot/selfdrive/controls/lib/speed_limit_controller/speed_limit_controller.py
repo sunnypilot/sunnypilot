@@ -36,7 +36,7 @@ class SpeedLimitController:
     self._last_params_update = 0.0
     self._last_op_engaged_time = 0.0
     self._is_metric = self._params.get_bool("IsMetric")
-    self._is_enabled = self._params.get_bool("SpeedLimitControl")
+    self._enabled = self._params.get_bool("SpeedLimitControl")
     self._op_engaged = False
     self._op_engaged_prev = False
     self._v_ego = 0.
@@ -107,11 +107,11 @@ class SpeedLimitController:
 
   @property
   def is_enabled(self) -> bool:
-    return self.state in ENABLED_STATES and self._is_enabled
+    return self.state in ENABLED_STATES and self._enabled
 
   @property
   def is_active(self) -> bool:
-    return self.state in ACTIVE_STATES and self._is_enabled
+    return self.state in ACTIVE_STATES and self._enabled
 
   @property
   def speed_limit_offseted(self) -> float:
@@ -152,7 +152,7 @@ class SpeedLimitController:
 
   def _update_params(self) -> None:
     if self._current_time > self._last_params_update + PARAMS_UPDATE_PERIOD:
-      self._is_enabled = self._params.get_bool("SpeedLimitControl")
+      self._enabled = self._params.get_bool("SpeedLimitControl")
       self._offset_type = OffsetType(self._read_int_param("SpeedLimitOffsetType"))
       self._offset_value = self._read_int_param("SpeedLimitValueOffset")
       self._warning_type = self._read_int_param("SpeedLimitWarningType")
@@ -273,9 +273,9 @@ class SpeedLimitController:
   def _state_transition(self) -> None:
     self._state_prev = self._state
 
-    # In any case, if op is disabled, or speed limit control is disabled
-    # or the reported speed limit is 0 or gas is pressed, deactivate.
-    if not self._op_engaged or not self._is_enabled or self._speed_limit == 0:
+    # In any case, if op is disabled, or speed limit control is disabled or no valid speed limit
+    # or gas is pressed, deactivate.
+    if not self._op_engaged or not self._enabled or self._speed_limit == 0:
       self.state = SpeedLimitControlState.inactive
       return
 
@@ -327,9 +327,9 @@ class SpeedLimitController:
         elif self._speed_limit_changed != 0:
           events_sp.add(EventNameSP.speedLimitValueChange)
 
-  def update(self, enabled: bool, v_ego: float, a_ego: float, sm: messaging.SubMaster, v_cruise_setpoint: float, events_sp: EventsSP) -> None:
+  def update(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise_setpoint: float, events_sp: EventsSP) -> None:
     _car_state = sm['carState']
-    self._op_engaged = enabled and self._CP.openpilotLongitudinalControl
+    self._op_engaged = sm['carControl'].longActive
     self._v_ego = v_ego
     self._a_ego = a_ego
     self._v_cruise_setpoint = v_cruise_setpoint if not np.isnan(v_cruise_setpoint) else 0.0
