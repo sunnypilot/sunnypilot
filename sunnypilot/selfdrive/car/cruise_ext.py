@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from cereal import car
 from openpilot.common.params import Params
-from openpilot.selfdrive.car.cruise import IMPERIAL_INCREMENT, CRUISE_NEAREST_FUNC, CRUISE_INTERVAL_SIGN
+from openpilot.selfdrive.car.cruise import CRUISE_NEAREST_FUNC, CRUISE_INTERVAL_SIGN
 
 ButtonType = car.CarState.ButtonEvent.Type
 
@@ -30,7 +30,7 @@ class VCruiseHelperSP:
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
 
-  def custom_v_cruise_kph(self, v_cruise_kph: float, button_type: car.CarState.ButtonEvent.Type,
+  def custom_v_cruise_kph(self, v_cruise_kph: float, v_cruise_delta: float, button_type: car.CarState.ButtonEvent.Type,
                           long_press: bool, is_metric: bool) -> float:
     """
     Adjust cruise control speed based on button inputs with customizable increments.
@@ -39,10 +39,8 @@ class VCruiseHelperSP:
     - long_press: Whether the button is being held down
     - is_metric: Check if the system is using metric units
     """
-    # Base increment value based on the unit system
-    v_cruise_delta = 1. if is_metric else IMPERIAL_INCREMENT
 
-    # Apply user-specified multipliers to the base increment if custom enabled
+    # Apply user-specified multipliers to the base increment
     short_increment = self.short_increment if 1 <= self.short_increment <= 10 else 1
     long_increment = self.long_increment if 1 <= self.long_increment <= 10 else 10 if is_metric else 5
 
