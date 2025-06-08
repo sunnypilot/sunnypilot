@@ -8,7 +8,6 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
 
 LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
-
   main_layout = new QStackedLayout(this);
   ListWidget *list = new ListWidget(this, false);
 

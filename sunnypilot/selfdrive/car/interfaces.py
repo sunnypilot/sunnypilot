@@ -67,6 +67,7 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   _initialize_custom_longitudinal_tuning(CI, CP, CP_SP, params)
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
 
+
 def custom_acc_controls(params: Params = None) -> tuple[bool, int, int]:
   if params is None:
     params = Params()
@@ -81,4 +82,3 @@ def custom_acc_controls(params: Params = None) -> tuple[bool, int, int]:
     long_inc = 0
 
   return custom_enabled, short_inc, long_inc
-

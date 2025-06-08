@@ -10,6 +10,7 @@ from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfac
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
+
 class TestAdjustCustomAccIncrements:
   def setup_method(self):
     self.CP = car.CarParams()
@@ -57,7 +58,7 @@ class TestAdjustCustomAccIncrements:
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
 
-        if (long_inc in [5, 10]):
+        if long_inc in [5, 10]:
           remainder = prev % long_inc
           exp = (long_inc - remainder) if btn == ButtonType.accelCruise else -remainder
           if remainder == 0:
@@ -68,8 +69,8 @@ class TestAdjustCustomAccIncrements:
             exp *= -1
 
         assert diff == exp, (
-                f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
-                f"expected {exp}, got {diff} (prev: {prev}, curr: {curr})"
+              f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
+              f"expected {exp}, got {diff} (prev: {prev}, curr: {curr})"
         )
     else:
       short_inc = acc_inc if custom_acc_enabled and 1 <= acc_inc <= 10 else 1
@@ -87,7 +88,7 @@ class TestAdjustCustomAccIncrements:
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
 
-        if (short_inc in [5,10]):
+        if short_inc in [5, 10]:
           remainder = prev % short_inc
           exp = (short_inc - remainder) if btn == ButtonType.accelCruise else -remainder
           if remainder == 0:
@@ -98,6 +99,6 @@ class TestAdjustCustomAccIncrements:
             exp *= -1
 
         assert diff == exp, (
-                f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
-                f"expected {exp}, got {diff}"
+              f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
+              f"expected {exp}, got {diff}"
         )
