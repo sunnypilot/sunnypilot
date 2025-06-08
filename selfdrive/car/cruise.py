@@ -32,7 +32,7 @@ CRUISE_INTERVAL_SIGN = {
 class VCruiseHelper(VCruiseHelperSP):
   def __init__(self, CP):
     VCruiseHelper.__init__(self, CP)
-    VCruiseHelperSP.__init__(self, CP)
+    VCruiseHelperSP.__init__(self)
     self.CP = CP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
