@@ -103,7 +103,7 @@ class VCruiseHelper(VCruiseHelperSP):
       return
 
     if self.custom_acc_enabled:
-      self.v_cruise_kph = self.adjust_cruise_speed(self.v_cruise_kph, button_type, long_press, is_metric)
+      self.v_cruise_kph = self.custom_v_cruise_kph(self.v_cruise_kph, button_type, long_press, is_metric)
     else:
       v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
       if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval

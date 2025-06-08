@@ -30,7 +30,7 @@ class VCruiseHelperSP:
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
 
-  def adjust_cruise_speed(self, v_cruise_kph: float, button_type: car.CarState.ButtonEvent.Type,
+  def custom_v_cruise_kph(self, v_cruise_kph: float, button_type: car.CarState.ButtonEvent.Type,
                           long_press: bool, is_metric: bool) -> float:
     """
     Adjust cruise control speed based on button inputs with customizable increments.
