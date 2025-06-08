@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import numpy as np
 
 from cereal import car
+from openpilot.common.params import Params
 from opendbc.car import structs
 from openpilot.selfdrive.car.cruise import VCruiseHelper, IMPERIAL_INCREMENT, CRUISE_LONG_PRESS, CRUISE_NEAREST_FUNC, CV, \
                                             V_CRUISE_MIN, V_CRUISE_MAX, CRUISE_INTERVAL_SIGN
@@ -19,15 +20,25 @@ class VCruiseHelperSP(VCruiseHelper):
 
   def __init__(self, CP: structs.CarParams) -> None:
     super().__init__(CP)
+    self.params = Params()
+
     self.custom_acc_enabled = False
-    self.short_increment = 0
-    self.long_increment = 0
+    self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
+    self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
+
+  def read_int_param(self, key: str, default: int = 0) -> int:
+    try:
+      return int(self.params.get(key, encoding='utf8'))
+    except (ValueError, TypeError):
+      return default
+
+  def read_custom_set_speed_params(self) -> None:
+    self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
+    self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
+    self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
 
   def update_v_cruise_sp(self, CS, enabled, is_metric, custom_acc: tuple[bool, int, int]) -> None:
     super().update_v_cruise(CS, enabled, is_metric)
-    self.custom_acc_enabled = custom_acc[0]
-    self.short_increment = custom_acc[1]
-    self.long_increment = custom_acc[2]
 
   def _update_v_cruise_non_pcm(self, CS: car.CarState, enabled: bool, is_metric: bool) -> None:
     if not enabled:
