@@ -3,7 +3,7 @@ import numpy as np
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
-from openpilot.sunnypilot.selfdrive.car.vcruise_helper import VCruiseHelperSP
+from openpilot.sunnypilot.selfdrive.car.cruise_ext import VCruiseHelperSP
 
 
 # WARNING: this value was determined based on the model's training distribution,
@@ -32,7 +32,7 @@ CRUISE_INTERVAL_SIGN = {
 class VCruiseHelper(VCruiseHelperSP):
   def __init__(self, CP):
     VCruiseHelper.__init__(self, CP)
-    VCruiseHelperSP.__init__(self)
+    VCruiseHelperSP.__init__(self, CP)
     self.CP = CP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
