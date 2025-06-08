@@ -16,8 +16,8 @@ class VCruiseHelperSP:
     self.params = Params()
 
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-    self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
-    self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
+    self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
+    self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
 
   def read_int_param(self, key: str, default: int = 0) -> int:
     try:
@@ -27,8 +27,8 @@ class VCruiseHelperSP:
 
   def read_custom_set_speed_params(self) -> None:
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
-    self.short_increment = self.read_int_param("CustomAccShortPressIncrement")
-    self.long_increment = self.read_int_param("CustomAccLongPressIncrement")
+    self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
+    self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
 
   def adjust_cruise_speed(self, v_cruise_kph: float, button_type: car.CarState.ButtonEvent.Type,
                           long_press: bool, is_metric: bool) -> float:
