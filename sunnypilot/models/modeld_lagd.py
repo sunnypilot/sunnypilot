@@ -11,6 +11,7 @@ from openpilot.common.swaglog import cloudlog
 class ModeldLagd:
   def __init__(self):
     self.params = Params()
+    self.lag = 0.0
 
   def lagd_main(self, CP, sm, model):
     if self.params.get_bool("LagdToggle"):
@@ -24,3 +25,10 @@ class ModeldLagd:
     result = (steer_actuator_delay + 0.2) + lat_smooth
     cloudlog.debug(f"LAGD USING STEER ACTUATOR: {steer_actuator_delay:.3f} + 0.2 + {lat_smooth:.3f} = {result:.3f}")
     return result
+
+  def lagd_torqued_main(self, CP, msg):
+    if self.params.get_bool("LagdToggle"):
+      self.lag = msg.lateralDelay
+    else:
+      self.lag = CP.steerActuatorDelay + 0.2
+    return self.lag
