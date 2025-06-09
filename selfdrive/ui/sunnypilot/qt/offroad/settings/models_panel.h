@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <QProgressBar>
+
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 class ModelsPanel : public QWidget {
@@ -33,6 +35,8 @@ private:
   void handleCurrentModelLblBtnClicked();
   void handleBundleDownloadProgress();
   void showResetParamsDialog();
+  QProgressBar* createProgressBar(QWidget *parent);
+  QFrame* createModelDetailFrame(QWidget *parent, QString &typeName, QProgressBar *progressBar);
   cereal::ModelManagerSP::Reader model_manager;
   cereal::ModelManagerSP::DownloadStatus download_status{};
   cereal::ModelManagerSP::DownloadStatus prev_download_status{};
@@ -59,6 +63,14 @@ private:
   bool is_onroad = false;
 
   ButtonControlSP *currentModelLblBtn;
+  QProgressBar *supercomboProgressBar;
+  QFrame *supercomboFrame;
+  QProgressBar *navigationProgressBar;
+  QFrame *navigationFrame;
+  QProgressBar *visionProgressBar;
+  QFrame *visionFrame;
+  QProgressBar *policyProgressBar;
+  QFrame *policyFrame;
   Params params;
 
 };
