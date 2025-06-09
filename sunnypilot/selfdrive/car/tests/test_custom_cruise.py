@@ -1,34 +1,31 @@
 import pytest
 import itertools
 
-from openpilot.selfdrive.car.cruise import VCruiseHelper, IMPERIAL_INCREMENT
+from openpilot.selfdrive.car.cruise import IMPERIAL_INCREMENT
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
+from openpilot.selfdrive.car.tests.test_cruise_speed import TestVCruiseHelper
+from parameterized import parameterized_class
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
-
-class TestAdjustCustomAccIncrements:
+@parameterized_class(('pcm_cruise',), [(False,)])
+class TestAdjustCustomAccIncrements(TestVCruiseHelper):
   def setup_method(self):
-    self.CP = car.CarParams()
+    TestVCruiseHelper.setup_method(self)
     self.params = Params()
-    self.v_cruise_helper = VCruiseHelper(self.CP)
-    self.reset_cruise_speed_state()
 
   def reset_cruise_speed_state(self):
-    # Two resets previous cruise speed
-    for _ in range(2):
-      self.v_cruise_helper.update_v_cruise(car.CarState(cruiseState={"available": False}), enabled=False, is_metric=False)
-
-  def enable(self, v_ego, experimental_mode, dynamic_experimental_control):
-    # Simulates user pressing set with a current speed
-    self.v_cruise_helper.initialize_v_cruise(car.CarState(vEgo=v_ego), experimental_mode, dynamic_experimental_control)
+    TestVCruiseHelper.reset_cruise_speed_state(self)
+    self.v_cruise_helper.custom_acc_enabled = False
+    self.v_cruise_helper.short_increment = 1
+    self.v_cruise_helper.long_increment = 5
 
   @pytest.mark.parametrize(
     ("custom_acc_enabled", "long_press", "acc_inc", "metric", "init_norm"),
-    itertools.product([True, False], [True, False], [1, 4, 10, 99], [False, True], [40, 35, 50])
+    itertools.product([True, False], [True, False], [-1, 1, 4, 10, 99], [False, True], [40, 35, 38, 50])
   )
   def test_acc_changes(self, custom_acc_enabled, long_press, acc_inc, metric, init_norm):
 
@@ -58,15 +55,22 @@ class TestAdjustCustomAccIncrements:
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
 
-        if long_inc in [5, 10]:
+        if custom_acc_enabled and long_inc in [5, 10]:
           remainder = prev % long_inc
           exp = (long_inc - remainder) if btn == ButtonType.accelCruise else -remainder
           if remainder == 0:
             exp = long_inc if btn == ButtonType.accelCruise else -long_inc
         else:
-          exp = long_inc if custom_acc_enabled else 10 if metric else 5
-          if btn == ButtonType.decelCruise:
-            exp *= -1
+          if custom_acc_enabled:
+            exp = long_inc
+            if btn == ButtonType.decelCruise:
+              exp *= -1
+          else:
+            long_inc = 5
+            remainder = prev % long_inc
+            exp = (long_inc - remainder) if btn == ButtonType.accelCruise else -remainder
+            if remainder == 0:
+              exp = long_inc if btn == ButtonType.accelCruise else -long_inc
 
         assert diff == exp, (
               f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
@@ -88,7 +92,7 @@ class TestAdjustCustomAccIncrements:
         curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
         diff = curr - prev
 
-        if short_inc in [5, 10]:
+        if custom_acc_enabled and short_inc in [5, 10]:
           remainder = prev % short_inc
           exp = (short_inc - remainder) if btn == ButtonType.accelCruise else -remainder
           if remainder == 0:
