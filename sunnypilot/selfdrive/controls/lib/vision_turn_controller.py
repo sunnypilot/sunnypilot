@@ -8,7 +8,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 
-VisionTurnControllerState = log.LongitudinalPlan.VisionTurnControllerState
+VisionTurnControllerState = custom.LongitudinalPlanSP.VisionTurnSpeedControl.VisionTurnSpeedControlState
 
 TRAJECTORY_SIZE = 33
 
