@@ -51,8 +51,8 @@ class LongitudinalPlannerSP:
     # Vision Turn Speed Control
     visionTurnSpeedControl = longitudinalPlanSP.visionTurnSpeedControl
     visionTurnSpeedControl.state = self.v_tsc.state
-    visionTurnSpeedControl.velocity = self.v_tsc.v_turn
-    visionTurnSpeedControl.currentLateralAccel = self.v_tsc.current_lat_acc
-    visionTurnSpeedControl.maxPredictedLateralAccel = self.v_tsc.max_pred_lat_acc
+    visionTurnSpeedControl.velocity = float(self.v_tsc.v_turn)
+    visionTurnSpeedControl.currentLateralAccel = float(self.v_tsc.current_lat_acc)
+    visionTurnSpeedControl.maxPredictedLateralAccel = float(self.v_tsc.max_pred_lat_acc)
 
     pm.send('longitudinalPlanSP', plan_sp_send)
