@@ -5,8 +5,8 @@ import math
 from cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 
 VisionTurnSpeedControlState = custom.LongitudinalPlanSP.VisionTurnSpeedControl.VisionTurnSpeedControlState
 
@@ -20,7 +20,7 @@ _ABORT_ENTERING_PRED_LAT_ACC_TH = 1.1  # Predicted Lat Acc threshold to abort en
 _TURNING_LAT_ACC_TH = 1.6  # Lat Acc threshold to trigger turning state.
 
 _LEAVING_LAT_ACC_TH = 1.3  # Lat Acc threshold to trigger leaving turn state.
-_FINISH_LAT_ACC_TH = 1.1  # Lat Acc threshold to trigger the end of turn cycle.
+_FINISH_LAT_ACC_TH = 1.1  # Lat Acc threshold to trigger the end of the turn cycle.
 
 _EVAL_STEP = 5.  # mts. Resolution of the curvature evaluation.
 _EVAL_START = 20.  # mts. Distance ahead where to start evaluating vision curvature.
@@ -56,13 +56,13 @@ def _debug(msg):
 
 def eval_curvature(poly, x_vals):
   """
-  This function returns a vector with the curvature based on path defined by `poly`
+  This function returns a vector with the curvature based on a path defined by `poly`
   evaluated on distance vector `x_vals`
   """
 
-  # https://en.wikipedia.org/wiki/Curvature#  Local_expressions
+  # https://en.wikipedia.org/wiki/Curvature# Local_expressions
   def curvature(x):
-    a = abs(2 * poly[1] + 6 * poly[0] * x) / (1 + (3 * poly[0] * x ** 2 + 2 * poly[1] * x + poly[2]) ** 2) ** (1.5)
+    a = abs(2 * poly[1] + 6 * poly[0] * x) / (1 + (3 * poly[0] * x ** 2 + 2 * poly[1] * x + poly[2]) ** 2) ** 1.5
     return a
 
   return np.vectorize(curvature)(x_vals)
@@ -222,7 +222,7 @@ class VisionTurnController:
 
     if self._lat_acc_overshoot_ahead:
       self._v_overshoot = min(math.sqrt(_A_LAT_REG_MAX / max_pred_curvature), self._v_cruise_setpoint)
-      self._v_overshoot_distance = max(lat_acc_overshoot_idxs[0] * _EVAL_STEP + _EVAL_START, _EVAL_STEP)
+      self._v_overshoot_distance = max(float(lat_acc_overshoot_idxs[0] * _EVAL_STEP + _EVAL_START), _EVAL_STEP)
       _debug(f'TVC: High LatAcc. Dist: {self._v_overshoot_distance:.2f}, v: {self._v_overshoot * CV.MS_TO_KPH:.2f}')
 
   def _state_transition(self):
@@ -236,7 +236,7 @@ class VisionTurnController:
       # Do not enter a turn control cycle if the speed is low.
       if self._v_ego <= _MIN_V:
         pass
-      # If substantial lateral acceleration is predicted ahead, then move to Entering turn state.
+      # If significant lateral acceleration is predicted ahead, then move to Entering turn state.
       elif self._max_pred_lat_acc >= _ENTERING_PRED_LAT_ACC_TH:
         self.state = VisionTurnSpeedControlState.entering
     # ENTERING
@@ -279,7 +279,7 @@ class VisionTurnController:
       _debug(f'    Decel: {a_target:.2f}, target v: {self.v_turn * CV.MS_TO_KPH}')
     # TURNING
     elif self.state == VisionTurnSpeedControlState.turning:
-      # When turning, we provide a target acceleration that is comfortable for the lateral accelearation felt.
+      # When turning, we provide a target acceleration that is comfortable for the lateral acceleration felt.
       a_target = np.interp(self._current_lat_acc, _TURNING_ACC_BP, _TURNING_ACC_V)
     # LEAVING
     elif self.state == VisionTurnSpeedControlState.leaving:
