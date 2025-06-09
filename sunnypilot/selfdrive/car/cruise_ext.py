@@ -45,12 +45,13 @@ class VCruiseHelperSP:
     long_increment = self.long_increment if 1 <= self.long_increment <= 10 else 10 if is_metric else 5
 
     # Determine which increment to use based on the press type
-    adjusted_v_cruise_delta = v_cruise_delta * (long_increment if long_press else short_increment)
+    actual_increment = long_increment if long_press else short_increment
+    v_cruise_delta = v_cruise_delta * actual_increment
 
     # Check if we need to align to interval boundaries
-    if adjusted_v_cruise_delta in (5, 10) and v_cruise_kph % adjusted_v_cruise_delta != 0:
-      v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / adjusted_v_cruise_delta) * adjusted_v_cruise_delta
+    if actual_increment in (5, 10) and v_cruise_kph % v_cruise_delta != 0:
+      v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](v_cruise_kph / v_cruise_delta) * v_cruise_delta
     else:
-      v_cruise_kph += adjusted_v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on the button type
+      v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]  # +1 or -1 based on the button type
 
     return v_cruise_kph
