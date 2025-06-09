@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
