@@ -147,6 +147,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"QuickBootToggle", PERSISTENT | BACKUP},
     {"QuietMode", PERSISTENT | BACKUP},
     {"ShowAdvancedControls", PERSISTENT | BACKUP},
+    {"VisionTurnSpeedControl", PERSISTENT | BACKUP},
 
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
