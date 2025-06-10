@@ -56,6 +56,8 @@ void LongitudinalPanel::refresh() {
       customAccIncrement->setDescription(accEnabledDescription);
     }
   } else {
+    params.remove("CustomAccIncrementsEnabled");
+    customAccIncrement->toggleFlipped(false);
     customAccIncrement->setDescription(accNoLongDescription);
     customAccIncrement->showDescription();
   }
