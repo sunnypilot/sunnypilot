@@ -21,6 +21,8 @@ public:
 
 private:
   Params params;
+  bool has_longitudinal_control = false;
+  bool is_pcm_cruise = false;
   QStackedLayout *main_layout = nullptr;
   ScrollViewSP *cruisePanelScroller = nullptr;
   QWidget *cruisePanelScreen = nullptr;
