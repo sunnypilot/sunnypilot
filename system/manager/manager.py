@@ -83,6 +83,7 @@ def manager_init() -> None:
     ("VibeFollowPersonalityEnabled", "0"),
     ("AccelPersonality", "1"),
 
+    ("VisionTurnSpeedControl", "1"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),
