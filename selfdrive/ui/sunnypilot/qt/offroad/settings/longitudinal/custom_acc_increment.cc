@@ -7,15 +7,8 @@
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
 
-const QMap<QString, QString> CustomAccIncrement::customLongValues = {
-  {"1", "1"},
-  {"2", "5"}, // Default
-  {"3", "10"}
-};
-
 CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
     : ExpandableToggleRow(param, title, desc, icon, parent) {
-
   auto *accFrame = new QFrame(this);
   auto *accFrameLayout = new QGridLayout();
   accFrame->setLayout(accFrameLayout);
@@ -33,13 +26,12 @@ CustomAccIncrement::CustomAccIncrement(const QString &param, const QString &titl
   accFrameLayout->addWidget(longPressControl, 0, 1, Qt::AlignRight);
 
   addItem(accFrame);
-
 }
 
 AccIncrementOptionControl::AccIncrementOptionControl(const QString &param, const MinMaxValue &range, const int per_value_change, const QMap<QString, QString> *valMap)
     : OptionControlSP(param, "", "", "", range, per_value_change, true, valMap) {
-    param_name = param.toStdString();
-    refresh();
+  param_name = param.toStdString();
+  refresh();
 }
 
 void AccIncrementOptionControl::refresh() {
@@ -47,7 +39,9 @@ void AccIncrementOptionControl::refresh() {
   std::string label = "<span style='font-size: 45px; font-weight: 450; color: #FFFFFF;'>";
   label += param_name == "CustomAccShortPressIncrement" ? "Short Press" : "Long Press";
   label += " <br><span style='font-size: 40px; font-weight: 450; color:rgb(174, 255, 195);'>" + val;
-  label += param_name == "CustomAccShortPressIncrement" ? (val == "1" ? " (Default)" : "") : (val == "5" ? " (Default)" : "");
+  label += param_name == "CustomAccShortPressIncrement"
+             ? (val == "1" ? " (Default)" : "")
+             : (val == "5" ? " (Default)" : "");
   label += "</span></span>";
   setLabel(QString::fromStdString(label));
 }

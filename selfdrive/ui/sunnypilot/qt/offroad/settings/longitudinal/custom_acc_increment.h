@@ -17,7 +17,12 @@ class CustomAccIncrement : public ExpandableToggleRow {
 
 public:
   CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
-  static const QMap<QString, QString> customLongValues;
+
+  QMap<QString, QString> customLongValues = {
+    {"1", "1"},
+    {"2", "5"}, // Default
+    {"3", "10"}
+  };
 };
 
 
