@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import numpy as np
+
 from cereal import car
 from openpilot.common.params import Params
 
@@ -29,14 +31,14 @@ class VCruiseHelperSP:
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
 
-  def update_v_cruise_delta(self, long_press: bool, v_cruise_delta: float, is_metric: bool) -> tuple[bool, float]:
+  def update_v_cruise_delta(self, long_press: bool, v_cruise_delta: float) -> tuple[bool, float]:
     if not self.custom_acc_enabled:
       v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
       return long_press, v_cruise_delta
 
     # Apply user-specified multipliers to the base increment
-    short_increment = self.short_increment if 1 <= self.short_increment <= 10 else 1
-    long_increment = self.long_increment if 1 <= self.long_increment <= 10 else 10 if is_metric else 5
+    short_increment = np.clip(self.short_increment, 1, 10)
+    long_increment = np.clip(self.long_increment, 1, 10)
 
     actual_increment = long_increment if long_press else short_increment
     round_to_nearest = actual_increment in (5, 10)
