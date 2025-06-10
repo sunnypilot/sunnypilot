@@ -23,46 +23,27 @@ static const QString progressStyleActive = "QProgressBar {"
     "QProgressBar::chunk {"
     "  background-color: #1e79e8;"
     "  border-radius: 10px;"
-    "  width: 10px;"
-    "  margin: 0.5px;"
     "}";
 
-static const QString progressStyleInactive = "QProgressBar {"
-    "  font-size: 40px;"
-    "  font-weight: 200;"
-    "  padding: 1px;"
-    "  border: 3px solid black;"
-    "  border-radius: 10px;"
-    "}"
+static const QString progressStyleInactive = progressStyleActive +
     "QProgressBar::chunk {"
     "  background-color: transparent;"
-    "  border-radius: 10px;"
     "}";
 
-static const QString progressStyleDone = "QProgressBar {"
-    "  font-size: 40px;"
-    "  font-weight: 200;"
-    "  padding: 1px;"
-    "  border: 3px solid black;"
-    "  border-radius: 10px;"
+static const QString progressStyleDone = progressStyleActive +
+    "QProgressBar {"
     "  color: #33ab4c;"
     "}"
     "QProgressBar::chunk {"
     "  background-color: transparent;"
-    "  border-radius: 10px;"
     "}";
 
-static const QString progressStyleError = "QProgressBar {"
-    "  font-size: 40px;"
-    "  font-weight: 200;"
-    "  padding: 1px;"
-    "  border: 3px solid black;"
-    "  border-radius: 10px;"
+static const QString progressStyleError = progressStyleActive +
+    "QProgressBar {"
     "  color: red;"
     "}"
     "QProgressBar::chunk {"
     "  background-color: transparent;"
-    "  border-radius: 10px;"
     "}";
 
 ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
@@ -189,36 +170,26 @@ void ModelsPanel::handleBundleDownloadProgress() {
 
     if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADING) {
       progressBar->setStyleSheet(progressStyleActive);
-      progressBar->style()->unpolish(progressBar);
-      progressBar->style()->polish(progressBar);
-      progressBar->setValue(static_cast<int>(progress.getProgress()));
+      progressBar->setValue(progress.getProgress());
       progressBar->setFormat(QString("  %1% - %2").arg(static_cast<int>(progress.getProgress())).arg(modelName));
+      device()->resetInteractiveTimeout();
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::DOWNLOADED) {
       progressBar->setStyleSheet(progressStyleDone);
-      progressBar->style()->unpolish(progressBar);
-      progressBar->style()->polish(progressBar);
-      progressBar->setValue(100);
       progressBar->setFormat(tr("  %1 - %2").arg(modelName, download_status_changed ? tr("downloaded") : tr("ready")));
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::CACHED) {
       progressBar->setStyleSheet(progressStyleDone);
-      progressBar->style()->unpolish(progressBar);
-      progressBar->style()->polish(progressBar);
-      progressBar->setValue(100);
       progressBar->setFormat(tr("  %1 - %2").arg(modelName, download_status_changed ? tr("from cache") : tr("ready")));
     } else if (progress.getStatus() == cereal::ModelManagerSP::DownloadStatus::FAILED) {
       progressBar->setStyleSheet(progressStyleError);
-      progressBar->style()->unpolish(progressBar);
-      progressBar->style()->polish(progressBar);
-      progressBar->setValue(100);
       progressBar->setFormat(tr("  download failed - %1").arg(modelName));
     } else {
       progressBar->setStyleSheet(progressStyleInactive);
-      progressBar->style()->unpolish(progressBar);
-      progressBar->style()->polish(progressBar);
-      progressBar->setValue(100);
       progressBar->setFormat(tr("  pending - %1").arg(modelName));
     }
-    modelFrame->setVisible(true);
+    // keep navigation hidden for now to avoid confusion
+    if (model.getType() != cereal::ModelManagerSP::Model::Type::NAVIGATION) {
+      modelFrame->setVisible(true);
+    }
   }
   prev_download_status = download_status;
 }
@@ -232,6 +203,17 @@ QString ModelsPanel::GetActiveModelName() {
     return QString::fromStdString(model_manager.getActiveBundle().getDisplayName());
   }
 
+  return DEFAULT_MODEL;
+}
+
+/**
+ * @brief Gets the short name of the currently selected model bundle
+ * @return Display short name of the selected bundle or default model name
+ */
+QString ModelsPanel::GetActiveModelInternalName() {
+  if (model_manager.hasActiveBundle()) {
+    return QString::fromStdString(model_manager.getActiveBundle().getInternalName());
+  }
   return DEFAULT_MODEL;
 }
 
@@ -266,7 +248,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
     bundleNames.append(index_to_bundle[index]);
   }
 
-  currentModelLblBtn->setValue(GetActiveModelName());
+  currentModelLblBtn->setValue(GetActiveModelInternalName());
 
   const QString selectedBundleName = MultiOptionDialog::getSelection(
     tr("Select a Model"), bundleNames, GetActiveModelName(), this);
@@ -307,7 +289,7 @@ void ModelsPanel::updateLabels() {
   updateModelManagerState();
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
-  currentModelLblBtn->setValue(GetActiveModelName());
+  currentModelLblBtn->setValue(GetActiveModelInternalName());
 }
 
 /**

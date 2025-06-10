@@ -19,6 +19,7 @@ public:
 
 private:
   QString GetActiveModelName();
+  QString GetActiveModelInternalName();
   void updateModelManagerState();
 
   bool isDownloading() const {
