@@ -12,7 +12,7 @@ VisionTurnSpeedControlState = custom.LongitudinalPlanSP.VisionTurnSpeedControl.V
 
 TRAJECTORY_SIZE = 33
 
-_MIN_V = 5.6  # Do not operate under 20 km/h
+_MIN_V = 20 * CV.KPH_TO_MS  # Do not operate under 20 km/h
 
 _ENTERING_PRED_LAT_ACC_TH = 1.3  # Predicted Lat Acc threshold to trigger entering turn state.
 _ABORT_ENTERING_PRED_LAT_ACC_TH = 1.1  # Predicted Lat Acc threshold to abort entering state if speed drops.
@@ -24,8 +24,8 @@ _FINISH_LAT_ACC_TH = 1.1  # Lat Acc threshold to trigger the end of the turn cyc
 
 _EVAL_STEP = 5.  # mts. Resolution of the curvature evaluation.
 _EVAL_START = 20.  # mts. Distance ahead where to start evaluating vision curvature.
-_EVAL_LENGHT = 150.  # mts. Distance ahead where to stop evaluating vision curvature.
-_EVAL_RANGE = np.arange(_EVAL_START, _EVAL_LENGHT, _EVAL_STEP)
+_EVAL_LENGTH = 150.  # mts. Distance ahead where to stop evaluating vision curvature.
+_EVAL_RANGE = np.arange(_EVAL_START, _EVAL_LENGTH, _EVAL_STEP)
 
 _A_LAT_REG_MAX = 2.  # Maximum lateral acceleration
 
@@ -41,7 +41,7 @@ _ENTERING_SMOOTH_DECEL_BP = [1.3, 3.]  # absolute value of lat acc ahead
 _TURNING_ACC_V = [0.5, 0., -0.4]  # acc value
 _TURNING_ACC_BP = [1.5, 2.3, 3.]  # absolute value of current lat acc
 
-_LEAVING_ACC = 0.5  # Confortble acceleration to regain speed while leaving a turn.
+_LEAVING_ACC = 0.5  # Conformable acceleration to regain speed while leaving a turn.
 
 _MIN_LANE_PROB = 0.6  # Minimum lanes probability to allow curvature prediction based on lanes.
 
