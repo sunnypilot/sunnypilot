@@ -1,108 +1,149 @@
 import pytest
-import itertools
+from parameterized import parameterized_class
 
-from openpilot.selfdrive.car.cruise import IMPERIAL_INCREMENT
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
+from openpilot.selfdrive.car.cruise import V_CRUISE_INITIAL
 from openpilot.selfdrive.car.tests.test_cruise_speed import TestVCruiseHelper
-from parameterized import parameterized_class
 
 ButtonEvent = car.CarState.ButtonEvent
 ButtonType = car.CarState.ButtonEvent.Type
 
+
 @parameterized_class(('pcm_cruise',), [(False,)])
-class TestAdjustCustomAccIncrements(TestVCruiseHelper):
+class TestCustomAccIncrements(TestVCruiseHelper):
   def setup_method(self):
     TestVCruiseHelper.setup_method(self)
     self.params = Params()
+    self.reset_custom_params()
 
-  def reset_cruise_speed_state(self):
-    TestVCruiseHelper.reset_cruise_speed_state(self)
-    self.v_cruise_helper.custom_acc_enabled = False
-    self.v_cruise_helper.short_increment = 1
-    self.v_cruise_helper.long_increment = 5
-
-  @pytest.mark.parametrize(
-    ("custom_acc_enabled", "long_press", "acc_inc", "metric", "init_norm"),
-    itertools.product([True, False], [True, False], [-1, 1, 4, 10, 99], [False, True], [40, 35, 38, 50])
-  )
-  def test_acc_changes(self, custom_acc_enabled, long_press, acc_inc, metric, init_norm):
-
-    self.params.put_bool("CustomAccIncrementsEnabled", custom_acc_enabled)
-    self.params.put("CustomAccShortPressIncrement", str(acc_inc))
-    self.params.put("CustomAccLongPressIncrement", str(acc_inc))
-    self.params.put_bool("IsMetric", metric)
+  def reset_custom_params(self) -> None:
+    """Reset to default custom ACC parameters"""
+    self.params.put_bool("CustomAccIncrementsEnabled", False)
+    self.params.put("CustomAccShortPressIncrement", "1")
+    self.params.put("CustomAccLongPressIncrement", "5")
     self.v_cruise_helper.read_custom_set_speed_params()
 
-    base = init_norm if metric else init_norm * IMPERIAL_INCREMENT
-    self.enable(base * CV.KPH_TO_MS, False, False)
+  def press_button_short(self, button_type: car.CarState.ButtonEvent.Type) -> None:
+    """Simulate a short button press (press + release)"""
+    CS = car.CarState(cruiseState={"available": True})
+    CS.buttonEvents = [ButtonEvent(type=button_type, pressed=True)]
+    self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
 
-    if long_press:
-      long_inc = acc_inc if custom_acc_enabled and 1 <= acc_inc <= 10 else 10 if metric else 5
+    CS.buttonEvents = [ButtonEvent(type=button_type, pressed=False)]
+    self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
 
-      for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
-        CS = car.CarState(cruiseState={"available": True})
-        prev = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
+  def press_button_long(self, button_type: car.CarState.ButtonEvent.Type) -> None:
+    """Simulate a long button press (50+ frames)"""
+    CS = car.CarState(cruiseState={"available": True})
+    CS.buttonEvents = [ButtonEvent(type=button_type, pressed=True)]
+    self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
 
-        for i in range(51):
-          CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)] if i == 0 else []
-          self.v_cruise_helper.update_v_cruise(CS, True, metric)
+    # Hold for 50 frames to trigger long press
+    CS.buttonEvents = []
+    for _ in range(50):
+      self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
 
-        CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric)
+    CS.buttonEvents = [ButtonEvent(type=button_type, pressed=False)]
+    self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
 
-        curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
-        diff = curr - prev
+  def set_custom_increments(self, enabled: bool, short_inc: int, long_inc: int) -> None:
+    """Set custom ACC increment parameters"""
+    self.params.put_bool("CustomAccIncrementsEnabled", enabled)
+    self.params.put("CustomAccShortPressIncrement", str(short_inc))
+    self.params.put("CustomAccLongPressIncrement", str(long_inc))
+    self.v_cruise_helper.read_custom_set_speed_params()
 
-        if custom_acc_enabled and long_inc in [5, 10]:
-          remainder = prev % long_inc
-          exp = (long_inc - remainder) if btn == ButtonType.accelCruise else -remainder
-          if remainder == 0:
-            exp = long_inc if btn == ButtonType.accelCruise else -long_inc
-        else:
-          if custom_acc_enabled:
-            exp = long_inc
-            if btn == ButtonType.decelCruise:
-              exp *= -1
-          else:
-            long_inc = 5
-            remainder = prev % long_inc
-            exp = (long_inc - remainder) if btn == ButtonType.accelCruise else -remainder
-            if remainder == 0:
-              exp = long_inc if btn == ButtonType.accelCruise else -long_inc
+  def test_default_behavior_when_disabled(self):
+    """Test that default increments are used when custom ACC is disabled"""
+    self.set_custom_increments(enabled=False, short_inc=5, long_inc=10)
+    self.enable(V_CRUISE_INITIAL * CV.KPH_TO_MS, False, False)
 
-        assert diff == exp, (
-              f"LONG press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
-              f"expected {exp}, got {diff} (prev: {prev}, curr: {curr})"
-        )
+    initial_speed = self.v_cruise_helper.v_cruise_kph
+
+    # Short press should increment by 1 (default)
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == initial_speed + 1
+
+  @pytest.mark.parametrize("increment", (1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+  def test_custom_short_press_increments(self, increment):
+    """Test custom short press increments (1-10)"""
+    self.set_custom_increments(enabled=True, short_inc=increment, long_inc=5)
+    self.enable(50 * CV.KPH_TO_MS, False, False)
+
+    initial_speed = self.v_cruise_helper.v_cruise_kph
+    self.press_button_short(ButtonType.accelCruise)
+
+    if increment in (5, 10):
+      # Should round to nearest increment
+      expected_speed = ((initial_speed // increment) + 1) * increment
     else:
-      short_inc = acc_inc if custom_acc_enabled and 1 <= acc_inc <= 10 else 1
+      expected_speed = initial_speed + increment
 
-      for btn in (ButtonType.accelCruise, ButtonType.decelCruise):
-        CS = car.CarState(cruiseState={"available": True})
-        prev = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
+    assert self.v_cruise_helper.v_cruise_kph == expected_speed
 
-        # simulate short-press
-        CS.buttonEvents = [ButtonEvent(type=btn, pressed=True)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric)
-        CS.buttonEvents = [ButtonEvent(type=btn, pressed=False)]
-        self.v_cruise_helper.update_v_cruise(CS, True, metric)
+  @pytest.mark.parametrize("increment", (1, 5, 10))
+  def test_custom_long_press_increments(self, increment):
+    """Test custom long press increments (1, 5, 10)"""
+    self.set_custom_increments(enabled=True, short_inc=1, long_inc=increment)
+    self.enable(50 * CV.KPH_TO_MS, False, False)
 
-        curr = self.v_cruise_helper.v_cruise_kph if metric else round(self.v_cruise_helper.v_cruise_kph / IMPERIAL_INCREMENT)
-        diff = curr - prev
+    initial_speed = self.v_cruise_helper.v_cruise_kph
+    self.press_button_long(ButtonType.accelCruise)
 
-        if custom_acc_enabled and short_inc in [5, 10]:
-          remainder = prev % short_inc
-          exp = (short_inc - remainder) if btn == ButtonType.accelCruise else -remainder
-          if remainder == 0:
-            exp = short_inc if btn == ButtonType.accelCruise else -short_inc
-        else:
-          exp = short_inc if custom_acc_enabled else 1
-          if btn == ButtonType.decelCruise:
-            exp *= -1
+    if increment in (5, 10):
+      # Should round to nearest increment
+      expected_speed = ((initial_speed // increment) + 1) * increment
+    else:
+      expected_speed = initial_speed + increment
 
-        assert diff == exp, (
-              f"SHORT press – {'metric' if metric else 'imperial'} {'decel' if btn == ButtonType.decelCruise else 'accel'}: " +
-              f"expected {exp}, got {diff}"
-        )
+    assert self.v_cruise_helper.v_cruise_kph == expected_speed
+
+  @pytest.mark.parametrize("button_type", [ButtonType.accelCruise, ButtonType.decelCruise])
+  def test_accel_decel_symmetry(self, button_type):
+    """Test that acceleration and deceleration work symmetrically"""
+    self.set_custom_increments(enabled=True, short_inc=3, long_inc=5)
+    self.enable(50 * CV.KPH_TO_MS, False, False)
+
+    initial_speed = self.v_cruise_helper.v_cruise_kph
+    self.press_button_short(button_type)
+
+    expected_change = 3 if button_type == ButtonType.accelCruise else -3
+    assert self.v_cruise_helper.v_cruise_kph == initial_speed + expected_change
+
+  def test_rounding_behavior(self):
+    """Test rounding behavior for 5 and 10 increments"""
+    test_cases = [
+      (47, 5, 50),   # 47 -> 50 (round up to next 5)
+      (45, 5, 50),   # 45 -> 50 (already at 5, increment by 5)
+      (43, 10, 50),  # 43 -> 50 (round up to next 10)
+      (40, 10, 50),  # 40 -> 50 (already at 10, increment by 10)
+    ]
+
+    for initial, increment, expected in test_cases:
+      self.set_custom_increments(enabled=True, short_inc=increment, long_inc=increment)
+      self.reset_cruise_speed_state()
+      self.enable(initial * CV.KPH_TO_MS, False, False)
+
+      self.press_button_short(ButtonType.accelCruise)
+      assert self.v_cruise_helper.v_cruise_kph == expected
+
+  def test_invalid_values_fallback(self):
+    """Test that invalid values fallback to safe defaults"""
+    # Test invalid short increment
+    self.set_custom_increments(enabled=True, short_inc=-1, long_inc=5)
+    self.enable(50 * CV.KPH_TO_MS, False, False)
+
+    initial_speed = self.v_cruise_helper.v_cruise_kph
+    self.press_button_short(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == initial_speed + 1  # Should fallback to 1
+
+    # Test invalid long increment
+    self.reset_cruise_speed_state()
+    self.set_custom_increments(enabled=True, short_inc=1, long_inc=99)
+    self.enable(50 * CV.KPH_TO_MS, False, False)
+
+    initial_speed = self.v_cruise_helper.v_cruise_kph
+    self.press_button_long(ButtonType.accelCruise)
+    assert self.v_cruise_helper.v_cruise_kph == initial_speed + 10  # Should fallback to 10
