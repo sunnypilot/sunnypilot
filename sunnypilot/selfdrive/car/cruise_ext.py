@@ -29,7 +29,7 @@ class VCruiseHelperSP:
     self.short_increment = self.read_int_param("CustomAccShortPressIncrement", 1)
     self.long_increment = self.read_int_param("CustomAccLongPressIncrement", 5)
 
-  def update_v_cruise_delta(self, long_press, v_cruise_delta, is_metric):
+  def update_v_cruise_delta(self, long_press: bool, v_cruise_delta: float, is_metric: bool) -> tuple[bool, float]:
     if not self.custom_acc_enabled:
       v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
       return long_press, v_cruise_delta
