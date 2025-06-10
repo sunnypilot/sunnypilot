@@ -80,8 +80,12 @@ void UIState::updateStatus() {
       status = STATUS_OVERRIDE;
     } else {
       if (mads.getAvailable()) {
-        if (mads.getEnabled()) {
-          status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_LAT_ONLY;
+        if (mads.getEnabled() && ss.getEnabled()) {
+          status = STATUS_ENGAGED;
+        } else if (mads.getEnabled()) {
+          status = STATUS_LAT_ONLY;
+        } else if (ss.getEnabled()) {
+          status = STATUS_LONG_ONLY;
         } else {
           status = STATUS_DISENGAGED;
         }
@@ -89,6 +93,11 @@ void UIState::updateStatus() {
         status = ss.getEnabled() ? STATUS_ENGAGED : STATUS_DISENGAGED;
       }
     }
+  }
+
+  if (engaged() != engaged_prev) {
+    engaged_prev = engaged();
+    emit engagedChanged(engaged());
   }
 
   // Handle onroad/offroad transition
@@ -162,6 +171,8 @@ void Device::resetInteractiveTimeout(int timeout) {
 }
 
 void Device::updateBrightness(const UIState &s) {
+  int brightness;
+  int brightness_override = QString::fromStdString(Params().get("Brightness")).toInt();
   float clipped_brightness = offroad_brightness;
   if (s.scene.started && s.scene.light_sensor >= 0) {
     clipped_brightness = s.scene.light_sensor;
@@ -173,11 +184,19 @@ void Device::updateBrightness(const UIState &s) {
       clipped_brightness = std::pow((clipped_brightness + 16.0) / 116.0, 3.0);
     }
 
-    // Scale back to 10% to 100%
-    clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);
+    if (brightness_override == 1) {
+      clipped_brightness = std::clamp(100.0f * clipped_brightness, 1.0f, 100.0f);  // Scale back to 1% to 100%
+    } else if (brightness_override == 0) {
+      clipped_brightness = std::clamp(100.0f * clipped_brightness, 10.0f, 100.0f);  // Scale back to 10% to 100%
+    }
   }
 
-  int brightness = brightness_filter.update(clipped_brightness);
+  if (brightness_override == 0 || brightness_override == 1) {
+    brightness = brightness_filter.update(clipped_brightness);
+  } else {
+    brightness = brightness_override;
+  }
+
   if (!awake) {
     brightness = 0;
   }

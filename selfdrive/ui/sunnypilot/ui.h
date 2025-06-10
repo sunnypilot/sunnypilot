@@ -20,6 +20,11 @@ class UIStateSP : public UIState {
 public:
   UIStateSP(QObject *parent = 0);
   void updateStatus() override;
+  inline bool engaged() const override {
+    return scene.started && (
+      (*sm)["selfdriveState"].getSelfdriveState().getEnabled() || (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads().getEnabled()
+    );
+  }
   void setSunnylinkRoles(const std::vector<RoleModel> &roles);
   void setSunnylinkDeviceUsers(const std::vector<UserModel> &users);
 
@@ -79,6 +84,10 @@ class DeviceSP : public Device {
 
 public:
   DeviceSP(QObject *parent = 0);
+
+private:
+  Params params;
+  void handleDisplayPowerChanged(bool on);
 };
 
 DeviceSP *deviceSP();

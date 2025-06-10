@@ -247,13 +247,10 @@ public:
     if (inline_layout) {
       button_param_layout->setMargin(0);
       button_param_layout->setSpacing(0);
+      spacingItem = nullptr;
       if (!title.isEmpty()) {
         main_layout->removeWidget(title_label);
         hlayout->addWidget(title_label, 1);
-      }
-      if (spacingItem != nullptr && main_layout->indexOf(spacingItem) != -1) {
-        main_layout->removeItem(spacingItem);
-        spacingItem = nullptr;
       }
     }
 
