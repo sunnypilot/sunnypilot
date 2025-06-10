@@ -51,6 +51,13 @@ protected:
   // Road information
   QString road_name;
 
+  // Vision Turn Speed Control (VTSC)
+  int vtsc_state = 0;
+  float vtsc_velocity = 0.0;
+  float vtsc_current_lateral_accel = 0.0;
+  float vtsc_max_predicted_lateral_accel = 0.0;
+  bool show_vtsc = false;
+
   float speed = 0;
   float set_speed = 0;
   bool is_cruise_set = false;
