@@ -72,6 +72,7 @@ def manager_init() -> None:
     ("ToyotaAutoHold", "0"),
     ("ToyotaEnhancedBsm", "0"),
     ("ToyotaTSS2Long", "0"),
+    ("VisionTurnSpeedControl", "1"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),
