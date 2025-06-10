@@ -49,8 +49,10 @@ void LongitudinalPanel::refresh() {
     has_longitudinal_control = false;
     is_pcm_cruise = false;
   }
+
   QString accEnabledDescription = tr("Enable custom Short & Long press increments for cruise speed increase/decrease.");
   QString accNoLongDescription = tr("This feature can only be used with openpilot longitudinal control enabled.");
+
   if (has_longitudinal_control) {
     if (!is_pcm_cruise) {
       customAccIncrement->setDescription(accEnabledDescription);
