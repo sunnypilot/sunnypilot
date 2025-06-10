@@ -101,14 +101,11 @@ class VCruiseHelper(VCruiseHelperSP):
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    if self.custom_acc_enabled:
-      self.v_cruise_kph = self.custom_v_cruise_kph(self.v_cruise_kph, v_cruise_delta, button_type, long_press, is_metric)
+    long_press, v_cruise_delta = VCruiseHelperSP.update_v_cruise_delta(self, long_press, v_cruise_delta, is_metric)
+    if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
+      self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
     else:
-      v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
-      if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
-        self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
-      else:
-        self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+      self.v_cruise_kph += v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
 
     # If set is pressed while overriding, clip cruise speed to minimum of vEgo
     if CS.gasPressed and button_type in (ButtonType.decelCruise, ButtonType.setCruise):
