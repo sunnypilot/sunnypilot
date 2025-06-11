@@ -18,12 +18,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   cruisePanelScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(cruisePanelScroller);
 
-  customAccIncrement = new CustomAccIncrement(
-    "CustomAccIncrementsEnabled",
-    tr("Custom ACC Speed Increments"),
-    "",
-    "",
-    this);
+  customAccIncrement = new CustomAccIncrement("CustomAccIncrementsEnabled", tr("Custom ACC Speed Increments"), "", "", this);
   list->addItem(customAccIncrement);
 
   main_layout->addWidget(cruisePanelScreen);
