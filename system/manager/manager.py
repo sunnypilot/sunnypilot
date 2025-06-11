@@ -67,6 +67,7 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
+    ("VisionTurnSpeedControl", "1"),
   ]
 
   # device boot mode
