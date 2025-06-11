@@ -18,13 +18,13 @@ class CustomAccIncrement : public ExpandableToggleRow {
 public:
   CustomAccIncrement(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent = nullptr);
 
+private:
   QMap<QString, QString> customLongValues = {
     {"1", "1"},
     {"2", "5"}, // Default
     {"3", "10"}
   };
 };
-
 
 class AccIncrementOptionControl : public OptionControlSP {
   Q_OBJECT
