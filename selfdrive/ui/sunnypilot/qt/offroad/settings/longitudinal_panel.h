@@ -17,12 +17,14 @@ class LongitudinalPanel : public QWidget {
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
-  void refresh();
+  void refresh(bool _offroad);
 
 private:
   Params params;
   bool has_longitudinal_control = false;
   bool is_pcm_cruise = false;
+  bool offroad = false;
+
   QStackedLayout *main_layout = nullptr;
   ScrollViewSP *cruisePanelScroller = nullptr;
   QWidget *cruisePanelScreen = nullptr;
