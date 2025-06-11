@@ -22,6 +22,8 @@ protected:
   void drawCurrentSpeed(QPainter &p, const QRect &surface_rect);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void drawSpeedLimitSigns(QPainter &p, const QRect &rect);
+  void drawVisionTurnControl(QPainter &p, const QRect &surface_rect);
+  QColor interpColor(float x, const std::vector<float> &x_vals, const std::vector<QColor> &colors);
 
   // Additional drawing methods from implementation
   void drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect);

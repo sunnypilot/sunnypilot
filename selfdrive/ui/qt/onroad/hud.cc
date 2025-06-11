@@ -7,11 +7,16 @@
 
 constexpr int SET_SPEED_NA = 255;
 
-static QColor interpColor(float x, const std::vector<float> &x_vals, const std::vector<QColor> &colors) {
+QColor HudRenderer::interpColor(float x, const std::vector<float> &x_vals, const std::vector<QColor> &colors) {
   assert(x_vals.size() == colors.size() && x_vals.size() >= 2);
+
+  if (x < x_vals[0]) return colors[0];
+  if (x > x_vals.back()) return colors.back();
+
   for (size_t i = 1; i < x_vals.size(); ++i) {
     if (x < x_vals[i]) {
       float t = (x - x_vals[i - 1]) / (x_vals[i] - x_vals[i - 1]);
+      t = std::max(0.0f, std::min(1.0f, t));
       QColor c1 = colors[i - 1];
       QColor c2 = colors[i];
       return QColor::fromRgbF(
@@ -159,13 +164,14 @@ void HudRenderer::drawSetSpeed(QPainter &p, const QRect &surface_rect) {
       max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
 
       // Speed limit color interpolation
-      float comparison_speed = slc_speed_limit;
-      if (comparison_speed > 0 && set_speed > comparison_speed) {
-        auto interp_color = [=](QColor c1, QColor c2, QColor c3) {
-          return interpColor(set_speed, {comparison_speed + 5, comparison_speed + 15, comparison_speed + 25}, {c1, c2, c3});
-        };
-        max_color = interp_color(max_color, QColor(0xff, 0xe4, 0xbf), QColor(0xff, 0xbf, 0xbf));
-        set_speed_color = interp_color(set_speed_color, QColor(0xff, 0x95, 0x00), QColor(0xff, 0x00, 0x00));
+      if (slc_speed_limit > 0) {
+      float comparison_speed = slc_speed_limit + slc_speed_offset;
+        max_color = interpColor(set_speed,
+          {comparison_speed, comparison_speed + 5, comparison_speed + 10},
+          {max_color, QColor(0xff, 0xe4, 0xbf), QColor(0xff, 0xbf, 0xbf)});
+        set_speed_color = interpColor(set_speed,
+          {comparison_speed, comparison_speed + 5, comparison_speed + 10},
+          {set_speed_color, QColor(0xff, 0x95, 0x00), QColor(0xff, 0x00, 0x00)});
       }
     }
   }
