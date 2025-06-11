@@ -255,7 +255,7 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
       p.setBrush(QColor(0, 0, 0, 255));
       p.drawRoundedRect(offset_box_rect, 12, 12);
 
-      p.setFont(InterFont(30, QFont::Bold));
+      p.setFont(InterFont(40, QFont::Bold));
       p.setPen(QColor(255, 255, 255, 255));
       p.drawText(offset_box_rect, Qt::AlignCenter, slcSubText);
     }
@@ -285,7 +285,7 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
     p.drawEllipse(red_ring);
 
     // Draw white center circle for text
-    QRect center_circle = red_ring.adjusted(8, 8, -8, -8);
+    QRect center_circle = red_ring.adjusted(30, 30, -30, -30);
     p.setBrush(QColor(255, 255, 255, pulse_alpha));
     p.drawEllipse(center_circle);
 
@@ -315,7 +315,7 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
       p.setBrush(QColor(0, 0, 0, 255));
       p.drawRoundedRect(offset_circle_rect, offset_circle_size/2, offset_circle_size/2);
 
-      p.setFont(InterFont(30, QFont::Bold));
+      p.setFont(InterFont(40, QFont::Bold));
       p.setPen(QColor(255, 255, 255, 255));
       p.drawText(offset_circle_rect, Qt::AlignCenter, slcSubText);
     }
@@ -349,8 +349,8 @@ void HudRenderer::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect)
   const int sign_y = 45;
   const int sign_height = 204;
 
-  const int ahead_width = 140;
-  const int ahead_height = 120;
+  const int ahead_width = 170;
+  const int ahead_height = 160;
   // Center the upcoming sign under the speed limit sign with small gap
   const int ahead_x = sign_x + (sign_width - ahead_width) / 2;
   const int ahead_y = sign_y + sign_height + 10; // 10px gap below speed limit sign
@@ -361,19 +361,19 @@ void HudRenderer::drawUpcomingSpeedLimit(QPainter &p, const QRect &surface_rect)
   p.drawRoundedRect(ahead_rect, 16, 16);
 
   // "AHEAD" label
-  p.setFont(InterFont(24, QFont::DemiBold));
+  p.setFont(InterFont(40, QFont::DemiBold));
   p.setPen(QColor(200, 200, 200, 255));
-  p.drawText(ahead_rect.adjusted(0, 8, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("AHEAD"));
+  p.drawText(ahead_rect.adjusted(0, 12, 0, 0), Qt::AlignTop | Qt::AlignHCenter, tr("AHEAD"));
 
   // Speed value
-  p.setFont(InterFont(48, QFont::Bold));
+  p.setFont(InterFont(70, QFont::Bold));
   p.setPen(QColor(255, 255, 255, 255));
-  p.drawText(ahead_rect.adjusted(0, 35, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedStr);
+  p.drawText(ahead_rect.adjusted(0, 42, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedStr);
 
   // Distance
-  p.setFont(InterFont(20, QFont::Normal));
+  p.setFont(InterFont(40, QFont::Normal));
   p.setPen(QColor(180, 180, 180, 255));
-  p.drawText(ahead_rect.adjusted(0, 85, 0, 0), Qt::AlignTop | Qt::AlignHCenter, distanceStr);
+  p.drawText(ahead_rect.adjusted(0, 110, 0, 0), Qt::AlignTop | Qt::AlignHCenter, distanceStr);
 }
 
 void HudRenderer::drawSLCStateIndicator(QPainter &p, const QRect &surface_rect) {
