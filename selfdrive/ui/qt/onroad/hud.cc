@@ -46,9 +46,6 @@ void HudRenderer::updateState(const UIState &s) {
   const auto slc = lp_sp.getSlc();
   const auto live_map_data = sm["liveMapDataSP"].getLiveMapDataSP();
 
-  // Speed limit from SLC
-  nav_speed_limit = slc.getSpeedLimit();
-
   // SLC state variables
   slc_speed_limit = slc.getSpeedLimit() * (is_metric ? MS_TO_KPH : MS_TO_MPH);
   slc_speed_offset = slc.getSpeedLimitOffset() * (is_metric ? MS_TO_KPH : MS_TO_MPH);
@@ -83,7 +80,7 @@ void HudRenderer::updateState(const UIState &s) {
   speed = std::max<float>(0.0f, v_ego * (is_metric ? MS_TO_KPH : MS_TO_MPH));
 
   // Enhanced over speed limit detection with multiple thresholds
-  float current_limit = (show_slc && slc_speed_limit > 0) ? slc_speed_limit : nav_speed_limit;
+  float current_limit = slc_speed_limit;
   if (current_limit > 0) {
     float effective_limit = current_limit + slc_speed_offset;
     speed_violation_level = 0; // No violation
@@ -114,7 +111,7 @@ void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
   }
 
   // Always try to draw speed limit signs if we have any speed limit data
-  if ((show_slc && slc_speed_limit > 0) || nav_speed_limit > 0) {
+  if (show_slc && slc_speed_limit > 0) {
     drawSpeedLimitSigns(p, surface_rect);
   }
 
@@ -162,7 +159,7 @@ void HudRenderer::drawSetSpeed(QPainter &p, const QRect &surface_rect) {
       max_color = QColor(0x80, 0xd8, 0xa6, 0xff);
 
       // Speed limit color interpolation
-      float comparison_speed = (show_slc && slc_speed_limit > 0) ? slc_speed_limit : nav_speed_limit;
+      float comparison_speed = slc_speed_limit;
       if (comparison_speed > 0 && set_speed > comparison_speed) {
         auto interp_color = [=](QColor c1, QColor c2, QColor c3) {
           return interpColor(set_speed, {comparison_speed + 5, comparison_speed + 15, comparison_speed + 25}, {c1, c2, c3});
@@ -187,7 +184,7 @@ void HudRenderer::drawSetSpeed(QPainter &p, const QRect &surface_rect) {
 
 void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
   // Determine which speed limit to display
-  float display_speed = (show_slc && slc_speed_limit > 0) ? slc_speed_limit : nav_speed_limit;
+  float display_speed = slc_speed_limit;
 
   if (display_speed <= 0) return;
 
@@ -219,7 +216,7 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
     // Draw inner rounded rectangle with colored border
     QRect inner_rect = sign_rect.adjusted(10, 10, -10, -10);
     QColor border_color = QColor(0, 0, 0, 255);
-    if (speed_violation_level == 1) border_color = QColor(255, 165, 0, 255); // Orange or yello?
+    if (speed_violation_level == 1) border_color = QColor(255, 165, 0, 255); // Orange or yellow?
     else if (speed_violation_level >= 2) border_color = QColor(255, 0, 0, 255); // Red
 
     p.setPen(QPen(border_color, 4));

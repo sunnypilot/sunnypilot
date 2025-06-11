@@ -28,9 +28,6 @@ protected:
   void drawSLCStateIndicator(QPainter &p, const QRect &surface_rect);
   void drawRoadName(QPainter &p, const QRect &surface_rect);
 
-  // Navigation speed limits
-  float nav_speed_limit = 0.0;
-
   // Display flags
   bool show_slc = false;
   bool over_speed_limit = false;
