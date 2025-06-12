@@ -49,6 +49,10 @@ lateral_panel_qt_src = [
   "sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.cc",
 ]
 
+longitudinal_panel_qt_src = [
+  "sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.cc",
+]
+
 network_src = [
   "sunnypilot/qt/network/sunnylink/sunnylink_client.cc",
   "sunnypilot/qt/network/sunnylink/services/base_device_service.cc",
@@ -83,7 +87,7 @@ brand_settings_qt_src = [
 
 
 sp_widgets_src = widgets_src + network_src
-sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + osm_panel_qt_src
+sp_qt_src = qt_src + lateral_panel_qt_src + vehicle_panel_qt_src + brand_settings_qt_src + longitudinal_panel_qt_src + osm_panel_qt_src
 sp_qt_util = qt_util
 
 Export('sp_widgets_src', 'sp_qt_src', "sp_qt_util")
