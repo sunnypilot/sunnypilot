@@ -7,7 +7,8 @@ from opendbc.car.toyota.values import Ecu, CAR, DBC, ToyotaFlags, CarControllerP
                                                   ToyotaSafetyFlags
 from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
-from opendbc.sunnypilot.car.toyota.values import ToyotaSafetyFlagsSP
+from opendbc.sunnypilot.car.toyota.values import ToyotaSafetyFlagsSP, DynamicSteeringParams
+from openpilot.common.params import Params # Added import
 
 SteerControlType = structs.CarParams.SteerControlType
 
@@ -60,11 +61,25 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.TOYOTA_PRIUS:
       stop_and_go = True
-      # Only give steer angle deadzone to for bad angle sensor prius
+      # Ensure torque tune is configured.
+      # This call will initialize ret.lateralTuning.torque with default values.
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+      # Apply desired PID gains for all Prius, overriding defaults
+      ret.lateralTuning.torque.kp = 0.72
+      ret.lateralTuning.torque.ki = 0.06
+      # ret.lateralTuning.torque.kf remains as set by configure_torque_tune (default 0.00005 or car specific)
+
+      # Apply desired steerActuatorDelay for all Prius
+      ret.steerActuatorDelay = 0.20
+
+      # Handle specifics for the "bad angle sensor prius"
+      # This case is identified by a specific EPS firmware version and requires a steering angle deadzone.
       for fw in car_fw:
         if fw.ecu == "eps" and not fw.fwVersion == b'8965B47060\x00\x00\x00\x00\x00\x00':
-          ret.steerActuatorDelay = 0.25
-          CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning, steering_angle_deadzone_deg=0.2)
+          ret.lateralTuning.steeringAngleDeadzoneDeg = 0.2
+          # The main PID gains (kp, ki) and steerActuatorDelay are already set above for all Priuses.
+          break # Exit loop once the specific EPS firmware is identified and handled.
 
     elif candidate in (CAR.LEXUS_RX, CAR.LEXUS_RX_TSS2):
       stop_and_go = True
@@ -112,12 +127,17 @@ class CarInterface(CarInterfaceBase):
     ret.radarUnavailable = Bus.radar not in DBC[candidate] or candidate in (NO_DSU_CAR - TSS2_CAR)
 
     # since we don't yet parse radar on TSS2/TSS-P radar-based ACC cars, gate longitudinal behind experimental toggle
+    # Determine default alpha longitudinal availability based on existing logic
+    existing_alpha_logic_for_radar_or_no_dsu_cars = False
     if candidate in (RADAR_ACC_CAR | NO_DSU_CAR):
-      ret.alphaLongitudinalAvailable = candidate in RADAR_ACC_CAR
+      existing_alpha_logic_for_radar_or_no_dsu_cars = candidate in RADAR_ACC_CAR # True if it's a RADAR_ACC_CAR in this group
 
-      # Disabling radar is only supported on TSS2 radar-ACC cars
+      # Disabling radar is only supported on TSS2 radar-ACC cars (original position)
       if alpha_long and candidate in RADAR_ACC_CAR:
         ret.flags |= ToyotaFlags.DISABLE_RADAR.value
+
+    # Ensure Prius TSS-P has alpha longitudinal available, preserving existing logic for others.
+    ret.alphaLongitudinalAvailable = existing_alpha_logic_for_radar_or_no_dsu_cars or (candidate == CAR.TOYOTA_PRIUS)
 
     # openpilot longitudinal enabled by default:
     #  - cars w/ DSU disconnected
@@ -156,6 +176,48 @@ class CarInterface(CarInterfaceBase):
                      car_fw: list[structs.CarParams.CarFw], alpha_long: bool, docs: bool) -> structs.CarParamsSP:
     if candidate in UNSUPPORTED_DSU_CAR:
       ret.safetyParam |= ToyotaSafetyFlagsSP.UNSUPPORTED_DSU
+
+    enhanced_steering_enabled = not Params().get_bool("dp_disable_dynamic_steering") # Changed line
+
+    if enhanced_steering_enabled:
+      # Parking Lot Profile (Aggressive)
+      ret.spDynamicSteeringParkingLot = DynamicSteeringParams(
+        steerMax=1875.0,
+        steerDeltaUp=26.0,
+        steerDeltaDown=40.0,
+        kp=0.81,
+        ki=0.07,
+        kf=0.000078
+      )
+      # Highway Profile (Conservative)
+      ret.spDynamicSteeringHighway = DynamicSteeringParams(
+        steerMax=1600.0,
+        steerDeltaUp=15.0,
+        steerDeltaDown=25.0,
+        kp=0.54,
+        ki=0.04,
+        kf=0.000078
+      )
+    else:
+      # Default Prius parameters (City Profile) for both when toggle is off
+      # These values should reflect the standard configuration for Prius from _get_params and CarControllerParams
+      default_kf = 0.000078 # Assuming this is the effective kf for Prius
+      if hasattr(stock_cp.lateralTuning.torque, 'kf') and stock_cp.lateralTuning.torque.kf > 1e-6 : # Check if kf is populated from _get_params
+          default_kf = stock_cp.lateralTuning.torque.kf
+
+      # SteerMax for Prius is 1875 (from CarControllerParams, used by LatControlTorque as default)
+      # SteerDeltaUp/Down for Prius (torque) are 19/32 (from CarControllerParams)
+      # Kp/Ki for Prius are 0.72/0.06 (from _get_params)
+      default_prius_params = DynamicSteeringParams(
+        steerMax=1875.0, # Matches CarControllerParams for Prius
+        steerDeltaUp=19.0, # Matches CarControllerParams for Prius (torque)
+        steerDeltaDown=32.0, # Matches CarControllerParams for Prius (torque)
+        kp=0.72, # Matches _get_params for Prius
+        ki=0.06, # Matches _get_params for Prius
+        kf=default_kf
+      )
+      ret.spDynamicSteeringParkingLot = default_prius_params
+      ret.spDynamicSteeringHighway = default_prius_params
 
     return ret
 

@@ -7,7 +7,7 @@ MIN_SPEED = 1.0
 CONTROL_N = 17
 CAR_ROTATION_RADIUS = 0.0
 # This is a turn radius smaller than most cars can achieve
-MAX_CURVATURE = 0.2
+MAX_CURVATURE = 0.35
 MAX_VEL_ERR = 5.0  # m/s
 
 # EU guidelines
