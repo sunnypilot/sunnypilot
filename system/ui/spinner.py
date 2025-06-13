@@ -4,8 +4,11 @@ import threading
 import time
 
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.window import BaseWindow
 from openpilot.system.ui.text import wrap_text
+
+from openpilot.system.ui.sunnypilot.lib.application import gui_app_sp
 
 # Constants
 PROGRESS_BAR_WIDTH = 1000
@@ -24,7 +27,7 @@ def clamp(value, min_value, max_value):
 
 class SpinnerRenderer:
   def __init__(self):
-    self._comma_texture = gui_app.texture("images/spinner_comma.png", TEXTURE_SIZE, TEXTURE_SIZE)
+    self._comma_texture = gui_app_sp.sp_texture("images/spinner_sunnypilot.png", TEXTURE_SIZE, TEXTURE_SIZE)
     self._spinner_texture = gui_app.texture("images/spinner_track.png", TEXTURE_SIZE, TEXTURE_SIZE, alpha_premultiply=True)
     self._rotation = 0.0
     self._progress: int | None = None
@@ -78,7 +81,7 @@ class SpinnerRenderer:
       rl.draw_rectangle_rounded(bar, 1, 10, rl.WHITE)
     elif wrapped_lines:
       for i, line in enumerate(wrapped_lines):
-        text_size = rl.measure_text_ex(gui_app.font(), line, FONT_SIZE, 0.0)
+        text_size = measure_text_cached(gui_app.font(), line, FONT_SIZE)
         rl.draw_text_ex(gui_app.font(), line, rl.Vector2(center.x - text_size.x / 2, y_pos + i * LINE_HEIGHT),
                         FONT_SIZE, 0.0, rl.WHITE)
 

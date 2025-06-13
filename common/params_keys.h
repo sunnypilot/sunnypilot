@@ -71,7 +71,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"LastPowerDropDetected", CLEAR_ON_MANAGER_START},
     {"LastUpdateException", CLEAR_ON_MANAGER_START},
     {"LastUpdateTime", PERSISTENT},
-    {"LiveDelay", PERSISTENT},
+    {"LiveDelay", PERSISTENT | BACKUP},
     {"LiveParameters", PERSISTENT},
     {"LiveParametersV2", PERSISTENT},
     {"LiveTorqueParameters", PERSISTENT | DONT_LOG},
@@ -125,15 +125,21 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ApiCache_DriveStats", PERSISTENT},
     {"AutoLaneChangeBsmDelay", PERSISTENT},
     {"AutoLaneChangeTimer", PERSISTENT},
+    {"BlinkerMinLateralControlSpeed", PERSISTENT | BACKUP},
+    {"BlinkerPauseLateralControl", PERSISTENT | BACKUP},
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
     {"CarPlatformBundle", PERSISTENT},
+    {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
+    {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
+    {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
+    {"DeviceBootMode", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
+    {"Brightness", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
-    {"OffroadMode_Status", CLEAR_ON_MANAGER_START},
     {"QuietMode", PERSISTENT | BACKUP},
 
     // MADS params
@@ -168,4 +174,28 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"HyundaiLongitudinalTuning", PERSISTENT},
 
     {"DynamicExperimentalControl", PERSISTENT},
+    {"BlindSpot", PERSISTENT | BACKUP},
+
+    // model panel params
+    {"LagdToggle", PERSISTENT | BACKUP},
+
+    // mapd
+    {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"MapdVersion", PERSISTENT},
+    {"MapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"NextMapSpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
+    {"Offroad_OSMUpdateRequired", CLEAR_ON_MANAGER_START},
+    {"OsmDbUpdatesCheck", CLEAR_ON_MANAGER_START},  // mapd database update happens with device ON, reset on boot
+    {"OSMDownloadBounds", PERSISTENT},
+    {"OsmDownloadedDate", PERSISTENT},
+    {"OSMDownloadLocations", PERSISTENT},
+    {"OSMDownloadProgress", CLEAR_ON_MANAGER_START},
+    {"OsmLocal", PERSISTENT},
+    {"OsmLocationName", PERSISTENT},
+    {"OsmLocationTitle", PERSISTENT},
+    {"OsmLocationUrl", PERSISTENT},
+    {"OsmStateName", PERSISTENT},
+    {"OsmStateTitle", PERSISTENT},
+    {"OsmWayTest", PERSISTENT},
+    {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
 };

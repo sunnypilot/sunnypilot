@@ -31,6 +31,13 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
     });
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
+
+  // LiveDelay toggle
+  list->addItem(new ParamControlSP("LagdToggle",
+                                   tr("Live Learning Steer Delay"),
+                                   tr("Enable this for the car to learn and adapt its steering response time. "
+                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
+                                   "../assets/offroad/icon_shell.png"));
 }
 
 
@@ -141,7 +148,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   // Sort bundles by index in descending order
   QStringList bundleNames;
   // Add "Default" as the first option
-  bundleNames.append(tr("Use Default"));
+  bundleNames.append(DEFAULT_MODEL);
 
   auto indices = index_to_bundle.keys();
   std::sort(indices.begin(), indices.end(), std::greater<uint32_t>());
@@ -159,7 +166,7 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
   }
 
   // Handle "Stock" selection differently
-  if (selectedBundleName == tr("Use Default")) {
+  if (selectedBundleName == DEFAULT_MODEL) {
     params.remove("ModelManager_ActiveBundle");
     currentModelLblBtn->setValue(tr("Default"));
     showResetParamsDialog();
