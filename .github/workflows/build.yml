@@ -1,21 +1,43 @@
-name: Build and Test
+name: Build
 
-on: [pull_request]
+on:
+  push:
+    tags:
+      - '*'
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # for softprops/action-gh-release to create a release
+
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
       with:
-        python-version: '3.8'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest
-    - name: Run tests
-      run: |
-        pytest
+        submodules: recursive
+
+    - name: Setup dependencies
+      run: sudo apt-get update && sudo ./tools/ubuntu_setup.sh
+
+    - name: Build openpilot
+      run: scons -j$(nproc)
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        name: ${{ github.ref_name }}
+        tag_name: ${{ github.ref_name }}
+        body: ${{ github.ref_name }}sunnypilot release
+        draft: false
+        prerelease: false
+        files: |
+          ./openpilot/selfdrive/assets/fonts/Inter*
+          ./openpilot/selfdrive/assets/sounds/*
+          ./openpilot/selfdrive/assets/images/*
+          ./openpilot/selfdrive/assets/offroad/fcc.html
