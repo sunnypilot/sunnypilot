@@ -53,8 +53,7 @@ class TorqueBuckets(PointBuckets):
 
 class TorqueEstimator(ParameterEstimator, ModeldLagd):
   def __init__(self, CP, decimated=False, track_all_points=False):
-    ParameterEstimator.__init__(self)
-    ModeldLagd.__init__(self)
+    super().__init__()
     self.CP = CP
     self.hist_len = int(HISTORY / DT_MDL)
     self.lag = 0.0
