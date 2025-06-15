@@ -11,7 +11,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
 
-from sunnypilot.models.modeld_lagd import ModeldLagd
+from openpilot.sunnypilot.livedelay.lagd_toggle import ModeldLagd
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
