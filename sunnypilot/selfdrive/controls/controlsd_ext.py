@@ -26,7 +26,7 @@ class ControlsExt:
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['selfdriveStateSP']
+    self.sm_services_ext = ['selfdriveStateSP', 'radarState']
     self.pm_services_ext = ['carControlSP']
 
   def get_params_sp(self) -> None:
@@ -50,8 +50,8 @@ class ControlsExt:
     CC_SP.leadRelSpeed = 0.0
     CC_SP.leadVisible = sm['longitudinalPlan'].hasLead
 
-    if sm.valid["radarState"]:
-      leadOne = sm["radarState"].leadOne
+    if sm.valid['radarState']:
+      leadOne = sm['radarState'].leadOne
       # Set leadDistance and leadRelSpeed if the lead vehicle is detected
       CC_SP.leadDistance = leadOne.dRel if leadOne.status else 0.0
       CC_SP.leadRelSpeed = leadOne.vRel if leadOne.status else 0.0
