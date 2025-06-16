@@ -8,7 +8,7 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
 
-class ModeldLagd:
+class LagdToggle:
   def __init__(self):
     self.params = Params()
     self.lag = 0.0
