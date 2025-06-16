@@ -88,6 +88,7 @@ class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, context: CLContext):
+    self.LAT_SMOOTH_SECONDS = 0.0
     self.frames = {
       'input_imgs': DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP),
       'big_input_imgs': DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP)
