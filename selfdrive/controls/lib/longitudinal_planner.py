@@ -4,7 +4,6 @@ import numpy as np
 
 import cereal.messaging as messaging
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
-from opendbc.car.toyota.values import CAR
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
@@ -94,12 +93,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     return x, v, a, j, throttle_prob
 
   def update(self, sm):
-    # Prevent Prius from entering experimental mode
-    experimental_mode_allowed = sm['selfdriveState'].experimentalMode
-    if self.CP.carFingerprint == CAR.TOYOTA_PRIUS:
-      experimental_mode_allowed = False
-      
-    self.mode = 'blended' if experimental_mode_allowed else 'acc'
+    self.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
     LongitudinalPlannerSP.update(self, sm)
     if dec_mpc_mode := self.get_mpc_mode():
       self.mode = dec_mpc_mode
