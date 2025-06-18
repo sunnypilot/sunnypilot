@@ -68,7 +68,7 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
-    ("VisionTurnSpeedControl", "1"),
+    ("VisionTurnSpeedControl", "0"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),

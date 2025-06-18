@@ -51,6 +51,12 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     this);
   list->addItem(slcControl);
 
+  visionTurnSpeedControl = new ParamControlSP("VisionTurnSpeedControl",
+    tr("Vision Turn Speed Controller"),
+    tr("Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(visionTurnSpeedControl);
+
   connect(slcControl, &SpeedLimitControl::slcSettingsButtonClicked, [=]() {
     cruisePanelScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(slcScreen);
