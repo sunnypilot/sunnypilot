@@ -6,6 +6,7 @@ from opendbc.car.interfaces import LatControlInputs
 from opendbc.car.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.common.pid import PIDController
+from openpilot.common.conversions import Conversions as CV
 
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext import LatControlTorqueExt
 
@@ -26,15 +27,20 @@ LOW_SPEED_Y = [15, 13, 10, 5]
 
 class LatControlTorque(LatControl):
   def __init__(self, CP, CP_SP, CI):
-    super().__init__(CP, CP_SP, CI)
+    super().__init__(CP, CP_SP, CI) # This stores self.CP_SP = CP_SP and self.CP = CP
     self.torque_params = CP.lateralTuning.torque.as_builder()
-    self.pid = PIDController(self.torque_params.kp, self.torque_params.ki,
-                             k_f=self.torque_params.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
+    # self.pid is initialized in super().__init__ (LatControl) using CP.lateralTuning.pid.
+    # For LatControlTorque, we re-initialize self.pid with torque controller specific gains.
+    self.pid = PIDController(CP.lateralTuning.torque.kp, CP.lateralTuning.torque.ki,
+                             k_f=CP.lateralTuning.torque.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
 
     self.extension = LatControlTorqueExt(self, CP, CP_SP)
+    # Enhanced steering is always enabled (no toggle)
+    self.enhanced_steering_enabled = True
+
 
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
@@ -43,10 +49,69 @@ class LatControlTorque(LatControl):
 
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
     pid_log = log.ControlsState.LateralTorqueState.new_message()
+
     if not active:
       output_torque = 0.0
       pid_log.active = False
+      self.pid.reset()
     else:
+      # Determine current steering parameters based on speed and toggle
+      active_steering_profile_str = "city_defaults" # Default if enhanced_steering_enabled is true but no profile matches
+
+      if self.enhanced_steering_enabled:
+        speed = CS.vEgo
+        PARKING_SPEED_THRESHOLD = 5.0 * CV.MPH_TO_MS
+        HIGHWAY_SPEED_THRESHOLD = 35.0 * CV.MPH_TO_MS
+
+        current_kp = self.CP.lateralTuning.torque.kp
+        current_ki = self.CP.lateralTuning.torque.ki
+        current_kf = self.CP.lateralTuning.torque.kf
+        current_steer_max = self.CP.maxSteeringAngleDeg
+
+        if self.CP_SP is not None:
+          if speed < PARKING_SPEED_THRESHOLD:
+            if hasattr(self.CP_SP, 'spDynamicSteeringParkingLot') and self.CP_SP.spDynamicSteeringParkingLot is not None:
+              parking_params = self.CP_SP.spDynamicSteeringParkingLot
+              current_kp = parking_params.kp
+              current_ki = parking_params.ki
+              current_kf = parking_params.kf
+              current_steer_max = parking_params.steerMax
+              active_steering_profile_str = "parking"
+          elif speed > HIGHWAY_SPEED_THRESHOLD:
+            if hasattr(self.CP_SP, 'spDynamicSteeringHighway') and self.CP_SP.spDynamicSteeringHighway is not None:
+              highway_params = self.CP_SP.spDynamicSteeringHighway
+              current_kp = highway_params.kp
+              current_ki = highway_params.ki
+              current_kf = highway_params.kf
+              current_steer_max = highway_params.steerMax
+              active_steering_profile_str = "highway"
+          else:
+            active_steering_profile_str = "city" # Default for enhanced mode, mid-speed range
+
+        self.pid.k_p = current_kp
+        self.pid.k_i = current_ki
+        self.pid.k_f = current_kf
+        self.pid.pos_limit = current_steer_max
+        self.pid.neg_limit = -current_steer_max
+        self.steer_max = current_steer_max
+      else:
+        # Enhanced steering is disabled, ensure default/fixed parameters from CP are used
+        self.pid.k_p = self.CP.lateralTuning.torque.kp
+        self.pid.k_i = self.CP.lateralTuning.torque.ki
+        self.pid.k_f = self.CP.lateralTuning.torque.kf
+        self.pid.pos_limit = self.CP.maxSteeringAngleDeg
+        self.pid.neg_limit = -self.CP.maxSteeringAngleDeg
+        self.steer_max = self.CP.maxSteeringAngleDeg
+        active_steering_profile_str = "disabled_defaults"
+
+      # Log active steering parameters
+      pid_log.activeSteeringProfile = active_steering_profile_str
+      pid_log.activeKp = self.pid.k_p
+      pid_log.activeKi = self.pid.k_i
+      pid_log.activeKf = self.pid.k_f
+      pid_log.activeSteerMax = self.pid.pos_limit
+
+      # Original LatControlTorque logic continues here
       actual_curvature_vm = -VM.calc_curvature(math.radians(CS.steeringAngleDeg - params.angleOffsetDeg), CS.vEgo, params.roll)
       roll_compensation = params.roll * ACCELERATION_DUE_TO_GRAVITY
       if self.use_steering_angle:
@@ -59,8 +124,6 @@ class LatControlTorque(LatControl):
         curvature_deadzone = 0.0
       desired_lateral_accel = desired_curvature * CS.vEgo ** 2
 
-      # desired rate is the desired rate of change in the setpoint, not the absolute desired curvature
-      # desired_lateral_jerk = desired_curvature_rate * CS.vEgo ** 2
       actual_lateral_accel = actual_curvature * CS.vEgo ** 2
       lateral_accel_deadzone = curvature_deadzone * CS.vEgo ** 2
 
@@ -68,6 +131,7 @@ class LatControlTorque(LatControl):
       setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
       gravity_adjusted_lateral_accel = desired_lateral_accel - roll_compensation
+
       torque_from_setpoint = self.torque_from_lateral_accel(LatControlInputs(setpoint, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
                                                             setpoint, lateral_accel_deadzone, friction_compensation=False, gravity_adjusted=False)
       torque_from_measurement = self.torque_from_lateral_accel(LatControlInputs(measurement, roll_compensation, CS.vEgo, CS.aEgo), self.torque_params,
@@ -78,7 +142,6 @@ class LatControlTorque(LatControl):
                                           gravity_adjusted=True)
 
       # Lateral acceleration torque controller extension updates
-      # Overrides stock ff and pid_log.error
       ff, pid_log = self.extension.update(CS, VM, params, ff, pid_log, setpoint, measurement, calibrated_pose, roll_compensation,
                                           desired_lateral_accel, actual_lateral_accel, lateral_accel_deadzone, gravity_adjusted_lateral_accel,
                                           desired_curvature, actual_curvature)
