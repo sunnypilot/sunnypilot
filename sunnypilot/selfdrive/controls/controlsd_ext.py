@@ -26,7 +26,7 @@ class ControlsExt:
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['selfdriveStateSP', 'radarState']
+    self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
 
   def get_params_sp(self) -> None:
