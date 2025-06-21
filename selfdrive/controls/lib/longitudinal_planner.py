@@ -134,10 +134,10 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
 
     if self.mode == 'acc':
-      if self.accel_controller.is_personality_enabled:
-        max_limit = self.accel_controller._get_max_accel_for_speed(v_ego)
-        #min_limit = self.accel_controller._get_min_accel_for_speed(v_ego)
-        accel_clip = [ACCEL_MIN, max_limit]
+      if self.vibe_controller.is_personality_enabled:
+        # Only get max acceleration from vibe controller, use default ACCEL_MIN for minimum
+        max_accel = self.vibe_controller.get_max_accel(v_ego)
+        accel_clip = [ACCEL_MIN, max_accel]
         print(f"accel_clip: {accel_clip}")
         # Recalculate limit turn according to the new max limit
         steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
