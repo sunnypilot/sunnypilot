@@ -43,21 +43,23 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     {
       "ToyotaAutoHold",
       tr("Toyota: Auto Brake Hold"),
-      tr("umm auto brake hold?"),
+      tr("As you may auto brake hold currently supported by openpilot, this feature will allow sunnypilot to automatically hold the vehicle at a stop when the lead car is stopped. (TSS2 only)"),
       "../assets/offroad/icon_blank.png",
       false,
     },
     {
       "ToyotaEnhancedBsm",
       tr("Toyota: Enhanced BSM"),
-      tr("like blind spot monitoring but better?"),
+      tr("Supports car that openpilot does not currently support such as the TSS-P/LSS, Prius TSS2, Lexus IS. "
+         "This feature will allow sunnypilot to use the car's blind spot monitoring system to detect vehicles in the blind spot and alert the driver."),
       "../assets/offroad/icon_blank.png",
       false,
     },
     {
       "ToyotaTSS2Long",
       tr("Toyota: custom tune"),
-      tr("idk something gas and brake"),
+      tr("Custome tune for Toyota TSS2 cars. ",
+         "This feature will allow SunnyPilot to adjust vehicle dynamics to be more natural and comfortable, tuned off the TSS2 Prius, Corolla, and RAV4."),
       "../assets/offroad/icon_blank.png",
       false,
     },
