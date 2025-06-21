@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from cereal import car
+from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import Priority, config_realtime_process
 from openpilot.common.swaglog import cloudlog
@@ -16,10 +17,13 @@ def main():
   CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("plannerd got CarParams: %s", CP.brand)
 
+  gps_location_service = get_gps_location_service(params)
+
   ldw = LaneDepartureWarning()
   longitudinal_planner = LongitudinalPlanner(CP)
   pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'longitudinalPlanSP'])
-  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState'],
+  sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState',
+                            'liveMapDataSP', 'carStateSP', gps_location_service],
                            poll='modelV2')
 
   while True:

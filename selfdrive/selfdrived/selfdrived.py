@@ -88,7 +88,7 @@ class SelfdriveD(CruiseHelper):
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'livePose', 'liveDelay',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
                                    'controlsState', 'carControl', 'driverAssistance', 'alertDebug', 'userFlag'] + \
-                                   self.camera_packets + self.sensor_packets + self.gps_packets,
+                                   self.camera_packets + self.sensor_packets + self.gps_packets + ["longitudinalPlanSP"],
                                   ignore_alive=ignore, ignore_avg_freq=ignore,
                                   ignore_valid=ignore, frequency=int(1/DT_CTRL))
 
@@ -197,6 +197,7 @@ class SelfdriveD(CruiseHelper):
 
     if not self.CP.notCar:
       self.events.add_from_msg(self.sm['driverMonitoringState'].events)
+      self.events_sp.add_from_msg(self.sm['longitudinalPlanSP'].events)
 
     # Add car events, ignore if CAN isn't valid
     if CS.canValid:
