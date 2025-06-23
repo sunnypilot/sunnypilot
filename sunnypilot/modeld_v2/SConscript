@@ -13,7 +13,6 @@ common_src = [
   "transforms/transform.cc",
 ]
 
-
 # OpenCL is a framework on Mac
 if arch == "Darwin":
   frameworks += ['OpenCL']
@@ -29,4 +28,3 @@ for pathdef, fn in {'TRANSFORM': 'transforms/transform.cl', 'LOADYUV': 'transfor
 cython_libs = envCython["LIBS"] + libs
 commonmodel_lib = lenv.Library('commonmodel', common_src)
 lenvCython.Program('models/commonmodel_pyx.so', 'models/commonmodel_pyx.pyx', LIBS=[commonmodel_lib, *cython_libs], FRAMEWORKS=frameworks)
-
