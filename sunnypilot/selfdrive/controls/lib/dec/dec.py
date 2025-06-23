@@ -436,11 +436,6 @@ class DynamicExperimentalController:
       self._mode_manager.request_mode('acc', confidence=1.0)
       return
 
-    # Standstill: use blended
-    if self._standstill_count > 3:
-      self._mode_manager.request_mode('blended', confidence=0.9)
-      return
-
     # Slow down scenarios: emergency for high urgency, normal for lower urgency
     if self._has_slow_down:
       if self._urgency > 0.7:
@@ -450,6 +445,11 @@ class DynamicExperimentalController:
         # Normal: blended with urgency-based confidence
         confidence = min(1.0, self._urgency * 1.3)
         self._mode_manager.request_mode('blended', confidence=confidence)
+      return
+
+    # Standstill: use blended
+    if self._standstill_count > 3:
+      self._mode_manager.request_mode('blended', confidence=0.9)
       return
 
     # High curvature at speed: use blended
