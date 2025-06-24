@@ -73,17 +73,21 @@ class TestNeuralNetworkLateralControl:
     controller.extension.model_v2 = model_v2
 
     # Saturate for curvature limited and controller limited
+    test_lag = 0.3
     for _ in range(1000):
       controller.extension.update_model_v2(model_v2)
+      controller.extension.update_lateral_lag(test_lag)
       _, _, lac_log = controller.update(True, CS, VM, params, False, 0, pose, True)
     assert lac_log.saturated
 
     for _ in range(1000):
       controller.extension.update_model_v2(model_v2)
+      controller.extension.update_lateral_lag(test_lag)
       _, _, lac_log = controller.update(True, CS, VM, params, False, 0, pose, False)
     assert not lac_log.saturated
 
     for _ in range(1000):
       controller.extension.update_model_v2(model_v2)
+      controller.extension.update_lateral_lag(test_lag)
       _, _, lac_log = controller.update(True, CS, VM, params, False, 1, pose, False)
     assert lac_log.saturated
