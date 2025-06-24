@@ -35,7 +35,7 @@ FOLLOW_DISTANCE_PROFILES = {
   },
   LongPersonality.standard: {
     'x_vel':  [0.,   2.,   6.,   14.,  14.5, 19.7, 22.2, 40.],
-    'y_dist': [1.20, 1.20, 1.31, 1.31, 1.37, 1.37, 1.45, 1.60]
+    'y_dist': [1.20, 1.20, 1.31, 1.31, 1.37, 1.37, 1.45, 1.45]
   },
   LongPersonality.aggressive: {
     'x_vel':  [0.,   1.,    5.,   14.,  14.5, 19.7, 22.2, 40.],
