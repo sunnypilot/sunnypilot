@@ -62,7 +62,7 @@ class ModelState:
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
     buffer_length = 5 if self.model_runner.is_20hz else 2
-    self.frames = {'input_imgs': DrivingModelFrame(context, buffer_length), 'big_input_imgs': DrivingModelFrame(context, buffer_length)}
+    self.frames = {name: DrivingModelFrame(context, buffer_length) for name in self.model_runner.vision_input_names}
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
     # img buffers are managed in openCL transform code
@@ -86,7 +86,7 @@ class ModelState:
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
                                   self.numpy_inputs['desire'].shape[2])
 
-  def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
+  def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire'][0] = 0
@@ -110,8 +110,7 @@ class ModelState:
       if key in inputs and key not in ['desire']:
         self.numpy_inputs[key][:] = inputs[key]
 
-    imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
-               'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
+    imgs_cl = {name: self.frames[name].prepare(bufs[name], transforms[name].flatten()) for name in self.model_runner.vision_input_names}
 
     # Prepare inputs using the model runner
     self.model_runner.prepare_inputs(imgs_cl, self.numpy_inputs, self.frames)
@@ -315,6 +314,8 @@ def main(demo=False):
     if prepare_only:
       cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
 
+    bufs = {name: buf_extra if 'big' in name else buf_main for name in model.model_runner.vision_input_names}
+    transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.model_runner.vision_input_names}
     inputs:dict[str, np.ndarray] = {
       'desire': vec_desire,
       'traffic_convention': traffic_convention,
@@ -324,7 +325,7 @@ def main(demo=False):
       inputs['lateral_control_params'] = np.array([v_ego, steer_delay], dtype=np.float32)
 
     mt1 = time.perf_counter()
-    model_output = model.run(buf_main, buf_extra, model_transform_main, model_transform_extra, inputs, prepare_only)
+    model_output = model.run(bufs, transforms, inputs, prepare_only)
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
 
