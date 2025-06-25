@@ -30,12 +30,12 @@ MIN_ACCEL_BREAKPOINTS =       [0.,       1.2,     8.,     13.,    22.2, 40.]
 # Following Distance Profiles
 FOLLOW_DISTANCE_PROFILES = {
   LongPersonality.relaxed: {
-    'x_vel':  [0.,   8.3, 14.5, 19.7, 22.2, 40.],
-    'y_dist': [1.22, 1.22, 1.80, 1.80, 1.90, 1.90]
+    'x_vel':  [0.,   8.3, 11.1, 19.7, 22.2, 40.],
+    'y_dist': [1.18, 1.18, 1.80, 1.80, 1.90, 1.90]
   },
   LongPersonality.standard: {
     'x_vel':  [0.,   2.,   6.,   14.,  14.5, 19.7, 22.2, 40.],
-    'y_dist': [1.20, 1.20, 1.31, 1.31, 1.37, 1.37, 1.45, 1.45]
+    'y_dist': [1.18, 1.18, 1.31, 1.31, 1.37, 1.37, 1.60, 1.60]
   },
   LongPersonality.aggressive: {
     'x_vel':  [0.,   1.,    5.,   14.,  14.5, 19.7, 22.2, 40.],
