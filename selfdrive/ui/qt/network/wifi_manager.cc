@@ -491,6 +491,15 @@ void WifiManager::tetheringActivated(QDBusPendingCallWatcher *call) {
       std::system("sudo sysctl net.ipv4.ip_forward=0");
     });
   }
+#ifdef SUNNYPILOT
+  else {
+    // nmcli can't set up NAT forwarding due to missing nf_tables kernel module, so we do it manually
+    QTimer::singleShot(5000, this, [=] {
+      qWarning() << "Setting up NAT forwarding for tethering";
+      std::system("sudo iptables-legacy -t nat -A POSTROUTING -s 192.168.43.0/24 -o wwan0 -j MASQUERADE");
+    });
+  }
+#endif
   call->deleteLater();
   tethering_on = true;
 }
