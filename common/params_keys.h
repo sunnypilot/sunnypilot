@@ -141,6 +141,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
     {"QuietMode", PERSISTENT | BACKUP},
+    {"PersistTetheringAcrossReboot", PERSISTENT | BACKUP},
+    {"TetheringEnabled", PERSISTENT | BACKUP},
 
     // MADS params
     {"Mads", PERSISTENT | BACKUP},
