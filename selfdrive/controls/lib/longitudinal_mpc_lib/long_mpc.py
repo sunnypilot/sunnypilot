@@ -334,19 +334,34 @@ class LongitudinalMpc:
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard): #, dynamic_personality=False):
+  def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
     v_ego = self.x0[1]
-    #self.vibe_controller.update()
-    #t_follow = self.vibe_controller.get_follow_distance_multiplier(v_ego) if dynamic_personality else get_T_FOLLOW(personality)
-    if self.vibe_controller.is_personality_enabled:
+
+    # Get following distance
+    if self.vibe_controller.is_follow_enabled():
       t_follow = self.vibe_controller.get_follow_distance_multiplier(v_ego)
-      print(f"[MPC Debug] Using DYNAMIC t_follow: {t_follow:.3f}s (from vibe controller)")
+      print(f"[MPC DYNAMIC ___________] Using DYNAMIC t_follow: {t_follow:.3f}s (from vibe controller)")
     else:
       t_follow = get_T_FOLLOW(personality)
-      print(f"[MPC Debug] Using STATIC t_follow: {t_follow:.3f}s (from personality: {personality})")
+      print(f"[MPC STATIC ___________] Using STATIC t_follow: {t_follow:.3f}s (disabled personality)")
+
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
-    min_accel = self.vibe_controller.get_min_accel(v_ego)
+
+    # Get acceleration limits
+    if self.vibe_controller.is_accel_enabled():
+      accel_limits = self.vibe_controller.get_accel_limits(v_ego)
+      if accel_limits is not None:
+        min_accel = accel_limits[0]
+        print(f"[MPC DYNAMIC ----------] Using DYNAMIC accel limits: {min_accel:.3f} m/s² (from vibe controller)")
+      else:
+        min_accel = CRUISE_MIN_ACCEL
+        print(f"[MPC STATIC ----------] Using STATIC accel limits: {min_accel:.3f} m/s² (fallback to stock behavior)")
+    else:
+      min_accel = CRUISE_MIN_ACCEL
+      print(f"[MPC STATIC ----------] Using STATIC accel limits: {min_accel:.3f} m/s² (disabled min accel limit)")
+
     a_cruise_min = min_accel
+    # You might also want to use max_accel somewhere in your MPC constraints
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)

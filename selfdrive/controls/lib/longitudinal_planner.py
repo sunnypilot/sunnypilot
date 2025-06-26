@@ -135,16 +135,23 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     prev_accel_constraint = not (reset_state or sm['carState'].standstill)
 
     if self.mode == 'acc':
-      if self.vibe_controller.is_personality_enabled:
+      if self.vibe_controller.is_accel_enabled():
         # Only get max acceleration from vibe controller, use default ACCEL_MIN for minimum
-        max_accel = self.vibe_controller.get_max_accel(v_ego)
-        accel_clip = [ACCEL_MIN, max_accel]
-        print(f"accel_clip: {accel_clip}")
+        accel_limits = self.vibe_controller.get_accel_limits(v_ego)
+        if accel_limits is not None:
+          max_accel = accel_limits[1]
+          accel_clip = [ACCEL_MIN, max_accel]
+          print(f"[LONG_PLAN+++++++] Using dynamic accel_clip: {accel_clip}")
+        else:
+          # Fallback to stock if vibe controller returns None
+          accel_clip = [ACCEL_MIN, get_max_accel(v_ego)]
+          print(f"[LONG_PLAN+++++++] Fallback to stock accel_clip: {accel_clip} (disabled max accel)")
         # Recalculate limit turn according to the new max limit
         steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
         accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
       else:
         accel_clip = [ACCEL_MIN, get_max_accel(v_ego)]
+        print(f"[LONG_PLAN+++++++] Fallback to stock accel_clip: {accel_clip}(disabled max accel stock)")
         steer_angle_without_offset = sm['carState'].steeringAngleDeg - sm['liveParameters'].angleOffsetDeg
         accel_clip = limit_accel_in_turns(v_ego, steer_angle_without_offset, accel_clip, self.CP)
     else:

@@ -54,239 +54,185 @@ class VibePersonalityController:
     self.params = Params()
     self.personality = LongPersonality.standard
     self.frame = 0
+    self.available_personalities = [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]
 
-    print(f"[VibePersonalityController] Initializing with personality: {self.personality}")
+    # Parameter mappings for cleaner access
+    self.param_keys = {
+      'personality': 'LongitudinalPersonality',
+      'enabled': 'VibePersonalityEnabled',
+      'accel_enabled': 'VibeAccelPersonalityEnabled',
+      'follow_enabled': 'VibeFollowPersonalityEnabled'
+    }
 
-    # Precompute slopes for acceleration profiles for efficiency
+    # Precompute slopes for all personalities
+    self._precompute_slopes()
+
+  def _precompute_slopes(self):
+    """Precompute all interpolation slopes for efficiency"""
     self.max_accel_slopes = {}
     self.min_accel_slopes = {}
     self.follow_distance_slopes = {}
 
-    for personality in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
-      print(f"[VibePersonalityController] Precomputing slopes for personality: {personality}")
+    for personality in self.available_personalities:
+      self.max_accel_slopes[personality] = self._compute_slopes(MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[personality])
+      self.min_accel_slopes[personality] = self._compute_slopes(MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[personality])
 
-      # Acceleration slopes
-      self.max_accel_slopes[personality] = self._compute_symmetric_slopes(
-        MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[personality]
-      )
-      self.min_accel_slopes[personality] = self._compute_symmetric_slopes(
-        MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[personality]
-      )
-
-      # Following distance slopes
       profile = FOLLOW_DISTANCE_PROFILES[personality]
-      self.follow_distance_slopes[personality] = self._compute_symmetric_slopes(
-        profile['x_vel'], profile['y_dist']
-      )
+      self.follow_distance_slopes[personality] = self._compute_slopes(profile['x_vel'], profile['y_dist'])
 
-    print("[VibePersonalityController] Initialization complete")
+  def _update_from_params(self):
+    """Update personality and toggle states from params (rate limited)"""
+    if self.frame % int(1. / DT_MDL) != 0:
+      return
 
-  def _update_personality_from_params(self):
-    if self.frame % int(1. / DT_MDL) == 0:
-      personality_str = self.params.get("LongitudinalPersonality", encoding='utf-8')
-      print(f"[VibePersonalityController] Reading personality param: {personality_str} (frame: {self.frame})")
+    # Update personality
+    try:
+      personality_str = self.params.get(self.param_keys['personality'], encoding='utf-8')
+      if personality_str:
+        personality_int = int(personality_str)
+        if personality_int in self.available_personalities:
+          self.personality = personality_int
+    except (ValueError, TypeError):
+      pass
 
-      if personality_str is not None:
-        try:
-          personality_int = int(personality_str)
-          if personality_int in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
-            if personality_int != self.personality:
-              print(f"[VibePersonalityController] Personality changed: {self.personality} -> {personality_int}")
-            self.personality = personality_int
-          else:
-            print(f"[VibePersonalityController] Invalid personality value: {personality_int}, keeping current: {self.personality}")
-        except (ValueError, TypeError):
-          print(f"[VibePersonalityController] Failed to parse personality param: {personality_str}, keeping current: {self.personality}")
-          # Keep current personality if parameter is invalid
-          pass
+  def _get_toggle_state(self, key: str, default: bool = True) -> bool:
+    """Get toggle state with default fallback"""
+    return self.params.get_bool(self.param_keys.get(key, key)) if key in self.param_keys else default
 
-  def get_accel_limits(self, v_ego: float, default_accel_limits: list[float] = None) -> tuple[float, float]:
-    self._update_personality_from_params()
+  def _set_toggle_state(self, key: str, value: bool):
+    """Set toggle state in params"""
+    if key in self.param_keys:
+      self.params.put_bool(self.param_keys[key], value)
 
-    if default_accel_limits is None:
-      default_accel_limits = [-1.2, 2.0]
+  # Individual Params
+  def toggle_personality(self): return self._toggle_flag('enabled')
+  def toggle_accel_personality(self): return self._toggle_flag('accel_enabled')
+  def toggle_follow_distance_personality(self): return self._toggle_flag('follow_enabled')
+
+  def _toggle_flag(self, key):
+    current = self._get_toggle_state(key)
+    self._set_toggle_state(key, not current)
+    return not current
+
+  def set_personality_enabled(self, enabled: bool): self._set_toggle_state('enabled', enabled)
+
+  def cycle_personality(self) -> int:
+    current_idx = self.available_personalities.index(self.personality)
+    next_personality = self.available_personalities[(current_idx + 1) % len(self.available_personalities)]
+    self.personality = next_personality
+    self.params.put(self.param_keys['personality'], str(next_personality))
+    return next_personality
+
+  def set_personality(self, personality: int) -> bool:
+    if personality in self.available_personalities:
+      self.personality = personality
+      self.params.put(self.param_keys['personality'], str(personality))
+      return True
+    return False
+
+  # Feature-specific Params checks
+  def is_accel_enabled(self) -> bool:
+    self._update_from_params()
+    return self._get_toggle_state('enabled') and self._get_toggle_state('accel_enabled')
+
+  def is_follow_enabled(self) -> bool:
+    self._update_from_params()
+    return self._get_toggle_state('enabled') and self._get_toggle_state('follow_enabled')
+
+  def is_enabled(self) -> bool:
+    self._update_from_params()
+    return (self._get_toggle_state('enabled') and
+            (self._get_toggle_state('accel_enabled') or self._get_toggle_state('follow_enabled')))
+
+  def get_accel_limits(self, v_ego: float) -> tuple[float, float] | None:
+    """
+    Get acceleration limits based on current personality and speed.
+    Returns None if controller is disabled (reverts to stock behavior).
+    """
+    self._update_from_params()
+    if not self.is_accel_enabled():
+      return None
 
     try:
-      max_accel = self._hermite_interpolate(
-        v_ego,
-        MAX_ACCEL_BREAKPOINTS,
-        MAX_ACCEL_PROFILES[self.personality],
-        self.max_accel_slopes[self.personality]
-      )
-      min_accel = self._hermite_interpolate(
-        v_ego,
-        MIN_ACCEL_BREAKPOINTS,
-        MIN_ACCEL_PROFILES[self.personality],
-        self.min_accel_slopes[self.personality]
-      )
-
-      print(f"[VibePersonalityController] Calculated accel limits: min={min_accel:.3f}, max={max_accel:.3f} m/s²")
-      return (float(min_accel), float(max_accel))
-    except (KeyError, IndexError) as e:
-      print(f"[VibePersonalityController] Error calculating accel limits: {e}, using defaults: {default_accel_limits}")
-      # Fallback to default limits if personality not found or interpolation fails
-      return (default_accel_limits[0], default_accel_limits[1])
+      max_a = self._interpolate(v_ego, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self.personality], self.max_accel_slopes[self.personality])
+      min_a = self._interpolate(v_ego, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[self.personality], self.min_accel_slopes[self.personality])
+      return float(min_a), float(max_a)
+    except (KeyError, IndexError):
+      return None
 
   def get_follow_distance_multiplier(self, v_ego: float) -> float:
-    """
-    Get dynamic follow distance multiplier based on current personality and speed.
-
-    Args:
-        v_ego: Current vehicle speed (m/s)
-
-    Returns:
-        float: Follow distance multiplier (1.0 = base following distance)
-    """
-    self._update_personality_from_params()
+    self._update_from_params()
 
     try:
       profile = FOLLOW_DISTANCE_PROFILES[self.personality]
-      result = self._hermite_interpolate(
-        v_ego,
-        profile['x_vel'],
-        profile['y_dist'],
-        self.follow_distance_slopes[self.personality]
-      )
-
-      print(f"[VibePersonalityController] Calculated follow distance multiplier: {result:.3f}")
-      return float(result)
-    except (KeyError, IndexError) as e:
-      print(f"[VibePersonalityController] Error calculating follow distance, using standard fallback: {e}")
-      # Fallback to standard profile
+      return float(self._interpolate(v_ego, profile['x_vel'], profile['y_dist'],
+                                     self.follow_distance_slopes[self.personality]))
+    except (KeyError, IndexError):
+      # Fallback to standard
       profile = FOLLOW_DISTANCE_PROFILES[LongPersonality.standard]
-      slopes = self._compute_symmetric_slopes(profile['x_vel'], profile['y_dist'])
-      result = self._hermite_interpolate(v_ego, profile['x_vel'], profile['y_dist'], slopes)
-      print(f"[VibePersonalityController] Fallback follow distance multiplier: {result:.3f}")
-      return float(result)
-
-  def get_max_accel(self, v_ego: float) -> float:
-    """
-    Get maximum acceleration limit for current speed and personality.
-
-    Args:
-        v_ego: Current vehicle speed (m/s)
-
-    Returns:
-        float: Maximum acceleration in m/s²
-    """
-    _, max_accel = self.get_accel_limits(v_ego)
-    return max_accel
-
-  def get_min_accel(self, v_ego: float) -> float:
-    """
-    Get minimum acceleration (maximum deceleration) limit for current speed and personality.
-
-    Args:
-        v_ego: Current vehicle speed (m/s)
-
-    Returns:
-        float: Minimum acceleration (negative value) in m/s²
-    """
-    min_accel, _ = self.get_accel_limits(v_ego)
-    return min_accel
-
-  def _compute_symmetric_slopes(self, x, y):
-    """
-    Compute slopes for Hermite interpolation using symmetric difference method.
-
-    Args:
-        x: x-coordinates (breakpoints)
-        y: y-coordinates (values)
-
-    Returns:
-        numpy.ndarray: Computed slopes
-    """
-    n = len(x)
-    if n < 2:
-      raise ValueError("At least two points are required to compute slopes.")
-
-    m = np.zeros(n)
-    for i in range(n):
-      if i == 0:
-        # Forward difference for first point
-        m[i] = (y[i+1] - y[i]) / (x[i+1] - x[i])
-      elif i == n-1:
-        # Backward difference for last point
-        m[i] = (y[i] - y[i-1]) / (x[i] - x[i-1])
-      else:
-        # Central difference for interior points
-        m[i] = ((y[i+1] - y[i]) / (x[i+1] - x[i]) + (y[i] - y[i-1]) / (x[i] - x[i-1])) / 2
-    return m
-
-  def _hermite_interpolate(self, x, xp, yp, slopes):
-    """
-    Perform cubic Hermite interpolation.
-
-    Args:
-        x: Point to interpolate at
-        xp: x-coordinates of data points
-        yp: y-coordinates of data points
-        slopes: Precomputed slopes at data points
-
-    Returns:
-        float: Interpolated value
-    """
-    # Clamp x to the domain
-    x = np.clip(x, xp[0], xp[-1])
-
-    # Find the segment
-    idx = np.searchsorted(xp, x) - 1
-    idx = np.clip(idx, 0, len(slopes) - 2)
-
-    # Get segment endpoints and slopes
-    x0, x1 = xp[idx], xp[idx+1]
-    y0, y1 = yp[idx], yp[idx+1]
-    m0, m1 = slopes[idx], slopes[idx+1]
-
-    # Compute normalized parameter t
-    t = (x - x0) / (x1 - x0)
-
-    # Hermite basis functions
-    h00 = 2*t**3 - 3*t**2 + 1      # (1+2t)(1-t)²
-    h10 = t**3 - 2*t**2 + t        # t(1-t)²
-    h01 = -2*t**3 + 3*t**2         # t²(3-2t)
-    h11 = t**3 - t**2              # t²(t-1)
-
-    # Compute interpolated value
-    return (h00 * y0) + (h10 * (x1 - x0) * m0) + (h01 * y1) + (h11 * (x1 - x0) * m1)
+      slopes = self._compute_slopes(profile['x_vel'], profile['y_dist'])
+      return float(self._interpolate(v_ego, profile['x_vel'], profile['y_dist'], slopes))
 
   def get_personality_info(self) -> dict:
-    self._update_personality_from_params()
-
-    personality_names = {
-      LongPersonality.relaxed: "Relaxed",
-      LongPersonality.standard: "Standard",
-      LongPersonality.aggressive: "Aggressive"
+    self._update_from_params()
+    names = {LongPersonality.relaxed: "Relaxed", LongPersonality.standard: "Standard", LongPersonality.aggressive: "Aggressive"}
+    descs = {
+      LongPersonality.relaxed: "Gentle acceleration, longer following distances",
+      LongPersonality.standard: "Balanced acceleration and following distance",
+      LongPersonality.aggressive: "Quick acceleration, shorter following distances"
     }
-
-    personality_descriptions = {
-      LongPersonality.relaxed: "Gentle acceleration, longer following distances, comfort-focused driving",
-      LongPersonality.standard: "Balanced acceleration and following distance for normal driving",
-      LongPersonality.aggressive: "Quick acceleration, shorter following distances, performance-focused driving"
-    }
-
     return {
-      "personality": personality_names.get(self.personality, "Unknown"),
+      "personality": names.get(self.personality, "Unknown"),
       "personality_int": self.personality,
-      "description": personality_descriptions.get(self.personality, "Standard behavior"),
-      "frame": self.frame
+      "description": descs.get(self.personality, "Standard behavior"),
+      "enabled": self._get_toggle_state('enabled'),
+      "accel_enabled": self._get_toggle_state('accel_enabled'),
+      "follow_enabled": self._get_toggle_state('follow_enabled')
     }
+
+  def get_min_accel(self, v_ego: float) -> float:
+    return self.get_accel_limits(v_ego)[0]
+
+  def get_max_accel(self, v_ego: float) -> float:
+    return self.get_accel_limits(v_ego)[1]
 
   def get_current_personality(self) -> int:
-    self._update_personality_from_params()
+    self._update_from_params()
     return self.personality
-
-  def is_personality_enabled(self) -> bool:
-    self._update_personality_from_params()
-    return self.personality != LongPersonality.standard
 
   def reset(self):
     self.personality = LongPersonality.standard
     self.frame = 0
 
   def update(self):
-    self.frame += 1
+    self.frame = (self.frame + 1) % 1000000
 
-    # Prevent frame counter overflow
-    if self.frame > 1000000:
-      self.frame = 0
+  def _compute_slopes(self, x, y):
+    """Compute slopes for Hermite interpolation using symmetric difference method."""
+    n = len(x)
+    if n < 2:
+      raise ValueError("At least two points required")
+
+    m = np.zeros(n)
+    for i in range(n):
+      if i == 0:
+        m[i] = (y[1] - y[0]) / (x[1] - x[0])
+      elif i == n-1:
+        m[i] = (y[i] - y[i-1]) / (x[i] - x[i-1])
+      else:
+        m[i] = ((y[i+1] - y[i]) / (x[i+1] - x[i]) + (y[i] - y[i-1]) / (x[i] - x[i-1])) / 2
+    return m
+
+  def _interpolate(self, x, xp, yp, slopes):
+    """Perform cubic Hermite interpolation."""
+    x = np.clip(x, xp[0], xp[-1])
+    idx = np.clip(np.searchsorted(xp, x) - 1, 0, len(slopes) - 2)
+
+    x0, x1 = xp[idx], xp[idx+1]
+    y0, y1 = yp[idx], yp[idx+1]
+    m0, m1 = slopes[idx], slopes[idx+1]
+
+    t = (x - x0) / (x1 - x0)
+    h = [2*t**3 - 3*t**2 + 1, t**3 - 2*t**2 + t, -2*t**3 + 3*t**2, t**3 - t**2]
+
+    return h[0]*y0 + h[1]*(x1 - x0)*m0 + h[2]*y1 + h[3]*(x1 - x0)*m1

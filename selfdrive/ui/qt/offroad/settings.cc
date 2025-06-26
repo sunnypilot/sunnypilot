@@ -41,6 +41,27 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       false,
     },
     {
+      "VibePersonalityEnabled",
+      tr("Enable vibe controller."),
+      tr("....."),
+      "../assets/offroad/icon_blank.png",
+      false,
+    },
+    {
+      "VibeAccelPersonalityEnabled",
+      tr("Enable Dynamic Accel"),
+      tr("....."),
+      "../assets/offroad/icon_blank.png",
+      false,
+    },
+    {
+      "VibeFollowPersonalityEnabled",
+      tr("Enable Dynamic Personality"),
+      tr("....."),
+      "../assets/offroad/icon_blank.png",
+      false,
+    },
+    {
       "ToyotaAutoHold",
       tr("Toyota: Auto Brake Hold"),
       tr("As you may auto brake hold currently supported by openpilot, this feature will allow sunnypilot to automatically hold the vehicle at a stop when the lead car is stopped. (TSS2 only)"),
