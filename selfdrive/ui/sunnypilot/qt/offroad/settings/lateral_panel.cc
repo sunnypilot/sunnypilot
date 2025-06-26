@@ -64,6 +64,17 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
   list->addItem(vertical_space(0));
   list->addItem(horizontal_line());
 
+  // Blinker Pause Lateral Control
+  blinkerPauseLateralSettings = new BlinkerPauseLateralSettings(
+    "BlinkerPauseLateralControl",
+    tr("Pause Lateral Control with Blinker"),
+    tr("Pause lateral control with blinker when traveling below the desired speed selected."),
+    "",
+    this);
+  list->addItem(blinkerPauseLateralSettings);
+
+  list->addItem(horizontal_line());
+
   // Neural Network Lateral Control
   nnlcToggle = new NeuralNetworkLateralControl();
   list->addItem(nnlcToggle);
@@ -122,7 +133,24 @@ void LateralPanel::updateToggles(bool _offroad) {
     toggle->setEnabled(_offroad);
   }
 
+  auto cp_bytes = params.get("CarParamsPersistent");
+  if (!cp_bytes.empty()) {
+    AlignedBuffer aligned_buf;
+    capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
+    cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
+
+    if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {
+      madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_LIMITED_COMPATIBILITY, MADS_BASE_DESC));
+    } else {
+      madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_FULL_COMPATIBILITY, MADS_BASE_DESC));
+    }
+  } else {
+    madsToggle->setDescription(descriptionBuilder(STATUS_MADS_CHECK_COMPATIBILITY, MADS_BASE_DESC));
+  }
+
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+
+  blinkerPauseLateralSettings->refresh();
 
   offroad = _offroad;
 }

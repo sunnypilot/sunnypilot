@@ -12,9 +12,12 @@ from opendbc.car.interfaces import LatControlInputs
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase
+from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase, sign
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import MOCK_MODEL_PATH
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NNTorqueModel
+
+LOW_SPEED_X = [0, 10, 20, 30]
+LOW_SPEED_Y = [12, 3, 1, 0]
 
 
 # At a given roll, if pitch magnitude increases, the
@@ -42,9 +45,8 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.pitch_last = 0.0
 
     # setup future time offsets
-    self.nn_time_offset = CP.steerActuatorDelay + 0.2
-    future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
-    self.nn_future_times = [i + self.nn_time_offset for i in future_times]
+    self.future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
+    self.nn_future_times = [i + self.desired_lat_jerk_time for i in self.future_times]
 
     # setup past time offsets
     self.past_times = [-0.3, -0.2, -0.1]
@@ -55,9 +57,17 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.error_deque = deque(maxlen=history_check_frames[0])
     self.past_future_len = len(self.past_times) + len(self.nn_future_times)
 
+  def update_lateral_lag(self, lag):
+    super().update_lateral_lag(lag)
+    self.nn_future_times = [t + self.desired_lat_jerk_time for t in self.future_times]
+
   def update_neural_network_feedforward(self, CS, params, calibrated_pose) -> None:
     if not self.enabled or not self.model_valid or not self.has_nn_model:
       return
+
+    low_speed_factor = float(np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y)) ** 2
+    self._setpoint = self._desired_lateral_accel + low_speed_factor * self._desired_curvature
+    self._measurement = self._actual_lateral_accel + low_speed_factor * self._actual_curvature
 
     # update past data
     roll = params.roll
@@ -91,6 +101,22 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     torque_from_setpoint = self.model.evaluate(nnff_setpoint_input)
     torque_from_measurement = self.model.evaluate(nnff_measurement_input)
     self._pid_log.error = torque_from_setpoint - torque_from_measurement
+
+    # The "pure" NNLC error response can be too weak for cars whose models were trained
+    # with a lack of high-magnitude lateral acceleration data, for which the NNLC model
+    # torque response flattens out at high lateral accelerations.
+    # This workaround blends in a guaranteed stronger error response only when the
+    # desired lateral acceleration is high enough to warrant it, by using the lateral acceleration
+    # error as the input to the NNLC model. This is not ideal, and potentially degrades the NNLC
+    # accuracy for cars that don't have this issue, but it's necessary until a better NNLC model
+    # structure is used that doesn't create this issue when high-magnitude data is missing.
+    error_blend_factor = float(np.interp(abs(self._desired_lateral_accel), [1.0, 2.0], [0.0, 1.0]))
+    if error_blend_factor > 0.0:  # blend in stronger error response when in high lat accel
+      # NNFF inputs 5+ are optional, and if left out are replaced with 0.0 inside the NNFF class
+      nnff_error_input = [CS.vEgo, self._setpoint - self._measurement, self.lateral_jerk_setpoint - self.lateral_jerk_measurement, 0.0]
+      torque_from_error = self.model.evaluate(nnff_error_input)
+      if sign(self._pid_log.error) == sign(torque_from_error) and abs(self._pid_log.error) < abs(torque_from_error):
+        self._pid_log.error = self._pid_log.error * (1.0 - error_blend_factor) + torque_from_error * error_blend_factor
 
     # compute feedforward (same as nn setpoint output)
     friction_input = self.update_friction_input(self._setpoint, self._measurement)

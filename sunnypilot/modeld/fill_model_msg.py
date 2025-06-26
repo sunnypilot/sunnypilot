@@ -50,7 +50,7 @@ def fill_xyz_poly(builder, degree, x, y, z):
   builder.zCoefficients = coeffs[:, 2].tolist()
 
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
-                   net_output_data: dict[str, np.ndarray], publish_state: PublishState,
+                   net_output_data: dict[str, np.ndarray], action: log.ModelDataV2.Action, publish_state: PublishState,
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
                    timestamp_eof: int, model_execution_time: float, valid: bool,
                    v_ego: float, steer_delay: float, meta_const) -> None:
@@ -76,8 +76,11 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   driving_model_data.frameDropPerc = frame_drop_perc
   driving_model_data.modelExecutionTime = model_execution_time
 
-  action = driving_model_data.action
-  action.desiredCurvature = desired_curvature
+  # Populate drivingModelData.action
+  driving_model_data_action = driving_model_data.action
+  driving_model_data_action.desiredAcceleration = action.desiredAcceleration
+  driving_model_data_action.shouldStop = action.shouldStop
+  driving_model_data_action.desiredCurvature = desired_curvature
 
   modelV2 = extended_msg.modelV2
   modelV2.frameId = vipc_frame_id
@@ -111,8 +114,10 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyz_poly(poly_path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
 
   # lateral planning
-  action = modelV2.action
-  action.desiredCurvature = desired_curvature
+  modelV2_action = modelV2.action
+  modelV2_action.desiredAcceleration = action.desiredAcceleration
+  modelV2_action.shouldStop = action.shouldStop
+  modelV2_action.desiredCurvature = desired_curvature
 
   # times at X_IDXS according to model plan
   PLAN_T_IDXS = [np.nan] * ModelConstants.IDX_N
