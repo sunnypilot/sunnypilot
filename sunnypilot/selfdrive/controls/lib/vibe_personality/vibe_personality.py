@@ -16,7 +16,7 @@ LongPersonality = log.LongitudinalPersonality
 MAX_ACCEL_PROFILES = {
   LongPersonality.relaxed:    [2.00, 2.00, 1.72, 0.83, .572, .455, .365, .32, .10],  # eco-like
   LongPersonality.standard:   [2.00, 2.00, 1.84, 1.00, .64,  .55, .42, .37, .15],   # normal
-  LongPersonality.aggressive: [2.00, 2.00, 1.95, 1.25, .78,  .67, .50, .43, .20],   # sport-like
+  #LongPersonality.aggressive: [2.00, 2.00, 1.95, 1.25, .78,  .67, .50, .43, .20],   # sport-like
   LongPersonality.aggressive: [2.00, 2.00, 1.92, 1.25, .78,  .67, .50, .43, .20],   # sport-like
 }
 MAX_ACCEL_BREAKPOINTS = [0., 7., 9., 11., 16., 20., 25., 30., 55.]
