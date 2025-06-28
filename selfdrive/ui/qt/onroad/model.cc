@@ -35,6 +35,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       drawLead(painter, lead_two, lead_vertices[1], surface_rect);
     }
   }
+  drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
   painter.restore();
 }
@@ -355,6 +356,147 @@ void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
     font.setBold(true);
     painter.setFont(font);
     painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LAT");
+}
+
+void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
+    auto *s = uiState();
+    auto &sm = *(s->sm);
+
+    if (!sm.alive("radarState")) return;
+
+    const auto &radar_state = sm["radarState"].getRadarState();
+    const auto &lead_one = radar_state.getLeadOne();
+    const auto &lead_two = radar_state.getLeadTwo();
+
+    // Check if we have any active leads
+    bool has_lead_one = lead_one.getStatus();
+    bool has_lead_two = lead_two.getStatus();
+
+    if (!has_lead_one && !has_lead_two) {
+        // Fade out status display
+        lead_status_alpha = std::max(0.0f, lead_status_alpha - 0.05f);
+        if (lead_status_alpha <= 0.0f) return;
+    } else {
+        // Fade in status display
+        lead_status_alpha = std::min(1.0f, lead_status_alpha + 0.1f);
+    }
+
+    // Draw status for each lead vehicle under its chevron
+    if (true) {
+        drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
+    }
+
+    if (has_lead_two && std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0) {
+        drawLeadStatusAtPosition(painter, lead_two, lead_vertices[1], height, width, "L2");
+    }
+}
+
+void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
+                                           const cereal::RadarState::LeadData::Reader &lead_data,
+                                           const QPointF &chevron_pos,
+                                           int height, int width,
+                                           const QString &label) {
+
+    float d_rel = lead_data.getDRel();
+    float v_rel = lead_data.getVRel();
+    float y_rel = lead_data.getYRel();
+
+    // Calculate chevron size (same logic as drawLead)
+    float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
+
+    // Prepare text content first to calculate required box size
+    QFont content_font = painter.font();
+    content_font.setPixelSize(40);
+    content_font.setBold(false);
+    painter.setFont(content_font);
+
+    QFontMetrics fm(content_font);
+
+    // Prepare all text lines
+    QString distance_text = QString("%1: %2m").arg(label).arg(d_rel, 0, 'f', 1);
+    QString velocity_text = QString("Δv: %1m/s").arg(v_rel, 0, 'f', 1);
+    QString third_line_text;
+
+    if (v_rel < -0.1f) {
+        float ttc = d_rel / (-v_rel);
+        third_line_text = QString("TTC: %1s").arg(ttc, 0, 'f', 1);
+    } else {
+        third_line_text = QString("Y: %1m").arg(y_rel, 0, 'f', 1);
+    }
+
+    // Calculate required box dimensions based on text
+    int padding = 10;
+    int line_height = fm.height() + 3;
+
+    int max_text_width = std::max({
+        fm.horizontalAdvance(distance_text),
+        fm.horizontalAdvance(velocity_text),
+        fm.horizontalAdvance(third_line_text)
+    });
+
+    float panel_width = max_text_width + (padding * 2);
+    float panel_height = (line_height * 3) + (padding * 2);
+
+    // should be under the chevron with proper clearance
+    // In screen coordinates, Y increases downward, so we need to add to Y to go below
+    // The chevron_pos.y() represents the tip (top) of the chevron
+    float chevron_bottom = chevron_pos.y() + sz * 1.25f; // Account for full chevron size
+    float gap_below_chevron = 12;
+
+    float status_x = chevron_pos.x() - panel_width / 2;
+    float status_y = chevron_bottom + gap_below_chevron;
+
+    // Clamp to screen bounds, but prioritize keeping it below chevron
+    status_x = std::clamp(status_x, 10.0f, (float)width - panel_width - 10);
+
+    // Only clamp Y if it would go off screen, otherwise keep it below chevron
+    if (status_y + panel_height > height - 10) {
+        status_y = height - panel_height - 10;
+    }
+
+    // Ensure minimum distance from chevron (if clamping moved it up)
+    if (status_y < chevron_bottom + 5) {
+        status_y = chevron_bottom + 5;
+    }
+
+    // Background panel with rounded corners
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, (int)(140 * lead_status_alpha)));
+    QRectF bg_rect(status_x, status_y, panel_width, panel_height);
+    painter.drawRoundedRect(bg_rect, 8, 8);
+
+    // Border
+    QPen border_pen(QColor(100, 100, 100, (int)(180 * lead_status_alpha)));
+    border_pen.setWidth(1);
+    painter.setPen(border_pen);
+    painter.drawRoundedRect(bg_rect, 8, 8);
+
+    // Determine status color based on danger level
+    QColor lead_color;
+    if (d_rel < 20.0f && v_rel < -2.0f) {
+        lead_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha)); // Red - danger
+    } else if (d_rel < 40.0f) {
+        lead_color = QColor(255, 200, 80, (int)(255 * lead_status_alpha)); // Yellow - caution
+    } else {
+        lead_color = QColor(80, 255, 120, (int)(255 * lead_status_alpha)); // Green - safe
+    }
+
+    // Draw text content
+    float text_x = status_x + padding;
+    float text_y = status_y + padding + fm.ascent(); // Use ascent for proper baseline
+
+    // Lead label and distance
+    painter.setPen(lead_color);
+    painter.drawText(QPointF(text_x, text_y), distance_text);
+
+    // Relative velocity
+    painter.setPen(QColor(200, 200, 200, (int)(220 * lead_status_alpha)));
+    text_y += line_height;
+    painter.drawText(QPointF(text_x, text_y), velocity_text);
+
+    // Third line (TTC or lateral position)
+    text_y += line_height;
+    painter.drawText(QPointF(text_x, text_y), third_line_text);
 }
 
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
