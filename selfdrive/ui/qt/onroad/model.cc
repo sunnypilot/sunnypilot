@@ -35,6 +35,7 @@ void ModelRenderer::draw(QPainter &painter, const QRect &surface_rect) {
       drawLead(painter, lead_two, lead_vertices[1], surface_rect);
     }
   }
+  drawLeadStatus(painter, surface_rect.height(), surface_rect.width());
 
   painter.restore();
 }
@@ -396,6 +397,137 @@ void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
     font.setBold(true);
     painter.setFont(font);
     painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LAT");
+}
+
+void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
+    auto *s = uiState();
+    auto &sm = *(s->sm);
+
+    if (!sm.alive("radarState")) return;
+
+    const auto &radar_state = sm["radarState"].getRadarState();
+    const auto &lead_one = radar_state.getLeadOne();
+    const auto &lead_two = radar_state.getLeadTwo();
+
+    // Check if we have any active leads
+    bool has_lead_one = lead_one.getStatus();
+    bool has_lead_two = lead_two.getStatus();
+
+    if (!has_lead_one && !has_lead_two) {
+        // Fade out status display
+        lead_status_alpha = std::max(0.0f, lead_status_alpha - 0.05f);
+        if (lead_status_alpha <= 0.0f) return;
+    } else {
+        // Fade in status display
+        lead_status_alpha = std::min(1.0f, lead_status_alpha + 0.1f);
+    }
+
+    // Draw status for each lead vehicle under its chevron
+    if (has_lead_one) {
+        drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
+    }
+
+    if (has_lead_two && std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0) {
+        drawLeadStatusAtPosition(painter, lead_two, lead_vertices[1], height, width, "L2");
+    }
+}
+
+void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
+                                           const cereal::RadarState::LeadData::Reader &lead_data,
+                                           const QPointF &chevron_pos,
+                                           int height, int width,
+                                           const QString &label) {
+
+    float d_rel = lead_data.getDRel();
+    float v_rel = lead_data.getVRel();
+    float y_rel = lead_data.getYRel();
+
+    // Calculate chevron size (same logic as drawLead)
+    float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
+
+    QFont content_font = painter.font();
+    content_font.setPixelSize(35);
+    content_font.setBold(true);
+    painter.setFont(content_font);
+
+    QFontMetrics fm(content_font);
+    auto *s = uiState();
+    bool is_metric = s->scene.is_metric;
+    QStringList text_lines;
+
+    // Distance
+    if (is_metric) {
+        text_lines.append(QString::number(d_rel, 'f', 0) + "m");
+    } else {
+        float d_feet = d_rel * 3.28084f; // Convert meters to feet
+        text_lines.append(QString::number(d_feet, 'f', 0) + "ft");
+    }
+
+    // Relative velocity (converted to more readable format)
+    float v_display;
+    if (is_metric) {
+        v_display = v_rel * 3.6f; // Convert m/s to km/h
+        text_lines.append(QString::number(v_display, 'f', 0) + " km/h");
+    } else {
+        v_display = v_rel * 2.23694f; // Convert m/s to mph
+        text_lines.append(QString::number(v_display, 'f', 0) + " mph");
+    }
+
+    // TTC or lateral position
+    if (v_rel < -0.1f) {
+        float ttc = d_rel / (-v_rel);
+        QString ttc_str = (ttc > 0 && ttc < 200) ? QString::number(ttc, 'f', 1) + "s" : "---";
+        text_lines.append(ttc_str);
+    } else {
+        text_lines.append(QString::number(y_rel, 'f', 1) + "m");
+    }
+
+    // Text box dimensions
+    float str_w = 150;  // Width of text area
+    float str_h = 45;   // Height per line
+
+    // Position text below chevron, centered horizontally
+    float text_x = chevron_pos.x() - str_w / 2;
+    float text_y = chevron_pos.y() + sz + 15;
+
+    // Clamp to screen bounds
+    text_x = std::clamp(text_x, 10.0f, (float)width - str_w - 10);
+
+    // Shadow offset
+    QPoint shadow_offset(2, 2);
+
+    // Draw each line of text with shadow
+    for (int i = 0; i < text_lines.size(); ++i) {
+        if (!text_lines[i].isEmpty()) {
+            QRect textRect(text_x, text_y + (i * str_h), str_w, str_h);
+
+            // Draw shadow
+            painter.setPen(QColor(0x0, 0x0, 0x0, (int)(200 * lead_status_alpha)));
+            painter.drawText(textRect.translated(shadow_offset.x(), shadow_offset.y()),
+                           Qt::AlignBottom | Qt::AlignHCenter, text_lines[i]);
+
+            // Determine text color based on line and danger level
+            QColor text_color;
+            if (i == 0) { // Distance line
+                if (d_rel < 20.0f) {
+                    text_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha)); // Red - danger
+                } else if (d_rel < 40.0f) {
+                    text_color = QColor(255, 200, 80, (int)(255 * lead_status_alpha)); // Yellow - caution
+                } else {
+                    text_color = QColor(80, 255, 120, (int)(255 * lead_status_alpha)); // Green - safe
+                }
+            } else {
+                text_color = QColor(0xff, 0xff, 0xff, (int)(255 * lead_status_alpha)); // White for other lines
+            }
+
+            // Draw main text
+            painter.setPen(text_color);
+            painter.drawText(textRect, Qt::AlignBottom | Qt::AlignHCenter, text_lines[i]);
+        }
+    }
+
+    // Reset pen
+    painter.setPen(Qt::NoPen);
 }
 
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
