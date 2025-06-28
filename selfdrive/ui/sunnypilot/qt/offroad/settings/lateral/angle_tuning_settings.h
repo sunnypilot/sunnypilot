@@ -11,6 +11,7 @@
 #include "selfdrive/ui/sunnypilot/ui.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/expandable_row.h"
 
 class AngleTunningSettings : public QWidget {
   Q_OBJECT
@@ -30,7 +31,7 @@ private:
   Params params;
   bool offroad;
 
-  OptionControlSP* hkgAngleSmoothingFactor;
+  ExpandableToggleRow* enableHkgAngleSmoothingFactor;
   OptionControlSP* hkgAngleMinTorque;
   OptionControlSP* hkgAngleMaxTorque;
   OptionControlSP* hkgTuningOverridingCycles;

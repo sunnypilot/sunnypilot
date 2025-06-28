@@ -200,9 +200,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
 
     // Tuning keys
-    {"HkgTuningAngleSmoothingFactor", PERSISTENT | BACKUP},
-    {"HkgTuningAngleMinTorque", PERSISTENT | BACKUP},
-    {"HkgTuningAngleMaxTorque", PERSISTENT | BACKUP},
+    {"EnableHkgTuningAngleSmoothingFactor", PERSISTENT | BACKUP},
+    {"HkgTuningAngleMinTorqueReductionGain", PERSISTENT | BACKUP},
+    {"HkgTuningAngleMaxTorqueReductionGain", PERSISTENT | BACKUP},
     {"HkgTuningOverridingCycles", PERSISTENT | BACKUP},
     {"HkgAngleLiveTuning", CLEAR_ON_MANAGER_START}
     
