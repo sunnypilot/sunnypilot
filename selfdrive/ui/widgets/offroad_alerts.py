@@ -9,6 +9,8 @@ from openpilot.system.ui.lib.scroll_panel import GuiScrollPanel
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.widget import Widget
+
 
 class AlertColors:
   HIGH_SEVERITY = rl.Color(226, 44, 44, 255)
@@ -40,8 +42,9 @@ class AlertData:
   visible: bool = False
 
 
-class AbstractAlert(ABC):
+class AbstractAlert(Widget, ABC):
   def __init__(self, has_reboot_btn: bool = False):
+    super().__init__()
     self.params = Params()
     self.has_reboot_btn = has_reboot_btn
     self.dismiss_callback: Callable | None = None
@@ -67,8 +70,7 @@ class AbstractAlert(ABC):
     pass
 
   def handle_input(self, mouse_pos: rl.Vector2, mouse_clicked: bool) -> bool:
-    # TODO: fix scroll_panel.is_click_valid()
-    if not mouse_clicked:
+    if not mouse_clicked or not self.scroll_panel.is_touch_valid():
       return False
 
     if rl.check_collision_point_rec(mouse_pos, self.dismiss_btn_rect):
@@ -88,7 +90,7 @@ class AbstractAlert(ABC):
 
     return False
 
-  def render(self, rect: rl.Rectangle):
+  def _render(self, rect: rl.Rectangle):
     rl.draw_rectangle_rounded(rect, AlertConstants.BORDER_RADIUS / rect.width, 10, AlertColors.BACKGROUND)
 
     footer_height = AlertConstants.BUTTON_SIZE[1] + AlertConstants.SPACING
