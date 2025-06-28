@@ -5,6 +5,7 @@ set -e
 DEFAULT_REPO_URL="https://github.com/sunnypilot"
 START_AT_BOOT=false
 RESTORE_MODE=false
+RUNNER_VERSION="2.325.0"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -108,9 +109,9 @@ setup_system_configs() {
 install_runner() {
     echo "Downloading and setting up runner..."
     cd "$RUNNER_DIR"
-    curl -o actions-runner-linux-arm64-2.322.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.322.0/actions-runner-linux-arm64-2.322.0.tar.gz
-    sudo -u ${RUNNER_USER} tar -xzf ./actions-runner-linux-arm64-2.322.0.tar.gz
-    sudo rm ./actions-runner-linux-arm64-2.322.0.tar.gz
+    curl -o actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz -L https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
+    sudo -u ${RUNNER_USER} tar -xzf ./actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
+    sudo rm ./actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
     sudo chmod +x ./config.sh
 }
 
