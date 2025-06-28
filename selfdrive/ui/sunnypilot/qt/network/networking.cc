@@ -6,7 +6,7 @@
 NetworkingSP::NetworkingSP(QWidget *parent) : Networking(parent) {
   auto vlayout = wifiScreen->findChild<QVBoxLayout*>();
   auto hlayout = new QHBoxLayout();
-  
+
   // Create and setup scan button
   auto scanButton = new QPushButton(tr("Scan"));
   scanButton->setObjectName("scan_btn");
@@ -73,6 +73,7 @@ AdvancedNetworkingSP::AdvancedNetworkingSP(QWidget *parent, WifiManager *wifi) :
     QTimer::singleShot(2000, this, [=] {
       qDebug() << "Re-enabling tethering on startup";
       wifi->setTetheringEnabled(true);
+      tetheringToggle->setEnabled(true);
     });
   }
 }
