@@ -382,7 +382,7 @@ void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
     }
 
     // Draw status for each lead vehicle under its chevron
-    if (true) {
+    if (has_lead_one) {
         drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
     }
 
@@ -404,99 +404,89 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
     // Calculate chevron size (same logic as drawLead)
     float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
 
-    // Prepare text content first to calculate required box size
     QFont content_font = painter.font();
-    content_font.setPixelSize(40);
-    content_font.setBold(false);
+    content_font.setPixelSize(35);
+    content_font.setBold(true);
     painter.setFont(content_font);
 
     QFontMetrics fm(content_font);
+    auto *s = uiState();
+    bool is_metric = s->scene.is_metric;
+    QStringList text_lines;
 
-    // Prepare all text lines
-    QString distance_text = QString("%1: %2m").arg(label).arg(d_rel, 0, 'f', 1);
-    QString velocity_text = QString("Δv: %1m/s").arg(v_rel, 0, 'f', 1);
-    QString third_line_text;
+    // Distance
+    if (is_metric) {
+        text_lines.append(QString::number(d_rel, 'f', 0) + "m");
+    } else {
+        float d_feet = d_rel * 3.28084f; // Convert meters to feet
+        text_lines.append(QString::number(d_feet, 'f', 0) + "ft");
+    }
 
+    // Relative velocity (converted to more readable format)
+    float v_display;
+    if (is_metric) {
+        v_display = v_rel * 3.6f; // Convert m/s to km/h
+        text_lines.append(QString::number(v_display, 'f', 0) + " km/h");
+    } else {
+        v_display = v_rel * 2.23694f; // Convert m/s to mph
+        text_lines.append(QString::number(v_display, 'f', 0) + " mph");
+    }
+
+    // TTC or lateral position
     if (v_rel < -0.1f) {
         float ttc = d_rel / (-v_rel);
-        third_line_text = QString("TTC: %1s").arg(ttc, 0, 'f', 1);
+        QString ttc_str = (ttc > 0 && ttc < 200) ? QString::number(ttc, 'f', 1) + "s" : "---";
+        text_lines.append(ttc_str);
     } else {
-        third_line_text = QString("Y: %1m").arg(y_rel, 0, 'f', 1);
+        text_lines.append(QString::number(y_rel, 'f', 1) + "m");
     }
 
-    // Calculate required box dimensions based on text
-    int padding = 10;
-    int line_height = fm.height() + 3;
+    // Text box dimensions
+    float str_w = 150;  // Width of text area
+    float str_h = 45;   // Height per line
 
-    int max_text_width = std::max({
-        fm.horizontalAdvance(distance_text),
-        fm.horizontalAdvance(velocity_text),
-        fm.horizontalAdvance(third_line_text)
-    });
+    // Position text below chevron, centered horizontally
+    float text_x = chevron_pos.x() - str_w / 2;
+    float text_y = chevron_pos.y() + sz + 15;
 
-    float panel_width = max_text_width + (padding * 2);
-    float panel_height = (line_height * 3) + (padding * 2);
+    // Clamp to screen bounds
+    text_x = std::clamp(text_x, 10.0f, (float)width - str_w - 10);
 
-    // should be under the chevron with proper clearance
-    // In screen coordinates, Y increases downward, so we need to add to Y to go below
-    // The chevron_pos.y() represents the tip (top) of the chevron
-    float chevron_bottom = chevron_pos.y() + sz * 1.25f; // Account for full chevron size
-    float gap_below_chevron = 12;
+    // Shadow offset
+    QPoint shadow_offset(2, 2);
 
-    float status_x = chevron_pos.x() - panel_width / 2;
-    float status_y = chevron_bottom + gap_below_chevron;
+    // Draw each line of text with shadow
+    for (int i = 0; i < text_lines.size(); ++i) {
+        if (!text_lines[i].isEmpty()) {
+            QRect textRect(text_x, text_y + (i * str_h), str_w, str_h);
 
-    // Clamp to screen bounds, but prioritize keeping it below chevron
-    status_x = std::clamp(status_x, 10.0f, (float)width - panel_width - 10);
+            // Draw shadow
+            painter.setPen(QColor(0x0, 0x0, 0x0, (int)(200 * lead_status_alpha)));
+            painter.drawText(textRect.translated(shadow_offset.x(), shadow_offset.y()),
+                           Qt::AlignBottom | Qt::AlignHCenter, text_lines[i]);
 
-    // Only clamp Y if it would go off screen, otherwise keep it below chevron
-    if (status_y + panel_height > height - 10) {
-        status_y = height - panel_height - 10;
+            // Determine text color based on line and danger level
+            QColor text_color;
+            if (i == 0) { // Distance line
+                if (d_rel < 20.0f) {
+                    text_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha)); // Red - danger
+                } else if (d_rel < 40.0f) {
+                    text_color = QColor(255, 200, 80, (int)(255 * lead_status_alpha)); // Yellow - caution
+                } else {
+                    text_color = QColor(80, 255, 120, (int)(255 * lead_status_alpha)); // Green - safe
+                }
+            } else {
+                text_color = QColor(0xff, 0xff, 0xff, (int)(255 * lead_status_alpha)); // White for other lines
+            }
+
+            // Draw main text
+            painter.setPen(text_color);
+            painter.drawText(textRect, Qt::AlignBottom | Qt::AlignHCenter, text_lines[i]);
+        }
     }
 
-    // Ensure minimum distance from chevron (if clamping moved it up)
-    if (status_y < chevron_bottom + 5) {
-        status_y = chevron_bottom + 5;
-    }
-
-    // Background panel with rounded corners
+    // Reset pen
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, (int)(140 * lead_status_alpha)));
-    QRectF bg_rect(status_x, status_y, panel_width, panel_height);
-    painter.drawRoundedRect(bg_rect, 8, 8);
-
-    // Border
-    QPen border_pen(QColor(100, 100, 100, (int)(180 * lead_status_alpha)));
-    border_pen.setWidth(1);
-    painter.setPen(border_pen);
-    painter.drawRoundedRect(bg_rect, 8, 8);
-
-    // Determine status color based on danger level
-    QColor lead_color;
-    if (d_rel < 20.0f && v_rel < -2.0f) {
-        lead_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha)); // Red - danger
-    } else if (d_rel < 40.0f) {
-        lead_color = QColor(255, 200, 80, (int)(255 * lead_status_alpha)); // Yellow - caution
-    } else {
-        lead_color = QColor(80, 255, 120, (int)(255 * lead_status_alpha)); // Green - safe
-    }
-
-    // Draw text content
-    float text_x = status_x + padding;
-    float text_y = status_y + padding + fm.ascent(); // Use ascent for proper baseline
-
-    // Lead label and distance
-    painter.setPen(lead_color);
-    painter.drawText(QPointF(text_x, text_y), distance_text);
-
-    // Relative velocity
-    painter.setPen(QColor(200, 200, 200, (int)(220 * lead_status_alpha)));
-    text_y += line_height;
-    painter.drawText(QPointF(text_x, text_y), velocity_text);
-
-    // Third line (TTC or lateral position)
-    text_y += line_height;
-    painter.drawText(QPointF(text_x, text_y), third_line_text);
 }
 
 void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data,
