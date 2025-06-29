@@ -41,11 +41,11 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   list->addItem(first_row);
 
   auto second_row = new QHBoxLayout();
-  hkgAngleIdleTorque = new OptionControlSP("HkgTuningAngleIdleTorqueReductionGain", tr("HKG Angle Idle Torque"), tr("Torque applied when lateral control is active but the vehicle is not turning.<br/>Used to maintain lane centering on straight paths when no user input is detected."), "../assets/offroad/icon_blank.png", {0, 100}, 1);
-  connect(hkgAngleIdleTorque, &OptionControlSP::updateLabels, hkgAngleIdleTorque, [=]() {
+  hkgAngleActiveTorque = new OptionControlSP("HkgTuningAngleActiveTorqueReductionGain", tr("HKG Angle Idle Torque"), tr("Torque applied when lateral control is active but the vehicle is not turning.<br/>Used to maintain lane centering on straight paths when no user input is detected."), "../assets/offroad/icon_blank.png", {0, 100}, 1);
+  connect(hkgAngleActiveTorque, &OptionControlSP::updateLabels, hkgAngleActiveTorque, [=]() {
     this->updateToggles(offroad);
   });
-  second_row->addWidget(hkgAngleIdleTorque);
+  second_row->addWidget(hkgAngleActiveTorque);
 
   hkgAngleMaxTorque = new OptionControlSP("HkgTuningAngleMaxTorqueReductionGain", tr("HKG Angle Max Torque"), tr("Maximum steering torque allowed under normal lateral control.<br/>Prevents excessive EPS stress or noise. Must be greater than Min Torque."), "../assets/offroad/icon_blank.png", {10, 100}, 1);
   connect(hkgAngleMaxTorque, &OptionControlSP::updateLabels, hkgAngleMaxTorque, [=]() {
@@ -74,8 +74,8 @@ void AngleTunningSettings::updateToggles(bool _offroad) {
   auto HkgAngleMinTorqueValue = QString::fromStdString(params.get("HkgTuningAngleMinTorqueReductionGain")).toInt();
   hkgAngleMinTorque->setLabel(QString::number(HkgAngleMinTorqueValue)+"%");
 
-  auto HkgAngleIdleTorqueValue = QString::fromStdString(params.get("HkgTuningAngleIdleTorqueReductionGain")).toInt();
-  hkgAngleIdleTorque->setLabel(QString::number(HkgAngleIdleTorqueValue)+"%");
+  auto HkgAngleActiveTorqueValue = QString::fromStdString(params.get("HkgTuningAngleActiveTorqueReductionGain")).toInt();
+  hkgAngleActiveTorque->setLabel(QString::number(HkgAngleActiveTorqueValue)+"%");
 
   auto HkgAngleMaxTorqueValue = QString::fromStdString(params.get("HkgTuningAngleMaxTorqueReductionGain")).toInt();
   hkgAngleMaxTorque->setLabel(QString::number(HkgAngleMaxTorqueValue)+"%");

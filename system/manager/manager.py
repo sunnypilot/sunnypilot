@@ -70,7 +70,7 @@ def manager_init() -> None:
     ("QuietMode", "0"),
     ("EnableHkgTuningAngleSmoothingFactor", "1"),
     ("HkgTuningAngleMinTorqueReductionGain", "10"),
-    ("HkgTuningAngleIdleTorqueReductionGain", "60"),
+    ("HkgTuningAngleActiveTorqueReductionGain", "60"),
     ("HkgTuningAngleMaxTorqueReductionGain", "100"),
     ("HkgTuningOverridingCycles", "17"),
     ("HkgAngleLiveTuning", "0"),

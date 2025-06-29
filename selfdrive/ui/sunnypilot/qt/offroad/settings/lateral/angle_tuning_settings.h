@@ -33,7 +33,7 @@ private:
 
   ExpandableToggleRow* enableHkgAngleSmoothingFactor;
   OptionControlSP* hkgAngleMinTorque;
-  OptionControlSP* hkgAngleIdleTorque;
+  OptionControlSP* hkgAngleActiveTorque;
   OptionControlSP* hkgAngleMaxTorque;
   OptionControlSP* hkgTuningOverridingCycles;
   ParamControlSP* hkgAngleLiveTuning;
