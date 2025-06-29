@@ -22,14 +22,9 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   auto *list = new ListWidgetSP(this, false);
 
   main_layout->addWidget(new QWidget());
-  auto *warning = new QLabel(tr("Reboot required for settings to apply"));
-  warning->setStyleSheet("font-size: 60px; font-weight: 500; font-family: 'Noto Color Emoji'; color: orange;");
-  main_layout->addWidget(warning, 0, Qt::AlignCenter);
-  list->addItem(horizontal_line());
 
   enableHkgAngleSmoothingFactor = new ExpandableToggleRow("EnableHkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering."), "../assets/offroad/icon_blank.png");
   list->addItem(enableHkgAngleSmoothingFactor);
-  list->addItem(horizontal_line());
 
   auto first_row = new QHBoxLayout();
   hkgTuningOverridingCycles = new OptionControlSP("HkgTuningOverridingCycles", tr("HKG Tuning Overriding Cycles"), tr("Number of cycles to ramp down the current amount of torque on the steering wheel.<br/>A smaller value means a faster override by the user (less effort)"), "../assets/offroad/icon_blank.png", {10, 30}, 1);
@@ -37,17 +32,22 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
     this->updateToggles(offroad);
   });
   first_row->addWidget(hkgTuningOverridingCycles);
-  list->addItem(first_row);
-  list->addItem(horizontal_line());
 
-  auto second_row = new QHBoxLayout();
-  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorqueReductionGain", tr("HKG Angle Min ACTIVE Torque"), tr("Minimum torque to apply to the steering wheel when controls are active (and not being overridden by the user).<br/>Must be smaller than max."), "../assets/offroad/icon_blank.png", {0, 100}, 5);
+  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorqueReductionGain", tr("HKG Angle Min Active Torque"), tr("Minimum torque applied when lateral control is active and the driver is overriding.<br/>Higher values make the wheel feel stiffer. Must be less than Max Torque."), "../assets/offroad/icon_blank.png", {0, 100}, 1);
   connect(hkgAngleMinTorque, &OptionControlSP::updateLabels, hkgAngleMinTorque, [=]() {
     this->updateToggles(offroad);
   });
-  second_row->addWidget(hkgAngleMinTorque);
+  first_row->addWidget(hkgAngleMinTorque);
+  list->addItem(first_row);
 
-  hkgAngleMaxTorque = new OptionControlSP("HkgTuningAngleMaxTorqueReductionGain", tr("HKG Angle Max Torque"), tr("Maximum torque to apply to the steering wheel.<br/>Must be bigger than min."), "../assets/offroad/icon_blank.png", {10, 100}, 5);
+  auto second_row = new QHBoxLayout();
+  hkgAngleIdleTorque = new OptionControlSP("HkgTuningAngleIdleTorqueReductionGain", tr("HKG Angle Idle Torque"), tr("Torque applied when lateral control is active but the vehicle is not turning.<br/>Used to maintain lane centering on straight paths when no user input is detected."), "../assets/offroad/icon_blank.png", {0, 100}, 1);
+  connect(hkgAngleIdleTorque, &OptionControlSP::updateLabels, hkgAngleIdleTorque, [=]() {
+    this->updateToggles(offroad);
+  });
+  second_row->addWidget(hkgAngleIdleTorque);
+
+  hkgAngleMaxTorque = new OptionControlSP("HkgTuningAngleMaxTorqueReductionGain", tr("HKG Angle Max Torque"), tr("Maximum steering torque allowed under normal lateral control.<br/>Prevents excessive EPS stress or noise. Must be greater than Min Torque."), "../assets/offroad/icon_blank.png", {10, 100}, 1);
   connect(hkgAngleMaxTorque, &OptionControlSP::updateLabels, hkgAngleMaxTorque, [=]() {
     this->updateToggles(offroad);
   });
@@ -57,6 +57,10 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   QObject::connect(uiState(), &UIState::offroadTransition, this, &AngleTunningSettings::updateToggles);
 
   main_layout->addWidget(new ScrollViewSP(list, this));
+
+  auto *warning = new QLabel(tr("Reboot required for settings to apply; Tap on each setting to see more details."));
+  warning->setStyleSheet("font-size: 40px; font-weight: 500; font-family: 'Noto Color Emoji'; color: orange;");
+  main_layout->addWidget(warning, 0, Qt::AlignCenter);
 }
 
 void AngleTunningSettings::showEvent(QShowEvent *event) {
@@ -69,6 +73,9 @@ void AngleTunningSettings::updateToggles(bool _offroad) {
 
   auto HkgAngleMinTorqueValue = QString::fromStdString(params.get("HkgTuningAngleMinTorqueReductionGain")).toInt();
   hkgAngleMinTorque->setLabel(QString::number(HkgAngleMinTorqueValue)+"%");
+
+  auto HkgAngleIdleTorqueValue = QString::fromStdString(params.get("HkgTuningAngleIdleTorqueReductionGain")).toInt();
+  hkgAngleIdleTorque->setLabel(QString::number(HkgAngleIdleTorqueValue)+"%");
 
   auto HkgAngleMaxTorqueValue = QString::fromStdString(params.get("HkgTuningAngleMaxTorqueReductionGain")).toInt();
   hkgAngleMaxTorque->setLabel(QString::number(HkgAngleMaxTorqueValue)+"%");
