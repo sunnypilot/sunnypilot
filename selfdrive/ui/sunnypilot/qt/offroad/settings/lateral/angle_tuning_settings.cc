@@ -59,7 +59,7 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   main_layout->addWidget(new ScrollViewSP(list, this));
 
   auto *warning = new QLabel(tr("Reboot required for settings to apply; Tap on each setting to see more details."));
-  warning->setStyleSheet("font-size: 40px; font-weight: 500; font-family: 'Noto Color Emoji'; color: orange;");
+  warning->setStyleSheet("font-size: 30px; font-weight: 500; font-family: 'Noto Color Emoji'; color: orange;");
   main_layout->addWidget(warning, 0, Qt::AlignCenter);
 }
 
