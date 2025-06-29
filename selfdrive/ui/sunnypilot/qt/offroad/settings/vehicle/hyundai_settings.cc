@@ -55,13 +55,7 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
 
   main_layout->addWidget(settingsScreen);
   main_layout->setCurrentWidget(settingsScreen);
-  if (layout()) {
-    layout()->addWidget(stackedWidget);
-  } else {
-    QVBoxLayout *newLayout = new QVBoxLayout(this);
-    newLayout->setContentsMargins(0, 0, 0, 0);
-    newLayout->addWidget(stackedWidget);
-  }
+  layout()->addWidget(stackedWidget);
 }
 
 void HyundaiSettings::updateSettings() {
