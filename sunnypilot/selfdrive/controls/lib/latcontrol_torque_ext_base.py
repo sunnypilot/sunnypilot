@@ -11,7 +11,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 LAT_PLAN_MIN_IDX = 5
-
+LATERAL_LAG_MOD = 0.0 # seconds, modifies how far in the future we look ahead for the lateral plan
 
 def get_predicted_lateral_jerk(lat_accels, t_diffs):
   # compute finite difference between subsequent model_v2.acceleration.y values
@@ -85,11 +85,14 @@ class LatControlTorqueExtBase:
 
     # precompute time differences between ModelConstants.T_IDXS
     self.t_diffs = np.diff(ModelConstants.T_IDXS)
-    self.desired_lat_jerk_time = CP.steerActuatorDelay + 0.3
+    self.desired_lat_jerk_time = CP.steerActuatorDelay + LATERAL_LAG_MOD
 
   def update_model_v2(self, model_v2):
     self.model_v2 = model_v2
     self.model_valid = self.model_v2 is not None and len(self.model_v2.orientation.x) >= CONTROL_N
+
+  def update_lateral_lag(self, lag):
+    self.desired_lat_jerk_time = max(0.01, lag) + LATERAL_LAG_MOD
 
   def update_friction_input(self, val_1, val_2):
     _error = val_1 - val_2

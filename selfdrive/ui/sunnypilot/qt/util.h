@@ -12,9 +12,11 @@
 
 #include <QMap>
 #include <QPainter>
+#include <QRegularExpression>
 #include <QWidget>
 
 QString getUserAgent(bool sunnylink = false);
 std::optional<QString> getSunnylinkDongleId();
 std::optional<QString> getParamIgnoringDefault(const std::string &param_name, const std::string &default_value);
 QMap<QString, QVariantMap> loadPlatformList();
+QStringList searchFromList(const QString &query, const QStringList &list);

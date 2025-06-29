@@ -8,8 +8,14 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/max_time_offroad.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/brightness.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/controls.h"
+
+enum class DeviceSleepModeStatus {
+  DEFAULT,
+  OFFROAD,
+};
 
 class DevicePanelSP : public DevicePanel {
   Q_OBJECT
@@ -25,6 +31,8 @@ private:
   std::map<QString, PushButtonSP*> buttons;
   PushButtonSP *offroadBtn;
   MaxTimeOffroad *maxTimeOffroad;
+  ButtonParamControlSP *toggleDeviceBootMode;
+  Brightness *brightness;
 
   const QString alwaysOffroadStyle = R"(
     PushButtonSP {
@@ -85,4 +93,20 @@ private:
       background-color: #FF2424;
     }
   )";
+
+  static QString deviceSleepModeDescription(DeviceSleepModeStatus status = DeviceSleepModeStatus::DEFAULT) {
+    QString def_str = tr("⁍ Default: Device will boot/wake-up normally & will be ready to engage.");
+    QString offrd_str = tr("⁍ Offroad: Device will be in Always Offroad mode after boot/wake-up.");
+
+    if (status == DeviceSleepModeStatus::DEFAULT) {
+      def_str = "<font color='white'><b>" + def_str + "</b></font>";
+    } else if (status == DeviceSleepModeStatus::OFFROAD) {
+      offrd_str = "<font color='white'><b>" + offrd_str + "</b></font>";
+    }
+
+    return QString("%1<br><br>%2<br>%3")
+             .arg(tr("Controls state of the device after boot/sleep."))
+             .arg(def_str)
+             .arg(offrd_str);
+  }
 };

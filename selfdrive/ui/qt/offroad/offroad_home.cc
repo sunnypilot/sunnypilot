@@ -18,7 +18,7 @@ OffroadHome::OffroadHome(QWidget* parent) : QFrame(parent) {
   main_layout->setContentsMargins(40, 40, 40, 40);
 
   // top header
-  QHBoxLayout* header_layout = new QHBoxLayout();
+  header_layout = new QHBoxLayout();
   header_layout->setContentsMargins(0, 0, 0, 0);
   header_layout->setSpacing(16);
 
