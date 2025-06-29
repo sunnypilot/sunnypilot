@@ -52,6 +52,19 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
 def get_init_params(params) -> list[dict[str, str]]:
   keys: list = [
     "HyundaiLongitudinalTuning",
+    "LongTuningCustomToggle",
+    "LongTuningVEgoStopping",
+    "LongTuningVEgoStarting",
+    "LongTuningStoppingDecelRate",
+    "LongTuningLongitudinalActuatorDelay",
+    "LongTuningMinUpperJerk",
+    "LongTuningMinLowerJerk",
+    "LongTuningJerkLimits",
+    "LongTuningLookaheadJerkBp",
+    "LongTuningLookaheadJerkUpperV",
+    "LongTuningLookaheadJerkLowerV",
+    "LongTuningUpperJerkV",
+    "LongTuningLowerJerkV",
   ]
 
   return [{k: params.get(k, encoding='utf8') or "0"} for k in keys]

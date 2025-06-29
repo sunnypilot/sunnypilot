@@ -68,6 +68,21 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
+
+    # Longitudinal Tuning Live Parameters
+    ("LongTuningCustomToggle", "0"),
+    ("LongTuningVEgoStopping", "0.25"),
+    ("LongTuningVEgoStarting", "0.10"),
+    ("LongTuningStoppingDecelRate", "0.40"),
+    ("LongTuningLookaheadJerkBp", "2.0,5.0,20.0"),
+    ("LongTuningLookaheadJerkUpperV", "0.25,0.5,1.0"),
+    ("LongTuningLookaheadJerkLowerV", "0.05,0.10,0.3"),
+    ("LongTuningLongitudinalActuatorDelay", "0.45"),
+    ("LongTuningJerkLimits", "4.0"),
+    ("LongTuningUpperJerkV", "2.0,2.0,1.2"),
+    ("LongTuningLowerJerkV", "3.0,3.0,2.5"),
+    ("LongTuningMinUpperJerk", "0.5"),
+    ("LongTuningMinLowerJerk", "0.5"),
   ]
 
   # device boot mode

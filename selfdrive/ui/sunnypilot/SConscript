@@ -76,6 +76,7 @@ brand_settings_qt_src = [
   "sunnypilot/qt/offroad/settings/vehicle/gm_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/honda_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/hyundai_settings.cc",
+  "sunnypilot/qt/offroad/settings/vehicle/hyundai_live_tuning.cc",
   "sunnypilot/qt/offroad/settings/vehicle/mazda_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/nissan_settings.cc",
   "sunnypilot/qt/offroad/settings/vehicle/rivian_settings.cc",
