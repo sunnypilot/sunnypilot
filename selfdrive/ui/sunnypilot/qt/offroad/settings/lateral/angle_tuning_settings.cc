@@ -23,17 +23,17 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
 
   main_layout->addWidget(new QWidget());
 
-  enableHkgAngleSmoothingFactor = new ExpandableToggleRow("EnableHkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering."), "../assets/offroad/icon_blank.png");
+  enableHkgAngleSmoothingFactor = new ExpandableToggleRow("EnableHkgTuningAngleSmoothingFactor", tr("HKG Angle Smoothing Factor"), tr("Applies EMA (Exponential Moving Average) to the desired angle steering and avoid overcorrections."), "../assets/offroad/icon_blank.png");
   list->addItem(enableHkgAngleSmoothingFactor);
 
   auto first_row = new QHBoxLayout();
-  hkgTuningOverridingCycles = new OptionControlSP("HkgTuningOverridingCycles", tr("HKG Tuning Overriding Cycles"), tr("Number of cycles to ramp down the current amount of torque on the steering wheel.<br/>A smaller value means a faster override by the user (less effort)"), "../assets/offroad/icon_blank.png", {10, 30}, 1);
+  hkgTuningOverridingCycles = new OptionControlSP("HkgTuningOverridingCycles", tr("Override Ramp-Down Cycles"), tr("Number of cycles to ramp down the current amount of torque on the steering wheel.<br/>A smaller value means a faster override by the user (less effort)"), "../assets/offroad/icon_blank.png", {10, 30}, 1);
   connect(hkgTuningOverridingCycles, &OptionControlSP::updateLabels, hkgTuningOverridingCycles, [=]() {
     this->updateToggles(offroad);
   });
   first_row->addWidget(hkgTuningOverridingCycles);
 
-  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorqueReductionGain", tr("HKG Angle Min Active Torque"), tr("Minimum torque applied when lateral control is active and the driver is overriding.<br/>Higher values make the wheel feel stiffer. Must be less than Max Torque."), "../assets/offroad/icon_blank.png", {0, 100}, 1);
+  hkgAngleMinTorque = new OptionControlSP("HkgTuningAngleMinTorqueReductionGain", tr("Override Steering Effort"), tr("Sets the steering effort percentage used when the driver is overriding lateral control.<br/>Higher values increase resistance and make the wheel feel stiffer."), "../assets/offroad/icon_blank.png", {5, 60}, 1);
   connect(hkgAngleMinTorque, &OptionControlSP::updateLabels, hkgAngleMinTorque, [=]() {
     this->updateToggles(offroad);
   });
@@ -41,13 +41,13 @@ AngleTunningSettings::AngleTunningSettings(QWidget *parent) : QWidget(parent) {
   list->addItem(first_row);
 
   auto second_row = new QHBoxLayout();
-  hkgAngleActiveTorque = new OptionControlSP("HkgTuningAngleActiveTorqueReductionGain", tr("HKG Angle Idle Torque"), tr("Torque applied when lateral control is active but the vehicle is not turning.<br/>Used to maintain lane centering on straight paths when no user input is detected."), "../assets/offroad/icon_blank.png", {0, 100}, 1);
+  hkgAngleActiveTorque = new OptionControlSP("HkgTuningAngleActiveTorqueReductionGain", tr("Min Active Torque"), tr("Torque applied when lateral control is active but the vehicle is not turning.<br/>Used to maintain lane centering on straight paths when no user input is detected."), "../assets/offroad/icon_blank.png", {10, 100}, 1);
   connect(hkgAngleActiveTorque, &OptionControlSP::updateLabels, hkgAngleActiveTorque, [=]() {
     this->updateToggles(offroad);
   });
   second_row->addWidget(hkgAngleActiveTorque);
 
-  hkgAngleMaxTorque = new OptionControlSP("HkgTuningAngleMaxTorqueReductionGain", tr("HKG Angle Max Torque"), tr("Maximum steering torque allowed under normal lateral control.<br/>Prevents excessive EPS stress or noise. Must be greater than Min Torque."), "../assets/offroad/icon_blank.png", {10, 100}, 1);
+  hkgAngleMaxTorque = new OptionControlSP("HkgTuningAngleMaxTorqueReductionGain", tr("Max Torque Allowance"), tr("Sets the maximum torque reduction percentage the controller can apply during normal lateral control.<br/>"), "../assets/offroad/icon_blank.png", {10, 100}, 1);
   connect(hkgAngleMaxTorque, &OptionControlSP::updateLabels, hkgAngleMaxTorque, [=]() {
     this->updateToggles(offroad);
   });
