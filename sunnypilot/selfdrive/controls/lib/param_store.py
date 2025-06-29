@@ -23,6 +23,19 @@ class ParamStore:
     if CP.brand == "hyundai":
       brand_params.extend([
         "HyundaiLongitudinalTuning",
+        "LongTuningCustomToggle",
+        "LongTuningVEgoStopping",
+        "LongTuningVEgoStarting",
+        "LongTuningStoppingDecelRate",
+        "LongTuningLongitudinalActuatorDelay",
+        "LongTuningMinUpperJerk",
+        "LongTuningMinLowerJerk",
+        "LongTuningJerkLimits",
+        "LongTuningLookaheadJerkBp",
+        "LongTuningLookaheadJerkUpperV",
+        "LongTuningLookaheadJerkLowerV",
+        "LongTuningUpperJerkV",
+        "LongTuningLowerJerkV",
       ])
 
     self.keys = universal_params + brand_params
