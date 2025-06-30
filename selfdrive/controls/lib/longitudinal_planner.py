@@ -98,6 +98,11 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if dec_mpc_mode := self.get_mpc_mode():
       self.mode = dec_mpc_mode
 
+    if not (self.generation == 11):
+      self.mpc.mode = self.mode
+    else:
+      self.mpc.mode = None
+
     if len(sm['carControl'].orientationNED) == 3:
       accel_coast = get_coast_accel(sm['carControl'].orientationNED[1])
     else:
