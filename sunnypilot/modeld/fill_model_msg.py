@@ -50,7 +50,7 @@ def fill_xyz_poly(builder, degree, x, y, z):
   builder.zCoefficients = coeffs[:, 2].tolist()
 
 def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
-                   net_output_data: dict[str, np.ndarray], publish_state: PublishState,
+                   net_output_data: dict[str, np.ndarray], action: log.ModelDataV2.Action, publish_state: PublishState,
                    vipc_frame_id: int, vipc_frame_id_extra: int, frame_id: int, frame_drop: float,
                    timestamp_eof: int, model_execution_time: float, valid: bool,
                    v_ego: float, steer_delay: float, meta_const) -> None:
@@ -78,6 +78,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # Populate drivingModelData.action
   driving_model_data_action = driving_model_data.action
+  driving_model_data_action.desiredAcceleration = action.desiredAcceleration
+  driving_model_data_action.shouldStop = action.shouldStop
   driving_model_data_action.desiredCurvature = desired_curvature
 
   modelV2 = extended_msg.modelV2
@@ -113,6 +115,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 
   # lateral planning
   modelV2_action = modelV2.action
+  modelV2_action.desiredAcceleration = action.desiredAcceleration
+  modelV2_action.shouldStop = action.shouldStop
   modelV2_action.desiredCurvature = desired_curvature
 
   # times at X_IDXS according to model plan

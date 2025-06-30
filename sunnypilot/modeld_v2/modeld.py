@@ -57,7 +57,7 @@ class ModelState:
     self.generation = model_bundle.generation
     overrides = {override.key: override.value for override in model_bundle.overrides}
 
-    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
@@ -171,10 +171,7 @@ class ModelState:
     else:
       desired_curvature = prev_action.desiredCurvature
 
-    if self.generation == 11:
-      return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature), desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
-    else:
-      return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature))
+    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),desiredAcceleration=float(desired_accel), shouldStop=bool(should_stop))
 
 
 def main(demo=False):
