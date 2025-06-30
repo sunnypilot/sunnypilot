@@ -94,12 +94,13 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
   def update(self, sm):
     self.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
+    if not (self.generation == 11):
+      self.mpc.mode = self.mode
     LongitudinalPlannerSP.update(self, sm)
     if dec_mpc_mode := self.get_mpc_mode():
       self.mode = dec_mpc_mode
-
-    if not (self.generation == 11):
-      self.mpc.mode = self.mode
+      if not (self.generation == 11):
+        self.mpc.mode = dec_mpc_mode
 
     if len(sm['carControl'].orientationNED) == 3:
       accel_coast = get_coast_accel(sm['carControl'].orientationNED[1])
