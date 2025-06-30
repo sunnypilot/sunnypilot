@@ -100,8 +100,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     if not (self.generation == 11):
       self.mpc.mode = self.mode
-    else:
-      self.mpc.mode = None
 
     if len(sm['carControl'].orientationNED) == 3:
       accel_coast = get_coast_accel(sm['carControl'].orientationNED[1])
@@ -176,15 +174,12 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    if self.mode == 'acc':
+    if self.mode == 'acc' or not (self.generation == 11):
       output_a_target = output_a_target_mpc
       self.output_should_stop = output_should_stop_mpc
     else:
       output_a_target = min(output_a_target_mpc, output_a_target_e2e)
       self.output_should_stop = output_should_stop_e2e or output_should_stop_mpc
-
-    if not (self.generation == 11):
-      output_a_target, self.output_should_stop = output_a_target_mpc, output_should_stop_mpc
 
     for idx in range(2):
       accel_clip[idx] = np.clip(accel_clip[idx], self.prev_accel_clip[idx] - 0.05, self.prev_accel_clip[idx] + 0.05)
