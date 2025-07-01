@@ -29,6 +29,7 @@ SIDEBAR_WIDTH = 500
 CLOSE_BTN_SIZE = 200
 NAV_BTN_HEIGHT = 110
 PANEL_MARGIN = 50
+ICON_SIZE = 80
 
 # Colors
 SIDEBAR_COLOR = rl.BLACK
@@ -61,6 +62,7 @@ class PanelInfo:
   name: str
   instance: object
   button_rect: rl.Rectangle = rl.Rectangle(0, 0, 0, 0)
+  icon: str = ""
 
 
 class SettingsLayout(Widget):
@@ -75,20 +77,20 @@ class SettingsLayout(Widget):
 
     # Panel configuration
     self._panels = {
-      PanelType.DEVICE: PanelInfo("Device", DeviceLayout()),
-      PanelType.NETWORK: PanelInfo("Network", NetworkLayout()),
-      PanelType.SUNNYLINK: PanelInfo("sunnylink", SunnylinkLayout()),
-      PanelType.TOGGLES: PanelInfo("Toggles", TogglesLayout()),
-      PanelType.SOFTWARE: PanelInfo("Software", SoftwareLayout()),
-      PanelType.MODELS: PanelInfo("Models", ModelsLayout()),
-      PanelType.STEERING: PanelInfo("Steering", SteeringLayout()),
-      PanelType.CRUISE: PanelInfo("Cruise", CruiseLayout()),
-      PanelType.VISUALS: PanelInfo("Visuals", VisualsLayout()),
-      PanelType.OSM: PanelInfo("OSM", OSMLayout()),
-      PanelType.TRIPS: PanelInfo("Trips", TripsLayout()),
-      PanelType.VEHICLE: PanelInfo("Vehicle", VehicleLayout()),
-      PanelType.FIREHOSE: PanelInfo("Firehose", FirehoseLayout()),
-      PanelType.DEVELOPER: PanelInfo("Developer", DeveloperLayout()),
+      PanelType.DEVICE: PanelInfo("Device", DeviceLayout(), icon="icons/shell.png"),
+      PanelType.NETWORK: PanelInfo("Network", NetworkLayout(), icon="icons/network.png"),
+      PanelType.SUNNYLINK: PanelInfo("sunnylink", SunnylinkLayout(), icon="icons/shell.png"),
+      PanelType.TOGGLES: PanelInfo("Toggles", TogglesLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
+      PanelType.SOFTWARE: PanelInfo("Software", SoftwareLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_software.png"),
+      PanelType.MODELS: PanelInfo("Models", ModelsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_models.png"),
+      PanelType.STEERING: PanelInfo("Steering", SteeringLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png"),
+      PanelType.CRUISE: PanelInfo("Cruise", CruiseLayout(), icon="icons/speed_limit.png"),
+      PanelType.VISUALS: PanelInfo("Visuals", VisualsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
+      PanelType.OSM: PanelInfo("OSM", OSMLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
+      PanelType.TRIPS: PanelInfo("Trips", TripsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
+      PanelType.VEHICLE: PanelInfo("Vehicle", VehicleLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
+      PanelType.FIREHOSE: PanelInfo("Firehose", FirehoseLayout(), icon="icons/shell.png"),
+      PanelType.DEVELOPER: PanelInfo("Developer", DeveloperLayout(), icon="icons/shell.png"),
     }
 
     self._font_medium = gui_app.font(FontWeight.MEDIUM)
@@ -120,11 +122,17 @@ class SettingsLayout(Widget):
       def _render(self, rect):
         is_selected = self.panel_type == self.parent._current_panel
         text_color = TEXT_SELECTED if is_selected else TEXT_NORMAL
+        content_x = rect.x + 90
+        text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
+
+        if self.panel_info.icon:
+          icon_texture = gui_app.texture(self.panel_info.icon, ICON_SIZE, ICON_SIZE)
+          rl.draw_texture(icon_texture, int(content_x), int(rect.y + (NAV_BTN_HEIGHT - text_size.y) / 2), rl.WHITE)
+          content_x += ICON_SIZE + 20
 
         # Draw button text (right-aligned)
-        text_size = measure_text_cached(self.parent._font_medium, self.panel_info.name, 65)
         text_pos = rl.Vector2(
-          rect.x + rect.width - text_size.x - 20,  # 50px padding from right
+          content_x,
           rect.y + (NAV_BTN_HEIGHT - text_size.y) / 2
         )
         rl.draw_text_ex(self.parent._font_medium, self.panel_info.name, text_pos, 65, 0, text_color)
