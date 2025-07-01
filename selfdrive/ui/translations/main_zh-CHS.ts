@@ -2074,6 +2074,14 @@ Data</source>
         <source>Start the vehicle to check vehicle compatibility.</source>
         <translation>启动车辆以检查车辆兼容性。</translation>
     </message>
+    <message>
+        <source>Vision Turn Speed Controller</source>
+        <translation>视觉转向速度控制器</translation>
+    </message>
+    <message>
+        <source>Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged.</source>
+        <translation>该控制器也被称为V-TSC，在OP纵向接合时，它能根据曲率自动减速。</translation>
+    </message>
 </context>
 <context>
     <name>VisualsPanel</name>
@@ -2506,6 +2514,18 @@ Are you sure you want to delete all the maps?</source>
     <message>
         <source>Enable Dynamic Experimental Control</source>
         <translation>启用动态实验性控制</translation>
+    </message>
+    <message>
+        <source>Enable vibe controller.</source>
+        <translation>启用振动控制器</translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Accel</source>
+        <translation>启用动态加速</translation>
+    </message>
+    <message>
+        <source>Enable Dynamic Personality</source>
+        <translation>启用动态个性</translation>
     </message>
     <message>
         <source>Toyota: Auto Brake Hold</source>
