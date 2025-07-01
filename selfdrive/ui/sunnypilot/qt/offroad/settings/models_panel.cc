@@ -90,11 +90,18 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(horizontal_line());
 
   // LiveDelay toggle
-  list->addItem(new ParamControlSP("LagdToggle",
+  QString lagd_desc = tr("Enable this for the car to learn and adapt its steering response time. "
+                         "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
+  QString lagd_current = QString::fromStdString(params.get("LagdToggleDesc", false));
+  if (!lagd_current.isEmpty()) {
+    lagd_desc += "<br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + lagd_current + "</span>";
+  }
+  auto *lagd_toggle_control = new ParamControlSP("LagdToggle",
                                    tr("Live Learning Steer Delay"),
-                                   tr("Enable this for the car to learn and adapt its steering response time. "
-                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
-                                   "../assets/offroad/icon_shell.png"));
+                                   lagd_desc,
+                                   "../assets/offroad/icon_shell.png");
+  lagd_toggle_control->setObjectName("LagdToggle");
+  list->addItem(lagd_toggle_control);
 }
 
 QProgressBar* ModelsPanel::createProgressBar(QWidget *parent) {
@@ -290,6 +297,19 @@ void ModelsPanel::updateLabels() {
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelInternalName());
+
+  // Update LagdToggle description with current value
+  QString lagd_current = QString::fromStdString(params.get("LagdToggleDesc", false));
+  for (auto *item : findChildren<ParamControlSP*>()) {
+    if (item->objectName() == "LagdToggle") {
+      QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
+                        "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
+      if (!lagd_current.isEmpty()) {
+        desc += "<br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + lagd_current + "</span>";
+      }
+      item->setDescription(desc);
+    }
+  }
 }
 
 /**

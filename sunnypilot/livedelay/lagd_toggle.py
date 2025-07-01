@@ -12,21 +12,29 @@ class LagdToggle:
   def __init__(self):
     self.params = Params()
     self.lag = 0.0
-    self.software_delay = 0.2
+    self.software_delay = 0.104
+    self._last_desc = None
+
+  def _maybe_update_desc(self, desc):
+    if desc != self._last_desc:
+      self.params.put_nonblocking("LagdToggleDesc", desc)
+      self._last_desc = desc
 
   def lagd_main(self, CP, sm, model):
     if self.params.get_bool("LagdToggle"):
       lateral_delay = sm["liveDelay"].lateralDelay
       lat_smooth = model.LAT_SMOOTH_SECONDS
       result = lateral_delay + lat_smooth
-      cloudlog.debug(f"MODELD USING LIVE DELAY: {lateral_delay:.3f} + {lat_smooth:.3f} = {result:.3f}")
+      desc = f"liveDelay ({lateral_delay:.3f}) + lat_smooth ({lat_smooth:.3f}) = {result:.3f}"
+      self._maybe_update_desc(desc)
       return result
 
     steer_actuator_delay = CP.steerActuatorDelay
     lat_smooth = model.LAT_SMOOTH_SECONDS
     delay = self.software_delay
     result = (steer_actuator_delay + delay) + lat_smooth
-    cloudlog.debug(f"MODELD USING STEER ACTUATOR: {steer_actuator_delay:.3f} + {delay:.3f} + {lat_smooth:.3f} = {result:.3f}")
+    desc = f"steerActuatorDelay ({steer_actuator_delay:.3f}) + software_delay ({delay:.3f}) + lat_smooth ({lat_smooth:.3f}) = {result:.3f}"
+    self._maybe_update_desc(desc)
     return result
 
   def lagd_torqued_main(self, CP, msg):
