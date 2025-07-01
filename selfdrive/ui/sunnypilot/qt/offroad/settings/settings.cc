@@ -72,6 +72,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
 
   TogglesPanelSP *toggles = new TogglesPanelSP(this);
   QObject::connect(this, &SettingsWindowSP::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
+  QObject::connect(this, &SettingsWindowSP::scrollToToggle, toggles, &TogglesPanel::scrollToToggle);
 
   auto networking = new NetworkingSP(this);
   QObject::connect(uiState()->prime_state, &PrimeState::changed, networking, &NetworkingSP::setPrimeType);
