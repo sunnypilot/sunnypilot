@@ -11,6 +11,7 @@
 #include <string>
 
 #include "selfdrive/ui/sunnypilot/ui.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/blinker_pause_lateral_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/mads_settings.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/neural_network_lateral_control.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral/lane_change_settings.h"
@@ -43,6 +44,7 @@ private:
   PushButtonSP *laneChangeSettingsButton;
   LaneChangeSettings *laneChangeWidget = nullptr;
   NeuralNetworkLateralControl *nnlcToggle = nullptr;
+  BlinkerPauseLateralSettings *blinkerPauseLateralSettings = nullptr;
 
   const QString MADS_BASE_DESC = tr("Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).");
 

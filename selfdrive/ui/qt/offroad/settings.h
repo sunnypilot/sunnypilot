@@ -42,6 +42,7 @@ signals:
   void reviewTrainingGuide();
   void showDriverView();
   void expandToggleDescription(const QString &param);
+  void scrollToToggle(const QString &param);
 
 protected:
   QPushButton *sidebar_alert_widget;
@@ -67,6 +68,7 @@ protected slots:
 protected:
   Params params;
   ButtonControl *pair_device;
+  ButtonControl *resetCalibBtn;
 };
 
 class TogglesPanel : public ListWidget {
@@ -77,6 +79,7 @@ public:
 
 public slots:
   void expandToggleDescription(const QString &param);
+  void scrollToToggle(const QString &param);
 
 protected slots:
   virtual void updateState(const UIState &s);

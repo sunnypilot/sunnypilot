@@ -2281,6 +2281,7 @@ struct LiveTorqueParametersData {
   points @10 :List(List(Float32));
   version @11 :Int32;
   useParams @12 :Bool;
+  calPerc @13 :Int8;
 }
 
 struct LiveDelayData {
@@ -2291,6 +2292,7 @@ struct LiveDelayData {
   lateralDelayEstimate @3 :Float32;
   lateralDelayEstimateStd @5 :Float32;
   points @4 :List(Float32);
+  calPerc @6 :Int8;
 
   enum Status {
     unestimated @0;
@@ -2610,7 +2612,7 @@ struct Event {
     carControlSP @112 :Custom.CarControlSP;
     backupManagerSP @113 :Custom.BackupManagerSP;
     carStateSP @114 :Custom.CarStateSP;
-    customReserved8 @115 :Custom.CustomReserved8;
+    liveMapDataSP @115 :Custom.LiveMapDataSP;
     customReserved9 @116 :Custom.CustomReserved9;
     customReserved10 @136 :Custom.CustomReserved10;
     customReserved11 @137 :Custom.CustomReserved11;
