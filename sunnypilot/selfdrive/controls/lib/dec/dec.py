@@ -1,26 +1,10 @@
-# The MIT License
-#
-# Copyright (c) 2019-, Rick Lan, dragonpilot community, and a number of other of contributors.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-#
-# Version = 2025-1-18
+"""
+Copyright (c) 2021-, rav4kumar, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
+# Version = 2025-6-30
 
 import numpy as np
 
@@ -184,13 +168,6 @@ class DynamicExperimentalController:
       smoothing_factor=0.92
     )
 
-    self._curvature_filter = SmoothKalmanFilter(
-      measurement_noise=0.3,
-      process_noise=0.08,
-      alpha=1.03,
-      smoothing_factor=0.9
-    )
-
     # Add MPC FCW detection like version 1
     self._mpc_fcw_filter = SmoothKalmanFilter(
       measurement_noise=0.2,
@@ -203,9 +180,7 @@ class DynamicExperimentalController:
     self._has_lead_filtered = False
     self._has_slow_down = False
     self._has_slowness = False
-    self._high_curvature = False
     self._has_mpc_fcw = False
-    self._curvature = 0.0
     self._v_ego_kph = 0.0
     self._v_cruise_kph = 0.0
     self._has_standstill = False
@@ -213,7 +188,6 @@ class DynamicExperimentalController:
 
     # Persistence counters for stability
     self._standstill_count = 0
-    self._curve_count = 0
 
     # Debugging info
     self._endpoint_x = float('inf')
@@ -262,9 +236,6 @@ class DynamicExperimentalController:
     self._mpc_fcw_filter.add_data(float(self._mpc_fcw_crash_cnt > 0))
     self._has_mpc_fcw = fcw_filtered_value > 0.5
 
-    # Curvature detection
-    self._calculate_curvature(md)
-
     # Slow down detection
     self._calculate_slow_down(md)
 
@@ -277,50 +248,6 @@ class DynamicExperimentalController:
       # Hysteresis for slowness
       threshold = WMACConstants.SLOWNESS_PROB * (0.8 if self._has_slowness else 1.1)
       self._has_slowness = slowness_value > threshold
-
-  def _calculate_curvature(self, md): # someone help!!!
-    """Calculate path curvature for curve detection."""
-    if len(md.position.x) == len(md.position.y) == TRAJECTORY_SIZE:
-      try:
-        curvatures = []
-        for i in range(3):
-          idx1 = 4 + i * 2
-          idx2 = 12 + i * 3
-          idx3 = 22 + i * 2
-
-          if idx3 < TRAJECTORY_SIZE:
-            v1x = md.position.x[idx2] - md.position.x[idx1]
-            v1y = md.position.y[idx2] - md.position.y[idx1]
-            v2x = md.position.x[idx3] - md.position.x[idx2]
-            v2y = md.position.y[idx3] - md.position.y[idx2]
-
-            mag1 = (v1x**2 + v1y**2)**0.5
-            mag2 = (v2x**2 + v2y**2)**0.5
-
-            if mag1 > 0.5 and mag2 > 0.5:
-              dot_product = v1x * v2x + v1y * v2y
-              cos_angle = np.clip(dot_product / (mag1 * mag2), -1.0, 1.0)
-              angle = np.arccos(cos_angle)
-              curvature = angle / ((mag1 + mag2) / 2)
-              curvatures.append(curvature)
-
-        if curvatures:
-          avg_curvature = np.mean(curvatures)
-          self._curvature_filter.add_data(avg_curvature)
-          self._curvature = self._curvature_filter.get_value() or 0.0
-
-          # Speed-adaptive curve threshold
-          curve_threshold = 0.04 + (self._v_ego_kph / 1000.0)
-
-          if self._curvature > curve_threshold:
-            self._curve_count = min(8, self._curve_count + 1)
-          else:
-            self._curve_count = max(0, self._curve_count - 1)
-
-          self._high_curvature = self._curve_count > 3
-
-      except Exception:
-        pass
 
   def _calculate_slow_down(self, md):
     """Calculate urgency based on trajectory endpoint vs expected distance."""
@@ -387,7 +314,7 @@ class DynamicExperimentalController:
 
   def _radarless_mode(self) -> None:
     """Radarless mode decision logic with emergency handling."""
-  
+
     # EMERGENCY: MPC FCW - immediate blended mode
     if self._has_mpc_fcw:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
@@ -409,12 +336,6 @@ class DynamicExperimentalController:
         self._mode_manager.request_mode('blended', confidence=confidence)
       return
 
-    # High curvature at speed: use blended
-    if self._high_curvature and self._v_ego_kph > 40.0:
-      confidence = min(1.0, self._curvature * 15.0)
-      self._mode_manager.request_mode('blended', confidence=confidence)
-      return
-
     # Driving slow: use ACC (but not if actively slowing down)
     if self._has_slowness and not self._has_slow_down:
       self._mode_manager.request_mode('acc', confidence=0.8)
@@ -425,7 +346,7 @@ class DynamicExperimentalController:
 
   def _radar_mode(self) -> None:
     """Radar mode with emergency handling."""
-  
+
     # EMERGENCY: MPC FCW - immediate blended mode
     if self._has_mpc_fcw:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
@@ -450,12 +371,6 @@ class DynamicExperimentalController:
     # Standstill: use blended
     if self._standstill_count > 3:
       self._mode_manager.request_mode('blended', confidence=0.9)
-      return
-
-    # High curvature at speed: use blended
-    if self._high_curvature and self._v_ego_kph > 45.0:
-      confidence = min(1.0, self._curvature * 12.0)
-      self._mode_manager.request_mode('blended', confidence=confidence)
       return
 
     # Driving slow: use ACC (but not if actively slowing down)

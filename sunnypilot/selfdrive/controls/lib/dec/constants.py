@@ -1,6 +1,6 @@
 class WMACConstants:
   # Lead detection parameters
-  LEAD_WINDOW_SIZE = 7  # Stable detection window
+  LEAD_WINDOW_SIZE = 6  # Stable detection window
   LEAD_PROB = 0.45  # Balanced threshold for lead detection
 
   # Slow down detection parameters
