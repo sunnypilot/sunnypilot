@@ -18,6 +18,19 @@
 
 venv/
 .venv/
+**/.idea
+**/.hypothesis
+**/.mypy_cache
+
+**/.venv
+**/.venv/
+
+**/.ci_cache
+**/*.rlog
+
+**/Dockerfile*
+**/dockerfile*
+**/build_output
 
 notebooks
 phone

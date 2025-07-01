@@ -1,0 +1,66 @@
+FROM sunnypilot-base
+
+ARG RUNNER_DEBUG=0
+
+ENV PYTHONUNBUFFERED=1
+ENV OPENPILOT_SRC_PATH=/tmp/openpilot
+ENV BUILD_DIR=/data/openpilot
+ENV OUTPUT_DIR=/output
+
+RUN sudo apt update && sudo apt install -y rsync
+
+RUN mkdir -p ${OPENPILOT_SRC_PATH}
+RUN mkdir -p ${BUILD_DIR}
+COPY . ${OPENPILOT_SRC_PATH}
+ENV PYTHONPATH=${BUILD_DIR}
+
+WORKDIR ${OPENPILOT_SRC_PATH}
+RUN ./tools/ubuntu_setup.sh
+
+RUN ./release/release_files.py | sort | uniq | rsync -rRl${RUNNER_DEBUG:+v} --files-from=- . $BUILD_DIR/
+WORKDIR ${BUILD_DIR}
+RUN sed -i '/from .board.jungle import PandaJungle, PandaJungleDFU/s/^/#/' panda/__init__.py
+RUN scons --cache-readonly -j$(nproc) --minimal
+RUN touch ${BUILD_DIR}/prebuilt
+RUN sudo rm -rf ${OUTPUT_DIR}
+RUN mkdir -p ${OUTPUT_DIR}
+
+ENTRYPOINT [\
+  "rsync", \
+  "-am", \
+  "--include=**/panda/board/", \
+  "--include=**/panda/board/obj", \
+  "--include=**/panda/board/obj/panda.bin.signed", \
+  "--include=**/panda/board/obj/panda_h7.bin.signed", \
+  "--include=**/panda/board/obj/bootstub.panda.bin", \
+  "--include=**/panda/board/obj/bootstub.panda_h7.bin", \
+  "--exclude=.sconsign.dblite", \
+  "--exclude=*.a", \
+  "--exclude=*.o", \
+  "--exclude=*.os", \
+  "--exclude=*.pyc", \
+  "--exclude=moc_*", \
+  "--exclude=*.cc", \
+  "--exclude=Jenkinsfile", \
+  "--exclude=supercombo.onnx", \
+  "--exclude=**/panda/board/*", \
+  "--exclude=**/panda/board/obj/**", \
+  "--exclude=**/panda/certs/", \
+  "--exclude=**/panda/crypto/", \
+  "--exclude=**/release/", \
+  "--exclude=**/.github/", \
+  "--exclude=**/selfdrive/ui/replay/", \
+  "--exclude=**/__pycache__/", \
+  "--exclude=**/selfdrive/ui/*.h", \
+  "--exclude=**/selfdrive/ui/**/*.h", \
+  "--exclude=**/selfdrive/ui/qt/offroad/sunnypilot/", \
+  #"--exclude=${SCONS_CACHE_DIR:-}", \
+  "--exclude=**/.git/", \
+  "--exclude=**/SConstruct", \
+  "--exclude=**/SConscript", \
+  "--exclude=**/.venv/", \
+  "--delete-excluded", \
+  "--chown=1000:1000", \
+  "/data/openpilot/", \
+  "/output/" \
+]
