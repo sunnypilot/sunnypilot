@@ -21,6 +21,7 @@ protected:
   void drawSetSpeed(QPainter &p, const QRect &surface_rect);
   void drawCurrentSpeed(QPainter &p, const QRect &surface_rect);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
+  void drawEcoText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void drawSpeedLimitSigns(QPainter &p, const QRect &rect);
   void drawVisionTurnControl(QPainter &p, const QRect &surface_rect);
   QColor interpColor(float x, const std::vector<float> &x_vals, const std::vector<QColor> &colors);
@@ -65,4 +66,6 @@ protected:
   bool is_metric = false;
   bool v_ego_cluster_seen = false;
   int status = STATUS_DISENGAGED;
+  float engine_rpm = 0.0f;
+  bool is_eco_mode = false;
 };
