@@ -1,18 +1,32 @@
 import pyray as rl
+
+from openpilot.system.ui.lib.list_view import ToggleAction, MultipleButtonAction, ListItem, ItemAction
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
-import openpilot.system.ui.sunnypilot.lib.styles as styles
+from collections.abc import Callable
 
+from openpilot.system.ui.sunnypilot.lib.toggle import ToggleSP
+import openpilot.system.ui.sunnypilot.lib.styles as styles
 style = styles.Default
 
-class ListItemSP:
 
-  def get_item_height(self) -> float:
+class ToggleActionSP(ToggleAction):
+  def __init__(self, initial_state: bool = False, width: int = style.TOGGLE_WIDTH, enabled: bool | Callable[[], bool] = True):
+    ToggleAction.__init__(self, initial_state, width, enabled)
+    self.toggle = ToggleSP(initial_state=initial_state)
+
+class ListItemSP(ListItem):
+  def __init__(self, title: str = "", icon: str | None = None, description: str | Callable[[], str] | None = None,
+               description_visible: bool = False, callback: Callable | None = None,
+               action_item: ItemAction | None = None):
+    ListItem.__init__(self, title, icon, description, description_visible, callback, action_item)
+
+  def get_item_height(self, font: rl.Font, max_width: int) -> float:
     if not self.is_visible:
       return 0
 
     total_width = self._rect.width - (2 * style.ITEM_PADDING)  # Full width minus padding
-    max_width = total_width - (2 * style.ITEM_PADDING)
+    max_width = int(total_width - (2 * style.ITEM_PADDING))
 
     current_description = self.get_description()
     if self.description_visible and current_description:
@@ -30,18 +44,27 @@ class ListItemSP:
       return style.ITEM_BASE_HEIGHT + self._description_height - (style.ITEM_BASE_HEIGHT - style.ITEM_DESC_V_OFFSET) + style.ITEM_PADDING
     return style.ITEM_BASE_HEIGHT
 
-  def get_action_item_rect(self, item_rect: rl.Rectangle, left_action_item: bool) -> rl.Rectangle:
+  def get_right_item_rect(self, item_rect: rl.Rectangle) -> rl.Rectangle:
+    if not self.action_item:
+      return rl.Rectangle(0, 0, 0, 0)
+
+    right_width = self.action_item.rect.width
+    if right_width == 0:  # Full width action (like DualButtonAction)
+      return rl.Rectangle(item_rect.x + style.ITEM_PADDING, item_rect.y,
+                          item_rect.width - (style.ITEM_PADDING * 2), style.ITEM_BASE_HEIGHT)
+
     action_width = self.action_item.rect.width
-    if left_action_item:
+    if isinstance(self.action_item, ToggleAction):
       action_x = item_rect.x
     else:
       action_x = item_rect.x + item_rect.width - action_width
     action_y = item_rect.y
     return rl.Rectangle(action_x, action_y, action_width, style.ITEM_BASE_HEIGHT)
 
-  def _render(self, left_action_item: bool):
+  def _render(self, _):
     content_x = self._rect.x + style.ITEM_PADDING
     text_x = content_x
+    left_action_item = isinstance(self.action_item, ToggleAction)
 
     if left_action_item:
       left_rect = rl.Rectangle(
@@ -91,4 +114,12 @@ class ListItemSP:
         style.ITEM_DESC_TEXT_COLOR,
       )
 
-    return True
+def toggle_item(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
+                callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True) -> ListItem:
+  action = ToggleActionSP(initial_state=initial_state, enabled=enabled)
+  return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
+
+def multiple_button_item(title: str, description: str, buttons: list[str], selected_index: int,
+                         button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
+  action = MultipleButtonAction(buttons, button_width, selected_index, callback=callback)
+  return ListItemSP(title=title, description=description, icon=icon, action_item=action)

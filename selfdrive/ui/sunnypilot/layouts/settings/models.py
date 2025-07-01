@@ -1,4 +1,4 @@
-from openpilot.system.ui.lib.list_view import ListItem, button_item, toggle_item
+from openpilot.system.ui.lib.list_view import button_item, toggle_item
 from openpilot.system.ui.lib.scroller import Scroller
 from openpilot.system.ui.lib.widget import Widget
 from openpilot.common.params import Params

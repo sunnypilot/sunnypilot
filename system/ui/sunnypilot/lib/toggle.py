@@ -1,17 +1,20 @@
 import pyray as rl
-import openpilot.system.ui.lib.toggle as ToggleOP
+from openpilot.system.ui.lib.toggle import Toggle
 import openpilot.system.ui.sunnypilot.lib.styles as styles
 
 style = styles.Default
 
-class ToggleSP:
-  def _render(self, rect: rl.Rectangle):
+class ToggleSP(Toggle):
+  def __init__(self, initial_state=False):
+    Toggle.__init__(self, initial_state)
 
+  def _render(self, rect: rl.Rectangle):
+    self.update()
     if self._enabled:
-      bg_color = ToggleOP.Toggle._blend_color(self, style.TOGGLE_OFF_COLOR, style.TOGGLE_ON_COLOR, self._progress)
+      bg_color = self._blend_color(style.TOGGLE_OFF_COLOR, style.TOGGLE_ON_COLOR, self._progress)
       knob_color = style.TOGGLE_KNOB_COLOR
     else:
-      bg_color = ToggleOP.Toggle._blend_color(self, style.TOGGLE_DISABLED_OFF_COLOR, style.TOGGLE_DISABLED_ON_COLOR, self._progress)
+      bg_color = self._blend_color(style.TOGGLE_DISABLED_OFF_COLOR, style.TOGGLE_DISABLED_ON_COLOR, self._progress)
       knob_color = style.TOGGLE_DISABLED_KNOB_COLOR
 
     # Draw background
@@ -22,11 +25,11 @@ class ToggleSP:
     if not self._enabled:
         # Use a more subtle color for disabled state
         outline_color = rl.Color(outline_color.r // 2, outline_color.g // 2, outline_color.b // 2, 255)
-    
+
     # Draw outline by drawing a slightly larger rounded rectangle behind the background
     outline_rect = rl.Rectangle(bg_rect.x - 2, bg_rect.y - 2, bg_rect.width + 4, bg_rect.height + 4)
     rl.draw_rectangle_rounded(outline_rect, 1.0, 10, outline_color)
-    
+
     # Draw actual background
     rl.draw_rectangle_rounded(bg_rect, 1.0, 10, bg_color)
 
@@ -41,7 +44,7 @@ class ToggleSP:
     min_knob_x = left_edge + knob_radius
     knob_x = min_knob_x + knob_travel_distance * self._progress
     knob_y = self._rect.y + style.TOGGLE_HEIGHT / 2
-    
+
     rl.draw_circle(int(knob_x), int(knob_y), knob_radius, knob_color)
 
     symbol_size = knob_radius / 2
@@ -54,7 +57,7 @@ class ToggleSP:
         mid_y = knob_y + symbol_size * 0.6
         end_x = knob_x + symbol_size * 0.8
         end_y = knob_y - symbol_size * 0.5
-        
+
         rl.draw_line_ex(
             rl.Vector2(int(start_x), int(start_y)),
             rl.Vector2(int(mid_x), int(mid_y)),
@@ -71,7 +74,7 @@ class ToggleSP:
         # Draw X when toggle is OFF
         x_size_factor = 0.65
         x_offset = symbol_size * x_size_factor
-        
+
         rl.draw_line_ex(
             rl.Vector2(int(knob_x - x_offset), int(knob_y - x_offset)),
             rl.Vector2(int(knob_x + x_offset), int(knob_y + x_offset)),
@@ -84,4 +87,3 @@ class ToggleSP:
             3,
           style.TOGGLE_OFF_COLOR
         )
-    return True

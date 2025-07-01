@@ -8,7 +8,6 @@ from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.button import gui_button, ButtonStyle
 from openpilot.system.ui.lib.toggle import Toggle, WIDTH as TOGGLE_WIDTH, HEIGHT as TOGGLE_HEIGHT
 from openpilot.system.ui.lib.widget import Widget
-from openpilot.system.ui.sunnypilot.lib.list_view import ListItemSP
 
 ITEM_BASE_WIDTH = 600
 ITEM_BASE_HEIGHT = 170
@@ -255,10 +254,6 @@ class ListItem(Widget):
       self._rect.y >= (self._parent_rect.y + self._parent_rect.height)):
       return
 
-    if ListItemSP._render(self, isinstance(self.action_item, ToggleAction)):
-      return
-
-
     content_x = self._rect.x + ITEM_PADDING
     text_x = content_x
 
@@ -303,10 +298,6 @@ class ListItem(Widget):
     if not self.is_visible:
       return 0
 
-    sp_height = ListItemSP.get_item_height(self)
-    if sp_height:
-      return sp_height
-
     current_description = self.get_description()
     if self.description_visible and current_description:
       if (
@@ -336,10 +327,6 @@ class ListItem(Widget):
     if right_width == 0:  # Full width action (like DualButtonAction)
       return rl.Rectangle(item_rect.x + ITEM_PADDING, item_rect.y,
                           item_rect.width - (ITEM_PADDING * 2), ITEM_BASE_HEIGHT)
-
-    action_rect = ListItemSP.get_action_item_rect(self, item_rect, isinstance(self.action_item, ToggleAction))
-    if action_rect:
-      return action_rect
 
     right_x = item_rect.x + item_rect.width - right_width
     right_y = item_rect.y
