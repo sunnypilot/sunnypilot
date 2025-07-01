@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 from opendbc.car import structs
 from opendbc.car.interfaces import CarInterfaceBase
-from opendbc.sunnypilot.car.hyundai.longitudinal.helpers import LongitudinalTuningType
+from opendbc.sunnypilot.car.hyundai.longitudinal.helpers import LongitudinalTuningType, RadarType
 from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
@@ -60,9 +60,25 @@ def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
+def _initialize_radar(CI: CarInterfaceBase, CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  # Hyundai Radar
+  if CP.brand == 'hyundai':
+    hyundai_radar = int(params.get("HyundaiRadar", encoding="utf8") or 0)
+    if hyundai_radar == RadarType.OFF:
+      CP_SP.flags |= HyundaiFlagsSP.RADAR_OFF.value
+    if hyundai_radar == RadarType.LEAD_ONLY:
+      CP_SP.flags |= HyundaiFlagsSP.RADAR_LEAD_ONLY.value
+    if hyundai_radar == RadarType.FULL_RADAR:
+      CP_SP.flags |= HyundaiFlagsSP.RADAR_FULL_RADAR.value
+
+
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
 
   _initialize_custom_longitudinal_tuning(CI, CP, CP_SP, params)
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
+  _initialize_radar(CI, CP, CP_SP, params)

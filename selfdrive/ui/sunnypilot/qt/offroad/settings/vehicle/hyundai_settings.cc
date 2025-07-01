@@ -20,6 +20,19 @@ HyundaiSettings::HyundaiSettings(QWidget *parent) : BrandSettingsInterface(paren
   QObject::connect(longitudinalTuningToggle, &ButtonParamControlSP::buttonClicked, this, &HyundaiSettings::updateSettings);
   list->addItem(longitudinalTuningToggle);
   longitudinalTuningToggle->showDescription();
+
+  std::vector<QString> radar_tuning_texts{ tr("Off"), tr("Lead Only"), tr("Full Radar") };
+  radarToggle = new ButtonParamControl(
+    "HyundaiRadar",
+    tr("Radar Tracks"),
+    "",
+    "",
+    radar_tuning_texts,
+    500
+  );
+  QObject::connect(radarToggle, &ButtonParamControlSP::buttonClicked, this, &HyundaiSettings::updateSettings);
+  list->addItem(radarToggle);
+  radarToggle->showDescription();
 }
 
 void HyundaiSettings::updateSettings() {
@@ -54,4 +67,25 @@ void HyundaiSettings::updateSettings() {
   longitudinalTuningToggle->setEnabled(!longitudinal_tuning_disabled);
   longitudinalTuningToggle->setDescription(longitudinal_tuning_description);
   longitudinalTuningToggle->showDescription();
+
+  auto radar_param = std::atoi(params.get("HyundaiRadar").c_str());
+
+  RadarOption radar_option;
+  if (radar_param == int(RadarOption::LEAD_ONLY)) {
+    radar_option = RadarOption::LEAD_ONLY;
+  } else if (radar_param == int(RadarOption::FULL_RADAR)) {
+    radar_option = RadarOption::FULL_RADAR;
+  } else {
+    radar_option = RadarOption::OFF;
+  }
+
+  bool radar_disabled = !offroad || !has_longitudinal_control;
+  QString radar_description = radarDescription(radar_option);
+  if (radar_disabled) {
+    radar_description = toggleDisableMsg(offroad, has_longitudinal_control);
+  }
+
+  radarToggle->setEnabled(!radar_disabled);
+  radarToggle->setDescription(radar_description);
+  radarToggle->showDescription();
 }
