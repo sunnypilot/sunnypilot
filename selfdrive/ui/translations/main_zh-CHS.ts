@@ -577,6 +577,17 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
 </context>
 <context>
+    <name>ModelRenderer</name>
+    <message>
+        <source>LAT</source>
+        <translation>横向</translation>
+    </message>
+    <message>
+        <source>LONG</source>
+        <translation>纵向</translation>
+    </message>
+</context>
+<context>
     <name>HudRenderer</name>
     <message>
         <source>km/h</source>
@@ -589,6 +600,14 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <message>
         <source>MAX</source>
         <translation>最大</translation>
+    </message>
+    <message>
+        <source>LAT</source>
+        <translation>横向</translation>
+    </message>
+    <message>
+        <source>LONG</source>
+        <translation>纵向</translation>
     </message>
     <message>
         <source>SPEED</source>

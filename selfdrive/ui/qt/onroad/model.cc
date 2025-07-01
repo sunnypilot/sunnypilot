@@ -280,7 +280,7 @@ void ModelRenderer::LongFuel(QPainter &painter, int height, int width) {
     font.setPixelSize(20);
     font.setBold(true);
     painter.setFont(font);
-    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LONG");
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, tr("LONG"));
 }
 
 
@@ -355,7 +355,7 @@ void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
     font.setPixelSize(20);
     font.setBold(true);
     painter.setFont(font);
-    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LAT");
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, tr("LAT"));
 }
 
 void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
