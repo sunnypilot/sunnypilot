@@ -1,6 +1,6 @@
 import pyray as rl
 
-from openpilot.system.ui.lib.list_view import ToggleAction, MultipleButtonAction, ListItem, ItemAction
+from openpilot.system.ui.lib.list_view import ToggleAction, ButtonAction, DualButtonAction, TextAction, MultipleButtonAction, ListItem, ItemAction
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from collections.abc import Callable
@@ -118,6 +118,24 @@ def toggle_item(title: str, description: str | Callable[[], str] | None = None, 
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
+
+
+def button_item(title: str, button_text: str | Callable[[], str], description: str | Callable[[], str] | None = None,
+                callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItem:
+  action = ButtonAction(text=button_text, enabled=enabled)
+  return ListItemSP(title=title, description=description, action_item=action, callback=callback)
+
+
+def text_item(title: str, value: str | Callable[[], str], description: str | Callable[[], str] | None = None,
+              callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItem:
+  action = TextAction(text=value, color=rl.Color(170, 170, 170, 255), enabled=enabled)
+  return ListItemSP(title=title, description=description, action_item=action, callback=callback)
+
+
+def dual_button_item(left_text: str, right_text: str, left_callback: Callable = None, right_callback: Callable = None,
+                     description: str | Callable[[], str] | None = None, enabled: bool | Callable[[], bool] = True) -> ListItem:
+  action = DualButtonAction(left_text, right_text, left_callback, right_callback, enabled)
+  return ListItemSP(title="", description=description, action_item=action)
 
 def multiple_button_item(title: str, description: str, buttons: list[str], selected_index: int,
                          button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
