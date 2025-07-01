@@ -1,12 +1,8 @@
 import pyray as rl
 import openpilot.system.ui.lib.toggle as ToggleOP
+import openpilot.system.ui.sunnypilot.lib.styles as styles
 
-ON_COLOR = rl.Color(28, 101, 186, 255)
-OFF_COLOR = rl.Color(0x39, 0x39, 0x39, 255)
-KNOB_COLOR = rl.WHITE
-DISABLED_ON_COLOR = rl.Color(0x22, 0x77, 0x22, 255)  # Dark green when disabled + on
-DISABLED_OFF_COLOR = rl.Color(0x39, 0x39, 0x39, 255)
-DISABLED_KNOB_COLOR = rl.Color(0x88, 0x88, 0x88, 255)
+STYLE = styles.Default
 WIDTH, HEIGHT = 130, 80
 BG_HEIGHT = 60
 
@@ -14,17 +10,17 @@ class ToggleSP:
   def _render(self, rect: rl.Rectangle):
 
     if self._enabled:
-      bg_color = ToggleOP.Toggle._blend_color(self, OFF_COLOR, ON_COLOR, self._progress)
-      knob_color = KNOB_COLOR
+      bg_color = ToggleOP.Toggle._blend_color(self, STYLE.TOGGLE_OFF_COLOR, STYLE.TOGGLE_ON_COLOR, self._progress)
+      knob_color = STYLE.TOGGLE_KNOB_COLOR
     else:
-      bg_color = ToggleOP.Toggle._blend_color(self, DISABLED_OFF_COLOR, DISABLED_ON_COLOR, self._progress)
-      knob_color = DISABLED_KNOB_COLOR
+      bg_color = ToggleOP.Toggle._blend_color(self, STYLE.TOGGLE_DISABLED_OFF_COLOR, STYLE.TOGGLE_DISABLED_ON_COLOR, self._progress)
+      knob_color = STYLE.TOGGLE_DISABLED_KNOB_COLOR
 
     # Draw background
     bg_rect = rl.Rectangle(self._rect.x + 5, self._rect.y + 10, WIDTH - 10, BG_HEIGHT)
 
     # Draw outline first
-    outline_color = ON_COLOR
+    outline_color = STYLE.TOGGLE_ON_COLOR
     if not self._enabled:
         # Use a more subtle color for disabled state
         outline_color = rl.Color(outline_color.r // 2, outline_color.g // 2, outline_color.b // 2, 255)
@@ -65,13 +61,13 @@ class ToggleSP:
             rl.Vector2(int(start_x), int(start_y)),
             rl.Vector2(int(mid_x), int(mid_y)),
             3,
-            ON_COLOR
+          STYLE.TOGGLE_ON_COLOR
         )
         rl.draw_line_ex(
             rl.Vector2(int(mid_x), int(mid_y)),
             rl.Vector2(int(end_x), int(end_y)),
             3,
-            ON_COLOR
+          STYLE.TOGGLE_ON_COLOR
         )
     else:
         # Draw X when toggle is OFF
@@ -82,12 +78,12 @@ class ToggleSP:
             rl.Vector2(int(knob_x - x_offset), int(knob_y - x_offset)),
             rl.Vector2(int(knob_x + x_offset), int(knob_y + x_offset)),
             3,
-            OFF_COLOR
+          STYLE.TOGGLE_OFF_COLOR
         )
         rl.draw_line_ex(
             rl.Vector2(int(knob_x + x_offset), int(knob_y - x_offset)),
             rl.Vector2(int(knob_x - x_offset), int(knob_y + x_offset)),
             3,
-            OFF_COLOR
+          STYLE.TOGGLE_OFF_COLOR
         )
     return True

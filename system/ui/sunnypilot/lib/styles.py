@@ -1,0 +1,20 @@
+import pyray as rl
+from dataclasses import dataclass
+
+@dataclass
+class Default:
+  # Base Colors
+  ON_BG_COLOR = rl.Color(28, 101, 186, 255) # Blue
+  OFF_BG_COLOR = rl.Color(39, 39, 39, 255) # Grey
+  DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255) # Dull Blue
+  DISABLED_OFF_BG_COLOR = rl.Color(39, 39, 39, 255) # Grey
+  ITEM_TEXT_COLOR = rl.WHITE
+  ITEM_DESC_TEXT_COLOR = rl.Color(128, 128, 128, 255)
+
+  # Toggle Colors
+  TOGGLE_ON_COLOR = ON_BG_COLOR
+  TOGGLE_OFF_COLOR = OFF_BG_COLOR
+  TOGGLE_KNOB_COLOR = rl.WHITE
+  TOGGLE_DISABLED_ON_COLOR = DISABLED_ON_BG_COLOR
+  TOGGLE_DISABLED_OFF_COLOR = DISABLED_OFF_BG_COLOR
+  TOGGLE_DISABLED_KNOB_COLOR = rl.Color(88, 88, 88, 255) # Lighter Grey
