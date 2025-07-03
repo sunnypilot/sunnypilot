@@ -7,11 +7,12 @@
 
 #pragma once
 
-#include "selfdrive/ui/sunnypilot/ui.h"
-#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_subpanel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 class LongitudinalPanel : public QWidget {
   Q_OBJECT
@@ -19,13 +20,18 @@ class LongitudinalPanel : public QWidget {
 public:
   explicit LongitudinalPanel(QWidget *parent = nullptr);
   void showEvent(QShowEvent *event) override;
+  void refresh(bool _offroad);
 
 private:
   Params params;
+  bool has_longitudinal_control = false;
+  bool is_pcm_cruise = false;
+  bool offroad = false;
+
   QStackedLayout *main_layout = nullptr;
   ScrollViewSP *cruisePanelScroller = nullptr;
   QWidget *cruisePanelScreen = nullptr;
-
+  CustomAccIncrement *customAccIncrement = nullptr;
   SpeedLimitControlSubpanel *slcScreen;
   SpeedLimitControl *slcControl;
 };

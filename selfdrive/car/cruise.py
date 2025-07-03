@@ -3,6 +3,7 @@ import numpy as np
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
+from openpilot.sunnypilot.selfdrive.car.cruise_ext import VCruiseHelperSP
 
 
 # WARNING: this value was determined based on the model's training distribution,
@@ -28,8 +29,9 @@ CRUISE_INTERVAL_SIGN = {
 }
 
 
-class VCruiseHelper:
+class VCruiseHelper(VCruiseHelperSP):
   def __init__(self, CP):
+    VCruiseHelperSP.__init__(self)
     self.CP = CP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
@@ -99,7 +101,7 @@ class VCruiseHelper:
     if not self.button_change_states[button_type]["enabled"]:
       return
 
-    v_cruise_delta = v_cruise_delta * (5 if long_press else 1)
+    long_press, v_cruise_delta = VCruiseHelperSP.update_v_cruise_delta(self, long_press, v_cruise_delta)
     if long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
       self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
     else:
