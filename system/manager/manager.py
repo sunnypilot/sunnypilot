@@ -73,6 +73,15 @@ def manager_init() -> None:
     ("ToyotaAutoHold", "0"),
     ("ToyotaEnhancedBsm", "0"),
     ("ToyotaTSS2Long", "0"),
+
+    ("SpeedLimitControl", "0"),
+    ("SpeedLimitControlPolicy", "3"),
+    ("SpeedLimitEngageType", "0"),
+    ("SpeedLimitOffsetType", "0"),
+    ("SpeedLimitValueOffset", "0"),
+    ("SpeedLimitWarningType", "0"),
+    ("SpeedLimitWarningOffsetType", "0"),
+    ("SpeedLimitWarningValueOffset", "0"),
   ]
 
   # device boot mode
