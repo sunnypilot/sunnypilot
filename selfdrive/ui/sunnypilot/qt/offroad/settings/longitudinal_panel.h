@@ -8,8 +8,11 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/custom_acc_increment.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal/slc/speed_limit_control_subpanel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+#include "selfdrive/ui/sunnypilot/ui.h"
 
 class LongitudinalPanel : public QWidget {
   Q_OBJECT
@@ -33,4 +36,6 @@ private:
   ParamControlSP *vibePersonalityControl;
   ParamControlSP *vibeAccelPersonalityControl;
   ParamControlSP *vibeFollowPersonalityControl;
+  SpeedLimitControlSubpanel *slcScreen;
+  SpeedLimitControl *slcControl;
 };
