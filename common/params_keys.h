@@ -198,4 +198,14 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"OsmStateTitle", PERSISTENT},
     {"OsmWayTest", PERSISTENT},
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
+
+    // Speed Limit Control
+    {"SpeedLimitControl", PERSISTENT | BACKUP},
+    {"SpeedLimitControlPolicy", PERSISTENT | BACKUP},
+    {"SpeedLimitEngageType", PERSISTENT | BACKUP},
+    {"SpeedLimitOffsetType", PERSISTENT | BACKUP},
+    {"SpeedLimitValueOffset", PERSISTENT | BACKUP},
+    {"SpeedLimitWarningType", PERSISTENT | BACKUP},
+    {"SpeedLimitWarningOffsetType", PERSISTENT | BACKUP},
+    {"SpeedLimitWarningValueOffset", PERSISTENT | BACKUP},
 };

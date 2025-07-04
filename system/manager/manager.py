@@ -68,6 +68,15 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
+
+    ("SpeedLimitControl", "0"),
+    ("SpeedLimitControlPolicy", "3"),
+    ("SpeedLimitEngageType", "0"),
+    ("SpeedLimitOffsetType", "0"),
+    ("SpeedLimitValueOffset", "0"),
+    ("SpeedLimitWarningType", "0"),
+    ("SpeedLimitWarningOffsetType", "0"),
+    ("SpeedLimitWarningValueOffset", "0"),
   ]
 
   # device boot mode
