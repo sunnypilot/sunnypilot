@@ -12,8 +12,11 @@ class LagdToggle:
   def __init__(self):
     self.params = Params()
     self.lag = 0.0
-    self.software_delay = 0.2
     self._last_desc = None
+
+  @property
+  def software_delay(self):
+    return float(self.params.get("LagdToggledelay", encoding='utf8'))
 
   def _maybe_update_desc(self, desc):
     if desc != self._last_desc:
