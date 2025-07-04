@@ -163,6 +163,11 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SmartCruiseControlVision", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
 
+    // toyota specific params
+    {"ToyotaAutoHold", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ToyotaEnhancedBsm", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ToyotaTSS2Long", {PERSISTENT | BACKUP, BOOL, "0"}},
+
     // MADS params
     {"Mads", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"MadsMainCruiseAllowed", {PERSISTENT | BACKUP, BOOL, "1"}},
