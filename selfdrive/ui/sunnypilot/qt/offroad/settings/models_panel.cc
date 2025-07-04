@@ -307,7 +307,8 @@ void ModelsPanel::updateLabels() {
 
   // Update lagdToggle description with current value
   QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
-                   "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
+                   "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. "
+                   "The Current value is updated automatically when the vehicle is Onroad.");
   QString current = QString::fromStdString(params.get("LagdToggleDesc", false));
   if (!current.isEmpty()) {
     desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
