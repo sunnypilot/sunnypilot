@@ -12,7 +12,7 @@ class LagdToggle:
   def __init__(self):
     self.params = Params()
     self.lag = 0.0
-    self.software_delay = 0.104
+    self.software_delay = 0.2
     self._last_desc = None
 
   def _maybe_update_desc(self, desc):
@@ -25,7 +25,7 @@ class LagdToggle:
       lateral_delay = sm["liveDelay"].lateralDelay
       lat_smooth = model.LAT_SMOOTH_SECONDS
       result = lateral_delay + lat_smooth
-      desc = f"liveDelay ({lateral_delay:.3f}) + lat_smooth ({lat_smooth:.3f}) = {result:.3f}"
+      desc = f"live steer delay learner ({lateral_delay:.3f}s) + model smoothing filter ({lat_smooth:.3f}s) = total delay ({result:.3f}s)"
       self._maybe_update_desc(desc)
       return result
 
@@ -33,7 +33,8 @@ class LagdToggle:
     lat_smooth = model.LAT_SMOOTH_SECONDS
     delay = self.software_delay
     result = (steer_actuator_delay + delay) + lat_smooth
-    desc = f"steerActuatorDelay ({steer_actuator_delay:.3f}) + software_delay ({delay:.3f}) + lat_smooth ({lat_smooth:.3f}) = {result:.3f}"
+    desc = (f"Vehicle steering delay ({steer_actuator_delay:.3f}s) + software delay ({delay:.3f}s) + " +
+            f"model smoothing filter ({lat_smooth:.3f}s) = total delay ({result:.3f}s)")
     self._maybe_update_desc(desc)
     return result
 

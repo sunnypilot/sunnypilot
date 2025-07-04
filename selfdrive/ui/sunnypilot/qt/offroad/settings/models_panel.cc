@@ -305,7 +305,7 @@ void ModelsPanel::updateLabels() {
       QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
                         "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.");
       if (!lagd_current.isEmpty()) {
-        desc += "<br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + lagd_current + "</span>";
+        desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + lagd_current + "</span>";
       }
       item->setDescription(desc);
     }
