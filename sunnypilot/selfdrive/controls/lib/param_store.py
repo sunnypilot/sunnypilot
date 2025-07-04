@@ -20,6 +20,11 @@ class ParamStore:
     universal_params: list[str] = []
     brand_params: list[str] = []
 
+    if CP.brand == "toyota":
+      brand_params.extend([
+        "FlipAccIncrements",
+      ])
+
     self.keys = universal_params + brand_params
     self.values = {}
 

@@ -8,6 +8,13 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle/toyota_settings.h"
 
 ToyotaSettings::ToyotaSettings(QWidget *parent) : BrandSettingsInterface(parent) {
+  toyotaFlipACC = new ParamControlSP(
+    "FlipAccIncrements",
+    tr("Flip ACC Increments"),
+    tr("Enabling this flips the Short & Long press ACC increments."),
+    "",
+    this);
+  list->addItem(toyotaFlipACC);
 }
 
 void ToyotaSettings::updateSettings() {
