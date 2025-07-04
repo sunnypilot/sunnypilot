@@ -313,6 +313,7 @@ void ModelsPanel::updateLabels() {
     desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
   }
   lagd_toggle_control->setDescription(desc);
+  lagd_toggle_control->showDescription();
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {
