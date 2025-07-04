@@ -73,6 +73,9 @@ def manager_init() -> None:
     ("ToyotaEnhancedBsm", "0"),
     ("ToyotaTSS2Long", "0"),
     ("VisionTurnSpeedControl", "1"),
+    ("VibePersonalityEnabled", "0"),
+    ("VibeAccelPersonalityEnabled", "0"),
+    ("VibeFollowPersonalityEnabled", "0"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),

@@ -45,7 +45,7 @@ _LEAVING_ACC = 0.5  # Conformable acceleration to regain speed while leaving a t
 
 _MIN_LANE_PROB = 0.6  # Minimum lanes probability to allow curvature prediction based on lanes.
 
-_DEBUG = False
+_DEBUG = True
 
 
 def _debug(msg):

@@ -207,6 +207,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"ToyotaEnhancedBsm", PERSISTENT},
     {"ToyotaTSS2Long", PERSISTENT},
     {"RainbowMode", PERSISTENT},
+    {"VibePersonalityEnabled", PERSISTENT},
+    {"VibeAccelPersonalityEnabled", PERSISTENT},
+    {"VibeFollowPersonalityEnabled", PERSISTENT},
     // Speed Limit Control
     {"SpeedLimitControl", PERSISTENT | BACKUP},
     {"SpeedLimitControlPolicy", PERSISTENT | BACKUP},
