@@ -7,6 +7,8 @@ from collections.abc import Callable
 
 from openpilot.system.ui.sunnypilot.lib.toggle import ToggleSP
 import openpilot.system.ui.sunnypilot.lib.styles as styles
+from openpilot.system.ui.sunnypilot.lib.option_control import OptionControl
+
 style = styles.Default
 
 
@@ -141,3 +143,29 @@ def multiple_button_item(title: str, description: str, buttons: list[str], selec
                          button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
   action = MultipleButtonAction(buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action)
+
+
+
+class OptionControlAction(ItemAction):
+  def __init__(self, min_value: int, max_value: int, initial_value: int,
+               value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
+               on_value_changed: Callable[[int], None] | None = None):
+    # TODO: Fix click detection rectangle for description
+    super().__init__(width=0, enabled=enabled)
+    self.option_control = OptionControl(min_value, max_value, initial_value,
+                                        value_change_step, enabled, on_value_changed)
+
+  def _render(self, rect: rl.Rectangle) -> bool:
+    self.option_control.set_enabled(self.enabled)
+    return self.option_control.render(rect)
+
+
+def option_item(title: str, min_value: int, max_value: int, initial_value: int,
+                value_change_step: int = 1, description: str | Callable[[], str] | None = None,
+                on_value_changed: Callable[[int], None] | None = None,
+                enabled: bool | Callable[[], bool] = True,
+                icon: str = "") -> ListItem:
+  action = OptionControlAction(min_value, max_value, initial_value,
+                               value_change_step, enabled, on_value_changed)
+  return ListItemSP(title=title, description=description,
+                  action_item=action, icon=icon)
