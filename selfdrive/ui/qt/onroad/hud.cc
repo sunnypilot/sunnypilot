@@ -226,9 +226,18 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
   const int sign_height = 204;
   QRect sign_rect(sign_x, sign_y, sign_width, sign_height);
 
-  // Add pulsing animation for violations
-  bool should_pulse = speed_violation_level >= 2;
-  int pulse_alpha = should_pulse ? (int)(127 + 128 * std::sin(QTime::currentTime().msec() * 0.01)) : 255;
+  // Check if SLC is inactive or controller is not active
+  bool is_slc_inactive = (slc_state == cereal::LongitudinalPlanSP::SpeedLimitControlState::INACTIVE ||
+                         slc_state == cereal::LongitudinalPlanSP::SpeedLimitControlState::TEMP_INACTIVE);
+  bool is_controller_inactive = (status == STATUS_DISENGAGED);
+  bool should_show_inactive = is_slc_inactive || is_controller_inactive;
+
+  // Reduce opacity when inactive (50% opacity instead of full)
+  int base_alpha = should_show_inactive ? 128 : 255;
+
+  // Add pulsing animation for violations (but not when inactive)
+  bool should_pulse = speed_violation_level >= 2 && !should_show_inactive;
+  int pulse_alpha = should_pulse ? (int)(127 + 128 * std::sin(QTime::currentTime().msec() * 0.01)) : base_alpha;
 
   if (!is_metric) {
     // US/Canada (MUTCD style) sign
@@ -238,9 +247,11 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
 
     // Draw inner rounded rectangle with colored border
     QRect inner_rect = sign_rect.adjusted(10, 10, -10, -10);
-    QColor border_color = QColor(0, 0, 0, 255);
-    if (speed_violation_level == 1) border_color = QColor(255, 165, 0, 255); // Orange or yellow?
-    else if (speed_violation_level >= 2) border_color = QColor(255, 0, 0, 255); // Red
+    QColor border_color = QColor(0, 0, 0, pulse_alpha);
+    if (!should_show_inactive) {
+      if (speed_violation_level == 1) border_color = QColor(255, 165, 0, pulse_alpha); // Orange or yellow?
+      else if (speed_violation_level >= 2) border_color = QColor(255, 0, 0, pulse_alpha); // Red
+    }
 
     p.setPen(QPen(border_color, 4));
     p.setBrush(QColor(255, 255, 255, pulse_alpha));
@@ -255,11 +266,20 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
     // Speed value with color coding
     p.setFont(InterFont(90, QFont::Bold));
     QColor speed_color = QColor(0, 0, 0, pulse_alpha);
-    if (speed_violation_level == 1) speed_color = QColor(255, 165, 0, pulse_alpha);
-    else if (speed_violation_level >= 2) speed_color = QColor(255, 0, 0, pulse_alpha);
+    if (!should_show_inactive) {
+      if (speed_violation_level == 1) speed_color = QColor(255, 165, 0, pulse_alpha);
+      else if (speed_violation_level >= 2) speed_color = QColor(255, 0, 0, pulse_alpha);
+    }
 
     p.setPen(speed_color);
     p.drawText(inner_rect.adjusted(0, 80, 0, 0), Qt::AlignTop | Qt::AlignHCenter, speedLimitStr);
+
+    // Draw diagonal line when inactive
+    if (should_show_inactive) {
+      p.setPen(QPen(QColor(200, 50, 50, 180), 8, Qt::SolidLine, Qt::RoundCap));
+      p.drawLine(inner_rect.topLeft() + QPoint(15, 15),
+                 inner_rect.bottomRight() + QPoint(-15, -15));
+    }
 
     // Speed limit offset value
     if (!slcSubText.isEmpty()) {
@@ -272,11 +292,11 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
       );
 
       p.setPen(QPen(QColor(255, 255, 255, 75), 6));
-      p.setBrush(QColor(0, 0, 0, 255));
+      p.setBrush(QColor(0, 0, 0, pulse_alpha));
       p.drawRoundedRect(offset_box_rect, 12, 12);
 
       p.setFont(InterFont(40, QFont::Bold));
-      p.setPen(QColor(255, 255, 255, 255));
+      p.setPen(QColor(255, 255, 255, pulse_alpha));
       p.drawText(offset_box_rect, Qt::AlignCenter, slcSubText);
     }
   } else {
@@ -298,8 +318,10 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
 
     QRect red_ring = circle_rect.adjusted(4, 4, -4, -4);
     QColor ring_color = QColor(255, 0, 0, pulse_alpha);
-    if (speed_violation_level == 1) ring_color = QColor(255, 165, 0, pulse_alpha);
-    else if (speed_violation_level >= 2) ring_color = QColor(255, 0, 0, pulse_alpha);
+    if (!should_show_inactive) {
+      if (speed_violation_level == 1) ring_color = QColor(255, 165, 0, pulse_alpha);
+      else if (speed_violation_level >= 2) ring_color = QColor(255, 0, 0, pulse_alpha);
+    }
 
     p.setBrush(ring_color);
     p.drawEllipse(red_ring);
@@ -313,13 +335,24 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
     int font_size = (speedLimitStr.size() >= 3) ? 70 : 85;
     p.setFont(InterFont(font_size, QFont::Bold));
     QColor speed_color = QColor(0, 0, 0, pulse_alpha);
-    if (speed_violation_level == 1) speed_color = QColor(255, 165, 0, pulse_alpha);
-    else if (speed_violation_level >= 2) speed_color = QColor(255, 0, 0, pulse_alpha);
+    if (!should_show_inactive) {
+      if (speed_violation_level == 1) speed_color = QColor(255, 165, 0, pulse_alpha);
+      else if (speed_violation_level >= 2) speed_color = QColor(255, 0, 0, pulse_alpha);
+    }
 
     p.setPen(speed_color);
 
     QRect speed_text_rect = center_circle;
     p.drawText(speed_text_rect, Qt::AlignCenter, speedLimitStr);
+
+    // Draw diagonal line when inactive
+    if (should_show_inactive) {
+      p.setPen(QPen(QColor(200, 50, 50, 180), 8, Qt::SolidLine, Qt::RoundCap));
+      // Draw line across the center circle
+      QPoint center = center_circle.center();
+      int radius = center_circle.width() / 2 - 8;
+      p.drawLine(center + QPoint(-radius, -radius), center + QPoint(radius, radius));
+    }
 
     // Speed limit offset value
     if (!slcSubText.isEmpty()) {
@@ -332,11 +365,11 @@ void HudRenderer::drawSpeedLimitSigns(QPainter &p, const QRect &surface_rect) {
       );
 
       p.setPen(QPen(QColor(255, 255, 255, 75), 6));
-      p.setBrush(QColor(0, 0, 0, 255));
+      p.setBrush(QColor(0, 0, 0, pulse_alpha));
       p.drawRoundedRect(offset_circle_rect, offset_circle_size/2, offset_circle_size/2);
 
       p.setFont(InterFont(40, QFont::Bold));
-      p.setPen(QColor(255, 255, 255, 255));
+      p.setPen(QColor(255, 255, 255, pulse_alpha));
       p.drawText(offset_circle_rect, Qt::AlignCenter, slcSubText);
     }
   }
