@@ -78,7 +78,6 @@ class Paths:
     else:
       return "/data/community/crashes"
 
-
   @staticmethod
   def mapd_root() -> str:
     if PC:
