@@ -5,6 +5,7 @@ set -e
 DEFAULT_REPO_URL="https://github.com/sunnypilot"
 START_AT_BOOT=false
 RESTORE_MODE=false
+RUNNER_VERSION="2.325.0"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -108,9 +109,9 @@ setup_system_configs() {
 install_runner() {
     echo "Downloading and setting up runner..."
     cd "$RUNNER_DIR"
-    curl -o actions-runner-linux-arm64-2.322.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.322.0/actions-runner-linux-arm64-2.322.0.tar.gz
-    sudo -u ${RUNNER_USER} tar -xzf ./actions-runner-linux-arm64-2.322.0.tar.gz
-    sudo rm ./actions-runner-linux-arm64-2.322.0.tar.gz
+    curl -o actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz -L https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
+    sudo -u ${RUNNER_USER} tar -xzf ./actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
+    sudo rm ./actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
     sudo chmod +x ./config.sh
 }
 
@@ -149,25 +150,32 @@ EOL
 }
 
 install_service() {
+    local service_name
+    if [ -f "${RUNNER_DIR}/.service" ]; then
+        service_name=$(cat "${RUNNER_DIR}/.service")
+    else
+        service_name="actions.runner.sunnypilot.$(uname -n)"
+    fi
+  
+    create_service_template
     remount_rw
+    local service_path="/etc/systemd/system/${service_name}"
     echo "Installing systemd service..."
+    if [ -f "${service_path}" ]; then
+        echo "Service ${service_path} found in systemd, we will delete it"
+        sudo rm -f "${service_path}"
+    fi
+    
     cd "$RUNNER_DIR"
     sudo ./svc.sh install $RUNNER_USER
 
     if [ "$START_AT_BOOT" = false ]; then
-        local service_name
-        if [ -f "${RUNNER_DIR}/.service" ]; then
-            service_name=$(cat "${RUNNER_DIR}/.service")
-        else
-            service_name="actions.runner.sunnypilot.$(uname -n)"
-        fi
         sudo systemctl disable "${service_name}"
     fi
     remount_ro
 }
 
 check_restore_prerequisites() {
-    local needs_restore=false
     local can_restore=false
     local service_name=""
 
@@ -189,25 +197,16 @@ check_restore_prerequisites() {
         exit 1
     fi
 
-    # Then check if restoration is needed (if either service or user is missing)
-    if ! systemctl list-unit-files "${service_name}" &>/dev/null; then
-        echo "Service ${service_name} not found in systemd"
-        needs_restore=true
-    fi
-
     if ! id "${RUNNER_USER}" &>/dev/null; then
         echo "User ${RUNNER_USER} does not exist"
-        needs_restore=true
     fi
 
     # Only proceed if we can restore AND need to restore
-    if [ "$can_restore" = true ] && [ "$needs_restore" = true ]; then
-        echo "Restoration is needed and possible"
+    if [ "$can_restore" = true ]; then
+        echo "Restoration is possible"
         return 0
     else
-        if [ "$needs_restore" = false ]; then
-            echo "System is already properly configured (user and service exist)"
-        fi
+        echo "No restoration possible"
         exit 0
     fi
 }
@@ -226,7 +225,6 @@ perform_install() {
     setup_system_configs
     install_runner
     set_directory_permissions
-    create_service_template
     configure_runner
     install_service
     echo "Installation completed successfully"
