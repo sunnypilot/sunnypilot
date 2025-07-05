@@ -6,19 +6,20 @@ See the LICENSE.md file in the root directory for more details.
 """
 # Version = 2025-6-30
 
-import numpy as np
-
 from cereal import messaging
 from opendbc.car import structs
 from numpy import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.constants import WMACConstants
-from openpilot.selfdrive.controls.lib.longitudinal_planner import ModelConstants
+from typing import Literal
 
 # d-e2e, from modeldata.h
 TRAJECTORY_SIZE = 33
 SET_MODE_TIMEOUT = 15
+
+# Define the valid mode types
+ModeType = Literal['acc', 'blended']
 
 
 class SmoothKalmanFilter:
@@ -78,14 +79,14 @@ class ModeTransitionManager:
   """Manages smooth transitions between driving modes with hysteresis."""
 
   def __init__(self):
-    self.current_mode = 'acc'
+    self.current_mode: ModeType = 'acc'
     self.mode_confidence = {'acc': 1.0, 'blended': 0.0}
     self.transition_timeout = 0
     self.min_mode_duration = 10
     self.mode_duration = 0
     self.emergency_override = False
 
-  def request_mode(self, mode: str, confidence: float = 1.0, emergency: bool = False):
+  def request_mode(self, mode: ModeType, confidence: float = 1.0, emergency: bool = False):
     # Emergency override for critical situations (stops, collisions)
     if emergency:
       self.emergency_override = True
@@ -125,7 +126,7 @@ class ModeTransitionManager:
     for mode in self.mode_confidence:
       self.mode_confidence[mode] *= 0.98
 
-  def get_mode(self) -> str:
+  def get_mode(self) -> ModeType:
     return self.current_mode
 
 
