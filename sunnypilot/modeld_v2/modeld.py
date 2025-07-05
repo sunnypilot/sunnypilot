@@ -23,7 +23,7 @@ from openpilot.sunnypilot.modeld_v2.models.commonmodel_pyx import DrivingModelFr
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 
 from openpilot.sunnypilot.models.helpers import get_active_bundle
-from openpilot.sunnypilot.models.modeld_lagd import ModeldLagd
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
 from openpilot.sunnypilot.models.runners.helpers import get_model_runner
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
@@ -239,7 +239,7 @@ def main(demo=False):
   cloudlog.info("modeld got CarParams: %s", CP.brand)
 
 
-  modeld_lagd = ModeldLagd()
+  modeld_lagd = LagdToggle()
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
