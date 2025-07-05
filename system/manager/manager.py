@@ -57,6 +57,7 @@ def manager_init() -> None:
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("LagdToggle", "1"),
+    ("LagdToggledelay", "0.2"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
