@@ -32,5 +32,5 @@ class ParamStore:
 
   def publish(self) -> list[capnp.lib.capnp._DynamicStructBuilder]:
     if self.cached_params_list is None:
-      self.cached_params_list = [custom.CarControlSP.Param(key=k, value=self.values[k]) for k in self.keys]
+      self.cached_params_list = [custom.CarControlSP.Param(key=k, value=self.values[k]) for k in self.keys] # TODO-SP: Why are we doing a list instead of a dictionary here? 
     return self.cached_params_list
