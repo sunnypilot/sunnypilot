@@ -11,6 +11,8 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
 
+from openpilot.sunnypilot.livedelay.lagd_toggle import LagdToggle
+
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
 MIN_POINTS_TOTAL = 4000
@@ -49,8 +51,10 @@ class TorqueBuckets(PointBuckets):
         break
 
 
-class TorqueEstimator(ParameterEstimator):
+class TorqueEstimator(ParameterEstimator, LagdToggle):
   def __init__(self, CP, decimated=False, track_all_points=False):
+    super().__init__()
+    self.CP = CP
     self.hist_len = int(HISTORY / DT_MDL)
     self.lag = 0.0
     self.track_all_points = track_all_points  # for offline analysis, without max lateral accel or max steer torque filters
@@ -176,7 +180,7 @@ class TorqueEstimator(ParameterEstimator):
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
     elif which == "liveDelay":
-      self.lag = msg.lateralDelay
+      self.lag = self.lagd_torqued_main(self.CP, msg)
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:
