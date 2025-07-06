@@ -340,7 +340,13 @@ class LongitudinalMpc:
     # Get following distance
     if self.vibe_controller.is_follow_enabled():
       t_follow = self.vibe_controller.get_follow_distance_multiplier(v_ego)
-      #print(f"[MPC DYNAMIC ___________] Using DYNAMIC t_follow: {t_follow:.3f}s (from vibe controller)")
+      if t_follow is not None:
+        #print(f"[MPC DYNAMIC ___________] Using DYNAMIC t_follow: {t_follow:.3f}s (from vibe controller)")
+        pass
+      else:
+        # Fallback to stock behavior when vibe controller can't provide a value
+        t_follow = get_T_FOLLOW(personality)
+        #print(f"[MPC FALLBACK ___________] Using FALLBACK t_follow: {t_follow:.3f}s (vibe controller returned None)")
     else:
       t_follow = get_T_FOLLOW(personality)
       #print(f"[MPC STATIC ___________] Using STATIC t_follow: {t_follow:.3f}s (disabled personality)")
@@ -355,7 +361,7 @@ class LongitudinalMpc:
         #print(f"[MPC DYNAMIC ----------] Using DYNAMIC accel limits: {min_accel:.3f} m/s² (from vibe controller)")
       else:
         min_accel = CRUISE_MIN_ACCEL
-        #print(f"[MPC STATIC ----------] Using STATIC accel limits: {min_accel:.3f} m/s² (fallback to stock behavior)")
+        #print(f"[MPC FALLBACK ----------] Using FALLBACK accel limits: {min_accel:.3f} m/s² (vibe controller returned None)")
     else:
       min_accel = CRUISE_MIN_ACCEL
       #print(f"[MPC STATIC ----------] Using STATIC accel limits: {min_accel:.3f} m/s² (disabled min accel limit)")

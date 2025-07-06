@@ -210,6 +210,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"VibePersonalityEnabled", PERSISTENT},
     {"VibeAccelPersonalityEnabled", PERSISTENT},
     {"VibeFollowPersonalityEnabled", PERSISTENT},
+    {"VibePersonalityType", PERSISTENT},
+    {"AccelPersonality", PERSISTENT},
     // Speed Limit Control
     {"SpeedLimitControl", PERSISTENT | BACKUP},
     {"SpeedLimitControlPolicy", PERSISTENT | BACKUP},
