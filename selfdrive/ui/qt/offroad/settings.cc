@@ -62,13 +62,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       false,
     },
     {
-      "VibePersonalityType",
-      tr("Enable use of eco normal and sport personality"),
-      tr("accel personalities based on personality (i.e., relaxed, standard, sport)"),
-      "../assets/offroad/icon_blank.png",
-      false,
-    },
-    {
       "ToyotaDriveMode",
       tr("Enable drive mode btn link"),
       tr("Links cars drive mode btn with accel personalities based on personality (i.e., relaxed, standard, sport)"),
