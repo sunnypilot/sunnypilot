@@ -76,6 +76,8 @@ def manager_init() -> None:
     ("VibePersonalityEnabled", "0"),
     ("VibeAccelPersonalityEnabled", "0"),
     ("VibeFollowPersonalityEnabled", "0"),
+    ("VibePersonalityType", "0"), # 0=LongPersonality, 1=AccelPersonality
+    ("AccelPersonality", "1"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),
