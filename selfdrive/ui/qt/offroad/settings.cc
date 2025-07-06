@@ -69,6 +69,13 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       false,
     },
     {
+      "ToyotaDriveMode",
+      tr("Enable drive mode btn link"),
+      tr("Links cars drive mode btn with accel personalities based on personality (i.e., relaxed, standard, sport)"),
+      "../assets/offroad/icon_blank.png",
+      false,
+    },
+    {
       "ToyotaAutoHold",
       tr("Toyota: Auto Brake Hold"),
       tr("As you may auto brake hold currently supported by openpilot, this feature will allow sunnypilot to automatically hold the vehicle at a stop when the lead car is stopped. (TSS2 only)"),
