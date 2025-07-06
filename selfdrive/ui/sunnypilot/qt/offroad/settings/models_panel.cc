@@ -94,11 +94,28 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   lagd_toggle_control->showDescription();
   list->addItem(lagd_toggle_control);
 
-  // Software delay control
+  // Software delay controls
+  delay_offset_control = new OptionControlSP("LagdToggledelayoffset", tr("Learned Delay Offset"),
+                                     tr("Adjust the delay offset when Live Learning Steer Delay is toggled on."
+                                        "\nThe default delay offset value is 0.0"),
+                                     "", {00, 20}, 1, false, nullptr, true);
+
+
   delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
                                      tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
                                         "\nThe default software delay value is 0.2"),
                                      "", {10, 30}, 1, false, nullptr, true);
+
+  connect(delay_offset_control, &OptionControlSP::updateLabels, [=]() {
+    float value = QString::fromStdString(params.get("LagdToggledelayoffset")).toFloat();
+    delay_offset_control->setLabel(QString::number(value, 'f', 2) + "s");
+  });
+  connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
+    delay_offset_control->setVisible(!state);
+  });
+  delay_offset_control->showDescription();
+  list->addItem(delay_offset_control);
+
 
   connect(delay_control, &OptionControlSP::updateLabels, [=]() {
     float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
@@ -315,6 +332,13 @@ void ModelsPanel::updateLabels() {
   }
   lagd_toggle_control->setDescription(desc);
   lagd_toggle_control->showDescription();
+
+  delay_offset_control->setVisible(params.getBool("LagdToggle"));
+  if (delay_offset_control->isVisible()) {
+    float value = QString::fromStdString(params.get("LagdToggledelayoffset")).toFloat();
+    delay_offset_control->setLabel(QString::number(value, 'f', 2) + "s");
+    delay_offset_control->showDescription();
+  }
 
   delay_control->setVisible(!params.getBool("LagdToggle"));
   if (delay_control->isVisible()) {

@@ -180,6 +180,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"LagdToggle", PERSISTENT | BACKUP},
     {"LagdToggleDesc", PERSISTENT},
     {"LagdToggledelay", PERSISTENT | BACKUP},
+    {"LagdToggledelayoffset", PERSISTENT | BACKUP},
 
     // mapd
     {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},

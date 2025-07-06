@@ -18,6 +18,10 @@ class LagdToggle:
   def software_delay(self):
     return float(self.params.get("LagdToggledelay", encoding='utf8'))
 
+  @property
+  def software_delay_offset(self):
+    return float(self.params.get("LagdToggledelayoffset", encoding='utf8'))
+
   def _maybe_update_desc(self, desc):
     if desc != self._last_desc:
       self.params.put_nonblocking("LagdToggleDesc", desc)
@@ -27,8 +31,9 @@ class LagdToggle:
     if self.params.get_bool("LagdToggle"):
       lateral_delay = sm["liveDelay"].lateralDelay
       lat_smooth = model.LAT_SMOOTH_SECONDS
-      result = lateral_delay + lat_smooth
-      desc = f"live steer delay learner ({lateral_delay:.3f}s) + model smoothing filter ({lat_smooth:.3f}s) = total delay ({result:.3f}s)"
+      offset = self.software_delay_offset
+      result = lateral_delay + offset + lat_smooth
+      desc = f"live steer delay learner ({lateral_delay:.3f}s) + offset ({offset:.3f}s) + model smoothing filter ({lat_smooth:.3f}s) = total delay ({result:.3f}s)"
       self._maybe_update_desc(desc)
       return result
 
