@@ -23,4 +23,5 @@ public:
 
 private:
   bool offroad = false;
+  ParamControlSP *toyotaFlipACC;
 };
