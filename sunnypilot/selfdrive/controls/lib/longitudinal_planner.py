@@ -10,6 +10,7 @@ from opendbc.car import structs
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_controller import AccelController
 DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 
 
@@ -22,6 +23,7 @@ class LongitudinalPlannerSP:
   @property
   def mlsim(self) -> bool:
     return self.generation == 11
+    self.accel_controller = AccelController()
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
@@ -31,6 +33,7 @@ class LongitudinalPlannerSP:
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.dec.update(sm)
+    self.accel_controller.update()
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
