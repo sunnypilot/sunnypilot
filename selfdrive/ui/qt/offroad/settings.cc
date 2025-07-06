@@ -41,27 +41,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       false,
     },
     {
-      "VibePersonalityEnabled",
-      tr("Enable Vibe Controller"),
-      tr("Master toggle that allows all the other vibe stuff to work?"),
-      "../assets/offroad/icon_blank.png",
-      false,
-    },
-    {
-      "VibeAccelPersonalityEnabled",
-      tr("Enable Dynamic Acceleration Controller"),
-      tr("Accel personalities based on personality (i.e., relaxed, standard, sport)"),
-      "../assets/offroad/icon_blank.png",
-      false,
-    },
-    {
-      "VibeFollowPersonalityEnabled",
-      tr("Enable Dynamic Personality Controller"),
-      tr("In relaxed/standard/or sport personality, this allows the vehicle to vary accel range (e.g., in relaxed 1.75 sec follow at high speed to 1.25 at low)."),
-      "../assets/offroad/icon_blank.png",
-      false,
-    },
-    {
       "ToyotaDriveMode",
       tr("Enable drive mode btn link"),
       tr("Links cars drive mode btn with accel personalities based on personality (i.e., relaxed, standard, sport)"),

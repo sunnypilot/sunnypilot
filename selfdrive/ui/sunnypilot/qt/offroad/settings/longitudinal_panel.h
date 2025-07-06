@@ -36,4 +36,7 @@ private:
   SpeedLimitControl *slcControl;
 
   ParamControlSP *visionTurnSpeedControl = nullptr;
+  ParamControlSP *vibePersonalityControl;
+  ParamControlSP *vibeAccelPersonalityControl;
+  ParamControlSP *vibeFollowPersonalityControl;
 };
