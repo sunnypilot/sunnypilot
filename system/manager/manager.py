@@ -79,6 +79,7 @@ def manager_init() -> None:
     ("VibeFollowPersonalityEnabled", "0"),
     ("VibePersonalityType", "0"), # 0=LongPersonality, 1=AccelPersonality
     ("AccelPersonality", "1"),
+    ("ToyotaDriveMode", "0"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),
