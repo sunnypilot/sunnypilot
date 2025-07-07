@@ -38,10 +38,6 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
-  main_layout->addWidget(cruisePanelScreen);
-  main_layout->setCurrentWidget(cruisePanelScreen);
-  refresh(offroad);
-
   slcControl = new SpeedLimitControl(
     "SpeedLimitControl",
     tr("Speed Limit Control (SLC)"),
@@ -57,6 +53,34 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "../assets/offroad/icon_shell.png");
   list->addItem(visionTurnSpeedControl);
 
+  // Vibe Personality Controller
+  vibePersonalityControl = new ParamControlSP("VibePersonalityEnabled",
+    tr("Vibe Personality Controller"),
+    tr("Advanced driving personality system with separate controls for acceleration behavior (Eco/Normal/Sport) and following distance/braking (Relaxed/Standard/Aggressive). "
+      "Customize your driving experience with independent acceleration and distance personalities."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(vibePersonalityControl);
+
+  connect(vibePersonalityControl, &ParamControlSP::toggleFlipped, [=]() {
+    refresh(offroad);
+  });
+
+  // Vibe Acceleration Personality
+  vibeAccelPersonalityControl = new ParamControlSP("VibeAccelPersonalityEnabled",
+    tr("Acceleration Personality"),
+    tr("Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive). "
+      "Adjust how aggressively the vehicle accelerates while maintaining smooth operation."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(vibeAccelPersonalityControl);
+
+  // Vibe Following Distance Personality
+  vibeFollowPersonalityControl = new ParamControlSP("VibeFollowPersonalityEnabled",
+    tr("Following Distance Personality"),
+    tr("Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). "
+      "Fine-tune your comfort level in traffic situations."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(vibeFollowPersonalityControl);
+
   connect(slcControl, &SpeedLimitControl::slcSettingsButtonClicked, [=]() {
     cruisePanelScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(slcScreen);
@@ -71,6 +95,7 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
   main_layout->addWidget(cruisePanelScreen);
   main_layout->addWidget(slcScreen);
   main_layout->setCurrentWidget(cruisePanelScreen);
+  refresh(offroad);
 }
 
 void LongitudinalPanel::showEvent(QShowEvent *event) {
@@ -115,10 +140,26 @@ void LongitudinalPanel::refresh(bool _offroad) {
       customAccIncrement->showDescription();
     }
   }
+  bool vibePersonalityEnabled = params.getBool("VibePersonalityEnabled");
+  if (vibePersonalityEnabled) {
+    vibeAccelPersonalityControl->setVisible(true);
+    vibeFollowPersonalityControl->setVisible(true);
+  } else {
+    vibeAccelPersonalityControl->setVisible(false);
+    vibeFollowPersonalityControl->setVisible(false);
+  }
 
   // enable toggle when long is available and is not PCM cruise
   customAccIncrement->setEnabled(has_longitudinal_control && !is_pcm_cruise && !offroad);
   customAccIncrement->refresh();
+
+  // Vibe Personality controls - always enabled for toggling
+  vibePersonalityControl->setEnabled(true);
+  vibeAccelPersonalityControl->setEnabled(true);
+  vibeFollowPersonalityControl->setEnabled(true);
+  vibePersonalityControl->refresh();
+  vibeAccelPersonalityControl->refresh();
+  vibeFollowPersonalityControl->refresh();
 
   offroad = _offroad;
 }

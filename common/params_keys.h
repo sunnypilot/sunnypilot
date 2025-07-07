@@ -179,6 +179,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // model panel params
     {"LagdToggle", PERSISTENT | BACKUP},
+    {"LagdToggleDesc", PERSISTENT},
+    {"LagdToggledelay", PERSISTENT | BACKUP},
 
     // mapd
     {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
@@ -200,6 +202,16 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"OsmWayTest", PERSISTENT},
     {"RoadName", CLEAR_ON_ONROAD_TRANSITION},
 
+    // toyota specific params
+    {"ToyotaAutoHold", PERSISTENT},
+    {"ToyotaEnhancedBsm", PERSISTENT},
+    {"ToyotaTSS2Long", PERSISTENT},
+    {"RainbowMode", PERSISTENT},
+    {"VibePersonalityEnabled", PERSISTENT},
+    {"VibeAccelPersonalityEnabled", PERSISTENT},
+    {"VibeFollowPersonalityEnabled", PERSISTENT},
+    {"AccelPersonality", PERSISTENT},
+    {"ToyotaDriveMode", PERSISTENT},
     // Speed Limit Control
     {"SpeedLimitControl", PERSISTENT | BACKUP},
     {"SpeedLimitControlPolicy", PERSISTENT | BACKUP},
@@ -209,12 +221,4 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"SpeedLimitWarningType", PERSISTENT | BACKUP},
     {"SpeedLimitWarningOffsetType", PERSISTENT | BACKUP},
     {"SpeedLimitWarningValueOffset", PERSISTENT | BACKUP},
-    // toyota specific params
-    {"ToyotaAutoHold", PERSISTENT},
-    {"ToyotaEnhancedBsm", PERSISTENT},
-    {"ToyotaTSS2Long", PERSISTENT},
-    {"RainbowMode", PERSISTENT},
-    {"VibePersonalityEnabled", PERSISTENT},
-    {"VibeAccelPersonalityEnabled", PERSISTENT},
-    {"VibeFollowPersonalityEnabled", PERSISTENT},
 };

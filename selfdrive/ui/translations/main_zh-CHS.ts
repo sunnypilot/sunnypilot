@@ -981,8 +981,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>​​实时学习转向延迟校准​​</translation>
     </message>
     <message>
-        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience.</source>
-        <translation>​​启用此选项可让车辆学习并自适应转向响应时间​​。​禁用则使用固定转向响应时间​​。保持开启可获得原生 openpilot 体验。</translation>
+        <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. The Current value is updated automatically when the vehicle is Onroad.</source>
+        <translation>​启用此功能，汽车便可学习和调整其转向响应时间。禁用此功能则使用固定的转向响应时间。保持启用此功能可提供原厂OpenPilot体验。当车辆处于公路行驶状态时，当前值会自动更新。</translation>
     </message>
 </context>
 <context>
@@ -2101,6 +2101,30 @@ Data</source>
         <source>Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged.</source>
         <translation>该控制器也被称为V-TSC，在OP纵向接合时，它能根据曲率自动减速。</translation>
     </message>
+    <message>
+        <source>Vibe Personality Controller</source>
+        <translation>高级驾驶个性系统</translation>
+    </message>
+    <message>
+        <source>Advanced driving personality system with separate controls for acceleration behavior (Eco/Normal/Sport) and following distance/braking (Relaxed/Standard/Aggressive). Customize your driving experience with independent acceleration and distance personalities.</source>
+        <translation>高级驾驶个性系统，分别控制驾驶模式行为（Eco/Normal/Sport）和跟车距离/刹车行为（Relaxed/Standard/Aggressive）。通过独立的加速和距离个性，定制您的驾驶体验。</translation>
+    </message>
+    <message>
+        <source>Acceleration Personality</source>
+        <translation>驾驶模式行为</translation>
+    </message>
+    <message>
+        <source>Controls acceleration behavior: Eco (efficient), Normal (balanced), Sport (responsive). Adjust how aggressively the vehicle accelerates while maintaining smooth operation.</source>
+        <translation>驾驶模式行为：节能（高效）、普通（平衡）、运动（响应）。调整车辆加速的力度，同时保持平稳运行。</translation>
+    </message>
+    <message>
+        <source>Following Distance Personality</source>
+        <translation>跟车距离行为</translation>
+    </message>
+    <message>
+        <source>Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). Fine-tune your comfort level in traffic situations.</source>
+        <translation>控制跟车距离和刹车行为：放松（更长距离，更柔和的刹车），标准（平衡），激进（更短距离，更坚定的刹车）。根据您的舒适度在交通情况下进行微调。</translation>
+    </message>
 </context>
 <context>
     <name>VisualsPanel</name>
@@ -2488,7 +2512,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Aggressive</source>
-        <translation>积极</translation>
+        <translation>激进</translation>
     </message>
     <message>
         <source>Standard</source>
@@ -2496,11 +2520,31 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Relaxed</source>
-        <translation>舒适</translation>
+        <translation>放松</translation>
     </message>
     <message>
         <source>Driving Personality</source>
         <translation>驾驶风格</translation>
+    </message>
+    <message>
+        <source>Acceleration Personality</source>
+        <translation>驾驶模式</translation>
+    </message>
+    <message>
+        <source>Sport</source>
+        <translation>运动</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>普通</translation>
+    </message>
+    <message>
+        <source>Eco</source>
+        <translation>节能</translation>
+    </message>
+    <message>
+        <source>Normal is recommended. In sport mode, sunnypilot will provide aggressive acceleration for a dynamic driving experience. In eco mode, sunnypilot will apply smoother and more relaxed acceleration. On supported cars, you can cycle through these acceleration personality within Onroad Settings on the driving screen.</source>
+        <translation>推荐选择普通模式。在运动模式下，阳光领航将提供强劲的加速，带来动感驾驶体验。在节能模式下，阳光领航将采用更平稳、更柔和的加速方式。在支持该功能的车辆上，您可以在驾驶屏幕上的公路设置中循环切换这些加速模式。</translation>
     </message>
     <message>
         <source>An alpha version of sunnypilot longitudinal control can be tested, along with Experimental mode, on non-release branches.</source>
@@ -2516,7 +2560,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
-        <translation>推荐使用标准模式。在积极模式下，sunnypilot 会更靠近前方车辆，并在油门和刹车方面更加激进。在放松模式下，sunnypilot 会与前方车辆保持更远距离。在支持的车型上，你可以使用方向盘上的距离按钮来循环切换这些驾驶风格。</translation>
+        <translation>建议选择标准模式。在激进模式下，阳光领航会跟紧前车，并在油门和刹车方面表现得更为激进。在放松模式下，阳光领航会与前车保持更远的距离。在支持该功能的车辆上，您可以通过方向盘上的距离按钮切换这些模式。</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
@@ -2545,6 +2589,14 @@ Are you sure you want to delete all the maps?</source>
     <message>
         <source>Enable Dynamic Personality</source>
         <translation>启用动态个性</translation>
+    </message>
+    <message>
+        <source>Enable drive mode btn link</source>
+        <translation>启用驾驶模式按钮连接</translation>
+    </message>
+    <message>
+        <source>Links cars drive mode btn with accel personalities based on personality (i.e., relaxed, standard, sport)</source>
+        <translation>将车辆驾驶模式按钮与加速特性相关联，根据驾驶风格（例如：放松、标准、运动）进行调整</translation>
     </message>
     <message>
         <source>Toyota: Auto Brake Hold</source>

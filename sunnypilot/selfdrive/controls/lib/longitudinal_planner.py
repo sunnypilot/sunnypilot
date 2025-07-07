@@ -31,6 +31,10 @@ class LongitudinalPlannerSP:
     model_bundle = get_active_bundle()
     self.generation = model_bundle.generation if model_bundle is not None else None
 
+  @property
+  def mlsim(self) -> bool:
+    return self.generation == 11
+
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
       return None
