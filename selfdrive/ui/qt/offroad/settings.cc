@@ -65,7 +65,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     {
       "ToyotaTSS2Long",
       tr("Toyota: custom tune"),
-      tr("Custome tune for Toyota TSS2 cars. ",
+      tr("Custome tune for Toyota TSS2 cars. "
          "This feature will allow SunnyPilot to adjust vehicle dynamics to be more natural and comfortable, tuned off the TSS2 Prius, Corolla, and RAV4."),
       "../assets/offroad/icon_blank.png",
       false,

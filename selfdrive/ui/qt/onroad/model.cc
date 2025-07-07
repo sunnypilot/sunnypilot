@@ -304,7 +304,7 @@ void ModelRenderer::LongFuel(QPainter &painter, int height, int width) {
 
     // Skip drawing arc if acceleration is too small
     if (absoluteAcceleration <= MIN_THRESHOLD) {
-        drawGaugeArc(painter, centerX, centerY, 0.0f, true, "LONG");
+        drawGaugeArc(painter, centerX, centerY, 0.0f, true, tr("LONG"));
         return;
     }
 
@@ -337,7 +337,7 @@ void ModelRenderer::LongFuel(QPainter &painter, int height, int width) {
     font.setPixelSize(20);
     font.setBold(true);
     painter.setFont(font);
-    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LONG");
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, tr("LONG"));
 }
 
 void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
@@ -362,7 +362,7 @@ void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
 
     // Skip drawing arc if lateral force is too small
     if (absoluteLateral <= 0.1f) {
-        drawGaugeArc(painter, centerX, centerY, 0.0f, true, "LAT");
+        drawGaugeArc(painter, centerX, centerY, 0.0f, true, tr("LAT"));
         return;
     }
 
@@ -396,7 +396,7 @@ void ModelRenderer::LateralFuel(QPainter &painter, int height, int width) {
     font.setPixelSize(20);
     font.setBold(true);
     painter.setFont(font);
-    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, "LAT");
+    painter.drawText(QRectF(centerX - 50, centerY + 10, 100, 20), Qt::AlignCenter, tr("LAT"));
 }
 
 void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
