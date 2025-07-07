@@ -33,7 +33,8 @@ class LagdToggle:
       lat_smooth = model.LAT_SMOOTH_SECONDS
       offset = self.software_delay_offset
       result = lateral_delay + offset + lat_smooth
-      desc = f"live steer delay learner ({lateral_delay:.3f}s) + offset ({offset:.3f}s) + model smoothing filter ({lat_smooth:.3f}s) = total delay ({result:.3f}s)"
+      desc = (f"live steer delay learner ({lateral_delay:.3f}s) + offset ({offset:.3f}s) + " +
+              f"model smoothing filter ({lat_smooth:.3f}s) = total delay ({result:.3f}s)")
       self._maybe_update_desc(desc)
       return result
 
