@@ -61,8 +61,8 @@ protected:
 
   void updatePathGradient(QLinearGradient &bg);
   QColor blendColors(const QColor &start, const QColor &end, float t);
-  void LongFuel(QPainter &p, int height, int width);
-  void LateralFuel(QPainter &p, int height, int width);
+
+
   bool longitudinal_control = false;
   bool experimental_mode = false;
   float blend_factor = 1.0f;
