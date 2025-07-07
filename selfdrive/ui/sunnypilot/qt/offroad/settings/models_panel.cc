@@ -97,7 +97,7 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   // Software delay controls
   delay_offset_control = new OptionControlSP("LagdToggledelayoffset", tr("Learned Delay Offset"),
                                      tr("Adjust the delay offset when Live Learning Steer Delay is toggled on."
-                                        "\nThe default delay offset value is 0.0"),
+                                        "\nThe default delay offset value 0.0 is the stock openpilot experience."),
                                      "", {00, 20}, 1, false, nullptr, true);
 
 
