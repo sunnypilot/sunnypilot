@@ -440,7 +440,6 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
 
     float d_rel = lead_data.getDRel();
     float v_rel = lead_data.getVRel();
-    float y_rel = lead_data.getYRel();
 
     // Calculate chevron size (same logic as drawLead)
     float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
@@ -473,13 +472,12 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
         text_lines.append(QString::number(v_display, 'f', 0) + " mph");
     }
 
-    // TTC or lateral position
+    // Distance in front of lead with seconds
     if (v_rel < -0.1f) {
-        float ttc = d_rel / (-v_rel);
-        QString ttc_str = (ttc > 0 && ttc < 200) ? QString::number(ttc, 'f', 1) + "s" : "---";
-        text_lines.append(ttc_str);
-    } else {
-        text_lines.append(QString::number(y_rel, 'f', 1) + "m");
+        float distance_in_front = d_rel / (-v_rel);
+        QString distance_str = (distance_in_front > 0 && distance_in_front < 200) ?
+            QString::number(distance_in_front, 'f', 1) + "s" : "---";
+        text_lines.append(distance_str);
     }
 
     // Text box dimensions
