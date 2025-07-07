@@ -217,11 +217,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     <name>DevicePanel</name>
     <message>
         <source>Dongle ID</source>
-        <translation>设备ID（Dongle ID）</translation>
+        <translation>设备ID</translation>
     </message>
     <message>
         <source>N/A</source>
-        <translation>N/A</translation>
+        <translation>无法使用</translation>
     </message>
     <message>
         <source>Serial</source>
@@ -623,7 +623,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>MAX</source>
-        <translation>最大</translation>
+        <translation>最高定速</translation>
     </message>
     <message>
         <source>LAT</source>
@@ -1644,7 +1644,7 @@ This may take up to a minute.</source>
     <name>Sidebar</name>
     <message>
         <source>CONNECT</source>
-        <translation>连接状态</translation>
+        <translation>云端服务</translation>
     </message>
     <message>
         <source>OFFLINE</source>
@@ -1656,11 +1656,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>ERROR</source>
-        <translation>连接出错</translation>
+        <translation>错误</translation>
     </message>
     <message>
         <source>TEMP</source>
-        <translation>设备温度</translation>
+        <translation>温度</translation>
     </message>
     <message>
         <source>HIGH</source>
@@ -1668,7 +1668,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>GOOD</source>
-        <translation>良好</translation>
+        <translation>正常</translation>
     </message>
     <message>
         <source>OK</source>
@@ -1676,15 +1676,15 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>VEHICLE</source>
-        <translation>车辆</translation>
+        <translation>车辆通讯</translation>
     </message>
     <message>
         <source>NO</source>
-        <translation>无</translation>
+        <translation>未连接</translation>
     </message>
     <message>
         <source>PANDA</source>
-        <translation>PANDA</translation>
+        <translation>车辆通讯</translation>
     </message>
     <message>
         <source>--</source>
@@ -2017,7 +2017,7 @@ Data</source>
     </message>
     <message>
         <source>N/A</source>
-        <translation>N/A</translation>
+        <translation>无</translation>
     </message>
     <message>
         <source>Off</source>
@@ -2323,7 +2323,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>N/A</source>
-        <translation>N/A</translation>
+        <translation>无法使用</translation>
     </message>
     <message>
         <source>Sponsor Status</source>
