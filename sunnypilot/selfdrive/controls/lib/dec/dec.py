@@ -6,19 +6,20 @@ See the LICENSE.md file in the root directory for more details.
 """
 # Version = 2025-6-30
 
-import numpy as np
-
 from cereal import messaging
 from opendbc.car import structs
 from numpy import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.constants import WMACConstants
-from openpilot.selfdrive.controls.lib.longitudinal_planner import ModelConstants
+from typing import Literal
 
 # d-e2e, from modeldata.h
 TRAJECTORY_SIZE = 33
 SET_MODE_TIMEOUT = 15
+
+# Define the valid mode types
+ModeType = Literal['acc', 'blended']
 
 
 class SmoothKalmanFilter:
@@ -48,10 +49,8 @@ class SmoothKalmanFilter:
       self.confidence = 0.1
       return
 
-    # Prediction
     self.P = self.alpha * self.P + self.Q
 
-    # Update with smoothing
     K = self.P / (self.P + self.R)
     effective_K = K * (1.0 - self.smoothing_factor) + self.smoothing_factor * 0.1
 
@@ -59,7 +58,6 @@ class SmoothKalmanFilter:
     self.x = self.x + effective_K * innovation
     self.P = (1 - effective_K) * self.P
 
-    # Update confidence
     if abs(innovation) < 0.1:
       self.confidence = min(1.0, self.confidence + 0.05)
     else:
@@ -81,14 +79,14 @@ class ModeTransitionManager:
   """Manages smooth transitions between driving modes with hysteresis."""
 
   def __init__(self):
-    self.current_mode = 'acc'
+    self.current_mode: ModeType = 'acc'
     self.mode_confidence = {'acc': 1.0, 'blended': 0.0}
     self.transition_timeout = 0
     self.min_mode_duration = 10
     self.mode_duration = 0
     self.emergency_override = False
 
-  def request_mode(self, mode: str, confidence: float = 1.0, emergency: bool = False):
+  def request_mode(self, mode: ModeType, confidence: float = 1.0, emergency: bool = False):
     # Emergency override for critical situations (stops, collisions)
     if emergency:
       self.emergency_override = True
@@ -97,7 +95,6 @@ class ModeTransitionManager:
       self.mode_duration = 0
       return
 
-    # Update confidence
     self.mode_confidence[mode] = min(1.0, self.mode_confidence[mode] + 0.1 * confidence)
     for m in self.mode_confidence:
       if m != mode:
@@ -129,7 +126,7 @@ class ModeTransitionManager:
     for mode in self.mode_confidence:
       self.mode_confidence[mode] *= 0.98
 
-  def get_mode(self) -> str:
+  def get_mode(self) -> ModeType:
     return self.current_mode
 
 
@@ -143,7 +140,6 @@ class DynamicExperimentalController:
     self._frame: int = 0
     self._urgency = 0.0
 
-    # Mode transition manager
     self._mode_manager = ModeTransitionManager()
 
     # Smooth filters for stable decision making with faster response for critical scenarios
@@ -151,14 +147,14 @@ class DynamicExperimentalController:
       measurement_noise=0.15,
       process_noise=0.05,
       alpha=1.02,
-      smoothing_factor=0.8  # Reduced smoothing for faster response
+      smoothing_factor=0.8
     )
 
     self._slow_down_filter = SmoothKalmanFilter(
-      measurement_noise=0.1,  # Reduced noise for better stop detection
-      process_noise=0.1,      # Increased process noise for faster adaptation
+      measurement_noise=0.1,
+      process_noise=0.1,
       alpha=1.05,
-      smoothing_factor=0.7    # Much less smoothing for stops
+      smoothing_factor=0.7
     )
 
     self._slowness_filter = SmoothKalmanFilter(
@@ -168,15 +164,12 @@ class DynamicExperimentalController:
       smoothing_factor=0.92
     )
 
-    # Add MPC FCW detection like version 1
     self._mpc_fcw_filter = SmoothKalmanFilter(
       measurement_noise=0.2,
       process_noise=0.1,
       alpha=1.1,
-      smoothing_factor=0.5  # Fast response for collisions
+      smoothing_factor=0.5
     )
-
-    # State variables
     self._has_lead_filtered = False
     self._has_slow_down = False
     self._has_slowness = False
@@ -185,11 +178,8 @@ class DynamicExperimentalController:
     self._v_cruise_kph = 0.0
     self._has_standstill = False
     self._mpc_fcw_crash_cnt = 0
-
-    # Persistence counters for stability
     self._standstill_count = 0
-
-    # Debugging info
+    # debug
     self._endpoint_x = float('inf')
     self._expected_distance = 0.0
     self._trajectory_valid = False
@@ -220,7 +210,7 @@ class DynamicExperimentalController:
     self._v_cruise_kph = car_state.vCruise
     self._has_standstill = car_state.standstill
 
-    # Persistent standstill detection
+    # standstill detection
     if self._has_standstill:
       self._standstill_count = min(20, self._standstill_count + 1)
     else:
@@ -265,7 +255,7 @@ class DynamicExperimentalController:
       # Invalid trajectory - this itself might indicate a stop scenario
       # Apply moderate urgency for incomplete trajectories at speed
       if self._v_ego_kph > 20.0:
-        urgency = 0.3  # Moderate urgency for incomplete trajectory
+        urgency = 0.3
 
       self._slow_down_filter.add_data(urgency)
       urgency_filtered = self._slow_down_filter.get_value() or 0.0
@@ -295,11 +285,11 @@ class DynamicExperimentalController:
       urgency = min(1.0, shortage_ratio * 2.0)
 
       # Increase urgency for very short trajectories (imminent stops)
-      critical_distance = expected_distance * 0.3  # Even more critical
+      critical_distance = expected_distance * 0.3
       if endpoint_x < critical_distance:
-        urgency = min(1.0, urgency * 2.0)  # Higher multiplier
+        urgency = min(1.0, urgency * 2.0)
 
-      # Speed-based urgency adjustment - more aggressive than v2
+      # Speed-based urgency adjustment
       if self._v_ego_kph > 25.0:
         speed_factor = 1.0 + (self._v_ego_kph - 25.0) / 80.0
         urgency = min(1.0, urgency * speed_factor)
@@ -320,11 +310,6 @@ class DynamicExperimentalController:
       self._mode_manager.request_mode('blended', confidence=1.0, emergency=True)
       return
 
-    # Standstill: use blended
-    if self._standstill_count > 3:
-      self._mode_manager.request_mode('blended', confidence=0.9)
-      return
-
     # Slow down scenarios: emergency for high urgency, normal for lower urgency
     if self._has_slow_down:
       if self._urgency > 0.7:
@@ -334,6 +319,11 @@ class DynamicExperimentalController:
         # Normal: blended with urgency-based confidence
         confidence = min(1.0, self._urgency * 1.5)
         self._mode_manager.request_mode('blended', confidence=confidence)
+      return
+
+    # Standstill: use blended
+    if self._standstill_count > 3:
+      self._mode_manager.request_mode('blended', confidence=0.9)
       return
 
     # Driving slow: use ACC (but not if actively slowing down)

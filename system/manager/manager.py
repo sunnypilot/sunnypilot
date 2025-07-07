@@ -57,6 +57,7 @@ def manager_init() -> None:
     ("DynamicExperimentalControl", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("LagdToggle", "1"),
+    ("LagdToggledelay", "0.2"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
     ("MadsSteeringMode", "0"),
@@ -68,7 +69,15 @@ def manager_init() -> None:
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
     ("QuietMode", "0"),
-    ("VisionTurnSpeedControl", "0"),
+    ("ToyotaAutoHold", "0"),
+    ("ToyotaEnhancedBsm", "0"),
+    ("ToyotaTSS2Long", "0"),
+    ("VisionTurnSpeedControl", "1"),
+    ("VibePersonalityEnabled", "0"),
+    ("VibeAccelPersonalityEnabled", "0"),
+    ("VibeFollowPersonalityEnabled", "0"),
+    ("AccelPersonality", "1"),
+    ("ToyotaDriveMode", "0"),
 
     ("SpeedLimitControl", "0"),
     ("SpeedLimitControlPolicy", "3"),
@@ -78,12 +87,6 @@ def manager_init() -> None:
     ("SpeedLimitWarningType", "0"),
     ("SpeedLimitWarningOffsetType", "0"),
     ("SpeedLimitWarningValueOffset", "0"),
-    ("ToyotaAutoHold", "0"),
-    ("ToyotaEnhancedBsm", "0"),
-    ("ToyotaTSS2Long", "0"),
-    ("VibePersonalityEnabled", "0"),
-    ("VibeAccelPersonalityEnabled", "0"),
-    ("VibeFollowPersonalityEnabled", "0"),
   ]
 
   # device boot mode
