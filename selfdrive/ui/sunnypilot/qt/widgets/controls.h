@@ -480,6 +480,16 @@ private:
     return result.toInt();
   }
 
+  int getParamValueScaled() {
+    const auto param_value = QString::fromStdString(params.get(key));
+    return static_cast<int>(param_value.toFloat() * 100);
+  }
+
+  void setParamValueScaled(const int new_value) {
+    const float scaled_value = new_value / 100.0f;
+    params.put(key, QString::number(scaled_value, 'f', 2).toStdString());
+  }
+
   // Although the method is not static, and thus has access to the value property, I prefer to be explicit about the value.
   void setParamValue(const int new_value) {
     const auto value_str = valueMap != nullptr ? valueMap->value(QString::number(new_value)) : QString::number(new_value);
@@ -488,7 +498,8 @@ private:
 
 public:
   OptionControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon,
-                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false, const QMap<QString, QString> *valMap = nullptr) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), is_inline_layout(inline_layout) {
+                  const MinMaxValue &range, const int per_value_change = 1, const bool inline_layout = false,
+                  const QMap<QString, QString> *valMap = nullptr, bool scale_float = false) : AbstractControlSP_SELECTOR(title, desc, icon, nullptr), _title(title), valueMap(valMap), is_inline_layout(inline_layout), use_float_scaling(scale_float) {
     const QString style = R"(
       QPushButton {
         border-radius: 20px;
@@ -528,7 +539,7 @@ public:
     const std::vector<QString> button_texts{"－", "＋"};
 
     key = param.toStdString();
-    value = getParamValue();
+    value = use_float_scaling ? getParamValueScaled() : getParamValue();
 
     button_group = new QButtonGroup(this);
     button_group->setExclusive(true);
@@ -546,10 +557,15 @@ public:
 
       QObject::connect(button, &QPushButton::clicked, [=]() {
         int change_value = (i == 0) ? -per_value_change : per_value_change;
-        value = getParamValue(); // in case it changed externally, we need to get the latest value.
+        value = use_float_scaling ? getParamValueScaled() : getParamValue();
         value += change_value;
         value = std::clamp(value, range.min_value, range.max_value);
-        setParamValue(value);
+
+        if (use_float_scaling) {
+          setParamValueScaled(value);
+        } else {
+          setParamValue(value);
+        }
 
         button_group->button(0)->setEnabled(!(value <= range.min_value));
         button_group->button(1)->setEnabled(!(value >= range.max_value));
@@ -642,6 +658,7 @@ private:
   const QString label_disabled_style = "font-size: 50px; font-weight: 450; color: #5C5C5C;";
 
   bool button_enabled = true;
+  bool use_float_scaling = false;
 };
 
 class PushButtonSP : public QPushButton {
