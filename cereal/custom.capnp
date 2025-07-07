@@ -102,6 +102,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   dec @0 :DynamicExperimentalControl;
   visionTurnSpeedControl @3 :VisionTurnSpeedControl;
+  accelPersonality @4 :AccelerationPersonality;
 
   events @1 :List(OnroadEventSP.Event);
   slc @2 :SpeedLimitControl;
@@ -146,6 +147,12 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     preActive @2;
     adapting @3; # Reducing speed to match new speed limit.
     active @4; # Cruising at speed limit.
+  }
+
+  enum AccelerationPersonality {
+    sport @0;
+    normal @1;
+    eco @2;
   }
 }
 

@@ -90,11 +90,25 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
   list->addItem(horizontal_line());
 
   // LiveDelay toggle
-  list->addItem(new ParamControlSP("LagdToggle",
-                                   tr("Live Learning Steer Delay"),
-                                   tr("Enable this for the car to learn and adapt its steering response time. "
-                                      "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience."),
-                                   "../assets/offroad/icon_shell.png"));
+  lagd_toggle_control = new ParamControlSP("LagdToggle", tr("Live Learning Steer Delay"), "", "../assets/offroad/icon_shell.png");
+  lagd_toggle_control->showDescription();
+  list->addItem(lagd_toggle_control);
+
+  // Software delay control
+  delay_control = new OptionControlSP("LagdToggledelay", tr("Adjust Software Delay"),
+                                     tr("Adjust the software delay when Live Learning Steer Delay is toggled off."
+                                        "\nThe default software delay value is 0.2"),
+                                     "", {10, 30}, 1, false, nullptr, true);
+
+  connect(delay_control, &OptionControlSP::updateLabels, [=]() {
+    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    delay_control->setLabel(QString::number(value, 'f', 2) + "s");
+  });
+  connect(lagd_toggle_control, &ParamControlSP::toggleFlipped, [=](bool state) {
+    delay_control->setVisible(!state);
+  });
+  delay_control->showDescription();
+  list->addItem(delay_control);
 }
 
 QProgressBar* ModelsPanel::createProgressBar(QWidget *parent) {
@@ -290,6 +304,24 @@ void ModelsPanel::updateLabels() {
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelInternalName());
+
+  // Update lagdToggle description with current value
+  QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
+                   "Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. "
+                   "The Current value is updated automatically when the vehicle is Onroad.");
+  QString current = QString::fromStdString(params.get("LagdToggleDesc", false));
+  if (!current.isEmpty()) {
+    desc += "<br><br><b><span style=\"color:#e0e0e0\">" + tr("Current:") + "</span></b> <span style=\"color:#e0e0e0\">" + current + "</span>";
+  }
+  lagd_toggle_control->setDescription(desc);
+  lagd_toggle_control->showDescription();
+
+  delay_control->setVisible(!params.getBool("LagdToggle"));
+  if (delay_control->isVisible()) {
+    float value = QString::fromStdString(params.get("LagdToggledelay")).toFloat();
+    delay_control->setLabel(QString::number(value, 'f', 2) + "s");
+    delay_control->showDescription();
+  }
 }
 
 /**
