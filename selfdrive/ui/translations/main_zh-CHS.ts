@@ -296,6 +296,30 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>关机</translation>
     </message>
     <message>
+        <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down.</source>
+        <translation>sunnypilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。</translation>
+    </message>
+    <message>
+        <source>Steering lag calibration is %1% complete.</source>
+        <translation>转向延迟校准完成%1%。</translation>
+    </message>
+    <message>
+        <source>Steering lag calibration is complete.</source>
+        <translation>转向延迟校准已完成。</translation>
+    </message>
+    <message>
+        <source>Steering torque response calibration is %1% complete.</source>
+        <translation>转向力矩响应校准完成%1%。</translation>
+    </message>
+    <message>
+        <source>Steering torque response calibration is complete.</source>
+        <translation>转向力矩响应校准已完成。</translation>
+    </message>
+    <message>
+        <source>openpilot is continuously calibrating, resetting is rarely required. Resetting calibration will restart openpilot if the car is powered on.</source>
+        <translation>openpilot会持续进行校准，很少需要重置。如果汽车通电，重置校准将重新启动openpilot。</translation>
+    </message>
+    <message>
         <source>sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. sunnypilot is continuously calibrating, resetting is rarely required.</source>
         <translation>sunnypilot要求设备安装的偏航角在左4°和右4°之间，俯仰角在上5°和下9°之间。一般来说，sunnypilot会持续更新校准，很少需要重置。</translation>
     </message>
