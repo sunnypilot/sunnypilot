@@ -15,7 +15,7 @@ MadsSettings::MadsSettings(QWidget *parent) : QWidget(parent) {
   main_layout->setSpacing(20);
 
   // Back button
-  PanelBackButton *back = new PanelBackButton();
+  PanelBackButton* back = new PanelBackButton(tr("Back"));
   connect(back, &QPushButton::clicked, [=]() { emit backPress(); });
   main_layout->addWidget(back, 0, Qt::AlignLeft);
 
