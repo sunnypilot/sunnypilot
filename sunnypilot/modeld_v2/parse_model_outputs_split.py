@@ -127,11 +127,12 @@ class Parser:
     return outs
 
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    self.parse_mdn('plan', outs, in_N=SplitModelConstants.PLAN_MHP_N, out_N=SplitModelConstants.PLAN_MHP_SELECTION,
-                   out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
     self.split_outputs(outs)
     if self.zero_inputs:
       self.split_zero_inputs(outs)
+    else:
+      self.parse_mdn('plan', outs, in_N=SplitModelConstants.PLAN_MHP_N, out_N=SplitModelConstants.PLAN_MHP_SELECTION,
+                     out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
     if 'lat_planner_solution' in outs:
       self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
     if 'desired_curvature' in outs:
