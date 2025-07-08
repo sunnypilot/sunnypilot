@@ -109,12 +109,12 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
   def update(self, sm):
     self.mode = 'blended' if sm['selfdriveState'].experimentalMode else 'acc'
-    if not (self.generation == 11):
+    if not self.mlsim:
       self.mpc.mode = self.mode
     LongitudinalPlannerSP.update(self, sm)
     if dec_mpc_mode := self.get_mpc_mode():
       self.mode = dec_mpc_mode
-      if not (self.generation == 11):
+      if not self.mlsim:
         self.mpc.mode = dec_mpc_mode
 
     if len(sm['carControl'].orientationNED) == 3:
@@ -209,7 +209,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    if self.mode == 'acc' or not (self.generation == 11):
+    if self.mode == 'acc' or not self.mlsim:
       output_a_target = output_a_target_mpc
       self.output_should_stop = output_should_stop_mpc
     else:

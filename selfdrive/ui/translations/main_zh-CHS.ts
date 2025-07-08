@@ -921,6 +921,22 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>政策</translation>
     </message>
     <message>
+        <source>Driving Model</source>
+        <translation>驾驶模型</translation>
+    </message>
+    <message>
+        <source>Navigation Model</source>
+        <translation>导航模型</translation>
+    </message>
+    <message>
+        <source>Vision Model</source>
+        <translation>视觉模型</translation>
+    </message>
+    <message>
+        <source>Policy Model</source>
+        <translation>策略模型</translation>
+    </message>
+    <message>
         <source>Downloading %1 model [%2]... (%3%)</source>
         <translation>正在下载 %1 model [%2]... (%3%)</translation>
     </message>
@@ -1007,6 +1023,16 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <message>
         <source>Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. Keeping this on provides the stock openpilot experience. The Current value is updated automatically when the vehicle is Onroad.</source>
         <translation>​启用此功能，汽车便可学习和调整其转向响应时间。禁用此功能则使用固定的转向响应时间。保持启用此功能可提供原厂OpenPilot体验。当车辆处于公路行驶状态时，当前值会自动更新。</translation>
+    </message>
+    <message>
+        <source>Adjust Software Delay</source>
+        <translation>调整软件延迟</translation>
+    </message>
+    <message>
+        <source>Adjust the software delay when Live Learning Steer Delay is toggled off.
+The default software delay value is 0.2</source>
+        <translation>当实时学习转向延迟功能被关闭时，调整软件延迟。
+软件延迟的默认值为0.2秒</translation>
     </message>
 </context>
 <context>
