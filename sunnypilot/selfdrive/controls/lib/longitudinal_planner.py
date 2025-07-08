@@ -11,7 +11,6 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
-from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_controller import AccelController
 #from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_controller import AccelController
 from openpilot.sunnypilot.selfdrive.controls.lib.vibe_personality.vibe_personality import VibePersonalityController
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit_controller.speed_limit_controller import SpeedLimitController
@@ -25,17 +24,15 @@ class LongitudinalPlannerSP:
     self.events_sp = EventsSP()
 
     self.dec = DynamicExperimentalController(CP, mpc)
+    self.vibe_controller = VibePersonalityController()
+    self.v_tsc = VisionTurnController(CP)
+    self.slc = SpeedLimitController(CP)
     model_bundle = get_active_bundle()
     self.generation = model_bundle.generation if model_bundle is not None else None
 
   @property
   def mlsim(self) -> bool:
     return self.generation == 11
-    self.accel_controller = AccelController()
-    #self.accel_controller = AccelController()
-    self.vibe_controller = VibePersonalityController()
-    self.v_tsc = VisionTurnController(CP)
-    self.slc = SpeedLimitController(CP)
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
