@@ -320,6 +320,11 @@ class DynamicExperimentalController:
         confidence = min(1.0, self._urgency * 1.5)
         self._mode_manager.request_mode('blended', confidence=confidence)
       return
+    
+    # Standstill: use blended
+    if self._standstill_count > 3:
+      self._mode_manager.request_mode('blended', confidence=0.9)
+      return
 
     # Standstill: use blended
     if self._standstill_count > 3:
