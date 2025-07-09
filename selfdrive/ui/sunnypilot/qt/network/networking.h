@@ -15,3 +15,16 @@ class NetworkingSP : public Networking {
 public:
     explicit NetworkingSP(QWidget *parent = nullptr);
 };
+
+class AdvancedNetworkingSP : public AdvancedNetworking {
+    Q_OBJECT
+
+public:
+    explicit AdvancedNetworkingSP(QWidget *parent = nullptr, WifiManager *wifi = nullptr);
+
+private:
+    Params params;
+
+public slots:
+    void toggleTethering(bool enabled) override;
+};

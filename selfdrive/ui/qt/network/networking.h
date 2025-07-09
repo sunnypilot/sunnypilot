@@ -87,7 +87,11 @@ signals:
   void requestWifiScreen();
 
 public slots:
-  void toggleTethering(bool enabled);
+#ifdef SUNNYPILOT
+  virtual void toggleTethering(bool enabled);
+#else
+  void toggleTethering(bool enabled) override;
+#endif
   void refresh();
 };
 

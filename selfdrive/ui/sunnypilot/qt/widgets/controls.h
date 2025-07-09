@@ -414,6 +414,7 @@ public:
   inline void addItem(QWidget *w) { inner_layout.addWidget(w); }
   inline void addItem(QLayout *layout) { inner_layout.addLayout(layout); }
   inline void setSpacing(int spacing) { inner_layout.setSpacing(spacing); }
+  inline int indexOf(QWidget *w) { return inner_layout.indexOf(w); }
 
   inline void AddWidgetAt(const int index, QWidget *new_widget) { inner_layout.insertWidget(index, new_widget); }
   inline void RemoveWidgetAt(const int index) {
