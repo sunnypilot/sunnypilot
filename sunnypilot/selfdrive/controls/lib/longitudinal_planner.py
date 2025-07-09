@@ -37,7 +37,7 @@ class LongitudinalPlannerSP:
 
   @property
   def mlsim(self) -> bool:
-    return self.generation == 11
+    return bool(self.generation is not None and self.generation >= 11)
 
   def get_mpc_mode(self) -> str | None:
     if not self.dec.active():
