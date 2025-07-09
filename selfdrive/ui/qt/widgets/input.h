@@ -6,6 +6,7 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QTreeWidget>
 
 #include "selfdrive/ui/qt/widgets/keyboard.h"
 
@@ -68,4 +69,17 @@ public:
   explicit MultiOptionDialog(const QString &prompt_text, const QStringList &l, const QString &current, QWidget *parent);
   static QString getSelection(const QString &prompt_text, const QStringList &l, const QString &current, QWidget *parent);
   QString selection;
+};
+
+class TreeOptionDialog : public DialogBase {
+  Q_OBJECT
+
+public:
+  explicit TreeOptionDialog(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items, const QString &current, QWidget *parent = nullptr);
+  static QString getSelection(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items, const QString &current, QWidget *parent = nullptr);
+  QString selection;
+
+private:
+  QTreeWidget *treeWidget;
+  QPushButton *confirm_btn;
 };
