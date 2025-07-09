@@ -87,6 +87,17 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
     params.put("DeviceBootMode", QString::number(index).toStdString());
     updateState();
   });
+
+  interactivityTimeout =  new OptionControlSP("InteractivityTimeout", tr("Interactivity Timeout"),
+                                     tr("Apply a custom timeout for settings UI."
+                                        "\nThis is the time after which settings UI closes automatically if user is not interacting with the screen."),
+                                     "", {0, 120}, 10, true, nullptr, false);
+
+  connect(interactivityTimeout, &OptionControlSP::updateLabels, [=]() {
+    updateState();
+  });
+
+  addItem(interactivityTimeout);
   
   // Brightness
   brightness = new Brightness();
@@ -198,4 +209,11 @@ void DevicePanelSP::updateState() {
     currStatus = DeviceSleepModeStatus::OFFROAD;
   }
   toggleDeviceBootMode->setDescription(deviceSleepModeDescription(currStatus));
+
+  QString timeoutValue = QString::fromStdString(params.get("InteractivityTimeout"));
+  if (timeoutValue == "0") {
+    interactivityTimeout->setLabel("DEFAULT");
+  } else {
+    interactivityTimeout->setLabel(timeoutValue + "s");
+  }
 }
