@@ -49,7 +49,9 @@ class LagdToggle:
 
   def lagd_torqued_main(self, CP, msg):
     if self.params.get_bool("LagdToggle"):
-      self.lag = msg.lateralDelay
+      offset = self.software_delay_offset
+      lateralDelay = msg.lateralDelay
+      self.lag = lateralDelay + offset
       cloudlog.debug(f"TORQUED USING LIVE DELAY: {self.lag:.3f}")
     else:
       self.lag = CP.steerActuatorDelay + self.software_delay
