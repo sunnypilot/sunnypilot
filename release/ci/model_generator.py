@@ -83,12 +83,12 @@ def create_metadata_json(models: list, output_dir: Path, custom_name=None, short
     "ref": upstream_branch,
     "environment": "development",
     "runner": "tinygrad",
-    "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "models": models,
-    "overrides": {},
     "index": -1,
     "minimum_selector_version": "-1",
     "generation": "-1",
+    "build_time": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "overrides": {},
+    "models": models,
   }
 
   # Write metadata to output_dir
