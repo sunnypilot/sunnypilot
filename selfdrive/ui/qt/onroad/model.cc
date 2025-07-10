@@ -440,6 +440,9 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
 
     float d_rel = lead_data.getDRel();
     float v_rel = lead_data.getVRel();
+    auto *s = uiState();
+    auto &sm = *(s->sm);
+    float v_ego = sm["carState"].getCarState().getVEgo();
 
     // Calculate chevron size (same logic as drawLead)
     float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
@@ -450,34 +453,43 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
     painter.setFont(content_font);
 
     QFontMetrics fm(content_font);
-    auto *s = uiState();
     bool is_metric = s->scene.is_metric;
+
     QStringList text_lines;
 
-    // Distance
-    if (is_metric) {
-        text_lines.append(QString::number(d_rel, 'f', 0) + "m");
-    } else {
-        float d_feet = d_rel * 3.28084f; // Convert meters to feet
-        text_lines.append(QString::number(d_feet, 'f', 0) + "ft");
+    // Use your chevron data logic TODOSP: params!
+    const int chevron_types = 3;
+    //const int chevron_all = chevron_types + 1;  // All metrics not in use
+    QStringList chevron_text[chevron_types];
+    int position;
+    float val;
+
+    // Distance display (always show for primary lead)
+    position = 0;
+    val = std::max(0.0f, d_rel);
+    chevron_text[position].append(QString::number(val, 'f', 0) + " " + "m");
+
+    // Absolute velocity display (ego + relative)
+    position = 1;
+    val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
+    chevron_text[position].append(QString::number(val, 'f', 0) + " " + (is_metric ? "km/h" : "mph"));
+
+    // Time-to-contact display
+    position = 2;
+    val = (d_rel > 0 && v_ego > 0) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+    QString ttc_str = (val > 0 && val < 200) ? QString::number(val, 'f', 1) + "s" : "---";
+    chevron_text[position].append(ttc_str);
+
+    // Collect all non-empty text lines
+    for (int i = 0; i < chevron_types; ++i) {
+        if (!chevron_text[i].isEmpty()) {
+            text_lines.append(chevron_text[i]);
+        }
     }
 
-    // Relative velocity (converted to more readable format)
-    float v_display;
-    if (is_metric) {
-        v_display = v_rel * 3.6f; // Convert m/s to km/h
-        text_lines.append(QString::number(v_display, 'f', 0) + " km/h");
-    } else {
-        v_display = v_rel * 2.23694f; // Convert m/s to mph
-        text_lines.append(QString::number(v_display, 'f', 0) + " mph");
-    }
-
-    // Distance in front of lead with seconds
-    if (v_rel < -0.1f) {
-        float distance_in_front = d_rel / (-v_rel);
-        QString distance_str = (distance_in_front > 0 && distance_in_front < 200) ?
-            QString::number(distance_in_front, 'f', 1) + "s" : "---";
-        text_lines.append(distance_str);
+    // If no text to display, return early
+    if (text_lines.isEmpty()) {
+        return;
     }
 
     // Text box dimensions
@@ -504,9 +516,11 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
             painter.drawText(textRect.translated(shadow_offset.x(), shadow_offset.y()),
                            Qt::AlignBottom | Qt::AlignHCenter, text_lines[i]);
 
-            // Determine text color based on line and danger level
+            // Determine text color based on content and danger level
             QColor text_color;
-            if (i == 0) { // Distance line
+
+            // Check if this is a distance line (contains 'm' or 'ft')
+            if (text_lines[i].contains("m") || text_lines[i].contains("ft")) {
                 if (d_rel < 20.0f) {
                     text_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha)); // Red - danger
                 } else if (d_rel < 40.0f) {
