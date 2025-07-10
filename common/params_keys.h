@@ -136,6 +136,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
     {"DeviceBootMode", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
+    {"InteractivityTimeout", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
     {"Brightness", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
