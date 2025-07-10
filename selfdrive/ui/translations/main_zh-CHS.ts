@@ -517,6 +517,20 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <source>⁍ Offroad: Device will be in Always Offroad mode after boot/wake-up.</source>
         <translation>⁍ ​​越野：设备将在启动/唤醒后自动进入常驻越野模式</translation>
     </message>
+    <message>
+        <source>Interactivity Timeout</source>
+        <translation>交互超时</translation>
+    </message>
+    <message>
+        <source>Apply a custom timeout for settings UI.
+This is the time after which settings UI closes automatically if user is not interacting with the screen.</source>
+        <translation>为设置UI应用自定义超时。
+这是设置UI在用户不与屏幕交互时自动关闭的时间。</translation>
+    </message>
+    <message>
+        <source>DEFAULT</source>
+        <translation>默认</translation>
+    </message>
 </context>
 <context>
     <name>DriveStats</name>

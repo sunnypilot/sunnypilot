@@ -32,7 +32,6 @@ class LongitudinalPlannerSP:
     self.events_sp = EventsSP()
 
     self.dec = DynamicExperimentalController(CP, mpc)
-    #self.accel_controller = AccelController()
     self.vibe_controller = VibePersonalityController()
     self.v_tsc = VisionTurnController(CP)
     self.slc = SpeedLimitController(CP)
