@@ -323,7 +323,6 @@ def hardware_thread(end_event, hw_queue) -> None:
     offroad_mode = params.get_bool("OffroadMode")
     startup_conditions["not_always_offroad"] = not offroad_mode
     onroad_conditions["not_always_offroad"] = not offroad_mode
-    set_offroad_alert("OffroadMode_Status", offroad_mode)
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger

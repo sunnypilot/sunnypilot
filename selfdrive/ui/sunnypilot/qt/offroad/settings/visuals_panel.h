@@ -8,6 +8,9 @@
 #pragma once
 
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
+#include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
+
+class ScrollViewSP;
 
 class VisualsPanel : public QWidget {
  Q_OBJECT
@@ -15,4 +18,13 @@ class VisualsPanel : public QWidget {
 public:
  explicit VisualsPanel(QWidget *parent = nullptr);
 
+ void paramsRefresh();
+
+protected:
+ QStackedLayout* main_layout = nullptr;
+ QWidget* sunnypilotScreen = nullptr;
+ ScrollViewSP *sunnypilotScroller = nullptr;
+ Params params;
+ std::map<std::string, ParamControlSP*> toggles;
+ ParamWatcher * param_watcher;
 };
