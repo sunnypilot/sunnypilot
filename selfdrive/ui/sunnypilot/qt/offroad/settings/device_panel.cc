@@ -98,7 +98,6 @@ DevicePanelSP::DevicePanelSP(SettingsWindowSP *parent) : DevicePanel(parent) {
   });
 
   addItem(interactivityTimeout);
-
   // Brightness
   brightness = new Brightness();
   connect(brightness, &OptionControlSP::updateLabels, brightness, &Brightness::refresh);
