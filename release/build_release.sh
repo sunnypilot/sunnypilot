@@ -31,7 +31,7 @@ git checkout --orphan $RELEASE_BRANCH
 # do the files copy
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
-cp -pR --parents $(./release/release_files.py) $BUILD_DIR/
+./release/release_files.py | sort | uniq | rsync -rRl --files-from=- . $TARGET_DIR/
 
 # in the directory
 cd $BUILD_DIR
