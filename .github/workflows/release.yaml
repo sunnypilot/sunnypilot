@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_masterci:
-    name: build master-ci
+  build_stagingc3new:
+    name: build staging-c3-new
     env:
       ImageOS: ubuntu24
     container:
-      image: ghcr.io/commaai/openpilot-base:latest
+      image: ghcr.io/sunnypilot/sunnypilot-base:latest
     runs-on: ubuntu-latest
     if: github.repository == 'sunnypilot/sunnypilot'
     permissions:
@@ -25,9 +25,9 @@ jobs:
       if: ${{ github.event_name == 'schedule' }}
       uses: lewagon/wait-on-check-action@ccfb013c15c8afb7bf2b7c028fb74dc5a068cccc
       with:
-        ref: master
+        ref: dockerize-sunny
         wait-interval: 30
-        running-workflow-name: 'build master-ci'
+        running-workflow-name: 'build staging-c3-new'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         check-regexp: ^((?!.*(build prebuilt).*).)*$
     - uses: actions/checkout@v4
@@ -38,5 +38,5 @@ jobs:
       run: |
         git config --global --add safe.directory '*'
         git lfs pull
-    - name: Push master-ci
-      run: BRANCH=__nightly release/build_devel.sh
+    - name: Push staging-c3-new
+      run: BRANCH=dockerized-prebuilt release/build_devel.sh
