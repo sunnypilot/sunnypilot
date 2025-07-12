@@ -19,16 +19,16 @@ cd $TARGET_DIR
 cp -r $SOURCE_DIR/.git $TARGET_DIR
 pre-commit uninstall || true
 
-echo "[-] bringing __nightly and devel in sync T=$SECONDS"
+echo "[-] bringing dockerized-prebuilt and staging-c3-new in sync T=$SECONDS"
 cd $TARGET_DIR
 
-git fetch --depth 1 origin __nightly
-git fetch --depth 1 origin devel
+git fetch --depth 1 origin dockerized-prebuilt
+git fetch --depth 1 origin staging-c3-new
 
-git checkout -f --track origin/__nightly
-git reset --hard __nightly
-git checkout __nightly
-git reset --hard origin/devel
+git checkout -f --track origin/dockerized-prebuilt
+git reset --hard dockerized-prebuilt
+git checkout dockerized-prebuilt
+git reset --hard origin/staging-c3-new
 git clean -xdff
 git lfs uninstall
 
@@ -85,7 +85,7 @@ fi
 
 if [ ! -z "$BRANCH" ]; then
   echo "[-] Pushing to $BRANCH T=$SECONDS"
-  git push -f origin __nightly:$BRANCH
+  git push -f origin dockerized-prebuilt:$BRANCH
 fi
 
 echo "[-] done T=$SECONDS, ready at $TARGET_DIR"
