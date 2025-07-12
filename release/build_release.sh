@@ -32,7 +32,7 @@ git checkout --orphan $RELEASE_BRANCH
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
 ./release/release_files.py | while IFS= read -r file; do
-  cp -pR --parents "$file" $TARGET_DIR/
+  cp -pR --parents "$file" $BUILD_DIR/
 done
 
 # in the directory
