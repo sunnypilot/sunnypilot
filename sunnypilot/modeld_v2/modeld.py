@@ -54,7 +54,7 @@ class ModelState:
       raise
 
     model_bundle = get_active_bundle()
-    self.generation = model_bundle.generation
+    self.generation = model_bundle.generation if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides}
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
@@ -88,7 +88,7 @@ class ModelState:
 
   @property
   def mlsim(self) -> bool:
-    return bool(self.generation >= 11)
+    return bool(self.generation is not None and self.generation >= 11)
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
