@@ -26,7 +26,7 @@ mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
 git remote add origin git@github.com:sunnypilot/sunnypilot.git
-git checkout --orphan $RELEASE_BRANCH
+git checkout --orphan $SOURCE_BRANCH
 
 # do the files copy
 echo "[-] copying files T=$SECONDS"
