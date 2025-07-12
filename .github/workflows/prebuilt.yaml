@@ -1,4 +1,4 @@
-name: prebuilt
+name: prebuilt base
 on:
   schedule:
     - cron: '0 * * * *'
@@ -6,11 +6,11 @@ on:
 
 env:
   DOCKER_LOGIN: docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-  BUILD: release/ci/docker_build_sp.sh prebuilt
+  BUILD: release/ci/docker_build_sp.sh base
 
 jobs:
-  build_prebuilt:
-    name: build prebuilt
+  build_prebuilt_base:
+    name: build prebuilt base
     runs-on: ubuntu-latest
     if: github.repository == 'sunnypilot/sunnypilot'
     env:
@@ -26,7 +26,7 @@ jobs:
       with:
         ref: dockerize-sunny
         wait-interval: 30
-        running-workflow-name: 'build prebuilt'
+        running-workflow-name: 'build prebuilt base'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         check-regexp: ^((?!.*(build master-ci).*).)*$
     - uses: actions/checkout@v4
