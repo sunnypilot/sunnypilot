@@ -31,9 +31,7 @@ git checkout --orphan $RELEASE_BRANCH
 # do the files copy
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
-./release/release_files.py | while IFS= read -r file; do
-  cp -pR --parents "$file" $BUILD_DIR/
-done
+cp -pR --parents $(./release/release_files.py) $BUILD_DIR/
 
 # in the directory
 cd $BUILD_DIR
@@ -76,7 +74,6 @@ find . -name '__pycache__' -delete
 rm -rf .sconsign.dblite Jenkinsfile release/
 rm selfdrive/modeld/models/driving_vision.onnx
 rm selfdrive/modeld/models/driving_policy.onnx
-rm sunnypilot/modeld*/models/supercombo.onnx
 
 find third_party/ -name '*x86*' -exec rm -r {} +
 find third_party/ -name '*Darwin*' -exec rm -r {} +
