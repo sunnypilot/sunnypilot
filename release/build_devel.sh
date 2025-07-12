@@ -43,10 +43,7 @@ git clean -xdff
 # do the files copy
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
-./release/release_files.py | while IFS= read -r file; do
-  cp -pR --parents "$file" $TARGET_DIR/
-done
-
+./release/release_files.py | sort | uniq | rsync -rRl --files-from=- . $TARGET_DIR/
 
 # in the directory
 cd $TARGET_DIR
