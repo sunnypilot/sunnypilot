@@ -39,4 +39,4 @@ jobs:
         git config --global --add safe.directory '*'
         git lfs pull
     - name: Push staging-c3-new
-      run: BRANCH=dockerized-prebuilt release/build_devel.sh
+      run: RELEASE_BRANCH=dockerized-prebuilt release/build_release.sh

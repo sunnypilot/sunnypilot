@@ -19,16 +19,16 @@ cd $TARGET_DIR
 cp -r $SOURCE_DIR/.git $TARGET_DIR
 pre-commit uninstall || true
 
-echo "[-] bringing dockerized-prebuilt and staging-c3-new in sync T=$SECONDS"
+echo "[-] bringing __nightly and devel in sync T=$SECONDS"
 cd $TARGET_DIR
 
-git fetch --depth 1 origin dockerized-prebuilt
-git fetch --depth 1 origin staging-c3-new
+git fetch --depth 1 origin __nightly
+git fetch --depth 1 origin devel
 
-git checkout -f --track origin/dockerized-prebuilt
-git reset --hard dockerized-prebuilt
-git checkout dockerized-prebuilt
-git reset --hard origin/staging-c3-new
+git checkout -f --track origin/__nightly
+git reset --hard __nightly
+git checkout __nightly
+git reset --hard origin/devel
 git clean -xdff
 git lfs uninstall
 
@@ -43,7 +43,7 @@ git clean -xdff
 # do the files copy
 echo "[-] copying files T=$SECONDS"
 cd $SOURCE_DIR
-./release/release_files.py | sort | uniq | rsync -rRl --files-from=- . $TARGET_DIR/
+cp -pR --parents $(./release/release_files.py) $TARGET_DIR/
 
 # in the directory
 cd $TARGET_DIR
@@ -85,7 +85,7 @@ fi
 
 if [ ! -z "$BRANCH" ]; then
   echo "[-] Pushing to $BRANCH T=$SECONDS"
-  git push -f origin dockerized-prebuilt:$BRANCH
+  git push -f origin __nightly:$BRANCH
 fi
 
 echo "[-] done T=$SECONDS, ready at $TARGET_DIR"

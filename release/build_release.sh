@@ -25,7 +25,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:commaai/openpilot.git
+git remote add origin git@github.com:sunnypilot/sunnypilot.git
 git checkout --orphan $RELEASE_BRANCH
 
 # do the files copy
@@ -88,7 +88,7 @@ touch prebuilt
 
 # Add built files to git
 git add -f .
-git commit --amend -m "openpilot v$VERSION"
+git commit --amend -m "sunnypilot v$VERSION"
 
 # Run tests
 cd $BUILD_DIR
