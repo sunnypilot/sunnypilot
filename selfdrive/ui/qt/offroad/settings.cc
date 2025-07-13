@@ -123,7 +123,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                              "acceleration personality within Onroad Settings on the driving screen."),
                                           "",
                                           accel_personality_texts);
-  accel_personality_setting->showDescription();
+  // accel_personality_setting->showDescription();
   // set up uiState update for personality setting
   QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
 

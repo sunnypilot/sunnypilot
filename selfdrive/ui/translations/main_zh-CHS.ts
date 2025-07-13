@@ -447,11 +447,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Offroad Mode</source>
-        <translation>越野模式</translation>
+        <translation>离线模式</translation>
     </message>
     <message>
         <source>Are you sure you want to exit Always Offroad mode?</source>
-        <translation>​​确定要退出“常驻越野模式”吗？​​</translation>
+        <translation>​​确定要退出“始终离线模式”吗？​​</translation>
     </message>
     <message>
         <source>Confirm</source>
@@ -459,19 +459,19 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Are you sure you want to enter Always Offroad mode?</source>
-        <translation>​​确定要启用“常驻越野模式”吗？​​</translation>
+        <translation>​​确定要启用“始终离线模式”吗？​​</translation>
     </message>
     <message>
         <source>Disengage to Enter Always Offroad Mode</source>
-        <translation>​​退出当前状态以启用常驻越野模式​​</translation>
+        <translation>​​退出当前状态以启用离线模式​​</translation>
     </message>
     <message>
         <source>Exit Always Offroad</source>
-        <translation>​​退出常驻越野模式​​</translation>
+        <translation>​​退出离线模式​​</translation>
     </message>
     <message>
         <source>Always Offroad</source>
-        <translation>​​常驻越野模式​​</translation>
+        <translation>始终离线模式</translation>
     </message>
     <message>
         <source>Quiet Mode</source>
@@ -503,7 +503,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Offroad</source>
-        <translation>​​越野</translation>
+        <translation>离线</translation>
     </message>
     <message>
         <source>Controls state of the device after boot/sleep.</source>
@@ -511,11 +511,11 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>⁍ Default: Device will boot/wake-up normally &amp; will be ready to engage.</source>
-        <translation>⁍ 默认：设备将正常启动/唤醒，并随时准备启用</translation>
+        <translation>⁍ 默认模式：设备将正常启动/唤醒，并随时准备启用</translation>
     </message>
     <message>
         <source>⁍ Offroad: Device will be in Always Offroad mode after boot/wake-up.</source>
-        <translation>⁍ ​​越野：设备将在启动/唤醒后自动进入常驻越野模式</translation>
+        <translation>⁍ ​离线模式：设备在启动/唤醒后将保持始终处于离线模式。</translation>
     </message>
     <message>
         <source>Interactivity Timeout</source>
@@ -712,7 +712,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
-        <translation>在设备面板中启用 &quot; 始终越野模式 &quot;，或关闭车辆以选择选项。</translation>
+        <translation>在设备面板中启用 &quot; 始终离线模式 &quot;，或关闭车辆以选择选项。</translation>
     </message>
     <message>
         <source>Off: Uses default tuning</source>
@@ -881,7 +881,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>MaxTimeOffroad</name>
     <message>
         <source>Max Time Offroad</source>
-        <translation>最大越野时间</translation>
+        <translation>最大离线时间</translation>
     </message>
     <message>
         <source>Device will automatically shutdown after set time once the engine is turned off.&lt;br/&gt;(30h is the default)</source>
@@ -1199,7 +1199,7 @@ The default software delay value is 0.2</source>
     </message>
     <message>
         <source>sunnypilot is now in Always Offroad mode. sunnypilot won&apos;t start until Always Offroad mode is disabled. Go to &quot;Settings&quot; -&gt; &quot;Device&quot; to exit Always Offroad mode.</source>
-        <translation>sunnypilot现在处于始终越野模式。在禁用始终越野模式之前，sunnypilot不会启动。转到&quot;设置&quot; -&gt; &quot;设备&quot;退出“始终越野”模式。</translation>
+        <translation>sunnypilot现在处于离线模式。在禁用离线模式之前，sunnypilot不会启动。转到&quot;设置&quot; -&gt; &quot;设备&quot;退出“始终离线模式”模式。</translation>
     </message>
 </context>
 <context>
@@ -1337,7 +1337,7 @@ The default software delay value is 0.2</source>
     </message>
     <message>
         <source>This setting will take effect once the device enters offroad state.</source>
-        <translation>此设置将在设备进入越野状态后生效。</translation>
+        <translation>此设置将在设备进入离线状态后生效。</translation>
     </message>
     <message>
         <source>Vehicle Selector</source>
