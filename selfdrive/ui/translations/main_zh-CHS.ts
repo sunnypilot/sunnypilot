@@ -1061,6 +1061,17 @@ The default software delay value is 0.2</source>
     </message>
 </context>
 <context>
+    <name>TreeOptionDialog</name>
+    <message>
+        <source>Select</source>
+        <translation>选择</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+</context>
+<context>
     <name>Networking</name>
     <message>
         <source>Advanced</source>
