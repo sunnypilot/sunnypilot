@@ -55,14 +55,20 @@ jobs:
       RECOMPILED_DIR: recompiled${{ github.event.inputs.recompiled_dir }}
       JSON_FILE: docs/docs/driving_models_v${{ github.event.inputs.json_version }}.json
     steps:
-      - name: Set up SSH and clone GitLab docs repo
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+
+      - name: Add GitLab.com SSH key to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+
+      - name: Clone GitLab docs repo
         env:
           GIT_SSH_COMMAND: 'ssh -o UserKnownHostsFile=~/.ssh/known_hosts'
         run: |
-          eval "$(ssh-agent -s)"
-          mkdir -p ~/.ssh
-          echo "${{ secrets.GITLAB_SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
           echo "Cloning GitLab"
           git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
           cd gitlab_docs
