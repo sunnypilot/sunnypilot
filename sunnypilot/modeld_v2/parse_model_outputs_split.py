@@ -89,25 +89,13 @@ class Parser:
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
   def split_outputs(self, outs: dict[str, np.ndarray]) -> None:
-    if 'lead' in outs:
-      if outs['lead'].shape[1] == 2 * SplitModelConstants.LEAD_MHP_SELECTION *SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH:
-        self.parse_mdn('lead', outs, in_N=0, out_N=0,
-                       out_shape=(SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN,SplitModelConstants.LEAD_WIDTH))
-      else:
-        self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
-                      out_shape=(SplitModelConstants.LEAD_TRAJ_LEN,SplitModelConstants.LEAD_WIDTH))
-    if 'plan' in outs:
-      if outs['plan'].shape[1] > 2 * SplitModelConstants.PLAN_WIDTH * SplitModelConstants.IDX_N:
-        self.parse_mdn('plan', outs, in_N=SplitModelConstants.PLAN_MHP_N, out_N=SplitModelConstants.PLAN_MHP_SELECTION,
-                       out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
-      else:
-        self.parse_mdn('plan', outs, in_N=0, out_N=0,
-                      out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
     if 'lane_lines' in outs:
       self.parse_mdn('lane_lines', outs, in_N=0, out_N=0,
                      out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
       self.parse_mdn('road_edges', outs, in_N=0, out_N=0,
                      out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+      self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
+                     out_shape=(SplitModelConstants.LEAD_TRAJ_LEN,SplitModelConstants.LEAD_WIDTH))
       if 'sim_pose' in outs:
         self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
       for k in ['lead_prob', 'lane_lines_prob']:
@@ -123,6 +111,8 @@ class Parser:
     return outs
 
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    self.parse_mdn('plan', outs, in_N=SplitModelConstants.PLAN_MHP_N, out_N=SplitModelConstants.PLAN_MHP_SELECTION,
+                   out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
     self.split_outputs(outs)
     if 'lat_planner_solution' in outs:
       self.parse_mdn('lat_planner_solution', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
