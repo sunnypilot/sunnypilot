@@ -33,7 +33,7 @@ on:
           - TR Models
           - DTR Models
           - Custom Merge Models
-          - FoF series models
+          - FOF series models
           - Other
       custom_model_folder:
         description: 'Custom model folder name (if "Other" selected)'
