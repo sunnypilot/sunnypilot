@@ -570,7 +570,7 @@ This is the time after which settings UI closes automatically if user is not int
     <name>ExperimentalModeButton</name>
     <message>
         <source>EXPERIMENTAL MODE ON</source>
-        <translation>试验模式运行</translation>
+        <translation>实验模式运行</translation>
     </message>
     <message>
         <source>CHILL MODE ON</source>
@@ -2182,7 +2182,7 @@ Data</source>
     </message>
     <message>
         <source>Advanced driving personality system with separate controls for acceleration behavior (Eco/Normal/Sport) and following distance/braking (Relaxed/Standard/Aggressive). Customize your driving experience with independent acceleration and distance personalities.</source>
-        <translation>高级驾驶个性系统，分别控制驾驶模式行为（Eco/Normal/Sport）和跟车距离/刹车行为（Relaxed/Standard/Aggressive）。通过独立的加速和距离个性，定制您的驾驶体验。</translation>
+        <translation>高级驾驶个性系统，分别控制驾驶模式行为（Eco/Normal/Sport）和跟车距离行为（Relaxed/Standard/Aggressive）。通过独立的加速和距离个性，定制您的驾驶体验。</translation>
     </message>
     <message>
         <source>Acceleration Personality</source>
@@ -2198,7 +2198,7 @@ Data</source>
     </message>
     <message>
         <source>Controls following distance and braking behavior: Relaxed (longer distance, gentler braking), Standard (balanced), Aggressive (shorter distance, firmer braking). Fine-tune your comfort level in traffic situations.</source>
-        <translation>控制跟车距离和刹车行为：放松（更长距离，更柔和的刹车），标准（平衡），激进（更短距离，更坚定的刹车）。根据您的舒适度在交通情况下进行微调。</translation>
+        <translation>控制跟车距离和刹车行为：舒适（更长距离，更柔和的刹车），标准（平衡），激进（更短距离，更坚定的刹车）。根据您的舒适度在交通情况下进行微调。</translation>
     </message>
 </context>
 <context>
@@ -2571,11 +2571,11 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>sunnypilot defaults to driving in &lt;b&gt;chill mode&lt;/b&gt;. Experimental mode enables &lt;b&gt;alpha-level features&lt;/b&gt; that aren&apos;t ready for chill mode. Experimental features are listed below:</source>
-        <translation>sunnypilot默认在&lt;b&gt;chill mode&lt;/b&gt;。实验模式启用了尚未准备好进入冷却模式的&lt;b&gt;alpha-level features&lt;/b&gt;。实验特征如下：</translation>
+        <translation>SunnyPilot默认在&lt;b&gt;轻松模式&lt;/b&gt;。实验模式启用&lt;b&gt;测试功能&lt;/b&gt;，这些功能尚未准备好用于轻松模式。测试功能如下：</translation>
     </message>
     <message>
         <source>Let the driving model control the gas and brakes. sunnypilot will drive as it thinks a human would, including stopping for red lights and stop signs. Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; mistakes should be expected.</source>
-        <translation>允许驾驶模型控制加速和制动，sunnypilot将模仿人类驾驶车辆，包括在红灯和停车让行标识前停车。鉴于驾驶模型确定行驶车速，所设定的车速仅作为上限。此功能尚处于早期测试状态，有可能会出现操作错误。</translation>
+        <translation>让驾驶模型控制油门和刹车。SunnyPilot模仿人类进行驾驶，包括在红灯和停车标志前停车。由于驾驶模型决定行驶速度，设置的速度仅作为上限。这是一个测试阶段的功能，可能会有错误。</translation>
     </message>
     <message>
         <source>New Driving Visualization</source>
@@ -2583,7 +2583,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Experimental mode is currently unavailable on this car since the car&apos;s stock ACC is used for longitudinal control.</source>
-        <translation>由于此车辆使用自带的ACC纵向控制，当前无法使用试验模式。</translation>
+        <translation>由于此车辆使用自带的ACC纵向控制，当前无法使用实验模式。</translation>
     </message>
     <message>
         <source>Aggressive</source>
@@ -2595,7 +2595,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Relaxed</source>
-        <translation>放松</translation>
+        <translation>舒适</translation>
     </message>
     <message>
         <source>Driving Personality</source>
