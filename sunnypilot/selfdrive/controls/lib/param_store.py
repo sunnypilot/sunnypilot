@@ -20,6 +20,24 @@ class ParamStore:
     universal_params: list[str] = []
     brand_params: list[str] = []
 
+    if CP.brand == "hyundai":
+      brand_params.extend([
+        "HyundaiLongitudinalTuning",
+        "LongTuningCustomToggle",
+        "LongTuningVEgoStopping",
+        "LongTuningVEgoStarting",
+        "LongTuningStoppingDecelRate",
+        "LongTuningLongitudinalActuatorDelay",
+        "LongTuningMinUpperJerk",
+        "LongTuningMinLowerJerk",
+        "LongTuningJerkLimits",
+        "LongTuningLookaheadJerkBp",
+        "LongTuningLookaheadJerkUpperV",
+        "LongTuningLookaheadJerkLowerV",
+        "LongTuningUpperJerkV",
+        "LongTuningLowerJerkV",
+      ])
+
     self.keys = universal_params + brand_params
     self.values = {}
     self.cached_params_list: list[capnp.lib.capnp._DynamicStructBuilder] | None = None

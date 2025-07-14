@@ -174,6 +174,21 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     // sunnypilot car specific params
     {"HyundaiLongitudinalTuning", PERSISTENT},
 
+    // Hyundai Longitudinal Tuning Live Parameters
+    {"LongTuningCustomToggle", PERSISTENT | BACKUP},
+    {"LongTuningVEgoStopping", PERSISTENT | BACKUP},
+    {"LongTuningVEgoStarting", PERSISTENT | BACKUP},
+    {"LongTuningStoppingDecelRate", PERSISTENT | BACKUP},
+    {"LongTuningLookaheadJerkBp", PERSISTENT | BACKUP},
+    {"LongTuningLookaheadJerkUpperV", PERSISTENT | BACKUP},
+    {"LongTuningLookaheadJerkLowerV", PERSISTENT | BACKUP},
+    {"LongTuningLongitudinalActuatorDelay", PERSISTENT | BACKUP},
+    {"LongTuningJerkLimits", PERSISTENT | BACKUP},
+    {"LongTuningUpperJerkV", PERSISTENT | BACKUP},
+    {"LongTuningLowerJerkV", PERSISTENT | BACKUP},
+    {"LongTuningMinUpperJerk", PERSISTENT | BACKUP},
+    {"LongTuningMinLowerJerk", PERSISTENT | BACKUP},
+
     {"DynamicExperimentalControl", PERSISTENT},
     {"BlindSpot", PERSISTENT | BACKUP},
 
