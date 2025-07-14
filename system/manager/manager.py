@@ -74,6 +74,7 @@ def manager_init() -> None:
     ("HkgTuningAngleMaxTorqueReductionGain", "100"),
     ("HkgTuningOverridingCycles", "17"),
     ("HkgAngleLiveTuning", "0"),
+    ("AdasDrvEcuInterceptorEnabled", "0"),
   ]
 
   # device boot mode
