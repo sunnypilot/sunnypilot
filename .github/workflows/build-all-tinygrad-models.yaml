@@ -8,22 +8,12 @@ on:
         required: false
         default: 'master-new'
         type: string
-      json_version:
-        description: 'driving_models_vX.json to use (default: next version)'
-        required: false
-        default: ''
-        type: string
-      recompiled_dir:
-        description: 'Recompiled directory number to use (e.g. 4 for recompiled4)'
-        required: true
-        type: number
 
 jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
       json_file: ${{ steps.get-json.outputs.json_file }}
-      recompiled_dir: ${{ steps.set-recompiled.outputs.recompiled_dir }}
     steps:
       - name: Checkout docs repo
         uses: actions/checkout@v4
@@ -33,30 +23,15 @@ jobs:
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
 
-      - name: Get JSON version to use
+      - name: Get next JSON version to use
         id: get-json
         run: |
           cd docs/docs
           latest=$(ls driving_models_v*.json | sed -E 's/.*_v([0-9]+)\.json/\1/' | sort -n | tail -1)
-          if [[ -z "${{ github.event.inputs.json_version }}" ]]; then
-            next=$((latest+1))
-            json_file="driving_models_v${next}.json"
-            cp "driving_models_v${latest}.json" "$json_file"
-          else
-            json_file="${{ github.event.inputs.json_version }}"
-          fi
-          if [[ ! -f "$json_file" ]]; then
-            echo "JSON file $json_file not found!" >&2
-            exit 1
-          fi
+          next=$((latest+1))
+          json_file="driving_models_v${next}.json"
+          cp "driving_models_v${latest}.json" "$json_file"
           echo "json_file=$json_file" >> $GITHUB_OUTPUT
-
-      - name: Set recompiled dir from input
-        id: set-recompiled
-        run: |
-          recompiled_dir="recompiled${{ github.event.inputs.recompiled_dir }}"
-          mkdir -p "$recompiled_dir"
-          echo "recompiled_dir=$recompiled_dir" >> $GITHUB_OUTPUT
 
       - name: Upload context for next jobs
         uses: actions/upload-artifact@v4
@@ -68,7 +43,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     env:
-      RECOMPILED_DIR: ${{ needs.setup.outputs.recompiled_dir }}
       JSON_FILE: docs/docs/${{ needs.setup.outputs.json_file }}
     steps:
       - name: Set up SSH and clone GitLab docs repo
@@ -82,10 +56,22 @@ jobs:
           echo "Cloning GitLab"
           git clone --depth 1 --filter=tree:0 --sparse git@gitlab.com:sunnypilot/public/docs.sunnypilot.ai2.git gitlab_docs
           cd gitlab_docs
-          echo "checkout models/${RECOMPILED_DIR}"
-          git sparse-checkout set --no-cone models/${RECOMPILED_DIR}
           git checkout main
           cd ..
+
+      - name: Set next recompiled dir
+        id: set-recompiled
+        run: |
+          cd gitlab_docs/models
+          latest_dir=$(ls -d recompiled* 2>/dev/null | sed -E 's/recompiled([0-9]+)/\1/' | sort -n | tail -1)
+          if [[ -z "$latest_dir" ]]; then
+            next_dir=1
+          else
+            next_dir=$((latest_dir+1))
+          fi
+          recompiled_dir="recompiled${next_dir}"
+          mkdir -p "$recompiled_dir"
+          echo "RECOMPILED_DIR=$recompiled_dir" >> $GITHUB_ENV
 
       - name: Download context
         uses: actions/download-artifact@v4
@@ -210,9 +196,6 @@ jobs:
         run: |
           cd gitlab_docs
           git checkout main
-          for d in models/"$(basename $RECOMPILED_DIR)"/*/; do
-            git sparse-checkout add "$d"
-          done
           mkdir -p models/"$(basename $RECOMPILED_DIR)"
           git add models/"$(basename $RECOMPILED_DIR)"
           git config --global user.name "GitHub Action"
