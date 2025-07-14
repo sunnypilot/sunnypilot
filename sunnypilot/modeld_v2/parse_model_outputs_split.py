@@ -120,11 +120,16 @@ class Parser:
   def split_outputs(self, outs: dict[str, np.ndarray]) -> None:
     if 'lane_lines' in outs:
       self.parse_mdn('lane_lines', outs, in_N=0, out_N=0,
-                     out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+                    out_shape=(SplitModelConstants.NUM_LANE_LINES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+    if 'road_edges' in outs:
       self.parse_mdn('road_edges', outs, in_N=0, out_N=0,
-                     out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
-      if 'sim_pose' in outs:
-        self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
+                    out_shape=(SplitModelConstants.NUM_ROAD_EDGES,SplitModelConstants.IDX_N,SplitModelConstants.LANE_LINES_WIDTH))
+    if 'sim_pose' in outs:
+      self.parse_mdn('sim_pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
+    if 'lane_lines_prob' in outs:
+      self.parse_binary_crossentropy('lane_lines_prob', outs)
+    if 'lead_prob' in outs:
+      self.parse_binary_crossentropy('lead_prob', outs)
 
   def parse_vision_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     self.parse_mdn('pose', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.POSE_WIDTH,))
@@ -134,11 +139,6 @@ class Parser:
     self.split_outputs(outs)
     self.parse_categorical_crossentropy('desire_pred', outs, out_shape=(SplitModelConstants.DESIRE_PRED_LEN,SplitModelConstants.DESIRE_PRED_WIDTH))
     self.parse_binary_crossentropy('meta', outs)
-    if self.generation >= 13:
-      self.parse_binary_crossentropy('lane_lines_prob', outs)
-    else:
-      for k in ['lead_prob', 'lane_lines_prob']:
-        self.parse_binary_crossentropy(k, outs)
     return outs
 
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
@@ -149,8 +149,6 @@ class Parser:
     if 'desired_curvature' in outs:
       self.parse_mdn('desired_curvature', outs, in_N=0, out_N=0, out_shape=(SplitModelConstants.DESIRED_CURV_WIDTH,))
     self.parse_categorical_crossentropy('desire_state', outs, out_shape=(SplitModelConstants.DESIRE_PRED_WIDTH,))
-    if self.generation >= 13:
-      self.parse_binary_crossentropy('lead_prob', outs)
     return outs
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
