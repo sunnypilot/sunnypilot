@@ -189,7 +189,7 @@ def get_lead(v_ego: float, ready: bool, tracks: dict[int, Track], lead_msg: capn
 
 def get_custom_yrel(CP: structs.CarParams, CP_SP: structs.CarParamsSP, lead_dict: dict[str, Any],
                     lead_msg: capnp._DynamicStructReader) -> dict[str, Any]:
-  if CP.brand == "hyundai" and (CP_SP.flags & HyundaiFlagsSP.ENHANCED_SCC or
+  if CP.brand == "hyundai" and (CP_SP.flags & (HyundaiFlagsSP.ENHANCED_SCC | HyundaiFlagsSP.ADAS_ECU_INTERCEPTOR) or
                                 CP.flags & (HyundaiFlags.CANFD_CAMERA_SCC | HyundaiFlags.CAMERA_SCC)):
     lead_dict['yRel'] = float(-lead_msg.y[0])
 
