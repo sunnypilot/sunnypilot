@@ -1048,6 +1048,14 @@ The default software delay value is 0.2</source>
         <translation>当实时学习转向延迟功能被关闭时，调整软件延迟。
 软件延迟的默认值为0.2秒</translation>
     </message>
+    <message>
+        <source>Allow Dynamic Model Outputs</source>
+        <translation>允许动态模型输出</translation>
+    </message>
+    <message>
+        <source>Enable this to allow dynamic model output parsing on all models produced after September, 2024. The affects of this toggle have been noted to make Gas and Brake controls noticeably smoother.</source>
+        <translation>启用此功能，允许在2024年9月之后生产的所有模型上进行动态模型输出解析。此切换功能的效果已被注意到，使油门和刹车控制明显更平滑。</translation>
+    </message>
 </context>
 <context>
     <name>MultiOptionDialog</name>
