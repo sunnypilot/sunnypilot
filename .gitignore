@@ -10,6 +10,7 @@ venv/
 .overlay_init
 .overlay_consistent
 .sconsign.dblite
+.vs/
 model2.png
 a.out
 .hypothesis
