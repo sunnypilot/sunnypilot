@@ -21,4 +21,8 @@ private:
   void searchBranches(const QString &query);
   ParamControl *disableUpdatesToggle = nullptr;
   void handleDisableUpdatesToggled(bool state);
+private slots:
+  void updateDisableUpdatesToggle(bool offroad);
+protected:
+  void showEvent(QShowEvent *event) override;
 };
