@@ -18,6 +18,15 @@ SoftwarePanelSP::SoftwarePanelSP(QWidget *parent) : SoftwarePanel(parent) {
         searchBranches(d.text());
       }
   });
+
+  // Disable Updates toggle
+  disableUpdatesToggle = new ParamControl("DisableUpdates",
+    tr("Disable Updates"),
+    tr("When enabled, software updates will be disabled. <b>This requires a reboot to take effect.</b>"),
+    "../assets/icons/icon_warning.png",
+    this);
+  addItem(disableUpdatesToggle);
+  connect(disableUpdatesToggle, &ParamControl::toggleFlipped, this, &SoftwarePanelSP::handleDisableUpdatesToggled);
 }
 
 /**
@@ -47,5 +56,17 @@ void SoftwarePanelSP::searchBranches(const QString &query) {
     params.put("UpdaterTargetBranch", selected_branch.toStdString());
     targetBranchBtn->setValue(selected_branch);
     checkForUpdates();
+  }
+}
+
+void SoftwarePanelSP::handleDisableUpdatesToggled(bool state) {
+  QString msg = state ? tr("Disabling updates requires a reboot. Reboot now?")
+                      : tr("Enabling updates requires a reboot. Reboot now?");
+  if (ConfirmationDialog::confirm(msg, tr("Reboot"), this)) {
+    params.putBool("DoReboot", true);
+  } else {
+    // Reset param to previous state if cancelled
+    params.putBool("DisableUpdates", !state);
+    disableUpdatesToggle->refresh();
   }
 }
