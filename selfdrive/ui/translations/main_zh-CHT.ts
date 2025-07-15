@@ -84,55 +84,56 @@
     </message>
     <message>
         <source>Prevent large data uploads when on a metered cellular connection</source>
-        <translation type="unfinished"></translation>
+        <translation>當處於按量計費的行動數據連線時，防止大量資料上傳</translation>
     </message>
     <message>
         <source>default</source>
-        <translation type="unfinished"></translation>
+        <translation>預設</translation>
     </message>
     <message>
         <source>metered</source>
-        <translation type="unfinished"></translation>
+        <translation>計費</translation>
     </message>
     <message>
         <source>unmetered</source>
-        <translation type="unfinished"></translation>
+        <translation>不計量</translation>
     </message>
     <message>
         <source>Wi-Fi Network Metered</source>
-        <translation type="unfinished"></translation>
+        <translation>Wi-Fi 網路計量</translation>
     </message>
     <message>
         <source>Prevent large data uploads when on a metered Wi-Fi connection</source>
-        <translation type="unfinished"></translation>
+        <translation>防止大量資料透過有流量限制的Wi-Fi網路進行上傳</translation>
     </message>
 </context>
 <context>
     <name>AutoLaneChangeTimer</name>
     <message>
         <source>Auto Lane Change by Blinker</source>
-        <translation type="unfinished"></translation>
+        <translation>透過方向燈自動變化車道</translation>
     </message>
     <message>
         <source>Set a timer to delay the auto lane change operation when the blinker is used. No nudge on the steering wheel is required to auto lane change if a timer is set. Default is Nudge.
 Please use caution when using this feature. Only use the blinker when traffic and road conditions permit.</source>
-        <translation type="unfinished"></translation>
+        <translation>設定計時器，延遲使用方向燈時自動變換車道的操作。設定計時器後，無需輕推方向盤即可自動變換車道。預設為輕推。
+使用此功能時請小心謹慎。僅在交通和道路狀況允許的情況下使用方向燈。</translation>
     </message>
     <message>
         <source>s</source>
-        <translation type="unfinished"></translation>
+        <translation>秒</translation>
     </message>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>關閉</translation>
     </message>
     <message>
         <source>Nudge</source>
-        <translation type="unfinished"></translation>
+        <translation>輕推</translation>
     </message>
     <message>
         <source>Nudgeless</source>
-        <translation type="unfinished"></translation>
+        <translation>無推力</translation>
     </message>
 </context>
 <context>
@@ -201,15 +202,15 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>openpilot Longitudinal Control (Alpha)</source>
-        <translation type="unfinished"></translation>
+        <translation>openpilot 縱向控制（Alpha）</translation>
     </message>
     <message>
         <source>WARNING: openpilot longitudinal control is in alpha for this car and will disable Automatic Emergency Braking (AEB).</source>
-        <translation type="unfinished"></translation>
+        <translation>警告：openpilot 縱向控制對於該車輛而言處於 alpha 階段，並且將停用自動緊急煞車 (AEB)。</translation>
     </message>
     <message>
         <source>On this car, sunnypilot defaults to the car&apos;s built-in ACC instead of openpilot&apos;s longitudinal control. Enable this to switch to openpilot longitudinal control. Enabling Experimental mode is recommended when enabling openpilot longitudinal control alpha.</source>
-        <translation type="unfinished"></translation>
+        <translation>在這輛車上，sunnypilot 預設使用車輛內建的 ACC，而非 openpilot 的縱向控制。啟用此選項可切換至 openpilot 縱向控制。建議在啟用 openpilot 縱向控制 alpha 時啟用實驗模式。</translation>
     </message>
 </context>
 <context>
@@ -356,125 +357,125 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>Disengage to Reset Calibration</source>
-        <translation type="unfinished"></translation>
+        <translation>請先取消控車才能重置校準</translation>
     </message>
     <message>
         <source> Resetting calibration will restart openpilot if the car is powered on.</source>
-        <translation type="unfinished"></translation>
+        <translation>若車輛已啟動，重設校準將會重新啟動 OpenPilot。</translation>
     </message>
 </context>
 <context>
     <name>DevicePanelSP</name>
     <message>
         <source>Driver Camera Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>駕駛監控鏡頭預覽</translation>
     </message>
     <message>
         <source>Training Guide</source>
-        <translation type="unfinished"></translation>
+        <translation>訓練指南</translation>
     </message>
     <message>
         <source>Regulatory</source>
-        <translation type="unfinished">法規/監管</translation>
+        <translation>法規/監管</translation>
     </message>
     <message>
         <source>Language</source>
-        <translation type="unfinished"></translation>
+        <translation>語言</translation>
     </message>
     <message>
         <source>Are you sure you want to review the training guide?</source>
-        <translation type="unfinished">您確定要觀看使用教學嗎？</translation>
+        <translation>您確定要觀看使用教學嗎？</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished">回顧</translation>
+        <translation>回顧</translation>
     </message>
     <message>
         <source>Select a language</source>
-        <translation type="unfinished">選擇語言</translation>
+        <translation>選擇語言</translation>
     </message>
     <message>
         <source>Reboot</source>
-        <translation type="unfinished">重新啟動</translation>
+        <translation>重新啟動</translation>
     </message>
     <message>
         <source>Power Off</source>
-        <translation type="unfinished">關機</translation>
+        <translation>關機</translation>
     </message>
     <message>
         <source>Offroad Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>非行駛模式</translation>
     </message>
     <message>
         <source>Are you sure you want to exit Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
+        <translation>你確定要離開「永遠非行駛模式」嗎？</translation>
     </message>
     <message>
         <source>Confirm</source>
-        <translation type="unfinished">確認</translation>
+        <translation>確認</translation>
     </message>
     <message>
         <source>Are you sure you want to enter Always Offroad mode?</source>
-        <translation type="unfinished"></translation>
+        <translation>你確定要進入「永遠非行駛模式」嗎？</translation>
     </message>
     <message>
         <source>Disengage to Enter Always Offroad Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>請解除控制後即可進入永遠非行駛模式</translation>
     </message>
     <message>
         <source>Exit Always Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>離開永遠非行駛模式</translation>
     </message>
     <message>
         <source>Always Offroad</source>
-        <translation type="unfinished"></translation>
+        <translation>永遠非行駛模式</translation>
     </message>
     <message>
         <source>Quiet Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>靜音模式</translation>
     </message>
     <message>
         <source>Reset Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>重置設定</translation>
     </message>
     <message>
         <source>Are you sure you want to reset all sunnypilot settings to default? Once the settings are reset, there is no going back.</source>
-        <translation type="unfinished"></translation>
+        <translation>你確定要將所有 SunnyPilot 設定重設為預設值嗎？一旦重設，將無法復原。</translation>
     </message>
     <message>
         <source>Reset</source>
-        <translation type="unfinished">重設</translation>
+        <translation>重設</translation>
     </message>
     <message>
         <source>The reset cannot be undone. You have been warned.</source>
-        <translation type="unfinished"></translation>
+        <translation>重設無法復原，請慎重操作。</translation>
     </message>
 </context>
 <context>
     <name>DriveStats</name>
     <message>
         <source>Drives</source>
-        <translation type="unfinished"></translation>
+        <translation>行駛紀錄</translation>
     </message>
     <message>
         <source>Hours</source>
-        <translation type="unfinished"></translation>
+        <translation>時數</translation>
     </message>
     <message>
         <source>ALL TIME</source>
-        <translation type="unfinished"></translation>
+        <translation>總計</translation>
     </message>
     <message>
         <source>PAST WEEK</source>
-        <translation type="unfinished"></translation>
+        <translation>過去一週</translation>
     </message>
     <message>
         <source>KM</source>
-        <translation type="unfinished"></translation>
+        <translation>公里</translation>
     </message>
     <message>
         <source>Miles</source>
-        <translation type="unfinished"></translation>
+        <translation>英里</translation>
     </message>
 </context>
 <context>
@@ -549,43 +550,43 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>HyundaiSettings</name>
     <message>
         <source>Off</source>
-        <translation type="unfinished"></translation>
+        <translation>關閉</translation>
     </message>
     <message>
         <source>Dynamic</source>
-        <translation type="unfinished"></translation>
+        <translation>動態式</translation>
     </message>
     <message>
         <source>Predictive</source>
-        <translation type="unfinished"></translation>
+        <translation>預測式</translation>
     </message>
     <message>
         <source>Custom Longitudinal Tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>自訂縱向控制調校</translation>
     </message>
     <message>
         <source>This feature can only be used with openpilot longitudinal control enabled.</source>
-        <translation type="unfinished"></translation>
+        <translation>此功能僅能在啟用 OpenPilot 縱向控制時使用。</translation>
     </message>
     <message>
         <source>Enable &quot;Always Offroad&quot; in Device panel, or turn vehicle off to select an option.</source>
-        <translation type="unfinished"></translation>
+        <translation>請在「裝置」面板中啟用「永遠非行駛模式」，或將車輛熄火後再選擇選項。</translation>
     </message>
     <message>
         <source>Off: Uses default tuning</source>
-        <translation type="unfinished"></translation>
+        <translation>關閉:使用預設調教設定</translation>
     </message>
     <message>
         <source>Dynamic: Adjusts acceleration limits based on current speed</source>
-        <translation type="unfinished"></translation>
+        <translation>動態：根據當前車速調整加速度限制</translation>
     </message>
     <message>
         <source>Predictive: Uses future trajectory data to anticipate needed adjustments</source>
-        <translation type="unfinished"></translation>
+        <translation>預測式：利用未來軌跡資料預先判斷所需調整</translation>
     </message>
     <message>
         <source>Fine-tune your driving experience by adjusting acceleration smoothness with openpilot longitudinal control.</source>
-        <translation type="unfinished"></translation>
+        <translation>透過調整加速平順度，結合 OpenPilot 縱向控制，精細調校你的駕駛體驗。</translation>
     </message>
 </context>
 <context>
@@ -605,61 +606,61 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     <name>LaneChangeSettings</name>
     <message>
         <source>Back</source>
-        <translation type="unfinished">回上頁</translation>
+        <translation>回上頁</translation>
     </message>
     <message>
         <source>Auto Lane Change: Delay with Blind Spot</source>
-        <translation type="unfinished"></translation>
+        <translation>自動變換車道：延遲（有盲點時）</translation>
     </message>
     <message>
         <source>Toggle to enable a delay timer for seamless lane changes when blind spot monitoring (BSM) detects a obstructing vehicle, ensuring safe maneuvering.</source>
-        <translation type="unfinished"></translation>
+        <translation>開啟此選項可在盲點偵測（BSM）發現有車擋道時啟用延遲計時器，確保變換車道更安全順暢。</translation>
     </message>
 </context>
 <context>
     <name>LateralPanel</name>
     <message>
         <source>Modular Assistive Driving System (MADS)</source>
-        <translation type="unfinished"></translation>
+        <translation>模組化輔助駕駛系統（MADS）</translation>
     </message>
     <message>
         <source>Enable the beloved MADS feature. Disable toggle to revert back to stock sunnypilot engagement/disengagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>啟用廣受喜愛的 MADS 功能。若關閉此選項，將恢復為原始的 SunnyPilot 啟用／解除方式。</translation>
     </message>
     <message>
         <source>Customize MADS</source>
-        <translation type="unfinished"></translation>
+        <translation>自訂 MADS 設定</translation>
     </message>
     <message>
         <source>Customize Lane Change</source>
-        <translation type="unfinished"></translation>
+        <translation>自訂變換車道設定</translation>
     </message>
     <message>
         <source>Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).</source>
-        <translation type="unfinished"></translation>
+        <translation>啟用自動車道置中（ALC）與自適應巡航控制（ACC）的獨立啟用功能。</translation>
     </message>
     <message>
         <source>Start the vehicle to check vehicle compatibility.</source>
-        <translation type="unfinished"></translation>
+        <translation>請啟動車輛以檢查車輛相容性。</translation>
     </message>
     <message>
         <source>This platform supports all MADS settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>此平台支援所有 MADS 設定。</translation>
     </message>
     <message>
         <source>This platform supports limited MADS settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>此平台僅支援部分 MADS 設定。</translation>
     </message>
 </context>
 <context>
     <name>MadsSettings</name>
     <message>
         <source>Toggle with Main Cruise</source>
-        <translation type="unfinished"></translation>
+        <translation>隨主巡航一同切換</translation>
     </message>
     <message>
         <source>Note: For vehicles without LFA/LKAS button, disabling this will prevent lateral control engagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>注意：對於沒有 LFA/LKAS 按鈕的車輛，若關閉此選項，將無法啟用橫向控制。</translation>
     </message>
     <message>
         <source>Unified Engagement Mode (UEM)</source>
@@ -667,7 +668,7 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
     </message>
     <message>
         <source>Engage lateral and longitudinal control with cruise control engagement.</source>
-        <translation type="unfinished"></translation>
+        <translation>啟用巡航控制時，同步啟用橫向與縱向控制。</translation>
     </message>
     <message>
         <source>Note: Once lateral control is engaged via UEM, it will remain engaged until it is manually disabled via the MADS button or car shut off.</source>
