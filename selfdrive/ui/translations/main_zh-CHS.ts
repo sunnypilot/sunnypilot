@@ -2232,7 +2232,7 @@ Data</source>
     </message>
     <message>
         <source>Offline Maps ETA</source>
-        <translation>离线地图预计到达时间</translation>
+        <translation>预计时间</translation>
     </message>
     <message>
         <source>Time Elapsed</source>
@@ -2244,7 +2244,7 @@ Data</source>
     </message>
     <message>
         <source>Downloaded Maps</source>
-        <translation>已下载地图</translation>
+        <translation>地图缓存</translation>
     </message>
     <message>
         <source>DELETE</source>
@@ -2263,7 +2263,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Database Update</source>
-        <translation>地图更新时间</translation>
+        <translation>更新时间</translation>
     </message>
     <message>
         <source>CHECK</source>
