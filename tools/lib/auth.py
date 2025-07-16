@@ -66,35 +66,16 @@ def auth_redirect_link(method):
   }[method]
 
   params = {
-    'redirect_uri': f"https://api.comma.ai/v2/auth/{provider_id}/redirect/",
+    'redirect_uri': f"https://api.konik.ai/v2/auth/{provider_id}/redirect/",
     'state': f'service,localhost:{PORT}',
   }
 
-  if method == 'google':
+  if method == 'github':
     params.update({
-      'type': 'web_server',
-      'client_id': '45471411055-ornt4svd2miog6dnopve7qtmh5mnu6id.apps.googleusercontent.com',
-      'response_type': 'code',
-      'scope': 'https://www.googleapis.com/auth/userinfo.email',
-      'prompt': 'select_account',
-    })
-    return 'https://accounts.google.com/o/oauth2/auth?' + urlencode(params)
-  elif method == 'github':
-    params.update({
-      'client_id': '28c4ecb54bb7272cb5a4',
+      'client_id': 'Ov23liy0AI1YCd15pypf',
       'scope': 'read:user',
     })
     return 'https://github.com/login/oauth/authorize?' + urlencode(params)
-  elif method == 'apple':
-    params.update({
-      'client_id': 'ai.comma.login',
-      'response_type': 'code',
-      'response_mode': 'form_post',
-      'scope': 'name email',
-    })
-    return 'https://appleid.apple.com/auth/authorize?' + urlencode(params)
-  else:
-    raise NotImplementedError(f"no redirect implemented for method {method}")
 
 
 def login(method):
@@ -123,7 +104,8 @@ def login(method):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Login to your comma account')
-  parser.add_argument('method', default='google', const='google', nargs='?', choices=['google', 'apple', 'github', 'jwt'])
+  # parser.add_argument('method', default='google', const='google', nargs='?', choices=['google', 'apple', 'github', 'jwt'])
+  parser.add_argument('method', default='google', const='google', nargs='?', choices=['github', 'jwt'])
   parser.add_argument('jwt', nargs='?')
 
   args = parser.parse_args()

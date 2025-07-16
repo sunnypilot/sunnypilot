@@ -343,8 +343,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>다시보기</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>장치를 comma connect (connect.comma.ai)에서 동기화하고 comma prime 무료 이용권을 사용하세요.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>장치를 comma connect (stable.konik.ai)에서 동기화하고 comma prime 무료 이용권을 사용하세요.</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -1058,16 +1058,16 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>장치를 comma 계정에 동기화합니다</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>https://connect.comma.ai에 접속하세요</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>https://stable.konik.ai에 접속하세요</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>&quot;새 장치 추가&quot;를 클릭하고 오른쪽 QR 코드를 스캔하세요</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>connect.comma.ai를 앱처럼 사용하려면 홈 화면에 바로가기를 만드세요</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>stable.konik.ai를 앱처럼 사용하려면 홈 화면에 바로가기를 만드세요</translation>
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
@@ -1182,8 +1182,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>지금 업그레이드하세요</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>connect.comma.ai에 접속하여 comma prime 회원으로 등록하세요</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>stable.konik.ai에 접속하여 comma prime 회원으로 등록하세요</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -1479,8 +1479,8 @@ This may take up to a minute.</source>
         <translation>설정 완료</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>장치를 comma connect (connect.comma.ai)에서 동기화하고 comma prime 무료 이용권을 사용하세요.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>장치를 comma connect (stable.konik.ai)에서 동기화하고 comma prime 무료 이용권을 사용하세요.</translation>
     </message>
     <message>
         <source>Pair device</source>

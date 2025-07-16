@@ -17,7 +17,7 @@ from openpilot.system.ui.widgets.html_render import HtmlRenderer
 
 # Description constants
 DESCRIPTIONS = {
-  'pair_device': "Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.",
+  'pair_device': "Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.",
   'driver_camera': "Preview the driver facing camera to ensure that driver monitoring has good visibility. (vehicle must be off)",
   'reset_calibration': (
       "openpilot requires the device to be mounted within 4° left or right and within 5° " +

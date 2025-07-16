@@ -343,8 +343,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>Revisar</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>Pareie seu dispositivo com comma connect (connect.comma.ai) e reivindique sua oferta de comma prime.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>Pareie seu dispositivo com comma connect (stable.konik.ai) e reivindique sua oferta de comma prime.</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -1060,16 +1060,16 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>Pareie seu dispositivo à sua conta comma</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>navegue até https://connect.comma.ai no seu telefone</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>navegue até https://stable.konik.ai no seu telefone</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>Clique &quot;add new device&quot; e escaneie o QR code a seguir</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>Salve connect.comma.ai como sua página inicial para utilizar como um app</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>Salve stable.konik.ai como sua página inicial para utilizar como um app</translation>
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
@@ -1184,8 +1184,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>Atualizar Agora</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>Seja um membro comma prime em connect.comma.ai</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>Seja um membro comma prime em stable.konik.ai</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -1484,8 +1484,8 @@ Isso pode levar até um minuto.</translation>
         <translation>Concluir</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>Pareie seu dispositivo com comma connect (connect.comma.ai) e reivindique sua oferta de comma prime.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>Pareie seu dispositivo com comma connect (stable.konik.ai) e reivindique sua oferta de comma prime.</translation>
     </message>
     <message>
         <source>Pair device</source>
