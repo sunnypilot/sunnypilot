@@ -164,8 +164,9 @@ void Device::setAwake(bool on) {
 }
 
 void Device::resetInteractiveTimeout(int timeout) {
+  int customTimeout = QString::fromStdString(Params().get("InteractivityTimeout")).toInt();
   if (timeout == -1) {
-    timeout = (ignition_on ? 10 : 30);
+    timeout = customTimeout == 0 ? (ignition_on ? 10 : 30) : customTimeout;
   }
   interactive_timeout = timeout * UI_FREQ;
 }
