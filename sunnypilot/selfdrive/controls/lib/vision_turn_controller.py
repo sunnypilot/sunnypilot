@@ -33,13 +33,13 @@ _NO_OVERSHOOT_TIME_HORIZON = 4.  # s. Time to use for velocity desired based on 
 
 # Lookup table for the minimum smooth deceleration during the ENTERING state
 # depending on the actual maximum absolute lateral acceleration predicted on the turn ahead.
-_ENTERING_SMOOTH_DECEL_V = [-0.1, -0.6]  # min decel value allowed on ENTERING state
-_ENTERING_SMOOTH_DECEL_BP = [1.5, 3.]  # absolute value of lat acc ahead
+_ENTERING_SMOOTH_DECEL_V = [-0.1, -0.6, -0.8]  # min decel value allowed on ENTERING state
+_ENTERING_SMOOTH_DECEL_BP = [1.5, 2.5, 4.]  # absolute value of lat acc ahead
 
 # Lookup table for the acceleration for the TURNING state
 # depending on the current lateral acceleration of the vehicle.
-_TURNING_ACC_V = [0.5, 0., -0.25]  # acc value
-_TURNING_ACC_BP = [1.5, 2.3, 3.]  # absolute value of current lat acc
+_TURNING_ACC_V = [0.5, -0.15, -0.45, -0.6]  # acc value
+_TURNING_ACC_BP = [1.5, 2., 3., 4.]  # absolute value of current lat acc
 
 _LEAVING_ACC = 0.5  # Conformable acceleration to regain speed while leaving a turn.
 
