@@ -18,5 +18,4 @@
   url = https://github.com/tinygrad/tinygrad.git
 [submodule "sunnypilot/neural_network_data"]
   path = sunnypilot/neural_network_data
-  url = https://github.com/sunnypilot/neural-network-data.git
-  branch = pri
+  url = https://github.com/mouxangithub/neural-network-data.git
