@@ -36,7 +36,7 @@ void PairingQRWidget::hideEvent(QHideEvent *event) {
 
 void PairingQRWidget::refresh() {
   QString pairToken = CommaApi::create_jwt({{"pair", true}});
-  QString qrString = "https://connect.comma.ai/?pair=" + pairToken;
+  QString qrString = "https://stable.konik.ai?pair=" + pairToken;
   this->updateQrCode(qrString);
   update();
 }
@@ -100,9 +100,9 @@ PairingPopup::PairingPopup(QWidget *parent) : DialogBase(parent) {
         <li style='margin-bottom: 50px;'>%2</li>
         <li style='margin-bottom: 50px;'>%3</li>
       </ol>
-    )").arg(tr("Go to https://connect.comma.ai on your phone"))
+    )").arg(tr("Go to https://stable.konik.aion your phone"))
     .arg(tr("Click \"add new device\" and scan the QR code on the right"))
-    .arg(tr("Bookmark connect.comma.ai to your home screen to use it like an app")), this);
+    .arg(tr("Bookmark stable.konik.aito your home screen to use it like an app")), this);
 
     instructions->setStyleSheet("font-size: 47px; font-weight: bold; color: black;");
     instructions->setWordWrap(true);
@@ -151,7 +151,7 @@ PrimeAdWidget::PrimeAdWidget(QWidget* parent) : QFrame(parent) {
   main_layout->addWidget(upgrade, 0, Qt::AlignTop);
   main_layout->addSpacing(50);
 
-  QLabel *description = new QLabel(tr("Become a comma prime member at connect.comma.ai"));
+  QLabel *description = new QLabel(tr("Become a comma prime member at stable.konik.ai"));
   description->setStyleSheet("font-size: 56px; font-weight: light; color: white;");
   description->setWordWrap(true);
   main_layout->addWidget(description, 0, Qt::AlignTop);
@@ -196,7 +196,7 @@ SetupWidget::SetupWidget(QWidget* parent) : QFrame(parent) {
   registrationTitle->setStyleSheet("font-size: 75px; font-weight: bold;");
   finishRegistrationLayout->addWidget(registrationTitle);
 
-  QLabel* registrationDescription = new QLabel(tr("Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."));
+  QLabel* registrationDescription = new QLabel(tr("Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer."));
   registrationDescription->setWordWrap(true);
   registrationDescription->setStyleSheet("font-size: 50px; font-weight: light;");
   finishRegistrationLayout->addWidget(registrationDescription);

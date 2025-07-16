@@ -80,7 +80,7 @@ Options:
 
 Arguments:
   route                  the drive to replay. find your drives at
-                         connect.comma.ai
+                         stable.konik.ai
 ```
 
 ## Visualize the Replay in the openpilot UI

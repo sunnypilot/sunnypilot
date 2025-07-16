@@ -343,8 +343,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>مراجعة</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>اقرن جهازك بجهاز (connect.comma.ai) واحصل على عرضك من comma prime.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>اقرن جهازك بجهاز (stable.konik.ai) واحصل على عرضك من comma prime.</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -1068,16 +1068,16 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>اقرن جهازك مع حسابك على comma</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>انتقل إلى https://connect.comma.ai على جوالك</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>انتقل إلى https://stable.konik.ai على جوالك</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>انقر &quot;،إضافة جهاز جديد&quot;، وامسح رمز الاستجابة السريعة (QR) على اليمين</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>اجعل لـconnect.comma.ai إشارة مرجعية على شاشتك  الرئيسية من أجل استخدامه مثل أي تطبيق</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>اجعل لـstable.konik.ai إشارة مرجعية على شاشتك  الرئيسية من أجل استخدامه مثل أي تطبيق</translation>
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
@@ -1192,8 +1192,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>الترقية الآن</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>كن عضوًا في comma prime على connect.comma.ai</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>كن عضوًا في comma prime على stable.konik.ai</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -1504,8 +1504,8 @@ This may take up to a minute.</source>
         <translation>إنهاء الإعداد</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>اقرن جهازك بجهاز (connect.comma.ai) واحصل على عرضك من comma prime.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>اقرن جهازك بجهاز (stable.konik.ai) واحصل على عرضك من comma prime.</translation>
     </message>
     <message>
         <source>Pair device</source>

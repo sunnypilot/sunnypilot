@@ -23,7 +23,7 @@ Each camera stream is H.265 encoded and written to its respective file.
 qlogs are a decimated subset of the rlogs. Check out [cereal/services.py](https://github.com/commaai/cereal/blob/master/services.py) for the decimation.
 
 
-qcameras are H.264 encoded, lower res versions of the fcamera.hevc. The video shown in [comma connect](https://connect.comma.ai/) is from the qcameras.
+qcameras are H.264 encoded, lower res versions of the fcamera.hevc. The video shown in [comma connect](https://stable.konik.ai/) is from the qcameras.
 
 
 qlogs and qcameras are designed to be small enough to upload instantly on slow internet and store forever, yet useful enough for most analysis and debugging.

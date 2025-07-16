@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
   QCommandLineParser cmd_parser;
   cmd_parser.addHelpOption();
-  cmd_parser.addPositionalArgument("route", "the drive to replay. find your drives at connect.comma.ai");
+  cmd_parser.addPositionalArgument("route", "the drive to replay. find your drives at stable.konik.ai");
   cmd_parser.addOption({"demo", "use a demo route instead of providing your own"});
   cmd_parser.addOption({"auto", "Auto load the route from the best available source (no video): internal, openpilotci, comma_api, car_segments, testing_closet"});
   cmd_parser.addOption({"qcam", "load qcamera"});

@@ -368,9 +368,9 @@
     </message>
     <message>
         <source>Get turn-by-turn directions displayed and more with a comma
-prime subscription. Sign up now: https://connect.comma.ai</source>
+prime subscription. Sign up now: https://stable.konik.ai</source>
         <translation>Krijg stapsgewijze routebeschrijving en meer met een comma
-prime abonnement. Meld u nu aan: https://connect.comma.ai</translation>
+prime abonnement. Meld u nu aan: https://stable.konik.ai</translation>
     </message>
     <message>
         <source>No home
@@ -452,16 +452,16 @@ ingesteld</translation>
         <translation>Koppel uw apparaat aan uw comma-account</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>Ga naar https://connect.comma.ai op uw telefoon</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>Ga naar https://stable.konik.ai op uw telefoon</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>Klik op &quot;add new device&quot; en scan de QR-code aan de rechterkant</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>Voeg connect.comma.ai toe op uw startscherm om het als een app te gebruiken</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>Voeg stable.konik.ai toe op uw startscherm om het als een app te gebruiken</translation>
     </message>
 </context>
 <context>
@@ -471,8 +471,8 @@ ingesteld</translation>
         <translation>Upgrade nu</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>Word een comma prime lid op connect.comma.ai</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>Word een comma prime lid op stable.konik.ai</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -502,8 +502,8 @@ ingesteld</translation>
         <translation>comma prime</translation>
     </message>
     <message>
-        <source>CONNECT.COMMA.AI</source>
-        <translation>CONNECT.COMMA.AI</translation>
+        <source>stable.konik.ai</source>
+        <translation>stable.konik.ai</translation>
     </message>
     <message>
         <source>COMMA POINTS</source>
@@ -713,8 +713,8 @@ ingesteld</translation>
         <translation>Installatie voltooien</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>Koppel uw apparaat met comma connect (connect.comma.ai) en claim uw comma prime-aanbieding.</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>Koppel uw apparaat met comma connect (stable.konik.ai) en claim uw comma prime-aanbieding.</translation>
     </message>
     <message>
         <source>Pair device</source>

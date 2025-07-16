@@ -28,7 +28,7 @@ class PairingDialog:
     except Exception as e:
       cloudlog.warning(f"Failed to get pairing token: {e}")
       token = ""
-    return f"https://connect.comma.ai/setup?token={token}"
+    return f"https://stable.konik.ai/setup?token={token}"
 
   def _generate_qr_code(self) -> None:
     try:
@@ -113,9 +113,9 @@ class PairingDialog:
 
   def _render_instructions(self, rect: rl.Rectangle) -> None:
     instructions = [
-      "Go to https://connect.comma.ai on your phone",
+      "Go to https://stable.konik.ai on your phone",
       "Click \"add new device\" and scan the QR code on the right",
-      "Bookmark connect.comma.ai to your home screen to use it like an app",
+      "Bookmark stable.konik.ai to your home screen to use it like an app",
     ]
 
     font = gui_app.font(FontWeight.BOLD)

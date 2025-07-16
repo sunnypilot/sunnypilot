@@ -368,8 +368,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>预览</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>将您的设备与comma connect （stable.konik.ai）配对并领取您的comma prime优惠。</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -1266,16 +1266,16 @@ The default software delay value is 0.2</source>
         <translation>将您的设备与comma账号配对</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>在手机上访问 https://connect.comma.ai</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>在手机上访问 https://stable.konik.ai</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>点击“添加新设备”，扫描右侧二维码</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>将 connect.comma.ai 收藏到您的主屏幕，以便像应用程序一样使用它</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>将 stable.konik.ai 收藏到您的主屏幕，以便像应用程序一样使用它</translation>
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
@@ -1390,8 +1390,8 @@ The default software delay value is 0.2</source>
         <translation>现在升级</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>打开connect.comma.ai以注册comma prime会员</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>打开stable.konik.ai以注册comma prime会员</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -1691,8 +1691,8 @@ This may take up to a minute.</source>
         <translation>完成设置</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>将您的设备与comma connect （connect.comma.ai）配对并领取您的comma prime优惠。</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>将您的设备与comma connect （stable.konik.ai）配对并领取您的comma prime优惠。</translation>
     </message>
     <message>
         <source>Pair device</source>

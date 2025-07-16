@@ -301,7 +301,7 @@ Version 0.8.12 (2021-12-15)
    * Improved audio amplifier configuration
    * System reliability improvements
    * Update Python to 3.8.10
- * Raw logs upload moved to connect.comma.ai
+ * Raw logs upload moved to stable.konik.ai
  * Fixed HUD alerts on newer Honda Bosch thanks to csouers!
  * Audi Q3 2020-21 support thanks to jyoung8607!
  * Lexus RC 2020 support thanks to ErichMoraga!

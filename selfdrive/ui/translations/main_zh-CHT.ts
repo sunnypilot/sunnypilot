@@ -343,8 +343,8 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>回顧</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>將您的裝置與 comma connect (connect.comma.ai) 配對並領取您的 comma 高級會員優惠。</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>將您的裝置與 comma connect (stable.konik.ai) 配對並領取您的 comma 高級會員優惠。</translation>
     </message>
     <message>
         <source>Pair Device</source>
@@ -1058,16 +1058,16 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>將裝置與您的 comma 帳號配對</translation>
     </message>
     <message>
-        <source>Go to https://connect.comma.ai on your phone</source>
-        <translation>用手機連至 https://connect.comma.ai</translation>
+        <source>Go to https://stable.konik.ai on your phone</source>
+        <translation>用手機連至 https://stable.konik.ai</translation>
     </message>
     <message>
         <source>Click &quot;add new device&quot; and scan the QR code on the right</source>
         <translation>點選 &quot;add new device&quot; 後掃描右邊的二維碼</translation>
     </message>
     <message>
-        <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
-        <translation>將 connect.comma.ai 加入您的主螢幕，以便像手機 App 一樣使用它</translation>
+        <source>Bookmark stable.konik.ai to your home screen to use it like an app</source>
+        <translation>將 stable.konik.ai 加入您的主螢幕，以便像手機 App 一樣使用它</translation>
     </message>
     <message>
         <source>Please connect to Wi-Fi to complete initial pairing</source>
@@ -1182,8 +1182,8 @@ Firehose Mode allows you to maximize your training data uploads to improve openp
         <translation>馬上升級</translation>
     </message>
     <message>
-        <source>Become a comma prime member at connect.comma.ai</source>
-        <translation>成為 connect.comma.ai 的高級會員</translation>
+        <source>Become a comma prime member at stable.konik.ai</source>
+        <translation>成為 stable.konik.ai 的高級會員</translation>
     </message>
     <message>
         <source>PRIME FEATURES:</source>
@@ -1479,8 +1479,8 @@ This may take up to a minute.</source>
         <translation>完成設置</translation>
     </message>
     <message>
-        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>將您的裝置與 comma connect (connect.comma.ai) 配對並領取您的 comma 高級會員優惠。</translation>
+        <source>Pair your device with comma connect (stable.konik.ai) and claim your comma prime offer.</source>
+        <translation>將您的裝置與 comma connect (stable.konik.ai) 配對並領取您的 comma 高級會員優惠。</translation>
     </message>
     <message>
         <source>Pair device</source>
