@@ -45,18 +45,6 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(experimentalLongitudinalToggle);
 
-  // TODO-SP: Move to Vehicles panel when ported back
-  hyundaiRadarTracksToggle = new ParamControl(
-    "HyundaiRadarTracksToggle",
-    tr("Hyundai: Enable Radar Tracks"),
-    tr("Enable this to attempt to enable radar tracks for Hyundai, Kia, and Genesis models equipped with the supported Mando SCC radar. "
-       "This allows sunnypilot to use radar data for improved lead tracking and overall longitudinal performance."), "");
-  hyundaiRadarTracksToggle->setConfirmation(true, false);
-  QObject::connect(hyundaiRadarTracksToggle, &ParamControl::toggleFlipped, [=](bool state) {
-    updateToggles(offroad);
-  });
-  addItem(hyundaiRadarTracksToggle);
-
   enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
 
@@ -96,9 +84,6 @@ void DeveloperPanel::updateToggles(bool _offroad) {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
-    auto hyundai = CP.getBrand() == "hyundai";
-    auto hyundai_mando_radar = hyundai && (CP.getFlags() & 4096);
-
     if (!CP.getAlphaLongitudinalAvailable() || is_release) {
       params.remove("AlphaLongitudinalEnabled");
       experimentalLongitudinalToggle->setEnabled(false);
@@ -112,11 +97,9 @@ void DeveloperPanel::updateToggles(bool _offroad) {
     experimentalLongitudinalToggle->setVisible(CP.getAlphaLongitudinalAvailable() && !is_release);
 
     longManeuverToggle->setEnabled(hasLongitudinalControl(CP) && _offroad);
-    hyundaiRadarTracksToggle->setVisible(hyundai_mando_radar && hasLongitudinalControl(CP));
   } else {
     longManeuverToggle->setEnabled(false);
     experimentalLongitudinalToggle->setVisible(false);
-    hyundaiRadarTracksToggle->setVisible(false);
   }
   experimentalLongitudinalToggle->refresh();
 

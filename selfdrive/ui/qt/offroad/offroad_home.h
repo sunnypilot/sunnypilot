@@ -39,11 +39,13 @@ public:
 
 protected:
   QHBoxLayout *home_layout;
+  QHBoxLayout *header_layout;
+
+  void showEvent(QShowEvent *event) override;
+  void refresh();
 
 private:
-  void showEvent(QShowEvent *event) override;
   void hideEvent(QHideEvent *event) override;
-  void refresh();
 
   Params params;
 
