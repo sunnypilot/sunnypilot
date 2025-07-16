@@ -21,7 +21,6 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
     prebuiltToggle->refresh();
   });
   prebuiltToggle->setVisible(false);
-  prebuiltToggle->showDescription();
 
   // Error log button
   errorLogBtn = new ButtonControlSP(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));

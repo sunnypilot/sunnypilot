@@ -6,7 +6,6 @@
  */
 #pragma once
 #include <QFile>
-#include <QDir>
 
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
