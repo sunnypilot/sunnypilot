@@ -156,6 +156,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"MadsUnifiedEngagementMode", PERSISTENT | BACKUP},
 
     // Model Manager params
+    {"DynamicModeldOutputs", PERSISTENT | BACKUP},
     {"ModelManager_ActiveBundle", PERSISTENT},
     {"ModelManager_ClearCache", CLEAR_ON_MANAGER_START},
     {"ModelManager_DownloadIndex", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},

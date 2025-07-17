@@ -1,4 +1,5 @@
 import numpy as np
+from openpilot.common.params import Params
 from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
@@ -25,6 +26,7 @@ def softmax(x, axis=-1):
 class Parser:
   def __init__(self, ignore_missing=False):
     self.ignore_missing = ignore_missing
+    self._params = Params()
     model_bundle = get_active_bundle()
     self.generation = model_bundle.generation if model_bundle is not None else None
 
@@ -96,23 +98,26 @@ class Parser:
                          out_shape=(SplitModelConstants.IDX_N,SplitModelConstants.PLAN_WIDTH))
 
   def parse_dynamic_outputs(self, outs: dict[str, np.ndarray]) -> None:
-    if 'lead' in outs:
-      if self.generation >= 12 and \
-         outs['lead'].shape[1] == 2 * SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH:
-        self.parse_mdn('lead', outs, in_N=0, out_N=0,
-                       out_shape=(SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH))
-      else:
-        self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
-                       out_shape=(SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH))
-    if 'plan' in outs:
-      if self.generation >= 12 and \
-        outs['plan'].shape[1] > 2 * SplitModelConstants.PLAN_WIDTH * SplitModelConstants.IDX_N:
-        self._parse_plan_mhp(outs)
-      elif self.generation >= 12:
-        self.parse_mdn('plan', outs, in_N=0, out_N=0,
-                       out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
-      else:
-        self._parse_plan_mhp(outs)
+    if self._params.get_bool("DynamicModeldOutputs") or (self.generation >= 12):
+        if 'lead' in outs:
+          if outs['lead'].shape[1] == 2 * SplitModelConstants.LEAD_MHP_SELECTION * SplitModelConstants.LEAD_TRAJ_LEN * SplitModelConstants.LEAD_WIDTH:
+            self.parse_mdn('lead', outs, in_N=0, out_N=0,
+                           out_shape=(SplitModelConstants.LEAD_MHP_SELECTION, SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH))
+          else:
+            self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
+                           out_shape=(SplitModelConstants.LEAD_TRAJ_LEN, SplitModelConstants.LEAD_WIDTH))
+        if 'plan' in outs:
+          if outs['plan'].shape[1] > 2 * SplitModelConstants.PLAN_WIDTH * SplitModelConstants.IDX_N:
+            self._parse_plan_mhp(outs)
+          else:
+            self.parse_mdn('plan', outs, in_N=0, out_N=0,
+                           out_shape=(SplitModelConstants.IDX_N, SplitModelConstants.PLAN_WIDTH))
+    else:
+        if 'lead' in outs:
+            self.parse_mdn('lead', outs, in_N=SplitModelConstants.LEAD_MHP_N, out_N=SplitModelConstants.LEAD_MHP_SELECTION,
+                           out_shape=(SplitModelConstants.LEAD_TRAJ_LEN,SplitModelConstants.LEAD_WIDTH))
+        if 'plan' in outs:
+            self._parse_plan_mhp(outs)
 
   def split_outputs(self, outs: dict[str, np.ndarray]) -> None:
     if 'desired_curvature' in outs:
