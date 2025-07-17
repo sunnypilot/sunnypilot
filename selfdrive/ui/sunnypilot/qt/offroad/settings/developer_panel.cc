@@ -12,10 +12,26 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   showAdvancedControls = new ParamControlSP("ShowAdvancedControls", tr("Show Advanced Controls"), tr("Toggle visibility of advanced sunnypilot controls.\nThis only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state."), "");
   addItem(showAdvancedControls);
 
+  // Github Runner Toggle
+  enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
+  addItem(enableGithubRunner);
+
+  // Error log button
+  errorLogBtn = new ButtonControlSP(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
+  connect(errorLogBtn, &ButtonControlSP::clicked, [=]() {
+    std::string txt = util::read_file("/data/community/crashes/error.log");
+    ConfirmationDialog::rich(QString::fromStdString(txt), this);
+  });
+  addItem(errorLogBtn);
+
+  QObject::connect(uiState(), &UIState::offroadTransition, this, &DeveloperPanelSP::updateToggles);
 }
 
 void DeveloperPanelSP::updateToggles(bool offroad) {
+  bool is_release = params.getBool("IsReleaseBranch");
 
+  enableGithubRunner->setVisible(!is_release);
+  errorLogBtn->setVisible(!is_release);
 }
 
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
