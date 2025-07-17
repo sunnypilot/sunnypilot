@@ -21,6 +21,7 @@ qt_src = [
   "sunnypilot/qt/home.cc",
   "sunnypilot/qt/offroad/exit_offroad_button.cc",
   "sunnypilot/qt/offroad/offroad_home.cc",
+  "sunnypilot/qt/offroad/settings/developer_panel.cc",
   "sunnypilot/qt/offroad/settings/device_panel.cc",
   "sunnypilot/qt/offroad/settings/lateral_panel.cc",
   "sunnypilot/qt/offroad/settings/longitudinal_panel.cc",
