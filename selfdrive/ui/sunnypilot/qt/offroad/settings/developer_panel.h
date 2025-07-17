@@ -5,7 +5,6 @@
  * See the LICENSE.md file in the root directory for more details.
  */
 #pragma once
-#include <QFile>
 
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
@@ -17,7 +16,6 @@ public:
 private:
   ParamControlSP *enableGithubRunner;
   ButtonControlSP *errorLogBtn;
-  ParamControlSP *prebuiltToggle;
   Params params;
 
 private slots:

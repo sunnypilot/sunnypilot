@@ -127,7 +127,6 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"AutoLaneChangeTimer", PERSISTENT},
     {"BlinkerMinLateralControlSpeed", PERSISTENT | BACKUP},
     {"BlinkerPauseLateralControl", PERSISTENT | BACKUP},
-    {"Brightness", PERSISTENT | BACKUP},
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
@@ -138,11 +137,10 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"DeviceBootMode", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
     {"InteractivityTimeout", PERSISTENT | BACKUP},
-    {"IsDevelopmentBranch", CLEAR_ON_MANAGER_START},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
+    {"Brightness", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
     {"OffroadMode", CLEAR_ON_MANAGER_START},
-    {"QuickBootToggle", PERSISTENT | BACKUP},
     {"QuietMode", PERSISTENT | BACKUP},
 
     // MADS params

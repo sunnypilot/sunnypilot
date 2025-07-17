@@ -118,12 +118,8 @@ class BuildMetadata:
     return self.channel in MASTER_SP_BRANCHES
 
   @property
-  def development_channel(self) -> bool:
-    return self.channel.startswith("dev-") or self.channel.endswith("-prebuilt")
-
-  @property
   def channel_type(self) -> str:
-    if self.development_channel:
+    if self.channel.startswith("dev-"):
       return "development"
     elif self.channel.startswith("staging-"):
       return "staging"
