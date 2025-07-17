@@ -31,8 +31,8 @@ QFrame *vertical_space(int height, QWidget *parent) {
 
 // AbstractControlSP
 
-AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
-    : AbstractControl(title, desc, icon, parent) {
+AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, const QString &icon, QWidget *parent, bool advancedControl)
+    : AbstractControl(title, desc, icon, parent), isAdvancedControl(advancedControl) {
 
   main_layout = new QVBoxLayout(this);
   main_layout->setMargin(0);
@@ -82,8 +82,8 @@ void AbstractControlSP::hideEvent(QHideEvent *e) {
   }
 }
 
-AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent)
-    : AbstractControlSP(title, desc, icon, parent) {
+AbstractControlSP_SELECTOR::AbstractControlSP_SELECTOR(const QString &title, const QString &desc, const QString &icon, QWidget *parent, bool advancedControl)
+    : AbstractControlSP(title, desc, icon, parent, advancedControl) {
 
   if (title_label != nullptr) {
     delete title_label;
@@ -169,8 +169,8 @@ void AbstractControlSP_SELECTOR::hideEvent(QHideEvent *e) {
 
 // controls
 
-ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent)
-    : AbstractControlSP(title, desc, "", parent) {
+ButtonControlSP::ButtonControlSP(const QString &title, const QString &text, const QString &desc, QWidget *parent, bool advancedControl)
+    : AbstractControlSP(title, desc, "", parent, advancedControl) {
 
   btn.setText(text);
   btn.setStyleSheet(R"(
@@ -225,8 +225,8 @@ void ElidedLabelSP::paintEvent(QPaintEvent *event) {
 
 // ParamControlSP
 
-ParamControlSP::ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent)
-    : ToggleControlSP(title, desc, icon, false, parent) {
+ParamControlSP::ParamControlSP(const QString &param, const QString &title, const QString &desc, const QString &icon, QWidget *parent, bool advancedControl)
+    : ToggleControlSP(title, desc, icon, false, parent, advancedControl){
 
   key = param.toStdString();
   QObject::connect(this, &ParamControlSP::toggleFlipped, this, &ParamControlSP::toggleClicked);
