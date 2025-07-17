@@ -96,6 +96,14 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
 
   list->addItem(horizontal_line());
 
+  // Dynamic Modeld Outputs toggle
+  dynamicModeldOutputs = new ParamControlSP("DynamicModeldOutputs", tr("Allow Dynamic Model Outputs"),
+                                            tr("Enable this to allow potentially smoother Gas and Brake controls on all models produced "
+                                               "after September, 2024."),
+                                               "../assets/offroad/icon_shell.png");
+  dynamicModeldOutputs->showDescription();
+  list->addItem(dynamicModeldOutputs);
+
   // LiveDelay toggle
   lagd_toggle_control = new ParamControlSP("LagdToggle", tr("Live Learning Steer Delay"), "", "../assets/offroad/icon_shell.png");
   lagd_toggle_control->showDescription();
@@ -356,6 +364,7 @@ void ModelsPanel::updateLabels() {
   handleBundleDownloadProgress();
   currentModelLblBtn->setEnabled(!is_onroad && !isDownloading());
   currentModelLblBtn->setValue(GetActiveModelInternalName());
+  dynamicModeldOutputs->showDescription();
 
   // Update lagdToggle description with current value
   QString desc = tr("Enable this for the car to learn and adapt its steering response time. "
