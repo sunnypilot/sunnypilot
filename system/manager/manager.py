@@ -56,7 +56,6 @@ def manager_init() -> None:
     ("CustomAccShortPressIncrement", "1"),
     ("DeviceBootMode", "0"),
     ("DynamicExperimentalControl", "0"),
-    ("QuickBootToggle", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("InteractivityTimeout", "0"),
     ("LagdToggle", "1"),
@@ -70,6 +69,7 @@ def manager_init() -> None:
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
+    ("QuickBootToggle", "0"),
     ("QuietMode", "0"),
   ]
 
