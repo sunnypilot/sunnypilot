@@ -1320,7 +1320,7 @@ The default software delay value is 0.2</source>
     </message>
     <message>
         <source>Enter model year (e.g., 2021) and model name (Toyota Corolla):</source>
-        <translation>输入车型年份（例如：2021）和车型名称（Toyota Corolla）：</translation>
+        <translation>输入车型年份和名称(例如: Toyota Corolla):</translation>
     </message>
     <message>
         <source>SEARCHING</source>
