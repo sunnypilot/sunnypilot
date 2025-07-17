@@ -1,0 +1,1697 @@
+VERSION ""
+
+NS_ :
+      NS_DESC_
+      CM_
+      BA_DEF_
+      BA_
+      VAL_
+      CAT_DEF_
+      CAT_
+      FILTER
+      BA_DEF_DEF_
+      EV_DATA_
+      ENVVAR_DATA_
+      SGTYPE_
+      SGTYPE_VAL_
+      BA_DEF_SGTYPE_
+      BA_SGTYPE_
+      SIG_TYPE_REF_
+      VAL_TABLE_
+      SIG_GROUP_
+      SIG_VALTYPE_
+      SIGTYPE_VALTYPE_
+      BO_TX_BU_
+      BA_DEF_REL_
+      BA_REL_
+      BA_DEF_DEF_REL_
+      BU_SG_REL_
+      BU_EV_REL_
+      BU_BO_REL_
+
+BS_:
+
+BU_: Vector__XXX BSR CAA CAA00 CAA01 CGW CSR FCM FRD MAV
+
+BO_ 15 CGW1G01: 8 Vector__XXX
+  SG_ TRIPCNT   : 7|16@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RESETCNT   : 23|20@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ KZK00F   : 35|28@0+ (1,0) [0|0] "" Vector__XXX
+  
+BO_ 836 ACC1F01: 8 FCM
+  SG_ DSS1GDRV: 7|10@0- (0.1,0) [0|0] "m/s^2" CGW
+  SG_ PREFILL: 12|1@0+ (1,0) [0|0] "" CGW
+  SG_ AVSTRGR: 11|1@0+ (1,0) [0|0] "" CGW
+  SG_ PBPREPMP: 8|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSALM: 17|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSOPR: 16|1@0+ (1,0) [0|0] "" CGW
+  SG_ PBRTRGR: 31|1@0+ (1,0) [0|0] "" CGW
+  SG_ PBATRGR: 30|2@0+ (1,0) [0|0] "" CGW
+  SG_ PPTRGR: 28|1@0+ (1,0) [0|0] "" CGW
+  SG_ IBTRGR: 27|1@0+ (1,0) [0|0] "" CGW
+  SG_ BRKHLD: 26|1@0+ (1,0) [0|0] "" CGW
+  SG_ VGRSTRGR: 25|2@0+ (1,0) [0|0] "" CGW
+  SG_ FV344: 39|4@0+ (1,0) [0|0] "" CGW
+  SG_ KZK344: 35|28@0+ (1,0) [0|0] "" CGW
+
+BO_ 835 ACC1S03: 8 FCM
+  SG_ ACCTYPE: 23|2@0+ (1,0) [0|0] "" CGW
+  SG_ XTRGT2: 21|1@0+ (1,0) [0|0] "" CGW
+  SG_ XLTMD2: 20|1@0+ (1,0) [0|0] "" CGW
+  SG_ LCDT2: 19|1@0+ (1,0) [0|0] "" CGW
+  SG_ LCNG: 18|1@0+ (1,0) [0|0] "" CGW
+  SG_ SMC: 17|2@0+ (1,0) [0|0] "" CGW
+  SG_ STOKJD: 31|1@0+ (1,0) [0|0] "" CGW
+  SG_ PMTBRKG: 30|1@0+ (1,0) [0|0] "" CGW
+  SG_ LCCWOK: 25|1@0+ (1,0) [0|0] "" CGW
+  SG_ LCBW2: 24|1@0+ (1,0) [0|0] "" CGW
+  SG_ AT_RAW: 47|8@0- (0.05,0) [0|0] "m/s^2" CGW
+  SG_ ACC03SUM: 63|8@0+ (1,0) [0|0] "" CGW
+
+BO_ 740 ACC1S09: 8 FCM
+  SG_ LKEXIST: 7|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKCOUNT: 6|6@0+ (1,0) [0|0] "" CGW
+  SG_ LKFACT: 0|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKTRQ: 15|16@0- (0.01,0) [0|0] "Nm" CGW
+  SG_ LKKPACT: 31|1@0+ (1,0) [0|0] "" CGW
+  SG_ FV2E4: 39|4@0+ (1,0) [0|0] "" CGW
+  SG_ KZK2E4: 35|28@0+ (1,0) [0|0] "" CGW
+
+BO_ 387 ACC1S11: 8 FCM
+  SG_ ATACC2: 7|16@0- (0.001,0) [0|0] "m/s^2" CGW
+  SG_ FV183: 39|4@0+ (1,0) [0|0] "" CGW
+  SG_ KZK183: 35|28@0+ (1,0) [0|0] "" CGW
+
+BO_ 1572 BDB1S08: 8 CGW
+  SG_ BDB08_ID: 7|8@0+ (1,0) [0|0] "" FCM
+  SG_ BDB08_IF: 15|8@0+ (1,0) [0|0] "" FCM
+  SG_ DEST_BDB: 23|8@0+ (1,0) [0|0] "" BSR,CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ C_CODE1: 31|4@0+ (1,0) [0|0] "" BSR,CAA,CAA00,CAA01,FCM,MAV
+  SG_ C_CODE2: 27|4@0+ (1,0) [0|0] "" BSR,CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ C_CODE3: 39|4@0+ (1,0) [0|0] "" BSR,CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ STRG_WHL: 47|2@0+ (1,0) [0|0] "" CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ DEICER: 40|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ KEYPLATE: 55|8@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ DBLLCK: 62|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ U2OP_CST: 61|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ U2OP_DFT: 60|1@0+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 1014 BSR1S01: 8 BSR
+  SG_ BSD_STAT: 7|3@0+ (1,0) [0|0] "" CGW
+  SG_ RCTA_DIR: 4|3@0+ (1,0) [0|0] "" CAA,CAA00,CAA01,CGW,CSR,MAV
+  SG_ BS4LDR: 1|1@0+ (1,0) [0|0] "" CGW,FCM
+  SG_ BS4LDL: 0|1@0+ (1,0) [0|0] "" CGW,FCM
+  SG_ BSD_SW: 15|1@0+ (1,0) [0|0] "" CGW
+  SG_ RCTA_EQ: 14|1@0+ (1,0) [0|0] "" CGW,CSR
+  SG_ RCTA_VOL: 13|2@0+ (1,0) [0|0] "" CGW,CSR
+  SG_ RCTADISP: 11|1@0+ (1,0) [0|0] "" CAA,CAA00,CAA01,CGW,MAV
+  SG_ CV4LDR: 10|1@0+ (1,0) [0|0] "" CGW,FCM
+  SG_ RCTA_SW: 9|1@0+ (1,0) [0|0] "" CGW
+  SG_ CV4LDL: 8|1@0+ (1,0) [0|0] "" CGW,FCM
+  SG_ BSD_BUZ: 23|1@0+ (1,0) [0|0] "" CGW,CSR
+  SG_ BSD_ILCR: 22|1@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_ILV: 21|3@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_ITCR: 18|1@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_ITV: 17|2@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_OMIL: 27|2@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_OMIR: 25|2@0+ (1,0) [0|0] "" CGW
+  SG_ RCTASTAT: 39|3@0+ (1,0) [0|0] "" CGW
+  SG_ BUZSTAT: 36|2@0+ (1,0) [0|0] "" CGW
+  SG_ CAAICM: 34|1@0+ (1,0) [0|0] "" CGW
+  SG_ RCTALAMP: 33|2@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_TTR: 47|1@0+ (1,0) [0|0] "" CGW
+  SG_ BSDINDI: 46|1@0+ (1,0) [0|0] "" CGW
+  SG_ RCTA_TTR: 45|1@0+ (1,0) [0|0] "" CGW
+  SG_ BSD_SWR: 44|1@0+ (1,0) [0|0] "" CGW
+  SG_ RCTA_SWR: 43|1@0+ (1,0) [0|0] "" CGW
+  SG_ RCTA_BUZ: 42|1@0+ (1,0) [0|0] "" CGW,CSR
+  SG_ RCTA_BCR: 41|1@0+ (1,0) [0|0] "" CGW
+
+BO_ 870 DS11D71: 7 FCM
+  SG_ TGT_ETTC: 7|6@0+ (0.1,0) [0|0] "s" CGW
+  SG_ XREQPBR: 1|1@0+ (1,0) [0|0] "" CGW
+  SG_ XREQPREF: 0|1@0+ (1,0) [0|0] "" CGW
+  SG_ TGT_OBJT: 15|4@0+ (1,0) [0|0] "" CGW
+  SG_ XREQALM: 11|2@0+ (1,0) [0|0] "" CGW
+  SG_ XREQPBA: 9|2@0+ (1,0) [0|0] "" CGW
+  SG_ TGT_VGAP: 23|9@0- (0.14,-21.7) [0|0] "m/s" CGW
+  SG_ TGT_DIST: 30|7@0+ (0.79,0) [0|0] "m" CGW
+  SG_ TGT_NUMB: 39|5@0+ (1,1) [0|0] "" CGW
+  SG_ XREQABK: 34|1@0+ (1,0) [0|0] "" CGW
+  SG_ XREQFPB: 33|1@0+ (1,0) [0|0] "" CGW
+  SG_ XREQPB: 32|1@0+ (1,0) [0|0] "" CGW
+  SG_ TGT_POSX: 47|5@0- (0.32,0) [0|0] "m" CGW
+  SG_ XREQPSB: 42|1@0+ (1,0) [0|0] "" CGW
+  SG_ XPCSRDY: 41|1@0+ (1,0) [0|0] "" CGW
+  SG_ TGT_TTCT: 40|1@0+ (1,0) [0|0] "" CGW
+  SG_ ALLPCSF: 55|1@0+ (1,0) [0|0] "" CGW
+  SG_ TGT_LSPD: 54|7@0- (0.2,0) [0|0] "m/s" CGW
+
+BO_ 871 DS11D72: 2 FCM
+  SG_ LKADRTRG: 7|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKADRSHR: 5|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKADRSLK: 4|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKADRSLD: 3|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKADRCC: 2|3@0+ (1,0) [0|0] "" CGW
+  SG_ LKADRTUR: 15|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKADRINV: 13|1@0+ (1,0) [0|0] "" CGW
+
+BO_ 830 DS11D73: 7 FCM
+  SG_ TGT_ACCR: 7|4@0- (1,0) [0|0] "m/s2" CGW
+  SG_ TGT_TTC: 3|6@0+ (0.1,0) [0|0] "s" CGW
+  SG_ XREQPBAL: 13|3@0+ (1,0) [0|0] "" CGW
+  SG_ PCS_DCS: 10|3@0+ (1,0) [0|0] "" CGW
+  SG_ TGT_FSNS: 23|4@0+ (1,0) [0|0] "" CGW
+  SG_ PCS_GRD: 19|4@0+ (1,0) [0|0] "" CGW
+  SG_ PCS_ALMM: 31|2@0+ (1,0) [0|0] "" CGW
+  SG_ XREQPBH: 29|1@0+ (1,0) [0|0] "" CGW
+  SG_ XREQAVD: 28|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSDISP: 27|12@0+ (1,0) [0|0] "" CGW
+  SG_ PCS_CURV: 45|6@0- (200,0) [0|0] "m" CGW
+  SG_ ALLPCSFF: 55|1@0+ (1,0) [0|0] "" CGW
+
+BO_ 1769 DS11D76: 8 FCM
+  SG_ ID6E900: 7|8@0+ (1,0) [0|0] "" CGW
+  SG_ IF6E900: 15|8@0+ (1,0) [0|0] "" CGW
+  SG_ ACCDRTRG: 22|1@0+ (1,0) [0|0] "" CGW
+  SG_ DECELFCL: 21|5@0+ (0.2,0) [0|0] "m/s^2" CGW
+  SG_ TGTTIME: 16|6@0+ (0.2,0) [0|0] "s" CGW
+  SG_ RD_YAW: 26|7@0- (0.1,0) [0|0] "deg" CGW
+  SG_ CM_YAW: 35|7@0- (0.1,0) [0|0] "deg" CGW
+  SG_ D_LTME: 44|3@0+ (1,0) [0|0] "" CGW
+  SG_ ACC_CURV: 41|10@0- (50,0) [0|0] "m" CGW
+  SG_ D_VMCC: 63|8@0+ (1,0) [0|0] "km/h" CGW
+
+BO_ 1770 DS11D77: 8 FCM
+  SG_ ID6EA00: 7|8@0+ (1,0) [0|0] "" CGW
+  SG_ IF6EA00: 15|8@0+ (1,0) [0|0] "" CGW
+  SG_ ACCDSYN: 23|1@0+ (1,0) [0|0] "" CGW
+  SG_ ATGTNUMB: 22|2@0+ (1,0) [0|0] "" CGW
+  SG_ ATGT_RD: 20|2@0+ (1,0) [0|0] "" CGW
+  SG_ ATGT_CM: 18|2@0+ (1,0) [0|0] "" CGW
+  SG_ ATGT_DST: 16|9@0+ (1,0) [0|0] "m" CGW
+  SG_ ATGT_RV: 39|9@0- (0.3,0) [0|0] "m/s" CGW
+  SG_ ATGT_LP: 46|9@0- (0.2,0) [0|0] "m" CGW
+  SG_ ATGT_LRV: 53|7@0- (0.2,0) [0|0] "m/s" CGW
+  SG_ D_LCCWOK: 62|1@0+ (1,0) [0|0] "" CGW
+  SG_ D_ATACC: 61|6@0- (0.2,0) [0|0] "m/s^2" CGW
+
+BO_ 643 DS11F01: 8 FCM
+  SG_ DSS1STAT: 7|3@0+ (1,0) [0|0] "" CGW
+  SG_ PCSNOCHG: 4|1@0+ (1,0) [0|0] "" CGW
+  SG_ DSS1FDRV: 23|16@0- (2,0) [0|0] "N" CGW
+  SG_ FV283: 39|4@0+ (1,0) [0|0] "" CGW
+  SG_ KZK283: 35|28@0+ (1,0) [0|0] "" CGW
+
+BO_ 401 DS11S09: 8 FCM
+  SG_ SRQEXIST: 7|1@0+ (1,0) [0|0] "" CGW
+  SG_ DRSTR: 30|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKAACT: 24|1@0+ (1,0) [0|0] "" CGW
+  SG_ DMPGAIN: 39|8@0+ (0.01,0) [0|0] "" CGW
+  SG_ SYSGAIN: 47|8@0+ (0.01,0) [0|0] "" CGW
+  SG_ CMCURV: 55|8@0- (0.0001,0) [0|0] "1/m" CGW
+  SG_ SM191: 63|8@0+ (1,0) [0|0] "" CGW
+
+BO_ 305 DS11S12: 8 FCM
+  SG_ LTCACT: 3|1@0+ (1,0) [0|0] "" CGW
+  SG_ LDAACT: 2|1@0+ (1,0) [0|0] "" CGW
+  SG_ SRQACT: 0|1@0+ (1,0) [0|0] "" CGW
+  SG_ SRQCOUNT: 13|6@0+ (1,0) [0|0] "" CGW
+  SG_ SRQANG: 23|16@0- (0.001,0) [0|0] "rad" CGW
+  SG_ FV131: 39|4@0+ (1,0) [0|0] "" CGW
+  SG_ KZK131: 35|28@0+ (1,0) [0|0] "" CGW
+
+BO_ 765 DS11S23: 8 FCM
+  SG_ ESTZ: 7|16@0- (0.001,0) [0|0] "rad" CGW
+  SG_ STSZ: 23|16@0- (0.001,0) [0|0] "rad" CGW
+  SG_ ESTZSTS: 39|2@0+ (1,0) [0|0] "" CGW
+  SG_ STSZSTS: 37|2@0+ (1,0) [0|0] "" CGW
+  SG_ SM2FD: 63|8@0+ (1,0) [0|0] "" CGW
+
+BO_ 881 DS11S35: 8 FCM
+  SG_ LTCDREST: 23|16@0- (0.001,0) [0|0] "rad" CGW
+  SG_ LTCDRTUR: 35|2@0+ (1,0) [0|0] "" CGW
+  SG_ LTCDRTRG: 33|2@0+ (1,0) [0|0] "" CGW
+  SG_ LTCDRSHR: 63|2@0+ (1,0) [0|0] "" CGW
+  SG_ LTCDRSLK: 61|1@0+ (1,0) [0|0] "" CGW
+  SG_ LTCDRCC: 60|2@0+ (1,0) [0|0] "" CGW
+  SG_ LTCFLFLG: 58|1@0+ (1,0) [0|0] "" CGW
+  SG_ LTCSPFLG: 57|1@0+ (1,0) [0|0] "" CGW
+  SG_ LTCDRINV: 56|1@0+ (1,0) [0|0] "" CGW
+
+BO_ 1041 DS12F02: 8 FCM
+  SG_ PCSINDI: 7|2@0+ (1,0) [0|0] "" CGW
+  SG_ PCSWM: 5|2@0+ (1,0) [0|0] "" CGW
+  SG_ PCSFCT: 3|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSTUCT: 2|1@0+ (1,0) [0|0] "" CGW
+  SG_ DS1LCCK: 1|2@0+ (1,0) [0|0] "" CGW
+  SG_ PBTUCT: 14|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSEXIST: 13|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSWDUCT: 11|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSMTBZ2: 27|4@0+ (1,0) [0|0] "" CGW
+  SG_ PCSDSRF: 36|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSTEMP: 35|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSDUST: 34|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSLCCK: 33|2@0+ (1,0) [0|0] "" CGW
+  SG_ PCTEMP2: 42|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSDUST2: 41|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSOFFS: 40|1@0+ (1,0) [0|0] "" CGW
+  SG_ PCSWDS: 55|2@0+ (1,0) [0|0] "" CGW
+  SG_ FRDADJ: 53|3@0+ (1,0) [0|0] "" CGW
+  SG_ TSS_TS: 49|1@0+ (1,0) [0|0] "" CGW
+
+BO_ 1042 DS12F03: 8 FCM
+  SG_ LKAINDI: 7|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKAWLSL: 5|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKAWLSR: 3|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKAHS: 1|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKAFCT: 15|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKATUCT: 14|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKACAMT: 13|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKACB: 12|1@0+ (1,0) [0|0] "" CGW
+  SG_ LDWEXIST: 10|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKAHFCT: 9|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKASPCND: 23|3@0+ (1,0) [0|0] "" CGW
+  SG_ LKAMDCS: 20|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKAWTCS: 18|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKASAUT: 16|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKAMDT: 31|2@0+ (1,0) [0|0] "" CGW
+  SG_ LTCCNFLV: 29|2@0+ (1,0) [0|0] "" CGW
+  SG_ FLWMD2: 39|2@0+ (1,0) [0|0] "" CGW
+  SG_ LDOFINDI: 37|1@0+ (1,0) [0|0] "" CGW
+  SG_ LTCEXST2: 36|1@0+ (1,0) [0|0] "" CGW
+  SG_ LDWBZ: 32|1@0+ (1,0) [0|0] "" CGW
+  SG_ LDAFCVB: 47|1@0+ (1,0) [0|0] "" CGW
+  SG_ SWSSENSD: 45|2@0+ (1,0) [0|0] "" CGW
+  SG_ SWSSWD: 43|1@0+ (1,0) [0|0] "" CGW
+  SG_ LDACD: 42|3@0+ (1,0) [0|0] "" CGW
+  SG_ SWSRAD: 55|2@0+ (1,0) [0|0] "" CGW
+  SG_ SWSBUZ: 50|2@0+ (1,0) [0|0] "" CGW
+  SG_ LKAEXIST: 48|1@0+ (1,0) [0|0] "" CGW
+  SG_ LKACTCD: 60|1@0+ (1,0) [0|0] "" CGW
+  SG_ LDAWRNC: 59|1@0+ (1,0) [0|0] "" CGW
+  SG_ SCEXIST: 57|1@0+ (1,0) [0|0] "" CGW
+  SG_ VIBEXIST: 56|1@0+ (1,0) [0|0] "" CGW
+
+BO_ 295 EHV1F02: 8 CGW
+  SG_ HVSYS: 12|1@0+ (1,0) [0|0] "" CSR
+  SG_ TQRR: 10|11@0- (8,0) [0|0] "Nm" Vector__XXX
+  SG_ DTSGFR: 30|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ DTSGRR: 29|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ TQFR: 26|11@0- (8,0) [0|0] "Nm" Vector__XXX
+  SG_ SFTP_FS: 47|4@0+ (1,0) [0|0] "" CSR
+  SG_ HVMRAFR: 43|12@0+ (0.3515625,0) [0|0] "deg" Vector__XXX
+  SG_ EHVF02SM: 63|8@0+ (1,0) [0|0] "" CSR
+
+BO_ 278 ENG1G03: 8 CGW
+  SG_ AOR: 7|8@0+ (0.5,0) [0|0] "%" Vector__XXX
+  SG_ HV_ACCP: 15|8@0+ (0.5,0) [0|0] "%" CSR,FCM
+  SG_ B_PDLF: 23|1@0+ (1,0) [0|0] "" FCM
+  SG_ FV116: 39|4@0+ (1,0) [0|0] "" FCM
+  SG_ KZK116: 35|28@0+ (1,0) [0|0] "" FCM
+
+BO_ 375 ENG1G04: 8 CGW
+  SG_ ACCREQ: 7|16@0- (0.0009765625,0) [0|0] "m/s^2" Vector__XXX
+  SG_ RQBH: 23|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ACCSTBK: 21|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ACCSTAT: 18|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BHOK: 31|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ XPAIDLV: 30|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ PLOCKF: 29|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ FV177: 39|4@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ KZK177: 35|28@0+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 374 ENG1G14: 8 CGW
+  SG_ XLDR: 7|1@0+ (1,0) [0|0] "" FCM
+  SG_ XACCACT: 5|1@0+ (1,0) [0|0] "" FCM
+  SG_ STPBZ: 4|1@0+ (1,0) [0|0] "" FCM
+  SG_ XPAIDL: 3|1@0+ (1,0) [0|0] "" FCM
+  SG_ SPDSTAT: 31|4@0+ (1,0) [0|0] "�|" FCM
+  SG_ SM176: 63|8@0+ (1,0) [0|0] "" FCM
+
+BO_ 252 ENG1G92: 8 CGW
+  SG_ B_TC: 6|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ B_ICC: 5|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ B_CCWG: 4|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ B_STPE: 0|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CHAW_BZR: 23|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CHAWID: 22|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BOSLAMP: 37|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BOSMINF: 34|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CSRDRVRF: 47|1@0+ (1,0) [0|0] "" CSR
+  SG_ GOSLAMP: 45|3@0+ (1,0) [0|0] "" FCM
+  SG_ GOSMINF: 42|3@0+ (1,0) [0|0] "" FCM
+
+BO_ 921 ENG1S95: 8 CGW
+  SG_ ACCBZR: 7|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ B_SPU2: 4|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ACASID1: 3|4@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ACASID2: 15|8@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACMSDSP: 23|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACACOPR: 21|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACONDSP: 20|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ASLBZR: 19|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ACCOVSPD: 17|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ B_LSP2: 31|8@0+ (1,0) [0|0] "km/h�Emph" Vector__XXX
+  SG_ B_ASLSP2: 39|8@0+ (1,0) [0|0] "km/h�Emph" Vector__XXX
+  SG_ CACCTRN: 47|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCINF: 46|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCFR2: 45|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCFR1: 44|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCFLD: 43|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCCM3: 42|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCCM2: 41|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CACCCM1: 40|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ ASLRNG: 55|1@0+ (1,0) [0|0] "" FCM
+  SG_ RACCSTM2: 52|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACCSTM1: 51|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACEQPD: 49|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACID: 48|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RACSPDOP: 63|8@0+ (1,0) [0|0] "km/h�Emph" Vector__XXX
+
+BO_ 467 ENG2F05: 8 CGW
+  SG_ LCCW2: 4|1@0+ (1,0) [0|0] "" FCM
+  SG_ WSTL2: 3|1@0+ (1,0) [0|0] "" FCM
+  SG_ LCCHK: 2|3@0+ (1,0) [0|0] "" FCM
+  SG_ XCCOK2: 15|1@0+ (1,0) [0|0] "" FCM
+  SG_ SLTACC: 14|2@0+ (1,0) [0|0] "" FCM
+  SG_ LTME2: 12|2@0+ (1,0) [0|0] "" FCM
+  SG_ VM: 23|16@0+ (0.00390625,0) [0|0] "km/h" FCM
+  SG_ INTG: 39|8@0- (0.04,0) [0|0] "m/s^2" FCM
+  SG_ D2PRXMK: 47|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SM1D3: 63|8@0+ (1,0) [0|0] "" FCM
+
+BO_ 608 EPS1S01: 8 CGW
+  SG_ EPENABLE: 7|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSF: 4|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EST2F: 3|1@0+ (1,0) [0|0] "" FCM
+  SG_ IPSF: 2|1@0+ (1,0) [0|0] "" FCM
+  SG_ TRQSENSF: 1|1@0+ (1,0) [0|0] "" FCM
+  SG_ EMIDP: 0|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ TRQSENS: 15|16@0- (0.01,0) [0|0] "Nm" FCM
+  SG_ EST2: 31|16@0- (0.001,0) [0|0] "rad" FCM
+  SG_ IPS: 47|16@0- (0.01,0) [0|0] "A" FCM
+  SG_ EPS01SUM: 63|8@0+ (1,0) [0|0] "" FCM
+
+BO_ 610 EPS1S02: 8 CGW
+  SG_ EPSFAIL: 7|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSSPD: 6|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSFCM: 5|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSSTS0: 2|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSACT: 1|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSSYS: 0|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSFANG: 15|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSBKUP2: 14|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSACT3: 13|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSFCM3: 12|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSSYS3: 11|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSTG: 31|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSCD: 30|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPSFTRQ: 29|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSBKUP: 28|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSACT2: 27|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSFCM2: 26|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSSYS2: 25|1@0+ (1,0) [0|0] "" FCM
+  SG_ EPSBRUSH: 24|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ DGRDF: 39|1@0+ (1,0) [0|0] "" FCM
+  SG_ GRDF: 38|1@0+ (1,0) [0|0] "" FCM
+  SG_ ESTZ2E: 37|1@0+ (1,0) [0|0] "" FCM
+  SG_ ESTZUDS: 36|2@0+ (1,0) [0|0] "" FCM
+  SG_ EPSTEMP1: 47|8@0+ (0.5,70) [0|0] "��" Vector__XXX
+  SG_ EPSTEMP2: 55|8@0+ (0.5,70) [0|0] "��" Vector__XXX
+  SG_ EPS02SUM: 63|8@0+ (1,0) [0|0] "" FCM
+
+BO_ 37 STR1S01: 8 CGW
+  SG_ STS3: 7|1@0+ (1,0) [0|0] "" BSR,CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ STS2: 6|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ STS1: 5|1@0+ (1,0) [0|0] "" BSR,CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ SSA: 3|12@0- (1.5,0) [0|0] "deg" BSR,CAA,CAA00,CAA01,CSR,FCM,MAV
+  SG_ SSAS: 39|4@0- (0.1,0) [0|0] "deg" FCM
+  SG_ SSAV: 35|12@0- (1,0) [0|0] "deg/s" FCM
+  SG_ STDID: 51|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SMKZ025: 63|8@0+ (1,0) [0|0] "" CSR,FCM
+
+BO_ 170 VSC1F01: 8 CGW
+  SG_ VXFREF: 7|1@0+ (1,0) [0|0] "" BSR,CAA,CAA01,CSR,FCM
+  SG_ VXFR: 6|15@0+ (0.01,-67.67) [0|0] "km/h" BSR,CSR,FCM
+  SG_ VXFLEF: 23|1@0+ (1,0) [0|0] "" BSR,CAA,CAA01,CSR,FCM
+  SG_ VXFL: 22|15@0+ (0.01,-67.67) [0|0] "km/h" BSR,CSR,FCM
+  SG_ VXRREF: 39|1@0+ (1,0) [0|0] "" BSR,CAA,CAA01,CSR,FCM
+  SG_ VXRR: 38|15@0+ (0.01,-67.67) [0|0] "km/h" BSR,CSR,FCM
+  SG_ VXRLEF: 55|1@0+ (1,0) [0|0] "" BSR,CAA,CAA01,CSR,FCM
+  SG_ VXRL: 54|15@0+ (0.01,-67.67) [0|0] "km/h" BSR,CSR,FCM
+
+BO_ 257 VSC1G05: 8 CGW
+  SG_ TRBRKSYS: 7|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ FBA: 6|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ FABS: 5|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ FSTP: 4|1@0+ (1,0) [0|0] "" CSR
+  SG_ WSTP: 3|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ PMCF: 20|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ PMCS: 19|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ PMC: 17|10@0+ (0.02,0) [0|0] "Mpa" CSR,FCM
+  SG_ SM101: 63|8@0+ (1,0) [0|0] "" CSR,FCM
+
+BO_ 417 VSC1G07: 8 CGW
+  SG_ FBKRLY: 6|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ FVSCM: 4|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ FVSCSFT: 3|1@0+ (1,0) [0|0] "" FCM
+  SG_ CCS: 2|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ TSVSC: 1|1@0+ (1,0) [0|0] "" FCM
+  SG_ FVSCL: 0|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BRSTOP: 9|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BRKON: 8|1@0+ (1,0) [0|0] "" FCM
+  SG_ ASLP: 23|8@0- (1,0) [0|0] "deg" Vector__XXX
+  SG_ BRKABT3: 26|1@0+ (1,0) [0|0] "" CSR,FCM
+  SG_ BRKABT2: 25|1@0+ (1,0) [0|0] "" CSR
+  SG_ BRKABT1: 24|1@0+ (1,0) [0|0] "" CSR
+  SG_ GVC: 39|8@0- (0.04,0) [0|0] "m/s^2" FCM
+  SG_ XGVCINV: 43|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ CSRICM: 40|1@0+ (1,0) [0|0] "" CSR
+  SG_ S07CNT: 52|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ PCSBRSTA: 50|2@0+ (1,0) [0|0] "" FCM
+  SG_ SM1A1: 63|8@0+ (1,0) [0|0] "" CSR,FCM
+
+BO_ 315 VSC1G09: 8 CGW
+  SG_ ABSOPE: 7|5@0+ (1,0) [0|0] "" FCM,MAV
+  SG_ VDMACT: 2|1@0+ (1,0) [0|0] "" FCM
+  SG_ MCBACT: 1|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ TSCACT: 0|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ TRCOPE: 15|6@0+ (1,0) [0|0] "" FCM
+  SG_ FHACACT2: 9|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ FHACHOLD: 8|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BAEX: 22|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ VSCACT: 21|1@0+ (1,0) [0|0] "" FCM
+  SG_ SM13B: 63|8@0+ (1,0) [0|0] "" FCM
+
+BO_ 215 VSC1G13: 8 CGW
+  SG_ SP1S: 7|1@0+ (1,0) [0|0] "" BSR,FCM,MAV
+  SG_ GVSPDINV: 6|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SP1P: 5|6@0+ (1,0) [0|0] "" FCM
+  SG_ SP1: 15|16@0+ (0.01,0) [0|0] "km/h" FCM,MAV
+  SG_ GVSPD: 31|16@0+ (0.01,0) [0|0] "km/h" Vector__XXX
+  SG_ SMKZ0D7: 63|8@0+ (1,0) [0|0] "" FCM 
+
+BO_ 264 VSC1G29: 8 CGW
+  SG_ DVS0PCS: 6|15@0- (0.001,0) [0|0] "m/s^2" FCM
+  SG_ PBALEVEL: 23|3@0+ (1,0) [0|0] "" FCM
+  SG_ SM108: 63|8@0+ (1,0) [0|0] "" FCM
+
+BO_ 1056 VSC1S08: 8 CGW
+  SG_ YR1Z: 7|16@0- (5.32309722222222E-04,0) [0|0] "rad/s" Vector__XXX
+  SG_ YR2Z: 23|16@0- (5.32309722222222E-04,0) [0|0] "rad/s" Vector__XXX
+  SG_ GL1Z: 39|8@0- (0.0359,0) [0|0] "m/s^2" Vector__XXX
+  SG_ GL2Z: 47|8@0- (0.0359,0) [0|0] "m/s^2" Vector__XXX
+  SG_ YRGSDIR: 55|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ GLZS: 51|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ YRZF: 50|1@0+ (1,0) [0|0] "" FCM
+  SG_ YRZS: 49|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ YRZKS: 48|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ VSC08SUM: 63|8@0+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 916 EPS1S90: 3 Vector__XXX
+  SG_ EPS_BZER   : 15|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPS_WLMP   : 13|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPS_MINF   : 19|3@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ EPS_REMT   : 16|1@0+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 1570 BDB1S03: 8 Vector__XXX
+  SG_ BDB03_ID   : 7|8@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ BDB03_IF   : 15|8@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SULDCD   : 21|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ PANL   : 19|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ LED_HI_B   : 17|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ HEDH   : 30|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ HEDL   : 29|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ TAIL   : 28|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ FFOG   : 27|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RFOG   : 26|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SB_IND   : 39|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SB_OK   : 37|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RSRMID_R   : 47|2@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RSR_PR   : 45|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ RSRON_ST   : 44|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ SRWARN   : 51|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ PWWARN   : 50|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ LTRBZ_R   : 49|1@0+ (1,0) [0|0] "" Vector__XXX
+  SG_ DRPBZ_R   : 62|3@0+ (1,0) [0|0] "" Vector__XXX
+
+BA_DEF_ "Manufacturer" STRING ;
+BA_DEF_ "ILTxTimeout" INT 0 100000;
+BA_DEF_ BU_ "ILUsed" ENUM "No","Yes";
+BA_DEF_ BU_ "NmNode" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgSendType" ENUM "Cyclic","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","NoMsgSendType";
+BA_DEF_ BO_ "GenMsgCycleTime" INT 2 50000;
+BA_DEF_ BO_ "GenMsgDelayTime" INT 0 65535;
+BA_DEF_ BO_ "NmMessage" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgILSupport" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgTxConditionPlusBOn" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgTxConditionAccOn" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgTxConditionIg1On" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgTxConditionIg2On" ENUM "No","Yes";
+BA_DEF_ BO_ "GenMsgTxConditionSpecialOn" ENUM "No","Yes";
+
+BA_DEF_ SG_ "GenSigSendType" ENUM "Cyclic","OnWrite","NotUsed","OnChange","NotUsed","NotUsed","NotUsed","NoSigSendType";
+BA_DEF_ SG_ "GenSigStartValue" FLOAT 0 100000000000;
+BA_DEF_ SG_ "GenSigFuncType" ENUM "NoFunction","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","CHK";
+BA_DEF_ BU_ "NodeLayerModules" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutValue" INT 0 100000;
+BA_DEF_ SG_ "GenSigInactiveValue" INT 0 100000;
+BA_DEF_ SG_ "GenSigTimeoutTime_BSR" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_BSR" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_BSR" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_BSR" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_CAA" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_CAA" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_CAA" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_CAA" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_CAA00" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_CAA00" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_CAA00" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_CAA00" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_CAA01" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_CAA01" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_CAA01" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_CAA01" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_CGW" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_CGW" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_CGW" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_CGW" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_CSR" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_CSR" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_CSR" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_CSR" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_FCM" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_FCM" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_FCM" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_FCM" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_FRD" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_FRD" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_FRD" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_FRD" STRING ;
+BA_DEF_ SG_ "GenSigTimeoutTime_MAV" INT 0 65535;
+BA_DEF_ SG_ "GenSigSuprvResp_MAV" ENUM "None","Notify","Substitute","NotifySubstitute";
+BA_DEF_ SG_ "GenSigSuprvRespSubValue_MAV" INT 0 2147483647;
+BA_DEF_ SG_ "GenSigRxStartValue_MAV" STRING ;
+
+
+BA_DEF_DEF_ "Manufacturer" "Toyota";
+BA_DEF_DEF_ "ILTxTimeout" 400;
+BA_DEF_DEF_ "ILUsed" "No";
+BA_DEF_DEF_ "NmNode" "No";
+BA_DEF_DEF_ "GenMsgSendType" "Cyclic";
+BA_DEF_DEF_ "GenSigSendType" "NoSigSendType";
+BA_DEF_DEF_ "GenMsgCycleTime" 100;
+BA_DEF_DEF_ "GenMsgDelayTime" 0;
+BA_DEF_DEF_ "NmMessage" "No";
+BA_DEF_DEF_ "GenMsgILSupport" "Yes";
+BA_DEF_DEF_ "GenMsgTxConditionPlusBOn" "No";
+BA_DEF_DEF_ "GenMsgTxConditionAccOn" "No";
+BA_DEF_DEF_ "GenMsgTxConditionIg1On" "No";
+BA_DEF_DEF_ "GenMsgTxConditionIg2On" "No";
+BA_DEF_DEF_ "GenMsgTxConditionSpecialOn" "No";
+
+BA_DEF_DEF_ "GenSigStartValue" 0;
+BA_DEF_DEF_ "GenSigFuncType" "NoFunction";
+BA_DEF_DEF_ "NodeLayerModules" "CANoeILNLToyota.dll";
+BA_DEF_DEF_ "GenSigTimeoutValue" 0;
+BA_DEF_DEF_ "GenSigInactiveValue" 0;
+BA_DEF_DEF_ "GenSigTimeoutTime_BSR" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_BSR" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_BSR" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_BSR" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_CAA" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_CAA" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_CAA" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_CAA" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_CAA00" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_CAA00" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_CAA00" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_CAA00" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_CAA01" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_CAA01" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_CAA01" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_CAA01" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_CGW" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_CGW" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_CGW" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_CGW" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_CSR" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_CSR" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_CSR" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_CSR" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_FCM" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_FCM" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_FCM" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_FCM" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_FRD" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_FRD" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_FRD" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_FRD" "";
+BA_DEF_DEF_ "GenSigTimeoutTime_MAV" 0;
+BA_DEF_DEF_ "GenSigSuprvResp_MAV" "None";
+BA_DEF_DEF_ "GenSigSuprvRespSubValue_MAV" 0;
+BA_DEF_DEF_ "GenSigRxStartValue_MAV" "";
+
+
+BA_ "GenMsgSendType" BO_ 836 0;
+BA_ "GenMsgCycleTime" BO_ 836 48;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 836 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 836 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 836 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 836 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 836 0;
+BA_ "ILUsed" BU_ FCM 1;
+BA_ "GenSigSendType" SG_ 836 DSS1GDRV 3;
+BA_ "GenSigStartValue" SG_ 836 DSS1GDRV 0;
+BA_ "GenSigSendType" SG_ 836 PREFILL 7;
+BA_ "GenSigStartValue" SG_ 836 PREFILL 0;
+BA_ "GenSigSendType" SG_ 836 AVSTRGR 7;
+BA_ "GenSigStartValue" SG_ 836 AVSTRGR 0;
+BA_ "GenSigSendType" SG_ 836 PBPREPMP 7;
+BA_ "GenSigStartValue" SG_ 836 PBPREPMP 0;
+BA_ "GenSigSendType" SG_ 836 PCSALM 7;
+BA_ "GenSigStartValue" SG_ 836 PCSALM 0;
+BA_ "GenSigSendType" SG_ 836 PCSOPR 7;
+BA_ "GenSigStartValue" SG_ 836 PCSOPR 0;
+BA_ "GenSigSendType" SG_ 836 PBRTRGR 7;
+BA_ "GenSigStartValue" SG_ 836 PBRTRGR 0;
+BA_ "GenSigSendType" SG_ 836 PBATRGR 3;
+BA_ "GenSigStartValue" SG_ 836 PBATRGR 0;
+BA_ "GenSigSendType" SG_ 836 PPTRGR 7;
+BA_ "GenSigStartValue" SG_ 836 PPTRGR 0;
+BA_ "GenSigSendType" SG_ 836 IBTRGR 7;
+BA_ "GenSigStartValue" SG_ 836 IBTRGR 0;
+BA_ "GenSigSendType" SG_ 836 BRKHLD 7;
+BA_ "GenSigStartValue" SG_ 836 BRKHLD 0;
+BA_ "GenSigSendType" SG_ 836 VGRSTRGR 3;
+BA_ "GenSigStartValue" SG_ 836 VGRSTRGR 0;
+BA_ "GenSigSendType" SG_ 836 FV344 7;
+BA_ "GenSigStartValue" SG_ 836 FV344 0;
+BA_ "GenSigSendType" SG_ 836 KZK344 7;
+BA_ "GenMsgSendType" BO_ 835 0;
+BA_ "GenMsgCycleTime" BO_ 835 32;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 835 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 835 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 835 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 835 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 835 0;
+BA_ "GenSigSendType" SG_ 835 ACCTYPE 7;
+BA_ "GenSigStartValue" SG_ 835 ACCTYPE 0;
+BA_ "GenSigSendType" SG_ 835 XTRGT2 7;
+BA_ "GenSigStartValue" SG_ 835 XTRGT2 0;
+BA_ "GenSigSendType" SG_ 835 XLTMD2 7;
+BA_ "GenSigStartValue" SG_ 835 XLTMD2 0;
+BA_ "GenSigSendType" SG_ 835 LCDT2 7;
+BA_ "GenSigStartValue" SG_ 835 LCDT2 0;
+BA_ "GenSigSendType" SG_ 835 LCNG 7;
+BA_ "GenSigStartValue" SG_ 835 LCNG 0;
+BA_ "GenSigSendType" SG_ 835 SMC 7;
+BA_ "GenSigStartValue" SG_ 835 SMC 0;
+BA_ "GenSigSendType" SG_ 835 STOKJD 7;
+BA_ "GenSigStartValue" SG_ 835 STOKJD 0;
+BA_ "GenSigSendType" SG_ 835 PMTBRKG 7;
+BA_ "GenSigStartValue" SG_ 835 PMTBRKG 0;
+BA_ "GenSigSendType" SG_ 835 LCCWOK 7;
+BA_ "GenSigStartValue" SG_ 835 LCCWOK 0;
+BA_ "GenSigSendType" SG_ 835 LCBW2 7;
+BA_ "GenSigStartValue" SG_ 835 LCBW2 0;
+BA_ "GenSigSendType" SG_ 835 AT_RAW 7;
+BA_ "GenSigStartValue" SG_ 835 AT_RAW 0;
+BA_ "GenSigSendType" SG_ 835 ACC03SUM 7;
+BA_ "GenSigFuncType" SG_ 835 ACC03SUM 7;
+BA_ "GenMsgSendType" BO_ 740 0;
+BA_ "GenMsgCycleTime" BO_ 740 24;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 740 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 740 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 740 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 740 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 740 0;
+BA_ "GenSigSendType" SG_ 740 LKEXIST 7;
+BA_ "GenSigStartValue" SG_ 740 LKEXIST 0;
+BA_ "GenSigSendType" SG_ 740 LKCOUNT 7;
+BA_ "GenSigStartValue" SG_ 740 LKCOUNT 0;
+BA_ "GenSigSendType" SG_ 740 LKFACT 7;
+BA_ "GenSigStartValue" SG_ 740 LKFACT 0;
+BA_ "GenSigSendType" SG_ 740 LKTRQ 7;
+BA_ "GenSigStartValue" SG_ 740 LKTRQ 0;
+BA_ "GenSigSendType" SG_ 740 LKKPACT 7;
+BA_ "GenSigStartValue" SG_ 740 LKKPACT 0;
+BA_ "GenSigSendType" SG_ 740 FV2E4 7;
+BA_ "GenSigStartValue" SG_ 740 FV2E4 0;
+BA_ "GenSigSendType" SG_ 740 KZK2E4 7;
+BA_ "GenMsgSendType" BO_ 387 0;
+BA_ "GenMsgCycleTime" BO_ 387 32;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 387 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 387 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 387 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 387 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 387 0;
+BA_ "GenSigSendType" SG_ 387 ATACC2 7;
+BA_ "GenSigStartValue" SG_ 387 ATACC2 0;
+BA_ "GenSigSendType" SG_ 387 FV183 7;
+BA_ "GenSigStartValue" SG_ 387 FV183 0;
+BA_ "GenSigSendType" SG_ 387 KZK183 7;
+BA_ "GenMsgSendType" BO_ 1572 0;
+BA_ "GenMsgCycleTime" BO_ 1572 1000;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1572 1;
+BA_ "GenMsgTxConditionAccOn" BO_ 1572 1;
+BA_ "GenMsgTxConditionIg1On" BO_ 1572 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1572 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1572 0;
+BA_ "ILUsed" BU_ CGW 1;
+BA_ "GenSigSendType" SG_ 1572 BDB08_ID 7;
+BA_ "GenSigSendType" SG_ 1572 BDB08_IF 7;
+BA_ "GenSigSendType" SG_ 1572 DEST_BDB 7;
+BA_ "GenSigStartValue" SG_ 1572 DEST_BDB 255;
+BA_ "GenSigSendType" SG_ 1572 C_CODE1 7;
+BA_ "GenSigStartValue" SG_ 1572 C_CODE1 15;
+BA_ "GenSigSendType" SG_ 1572 C_CODE2 7;
+BA_ "GenSigStartValue" SG_ 1572 C_CODE2 15;
+BA_ "GenSigSendType" SG_ 1572 C_CODE3 7;
+BA_ "GenSigStartValue" SG_ 1572 C_CODE3 15;
+BA_ "GenSigSendType" SG_ 1572 STRG_WHL 7;
+BA_ "GenSigStartValue" SG_ 1572 STRG_WHL 3;
+BA_ "GenSigSendType" SG_ 1572 DEICER 7;
+BA_ "GenSigStartValue" SG_ 1572 DEICER 1;
+BA_ "GenSigSendType" SG_ 1572 KEYPLATE 7;
+BA_ "GenSigStartValue" SG_ 1572 KEYPLATE 255;
+BA_ "GenSigSendType" SG_ 1572 DBLLCK 7;
+BA_ "GenSigStartValue" SG_ 1572 DBLLCK 0;
+BA_ "GenSigSendType" SG_ 1572 U2OP_CST 7;
+BA_ "GenSigStartValue" SG_ 1572 U2OP_CST 0;
+BA_ "GenSigSendType" SG_ 1572 U2OP_DFT 7;
+BA_ "GenSigStartValue" SG_ 1572 U2OP_DFT 0;
+BA_ "GenMsgSendType" BO_ 1014 0;
+BA_ "GenMsgCycleTime" BO_ 1014 1000;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1014 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 1014 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 1014 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1014 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1014 0;
+BA_ "ILUsed" BU_ BSR 1;
+BA_ "GenSigSendType" SG_ 1014 BSD_STAT 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_STAT 1;
+BA_ "GenSigSendType" SG_ 1014 RCTA_DIR 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_DIR 0;
+BA_ "GenSigSendType" SG_ 1014 BS4LDR 3;
+BA_ "GenSigStartValue" SG_ 1014 BS4LDR 0;
+BA_ "GenSigSendType" SG_ 1014 BS4LDL 3;
+BA_ "GenSigStartValue" SG_ 1014 BS4LDL 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_SW 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_SW 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_EQ 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_EQ 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_VOL 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_VOL 0;
+BA_ "GenSigSendType" SG_ 1014 RCTADISP 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTADISP 0;
+BA_ "GenSigSendType" SG_ 1014 CV4LDR 3;
+BA_ "GenSigStartValue" SG_ 1014 CV4LDR 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_SW 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_SW 0;
+BA_ "GenSigSendType" SG_ 1014 CV4LDL 3;
+BA_ "GenSigStartValue" SG_ 1014 CV4LDL 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_BUZ 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_BUZ 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_ILCR 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_ILCR 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_ILV 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_ILV 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_ITCR 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_ITCR 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_ITV 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_ITV 2;
+BA_ "GenSigSendType" SG_ 1014 BSD_OMIL 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_OMIL 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_OMIR 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_OMIR 0;
+BA_ "GenSigSendType" SG_ 1014 RCTASTAT 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTASTAT 1;
+BA_ "GenSigSendType" SG_ 1014 BUZSTAT 3;
+BA_ "GenSigStartValue" SG_ 1014 BUZSTAT 0;
+BA_ "GenSigSendType" SG_ 1014 CAAICM 3;
+BA_ "GenSigStartValue" SG_ 1014 CAAICM 0;
+BA_ "GenSigSendType" SG_ 1014 RCTALAMP 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTALAMP 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_TTR 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_TTR 0;
+BA_ "GenSigSendType" SG_ 1014 BSDINDI 3;
+BA_ "GenSigStartValue" SG_ 1014 BSDINDI 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_TTR 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_TTR 0;
+BA_ "GenSigSendType" SG_ 1014 BSD_SWR 3;
+BA_ "GenSigStartValue" SG_ 1014 BSD_SWR 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_SWR 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_SWR 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_BUZ 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_BUZ 0;
+BA_ "GenSigSendType" SG_ 1014 RCTA_BCR 3;
+BA_ "GenSigStartValue" SG_ 1014 RCTA_BCR 0;
+BA_ "GenMsgSendType" BO_ 870 0;
+BA_ "GenMsgCycleTime" BO_ 870 200;
+BA_ "GenMsgDelayTime" BO_ 870 160;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 870 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 870 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 870 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 870 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 870 0;
+BA_ "GenSigSendType" SG_ 870 TGT_ETTC 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_ETTC 63;
+BA_ "GenSigSendType" SG_ 870 XREQPBR 7;
+BA_ "GenSigStartValue" SG_ 870 XREQPBR 0;
+BA_ "GenSigSendType" SG_ 870 XREQPREF 7;
+BA_ "GenSigStartValue" SG_ 870 XREQPREF 0;
+BA_ "GenSigSendType" SG_ 870 TGT_OBJT 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_OBJT 0;
+BA_ "GenSigSendType" SG_ 870 XREQALM 3;
+BA_ "GenSigStartValue" SG_ 870 XREQALM 0;
+BA_ "GenSigSendType" SG_ 870 XREQPBA 3;
+BA_ "GenSigStartValue" SG_ 870 XREQPBA 0;
+BA_ "GenSigSendType" SG_ 870 TGT_VGAP 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_VGAP 255;
+BA_ "GenSigSendType" SG_ 870 TGT_DIST 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_DIST 127;
+BA_ "GenSigSendType" SG_ 870 TGT_NUMB 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_NUMB 31;
+BA_ "GenSigSendType" SG_ 870 XREQABK 7;
+BA_ "GenSigStartValue" SG_ 870 XREQABK 0;
+BA_ "GenSigSendType" SG_ 870 XREQFPB 7;
+BA_ "GenSigStartValue" SG_ 870 XREQFPB 0;
+BA_ "GenSigSendType" SG_ 870 XREQPB 7;
+BA_ "GenSigStartValue" SG_ 870 XREQPB 0;
+BA_ "GenSigSendType" SG_ 870 TGT_POSX 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_POSX 15;
+BA_ "GenSigSendType" SG_ 870 XREQPSB 7;
+BA_ "GenSigStartValue" SG_ 870 XREQPSB 0;
+BA_ "GenSigSendType" SG_ 870 XPCSRDY 7;
+BA_ "GenSigStartValue" SG_ 870 XPCSRDY 0;
+BA_ "GenSigSendType" SG_ 870 TGT_TTCT 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_TTCT 0;
+BA_ "GenSigSendType" SG_ 870 ALLPCSF 7;
+BA_ "GenSigStartValue" SG_ 870 ALLPCSF 0;
+BA_ "GenSigSendType" SG_ 870 TGT_LSPD 7;
+BA_ "GenSigStartValue" SG_ 870 TGT_LSPD 0;
+BA_ "GenMsgSendType" BO_ 871 0;
+BA_ "GenMsgCycleTime" BO_ 871 400;
+BA_ "GenMsgDelayTime" BO_ 871 160;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 871 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 871 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 871 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 871 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 871 0;
+BA_ "GenSigSendType" SG_ 871 LKADRTRG 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRTRG 0;
+BA_ "GenSigSendType" SG_ 871 LKADRSHR 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRSHR 0;
+BA_ "GenSigSendType" SG_ 871 LKADRSLK 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRSLK 0;
+BA_ "GenSigSendType" SG_ 871 LKADRSLD 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRSLD 0;
+BA_ "GenSigSendType" SG_ 871 LKADRCC 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRCC 0;
+BA_ "GenSigSendType" SG_ 871 LKADRTUR 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRTUR 0;
+BA_ "GenSigSendType" SG_ 871 LKADRINV 3;
+BA_ "GenSigStartValue" SG_ 871 LKADRINV 0;
+BA_ "GenMsgSendType" BO_ 830 0;
+BA_ "GenMsgCycleTime" BO_ 830 200;
+BA_ "GenMsgDelayTime" BO_ 830 160;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 830 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 830 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 830 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 830 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 830 0;
+BA_ "GenSigSendType" SG_ 830 TGT_ACCR 7;
+BA_ "GenSigStartValue" SG_ 830 TGT_ACCR 7;
+BA_ "GenSigSendType" SG_ 830 TGT_TTC 7;
+BA_ "GenSigStartValue" SG_ 830 TGT_TTC 63;
+BA_ "GenSigSendType" SG_ 830 XREQPBAL 7;
+BA_ "GenSigStartValue" SG_ 830 XREQPBAL 0;
+BA_ "GenSigSendType" SG_ 830 PCS_DCS 7;
+BA_ "GenSigStartValue" SG_ 830 PCS_DCS 0;
+BA_ "GenSigSendType" SG_ 830 TGT_FSNS 7;
+BA_ "GenSigStartValue" SG_ 830 TGT_FSNS 0;
+BA_ "GenSigSendType" SG_ 830 PCS_GRD 7;
+BA_ "GenSigStartValue" SG_ 830 PCS_GRD 0;
+BA_ "GenSigSendType" SG_ 830 PCS_ALMM 7;
+BA_ "GenSigStartValue" SG_ 830 PCS_ALMM 3;
+BA_ "GenSigSendType" SG_ 830 XREQPBH 7;
+BA_ "GenSigStartValue" SG_ 830 XREQPBH 0;
+BA_ "GenSigSendType" SG_ 830 XREQAVD 7;
+BA_ "GenSigStartValue" SG_ 830 XREQAVD 0;
+BA_ "GenSigSendType" SG_ 830 PCSDISP 7;
+BA_ "GenSigStartValue" SG_ 830 PCSDISP 0;
+BA_ "GenSigSendType" SG_ 830 PCS_CURV 7;
+BA_ "GenSigStartValue" SG_ 830 PCS_CURV 0;
+BA_ "GenSigSendType" SG_ 830 ALLPCSFF 7;
+BA_ "GenSigStartValue" SG_ 830 ALLPCSFF 0;
+BA_ "GenMsgSendType" BO_ 1769 0;
+BA_ "GenMsgCycleTime" BO_ 1769 200;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1769 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 1769 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 1769 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1769 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1769 0;
+BA_ "GenSigSendType" SG_ 1769 ID6E900 7;
+BA_ "GenSigSendType" SG_ 1769 IF6E900 7;
+BA_ "GenSigSendType" SG_ 1769 ACCDRTRG 7;
+BA_ "GenSigStartValue" SG_ 1769 ACCDRTRG 0;
+BA_ "GenSigSendType" SG_ 1769 DECELFCL 7;
+BA_ "GenSigStartValue" SG_ 1769 DECELFCL 0;
+BA_ "GenSigSendType" SG_ 1769 TGTTIME 7;
+BA_ "GenSigStartValue" SG_ 1769 TGTTIME 0;
+BA_ "GenSigSendType" SG_ 1769 RD_YAW 7;
+BA_ "GenSigStartValue" SG_ 1769 RD_YAW 0;
+BA_ "GenSigSendType" SG_ 1769 CM_YAW 7;
+BA_ "GenSigStartValue" SG_ 1769 CM_YAW 0;
+BA_ "GenSigSendType" SG_ 1769 D_LTME 7;
+BA_ "GenSigStartValue" SG_ 1769 D_LTME 0;
+BA_ "GenSigSendType" SG_ 1769 ACC_CURV 7;
+BA_ "GenSigStartValue" SG_ 1769 ACC_CURV 0;
+BA_ "GenSigSendType" SG_ 1769 D_VMCC 7;
+BA_ "GenSigStartValue" SG_ 1769 D_VMCC 0;
+BA_ "GenMsgSendType" BO_ 1770 0;
+BA_ "GenMsgCycleTime" BO_ 1770 200;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1770 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 1770 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 1770 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1770 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1770 0;
+BA_ "GenSigSendType" SG_ 1770 ID6EA00 7;
+BA_ "GenSigSendType" SG_ 1770 IF6EA00 7;
+BA_ "GenSigSendType" SG_ 1770 ACCDSYN 7;
+BA_ "GenSigStartValue" SG_ 1770 ACCDSYN 0;
+BA_ "GenSigSendType" SG_ 1770 ATGTNUMB 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGTNUMB 0;
+BA_ "GenSigSendType" SG_ 1770 ATGT_RD 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGT_RD 0;
+BA_ "GenSigSendType" SG_ 1770 ATGT_CM 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGT_CM 0;
+BA_ "GenSigSendType" SG_ 1770 ATGT_DST 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGT_DST 0;
+BA_ "GenSigSendType" SG_ 1770 ATGT_RV 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGT_RV 0;
+BA_ "GenSigSendType" SG_ 1770 ATGT_LP 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGT_LP 0;
+BA_ "GenSigSendType" SG_ 1770 ATGT_LRV 7;
+BA_ "GenSigStartValue" SG_ 1770 ATGT_LRV 0;
+BA_ "GenSigSendType" SG_ 1770 D_LCCWOK 7;
+BA_ "GenSigStartValue" SG_ 1770 D_LCCWOK 0;
+BA_ "GenSigSendType" SG_ 1770 D_ATACC 7;
+BA_ "GenSigStartValue" SG_ 1770 D_ATACC 0;
+BA_ "GenMsgSendType" BO_ 643 0;
+BA_ "GenMsgCycleTime" BO_ 643 32;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 643 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 643 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 643 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 643 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 643 0;
+BA_ "GenSigSendType" SG_ 643 DSS1STAT 3;
+BA_ "GenSigStartValue" SG_ 643 DSS1STAT 0;
+BA_ "GenSigSendType" SG_ 643 PCSNOCHG 7;
+BA_ "GenSigStartValue" SG_ 643 PCSNOCHG 0;
+BA_ "GenSigSendType" SG_ 643 DSS1FDRV 3;
+BA_ "GenSigStartValue" SG_ 643 DSS1FDRV 0;
+BA_ "GenSigSendType" SG_ 643 FV283 7;
+BA_ "GenSigStartValue" SG_ 643 FV283 0;
+BA_ "GenSigSendType" SG_ 643 KZK283 7;
+BA_ "GenMsgSendType" BO_ 401 0;
+BA_ "GenMsgCycleTime" BO_ 401 24;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 401 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 401 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 401 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 401 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 401 0;
+BA_ "GenSigSendType" SG_ 401 SRQEXIST 7;
+BA_ "GenSigStartValue" SG_ 401 SRQEXIST 0;
+BA_ "GenSigSendType" SG_ 401 DRSTR 7;
+BA_ "GenSigStartValue" SG_ 401 DRSTR 0;
+BA_ "GenSigSendType" SG_ 401 LKAACT 7;
+BA_ "GenSigStartValue" SG_ 401 LKAACT 0;
+BA_ "GenSigSendType" SG_ 401 DMPGAIN 7;
+BA_ "GenSigStartValue" SG_ 401 DMPGAIN 0;
+BA_ "GenSigSendType" SG_ 401 SYSGAIN 7;
+BA_ "GenSigStartValue" SG_ 401 SYSGAIN 0;
+BA_ "GenSigSendType" SG_ 401 CMCURV 7;
+BA_ "GenSigStartValue" SG_ 401 CMCURV 0;
+BA_ "GenSigSendType" SG_ 401 SM191 7;
+BA_ "GenSigFuncType" SG_ 401 SM191 7;
+BA_ "GenMsgSendType" BO_ 305 0;
+BA_ "GenMsgCycleTime" BO_ 305 24;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 305 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 305 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 305 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 305 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 305 0;
+BA_ "GenSigSendType" SG_ 305 LTCACT 7;
+BA_ "GenSigStartValue" SG_ 305 LTCACT 0;
+BA_ "GenSigSendType" SG_ 305 LDAACT 7;
+BA_ "GenSigStartValue" SG_ 305 LDAACT 0;
+BA_ "GenSigSendType" SG_ 305 SRQACT 7;
+BA_ "GenSigStartValue" SG_ 305 SRQACT 0;
+BA_ "GenSigSendType" SG_ 305 SRQCOUNT 7;
+BA_ "GenSigStartValue" SG_ 305 SRQCOUNT 0;
+BA_ "GenSigSendType" SG_ 305 SRQANG 7;
+BA_ "GenSigStartValue" SG_ 305 SRQANG 0;
+BA_ "GenSigSendType" SG_ 305 FV131 7;
+BA_ "GenSigStartValue" SG_ 305 FV131 0;
+BA_ "GenSigSendType" SG_ 305 KZK131 7;
+BA_ "GenMsgSendType" BO_ 765 0;
+BA_ "GenMsgCycleTime" BO_ 765 1000;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 765 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 765 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 765 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 765 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 765 0;
+BA_ "GenSigSendType" SG_ 765 ESTZ 7;
+BA_ "GenSigStartValue" SG_ 765 ESTZ 0;
+BA_ "GenSigSendType" SG_ 765 STSZ 7;
+BA_ "GenSigStartValue" SG_ 765 STSZ 0;
+BA_ "GenSigSendType" SG_ 765 ESTZSTS 7;
+BA_ "GenSigStartValue" SG_ 765 ESTZSTS 0;
+BA_ "GenSigSendType" SG_ 765 STSZSTS 7;
+BA_ "GenSigStartValue" SG_ 765 STSZSTS 0;
+BA_ "GenSigSendType" SG_ 765 SM2FD 7;
+BA_ "GenSigFuncType" SG_ 765 SM2FD 7;
+BA_ "GenMsgSendType" BO_ 881 0;
+BA_ "GenMsgCycleTime" BO_ 881 200;
+BA_ "GenMsgDelayTime" BO_ 881 160;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 881 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 881 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 881 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 881 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 881 0;
+BA_ "GenSigSendType" SG_ 881 LTCDREST 7;
+BA_ "GenSigStartValue" SG_ 881 LTCDREST 0;
+BA_ "GenSigSendType" SG_ 881 LTCDRTUR 3;
+BA_ "GenSigStartValue" SG_ 881 LTCDRTUR 0;
+BA_ "GenSigSendType" SG_ 881 LTCDRTRG 3;
+BA_ "GenSigStartValue" SG_ 881 LTCDRTRG 0;
+BA_ "GenSigSendType" SG_ 881 LTCDRSHR 3;
+BA_ "GenSigStartValue" SG_ 881 LTCDRSHR 0;
+BA_ "GenSigSendType" SG_ 881 LTCDRSLK 3;
+BA_ "GenSigStartValue" SG_ 881 LTCDRSLK 0;
+BA_ "GenSigSendType" SG_ 881 LTCDRCC 3;
+BA_ "GenSigStartValue" SG_ 881 LTCDRCC 0;
+BA_ "GenSigSendType" SG_ 881 LTCFLFLG 3;
+BA_ "GenSigStartValue" SG_ 881 LTCFLFLG 0;
+BA_ "GenSigSendType" SG_ 881 LTCSPFLG 3;
+BA_ "GenSigStartValue" SG_ 881 LTCSPFLG 0;
+BA_ "GenSigSendType" SG_ 881 LTCDRINV 3;
+BA_ "GenSigStartValue" SG_ 881 LTCDRINV 0;
+BA_ "GenMsgSendType" BO_ 1041 0;
+BA_ "GenMsgCycleTime" BO_ 1041 1000;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1041 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 1041 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 1041 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1041 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1041 0;
+BA_ "GenSigSendType" SG_ 1041 PCSINDI 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSINDI 0;
+BA_ "GenSigSendType" SG_ 1041 PCSWM 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSWM 0;
+BA_ "GenSigSendType" SG_ 1041 PCSFCT 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSFCT 0;
+BA_ "GenSigSendType" SG_ 1041 PCSTUCT 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSTUCT 0;
+BA_ "GenSigSendType" SG_ 1041 DS1LCCK 3;
+BA_ "GenSigStartValue" SG_ 1041 DS1LCCK 0;
+BA_ "GenSigSendType" SG_ 1041 PBTUCT 3;
+BA_ "GenSigStartValue" SG_ 1041 PBTUCT 0;
+BA_ "GenSigSendType" SG_ 1041 PCSEXIST 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSEXIST 0;
+BA_ "GenSigSendType" SG_ 1041 PCSWDUCT 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSWDUCT 0;
+BA_ "GenSigSendType" SG_ 1041 PCSMTBZ2 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSMTBZ2 0;
+BA_ "GenSigSendType" SG_ 1041 PCSDSRF 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSDSRF 0;
+BA_ "GenSigSendType" SG_ 1041 PCSTEMP 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSTEMP 0;
+BA_ "GenSigSendType" SG_ 1041 PCSDUST 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSDUST 0;
+BA_ "GenSigSendType" SG_ 1041 PCSLCCK 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSLCCK 0;
+BA_ "GenSigSendType" SG_ 1041 PCTEMP2 3;
+BA_ "GenSigStartValue" SG_ 1041 PCTEMP2 0;
+BA_ "GenSigSendType" SG_ 1041 PCSDUST2 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSDUST2 0;
+BA_ "GenSigSendType" SG_ 1041 PCSOFFS 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSOFFS 0;
+BA_ "GenSigSendType" SG_ 1041 PCSWDS 3;
+BA_ "GenSigStartValue" SG_ 1041 PCSWDS 0;
+BA_ "GenSigSendType" SG_ 1041 FRDADJ 3;
+BA_ "GenSigStartValue" SG_ 1041 FRDADJ 0;
+BA_ "GenSigSendType" SG_ 1041 TSS_TS 3;
+BA_ "GenSigStartValue" SG_ 1041 TSS_TS 0;
+BA_ "GenMsgSendType" BO_ 1042 0;
+BA_ "GenMsgCycleTime" BO_ 1042 1000;
+BA_ "GenMsgDelayTime" BO_ 1042 160;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1042 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 1042 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 1042 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1042 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1042 0;
+BA_ "GenSigSendType" SG_ 1042 LKAINDI 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAINDI 0;
+BA_ "GenSigSendType" SG_ 1042 LKAWLSL 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAWLSL 0;
+BA_ "GenSigSendType" SG_ 1042 LKAWLSR 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAWLSR 0;
+BA_ "GenSigSendType" SG_ 1042 LKAHS 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAHS 0;
+BA_ "GenSigSendType" SG_ 1042 LKAFCT 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAFCT 0;
+BA_ "GenSigSendType" SG_ 1042 LKATUCT 3;
+BA_ "GenSigStartValue" SG_ 1042 LKATUCT 0;
+BA_ "GenSigSendType" SG_ 1042 LKACAMT 3;
+BA_ "GenSigStartValue" SG_ 1042 LKACAMT 0;
+BA_ "GenSigSendType" SG_ 1042 LKACB 3;
+BA_ "GenSigStartValue" SG_ 1042 LKACB 0;
+BA_ "GenSigSendType" SG_ 1042 LDWEXIST 3;
+BA_ "GenSigStartValue" SG_ 1042 LDWEXIST 0;
+BA_ "GenSigSendType" SG_ 1042 LKAHFCT 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAHFCT 0;
+BA_ "GenSigSendType" SG_ 1042 LKASPCND 3;
+BA_ "GenSigStartValue" SG_ 1042 LKASPCND 0;
+BA_ "GenSigSendType" SG_ 1042 LKAMDCS 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAMDCS 0;
+BA_ "GenSigSendType" SG_ 1042 LKAWTCS 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAWTCS 0;
+BA_ "GenSigSendType" SG_ 1042 LKASAUT 3;
+BA_ "GenSigStartValue" SG_ 1042 LKASAUT 0;
+BA_ "GenSigSendType" SG_ 1042 LKAMDT 3;
+BA_ "GenSigStartValue" SG_ 1042 LKAMDT 0;
+BA_ "GenSigSendType" SG_ 1042 LTCCNFLV 3;
+BA_ "GenSigStartValue" SG_ 1042 LTCCNFLV 0;
+BA_ "GenSigSendType" SG_ 1042 FLWMD2 3;
+BA_ "GenSigStartValue" SG_ 1042 FLWMD2 0;
+BA_ "GenSigSendType" SG_ 1042 LDOFINDI 3;
+BA_ "GenSigStartValue" SG_ 1042 LDOFINDI 0;
+BA_ "GenSigSendType" SG_ 1042 LTCEXST2 7;
+BA_ "GenSigStartValue" SG_ 1042 LTCEXST2 0;
+BA_ "GenSigSendType" SG_ 1042 LDWBZ 3;
+BA_ "GenSigStartValue" SG_ 1042 LDWBZ 0;
+BA_ "GenSigSendType" SG_ 1042 LDAFCVB 3;
+BA_ "GenSigStartValue" SG_ 1042 LDAFCVB 0;
+BA_ "GenSigSendType" SG_ 1042 SWSSENSD 3;
+BA_ "GenSigStartValue" SG_ 1042 SWSSENSD 0;
+BA_ "GenSigSendType" SG_ 1042 SWSSWD 3;
+BA_ "GenSigStartValue" SG_ 1042 SWSSWD 0;
+BA_ "GenSigSendType" SG_ 1042 LDACD 3;
+BA_ "GenSigStartValue" SG_ 1042 LDACD 0;
+BA_ "GenSigSendType" SG_ 1042 SWSRAD 3;
+BA_ "GenSigStartValue" SG_ 1042 SWSRAD 0;
+BA_ "GenSigSendType" SG_ 1042 SWSBUZ 3;
+BA_ "GenSigStartValue" SG_ 1042 SWSBUZ 0;
+BA_ "GenSigSendType" SG_ 1042 LKAEXIST 7;
+BA_ "GenSigStartValue" SG_ 1042 LKAEXIST 0;
+BA_ "GenSigSendType" SG_ 1042 LKACTCD 3;
+BA_ "GenSigStartValue" SG_ 1042 LKACTCD 0;
+BA_ "GenSigSendType" SG_ 1042 LDAWRNC 7;
+BA_ "GenSigStartValue" SG_ 1042 LDAWRNC 0;
+BA_ "GenSigSendType" SG_ 1042 SCEXIST 7;
+BA_ "GenSigStartValue" SG_ 1042 SCEXIST 0;
+BA_ "GenSigSendType" SG_ 1042 VIBEXIST 7;
+BA_ "GenSigStartValue" SG_ 1042 VIBEXIST 0;
+BA_ "GenMsgSendType" BO_ 295 0;
+BA_ "GenMsgCycleTime" BO_ 295 16;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 295 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 295 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 295 0;
+BA_ "GenMsgTxConditionIg2On" BO_ 295 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 295 0;
+BA_ "GenSigSendType" SG_ 295 HVSYS 7;
+BA_ "GenSigStartValue" SG_ 295 HVSYS 0;
+BA_ "GenSigSendType" SG_ 295 TQRR 7;
+BA_ "GenSigStartValue" SG_ 295 TQRR 0;
+BA_ "GenSigSendType" SG_ 295 DTSGFR 7;
+BA_ "GenSigStartValue" SG_ 295 DTSGFR 0;
+BA_ "GenSigSendType" SG_ 295 DTSGRR 7;
+BA_ "GenSigStartValue" SG_ 295 DTSGRR 0;
+BA_ "GenSigSendType" SG_ 295 TQFR 7;
+BA_ "GenSigStartValue" SG_ 295 TQFR 0;
+BA_ "GenSigSendType" SG_ 295 SFTP_FS 7;
+BA_ "GenSigStartValue" SG_ 295 SFTP_FS 0;
+BA_ "GenSigSendType" SG_ 295 HVMRAFR 7;
+BA_ "GenSigStartValue" SG_ 295 HVMRAFR 0;
+BA_ "GenSigSendType" SG_ 295 EHVF02SM 7;
+BA_ "GenSigFuncType" SG_ 295 EHVF02SM 7;
+BA_ "GenMsgSendType" BO_ 278 0;
+BA_ "GenMsgCycleTime" BO_ 278 24;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 278 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 278 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 278 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 278 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 278 0;
+BA_ "GenSigSendType" SG_ 278 AOR 7;
+BA_ "GenSigStartValue" SG_ 278 AOR 0;
+BA_ "GenSigSendType" SG_ 278 HV_ACCP 7;
+BA_ "GenSigStartValue" SG_ 278 HV_ACCP 0;
+BA_ "GenSigSendType" SG_ 278 B_PDLF 7;
+BA_ "GenSigStartValue" SG_ 278 B_PDLF 0;
+BA_ "GenSigSendType" SG_ 278 FV116 7;
+BA_ "GenSigStartValue" SG_ 278 FV116 0;
+BA_ "GenSigSendType" SG_ 278 KZK116 7;
+BA_ "GenMsgSendType" BO_ 375 0;
+BA_ "GenMsgCycleTime" BO_ 375 32;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 375 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 375 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 375 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 375 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 375 0;
+BA_ "GenSigSendType" SG_ 375 ACCREQ 7;
+BA_ "GenSigStartValue" SG_ 375 ACCREQ 0;
+BA_ "GenSigSendType" SG_ 375 RQBH 7;
+BA_ "GenSigStartValue" SG_ 375 RQBH 1;
+BA_ "GenSigSendType" SG_ 375 ACCSTBK 7;
+BA_ "GenSigStartValue" SG_ 375 ACCSTBK 0;
+BA_ "GenSigSendType" SG_ 375 ACCSTAT 7;
+BA_ "GenSigStartValue" SG_ 375 ACCSTAT 0;
+BA_ "GenSigSendType" SG_ 375 BHOK 7;
+BA_ "GenSigStartValue" SG_ 375 BHOK 0;
+BA_ "GenSigSendType" SG_ 375 XPAIDLV 7;
+BA_ "GenSigStartValue" SG_ 375 XPAIDLV 1;
+BA_ "GenSigSendType" SG_ 375 PLOCKF 7;
+BA_ "GenSigStartValue" SG_ 375 PLOCKF 0;
+BA_ "GenSigSendType" SG_ 375 FV177 7;
+BA_ "GenSigStartValue" SG_ 375 FV177 0;
+BA_ "GenSigSendType" SG_ 375 KZK177 7;
+BA_ "GenMsgSendType" BO_ 374 0;
+BA_ "GenMsgCycleTime" BO_ 374 32;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 374 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 374 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 374 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 374 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 374 0;
+BA_ "GenSigSendType" SG_ 374 XLDR 7;
+BA_ "GenSigStartValue" SG_ 374 XLDR 0;
+BA_ "GenSigSendType" SG_ 374 XACCACT 7;
+BA_ "GenSigStartValue" SG_ 374 XACCACT 0;
+BA_ "GenSigSendType" SG_ 374 STPBZ 7;
+BA_ "GenSigStartValue" SG_ 374 STPBZ 0;
+BA_ "GenSigSendType" SG_ 374 XPAIDL 7;
+BA_ "GenSigStartValue" SG_ 374 XPAIDL 1;
+BA_ "GenSigSendType" SG_ 374 SPDSTAT 7;
+BA_ "GenSigStartValue" SG_ 374 SPDSTAT 0;
+BA_ "GenSigSendType" SG_ 374 SM176 7;
+BA_ "GenSigFuncType" SG_ 374 SM176 7;
+BA_ "GenMsgSendType" BO_ 252 0;
+BA_ "GenMsgCycleTime" BO_ 252 1000;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 252 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 252 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 252 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 252 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 252 0;
+BA_ "GenSigSendType" SG_ 252 B_TC 3;
+BA_ "GenSigStartValue" SG_ 252 B_TC 0;
+BA_ "GenSigSendType" SG_ 252 B_ICC 3;
+BA_ "GenSigStartValue" SG_ 252 B_ICC 0;
+BA_ "GenSigSendType" SG_ 252 B_CCWG 3;
+BA_ "GenSigStartValue" SG_ 252 B_CCWG 0;
+BA_ "GenSigSendType" SG_ 252 B_STPE 3;
+BA_ "GenSigStartValue" SG_ 252 B_STPE 0;
+BA_ "GenSigSendType" SG_ 252 CHAW_BZR 3;
+BA_ "GenSigStartValue" SG_ 252 CHAW_BZR 0;
+BA_ "GenSigSendType" SG_ 252 CHAWID 3;
+BA_ "GenSigStartValue" SG_ 252 CHAWID 0;
+BA_ "GenSigSendType" SG_ 252 BOSLAMP 3;
+BA_ "GenSigStartValue" SG_ 252 BOSLAMP 0;
+BA_ "GenSigSendType" SG_ 252 BOSMINF 3;
+BA_ "GenSigStartValue" SG_ 252 BOSMINF 0;
+BA_ "GenSigSendType" SG_ 252 CSRDRVRF 3;
+BA_ "GenSigStartValue" SG_ 252 CSRDRVRF 0;
+BA_ "GenSigSendType" SG_ 252 GOSLAMP 3;
+BA_ "GenSigStartValue" SG_ 252 GOSLAMP 0;
+BA_ "GenSigSendType" SG_ 252 GOSMINF 3;
+BA_ "GenSigStartValue" SG_ 252 GOSMINF 0;
+BA_ "GenMsgSendType" BO_ 921 0;
+BA_ "GenMsgCycleTime" BO_ 921 1024;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 921 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 921 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 921 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 921 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 921 0;
+BA_ "GenSigSendType" SG_ 921 ACCBZR 3;
+BA_ "GenSigStartValue" SG_ 921 ACCBZR 0;
+BA_ "GenSigSendType" SG_ 921 B_SPU2 3;
+BA_ "GenSigStartValue" SG_ 921 B_SPU2 0;
+BA_ "GenSigSendType" SG_ 921 ACASID1 3;
+BA_ "GenSigStartValue" SG_ 921 ACASID1 0;
+BA_ "GenSigSendType" SG_ 921 ACASID2 3;
+BA_ "GenSigStartValue" SG_ 921 ACASID2 0;
+BA_ "GenSigSendType" SG_ 921 RACMSDSP 3;
+BA_ "GenSigStartValue" SG_ 921 RACMSDSP 0;
+BA_ "GenSigSendType" SG_ 921 RACACOPR 3;
+BA_ "GenSigStartValue" SG_ 921 RACACOPR 0;
+BA_ "GenSigSendType" SG_ 921 RACONDSP 3;
+BA_ "GenSigStartValue" SG_ 921 RACONDSP 0;
+BA_ "GenSigSendType" SG_ 921 ASLBZR 3;
+BA_ "GenSigStartValue" SG_ 921 ASLBZR 0;
+BA_ "GenSigSendType" SG_ 921 ACCOVSPD 3;
+BA_ "GenSigStartValue" SG_ 921 ACCOVSPD 0;
+BA_ "GenSigSendType" SG_ 921 B_LSP2 3;
+BA_ "GenSigStartValue" SG_ 921 B_LSP2 0;
+BA_ "GenSigSendType" SG_ 921 B_ASLSP2 3;
+BA_ "GenSigStartValue" SG_ 921 B_ASLSP2 0;
+BA_ "GenSigSendType" SG_ 921 CACCTRN 3;
+BA_ "GenSigStartValue" SG_ 921 CACCTRN 0;
+BA_ "GenSigSendType" SG_ 921 CACCINF 3;
+BA_ "GenSigStartValue" SG_ 921 CACCINF 0;
+BA_ "GenSigSendType" SG_ 921 CACCFR2 3;
+BA_ "GenSigStartValue" SG_ 921 CACCFR2 0;
+BA_ "GenSigSendType" SG_ 921 CACCFR1 3;
+BA_ "GenSigStartValue" SG_ 921 CACCFR1 0;
+BA_ "GenSigSendType" SG_ 921 CACCFLD 3;
+BA_ "GenSigStartValue" SG_ 921 CACCFLD 0;
+BA_ "GenSigSendType" SG_ 921 CACCCM3 3;
+BA_ "GenSigStartValue" SG_ 921 CACCCM3 0;
+BA_ "GenSigSendType" SG_ 921 CACCCM2 3;
+BA_ "GenSigStartValue" SG_ 921 CACCCM2 0;
+BA_ "GenSigSendType" SG_ 921 CACCCM1 3;
+BA_ "GenSigStartValue" SG_ 921 CACCCM1 0;
+BA_ "GenSigSendType" SG_ 921 ASLRNG 3;
+BA_ "GenSigStartValue" SG_ 921 ASLRNG 0;
+BA_ "GenSigSendType" SG_ 921 RACCSTM2 3;
+BA_ "GenSigStartValue" SG_ 921 RACCSTM2 0;
+BA_ "GenSigSendType" SG_ 921 RACCSTM1 3;
+BA_ "GenSigStartValue" SG_ 921 RACCSTM1 0;
+BA_ "GenSigSendType" SG_ 921 RACEQPD 3;
+BA_ "GenSigStartValue" SG_ 921 RACEQPD 0;
+BA_ "GenSigSendType" SG_ 921 RACID 3;
+BA_ "GenSigStartValue" SG_ 921 RACID 0;
+BA_ "GenSigSendType" SG_ 921 RACSPDOP 3;
+BA_ "GenSigStartValue" SG_ 921 RACSPDOP 0;
+BA_ "GenMsgSendType" BO_ 467 0;
+BA_ "GenMsgCycleTime" BO_ 467 32;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 467 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 467 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 467 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 467 1;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 467 0;
+BA_ "GenSigSendType" SG_ 467 LCCW2 7;
+BA_ "GenSigStartValue" SG_ 467 LCCW2 0;
+BA_ "GenSigSendType" SG_ 467 WSTL2 7;
+BA_ "GenSigStartValue" SG_ 467 WSTL2 0;
+BA_ "GenSigSendType" SG_ 467 LCCHK 7;
+BA_ "GenSigStartValue" SG_ 467 LCCHK 0;
+BA_ "GenSigSendType" SG_ 467 XCCOK2 7;
+BA_ "GenSigStartValue" SG_ 467 XCCOK2 0;
+BA_ "GenSigSendType" SG_ 467 SLTACC 7;
+BA_ "GenSigStartValue" SG_ 467 SLTACC 0;
+BA_ "GenSigSendType" SG_ 467 LTME2 7;
+BA_ "GenSigStartValue" SG_ 467 LTME2 0;
+BA_ "GenSigSendType" SG_ 467 VM 7;
+BA_ "GenSigStartValue" SG_ 467 VM 0;
+BA_ "GenSigSendType" SG_ 467 INTG 7;
+BA_ "GenSigStartValue" SG_ 467 INTG 0;
+BA_ "GenSigSendType" SG_ 467 D2PRXMK 7;
+BA_ "GenSigStartValue" SG_ 467 D2PRXMK 0;
+BA_ "GenSigSendType" SG_ 467 SM1D3 7;
+BA_ "GenSigFuncType" SG_ 467 SM1D3 7;
+BA_ "GenMsgSendType" BO_ 608 0;
+BA_ "GenMsgCycleTime" BO_ 608 20;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 608 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 608 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 608 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 608 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 608 0;
+BA_ "GenSigSendType" SG_ 608 EPENABLE 7;
+BA_ "GenSigStartValue" SG_ 608 EPENABLE 0;
+BA_ "GenSigSendType" SG_ 608 EPSF 7;
+BA_ "GenSigStartValue" SG_ 608 EPSF 0;
+BA_ "GenSigSendType" SG_ 608 EST2F 7;
+BA_ "GenSigStartValue" SG_ 608 EST2F 1;
+BA_ "GenSigSendType" SG_ 608 IPSF 7;
+BA_ "GenSigStartValue" SG_ 608 IPSF 1;
+BA_ "GenSigSendType" SG_ 608 TRQSENSF 7;
+BA_ "GenSigStartValue" SG_ 608 TRQSENSF 1;
+BA_ "GenSigSendType" SG_ 608 EMIDP 7;
+BA_ "GenSigStartValue" SG_ 608 EMIDP 0;
+BA_ "GenSigSendType" SG_ 608 TRQSENS 7;
+BA_ "GenSigStartValue" SG_ 608 TRQSENS 0;
+BA_ "GenSigSendType" SG_ 608 EST2 7;
+BA_ "GenSigStartValue" SG_ 608 EST2 0;
+BA_ "GenSigSendType" SG_ 608 IPS 7;
+BA_ "GenSigStartValue" SG_ 608 IPS 0;
+BA_ "GenSigSendType" SG_ 608 EPS01SUM 7;
+BA_ "GenSigFuncType" SG_ 608 EPS01SUM 7;
+BA_ "GenMsgSendType" BO_ 610 0;
+BA_ "GenMsgCycleTime" BO_ 610 40;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 610 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 610 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 610 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 610 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 610 0;
+BA_ "GenSigSendType" SG_ 610 EPSFAIL 7;
+BA_ "GenSigStartValue" SG_ 610 EPSFAIL 0;
+BA_ "GenSigSendType" SG_ 610 EPSSPD 7;
+BA_ "GenSigStartValue" SG_ 610 EPSSPD 0;
+BA_ "GenSigSendType" SG_ 610 EPSFCM 7;
+BA_ "GenSigStartValue" SG_ 610 EPSFCM 0;
+BA_ "GenSigSendType" SG_ 610 EPSSTS0 7;
+BA_ "GenSigStartValue" SG_ 610 EPSSTS0 0;
+BA_ "GenSigSendType" SG_ 610 EPSACT 7;
+BA_ "GenSigStartValue" SG_ 610 EPSACT 0;
+BA_ "GenSigSendType" SG_ 610 EPSSYS 7;
+BA_ "GenSigStartValue" SG_ 610 EPSSYS 0;
+BA_ "GenSigSendType" SG_ 610 EPSFANG 7;
+BA_ "GenSigStartValue" SG_ 610 EPSFANG 0;
+BA_ "GenSigSendType" SG_ 610 EPSBKUP2 7;
+BA_ "GenSigStartValue" SG_ 610 EPSBKUP2 0;
+BA_ "GenSigSendType" SG_ 610 EPSACT3 7;
+BA_ "GenSigStartValue" SG_ 610 EPSACT3 0;
+BA_ "GenSigSendType" SG_ 610 EPSFCM3 7;
+BA_ "GenSigStartValue" SG_ 610 EPSFCM3 0;
+BA_ "GenSigSendType" SG_ 610 EPSSYS3 7;
+BA_ "GenSigStartValue" SG_ 610 EPSSYS3 0;
+BA_ "GenSigSendType" SG_ 610 EPSTG 7;
+BA_ "GenSigStartValue" SG_ 610 EPSTG 0;
+BA_ "GenSigSendType" SG_ 610 EPSCD 7;
+BA_ "GenSigStartValue" SG_ 610 EPSCD 0;
+BA_ "GenSigSendType" SG_ 610 EPSFTRQ 7;
+BA_ "GenSigStartValue" SG_ 610 EPSFTRQ 0;
+BA_ "GenSigSendType" SG_ 610 EPSBKUP 7;
+BA_ "GenSigStartValue" SG_ 610 EPSBKUP 0;
+BA_ "GenSigSendType" SG_ 610 EPSACT2 7;
+BA_ "GenSigStartValue" SG_ 610 EPSACT2 0;
+BA_ "GenSigSendType" SG_ 610 EPSFCM2 7;
+BA_ "GenSigStartValue" SG_ 610 EPSFCM2 0;
+BA_ "GenSigSendType" SG_ 610 EPSSYS2 7;
+BA_ "GenSigStartValue" SG_ 610 EPSSYS2 0;
+BA_ "GenSigSendType" SG_ 610 EPSBRUSH 7;
+BA_ "GenSigStartValue" SG_ 610 EPSBRUSH 0;
+BA_ "GenSigSendType" SG_ 610 DGRDF 7;
+BA_ "GenSigStartValue" SG_ 610 DGRDF 0;
+BA_ "GenSigSendType" SG_ 610 GRDF 7;
+BA_ "GenSigStartValue" SG_ 610 GRDF 0;
+BA_ "GenSigSendType" SG_ 610 ESTZ2E 7;
+BA_ "GenSigStartValue" SG_ 610 ESTZ2E 0;
+BA_ "GenSigSendType" SG_ 610 ESTZUDS 7;
+BA_ "GenSigStartValue" SG_ 610 ESTZUDS 0;
+BA_ "GenSigSendType" SG_ 610 EPSTEMP1 7;
+BA_ "GenSigStartValue" SG_ 610 EPSTEMP1 255;
+BA_ "GenSigSendType" SG_ 610 EPSTEMP2 7;
+BA_ "GenSigStartValue" SG_ 610 EPSTEMP2 255;
+BA_ "GenSigSendType" SG_ 610 EPS02SUM 7;
+BA_ "GenSigFuncType" SG_ 610 EPS02SUM 7;
+BA_ "GenMsgSendType" BO_ 37 0;
+BA_ "GenMsgCycleTime" BO_ 37 10;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 37 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 37 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 37 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 37 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 37 0;
+BA_ "GenSigSendType" SG_ 37 STS3 7;
+BA_ "GenSigSendType" SG_ 37 STS2 7;
+BA_ "GenSigStartValue" SG_ 37 STS2 0;
+BA_ "GenSigSendType" SG_ 37 STS1 7;
+BA_ "GenSigStartValue" SG_ 37 STS1 0;
+BA_ "GenSigSendType" SG_ 37 SSA 7;
+BA_ "GenSigSendType" SG_ 37 SSAS 7;
+BA_ "GenSigSendType" SG_ 37 SSAV 7;
+BA_ "GenSigStartValue" SG_ 37 SSAV 0;
+BA_ "GenSigSendType" SG_ 37 STDID 7;
+BA_ "GenSigStartValue" SG_ 37 STDID 1;
+BA_ "GenSigSendType" SG_ 37 SMKZ025 7;
+BA_ "GenSigSendType" SG_ 37 FV025 7;
+BA_ "GenSigStartValue" SG_ 37 FV025 0;
+BA_ "GenSigSendType" SG_ 37 KZK025 7;
+BA_ "GenMsgSendType" BO_ 170 0;
+BA_ "GenMsgCycleTime" BO_ 170 10;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 170 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 170 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 170 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 170 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 170 0;
+BA_ "GenSigSendType" SG_ 170 VXFREF 7;
+BA_ "GenSigStartValue" SG_ 170 VXFREF 0;
+BA_ "GenSigSendType" SG_ 170 VXFR 7;
+BA_ "GenSigStartValue" SG_ 170 VXFR 6767;
+BA_ "GenSigSendType" SG_ 170 VXFLEF 7;
+BA_ "GenSigStartValue" SG_ 170 VXFLEF 0;
+BA_ "GenSigSendType" SG_ 170 VXFL 7;
+BA_ "GenSigStartValue" SG_ 170 VXFL 6767;
+BA_ "GenSigSendType" SG_ 170 VXRREF 7;
+BA_ "GenSigStartValue" SG_ 170 VXRREF 0;
+BA_ "GenSigSendType" SG_ 170 VXRR 7;
+BA_ "GenSigStartValue" SG_ 170 VXRR 6767;
+BA_ "GenSigSendType" SG_ 170 VXRLEF 7;
+BA_ "GenSigStartValue" SG_ 170 VXRLEF 0;
+BA_ "GenSigSendType" SG_ 170 VXRL 7;
+BA_ "GenSigStartValue" SG_ 170 VXRL 6767;
+BA_ "GenMsgSendType" BO_ 257 0;
+BA_ "GenMsgCycleTime" BO_ 257 20;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 257 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 257 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 257 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 257 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 257 0;
+BA_ "GenSigSendType" SG_ 257 TRBRKSYS 7;
+BA_ "GenSigSendType" SG_ 257 FBA 7;
+BA_ "GenSigStartValue" SG_ 257 FBA 0;
+BA_ "GenSigSendType" SG_ 257 FABS 7;
+BA_ "GenSigStartValue" SG_ 257 FABS 0;
+BA_ "GenSigSendType" SG_ 257 FSTP 7;
+BA_ "GenSigStartValue" SG_ 257 FSTP 0;
+BA_ "GenSigSendType" SG_ 257 WSTP 7;
+BA_ "GenSigStartValue" SG_ 257 WSTP 0;
+BA_ "GenSigSendType" SG_ 257 PMCF 7;
+BA_ "GenSigStartValue" SG_ 257 PMCF 0;
+BA_ "GenSigSendType" SG_ 257 PMCS 7;
+BA_ "GenSigStartValue" SG_ 257 PMCS 1;
+BA_ "GenSigSendType" SG_ 257 PMC 7;
+BA_ "GenSigStartValue" SG_ 257 PMC 0;
+BA_ "GenSigSendType" SG_ 257 SM101 7;
+BA_ "GenSigFuncType" SG_ 257 SM101 7;
+BA_ "GenMsgSendType" BO_ 417 0;
+BA_ "GenMsgCycleTime" BO_ 417 50;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 417 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 417 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 417 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 417 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 417 0;
+BA_ "GenSigSendType" SG_ 417 FBKRLY 7;
+BA_ "GenSigStartValue" SG_ 417 FBKRLY 0;
+BA_ "GenSigSendType" SG_ 417 FVSCM 7;
+BA_ "GenSigStartValue" SG_ 417 FVSCM 1;
+BA_ "GenSigSendType" SG_ 417 FVSCSFT 7;
+BA_ "GenSigStartValue" SG_ 417 FVSCSFT 0;
+BA_ "GenSigSendType" SG_ 417 CCS 7;
+BA_ "GenSigStartValue" SG_ 417 CCS 0;
+BA_ "GenSigSendType" SG_ 417 TSVSC 7;
+BA_ "GenSigStartValue" SG_ 417 TSVSC 0;
+BA_ "GenSigSendType" SG_ 417 FVSCL 7;
+BA_ "GenSigStartValue" SG_ 417 FVSCL 0;
+BA_ "GenSigSendType" SG_ 417 BRSTOP 7;
+BA_ "GenSigStartValue" SG_ 417 BRSTOP 0;
+BA_ "GenSigSendType" SG_ 417 BRKON 7;
+BA_ "GenSigStartValue" SG_ 417 BRKON 0;
+BA_ "GenSigSendType" SG_ 417 ASLP 7;
+BA_ "GenSigStartValue" SG_ 417 ASLP 0;
+BA_ "GenSigSendType" SG_ 417 BRKABT3 7;
+BA_ "GenSigStartValue" SG_ 417 BRKABT3 0;
+BA_ "GenSigSendType" SG_ 417 BRKABT2 7;
+BA_ "GenSigStartValue" SG_ 417 BRKABT2 0;
+BA_ "GenSigSendType" SG_ 417 BRKABT1 7;
+BA_ "GenSigStartValue" SG_ 417 BRKABT1 0;
+BA_ "GenSigSendType" SG_ 417 GVC 7;
+BA_ "GenSigStartValue" SG_ 417 GVC 0;
+BA_ "GenSigSendType" SG_ 417 XGVCINV 7;
+BA_ "GenSigStartValue" SG_ 417 XGVCINV 0;
+BA_ "GenSigSendType" SG_ 417 CSRICM 7;
+BA_ "GenSigStartValue" SG_ 417 CSRICM 1;
+BA_ "GenSigSendType" SG_ 417 S07CNT 7;
+BA_ "GenSigStartValue" SG_ 417 S07CNT 0;
+BA_ "GenSigSendType" SG_ 417 PCSBRSTA 7;
+BA_ "GenSigStartValue" SG_ 417 PCSBRSTA 0;
+BA_ "GenSigSendType" SG_ 417 SM1A1 7;
+BA_ "GenSigFuncType" SG_ 417 SM1A1 7;
+BA_ "GenMsgSendType" BO_ 315 0;
+BA_ "GenMsgCycleTime" BO_ 315 30;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 315 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 315 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 315 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 315 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 315 0;
+BA_ "GenSigSendType" SG_ 315 ABSOPE 7;
+BA_ "GenSigStartValue" SG_ 315 ABSOPE 0;
+BA_ "GenSigSendType" SG_ 315 VDMACT 7;
+BA_ "GenSigStartValue" SG_ 315 VDMACT 0;
+BA_ "GenSigSendType" SG_ 315 MCBACT 7;
+BA_ "GenSigStartValue" SG_ 315 MCBACT 0;
+BA_ "GenSigSendType" SG_ 315 TSCACT 7;
+BA_ "GenSigStartValue" SG_ 315 TSCACT 0;
+BA_ "GenSigSendType" SG_ 315 TRCOPE 7;
+BA_ "GenSigStartValue" SG_ 315 TRCOPE 0;
+BA_ "GenSigSendType" SG_ 315 FHACACT2 7;
+BA_ "GenSigStartValue" SG_ 315 FHACACT2 0;
+BA_ "GenSigSendType" SG_ 315 FHACHOLD 7;
+BA_ "GenSigStartValue" SG_ 315 FHACHOLD 0;
+BA_ "GenSigSendType" SG_ 315 BAEX 7;
+BA_ "GenSigStartValue" SG_ 315 BAEX 0;
+BA_ "GenSigSendType" SG_ 315 VSCACT 7;
+BA_ "GenSigStartValue" SG_ 315 VSCACT 0;
+BA_ "GenSigSendType" SG_ 315 SM13B 7;
+BA_ "GenSigFuncType" SG_ 315 SM13B 7;
+BA_ "GenMsgSendType" BO_ 215 0;
+BA_ "GenMsgCycleTime" BO_ 215 20;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 215 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 215 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 215 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 215 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 215 0;
+BA_ "GenSigSendType" SG_ 215 SP1S 7;
+BA_ "GenSigStartValue" SG_ 215 SP1S 1;
+BA_ "GenSigSendType" SG_ 215 GVSPDINV 7;
+BA_ "GenSigStartValue" SG_ 215 GVSPDINV 0;
+BA_ "GenSigSendType" SG_ 215 SP1P 7;
+BA_ "GenSigStartValue" SG_ 215 SP1P 0;
+BA_ "GenSigSendType" SG_ 215 SP1 7;
+BA_ "GenSigStartValue" SG_ 215 SP1 0;
+BA_ "GenSigSendType" SG_ 215 GVSPD 7;
+BA_ "GenSigStartValue" SG_ 215 GVSPD 0;
+BA_ "GenSigSendType" SG_ 215 SMKZ0D7 7;
+BA_ "GenSigSendType" SG_ 215 FV0D7 7;
+BA_ "GenSigStartValue" SG_ 215 FV0D7 0;
+BA_ "GenSigSendType" SG_ 215 KZK0D7 7;
+BA_ "GenMsgSendType" BO_ 264 0;
+BA_ "GenMsgCycleTime" BO_ 264 20;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 264 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 264 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 264 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 264 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 264 0;
+BA_ "GenSigSendType" SG_ 264 DVS0PCS 7;
+BA_ "GenSigStartValue" SG_ 264 DVS0PCS 0;
+BA_ "GenSigSendType" SG_ 264 PBALEVEL 7;
+BA_ "GenSigStartValue" SG_ 264 PBALEVEL 0;
+BA_ "GenSigSendType" SG_ 264 SM108 7;
+BA_ "GenSigFuncType" SG_ 264 SM108 7;
+BA_ "GenMsgSendType" BO_ 1056 0;
+BA_ "GenMsgCycleTime" BO_ 1056 1000;
+BA_ "GenMsgTxConditionPlusBOn" BO_ 1056 0;
+BA_ "GenMsgTxConditionAccOn" BO_ 1056 0;
+BA_ "GenMsgTxConditionIg1On" BO_ 1056 1;
+BA_ "GenMsgTxConditionIg2On" BO_ 1056 0;
+BA_ "GenMsgTxConditionSpecialOn" BO_ 1056 0;
+BA_ "GenSigSendType" SG_ 1056 YR1Z 7;
+BA_ "GenSigStartValue" SG_ 1056 YR1Z 0;
+BA_ "GenSigSendType" SG_ 1056 YR2Z 7;
+BA_ "GenSigStartValue" SG_ 1056 YR2Z 0;
+BA_ "GenSigSendType" SG_ 1056 GL1Z 7;
+BA_ "GenSigStartValue" SG_ 1056 GL1Z 0;
+BA_ "GenSigSendType" SG_ 1056 GL2Z 7;
+BA_ "GenSigStartValue" SG_ 1056 GL2Z 0;
+BA_ "GenSigSendType" SG_ 1056 YRGSDIR 7;
+BA_ "GenSigSendType" SG_ 1056 GLZS 7;
+BA_ "GenSigStartValue" SG_ 1056 GLZS 1;
+BA_ "GenSigSendType" SG_ 1056 YRZF 7;
+BA_ "GenSigStartValue" SG_ 1056 YRZF 0;
+BA_ "GenSigSendType" SG_ 1056 YRZS 7;
+BA_ "GenSigStartValue" SG_ 1056 YRZS 1;
+BA_ "GenSigSendType" SG_ 1056 YRZKS 7;
+BA_ "GenSigStartValue" SG_ 1056 YRZKS 0;
+BA_ "GenSigSendType" SG_ 1056 VSC08SUM 7;
+BA_ "GenSigFuncType" SG_ 1056 VSC08SUM 7;

@@ -65,6 +65,10 @@ class HudRenderer(Widget):
     self.speed: float = 0.0
     self.v_ego_cluster_seen: bool = False
 
+    # Seat control display
+    self.seat_control_command: str = "NEUTRAL"
+    self.seat_control_source: str = "None"
+
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_medium: rl.Font = gui_app.font(FontWeight.MEDIUM)
@@ -99,8 +103,63 @@ class HudRenderer(Widget):
     speed_conversion = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
     self.speed = max(0.0, v_ego * speed_conversion)
 
+    # Update seat control command (you'll need to get this from your control system)
+    self._update_seat_control_state()
+
+  def _update_seat_control_state(self) -> None:
+    """Update seat control command state."""
+    # Get seat control data from messaging system
+    sm = ui_state.sm
+
+    try:
+      # Check if seatControl is in the SubMaster
+      if 'seatControl' not in sm.updated:
+        self.seat_control_command = "NO_SERVICE"
+        self.seat_control_source = "Missing"
+        return
+
+      # Check if we have seat control data
+      if sm.updated.get('seatControl'):
+        seat_control = sm['seatControl']
+
+        # Map Cap'n Proto enum strings to display strings
+        command_mapping = {
+          'neutral': "NEUTRAL",
+          'forward': "FORWARD",
+          'back': "BACK",
+          'mildLeft': "MILD_LEFT",
+          'mildRight': "MILD_RIGHT",
+          'hardLeft': "HARD_LEFT",
+          'hardRight': "HARD_RIGHT"
+        }
+
+        # Map Cap'n Proto enum strings to display strings
+        source_mapping = {
+          'none': "None",
+          'stop': "Stop",
+          'accelerate': "Accelerate",
+          'curve': "Curve",
+          'turn': "Turn"
+        }
+
+        # Get the actual enum string values from the message
+        cmd_val = str(seat_control.command)
+        src_val = str(seat_control.source)
+
+        self.seat_control_command = command_mapping.get(cmd_val, f"UNK_{cmd_val}")
+        self.seat_control_source = source_mapping.get(src_val, f"UNK_{src_val}")
+      # If no new data, keep the existing command (don't change anything)
+      # This prevents flickering by maintaining the last known command
+
+    except Exception as e:
+      self.seat_control_command = "ERROR"
+      self.seat_control_source = "Exception"
+
   def _render(self, rect: rl.Rectangle) -> None:
     """Render HUD elements to the screen."""
+    # Update state before rendering
+    self._update_state()
+
     # Draw the header background
     rl.draw_rectangle_gradient_v(
       int(rect.x),
@@ -115,6 +174,7 @@ class HudRenderer(Widget):
       self._draw_set_speed(rect)
 
     self._draw_current_speed(rect)
+    self._draw_seat_control_command(rect)
 
     button_x = rect.x + rect.width - UI_CONFIG.border_size - UI_CONFIG.button_size
     button_y = rect.y + UI_CONFIG.border_size
@@ -177,3 +237,49 @@ class HudRenderer(Widget):
     unit_text_size = measure_text_cached(self._font_medium, unit_text, FONT_SIZES.speed_unit)
     unit_pos = rl.Vector2(rect.x + rect.width / 2 - unit_text_size.x / 2, 290 - unit_text_size.y / 2)
     rl.draw_text_ex(self._font_medium, unit_text, unit_pos, FONT_SIZES.speed_unit, 0, COLORS.white_translucent)
+
+  def _draw_seat_control_command(self, rect: rl.Rectangle) -> None:
+    """Draw the seat control command display."""
+    # Position the seat control display on the right side, below the experimental button
+    x = rect.x + rect.width - UI_CONFIG.border_size - 250
+    y = rect.y + UI_CONFIG.border_size + UI_CONFIG.button_size + 20
+    width = 240
+    height = 80
+
+    # Draw background box
+    seat_control_rect = rl.Rectangle(x, y, width, height)
+    rl.draw_rectangle_rounded(seat_control_rect, 0.15, 20, COLORS.black_translucent)
+    rl.draw_rectangle_rounded_lines_ex(seat_control_rect, 0.15, 20, 2, COLORS.border_translucent)
+
+    # Draw "SEAT" label
+    label_text = "SEAT"
+    label_size = measure_text_cached(self._font_semi_bold, label_text, 24)
+    label_pos = rl.Vector2(x + (width - label_size.x) / 2, y + 8)
+    rl.draw_text_ex(self._font_semi_bold, label_text, label_pos, 24, 0, COLORS.grey)
+
+    # Draw command text
+    command_text = self.seat_control_command
+    command_size = measure_text_cached(self._font_bold, command_text, 28)
+    command_pos = rl.Vector2(x + (width - command_size.x) / 2, y + 35)
+
+    # Color based on command type
+    command_color = COLORS.white
+    if command_text == "NEUTRAL":
+      command_color = COLORS.grey
+    elif command_text in ["MILD_LEFT", "MILD_RIGHT"]:
+      command_color = COLORS.engaged
+    elif command_text in ["HARD_LEFT", "HARD_RIGHT"]:
+      command_color = rl.Color(255, 165, 0, 255)  # Orange
+    elif command_text == "FORWARD":
+      command_color = rl.Color(0, 255, 0, 255)    # Green
+    elif command_text == "BACK":
+      command_color = rl.Color(255, 0, 0, 255)    # Red
+
+    rl.draw_text_ex(self._font_bold, command_text, command_pos, 28, 0, command_color)
+
+    # Draw source text (optional)
+    if self.seat_control_source != "None":
+      source_text = f"({self.seat_control_source})"
+      source_size = measure_text_cached(self._font_medium, source_text, 16)
+      source_pos = rl.Vector2(x + (width - source_size.x) / 2, y + 60)
+      rl.draw_text_ex(self._font_medium, source_text, source_pos, 16, 0, COLORS.dark_grey)

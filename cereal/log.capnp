@@ -2613,7 +2613,7 @@ struct Event {
     backupManagerSP @113 :Custom.BackupManagerSP;
     carStateSP @114 :Custom.CarStateSP;
     liveMapDataSP @115 :Custom.LiveMapDataSP;
-    customReserved9 @116 :Custom.CustomReserved9;
+    seatControl @116 :Custom.SeatControl;
     customReserved10 @136 :Custom.CustomReserved10;
     customReserved11 @137 :Custom.CustomReserved11;
     customReserved12 @138 :Custom.CustomReserved12;

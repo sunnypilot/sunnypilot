@@ -164,9 +164,19 @@ void ConsoleUI::updateStatus() {
   auto [status_str, status_color] = status_text[status];
   write_item(0, 0, "STATUS:    ", status_str, "      ", false, status_color);
   auto cur_ts = replay->routeDateTime() + (int)replay->currentSeconds();
-  char *time_string = ctime(&cur_ts);
+  char buf[32] = "unknown";
+  if (cur_ts >= 0) {
+    char *ts = ctime(&cur_ts);
+    if (ts) {
+      // ctime() includes trailing newline; strip
+      strncpy(buf, ts, sizeof(buf)-1);
+      buf[sizeof(buf)-1] = '\0';
+      char *nl = strchr(buf, '\n');
+      if (nl) *nl = '\0';
+    }
+  }
   std::string current_segment = " - " + std::to_string((int)(replay->currentSeconds() / 60));
-  write_item(0, 25, "TIME:  ", time_string, current_segment, true);
+  write_item(0, 25, "TIME: ", buf, current_segment, true);
 
   auto p = sm["liveParameters"].getLiveParameters();
   write_item(1, 0, "STIFFNESS: ", util::string_format("%.2f %%", p.getStiffnessFactor() * 100), "  ");

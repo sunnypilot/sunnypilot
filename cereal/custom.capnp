@@ -235,7 +235,28 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
   roadName @5 :Text;
 }
 
-struct CustomReserved9 @0xa1680744031fdb2d {
+struct SeatControl @0xa1680744031fdb2d {
+  command @0 :SeatControlCommand;
+  source @1 :SeatControlSource;
+  timestamp @2 :UInt64;
+
+  enum SeatControlCommand {
+    neutral @0;
+    forward @1;
+    back @2;
+    mildLeft @3;
+    mildRight @4;
+    hardLeft @5;
+    hardRight @6;
+  }
+
+  enum SeatControlSource {
+    none @0;
+    stop @1;
+    accelerate @2;
+    curve @3;
+    turn @4;
+  }
 }
 
 struct CustomReserved10 @0xcb9fd56c7057593a {

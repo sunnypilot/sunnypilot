@@ -43,6 +43,7 @@ class UIState:
         "managerState",
         "selfdriveState",
         "longitudinalPlan",
+        "seatControl",
       ]
     )
 
