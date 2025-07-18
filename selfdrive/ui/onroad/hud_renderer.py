@@ -241,26 +241,26 @@ class HudRenderer(Widget):
   def _draw_seat_control_command(self, rect: rl.Rectangle) -> None:
     """Draw the seat control command display."""
     # Position the seat control display on the right side, below the experimental button
-    x = rect.x + rect.width - UI_CONFIG.border_size - 250
+    x = rect.x + rect.width - UI_CONFIG.border_size - 320
     y = rect.y + UI_CONFIG.border_size + UI_CONFIG.button_size + 20
-    width = 240
-    height = 80
+    width = 310
+    height = 120
 
     # Draw background box
     seat_control_rect = rl.Rectangle(x, y, width, height)
     rl.draw_rectangle_rounded(seat_control_rect, 0.15, 20, COLORS.black_translucent)
-    rl.draw_rectangle_rounded_lines_ex(seat_control_rect, 0.15, 20, 2, COLORS.border_translucent)
+    rl.draw_rectangle_rounded_lines_ex(seat_control_rect, 0.15, 20, 3, COLORS.border_translucent)
 
     # Draw "SEAT" label
     label_text = "SEAT"
-    label_size = measure_text_cached(self._font_semi_bold, label_text, 24)
-    label_pos = rl.Vector2(x + (width - label_size.x) / 2, y + 8)
-    rl.draw_text_ex(self._font_semi_bold, label_text, label_pos, 24, 0, COLORS.grey)
+    label_size = measure_text_cached(self._font_semi_bold, label_text, 32)
+    label_pos = rl.Vector2(x + (width - label_size.x) / 2, y + 12)
+    rl.draw_text_ex(self._font_semi_bold, label_text, label_pos, 32, 0, COLORS.grey)
 
     # Draw command text
     command_text = self.seat_control_command
-    command_size = measure_text_cached(self._font_bold, command_text, 28)
-    command_pos = rl.Vector2(x + (width - command_size.x) / 2, y + 35)
+    command_size = measure_text_cached(self._font_bold, command_text, 38)
+    command_pos = rl.Vector2(x + (width - command_size.x) / 2, y + 50)
 
     # Color based on command type
     command_color = COLORS.white
@@ -275,11 +275,11 @@ class HudRenderer(Widget):
     elif command_text == "BACK":
       command_color = rl.Color(255, 0, 0, 255)    # Red
 
-    rl.draw_text_ex(self._font_bold, command_text, command_pos, 28, 0, command_color)
+    rl.draw_text_ex(self._font_bold, command_text, command_pos, 38, 0, command_color)
 
     # Draw source text (optional)
     if self.seat_control_source != "None":
       source_text = f"({self.seat_control_source})"
-      source_size = measure_text_cached(self._font_medium, source_text, 16)
-      source_pos = rl.Vector2(x + (width - source_size.x) / 2, y + 60)
-      rl.draw_text_ex(self._font_medium, source_text, source_pos, 16, 0, COLORS.dark_grey)
+      source_size = measure_text_cached(self._font_medium, source_text, 20)
+      source_pos = rl.Vector2(x + (width - source_size.x) / 2, y + 90)
+      rl.draw_text_ex(self._font_medium, source_text, source_pos, 20, 0, COLORS.dark_grey)
