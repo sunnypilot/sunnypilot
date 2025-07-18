@@ -57,6 +57,7 @@ class AbstractControlSP : public AbstractControl {
   Q_OBJECT
 
 public:
+  ~AbstractControlSP();
   void setDescription(const QString &desc) override {
     if (description) description->setText(desc);
   }
@@ -89,6 +90,10 @@ public slots:
     AbstractControl::setVisible(_visible);
   }
 
+  static void RegisterAdvancedControl(AbstractControlSP *ctrl);
+  static void UnregisterAdvancedControl(AbstractControlSP *ctrl);
+  static void UpdateAllAdvancedControls();
+
 protected:
   AbstractControlSP(const QString &title, const QString &desc = "", const QString &icon = "", QWidget *parent = nullptr, bool advancedControl = false);
   void hideEvent(QHideEvent *e) override;
@@ -100,6 +105,7 @@ protected:
 
 private:
   Params params;
+  static std::vector<AbstractControlSP*> advanced_controls_;
 };
 
 // AbstractControlSP_SELECTOR

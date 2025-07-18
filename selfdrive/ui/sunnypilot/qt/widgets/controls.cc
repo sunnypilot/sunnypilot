@@ -30,9 +30,24 @@ QFrame *vertical_space(int height, QWidget *parent) {
 }
 
 // AbstractControlSP
+std::vector<AbstractControlSP*> AbstractControlSP::advanced_controls_;
+AbstractControlSP::~AbstractControlSP() { UnregisterAdvancedControl(this); }
+
+void AbstractControlSP::RegisterAdvancedControl(AbstractControlSP *ctrl) { advanced_controls_.push_back(ctrl); }
+
+void AbstractControlSP::UnregisterAdvancedControl(AbstractControlSP *ctrl) {
+  advanced_controls_.erase(std::remove(advanced_controls_.begin(), advanced_controls_.end(), ctrl), advanced_controls_.end());
+}
+
+void AbstractControlSP::UpdateAllAdvancedControls() {
+  bool visibility = Params().getBool("ShowAdvancedControls");
+  advanced_controls_.erase(std::remove(advanced_controls_.begin(), advanced_controls_.end(), nullptr), advanced_controls_.end());
+  for (auto *ctrl : advanced_controls_) ctrl->setVisible(visibility);
+}
 
 AbstractControlSP::AbstractControlSP(const QString &title, const QString &desc, const QString &icon, QWidget *parent, bool advancedControl)
     : AbstractControl(title, desc, icon, parent), isAdvancedControl(advancedControl) {
+  if (isAdvancedControl) RegisterAdvancedControl(this);
 
   main_layout = new QVBoxLayout(this);
   main_layout->setMargin(0);

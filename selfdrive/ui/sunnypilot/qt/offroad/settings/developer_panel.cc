@@ -12,6 +12,12 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   showAdvancedControls = new ParamControlSP("ShowAdvancedControls", tr("Show Advanced Controls"), tr("Toggle visibility of advanced sunnypilot controls.\nThis only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state."), "");
   addItem(showAdvancedControls);
 
+  QObject::connect(showAdvancedControls, &ParamControlSP::toggleFlipped, this, [=](bool) {
+    AbstractControlSP::UpdateAllAdvancedControls();
+    updateToggles(!uiState()->scene.started);
+  });
+  showAdvancedControls->showDescription();
+
   // Github Runner Toggle
   enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
@@ -37,4 +43,5 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
   DeveloperPanel::showEvent(event);
   updateToggles(!uiState()->scene.started);
+  AbstractControlSP::UpdateAllAdvancedControls();
 }
