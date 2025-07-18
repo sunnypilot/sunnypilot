@@ -164,6 +164,9 @@ procs += [
   # mapd
   NativeProcess("mapd", Paths.mapd_root(), [MAPD_PATH], always_run),
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
+
+  # seat control
+  PythonProcess("seat_control", "sunnypilot_dev_msync.seat_control_service", always_run),
 ]
 
 if os.path.exists("./github_runner.sh"):

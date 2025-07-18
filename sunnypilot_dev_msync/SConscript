@@ -1,0 +1,4 @@
+Import('env')
+
+# No specific build targets needed for Python modules
+# The files will be available through PYTHONPATH
