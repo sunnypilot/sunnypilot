@@ -1056,6 +1056,10 @@ The default software delay value is 0.2</source>
         <source>Enable this to allow dynamic model output parsing on all models produced after September, 2024. The affects of this toggle have been noted to make Gas and Brake controls noticeably smoother.</source>
         <translation>启用此功能，允许在2024年9月之后生产的所有模型上进行动态模型输出解析。此切换功能的效果已被注意到，使油门和刹车控制明显更平滑。</translation>
     </message>
+    <message>
+        <source>Enable this to allow potentially smoother Gas and Brake controls on all models produced after September, 2024.</source>
+        <translation>启用此功能，可让2024年9月后生产的所有车型实现更平稳的油门和刹车控制。</translation>
+    </message>
 </context>
 <context>
     <name>MultiOptionDialog</name>
