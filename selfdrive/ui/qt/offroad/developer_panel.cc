@@ -45,22 +45,6 @@ DeveloperPanel::DeveloperPanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(experimentalLongitudinalToggle);
 
-  enableGithubRunner = new ParamControl("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
-  addItem(enableGithubRunner);
-
-  // error log button
-  errorLogBtn = new ButtonControl(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
-  connect(errorLogBtn, &ButtonControl::clicked, [=]() {
-    QFileInfo file("/data/community/crashes/error.log");
-    QString text;
-    if (file.exists()) {
-      text = "<b>" + file.lastModified().toString("dd-MMM-yyyy hh:mm:ss ").toUpper() + "</b><br><br>";
-    }
-    text += QString::fromStdString(util::read_file("/data/community/crashes/error.log"));
-    ConfirmationDialog::rich(text, this);
-  });
-  addItem(errorLogBtn);
-
   // Joystick and longitudinal maneuvers should be hidden on release branches
   is_release = params.getBool("IsReleaseBranch");
 
@@ -109,8 +93,6 @@ void DeveloperPanel::updateToggles(bool _offroad) {
   experimentalLongitudinalToggle->refresh();
 
   // Handle specific controls visibility for release branches
-  enableGithubRunner->setVisible(!is_release);
-  errorLogBtn->setVisible(!is_release);
   joystickToggle->setVisible(!is_release);
 
   offroad = _offroad;
