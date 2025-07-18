@@ -5,7 +5,6 @@
 #else
 #include "selfdrive/ui/qt/offroad/settings.h"
 #endif
-#include <QFileInfo>
 class DeveloperPanel : public ListWidget {
   Q_OBJECT
 public:
