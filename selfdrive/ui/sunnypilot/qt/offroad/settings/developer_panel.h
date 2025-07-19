@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include <QFileInfo>
+
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
 class DeveloperPanelSP : public DeveloperPanel {
