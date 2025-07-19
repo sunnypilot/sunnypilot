@@ -41,6 +41,8 @@ private:
   cereal::ModelManagerSP::Reader model_manager;
   cereal::ModelManagerSP::DownloadStatus download_status{};
   cereal::ModelManagerSP::DownloadStatus prev_download_status{};
+  void clearModelCache();
+  double calculateCacheSize();
 
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;
@@ -64,6 +66,8 @@ private:
   bool is_onroad = false;
 
   ButtonControlSP *currentModelLblBtn;
+  ParamControlSP *lagd_toggle_control;
+  OptionControlSP *delay_control;
   QProgressBar *supercomboProgressBar;
   QFrame *supercomboFrame;
   QProgressBar *navigationProgressBar;
@@ -73,5 +77,6 @@ private:
   QProgressBar *policyProgressBar;
   QFrame *policyFrame;
   Params params;
+  ButtonControlSP *clearModelCacheBtn;
 
 };

@@ -12,7 +12,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
   connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
     paramsRefresh();
   });
-  
+
   main_layout = new QStackedLayout(this);
   ListWidgetSP *list = new ListWidgetSP(this, false);
 
@@ -30,6 +30,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     },
   };
 
+  // Add regular toggles first
   for (auto &[param, title, desc, icon, needs_restart] : toggle_defs) {
     auto toggle = new ParamControlSP(param, title, desc, icon, this);
 
@@ -53,9 +54,20 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     param_watcher->addParam(param);
   }
 
+  // Visuals: Display Metrics below Chevron
+  std::vector<QString> chevron_info_settings_texts{tr("Off"), tr("Distance"), tr("Speed"), tr("Time"), tr("All")};
+  chevron_info_settings = new ButtonParamControlSP(
+    "ChevronInfo", tr("Display Metrics Below Chevron"), tr("Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control)."),
+    "",
+    chevron_info_settings_texts,
+    200);
+  chevron_info_settings->showDescription();
+  list->addItem(chevron_info_settings);
+  param_watcher->addParam("ChevronInfo");
+
   sunnypilotScroller = new ScrollViewSP(list, this);
   vlayout->addWidget(sunnypilotScroller);
-  
+
   main_layout->addWidget(sunnypilotScreen);
 }
 
@@ -66,5 +78,9 @@ void VisualsPanel::paramsRefresh() {
 
   for (auto toggle : toggles) {
     toggle.second->refresh();
+  }
+
+  if (chevron_info_settings) {
+    chevron_info_settings->refresh();
   }
 }
