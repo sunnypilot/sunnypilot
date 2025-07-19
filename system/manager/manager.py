@@ -83,6 +83,15 @@ def manager_init() -> None:
     ("VibeFollowPersonalityEnabled", "0"),
     ("AccelPersonality", "1"),
 
+
+    ("SpeedLimitControl", "0"),
+    ("SpeedLimitControlPolicy", "3"),
+    ("SpeedLimitEngageType", "0"),
+    ("SpeedLimitOffsetType", "0"),
+    ("SpeedLimitValueOffset", "0"),
+    ("SpeedLimitWarningType", "0"),
+    ("SpeedLimitWarningOffsetType", "0"),
+    ("SpeedLimitWarningValueOffset", "0"),
   ]
 
   # device boot mode
