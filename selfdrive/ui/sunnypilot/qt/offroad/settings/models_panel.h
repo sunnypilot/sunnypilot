@@ -42,6 +42,7 @@ private:
   cereal::ModelManagerSP::DownloadStatus download_status{};
   cereal::ModelManagerSP::DownloadStatus prev_download_status{};
   void clearModelCache();
+  double calculateCacheSize();
 
   bool canContinueOnMeteredDialog() {
     if (!is_metered) return true;

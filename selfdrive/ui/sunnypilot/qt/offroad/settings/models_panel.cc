@@ -329,6 +329,8 @@ void ModelsPanel::updateLabels() {
     delay_control->setLabel(QString::number(value, 'f', 2) + "s");
     delay_control->showDescription();
   }
+
+  clearModelCacheBtn->setValue(QString::number(calculateCacheSize(), 'f', 2) + " MB");
 }
 
 /**
@@ -378,4 +380,20 @@ void ModelsPanel::clearModelCache() {
       }
     });
     }
+}
+
+double ModelsPanel::calculateCacheSize() {
+  QFuture<qint64> future_ModelCacheSize = QtConcurrent::run([=]() {
+
+    QDir model_dir(QString::fromStdString(Path::model_root()));
+    QFileInfoList model_files = model_dir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+    qint64 totalSize = 0;
+    for (const QFileInfo &model_file : model_files) {
+        if (model_file.isFile()) {
+            totalSize += model_file.size();
+        }
+    }
+    return totalSize;
+  });
+  return static_cast<double>(future_ModelCacheSize) / (1024.0 * 1024.0);
 }
