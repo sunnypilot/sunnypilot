@@ -196,11 +196,12 @@ class ModelManagerSP:
 
     # Get list of files used by active model bundle
     active_files = []
-    for model in self.active_bundle.models:
-      if hasattr(model, 'artifact') and model.artifact.fileName:
-        active_files.append(model.artifact.fileName)
-      if hasattr(model, 'metadata') and model.metadata.fileName:
-        active_files.append(model.metadata.fileName)
+    if self.active_bundle is not None: # When the default model is active
+      for model in self.active_bundle.models:
+        if hasattr(model, 'artifact') and model.artifact.fileName:
+          active_files.append(model.artifact.fileName)
+        if hasattr(model, 'metadata') and model.metadata.fileName:
+          active_files.append(model.metadata.fileName)
 
     # Remove all files except active ones
     model_dir = Paths.model_root()
@@ -210,7 +211,7 @@ class ModelManagerSP:
           file_path = os.path.join(model_dir, filename)
           if os.path.isfile(file_path):
             os.remove(file_path)
-      cloudlog.info(f"Model cache cleared, keeping active model files: {self.active_bundle.displayName}")
+      cloudlog.info("Model cache cleared, keeping active model files")
     except Exception as e:
       cloudlog.exception(f"Error clearing model cache: {str(e)}")
 
