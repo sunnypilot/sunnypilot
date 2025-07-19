@@ -25,8 +25,13 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   // Error log button
   errorLogBtn = new ButtonControlSP(tr("Error Log"), tr("VIEW"), tr("View the error log for sunnypilot crashes."));
   connect(errorLogBtn, &ButtonControlSP::clicked, [=]() {
-    std::string txt = util::read_file("/data/community/crashes/error.log");
-    ConfirmationDialog::rich(QString::fromStdString(txt), this);
+    QFileInfo file("/data/community/crashes/error.log");
+    QString text;
+    if (file.exists()) {
+      text = "<b>" + file.lastModified().toString("dd-MMM-yyyy hh:mm:ss ").toUpper() + "</b><br><br>";
+    }
+    text += QString::fromStdString(util::read_file("/data/community/crashes/error.log"));
+    ConfirmationDialog::rich(text, this);
   });
   addItem(errorLogBtn);
 
