@@ -50,6 +50,8 @@ def manager_init() -> None:
     ("BlindSpot", "0"),
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
+    ("Brightness", "0"),
+    ("ChevronInfo", "0"),
     ("CustomAccIncrementsEnabled", "0"),
     ("CustomAccLongPressIncrement", "5"),
     ("CustomAccShortPressIncrement", "1"),
@@ -65,7 +67,6 @@ def manager_init() -> None:
     ("MadsUnifiedEngagementMode", "1"),
     ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "1800"),
-    ("Brightness", "0"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
