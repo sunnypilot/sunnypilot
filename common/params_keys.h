@@ -5,8 +5,8 @@
 
 inline static std::unordered_map<std::string, uint32_t> keys = {
     {"AccessToken", CLEAR_ON_MANAGER_START | DONT_LOG},
-    {"AdbEnabled", PERSISTENT},
-    {"AlwaysOnDM", PERSISTENT},
+    {"AdbEnabled", PERSISTENT | BACKUP},
+    {"AlwaysOnDM", PERSISTENT | BACKUP},
     {"ApiCache_Device", PERSISTENT},
     {"ApiCache_FirehoseStats", PERSISTENT},
     {"AssistNowToken", PERSISTENT},
@@ -78,7 +78,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"LocationFilterInitialState", PERSISTENT},
     {"LongitudinalManeuverMode", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"LongitudinalPersonality", PERSISTENT | BACKUP},
-    {"NetworkMetered", PERSISTENT},
+    {"NetworkMetered", PERSISTENT | BACKUP},
     {"ObdMultiplexingChanged", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"ObdMultiplexingEnabled", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"Offroad_BadNvme", CLEAR_ON_MANAGER_START},
@@ -124,15 +124,15 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // --- sunnypilot params --- //
     {"ApiCache_DriveStats", PERSISTENT},
-    {"AutoLaneChangeBsmDelay", PERSISTENT},
-    {"AutoLaneChangeTimer", PERSISTENT},
+    {"AutoLaneChangeBsmDelay", PERSISTENT | BACKUP},
+    {"AutoLaneChangeTimer", PERSISTENT | BACKUP},
     {"BlinkerMinLateralControlSpeed", PERSISTENT | BACKUP},
     {"BlinkerPauseLateralControl", PERSISTENT | BACKUP},
     {"Brightness", PERSISTENT | BACKUP},
     {"CarParamsSP", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
-    {"CarPlatformBundle", PERSISTENT},
+    {"CarPlatformBundle", PERSISTENT | BACKUP},
     {"ChevronInfo", PERSISTENT | BACKUP},
     {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
     {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
@@ -178,9 +178,9 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"BackupManager_RestoreVersion", PERSISTENT},
 
     // sunnypilot car specific params
-    {"HyundaiLongitudinalTuning", PERSISTENT},
+    {"HyundaiLongitudinalTuning", PERSISTENT | BACKUP},
 
-    {"DynamicExperimentalControl", PERSISTENT},
+    {"DynamicExperimentalControl", PERSISTENT | BACKUP},
     {"BlindSpot", PERSISTENT | BACKUP},
 
     // model panel params
