@@ -48,7 +48,8 @@ class LatControlTorqueExtBase(LagdToggle):
     LagdToggle.__init__(self)
     self.model_v2 = None
     self.model_valid = False
-    self.use_steering_angle = lac_torque.use_steering_angle
+    self.torque_params = lac_torque.torque_params
+    self.use_steering_angle = lac_torque.torque_params.useSteeringAngle
 
     self.actual_lateral_jerk: float = 0.0
     self.lateral_jerk_setpoint: float = 0.0
@@ -56,7 +57,6 @@ class LatControlTorqueExtBase(LagdToggle):
     self.lookahead_lateral_jerk: float = 0.0
 
     self.torque_from_lateral_accel = lac_torque.torque_from_lateral_accel
-    self.torque_params = lac_torque.torque_params
 
     self._ff = 0.0
     self._pid_log = None
