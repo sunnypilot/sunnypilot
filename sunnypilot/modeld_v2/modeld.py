@@ -54,10 +54,10 @@ class ModelState:
       raise
 
     model_bundle = get_active_bundle()
-    self.generation = model_bundle.generation
+    self.generation = model_bundle.generation if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides}
 
-    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".2"))
+    self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
 
@@ -85,6 +85,10 @@ class ModelState:
       self.temporal_idxs = np.arange(step_size, step_size * (num_elements + 1), step_size)[::-1]
       self.desire_reshape_dims = (self.numpy_inputs['desire'].shape[0], self.numpy_inputs['desire'].shape[1], -1,
                                   self.numpy_inputs['desire'].shape[2])
+
+  @property
+  def mlsim(self) -> bool:
+    return bool(self.generation is not None and self.generation >= 11)
 
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
                 inputs: dict[str, np.ndarray], prepare_only: bool) -> dict[str, np.ndarray] | None:
@@ -151,7 +155,7 @@ class ModelState:
       self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
       self.full_prev_desired_curv[0,-1,:] = outputs['desired_curvature'][0, :]
       self.numpy_inputs[input_name_prev][:] = self.full_prev_desired_curv[0, self.temporal_idxs]
-      if self.generation == 11:
+      if self.mlsim:
         self.numpy_inputs[input_name_prev][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
     else:
       length = outputs['desired_curvature'][0].size
@@ -165,7 +169,7 @@ class ModelState:
                                                      action_t=long_action_t)
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
 
-    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.generation)
+    desired_curvature = get_curvature_from_output(model_output, v_ego, lat_action_t, self.mlsim)
     if v_ego > self.MIN_LAT_CONTROL_SPEED:
       desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, self.LAT_SMOOTH_SECONDS)
     else:

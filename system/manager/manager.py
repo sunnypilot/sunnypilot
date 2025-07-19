@@ -58,6 +58,7 @@ def manager_init() -> None:
     ("DeviceBootMode", "0"),
     ("DisableUpdates", "0"),
     ("DynamicExperimentalControl", "0"),
+    ("DynamicModeldOutputs", "0"),
     ("HyundaiLongitudinalTuning", "0"),
     ("InteractivityTimeout", "0"),
     ("LagdToggle", "1"),
