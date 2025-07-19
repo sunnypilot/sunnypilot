@@ -7,6 +7,17 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
 
 DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(parent) {
+
+  // Advanced Controls Toggle
+  showAdvancedControls = new ParamControlSP("ShowAdvancedControls", tr("Show Advanced Controls"), tr("Toggle visibility of advanced sunnypilot controls.\nThis only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state."), "");
+  addItem(showAdvancedControls);
+
+  QObject::connect(showAdvancedControls, &ParamControlSP::toggleFlipped, this, [=](bool) {
+    AbstractControlSP::UpdateAllAdvancedControls();
+    updateToggles(!uiState()->scene.started);
+  });
+  showAdvancedControls->showDescription();
+
   // Github Runner Toggle
   enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
   addItem(enableGithubRunner);
@@ -57,11 +68,13 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
     : tr("Quickboot mode requires updates to be disabled.<br>Enable 'Disable Updates' in the Software panel first."));
 
   enableGithubRunner->setVisible(!is_release);
-  errorLogBtn->setVisible(!is_release && !is_tested);
+  errorLogBtn->setVisible(!is_release);
+  showAdvancedControls->setEnabled(true);
 }
 
 void DeveloperPanelSP::showEvent(QShowEvent *event) {
   DeveloperPanel::showEvent(event);
   updateToggles(!uiState()->scene.started);
+  AbstractControlSP::UpdateAllAdvancedControls();
   prebuiltToggle->showDescription();
 }
