@@ -22,7 +22,7 @@ from openpilot.common.spinner import Spinner
 from openpilot.system.version import is_prebuilt
 import openpilot.system.sentry as sentry
 
-VERSION = 'v1.9.0'
+VERSION = 'v1.10.0'
 URL = f"https://github.com/pfeiferj/openpilot-mapd/releases/download/{VERSION}/mapd"
 
 
