@@ -51,7 +51,7 @@ def manager_init() -> None:
     ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
     ("BlinkerPauseLateralControl", "0"),
     ("Brightness", "0"),
-    ("ChevronInfo", "0"),
+    ("ChevronInfo", "4"),
     ("CustomAccIncrementsEnabled", "0"),
     ("CustomAccLongPressIncrement", "5"),
     ("CustomAccShortPressIncrement", "1"),
