@@ -25,6 +25,12 @@ struct ModularAssistiveDrivingSystem {
   }
 }
 
+struct LeadData {
+  distance @0 :Float32;
+  relSpeed @1 :Float32;
+  visible @2 :Bool;
+}
+
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
 }
@@ -173,10 +179,8 @@ struct CarParamsSP @0x80ae746ee2596b11 {
 
 struct CarControlSP @0xa5cd762cd951a455 {
   mads @0 :ModularAssistiveDrivingSystem;
-  leadDistance @1 :Float32;
-  leadRelSpeed @2 :Float32;
-  leadVisible @3 :Bool;
-  params @4 :List(Param);
+  params @1 :List(Param);
+  leadData @2 :LeadData;
 
   struct Param {
     key @0 :Text;
