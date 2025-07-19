@@ -19,6 +19,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
 from openpilot.system.hardware.hw import Paths
+from openpilot.sunnypilot.mapd.mapd_installer import MapdInstallManager, VERSION
 
 # PFEIFER - MAPD {{
 params = Params()
@@ -115,8 +116,8 @@ def update_osm_db() -> None:
   if not mem_params.get("LastGPSPosition"):
     mem_params.put("LastGPSPosition", "{}")
 
-
 def main_thread():
+  MapdInstallManager.update_installed_version(VERSION)
   config_realtime_process([0, 1, 2, 3], 5)
 
   rk = Ratekeeper(1, print_delay_threshold=None)
