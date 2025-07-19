@@ -361,24 +361,7 @@ void ModelsPanel::clearModelCache() {
   if (showConfirmationDialog(
     content,
     tr("Clear Cache"))) {
-    QtConcurrent::run([=]() {
-      QStringList activeFiles;
-      for (const auto &model : model_manager.getActiveBundle().getModels()) {
-        if (model.hasArtifact())
-          activeFiles << QString::fromStdString(model.getArtifact().getFileName());
-        if (model.hasMetadata())
-          activeFiles << QString::fromStdString(model.getMetadata().getFileName());
-      }
-
-      QDir model_dir(QString::fromStdString(Path::model_root()));
-      QStringList files = model_dir.entryList();
-      foreach (const QString &s, activeFiles) {
-       files.removeAll(s);
-      }
-      for (const QString& file : files) {
-        QFile::remove(model_dir.filePath(file));
-      }
-    });
+      params.putBool("ModelManager_ClearCache", true);
     }
 }
 
