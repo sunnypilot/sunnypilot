@@ -45,7 +45,7 @@ void DeveloperPanelSP::updateToggles(bool offroad) {
   bool disable_updates = params.getBool("DisableUpdates");
 
   prebuiltToggle->setVisible(!is_release && !is_tested && !is_development);
-  prebuiltToggle->setEnabled(offroad && disable_updates);
+  prebuiltToggle->setEnabled(disable_updates);
 
   params.putBool("QuickBootToggle", QFile::exists("/data/openpilot/prebuilt"));
   prebuiltToggle->refresh();
