@@ -8,10 +8,10 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
-#include "selfdrive/ui/qt/offroad/developer_panel.h"
 #include "selfdrive/ui/qt/offroad/firehose.h"
 #include "selfdrive/ui/sunnypilot/qt/network/networking.h"
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/device_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/software_panel.h"
@@ -91,7 +91,7 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
     PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
     PanelInfo("   " + tr("Vehicle"), new VehiclePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
     PanelInfo("   " + tr("Firehose"), new FirehosePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_firehose.svg"),
-    PanelInfo("   " + tr("Developer"), new DeveloperPanel(this), "../assets/icons/shell.png"),
+    PanelInfo("   " + tr("Developer"), new DeveloperPanelSP(this), "../assets/icons/shell.png"),
   };
 
   nav_btns = new QButtonGroup(this);
