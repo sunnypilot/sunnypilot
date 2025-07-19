@@ -2,7 +2,7 @@
   <tool name="uv Scons Build Debug" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
     <exec>
       <option name="COMMAND" value="bash" />
-      <option name="PARAMETERS" value="-c &quot;source .venv/bin/activate &amp;&amp; scons -u -j$(nproc) --compile_db --ccflags=\&quot;-fno-inline\&quot;&quot;" />
+      <option name="PARAMETERS" value="-c &quot;source .venv/bin/activate &amp;&amp; scons -u -j$(nproc) --ccflags=\&quot;-fno-inline\&quot;&quot;" />
       <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     </exec>
   </tool>
@@ -16,7 +16,7 @@
   <tool name="uv Scons Build Release" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
     <exec>
       <option name="COMMAND" value="bash" />
-      <option name="PARAMETERS" value="-c &quot;source .venv/bin/activate &amp;&amp; scons -u -j$(nproc) --compile_db&quot; " />
+      <option name="PARAMETERS" value="-c &quot;source .venv/bin/activate &amp;&amp; scons -u -j$(nproc)&quot; " />
       <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     </exec>
   </tool>
