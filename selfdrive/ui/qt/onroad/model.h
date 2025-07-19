@@ -34,6 +34,12 @@ protected:
   bool mapToScreen(float in_x, float in_y, float in_z, QPointF *out);
   void mapLineToPolygon(const cereal::XYZTData::Reader &line, float y_off, float z_off,
                         QPolygonF *pvd, int max_idx, bool allow_invert = true);
+  void drawLeadStatus(QPainter &painter, int height, int width);
+  void drawLeadStatusAtPosition(QPainter &painter,
+                             const cereal::RadarState::LeadData::Reader &lead_data,
+                             const QPointF &chevron_pos,
+                             int height, int width,
+                             const QString &label);
   void drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const QPointF &vd, const QRect &surface_rect);
   void update_leads(const cereal::RadarState::Reader &radar_state, const cereal::XYZTData::Reader &line);
   virtual void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead);
@@ -58,4 +64,9 @@ protected:
   QPointF lead_vertices[2] = {};
   Eigen::Matrix3f car_space_transform = Eigen::Matrix3f::Zero();
   QRectF clip_region;
+
+  float lead_status_alpha = 0.0f;
+  QPointF lead_status_pos;
+  QString lead_status_text;
+  QColor lead_status_color;
 };

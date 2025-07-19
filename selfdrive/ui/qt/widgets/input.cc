@@ -2,6 +2,7 @@
 
 #include <QPushButton>
 #include <QButtonGroup>
+#include <QScroller>
 
 #include "system/hardware/hw.h"
 #include "selfdrive/ui/qt/util.h"
@@ -329,6 +330,144 @@ MultiOptionDialog::MultiOptionDialog(const QString &prompt_text, const QStringLi
 
 QString MultiOptionDialog::getSelection(const QString &prompt_text, const QStringList &l, const QString &current, QWidget *parent) {
   MultiOptionDialog d(prompt_text, l, current, parent);
+  if (d.exec()) {
+    return d.selection;
+  }
+  return "";
+}
+
+TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items,
+                                   const QString &current, QWidget *parent) : DialogBase(parent) {
+  QFrame *container = new QFrame(this);
+  container->setStyleSheet(R"(
+    QFrame { background-color: #1B1B1B; }
+    #confirm_btn[enabled="false"] { background-color: #2B2B2B; }
+    #confirm_btn:enabled { background-color: #465BEA; }
+    #confirm_btn:enabled:pressed { background-color: #3049F4; }
+    QTreeWidget {
+      background-color: transparent;
+      border: none;
+    }
+    QTreeWidget::item {
+      height: 135;
+      padding: 0px 50px;
+      margin: 5px;
+      text-align: left;
+      font-size: 55px;
+      font-weight: 300;
+      border-radius: 10px;
+      background-color: #4F4F4F;
+      color: white;
+    }
+    QTreeWidget::item:selected {
+      background-color: #465BEA;
+    }
+    QTreeWidget::branch {
+      background-color: transparent;
+    }
+  )");
+
+  QVBoxLayout *main_layout = new QVBoxLayout(container);
+  main_layout->setContentsMargins(55, 50, 55, 50);
+
+  QLabel *title = new QLabel(prompt_text, this);
+  title->setStyleSheet("font-size: 70px; font-weight: 500;");
+  main_layout->addWidget(title, 0, Qt::AlignLeft | Qt::AlignTop);
+  main_layout->addSpacing(25);
+
+  treeWidget = new QTreeWidget(this);
+  treeWidget->setHeaderHidden(true);
+  treeWidget->setIndentation(50);
+  treeWidget->setExpandsOnDoubleClick(false); // Disable double-click expansion
+  treeWidget->setAnimated(true);
+  treeWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  treeWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  treeWidget->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+  treeWidget->setDragEnabled(false);
+  treeWidget->setMouseTracking(true);
+
+  // Connect single-click to expand/collapse
+  QObject::connect(treeWidget, &QTreeWidget::itemClicked, [=](QTreeWidgetItem *item, int) {
+    if (item->childCount() > 0) {
+      item->setExpanded(!item->isExpanded());
+      treeWidget->scrollToItem(item->child(0), QAbstractItemView::EnsureVisible);
+    }
+  });
+
+  QScroller::grabGesture(treeWidget->viewport(), QScroller::LeftMouseButtonGesture);
+
+  // Populate tree
+  QListIterator<QPair<QString, QStringList>> iter(items);
+  while (iter.hasNext()) {
+    QPair currItem = iter.next();
+    if (currItem.first.isEmpty()) {
+      for (const QString &item : currItem.second) {
+        QTreeWidgetItem *topLevel = new QTreeWidgetItem();
+        topLevel->setText(0, item);
+        topLevel->setFlags(topLevel->flags() | Qt::ItemIsSelectable);
+        treeWidget->addTopLevelItem(topLevel);
+        if (item == current) {
+          topLevel->setSelected(true);
+        }
+      }
+    } else {
+      QTreeWidgetItem *folderItem = new QTreeWidgetItem(treeWidget);
+      folderItem->setIcon(0, QIcon(QPixmap("../assets/icons/menu.png")));
+      folderItem->setText(0, "  " + currItem.first);
+      folderItem->setFlags(folderItem->flags() | Qt::ItemIsAutoTristate);
+      folderItem->setFlags(folderItem->flags() & ~Qt::ItemIsSelectable);
+
+      for (const QString &item : currItem.second)
+      {
+        QTreeWidgetItem *childItem = new QTreeWidgetItem(folderItem);
+        childItem->setText(0, item);
+        childItem->setFlags(childItem->flags() | Qt::ItemIsSelectable);
+
+        if (item == current) {
+          childItem->setSelected(true);
+          folderItem->setExpanded(true);
+        }
+      }
+    }
+  }
+
+  confirm_btn = new QPushButton(tr("Select"));
+  confirm_btn->setObjectName("confirm_btn");
+  confirm_btn->setEnabled(false);
+
+  QObject::connect(treeWidget, &QTreeWidget::itemSelectionChanged, [=]() {
+    QList<QTreeWidgetItem*> selectedItems = treeWidget->selectedItems();
+    if (!selectedItems.isEmpty()) {
+      selection = selectedItems.first()->text(0);
+      confirm_btn->setEnabled(selection != current);
+    }
+  });
+
+  ScrollView *scroll_view = new ScrollView(treeWidget, this);
+  scroll_view->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+  main_layout->addWidget(scroll_view);
+  main_layout->addSpacing(35);
+
+  // cancel + confirm buttons
+  QHBoxLayout *blayout = new QHBoxLayout;
+  main_layout->addLayout(blayout);
+  blayout->setSpacing(50);
+
+  QPushButton *cancel_btn = new QPushButton(tr("Cancel"));
+  QObject::connect(cancel_btn, &QPushButton::clicked, this, &ConfirmationDialog::reject);
+  QObject::connect(confirm_btn, &QPushButton::clicked, this, &ConfirmationDialog::accept);
+  blayout->addWidget(cancel_btn);
+  blayout->addWidget(confirm_btn);
+
+  QVBoxLayout *outer_layout = new QVBoxLayout(this);
+  outer_layout->setContentsMargins(50, 50, 50, 50);
+  outer_layout->addWidget(container);
+}
+
+QString TreeOptionDialog::getSelection(const QString &prompt_text, const QList<QPair<QString, QStringList>> &items,
+                                     const QString &current, QWidget *parent) {
+  TreeOptionDialog d(prompt_text, items, current, parent);
   if (d.exec()) {
     return d.selection;
   }

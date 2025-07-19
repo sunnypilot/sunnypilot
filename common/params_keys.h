@@ -99,9 +99,10 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"PandaSomResetTriggered", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"PandaSignatures", CLEAR_ON_MANAGER_START},
     {"PrimeType", PERSISTENT},
+    {"RecordAudio", PERSISTENT | BACKUP},
     {"RecordFront", PERSISTENT | BACKUP},
     {"RecordFrontLock", PERSISTENT},  // for the internal fleet
-    {"SecOCKey", PERSISTENT | DONT_LOG},  // Candidate for | BACKUP
+    {"SecOCKey", PERSISTENT | DONT_LOG | BACKUP},
     {"RouteCount", PERSISTENT},
     {"SnoozeUpdate", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"SshEnabled", PERSISTENT | BACKUP},
@@ -131,11 +132,13 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CarParamsSPCache", CLEAR_ON_MANAGER_START},
     {"CarParamsSPPersistent", PERSISTENT},
     {"CarPlatformBundle", PERSISTENT},
+    {"ChevronInfo", PERSISTENT | BACKUP},
     {"CustomAccIncrementsEnabled", PERSISTENT | BACKUP},
     {"CustomAccLongPressIncrement", PERSISTENT | BACKUP},
     {"CustomAccShortPressIncrement", PERSISTENT | BACKUP},
     {"DeviceBootMode", PERSISTENT | BACKUP},
     {"EnableGithubRunner", PERSISTENT | BACKUP},
+    {"InteractivityTimeout", PERSISTENT | BACKUP},
     {"MaxTimeOffroad", PERSISTENT | BACKUP},
     {"Brightness", PERSISTENT | BACKUP},
     {"ModelRunnerTypeCache", CLEAR_ON_ONROAD_TRANSITION},
@@ -178,6 +181,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
 
     // model panel params
     {"LagdToggle", PERSISTENT | BACKUP},
+    {"LagdToggleDesc", PERSISTENT},
+    {"LagdToggledelay", PERSISTENT | BACKUP},
 
     // mapd
     {"MapAdvisorySpeedLimit", CLEAR_ON_ONROAD_TRANSITION},
