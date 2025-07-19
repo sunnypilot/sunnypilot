@@ -74,6 +74,15 @@ def manager_init() -> None:
     ("QuickBootToggle", "0"),
     ("QuietMode", "0"),
     ("ShowAdvancedControls", "0" if build_metadata.tested_channel else "1"),
+
+    ("ToyotaAutoHold", "0"),
+    ("ToyotaEnhancedBsm", "0"),
+    ("ToyotaTSS2Long", "0"),
+    ("VibePersonalityEnabled", "0"),
+    ("VibeAccelPersonalityEnabled", "0"),
+    ("VibeFollowPersonalityEnabled", "0"),
+    ("AccelPersonality", "1"),
+
   ]
 
   # device boot mode
