@@ -19,11 +19,11 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
   showAdvancedControls->showDescription();
 
   // Github Runner Toggle
-  enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "");
+  enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "", this, true);
   addItem(enableGithubRunner);
 
   // Quickboot Mode Toggle
-  prebuiltToggle = new ParamControlSP("QuickBootToggle", tr("Enable Quickboot Mode"), tr(""), "");
+  prebuiltToggle = new ParamControlSP("QuickBootToggle", tr("Enable Quickboot Mode"), tr(""), "", this, true);
   addItem(prebuiltToggle);
 
   QObject::connect(prebuiltToggle, &ParamControl::toggleFlipped, [=](bool state) {
