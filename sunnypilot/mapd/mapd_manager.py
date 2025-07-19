@@ -15,6 +15,7 @@ import shutil
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper, config_realtime_process
+from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.selfdrived.alertmanager import set_offroad_alert
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
 from openpilot.system.hardware.hw import Paths
@@ -120,6 +121,14 @@ def main_thread():
 
   rk = Ratekeeper(1, print_delay_threshold=None)
   live_map_sp = OsmMapData()
+
+  # Create folder needed for OSM
+  try:
+    os.mkdir(Paths.mapd_root())
+  except FileExistsError:
+    pass
+  except PermissionError:
+    cloudlog.exception(f"mapd: failed to make {Paths.mapd_root()}")
 
   while True:
     show_alert = get_files_for_cleanup() and params.get_bool("OsmLocal")

@@ -17,6 +17,7 @@ from urllib.request import urlopen
 from cereal import messaging
 from openpilot.common.params import Params
 from openpilot.sunnypilot.mapd.mapd_manager import MAPD_PATH, MAPD_BIN_DIR
+from openpilot.system.hardware.hw import Paths
 from openpilot.common.spinner import Spinner
 from openpilot.system.version import is_prebuilt
 import openpilot.system.sentry as sentry
@@ -44,6 +45,8 @@ class MapdInstallManager:
 
   @staticmethod
   def ensure_directories_exist() -> None:
+    if not os.path.exists(Paths.mapd_root()):
+      os.makedirs(Paths.mapd_root())
     if not os.path.exists(MAPD_BIN_DIR):
       os.makedirs(MAPD_BIN_DIR)
 
