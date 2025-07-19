@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <QJsonDocument>
 #include <QStyle>
+#include <QtConcurrent/QtConcurrent>
+#include <QDir>
 
 #include "common/model.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
@@ -65,6 +67,11 @@ ModelsPanel::ModelsPanel(QWidget *parent) : QWidget(parent) {
     });
   connect(uiStateSP(), &UIStateSP::uiUpdate, this, &ModelsPanel::updateLabels);
   list->addItem(currentModelLblBtn);
+
+  clearModelCacheBtn = new ButtonControlSP(tr("Clear Model Cache"), tr("CLEAR"), "", this);
+  connect(clearModelCacheBtn, &ButtonControlSP::clicked, this, &ModelsPanel::clearModelCache);
+
+  list->addItem(clearModelCacheBtn);
 
   // Create progress bars for downloads
   supercomboProgressBar = createProgressBar(this);
@@ -341,4 +348,34 @@ void ModelsPanel::showResetParamsDialog() {
     params.remove("CalibrationParams");
     params.remove("LiveTorqueParameters");
   }
+}
+
+void ModelsPanel::clearModelCache() {
+  QString confirmMsg = tr("This will delete ALL downloaded models from the cache"
+                            "<br/><u>except the currently active model</u>."
+                            "<br/><br/>Are you sure you want to continue?");
+  QString content("<body><h2 style=\"text-align: center;\">" + tr("Driving Model Selector") + "</h2><br>"
+                "<p style=\"text-align: center; margin: 0 128px; font-size: 50px;\">" + confirmMsg + "</p></body>");
+  if (showConfirmationDialog(
+    content,
+    tr("Clear Cache"))) {
+    QtConcurrent::run([=]() {
+      QStringList activeFiles;
+      for (const auto &model : model_manager.getActiveBundle().getModels()) {
+        if (model.hasArtifact())
+          activeFiles << QString::fromStdString(model.getArtifact().getFileName());
+        if (model.hasMetadata())
+          activeFiles << QString::fromStdString(model.getMetadata().getFileName());
+      }
+
+      QDir model_dir(QString::fromStdString(Path::model_root()));
+      QStringList files = model_dir.entryList();
+      foreach (const QString &s, activeFiles) {
+       files.removeAll(s);
+      }
+      for (const QString& file : files) {
+        QFile::remove(model_dir.filePath(file));
+      }
+    });
+    }
 }
