@@ -1898,6 +1898,14 @@ This may take up to a minute.</source>
         <source>Select a branch</source>
         <translation>选择分支</translation>
     </message>
+    <message>
+        <source>Disable Updates</source>
+        <translation>禁用更新</translation>
+    </message>
+    <message>
+        <source>When enabled, software updates will be disabled. &lt;b&gt;This requires a reboot to take effect.&lt;/b&gt;</source>
+        <translation>当启用时，软件更新将被禁用。&lt;b&gt;这需要重启才能生效。&lt;/b&gt;</translation>
+    </message>
 </context>
 <context>
     <name>SshControl</name>
@@ -2226,6 +2234,34 @@ Data</source>
     <message>
         <source>Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has BSM supported.</source>
         <translation>启用此功能后，只要您的车辆支持盲点监测系统（BSM），当检测到盲区有车辆时将会显示警告。</translation>
+    </message>
+    <message>
+        <source>Display Metrics Below Chevron</source>
+        <translation>车标下方显示指标</translation>
+    </message>
+    <message>
+        <source>Display useful metrics below the chevron that tracks the lead car (only applicable to cars with openpilot longitudinal control).</source>
+        <translation>在跟踪前车的箭头下方显示有用的指标（仅适用于使用openpilot纵向控制的车辆）。</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Distance</source>
+        <translation>距离</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>速度</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>时间</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>全部</translation>
     </message>
 </context>
 <context>
@@ -2564,6 +2600,10 @@ Are you sure you want to delete all the maps?</source>
     <message>
         <source>Record and Upload Driver Camera</source>
         <translation>录制并上传驾驶员摄像头</translation>
+    </message>
+    <message>
+        <source>Record and Upload Microphone Audio</source>
+        <translation>录制并上传麦克风音频</translation>
     </message>
     <message>
         <source>Upload data from the driver facing camera and help improve the driver monitoring algorithm.</source>
