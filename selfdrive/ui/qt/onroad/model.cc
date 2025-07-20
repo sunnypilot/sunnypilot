@@ -423,7 +423,7 @@ void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
     }
 
     // Draw status for each lead vehicle under its chevron
-    if (has_lead_one) {
+    if (true) {
         drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
     }
 
@@ -444,6 +444,8 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
     auto &sm = *(s->sm);
     float v_ego = sm["carState"].getCarState().getVEgo();
 
+    int chevron_data = std::atoi(Params().get("ChevronInfo").c_str());
+
     // Calculate chevron size (same logic as drawLead)
     float sz = std::clamp((25 * 30) / (d_rel / 3 + 30), 15.0f, 30.0f) * 2.35;
 
@@ -457,28 +459,37 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
 
     QStringList text_lines;
 
-    // Use your chevron data logic TODOSP: params!
     const int chevron_types = 3;
-    //const int chevron_all = chevron_types + 1;  // All metrics not in use
+    const int chevron_all = chevron_types + 1;  // All metrics (value 4)
     QStringList chevron_text[chevron_types];
     int position;
     float val;
 
-    // Distance display (always show for primary lead)
-    position = 0;
-    val = std::max(0.0f, d_rel);
-    chevron_text[position].append(QString::number(val, 'f', 0) + " " + "m");
+    // Distance display (chevron_data == 1 or all)
+    if (chevron_data == 1 || chevron_data == chevron_all) {
+        position = 0;
+        val = std::max(0.0f, d_rel);
+        QString distance_unit = is_metric ? "m" : "ft";
+        if (!is_metric) {
+            val *= 3.28084f; // Convert meters to feet
+        }
+        chevron_text[position].append(QString::number(val, 'f', 0) + " " + distance_unit);
+    }
 
-    // Absolute velocity display (ego + relative)
-    position = 1;
-    val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
-    chevron_text[position].append(QString::number(val, 'f', 0) + " " + (is_metric ? "km/h" : "mph"));
+    // Absolute velocity display (chevron_data == 2 or all)
+    if (chevron_data == 2 || chevron_data == chevron_all) {
+        position = (chevron_data == 2) ? 0 : 1;
+        val = std::max(0.0f, (v_rel + v_ego) * (is_metric ? static_cast<float>(MS_TO_KPH) : static_cast<float>(MS_TO_MPH)));
+        chevron_text[position].append(QString::number(val, 'f', 0) + " " + (is_metric ? "km/h" : "mph"));
+    }
 
-    // Time-to-contact display
-    position = 2;
-    val = (d_rel > 0 && v_ego > 0) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
-    QString ttc_str = (val > 0 && val < 200) ? QString::number(val, 'f', 1) + "s" : "---";
-    chevron_text[position].append(ttc_str);
+    // Time-to-contact display (chevron_data == 3 or all)
+    if (chevron_data == 3 || chevron_data == chevron_all) {
+        position = (chevron_data == 3) ? 0 : 2;
+        val = (d_rel > 0 && v_ego > 0) ? std::max(0.0f, d_rel / v_ego) : 0.0f;
+        QString ttc_str = (val > 0 && val < 200) ? QString::number(val, 'f', 1) + "s" : "---";
+        chevron_text[position].append(ttc_str);
+    }
 
     // Collect all non-empty text lines
     for (int i = 0; i < chevron_types; ++i) {
@@ -528,7 +539,19 @@ void ModelRenderer::drawLeadStatusAtPosition(QPainter &painter,
                 } else {
                     text_color = QColor(80, 255, 120, (int)(255 * lead_status_alpha)); // Green - safe
                 }
-            } else {
+            }
+            // Enhanced color coding for time-to-contact
+            else if (text_lines[i].contains("s") && !text_lines[i].contains("---")) {
+                float ttc_val = text_lines[i].left(text_lines[i].length() - 1).toFloat();
+                if (ttc_val < 3.0f) {
+                    text_color = QColor(255, 80, 80, (int)(255 * lead_status_alpha)); // Red - urgent
+                } else if (ttc_val < 6.0f) {
+                    text_color = QColor(255, 200, 80, (int)(255 * lead_status_alpha)); // Yellow - caution
+                } else {
+                    text_color = QColor(0xff, 0xff, 0xff, (int)(255 * lead_status_alpha)); // White - safe
+                }
+            }
+            else {
                 text_color = QColor(0xff, 0xff, 0xff, (int)(255 * lead_status_alpha)); // White for other lines
             }
 

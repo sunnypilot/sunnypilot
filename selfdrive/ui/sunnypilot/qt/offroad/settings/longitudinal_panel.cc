@@ -38,20 +38,6 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
 
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LongitudinalPanel::refresh);
 
-  slcControl = new SpeedLimitControl(
-    "SpeedLimitControl",
-    tr("Speed Limit Control (SLC)"),
-    tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
-      "The maximum cruising speed will always be the MAX set speed."),
-    "",
-    this);
-  list->addItem(slcControl);
-
-  visionTurnSpeedControl = new ParamControlSP("VisionTurnSpeedControl",
-    tr("Vision Turn Speed Controller"),
-    tr("Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged."),
-    "../assets/offroad/icon_shell.png");
-  list->addItem(visionTurnSpeedControl);
 
   // Vibe Personality Controller
   vibePersonalityControl = new ParamControlSP("VibePersonalityEnabled",
@@ -81,6 +67,15 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     "../assets/offroad/icon_shell.png");
   list->addItem(vibeFollowPersonalityControl);
 
+  slcControl = new SpeedLimitControl(
+    "SpeedLimitControl",
+    tr("Speed Limit Control (SLC)"),
+    tr("When you engage ACC, you will be prompted to set the cruising speed to the speed limit of the road adjusted by the Offset and Source Policy specified, or the current driving speed. "
+      "The maximum cruising speed will always be the MAX set speed."),
+    "",
+    this);
+  list->addItem(slcControl);
+
   connect(slcControl, &SpeedLimitControl::slcSettingsButtonClicked, [=]() {
     cruisePanelScroller->setLastScrollPosition();
     main_layout->setCurrentWidget(slcScreen);
@@ -91,6 +86,11 @@ LongitudinalPanel::LongitudinalPanel(QWidget *parent) : QWidget(parent) {
     cruisePanelScroller->restoreScrollPosition();
     main_layout->setCurrentWidget(cruisePanelScreen);
   });
+  visionTurnSpeedControl = new ParamControlSP("VisionTurnSpeedControl",
+    tr("Vision Turn Speed Controller"),
+    tr("Also known as V-TSC, this controller automatically slows down for curvature while OP longitudinal is engaged."),
+    "../assets/offroad/icon_shell.png");
+  list->addItem(visionTurnSpeedControl);
 
   main_layout->addWidget(cruisePanelScreen);
   main_layout->addWidget(slcScreen);

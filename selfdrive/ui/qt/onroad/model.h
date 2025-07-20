@@ -77,6 +77,11 @@ protected:
   Eigen::Matrix3f car_space_transform = Eigen::Matrix3f::Zero();
   QRectF clip_region;
 
+  float lead_status_alpha = 0.0f;
+  QPointF lead_status_pos;
+  QString lead_status_text;
+  QColor lead_status_color;
+
   // Gauge configuration constants
   static constexpr qreal GAUGE_SIZE = 140.0;
   static constexpr qreal BACKGROUND_SIZE_MULTIPLIER = 1.4;
@@ -98,8 +103,4 @@ protected:
   //chevron
   float hysteretic_x = 0.0f;
   const float hysteresis_factor = 0.15f;
-  float lead_status_alpha = 0.0f;
-  QPointF lead_status_pos;
-  QString lead_status_text;
-  QColor lead_status_color;
 };
