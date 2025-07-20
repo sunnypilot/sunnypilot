@@ -50,7 +50,7 @@ void ModelRendererSP::drawPath(QPainter &painter, const cereal::ModelDataV2::Rea
   }
 
   bool rainbow = Params().getBool("RainbowMode");
-  float v_ego = sm["carState"].getCarState().getVEgo();
+  //float v_ego = sm["carState"].getCarState().getVEgo();
 
   if (rainbow) {
     // Simple time-based animation
