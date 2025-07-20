@@ -1,6 +1,6 @@
 [submodule "panda"]
   path = panda
-  url = https://github.com/sunnyhaibin/panda.git
+  url = https://github.com/sunnypilot/panda.git
 [submodule "opendbc"]
   path = opendbc_repo
   url = https://github.com/mouxangithub/opendbc.git
@@ -18,4 +18,4 @@
   url = https://github.com/tinygrad/tinygrad.git
 [submodule "sunnypilot/neural_network_data"]
   path = sunnypilot/neural_network_data
-  url = https://github.com/sunnypilot/neural-network-data.git
+  url = https://github.com/mouxangithub/neural-network-data.git
