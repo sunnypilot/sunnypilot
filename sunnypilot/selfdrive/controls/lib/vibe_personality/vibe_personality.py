@@ -17,17 +17,17 @@ AccelPersonality = custom.LongitudinalPlanSP.AccelerationPersonality
 MAX_ACCEL_PROFILES = {
   AccelPersonality.eco:       [2.00, 2.00, 1.32, 0.80, .54,  .46, .365, .317, .089],  # eco
   AccelPersonality.normal:    [2.00, 2.00, 1.42, 1.10, .65,  .56, .43, .36, .12],   # normal
-  AccelPersonality.sport:     [2.00, 2.00, 1.75, 1.45, .90,  .80, .53, .46, .20],   # sport
+  AccelPersonality.sport:     [2.00, 2.00, 1.70, 1.40, .80,  .70, .53, .46, .20],   # sport
 }
 MAX_ACCEL_BREAKPOINTS =       [0.,   6.,   9.,   11.,  16.,  20., 25., 30., 55.]
 
 # Braking profiles mapped to LongPersonality (relaxed/standard/aggressive)
 MIN_ACCEL_PROFILES = {
   LongPersonality.relaxed:    [-1.20, -1.20],  # gentler braking
-  LongPersonality.standard:   [-1.22, -1.22],  # normal braking
-  LongPersonality.aggressive: [-1.24, -1.24],  # more aggressive braking
+  LongPersonality.standard:   [-1.30, -1.30],  # normal braking
+  LongPersonality.aggressive: [-1.40, -1.40],  # more aggressive braking
 }
-MIN_ACCEL_BREAKPOINTS =       [0.,    40.]
+MIN_ACCEL_BREAKPOINTS =       [0., 50.]
 
 # Following Distance Profiles mapped to LongPersonality (relaxed/standard/aggressive)
 FOLLOW_DISTANCE_PROFILES = {
@@ -37,7 +37,7 @@ FOLLOW_DISTANCE_PROFILES = {
   },
   LongPersonality.standard: {
     'x_vel':  [0.,   19.7, 22.2, 40.],
-    'y_dist': [1.35, 1.35, 1.38, 1.38]  # normal following distance
+    'y_dist': [1.35, 1.35, 1.40, 1.40]  # normal following distance
   },
   LongPersonality.aggressive: {
     'x_vel':  [0.,   19.7, 22.2, 40.],
