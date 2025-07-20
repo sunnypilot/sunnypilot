@@ -121,7 +121,7 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
     <message>
         <source>s</source>
-        <translation></translation>
+        <translation>s</translation>
     </message>
     <message>
         <source>Off</source>
