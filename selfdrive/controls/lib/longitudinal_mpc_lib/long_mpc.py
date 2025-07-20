@@ -10,8 +10,6 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.modeld.constants import index_function
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
 
-#from openpilot.sunnypilot.selfdrive.controls.lib.accel_personality.accel_controller import AccelController
-#from openpilot.sunnypilot.selfdrive.controls.lib.dynamic_personality.dynamic_personality_controller import DynamicPersonalityController
 from openpilot.sunnypilot.selfdrive.controls.lib.vibe_personality.vibe_personality import VibePersonalityController
 
 if __name__ == '__main__':  # generating code
@@ -232,8 +230,6 @@ class LongitudinalMpc:
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.reset()
     self.source = SOURCES[2]
-    #self.accel_controller = AccelController()
-    #self.dynamic_personality_controller = DynamicPersonalityController()
     self.vibe_controller = VibePersonalityController()
 
   def reset(self):
@@ -340,16 +336,11 @@ class LongitudinalMpc:
     # Get following distance
     if self.vibe_controller.is_follow_enabled():
       t_follow = self.vibe_controller.get_follow_distance_multiplier(v_ego)
-      if t_follow is not None:
-        #print(f"[MPC DYNAMIC ___________] Using DYNAMIC t_follow: {t_follow:.3f}s (from vibe controller)")
-        pass
-      else:
+      if t_follow is None:
         # Fallback to stock behavior when vibe controller can't provide a value
         t_follow = get_T_FOLLOW(personality)
-        #print(f"[MPC FALLBACK ___________] Using FALLBACK t_follow: {t_follow:.3f}s (vibe controller returned None)")
     else:
       t_follow = get_T_FOLLOW(personality)
-      #print(f"[MPC STATIC ___________] Using STATIC t_follow: {t_follow:.3f}s (disabled personality)")
 
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
@@ -358,16 +349,12 @@ class LongitudinalMpc:
       accel_limits = self.vibe_controller.get_accel_limits(v_ego)
       if accel_limits is not None:
         min_accel = accel_limits[0]
-        #print(f"[MPC DYNAMIC ----------] Using DYNAMIC accel limits: {min_accel:.3f} m/s² (from vibe controller)")
       else:
         min_accel = CRUISE_MIN_ACCEL
-        #print(f"[MPC FALLBACK ----------] Using FALLBACK accel limits: {min_accel:.3f} m/s² (vibe controller returned None)")
     else:
       min_accel = CRUISE_MIN_ACCEL
-      #print(f"[MPC STATIC ----------] Using STATIC accel limits: {min_accel:.3f} m/s² (disabled min accel limit)")
 
     a_cruise_min = min_accel
-    # You might also want to use max_accel somewhere in your MPC constraints
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)

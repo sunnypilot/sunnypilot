@@ -423,7 +423,7 @@ void ModelRenderer::drawLeadStatus(QPainter &painter, int height, int width) {
     }
 
     // Draw status for each lead vehicle under its chevron
-    if (has_lead_one) {
+    if (true) {
         drawLeadStatusAtPosition(painter, lead_one, lead_vertices[0], height, width, "L1");
     }
 

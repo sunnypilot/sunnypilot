@@ -387,9 +387,10 @@ TreeOptionDialog::TreeOptionDialog(const QString &prompt_text, const QList<QPair
   treeWidget->setMouseTracking(true);
 
   // Connect single-click to expand/collapse
-  QObject::connect(treeWidget, &QTreeWidget::itemClicked, [](QTreeWidgetItem *item, int) {
+  QObject::connect(treeWidget, &QTreeWidget::itemClicked, [=](QTreeWidgetItem *item, int) {
     if (item->childCount() > 0) {
       item->setExpanded(!item->isExpanded());
+      treeWidget->scrollToItem(item->child(0), QAbstractItemView::EnsureVisible);
     }
   });
 

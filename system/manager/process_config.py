@@ -88,6 +88,9 @@ def is_stock_model(started, params, CP: car.CarParams) -> bool:
   """Check if the active model runner is stock."""
   return bool(get_active_model_runner(params, not started) == custom.ModelManagerSP.Runner.stock)
 
+def mapd_ready(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return bool(os.path.exists(Paths.mapd_root()))
+
 def or_(*fns):
   return lambda *args: operator.or_(*(fn(*args) for fn in fns))
 
@@ -162,7 +165,7 @@ procs += [
   PythonProcess("backup_manager", "sunnypilot.sunnylink.backups.manager", and_(only_offroad, sunnylink_ready_shim)),
 
   # mapd
-  NativeProcess("mapd", Paths.mapd_root(), [MAPD_PATH], always_run),
+  NativeProcess("mapd", Paths.mapd_root(), [MAPD_PATH], mapd_ready),
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 ]
 

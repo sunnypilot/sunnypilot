@@ -6,6 +6,7 @@
  */
 #pragma once
 #include <QFile>
+#include <QFileInfo>
 
 #include "selfdrive/ui/qt/offroad/developer_panel.h"
 
@@ -19,6 +20,7 @@ private:
   ButtonControlSP *errorLogBtn;
   ParamControlSP *prebuiltToggle;
   Params params;
+  ParamControlSP *showAdvancedControls;
 
 private slots:
   void updateToggles(bool offroad);
