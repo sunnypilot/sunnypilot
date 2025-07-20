@@ -1060,6 +1060,14 @@ The default software delay value is 0.2</source>
         <source>Enable this to allow potentially smoother Gas and Brake controls on all models produced after September, 2024.</source>
         <translation>启用此功能，可让2024年9月后生产的所有车型实现更平稳的油门和刹车控制。</translation>
     </message>
+    <message>
+        <source>Clear Model Cache</source>
+        <translation>清除模型缓存</translation>
+    </message>
+    <message>
+        <source>CLEAR</source>
+        <translation>清除</translation>
+    </message>
 </context>
 <context>
     <name>MultiOptionDialog</name>
