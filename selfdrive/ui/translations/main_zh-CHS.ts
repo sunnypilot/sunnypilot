@@ -177,6 +177,14 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>错误日志</translation>
     </message>
     <message>
+        <source>VIEW</source>
+        <translation>查看</translation>
+    </message>
+    <message>
+        <source>View the error log for sunnypilot crashes.</source>
+        <translation>查看 ​​sunnypilot​​ 崩溃的错误日志</translation>
+    </message>
+    <message>
         <source>Show Advanced Controls</source>
         <translation>显示高级控件</translation>
     </message>
@@ -1103,7 +1111,7 @@ The default software delay value is 0.2</source>
     </message>
     <message>
         <source>Clear Model Cache</source>
-        <translation>清除模型缓存</translation>
+        <translation>模型缓存</translation>
     </message>
     <message>
         <source>CLEAR</source>
@@ -1595,7 +1603,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>sunnylink</source>
-        <translation>阳光链接</translation>
+        <translation>阳光云端</translation>
     </message>
     <message>
         <source>Toggles</source>
@@ -1851,7 +1859,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>SUNNYLINK</source>
-        <translation>SUNNYLINK</translation>
+        <translation>阳光云端</translation>
     </message>
 </context>
 <context>
@@ -2455,7 +2463,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Enable sunnylink</source>
-        <translation>启用sunnylink</translation>
+        <translation>启用阳光云端</translation>
     </message>
     <message>
         <source>🎉Welcome back! We&apos;re excited to see you&apos;ve enabled sunnylink again! 🚀</source>
@@ -2463,7 +2471,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>👋Not going to lie, it&apos;s sad to see you disabled sunnylink 😢, but we&apos;ll be here when you&apos;re ready to come back 🎉.</source>
-        <translation>👋不瞒你说，看到你停用阳光链接我们挺难过的 😢，不过等你准备好回来时，我们随时欢迎 🎉。</translation>
+        <translation>👋不瞒你说，看到你停用阳光云端我们挺难过的 😢，不过等你准备好回来时，我们随时欢迎 🎉。</translation>
     </message>
     <message>
         <source>Device ID</source>
@@ -2768,7 +2776,7 @@ Are you sure you want to delete all the maps?</source>
     </message>
     <message>
         <source>Enable drive mode btn link</source>
-        <translation>启用驾驶模式按钮连接</translation>
+        <translation>启用驾驶模式按钮</translation>
     </message>
     <message>
         <source>Links cars drive mode btn with accel personalities based on personality (i.e., relaxed, standard, sport)</source>
