@@ -190,6 +190,18 @@ This only toggles the visibility of the controls; it does not toggle the actual 
         <source>Enable Quickboot Mode</source>
         <translation>启用快速启动模式</translation>
     </message>
+    <message>
+        <source>Enable Quickboot Mode</source>
+        <translation>启用快速启动模式</translation>
+    </message>
+    <message>
+        <source>Quickboot mode requires updates to be disabled.&lt;br&gt;Enable &apos;Disable Updates&apos; in the Software panel first.</source>
+        <translation>快速启动模式需要禁用更新。&lt;br&gt;请先在软件面板中启用&quot;禁用更新&quot;。</translation>
+    </message>
+    <message>
+        <source>When toggled on, this creates a prebuilt file to allow accelerated boot times. When toggled off, it immediately removes the prebuilt file so compilation of locally edited cpp files can be made. &lt;br&gt;&lt;br&gt;&lt;b&gt;To edit C++ files locally on device, you MUST first turn off this toggle so the changes can recompile.&lt;/b&gt;</source>
+        <translation>当开关打开时，这会创建一个预构建的文件以实现更快的启动时间。当开关关闭时，它会立即删除预构建文件，以便可以编译本地编辑的cpp文件。&lt;br&gt;&lt;br&gt;&lt;b&gt;要在设备上本地编辑C++文件，您必须首先关闭此开关，以便更改可以重新编译。&lt;/b&gt;</translation>
+    </message>
 </context>
 <context>
     <name>DeveloperPanel</name>
@@ -2775,7 +2787,7 @@ Are you sure you want to delete all the maps?</source>
         <translation>丰田：增强型盲点监测系统（BSM）</translation>
     </message>
     <message>
-        <source>Supports car that openpilot does not currently support such as the TSS-P/LSS, Prius TSS2, Lexus IS. This feature will allow sunnypilot to use the car's blind spot monitoring system to detect vehicles in the blind spot and alert the driver.</source>
+        <source>Supports car that openpilot does not currently support such as the TSS-P/LSS, Prius TSS2, Lexus IS. This feature will allow sunnypilot to use the car&apos;s blind spot monitoring system to detect vehicles in the blind spot and alert the driver.</source>
         <translation>支持目前OpenPilot尚不支持的车型，如TSS-P/LSS、普锐斯TSS2、雷克萨斯IS。该功能将允许Sunnypilot利用车辆的盲点监测系统来检测盲点中的车辆，并向驾驶员发出警报。</translation>
     </message>
     <message>
