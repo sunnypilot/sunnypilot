@@ -163,6 +163,35 @@ Please use caution when using this feature. Only use the blinker when traffic an
     </message>
 </context>
 <context>
+    <name>DeveloperPanelSP</name>
+    <message>
+        <source>Enable GitHub runner service</source>
+        <translation>启用 GitHub Runner 服务</translation>
+    </message>
+    <message>
+        <source>Enables or disables the github runner service.</source>
+        <translation>启用或禁用 GitHub Runner 服务</translation>
+    </message>
+    <message>
+        <source>Error Log</source>
+        <translation>错误日志</translation>
+    </message>
+    <message>
+        <source>Show Advanced Controls</source>
+        <translation>显示高级控件</translation>
+    </message>
+    <message>
+        <source>Toggle visibility of advanced sunnypilot controls.
+This only toggles the visibility of the controls; it does not toggle the actual control enabled/disabled state.</source>
+        <translation>切换高级SunnyPilot控件的可见性。
+这仅切换控件的可见性，不会切换实际控件的启用/禁用状态。</translation>
+    </message>
+    <message>
+        <source>Enable Quickboot Mode</source>
+        <translation>启用快速启动模式</translation>
+    </message>
+</context>
+<context>
     <name>DeveloperPanel</name>
     <message>
         <source>Joystick Debug Mode</source>
