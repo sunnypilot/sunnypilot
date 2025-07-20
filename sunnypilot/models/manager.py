@@ -178,6 +178,10 @@ class ModelManagerSP:
             finally:
               self.params.put("ModelManager_DownloadIndex", "")
 
+        if self.params.get("ModelManager_ClearCache", block=False, encoding="utf-8"):
+            self.clear_model_cache()
+            self.params.remove("ModelManager_ClearCache")
+
         self._report_status()
         rk.keep_time()
 
@@ -185,6 +189,31 @@ class ModelManagerSP:
         cloudlog.exception(f"Error in main thread: {str(e)}")
         rk.keep_time()
 
+  def clear_model_cache(self) -> None:
+    """
+    Clears the model cache directory of all files except those in the active model bundle.
+    """
+
+    # Get list of files used by active model bundle
+    active_files = []
+    if self.active_bundle is not None: # When the default model is active
+      for model in self.active_bundle.models:
+        if hasattr(model, 'artifact') and model.artifact.fileName:
+          active_files.append(model.artifact.fileName)
+        if hasattr(model, 'metadata') and model.metadata.fileName:
+          active_files.append(model.metadata.fileName)
+
+    # Remove all files except active ones
+    model_dir = Paths.model_root()
+    try:
+      for filename in os.listdir(model_dir):
+        if filename not in active_files:
+          file_path = os.path.join(model_dir, filename)
+          if os.path.isfile(file_path):
+            os.remove(file_path)
+      cloudlog.info("Model cache cleared, keeping active model files")
+    except Exception as e:
+      cloudlog.exception(f"Error clearing model cache: {str(e)}")
 
 def main():
   ModelManagerSP().main_thread()
