@@ -16,7 +16,10 @@ public:
 private:
   void update_model(const cereal::ModelDataV2::Reader &model, const cereal::RadarState::LeadData::Reader &lead) override;
   void drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, const QRect &rect) override;
-
+  void drawBreathingRainbow(QPainter &painter, const QRect &surface_rect, float time_offset);
+  void drawFlowingRainbow(QPainter &painter, const QRect &surface_rect, float time_offset, float v_ego);
+  void drawDynamicSpectrum(QPainter &painter, const QRect &surface_rect, float time_offset, float v_ego);
+  void drawPlasmaRainbow(QPainter &painter, const QRect &surface_rect, float time_offset, float v_ego);
   // Lead status display methods
   void drawLeadStatus(QPainter &painter, int height, int width);
   void drawLeadStatusAtPosition(QPainter &painter,
