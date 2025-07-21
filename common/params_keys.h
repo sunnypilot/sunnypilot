@@ -123,6 +123,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"Version", PERSISTENT},
 
     // --- sunnypilot params --- //
+    {"sunnypilot_ui", PERSISTENT},
+
     {"ApiCache_DriveStats", PERSISTENT},
     {"AutoLaneChangeBsmDelay", PERSISTENT | BACKUP},
     {"AutoLaneChangeTimer", PERSISTENT | BACKUP},

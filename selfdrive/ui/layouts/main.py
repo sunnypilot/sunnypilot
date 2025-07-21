@@ -8,6 +8,10 @@ from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
 from openpilot.system.ui.lib.widget import Widget
 
+from openpilot.common.params import Params
+if Params().get_bool("sunnypilot_ui"):
+  from openpilot.selfdrive.ui.sunnypilot.layouts.settings.settings import SettingsLayout
+
 
 class MainState(IntEnum):
   HOME = 0

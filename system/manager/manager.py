@@ -45,6 +45,8 @@ def manager_init() -> None:
   ]
 
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
+    ("sunnypilot_ui", "1"), # Use sunnypilot UI for raylib. Disable to use stock.
+
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "0"),
     ("BlindSpot", "0"),
