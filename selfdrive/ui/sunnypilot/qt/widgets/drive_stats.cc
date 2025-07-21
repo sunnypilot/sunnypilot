@@ -55,6 +55,17 @@ DriveStats::DriveStats(QWidget* parent) : QFrame(parent) {
     QString url = CommaApi::BASE_URL + "/v1.1/devices/" + *dongleId + "/stats";
     RequestRepeater* repeater = new RequestRepeater(this, url, "ApiCache_DriveStats", 30);
     QObject::connect(repeater, &RequestRepeater::requestDone, this, &DriveStats::parseResponse);
+  } else {
+    // 没有 dongleId，使用本地缓存或默认值
+    std::string cached = Params().get("ApiCache_DriveStats");
+    if (!cached.empty()) {
+      QString response = QString::fromStdString(cached);
+      parseResponse(response, true);
+    } else {
+      // 使用默认值
+      QString defaultJson = R"({"all": {"routes":0,"distance":0,"hours":0},"week": {"routes":0,"distance":0,"hours":0}})";
+      parseResponse(defaultJson, true);
+    }
   }
 
   setStyleSheet(R"(
