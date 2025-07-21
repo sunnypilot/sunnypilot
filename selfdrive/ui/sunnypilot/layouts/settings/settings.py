@@ -24,7 +24,7 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.visuals import VisualsLa
 OP.PANEL_COLOR = rl.BLACK
 ICON_SIZE = 80
 
-OP.PanelType = IntEnum(
+OP.PanelType = IntEnum( # type: ignore
   "PanelType",
   [es.name for es in OP.PanelType] + [
     "SUNNYLINK",
