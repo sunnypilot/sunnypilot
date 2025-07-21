@@ -1,0 +1,32 @@
+import pyray as rl
+from dataclasses import dataclass
+
+@dataclass
+class Default:
+  # Base Colors
+  ON_BG_COLOR = rl.Color(28, 101, 186, 255) # Blue
+  OFF_BG_COLOR = rl.Color(39, 39, 39, 255) # Grey
+  DISABLED_ON_BG_COLOR = rl.Color(37, 70, 107, 255) # Dull Blue
+  DISABLED_OFF_BG_COLOR = rl.Color(39, 39, 39, 255) # Grey
+  ITEM_TEXT_COLOR = rl.WHITE
+  ITEM_DESC_TEXT_COLOR = rl.Color(128, 128, 128, 255)
+
+  # Widget/Control Dimensions
+  ITEM_BASE_HEIGHT = 170
+  ITEM_PADDING = 20
+  ITEM_TEXT_FONT_SIZE = 50
+  ITEM_DESC_FONT_SIZE = 40
+  ITEM_DESC_V_OFFSET = 150
+  TOGGLE_WIDTH = 130
+  TOGGLE_HEIGHT = 80
+  TOGGLE_BG_HEIGHT = 60
+  BUTTON_WIDTH = 250
+  BUTTON_HEIGHT = 100
+
+  # Toggle Colors
+  TOGGLE_ON_COLOR = ON_BG_COLOR
+  TOGGLE_OFF_COLOR = OFF_BG_COLOR
+  TOGGLE_KNOB_COLOR = rl.WHITE
+  TOGGLE_DISABLED_ON_COLOR = DISABLED_ON_BG_COLOR
+  TOGGLE_DISABLED_OFF_COLOR = DISABLED_OFF_BG_COLOR
+  TOGGLE_DISABLED_KNOB_COLOR = rl.Color(88, 88, 88, 255) # Lighter Grey

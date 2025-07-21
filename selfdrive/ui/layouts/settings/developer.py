@@ -4,6 +4,9 @@ from openpilot.system.ui.lib.widget import Widget
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.widgets.ssh_key import ssh_key_item
 
+# TODO: Add sunnypilot check to allow stock ui like we did with Qt?
+from openpilot.system.ui.sunnypilot.lib.list_view import toggle_item
+
 # Description constants
 DESCRIPTIONS = {
   'enable_adb': (
