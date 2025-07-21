@@ -115,7 +115,7 @@ class ListItemSP(ListItem):
         style.ITEM_DESC_TEXT_COLOR,
       )
 
-def toggle_item(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
+def toggle_item_sp(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
