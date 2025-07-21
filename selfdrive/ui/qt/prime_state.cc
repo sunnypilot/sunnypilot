@@ -18,6 +18,17 @@ PrimeState::PrimeState(QObject* parent) : QObject(parent) {
     QString url = CommaApi::BASE_URL + "/v1.1/devices/" + *dongleId + "/";
     RequestRepeater* repeater = new RequestRepeater(this, url, "ApiCache_Device", 5);
     QObject::connect(repeater, &RequestRepeater::requestDone, this, &PrimeState::handleReply);
+  } else {
+    // 没有 dongleId，使用本地缓存或默认值
+    std::string cached = Params().get("ApiCache_Device");
+    if (!cached.empty()) {
+      QString response = QString::fromStdString(cached);
+      handleReply(response, true);  // 复用 handleReply 方法
+    } else {
+      // 使用默认值（模拟云端返回的数据结构）
+      QString defaultJson = R"({"is_paired":false,"prime_type":0})";
+      handleReply(defaultJson, true);
+    }
   }
 
   // Emit the initial state change
