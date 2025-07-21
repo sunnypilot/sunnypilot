@@ -3,8 +3,8 @@ from openpilot.system.ui.lib.scroller import Scroller
 from openpilot.system.ui.lib.widget import Widget
 from openpilot.common.params import Params
 
-# TODO: Add sunnypilot check to allow stock ui like we did with Qt?
-from openpilot.system.ui.sunnypilot.lib.list_view import toggle_item
+if Params().get_bool("sunnypilot_ui"):
+  from openpilot.system.ui.sunnypilot.lib.list_view import toggle_item
 
 # Description constants
 DESCRIPTIONS = {
