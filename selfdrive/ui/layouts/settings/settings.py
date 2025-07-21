@@ -77,7 +77,7 @@ class SettingsLayout(Widget):
 
     # Panel configuration
     self._panels = {
-      PanelType.DEVICE: PanelInfo("Device", DeviceLayout(), icon="icons/shell.png"),
+      PanelType.DEVICE: PanelInfo("Device", DeviceLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_home.png"),
       PanelType.NETWORK: PanelInfo("Network", NetworkLayout(), icon="icons/network.png"),
       PanelType.SUNNYLINK: PanelInfo("sunnylink", SunnylinkLayout(), icon="icons/shell.png"),
       PanelType.TOGGLES: PanelInfo("Toggles", TogglesLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
@@ -89,7 +89,7 @@ class SettingsLayout(Widget):
       PanelType.OSM: PanelInfo("OSM", OSMLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
       PanelType.TRIPS: PanelInfo("Trips", TripsLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
       PanelType.VEHICLE: PanelInfo("Vehicle", VehicleLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
-      PanelType.FIREHOSE: PanelInfo("Firehose", FirehoseLayout(), icon="icons/shell.png"),
+      PanelType.FIREHOSE: PanelInfo("Firehose", FirehoseLayout(), icon="../../sunnypilot/selfdrive/assets/offroad/icon_firehose.png"),
       PanelType.DEVELOPER: PanelInfo("Developer", DeveloperLayout(), icon="icons/shell.png"),
     }
 
