@@ -16,7 +16,7 @@ DeveloperPanelSP::DeveloperPanelSP(SettingsWindow *parent) : DeveloperPanel(pare
     AbstractControlSP::UpdateAllAdvancedControls();
     updateToggles(!uiState()->scene.started);
   });
-  showAdvancedControls->showDescription();
+  // showAdvancedControls->showDescription();
 
   // Github Runner Toggle
   enableGithubRunner = new ParamControlSP("EnableGithubRunner", tr("Enable GitHub runner service"), tr("Enables or disables the github runner service."), "", this, true);
@@ -76,5 +76,5 @@ void DeveloperPanelSP::showEvent(QShowEvent *event) {
   DeveloperPanel::showEvent(event);
   updateToggles(!uiState()->scene.started);
   AbstractControlSP::UpdateAllAdvancedControls();
-  prebuiltToggle->showDescription();
+  // prebuiltToggle->showDescription();
 }

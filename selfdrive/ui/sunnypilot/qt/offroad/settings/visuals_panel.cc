@@ -68,7 +68,7 @@ VisualsPanel::VisualsPanel(QWidget *parent) : QWidget(parent) {
     "",
     chevron_info_settings_texts,
     200);
-  chevron_info_settings->showDescription();
+  // chevron_info_settings->showDescription();
   list->addItem(chevron_info_settings);
   param_watcher->addParam("ChevronInfo");
 
