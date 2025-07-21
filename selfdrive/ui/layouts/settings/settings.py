@@ -225,7 +225,7 @@ class SettingsLayout(Widget):
 
     # Check navigation buttons
     for panel_type, panel_info in self._panels.items():
-      if rl.check_collision_point_rec(mouse_pos, panel_info.button_rect):
+      if rl.check_collision_point_rec(mouse_pos, panel_info.button_rect) and self._sidebar_scroller.scroll_panel.is_touch_valid():
         self.set_current_panel(panel_type)
         return True
 
