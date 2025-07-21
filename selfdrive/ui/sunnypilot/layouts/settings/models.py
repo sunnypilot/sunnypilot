@@ -1,4 +1,4 @@
-from openpilot.system.ui.sunnypilot.lib.list_view import button_item, toggle_item
+from openpilot.system.ui.sunnypilot.lib.list_view import button_item_sp, toggle_item_sp
 from openpilot.system.ui.lib.scroller import Scroller
 from openpilot.system.ui.lib.widget import Widget
 from openpilot.common.params import Params
@@ -14,8 +14,8 @@ class ModelsLayout(Widget):
 
   def _init_items(self):
     items = [
-      button_item("Current Model", "SELECT", callback=self._on_model_select),
-      toggle_item("Live Learning Steer Delay"),
+      button_item_sp("Current Model", "SELECT", callback=self._on_model_select),
+      toggle_item_sp("Live Learning Steer Delay"),
     ]
     return items
 

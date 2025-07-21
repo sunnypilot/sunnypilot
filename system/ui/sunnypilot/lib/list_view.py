@@ -7,7 +7,7 @@ from collections.abc import Callable
 
 from openpilot.system.ui.sunnypilot.lib.toggle import ToggleSP
 import openpilot.system.ui.sunnypilot.lib.styles as styles
-from openpilot.system.ui.sunnypilot.lib.option_control import OptionControl
+from openpilot.system.ui.sunnypilot.lib.option_control import OptionControlSP
 
 style = styles.Default
 
@@ -116,43 +116,43 @@ class ListItemSP(ListItem):
         style.ITEM_DESC_TEXT_COLOR,
       )
 
-def toggle_item(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
+def toggle_item_sp(title: str, description: str | Callable[[], str] | None = None, initial_state: bool = False,
                 callback: Callable | None = None, icon: str = "", enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = ToggleActionSP(initial_state=initial_state, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, icon=icon, callback=callback)
 
 
-def button_item(title: str, button_text: str | Callable[[], str], description: str | Callable[[], str] | None = None,
+def button_item_sp(title: str, button_text: str | Callable[[], str], description: str | Callable[[], str] | None = None,
                 callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = ButtonAction(text=button_text, enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
 
 
-def text_item(title: str, value: str | Callable[[], str], description: str | Callable[[], str] | None = None,
+def text_item_sp(title: str, value: str | Callable[[], str], description: str | Callable[[], str] | None = None,
               callback: Callable | None = None, enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = TextAction(text=value, color=rl.Color(170, 170, 170, 255), enabled=enabled)
   return ListItemSP(title=title, description=description, action_item=action, callback=callback)
 
 
-def dual_button_item(left_text: str, right_text: str, left_callback: Callable = None, right_callback: Callable = None,
+def dual_button_item_sp(left_text: str, right_text: str, left_callback: Callable = None, right_callback: Callable = None,
                      description: str | Callable[[], str] | None = None, enabled: bool | Callable[[], bool] = True) -> ListItem:
   action = DualButtonAction(left_text, right_text, left_callback, right_callback, enabled)
   return ListItemSP(title="", description=description, action_item=action)
 
-def multiple_button_item(title: str, description: str, buttons: list[str], selected_index: int,
+def multiple_button_item_sp(title: str, description: str, buttons: list[str], selected_index: int,
                          button_width: int = style.BUTTON_WIDTH, callback: Callable = None, icon: str = ""):
   action = MultipleButtonAction(buttons, button_width, selected_index, callback=callback)
   return ListItemSP(title=title, description=description, icon=icon, action_item=action)
 
 
 
-class OptionControlAction(ItemAction):
+class OptionControlActionSP(ItemAction):
   def __init__(self, min_value: int, max_value: int, initial_value: int,
                value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
                on_value_changed: Callable[[int], None] | None = None):
     # TODO: Fix click detection rectangle for description
     super().__init__(width=0, enabled=enabled)
-    self.option_control = OptionControl(min_value, max_value, initial_value,
+    self.option_control = OptionControlSP(min_value, max_value, initial_value,
                                         value_change_step, enabled, on_value_changed)
 
   def _render(self, rect: rl.Rectangle) -> bool | int | None:
@@ -160,12 +160,12 @@ class OptionControlAction(ItemAction):
     return self.option_control.render(rect)
 
 
-def option_item(title: str, min_value: int, max_value: int, initial_value: int,
+def option_item_sp(title: str, min_value: int, max_value: int, initial_value: int,
                 value_change_step: int = 1, description: str | Callable[[], str] | None = None,
                 on_value_changed: Callable[[int], None] | None = None,
                 enabled: bool | Callable[[], bool] = True,
                 icon: str = "") -> ListItem:
-  action = OptionControlAction(min_value, max_value, initial_value,
+  action = OptionControlActionSP(min_value, max_value, initial_value,
                                value_change_step, enabled, on_value_changed)
   return ListItemSP(title=title, description=description,
                   action_item=action, icon=icon)

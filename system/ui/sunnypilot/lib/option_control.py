@@ -18,7 +18,7 @@ TOP_PADDING = 32
 # Calculate total control width including padding
 OPTION_CONTROL_WIDTH = (BUTTON_WIDTH * 2) + LABEL_WIDTH + (BUTTON_SPACING * 2) + (CONTAINER_PADDING * 2)
 
-class OptionControl(Widget):
+class OptionControlSP(Widget):
     def __init__(self, min_value: int, max_value: int, initial_value: int,
                  value_change_step: int = 1, enabled: bool | Callable[[], bool]= True,
                  on_value_changed: Callable[[int], None] | None = None):

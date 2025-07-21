@@ -44,7 +44,7 @@ class PanelInfo(OP.PanelInfo):
   icon: str = ""
 
 
-class SettingsLayout(OP.SettingsLayout):
+class SettingsLayoutSP(OP.SettingsLayout):
   def __init__(self):
     OP.SettingsLayout.__init__(self)
     self._nav_items: list[Widget] = []
