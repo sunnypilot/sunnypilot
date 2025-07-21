@@ -155,7 +155,7 @@ class OptionControlAction(ItemAction):
     self.option_control = OptionControl(min_value, max_value, initial_value,
                                         value_change_step, enabled, on_value_changed)
 
-  def _render(self, rect: rl.Rectangle) -> bool:
+  def _render(self, rect: rl.Rectangle) -> bool | int | None:
     self.option_control.set_enabled(self.enabled)
     return self.option_control.render(rect)
 

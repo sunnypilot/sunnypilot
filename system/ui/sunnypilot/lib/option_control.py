@@ -1,5 +1,5 @@
 import pyray as rl
-from typing import Callable, Union
+from collections.abc import Callable
 from openpilot.system.ui.lib.widget import Widget
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -20,7 +20,7 @@ OPTION_CONTROL_WIDTH = (BUTTON_WIDTH * 2) + LABEL_WIDTH + (BUTTON_SPACING * 2) +
 
 class OptionControl(Widget):
     def __init__(self, min_value: int, max_value: int, initial_value: int,
-                 value_change_step: int = 1, enabled: bool = True,
+                 value_change_step: int = 1, enabled: bool | Callable[[], bool]= True,
                  on_value_changed: Callable[[int], None] | None = None):
         super().__init__()
         self.min_value = min_value
@@ -175,7 +175,7 @@ class OptionControl(Widget):
     def _render_value_label(self, x: float, y: float):
         text = str(self.current_value)
         text_size = measure_text_cached(self._font, text, VALUE_FONT_SIZE)
-        
+
         # Center the text in the label area with slight y-offset for visual balance
         text_x = x + (LABEL_WIDTH - text_size.x) / 2
         text_y = y + (BUTTON_HEIGHT - text_size.y) / 2 - 2

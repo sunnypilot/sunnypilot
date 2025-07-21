@@ -95,7 +95,7 @@ def and_(*fns):
   return lambda *args: operator.and_(*(fn(*args) for fn in fns))
 
 def use_raylib(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return params.get_bool("UseRaylib")
+  return bool(params.get_bool("UseRaylib"))
 
 def use_qt(started: bool, params: Params, CP: car.CarParams) -> bool:
   return not params.get_bool("UseRaylib")
