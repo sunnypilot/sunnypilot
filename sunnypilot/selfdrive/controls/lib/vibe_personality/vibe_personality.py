@@ -141,12 +141,12 @@ class VibePersonalityController:
     current_idx = personalities.index(self.accel_personality)
     next_personality = personalities[(current_idx + 1) % len(personalities)]
     self.set_accel_personality(next_personality)
-    return next_personality
+    return int(next_personality)
 
   def get_accel_personality(self) -> int:
     """Get current AccelPersonality"""
     self._update_from_params()
-    return self.accel_personality
+    return int(self.accel_personality)
 
   # LongPersonality Management (for braking and following distance)
   def set_long_personality(self, personality: int) -> bool:
@@ -163,12 +163,12 @@ class VibePersonalityController:
     current_idx = personalities.index(self.long_personality)
     next_personality = personalities[(current_idx + 1) % len(personalities)]
     self.set_long_personality(next_personality)
-    return next_personality
+    return int(next_personality)
 
   def get_long_personality(self) -> int:
     """Get current LongPersonality"""
     self._update_from_params()
-    return self.long_personality
+    return int(self.long_personality)
 
   # Toggle Functions
   def toggle_personality(self): return self._toggle_flag('enabled')
