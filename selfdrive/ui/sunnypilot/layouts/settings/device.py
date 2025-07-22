@@ -32,7 +32,6 @@ DESCRIPTIONS = {
 class DeviceLayoutSP(DeviceLayout):
   def __init__(self):
     DeviceLayout.__init__(self)
-    items = self._initialize_items()
 
   def _hide_item(self, item):
     return (item.title in {"Driver Camera", "Regulatory", "Review Training Guide", "Change Language"}

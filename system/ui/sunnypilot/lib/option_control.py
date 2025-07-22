@@ -1,6 +1,6 @@
 import pyray as rl
 from collections.abc import Callable
-from typing import Dict, Optional, Union, Tuple
+from typing import Optional, Union
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.widget import Widget
 from openpilot.system.ui.lib.application import gui_app, FontWeight
@@ -29,9 +29,9 @@ class OptionControlSP(Widget):
     """
 
     def __init__(self, param: str, min_value: int, max_value: int,
-                 value_change_step: int = 1, enabled: Union[bool, Callable[[], bool]] = True,
-                 on_value_changed: Optional[Callable[[int], None]] = None,
-                 value_map: Optional[Dict[str, Tuple[str, str]]] = None,
+                 value_change_step: int = 1, enabled: bool | Callable[[], bool] = True,
+                 on_value_changed: Callable[[int], None] | None = None,
+                 value_map: dict[str, tuple[str, str]] | None = None,
                  use_float_scaling: bool = False):
 
         super().__init__()
@@ -69,7 +69,7 @@ class OptionControlSP(Widget):
         self.text_pressed = rl.Color(255, 255, 255, 255)        # Pressed text
         self.text_disabled = rl.Color(92, 92, 92, 255)          # Disabled text
 
-    def set_enabled(self, enabled: Union[bool, Callable[[], bool]]):
+    def set_enabled(self, enabled: bool | Callable[[], bool]):
         """Set whether the control is enabled"""
         self._enabled = enabled
 
@@ -81,7 +81,10 @@ class OptionControlSP(Widget):
         """Set the control to a specific value"""
         if self.min_value <= value <= self.max_value:
             self.current_value = value
-            self.params.put(self.param_key, str(value))
+            if self.value_map:
+                self.params.put(self.param_key, str(self.value_map[str(value)][0]))
+            else:
+                self.params.put(self.param_key, str(value))
             if self.on_value_changed:
                 self.on_value_changed(value)
 

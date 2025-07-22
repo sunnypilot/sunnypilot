@@ -177,7 +177,7 @@ def option_item_sp(title: str, description: str | Callable[[], str] | None, para
                    min_value: int, max_value: int, value_change_step: int = 1,
                    on_value_changed: Callable[[int], None] | None = None,
                    enabled: bool | Callable[[], bool] = True,
-                   icon: str = "", value_map: dict[str, str] | None = None,
+                   icon: str = "", value_map: dict[str, tuple[str, str]] | None = None,
                    use_float_scaling: bool = False) -> ListItem:
   action = OptionControlActionSP(
       param, min_value, max_value, value_change_step,
