@@ -7,7 +7,7 @@ acceleration profiles, following distance, and personality management.
 
 import pytest
 import numpy as np
-from unittest.mock import Mock, patch, call
+from pytest_mock import MockerFixture
 from cereal import log, custom
 
 from openpilot.sunnypilot.selfdrive.controls.lib.vibe_personality.vibe_personality import VibePersonalityController
@@ -20,9 +20,9 @@ class TestVibePersonalityController:
   """Test suite for VibePersonalityController"""
 
   @pytest.fixture
-  def mock_params(self):
+  def mock_params(self, mocker: MockerFixture):
     """Mock Params with realistic behavior"""
-    mock = Mock()
+    mock = mocker.Mock()
     mock.get.return_value = None
     mock.get_bool.return_value = True
     mock.put.return_value = None
@@ -30,12 +30,12 @@ class TestVibePersonalityController:
     return mock
 
   @pytest.fixture
-  def controller(self, mock_params):
+  def controller(self, mock_params, mocker: MockerFixture):
     """Create controller with mocked dependencies"""
-    with patch('openpilot.sunnypilot.selfdrive.controls.lib.vibe_personality.vibe_personality.Params', return_value=mock_params):
-      controller = VibePersonalityController()
-      controller.params = mock_params
-      return controller
+    mocker.patch('openpilot.sunnypilot.selfdrive.controls.lib.vibe_personality.vibe_personality.Params', return_value=mock_params)
+    controller = VibePersonalityController()
+    controller.params = mock_params
+    return controller
 
   def test_initialization_sets_correct_defaults(self, controller):
     """Controller should initialize with expected default values"""
@@ -284,7 +284,3 @@ class TestVibePersonalityController:
     # Test with insufficient points
     with pytest.raises(ValueError):
       controller._compute_slopes([0.], [1.0])
-
-
-if __name__ == "__main__":
-  pytest.main([__file__, "-v", "--tb=short"])
