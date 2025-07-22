@@ -7,9 +7,9 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 # Dimensions and styling constants
-BUTTON_WIDTH = 150
+BUTTON_WIDTH = 80
 BUTTON_HEIGHT = 80
-LABEL_WIDTH = 350
+LABEL_WIDTH = 200
 BUTTON_SPACING = 25
 VALUE_FONT_SIZE = 50
 BUTTON_FONT_SIZE = 60
@@ -39,12 +39,19 @@ class OptionControlSP(Widget):
         self.param_key = param
         self.min_value = min_value
         self.max_value = max_value
-        self.current_value = int(self.params.get(self.param_key, encoding="utf8"))
         self.value_change_step = value_change_step
         self._enabled = enabled
         self.on_value_changed = on_value_changed
         self.value_map = value_map
         self.use_float_scaling = use_float_scaling
+        self.current_value = min_value
+        if self.value_map:
+            for key in self.value_map:
+                if self.value_map[key][0] == self.params.get(self.param_key, encoding="utf8"):
+                    self.current_value = int(key)
+                    break
+        else:
+            self.current_value = int(self.params.get(self.param_key, encoding="utf8"))
 
         # Initialize font and button styles
         self._font = gui_app.font(FontWeight.MEDIUM)
@@ -167,7 +174,7 @@ class OptionControlSP(Widget):
         enabled = self.is_enabled()
 
         # Draw container background
-        rl.draw_rectangle_rounded(self.container_rect, 0.2, BUTTON_CORNER_RADIUS, self.surface_container)
+        rl.draw_rectangle_rounded(self.container_rect, 1, BUTTON_CORNER_RADIUS, self.surface_container)
 
         # Determine button states
         minus_enabled = enabled and self.current_value > self.min_value
@@ -214,7 +221,7 @@ class OptionControlSP(Widget):
             text_color = self.text_enabled
 
         # Draw button background
-        rl.draw_rectangle_rounded(rect, 0.2, BUTTON_CORNER_RADIUS, bg_color)
+        rl.draw_rectangle_rounded(rect, 1, BUTTON_CORNER_RADIUS, bg_color)
 
         # Draw button text
         text_size = measure_text_cached(self._font, text, BUTTON_FONT_SIZE)
