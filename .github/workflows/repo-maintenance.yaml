@@ -62,7 +62,7 @@ jobs:
       uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
       with:
         author: sunnypilot CI <ci@sunnypilot.ai>
-        token: ${{ secrets.ACTIONS_CREATE_PR_PAT }}
+        token: ${{ github.repository == 'commaai/openpilot' && secrets.ACTIONS_CREATE_PR_PAT || secrets.GITHUB_TOKEN }}
         commit-message: Update Python packages
         title: '[bot] Update Python packages'
         branch: auto-package-updates
