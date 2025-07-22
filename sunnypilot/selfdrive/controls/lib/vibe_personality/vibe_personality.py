@@ -69,8 +69,6 @@ class VibePersonalityController:
       'follow_enabled': 'VibeFollowPersonalityEnabled'
     }
 
-    print(f"[VIBE_DEBUG] Initializing VibePersonalityController - accel_personality: {self.accel_personality}, long_personality: {self.long_personality}")
-
     # Precompute slopes for all personalities
     self._precompute_slopes()
 
@@ -105,8 +103,6 @@ class VibePersonalityController:
       if accel_personality_str:
         accel_personality_int = int(accel_personality_str)
         if accel_personality_int in [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]:
-          if accel_personality_int != self.accel_personality:
-            print(f"[VIBE_DEBUG] AccelPersonality changed from {self.accel_personality} to {accel_personality_int}")
           self.accel_personality = accel_personality_int
     except (ValueError, TypeError):
       pass
@@ -117,8 +113,6 @@ class VibePersonalityController:
       if long_personality_str:
         long_personality_int = int(long_personality_str)
         if long_personality_int in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
-          if long_personality_int != self.long_personality:
-            print(f"[VIBE_DEBUG] LongPersonality changed from {self.long_personality} to {long_personality_int}")
           self.long_personality = long_personality_int
     except (ValueError, TypeError):
       pass
@@ -136,10 +130,8 @@ class VibePersonalityController:
   def set_accel_personality(self, personality: int) -> bool:
     """Set AccelPersonality (eco=0, normal=1, sport=2)"""
     if personality in [AccelPersonality.eco, AccelPersonality.normal, AccelPersonality.sport]:
-      old_personality = self.accel_personality
       self.accel_personality = personality
       self.params.put(self.param_keys['accel_personality'], str(personality))
-      print(f"[VIBE_DEBUG] AccelPersonality set: {old_personality} -> {personality}")
       return True
     return False
 
@@ -160,10 +152,8 @@ class VibePersonalityController:
   def set_long_personality(self, personality: int) -> bool:
     """Set LongPersonality (relaxed=0, standard=1, aggressive=2)"""
     if personality in [LongPersonality.relaxed, LongPersonality.standard, LongPersonality.aggressive]:
-      old_personality = self.long_personality
       self.long_personality = personality
       self.params.put(self.param_keys['long_personality'], str(personality))
-      print(f"[VIBE_DEBUG] LongPersonality set: {old_personality} -> {personality}")
       return True
     return False
 
@@ -195,17 +185,11 @@ class VibePersonalityController:
   # Feature-specific enable checks
   def is_accel_enabled(self) -> bool:
     self._update_from_params()
-    enabled = self._get_toggle_state('enabled') and self._get_toggle_state('accel_enabled')
-    if enabled:
-      print(f"[VIBE_DEBUG] is_accel_enabled: TRUE using AccelPersonality {self.accel_personality}")
-    return enabled
+    return self._get_toggle_state('enabled') and self._get_toggle_state('accel_enabled')
 
   def is_follow_enabled(self) -> bool:
     self._update_from_params()
-    enabled = self._get_toggle_state('enabled') and self._get_toggle_state('follow_enabled')
-    if enabled:
-      print(f"[VIBE_DEBUG] is_follow_enabled: TRUE using LongPersonality {self.long_personality}")
-    return enabled
+    return self._get_toggle_state('enabled') and self._get_toggle_state('follow_enabled')
 
   def is_enabled(self) -> bool:
     self._update_from_params()
@@ -224,8 +208,6 @@ class VibePersonalityController:
       return None
 
     try:
-      print(f"[VIBE_DEBUG] get_accel_limits: AccelPersonality={self.accel_personality}, LongPersonality={self.long_personality}, speed={v_ego:.2f}")
-
       # Max acceleration from AccelPersonality
       max_a = self._interpolate(v_ego, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self.accel_personality],
                                 self.max_accel_slopes[self.accel_personality])
@@ -234,10 +216,8 @@ class VibePersonalityController:
       min_a = self._interpolate(v_ego, MIN_ACCEL_BREAKPOINTS, MIN_ACCEL_PROFILES[self.long_personality],
                                 self.min_accel_slopes[self.long_personality])
 
-      print(f"[VIBE_DEBUG] get_accel_limits: min_a={min_a:.3f} (from LongPersonality), max_a={max_a:.3f} (from AccelPersonality)")
       return float(min_a), float(max_a)
     except (KeyError, IndexError):
-      print(f"[VIBE_DEBUG] get_accel_limits: ERROR - KeyError/IndexError")
       return None
 
   def get_follow_distance_multiplier(self, v_ego: float) -> float | None:
@@ -247,14 +227,11 @@ class VibePersonalityController:
       return None
 
     try:
-      print(f"[VIBE_DEBUG] get_follow_distance_multiplier: LongPersonality={self.long_personality}, speed={v_ego:.2f}")
       profile = FOLLOW_DISTANCE_PROFILES[self.long_personality]
       multiplier = float(self._interpolate(v_ego, profile['x_vel'], profile['y_dist'],
                                            self.follow_distance_slopes[self.long_personality]))
-      print(f"[VIBE_DEBUG] get_follow_distance_multiplier: multiplier={multiplier:.3f}")
       return multiplier
     except (KeyError, IndexError):
-      print(f"[VIBE_DEBUG] get_follow_distance_multiplier: ERROR - KeyError/IndexError")
       return None
 
   def get_personality_info(self) -> dict:
@@ -276,7 +253,6 @@ class VibePersonalityController:
       "long_description": f"Following/Braking: {long_names.get(self.long_personality, 'Unknown')}",
     }
 
-    print(f"[VIBE_DEBUG] get_personality_info: {info}")
     return info
 
   def get_min_accel(self, v_ego: float) -> float | None:
@@ -291,7 +267,6 @@ class VibePersonalityController:
 
   def reset(self):
     """Reset to default modes"""
-    print(f"[VIBE_DEBUG] Reset to default personalities - accel: {self.accel_personality}, long: {self.long_personality}")
     self.accel_personality = AccelPersonality.normal
     self.long_personality = LongPersonality.standard
     self.frame = 0
