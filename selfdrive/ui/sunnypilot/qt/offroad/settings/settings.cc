@@ -8,16 +8,20 @@
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/settings.h"
 
 #include "selfdrive/ui/sunnypilot/qt/widgets/scrollview.h"
-#include "selfdrive/ui/qt/offroad/developer_panel.h"
 #include "selfdrive/ui/qt/offroad/firehose.h"
 #include "selfdrive/ui/sunnypilot/qt/network/networking.h"
 
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/developer_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/device_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/models_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/software_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/sunnylink_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/lateral_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/longitudinal_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/osm_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/trips_panel.h"
 #include "selfdrive/ui/sunnypilot/qt/offroad/settings/vehicle_panel.h"
+#include "selfdrive/ui/sunnypilot/qt/offroad/settings/visuals_panel.h"
 
 TogglesPanelSP::TogglesPanelSP(SettingsWindowSP *parent) : TogglesPanel(parent) {
   QObject::connect(uiStateSP(), &UIStateSP::uiUpdate, this, &TogglesPanelSP::updateState);
@@ -68,21 +72,26 @@ SettingsWindowSP::SettingsWindowSP(QWidget *parent) : SettingsWindow(parent) {
 
   TogglesPanelSP *toggles = new TogglesPanelSP(this);
   QObject::connect(this, &SettingsWindowSP::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
+  QObject::connect(this, &SettingsWindowSP::scrollToToggle, toggles, &TogglesPanel::scrollToToggle);
 
   auto networking = new NetworkingSP(this);
   QObject::connect(uiState()->prime_state, &PrimeState::changed, networking, &NetworkingSP::setPrimeType);
 
   QList<PanelInfo> panels = {
     PanelInfo("   " + tr("Device"), device, "../../sunnypilot/selfdrive/assets/offroad/icon_home.svg"),
-    PanelInfo("   " + tr("Network"), networking, "../assets/offroad/icon_network.png"),
-    PanelInfo("   " + tr("sunnylink"), new SunnylinkPanel(this), "../assets/offroad/icon_wifi_strength_full.svg"),
+    PanelInfo("   " + tr("Network"), networking, "../assets/icons/network.png"),
+    PanelInfo("   " + tr("sunnylink"), new SunnylinkPanel(this), "../assets/icons/wifi_strength_full.svg"),
     PanelInfo("   " + tr("Toggles"), toggles, "../../sunnypilot/selfdrive/assets/offroad/icon_toggle.png"),
     PanelInfo("   " + tr("Software"), new SoftwarePanelSP(this), "../../sunnypilot/selfdrive/assets/offroad/icon_software.png"),
+    PanelInfo("   " + tr("Models"), new ModelsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_models.png"),
     PanelInfo("   " + tr("Steering"), new LateralPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_lateral.png"),
+    PanelInfo("   " + tr("Cruise"), new LongitudinalPanel(this), "../assets/icons/speed_limit.png"),
+    PanelInfo("   " + tr("Visuals"), new VisualsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_visuals.png"),
+    PanelInfo("   " + tr("OSM"), new OsmPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_map.png"),
     PanelInfo("   " + tr("Trips"), new TripsPanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_trips.png"),
     PanelInfo("   " + tr("Vehicle"), new VehiclePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_vehicle.png"),
     PanelInfo("   " + tr("Firehose"), new FirehosePanel(this), "../../sunnypilot/selfdrive/assets/offroad/icon_firehose.svg"),
-    PanelInfo("   " + tr("Developer"), new DeveloperPanel(this), "../assets/offroad/icon_shell.png"),
+    PanelInfo("   " + tr("Developer"), new DeveloperPanelSP(this), "../assets/icons/shell.png"),
   };
 
   nav_btns = new QButtonGroup(this);

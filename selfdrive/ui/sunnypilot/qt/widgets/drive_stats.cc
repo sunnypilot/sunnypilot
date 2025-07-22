@@ -34,7 +34,7 @@ DriveStats::DriveStats(QWidget* parent) : QFrame(parent) {
 
     int row = 0;
     grid_layout->addWidget(newLabel(title, "title"), row++, 0, 1, 3);
-    grid_layout->addItem(new QSpacerItem(0, 50), row++, 0, 1, 1);
+    grid_layout->addItem(new QSpacerItem(0, 30), row++, 0, 1, 1);
 
     grid_layout->addWidget(labels.routes = newLabel("0", "number"), row, 0, Qt::AlignLeft);
     grid_layout->addWidget(labels.distance = newLabel("0", "number"), row, 1, Qt::AlignLeft);

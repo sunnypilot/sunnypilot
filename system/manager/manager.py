@@ -19,6 +19,8 @@ from openpilot.common.swaglog import cloudlog, add_file_handler
 from openpilot.system.version import get_build_metadata, terms_version, training_version
 from openpilot.system.hardware.hw import Paths
 
+from openpilot.sunnypilot.mapd.mapd_installer import VERSION
+
 
 def manager_init() -> None:
   save_bootlog()
@@ -45,17 +47,38 @@ def manager_init() -> None:
   sunnypilot_default_params: list[tuple[str, str | bytes]] = [
     ("AutoLaneChangeTimer", "0"),
     ("AutoLaneChangeBsmDelay", "0"),
+    ("BlindSpot", "0"),
+    ("BlinkerMinLateralControlSpeed", "20"),  # MPH or km/h
+    ("BlinkerPauseLateralControl", "0"),
+    ("Brightness", "0"),
+    ("ChevronInfo", "4"),
+    ("CustomAccIncrementsEnabled", "0"),
+    ("CustomAccLongPressIncrement", "5"),
+    ("CustomAccShortPressIncrement", "1"),
+    ("DeviceBootMode", "0"),
+    ("DisableUpdates", "0"),
     ("DynamicExperimentalControl", "0"),
+    ("HyundaiLongitudinalTuning", "0"),
+    ("InteractivityTimeout", "0"),
+    ("LagdToggle", "1"),
+    ("LagdToggledelay", "0.2"),
     ("Mads", "1"),
     ("MadsMainCruiseAllowed", "1"),
-    ("MadsPauseLateralOnBrake", "0"),
+    ("MadsSteeringMode", "0"),
     ("MadsUnifiedEngagementMode", "1"),
+    ("MapdVersion", f"{VERSION}"),
     ("MaxTimeOffroad", "1800"),
     ("ModelManager_LastSyncTime", "0"),
     ("ModelManager_ModelsCache", ""),
     ("NeuralNetworkLateralControl", "0"),
+    ("QuickBootToggle", "0"),
     ("QuietMode", "0"),
+    ("ShowAdvancedControls", "0" if build_metadata.tested_channel else "1"),
   ]
+
+  # device boot mode
+  if params.get("DeviceBootMode") == b"1": # start in always offroad mode
+    params.put_bool("OffroadMode", True)
 
   if params.get_bool("RecordFrontLock"):
     params.put_bool("RecordFront", True)
@@ -82,6 +105,7 @@ def manager_init() -> None:
   params.put("GitCommitDate", build_metadata.openpilot.git_commit_date)
   params.put("GitBranch", build_metadata.channel)
   params.put("GitRemote", build_metadata.openpilot.git_origin)
+  params.put_bool("IsDevelopmentBranch", build_metadata.development_channel)
   params.put_bool("IsTestedBranch", build_metadata.tested_channel)
   params.put_bool("IsReleaseBranch", build_metadata.release_channel)
   params.put("HardwareSerial", serial)

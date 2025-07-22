@@ -35,11 +35,13 @@ def asdictref(obj) -> dict[str, Any]:
   return _asdictref_inner(obj)
 
 
-def convert_to_capnp(struct: structs.CarParamsSP) -> capnp.lib.capnp._DynamicStructBuilder:
+def convert_to_capnp(struct: structs.CarParamsSP | structs.CarStateSP) -> capnp.lib.capnp._DynamicStructBuilder:
   struct_dict = asdictref(struct)
 
   if isinstance(struct, structs.CarParamsSP):
     struct_capnp = custom.CarParamsSP.new_message(**struct_dict)
+  elif isinstance(struct, structs.CarStateSP):
+    struct_capnp = custom.CarStateSP.new_message(**struct_dict)
   else:
     raise ValueError(f"Unsupported struct type: {type(struct)}")
 
@@ -55,5 +57,6 @@ def convert_carControlSP(struct: capnp.lib.capnp._DynamicStructReader) -> struct
   struct_dataclass = structs.CarControlSP(**remove_deprecated({k: v for k, v in struct_dict.items() if not isinstance(k, dict)}))
 
   struct_dataclass.mads = structs.ModularAssistiveDrivingSystem(**remove_deprecated(struct_dict.get('mads', {})))
+  struct_dataclass.params = [structs.CarControlSP.Param(**remove_deprecated(p)) for p in struct_dict.get('params', [])]
 
   return struct_dataclass
